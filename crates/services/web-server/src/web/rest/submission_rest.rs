@@ -39,7 +39,7 @@ pub async fn list_case_submissions(
 ) -> Result<(StatusCode, Json<DataRestResult<CaseSubmissionList>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
-	let rows = list_by_case(case_id).await;
+	let rows = list_by_case(&ctx, &_mm, case_id).await?;
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
@@ -56,11 +56,11 @@ pub async fn get_case_submission(
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
-	let record = get_submission(submission_id)
-		.await
-		.ok_or(Error::BadRequest {
+	let record = get_submission(&ctx, &_mm, submission_id).await?.ok_or(
+		Error::BadRequest {
 			message: format!("submission not found: {submission_id}"),
-		})?;
+		},
+	)?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: record })))
 }
 
@@ -73,6 +73,6 @@ pub async fn post_mock_ack(
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_UPDATE)?;
-	let record = apply_mock_ack(submission_id, input).await?;
+	let record = apply_mock_ack(&ctx, &_mm, submission_id, input).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: record })))
 }

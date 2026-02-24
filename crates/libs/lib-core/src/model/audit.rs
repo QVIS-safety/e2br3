@@ -6,6 +6,8 @@ use crate::model::store::set_full_context_dbx;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::filter::{FilterNodes, ListOptions, OpValsString};
+use sea_query::{Alias, Expr, Iden, PostgresQueryBuilder, Query};
+use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use sqlx::types::time::OffsetDateTime;
@@ -42,10 +44,13 @@ pub struct AuditLog {
 	pub record_id: Uuid,
 	pub action: String, // CREATE, UPDATE, DELETE, SUBMIT, NULLIFY
 	pub user_id: Uuid,
+	#[sqlx(default)]
+	pub user_display: Option<String>,
 	pub old_values: Option<JsonValue>,
 	pub new_values: Option<JsonValue>,
 	pub ip_address: Option<String>, // Stored as TEXT in DB
 	pub user_agent: Option<String>,
+	#[serde(with = "time::serde::rfc3339")]
 	pub created_at: OffsetDateTime,
 }
 
@@ -64,6 +69,23 @@ pub struct AuditLogForCreate {
 pub struct AuditLogFilter {
 	pub table_name: Option<OpValsString>,
 	pub action: Option<OpValsString>,
+}
+
+const LIST_LIMIT_DEFAULT: i64 = 1000;
+const LIST_LIMIT_MAX: i64 = 5000;
+
+#[derive(Iden)]
+enum AuditLogIden {
+	Id,
+	TableName,
+	RecordId,
+	Action,
+	UserId,
+	OldValues,
+	NewValues,
+	IpAddress,
+	UserAgent,
+	CreatedAt,
 }
 
 // -- BMCs
@@ -140,6 +162,33 @@ impl DbBmc for AuditLogBmc {
 }
 
 impl AuditLogBmc {
+	fn is_metadata_only_update(log: &AuditLog) -> bool {
+		if log.action != "UPDATE" {
+			return false;
+		}
+
+		let Some(mut old_values) = log.old_values.clone() else {
+			return false;
+		};
+		let Some(mut new_values) = log.new_values.clone() else {
+			return false;
+		};
+
+		let JsonValue::Object(ref mut old_obj) = old_values else {
+			return false;
+		};
+		let JsonValue::Object(ref mut new_obj) = new_values else {
+			return false;
+		};
+
+		old_obj.remove("updated_at");
+		old_obj.remove("updated_by");
+		new_obj.remove("updated_at");
+		new_obj.remove("updated_by");
+
+		old_values == new_values
+	}
+
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
@@ -169,16 +218,47 @@ impl AuditLogBmc {
 	pub async fn list(
 		_ctx: &Ctx,
 		mm: &ModelManager,
-		_filters: Option<Vec<AuditLogFilter>>,
-		_list_options: Option<ListOptions>,
+		filters: Option<Vec<AuditLogFilter>>,
+		list_options: Option<ListOptions>,
 	) -> Result<Vec<AuditLog>> {
-		// Simple implementation - can be enhanced with filters later
-		let sql = "SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 1000";
+		let mut query = Query::select();
+		query
+			.from(Self::table_ref())
+			.columns([
+				AuditLogIden::Id,
+				AuditLogIden::TableName,
+				AuditLogIden::RecordId,
+				AuditLogIden::Action,
+				AuditLogIden::UserId,
+				AuditLogIden::OldValues,
+				AuditLogIden::NewValues,
+				AuditLogIden::IpAddress,
+				AuditLogIden::UserAgent,
+				AuditLogIden::CreatedAt,
+			])
+			.expr_as(
+				Expr::cust("audit_user_display(user_id)"),
+				Alias::new("user_display"),
+			);
+
+		if let Some(filters) = filters {
+			let filters: modql::filter::FilterGroups = filters.into();
+			let cond: sea_query::Condition = filters.try_into()?;
+			query.cond_where(cond);
+		}
+
+		let list_options = compute_list_options(list_options)?;
+		list_options.apply_to_sea_query(&mut query);
+
+		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 		let logs = mm
 			.dbx()
-			.fetch_all(sqlx::query_as::<_, AuditLog>(sql))
+			.fetch_all(sqlx::query_as_with::<_, AuditLog, _>(&sql, values))
 			.await?;
-		Ok(logs)
+		Ok(logs
+			.into_iter()
+			.filter(|log| !Self::is_metadata_only_update(log))
+			.collect())
 	}
 
 	pub async fn list_by_record(
@@ -189,10 +269,11 @@ impl AuditLogBmc {
 	) -> Result<Vec<AuditLog>> {
 		let logs = if table_name == "cases" {
 			let sql = format!(
-				"SELECT * FROM {}
-				 WHERE (table_name = $1 AND record_id = $2)
-				    OR COALESCE(new_values->>'case_id', old_values->>'case_id') = $3
-				 ORDER BY created_at DESC",
+				"SELECT l.*, audit_user_display(l.user_id) AS user_display
+				 FROM {} l
+				 WHERE (l.table_name = $1 AND l.record_id = $2)
+				    OR COALESCE(l.new_values->>'case_id', l.old_values->>'case_id') = $3
+				 ORDER BY l.created_at DESC",
 				Self::TABLE
 			);
 			mm.dbx()
@@ -205,7 +286,10 @@ impl AuditLogBmc {
 				.await?
 		} else {
 			let sql = format!(
-				"SELECT * FROM {} WHERE table_name = $1 AND record_id = $2 ORDER BY created_at DESC",
+				"SELECT l.*, audit_user_display(l.user_id) AS user_display
+				 FROM {} l
+				 WHERE l.table_name = $1 AND l.record_id = $2
+				 ORDER BY l.created_at DESC",
 				Self::TABLE
 			);
 			mm.dbx()
@@ -216,6 +300,31 @@ impl AuditLogBmc {
 				)
 				.await?
 		};
-		Ok(logs)
+		Ok(logs
+			.into_iter()
+			.filter(|log| !Self::is_metadata_only_update(log))
+			.collect())
+	}
+}
+
+fn compute_list_options(list_options: Option<ListOptions>) -> Result<ListOptions> {
+	if let Some(mut list_options) = list_options {
+		if let Some(limit) = list_options.limit {
+			if limit > LIST_LIMIT_MAX {
+				return Err(crate::model::Error::ListLimitOverMax {
+					max: LIST_LIMIT_MAX,
+					actual: limit,
+				});
+			}
+		} else {
+			list_options.limit = Some(LIST_LIMIT_DEFAULT);
+		}
+		Ok(list_options)
+	} else {
+		Ok(ListOptions {
+			limit: Some(LIST_LIMIT_DEFAULT),
+			offset: None,
+			order_bys: Some("!created_at".into()),
+		})
 	}
 }

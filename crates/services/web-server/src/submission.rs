@@ -1,15 +1,16 @@
-use std::collections::HashMap;
-use std::sync::OnceLock;
-
 use lib_core::ctx::Ctx;
-use lib_core::model::case::{CaseBmc, CaseForUpdate};
+use lib_core::model::case::CaseBmc;
+use lib_core::model::store::set_full_context_dbx_or_rollback;
 use lib_core::model::ModelManager;
-use lib_core::xml::{export_case_xml, validate_e2b_xml};
+use lib_core::xml::{export_case_xml, should_skip_xml_validation, validate_e2b_xml};
 use lib_rest_core::{Error, Result};
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
+use sqlx::FromRow;
+use std::time::Duration;
 use time::OffsetDateTime;
 use tokio::runtime::Handle;
-use tokio::sync::RwLock;
 use tokio::task;
 use uuid::Uuid;
 
@@ -57,21 +58,101 @@ pub struct MockAckInput {
 	pub message: Option<String>,
 }
 
+#[derive(Debug, Clone, FromRow)]
+struct CaseSubmissionRow {
+	id: Uuid,
+	case_id: Uuid,
+	gateway: String,
+	remote_submission_id: String,
+	status: String,
+	xml_bytes: i32,
+	submitted_by: Uuid,
+	submitted_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct SubmissionAckRow {
+	ack_level: i16,
+	success: bool,
+	ack_code: Option<String>,
+	ack_message: Option<String>,
+	received_at: OffsetDateTime,
+}
+
+#[derive(Debug)]
+struct GatewaySubmissionOutcome {
+	gateway: String,
+	remote_submission_id: String,
+	ack1: SubmissionAck,
+}
+
+#[derive(Debug, Deserialize)]
+struct EsgSubmitResponse {
+	remote_submission_id: Option<String>,
+	submission_id: Option<String>,
+	id: Option<String>,
+	ack: Option<EsgAckResponse>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EsgAckResponse {
+	level: Option<u8>,
+	success: Option<bool>,
+	code: Option<String>,
+	message: Option<String>,
+	received_at: Option<String>,
+}
+
 fn default_true() -> bool {
 	true
 }
 
-type SubmissionStore = RwLock<HashMap<Uuid, SubmissionRecord>>;
+fn env_truthy(name: &str) -> bool {
+	matches!(
+		std::env::var(name),
+		Ok(v) if matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on")
+	)
+}
 
-fn store() -> &'static SubmissionStore {
-	static STORE: OnceLock<SubmissionStore> = OnceLock::new();
-	STORE.get_or_init(|| RwLock::new(HashMap::new()))
+fn is_esg_enabled() -> bool {
+	env_truthy("FDA_ESG_ENABLED")
+}
+
+fn parse_timeout_secs(name: &str, default_secs: u64) -> u64 {
+	std::env::var(name)
+		.ok()
+		.and_then(|v| v.trim().parse::<u64>().ok())
+		.filter(|v| *v > 0)
+		.unwrap_or(default_secs)
 }
 
 fn is_fda_profile(case_profile: Option<&str>) -> bool {
 	case_profile
 		.map(|v| v.eq_ignore_ascii_case("fda"))
 		.unwrap_or(true)
+}
+
+fn status_to_db(status: &SubmissionStatus) -> &'static str {
+	match status {
+		SubmissionStatus::Ack1Received => "ack1_received",
+		SubmissionStatus::Ack2Received => "ack2_received",
+		SubmissionStatus::Ack3Received => "ack3_received",
+		SubmissionStatus::Ack4Received => "ack4_received",
+		SubmissionStatus::Rejected => "rejected",
+	}
+}
+
+fn status_from_db(status: &str) -> Result<SubmissionStatus> {
+	match status.trim().to_ascii_lowercase().as_str() {
+		"ack1_received" => Ok(SubmissionStatus::Ack1Received),
+		"ack2_received" => Ok(SubmissionStatus::Ack2Received),
+		"ack3_received" => Ok(SubmissionStatus::Ack3Received),
+		"ack4_received" => Ok(SubmissionStatus::Ack4Received),
+		"rejected" => Ok(SubmissionStatus::Rejected),
+		other => Err(Error::BadRequest {
+			message: format!("invalid submission status in database: '{other}'"),
+		}),
+	}
 }
 
 fn status_from_ack(level: u8, success: bool) -> Result<SubmissionStatus> {
@@ -93,6 +174,251 @@ fn status_from_ack(level: u8, success: bool) -> Result<SubmissionStatus> {
 	Ok(status)
 }
 
+fn submission_status_rank(status: &SubmissionStatus) -> u8 {
+	match status {
+		SubmissionStatus::Ack1Received => 1,
+		SubmissionStatus::Ack2Received => 2,
+		SubmissionStatus::Ack3Received => 3,
+		SubmissionStatus::Ack4Received => 4,
+		SubmissionStatus::Rejected => 5,
+	}
+}
+
+fn is_submission_terminal(status: &SubmissionStatus) -> bool {
+	matches!(
+		status,
+		SubmissionStatus::Ack4Received | SubmissionStatus::Rejected
+	)
+}
+
+fn merge_submission_status(
+	current: &SubmissionStatus,
+	incoming: &SubmissionStatus,
+) -> SubmissionStatus {
+	if is_submission_terminal(current) {
+		return current.clone();
+	}
+	if matches!(incoming, SubmissionStatus::Rejected) {
+		return SubmissionStatus::Rejected;
+	}
+	if submission_status_rank(incoming) >= submission_status_rank(current) {
+		incoming.clone()
+	} else {
+		current.clone()
+	}
+}
+
+async fn submit_to_gateway(xml: &str) -> Result<GatewaySubmissionOutcome> {
+	let now = OffsetDateTime::now_utc();
+	if !is_esg_enabled() {
+		let submission_id = Uuid::new_v4();
+		return Ok(GatewaySubmissionOutcome {
+			gateway: "fda-esg-nextgen-mock".to_string(),
+			remote_submission_id: format!(
+				"FDA-MOCK-{}",
+				submission_id.simple().to_string().to_uppercase()
+			),
+			ack1: SubmissionAck {
+				level: 1,
+				success: true,
+				code: Some("ACK1_ACCEPTED".to_string()),
+				message: Some("Upload accepted by mock FDA gateway".to_string()),
+				received_at: now,
+			},
+		});
+	}
+
+	let base_url =
+		std::env::var("FDA_ESG_BASE_URL").map_err(|_| Error::BadRequest {
+			message: "FDA_ESG_ENABLED=1 requires FDA_ESG_BASE_URL".to_string(),
+		})?;
+	let submit_path = std::env::var("FDA_ESG_SUBMIT_PATH")
+		.unwrap_or_else(|_| "/submissions".to_string());
+	let submit_url = format!(
+		"{}/{}",
+		base_url.trim_end_matches('/'),
+		submit_path.trim_start_matches('/')
+	);
+	let timeout_secs = parse_timeout_secs("FDA_ESG_TIMEOUT_SECS", 30);
+	let client = reqwest::Client::builder()
+		.timeout(Duration::from_secs(timeout_secs))
+		.build()
+		.map_err(|err| Error::BadRequest {
+			message: format!("failed to initialize FDA ESG client: {err}"),
+		})?;
+
+	let mut headers = HeaderMap::new();
+	if let Ok(token) = std::env::var("FDA_ESG_BEARER_TOKEN") {
+		let value = format!("Bearer {}", token.trim());
+		let hv = HeaderValue::from_str(&value).map_err(|_| Error::BadRequest {
+			message: "invalid FDA_ESG_BEARER_TOKEN".to_string(),
+		})?;
+		headers.insert(AUTHORIZATION, hv);
+	}
+	if let Ok(api_key) = std::env::var("FDA_ESG_API_KEY") {
+		let hv = HeaderValue::from_str(api_key.trim()).map_err(|_| {
+			Error::BadRequest {
+				message: "invalid FDA_ESG_API_KEY".to_string(),
+			}
+		})?;
+		headers.insert("x-api-key", hv);
+	}
+
+	let resp = client
+		.post(&submit_url)
+		.headers(headers)
+		.json(&json!({ "xml": xml }))
+		.send()
+		.await
+		.map_err(|err| Error::BadRequest {
+			message: format!("FDA ESG submit request failed: {err}"),
+		})?;
+	let status = resp.status();
+	let body_text = resp.text().await.map_err(|err| Error::BadRequest {
+		message: format!("FDA ESG submit response read failed: {err}"),
+	})?;
+	if !status.is_success() {
+		let body_snippet = body_text.chars().take(200).collect::<String>();
+		return Err(Error::BadRequest {
+			message: format!("FDA ESG submit failed ({status}): {body_snippet}"),
+		});
+	}
+
+	let parsed: EsgSubmitResponse =
+		serde_json::from_str(&body_text).map_err(|err| Error::BadRequest {
+			message: format!("FDA ESG submit response is not valid JSON: {err}"),
+		})?;
+	let remote_submission_id = parsed
+		.remote_submission_id
+		.or(parsed.submission_id)
+		.or(parsed.id)
+		.ok_or(Error::BadRequest {
+			message: "FDA ESG submit response missing remote submission identifier"
+				.to_string(),
+		})?;
+	let ack = parsed.ack.unwrap_or(EsgAckResponse {
+		level: Some(1),
+		success: Some(true),
+		code: Some("ACK1_ACCEPTED".to_string()),
+		message: Some(
+			"Submitted to FDA ESG; awaiting downstream ACK updates".to_string(),
+		),
+		received_at: None,
+	});
+	let ack1 = SubmissionAck {
+		level: ack.level.unwrap_or(1),
+		success: ack.success.unwrap_or(true),
+		code: ack.code,
+		message: ack.message,
+		received_at: now,
+	};
+	Ok(GatewaySubmissionOutcome {
+		gateway: "fda-esg-nextgen-api".to_string(),
+		remote_submission_id,
+		ack1,
+	})
+}
+
+fn compose_submission_record(
+	row: CaseSubmissionRow,
+	acks: Vec<SubmissionAckRow>,
+) -> Result<SubmissionRecord> {
+	let mut ack1 = None;
+	let mut ack2 = None;
+	let mut ack3 = None;
+	let mut ack4 = None;
+	for ack in acks {
+		let item = SubmissionAck {
+			level: ack.ack_level as u8,
+			success: ack.success,
+			code: ack.ack_code,
+			message: ack.ack_message,
+			received_at: ack.received_at,
+		};
+		match item.level {
+			1 if ack1.is_none() => ack1 = Some(item),
+			2 if ack2.is_none() => ack2 = Some(item),
+			3 if ack3.is_none() => ack3 = Some(item),
+			4 if ack4.is_none() => ack4 = Some(item),
+			_ => {}
+		}
+	}
+
+	Ok(SubmissionRecord {
+		id: row.id,
+		case_id: row.case_id,
+		gateway: row.gateway,
+		remote_submission_id: row.remote_submission_id,
+		status: status_from_db(&row.status)?,
+		xml_bytes: row.xml_bytes as usize,
+		submitted_by: row.submitted_by,
+		submitted_at: row.submitted_at,
+		ack1,
+		ack2,
+		ack3,
+		ack4,
+	})
+}
+
+async fn get_submission_row(
+	mm: &ModelManager,
+	submission_id: Uuid,
+) -> Result<Option<CaseSubmissionRow>> {
+	let row = mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, CaseSubmissionRow>(
+				"SELECT id, case_id, gateway, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
+				 FROM case_submissions
+				 WHERE id = $1",
+			)
+			.bind(submission_id),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(row)
+}
+
+async fn list_submission_rows_by_case(
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<Vec<CaseSubmissionRow>> {
+	let rows = mm
+		.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, CaseSubmissionRow>(
+				"SELECT id, case_id, gateway, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
+				 FROM case_submissions
+				 WHERE case_id = $1
+				 ORDER BY submitted_at DESC",
+			)
+			.bind(case_id),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(rows)
+}
+
+async fn list_ack_rows(
+	mm: &ModelManager,
+	submission_id: Uuid,
+) -> Result<Vec<SubmissionAckRow>> {
+	let rows = mm
+		.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, SubmissionAckRow>(
+				"SELECT ack_level, success, ack_code, ack_message, received_at
+				 FROM submission_acks
+				 WHERE submission_id = $1
+				 ORDER BY received_at DESC",
+			)
+			.bind(submission_id),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(rows)
+}
+
 pub async fn create_fda_submission(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -102,6 +428,12 @@ pub async fn create_fda_submission(
 	if !is_fda_profile(case.validation_profile.as_deref()) {
 		return Err(Error::BadRequest {
 			message: "case validation_profile must be fda for FDA submission"
+				.to_string(),
+		});
+	}
+	if !case.status.eq_ignore_ascii_case("validated") {
+		return Err(Error::BadRequest {
+			message: "case must be in 'validated' status before FDA submission"
 				.to_string(),
 		});
 	}
@@ -116,128 +448,266 @@ pub async fn create_fda_submission(
 		message: format!("submission export task failed: {err}"),
 	})?
 	.map_err(Error::from)?;
-	let report = validate_e2b_xml(xml.as_bytes(), None).map_err(Error::from)?;
-	if !report.ok {
-		let preview = report
-			.errors
-			.iter()
-			.take(3)
-			.map(|err| err.message.as_str())
-			.collect::<Vec<_>>()
-			.join("; ");
-		return Err(Error::BadRequest {
-			message: format!(
-				"cannot submit case: XML validation failed ({} issue(s)): {}",
-				report.errors.len(),
-				preview
-			),
-		});
+	if !should_skip_xml_validation() {
+		let report = validate_e2b_xml(xml.as_bytes(), None).map_err(Error::from)?;
+		if !report.ok {
+			let preview = report
+				.errors
+				.iter()
+				.take(3)
+				.map(|err| err.message.as_str())
+				.collect::<Vec<_>>()
+				.join("; ");
+			return Err(Error::BadRequest {
+				message: format!(
+					"cannot submit case: XML validation failed ({} issue(s)): {}",
+					report.errors.len(),
+					preview
+				),
+			});
+		}
 	}
 
 	let now = OffsetDateTime::now_utc();
 	let submission_id = Uuid::new_v4();
-	let remote_submission_id = format!(
-		"FDA-MOCK-{}",
-		submission_id.simple().to_string().to_uppercase()
-	);
-	let ack1 = SubmissionAck {
-		level: 1,
-		success: true,
-		code: Some("ACK1_ACCEPTED".to_string()),
-		message: Some("Upload accepted by mock FDA gateway".to_string()),
-		received_at: now,
-	};
+	let gateway_outcome = submit_to_gateway(&xml).await?;
+	let remote_submission_id = gateway_outcome.remote_submission_id;
+	let ack1 = gateway_outcome.ack1;
+	let gateway = gateway_outcome.gateway;
 
-	CaseBmc::update(
-		ctx,
-		mm,
-		case_id,
-		CaseForUpdate {
-			safety_report_id: None,
-			dg_prd_key: None,
-			status: Some("submitted".to_string()),
-			validation_profile: None,
-			submitted_by: Some(ctx.user_id()),
-			submitted_at: Some(now),
-			raw_xml: Some(xml.as_bytes().to_vec()),
-			dirty_c: Some(false),
-			dirty_d: Some(false),
-			dirty_e: Some(false),
-			dirty_f: Some(false),
-			dirty_g: Some(false),
-			dirty_h: Some(false),
-		},
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
 	)
 	.await?;
 
-	let record = SubmissionRecord {
-		id: submission_id,
-		case_id,
-		gateway: "fda-esg-nextgen-mock".to_string(),
-		remote_submission_id,
-		status: SubmissionStatus::Ack1Received,
-		xml_bytes: xml.len(),
-		submitted_by: ctx.user_id(),
-		submitted_at: now,
-		ack1: Some(ack1),
-		ack2: None,
-		ack3: None,
-		ack4: None,
+	let updated = mm
+		.dbx()
+		.execute(
+			sqlx::query(
+				"UPDATE cases
+				 SET status = 'submitted',
+				     submitted_by = $2,
+				     submitted_at = $3,
+				     raw_xml = $4,
+				     dirty_c = false,
+				     dirty_d = false,
+				     dirty_e = false,
+				     dirty_f = false,
+				     dirty_g = false,
+				     dirty_h = false,
+				     updated_at = now()
+				 WHERE id = $1",
+			)
+			.bind(case_id)
+			.bind(ctx.user_id())
+			.bind(now)
+			.bind(xml.as_bytes()),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if updated == 0 {
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(Error::BadRequest {
+			message: format!("case not found: {case_id}"),
+		});
+	}
+
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"INSERT INTO case_submissions (
+					id, case_id, gateway, remote_submission_id, status, xml_bytes,
+					submitted_by, submitted_at, created_at, updated_at
+				)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), now())",
+			)
+			.bind(submission_id)
+			.bind(case_id)
+			.bind(gateway)
+			.bind(&remote_submission_id)
+			.bind(status_to_db(&SubmissionStatus::Ack1Received))
+			.bind(xml.len() as i32)
+			.bind(ctx.user_id())
+			.bind(now),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"INSERT INTO submission_acks (
+					submission_id, ack_level, success, ack_code, ack_message, received_at, raw_payload
+				)
+				VALUES ($1, $2, $3, $4, $5, $6, $7)",
+			)
+			.bind(submission_id)
+			.bind(ack1.level as i16)
+			.bind(ack1.success)
+			.bind(ack1.code.as_deref())
+			.bind(ack1.message.as_deref())
+			.bind(ack1.received_at)
+			.bind(json!({
+				"level": ack1.level,
+				"success": ack1.success,
+				"code": ack1.code,
+				"message": ack1.message,
+			})),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+	let row =
+		get_submission_row(mm, submission_id)
+			.await?
+			.ok_or(Error::BadRequest {
+				message: format!(
+					"submission not found after insert: {submission_id}"
+				),
+			})?;
+	let acks = list_ack_rows(mm, submission_id).await?;
+	compose_submission_record(row, acks)
+}
+
+pub async fn list_by_case(
+	_ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<Vec<SubmissionRecord>> {
+	let rows = list_submission_rows_by_case(mm, case_id).await?;
+	let mut out = Vec::with_capacity(rows.len());
+	for row in rows {
+		let acks = list_ack_rows(mm, row.id).await?;
+		out.push(compose_submission_record(row, acks)?);
+	}
+	Ok(out)
+}
+
+pub async fn get_submission(
+	_ctx: &Ctx,
+	mm: &ModelManager,
+	id: Uuid,
+) -> Result<Option<SubmissionRecord>> {
+	let Some(row) = get_submission_row(mm, id).await? else {
+		return Ok(None);
 	};
-
-	let mut st = store().write().await;
-	st.insert(record.id, record.clone());
-	Ok(record)
-}
-
-pub async fn list_by_case(case_id: Uuid) -> Vec<SubmissionRecord> {
-	let st = store().read().await;
-	let mut rows: Vec<SubmissionRecord> = st
-		.values()
-		.filter(|row| row.case_id == case_id)
-		.cloned()
-		.collect();
-	rows.sort_by(|a, b| b.submitted_at.cmp(&a.submitted_at));
-	rows
-}
-
-pub async fn get_submission(id: Uuid) -> Option<SubmissionRecord> {
-	let st = store().read().await;
-	st.get(&id).cloned()
+	let acks = list_ack_rows(mm, id).await?;
+	Ok(Some(compose_submission_record(row, acks)?))
 }
 
 pub async fn apply_mock_ack(
+	ctx: &Ctx,
+	mm: &ModelManager,
 	submission_id: Uuid,
 	input: MockAckInput,
 ) -> Result<SubmissionRecord> {
-	let status = status_from_ack(input.level, input.success)?;
-	let ack = SubmissionAck {
-		level: input.level,
-		success: input.success,
-		code: input.code,
-		message: input.message,
-		received_at: OffsetDateTime::now_utc(),
-	};
-
-	let mut st = store().write().await;
-	let record = st.get_mut(&submission_id).ok_or(Error::BadRequest {
-		message: format!("submission not found: {submission_id}"),
-	})?;
-
-	match ack.level {
-		1 => record.ack1 = Some(ack),
-		2 => record.ack2 = Some(ack),
-		3 => record.ack3 = Some(ack),
-		4 => record.ack4 = Some(ack),
-		_ => unreachable!(),
+	if is_esg_enabled() {
+		return Err(Error::BadRequest {
+			message: "mock ACK endpoint is disabled when FDA_ESG_ENABLED=1"
+				.to_string(),
+		});
 	}
-	record.status = status;
-	Ok(record.clone())
+	let incoming_status = status_from_ack(input.level, input.success)?;
+	let now = OffsetDateTime::now_utc();
+
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
+	)
+	.await?;
+
+	let row = mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, CaseSubmissionRow>(
+				"SELECT id, case_id, gateway, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
+				 FROM case_submissions
+				 WHERE id = $1
+				 FOR UPDATE",
+			)
+			.bind(submission_id),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?
+		.ok_or(Error::BadRequest {
+			message: format!("submission not found: {submission_id}"),
+		})?;
+	let current_status = status_from_db(&row.status)?;
+	let merged_status = merge_submission_status(&current_status, &incoming_status);
+
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"INSERT INTO submission_acks (
+					submission_id, ack_level, success, ack_code, ack_message, received_at, raw_payload
+				)
+				VALUES ($1, $2, $3, $4, $5, $6, $7)",
+			)
+			.bind(submission_id)
+			.bind(input.level as i16)
+			.bind(input.success)
+			.bind(input.code.as_deref())
+			.bind(input.message.as_deref())
+			.bind(now)
+			.bind(json!({
+				"level": input.level,
+				"success": input.success,
+				"code": input.code,
+				"message": input.message,
+			})),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"UPDATE case_submissions
+				 SET status = $2,
+				     updated_at = now()
+				 WHERE id = $1",
+			)
+			.bind(submission_id)
+			.bind(status_to_db(&merged_status)),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+	let row =
+		get_submission_row(mm, submission_id)
+			.await?
+			.ok_or(Error::BadRequest {
+				message: format!("submission not found: {submission_id}"),
+			})?;
+	let acks = list_ack_rows(mm, submission_id).await?;
+	compose_submission_record(row, acks)
 }
 
 #[cfg(test)]
 mod tests {
-	use super::{status_from_ack, SubmissionStatus};
+	use super::{merge_submission_status, status_from_ack, SubmissionStatus};
 
 	#[test]
 	fn ack_status_mapping_success() {
@@ -263,6 +733,35 @@ mod tests {
 	fn ack_status_mapping_rejected() {
 		assert_eq!(
 			status_from_ack(2, false).unwrap(),
+			SubmissionStatus::Rejected
+		);
+	}
+
+	#[test]
+	fn ack_status_merge_never_regresses() {
+		assert_eq!(
+			merge_submission_status(
+				&SubmissionStatus::Ack3Received,
+				&SubmissionStatus::Ack2Received
+			),
+			SubmissionStatus::Ack3Received
+		);
+	}
+
+	#[test]
+	fn ack_status_merge_respects_terminal() {
+		assert_eq!(
+			merge_submission_status(
+				&SubmissionStatus::Ack4Received,
+				&SubmissionStatus::Ack2Received
+			),
+			SubmissionStatus::Ack4Received
+		);
+		assert_eq!(
+			merge_submission_status(
+				&SubmissionStatus::Rejected,
+				&SubmissionStatus::Ack4Received
+			),
 			SubmissionStatus::Rejected
 		);
 	}

@@ -122,7 +122,14 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 		let xml_id =
 			parse_uuid_opt(first_attr(&mut xpath, &node, GDrugPaths::XML_ID_ROOT));
 		let name1 = first_text(&mut xpath, &node, GDrugPaths::PRODUCT_NAME_1)
-			.unwrap_or_else(|| "UNKNOWN".to_string());
+			.ok_or_else(|| Error::InvalidXml {
+				message: format!(
+					"ICH.G.k.2.2.REQUIRED: medicinal product name missing for drug index {}",
+					idx + 1
+				),
+				line: None,
+				column: None,
+			})?;
 		let name2 = first_text(&mut xpath, &node, GDrugPaths::PRODUCT_NAME_2);
 		let drug_characterization = "1".to_string();
 		let mpid = first_attr(&mut xpath, &node, GDrugPaths::MPID);
@@ -146,8 +153,7 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 		let action_taken = normalize_code(
 			first_attr(&mut xpath, &node, GDrugPaths::ACTION_TAKEN),
 			&["1", "2", "3", "4", "5", "6"],
-		)
-		.or_else(|| Some("5".to_string()));
+		);
 		let rechallenge = normalize_code(
 			first_attr(&mut xpath, &node, GDrugPaths::RECHALLENGE),
 			&["1", "2", "3", "4"],

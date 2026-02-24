@@ -40,8 +40,8 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
 
     -- Insert demo user
-    INSERT INTO users (id, organization_id, email, username, role, active, created_by, created_at, updated_at)
-    VALUES (v_user_id, v_org_id, 'demo.user@example.com', 'demo_user', 'admin', true, '00000000-0000-0000-0000-000000000001'::UUID, NOW(), NOW())
+    INSERT INTO users (id, organization_id, email, username, role, active, must_change_password, created_by, created_at, updated_at)
+    VALUES (v_user_id, v_org_id, 'demo.user@example.com', 'demo_user', 'admin', true, false, '00000000-0000-0000-0000-000000000001'::UUID, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
     -- Switch context to demo user for remaining demo data

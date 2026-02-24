@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     active BOOLEAN DEFAULT true,
+    must_change_password BOOLEAN NOT NULL DEFAULT false,
     last_login_at TIMESTAMP WITH TIME ZONE,
 
     -- Audit fields (standardized UUID-based)
@@ -49,8 +50,12 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT user_role_valid CHECK (role IN ('admin', 'manager', 'user', 'viewer'))
 );
 
-  CREATE INDEX idx_users_organization ON users(organization_id);
-  CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_organization ON users(organization_id);
+CREATE INDEX idx_users_email ON users(email);
+
+-- Backward-compatible guard for already-created dev DBs.
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
 
     -- ============================================================================
     -- 3. Safety Cases
@@ -114,6 +119,47 @@ CREATE TABLE if NOT EXISTS case_versions (
 );
 
 CREATE INDEX idx_case_versions_case ON case_versions(case_id);
+
+    -- ============================================================================
+    -- 4.1 Case Submissions (durable submission lifecycle)
+    -- ============================================================================
+CREATE TABLE if NOT EXISTS case_submissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    gateway VARCHAR(100) NOT NULL,
+    remote_submission_id VARCHAR(200) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    xml_bytes INTEGER NOT NULL,
+    submitted_by UUID NOT NULL REFERENCES users(id),
+    submitted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT case_submission_status_valid CHECK (
+        status IN ('ack1_received', 'ack2_received', 'ack3_received', 'ack4_received', 'rejected')
+    )
+);
+
+CREATE INDEX idx_case_submissions_case ON case_submissions(case_id, submitted_at DESC);
+CREATE INDEX idx_case_submissions_status ON case_submissions(status, updated_at DESC);
+
+    -- ============================================================================
+    -- 4.2 Submission ACKs (durable ACK history)
+    -- ============================================================================
+CREATE TABLE if NOT EXISTS submission_acks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    submission_id UUID NOT NULL REFERENCES case_submissions(id) ON DELETE CASCADE,
+    ack_level SMALLINT NOT NULL CHECK (ack_level BETWEEN 1 AND 4),
+    success BOOLEAN NOT NULL,
+    ack_code VARCHAR(120),
+    ack_message TEXT,
+    received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    raw_payload JSONB
+);
+
+CREATE INDEX idx_submission_acks_submission ON submission_acks(submission_id, ack_level, received_at DESC);
+CREATE UNIQUE INDEX idx_submission_acks_unique_event
+    ON submission_acks(submission_id, ack_level, success, COALESCE(ack_code, ''), received_at);
 
     -- ============================================================================
     -- 5. Audit Logs
@@ -268,6 +314,30 @@ EXCEPTION
 END;
 $$;
 
+-- Resolve display name for audit logs.
+-- Returns username/email when visible by current role+RLS context, otherwise
+-- falls back to the UUID text so audit listing never fails.
+CREATE OR REPLACE FUNCTION audit_user_display(p_user_id UUID)
+RETURNS TEXT
+LANGUAGE plpgsql
+STABLE
+SECURITY INVOKER
+AS $$
+DECLARE
+    v_display TEXT;
+BEGIN
+    SELECT COALESCE(NULLIF(u.username, ''), NULLIF(u.email, ''), p_user_id::TEXT)
+    INTO v_display
+    FROM users u
+    WHERE u.id = p_user_id;
+
+    RETURN COALESCE(v_display, p_user_id::TEXT);
+EXCEPTION
+    WHEN insufficient_privilege THEN
+        RETURN p_user_id::TEXT;
+END;
+$$;
+
 -- ============================================================================
 -- 8. Row-Level Security for Audit Logs (Tamper-Proof)
 -- ============================================================================
@@ -332,6 +402,8 @@ GRANT USAGE ON SEQUENCE audit_logs_id_seq TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION set_current_user_context(UUID) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION get_current_user_context() TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION validate_user_context() TO e2br3_app_role;
+GRANT EXECUTE ON FUNCTION audit_user_display(UUID) TO e2br3_app_role;
+GRANT EXECUTE ON FUNCTION audit_user_display(UUID) TO e2br3_auditor_role;
 
 -- ============================================================================
 -- 9. Row-Level Security for Organization Isolation (Multi-Tenancy)
@@ -416,7 +488,57 @@ CREATE POLICY case_versions_via_case ON case_versions
     );
 
 -- ============================================================================
--- 9.3 Users Table RLS
+-- 9.3 Case Submissions Table RLS
+-- ============================================================================
+ALTER TABLE case_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE case_submissions FORCE ROW LEVEL SECURITY;
+CREATE POLICY case_submissions_via_case ON case_submissions
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = case_submissions.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = case_submissions.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+-- ============================================================================
+-- 9.4 Submission ACKs Table RLS
+-- ============================================================================
+ALTER TABLE submission_acks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE submission_acks FORCE ROW LEVEL SECURITY;
+CREATE POLICY submission_acks_via_submission ON submission_acks
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM case_submissions cs
+            JOIN cases c ON c.id = cs.case_id
+            WHERE cs.id = submission_acks.submission_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM case_submissions cs
+            JOIN cases c ON c.id = cs.case_id
+            WHERE cs.id = submission_acks.submission_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+-- ============================================================================
+-- 9.5 Users Table RLS
 -- ============================================================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users FORCE ROW LEVEL SECURITY;

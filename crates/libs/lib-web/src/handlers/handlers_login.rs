@@ -66,7 +66,8 @@ pub async fn api_login_handler(
 	// Create the success body.
 	let body = Json(json!({
 		"result": {
-			"success": true
+			"success": true,
+			"must_change_password": user.must_change_password
 		}
 	}));
 

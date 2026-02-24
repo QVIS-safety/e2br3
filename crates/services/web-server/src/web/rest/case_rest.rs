@@ -120,6 +120,51 @@ fn validate_case_update_payload(data: &CaseForUpdate) -> Result<()> {
 	Ok(())
 }
 
+fn is_allowed_case_status_transition(from: &str, to: &str) -> bool {
+	let from = from.trim().to_ascii_lowercase();
+	let to = to.trim().to_ascii_lowercase();
+	if from == to {
+		return true;
+	}
+	match from.as_str() {
+		"" | "draft" => matches!(
+			to.as_str(),
+			"checked" | "validated" | "submitted" | "archived" | "nullified"
+		),
+		"checked" => {
+			matches!(
+				to.as_str(),
+				"validated" | "submitted" | "archived" | "nullified"
+			)
+		}
+		"validated" => matches!(
+			to.as_str(),
+			"checked" | "submitted" | "archived" | "nullified"
+		),
+		"submitted" => matches!(to.as_str(), "archived" | "nullified"),
+		"archived" => false,
+		"nullified" => to == "archived",
+		_ => false,
+	}
+}
+
+#[derive(Debug, Serialize)]
+pub struct CaseLifecycleItem {
+	pub case_id: Uuid,
+	pub version: i32,
+	pub status: String,
+	pub created_at: String,
+	pub updated_at: String,
+	pub is_current: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CaseLifecycleResult {
+	pub safety_report_id: String,
+	pub current_case_id: Uuid,
+	pub items: Vec<CaseLifecycleItem>,
+}
+
 pub async fn create_case_guarded(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -145,21 +190,106 @@ pub async fn update_case_guarded(
 	require_permission(&ctx, CASE_UPDATE)?;
 	let ParamsForUpdate { data } = params;
 	validate_case_update_payload(&data)?;
-
-	let wants_validated = data
-		.status
-		.as_deref()
-		.map(|s| s.eq_ignore_ascii_case("validated"))
-		.unwrap_or(false);
-	if wants_validated {
-		return Err(Error::BadRequest {
-			message: "cannot set case to validated manually: status is managed by validator".to_string(),
-		});
+	let current = CaseBmc::get(&ctx, &mm, id).await?;
+	if let Some(next_status) = data.status.as_deref() {
+		if !is_allowed_case_status_transition(&current.status, next_status) {
+			return Err(Error::BadRequest {
+				message: format!(
+					"illegal case status transition: '{}' -> '{}'",
+					current.status, next_status
+				),
+			});
+		}
 	}
 
 	CaseBmc::update(&ctx, &mm, id, data).await?;
-	let entity = CaseBmc::get(&ctx, &mm, id).await?;
+	let mut entity = CaseBmc::get(&ctx, &mm, id).await?;
+
+	let status = entity.status.trim().to_ascii_lowercase();
+	let auto_manage_status =
+		matches!(status.as_str(), "" | "draft" | "checked" | "validated");
+	if auto_manage_status {
+		let profile = entity
+			.validation_profile
+			.as_deref()
+			.and_then(ValidationProfile::parse)
+			.unwrap_or(ValidationProfile::Fda);
+		let report = match profile {
+			ValidationProfile::Ich => {
+				lib_core::xml::ich::validation::validate_case(&ctx, &mm, id).await?
+			}
+			ValidationProfile::Fda => {
+				lib_core::xml::fda::validation::validate_case(&ctx, &mm, id).await?
+			}
+			ValidationProfile::Mfds => {
+				lib_core::xml::mfds::validation::validate_case(&ctx, &mm, id).await?
+			}
+		};
+		let desired = if report.ok { "validated" } else { "checked" };
+		if entity.status.trim().to_ascii_lowercase() != desired {
+			CaseBmc::update(
+				&ctx,
+				&mm,
+				id,
+				CaseForUpdate {
+					safety_report_id: None,
+					dg_prd_key: None,
+					status: Some(desired.to_string()),
+					validation_profile: None,
+					submitted_by: None,
+					submitted_at: None,
+					raw_xml: None,
+					dirty_c: None,
+					dirty_d: None,
+					dirty_e: None,
+					dirty_f: None,
+					dirty_g: None,
+					dirty_h: None,
+				},
+			)
+			.await?;
+			entity = CaseBmc::get(&ctx, &mm, id).await?;
+		}
+	}
+
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+pub async fn get_case_lifecycle(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(id): Path<Uuid>,
+) -> Result<(StatusCode, Json<DataRestResult<CaseLifecycleResult>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	let case = CaseBmc::get(&ctx, &mm, id).await?;
+	let mut versions: Vec<Case> = CaseBmc::list(&ctx, &mm, None, None)
+		.await?
+		.into_iter()
+		.filter(|row| row.safety_report_id == case.safety_report_id)
+		.collect();
+	versions.sort_by(|a, b| a.version.cmp(&b.version));
+	let items = versions
+		.into_iter()
+		.map(|row| CaseLifecycleItem {
+			case_id: row.id,
+			version: row.version,
+			status: row.status,
+			created_at: row.created_at.to_string(),
+			updated_at: row.updated_at.to_string(),
+			is_current: row.id == id,
+		})
+		.collect();
+	Ok((
+		StatusCode::OK,
+		Json(DataRestResult {
+			data: CaseLifecycleResult {
+				safety_report_id: case.safety_report_id,
+				current_case_id: id,
+				items,
+			},
+		}),
+	))
 }
 
 pub async fn mark_case_validated_by_validator(
@@ -704,9 +834,11 @@ pub async fn create_case_from_intake(
 	)
 	.await?;
 	if !duplicate_matches.is_empty() {
-		return Err(Error::BadRequest {
-			message: "duplicate case detected; create is blocked when intake check finds duplicates".to_string(),
-		});
+		if !data.allow_duplicate_override.unwrap_or(false) {
+			return Err(Error::BadRequest {
+				message: "duplicate case detected; create is blocked when intake check finds duplicates".to_string(),
+			});
+		}
 	}
 
 	let profile = match data.validation_profile.as_deref() {
@@ -728,19 +860,16 @@ pub async fn create_case_from_intake(
 		})?;
 
 	let next_version = next_case_version(&ctx, &mm, safety_report_id).await?;
-	let case_id = CaseBmc::create(
-		&ctx,
-		&mm,
-		CaseForCreate {
-			organization_id: ctx.organization_id(),
-			safety_report_id: safety_report_id.to_string(),
-			dg_prd_key: data.dg_prd_key.clone(),
-			status: Some(data.status.unwrap_or_else(|| "draft".to_string())),
-			validation_profile: Some(profile),
-			version: Some(next_version),
-		},
-	)
-	.await?;
+	let case_create = CaseForCreate {
+		organization_id: ctx.organization_id(),
+		safety_report_id: safety_report_id.to_string(),
+		dg_prd_key: data.dg_prd_key.clone(),
+		status: Some(data.status.unwrap_or_else(|| "draft".to_string())),
+		validation_profile: Some(profile),
+		version: Some(next_version),
+	};
+	validate_case_create_payload(&case_create)?;
+	let case_id = CaseBmc::create(&ctx, &mm, case_create).await?;
 
 	let now = OffsetDateTime::now_utc();
 	MessageHeaderBmc::create(

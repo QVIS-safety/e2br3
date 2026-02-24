@@ -477,6 +477,12 @@ impl SafetyReportIdentificationBmc {
 		case_id: Uuid,
 		data: SafetyReportIdentificationForUpdate,
 	) -> Result<()> {
+		let should_mark_nullified = data
+			.nullification_code
+			.as_deref()
+			.map(str::trim)
+			.map(|v| !v.is_empty())
+			.unwrap_or(false);
 		mm.dbx().begin_txn().await?;
 		set_full_context_dbx_or_rollback(
 			mm.dbx(),
@@ -529,6 +535,22 @@ impl SafetyReportIdentificationBmc {
 				entity: Self::TABLE,
 				id: case_id,
 			});
+		}
+
+		if should_mark_nullified {
+			mm.dbx()
+				.execute(
+					sqlx::query(
+						"UPDATE cases
+						 SET status = 'nullified',
+						     updated_at = now(),
+						     updated_by = $2
+						 WHERE id = $1 AND status <> 'nullified'",
+					)
+					.bind(case_id)
+					.bind(ctx.user_id()),
+				)
+				.await?;
 		}
 		mm.dbx().commit_txn().await?;
 		Ok(())

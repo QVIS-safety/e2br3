@@ -54,7 +54,11 @@ pub fn parse_c_safety_report(xml: &[u8]) -> Result<Option<CSafetyReportImport>> 
 		first_value_root(&mut xpath, CSafetyReportPaths::TYPE_OF_REPORT_CODE),
 		&["1", "2", "3", "4"],
 	)
-	.unwrap_or_else(|| "1".to_string());
+	.ok_or_else(|| Error::InvalidXml {
+		message: "ICH.C.1.3.REQUIRED: type of report missing".to_string(),
+		line: None,
+		column: None,
+	})?;
 
 	let date_first_received_from_source =
 		first_value_root(&mut xpath, CSafetyReportPaths::DATE_FIRST_RECEIVED)

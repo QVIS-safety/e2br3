@@ -2,17 +2,16 @@
 // Keep behavior in one place to avoid drift when FDA submission behavior changes.
 use super::{has_export_directive, ExportDirective};
 
-pub const DEFAULT_OUTCOME_CODE: &str = "3";
 pub const DEFAULT_OUTCOME_DISPLAY: &str = "not recovered/not resolved/ongoing";
 
-pub fn normalize_outcome_code(value: Option<&str>) -> &'static str {
+pub fn normalize_outcome_code(value: Option<&str>) -> Option<&'static str> {
 	match value.map(str::trim).filter(|v| !v.is_empty()) {
-		Some("1") => "1",
-		Some("2") => "2",
-		Some("3") => "3",
-		Some("4") => "4",
-		Some("5") => "5",
-		_ => DEFAULT_OUTCOME_CODE,
+		Some("1") => Some("1"),
+		Some("2") => Some("2"),
+		Some("3") => Some("3"),
+		Some("4") => Some("4"),
+		Some("5") => Some("5"),
+		_ => None,
 	}
 }
 
@@ -44,16 +43,16 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn normalize_outcome_code_defaults_to_3() {
-		assert_eq!(normalize_outcome_code(None), "3");
-		assert_eq!(normalize_outcome_code(Some("")), "3");
-		assert_eq!(normalize_outcome_code(Some("99")), "3");
+	fn normalize_outcome_code_rejects_missing_or_invalid() {
+		assert_eq!(normalize_outcome_code(None), None);
+		assert_eq!(normalize_outcome_code(Some("")), None);
+		assert_eq!(normalize_outcome_code(Some("99")), None);
 	}
 
 	#[test]
 	fn normalize_outcome_code_preserves_valid_values() {
-		assert_eq!(normalize_outcome_code(Some("1")), "1");
-		assert_eq!(normalize_outcome_code(Some("5")), "5");
+		assert_eq!(normalize_outcome_code(Some("1")), Some("1"));
+		assert_eq!(normalize_outcome_code(Some("5")), Some("5"));
 	}
 
 	#[test]

@@ -1,4 +1,5 @@
 use crate::model::reaction::Reaction;
+use crate::xml::error::Error;
 use crate::xml::validate::{
 	normalize_outcome_code, outcome_display_name,
 	should_emit_required_intervention_null_flavor_ni,
@@ -9,13 +10,13 @@ use sqlx::types::time::Date;
 pub fn export_e_reactions_xml(reactions: &[Reaction]) -> Result<String> {
 	let mut reactions_xml = String::new();
 	for reaction in reactions {
-		reactions_xml.push_str(&reaction_fragment(reaction));
+		reactions_xml.push_str(&reaction_fragment(reaction)?);
 	}
 	let xml = base_e_reaction_skeleton().replace("{REACTIONS}", &reactions_xml);
 	Ok(xml)
 }
 
-pub(crate) fn reaction_fragment(reaction: &Reaction) -> String {
+pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 	let mut out = String::new();
 	out.push_str("<subjectOf2 typeCode=\"SBJ\"><observation classCode=\"OBS\" moodCode=\"EVN\">");
 	out.push_str("<id root=\"");
@@ -115,7 +116,10 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> String {
 
 	out.push_str(&observation_rel_required_intervention());
 
-	out.push_str(&observation_rel_outcome(reaction.outcome.as_deref()));
+	out.push_str(&observation_rel_outcome(
+		reaction.outcome.as_deref(),
+		reaction.sequence_number,
+	)?);
 	if let Some(value) = reaction.medical_confirmation {
 		out.push_str(&observation_rel_bool("24", value));
 	}
@@ -127,7 +131,7 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> String {
 	}
 
 	out.push_str("</observation></subjectOf2>");
-	out
+	Ok(out)
 }
 
 fn observation_rel_bool(code: &str, value: bool) -> String {
@@ -154,14 +158,24 @@ fn observation_rel_bool_or_ni(code: &str, value: bool) -> String {
 	}
 }
 
-fn observation_rel_outcome(value: Option<&str>) -> String {
-	let code = normalize_outcome_code(value);
+fn observation_rel_outcome(
+	value: Option<&str>,
+	sequence_number: i32,
+) -> Result<String> {
+	let code = normalize_outcome_code(value).ok_or_else(|| Error::InvalidXml {
+		message: format!(
+			"ICH.E.i.7.REQUIRED: reaction outcome missing or invalid for reaction sequence {}",
+			sequence_number
+		),
+		line: None,
+		column: None,
+	})?;
 	let display_name = outcome_display_name(code);
-	format!(
+	Ok(format!(
 		"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"27\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"CE\" code=\"{}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.11\" displayName=\"{}\"/></observation></outboundRelationship2>",
 		xml_escape(code),
 		xml_escape(display_name)
-	)
+	))
 }
 
 fn observation_rel_required_intervention() -> String {

@@ -35,6 +35,7 @@ pub struct User {
 	pub first_name: Option<String>,
 	pub last_name: Option<String>,
 	pub active: bool,
+	pub must_change_password: bool,
 	pub last_login_at: Option<OffsetDateTime>,
 
 	// Audit fields (standardized UUID-based)
@@ -72,6 +73,7 @@ pub struct UserForLogin {
 	pub email: String,
 	pub username: String,
 	pub role: String,
+	pub must_change_password: bool,
 
 	// -- pwd and token info
 	pub pwd: Option<String>, // encrypted
@@ -121,6 +123,7 @@ enum UserIden {
 	Id,
 	Email,
 	Pwd,
+	MustChangePassword,
 }
 
 // -- UserBmc
@@ -303,14 +306,101 @@ impl UserBmc {
 		// -- Exec query
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 		let sqlx_query = sqlx::query_with(&sql, values);
-		if let Err(err) = dbx.execute(sqlx_query).await {
+		let count = match dbx.execute(sqlx_query).await {
+			Ok(count) => count,
+			Err(err) => {
+				dbx.rollback_txn().await.map_err(Error::Dbx)?;
+				return Err(err.into());
+			}
+		};
+		if count == 0 {
 			dbx.rollback_txn().await.map_err(Error::Dbx)?;
-			return Err(err.into());
+			return Err(Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
 		}
 
 		dbx.commit_txn().await.map_err(Error::Dbx)?;
 
 		Ok(())
+	}
+
+	pub async fn update_pwd_and_clear_must_change(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		pwd_clear: &str,
+	) -> Result<()> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await.map_err(Error::Dbx)?;
+		if let Err(err) = set_full_context_dbx_or_rollback(
+			dbx,
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await
+		{
+			dbx.rollback_txn().await.map_err(Error::Dbx)?;
+			return Err(err);
+		}
+
+		let user: UserForLogin = Self::get(ctx, mm, id).await?;
+		let pwd = pwd::hash_pwd(ContentToHash {
+			content: pwd_clear.to_string(),
+			salt: user.pwd_salt,
+		})
+		.await?;
+
+		let mut fields = SeaFields::new(vec![
+			SeaField::new(UserIden::Pwd, pwd),
+			SeaField::new(UserIden::MustChangePassword, false),
+		]);
+		prep_fields_for_update::<Self>(&mut fields, ctx.user_id());
+
+		let fields = fields.for_sea_update();
+		let mut query = Query::update();
+		query
+			.table(Self::table_ref())
+			.values(fields)
+			.and_where(Expr::col(UserIden::Id).eq(id));
+
+		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+		let sqlx_query = sqlx::query_with(&sql, values);
+		let count = match dbx.execute(sqlx_query).await {
+			Ok(count) => count,
+			Err(err) => {
+				dbx.rollback_txn().await.map_err(Error::Dbx)?;
+				return Err(err.into());
+			}
+		};
+		if count == 0 {
+			dbx.rollback_txn().await.map_err(Error::Dbx)?;
+			return Err(Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
+		}
+
+		dbx.commit_txn().await.map_err(Error::Dbx)?;
+		Ok(())
+	}
+
+	pub async fn set_must_change_password(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		must_change_password: bool,
+	) -> Result<()> {
+		#[derive(Fields)]
+		struct UserPasswordPolicyForUpdate {
+			must_change_password: Option<bool>,
+		}
+		let user_u = UserPasswordPolicyForUpdate {
+			must_change_password: Some(must_change_password),
+		};
+		base_uuid::update::<Self, _>(ctx, mm, id, user_u).await
 	}
 
 	pub async fn auth_by_email(
@@ -418,14 +508,15 @@ impl UserBmc {
 				organization_id,
 				email,
 				username,
-				CASE
-					WHEN lower(trim(role)) IN ('admin', 'manager', 'user', 'viewer')
-						THEN lower(trim(role))
-					ELSE 'user'
-				END AS role,
-				pwd,
-				pwd_salt,
-				token_salt
+					CASE
+						WHEN lower(trim(role)) IN ('admin', 'manager', 'user', 'viewer')
+							THEN lower(trim(role))
+						ELSE 'user'
+					END AS role,
+					must_change_password,
+					pwd,
+					pwd_salt,
+					token_salt
 			FROM users
 			WHERE email = $1
 			LIMIT 1

@@ -240,7 +240,12 @@ pub async fn import_e2b_xml(
 	let safety_report_id_raw = extract_safety_report_id(&req.xml)?;
 	let safety_report_id =
 		clamp_str(Some(safety_report_id_raw), 100, "cases.safety_report_id")
-			.unwrap_or_else(|| "UNKNOWN".to_string());
+			.ok_or_else(|| Error::InvalidXml {
+				message: "ICH.C.1.REQUIRED: safety report identifier missing"
+					.to_string(),
+				line: None,
+				column: None,
+			})?;
 	let header_extract = extract_message_header(&req.xml).ok();
 	let inferred_validation_profile =
 		infer_validation_profile(header_extract.as_ref());
@@ -338,6 +343,7 @@ pub async fn import_e2b_xml(
 					message_number: None,
 					message_sender_identifier: None,
 					message_receiver_identifier: None,
+					message_date: None,
 				},
 			)
 			.await?;
@@ -552,16 +558,12 @@ async fn import_safety_report(
 		.await
 		.is_ok()
 	{
-		let _ = SafetyReportIdentificationBmc::update_by_case(
-			ctx, mm, case_id, report_u,
-		)
-		.await;
+		SafetyReportIdentificationBmc::update_by_case(ctx, mm, case_id, report_u)
+			.await?;
 	} else {
-		let _ = SafetyReportIdentificationBmc::create(ctx, mm, report_c).await?;
-		let _ = SafetyReportIdentificationBmc::update_by_case(
-			ctx, mm, case_id, report_u,
-		)
-		.await;
+		SafetyReportIdentificationBmc::create(ctx, mm, report_c).await?;
+		SafetyReportIdentificationBmc::update_by_case(ctx, mm, case_id, report_u)
+			.await?;
 	}
 
 	Ok(())
@@ -2060,7 +2062,11 @@ fn parse_safety_report_identification(
 		&["1", "2", "3", "4"],
 		"safety_report_identification.report_type",
 	)
-	.unwrap_or_else(|| "1".to_string());
+	.ok_or_else(|| Error::InvalidXml {
+		message: "ICH.C.1.3.REQUIRED: type of report missing".to_string(),
+		line: None,
+		column: None,
+	})?;
 
 	let date_first_received_from_source = first_value_root(
 		&mut xpath,
@@ -2182,7 +2188,11 @@ fn parse_sender_information(
 		&["1", "2", "3", "4", "5", "6"],
 		"sender_information.sender_type",
 	)
-	.unwrap_or_else(|| "1".to_string());
+	.ok_or_else(|| Error::InvalidXml {
+		message: "ICH.C.3.1.REQUIRED: sender type missing".to_string(),
+		line: None,
+		column: None,
+	})?;
 
 	let organization_name = first_text_root(
 		&mut xpath,
@@ -2195,7 +2205,11 @@ fn parse_sender_information(
 		)
 	})
 	.or_else(|| header.and_then(|h| h.message_sender.clone()))
-	.unwrap_or_else(|| "Unknown Sender".to_string());
+	.ok_or_else(|| Error::InvalidXml {
+		message: "ICH.C.3.2.REQUIRED: sender organization missing".to_string(),
+		line: None,
+		column: None,
+	})?;
 
 	Ok(Some(SenderImport {
 		sender_type,
@@ -2563,11 +2577,18 @@ fn parse_literature_references(xml: &[u8]) -> Result<Vec<LiteratureImport>> {
 		})?;
 
 	let mut items = Vec::new();
-	for node in nodes {
+	for (idx, node) in nodes.into_iter().enumerate() {
 		let reference_text =
 			first_text(&mut xpath, &node, "hl7:bibliographicDesignationText")
 				.or_else(|| first_text(&mut xpath, &node, "hl7:title"))
-				.unwrap_or_else(|| "Literature reference".to_string());
+				.ok_or_else(|| Error::InvalidXml {
+					message: format!(
+						"ICH.C.4.r.REQUIRED: literature reference text missing for sequence {}",
+						idx + 1
+					),
+					line: None,
+					column: None,
+				})?;
 		let document_base64 = first_text(&mut xpath, &node, "hl7:text");
 		let media_type = first_attr(&mut xpath, &node, "hl7:text", "mediaType");
 		let representation =
@@ -2688,7 +2709,14 @@ fn parse_receiver_information(
 	}
 
 	Ok(Some(ReceiverInformationForUpdate {
-		receiver_type: first_value_root(&mut xpath, "//hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:code/@code"),
+		receiver_type: normalize_code(
+			first_value_root(
+				&mut xpath,
+				"//hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:code/@code",
+			),
+			&["1", "2", "3", "4", "5", "6"],
+			"receiver_information.receiver_type",
+		),
 		organization_name,
 		department: first_text_root(&mut xpath, "//hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:desc"),
 		street_address: first_text_root(&mut xpath, "//hl7:receiver/hl7:device/hl7:asAgent/hl7:addr/hl7:streetAddressLine"),
@@ -2736,7 +2764,11 @@ fn parse_patient_identifiers(xml: &[u8]) -> Result<Vec<PatientIdentifierImport>>
 
 	let mut items = Vec::new();
 	for node in nodes {
-		let identifier_type_code = first_attr(&mut xpath, &node, "hl7:code", "code");
+		let identifier_type_code = normalize_code(
+			first_attr(&mut xpath, &node, "hl7:code", "code"),
+			&["1", "2", "3", "4"],
+			"patient_identifiers.identifier_type_code",
+		);
 		let identifier_value = first_attr(&mut xpath, &node, "hl7:id", "extension");
 		if let (Some(identifier_type_code), Some(identifier_value)) =
 			(identifier_type_code, identifier_value)
@@ -3309,10 +3341,17 @@ fn parse_test_results(xml: &[u8]) -> Result<Vec<TestResultImport>> {
 		})?;
 
 	let mut items = Vec::new();
-	for node in nodes {
+	for (idx, node) in nodes.into_iter().enumerate() {
 		let test_name = first_text(&mut xpath, &node, "hl7:code/hl7:originalText")
 			.or_else(|| first_attr(&mut xpath, &node, "hl7:code", "displayName"))
-			.unwrap_or_else(|| "Test".to_string());
+			.ok_or_else(|| Error::InvalidXml {
+				message: format!(
+					"ICH.F.r.2.REQUIRED: test name missing for sequence {}",
+					idx + 1
+				),
+				line: None,
+				column: None,
+			})?;
 		let test_meddra_code = first_attr(&mut xpath, &node, "hl7:code", "code");
 		let test_meddra_version = clamp_str(
 			first_attr(&mut xpath, &node, "hl7:code", "codeSystemVersion"),
@@ -3573,7 +3612,11 @@ fn parse_narrative_information(xml: &[u8]) -> Result<Option<NarrativeImport>> {
 	)
 	.or_else(|| first_text_root(&mut xpath, "//hl7:component1//hl7:text"))
 	.or_else(|| first_text_root(&mut xpath, "//hl7:text"))
-	.unwrap_or_else(|| "Imported narrative not provided.".to_string());
+	.ok_or_else(|| Error::InvalidXml {
+		message: "ICH.H.1.REQUIRED: case narrative missing".to_string(),
+		line: None,
+		column: None,
+	})?;
 
 	let reporter_comments = first_text_root(
 		&mut xpath,
@@ -3640,7 +3683,14 @@ fn parse_reactions(xml: &[u8], case_id: Uuid) -> Result<Vec<ReactionImport>> {
 				"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='30']]/hl7:value",
 			)
 		})
-		.unwrap_or_else(|| "UNKNOWN".to_string());
+		.ok_or_else(|| Error::InvalidXml {
+			message: format!(
+				"ICH.E.i.1.1a.REQUIRED: reaction text missing for reaction index {}",
+				idx + 1
+			),
+			line: None,
+			column: None,
+		})?;
 
 		let reaction_c = ReactionForCreate {
 			case_id,
@@ -3809,11 +3859,15 @@ fn parse_reactions(xml: &[u8], case_id: Uuid) -> Result<Vec<ReactionImport>> {
 				),
 				"reactions.duration_unit",
 			),
-			outcome: first_attr(
-				&mut xpath,
-				&node,
-				"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='27']]/hl7:value",
-				"code",
+			outcome: normalize_code(
+				first_attr(
+					&mut xpath,
+					&node,
+					"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='27']]/hl7:value",
+					"code",
+				),
+				&["0", "1", "2", "3", "4", "5"],
+				"reactions.outcome",
 			),
 			medical_confirmation: parse_bool_attr(
 				&mut xpath,
@@ -4717,7 +4771,14 @@ fn parse_drugs(xml: &[u8]) -> Result<Vec<DrugImport>> {
 			&node,
 			"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:name[1]",
 		)
-		.unwrap_or_else(|| "UNKNOWN".to_string());
+		.ok_or_else(|| Error::InvalidXml {
+			message: format!(
+				"ICH.G.k.2.2.REQUIRED: medicinal product name missing for drug index {}",
+				idx + 1
+			),
+			line: None,
+			column: None,
+		})?;
 		let name2 = first_text(
 			&mut xpath,
 			&node,
@@ -4783,8 +4844,7 @@ fn parse_drugs(xml: &[u8]) -> Result<Vec<DrugImport>> {
 			),
 			&["1", "2", "3", "4", "5", "6"],
 			"drug_information.action_taken",
-		)
-		.or_else(|| Some("5".to_string()));
+		);
 		if let Some(val) = action_taken.as_deref() {
 			eprintln!("[import_e2b_xml] action_taken={val}");
 		}
@@ -5186,8 +5246,11 @@ fn parse_drug_observations(xml: &[u8]) -> Result<Vec<DrugObservationImport>> {
 
 		for (oidx, obs) in obs_nodes.into_iter().enumerate() {
 			let sequence_number = (oidx + 1) as i32;
-			let reaction_recurred =
-				first_attr(&mut xpath, &obs, "hl7:value", "code");
+			let reaction_recurred = normalize_code(
+				first_attr(&mut xpath, &obs, "hl7:value", "code"),
+				&["1", "2", "3"],
+				"drug_recurrence_information.reaction_recurred",
+			);
 			let reaction_xml_id = parse_uuid_opt(first_attr(
 				&mut xpath,
 				&obs,
@@ -5202,11 +5265,15 @@ fn parse_drug_observations(xml: &[u8]) -> Result<Vec<DrugObservationImport>> {
 				} else {
 					(None, None)
 				};
-			let rechallenge_action = first_attr(
-				&mut xpath,
-				&obs,
-				"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='G.k.8.r.1']]/hl7:value",
-				"code",
+			let rechallenge_action = normalize_code(
+				first_attr(
+					&mut xpath,
+					&obs,
+					"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='G.k.8.r.1']]/hl7:value",
+					"code",
+				),
+				&["1", "2", "3", "4"],
+				"drug_recurrence_information.rechallenge_action",
 			);
 			let recurrence_meddra_version = clamp_str(
 				first_attr(

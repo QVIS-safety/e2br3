@@ -10,6 +10,7 @@ use crate::model::narrative::NarrativeInformationBmc;
 use crate::model::patient::PatientInformationBmc;
 use crate::model::reaction::Reaction;
 use crate::model::safety_report::SafetyReportIdentificationBmc;
+use crate::model::safety_report::PrimarySource;
 use crate::model::safety_report::SenderInformation;
 use crate::model::safety_report::{StudyInformation, StudyRegistrationNumber};
 use crate::model::test_result::TestResult;
@@ -29,7 +30,7 @@ use crate::xml::raw::patch::{
 };
 use crate::xml::Result;
 use libxml::parser::Parser;
-use libxml::tree::Document;
+use libxml::tree::{Document, Node, NodeType};
 use libxml::xpath::Context;
 
 pub async fn export_case_xml(
@@ -81,12 +82,15 @@ pub async fn export_case_xml(
 				.await
 				.map_err(model::Error::from)
 				.map_err(Error::from)?;
-			return export_c_safety_report_patch(
+			let header = fetch_message_header(mm, case_id).await?;
+			let xml = export_c_safety_report_patch(
 				raw_xml,
 				&case,
 				&report,
+				header.as_ref(),
 				sender.as_ref(),
-			);
+			)?;
+			return apply_section_postprocess(mm, case_id, xml).await;
 		}
 
 		let only_d_dirty = case.dirty_d
@@ -265,7 +269,14 @@ pub async fn export_case_xml(
 					.await
 					.map_err(model::Error::from)
 					.map_err(Error::from)?;
-			return export_c_safety_report_xml(&case, &report, sender.as_ref());
+			let header = fetch_message_header(mm, case_id).await?;
+			let xml = export_c_safety_report_xml(
+				&case,
+				&report,
+				header.as_ref(),
+				sender.as_ref(),
+			)?;
+			return apply_section_postprocess(mm, case_id, xml).await;
 		}
 
 		let only_d_dirty = case.dirty_d
@@ -464,10 +475,12 @@ async fn export_case_xml_from_db(
 			.await
 			.map_err(model::Error::from)
 			.map_err(Error::from)?;
+		let header = fetch_message_header(mm, case_id).await?;
 		xml = export_c_safety_report_patch(
 			xml.as_bytes(),
 			&case,
 			&report,
+			header.as_ref(),
 			sender.as_ref(),
 		)?;
 	}
@@ -584,25 +597,7 @@ async fn export_case_xml_from_db(
 		xml = patch_h_narrative(xml.as_bytes(), &narrative)?;
 	}
 
-	let parser = Parser::default();
-	let mut doc = parser.parse_string(&xml).map_err(|err| Error::InvalidXml {
-		message: format!("XML parse error (patched): {err}"),
-		line: None,
-		column: None,
-	})?;
-	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
-		message: "Failed to initialize XPath context".to_string(),
-		line: None,
-		column: None,
-	})?;
-	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
-	let _ =
-		xpath.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-	apply_section_n(&mut doc, &parser, mm, case_id, &mut xpath).await?;
-	apply_study_section(&mut doc, &parser, mm, case_id, &mut xpath).await?;
-	postprocess_export_doc(&mut doc, &mut xpath);
-
-	Ok(normalize_namespace_artifacts(doc.to_string()))
+	apply_section_postprocess(mm, case_id, xml).await
 }
 
 fn base_export_skeleton() -> &'static str {
@@ -718,10 +713,29 @@ async fn fetch_message_header(
 		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
 }
 
+async fn fetch_primary_source(
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+) -> Result<Option<PrimarySource>> {
+	let sql = "SELECT * FROM primary_sources WHERE case_id = $1 ORDER BY sequence_number LIMIT 1";
+	mm.dbx()
+		.fetch_optional(sqlx::query_as::<_, PrimarySource>(sql).bind(case_id))
+		.await
+		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
+}
+
 fn set_attr_first(xpath: &mut Context, path: &str, attr: &str, value: &str) {
 	if let Ok(nodes) = xpath.findnodes(path, None) {
 		if let Some(mut node) = nodes.into_iter().next() {
 			let _ = node.set_attribute(attr, value);
+		}
+	}
+}
+
+fn set_text_first(xpath: &mut Context, path: &str, value: &str) {
+	if let Ok(nodes) = xpath.findnodes(path, None) {
+		if let Some(mut node) = nodes.into_iter().next() {
+			let _ = node.set_content(value);
 		}
 	}
 }
@@ -744,6 +758,271 @@ fn normalize_namespace_artifacts(mut xml: String) -> String {
 	xml = xml.replace("<default:", "<");
 	xml = xml.replace("</default:", "</");
 	xml
+}
+
+async fn apply_section_postprocess(
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+	xml: String,
+) -> Result<String> {
+	let parser = Parser::default();
+	let mut doc = parser.parse_string(&xml).map_err(|err| Error::InvalidXml {
+		message: format!("XML parse error (patched): {err}"),
+		line: None,
+		column: None,
+	})?;
+	let mut xpath = Context::new(&doc).map_err(|_| Error::InvalidXml {
+		message: "Failed to initialize XPath context".to_string(),
+		line: None,
+		column: None,
+	})?;
+	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let _ =
+		xpath.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
+	apply_section_n(&mut doc, &parser, mm, case_id, &mut xpath).await?;
+	apply_primary_source_section(&mut doc, &parser, mm, case_id, &mut xpath)
+		.await?;
+	apply_study_section(&mut doc, &parser, mm, case_id, &mut xpath).await?;
+	postprocess_export_doc(&mut doc, &mut xpath);
+
+	Ok(normalize_namespace_artifacts(doc.to_string()))
+}
+
+async fn apply_primary_source_section(
+	doc: &mut Document,
+	parser: &Parser,
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+	xpath: &mut Context,
+) -> Result<()> {
+	let Some(primary) = fetch_primary_source(mm, case_id).await? else {
+		return Ok(());
+	};
+
+	let base = "//hl7:investigationEvent/hl7:outboundRelationship[hl7:relatedInvestigation/hl7:code[@code='2']]/hl7:relatedInvestigation/hl7:subjectOf2/hl7:controlActEvent/hl7:author/hl7:assignedEntity";
+	if xpath
+		.findnodes(&format!("{base}/hl7:representedOrganization"), None)
+		.map(|nodes| nodes.is_empty())
+		.unwrap_or(true)
+	{
+		append_fragment_child(
+			doc,
+			parser,
+			xpath,
+			base,
+			"<representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name/></representedOrganization>",
+		)?;
+	}
+
+	if let Some(value) = primary.reporter_title.as_deref() {
+		set_text_first(
+			xpath,
+			&format!("{base}/hl7:assignedPerson/hl7:name/hl7:prefix"),
+			value,
+		);
+	}
+	if let Some(value) = primary.reporter_given_name.as_deref() {
+		set_text_first(
+			xpath,
+			&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given"),
+			value,
+		);
+	}
+	if let Some(value) = primary.reporter_middle_name.as_deref() {
+		set_text_first(
+			xpath,
+			&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[2]"),
+			value,
+		);
+	}
+	if let Some(value) = primary.reporter_family_name.as_deref() {
+		set_text_first(
+			xpath,
+			&format!("{base}/hl7:assignedPerson/hl7:name/hl7:family"),
+			value,
+		);
+	}
+	if let Some(value) = primary.organization.as_deref() {
+		set_text_first(
+			xpath,
+			&format!("{base}/hl7:representedOrganization/hl7:name"),
+			value,
+		);
+	}
+	if let Some(value) = primary.department.as_deref() {
+		if xpath
+			.findnodes(
+				&format!("{base}/hl7:representedOrganization/hl7:name[2]"),
+				None,
+			)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				doc,
+				parser,
+				xpath,
+				&format!("{base}/hl7:representedOrganization"),
+				"<name/>",
+			)?;
+		}
+		set_text_first(
+			xpath,
+			&format!("{base}/hl7:representedOrganization/hl7:name[2]"),
+			value,
+		);
+	}
+	if let Some(value) = primary.street.as_deref() {
+		set_text_first(
+			xpath,
+			&format!("{base}/hl7:addr/hl7:streetAddressLine"),
+			value,
+		);
+	}
+	if let Some(value) = primary.city.as_deref() {
+		set_text_first(xpath, &format!("{base}/hl7:addr/hl7:city"), value);
+	}
+	if let Some(value) = primary.state.as_deref() {
+		set_text_first(xpath, &format!("{base}/hl7:addr/hl7:state"), value);
+	}
+	if let Some(value) = primary.postcode.as_deref() {
+		set_text_first(
+			xpath,
+			&format!("{base}/hl7:addr/hl7:postalCode"),
+			value,
+		);
+	}
+	if let Some(value) = primary.telephone.as_deref() {
+		let telecom_value = if value.contains(':') {
+			value.to_string()
+		} else {
+			format!("tel:{value}")
+		};
+		set_attr_first(
+			xpath,
+			&format!("{base}/hl7:telecom[starts-with(@value,'tel:')]"),
+			"value",
+			&telecom_value,
+		);
+	}
+	if let Some(value) = primary.email.as_deref() {
+		let telecom_value = if value.contains(':') {
+			value.to_string()
+		} else {
+			format!("mailto:{value}")
+		};
+		set_attr_first(
+			xpath,
+			&format!("{base}/hl7:telecom[starts-with(@value,'mailto:')]"),
+			"value",
+			&telecom_value,
+		);
+	}
+	if let Some(value) = primary.country_code.as_deref() {
+		set_attr_first(
+			xpath,
+			&format!(
+				"{base}/hl7:assignedPerson/hl7:asLocatedEntity/hl7:location/hl7:code"
+			),
+			"code",
+			value,
+		);
+	}
+	if let Some(value) = primary.qualification.as_deref() {
+		set_attr_first(
+			xpath,
+			&format!(
+				"{base}/hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code"
+			),
+			"code",
+			value,
+		);
+	}
+	if let Some(value) = primary.primary_source_regulatory.as_deref() {
+		set_attr_first(
+			xpath,
+			"//hl7:investigationEvent/hl7:outboundRelationship[hl7:relatedInvestigation/hl7:code[@code='2']]/hl7:priorityNumber",
+			"value",
+			value,
+		);
+	}
+
+	Ok(())
+}
+
+fn append_fragment_child(
+	doc: &mut Document,
+	parser: &Parser,
+	xpath: &mut Context,
+	parent_path: &str,
+	fragment: &str,
+) -> Result<()> {
+	let mut parent = xpath
+		.findnodes(parent_path, None)
+		.map_err(|_| Error::InvalidXml {
+			message: format!("Failed to find nodes for path {parent_path}"),
+			line: None,
+			column: None,
+		})?
+		.into_iter()
+		.next()
+		.ok_or(Error::InvalidXml {
+			message: format!("Failed to find nodes for path {parent_path}"),
+			line: None,
+			column: None,
+		})?;
+
+	let mut node = node_from_fragment(doc, parser, fragment)?;
+	parent
+		.add_child(&mut node)
+		.map_err(|err| Error::InvalidXml {
+			message: format!("Failed to append fragment: {err}"),
+			line: None,
+			column: None,
+		})?;
+	Ok(())
+}
+
+fn node_from_fragment(
+	doc: &mut Document,
+	parser: &Parser,
+	fragment: &str,
+) -> Result<Node> {
+	let fragment = wrap_fragment(fragment, "urn:hl7-org:v3");
+	let frag_doc =
+		parser
+			.parse_string(&fragment)
+			.map_err(|err| Error::InvalidXml {
+				message: format!("XML parse error: {err}"),
+				line: None,
+				column: None,
+			})?;
+	let root = frag_doc.get_root_element().ok_or(Error::InvalidXml {
+		message: "Failed to get fragment root".to_string(),
+		line: None,
+		column: None,
+	})?;
+	let mut child = root
+		.get_child_nodes()
+		.into_iter()
+		.find(|n| n.get_type() == Some(NodeType::ElementNode))
+		.ok_or(Error::InvalidXml {
+			message: "Failed to get fragment child".to_string(),
+			line: None,
+			column: None,
+		})?;
+	child.unlink_node();
+	doc.import_node(&mut child).map_err(|_| Error::InvalidXml {
+		message: "Failed to import cloned node".to_string(),
+		line: None,
+		column: None,
+	})
+}
+
+fn wrap_fragment(fragment: &str, ns: &str) -> String {
+	format!(
+		"<wrapper xmlns=\"{ns}\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">{fragment}</wrapper>"
+	)
 }
 
 async fn apply_study_section(

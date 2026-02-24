@@ -25,6 +25,7 @@ use lib_core::model::safety_report::{
 	StudyRegistrationNumberBmc, StudyRegistrationNumberFilter,
 	StudyRegistrationNumberForCreate, StudyRegistrationNumberForUpdate,
 };
+use lib_core::model::case::{CaseBmc, CaseForUpdate};
 use lib_core::model::{self, ModelManager};
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
@@ -58,6 +59,35 @@ async fn ensure_study_case(
 ) -> Result<()> {
 	let study = StudyInformationBmc::get(ctx, mm, study_id).await?;
 	ensure_case_scope(case_id, study.case_id, study_id, "study_information")
+}
+
+async fn mark_case_dirty_c(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<()> {
+	CaseBmc::update(
+		ctx,
+		mm,
+		case_id,
+		CaseForUpdate {
+			safety_report_id: None,
+			dg_prd_key: None,
+			status: None,
+			validation_profile: None,
+			submitted_by: None,
+			submitted_at: None,
+			raw_xml: None,
+			dirty_c: Some(true),
+			dirty_d: None,
+			dirty_e: None,
+			dirty_f: None,
+			dirty_g: None,
+			dirty_h: None,
+		},
+	)
+	.await
+	.map_err(Into::into)
 }
 
 // -- Sender Information (C.3.x)
@@ -163,6 +193,7 @@ pub async fn create_primary_source(
 	data.case_id = case_id;
 
 	let id = PrimarySourceBmc::create(&ctx, &mm, data).await?;
+	mark_case_dirty_c(&ctx, &mm, case_id).await?;
 	let entity = PrimarySourceBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
 }
@@ -217,6 +248,7 @@ pub async fn update_primary_source(
 	let entity = PrimarySourceBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "primary_sources")?;
 	PrimarySourceBmc::update(&ctx, &mm, id, data).await?;
+	mark_case_dirty_c(&ctx, &mm, case_id).await?;
 	let entity = PrimarySourceBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
@@ -232,6 +264,7 @@ pub async fn delete_primary_source(
 	let entity = PrimarySourceBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "primary_sources")?;
 	PrimarySourceBmc::delete(&ctx, &mm, id).await?;
+	mark_case_dirty_c(&ctx, &mm, case_id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 

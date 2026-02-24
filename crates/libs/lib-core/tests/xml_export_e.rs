@@ -67,7 +67,7 @@ fn export_e_reaction_basic() {
 }
 
 #[test]
-fn export_e_reaction_outcome_defaults_to_code_3() {
+fn export_e_reaction_requires_outcome() {
 	let reaction = Reaction {
 		id: Uuid::new_v4(),
 		case_id: Uuid::new_v4(),
@@ -98,25 +98,8 @@ fn export_e_reaction_outcome_defaults_to_code_3() {
 		updated_by: None,
 	};
 
-	let xml = export_e_reactions_xml(&[reaction]).expect("export xml");
-	let parser = Parser::default();
-	let doc = parser.parse_string(&xml).expect("parse");
-	let mut xpath = Context::new(&doc).expect("xpath");
-	xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
-
-	let outcome_code = xpath
-		.findvalue(
-			"//hl7:subjectOf2/hl7:observation/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='27']]/hl7:value/@code",
-			None,
-		)
-		.unwrap();
-	assert_eq!(outcome_code, "3");
-
-	let required_intervention_null_flavor = xpath
-		.findvalue(
-			"//hl7:subjectOf2/hl7:observation/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='7']]/hl7:value/@nullFlavor",
-			None,
-		)
-		.unwrap();
-	assert_eq!(required_intervention_null_flavor, "NI");
+	let err = export_e_reactions_xml(&[reaction])
+		.expect_err("missing outcome should fail");
+	let msg = format!("{err}");
+	assert!(msg.contains("ICH.E.i.7.REQUIRED"));
 }

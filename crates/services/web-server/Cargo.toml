@@ -27,15 +27,15 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 time = { workspace = true }
 uuid = {version = "1", features = ["v4","fast-rng",]}
 modql = { workspace = true }
+sqlx = { workspace = true }
 strum_macros = "0.26"
 derive_more = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
 [dev-dependencies]
 httpc-test = "0.1"
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serial_test = "3"
 tower = "0.5"
-sqlx = { workspace = true }
 hmac = "0.12"
 sha2 = "0.10"
 

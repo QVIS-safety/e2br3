@@ -1,4 +1,4 @@
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::model::acs::{
@@ -73,7 +73,7 @@ pub async fn get_organization(
 pub async fn list_organizations(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Query(params): Query<ParamsList<OrganizationFilter>>,
+	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<Organization>>>)> {
 	let ctx = ctx_w.0;
 	require_admin_role(&ctx)?;
@@ -83,6 +83,12 @@ pub async fn list_organizations(
 			required_permission: "Organization.List".to_string(),
 		});
 	}
+
+	let params =
+		ParamsList::<OrganizationFilter>::from_raw_query(raw_query.as_deref())
+			.map_err(|message| {
+				WebError::from(lib_rest_core::Error::BadRequest { message })
+			})?;
 
 	let entities =
 		OrganizationBmc::list(&ctx, &mm, params.filters, params.list_options)

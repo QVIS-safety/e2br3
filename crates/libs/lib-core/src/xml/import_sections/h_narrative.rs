@@ -38,7 +38,11 @@ pub fn parse_h_narrative(xml: &[u8]) -> Result<Option<HNarrativeImport>> {
 		first_text_root(&mut xpath, HNarrativePaths::CASE_NARRATIVE)
 			.or_else(|| first_text_root(&mut xpath, "//hl7:component1//hl7:text"))
 			.or_else(|| first_text_root(&mut xpath, "//hl7:text"))
-			.unwrap_or_else(|| "Imported narrative not provided.".to_string());
+			.ok_or_else(|| Error::InvalidXml {
+				message: "ICH.H.1.REQUIRED: case narrative missing".to_string(),
+				line: None,
+				column: None,
+			})?;
 	let reporter_comments =
 		first_text_root(&mut xpath, HNarrativePaths::REPORTER_COMMENTS);
 	let sender_comments =

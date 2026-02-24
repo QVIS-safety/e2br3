@@ -56,12 +56,19 @@ pub fn parse_f_test_results(xml: &[u8]) -> Result<Vec<FTestResultImport>> {
 			})?;
 
 	let mut items = Vec::new();
-	for node in nodes {
+	for (idx, node) in nodes.into_iter().enumerate() {
 		let test_name = first_text(&mut xpath, &node, FTestResultPaths::TEST_NAME)
 			.or_else(|| {
 				first_attr(&mut xpath, &node, FTestResultPaths::TEST_NAME_DISPLAY)
 			})
-			.unwrap_or_else(|| "Test".to_string());
+			.ok_or_else(|| Error::InvalidXml {
+				message: format!(
+					"ICH.F.r.2.REQUIRED: test name missing for sequence {}",
+					idx + 1
+				),
+				line: None,
+				column: None,
+			})?;
 		let test_meddra_code =
 			first_attr(&mut xpath, &node, FTestResultPaths::TEST_MEDDRA_CODE);
 		let test_meddra_version = clamp_str(

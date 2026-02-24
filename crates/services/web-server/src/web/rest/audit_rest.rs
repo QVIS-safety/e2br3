@@ -1,6 +1,6 @@
 // Audit Log REST endpoints
 
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::model::acs::{has_permission, AUDIT_LIST};
@@ -29,13 +29,18 @@ fn require_audit_permission(ctx: &lib_core::ctx::Ctx) -> Result<()> {
 pub async fn list_audit_logs(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Query(params): Query<ParamsList<AuditLogFilter>>,
+	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<AuditLog>>>)> {
 	let ctx = ctx_w.0;
 	tracing::debug!("{:<12} - rest list_audit_logs", "HANDLER");
 
 	// Verify audit permission
 	require_audit_permission(&ctx)?;
+
+	let params = ParamsList::<AuditLogFilter>::from_raw_query(raw_query.as_deref())
+		.map_err(|message| WebError::from(lib_rest_core::Error::BadRequest {
+			message,
+		}))?;
 
 	let logs = AuditLogBmc::list(&ctx, &mm, params.filters, params.list_options)
 		.await

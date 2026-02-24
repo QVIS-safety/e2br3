@@ -55,11 +55,13 @@ macro_rules! generate_common_rest_fns {
             pub async fn [<list_ $suffix s>](
                 State(mm): State<ModelManager>,
                 ctx_w: lib_web::middleware::mw_auth::CtxW,
-                Query(params): Query<ParamsList<$filter>>,
+                axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
             ) -> Result<(axum::http::StatusCode, Json<DataRestResult<Vec<$entity>>>)> {
                 let ctx = ctx_w.0;
                 $crate::require_permission(&ctx, $perm_list)?;
                 tracing::debug!("{:<12} - rest list {}s", "HANDLER", stringify!($suffix));
+                let params = ParamsList::<$filter>::from_raw_query(raw_query.as_deref())
+                    .map_err(|message| $crate::Error::BadRequest { message })?;
                 let entities = $bmc::list(&ctx, &mm, params.filters, params.list_options).await?;
                 Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entities })))
             }
@@ -151,11 +153,13 @@ macro_rules! generate_common_rest_fns {
             pub async fn [<list_ $suffix s>](
                 State(mm): State<ModelManager>,
                 ctx_w: lib_web::middleware::mw_auth::CtxW,
-                Query(params): Query<ParamsList<$filter>>,
+                axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
             ) -> Result<(axum::http::StatusCode, Json<DataRestResult<Vec<$entity>>>)> {
                 let ctx = ctx_w.0;
                 $crate::require_permission(&ctx, $perm_list)?;
                 tracing::debug!("{:<12} - rest list {}s", "HANDLER", stringify!($suffix));
+                let params = ParamsList::<$filter>::from_raw_query(raw_query.as_deref())
+                    .map_err(|message| $crate::Error::BadRequest { message })?;
                 let entities = $bmc::list(&ctx, &mm, params.filters, params.list_options).await?;
                 Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entities })))
             }

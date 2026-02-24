@@ -1,6 +1,7 @@
 mod common;
 
 use axum::body::Body;
+use axum::http::header;
 use axum::http::{Request, StatusCode};
 use common::{
 	cookie_header, init_test_mm, seed_org_with_all_roles, seed_org_with_users,
@@ -47,6 +48,111 @@ async fn test_admin_can_create_user() -> Result<()> {
 		)
 		.into());
 	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_new_user_temp_password_and_first_login_reset_flow() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let suffix = Uuid::new_v4();
+	let email = format!("first-login-{suffix}@example.com");
+	let username = format!("first_login_{suffix}");
+
+	let create_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": email,
+			"username": username,
+			"role": "user"
+		}
+	});
+	let create_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&admin_token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_res = app.clone().oneshot(create_req).await?;
+	assert_eq!(create_res.status(), StatusCode::CREATED);
+
+	let login_body = json!({
+		"email": email,
+		"pwd": "welcome"
+	});
+	let login_req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(login_body.to_string()))?;
+	let login_res = app.clone().oneshot(login_req).await?;
+	assert_eq!(login_res.status(), StatusCode::OK);
+	let auth_cookie = login_res
+		.headers()
+		.get_all(header::SET_COOKIE)
+		.iter()
+		.filter_map(|val| val.to_str().ok())
+		.find_map(|cookie| {
+			if cookie.starts_with("auth-token=") {
+				Some(cookie.split(';').next().unwrap_or_default().to_string())
+			} else {
+				None
+			}
+		})
+		.ok_or("missing auth-token cookie after login")?;
+
+	let me_req = Request::builder()
+		.method("GET")
+		.uri("/api/users/me")
+		.header("cookie", auth_cookie.as_str())
+		.body(Body::empty())?;
+	let me_res = app.clone().oneshot(me_req).await?;
+	assert_eq!(me_res.status(), StatusCode::OK);
+	let me_bytes = axum::body::to_bytes(me_res.into_body(), usize::MAX).await?;
+	let me_json: serde_json::Value = serde_json::from_slice(&me_bytes)?;
+	assert_eq!(
+		me_json["data"]["must_change_password"].as_bool(),
+		Some(true)
+	);
+
+	let set_pwd_body = json!({ "data": { "new_password": "new_password_123" } });
+	let set_pwd_req = Request::builder()
+		.method("POST")
+		.uri("/api/users/me/password")
+		.header("cookie", auth_cookie.as_str())
+		.header("content-type", "application/json")
+		.body(Body::from(set_pwd_body.to_string()))?;
+	let set_pwd_res = app.clone().oneshot(set_pwd_req).await?;
+	assert_eq!(set_pwd_res.status(), StatusCode::NO_CONTENT);
+
+	let old_login_body = json!({
+		"email": email,
+		"pwd": "welcome"
+	});
+	let old_login_req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(old_login_body.to_string()))?;
+	let old_login_res = app.clone().oneshot(old_login_req).await?;
+	assert_eq!(old_login_res.status(), StatusCode::FORBIDDEN);
+
+	let new_login_body = json!({
+		"email": email,
+		"pwd": "new_password_123"
+	});
+	let new_login_req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(new_login_body.to_string()))?;
+	let new_login_res = app.clone().oneshot(new_login_req).await?;
+	assert_eq!(new_login_res.status(), StatusCode::OK);
+
 	Ok(())
 }
 

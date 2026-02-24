@@ -430,6 +430,7 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(case_validation_rest::validate_case),
 	)
 	.route("/cases/{id}/export/xml", get(case_rest::export_case))
+	.route("/cases/{id}/lifecycle", get(case_rest::get_case_lifecycle))
 	.route(
 		"/cases/{id}/submissions/fda",
 		axum::routing::post(submission_rest::submit_case_to_fda),
@@ -460,6 +461,10 @@ pub fn routes_users(mm: ModelManager) -> Router {
 	Router::new()
 		// GET /api/users/me - must be before /users/{id} to avoid matching
 		.route("/users/me", get(user_rest::get_current_user))
+		.route(
+			"/users/me/password",
+			axum::routing::post(user_rest::set_my_password),
+		)
 		// Standard collection routes
 		.route(
 			"/users",

@@ -1272,11 +1272,9 @@ const REQUIRED_PRESENCE_BINDINGS: &[PresencePolicyBinding] = &[
 
 fn export_directive_for_code(code: &str) -> Option<ExportDirective> {
 	match code {
-		"ICH.E.i.7.REQUIRED" => Some(ExportDirective::OutcomeDefaultCode3),
 		"FDA.E.i.3.2h.REQUIRED" => {
 			Some(ExportDirective::RequiredInterventionNullFlavorNi)
 		}
-		"ICH.G.k.1.REQUIRED" => Some(ExportDirective::DrugRoleDefaultConcomitant),
 		"FDA.C.1.7.1.REQUIRED" | "FDA.C.1.12.REQUIRED" => {
 			Some(ExportDirective::ClearNullFlavorWhenValuePresent)
 		}
@@ -1791,7 +1789,7 @@ mod tests {
 		assert_eq!(
 			find_canonical_rule("ICH.E.i.7.REQUIRED")
 				.and_then(|rule| rule.export_directive),
-			Some(ExportDirective::OutcomeDefaultCode3)
+			None
 		);
 		assert_eq!(
 			find_canonical_rule("FDA.E.i.3.2h.REQUIRED")

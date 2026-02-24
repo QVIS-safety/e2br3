@@ -1,6 +1,7 @@
 // Section C exporter (Safety Report Identification) - FDA mapping.
 
 use crate::model::case::Case;
+use crate::model::message_header::MessageHeader;
 use crate::model::safety_report::{SafetyReportIdentification, SenderInformation};
 use crate::xml::raw::patch::{patch_c_safety_report, CSafetyReportPatch};
 use crate::xml::Result;
@@ -10,11 +11,14 @@ pub fn export_c_safety_report_patch(
 	raw_xml: &[u8],
 	case: &Case,
 	report: &SafetyReportIdentification,
+	header: Option<&MessageHeader>,
 	sender: Option<&SenderInformation>,
 ) -> Result<String> {
 	let patch = CSafetyReportPatch {
 		report_unique_id: &case.safety_report_id,
 		transmission_date: report.transmission_date,
+		transmission_date_value: header.map(|h| h.message_date.as_str()),
+		transmission_date_time: header.and_then(|h| h.batch_transmission_date),
 		report_type: &report.report_type,
 		date_first_received: report.date_first_received_from_source,
 		date_most_recent: report.date_of_most_recent_information,
@@ -51,6 +55,7 @@ pub fn export_c_safety_report_patch(
 pub fn export_c_safety_report_xml(
 	case: &Case,
 	report: &SafetyReportIdentification,
+	header: Option<&MessageHeader>,
 	sender: Option<&SenderInformation>,
 ) -> Result<String> {
 	let base_xml = base_icrs_skeleton();
@@ -63,7 +68,7 @@ pub fn export_c_safety_report_xml(
 		}
 	})?;
 	let raw = doc.to_string();
-	export_c_safety_report_patch(raw.as_bytes(), case, report, sender)
+	export_c_safety_report_patch(raw.as_bytes(), case, report, header, sender)
 }
 
 fn base_icrs_skeleton() -> &'static str {

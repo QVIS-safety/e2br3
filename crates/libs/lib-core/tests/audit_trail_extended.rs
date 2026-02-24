@@ -5,7 +5,7 @@ use common::{
 	demo_org_id, demo_user_id, init_test_mm, reset_role, set_auditor_role,
 	set_current_user, unique_suffix, Result,
 };
-use lib_core::model::audit::AuditLogBmc;
+use lib_core::model::audit::{AuditLogBmc, AuditLogFilter};
 use lib_core::model::case::CaseBmc;
 use lib_core::model::drug::{
 	DrugInformationBmc, DrugInformationForCreate, DrugInformationForUpdate,
@@ -18,6 +18,7 @@ use lib_core::model::patient::{
 };
 use lib_core::model::reaction::{ReactionBmc, ReactionForCreate, ReactionForUpdate};
 use lib_core::model::user::{UserBmc, UserForCreate, UserForUpdate};
+use modql::filter::ListOptions;
 use serial_test::serial;
 
 // ============================================================================
@@ -523,6 +524,73 @@ async fn test_audit_log_chronological_order() -> Result<()> {
 	// Cleanup
 	CaseBmc::delete(&ctx, &mm, case_id).await?;
 
+	commit_test_ctx(&mm).await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_audit_log_list_honors_filters_and_list_options() -> Result<()> {
+	let mm = init_test_mm().await;
+	let ctx = demo_ctx();
+
+	set_current_user(&mm, demo_user_id()).await?;
+	begin_test_ctx(&mm, &ctx).await?;
+
+	let suffix = unique_suffix();
+	let org_id = OrganizationBmc::create(
+		&ctx,
+		&mm,
+		OrganizationForCreate {
+			name: format!("AuditFilterOrg-{suffix}"),
+			org_type: Some("sponsor".to_string()),
+			address: None,
+			contact_email: None,
+		},
+	)
+	.await?;
+
+	// Ensure we have a known matching row.
+	set_auditor_role(&mm).await?;
+	let org_filter: AuditLogFilter = serde_json::from_value(
+		serde_json::json!({ "table_name": { "$eq": "organizations" } }),
+	)?;
+	let org_logs =
+		AuditLogBmc::list(&ctx, &mm, Some(vec![org_filter]), None).await?;
+	assert!(
+		!org_logs.is_empty(),
+		"expected at least one organizations audit log"
+	);
+
+	// Verify filters are actually applied.
+	let none_filter: AuditLogFilter = serde_json::from_value(
+		serde_json::json!({ "table_name": { "$eq": "__no_such_table__" } }),
+	)?;
+	let no_logs =
+		AuditLogBmc::list(&ctx, &mm, Some(vec![none_filter]), None).await?;
+	assert!(
+		no_logs.is_empty(),
+		"expected no logs for impossible table_name"
+	);
+
+	// Verify list_options limit is honored.
+	let limited = AuditLogBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![serde_json::from_value(
+			serde_json::json!({ "table_name": { "$eq": "organizations" } }),
+		)?]),
+		Some(ListOptions {
+			limit: Some(1),
+			offset: None,
+			order_bys: Some("!created_at".into()),
+		}),
+	)
+	.await?;
+	assert!(limited.len() <= 1, "expected at most one row with limit=1");
+
+	reset_role(&mm).await?;
+	OrganizationBmc::delete(&ctx, &mm, org_id).await?;
 	commit_test_ctx(&mm).await?;
 	Ok(())
 }

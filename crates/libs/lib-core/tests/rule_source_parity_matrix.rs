@@ -7,27 +7,23 @@ use lib_core::xml::validate::{
 
 #[test]
 fn cross_profile_rule_source_parity_matrix() {
-	// ICH: exporter default for E.i.7 must match catalog directive.
+	// ICH: E.i.7 no longer has exporter default; missing value must be rejected.
 	let ich_outcome_rule = find_canonical_rule("ICH.E.i.7.REQUIRED")
 		.expect("canonical ICH.E.i.7.REQUIRED rule");
+	assert_eq!(ich_outcome_rule.export_directive, None);
+	assert_eq!(normalize_outcome_code(None), None);
+	assert_eq!(normalize_outcome_code(Some("3")), Some("3"));
 	assert_eq!(
-		ich_outcome_rule.export_directive,
-		Some(ExportDirective::OutcomeDefaultCode3)
-	);
-	assert_eq!(normalize_outcome_code(None), "3");
-	assert_eq!(
-		outcome_display_name(normalize_outcome_code(None)),
+		outcome_display_name("3"),
 		"not recovered/not resolved/ongoing"
 	);
 
-	// ICH: exporter default for G.k.1 must match catalog directive.
+	// ICH: G.k.1 no longer has exporter default; missing value must be rejected.
 	let ich_drug_rule = find_canonical_rule("ICH.G.k.1.REQUIRED")
 		.expect("canonical ICH.G.k.1.REQUIRED rule");
-	assert_eq!(
-		ich_drug_rule.export_directive,
-		Some(ExportDirective::DrugRoleDefaultConcomitant)
-	);
-	assert_eq!(normalize_drug_characterization(""), "2");
+	assert_eq!(ich_drug_rule.export_directive, None);
+	assert_eq!(normalize_drug_characterization(""), None);
+	assert_eq!(normalize_drug_characterization("2"), Some("2"));
 
 	// FDA: validator condition + exporter directive should agree for E.i.3.2h.
 	let fda_ei_rule = find_canonical_rule("FDA.E.i.3.2h.REQUIRED")

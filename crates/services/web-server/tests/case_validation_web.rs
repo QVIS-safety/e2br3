@@ -239,6 +239,42 @@ async fn update_case_status(
 	Ok((status, value))
 }
 
+async fn update_safety_report(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/cases/{case_id}/safety-report"))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = serde_json::from_slice::<Value>(&body)?;
+	Ok((status, value))
+}
+
+async fn get_case(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/cases/{case_id}"))
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = serde_json::from_slice::<Value>(&body)?;
+	Ok((status, value))
+}
+
 async fn validator_mark_validated(
 	app: &axum::Router,
 	cookie: &str,
@@ -382,7 +418,61 @@ async fn test_update_case_rejects_invalid_status() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_case_cannot_be_marked_validated_with_blocking_issues() -> Result<()> {
+async fn test_case_status_transition_prevents_regression_after_submitted(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let (status, body) =
+		update_case_status(&app, &cookie, case_id, "submitted").await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, body) = update_case_status(&app, &cookie, case_id, "draft").await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(body.to_string().contains("illegal case status transition"));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_nullification_code_marks_case_nullified() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let (status, body) = update_safety_report(
+		&app,
+		&cookie,
+		case_id,
+		json!({
+			"data": {
+				"nullification_code": "1",
+				"nullification_reason": "Duplicate report"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, body) = get_case(&app, &cookie, case_id).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["status"].as_str(), Some("nullified"));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_save_auto_statuses_checked_when_blocking_issues_exist(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -392,11 +482,8 @@ async fn test_case_cannot_be_marked_validated_with_blocking_issues() -> Result<(
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) =
 		update_case_status(&app, &cookie, case_id, "validated").await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(body["error"]["data"]["detail"]
-		.as_str()
-		.unwrap_or_default()
-		.contains("cannot set case to validated manually"));
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["status"].as_str(), Some("checked"));
 
 	Ok(())
 }

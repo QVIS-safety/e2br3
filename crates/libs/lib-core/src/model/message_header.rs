@@ -64,6 +64,7 @@ pub struct MessageHeaderForUpdate {
 	pub message_number: Option<String>,
 	pub message_sender_identifier: Option<String>,
 	pub message_receiver_identifier: Option<String>,
+	pub message_date: Option<String>,
 }
 
 // -- BMC
@@ -154,8 +155,9 @@ impl MessageHeaderBmc {
 			     message_number = COALESCE($6, message_number),
 			     message_sender_identifier = COALESCE($7, message_sender_identifier),
 			     message_receiver_identifier = COALESCE($8, message_receiver_identifier),
+			     message_date = COALESCE($9, message_date),
 			     updated_at = now(),
-			     updated_by = $9
+			     updated_by = $10
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -171,6 +173,7 @@ impl MessageHeaderBmc {
 					.bind(data.message_number)
 					.bind(data.message_sender_identifier)
 					.bind(data.message_receiver_identifier)
+					.bind(data.message_date)
 					.bind(ctx.user_id()),
 			)
 			.await

@@ -48,6 +48,9 @@ CREATE TRIGGER update_dosage_information_updated_at BEFORE UPDATE ON dosage_info
 CREATE TRIGGER update_narrative_information_updated_at BEFORE UPDATE ON narrative_information
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_case_submissions_updated_at BEFORE UPDATE ON case_submissions
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- ============================================================================
 -- Audit Trail Trigger
 -- ============================================================================
@@ -60,6 +63,8 @@ SECURITY DEFINER
 AS $$
 DECLARE
     v_user_id UUID;
+    v_old_business JSONB;
+    v_new_business JSONB;
 BEGIN
     -- Get user from context (will fail if not set, ensuring user attribution)
     v_user_id := get_current_user_context();
@@ -70,6 +75,14 @@ BEGIN
         RETURN NEW;
 
     ELSIF TG_OP = 'UPDATE' THEN
+        -- Ignore metadata-only updates (updated_at/updated_by) to avoid noisy
+        -- audit trails from no-op saves.
+        v_old_business := to_jsonb(OLD) - 'updated_at' - 'updated_by';
+        v_new_business := to_jsonb(NEW) - 'updated_at' - 'updated_by';
+        IF v_old_business = v_new_business THEN
+            RETURN NEW;
+        END IF;
+
         INSERT INTO audit_logs (table_name, record_id, action, user_id, old_values, new_values)
         VALUES (TG_TABLE_NAME, NEW.id, 'UPDATE', v_user_id, to_jsonb(OLD), to_jsonb(NEW));
         RETURN NEW;
@@ -95,6 +108,8 @@ SECURITY DEFINER
 AS $$
 DECLARE
     v_user_id UUID;
+    v_old_business JSONB;
+    v_new_business JSONB;
 BEGIN
     v_user_id := get_current_user_context();
 
@@ -104,6 +119,14 @@ BEGIN
         RETURN NEW;
 
     ELSIF TG_OP = 'UPDATE' THEN
+        -- Ignore metadata-only updates (updated_at/updated_by) to avoid noisy
+        -- audit trails from no-op saves.
+        v_old_business := to_jsonb(OLD) - 'updated_at' - 'updated_by';
+        v_new_business := to_jsonb(NEW) - 'updated_at' - 'updated_by';
+        IF v_old_business = v_new_business THEN
+            RETURN NEW;
+        END IF;
+
         INSERT INTO audit_logs (table_name, record_id, action, user_id, old_values, new_values)
         VALUES (TG_TABLE_NAME, NEW.audit_id, 'UPDATE', v_user_id, to_jsonb(OLD), to_jsonb(NEW));
         RETURN NEW;
@@ -200,6 +223,12 @@ CREATE TRIGGER audit_case_summary_information AFTER INSERT OR UPDATE OR DELETE O
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_case_versions AFTER INSERT OR UPDATE OR DELETE ON case_versions
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_case_submissions AFTER INSERT OR UPDATE OR DELETE ON case_submissions
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_submission_acks AFTER INSERT OR UPDATE OR DELETE ON submission_acks
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 -- Audit triggers for core tables

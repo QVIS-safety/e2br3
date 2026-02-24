@@ -19,10 +19,13 @@ use libxml::parser::Parser;
 use libxml::tree::{Document, Node, NodeType};
 use libxml::xpath::Context;
 use sqlx::types::time::Date;
+use sqlx::types::time::OffsetDateTime;
 
 pub struct CSafetyReportPatch<'a> {
 	pub report_unique_id: &'a str,
 	pub transmission_date: Date,
+	pub transmission_date_value: Option<&'a str>,
+	pub transmission_date_time: Option<OffsetDateTime>,
 	pub report_type: &'a str,
 	pub date_first_received: Date,
 	pub date_most_recent: Date,
@@ -105,7 +108,12 @@ pub fn patch_c_safety_report(
 		&mut xpath,
 		"//hl7:controlActProcess/hl7:effectiveTime",
 		"value",
-		&fmt_date_time_fallback(patch.transmission_date),
+		&patch
+			.transmission_date_value
+			.filter(|v| is_14_digit_datetime(v))
+			.map(|v| v.to_string())
+			.or_else(|| patch.transmission_date_time.map(fmt_offset_datetime))
+			.unwrap_or_else(|| fmt_date_time_fallback(patch.transmission_date)),
 	);
 
 	// C.1.4 Date First Received
@@ -183,6 +191,7 @@ pub fn patch_c_safety_report(
 
 	// FDA.C.1.12 Combination Product Report Indicator
 	if let Some(value) = patch.combination_product_indicator {
+		let normalized = normalize_bl_value(value).unwrap_or("false");
 		ensure_observation_event_component(
 			&mut doc,
 			&parser,
@@ -195,7 +204,7 @@ pub fn patch_c_safety_report(
 			&mut xpath,
 			"//hl7:component/hl7:observationEvent[hl7:code[@code='C156384' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value",
 			"value",
-			value,
+			normalized,
 		);
 		clear_null_flavor_if_catalog_directive(
 			&mut xpath,
@@ -506,7 +515,7 @@ pub fn patch_e_reactions(raw_xml: &[u8], reactions: &[Reaction]) -> Result<Strin
 		"//hl7:primaryRole/hl7:subjectOf2[hl7:observation/hl7:code[@code='29' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]",
 	);
 	for reaction in reactions {
-		let fragment = reaction_fragment(reaction);
+		let fragment = reaction_fragment(reaction)?;
 		append_fragment_child(
 			&mut doc,
 			&parser,
@@ -623,7 +632,7 @@ pub fn patch_g_drugs(
 			"//hl7:primaryRole",
 			&fragment,
 		)?;
-		let role_fragment = causality_role_fragment(drug);
+		let role_fragment = causality_role_fragment(drug)?;
 		append_fragment_child(
 			&mut doc,
 			&parser,
@@ -636,10 +645,18 @@ pub fn patch_g_drugs(
 	Ok(doc.to_string())
 }
 
-fn causality_role_fragment(drug: &DrugInformation) -> String {
-	let role_code = normalize_drug_characterization(&drug.drug_characterization);
+fn causality_role_fragment(drug: &DrugInformation) -> Result<String> {
+	let role_code = normalize_drug_characterization(&drug.drug_characterization)
+		.ok_or_else(|| Error::InvalidXml {
+			message: format!(
+				"ICH.G.k.1.REQUIRED: drug characterization missing or invalid for drug sequence {}",
+				drug.sequence_number
+			),
+			line: None,
+			column: None,
+		})?;
 	let display = drug_characterization_display_name(role_code);
-	format!(
+	Ok(format!(
 		"<component typeCode=\"COMP\">\
 			<causalityAssessment classCode=\"OBS\" moodCode=\"EVN\">\
 				<code code=\"20\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"interventionCharacterization\"/>\
@@ -652,7 +669,7 @@ fn causality_role_fragment(drug: &DrugInformation) -> String {
 			</causalityAssessment>\
 		</component>",
 		xml_escape(&drug.id.to_string())
-	)
+	))
 }
 
 fn xml_escape(value: &str) -> String {
@@ -961,7 +978,28 @@ fn ensure_observation_event_component(
 			</observationEvent>\
 		</component>"
 	);
-	append_fragment_child(doc, parser, xpath, "//hl7:investigationEvent", &fragment)
+	append_fragment_child(
+		doc,
+		parser,
+		xpath,
+		"//hl7:investigationEvent",
+		&fragment,
+	)?;
+	reorder_investigation_event_children(xpath);
+	Ok(())
+}
+
+fn reorder_investigation_event_children(xpath: &mut Context) {
+	if let Ok(subject_nodes) =
+		xpath.findnodes("//hl7:investigationEvent/hl7:subjectOf2", None)
+	{
+		for mut node in subject_nodes {
+			if let Some(mut parent) = node.get_parent() {
+				node.unlink_node();
+				let _ = parent.add_child(&mut node);
+			}
+		}
+	}
 }
 
 fn append_fragment_child(
@@ -1090,4 +1128,28 @@ fn fmt_date(date: Date) -> String {
 
 fn fmt_date_time_fallback(date: Date) -> String {
 	format!("{}000000", fmt_date(date))
+}
+
+fn fmt_offset_datetime(dt: OffsetDateTime) -> String {
+	format!(
+		"{:04}{:02}{:02}{:02}{:02}{:02}",
+		dt.year(),
+		u8::from(dt.month()),
+		dt.day(),
+		dt.hour(),
+		dt.minute(),
+		dt.second()
+	)
+}
+
+fn is_14_digit_datetime(value: &str) -> bool {
+	value.len() == 14 && value.chars().all(|c| c.is_ascii_digit())
+}
+
+fn normalize_bl_value(value: &str) -> Option<&'static str> {
+	match value.trim().to_ascii_lowercase().as_str() {
+		"true" | "1" | "y" | "yes" => Some("true"),
+		"false" | "0" | "2" | "n" | "no" => Some("false"),
+		_ => None,
+	}
 }

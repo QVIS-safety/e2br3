@@ -68,7 +68,7 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 		})?;
 
 	let mut imports: Vec<EReactionImport> = Vec::new();
-	for node in nodes.into_iter() {
+	for (idx, node) in nodes.into_iter().enumerate() {
 		let xml_id = parse_uuid_opt(first_attr(
 			&mut xpath,
 			&node,
@@ -78,7 +78,14 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 			.or_else(|| {
 				first_text(&mut xpath, &node, EReactionPaths::PRIMARY_TEXT_ALT)
 			})
-			.unwrap_or_else(|| "UNKNOWN".to_string());
+			.ok_or_else(|| Error::InvalidXml {
+				message: format!(
+					"ICH.E.i.1.1a.REQUIRED: reaction text missing for reaction index {}",
+					idx + 1
+				),
+				line: None,
+				column: None,
+			})?;
 
 		let reaction_meddra_version = clamp_str(
 			first_attr(&mut xpath, &node, EReactionPaths::MEDDRA_VERSION),
