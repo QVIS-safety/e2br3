@@ -162,6 +162,29 @@ CREATE UNIQUE INDEX idx_submission_acks_unique_event
     ON submission_acks(submission_id, ack_level, success, COALESCE(ack_code, ''), received_at);
 
     -- ============================================================================
+    -- 4.3 Electronic Signatures (Part 11 / Annex 11)
+    -- ============================================================================
+CREATE TABLE if NOT EXISTS e_signatures (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID REFERENCES cases(id) ON DELETE SET NULL,
+    signer_user_id UUID NOT NULL REFERENCES users(id),
+    signer_username VARCHAR(128) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    meaning TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    signature_method VARCHAR(50) NOT NULL DEFAULT 'password_reentry',
+    signed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id),
+    updated_by UUID REFERENCES users(id)
+);
+
+CREATE INDEX idx_e_signatures_case ON e_signatures(case_id, signed_at DESC);
+CREATE INDEX idx_e_signatures_signer ON e_signatures(signer_user_id, signed_at DESC);
+CREATE INDEX idx_e_signatures_action ON e_signatures(action, signed_at DESC);
+
+    -- ============================================================================
     -- 5. Audit Logs
     -- ============================================================================
 CREATE TABLE if NOT EXISTS audit_logs (
@@ -170,6 +193,8 @@ CREATE TABLE if NOT EXISTS audit_logs (
     record_id UUID NOT NULL,
     action VARCHAR(50) NOT NULL,
     user_id UUID NOT NULL REFERENCES users(id),
+    reason_for_change TEXT,
+    e_signature_id UUID REFERENCES e_signatures(id),
     old_values JSONB,
     new_values JSONB,
     ip_address INET,
@@ -182,6 +207,7 @@ CREATE TABLE if NOT EXISTS audit_logs (
 CREATE INDEX idx_audit_logs_table_record ON audit_logs(table_name, record_id);
 CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX idx_audit_logs_esignature ON audit_logs(e_signature_id);
 
 -- ============================================================================
 -- 6. System User and Foreign Key Constraints
@@ -314,6 +340,64 @@ EXCEPTION
 END;
 $$;
 
+-- Compliance context setter for audit enrichment.
+CREATE OR REPLACE FUNCTION set_compliance_context(
+    p_change_reason TEXT,
+    p_e_signature_id TEXT
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    PERFORM set_config(
+        'app.change_reason',
+        COALESCE(p_change_reason, ''),
+        true
+    );
+    PERFORM set_config(
+        'app.e_signature_id',
+        COALESCE(p_e_signature_id, ''),
+        true
+    );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_current_change_reason()
+RETURNS TEXT
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_reason TEXT;
+BEGIN
+    v_reason := current_setting('app.change_reason', true);
+    IF v_reason IS NULL OR btrim(v_reason) = '' THEN
+        RETURN NULL;
+    END IF;
+    RETURN v_reason;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_current_esignature_id()
+RETURNS UUID
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_sig TEXT;
+BEGIN
+    v_sig := current_setting('app.e_signature_id', true);
+    IF v_sig IS NULL OR btrim(v_sig) = '' THEN
+        RETURN NULL;
+    END IF;
+    RETURN v_sig::UUID;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN NULL;
+END;
+$$;
+
 -- Resolve display name for audit logs.
 -- Returns username/email when visible by current role+RLS context, otherwise
 -- falls back to the UUID text so audit listing never fails.
@@ -402,6 +486,9 @@ GRANT USAGE ON SEQUENCE audit_logs_id_seq TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION set_current_user_context(UUID) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION get_current_user_context() TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION validate_user_context() TO e2br3_app_role;
+GRANT EXECUTE ON FUNCTION set_compliance_context(TEXT, TEXT) TO e2br3_app_role;
+GRANT EXECUTE ON FUNCTION get_current_change_reason() TO e2br3_app_role;
+GRANT EXECUTE ON FUNCTION get_current_esignature_id() TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION audit_user_display(UUID) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION audit_user_display(UUID) TO e2br3_auditor_role;
 
@@ -538,7 +625,32 @@ CREATE POLICY submission_acks_via_submission ON submission_acks
     );
 
 -- ============================================================================
--- 9.5 Users Table RLS
+-- 9.5 Electronic Signatures Table RLS
+-- ============================================================================
+ALTER TABLE e_signatures ENABLE ROW LEVEL SECURITY;
+ALTER TABLE e_signatures FORCE ROW LEVEL SECURITY;
+CREATE POLICY e_signatures_via_case ON e_signatures
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        case_id IS NULL
+        OR EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = e_signatures.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        case_id IS NULL
+        OR EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = e_signatures.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+-- ============================================================================
+-- 9.6 Users Table RLS
 -- ============================================================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users FORCE ROW LEVEL SECURITY;
@@ -560,7 +672,7 @@ CREATE POLICY users_org_isolation_modify ON users
     WITH CHECK (is_current_user_admin());
 
 -- ============================================================================
--- 9.4 Organizations Table RLS
+-- 9.7 Organizations Table RLS
 -- ============================================================================
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations FORCE ROW LEVEL SECURITY;

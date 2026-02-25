@@ -1,6 +1,8 @@
 use lib_core::ctx::Ctx;
 use lib_core::model::case::CaseBmc;
-use lib_core::model::store::set_full_context_dbx_or_rollback;
+use lib_core::model::store::{
+	set_compliance_context_dbx, set_full_context_dbx_or_rollback,
+};
 use lib_core::model::ModelManager;
 use lib_core::xml::{export_case_xml, should_skip_xml_validation, validate_e2b_xml};
 use lib_rest_core::{Error, Result};
@@ -565,19 +567,7 @@ pub async fn create_fda_submission(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<SubmissionRecord> {
-	let case = CaseBmc::get(ctx, mm, case_id).await?;
-	if !is_fda_profile(case.validation_profile.as_deref()) {
-		return Err(Error::BadRequest {
-			message: "case validation_profile must be fda for FDA submission"
-				.to_string(),
-		});
-	}
-	if !case.status.eq_ignore_ascii_case("validated") {
-		return Err(Error::BadRequest {
-			message: "case must be in 'validated' status before FDA submission"
-				.to_string(),
-		});
-	}
+	assert_case_ready_for_fda_submission(ctx, mm, case_id).await?;
 
 	let ctx_clone = ctx.clone();
 	let mm_clone = mm.clone();
@@ -627,6 +617,9 @@ pub async fn create_fda_submission(
 		ctx.role(),
 	)
 	.await?;
+	set_compliance_context_dbx(mm.dbx(), ctx.change_reason(), ctx.e_signature_id())
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 
 	let updated = mm
 		.dbx()
@@ -721,6 +714,27 @@ pub async fn create_fda_submission(
 	compose_submission_record(row, acks)
 }
 
+pub async fn assert_case_ready_for_fda_submission(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<()> {
+	let case = CaseBmc::get(ctx, mm, case_id).await?;
+	if !is_fda_profile(case.validation_profile.as_deref()) {
+		return Err(Error::BadRequest {
+			message: "case validation_profile must be fda for FDA submission"
+				.to_string(),
+		});
+	}
+	if !case.status.eq_ignore_ascii_case("validated") {
+		return Err(Error::BadRequest {
+			message: "case must be in 'validated' status before FDA submission"
+				.to_string(),
+		});
+	}
+	Ok(())
+}
+
 pub async fn list_by_case(
 	_ctx: &Ctx,
 	mm: &ModelManager,
@@ -774,6 +788,9 @@ pub async fn apply_mock_ack(
 		ctx.role(),
 	)
 	.await?;
+	set_compliance_context_dbx(mm.dbx(), ctx.change_reason(), ctx.e_signature_id())
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 
 	let row = mm
 		.dbx()
@@ -877,6 +894,13 @@ pub async fn apply_gateway_ack_by_remote(
 		system_ctx.role(),
 	)
 	.await?;
+	set_compliance_context_dbx(
+		mm.dbx(),
+		system_ctx.change_reason(),
+		system_ctx.e_signature_id(),
+	)
+	.await
+	.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 
 	let row = mm
 		.dbx()

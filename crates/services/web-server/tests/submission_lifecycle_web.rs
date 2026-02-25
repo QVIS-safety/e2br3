@@ -22,6 +22,16 @@ fn clear_esg_env() {
 	std::env::remove_var("E2BR3_ALLOW_MOCK_SUBMISSION");
 }
 
+fn valid_compliance_payload() -> Value {
+	json!({
+		"reason_for_change": "submit case to FDA gateway",
+		"e_signature": {
+			"meaning": "submit case",
+			"password": "adminpwd"
+		}
+	})
+}
+
 async fn post_json(
 	app: &axum::Router,
 	cookie: &str,
@@ -164,7 +174,7 @@ async fn test_submission_requires_case_validated_status() -> Result<()> {
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/submissions/fda"),
-		json!({}),
+		valid_compliance_payload(),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
@@ -199,7 +209,7 @@ async fn test_submission_ack_out_of_order_does_not_regress_status() -> Result<()
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/submissions/fda"),
-		json!({}),
+		valid_compliance_payload(),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{submit_body:?}");
@@ -253,7 +263,7 @@ async fn test_submission_ack_terminal_status_does_not_change() -> Result<()> {
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/submissions/fda"),
-		json!({}),
+		valid_compliance_payload(),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{submit_body:?}");
@@ -307,7 +317,7 @@ async fn test_submission_rejects_enabled_esg_without_base_url() -> Result<()> {
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/submissions/fda"),
-		json!({}),
+		valid_compliance_payload(),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
@@ -339,7 +349,7 @@ async fn test_submission_rejects_when_as2_submitter_unreachable() -> Result<()> 
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/submissions/fda"),
-		json!({}),
+		valid_compliance_payload(),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
@@ -374,7 +384,7 @@ async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/submissions/fda"),
-		json!({}),
+		valid_compliance_payload(),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{submit_body:?}");

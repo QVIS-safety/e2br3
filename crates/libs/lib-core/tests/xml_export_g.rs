@@ -140,4 +140,43 @@ fn export_g_drug_basic() {
 		.findvalue("//hl7:kindOfProduct/hl7:name", None)
 		.unwrap();
 	assert_eq!(name, "Drug A");
+	let mpid = xpath
+		.findvalue("//hl7:kindOfProduct/hl7:code/@code", None)
+		.unwrap();
+	assert_eq!(mpid, "MPID123");
+	let drug_text = xpath
+		.findvalue(
+			"//hl7:organizer/hl7:component/hl7:substanceAdministration/hl7:text",
+			None,
+		)
+		.unwrap();
+	assert_eq!(drug_text, "Take once daily");
+	let drug_batch = xpath
+		.findvalue(
+			"//hl7:consumable/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText",
+			None,
+		)
+		.unwrap();
+	assert_eq!(drug_batch, "LOT1");
+	let sub_strength_value = xpath
+		.findvalue(
+			"//hl7:ingredient/hl7:ingredientSubstance/hl7:quantity/hl7:numerator/@value",
+			None,
+		)
+		.unwrap();
+	assert_eq!(sub_strength_value, "1");
+	let dose_text = xpath
+		.findvalue(
+			"//hl7:outboundRelationship2/hl7:substanceAdministration[hl7:doseQuantity]/hl7:text",
+			None,
+		)
+		.unwrap();
+	assert_eq!(dose_text, "Dose text");
+	let first_admin = xpath
+		.findvalue(
+			"//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:effectiveTime/hl7:comp/hl7:low/@value",
+			None,
+		)
+		.unwrap();
+	assert_eq!(first_admin, "20240101080000");
 }

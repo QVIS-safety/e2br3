@@ -32,6 +32,8 @@ pub struct Ctx {
 	user_id: uuid::Uuid,
 	organization_id: uuid::Uuid,
 	role: String,
+	change_reason: Option<String>,
+	e_signature_id: Option<uuid::Uuid>,
 }
 
 // Constructors.
@@ -45,6 +47,8 @@ impl Ctx {
 			organization_id: uuid::Uuid::parse_str(SYSTEM_ORG_ID)
 				.expect("Invalid system org UUID"),
 			role: ROLE_ADMIN.to_string(),
+			change_reason: None,
+			e_signature_id: None,
 		}
 	}
 
@@ -72,6 +76,8 @@ impl Ctx {
 			user_id,
 			organization_id,
 			role,
+			change_reason: None,
+			e_signature_id: None,
 		})
 	}
 
@@ -102,6 +108,25 @@ impl Ctx {
 
 	pub fn role(&self) -> &str {
 		&self.role
+	}
+
+	pub fn change_reason(&self) -> Option<&str> {
+		self.change_reason.as_deref()
+	}
+
+	pub fn e_signature_id(&self) -> Option<uuid::Uuid> {
+		self.e_signature_id
+	}
+
+	pub fn with_compliance(
+		&self,
+		change_reason: Option<String>,
+		e_signature_id: Option<uuid::Uuid>,
+	) -> Self {
+		let mut next = self.clone();
+		next.change_reason = change_reason;
+		next.e_signature_id = e_signature_id;
+		next
 	}
 
 	// Role check helpers

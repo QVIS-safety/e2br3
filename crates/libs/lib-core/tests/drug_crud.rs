@@ -48,6 +48,8 @@ async fn test_drug_information_crud() -> Result<()> {
 		investigational_product_blinded: None,
 		mpid: None,
 		mpid_version: None,
+		phpid: None,
+		phpid_version: None,
 		obtain_drug_country: None,
 		parent_route: None,
 		parent_route_termid: None,

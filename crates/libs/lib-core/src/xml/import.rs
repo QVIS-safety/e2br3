@@ -4403,6 +4403,8 @@ async fn import_drugs(
 					.investigational_product_blinded,
 				mpid: drug.mpid,
 				mpid_version: drug.mpid_version,
+				phpid: None,
+				phpid_version: None,
 				obtain_drug_country: drug.obtain_drug_country,
 				parent_route: drug.parent_route,
 				parent_route_termid: drug.parent_route_termid,

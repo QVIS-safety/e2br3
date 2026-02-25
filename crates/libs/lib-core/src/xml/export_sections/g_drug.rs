@@ -41,7 +41,6 @@ pub fn export_g_drugs_xml(
 			.or_default()
 			.push(ch);
 	}
-
 	let mut items_xml = String::new();
 	for drug in drugs {
 		let subs = subs_by_drug.get(&drug.id).cloned().unwrap_or_default();
@@ -76,6 +75,11 @@ pub(crate) fn drug_fragment(
 	out.push_str("<id root=\"");
 	out.push_str(&xml_escape(&drug.id.to_string()));
 	out.push_str("\"/>");
+	if let Some(text) = drug.dosage_text.as_deref() {
+		out.push_str("<text>");
+		out.push_str(&xml_escape(text));
+		out.push_str("</text>");
+	}
 	out.push_str(
 		"<consumable typeCode=\"CSM\"><instanceOfKind classCode=\"INST\"><kindOfProduct classCode=\"MMAT\" determinerCode=\"KIND\">",
 	);
@@ -102,10 +106,25 @@ pub(crate) fn drug_fragment(
 		}
 		out.push_str("/></asIdentifiedEntity>");
 	}
+	if drug.phpid.is_some() || drug.phpid_version.is_some() {
+		out.push_str("<asIdentifiedEntity classCode=\"IDENT\"><id");
+		if let Some(phpid) = drug.phpid.as_deref() {
+			out.push_str(" extension=\"");
+			out.push_str(&xml_escape(phpid));
+			out.push_str("\"");
+		}
+		out.push_str("/><code code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"");
+		if let Some(ver) = drug.phpid_version.as_deref() {
+			out.push_str(" codeSystemVersion=\"");
+			out.push_str(&xml_escape(ver));
+			out.push_str("\"");
+		}
+		out.push_str("/></asIdentifiedEntity>");
+	}
 	if let Some(blinded) = drug.investigational_product_blinded {
 		let val = if blinded { "true" } else { "false" };
 		out.push_str(
-			"<subjectOf><observation><code code=\"G.k.2.5\"/><value value=\"",
+			"<subjectOf typeCode=\"SBJ\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"G.k.2.5\"/><value xsi:type=\"BL\" value=\"",
 		);
 		out.push_str(val);
 		out.push_str("\"/></observation></subjectOf>");
@@ -146,21 +165,21 @@ pub(crate) fn drug_fragment(
 				}
 				out.push_str("/>");
 			}
-			out.push_str("</ingredientSubstance>");
 			if sub.strength_value.is_some() || sub.strength_unit.is_some() {
 				out.push_str("<quantity><numerator");
-				if let Some(val) = sub.strength_value.as_ref() {
+				if let Some(v) = sub.strength_value.as_ref() {
 					out.push_str(" value=\"");
-					out.push_str(&xml_escape(&val.to_string()));
+					out.push_str(&xml_escape(&v.to_string()));
 					out.push_str("\"");
 				}
-				if let Some(unit) = sub.strength_unit.as_deref() {
+				if let Some(u) = sub.strength_unit.as_deref() {
 					out.push_str(" unit=\"");
-					out.push_str(&xml_escape(unit));
+					out.push_str(&xml_escape(u));
 					out.push_str("\"");
 				}
-				out.push_str("/><denominator value=\"1\" unit=\"1\"/></quantity>");
+				out.push_str("/></quantity>");
 			}
+			out.push_str("</ingredientSubstance>");
 			out.push_str("</ingredient>");
 		}
 	}
@@ -215,28 +234,24 @@ pub(crate) fn drug_fragment(
 			out.push_str("</characteristic></subjectOf></asManufacturedProduct></partProduct></part>");
 		}
 	}
+	if let Some(batch) = drug.batch_lot_number.as_deref() {
+		out.push_str("<part><partProduct><instanceOfKind><productInstanceInstance><lotNumberText>");
+		out.push_str(&xml_escape(batch));
+		out.push_str("</lotNumberText></productInstanceInstance></instanceOfKind></partProduct></part>");
+	}
 
+	out.push_str("</kindOfProduct>");
 	if let Some(country) = drug.obtain_drug_country.as_deref() {
-		out.push_str("<subjectOf><productEvent><performer><assignedEntity><representedOrganization><addr><country>");
+		out.push_str("<subjectOf typeCode=\"SBJ\"><productEvent classCode=\"ACT\" moodCode=\"EVN\"><code code=\"1\" codeSystemVersion=\"1.0\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.18\" displayName=\"retailSupply\"/><performer typeCode=\"PRF\"><assignedEntity classCode=\"ASSIGNED\"><representedOrganization determinerCode=\"INSTANCE\" classCode=\"ORG\"><addr><country>");
 		out.push_str(&xml_escape(country));
 		out.push_str("</country></addr></representedOrganization></assignedEntity></performer></productEvent></subjectOf>");
 	}
-	out.push_str("</kindOfProduct></instanceOfKind></consumable>");
+	out.push_str("</instanceOfKind></consumable>");
 
-	if let Some(action) = drug.action_taken.as_deref() {
-		out.push_str("<inboundRelationship typeCode=\"CAUS\"><act classCode=\"ACT\" moodCode=\"EVN\"><code code=\"");
-		out.push_str(&xml_escape(action));
-		out.push_str("\"/></act></inboundRelationship>");
-	}
 	if let Some(rechallenge) = drug.rechallenge.as_deref() {
 		out.push_str("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"31\"/><value xsi:type=\"CE\" code=\"");
 		out.push_str(&xml_escape(rechallenge));
 		out.push_str("\"/></observation></outboundRelationship2>");
-	}
-	if let Some(text) = drug.dosage_text.as_deref() {
-		out.push_str("<text>");
-		out.push_str(&xml_escape(text));
-		out.push_str("</text>");
 	}
 	if let Some(code) = drug.fda_additional_info_coded.as_deref() {
 		out.push_str("<outboundRelationship2 typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"9\"/><value xsi:type=\"CE\" code=\"");
@@ -299,12 +314,12 @@ pub(crate) fn drug_fragment(
 			out.push_str("<effectiveTime>");
 			if let Some(start) = dose.first_administration_date {
 				out.push_str("<comp operator=\"A\"><low value=\"");
-				out.push_str(&fmt_date(start));
+				out.push_str(&fmt_ts(start, dose.first_administration_time));
 				out.push_str("\"/></comp>");
 			}
 			if let Some(end) = dose.last_administration_date {
 				out.push_str("<comp operator=\"A\"><high value=\"");
-				out.push_str(&fmt_date(end));
+				out.push_str(&fmt_ts(end, dose.last_administration_time));
 				out.push_str("\"/></comp>");
 			}
 			if let Some(width) = dose.duration_value.as_ref() {
@@ -361,13 +376,8 @@ pub(crate) fn drug_fragment(
 				"</formCode></kindOfProduct></instanceOfKind></consumable>",
 			);
 		}
-		if let Some(batch) = dose.batch_lot_number.as_deref() {
-			out.push_str("<consumable><instanceOfKind><productInstanceInstance><lotNumberText>");
-			out.push_str(&xml_escape(batch));
-			out.push_str("</lotNumberText></productInstanceInstance></instanceOfKind></consumable>");
-		}
-		if dose.parent_route_termid.is_some() || dose.parent_route.is_some() {
-			out.push_str("<outboundRelationship2><observation><code code=\"G.k.4.r.11\"/><value");
+			if dose.parent_route_termid.is_some() || dose.parent_route.is_some() {
+			out.push_str("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"G.k.4.r.11\"/><value");
 			if let Some(code) = dose.parent_route_termid.as_deref() {
 				out.push_str(" code=\"");
 				out.push_str(&xml_escape(code));
@@ -389,8 +399,14 @@ pub(crate) fn drug_fragment(
 		out.push_str("</substanceAdministration></outboundRelationship2>");
 	}
 
+	if let Some(action) = drug.action_taken.as_deref() {
+		out.push_str("<inboundRelationship typeCode=\"CAUS\"><act classCode=\"ACT\" moodCode=\"EVN\"><code code=\"");
+		out.push_str(&xml_escape(action));
+		out.push_str("\"/></act></inboundRelationship>");
+	}
+
 	for ind in indications {
-		out.push_str("<inboundRelationship typeCode=\"RSON\"><observation><value");
+		out.push_str("<inboundRelationship typeCode=\"RSON\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"19\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"indication\"/><value xsi:type=\"CE\"");
 		if let Some(code) = ind.indication_meddra_code.as_deref() {
 			out.push_str(" code=\"");
 			out.push_str(&xml_escape(code));
@@ -423,9 +439,16 @@ fn fmt_date(date: Date) -> String {
 	)
 }
 
-#[allow(dead_code)]
 fn fmt_time(time: Time) -> String {
 	format!("{:02}{:02}{:02}", time.hour(), time.minute(), time.second())
+}
+
+fn fmt_ts(date: Date, time: Option<Time>) -> String {
+	let mut out = fmt_date(date);
+	if let Some(t) = time {
+		out.push_str(&fmt_time(t));
+	}
+	out
 }
 
 fn xml_escape(value: &str) -> String {

@@ -9,9 +9,13 @@ use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::Serialize;
 use uuid::Uuid;
+use crate::web::rest::compliance::{
+	capture_e_signature, ComplianceActionInput,
+};
 
 use crate::submission::{
-	apply_gateway_ack_by_remote, apply_mock_ack, create_fda_submission,
+	apply_gateway_ack_by_remote, apply_mock_ack,
+	assert_case_ready_for_fda_submission, create_fda_submission,
 	get_submission, list_by_case, GatewayAckCallbackInput, MockAckInput,
 	SubmissionRecord,
 };
@@ -26,10 +30,30 @@ pub async fn submit_case_to_fda(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(case_id): Path<Uuid>,
+	payload: Option<Json<ComplianceActionInput>>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_UPDATE)?;
-	let record = create_fda_submission(&ctx, &mm, case_id).await?;
+	let payload = payload.ok_or(Error::BadRequest {
+		message: "reason_for_change and e_signature are required for submission"
+			.to_string(),
+	})?;
+	let compliance = payload.0;
+	compliance.validate()?;
+	assert_case_ready_for_fda_submission(&ctx, &mm, case_id).await?;
+	let signature_id = capture_e_signature(
+		&ctx,
+		&mm,
+		Some(case_id),
+		"CASE_SUBMISSION",
+		&compliance,
+	)
+	.await?;
+	let ctx_with_compliance = ctx.with_compliance(
+		Some(compliance.reason_for_change.trim().to_string()),
+		Some(signature_id),
+	);
+	let record = create_fda_submission(&ctx_with_compliance, &mm, case_id).await?;
 	Ok((StatusCode::CREATED, Json(DataRestResult { data: record })))
 }
 

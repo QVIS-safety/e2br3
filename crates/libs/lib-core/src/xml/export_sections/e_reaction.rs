@@ -85,6 +85,11 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 		out.push_str(&xml_escape(&reaction.primary_source_reaction));
 		out.push_str("</originalText></value>");
 	}
+	if let Some(country) = reaction.country_code.as_deref() {
+		out.push_str("<location typeCode=\"LOC\"><locatedEntity classCode=\"LOCE\"><locatedPlace classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code code=\"");
+		out.push_str(&xml_escape(country));
+		out.push_str("\"/></locatedPlace></locatedEntity></location>");
+	}
 
 	if let Some(term_code) =
 		term_highlight_code(reaction.term_highlighted, reaction.serious)
@@ -122,12 +127,6 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 	)?);
 	if let Some(value) = reaction.medical_confirmation {
 		out.push_str(&observation_rel_bool("24", value));
-	}
-
-	if let Some(country) = reaction.country_code.as_deref() {
-		out.push_str("<location typeCode=\"LOC\"><locatedEntity classCode=\"LOCE\"><locatedPlace classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code code=\"");
-		out.push_str(&xml_escape(country));
-		out.push_str("\"/></locatedPlace></locatedEntity></location>");
 	}
 
 	out.push_str("</observation></subjectOf2>");

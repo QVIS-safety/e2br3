@@ -3,6 +3,7 @@
 pub(in crate::model) mod dbx;
 
 use crate::core_config;
+use crate::ctx::Ctx;
 use crate::model::Error;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres, Transaction};
@@ -103,6 +104,30 @@ pub async fn set_org_context_dbx(
 	Ok(())
 }
 
+/// Sets optional compliance context for audit enrichment.
+/// Values are transaction-scoped and read by DB audit triggers.
+pub async fn set_compliance_context_dbx(
+	dbx: &dbx::Dbx,
+	change_reason: Option<&str>,
+	e_signature_id: Option<Uuid>,
+) -> Result<(), Error> {
+	let reason = change_reason.unwrap_or("");
+	let sig = e_signature_id
+		.map(|id| id.to_string())
+		.unwrap_or_default();
+
+	let query = sqlx::query(
+		"SELECT set_config('app.change_reason', $1, true),
+		        set_config('app.e_signature_id', $2, true)",
+	)
+		.bind(reason)
+		.bind(sig);
+	dbx.execute(query)
+		.await
+		.map_err(|e| Error::Store(format!("Failed to set compliance context: {e}")))?;
+	Ok(())
+}
+
 /// Sets both user context (for audit trail) and organization context (for RLS).
 /// This is the recommended function to call at the start of each request.
 #[allow(dead_code)]
@@ -116,6 +141,23 @@ pub async fn set_full_context_dbx(
 	set_user_context_dbx(dbx, user_id).await?;
 	// Set organization context for RLS
 	set_org_context_dbx(dbx, organization_id, role).await?;
+	Ok(())
+}
+
+/// Sets full context from Ctx, including optional compliance context.
+pub async fn set_full_context_from_ctx_dbx(
+	dbx: &dbx::Dbx,
+	ctx: &Ctx,
+) -> Result<(), Error> {
+	set_full_context_dbx(
+		dbx,
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
+	)
+	.await?;
+	set_compliance_context_dbx(dbx, ctx.change_reason(), ctx.e_signature_id())
+		.await?;
 	Ok(())
 }
 

@@ -99,6 +99,8 @@ pub struct DrugInformationForUpdate {
 	pub investigational_product_blinded: Option<bool>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
+	pub phpid: Option<String>,
+	pub phpid_version: Option<String>,
 	pub obtain_drug_country: Option<String>,
 	pub parent_route: Option<String>,
 	pub parent_route_termid: Option<String>,
@@ -481,14 +483,16 @@ impl DrugInformationBmc {
 			     investigational_product_blinded = COALESCE($11, investigational_product_blinded),
 			     mpid = COALESCE($12, mpid),
 			     mpid_version = COALESCE($13, mpid_version),
-			     obtain_drug_country = COALESCE($14, obtain_drug_country),
-			     parent_route = COALESCE($15, parent_route),
-			     parent_route_termid = COALESCE($16, parent_route_termid),
-			     parent_route_termid_version = COALESCE($17, parent_route_termid_version),
-			     parent_dosage_text = COALESCE($18, parent_dosage_text),
-			     fda_additional_info_coded = COALESCE($19, fda_additional_info_coded),
+			     phpid = COALESCE($14, phpid),
+			     phpid_version = COALESCE($15, phpid_version),
+			     obtain_drug_country = COALESCE($16, obtain_drug_country),
+			     parent_route = COALESCE($17, parent_route),
+			     parent_route_termid = COALESCE($18, parent_route_termid),
+			     parent_route_termid_version = COALESCE($19, parent_route_termid_version),
+			     parent_dosage_text = COALESCE($20, parent_dosage_text),
+			     fda_additional_info_coded = COALESCE($21, fda_additional_info_coded),
 			     updated_at = now(),
-			     updated_by = $20
+			     updated_by = $22
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -509,6 +513,8 @@ impl DrugInformationBmc {
 					.bind(drug_u.investigational_product_blinded)
 					.bind(drug_u.mpid)
 					.bind(drug_u.mpid_version)
+					.bind(drug_u.phpid)
+					.bind(drug_u.phpid_version)
 					.bind(drug_u.obtain_drug_country)
 					.bind(drug_u.parent_route)
 					.bind(drug_u.parent_route_termid)
@@ -600,14 +606,16 @@ impl DrugInformationBmc {
 			     investigational_product_blinded = COALESCE($12, investigational_product_blinded),
 			     mpid = COALESCE($13, mpid),
 			     mpid_version = COALESCE($14, mpid_version),
-			     obtain_drug_country = COALESCE($15, obtain_drug_country),
-			     parent_route = COALESCE($16, parent_route),
-			     parent_route_termid = COALESCE($17, parent_route_termid),
-			     parent_route_termid_version = COALESCE($18, parent_route_termid_version),
-			     parent_dosage_text = COALESCE($19, parent_dosage_text),
-			     fda_additional_info_coded = COALESCE($20, fda_additional_info_coded),
+			     phpid = COALESCE($15, phpid),
+			     phpid_version = COALESCE($16, phpid_version),
+			     obtain_drug_country = COALESCE($17, obtain_drug_country),
+			     parent_route = COALESCE($18, parent_route),
+			     parent_route_termid = COALESCE($19, parent_route_termid),
+			     parent_route_termid_version = COALESCE($20, parent_route_termid_version),
+			     parent_dosage_text = COALESCE($21, parent_dosage_text),
+			     fda_additional_info_coded = COALESCE($22, fda_additional_info_coded),
 			     updated_at = now(),
-			     updated_by = $21
+			     updated_by = $23
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -629,6 +637,8 @@ impl DrugInformationBmc {
 					.bind(drug_u.investigational_product_blinded)
 					.bind(drug_u.mpid)
 					.bind(drug_u.mpid_version)
+					.bind(drug_u.phpid)
+					.bind(drug_u.phpid_version)
 					.bind(drug_u.obtain_drug_country)
 					.bind(drug_u.parent_route)
 					.bind(drug_u.parent_route_termid)

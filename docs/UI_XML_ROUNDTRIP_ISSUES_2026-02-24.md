@@ -6,6 +6,11 @@
 - `NR` one-off rerun: `ok=true`, `missingCount=0`, `exportStatus=200`
 - `DG` one-off rerun: still blocked by `exportStatus=400` (schema ordering/content issue in `G` section v2 export path), so missing-field assertions cannot proceed until export is valid.
 
+### DG Unblocked (latest)
+
+- `DG` one-off now reaches `exportStatus=200` after schema fixes in G patch/export flow.
+- Current DG status: `changed=38`, `missingCount=22` (export-valid, now purely mapping gaps).
+
 Latest DG export-400 details (after fixes applied):
 
 - `Element '{urn:hl7-org:v3}subjectOf': This element is not expected. Expected is one of (consumable, performer, author, location, outboundRelationship1, outboundRelationship2, inboundRelationship).`

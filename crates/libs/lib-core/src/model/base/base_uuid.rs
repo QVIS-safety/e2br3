@@ -8,7 +8,7 @@ use crate::ctx::Ctx;
 use crate::model::base::{
 	prep_fields_for_create, prep_fields_for_update, CommonIden, DbBmc,
 };
-use crate::model::store::set_full_context_dbx;
+use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::HasSeaFields;
@@ -41,10 +41,7 @@ where
 	dbx.begin_txn().await?;
 
 	// CRITICAL: Set user + org context for audit triggers and RLS
-	if let Err(err) =
-		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
-			.await
-	{
+	if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
 		dbx.rollback_txn().await?;
 		return Err(err);
 	}
@@ -132,10 +129,7 @@ where
 	dbx.begin_txn().await?;
 
 	// CRITICAL: Set user + org context for audit triggers and RLS
-	if let Err(err) =
-		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
-			.await
-	{
+	if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
 		dbx.rollback_txn().await?;
 		return Err(err);
 	}
@@ -201,10 +195,7 @@ where
 	dbx.begin_txn().await?;
 
 	// CRITICAL: Set user + org context for audit triggers and RLS
-	if let Err(err) =
-		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
-			.await
-	{
+	if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
 		dbx.rollback_txn().await?;
 		return Err(err);
 	}

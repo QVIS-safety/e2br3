@@ -45,6 +45,10 @@ pub struct AuditLog {
 	pub action: String, // CREATE, UPDATE, DELETE, SUBMIT, NULLIFY
 	pub user_id: Uuid,
 	#[sqlx(default)]
+	pub reason_for_change: Option<String>,
+	#[sqlx(default)]
+	pub e_signature_id: Option<Uuid>,
+	#[sqlx(default)]
 	pub user_display: Option<String>,
 	pub old_values: Option<JsonValue>,
 	pub new_values: Option<JsonValue>,
@@ -59,6 +63,8 @@ pub struct AuditLogForCreate {
 	pub table_name: String,
 	pub record_id: Uuid,
 	pub action: String,
+	pub reason_for_change: Option<String>,
+	pub e_signature_id: Option<Uuid>,
 	pub old_values: Option<JsonValue>,
 	pub new_values: Option<JsonValue>,
 	pub ip_address: Option<String>, // Stored as TEXT in DB
@@ -195,7 +201,7 @@ impl AuditLogBmc {
 		audit_c: AuditLogForCreate,
 	) -> Result<i64> {
 		let user_id = ctx.user_id();
-		let sql = "INSERT INTO audit_logs (table_name, record_id, action, user_id, old_values, new_values, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id";
+		let sql = "INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id";
 
 		let (id,) = mm
 			.dbx()
@@ -205,6 +211,8 @@ impl AuditLogBmc {
 					.bind(audit_c.record_id)
 					.bind(audit_c.action)
 					.bind(user_id)
+					.bind(audit_c.reason_for_change)
+					.bind(audit_c.e_signature_id)
 					.bind(audit_c.old_values)
 					.bind(audit_c.new_values)
 					.bind(audit_c.ip_address)

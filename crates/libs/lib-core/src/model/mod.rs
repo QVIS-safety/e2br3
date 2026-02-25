@@ -71,6 +71,7 @@ pub mod terminology; // MedDRA, WHODrug, ISO countries, E2B code lists
 
 // Audit and Versioning
 pub mod audit; // Audit logs and case versions
+pub mod e_signature; // Electronic signatures for Part 11 critical actions
 
 // Presave Templates
 pub mod presave_template; // Reusable pre-case templates and template audit history

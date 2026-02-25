@@ -51,6 +51,9 @@ CREATE TRIGGER update_narrative_information_updated_at BEFORE UPDATE ON narrativ
 CREATE TRIGGER update_case_submissions_updated_at BEFORE UPDATE ON case_submissions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_e_signatures_updated_at BEFORE UPDATE ON e_signatures
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- ============================================================================
 -- Audit Trail Trigger
 -- ============================================================================
@@ -70,8 +73,16 @@ BEGIN
     v_user_id := get_current_user_context();
 
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, new_values)
-        VALUES (TG_TABLE_NAME, NEW.id, 'CREATE', v_user_id, to_jsonb(NEW));
+        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, new_values)
+        VALUES (
+            TG_TABLE_NAME,
+            NEW.id,
+            'CREATE',
+            v_user_id,
+            get_current_change_reason(),
+            get_current_esignature_id(),
+            to_jsonb(NEW)
+        );
         RETURN NEW;
 
     ELSIF TG_OP = 'UPDATE' THEN
@@ -83,13 +94,30 @@ BEGIN
             RETURN NEW;
         END IF;
 
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, old_values, new_values)
-        VALUES (TG_TABLE_NAME, NEW.id, 'UPDATE', v_user_id, to_jsonb(OLD), to_jsonb(NEW));
+        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values)
+        VALUES (
+            TG_TABLE_NAME,
+            NEW.id,
+            'UPDATE',
+            v_user_id,
+            get_current_change_reason(),
+            get_current_esignature_id(),
+            to_jsonb(OLD),
+            to_jsonb(NEW)
+        );
         RETURN NEW;
 
     ELSIF TG_OP = 'DELETE' THEN
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, old_values)
-        VALUES (TG_TABLE_NAME, OLD.id, 'DELETE', v_user_id, to_jsonb(OLD));
+        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values)
+        VALUES (
+            TG_TABLE_NAME,
+            OLD.id,
+            'DELETE',
+            v_user_id,
+            get_current_change_reason(),
+            get_current_esignature_id(),
+            to_jsonb(OLD)
+        );
         RETURN OLD;
     END IF;
 
@@ -114,8 +142,16 @@ BEGIN
     v_user_id := get_current_user_context();
 
     IF TG_OP = 'INSERT' THEN
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, new_values)
-        VALUES (TG_TABLE_NAME, NEW.audit_id, 'CREATE', v_user_id, to_jsonb(NEW));
+        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, new_values)
+        VALUES (
+            TG_TABLE_NAME,
+            NEW.audit_id,
+            'CREATE',
+            v_user_id,
+            get_current_change_reason(),
+            get_current_esignature_id(),
+            to_jsonb(NEW)
+        );
         RETURN NEW;
 
     ELSIF TG_OP = 'UPDATE' THEN
@@ -127,13 +163,30 @@ BEGIN
             RETURN NEW;
         END IF;
 
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, old_values, new_values)
-        VALUES (TG_TABLE_NAME, NEW.audit_id, 'UPDATE', v_user_id, to_jsonb(OLD), to_jsonb(NEW));
+        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values)
+        VALUES (
+            TG_TABLE_NAME,
+            NEW.audit_id,
+            'UPDATE',
+            v_user_id,
+            get_current_change_reason(),
+            get_current_esignature_id(),
+            to_jsonb(OLD),
+            to_jsonb(NEW)
+        );
         RETURN NEW;
 
     ELSIF TG_OP = 'DELETE' THEN
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, old_values)
-        VALUES (TG_TABLE_NAME, OLD.audit_id, 'DELETE', v_user_id, to_jsonb(OLD));
+        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values)
+        VALUES (
+            TG_TABLE_NAME,
+            OLD.audit_id,
+            'DELETE',
+            v_user_id,
+            get_current_change_reason(),
+            get_current_esignature_id(),
+            to_jsonb(OLD)
+        );
         RETURN OLD;
     END IF;
 
@@ -229,6 +282,9 @@ CREATE TRIGGER audit_case_submissions AFTER INSERT OR UPDATE OR DELETE ON case_s
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_submission_acks AFTER INSERT OR UPDATE OR DELETE ON submission_acks
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_e_signatures AFTER INSERT OR UPDATE OR DELETE ON e_signatures
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 -- Audit triggers for core tables

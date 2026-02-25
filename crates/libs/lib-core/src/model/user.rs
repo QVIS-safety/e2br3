@@ -3,7 +3,7 @@ use crate::model::base::base_uuid;
 use crate::model::base::{prep_fields_for_update, DbBmc};
 use crate::model::store::set_full_context_dbx_or_rollback;
 use crate::model::{Error, ModelManager, Result};
-use lib_auth::pwd::{self, ContentToHash};
+use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
 use modql::field::{Fields, HasSeaFields, SeaField, SeaFields};
 use modql::filter::{FilterNodes, ListOptions, OpValsString, OpValsValue};
 use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
@@ -437,6 +437,30 @@ impl UserBmc {
 		}
 
 		Self::auth_login_by_email_exact(mm, &normalized).await
+	}
+
+	pub async fn verify_password(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		user_id: Uuid,
+		pwd_clear: &str,
+	) -> Result<bool> {
+		let user: UserForLogin = Self::get(ctx, mm, user_id).await?;
+		let Some(pwd_hash) = user.pwd else {
+			return Ok(false);
+		};
+		let status = pwd::validate_pwd(
+			ContentToHash {
+				salt: user.pwd_salt,
+				content: pwd_clear.to_string(),
+			},
+			pwd_hash,
+		)
+		.await;
+		match status {
+			Ok(SchemeStatus::Ok | SchemeStatus::Outdated) => Ok(true),
+			Err(_) => Ok(false),
+		}
 	}
 
 	async fn auth_by_email_exact(

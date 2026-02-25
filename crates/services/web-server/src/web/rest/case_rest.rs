@@ -20,7 +20,7 @@ use lib_core::model::safety_report::{
 use lib_core::xml::validate::ValidationProfile;
 use lib_core::xml::{export_case_xml, validate_e2b_xml};
 use lib_rest_core::prelude::*;
-use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
+use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::Error;
 use lib_web::middleware::mw_auth::CtxW;
@@ -31,6 +31,9 @@ use time::{Date, Month, OffsetDateTime};
 use tokio::runtime::Handle;
 use tokio::task;
 use uuid::Uuid;
+use crate::web::rest::compliance::{
+	capture_e_signature, ComplianceActionInput, ESignatureInput,
+};
 
 // This macro generates all 5 CRUD functions:
 // - create_case
@@ -184,13 +187,18 @@ pub async fn update_case_guarded(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
-	Json(params): Json<ParamsForUpdate<CaseForUpdate>>,
+	Json(params): Json<CaseUpdateRequest>,
 ) -> Result<(StatusCode, Json<DataRestResult<Case>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_UPDATE)?;
-	let ParamsForUpdate { data } = params;
+	let CaseUpdateRequest {
+		data,
+		reason_for_change,
+		e_signature,
+	} = params;
 	validate_case_update_payload(&data)?;
 	let current = CaseBmc::get(&ctx, &mm, id).await?;
+	let requested_status = data.status.clone();
 	if let Some(next_status) = data.status.as_deref() {
 		if !is_allowed_case_status_transition(&current.status, next_status) {
 			return Err(Error::BadRequest {
@@ -202,7 +210,50 @@ pub async fn update_case_guarded(
 		}
 	}
 
-	CaseBmc::update(&ctx, &mm, id, data).await?;
+	let requires_compliance = requested_status
+		.as_deref()
+		.map(|next_status| {
+			let prev = current.status.trim().to_ascii_lowercase();
+			let next = next_status.trim().to_ascii_lowercase();
+			prev != next
+				&& matches!(next.as_str(), "submitted" | "nullified")
+		})
+		.unwrap_or(false);
+
+	let ctx_for_update = if requires_compliance {
+		let reason = reason_for_change
+			.and_then(|v| {
+				let trimmed = v.trim().to_string();
+				if trimmed.is_empty() { None } else { Some(trimmed) }
+			})
+			.ok_or(Error::BadRequest {
+				message:
+					"reason_for_change is required for submitted/nullified status transitions"
+						.to_string(),
+			})?;
+		let e_signature = e_signature.ok_or(Error::BadRequest {
+			message:
+				"e_signature is required for submitted/nullified status transitions"
+					.to_string(),
+		})?;
+		let compliance = ComplianceActionInput {
+			reason_for_change: reason.clone(),
+			e_signature,
+		};
+		let signature_id = capture_e_signature(
+			&ctx,
+			&mm,
+			Some(id),
+			"CASE_STATUS_TRANSITION",
+			&compliance,
+		)
+		.await?;
+		ctx.with_compliance(Some(reason), Some(signature_id))
+	} else {
+		ctx.clone()
+	};
+
+	CaseBmc::update(&ctx_for_update, &mm, id, data).await?;
 	let mut entity = CaseBmc::get(&ctx, &mm, id).await?;
 
 	let status = entity.status.trim().to_ascii_lowercase();
@@ -253,6 +304,13 @@ pub async fn update_case_guarded(
 	}
 
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+#[derive(Deserialize)]
+pub struct CaseUpdateRequest {
+	pub data: CaseForUpdate,
+	pub reason_for_change: Option<String>,
+	pub e_signature: Option<ESignatureInput>,
 }
 
 pub async fn get_case_lifecycle(

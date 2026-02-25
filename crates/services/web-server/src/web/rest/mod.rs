@@ -1,6 +1,7 @@
 // Declare handler modules
 pub mod case_rest;
 pub mod case_validation_rest;
+pub mod compliance;
 pub mod organization_rest;
 pub mod patient_rest;
 pub mod user_rest;

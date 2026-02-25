@@ -2,6 +2,9 @@ use lib_core::model::drug::{
 	DosageInformation, DrugActiveSubstance, DrugDeviceCharacteristic,
 	DrugIndication, DrugInformation,
 };
+use lib_core::model::drug_reaction_assessment::{
+	DrugReactionAssessment, RelatednessAssessment,
+};
 use lib_core::xml::raw::patch::patch_g_drugs;
 use lib_core::xml::Error as XmlError;
 use libxml::parser::Parser;
@@ -58,6 +61,8 @@ fn patch_g_drug_updates_raw_xml() {
 		&[] as &[DosageInformation],
 		&[] as &[DrugIndication],
 		&[] as &[DrugDeviceCharacteristic],
+		&[] as &[DrugReactionAssessment],
+		&[] as &[RelatednessAssessment],
 	)
 	.expect("patch");
 
@@ -120,6 +125,8 @@ fn patch_g_drug_normalizes_characterization_for_causality() {
 		&[] as &[DosageInformation],
 		&[] as &[DrugIndication],
 		&[] as &[DrugDeviceCharacteristic],
+		&[] as &[DrugReactionAssessment],
+		&[] as &[RelatednessAssessment],
 	)
 	.expect_err("missing drug characterization should fail");
 	match err {
@@ -128,4 +135,93 @@ fn patch_g_drug_normalizes_characterization_for_causality() {
 		}
 		other => panic!("unexpected error type: {other:?}"),
 	}
+}
+
+#[test]
+fn patch_g_drug_emits_relatedness_assessment_values() {
+	let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+		.parent()
+		.and_then(|p| p.parent())
+		.and_then(|p| p.parent())
+		.expect("workspace root")
+		.to_path_buf();
+	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario1.xml"))
+		.expect("read sample xml");
+
+	let drug_id = Uuid::new_v4();
+	let reaction_id = Uuid::new_v4();
+	let assessment_id = Uuid::new_v4();
+
+	let drug = DrugInformation {
+		id: drug_id,
+		case_id: Uuid::new_v4(),
+		sequence_number: 1,
+		drug_characterization: "1".to_string(),
+		medicinal_product: "Drug A".to_string(),
+		mpid: None,
+		mpid_version: None,
+		phpid: None,
+		phpid_version: None,
+		investigational_product_blinded: None,
+		obtain_drug_country: None,
+		brand_name: None,
+		manufacturer_name: None,
+		manufacturer_country: None,
+		batch_lot_number: None,
+		dosage_text: None,
+		action_taken: None,
+		rechallenge: None,
+		parent_route: None,
+		parent_route_termid: None,
+		parent_route_termid_version: None,
+		parent_dosage_text: None,
+		fda_additional_info_coded: None,
+		created_at: OffsetDateTime::now_utc(),
+		updated_at: OffsetDateTime::now_utc(),
+		created_by: Uuid::new_v4(),
+		updated_by: None,
+	};
+	let assessment = DrugReactionAssessment {
+		id: assessment_id,
+		drug_id,
+		reaction_id,
+		time_interval_value: None,
+		time_interval_unit: None,
+		recurrence_action: None,
+		recurrence_meddra_version: None,
+		recurrence_meddra_code: None,
+		reaction_recurred: None,
+		created_at: OffsetDateTime::now_utc(),
+		updated_at: OffsetDateTime::now_utc(),
+		created_by: Uuid::new_v4(),
+		updated_by: None,
+	};
+	let relatedness = RelatednessAssessment {
+		id: Uuid::new_v4(),
+		drug_reaction_assessment_id: assessment_id,
+		sequence_number: 1,
+		source_of_assessment: Some("RTDG18".to_string()),
+		method_of_assessment: Some("RTDG19".to_string()),
+		result_of_assessment: Some("RTDG20".to_string()),
+		created_at: OffsetDateTime::now_utc(),
+		updated_at: OffsetDateTime::now_utc(),
+		created_by: Uuid::new_v4(),
+		updated_by: None,
+	};
+
+	let patched = patch_g_drugs(
+		&xml,
+		&[drug],
+		&[] as &[DrugActiveSubstance],
+		&[] as &[DosageInformation],
+		&[] as &[DrugIndication],
+		&[] as &[DrugDeviceCharacteristic],
+		&[assessment],
+		&[relatedness],
+	)
+	.expect("patch");
+
+	assert!(patched.contains("RTDG18"));
+	assert!(patched.contains("RTDG19"));
+	assert!(patched.contains("RTDG20"));
 }
