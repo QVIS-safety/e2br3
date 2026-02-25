@@ -46,6 +46,7 @@ pub struct CSafetyReportPatch<'a> {
 	pub sender_country_code: Option<&'a str>,
 	pub sender_person_title: Option<&'a str>,
 	pub sender_person_given_name: Option<&'a str>,
+	pub sender_person_middle_name: Option<&'a str>,
 	pub sender_person_family_name: Option<&'a str>,
 	pub sender_telephone: Option<&'a str>,
 	pub sender_fax: Option<&'a str>,
@@ -310,6 +311,29 @@ pub fn patch_c_safety_report(
 		set_text_first(
 			&mut xpath,
 			&format!("{sender_base}//hl7:assignedPerson/hl7:name/hl7:given"),
+			v,
+		);
+	}
+	if let Some(v) = patch.sender_person_middle_name {
+		if xpath
+			.findnodes(
+				&format!("{sender_base}//hl7:assignedPerson/hl7:name/hl7:given[2]"),
+				None,
+			)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				&format!("{sender_base}//hl7:assignedPerson/hl7:name"),
+				"<given/>",
+			)?;
+		}
+		set_text_first(
+			&mut xpath,
+			&format!("{sender_base}//hl7:assignedPerson/hl7:name/hl7:given[2]"),
 			v,
 		);
 	}

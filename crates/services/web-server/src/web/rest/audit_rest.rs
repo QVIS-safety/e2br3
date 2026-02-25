@@ -38,9 +38,9 @@ pub async fn list_audit_logs(
 	require_audit_permission(&ctx)?;
 
 	let params = ParamsList::<AuditLogFilter>::from_raw_query(raw_query.as_deref())
-		.map_err(|message| WebError::from(lib_rest_core::Error::BadRequest {
-			message,
-		}))?;
+		.map_err(|message| {
+			WebError::from(lib_rest_core::Error::BadRequest { message })
+		})?;
 
 	let logs = AuditLogBmc::list(&ctx, &mm, params.filters, params.list_options)
 		.await

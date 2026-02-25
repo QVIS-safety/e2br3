@@ -1,5 +1,15 @@
 # UI to XML Roundtrip Issues (2026-02-24)
 
+## Progress Update (2026-02-25)
+
+- `DH` one-off rerun: `ok=true`, `missingCount=0`, `exportStatus=200`
+- `NR` one-off rerun: `ok=true`, `missingCount=0`, `exportStatus=200`
+- `DG` one-off rerun: still blocked by `exportStatus=400` (schema ordering/content issue in `G` section v2 export path), so missing-field assertions cannot proceed until export is valid.
+
+Latest DG export-400 details (after fixes applied):
+
+- `Element '{urn:hl7-org:v3}subjectOf': This element is not expected. Expected is one of (consumable, performer, author, location, outboundRelationship1, outboundRelationship2, inboundRelationship).`
+
 ## Scope
 
 Exhaustive per-tab UI automation attempted to edit visible fields on imported cases, then:

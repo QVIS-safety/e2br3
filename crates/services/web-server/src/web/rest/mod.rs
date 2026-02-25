@@ -564,3 +564,13 @@ pub fn routes_submissions(mm: ModelManager) -> Router {
 		)
 		.with_state(mm)
 }
+
+/// Routes for /internal/submissions (gateway callbacks)
+pub fn routes_submissions_internal(mm: ModelManager) -> Router {
+	Router::new()
+		.route(
+			"/submissions/callbacks/ack",
+			axum::routing::post(submission_rest::post_gateway_ack_callback),
+		)
+		.with_state(mm)
+}

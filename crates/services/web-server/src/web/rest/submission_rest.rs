@@ -1,5 +1,6 @@
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
+use axum::http::{HeaderMap, HeaderValue};
 use axum::Json;
 use lib_core::model::acs::{CASE_READ, CASE_UPDATE};
 use lib_core::model::ModelManager;
@@ -10,8 +11,9 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use crate::submission::{
-	apply_mock_ack, create_fda_submission, get_submission, list_by_case,
-	MockAckInput, SubmissionRecord,
+	apply_gateway_ack_by_remote, apply_mock_ack, create_fda_submission,
+	get_submission, list_by_case, GatewayAckCallbackInput, MockAckInput,
+	SubmissionRecord,
 };
 
 #[derive(Debug, Serialize)]
@@ -75,4 +77,34 @@ pub async fn post_mock_ack(
 	require_permission(&ctx, CASE_UPDATE)?;
 	let record = apply_mock_ack(&ctx, &_mm, submission_id, input).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: record })))
+}
+
+/// POST /internal/submissions/callbacks/ack
+pub async fn post_gateway_ack_callback(
+	State(mm): State<ModelManager>,
+	headers: HeaderMap,
+	Json(input): Json<GatewayAckCallbackInput>,
+) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
+	let expected =
+		std::env::var("AS2_CALLBACK_TOKEN").map_err(|_| Error::BadRequest {
+			message: "AS2_CALLBACK_TOKEN is required for gateway callback endpoint"
+				.to_string(),
+		})?;
+	let incoming = headers
+		.get("x-callback-token")
+		.and_then(|v| header_to_str(v))
+		.ok_or(Error::BadRequest {
+			message: "missing x-callback-token".to_string(),
+		})?;
+	if incoming != expected {
+		return Err(Error::BadRequest {
+			message: "invalid x-callback-token".to_string(),
+		});
+	}
+	let record = apply_gateway_ack_by_remote(&mm, input).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: record })))
+}
+
+fn header_to_str(value: &HeaderValue) -> Option<String> {
+	value.to_str().ok().map(|v| v.to_string())
 }

@@ -41,6 +41,8 @@ pub fn export_c_safety_report_patch(
 		sender_person_title: sender.and_then(|s| s.person_title.as_deref()),
 		sender_person_given_name: sender
 			.and_then(|s| s.person_given_name.as_deref()),
+		sender_person_middle_name: sender
+			.and_then(|s| s.person_middle_name.as_deref()),
 		sender_person_family_name: sender
 			.and_then(|s| s.person_family_name.as_deref()),
 		sender_telephone: sender.and_then(|s| s.telephone.as_deref()),

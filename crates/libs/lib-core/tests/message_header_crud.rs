@@ -39,6 +39,7 @@ async fn test_message_header_crud() -> Result<()> {
 		message_number: Some("MSG-002".to_string()),
 		message_sender_identifier: None,
 		message_receiver_identifier: None,
+		message_date: None,
 	};
 	MessageHeaderBmc::update_by_case(&ctx, &mm, case_id, header_u).await?;
 	let header = MessageHeaderBmc::get_by_case(&ctx, &mm, case_id).await?;

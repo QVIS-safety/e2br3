@@ -37,7 +37,7 @@ fn patch_e_reaction_updates_raw_xml() {
 		end_date: None,
 		duration_value: None,
 		duration_unit: None,
-		outcome: None,
+		outcome: Some("3".to_string()),
 		medical_confirmation: None,
 		country_code: None,
 		created_at: OffsetDateTime::now_utc(),

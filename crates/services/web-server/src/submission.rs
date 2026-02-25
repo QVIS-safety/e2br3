@@ -103,6 +103,24 @@ struct EsgAckResponse {
 	received_at: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct As2SubmitResponse {
+	remote_submission_id: Option<String>,
+	submission_id: Option<String>,
+	status: Option<String>,
+	authority: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GatewayAckCallbackInput {
+	pub remote_submission_id: String,
+	pub ack_level: u8,
+	#[serde(default = "default_true")]
+	pub success: bool,
+	pub ack_code: Option<String>,
+	pub ack_message: Option<String>,
+}
+
 fn default_true() -> bool {
 	true
 }
@@ -116,6 +134,21 @@ fn env_truthy(name: &str) -> bool {
 
 fn is_esg_enabled() -> bool {
 	env_truthy("FDA_ESG_ENABLED")
+}
+
+fn allow_mock_submission() -> bool {
+	env_truthy("E2BR3_ALLOW_MOCK_SUBMISSION")
+}
+
+fn as2_submitter_url() -> Option<String> {
+	std::env::var("AS2_SUBMITTER_URL").ok().and_then(|v| {
+		let trimmed = v.trim();
+		if trimmed.is_empty() {
+			None
+		} else {
+			Some(trimmed.to_string())
+		}
+	})
 }
 
 fn parse_timeout_secs(name: &str, default_secs: u64) -> u64 {
@@ -208,9 +241,80 @@ fn merge_submission_status(
 	}
 }
 
-async fn submit_to_gateway(xml: &str) -> Result<GatewaySubmissionOutcome> {
+async fn submit_to_gateway(
+	case_id: Uuid,
+	xml: &str,
+) -> Result<GatewaySubmissionOutcome> {
 	let now = OffsetDateTime::now_utc();
-	if !is_esg_enabled() {
+	if let Some(base_url) = as2_submitter_url() {
+		let submit_url = format!("{}/submit", base_url.trim_end_matches('/'));
+		let timeout_secs = parse_timeout_secs("AS2_SUBMITTER_TIMEOUT_SECS", 30);
+		let client = reqwest::Client::builder()
+			.timeout(Duration::from_secs(timeout_secs))
+			.build()
+			.map_err(|err| Error::BadRequest {
+				message: format!("failed to initialize AS2 submitter client: {err}"),
+			})?;
+		let callback_url = std::env::var("AS2_ACK_CALLBACK_URL").ok();
+		let resp = client
+			.post(&submit_url)
+			.json(&json!({
+				"caseId": case_id.to_string(),
+				"authority": "fda",
+				"xmlPayload": xml,
+				"callbackUrl": callback_url,
+			}))
+			.send()
+			.await
+			.map_err(|err| Error::BadRequest {
+				message: format!("AS2 submitter request failed: {err}"),
+			})?;
+		let status = resp.status();
+		let body_text = resp.text().await.map_err(|err| Error::BadRequest {
+			message: format!("AS2 submitter response read failed: {err}"),
+		})?;
+		if !status.is_success() {
+			let body_snippet = body_text.chars().take(200).collect::<String>();
+			return Err(Error::BadRequest {
+				message: format!(
+					"AS2 submitter rejected request ({status}): {body_snippet}"
+				),
+			});
+		}
+		let parsed: As2SubmitResponse =
+			serde_json::from_str(&body_text).map_err(|err| Error::BadRequest {
+				message: format!("AS2 submitter response is not valid JSON: {err}"),
+			})?;
+		let remote_submission_id = parsed
+			.remote_submission_id
+			.or(parsed.submission_id)
+			.ok_or(Error::BadRequest {
+				message:
+					"AS2 submitter response missing remote submission identifier"
+						.to_string(),
+			})?;
+		let ack_message = match (parsed.status, parsed.authority) {
+			(Some(status), Some(authority)) => {
+				Some(format!("AS2 accepted: {status} ({authority})"))
+			}
+			(Some(status), None) => Some(format!("AS2 accepted: {status}")),
+			(None, Some(authority)) => Some(format!("AS2 accepted ({authority})")),
+			(None, None) => None,
+		};
+		return Ok(GatewaySubmissionOutcome {
+			gateway: "as2-submitter-http".to_string(),
+			remote_submission_id,
+			ack1: SubmissionAck {
+				level: 1,
+				success: true,
+				code: Some("ACK1_ACCEPTED".to_string()),
+				message: ack_message,
+				received_at: now,
+			},
+		});
+	}
+
+	if allow_mock_submission() {
 		let submission_id = Uuid::new_v4();
 		return Ok(GatewaySubmissionOutcome {
 			gateway: "fda-esg-nextgen-mock".to_string(),
@@ -225,6 +329,11 @@ async fn submit_to_gateway(xml: &str) -> Result<GatewaySubmissionOutcome> {
 				message: Some("Upload accepted by mock FDA gateway".to_string()),
 				received_at: now,
 			},
+		});
+	}
+	if !is_esg_enabled() {
+		return Err(Error::BadRequest {
+			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
 		});
 	}
 
@@ -419,6 +528,38 @@ async fn list_ack_rows(
 	Ok(rows)
 }
 
+async fn ack_event_exists(
+	mm: &ModelManager,
+	submission_id: Uuid,
+	ack_level: i16,
+	success: bool,
+	ack_code: Option<&str>,
+	ack_message: Option<&str>,
+) -> Result<bool> {
+	let count = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (i64,)>(
+				"SELECT COUNT(*)::bigint
+				 FROM submission_acks
+				 WHERE submission_id = $1
+				   AND ack_level = $2
+				   AND success = $3
+				   AND COALESCE(ack_code, '') = COALESCE($4, '')
+				   AND COALESCE(ack_message, '') = COALESCE($5, '')",
+			)
+			.bind(submission_id)
+			.bind(ack_level)
+			.bind(success)
+			.bind(ack_code)
+			.bind(ack_message),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?
+		.0;
+	Ok(count > 0)
+}
+
 pub async fn create_fda_submission(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -470,7 +611,7 @@ pub async fn create_fda_submission(
 
 	let now = OffsetDateTime::now_utc();
 	let submission_id = Uuid::new_v4();
-	let gateway_outcome = submit_to_gateway(&xml).await?;
+	let gateway_outcome = submit_to_gateway(case_id, &xml).await?;
 	let remote_submission_id = gateway_outcome.remote_submission_id;
 	let ack1 = gateway_outcome.ack1;
 	let gateway = gateway_outcome.gateway;
@@ -612,10 +753,11 @@ pub async fn apply_mock_ack(
 	submission_id: Uuid,
 	input: MockAckInput,
 ) -> Result<SubmissionRecord> {
-	if is_esg_enabled() {
+	if !allow_mock_submission() {
 		return Err(Error::BadRequest {
-			message: "mock ACK endpoint is disabled when FDA_ESG_ENABLED=1"
-				.to_string(),
+			message:
+				"mock ACK endpoint is disabled unless E2BR3_ALLOW_MOCK_SUBMISSION=1"
+					.to_string(),
 		});
 	}
 	let incoming_status = status_from_ack(input.level, input.success)?;
@@ -651,30 +793,41 @@ pub async fn apply_mock_ack(
 		})?;
 	let current_status = status_from_db(&row.status)?;
 	let merged_status = merge_submission_status(&current_status, &incoming_status);
+	let is_duplicate = ack_event_exists(
+		mm,
+		submission_id,
+		input.level as i16,
+		input.success,
+		input.code.as_deref(),
+		input.message.as_deref(),
+	)
+	.await?;
 
-	mm.dbx()
-		.execute(
-			sqlx::query(
-				"INSERT INTO submission_acks (
-					submission_id, ack_level, success, ack_code, ack_message, received_at, raw_payload
+	if !is_duplicate {
+		mm.dbx()
+			.execute(
+				sqlx::query(
+					"INSERT INTO submission_acks (
+						submission_id, ack_level, success, ack_code, ack_message, received_at, raw_payload
+					)
+					VALUES ($1, $2, $3, $4, $5, $6, $7)",
 				)
-				VALUES ($1, $2, $3, $4, $5, $6, $7)",
+				.bind(submission_id)
+				.bind(input.level as i16)
+				.bind(input.success)
+				.bind(input.code.as_deref())
+				.bind(input.message.as_deref())
+				.bind(now)
+				.bind(json!({
+					"level": input.level,
+					"success": input.success,
+					"code": input.code,
+					"message": input.message,
+				})),
 			)
-			.bind(submission_id)
-			.bind(input.level as i16)
-			.bind(input.success)
-			.bind(input.code.as_deref())
-			.bind(input.message.as_deref())
-			.bind(now)
-			.bind(json!({
-				"level": input.level,
-				"success": input.success,
-				"code": input.code,
-				"message": input.message,
-			})),
-		)
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+			.await
+			.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	}
 
 	mm.dbx()
 		.execute(
@@ -703,6 +856,111 @@ pub async fn apply_mock_ack(
 			})?;
 	let acks = list_ack_rows(mm, submission_id).await?;
 	compose_submission_record(row, acks)
+}
+
+pub async fn apply_gateway_ack_by_remote(
+	mm: &ModelManager,
+	input: GatewayAckCallbackInput,
+) -> Result<SubmissionRecord> {
+	let incoming_status = status_from_ack(input.ack_level, input.success)?;
+	let now = OffsetDateTime::now_utc();
+	let system_ctx = Ctx::root_ctx();
+
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		system_ctx.user_id(),
+		system_ctx.organization_id(),
+		system_ctx.role(),
+	)
+	.await?;
+
+	let row = mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, CaseSubmissionRow>(
+				"SELECT id, case_id, gateway, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
+				 FROM case_submissions
+				 WHERE remote_submission_id = $1
+				 FOR UPDATE",
+			)
+			.bind(input.remote_submission_id.trim()),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?
+		.ok_or(Error::BadRequest {
+			message: format!(
+				"submission not found for remote_submission_id: {}",
+				input.remote_submission_id
+			),
+		})?;
+	let current_status = status_from_db(&row.status)?;
+	let merged_status = merge_submission_status(&current_status, &incoming_status);
+	let is_duplicate = ack_event_exists(
+		mm,
+		row.id,
+		input.ack_level as i16,
+		input.success,
+		input.ack_code.as_deref(),
+		input.ack_message.as_deref(),
+	)
+	.await?;
+
+	if !is_duplicate {
+		mm.dbx()
+			.execute(
+				sqlx::query(
+					"INSERT INTO submission_acks (
+						submission_id, ack_level, success, ack_code, ack_message, received_at, raw_payload
+					)
+					VALUES ($1, $2, $3, $4, $5, $6, $7)",
+				)
+				.bind(row.id)
+				.bind(input.ack_level as i16)
+				.bind(input.success)
+				.bind(input.ack_code.as_deref())
+				.bind(input.ack_message.as_deref())
+				.bind(now)
+				.bind(json!({
+					"source": "gateway_callback",
+					"ack_level": input.ack_level,
+					"success": input.success,
+					"ack_code": input.ack_code,
+					"ack_message": input.ack_message,
+				})),
+			)
+			.await
+			.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	}
+
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"UPDATE case_submissions
+				 SET status = $2,
+				     updated_at = now()
+				 WHERE id = $1",
+			)
+			.bind(row.id)
+			.bind(status_to_db(&merged_status)),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+	let mut row_for_response = row.clone();
+	row_for_response.status = status_to_db(&merged_status).to_string();
+	let acks = list_ack_rows(mm, row.id).await?;
+	let response = compose_submission_record(row_for_response, acks)?;
+
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+	Ok(response)
 }
 
 #[cfg(test)]

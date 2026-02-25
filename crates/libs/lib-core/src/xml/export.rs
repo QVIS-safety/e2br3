@@ -6,11 +6,20 @@ use crate::model::drug::{
 	DrugIndication, DrugInformation,
 };
 use crate::model::message_header::MessageHeader;
-use crate::model::narrative::NarrativeInformationBmc;
-use crate::model::patient::PatientInformationBmc;
+use crate::model::narrative::{
+	CaseSummaryInformation, CaseSummaryInformationBmc, CaseSummaryInformationFilter,
+	NarrativeInformationBmc,
+};
+use crate::model::patient::{
+	ParentInformation, ParentInformationBmc, ParentInformationFilter,
+	PastDrugHistory, PastDrugHistoryBmc, PastDrugHistoryFilter,
+	PatientIdentifier, PatientIdentifierBmc, PatientIdentifierFilter,
+	PatientInformation, PatientInformationBmc,
+};
 use crate::model::reaction::Reaction;
-use crate::model::safety_report::SafetyReportIdentificationBmc;
+use crate::model::receiver::ReceiverInformation;
 use crate::model::safety_report::PrimarySource;
+use crate::model::safety_report::SafetyReportIdentificationBmc;
 use crate::model::safety_report::SenderInformation;
 use crate::model::safety_report::{StudyInformation, StudyRegistrationNumber};
 use crate::model::test_result::TestResult;
@@ -32,6 +41,8 @@ use crate::xml::Result;
 use libxml::parser::Parser;
 use libxml::tree::{Document, Node, NodeType};
 use libxml::xpath::Context;
+use modql::filter::{ListOptions, OpValValue, OpValsValue};
+use serde_json::json;
 
 pub async fn export_case_xml(
 	ctx: &Ctx,
@@ -90,7 +101,7 @@ pub async fn export_case_xml(
 				header.as_ref(),
 				sender.as_ref(),
 			)?;
-			return apply_section_postprocess(mm, case_id, xml).await;
+			return apply_section_postprocess(ctx, mm, case_id, xml).await;
 		}
 
 		let only_d_dirty = case.dirty_d
@@ -104,7 +115,8 @@ pub async fn export_case_xml(
 			let patient = PatientInformationBmc::get_by_case(ctx, mm, case_id)
 				.await
 				.map_err(Error::from)?;
-			return export_d_patient_patch(raw_xml, &patient);
+			let xml = export_d_patient_patch(raw_xml, &patient)?;
+			return apply_section_postprocess(ctx, mm, case_id, xml).await;
 		}
 
 		let only_e_dirty = case.dirty_e
@@ -276,7 +288,7 @@ pub async fn export_case_xml(
 				header.as_ref(),
 				sender.as_ref(),
 			)?;
-			return apply_section_postprocess(mm, case_id, xml).await;
+			return apply_section_postprocess(ctx, mm, case_id, xml).await;
 		}
 
 		let only_d_dirty = case.dirty_d
@@ -291,7 +303,8 @@ pub async fn export_case_xml(
 			let patient = PatientInformationBmc::get_by_case(ctx, mm, case_id)
 				.await
 				.map_err(Error::from)?;
-			return export_d_patient_xml(&patient);
+			let xml = export_d_patient_xml(&patient)?;
+			return apply_section_postprocess(ctx, mm, case_id, xml).await;
 		}
 
 		let only_e_dirty = case.dirty_e
@@ -597,7 +610,7 @@ async fn export_case_xml_from_db(
 		xml = patch_h_narrative(xml.as_bytes(), &narrative)?;
 	}
 
-	apply_section_postprocess(mm, case_id, xml).await
+	apply_section_postprocess(ctx, mm, case_id, xml).await
 }
 
 fn base_export_skeleton() -> &'static str {
@@ -605,8 +618,8 @@ fn base_export_skeleton() -> &'static str {
 }
 
 async fn apply_section_n(
-	_doc: &mut Document,
-	_parser: &Parser,
+	doc: &mut Document,
+	parser: &Parser,
 	mm: &ModelManager,
 	case_id: sqlx::types::Uuid,
 	xpath: &mut Context,
@@ -698,7 +711,109 @@ async fn apply_section_n(
 		"value",
 		&header.message_date,
 	);
-
+	if let Some(receiver) = fetch_receiver_information(mm, case_id).await? {
+		ensure_receiver_agent_nodes(
+			doc,
+			parser,
+			xpath,
+			&header.message_receiver_identifier,
+		)?;
+		let base = "/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization";
+		if let Some(v) = receiver.organization_name.as_deref() {
+			set_text_first(xpath, &format!("{base}/hl7:name"), v);
+		}
+		if let Some(v) = receiver.department.as_deref() {
+			set_text_first(
+				xpath,
+				&format!(
+					"{base}/hl7:notificationParty/hl7:contactOrganization/hl7:name"
+				),
+				v,
+			);
+		}
+		if let Some(v) = receiver.street_address.as_deref() {
+			set_text_first(
+				xpath,
+				&format!(
+					"{base}/hl7:notificationParty/hl7:addr/hl7:streetAddressLine"
+				),
+				v,
+			);
+		}
+		if let Some(v) = receiver.city.as_deref() {
+			set_text_first(
+				xpath,
+				&format!("{base}/hl7:notificationParty/hl7:addr/hl7:city"),
+				v,
+			);
+		}
+		if let Some(v) = receiver.state_province.as_deref() {
+			set_text_first(
+				xpath,
+				&format!("{base}/hl7:notificationParty/hl7:addr/hl7:state"),
+				v,
+			);
+		}
+		if let Some(v) = receiver.postcode.as_deref() {
+			set_text_first(
+				xpath,
+				&format!("{base}/hl7:notificationParty/hl7:addr/hl7:postalCode"),
+				v,
+			);
+		}
+		if let Some(v) = receiver.country_code.as_deref() {
+			set_text_first(
+				xpath,
+				&format!("{base}/hl7:notificationParty/hl7:addr/hl7:country"),
+				v,
+			);
+		}
+		if let Some(v) = receiver.telephone.as_deref() {
+			let value = if v.contains(':') {
+				v.to_string()
+			} else {
+				format!("tel:{v}")
+			};
+			set_attr_first(
+				xpath,
+				&format!(
+					"{base}/hl7:notificationParty/hl7:telecom[starts-with(@value,'tel:')]"
+				),
+				"value",
+				&value,
+			);
+		}
+		if let Some(v) = receiver.fax.as_deref() {
+			let value = if v.contains(':') {
+				v.to_string()
+			} else {
+				format!("fax:{v}")
+			};
+			set_attr_first(
+				xpath,
+				&format!(
+					"{base}/hl7:notificationParty/hl7:telecom[starts-with(@value,'fax:')]"
+				),
+				"value",
+				&value,
+			);
+		}
+		if let Some(v) = receiver.email.as_deref() {
+			let value = if v.contains(':') {
+				v.to_string()
+			} else {
+				format!("mailto:{v}")
+			};
+			set_attr_first(
+				xpath,
+				&format!(
+					"{base}/hl7:notificationParty/hl7:telecom[starts-with(@value,'mailto:')]"
+				),
+				"value",
+				&value,
+			);
+		}
+	}
 	Ok(())
 }
 
@@ -722,6 +837,216 @@ async fn fetch_primary_source(
 		.fetch_optional(sqlx::query_as::<_, PrimarySource>(sql).bind(case_id))
 		.await
 		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
+}
+
+async fn fetch_receiver_information(
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+) -> Result<Option<ReceiverInformation>> {
+	let sql = "SELECT * FROM receiver_information WHERE case_id = $1 LIMIT 1";
+	mm.dbx()
+		.fetch_optional(sqlx::query_as::<_, ReceiverInformation>(sql).bind(case_id))
+		.await
+		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
+}
+
+async fn fetch_patient_information(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+) -> Result<Option<PatientInformation>> {
+	match PatientInformationBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(patient) => Ok(Some(patient)),
+		Err(model::Error::EntityUuidNotFound { .. }) => Ok(None),
+		Err(err) => Err(Error::from(err)),
+	}
+}
+
+async fn fetch_patient_identifiers(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	patient_id: sqlx::types::Uuid,
+) -> Result<Vec<PatientIdentifier>> {
+	let filter = PatientIdentifierFilter {
+		patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			patient_id.to_string()
+		))])),
+		..Default::default()
+	};
+	PatientIdentifierBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await
+	.map_err(Error::from)
+}
+
+async fn fetch_parent_information(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	patient_id: sqlx::types::Uuid,
+) -> Result<Option<ParentInformation>> {
+	let filter = ParentInformationFilter {
+		patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			patient_id.to_string()
+		))])),
+		..Default::default()
+	};
+	let rows = ParentInformationBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await
+	.map_err(Error::from)?;
+	Ok(rows.into_iter().next())
+}
+
+async fn fetch_case_summaries(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	narrative_id: sqlx::types::Uuid,
+) -> Result<Vec<CaseSummaryInformation>> {
+	let filter = CaseSummaryInformationFilter {
+		narrative_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			narrative_id.to_string()
+		))])),
+		..Default::default()
+	};
+	CaseSummaryInformationBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await
+	.map_err(Error::from)
+}
+
+async fn fetch_past_drug_history(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	patient_id: sqlx::types::Uuid,
+) -> Result<Vec<PastDrugHistory>> {
+	let filter = PastDrugHistoryFilter {
+		patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			patient_id.to_string()
+		))])),
+		..Default::default()
+	};
+	PastDrugHistoryBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await
+	.map_err(Error::from)
+}
+
+fn ensure_patient_observation(
+	xpath: &mut Context,
+	doc: &mut Document,
+	parser: &Parser,
+	code: &str,
+	xsi_type: &str,
+) -> Result<()> {
+	let path = format!(
+		"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='{code}']]"
+	);
+	if xpath
+		.findnodes(&path, None)
+		.map(|n| !n.is_empty())
+		.unwrap_or(false)
+	{
+		return Ok(());
+	}
+	let fragment = format!(
+		"<subjectOf2 typeCode=\"SBJ\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"{code}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"{xsi_type}\"/></observation></subjectOf2>"
+	);
+	append_fragment_child(doc, parser, xpath, "//hl7:primaryRole", &fragment)
+}
+
+fn ensure_patient_history_text(
+	xpath: &mut Context,
+	doc: &mut Document,
+	parser: &Parser,
+) -> Result<()> {
+	let path = "//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]";
+	if xpath
+		.findnodes(path, None)
+		.map(|n| !n.is_empty())
+		.unwrap_or(false)
+	{
+		return Ok(());
+	}
+	append_fragment_child(
+		doc,
+		parser,
+		xpath,
+		"//hl7:primaryRole",
+		"<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\"/><component typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"18\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"ED\"/></observation></component></organizer></subjectOf2>",
+	)
+}
+
+fn ensure_patient_identifier(
+	xpath: &mut Context,
+	doc: &mut Document,
+	parser: &Parser,
+	id_type_code: &str,
+) -> Result<()> {
+	let path = format!(
+		"//hl7:primaryRole/hl7:player1/hl7:asIdentifiedEntity[hl7:code[@code='{id_type_code}']]"
+	);
+	if xpath
+		.findnodes(&path, None)
+		.map(|n| !n.is_empty())
+		.unwrap_or(false)
+	{
+		return Ok(());
+	}
+	let root = match id_type_code {
+		"1" => "2.16.840.1.113883.3.989.2.1.3.7",
+		"2" => "2.16.840.1.113883.3.989.2.1.3.8",
+		"3" => "2.16.840.1.113883.3.989.2.1.3.9",
+		"4" => "2.16.840.1.113883.3.989.2.1.3.10",
+		_ => "2.16.840.1.113883.3.989.2.1.3.7",
+	};
+	let fragment = format!(
+		"<asIdentifiedEntity classCode=\"IDENT\"><id root=\"{root}\"/><code code=\"{id_type_code}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"/></asIdentifiedEntity>"
+	);
+	append_fragment_child(
+		doc,
+		parser,
+		xpath,
+		"//hl7:primaryRole/hl7:player1",
+		&fragment,
+	)
+}
+
+fn ensure_parent_role(
+	xpath: &mut Context,
+	doc: &mut Document,
+	parser: &Parser,
+) -> Result<()> {
+	let path = "//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]";
+	if xpath
+		.findnodes(path, None)
+		.map(|n| !n.is_empty())
+		.unwrap_or(false)
+	{
+		return Ok(());
+	}
+	append_fragment_child(
+		doc,
+		parser,
+		xpath,
+		"//hl7:primaryRole/hl7:player1",
+		"<role classCode=\"PRS\"><code code=\"PRN\" codeSystem=\"2.16.840.1.113883.5.111\"/><associatedPerson classCode=\"PSN\" determinerCode=\"INSTANCE\"><name/><birthTime/></associatedPerson><subjectOf2 typeCode=\"SBJ\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"22\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"TS\"/></observation></subjectOf2><subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\"/><component typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"18\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"ED\"/></observation></component></organizer></subjectOf2></role>",
+	)
 }
 
 fn set_attr_first(xpath: &mut Context, path: &str, attr: &str, value: &str) {
@@ -752,6 +1077,15 @@ fn fmt_datetime(dt: sqlx::types::time::OffsetDateTime) -> String {
 	)
 }
 
+fn fmt_date(date: sqlx::types::time::Date) -> String {
+	format!(
+		"{:04}{:02}{:02}",
+		date.year(),
+		u8::from(date.month()),
+		date.day()
+	)
+}
+
 fn normalize_namespace_artifacts(mut xml: String) -> String {
 	xml = xml.replace("xmlns:default=\"urn:hl7-org:v3\"", "");
 	xml = xml.replace("xmlns:default=\"urn:hl7-org:v3\" ", "");
@@ -761,6 +1095,7 @@ fn normalize_namespace_artifacts(mut xml: String) -> String {
 }
 
 async fn apply_section_postprocess(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: sqlx::types::Uuid,
 	xml: String,
@@ -780,12 +1115,245 @@ async fn apply_section_postprocess(
 	let _ =
 		xpath.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
 	apply_section_n(&mut doc, &parser, mm, case_id, &mut xpath).await?;
-	apply_primary_source_section(&mut doc, &parser, mm, case_id, &mut xpath)
-		.await?;
+	apply_patient_section(ctx, &mut doc, &parser, mm, case_id, &mut xpath).await?;
+	apply_primary_source_section(&mut doc, &parser, mm, case_id, &mut xpath).await?;
 	apply_study_section(&mut doc, &parser, mm, case_id, &mut xpath).await?;
+	apply_case_summary_section(ctx, &mut doc, &parser, mm, case_id, &mut xpath)
+		.await?;
 	postprocess_export_doc(&mut doc, &mut xpath);
 
 	Ok(normalize_namespace_artifacts(doc.to_string()))
+}
+
+async fn apply_patient_section(
+	ctx: &Ctx,
+	doc: &mut Document,
+	parser: &Parser,
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+	xpath: &mut Context,
+) -> Result<()> {
+	let Some(patient) = fetch_patient_information(ctx, mm, case_id).await? else {
+		return Ok(());
+	};
+	let identifiers = fetch_patient_identifiers(ctx, mm, patient.id).await?;
+	let parent = fetch_parent_information(ctx, mm, patient.id).await?;
+	let past_drugs = fetch_past_drug_history(ctx, mm, patient.id).await?;
+
+	if let Some(v) = patient.patient_initials.as_deref() {
+		set_text_first(xpath, "//hl7:primaryRole/hl7:player1/hl7:name", v);
+	}
+	if let Some(v) = patient.birth_date {
+		set_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:player1/hl7:birthTime",
+			"value",
+			&fmt_date(v),
+		);
+	}
+	if let Some(v) = patient.race_code.as_deref() {
+		set_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C17049']]/hl7:value",
+			"code",
+			v,
+		);
+	}
+	if let Some(v) = patient.ethnicity_code.as_deref() {
+		set_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C16564']]/hl7:value",
+			"code",
+			v,
+		);
+	}
+	if let Some(v) = patient.last_menstrual_period_date {
+		ensure_patient_observation(xpath, doc, parser, "22", "TS")?;
+		set_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='22']]/hl7:value",
+			"value",
+			&fmt_date(v),
+		);
+	}
+	if let Some(v) = patient.medical_history_text.as_deref() {
+		ensure_patient_history_text(xpath, doc, parser)?;
+		set_text_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]/hl7:value",
+			v,
+		);
+	}
+
+	for ident in &identifiers {
+		ensure_patient_identifier(xpath, doc, parser, &ident.identifier_type_code)?;
+		set_attr_first(
+			xpath,
+			&format!(
+				"//hl7:primaryRole/hl7:player1/hl7:asIdentifiedEntity[hl7:code[@code='{}']]/hl7:id",
+				ident.identifier_type_code
+			),
+			"extension",
+			&ident.identifier_value,
+		);
+	}
+
+	if let Some(parent) = parent {
+		ensure_parent_role(xpath, doc, parser)?;
+		if let Some(v) = parent.parent_identification.as_deref() {
+			set_text_first(
+				xpath,
+				"//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:associatedPerson/hl7:name",
+				v,
+			);
+		}
+		if let Some(v) = parent.parent_birth_date {
+			set_attr_first(
+				xpath,
+				"//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:associatedPerson/hl7:birthTime",
+				"value",
+				&fmt_date(v),
+			);
+		}
+		if let Some(v) = parent.last_menstrual_period_date {
+			set_attr_first(
+				xpath,
+				"//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:subjectOf2/hl7:observation[hl7:code[@code='22']]/hl7:value",
+				"value",
+				&fmt_date(v),
+			);
+		}
+		if let Some(v) = parent.medical_history_text.as_deref() {
+			set_text_first(
+				xpath,
+				"//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]/hl7:value",
+				v,
+			);
+		}
+	}
+
+	if let Some(drug) = past_drugs.into_iter().next() {
+		let base = "(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='2']]/hl7:component[1]/hl7:substanceAdministration)[1]";
+		if let Some(v) = drug.mpid_version.as_deref() {
+			set_attr_first(
+				xpath,
+				&format!("{base}/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code"),
+				"codeSystemVersion",
+				v,
+			);
+		}
+		if let Some(v) = drug.mpid.as_deref() {
+			set_attr_first(
+				xpath,
+				&format!("{base}/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code"),
+				"code",
+				v,
+			);
+		}
+		if let Some(v) = drug.start_date {
+			ensure_d8_effective_time(xpath, doc, parser, base)?;
+			set_attr_first(
+				xpath,
+				&format!("{base}/hl7:effectiveTime/hl7:low"),
+				"value",
+				&fmt_date(v),
+			);
+		}
+		if let Some(v) = drug.end_date {
+			ensure_d8_effective_time(xpath, doc, parser, base)?;
+			set_attr_first(
+				xpath,
+				&format!("{base}/hl7:effectiveTime/hl7:high"),
+				"value",
+				&fmt_date(v),
+			);
+		}
+		let indication_xpath = format!(
+			"{base}/hl7:outboundRelationship2[@typeCode='RSON']/hl7:observation/hl7:value"
+		);
+		if (drug.indication_meddra_version.is_some() || drug.indication_meddra_code.is_some())
+			&& xpath
+				.findnodes(&indication_xpath, None)
+				.map(|nodes| nodes.is_empty())
+				.unwrap_or(true)
+		{
+			append_fragment_child(
+				doc,
+				parser,
+				xpath,
+				&base,
+				"<outboundRelationship2 typeCode=\"RSON\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"19\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" codeSystemVersion=\"1.1\" displayName=\"indication\"/><value xsi:type=\"CE\"/></observation></outboundRelationship2>",
+			)?;
+		}
+		if let Some(v) = drug.indication_meddra_version.as_deref() {
+			set_attr_first(xpath, &indication_xpath, "codeSystemVersion", v);
+		}
+		if let Some(v) = drug.indication_meddra_code.as_deref() {
+			set_attr_first(xpath, &indication_xpath, "code", v);
+		}
+
+		let reaction_xpath = format!(
+			"{base}/hl7:outboundRelationship2[@typeCode='CAUS']/hl7:observation/hl7:value"
+		);
+		if (drug.reaction_meddra_version.is_some() || drug.reaction_meddra_code.is_some())
+			&& xpath
+				.findnodes(&reaction_xpath, None)
+				.map(|nodes| nodes.is_empty())
+				.unwrap_or(true)
+		{
+			append_fragment_child(
+				doc,
+				parser,
+				xpath,
+				&base,
+				"<outboundRelationship2 typeCode=\"CAUS\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"29\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" codeSystemVersion=\"1.1\" displayName=\"reaction\"/><value xsi:type=\"CE\"/></observation></outboundRelationship2>",
+			)?;
+		}
+		if let Some(v) = drug.reaction_meddra_version.as_deref() {
+			set_attr_first(xpath, &reaction_xpath, "codeSystemVersion", v);
+		}
+		if let Some(v) = drug.reaction_meddra_code.as_deref() {
+			set_attr_first(xpath, &reaction_xpath, "code", v);
+		}
+		if drug.phpid.is_some() || drug.phpid_version.is_some() {
+			let php_xpath = format!(
+				"{base}/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='PHPID']]"
+			);
+			if xpath
+				.findnodes(&php_xpath, None)
+				.map(|nodes| nodes.is_empty())
+				.unwrap_or(true)
+			{
+				append_fragment_child(
+					doc,
+					parser,
+					xpath,
+					&format!(
+						"{base}/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct"
+					),
+					"<asIdentifiedEntity classCode=\"IDENT\"><id/><code code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"/></asIdentifiedEntity>",
+				)?;
+			}
+			if let Some(v) = drug.phpid.as_deref() {
+				set_attr_first(
+					xpath,
+					&format!("{php_xpath}/hl7:id"),
+					"extension",
+					v,
+				);
+			}
+			if let Some(v) = drug.phpid_version.as_deref() {
+				set_attr_first(
+					xpath,
+					&format!("{php_xpath}/hl7:code"),
+					"codeSystemVersion",
+					v,
+				);
+			}
+		}
+	}
+
+	Ok(())
 }
 
 async fn apply_primary_source_section(
@@ -829,6 +1397,22 @@ async fn apply_primary_source_section(
 		);
 	}
 	if let Some(value) = primary.reporter_middle_name.as_deref() {
+		if xpath
+			.findnodes(
+				&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[2]"),
+				None,
+			)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				doc,
+				parser,
+				xpath,
+				&format!("{base}/hl7:assignedPerson/hl7:name"),
+				"<given/>",
+			)?;
+		}
 		set_text_first(
 			xpath,
 			&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[2]"),
@@ -842,33 +1426,21 @@ async fn apply_primary_source_section(
 			value,
 		);
 	}
-	if let Some(value) = primary.organization.as_deref() {
+	let org_name = match (
+		primary.organization.as_deref().map(str::trim),
+		primary.department.as_deref().map(str::trim),
+	) {
+		(Some(org), Some(dept)) if !org.is_empty() && !dept.is_empty() => {
+			Some(format!("{org} / {dept}"))
+		}
+		(Some(org), _) if !org.is_empty() => Some(org.to_string()),
+		(_, Some(dept)) if !dept.is_empty() => Some(dept.to_string()),
+		_ => None,
+	};
+	if let Some(value) = org_name.as_deref() {
 		set_text_first(
 			xpath,
 			&format!("{base}/hl7:representedOrganization/hl7:name"),
-			value,
-		);
-	}
-	if let Some(value) = primary.department.as_deref() {
-		if xpath
-			.findnodes(
-				&format!("{base}/hl7:representedOrganization/hl7:name[2]"),
-				None,
-			)
-			.map(|nodes| nodes.is_empty())
-			.unwrap_or(true)
-		{
-			append_fragment_child(
-				doc,
-				parser,
-				xpath,
-				&format!("{base}/hl7:representedOrganization"),
-				"<name/>",
-			)?;
-		}
-		set_text_first(
-			xpath,
-			&format!("{base}/hl7:representedOrganization/hl7:name[2]"),
 			value,
 		);
 	}
@@ -886,11 +1458,7 @@ async fn apply_primary_source_section(
 		set_text_first(xpath, &format!("{base}/hl7:addr/hl7:state"), value);
 	}
 	if let Some(value) = primary.postcode.as_deref() {
-		set_text_first(
-			xpath,
-			&format!("{base}/hl7:addr/hl7:postalCode"),
-			value,
-		);
+		set_text_first(xpath, &format!("{base}/hl7:addr/hl7:postalCode"), value);
 	}
 	if let Some(value) = primary.telephone.as_deref() {
 		let telecom_value = if value.contains(':') {
@@ -931,9 +1499,7 @@ async fn apply_primary_source_section(
 	if let Some(value) = primary.qualification.as_deref() {
 		set_attr_first(
 			xpath,
-			&format!(
-				"{base}/hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code"
-			),
+			&format!("{base}/hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code"),
 			"code",
 			value,
 		);
@@ -947,6 +1513,63 @@ async fn apply_primary_source_section(
 		);
 	}
 
+	Ok(())
+}
+
+async fn apply_case_summary_section(
+	ctx: &Ctx,
+	doc: &mut Document,
+	parser: &Parser,
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+	xpath: &mut Context,
+) -> Result<()> {
+	let narrative =
+		match NarrativeInformationBmc::get_by_case(ctx, mm, case_id).await {
+			Ok(v) => v,
+			Err(_) => return Ok(()),
+		};
+	let summaries = fetch_case_summaries(ctx, mm, narrative.id).await?;
+	let Some(summary) = summaries.iter().find(|s| {
+		s.summary_text
+			.as_deref()
+			.is_some_and(|v| !v.trim().is_empty())
+	}) else {
+		return Ok(());
+	};
+
+	let node_path = "//hl7:investigationEvent/hl7:component/hl7:observationEvent[hl7:code[@code='36'] and hl7:author/hl7:assignedEntity/hl7:code[@code='2']]";
+	if xpath
+		.findnodes(node_path, None)
+		.map(|nodes| nodes.is_empty())
+		.unwrap_or(true)
+	{
+		let fragment = "<component typeCode=\"COMP\"><observationEvent classCode=\"OBS\" moodCode=\"EVN\"><code code=\"36\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"summaryAndComment\"/><value xsi:type=\"ED\"/><author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\"><code code=\"2\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.21\" displayName=\"reporter\"/></assignedEntity></author></observationEvent></component>";
+		append_fragment_child(
+			doc,
+			parser,
+			xpath,
+			"//hl7:investigationEvent",
+			fragment,
+		)?;
+		reorder_investigation_event_children(xpath);
+	}
+
+	if let Some(text) = summary.summary_text.as_deref() {
+		set_text_first(
+			xpath,
+			"//hl7:investigationEvent/hl7:component/hl7:observationEvent[hl7:code[@code='36'] and hl7:author/hl7:assignedEntity/hl7:code[@code='2']]/hl7:value",
+			text,
+		);
+	}
+	if let Some(language) = summary.language_code.as_deref() {
+		set_attr_first(
+			xpath,
+			"//hl7:investigationEvent/hl7:component/hl7:observationEvent[hl7:code[@code='36'] and hl7:author/hl7:assignedEntity/hl7:code[@code='2']]/hl7:value",
+			"language",
+			language,
+		);
+	}
 	Ok(())
 }
 
@@ -981,6 +1604,50 @@ fn append_fragment_child(
 			column: None,
 		})?;
 	Ok(())
+}
+
+fn ensure_receiver_agent_nodes(
+	doc: &mut Document,
+	parser: &Parser,
+	xpath: &mut Context,
+	receiver_id: &str,
+) -> Result<()> {
+	let base = "/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization";
+	if xpath
+		.findnodes(base, None)
+		.map(|nodes| !nodes.is_empty())
+		.unwrap_or(false)
+	{
+		return Ok(());
+	}
+	let escaped = xml_escape(receiver_id);
+	let fragment = format!(
+		"<asAgent classCode=\"AGNT\">\
+			<representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\">\
+				<id root=\"2.16.840.1.113883.3.989.2.1.3.14\" extension=\"{escaped}\"/>\
+				<name/>\
+				<notificationParty classCode=\"CON\">\
+					<id root=\"2.16.840.1.113883.3.989.2.1.3.14\" extension=\"{escaped}-contact\"/>\
+					<addr><streetAddressLine/><city/><state/><postalCode/><country/></addr>\
+					<telecom value=\"tel:\"/>\
+					<telecom value=\"fax:\"/>\
+					<telecom value=\"mailto:\"/>\
+					<contactOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\">\
+						<id root=\"2.16.840.1.113883.3.989.2.1.3.14\" extension=\"{escaped}-org\"/>\
+						<name>Receiver Contact</name>\
+						<contactParty classCode=\"CON\"/>\
+					</contactOrganization>\
+				</notificationParty>\
+			</representedOrganization>\
+		</asAgent>"
+	);
+	append_fragment_child(
+		doc,
+		parser,
+		xpath,
+		"/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device",
+		&fragment,
+	)
 }
 
 fn node_from_fragment(
@@ -1200,4 +1867,93 @@ fn inject_study_fragment_in_primary_role(
 	out.push_str(fragment);
 	out.push_str(&xml[insert_at..]);
 	Some(out)
+}
+
+fn reorder_investigation_event_children(xpath: &mut Context) {
+	if let Ok(outbound_nodes) =
+		xpath.findnodes("//hl7:investigationEvent/hl7:outboundRelationship", None)
+	{
+		for mut node in outbound_nodes {
+			if let Some(mut parent) = node.get_parent() {
+				node.unlink_node();
+				let _ = parent.add_child(&mut node);
+			}
+		}
+	}
+	if let Ok(subject1_nodes) =
+		xpath.findnodes("//hl7:investigationEvent/hl7:subjectOf1", None)
+	{
+		for mut node in subject1_nodes {
+			if let Some(mut parent) = node.get_parent() {
+				node.unlink_node();
+				let _ = parent.add_child(&mut node);
+			}
+		}
+	}
+	if let Ok(subject2_nodes) =
+		xpath.findnodes("//hl7:investigationEvent/hl7:subjectOf2", None)
+	{
+		for mut node in subject2_nodes {
+			if let Some(mut parent) = node.get_parent() {
+				node.unlink_node();
+				let _ = parent.add_child(&mut node);
+			}
+		}
+	}
+}
+
+fn ensure_d8_effective_time(
+	xpath: &mut Context,
+	doc: &mut Document,
+	parser: &Parser,
+	base: &str,
+) -> Result<()> {
+	let effective_time_xpath = format!("{base}/hl7:effectiveTime");
+	let has_effective_time = xpath
+		.findnodes(&effective_time_xpath, None)
+		.map(|nodes| !nodes.is_empty())
+		.unwrap_or(false);
+	if !has_effective_time {
+		append_fragment_child(
+			doc,
+			parser,
+			xpath,
+			base,
+			"<effectiveTime xsi:type=\"IVL_TS\"><low/><high/></effectiveTime>",
+		)?;
+	}
+
+	let has_low = xpath
+		.findnodes(&format!("{base}/hl7:effectiveTime/hl7:low"), None)
+		.map(|nodes| !nodes.is_empty())
+		.unwrap_or(false);
+	if !has_low {
+		append_fragment_child(doc, parser, xpath, &effective_time_xpath, "<low/>")?;
+	}
+
+	let has_high = xpath
+		.findnodes(&format!("{base}/hl7:effectiveTime/hl7:high"), None)
+		.map(|nodes| !nodes.is_empty())
+		.unwrap_or(false);
+	if !has_high {
+		append_fragment_child(doc, parser, xpath, &effective_time_xpath, "<high/>")?;
+	}
+
+	reorder_d8_substance_administration_children(xpath, base);
+	Ok(())
+}
+
+fn reorder_d8_substance_administration_children(
+	xpath: &mut Context,
+	base: &str,
+) {
+	let child_path = format!("{base}/*[not(self::hl7:effectiveTime)]");
+	if let Ok(nodes) = xpath.findnodes(&child_path, None) {
+		for mut node in nodes {
+			if let Some(mut parent) = node.get_parent() {
+				node.unlink_node();
+				let _ = parent.add_child(&mut node);
+			}
+		}
+	}
 }

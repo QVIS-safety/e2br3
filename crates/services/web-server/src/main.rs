@@ -26,6 +26,8 @@ async fn main() -> Result<()> {
 
 	// -- FOR DEV ONLY (skips automatically if SKIP_DEV_INIT=1)
 	_dev_utils::init_dev().await;
+	config::validate_submission_runtime_config()
+		.map_err(Error::Config)?;
 
 	let mm = ModelManager::new().await?;
 

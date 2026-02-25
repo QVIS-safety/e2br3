@@ -3,6 +3,7 @@ use lib_core::model::drug::{
 	DrugIndication, DrugInformation,
 };
 use lib_core::xml::raw::patch::patch_g_drugs;
+use lib_core::xml::Error as XmlError;
 use libxml::parser::Parser;
 use libxml::xpath::Context;
 use sqlx::types::Uuid;
@@ -112,7 +113,7 @@ fn patch_g_drug_normalizes_characterization_for_causality() {
 		updated_by: None,
 	};
 
-	let patched = patch_g_drugs(
+	let err = patch_g_drugs(
 		&xml,
 		&[drug],
 		&[] as &[DrugActiveSubstance],
@@ -120,15 +121,11 @@ fn patch_g_drug_normalizes_characterization_for_causality() {
 		&[] as &[DrugIndication],
 		&[] as &[DrugDeviceCharacteristic],
 	)
-	.expect("patch");
-
-	let parser = Parser::default();
-	let doc = parser.parse_string(&patched).expect("parse");
-	let mut xpath = Context::new(&doc).expect("xpath");
-	xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
-
-	let role_code = xpath
-		.findvalue("//hl7:causalityAssessment/hl7:value[@code='2']/@code", None)
-		.unwrap();
-	assert_eq!(role_code, "2");
+	.expect_err("missing drug characterization should fail");
+	match err {
+		XmlError::InvalidXml { message, .. } => {
+			assert!(message.contains("ICH.G.k.1.REQUIRED"));
+		}
+		other => panic!("unexpected error type: {other:?}"),
+	}
 }

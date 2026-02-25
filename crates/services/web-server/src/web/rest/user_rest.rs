@@ -174,9 +174,9 @@ pub async fn list_users(
 	}
 
 	let params = ParamsList::<UserFilter>::from_raw_query(raw_query.as_deref())
-		.map_err(|message| WebError::from(lib_rest_core::Error::BadRequest {
-			message,
-		}))?;
+		.map_err(|message| {
+			WebError::from(lib_rest_core::Error::BadRequest { message })
+		})?;
 
 	// RLS will filter to users in the same organization (unless admin)
 	let entities = UserBmc::list(&ctx, &mm, params.filters, params.list_options)

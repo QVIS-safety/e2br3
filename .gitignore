@@ -13,6 +13,7 @@ _*
 
 # -- Rust
 target/
+target-codex/ 
 !Cargo.lock
 !.cargo/
 

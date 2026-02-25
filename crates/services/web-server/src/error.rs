@@ -8,6 +8,7 @@ pub enum Error {
 	// -- Modules
 	#[from]
 	Model(model::Error),
+	Config(String),
 }
 
 // region:    --- Error Boilerplate

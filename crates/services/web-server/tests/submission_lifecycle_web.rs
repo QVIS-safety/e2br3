@@ -15,6 +15,11 @@ fn clear_esg_env() {
 	std::env::remove_var("FDA_ESG_SUBMIT_PATH");
 	std::env::remove_var("FDA_ESG_BEARER_TOKEN");
 	std::env::remove_var("FDA_ESG_API_KEY");
+	std::env::remove_var("AS2_SUBMITTER_URL");
+	std::env::remove_var("AS2_SUBMITTER_TIMEOUT_SECS");
+	std::env::remove_var("AS2_ACK_CALLBACK_URL");
+	std::env::remove_var("AS2_CALLBACK_TOKEN");
+	std::env::remove_var("E2BR3_ALLOW_MOCK_SUBMISSION");
 }
 
 async fn post_json(
@@ -176,6 +181,7 @@ async fn test_submission_requires_case_validated_status() -> Result<()> {
 #[tokio::test]
 async fn test_submission_ack_out_of_order_does_not_regress_status() -> Result<()> {
 	clear_esg_env();
+	std::env::set_var("E2BR3_ALLOW_MOCK_SUBMISSION", "1");
 	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
 	std::env::set_var("E2BR3_SKIP_XML_VALIDATE", "1");
 	let mm = init_test_mm().await?;
@@ -229,6 +235,7 @@ async fn test_submission_ack_out_of_order_does_not_regress_status() -> Result<()
 #[tokio::test]
 async fn test_submission_ack_terminal_status_does_not_change() -> Result<()> {
 	clear_esg_env();
+	std::env::set_var("E2BR3_ALLOW_MOCK_SUBMISSION", "1");
 	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
 	std::env::set_var("E2BR3_SKIP_XML_VALIDATE", "1");
 	let mm = init_test_mm().await?;
@@ -305,6 +312,115 @@ async fn test_submission_rejects_enabled_esg_without_base_url() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
 	assert!(body.to_string().contains("FDA_ESG_BASE_URL"), "{body:?}");
+	clear_esg_env();
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_submission_rejects_when_as2_submitter_unreachable() -> Result<()> {
+	clear_esg_env();
+	std::env::set_var("AS2_SUBMITTER_URL", "http://127.0.0.1:9");
+	std::env::set_var("AS2_SUBMITTER_TIMEOUT_SECS", "1");
+	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+	std::env::set_var("E2BR3_SKIP_XML_VALIDATE", "1");
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+	create_message_header(&app, &cookie, case_id).await?;
+	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/submissions/fda"),
+		json!({}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body.to_string().contains("AS2 submitter request failed"),
+		"{body:?}"
+	);
+	clear_esg_env();
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<()> {
+	clear_esg_env();
+	std::env::set_var("E2BR3_ALLOW_MOCK_SUBMISSION", "1");
+	std::env::set_var("AS2_CALLBACK_TOKEN", "callback-secret");
+	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+	std::env::set_var("E2BR3_SKIP_XML_VALIDATE", "1");
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+	create_message_header(&app, &cookie, case_id).await?;
+	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
+
+	let (status, submit_body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/submissions/fda"),
+		json!({}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{submit_body:?}");
+	let remote_submission_id = submit_body["data"]["remote_submission_id"]
+		.as_str()
+		.ok_or("missing remote_submission_id")?
+		.to_string();
+	let submission_id = submit_body["data"]["id"]
+		.as_str()
+		.ok_or("missing submission_id")?
+		.to_string();
+
+	let req = Request::builder()
+		.method("POST")
+		.uri("/internal/submissions/callbacks/ack")
+		.header("content-type", "application/json")
+		.header("x-callback-token", "callback-secret")
+		.body(Body::from(
+			json!({
+				"remote_submission_id": remote_submission_id,
+				"ack_level": 3,
+				"success": true,
+				"ack_code": "ACK3",
+				"ack_message": "Processed",
+			})
+			.to_string(),
+		))?;
+	let res = app.clone().oneshot(req).await?;
+	let callback_status = res.status();
+	let callback_body = to_bytes(res.into_body(), usize::MAX).await?;
+	let callback_value: Value = serde_json::from_slice(&callback_body)?;
+	assert_eq!(callback_status, StatusCode::OK, "{callback_value:?}");
+	assert_eq!(callback_value["data"]["status"], "ack3_received");
+
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/submissions/{submission_id}"))
+		.header("cookie", &cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let get_status = res.status();
+	let get_body = to_bytes(res.into_body(), usize::MAX).await?;
+	let get_value: Value = serde_json::from_slice(&get_body)?;
+	assert_eq!(get_status, StatusCode::OK, "{get_value:?}");
+	assert_eq!(get_value["data"]["status"], "ack3_received");
+
 	clear_esg_env();
 	Ok(())
 }

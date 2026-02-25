@@ -14,6 +14,7 @@ use lib_core::model::acs::{
 	STUDY_INFORMATION_UPDATE, STUDY_REGISTRATION_CREATE, STUDY_REGISTRATION_DELETE,
 	STUDY_REGISTRATION_LIST, STUDY_REGISTRATION_READ, STUDY_REGISTRATION_UPDATE,
 };
+use lib_core::model::case::{CaseBmc, CaseForUpdate};
 use lib_core::model::safety_report::{
 	LiteratureReference, LiteratureReferenceBmc, LiteratureReferenceFilter,
 	LiteratureReferenceForCreate, LiteratureReferenceForUpdate, PrimarySource,
@@ -25,7 +26,6 @@ use lib_core::model::safety_report::{
 	StudyRegistrationNumberBmc, StudyRegistrationNumberFilter,
 	StudyRegistrationNumberForCreate, StudyRegistrationNumberForUpdate,
 };
-use lib_core::model::case::{CaseBmc, CaseForUpdate};
 use lib_core::model::{self, ModelManager};
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;

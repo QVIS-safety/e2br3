@@ -88,18 +88,19 @@ pub(crate) fn drug_fragment(
 		out.push_str("</name>");
 	}
 	if drug.mpid.is_some() || drug.mpid_version.is_some() {
-		out.push_str("<code");
-		if let Some(code) = drug.mpid.as_deref() {
-			out.push_str(" code=\"");
-			out.push_str(&xml_escape(code));
+		out.push_str("<asIdentifiedEntity classCode=\"IDENT\"><id");
+		if let Some(mpid) = drug.mpid.as_deref() {
+			out.push_str(" extension=\"");
+			out.push_str(&xml_escape(mpid));
 			out.push_str("\"");
 		}
+		out.push_str("/><code code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"");
 		if let Some(ver) = drug.mpid_version.as_deref() {
 			out.push_str(" codeSystemVersion=\"");
 			out.push_str(&xml_escape(ver));
 			out.push_str("\"");
 		}
-		out.push_str("/>");
+		out.push_str("/></asIdentifiedEntity>");
 	}
 	if let Some(blinded) = drug.investigational_product_blinded {
 		let val = if blinded { "true" } else { "false" };
@@ -120,12 +121,6 @@ pub(crate) fn drug_fragment(
 		}
 		out.push_str("</approval></subjectOf></asManufacturedProduct>");
 	}
-	if let Some(batch) = drug.batch_lot_number.as_deref() {
-		out.push_str("<productInstanceInstance><lotNumberText>");
-		out.push_str(&xml_escape(batch));
-		out.push_str("</lotNumberText></productInstanceInstance>");
-	}
-
 	if !substances.is_empty() {
 		for sub in substances {
 			out.push_str("<ingredient>");
@@ -221,13 +216,12 @@ pub(crate) fn drug_fragment(
 		}
 	}
 
-	out.push_str("</kindOfProduct></instanceOfKind></consumable>");
-
 	if let Some(country) = drug.obtain_drug_country.as_deref() {
 		out.push_str("<subjectOf><productEvent><performer><assignedEntity><representedOrganization><addr><country>");
 		out.push_str(&xml_escape(country));
 		out.push_str("</country></addr></representedOrganization></assignedEntity></performer></productEvent></subjectOf>");
 	}
+	out.push_str("</kindOfProduct></instanceOfKind></consumable>");
 
 	if let Some(action) = drug.action_taken.as_deref() {
 		out.push_str("<inboundRelationship typeCode=\"CAUS\"><act classCode=\"ACT\" moodCode=\"EVN\"><code code=\"");

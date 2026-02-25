@@ -18,11 +18,13 @@ pub fn app(mm: ModelManager) -> Router {
 	let routes_rest = web::routes_rest::routes(mm.clone()).route_layer(
 		middleware::from_fn_with_state(mm.clone(), mw_ctx_require_and_set_dbx),
 	);
+	let routes_internal = web::routes_internal::routes(mm.clone());
 	let routes_login = web::routes_login::routes(mm.clone());
 
 	Router::new()
 		.nest("/auth/v1", routes_login)
 		.nest("/api", routes_rest)
+		.nest("/internal", routes_internal)
 		.layer(middleware::map_response(mw_response_map))
 		.layer(middleware::from_fn_with_state(mm, mw_ctx_resolver))
 		.layer(CookieManagerLayer::new())

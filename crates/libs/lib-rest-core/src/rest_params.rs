@@ -121,7 +121,8 @@ where
 				continue;
 			}
 
-			let filters_value = filters_root.get_or_insert(JsonValue::Object(JsonMap::new()));
+			let filters_value =
+				filters_root.get_or_insert(JsonValue::Object(JsonMap::new()));
 			insert_nested_json(
 				filters_value,
 				&tokens[1..],
@@ -136,10 +137,8 @@ where
 				serde_json::from_value::<Vec<F>>(value)
 					.map_err(|err| format!("failed to parse filters: {err}"))?,
 			),
-			Some(value) => Some(vec![
-				serde_json::from_value::<F>(value)
-					.map_err(|err| format!("failed to parse filter: {err}"))?,
-			]),
+			Some(value) => Some(vec![serde_json::from_value::<F>(value)
+				.map_err(|err| format!("failed to parse filter: {err}"))?]),
 		};
 
 		Ok(Self {
