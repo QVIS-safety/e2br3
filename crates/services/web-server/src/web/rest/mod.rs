@@ -437,6 +437,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		axum::routing::post(submission_rest::submit_case_to_fda),
 	)
 	.route(
+		"/cases/{id}/submissions/mfds",
+		axum::routing::post(submission_rest::submit_case_to_mfds),
+	)
+	.route(
 		"/cases/{id}/submissions",
 		get(submission_rest::list_case_submissions),
 	)
@@ -510,6 +514,30 @@ pub fn routes_terminology(mm: ModelManager) -> Router {
 			get(terminology_rest::search_whodrug),
 		)
 		.route(
+			"/terminology/import/meddra",
+			axum::routing::post(terminology_rest::import_meddra),
+		)
+		.route(
+			"/terminology/import/whodrug",
+			axum::routing::post(terminology_rest::import_whodrug),
+		)
+		.route(
+			"/terminology/releases",
+			get(terminology_rest::list_releases),
+		)
+		.route(
+			"/terminology/releases/{dictionary}/{version}/approve",
+			axum::routing::post(terminology_rest::approve_release),
+		)
+		.route(
+			"/terminology/releases/{dictionary}/{version}/activate",
+			axum::routing::post(terminology_rest::activate_release),
+		)
+		.route(
+			"/terminology/releases/{dictionary}/{version}/rollback",
+			axum::routing::post(terminology_rest::rollback_release),
+		)
+		.route(
 			"/terminology/countries",
 			get(terminology_rest::list_countries),
 		)
@@ -560,6 +588,14 @@ pub fn routes_submissions(mm: ModelManager) -> Router {
 			get(submission_rest::get_case_submission),
 		)
 		.route(
+			"/submissions/{id}/events",
+			get(submission_rest::list_submission_event_history),
+		)
+		.route(
+			"/submissions/{id}/dispatch-state",
+			get(submission_rest::get_submission_dispatch_state_view),
+		)
+		.route(
 			"/submissions/{id}/acks/mock",
 			axum::routing::post(submission_rest::post_mock_ack),
 		)
@@ -572,6 +608,14 @@ pub fn routes_submissions_internal(mm: ModelManager) -> Router {
 		.route(
 			"/submissions/callbacks/ack",
 			axum::routing::post(submission_rest::post_gateway_ack_callback),
+		)
+		.route(
+			"/submissions/reconcile",
+			axum::routing::post(submission_rest::post_reconcile_due_submissions),
+		)
+		.route(
+			"/submissions/reconcile/status",
+			get(submission_rest::get_reconcile_status),
 		)
 		.with_state(mm)
 }

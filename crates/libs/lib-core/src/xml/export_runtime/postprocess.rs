@@ -144,6 +144,28 @@ async fn apply_patient_section(
 				v,
 			);
 		}
+		if parent.parent_age.is_some() || parent.parent_age_unit.is_some() {
+			let age_value_xpath = "//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:subjectOf2/hl7:observation[hl7:code[@code='3']]/hl7:value";
+			if xpath
+				.findnodes(age_value_xpath, None)
+				.map(|nodes| nodes.is_empty())
+				.unwrap_or(true)
+			{
+				append_fragment_child(
+					doc,
+					parser,
+					xpath,
+					"//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]",
+					"<subjectOf2 typeCode=\"SBJ\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"3\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"PQ\"/></observation></subjectOf2>",
+				)?;
+			}
+			if let Some(v) = parent.parent_age.as_ref() {
+				set_attr_first(xpath, age_value_xpath, "value", &v.to_string());
+			}
+			if let Some(v) = parent.parent_age_unit.as_deref() {
+				set_attr_first(xpath, age_value_xpath, "unit", v);
+			}
+		}
 	}
 
 	if let Some(drug) = past_drugs.into_iter().next() {
@@ -185,7 +207,8 @@ async fn apply_patient_section(
 		let indication_xpath = format!(
 			"{base}/hl7:outboundRelationship2[@typeCode='RSON']/hl7:observation/hl7:value"
 		);
-		if (drug.indication_meddra_version.is_some() || drug.indication_meddra_code.is_some())
+		if (drug.indication_meddra_version.is_some()
+			|| drug.indication_meddra_code.is_some())
 			&& xpath
 				.findnodes(&indication_xpath, None)
 				.map(|nodes| nodes.is_empty())
@@ -209,7 +232,8 @@ async fn apply_patient_section(
 		let reaction_xpath = format!(
 			"{base}/hl7:outboundRelationship2[@typeCode='CAUS']/hl7:observation/hl7:value"
 		);
-		if (drug.reaction_meddra_version.is_some() || drug.reaction_meddra_code.is_some())
+		if (drug.reaction_meddra_version.is_some()
+			|| drug.reaction_meddra_code.is_some())
 			&& xpath
 				.findnodes(&reaction_xpath, None)
 				.map(|nodes| nodes.is_empty())
@@ -269,4 +293,3 @@ async fn apply_patient_section(
 
 	Ok(())
 }
-

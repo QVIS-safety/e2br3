@@ -1300,8 +1300,25 @@ CREATE POLICY e2b_code_lists_delete ON e2b_code_lists
 -- ============================================================================
 -- Section C-H dirty flags (for XML merge)
 -- ============================================================================
+CREATE OR REPLACE FUNCTION has_business_change_on_update(
+  p_old anyelement,
+  p_new anyelement
+) RETURNS BOOLEAN AS $$
+DECLARE
+  v_old_business JSONB;
+  v_new_business JSONB;
+BEGIN
+  v_old_business := to_jsonb(p_old) - 'updated_at' - 'updated_by';
+  v_new_business := to_jsonb(p_new) - 'updated_at' - 'updated_by';
+  RETURN v_old_business IS DISTINCT FROM v_new_business;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION mark_case_dirty_c() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases SET dirty_c = TRUE WHERE id = COALESCE(NEW.case_id, OLD.case_id);
   RETURN COALESCE(NEW, OLD);
 END;
@@ -1309,6 +1326,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION mark_case_dirty_c_from_study_info() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases
     SET dirty_c = TRUE
     WHERE id = (
@@ -1321,6 +1341,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION mark_case_dirty_d() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases SET dirty_d = TRUE WHERE id = COALESCE(NEW.case_id, OLD.case_id);
   RETURN COALESCE(NEW, OLD);
 END;
@@ -1328,6 +1351,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION mark_case_dirty_d_from_patient() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases
     SET dirty_d = TRUE
     WHERE id = (
@@ -1340,6 +1366,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION mark_case_dirty_d_from_parent() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases
     SET dirty_d = TRUE
     WHERE id = (
@@ -1354,6 +1383,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION mark_case_dirty_d_from_death_info() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases
     SET dirty_d = TRUE
     WHERE id = (
@@ -1368,6 +1400,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION mark_case_dirty_e() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases SET dirty_e = TRUE WHERE id = COALESCE(NEW.case_id, OLD.case_id);
   RETURN COALESCE(NEW, OLD);
 END;
@@ -1375,6 +1410,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION mark_case_dirty_f() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases SET dirty_f = TRUE WHERE id = COALESCE(NEW.case_id, OLD.case_id);
   RETURN COALESCE(NEW, OLD);
 END;
@@ -1382,6 +1420,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION mark_case_dirty_g() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases SET dirty_g = TRUE WHERE id = COALESCE(NEW.case_id, OLD.case_id);
   RETURN COALESCE(NEW, OLD);
 END;
@@ -1391,6 +1432,10 @@ CREATE OR REPLACE FUNCTION mark_case_dirty_g_from_drug() RETURNS trigger AS $$
 DECLARE
   v_drug_id UUID;
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
+
   IF TG_TABLE_NAME = 'relatedness_assessments' THEN
     SELECT dra.drug_id INTO v_drug_id
     FROM drug_reaction_assessments dra
@@ -1413,6 +1458,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION mark_case_dirty_h() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases SET dirty_h = TRUE WHERE id = COALESCE(NEW.case_id, OLD.case_id);
   RETURN COALESCE(NEW, OLD);
 END;
@@ -1420,6 +1468,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION mark_case_dirty_h_from_narrative() RETURNS trigger AS $$
 BEGIN
+  IF TG_OP = 'UPDATE' AND NOT has_business_change_on_update(OLD, NEW) THEN
+    RETURN NEW;
+  END IF;
   UPDATE cases
     SET dirty_h = TRUE
     WHERE id = (

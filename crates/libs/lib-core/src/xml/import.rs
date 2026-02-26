@@ -458,6 +458,8 @@ async fn import_reactions(
 				},
 				update: ReactionForUpdate {
 					primary_source_reaction: Some(entry.primary_source_reaction),
+					primary_source_reaction_translation: entry
+						.primary_source_reaction_translation,
 					reaction_language: entry.reaction_language,
 					reaction_meddra_code: entry.reaction_meddra_code,
 					reaction_meddra_version: entry.reaction_meddra_version,
@@ -3777,8 +3779,15 @@ fn parse_reactions(xml: &[u8], case_id: Uuid) -> Result<Vec<ReactionImport>> {
 			serious_from_term
 		};
 
+		let primary_translation = first_text(
+			&mut xpath,
+			&node,
+			"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='30']]/hl7:value",
+		);
+
 		let reaction_u = ReactionForUpdate {
 			primary_source_reaction: Some(primary),
+			primary_source_reaction_translation: primary_translation,
 			reaction_language: normalize_lang2(
 				first_attr(
 					&mut xpath,
@@ -4711,6 +4720,9 @@ async fn import_drug_reaction_assessments(
 				RelatednessAssessmentForCreate {
 					drug_reaction_assessment_id: assessment_id,
 					sequence_number: *seq,
+					source_of_assessment: rel.source_of_assessment.clone(),
+					method_of_assessment: rel.method_of_assessment.clone(),
+					result_of_assessment: rel.result_of_assessment.clone(),
 				},
 			)
 			.await?;

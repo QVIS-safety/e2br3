@@ -269,6 +269,12 @@
 |---|---|---|---|---|
 | GET | `/api/terminology/meddra?q={term}&limit={count}&version={version}` | `Terminology.Read` | none | `DataRestResult<Vec<MeddraTerm>>` |
 | GET | `/api/terminology/whodrug?q={term}&limit={count}` | `Terminology.Read` | none | `DataRestResult<Vec<WhodrugProduct>>` |
+| POST | `/api/terminology/import/meddra?version={ver}&language={lang}&dry_run={bool}` | `Terminology.Import` | `multipart/form-data` field `file` (zip with `llt.asc`,`mdhier.asc`) | `DataRestResult<TerminologyImportResult>` (`dry_run=false` stages release as `validated`) |
+| POST | `/api/terminology/import/whodrug?version={ver}&language={lang}&dry_run={bool}` | `Terminology.Import` | `multipart/form-data` field `file` (csv/tsv/txt or zip containing one) | `DataRestResult<TerminologyImportResult>` (`dry_run=false` stages release as `validated`) |
+| GET | `/api/terminology/releases?dictionary={dict}&language={lang}` | `Terminology.Read` | none | `DataRestResult<Vec<TerminologyReleaseRow>>` |
+| POST | `/api/terminology/releases/{dictionary}/{version}/approve?language={lang}&note={text}` | `Terminology.Approve` | none | `DataRestResult<TerminologyReleaseRow>` |
+| POST | `/api/terminology/releases/{dictionary}/{version}/activate?language={lang}` | `Terminology.Approve` | none | `DataRestResult<TerminologyReleaseRow>` |
+| POST | `/api/terminology/releases/{dictionary}/{version}/rollback?language={lang}` | `Terminology.Approve` | none | `DataRestResult<TerminologyReleaseRow>` |
 | GET | `/api/terminology/countries` | `Terminology.Read` | none | `DataRestResult<Vec<IsoCountry>>` |
 | GET | `/api/terminology/code-lists?list_name={name}` | `Terminology.Read` | none | `DataRestResult<Vec<E2bCodeList>>` |
 

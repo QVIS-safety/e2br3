@@ -107,35 +107,41 @@ fn relatedness_fragment(
 	relatedness: &RelatednessAssessment,
 ) -> String {
 	let mut out = String::new();
-	out.push_str("<component typeCode=\"COMP\"><causalityAssessment classCode=\"OBS\" moodCode=\"EVN\">");
-	out.push_str(
-		"<code code=\"39\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"causality\"/>",
-	);
-	out.push_str("<subject1 typeCode=\"SBJ\"><adverseEffectReference classCode=\"OBS\" moodCode=\"EVN\"><id root=\"");
-	out.push_str(&assessment.reaction_id.to_string());
-	out.push_str("\"/></adverseEffectReference></subject1>");
-	out.push_str("<subject2 typeCode=\"SBJ\"><productUseReference classCode=\"SBADM\" moodCode=\"EVN\"><id root=\"");
-	out.push_str(&drug_id.to_string());
-	out.push_str("\"/></productUseReference></subject2>");
+	let mut text_bits: Vec<String> = Vec::new();
 	if let Some(source) = relatedness.source_of_assessment.as_deref() {
-		let s = xml_escape(source);
-		out.push_str("<author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\"><code><originalText>");
-		out.push_str(&s);
-		out.push_str("</originalText></code></assignedEntity></author>");
+		text_bits.push(format!("source={}", xml_escape(source)));
+	}
+	if let Some(interval) = assessment.time_interval_value.as_ref() {
+		if let Some(unit) = assessment.time_interval_unit.as_deref() {
+			text_bits.push(format!(
+				"interval={} {}",
+				xml_escape(&interval.to_string()),
+				xml_escape(unit)
+			));
+		} else {
+			text_bits
+				.push(format!("interval={}", xml_escape(&interval.to_string())));
+		}
 	}
 	if let Some(method) = relatedness.method_of_assessment.as_deref() {
-		let m = xml_escape(method);
-		out.push_str("<methodCode><originalText>");
-		out.push_str(&m);
-		out.push_str("</originalText></methodCode>");
+		text_bits.push(format!("method={}", xml_escape(method)));
 	}
 	if let Some(result) = relatedness.result_of_assessment.as_deref() {
-		let r = xml_escape(result);
-		out.push_str("<value xsi:type=\"CE\"><originalText>");
-		out.push_str(&r);
-		out.push_str("</originalText></value>");
+		text_bits.push(format!("result={}", xml_escape(result)));
 	}
-	out.push_str("</causalityAssessment></component>");
+	let summary = if text_bits.is_empty() {
+		format!(
+			"relatedness assessment={} drug={} reaction={}",
+			assessment.id, drug_id, assessment.reaction_id
+		)
+	} else {
+		text_bits.join("; ")
+	};
+	out.push_str("<component1 typeCode=\"COMP\"><observationEvent classCode=\"OBS\" moodCode=\"EVN\">");
+	out.push_str("<code code=\"39\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"causality\"/>");
+	out.push_str("<value xsi:type=\"ED\">");
+	out.push_str(&summary);
+	out.push_str("</value></observationEvent></component1>");
 	out
 }
 

@@ -85,11 +85,60 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		message: "Message header is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.C.1.1.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: false,
+		message: "[C.1.1] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.2.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: false,
+		message: "[C.1.2] is required.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.C.1.3.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
 		blocking: false,
 		message: "[C.1.3] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.4.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: false,
+		message: "[C.1.4] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.5.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: false,
+		message: "[C.1.5] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.7.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: false,
+		message: "[C.1.7] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.3.1.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "sender",
+		blocking: false,
+		message: "[C.3.1] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.3.2.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "sender",
+		blocking: false,
+		message: "[C.3.2] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.4.REQUIRED",
@@ -1167,7 +1216,35 @@ struct ValuePolicyBinding {
 
 const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
+		code: "ICH.C.1.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
 		code: "ICH.C.1.3.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.4.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.5.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.7.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.3.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.3.2.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
@@ -1806,6 +1883,18 @@ mod tests {
 	#[test]
 	fn canonical_value_rules_cover_core_ich_required_fields() {
 		assert!(!is_rule_value_valid(
+			"ICH.C.1.1.REQUIRED",
+			Some(""),
+			None,
+			RuleFacts::default()
+		));
+		assert!(is_rule_value_valid(
+			"ICH.C.1.1.REQUIRED",
+			Some("CASE-001"),
+			None,
+			RuleFacts::default()
+		));
+		assert!(!is_rule_value_valid(
 			"ICH.C.1.3.REQUIRED",
 			Some(""),
 			None,
@@ -1814,6 +1903,30 @@ mod tests {
 		assert!(is_rule_value_valid(
 			"ICH.C.1.3.REQUIRED",
 			Some("1"),
+			None,
+			RuleFacts::default()
+		));
+		assert!(!is_rule_value_valid(
+			"ICH.C.1.4.REQUIRED",
+			Some(""),
+			None,
+			RuleFacts::default()
+		));
+		assert!(is_rule_value_valid(
+			"ICH.C.1.4.REQUIRED",
+			Some("20260226"),
+			None,
+			RuleFacts::default()
+		));
+		assert!(!is_rule_value_valid(
+			"ICH.C.1.5.REQUIRED",
+			Some(""),
+			None,
+			RuleFacts::default()
+		));
+		assert!(is_rule_value_valid(
+			"ICH.C.1.5.REQUIRED",
+			Some("20260226"),
 			None,
 			RuleFacts::default()
 		));

@@ -1,13 +1,351 @@
 <!DOCTYPE html>
-<html>
-  
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>AWESOME-APP Web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SafetyDB Terminology Admin</title>
+  <style>
+    :root {
+      --bg: #f2f4f7;
+      --card: #ffffff;
+      --ink: #111827;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --brand: #004e92;
+      --brand-dark: #003867;
+      --ok: #166534;
+      --warn: #92400e;
+      --bad: #991b1b;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1000px 300px at 20% 0%, #c7dff6 0%, transparent 70%),
+        radial-gradient(700px 250px at 80% 0%, #d7efe6 0%, transparent 70%),
+        var(--bg);
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 24px auto;
+      padding: 0 16px 32px;
+    }
+
+    .hero {
+      background: linear-gradient(110deg, #003867, #005aa8);
+      color: #fff;
+      border-radius: 16px;
+      padding: 20px 22px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+      margin-bottom: 18px;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 1.35rem;
+      letter-spacing: 0.01em;
+    }
+
+    .hero p {
+      margin: 0;
+      opacity: 0.92;
+      font-size: 0.95rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 4px 10px rgba(17, 24, 39, 0.04);
+    }
+
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    input[type="file"],
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      background: var(--brand);
+    }
+
+    button.secondary {
+      background: #475569;
+    }
+
+    button:hover { background: var(--brand-dark); }
+    button.secondary:hover { background: #334155; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .status {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #f9fafb;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .status.ok { color: var(--ok); border-color: #bbf7d0; background: #f0fdf4; }
+    .status.warn { color: var(--warn); border-color: #fed7aa; background: #fffbeb; }
+    .status.bad { color: var(--bad); border-color: #fecaca; background: #fef2f2; }
+
+    .hint {
+      margin-top: 14px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+  </style>
 </head>
-
 <body>
-  Hello <strong>World!</strong>
-</body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>SafetyDB Terminology Admin Console</h1>
+      <p>Upload licensed MedDRA and WHODrug packages. Activation runs server-side with RBAC and release tracking.</p>
+    </section>
 
+    <section class="grid">
+      <article class="card">
+        <h2>MedDRA Import</h2>
+        <div class="field">
+          <label for="meddra-file">Package file (zip with <code>llt.asc</code> and <code>mdhier.asc</code>)</label>
+          <input id="meddra-file" type="file" accept=".zip,application/zip">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="meddra-version">Version</label>
+            <input id="meddra-version" type="text" placeholder="27.1">
+          </div>
+          <div class="field">
+            <label for="meddra-lang">Language</label>
+            <input id="meddra-lang" type="text" value="en">
+          </div>
+        </div>
+        <div class="actions">
+          <button id="meddra-dry">Dry Run</button>
+          <button id="meddra-load" class="secondary">Stage Import</button>
+        </div>
+        <div class="actions">
+          <button id="meddra-approve">Approve</button>
+          <button id="meddra-activate" class="secondary">Activate</button>
+          <button id="meddra-rollback" class="secondary">Rollback</button>
+        </div>
+        <div id="meddra-status" class="status">No run yet.</div>
+      </article>
+
+      <article class="card">
+        <h2>WHODrug Import</h2>
+        <div class="field">
+          <label for="whodrug-file">Package file (csv/tsv/txt or zip)</label>
+          <input id="whodrug-file" type="file" accept=".zip,.csv,.tsv,.txt,text/plain,application/zip,text/csv">
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="whodrug-version">Version</label>
+            <input id="whodrug-version" type="text" placeholder="2025.09">
+          </div>
+          <div class="field">
+            <label for="whodrug-lang">Language</label>
+            <input id="whodrug-lang" type="text" value="en">
+          </div>
+        </div>
+        <div class="actions">
+          <button id="whodrug-dry">Dry Run</button>
+          <button id="whodrug-load" class="secondary">Stage Import</button>
+        </div>
+        <div class="actions">
+          <button id="whodrug-approve">Approve</button>
+          <button id="whodrug-activate" class="secondary">Activate</button>
+          <button id="whodrug-rollback" class="secondary">Rollback</button>
+        </div>
+        <div id="whodrug-status" class="status">No run yet.</div>
+      </article>
+    </section>
+
+    <p class="hint">
+      Requires authenticated session cookie and <code>Terminology.Import</code> permission (admin/manager).
+      API endpoints: <code>/api/terminology/import/*</code> and <code>/api/terminology/releases/*</code>.
+    </p>
+  </div>
+
+  <script>
+    async function runImport(kind, dryRun) {
+      const fileInput = document.getElementById(kind + "-file");
+      const versionInput = document.getElementById(kind + "-version");
+      const languageInput = document.getElementById(kind + "-lang");
+      const statusEl = document.getElementById(kind + "-status");
+      const dryBtn = document.getElementById(kind + "-dry");
+      const loadBtn = document.getElementById(kind + "-load");
+      const approveBtn = document.getElementById(kind + "-approve");
+      const activateBtn = document.getElementById(kind + "-activate");
+      const rollbackBtn = document.getElementById(kind + "-rollback");
+
+      const file = fileInput.files && fileInput.files[0];
+      const version = versionInput.value.trim();
+      const language = languageInput.value.trim() || "en";
+
+      if (!file) {
+        statusEl.className = "status bad";
+        statusEl.textContent = "Please choose a file first.";
+        return;
+      }
+      if (!version) {
+        statusEl.className = "status bad";
+        statusEl.textContent = "Please enter a version.";
+        return;
+      }
+
+      const params = new URLSearchParams({
+        version: version,
+        language: language,
+        dry_run: String(dryRun)
+      });
+      const url = "/api/terminology/import/" + kind + "?" + params.toString();
+      const form = new FormData();
+      form.append("file", file);
+
+      statusEl.className = "status warn";
+      statusEl.textContent = "Uploading and processing...";
+      dryBtn.disabled = true;
+      loadBtn.disabled = true;
+      approveBtn.disabled = true;
+      activateBtn.disabled = true;
+      rollbackBtn.disabled = true;
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          body: form,
+          credentials: "include"
+        });
+
+        const text = await res.text();
+        let payload;
+        try { payload = JSON.parse(text); } catch (_) { payload = text; }
+
+        if (!res.ok) {
+          statusEl.className = "status bad";
+          statusEl.textContent =
+            "Failed (" + res.status + "):\n" +
+            (typeof payload === "string" ? payload : JSON.stringify(payload, null, 2));
+          return;
+        }
+
+        statusEl.className = "status ok";
+        statusEl.textContent = "Success:\n" + JSON.stringify(payload, null, 2);
+      } catch (err) {
+        statusEl.className = "status bad";
+        statusEl.textContent = "Request error:\n" + (err && err.message ? err.message : String(err));
+      } finally {
+        dryBtn.disabled = false;
+        loadBtn.disabled = false;
+        approveBtn.disabled = false;
+        activateBtn.disabled = false;
+        rollbackBtn.disabled = false;
+      }
+    }
+
+    async function runReleaseAction(kind, action) {
+      const versionInput = document.getElementById(kind + "-version");
+      const languageInput = document.getElementById(kind + "-lang");
+      const statusEl = document.getElementById(kind + "-status");
+      const version = versionInput.value.trim();
+      const language = languageInput.value.trim() || "en";
+      if (!version) {
+        statusEl.className = "status bad";
+        statusEl.textContent = "Please enter a version.";
+        return;
+      }
+
+      const url = "/api/terminology/releases/" + kind + "/" + encodeURIComponent(version) +
+        "/" + action + "?language=" + encodeURIComponent(language);
+      statusEl.className = "status warn";
+      statusEl.textContent = "Running " + action + "...";
+
+      try {
+        const res = await fetch(url, { method: "POST", credentials: "include" });
+        const text = await res.text();
+        let payload;
+        try { payload = JSON.parse(text); } catch (_) { payload = text; }
+        if (!res.ok) {
+          statusEl.className = "status bad";
+          statusEl.textContent =
+            "Failed (" + res.status + "):\n" +
+            (typeof payload === "string" ? payload : JSON.stringify(payload, null, 2));
+          return;
+        }
+        statusEl.className = "status ok";
+        statusEl.textContent = "Success:\n" + JSON.stringify(payload, null, 2);
+      } catch (err) {
+        statusEl.className = "status bad";
+        statusEl.textContent = "Request error:\n" + (err && err.message ? err.message : String(err));
+      }
+    }
+
+    document.getElementById("meddra-dry").addEventListener("click", () => runImport("meddra", true));
+    document.getElementById("meddra-load").addEventListener("click", () => runImport("meddra", false));
+    document.getElementById("meddra-approve").addEventListener("click", () => runReleaseAction("meddra", "approve"));
+    document.getElementById("meddra-activate").addEventListener("click", () => runReleaseAction("meddra", "activate"));
+    document.getElementById("meddra-rollback").addEventListener("click", () => runReleaseAction("meddra", "rollback"));
+    document.getElementById("whodrug-dry").addEventListener("click", () => runImport("whodrug", true));
+    document.getElementById("whodrug-load").addEventListener("click", () => runImport("whodrug", false));
+    document.getElementById("whodrug-approve").addEventListener("click", () => runReleaseAction("whodrug", "approve"));
+    document.getElementById("whodrug-activate").addEventListener("click", () => runReleaseAction("whodrug", "activate"));
+    document.getElementById("whodrug-rollback").addEventListener("click", () => runReleaseAction("whodrug", "rollback"));
+  </script>
+</body>
 </html>

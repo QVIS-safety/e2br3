@@ -28,11 +28,15 @@ pub(super) async fn apply_section_n(
 			&fmt_datetime(batch_tx),
 		);
 	} else {
+		let safe_message_date =
+			crate::xml::export_utils::clamp_14_digit_datetime_not_future(
+				&header.message_date,
+			);
 		set_attr_first(
 			xpath,
 			"/hl7:MCCI_IN200100UV01/hl7:creationTime",
 			"value",
-			&header.message_date,
+			&safe_message_date,
 		);
 	}
 	let batch_sender = header
@@ -70,11 +74,15 @@ pub(super) async fn apply_section_n(
 		"extension",
 		&header.message_number,
 	);
+	let safe_message_date =
+		crate::xml::export_utils::clamp_14_digit_datetime_not_future(
+			&header.message_date,
+		);
 	set_attr_first(
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:creationTime",
 		"value",
-		&header.message_date,
+		&safe_message_date,
 	);
 	set_attr_first(
 		xpath,
@@ -92,7 +100,7 @@ pub(super) async fn apply_section_n(
 		xpath,
 		"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:controlActProcess/hl7:effectiveTime",
 		"value",
-		&header.message_date,
+		&safe_message_date,
 	);
 	if let Some(receiver) = fetch_receiver_information(mm, case_id).await? {
 		ensure_receiver_agent_nodes(
@@ -232,4 +240,3 @@ pub(super) async fn fetch_receiver_information(
 		.await
 		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
 }
-

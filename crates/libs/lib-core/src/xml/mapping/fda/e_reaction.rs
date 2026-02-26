@@ -12,6 +12,8 @@ impl EReactionPaths {
 		"hl7:value[@xsi:type='CE']/hl7:originalText";
 	pub const PRIMARY_TEXT_ALT: &'static str =
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='30']]/hl7:value";
+	pub const TRANSLATION_TEXT: &'static str =
+		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='30']]/hl7:value";
 	pub const MEDDRA_CODE: &'static str = "hl7:value[@xsi:type='CE']/@code";
 	pub const MEDDRA_VERSION: &'static str =
 		"hl7:value[@xsi:type='CE']/@codeSystemVersion";

@@ -1,4 +1,5 @@
 use super::*;
+use time::{Duration, Month, PrimitiveDateTime, Time, UtcOffset};
 
 pub(super) fn ensure_investigation_id(
 	doc: &mut Document,
@@ -281,6 +282,7 @@ pub(super) fn fmt_date_time_fallback(date: Date) -> String {
 }
 
 pub(super) fn fmt_offset_datetime(dt: OffsetDateTime) -> String {
+	let dt = dt.to_offset(UtcOffset::UTC);
 	format!(
 		"{:04}{:02}{:02}{:02}{:02}{:02}",
 		dt.year(),
@@ -290,6 +292,48 @@ pub(super) fn fmt_offset_datetime(dt: OffsetDateTime) -> String {
 		dt.minute(),
 		dt.second()
 	)
+}
+
+pub(super) fn clamp_14_digit_datetime_not_future(value: &str) -> String {
+	if value.len() != 14 || !value.chars().all(|c| c.is_ascii_digit()) {
+		return value.to_string();
+	}
+	let year: i32 = value[0..4].parse().unwrap_or(0);
+	let month_num: u8 = value[4..6].parse().unwrap_or(0);
+	let day: u8 = value[6..8].parse().unwrap_or(0);
+	let hour: u8 = value[8..10].parse().unwrap_or(0);
+	let minute: u8 = value[10..12].parse().unwrap_or(0);
+	let second: u8 = value[12..14].parse().unwrap_or(0);
+
+	let month = match month_num {
+		1 => Month::January,
+		2 => Month::February,
+		3 => Month::March,
+		4 => Month::April,
+		5 => Month::May,
+		6 => Month::June,
+		7 => Month::July,
+		8 => Month::August,
+		9 => Month::September,
+		10 => Month::October,
+		11 => Month::November,
+		12 => Month::December,
+		_ => return value.to_string(),
+	};
+
+	let Ok(date) = Date::from_calendar_date(year, month, day) else {
+		return value.to_string();
+	};
+	let Ok(time) = Time::from_hms(hour, minute, second) else {
+		return value.to_string();
+	};
+	let dt = PrimitiveDateTime::new(date, time).assume_utc();
+	let cutoff = OffsetDateTime::now_utc() - Duration::minutes(5);
+	if dt > cutoff {
+		fmt_offset_datetime(cutoff)
+	} else {
+		value.to_string()
+	}
 }
 
 pub(super) fn is_14_digit_datetime(value: &str) -> bool {

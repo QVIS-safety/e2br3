@@ -9,6 +9,8 @@ CREATE TABLE reactions (
 
     -- E.i.1.1 - Reaction/Event as Reported
     primary_source_reaction VARCHAR(250) NOT NULL,
+    -- E.i.1.2 - Reaction/Event as Reported by Primary Source (translation)
+    primary_source_reaction_translation VARCHAR(250),
 
     -- E.i.1.2 - Reaction/Event Language
     reaction_language VARCHAR(2),  -- ISO 639-1 code

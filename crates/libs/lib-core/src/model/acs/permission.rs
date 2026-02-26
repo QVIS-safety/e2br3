@@ -494,6 +494,10 @@ pub const AUDIT_LIST: Permission = Permission::new(Resource::AuditLog, Action::L
 // Terminology permissions
 pub const TERMINOLOGY_READ: Permission =
 	Permission::new(Resource::Terminology, Action::Read);
+pub const TERMINOLOGY_IMPORT: Permission =
+	Permission::new(Resource::Terminology, Action::Import);
+pub const TERMINOLOGY_APPROVE: Permission =
+	Permission::new(Resource::Terminology, Action::Approve);
 
 // XML permissions
 pub const XML_EXPORT: Permission =
@@ -700,6 +704,8 @@ fn admin_permissions() -> &'static [Permission] {
 		AUDIT_LIST,
 		// Terminology
 		TERMINOLOGY_READ,
+		TERMINOLOGY_IMPORT,
+		TERMINOLOGY_APPROVE,
 		// XML
 		XML_EXPORT,
 		XML_IMPORT,
@@ -895,6 +901,8 @@ fn manager_permissions() -> &'static [Permission] {
 		AUDIT_LIST,
 		// Terminology
 		TERMINOLOGY_READ,
+		TERMINOLOGY_IMPORT,
+		TERMINOLOGY_APPROVE,
 		// XML
 		XML_EXPORT,
 		XML_IMPORT,

@@ -61,4 +61,3 @@ pub fn patch_h_narrative(
 
 	Ok(doc.to_string())
 }
-

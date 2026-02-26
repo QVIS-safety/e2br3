@@ -15,6 +15,7 @@ use time::Month;
 pub struct EReactionImport {
 	pub xml_id: Option<Uuid>,
 	pub primary_source_reaction: String,
+	pub primary_source_reaction_translation: Option<String>,
 	pub reaction_language: Option<String>,
 	pub reaction_meddra_version: Option<String>,
 	pub reaction_meddra_code: Option<String>,
@@ -74,10 +75,10 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 			&node,
 			EReactionPaths::XML_ID_ROOT,
 		));
+		let translation_text =
+			first_text(&mut xpath, &node, EReactionPaths::TRANSLATION_TEXT);
 		let primary = first_text(&mut xpath, &node, EReactionPaths::PRIMARY_TEXT)
-			.or_else(|| {
-				first_text(&mut xpath, &node, EReactionPaths::PRIMARY_TEXT_ALT)
-			})
+			.or_else(|| translation_text.clone())
 			.ok_or_else(|| Error::InvalidXml {
 				message: format!(
 					"ICH.E.i.1.1a.REQUIRED: reaction text missing for reaction index {}",
@@ -192,6 +193,7 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 		imports.push(EReactionImport {
 			xml_id,
 			primary_source_reaction: primary,
+			primary_source_reaction_translation: translation_text,
 			reaction_language,
 			reaction_meddra_version,
 			reaction_meddra_code,

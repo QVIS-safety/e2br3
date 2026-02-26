@@ -31,13 +31,15 @@ sqlx = { workspace = true }
 strum_macros = "0.26"
 derive_more = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+csv = "1"
+zip = "2"
+sha2 = "0.10"
 
 [dev-dependencies]
 httpc-test = "0.1"
 serial_test = "3"
 tower = "0.5"
 hmac = "0.12"
-sha2 = "0.10"
 
 [[example]]
 name = "case_create_fda_minimal"

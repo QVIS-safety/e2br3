@@ -14,6 +14,18 @@ pub fn export_c_safety_report_patch(
 	header: Option<&MessageHeader>,
 	sender: Option<&SenderInformation>,
 ) -> Result<String> {
+	let combination_true = report
+		.combination_product_report_indicator
+		.as_deref()
+		.map(is_true_like)
+		.unwrap_or(false);
+	let local_criteria_report_type =
+		if !report.fulfil_expedited_criteria && !combination_true {
+			Some("2")
+		} else {
+			report.local_criteria_report_type.as_deref()
+		};
+
 	let patch = CSafetyReportPatch {
 		report_unique_id: &case.safety_report_id,
 		transmission_date: report.transmission_date,
@@ -24,7 +36,7 @@ pub fn export_c_safety_report_patch(
 		date_most_recent: report.date_of_most_recent_information,
 		fulfil_expedited: report.fulfil_expedited_criteria,
 		worldwide_unique_id: report.worldwide_unique_id.as_deref(),
-		local_criteria_report_type: report.local_criteria_report_type.as_deref(),
+		local_criteria_report_type,
 		combination_product_indicator: report
 			.combination_product_report_indicator
 			.as_deref(),
@@ -51,6 +63,13 @@ pub fn export_c_safety_report_patch(
 	};
 
 	patch_c_safety_report(raw_xml, &patch)
+}
+
+fn is_true_like(value: &str) -> bool {
+	matches!(
+		value.trim().to_ascii_lowercase().as_str(),
+		"true" | "1" | "y" | "yes"
+	)
 }
 
 /// Build a minimal ICSR XML skeleton and populate Section C using mapping-driven patching.

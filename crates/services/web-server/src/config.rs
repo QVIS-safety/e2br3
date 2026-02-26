@@ -72,13 +72,11 @@ pub fn validate_submission_runtime_config() -> core::result::Result<(), String> 
 	if as2_enabled {
 		if !env_non_empty("AS2_ACK_CALLBACK_URL") {
 			return Err(
-				"AS2_SUBMITTER_URL requires AS2_ACK_CALLBACK_URL".to_string(),
+				"AS2_SUBMITTER_URL requires AS2_ACK_CALLBACK_URL".to_string()
 			);
 		}
 		if !env_non_empty("AS2_CALLBACK_TOKEN") {
-			return Err(
-				"AS2_SUBMITTER_URL requires AS2_CALLBACK_TOKEN".to_string(),
-			);
+			return Err("AS2_SUBMITTER_URL requires AS2_CALLBACK_TOKEN".to_string());
 		}
 	}
 

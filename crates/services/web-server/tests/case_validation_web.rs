@@ -534,6 +534,44 @@ async fn test_case_save_auto_statuses_checked_when_blocking_issues_exist(
 
 #[serial]
 #[tokio::test]
+async fn test_create_safety_report_is_idempotent_for_existing_case() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let body = json!({
+		"data": {
+			"case_id": case_id,
+			"transmission_date": [2025, 1],
+			"report_type": "2",
+			"date_first_received_from_source": [2025, 1],
+			"date_of_most_recent_information": [2025, 1],
+			"fulfil_expedited_criteria": true
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!("/api/cases/{case_id}/safety-report"))
+		.header("cookie", &cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert!(value["data"]["id"].as_str().is_some(), "{value:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_validator_endpoint_requires_token() -> Result<()> {
 	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
 	let mm = init_test_mm().await?;
@@ -594,6 +632,32 @@ async fn test_validator_endpoint_marks_validated_when_clean() -> Result<()> {
 			.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["status"].as_str(), Some("validated"));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_save_allows_validated_to_draft_transition() -> Result<()> {
+	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+	create_message_header(&app, &cookie, case_id).await?;
+	let (status, body) =
+		validator_mark_validated(&app, &cookie, case_id, Some("validator-secret"))
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["status"].as_str(), Some("validated"));
+
+	let (status, body) = update_case_status(&app, &cookie, case_id, "draft").await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert!(body.get("data").is_some(), "{body:?}");
+
 	Ok(())
 }
 

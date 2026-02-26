@@ -17,6 +17,7 @@ members = [
 
     # -- Tools
     "crates/tools/gen-key",
+    "crates/tools/terminology-loader",
 ]
 
 # NOTE: Only the crates that are utilized in two or more sub-crates and benefit from global management

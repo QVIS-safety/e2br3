@@ -108,4 +108,3 @@ pub fn patch_d_patient(raw_xml: &[u8], patch: &DPatientPatch) -> Result<String> 
 
 	Ok(doc.to_string())
 }
-

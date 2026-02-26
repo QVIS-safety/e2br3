@@ -83,4 +83,3 @@ pub fn patch_f_test_results(raw_xml: &[u8], tests: &[TestResult]) -> Result<Stri
 
 	Ok(doc.to_string())
 }
-

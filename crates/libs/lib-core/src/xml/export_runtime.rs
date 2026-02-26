@@ -7,9 +7,9 @@ use crate::model::narrative::{
 };
 use crate::model::patient::{
 	ParentInformation, ParentInformationBmc, ParentInformationFilter,
-	PastDrugHistory, PastDrugHistoryBmc, PastDrugHistoryFilter,
-	PatientIdentifier, PatientIdentifierBmc, PatientIdentifierFilter,
-	PatientInformation, PatientInformationBmc,
+	PastDrugHistory, PastDrugHistoryBmc, PastDrugHistoryFilter, PatientIdentifier,
+	PatientIdentifierBmc, PatientIdentifierFilter, PatientInformation,
+	PatientInformationBmc,
 };
 use crate::model::receiver::ReceiverInformation;
 use crate::model::safety_report::PrimarySource;
@@ -40,9 +40,7 @@ mod sections;
 pub(crate) use core_section_n::fetch_message_header;
 pub(crate) use postprocess::apply_section_postprocess;
 
-use core_section_n::{
-	apply_section_n, fetch_primary_source,
-};
+use core_section_n::{apply_section_n, fetch_primary_source};
 use patient_data::{
 	ensure_parent_role, ensure_patient_history_text, ensure_patient_identifier,
 	ensure_patient_observation, fetch_case_summaries, fetch_parent_information,

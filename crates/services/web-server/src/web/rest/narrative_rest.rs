@@ -1,25 +1,102 @@
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
+use axum::Json;
 use lib_core::model::acs::{
 	NARRATIVE_CREATE, NARRATIVE_DELETE, NARRATIVE_READ, NARRATIVE_UPDATE,
 };
 use lib_core::model::narrative::{
-	NarrativeInformationBmc, NarrativeInformationForCreate,
+	NarrativeInformation, NarrativeInformationBmc, NarrativeInformationForCreate,
 	NarrativeInformationForUpdate,
 };
-use lib_rest_core::prelude::*;
+use lib_core::model::ModelManager;
+use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
+use lib_rest_core::rest_result::DataRestResult;
+use lib_rest_core::{require_permission, Result};
+use lib_web::middleware::mw_auth::CtxW;
+use std::borrow::Cow;
+use uuid::Uuid;
 
-// Case-scoped single narrative CRUD:
-// - create_narrative_information
-// - get_narrative_information
-// - update_narrative_information
-// - delete_narrative_information
-generate_case_single_rest_fns! {
-	Bmc: NarrativeInformationBmc,
-	Entity: lib_core::model::narrative::NarrativeInformation,
-	ForCreate: NarrativeInformationForCreate,
-	ForUpdate: NarrativeInformationForUpdate,
-	Suffix: narrative_information,
-	PermCreate: NARRATIVE_CREATE,
-	PermRead: NARRATIVE_READ,
-	PermUpdate: NARRATIVE_UPDATE,
-	PermDelete: NARRATIVE_DELETE
+fn is_unique_violation(err: &lib_core::model::Error) -> bool {
+	matches!(err, lib_core::model::Error::UniqueViolation { .. })
+		|| matches!(
+			err.as_database_error().and_then(|db| db.code()),
+			Some(Cow::Borrowed("23505"))
+		) || {
+		let text = format!("{err:?}").to_ascii_lowercase();
+		text.contains("duplicate") || text.contains("unique")
+	}
+}
+
+pub async fn create_narrative_information(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(params): Json<ParamsForCreate<NarrativeInformationForCreate>>,
+) -> Result<(StatusCode, Json<DataRestResult<NarrativeInformation>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, NARRATIVE_CREATE)?;
+	let ParamsForCreate { data } = params;
+	let mut data = data;
+	data.case_id = case_id;
+
+	match NarrativeInformationBmc::get_by_case(&ctx, &mm, case_id).await {
+		Ok(entity) => {
+			return Ok((StatusCode::OK, Json(DataRestResult { data: entity })));
+		}
+		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => {}
+		Err(err) => return Err(err.into()),
+	}
+
+	match NarrativeInformationBmc::create(&ctx, &mm, data).await {
+		Ok(_) => {
+			let entity =
+				NarrativeInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+			Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+		}
+		Err(err) if is_unique_violation(&err) => {
+			match NarrativeInformationBmc::get_by_case(&ctx, &mm, case_id).await {
+				Ok(entity) => {
+					Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+				}
+				Err(_) => Err(err.into()),
+			}
+		}
+		Err(err) => Err(err.into()),
+	}
+}
+
+pub async fn get_narrative_information(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<DataRestResult<NarrativeInformation>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, NARRATIVE_READ)?;
+	let entity = NarrativeInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+pub async fn update_narrative_information(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(params): Json<ParamsForUpdate<NarrativeInformationForUpdate>>,
+) -> Result<(StatusCode, Json<DataRestResult<NarrativeInformation>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, NARRATIVE_UPDATE)?;
+	let ParamsForUpdate { data } = params;
+	NarrativeInformationBmc::update_by_case(&ctx, &mm, case_id, data).await?;
+	let entity = NarrativeInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+pub async fn delete_narrative_information(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<StatusCode> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, NARRATIVE_DELETE)?;
+	NarrativeInformationBmc::delete_by_case(&ctx, &mm, case_id).await?;
+	Ok(StatusCode::NO_CONTENT)
 }

@@ -98,7 +98,9 @@ pub(crate) fn drug_fragment(
 			out.push_str(&xml_escape(mpid));
 			out.push_str("\"");
 		}
-		out.push_str("/><code code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"");
+		out.push_str(
+			"/><code code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
+		);
 		if let Some(ver) = drug.mpid_version.as_deref() {
 			out.push_str(" codeSystemVersion=\"");
 			out.push_str(&xml_escape(ver));
@@ -113,7 +115,9 @@ pub(crate) fn drug_fragment(
 			out.push_str(&xml_escape(phpid));
 			out.push_str("\"");
 		}
-		out.push_str("/><code code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"");
+		out.push_str(
+			"/><code code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
+		);
 		if let Some(ver) = drug.phpid_version.as_deref() {
 			out.push_str(" codeSystemVersion=\"");
 			out.push_str(&xml_escape(ver));
@@ -143,12 +147,21 @@ pub(crate) fn drug_fragment(
 	if !substances.is_empty() {
 		for sub in substances {
 			out.push_str("<ingredient>");
-			out.push_str("<ingredientSubstance>");
-			if let Some(name) = sub.substance_name.as_deref() {
-				out.push_str("<name>");
-				out.push_str(&xml_escape(name));
-				out.push_str("</name>");
+			if sub.strength_value.is_some() || sub.strength_unit.is_some() {
+				out.push_str("<quantity><numerator");
+				if let Some(v) = sub.strength_value.as_ref() {
+					out.push_str(" value=\"");
+					out.push_str(&xml_escape(&v.to_string()));
+					out.push_str("\"");
+				}
+				if let Some(u) = sub.strength_unit.as_deref() {
+					out.push_str(" unit=\"");
+					out.push_str(&xml_escape(u));
+					out.push_str("\"");
+				}
+				out.push_str("/><denominator value=\"1\" unit=\"1\"/></quantity>");
 			}
+			out.push_str("<ingredientSubstance>");
 			if sub.substance_termid.is_some()
 				|| sub.substance_termid_version.is_some()
 			{
@@ -165,19 +178,10 @@ pub(crate) fn drug_fragment(
 				}
 				out.push_str("/>");
 			}
-			if sub.strength_value.is_some() || sub.strength_unit.is_some() {
-				out.push_str("<quantity><numerator");
-				if let Some(v) = sub.strength_value.as_ref() {
-					out.push_str(" value=\"");
-					out.push_str(&xml_escape(&v.to_string()));
-					out.push_str("\"");
-				}
-				if let Some(u) = sub.strength_unit.as_deref() {
-					out.push_str(" unit=\"");
-					out.push_str(&xml_escape(u));
-					out.push_str("\"");
-				}
-				out.push_str("/></quantity>");
+			if let Some(name) = sub.substance_name.as_deref() {
+				out.push_str("<name>");
+				out.push_str(&xml_escape(name));
+				out.push_str("</name>");
 			}
 			out.push_str("</ingredientSubstance>");
 			out.push_str("</ingredient>");
@@ -294,7 +298,9 @@ pub(crate) fn drug_fragment(
 			out.push_str("</text>");
 		}
 		if dose.frequency_value.is_some() || dose.frequency_unit.is_some() {
-			out.push_str("<effectiveTime><comp xsi:type=\"PIVL_TS\"><period");
+			out.push_str(
+				"<effectiveTime xsi:type=\"SXPR_TS\"><comp xsi:type=\"PIVL_TS\"><period",
+			);
 			if let Some(v) = dose.frequency_value.as_ref() {
 				out.push_str(" value=\"");
 				out.push_str(&xml_escape(&v.to_string()));
@@ -311,19 +317,25 @@ pub(crate) fn drug_fragment(
 			|| dose.last_administration_date.is_some()
 			|| dose.duration_value.is_some()
 		{
-			out.push_str("<effectiveTime>");
+			out.push_str("<effectiveTime xsi:type=\"SXPR_TS\">");
 			if let Some(start) = dose.first_administration_date {
-				out.push_str("<comp operator=\"A\"><low value=\"");
+				out.push_str(
+					"<comp xsi:type=\"IVL_TS\" operator=\"A\"><low value=\"",
+				);
 				out.push_str(&fmt_ts(start, dose.first_administration_time));
 				out.push_str("\"/></comp>");
 			}
 			if let Some(end) = dose.last_administration_date {
-				out.push_str("<comp operator=\"A\"><high value=\"");
+				out.push_str(
+					"<comp xsi:type=\"IVL_TS\" operator=\"A\"><high value=\"",
+				);
 				out.push_str(&fmt_ts(end, dose.last_administration_time));
 				out.push_str("\"/></comp>");
 			}
 			if let Some(width) = dose.duration_value.as_ref() {
-				out.push_str("<comp operator=\"A\"><width value=\"");
+				out.push_str(
+					"<comp xsi:type=\"IVL_TS\" operator=\"A\"><width value=\"",
+				);
 				out.push_str(&xml_escape(&width.to_string()));
 				out.push_str("\"");
 				if let Some(unit) = dose.duration_unit.as_deref() {
@@ -334,6 +346,11 @@ pub(crate) fn drug_fragment(
 				out.push_str("/></comp>");
 			}
 			out.push_str("</effectiveTime>");
+		}
+		if let Some(route) = dose.route_of_administration.as_deref() {
+			out.push_str("<routeCode code=\"");
+			out.push_str(&xml_escape(route));
+			out.push_str("\"/>");
 		}
 		if dose.dose_value.is_some() || dose.dose_unit.is_some() {
 			out.push_str("<doseQuantity");
@@ -349,35 +366,41 @@ pub(crate) fn drug_fragment(
 			}
 			out.push_str("/>");
 		}
-		if let Some(route) = dose.route_of_administration.as_deref() {
-			out.push_str("<routeCode code=\"");
-			out.push_str(&xml_escape(route));
-			out.push_str("\"/>");
+		if dose.batch_lot_number.is_some()
+			|| dose.dose_form.is_some()
+			|| dose.dose_form_termid.is_some()
+		{
+			out.push_str("<consumable><instanceOfKind>");
+			if let Some(batch) = dose.batch_lot_number.as_deref() {
+				out.push_str("<productInstanceInstance><lotNumberText>");
+				out.push_str(&xml_escape(batch));
+				out.push_str("</lotNumberText></productInstanceInstance>");
+			}
+			if dose.dose_form.is_some() || dose.dose_form_termid.is_some() {
+				out.push_str("<kindOfProduct><formCode");
+				if let Some(code) = dose.dose_form_termid.as_deref() {
+					out.push_str(" code=\"");
+					out.push_str(&xml_escape(code));
+					out.push_str("\"");
+				}
+				if let Some(ver) = dose.dose_form_termid_version.as_deref() {
+					out.push_str(" codeSystemVersion=\"");
+					out.push_str(&xml_escape(ver));
+					out.push_str("\"");
+				}
+				out.push_str(">");
+				if let Some(text) = dose.dose_form.as_deref() {
+					out.push_str("<originalText>");
+					out.push_str(&xml_escape(text));
+					out.push_str("</originalText>");
+				}
+				out.push_str("</formCode></kindOfProduct>");
+			}
+			out.push_str("</instanceOfKind></consumable>");
 		}
-		if dose.dose_form.is_some() || dose.dose_form_termid.is_some() {
-			out.push_str("<consumable><instanceOfKind><kindOfProduct><formCode");
-			if let Some(code) = dose.dose_form_termid.as_deref() {
-				out.push_str(" code=\"");
-				out.push_str(&xml_escape(code));
-				out.push_str("\"");
-			}
-			if let Some(ver) = dose.dose_form_termid_version.as_deref() {
-				out.push_str(" codeSystemVersion=\"");
-				out.push_str(&xml_escape(ver));
-				out.push_str("\"");
-			}
-			out.push_str(">");
-			if let Some(text) = dose.dose_form.as_deref() {
-				out.push_str("<originalText>");
-				out.push_str(&xml_escape(text));
-				out.push_str("</originalText>");
-			}
-			out.push_str(
-				"</formCode></kindOfProduct></instanceOfKind></consumable>",
-			);
-		}
-			if dose.parent_route_termid.is_some() || dose.parent_route.is_some() {
+		if dose.parent_route_termid.is_some() || dose.parent_route.is_some() {
 			out.push_str("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"G.k.4.r.11\"/><value");
+			out.push_str(" xsi:type=\"CE\"");
 			if let Some(code) = dose.parent_route_termid.as_deref() {
 				out.push_str(" code=\"");
 				out.push_str(&xml_escape(code));

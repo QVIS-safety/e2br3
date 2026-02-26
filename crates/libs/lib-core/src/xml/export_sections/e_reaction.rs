@@ -30,23 +30,40 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 		|| reaction.end_date.is_some()
 		|| reaction.duration_value.is_some()
 	{
-		if reaction.duration_value.is_some() {
+		let has_duration = reaction.duration_value.is_some();
+		if has_duration {
 			out.push_str("<effectiveTime xsi:type=\"SXPR_TS\">");
 		} else {
 			out.push_str("<effectiveTime xsi:type=\"IVL_TS\">");
 		}
 		if let Some(start) = reaction.start_date {
-			out.push_str("<low value=\"");
-			out.push_str(&fmt_date(start));
-			out.push_str("\"/>");
+			if has_duration {
+				out.push_str(
+					"<comp xsi:type=\"IVL_TS\" operator=\"A\"><low value=\"",
+				);
+				out.push_str(&fmt_date(start));
+				out.push_str("\"/></comp>");
+			} else {
+				out.push_str("<low value=\"");
+				out.push_str(&fmt_date(start));
+				out.push_str("\"/>");
+			}
 		}
 		if let Some(end) = reaction.end_date {
-			out.push_str("<high value=\"");
-			out.push_str(&fmt_date(end));
-			out.push_str("\"/>");
+			if has_duration {
+				out.push_str(
+					"<comp xsi:type=\"IVL_TS\" operator=\"A\"><high value=\"",
+				);
+				out.push_str(&fmt_date(end));
+				out.push_str("\"/></comp>");
+			} else {
+				out.push_str("<high value=\"");
+				out.push_str(&fmt_date(end));
+				out.push_str("\"/>");
+			}
 		}
 		if let Some(width) = reaction.duration_value.as_ref() {
-			out.push_str("<comp operator=\"A\"><width value=\"");
+			out.push_str("<comp xsi:type=\"IVL_TS\" operator=\"A\"><width value=\"");
 			out.push_str(&xml_escape(&width.to_string()));
 			out.push_str("\"");
 			if let Some(unit) = reaction.duration_unit.as_deref() {
@@ -73,7 +90,15 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 			out.push_str(&xml_escape(version));
 			out.push_str("\"");
 		}
-		out.push_str("/>");
+		out.push_str("><originalText");
+		if let Some(lang) = reaction.reaction_language.as_deref() {
+			out.push_str(" language=\"");
+			out.push_str(&xml_escape(lang));
+			out.push_str("\"");
+		}
+		out.push_str(">");
+		out.push_str(&xml_escape(&reaction.primary_source_reaction));
+		out.push_str("</originalText></value>");
 	} else {
 		out.push_str("<value xsi:type=\"CE\"><originalText");
 		if let Some(lang) = reaction.reaction_language.as_deref() {
@@ -85,12 +110,7 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 		out.push_str(&xml_escape(&reaction.primary_source_reaction));
 		out.push_str("</originalText></value>");
 	}
-	if let Some(country) = reaction.country_code.as_deref() {
-		out.push_str("<location typeCode=\"LOC\"><locatedEntity classCode=\"LOCE\"><locatedPlace classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code code=\"");
-		out.push_str(&xml_escape(country));
-		out.push_str("\"/></locatedPlace></locatedEntity></location>");
-	}
-
+	out.push_str(&observation_rel_translation(reaction));
 	if let Some(term_code) =
 		term_highlight_code(reaction.term_highlighted, reaction.serious)
 	{
@@ -119,7 +139,9 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 		reaction.criteria_other_medically_important,
 	));
 
-	out.push_str(&observation_rel_required_intervention());
+	out.push_str(&observation_rel_required_intervention(
+		reaction.required_intervention.as_deref(),
+	));
 
 	out.push_str(&observation_rel_outcome(
 		reaction.outcome.as_deref(),
@@ -177,12 +199,47 @@ fn observation_rel_outcome(
 	))
 }
 
-fn observation_rel_required_intervention() -> String {
+fn normalize_bl(value: &str) -> Option<&'static str> {
+	match value.trim().to_ascii_lowercase().as_str() {
+		"true" | "1" | "yes" | "y" => Some("true"),
+		"false" | "2" | "no" | "n" => Some("false"),
+		_ => None,
+	}
+}
+
+fn observation_rel_required_intervention(value: Option<&str>) -> String {
+	if let Some(v) = value.and_then(normalize_bl) {
+		return format!(
+			"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"7\" codeSystem=\"2.16.840.1.113883.3.989.5.1.2.2.1.3\"/><value xsi:type=\"BL\" value=\"{v}\"/></observation></outboundRelationship2>"
+		);
+	}
 	if should_emit_required_intervention_null_flavor_ni() {
 		"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"7\" codeSystem=\"2.16.840.1.113883.3.989.5.1.2.2.1.3\"/><value xsi:type=\"BL\" nullFlavor=\"NI\"/></observation></outboundRelationship2>".to_string()
 	} else {
 		"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"7\" codeSystem=\"2.16.840.1.113883.3.989.5.1.2.2.1.3\"/><value xsi:type=\"BL\" value=\"true\"/></observation></outboundRelationship2>".to_string()
 	}
+}
+
+fn observation_rel_translation(reaction: &Reaction) -> String {
+	let text = reaction
+		.primary_source_reaction_translation
+		.as_deref()
+		.filter(|v| !v.trim().is_empty())
+		.unwrap_or_else(|| reaction.primary_source_reaction.as_str());
+	if text.trim().is_empty() {
+		return String::new();
+	}
+	let mut out = String::new();
+	out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"30\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"ED\"");
+	if let Some(lang) = reaction.reaction_language.as_deref() {
+		out.push_str(" language=\"");
+		out.push_str(&xml_escape(lang));
+		out.push_str("\"");
+	}
+	out.push_str(">");
+	out.push_str(&xml_escape(text));
+	out.push_str("</value></observation></outboundRelationship2>");
+	out
 }
 
 fn term_highlight_code(

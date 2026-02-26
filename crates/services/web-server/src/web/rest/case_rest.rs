@@ -137,12 +137,12 @@ fn is_allowed_case_status_transition(from: &str, to: &str) -> bool {
 		"checked" => {
 			matches!(
 				to.as_str(),
-				"validated" | "submitted" | "archived" | "nullified"
+				"draft" | "validated" | "submitted" | "archived" | "nullified"
 			)
 		}
 		"validated" => matches!(
 			to.as_str(),
-			"checked" | "submitted" | "archived" | "nullified"
+			"draft" | "checked" | "submitted" | "archived" | "nullified"
 		),
 		"submitted" => matches!(to.as_str(), "archived" | "nullified"),
 		"archived" => false,

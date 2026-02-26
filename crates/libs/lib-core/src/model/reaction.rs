@@ -24,6 +24,8 @@ pub struct Reaction {
 
 	// E.i.1.1 - Reaction as reported
 	pub primary_source_reaction: String,
+	// E.i.1.2 - Reaction/Event as reported by primary source for translation
+	pub primary_source_reaction_translation: Option<String>,
 	pub reaction_language: Option<String>,
 
 	// E.i.2.1 - MedDRA coding
@@ -78,6 +80,7 @@ pub struct ReactionForCreate {
 #[derive(Fields, Deserialize)]
 pub struct ReactionForUpdate {
 	pub primary_source_reaction: Option<String>,
+	pub primary_source_reaction_translation: Option<String>,
 	pub reaction_language: Option<String>,
 	pub reaction_meddra_code: Option<String>,
 	pub reaction_meddra_version: Option<String>,
@@ -188,27 +191,28 @@ impl ReactionBmc {
 		let sql = format!(
 			"UPDATE {}
 			 SET primary_source_reaction = COALESCE($2, primary_source_reaction),
-			     reaction_language = COALESCE($3, reaction_language),
-			     reaction_meddra_code = COALESCE($4, reaction_meddra_code),
-			     reaction_meddra_version = COALESCE($5, reaction_meddra_version),
-			     term_highlighted = COALESCE($6, term_highlighted),
-			     serious = COALESCE($7, serious),
-			     criteria_death = COALESCE($8, criteria_death),
-			     criteria_life_threatening = COALESCE($9, criteria_life_threatening),
-			     criteria_hospitalization = COALESCE($10, criteria_hospitalization),
-			     criteria_disabling = COALESCE($11, criteria_disabling),
-			     criteria_congenital_anomaly = COALESCE($12, criteria_congenital_anomaly),
-			     criteria_other_medically_important = COALESCE($13, criteria_other_medically_important),
-			     required_intervention = COALESCE($14, required_intervention),
-			     start_date = COALESCE($15, start_date),
-			     end_date = COALESCE($16, end_date),
-			     duration_value = COALESCE($17, duration_value),
-			     duration_unit = COALESCE($18, duration_unit),
-			     outcome = COALESCE($19, outcome),
-			     medical_confirmation = COALESCE($20, medical_confirmation),
-			     country_code = COALESCE($21, country_code),
+			     primary_source_reaction_translation = COALESCE($3, primary_source_reaction_translation),
+			     reaction_language = COALESCE($4, reaction_language),
+			     reaction_meddra_code = COALESCE($5, reaction_meddra_code),
+			     reaction_meddra_version = COALESCE($6, reaction_meddra_version),
+			     term_highlighted = COALESCE($7, term_highlighted),
+			     serious = COALESCE($8, serious),
+			     criteria_death = COALESCE($9, criteria_death),
+			     criteria_life_threatening = COALESCE($10, criteria_life_threatening),
+			     criteria_hospitalization = COALESCE($11, criteria_hospitalization),
+			     criteria_disabling = COALESCE($12, criteria_disabling),
+			     criteria_congenital_anomaly = COALESCE($13, criteria_congenital_anomaly),
+			     criteria_other_medically_important = COALESCE($14, criteria_other_medically_important),
+			     required_intervention = COALESCE($15, required_intervention),
+			     start_date = COALESCE($16, start_date),
+			     end_date = COALESCE($17, end_date),
+			     duration_value = COALESCE($18, duration_value),
+			     duration_unit = COALESCE($19, duration_unit),
+			     outcome = COALESCE($20, outcome),
+			     medical_confirmation = COALESCE($21, medical_confirmation),
+			     country_code = COALESCE($22, country_code),
 			     updated_at = now(),
-			     updated_by = $22
+			     updated_by = $23
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -218,6 +222,7 @@ impl ReactionBmc {
 				sqlx::query(&sql)
 					.bind(id)
 					.bind(reaction_u.primary_source_reaction)
+					.bind(reaction_u.primary_source_reaction_translation)
 					.bind(reaction_u.reaction_language)
 					.bind(reaction_u.reaction_meddra_code)
 					.bind(reaction_u.reaction_meddra_version)
@@ -309,27 +314,28 @@ impl ReactionBmc {
 		let sql = format!(
 			"UPDATE {}
 			 SET primary_source_reaction = COALESCE($3, primary_source_reaction),
-			     reaction_language = COALESCE($4, reaction_language),
-			     reaction_meddra_code = COALESCE($5, reaction_meddra_code),
-			     reaction_meddra_version = COALESCE($6, reaction_meddra_version),
-			     term_highlighted = COALESCE($7, term_highlighted),
-			     serious = COALESCE($8, serious),
-			     criteria_death = COALESCE($9, criteria_death),
-			     criteria_life_threatening = COALESCE($10, criteria_life_threatening),
-			     criteria_hospitalization = COALESCE($11, criteria_hospitalization),
-			     criteria_disabling = COALESCE($12, criteria_disabling),
-			     criteria_congenital_anomaly = COALESCE($13, criteria_congenital_anomaly),
-			     criteria_other_medically_important = COALESCE($14, criteria_other_medically_important),
-			     required_intervention = COALESCE($15, required_intervention),
-			     start_date = COALESCE($16, start_date),
-			     end_date = COALESCE($17, end_date),
-			     duration_value = COALESCE($18, duration_value),
-			     duration_unit = COALESCE($19, duration_unit),
-			     outcome = COALESCE($20, outcome),
-			     medical_confirmation = COALESCE($21, medical_confirmation),
-			     country_code = COALESCE($22, country_code),
+			     primary_source_reaction_translation = COALESCE($4, primary_source_reaction_translation),
+			     reaction_language = COALESCE($5, reaction_language),
+			     reaction_meddra_code = COALESCE($6, reaction_meddra_code),
+			     reaction_meddra_version = COALESCE($7, reaction_meddra_version),
+			     term_highlighted = COALESCE($8, term_highlighted),
+			     serious = COALESCE($9, serious),
+			     criteria_death = COALESCE($10, criteria_death),
+			     criteria_life_threatening = COALESCE($11, criteria_life_threatening),
+			     criteria_hospitalization = COALESCE($12, criteria_hospitalization),
+			     criteria_disabling = COALESCE($13, criteria_disabling),
+			     criteria_congenital_anomaly = COALESCE($14, criteria_congenital_anomaly),
+			     criteria_other_medically_important = COALESCE($15, criteria_other_medically_important),
+			     required_intervention = COALESCE($16, required_intervention),
+			     start_date = COALESCE($17, start_date),
+			     end_date = COALESCE($18, end_date),
+			     duration_value = COALESCE($19, duration_value),
+			     duration_unit = COALESCE($20, duration_unit),
+			     outcome = COALESCE($21, outcome),
+			     medical_confirmation = COALESCE($22, medical_confirmation),
+			     country_code = COALESCE($23, country_code),
 			     updated_at = now(),
-			     updated_by = $23
+			     updated_by = $24
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -340,6 +346,7 @@ impl ReactionBmc {
 					.bind(id)
 					.bind(case_id)
 					.bind(reaction_u.primary_source_reaction)
+					.bind(reaction_u.primary_source_reaction_translation)
 					.bind(reaction_u.reaction_language)
 					.bind(reaction_u.reaction_meddra_code)
 					.bind(reaction_u.reaction_meddra_version)

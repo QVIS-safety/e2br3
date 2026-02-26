@@ -17,7 +17,19 @@ use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::Deserialize;
+use std::borrow::Cow;
 use uuid::Uuid;
+
+fn is_unique_violation(err: &lib_core::model::Error) -> bool {
+	matches!(err, lib_core::model::Error::UniqueViolation { .. })
+		|| matches!(
+			err.as_database_error().and_then(|db| db.code()),
+			Some(Cow::Borrowed("23505"))
+		) || {
+		let text = format!("{err:?}").to_ascii_lowercase();
+		text.contains("duplicate") || text.contains("unique")
+	}
+}
 
 /// POST /api/cases/{case_id}/safety-report
 pub async fn create_safety_report_identification(
@@ -31,10 +43,34 @@ pub async fn create_safety_report_identification(
 	let ParamsForCreate { data } = params;
 	let mut data = data;
 	data.case_id = case_id;
-	let _id = SafetyReportIdentificationBmc::create(&ctx, &mm, data).await?;
-	let entity =
-		SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+
+	match SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id).await {
+		Ok(entity) => {
+			return Ok((StatusCode::OK, Json(DataRestResult { data: entity })));
+		}
+		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => {}
+		Err(err) => return Err(err.into()),
+	}
+
+	match SafetyReportIdentificationBmc::create(&ctx, &mm, data).await {
+		Ok(_) => {
+			let entity =
+				SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id)
+					.await?;
+			Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+		}
+		Err(err) if is_unique_violation(&err) => {
+			match SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id)
+				.await
+			{
+				Ok(entity) => {
+					Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+				}
+				Err(_) => Err(err.into()),
+			}
+		}
+		Err(err) => Err(err.into()),
+	}
 }
 
 /// GET /api/cases/{case_id}/safety-report

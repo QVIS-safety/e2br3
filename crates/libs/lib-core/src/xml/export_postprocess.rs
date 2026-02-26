@@ -193,9 +193,12 @@ fn prune_placeholder_nodes(xpath: &mut Context) {
 						continue;
 					}
 					let val = node.get_attribute("value").unwrap_or_default();
-					if looks_placeholder(val.trim()) {
-						let _ = node.remove_attribute("value");
+					let trimmed = val.trim();
+					if !trimmed.is_empty() && !looks_placeholder(trimmed) {
+						let _ = node.remove_attribute("nullFlavor");
+						continue;
 					}
+					let _ = node.remove_attribute("value");
 					if node.get_attribute("nullFlavor").is_none() {
 						let _ = node.set_attribute("nullFlavor", "NI");
 					}

@@ -28,10 +28,6 @@ use libxml::xpath::Context;
 use sqlx::types::time::Date;
 use sqlx::types::time::OffsetDateTime;
 
-#[path = "patch_impl/types.rs"]
-mod types;
-#[path = "patch_impl/helpers.rs"]
-mod helpers;
 #[path = "patch_impl/c_safety_report.rs"]
 mod c_safety_report;
 #[path = "patch_impl/d_patient.rs"]
@@ -42,12 +38,16 @@ mod e_f_sections;
 mod g_drug;
 #[path = "patch_impl/h_narrative.rs"]
 mod h_narrative;
+#[path = "patch_impl/helpers.rs"]
+mod helpers;
+#[path = "patch_impl/types.rs"]
+mod types;
 
-pub use types::{CSafetyReportPatch, DPatientPatch};
 pub use c_safety_report::patch_c_safety_report;
 pub use d_patient::patch_d_patient;
 pub use e_f_sections::{patch_e_reactions, patch_f_test_results};
 pub use g_drug::patch_g_drugs;
 pub use h_narrative::patch_h_narrative;
+pub use types::{CSafetyReportPatch, DPatientPatch};
 
 use helpers::*;

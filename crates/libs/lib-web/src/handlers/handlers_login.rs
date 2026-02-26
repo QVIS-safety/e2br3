@@ -35,7 +35,7 @@ pub async fn api_login_handler(
 		.map_err(|_| Error::LoginFailUserCtxCreate { user_id })?;
 
 	// -- Validate the password.
-	let Some(pwd) = user.pwd else {
+	let Some(pwd) = user.pwd.clone() else {
 		return Err(Error::LoginFailUserHasNoPwd { user_id });
 	};
 

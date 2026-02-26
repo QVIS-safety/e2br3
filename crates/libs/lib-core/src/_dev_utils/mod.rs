@@ -5,6 +5,7 @@ mod dev_db;
 use crate::ctx::Ctx;
 use crate::model::user::UserBmc;
 use crate::model::ModelManager;
+use lib_auth::pwd::{self, ContentToHash};
 use tokio::sync::OnceCell;
 use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
@@ -81,6 +82,31 @@ async fn maybe_set_demo_pwd() {
 		return;
 	};
 
+	let force_sync = env_truthy("DEMO_USER_FORCE_SYNC");
+	if let Some(existing_pwd_hash) = user.pwd.clone() {
+		let is_valid = pwd::validate_pwd(
+			ContentToHash {
+				salt: user.pwd_salt,
+				content: pwd.clone(),
+			},
+			existing_pwd_hash,
+		)
+		.await
+		.is_ok();
+		if is_valid {
+			info!("FOR-DEV-ONLY - demo pwd already in sync for {email}");
+			return;
+		}
+		if !force_sync {
+			panic!(
+				"FOR-DEV-ONLY - demo pwd mismatch for {email}. Refusing to overwrite existing password on boot. Set DEMO_USER_FORCE_SYNC=1 once to repair, then remove it."
+			);
+		}
+		warn!(
+			"FOR-DEV-ONLY - forcing demo pwd resync for {email} (DEMO_USER_FORCE_SYNC=1)"
+		);
+	}
+
 	if let Err(err) = UserBmc::update_pwd(&ctx, &mm, user.id, &pwd).await {
 		warn!("FOR-DEV-ONLY - demo pwd update failed: {err}");
 		return;
@@ -92,6 +118,13 @@ async fn maybe_set_demo_pwd() {
 fn should_retry_demo_pwd_lookup(err: &crate::model::Error) -> bool {
 	let msg = err.to_string();
 	msg.contains("42P01") || msg.contains("relation \"users\" does not exist")
+}
+
+fn env_truthy(name: &str) -> bool {
+	matches!(
+		std::env::var(name),
+		Ok(v) if matches!(v.trim().to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on")
+	)
 }
 
 /// Initialize test environment.

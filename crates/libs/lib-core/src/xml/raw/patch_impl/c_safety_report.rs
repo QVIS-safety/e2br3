@@ -46,12 +46,14 @@ pub fn patch_c_safety_report(
 		&mut xpath,
 		"//hl7:controlActProcess/hl7:effectiveTime",
 		"value",
-		&patch
-			.transmission_date_value
-			.filter(|v| is_14_digit_datetime(v))
-			.map(|v| v.to_string())
-			.or_else(|| patch.transmission_date_time.map(fmt_offset_datetime))
-			.unwrap_or_else(|| fmt_date_time_fallback(patch.transmission_date)),
+		&clamp_14_digit_datetime_not_future(
+			&patch
+				.transmission_date_value
+				.filter(|v| is_14_digit_datetime(v))
+				.map(|v| v.to_string())
+				.or_else(|| patch.transmission_date_time.map(fmt_offset_datetime))
+				.unwrap_or_else(|| fmt_date_time_fallback(patch.transmission_date)),
+		),
 	);
 
 	// C.1.4 Date First Received
@@ -210,6 +212,35 @@ pub fn patch_c_safety_report(
 		set_attr_first(&mut xpath, &format!("{sender_base}/hl7:code"), "code", v);
 	}
 	if let Some(v) = patch.sender_street_address {
+		if xpath
+			.findnodes(&format!("{sender_base}/hl7:addr"), None)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				sender_base,
+				"<addr/>",
+			)?;
+		}
+		if xpath
+			.findnodes(
+				&format!("{sender_base}/hl7:addr/hl7:streetAddressLine"),
+				None,
+			)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				&format!("{sender_base}/hl7:addr"),
+				"<streetAddressLine/>",
+			)?;
+		}
 		set_text_first(
 			&mut xpath,
 			&format!("{sender_base}/hl7:addr/hl7:streetAddressLine"),
@@ -238,6 +269,48 @@ pub fn patch_c_safety_report(
 		);
 	}
 	if let Some(v) = patch.sender_person_title {
+		if xpath
+			.findnodes(&format!("{sender_base}/hl7:assignedPerson"), None)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				sender_base,
+				"<assignedPerson/>",
+			)?;
+		}
+		if xpath
+			.findnodes(&format!("{sender_base}/hl7:assignedPerson/hl7:name"), None)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				&format!("{sender_base}/hl7:assignedPerson"),
+				"<name/>",
+			)?;
+		}
+		if xpath
+			.findnodes(
+				&format!("{sender_base}/hl7:assignedPerson/hl7:name/hl7:prefix"),
+				None,
+			)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				&format!("{sender_base}/hl7:assignedPerson/hl7:name"),
+				"<prefix/>",
+			)?;
+		}
 		set_text_first(
 			&mut xpath,
 			&format!("{sender_base}//hl7:assignedPerson/hl7:name/hl7:prefix"),
@@ -245,6 +318,48 @@ pub fn patch_c_safety_report(
 		);
 	}
 	if let Some(v) = patch.sender_person_given_name {
+		if xpath
+			.findnodes(&format!("{sender_base}/hl7:assignedPerson"), None)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				sender_base,
+				"<assignedPerson/>",
+			)?;
+		}
+		if xpath
+			.findnodes(&format!("{sender_base}/hl7:assignedPerson/hl7:name"), None)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				&format!("{sender_base}/hl7:assignedPerson"),
+				"<name/>",
+			)?;
+		}
+		if xpath
+			.findnodes(
+				&format!("{sender_base}/hl7:assignedPerson/hl7:name/hl7:given"),
+				None,
+			)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				&format!("{sender_base}/hl7:assignedPerson/hl7:name"),
+				"<given/>",
+			)?;
+		}
 		set_text_first(
 			&mut xpath,
 			&format!("{sender_base}//hl7:assignedPerson/hl7:name/hl7:given"),
@@ -275,6 +390,48 @@ pub fn patch_c_safety_report(
 		);
 	}
 	if let Some(v) = patch.sender_person_family_name {
+		if xpath
+			.findnodes(&format!("{sender_base}/hl7:assignedPerson"), None)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				sender_base,
+				"<assignedPerson/>",
+			)?;
+		}
+		if xpath
+			.findnodes(&format!("{sender_base}/hl7:assignedPerson/hl7:name"), None)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				&format!("{sender_base}/hl7:assignedPerson"),
+				"<name/>",
+			)?;
+		}
+		if xpath
+			.findnodes(
+				&format!("{sender_base}/hl7:assignedPerson/hl7:name/hl7:family"),
+				None,
+			)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				&format!("{sender_base}/hl7:assignedPerson/hl7:name"),
+				"<family/>",
+			)?;
+		}
 		set_text_first(
 			&mut xpath,
 			&format!("{sender_base}//hl7:assignedPerson/hl7:name/hl7:family"),
@@ -337,4 +494,3 @@ pub fn patch_c_safety_report(
 
 	Ok(doc.to_string())
 }
-

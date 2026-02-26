@@ -7,6 +7,7 @@ use lib_core::ctx::{
 };
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
+use std::path::PathBuf;
 use uuid::Uuid;
 
 pub type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
@@ -59,6 +60,20 @@ pub async fn init_test_env() {
 	std::env::set_var("SERVICE_TOKEN_KEY", "ZmFrZV9rZXk");
 	std::env::set_var("SERVICE_TOKEN_DURATION_SEC", "3600");
 	std::env::set_var("E2BR3_DEBUG_ERRORS", "1");
+
+	// Keep integration tests deterministic even when direnv isn't loaded.
+	if std::env::var("E2BR3_EXAMPLES_DIR").is_err() {
+		let examples_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+			.join("../../..")
+			.join("docs/refs/instances");
+		std::env::set_var("E2BR3_EXAMPLES_DIR", examples_dir);
+	}
+	if std::env::var("E2BR3_XSD_PATH").is_err() {
+		let xsd_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+			.join("../../..")
+			.join("deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd");
+		std::env::set_var("E2BR3_XSD_PATH", xsd_path);
+	}
 }
 
 pub async fn init_test_mm() -> Result<ModelManager> {

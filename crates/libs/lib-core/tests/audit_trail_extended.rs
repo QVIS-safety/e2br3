@@ -145,10 +145,10 @@ async fn test_audit_trail_reactions() -> Result<()> {
 	);
 
 	// UPDATE
-		let reaction_u = ReactionForUpdate {
-			primary_source_reaction: Some("Updated Reaction".to_string()),
-			primary_source_reaction_translation: None,
-			reaction_meddra_code: None,
+	let reaction_u = ReactionForUpdate {
+		primary_source_reaction: Some("Updated Reaction".to_string()),
+		primary_source_reaction_translation: None,
+		reaction_meddra_code: None,
 		reaction_meddra_version: None,
 		reaction_language: None,
 		term_highlighted: None,
@@ -476,10 +476,10 @@ async fn test_audit_log_chronological_order() -> Result<()> {
 	let reaction_id = ReactionBmc::create(&ctx, &mm, reaction_c).await?;
 
 	// UPDATE
-		let reaction_u = ReactionForUpdate {
-			primary_source_reaction: Some("Chrono Updated".to_string()),
-			primary_source_reaction_translation: None,
-			reaction_meddra_code: None,
+	let reaction_u = ReactionForUpdate {
+		primary_source_reaction: Some("Chrono Updated".to_string()),
+		primary_source_reaction_translation: None,
+		reaction_meddra_code: None,
 		reaction_meddra_version: None,
 		reaction_language: None,
 		term_highlighted: None,

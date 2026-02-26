@@ -495,10 +495,7 @@ pub(super) fn ensure_d8_effective_time(
 	Ok(())
 }
 
-fn reorder_d8_substance_administration_children(
-	xpath: &mut Context,
-	base: &str,
-) {
+fn reorder_d8_substance_administration_children(xpath: &mut Context, base: &str) {
 	let child_path = format!("{base}/*[not(self::hl7:effectiveTime)]");
 	if let Ok(nodes) = xpath.findnodes(&child_path, None) {
 		for mut node in nodes {

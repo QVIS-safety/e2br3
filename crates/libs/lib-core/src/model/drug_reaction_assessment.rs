@@ -100,6 +100,9 @@ pub struct RelatednessAssessment {
 pub struct RelatednessAssessmentForCreate {
 	pub drug_reaction_assessment_id: Uuid,
 	pub sequence_number: i32,
+	pub source_of_assessment: Option<String>,
+	pub method_of_assessment: Option<String>,
+	pub result_of_assessment: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]

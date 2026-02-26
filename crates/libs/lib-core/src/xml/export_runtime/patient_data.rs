@@ -198,4 +198,3 @@ pub(super) fn ensure_parent_role(
 		"<role classCode=\"PRS\"><code code=\"PRN\" codeSystem=\"2.16.840.1.113883.5.111\"/><associatedPerson classCode=\"PSN\" determinerCode=\"INSTANCE\"><name/><birthTime/></associatedPerson><subjectOf2 typeCode=\"SBJ\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"22\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"TS\"/></observation></subjectOf2><subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\"/><component typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"18\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"ED\"/></observation></component></organizer></subjectOf2></role>",
 	)
 }
-
