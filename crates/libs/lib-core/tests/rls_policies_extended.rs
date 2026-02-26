@@ -574,6 +574,9 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 		RelatednessAssessmentForCreate {
 			drug_reaction_assessment_id: dra1,
 			sequence_number: 1,
+			source_of_assessment: None,
+			method_of_assessment: None,
+			result_of_assessment: None,
 		},
 	)
 	.await?;
@@ -583,6 +586,9 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 		RelatednessAssessmentForCreate {
 			drug_reaction_assessment_id: dra2,
 			sequence_number: 1,
+			source_of_assessment: None,
+			method_of_assessment: None,
+			result_of_assessment: None,
 		},
 	)
 	.await?;

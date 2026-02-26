@@ -145,9 +145,10 @@ async fn test_audit_trail_reactions() -> Result<()> {
 	);
 
 	// UPDATE
-	let reaction_u = ReactionForUpdate {
-		primary_source_reaction: Some("Updated Reaction".to_string()),
-		reaction_meddra_code: None,
+		let reaction_u = ReactionForUpdate {
+			primary_source_reaction: Some("Updated Reaction".to_string()),
+			primary_source_reaction_translation: None,
+			reaction_meddra_code: None,
 		reaction_meddra_version: None,
 		reaction_language: None,
 		term_highlighted: None,
@@ -475,9 +476,10 @@ async fn test_audit_log_chronological_order() -> Result<()> {
 	let reaction_id = ReactionBmc::create(&ctx, &mm, reaction_c).await?;
 
 	// UPDATE
-	let reaction_u = ReactionForUpdate {
-		primary_source_reaction: Some("Chrono Updated".to_string()),
-		reaction_meddra_code: None,
+		let reaction_u = ReactionForUpdate {
+			primary_source_reaction: Some("Chrono Updated".to_string()),
+			primary_source_reaction_translation: None,
+			reaction_meddra_code: None,
 		reaction_meddra_version: None,
 		reaction_language: None,
 		term_highlighted: None,
@@ -653,6 +655,7 @@ async fn test_audit_log_captures_all_changed_fields() -> Result<()> {
 	let update_log = logs.iter().find(|l| l.action == "UPDATE").unwrap();
 
 	let new_values = update_log.new_values.as_ref().unwrap();
+	let changed_fields = update_log.changed_fields.as_ref().unwrap();
 
 	// Verify all updated fields are captured
 	assert!(new_values.get("medicinal_product").is_some());
@@ -660,6 +663,11 @@ async fn test_audit_log_captures_all_changed_fields() -> Result<()> {
 	assert!(new_values.get("brand_name").is_some());
 	assert!(new_values.get("manufacturer_name").is_some());
 	assert!(new_values.get("action_taken").is_some());
+	assert!(changed_fields.get("medicinal_product").is_some());
+	assert!(changed_fields.get("drug_characterization").is_some());
+	assert!(changed_fields.get("brand_name").is_some());
+	assert!(changed_fields.get("manufacturer_name").is_some());
+	assert!(changed_fields.get("action_taken").is_some());
 
 	// Cleanup
 	DrugInformationBmc::delete(&ctx, &mm, drug_id).await?;

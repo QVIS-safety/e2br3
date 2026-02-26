@@ -228,7 +228,7 @@ async fn test_auth_login_created_user_email_case_insensitive() -> Result<()> {
 	let create_res = app.clone().oneshot(create_req).await?;
 	assert_eq!(create_res.status(), StatusCode::CREATED);
 
-	let login_body = json!({ "email": login_email, "pwd": "CaseMixPwd123!" });
+	let login_body = json!({ "email": login_email, "pwd": "welcome" });
 	let login_req = Request::builder()
 		.method("POST")
 		.uri("/auth/v1/login")
@@ -266,7 +266,7 @@ async fn test_auth_login_created_user_without_role_uses_default() -> Result<()> 
 	let create_res = app.clone().oneshot(create_req).await?;
 	assert_eq!(create_res.status(), StatusCode::CREATED);
 
-	let login_body = json!({ "email": email, "pwd": "RoleDefaultPwd123!" });
+	let login_body = json!({ "email": email, "pwd": "welcome" });
 	let login_req = Request::builder()
 		.method("POST")
 		.uri("/auth/v1/login")
@@ -454,6 +454,11 @@ async fn test_audit_trail_case_crud() -> Result<()> {
 	let update_body = json!({
 		"data": {
 			"status": "submitted"
+		},
+		"reason_for_change": "audit test submit transition",
+		"e_signature": {
+			"meaning": "submit case for audit test",
+			"password": "adminpwd"
 		}
 	});
 	let req = Request::builder()

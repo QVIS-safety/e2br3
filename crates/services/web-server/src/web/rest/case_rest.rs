@@ -1,3 +1,6 @@
+use crate::web::rest::compliance::{
+	capture_e_signature, ComplianceActionInput, ESignatureInput,
+};
 use axum::http::{header, HeaderMap};
 use axum::response::Response;
 use lib_core::model::acs::{
@@ -31,9 +34,6 @@ use time::{Date, Month, OffsetDateTime};
 use tokio::runtime::Handle;
 use tokio::task;
 use uuid::Uuid;
-use crate::web::rest::compliance::{
-	capture_e_signature, ComplianceActionInput, ESignatureInput,
-};
 
 // This macro generates all 5 CRUD functions:
 // - create_case
@@ -215,8 +215,7 @@ pub async fn update_case_guarded(
 		.map(|next_status| {
 			let prev = current.status.trim().to_ascii_lowercase();
 			let next = next_status.trim().to_ascii_lowercase();
-			prev != next
-				&& matches!(next.as_str(), "submitted" | "nullified")
+			prev != next && matches!(next.as_str(), "submitted" | "nullified")
 		})
 		.unwrap_or(false);
 

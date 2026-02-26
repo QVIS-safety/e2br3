@@ -29,6 +29,7 @@ async fn test_reaction_crud() -> Result<()> {
 
 	let reaction_u = ReactionForUpdate {
 		primary_source_reaction: Some("Updated Headache".to_string()),
+		primary_source_reaction_translation: None,
 		reaction_meddra_code: None,
 		reaction_meddra_version: None,
 		reaction_language: None,

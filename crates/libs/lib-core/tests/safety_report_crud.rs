@@ -78,6 +78,64 @@ async fn test_safety_report_identification_crud() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_safety_report_nullification_requires_compliance_context() -> Result<()>
+{
+	let mm = init_test_mm().await;
+	let ctx = demo_ctx();
+
+	set_current_user(&mm, demo_user_id()).await?;
+	begin_test_ctx(&mm, &ctx).await?;
+	let case_id = create_case_fixture(&mm, demo_org_id(), demo_user_id()).await?;
+
+	let report_c = SafetyReportIdentificationForCreate {
+		case_id,
+		transmission_date: Date::from_calendar_date(2024, Month::January, 1)?,
+		report_type: "1".to_string(),
+		date_first_received_from_source: Date::from_calendar_date(
+			2024,
+			Month::January,
+			1,
+		)?,
+		date_of_most_recent_information: Date::from_calendar_date(
+			2024,
+			Month::January,
+			1,
+		)?,
+		fulfil_expedited_criteria: true,
+	};
+	SafetyReportIdentificationBmc::create(&ctx, &mm, report_c).await?;
+
+	let report_u = SafetyReportIdentificationForUpdate {
+		transmission_date: None,
+		report_type: None,
+		date_first_received_from_source: None,
+		date_of_most_recent_information: None,
+		fulfil_expedited_criteria: None,
+		worldwide_unique_id: None,
+		nullification_code: Some("1".to_string()),
+		nullification_reason: Some("duplicate report".to_string()),
+		receiver_organization: None,
+		local_criteria_report_type: None,
+		combination_product_report_indicator: None,
+	};
+
+	let err =
+		SafetyReportIdentificationBmc::update_by_case(&ctx, &mm, case_id, report_u)
+			.await
+			.expect_err("nullification without compliance context must fail");
+	assert!(
+		err.to_string()
+			.contains("compliance context required for nullification"),
+		"unexpected error: {err}"
+	);
+
+	CaseBmc::delete(&ctx, &mm, case_id).await?;
+	commit_test_ctx(&mm).await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_safety_report_submodels_crud() -> Result<()> {
 	let mm = init_test_mm().await;
 	let ctx = demo_ctx();

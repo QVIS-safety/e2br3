@@ -112,6 +112,7 @@ async fn test_audit_trail_cases() -> Result<()> {
 	);
 	let old_values = update_log.old_values.as_ref().unwrap();
 	let new_values = update_log.new_values.as_ref().unwrap();
+	let changed_fields = update_log.changed_fields.as_ref().unwrap();
 	assert_eq!(
 		old_values.get("status").and_then(|v| v.as_str()),
 		Some("draft"),
@@ -121,6 +122,22 @@ async fn test_audit_trail_cases() -> Result<()> {
 		new_values.get("status").and_then(|v| v.as_str()),
 		Some("validated"),
 		"UPDATE audit log should capture new status"
+	);
+	assert_eq!(
+		changed_fields
+			.get("status")
+			.and_then(|v| v.get("old"))
+			.and_then(|v| v.as_str()),
+		Some("draft"),
+		"UPDATE changed_fields should capture old status"
+	);
+	assert_eq!(
+		changed_fields
+			.get("status")
+			.and_then(|v| v.get("new"))
+			.and_then(|v| v.as_str()),
+		Some("validated"),
+		"UPDATE changed_fields should capture new status"
 	);
 
 	// -- Verify DELETE log captures old_values

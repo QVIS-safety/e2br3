@@ -144,7 +144,59 @@ CREATE INDEX idx_case_submissions_case ON case_submissions(case_id, submitted_at
 CREATE INDEX idx_case_submissions_status ON case_submissions(status, updated_at DESC);
 
     -- ============================================================================
-    -- 4.2 Submission ACKs (durable ACK history)
+    -- 4.2 Submission Events (durable lifecycle history)
+    -- ============================================================================
+CREATE TABLE if NOT EXISTS submission_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    submission_id UUID NOT NULL REFERENCES case_submissions(id) ON DELETE CASCADE,
+    event_type VARCHAR(80) NOT NULL,
+    event_data JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_submission_events_submission ON submission_events(submission_id, created_at DESC);
+CREATE INDEX idx_submission_events_type ON submission_events(event_type, created_at DESC);
+
+    -- ============================================================================
+    -- 4.3 Submission Dispatch State (retry/terminal metadata)
+    -- ============================================================================
+CREATE TABLE if NOT EXISTS submission_dispatch_state (
+    submission_id UUID PRIMARY KEY REFERENCES case_submissions(id) ON DELETE CASCADE,
+    attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+    last_attempt_at TIMESTAMPTZ,
+    last_error TEXT,
+    next_retry_at TIMESTAMPTZ,
+    terminal_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_submission_dispatch_retry ON submission_dispatch_state(next_retry_at)
+    WHERE next_retry_at IS NOT NULL;
+CREATE INDEX idx_submission_dispatch_terminal ON submission_dispatch_state(terminal_at);
+
+    -- ============================================================================
+    -- 4.4 Submission Idempotency Keys
+    -- ============================================================================
+CREATE TABLE if NOT EXISTS submission_idempotency (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    authority VARCHAR(16) NOT NULL,
+    idempotency_key VARCHAR(128) NOT NULL,
+    submission_id UUID NOT NULL REFERENCES case_submissions(id) ON DELETE CASCADE,
+    created_by UUID NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT submission_idempotency_authority_valid CHECK (
+        authority IN ('fda', 'mfds')
+    ),
+    CONSTRAINT submission_idempotency_unique UNIQUE (case_id, authority, idempotency_key)
+);
+
+CREATE INDEX idx_submission_idempotency_submission ON submission_idempotency(submission_id);
+
+    -- ============================================================================
+    -- 4.5 Submission ACKs (durable ACK history)
     -- ============================================================================
 CREATE TABLE if NOT EXISTS submission_acks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -162,7 +214,7 @@ CREATE UNIQUE INDEX idx_submission_acks_unique_event
     ON submission_acks(submission_id, ack_level, success, COALESCE(ack_code, ''), received_at);
 
     -- ============================================================================
-    -- 4.3 Electronic Signatures (Part 11 / Annex 11)
+    -- 4.6 Electronic Signatures (Part 11 / Annex 11)
     -- ============================================================================
 CREATE TABLE if NOT EXISTS e_signatures (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -197,6 +249,7 @@ CREATE TABLE if NOT EXISTS audit_logs (
     e_signature_id UUID REFERENCES e_signatures(id),
     old_values JSONB,
     new_values JSONB,
+    changed_fields JSONB,
     ip_address INET,
     user_agent TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -208,6 +261,10 @@ CREATE INDEX idx_audit_logs_table_record ON audit_logs(table_name, record_id);
 CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
 CREATE INDEX idx_audit_logs_esignature ON audit_logs(e_signature_id);
+CREATE INDEX idx_audit_logs_changed_fields ON audit_logs USING GIN (changed_fields);
+
+ALTER TABLE audit_logs
+    ADD COLUMN IF NOT EXISTS changed_fields JSONB;
 
 -- ============================================================================
 -- 6. System User and Foreign Key Constraints
@@ -398,6 +455,77 @@ EXCEPTION
 END;
 $$;
 
+-- Compute field-level delta as:
+-- {"path.to.field": {"old": <jsonb>, "new": <jsonb>}}
+CREATE OR REPLACE FUNCTION compute_audit_changed_fields(
+    p_old JSONB,
+    p_new JSONB,
+    p_prefix TEXT DEFAULT ''
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_result JSONB := '{}'::JSONB;
+    v_nested JSONB;
+    v_key TEXT;
+    v_old_value JSONB;
+    v_new_value JSONB;
+    v_path TEXT;
+BEGIN
+    IF p_old IS NULL THEN
+        p_old := '{}'::JSONB;
+    END IF;
+    IF p_new IS NULL THEN
+        p_new := '{}'::JSONB;
+    END IF;
+
+    IF jsonb_typeof(p_old) = 'object' AND jsonb_typeof(p_new) = 'object' THEN
+        FOR v_key IN
+            SELECT key FROM (
+                SELECT jsonb_object_keys(p_old) AS key
+                UNION
+                SELECT jsonb_object_keys(p_new) AS key
+            ) keys
+        LOOP
+            v_old_value := p_old -> v_key;
+            v_new_value := p_new -> v_key;
+            v_path := CASE
+                WHEN p_prefix IS NULL OR p_prefix = '' THEN v_key
+                ELSE p_prefix || '.' || v_key
+            END;
+
+            IF jsonb_typeof(v_old_value) = 'object' AND jsonb_typeof(v_new_value) = 'object' THEN
+                v_nested := compute_audit_changed_fields(v_old_value, v_new_value, v_path);
+                IF v_nested <> '{}'::JSONB THEN
+                    v_result := v_result || v_nested;
+                END IF;
+            ELSIF v_old_value IS DISTINCT FROM v_new_value THEN
+                v_result := v_result || jsonb_build_object(
+                    v_path,
+                    jsonb_build_object('old', v_old_value, 'new', v_new_value)
+                );
+            END IF;
+        END LOOP;
+        RETURN v_result;
+    END IF;
+
+    IF p_old IS DISTINCT FROM p_new THEN
+        v_path := CASE
+            WHEN p_prefix IS NULL OR p_prefix = '' THEN '$'
+            ELSE p_prefix
+        END;
+        RETURN jsonb_build_object(
+            v_path,
+            jsonb_build_object('old', p_old, 'new', p_new)
+        );
+    END IF;
+
+    RETURN '{}'::JSONB;
+END;
+$$;
+
 -- Resolve display name for audit logs.
 -- Returns username/email when visible by current role+RLS context, otherwise
 -- falls back to the UUID text so audit listing never fails.
@@ -489,6 +617,7 @@ GRANT EXECUTE ON FUNCTION validate_user_context() TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION set_compliance_context(TEXT, TEXT) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION get_current_change_reason() TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION get_current_esignature_id() TO e2br3_app_role;
+GRANT EXECUTE ON FUNCTION compute_audit_changed_fields(JSONB, JSONB, TEXT) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION audit_user_display(UUID) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION audit_user_display(UUID) TO e2br3_auditor_role;
 
@@ -598,7 +727,84 @@ CREATE POLICY case_submissions_via_case ON case_submissions
     );
 
 -- ============================================================================
--- 9.4 Submission ACKs Table RLS
+-- 9.4 Submission Events Table RLS
+-- ============================================================================
+ALTER TABLE submission_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE submission_events FORCE ROW LEVEL SECURITY;
+CREATE POLICY submission_events_via_submission ON submission_events
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM case_submissions cs
+            JOIN cases c ON c.id = cs.case_id
+            WHERE cs.id = submission_events.submission_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM case_submissions cs
+            JOIN cases c ON c.id = cs.case_id
+            WHERE cs.id = submission_events.submission_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+-- ============================================================================
+-- 9.5 Submission Dispatch State Table RLS
+-- ============================================================================
+ALTER TABLE submission_dispatch_state ENABLE ROW LEVEL SECURITY;
+ALTER TABLE submission_dispatch_state FORCE ROW LEVEL SECURITY;
+CREATE POLICY submission_dispatch_state_via_submission ON submission_dispatch_state
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1
+            FROM case_submissions cs
+            JOIN cases c ON c.id = cs.case_id
+            WHERE cs.id = submission_dispatch_state.submission_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1
+            FROM case_submissions cs
+            JOIN cases c ON c.id = cs.case_id
+            WHERE cs.id = submission_dispatch_state.submission_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+-- ============================================================================
+-- 9.6 Submission Idempotency Table RLS
+-- ============================================================================
+ALTER TABLE submission_idempotency ENABLE ROW LEVEL SECURITY;
+ALTER TABLE submission_idempotency FORCE ROW LEVEL SECURITY;
+CREATE POLICY submission_idempotency_via_case ON submission_idempotency
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = submission_idempotency.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = submission_idempotency.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+-- ============================================================================
+-- 9.7 Submission ACKs Table RLS
 -- ============================================================================
 ALTER TABLE submission_acks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE submission_acks FORCE ROW LEVEL SECURITY;
@@ -625,7 +831,7 @@ CREATE POLICY submission_acks_via_submission ON submission_acks
     );
 
 -- ============================================================================
--- 9.5 Electronic Signatures Table RLS
+-- 9.8 Electronic Signatures Table RLS
 -- ============================================================================
 ALTER TABLE e_signatures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE e_signatures FORCE ROW LEVEL SECURITY;
@@ -650,7 +856,7 @@ CREATE POLICY e_signatures_via_case ON e_signatures
     );
 
 -- ============================================================================
--- 9.6 Users Table RLS
+-- 9.9 Users Table RLS
 -- ============================================================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users FORCE ROW LEVEL SECURITY;
@@ -672,7 +878,7 @@ CREATE POLICY users_org_isolation_modify ON users
     WITH CHECK (is_current_user_admin());
 
 -- ============================================================================
--- 9.7 Organizations Table RLS
+-- 9.10 Organizations Table RLS
 -- ============================================================================
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations FORCE ROW LEVEL SECURITY;

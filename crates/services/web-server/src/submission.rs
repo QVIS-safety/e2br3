@@ -1,20 +1,48 @@
 use lib_core::ctx::Ctx;
 use lib_core::model::case::CaseBmc;
 use lib_core::model::store::{
-	set_compliance_context_dbx, set_full_context_dbx_or_rollback,
+	set_compliance_context_dbx, set_full_context_dbx,
+	set_full_context_dbx_or_rollback,
 };
+use lib_core::model::Error as ModelError;
 use lib_core::model::ModelManager;
 use lib_core::xml::{export_case_xml, should_skip_xml_validation, validate_e2b_xml};
 use lib_rest_core::{Error, Result};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Value};
 use sqlx::FromRow;
+use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use time::OffsetDateTime;
 use tokio::runtime::Handle;
 use tokio::task;
+use tokio::time::sleep;
 use uuid::Uuid;
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum SubmissionAuthority {
+	Fda,
+	Mfds,
+}
+
+impl SubmissionAuthority {
+	pub fn as_str(self) -> &'static str {
+		match self {
+			Self::Fda => "fda",
+			Self::Mfds => "mfds",
+		}
+	}
+
+	pub fn parse(raw: &str) -> Option<Self> {
+		match raw.trim().to_ascii_lowercase().as_str() {
+			"fda" => Some(Self::Fda),
+			"mfds" => Some(Self::Mfds),
+			_ => None,
+		}
+	}
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -51,6 +79,113 @@ pub struct SubmissionRecord {
 	pub ack4: Option<SubmissionAck>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubmissionEventRecord {
+	pub id: Uuid,
+	pub submission_id: Uuid,
+	pub event_type: String,
+	pub event_data: Option<Value>,
+	pub created_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubmissionDispatchStateRecord {
+	pub submission_id: Uuid,
+	pub attempt_count: i32,
+	pub last_attempt_at: Option<OffsetDateTime>,
+	pub last_error: Option<String>,
+	pub next_retry_at: Option<OffsetDateTime>,
+	pub terminal_at: Option<OffsetDateTime>,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubmissionReconcileResult {
+	pub attempted: usize,
+	pub succeeded: usize,
+	pub failed: usize,
+	pub skipped: usize,
+	pub processed_submission_ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubmissionReconcileRuntimeStatus {
+	pub last_run_at: Option<OffsetDateTime>,
+	pub last_success_at: Option<OffsetDateTime>,
+	pub last_error: Option<String>,
+	pub total_runs: u64,
+	pub total_errors: u64,
+	pub total_attempted: u64,
+	pub total_succeeded: u64,
+	pub total_failed: u64,
+	pub total_skipped: u64,
+}
+
+#[derive(Debug, Default)]
+struct ReconcileRuntimeStore {
+	last_run_at: Option<OffsetDateTime>,
+	last_success_at: Option<OffsetDateTime>,
+	last_error: Option<String>,
+	total_runs: u64,
+	total_errors: u64,
+	total_attempted: u64,
+	total_succeeded: u64,
+	total_failed: u64,
+	total_skipped: u64,
+}
+
+fn reconcile_runtime_store() -> &'static Mutex<ReconcileRuntimeStore> {
+	static STORE: OnceLock<Mutex<ReconcileRuntimeStore>> = OnceLock::new();
+	STORE.get_or_init(|| Mutex::new(ReconcileRuntimeStore::default()))
+}
+
+fn record_reconcile_result(result: &SubmissionReconcileResult) {
+	let now = OffsetDateTime::now_utc();
+	let mut store = reconcile_runtime_store()
+		.lock()
+		.expect("reconcile runtime stats lock");
+	store.last_run_at = Some(now);
+	store.last_success_at = Some(now);
+	store.last_error = None;
+	store.total_runs = store.total_runs.saturating_add(1);
+	store.total_attempted = store
+		.total_attempted
+		.saturating_add(result.attempted as u64);
+	store.total_succeeded = store
+		.total_succeeded
+		.saturating_add(result.succeeded as u64);
+	store.total_failed = store.total_failed.saturating_add(result.failed as u64);
+	store.total_skipped = store.total_skipped.saturating_add(result.skipped as u64);
+}
+
+fn record_reconcile_error(err: &str) {
+	let now = OffsetDateTime::now_utc();
+	let mut store = reconcile_runtime_store()
+		.lock()
+		.expect("reconcile runtime stats lock");
+	store.last_run_at = Some(now);
+	store.last_error = Some(err.to_string());
+	store.total_runs = store.total_runs.saturating_add(1);
+	store.total_errors = store.total_errors.saturating_add(1);
+}
+
+pub fn get_reconcile_runtime_status() -> SubmissionReconcileRuntimeStatus {
+	let store = reconcile_runtime_store()
+		.lock()
+		.expect("reconcile runtime stats lock");
+	SubmissionReconcileRuntimeStatus {
+		last_run_at: store.last_run_at,
+		last_success_at: store.last_success_at,
+		last_error: store.last_error.clone(),
+		total_runs: store.total_runs,
+		total_errors: store.total_errors,
+		total_attempted: store.total_attempted,
+		total_succeeded: store.total_succeeded,
+		total_failed: store.total_failed,
+		total_skipped: store.total_skipped,
+	}
+}
 #[derive(Debug, Deserialize)]
 pub struct MockAckInput {
 	pub level: u8,
@@ -79,6 +214,27 @@ struct SubmissionAckRow {
 	ack_code: Option<String>,
 	ack_message: Option<String>,
 	received_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct SubmissionEventRow {
+	id: Uuid,
+	submission_id: Uuid,
+	event_type: String,
+	event_data: Option<Value>,
+	created_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct SubmissionDispatchStateRow {
+	submission_id: Uuid,
+	attempt_count: i32,
+	last_attempt_at: Option<OffsetDateTime>,
+	last_error: Option<String>,
+	next_retry_at: Option<OffsetDateTime>,
+	terminal_at: Option<OffsetDateTime>,
+	created_at: OffsetDateTime,
+	updated_at: OffsetDateTime,
 }
 
 #[derive(Debug)]
@@ -167,6 +323,27 @@ fn is_fda_profile(case_profile: Option<&str>) -> bool {
 		.unwrap_or(true)
 }
 
+fn is_mfds_profile(case_profile: Option<&str>) -> bool {
+	case_profile
+		.map(|v| v.eq_ignore_ascii_case("mfds"))
+		.unwrap_or(false)
+}
+
+fn authority_from_case_profile(
+	case_profile: Option<&str>,
+) -> Result<SubmissionAuthority> {
+	if is_mfds_profile(case_profile) {
+		return Ok(SubmissionAuthority::Mfds);
+	}
+	if is_fda_profile(case_profile) {
+		return Ok(SubmissionAuthority::Fda);
+	}
+	Err(Error::BadRequest {
+		message: "case validation_profile must be fda or mfds for submission"
+			.to_string(),
+	})
+}
+
 fn status_to_db(status: &SubmissionStatus) -> &'static str {
 	match status {
 		SubmissionStatus::Ack1Received => "ack1_received",
@@ -175,6 +352,268 @@ fn status_to_db(status: &SubmissionStatus) -> &'static str {
 		SubmissionStatus::Ack4Received => "ack4_received",
 		SubmissionStatus::Rejected => "rejected",
 	}
+}
+
+async fn submission_events_table_exists(mm: &ModelManager) -> Result<bool> {
+	let row = mm
+		.dbx()
+		.fetch_one(sqlx::query_as::<_, (Option<String>,)>(
+			"SELECT to_regclass('public.submission_events')::text",
+		))
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(row.0.is_some())
+}
+
+async fn submission_dispatch_state_table_exists(mm: &ModelManager) -> Result<bool> {
+	let row = mm
+		.dbx()
+		.fetch_one(sqlx::query_as::<_, (Option<String>,)>(
+			"SELECT to_regclass('public.submission_dispatch_state')::text",
+		))
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if row.0.is_none() {
+		return Ok(false);
+	}
+	let audit_trigger_fn = mm
+		.dbx()
+		.fetch_one(sqlx::query_as::<_, (Option<String>,)>(
+			"SELECT p.proname::text
+			 FROM pg_trigger t
+			 JOIN pg_class c ON c.oid = t.tgrelid
+			 JOIN pg_namespace n ON n.oid = c.relnamespace
+			 JOIN pg_proc p ON p.oid = t.tgfoid
+			 WHERE n.nspname = 'public'
+			   AND c.relname = 'submission_dispatch_state'
+			   AND t.tgname = 'audit_submission_dispatch_state'
+			   AND NOT t.tgisinternal
+			 LIMIT 1",
+		))
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	let audit_trigger_fn = audit_trigger_fn.0;
+	if audit_trigger_fn.is_none() {
+		return Ok(true);
+	}
+	let has_id_column = mm
+		.dbx()
+		.fetch_one(sqlx::query_as::<_, (bool,)>(
+			"SELECT EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_schema = 'public'
+				  AND table_name = 'submission_dispatch_state'
+				  AND column_name = 'id'
+			)",
+		))
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	let has_incompatible_trigger =
+		matches!(audit_trigger_fn.as_deref(), Some("audit_trigger_function"));
+	if has_incompatible_trigger && !has_id_column.0 {
+		eprintln!(
+			"submission_dispatch_state disabled: incompatible audit trigger (audit_trigger_function) requires id column"
+		);
+		return Ok(false);
+	}
+	Ok(true)
+}
+
+async fn submission_idempotency_table_exists(mm: &ModelManager) -> Result<bool> {
+	let row = mm
+		.dbx()
+		.fetch_one(sqlx::query_as::<_, (Option<String>,)>(
+			"SELECT to_regclass('public.submission_idempotency')::text",
+		))
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(row.0.is_some())
+}
+
+async fn append_submission_event(
+	mm: &ModelManager,
+	submission_id: Uuid,
+	event_type: &str,
+	event_data: Option<Value>,
+) -> Result<()> {
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"INSERT INTO submission_events (
+					submission_id, event_type, event_data, created_at
+				)
+				VALUES ($1, $2, $3, now())",
+			)
+			.bind(submission_id)
+			.bind(event_type)
+			.bind(event_data),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(())
+}
+
+async fn upsert_dispatch_state_submit_success(
+	mm: &ModelManager,
+	submission_id: Uuid,
+	attempted_at: OffsetDateTime,
+	attempt_count: i32,
+) -> Result<()> {
+	let res = mm
+		.dbx()
+		.execute(
+			sqlx::query(
+				"INSERT INTO submission_dispatch_state (
+					submission_id, attempt_count, last_attempt_at, last_error, next_retry_at, terminal_at, created_at, updated_at
+				)
+				VALUES ($1, $3, $2, NULL, NULL, NULL, now(), now())
+				ON CONFLICT (submission_id)
+				DO UPDATE SET
+					attempt_count = EXCLUDED.attempt_count,
+					last_attempt_at = EXCLUDED.last_attempt_at,
+					last_error = NULL,
+					next_retry_at = NULL,
+					updated_at = now()",
+				)
+				.bind(submission_id)
+				.bind(attempted_at)
+				.bind(attempt_count),
+			)
+		.await;
+	if let Err(err) = res {
+		eprintln!("dispatch state write skipped (submit_success): {err}");
+	}
+	Ok(())
+}
+
+async fn upsert_dispatch_state_submit_failure(
+	mm: &ModelManager,
+	submission_id: Uuid,
+	attempted_at: OffsetDateTime,
+	attempt_count: i32,
+	last_error: &str,
+	next_retry_at: Option<OffsetDateTime>,
+) -> Result<()> {
+	let res = mm
+		.dbx()
+		.execute(
+			sqlx::query(
+				"INSERT INTO submission_dispatch_state (
+					submission_id, attempt_count, last_attempt_at, last_error, next_retry_at, terminal_at, created_at, updated_at
+				)
+				VALUES ($1, $3, $2, $4, $5, NULL, now(), now())
+				ON CONFLICT (submission_id)
+				DO UPDATE SET
+					attempt_count = EXCLUDED.attempt_count,
+					last_attempt_at = EXCLUDED.last_attempt_at,
+					last_error = EXCLUDED.last_error,
+					next_retry_at = EXCLUDED.next_retry_at,
+					updated_at = now()",
+			)
+			.bind(submission_id)
+			.bind(attempted_at)
+				.bind(attempt_count)
+				.bind(last_error)
+				.bind(next_retry_at),
+			)
+		.await;
+	if let Err(err) = res {
+		eprintln!("dispatch state write skipped (submit_failure): {err}");
+	}
+	Ok(())
+}
+
+async fn get_dispatch_attempt_count(
+	mm: &ModelManager,
+	submission_id: Uuid,
+) -> Result<i32> {
+	let row = mm
+		.dbx()
+		.fetch_optional(sqlx::query_as::<_, (i32,)>(
+			"SELECT attempt_count FROM submission_dispatch_state WHERE submission_id = $1",
+		).bind(submission_id))
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(row.map(|r| r.0).unwrap_or(0))
+}
+
+async fn find_submission_idempotency(
+	mm: &ModelManager,
+	case_id: Uuid,
+	authority: SubmissionAuthority,
+	key: &str,
+) -> Result<Option<Uuid>> {
+	let row = mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, (Uuid,)>(
+				"SELECT submission_id
+				 FROM submission_idempotency
+				 WHERE case_id = $1
+				   AND authority = $2
+				   AND idempotency_key = $3",
+			)
+			.bind(case_id)
+			.bind(authority.as_str())
+			.bind(key),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(row.map(|r| r.0))
+}
+
+async fn insert_submission_idempotency(
+	mm: &ModelManager,
+	case_id: Uuid,
+	authority: SubmissionAuthority,
+	key: &str,
+	submission_id: Uuid,
+	created_by: Uuid,
+) -> Result<()> {
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"INSERT INTO submission_idempotency (
+					case_id, authority, idempotency_key, submission_id, created_by, created_at
+				)
+				VALUES ($1, $2, $3, $4, $5, now())
+				ON CONFLICT (case_id, authority, idempotency_key) DO NOTHING",
+			)
+			.bind(case_id)
+			.bind(authority.as_str())
+			.bind(key)
+			.bind(submission_id)
+			.bind(created_by),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(())
+}
+
+async fn mark_dispatch_terminal(
+	mm: &ModelManager,
+	submission_id: Uuid,
+	terminal_at: OffsetDateTime,
+) -> Result<()> {
+	let res = mm
+		.dbx()
+		.execute(
+			sqlx::query(
+				"UPDATE submission_dispatch_state
+				 SET terminal_at = COALESCE(terminal_at, $2),
+				     next_retry_at = NULL,
+				     updated_at = now()
+				 WHERE submission_id = $1",
+			)
+			.bind(submission_id)
+			.bind(terminal_at),
+		)
+		.await;
+	if let Err(err) = res {
+		eprintln!("dispatch state write skipped (terminal): {err}");
+	}
+	Ok(())
 }
 
 fn status_from_db(status: &str) -> Result<SubmissionStatus> {
@@ -246,6 +685,7 @@ fn merge_submission_status(
 async fn submit_to_gateway(
 	case_id: Uuid,
 	xml: &str,
+	authority: SubmissionAuthority,
 ) -> Result<GatewaySubmissionOutcome> {
 	let now = OffsetDateTime::now_utc();
 	if let Some(base_url) = as2_submitter_url() {
@@ -262,7 +702,7 @@ async fn submit_to_gateway(
 			.post(&submit_url)
 			.json(&json!({
 				"caseId": case_id.to_string(),
-				"authority": "fda",
+				"authority": authority.as_str(),
 				"xmlPayload": xml,
 				"callbackUrl": callback_url,
 			}))
@@ -321,7 +761,8 @@ async fn submit_to_gateway(
 		return Ok(GatewaySubmissionOutcome {
 			gateway: "fda-esg-nextgen-mock".to_string(),
 			remote_submission_id: format!(
-				"FDA-MOCK-{}",
+				"{}-MOCK-{}",
+				authority.as_str().to_ascii_uppercase(),
 				submission_id.simple().to_string().to_uppercase()
 			),
 			ack1: SubmissionAck {
@@ -336,6 +777,13 @@ async fn submit_to_gateway(
 	if !is_esg_enabled() {
 		return Err(Error::BadRequest {
 			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
+		});
+	}
+	if authority != SubmissionAuthority::Fda {
+		return Err(Error::BadRequest {
+			message:
+				"FDA ESG transport only supports authority=fda; configure AS2 for MFDS submissions"
+					.to_string(),
 		});
 	}
 
@@ -427,6 +875,120 @@ async fn submit_to_gateway(
 		gateway: "fda-esg-nextgen-api".to_string(),
 		remote_submission_id,
 		ack1,
+	})
+}
+
+fn select_gateway_name(authority: SubmissionAuthority) -> Result<String> {
+	if as2_submitter_url().is_some() {
+		return Ok("as2-submitter-http".to_string());
+	}
+	if allow_mock_submission() {
+		return Ok("fda-esg-nextgen-mock".to_string());
+	}
+	if !is_esg_enabled() {
+		return Err(Error::BadRequest {
+			message: "no submission transport configured: set AS2_SUBMITTER_URL or FDA_ESG_ENABLED=1".to_string(),
+		});
+	}
+	if authority != SubmissionAuthority::Fda {
+		return Err(Error::BadRequest {
+			message:
+				"FDA ESG transport only supports authority=fda; configure AS2 for MFDS submissions"
+					.to_string(),
+		});
+	}
+	let _ = std::env::var("FDA_ESG_BASE_URL").map_err(|_| Error::BadRequest {
+		message: "FDA_ESG_ENABLED=1 requires FDA_ESG_BASE_URL".to_string(),
+	})?;
+	Ok("fda-esg-nextgen-api".to_string())
+}
+
+fn submission_max_attempts() -> u32 {
+	std::env::var("SUBMISSION_MAX_ATTEMPTS")
+		.ok()
+		.and_then(|v| v.trim().parse::<u32>().ok())
+		.filter(|v| *v > 0)
+		.unwrap_or(1)
+}
+
+fn submission_retry_base_ms() -> u64 {
+	std::env::var("SUBMISSION_RETRY_BASE_MS")
+		.ok()
+		.and_then(|v| v.trim().parse::<u64>().ok())
+		.filter(|v| *v > 0)
+		.unwrap_or(500)
+}
+
+fn submission_retry_max_ms() -> u64 {
+	std::env::var("SUBMISSION_RETRY_MAX_MS")
+		.ok()
+		.and_then(|v| v.trim().parse::<u64>().ok())
+		.filter(|v| *v > 0)
+		.unwrap_or(10_000)
+}
+
+fn backoff_ms_for_attempt(attempt_number: u32) -> u64 {
+	let base = submission_retry_base_ms();
+	let max = submission_retry_max_ms();
+	let shift = attempt_number.saturating_sub(1).min(16);
+	let pow = 1u64 << shift;
+	base.saturating_mul(pow).min(max)
+}
+
+fn is_retryable_submit_error(msg: &str) -> bool {
+	let lower = msg.to_ascii_lowercase();
+	!(lower.contains("missing remote submission identifier")
+		|| lower.contains("response is not valid json")
+		|| lower.contains("rejected request (")
+		|| lower.contains("submit failed ("))
+}
+
+struct GatewayDispatchFailure {
+	message: String,
+	attempts: u32,
+	next_retry_at: Option<OffsetDateTime>,
+}
+
+async fn submit_to_gateway_with_retry(
+	case_id: Uuid,
+	xml: &str,
+	authority: SubmissionAuthority,
+) -> core::result::Result<(GatewaySubmissionOutcome, u32), GatewayDispatchFailure> {
+	let max_attempts = submission_max_attempts();
+	let mut last_error = "submission failed".to_string();
+
+	for attempt in 1..=max_attempts {
+		match submit_to_gateway(case_id, xml, authority).await {
+			Ok(outcome) => return Ok((outcome, attempt)),
+			Err(err) => {
+				last_error = err.to_string();
+				let retryable = is_retryable_submit_error(&last_error);
+				if attempt >= max_attempts || !retryable {
+					let next_retry_at = if retryable {
+						Some(
+							OffsetDateTime::now_utc()
+								+ time::Duration::milliseconds(
+									backoff_ms_for_attempt(attempt) as i64,
+								),
+						)
+					} else {
+						None
+					};
+					return Err(GatewayDispatchFailure {
+						message: last_error,
+						attempts: attempt,
+						next_retry_at,
+					});
+				}
+				sleep(Duration::from_millis(backoff_ms_for_attempt(attempt))).await;
+			}
+		}
+	}
+
+	Err(GatewayDispatchFailure {
+		message: last_error,
+		attempts: max_attempts,
+		next_retry_at: None,
 	})
 }
 
@@ -567,7 +1129,16 @@ pub async fn create_fda_submission(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<SubmissionRecord> {
-	assert_case_ready_for_fda_submission(ctx, mm, case_id).await?;
+	create_submission(ctx, mm, case_id, SubmissionAuthority::Fda).await
+}
+
+pub async fn create_submission(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	authority: SubmissionAuthority,
+) -> Result<SubmissionRecord> {
+	assert_case_ready_for_submission(ctx, mm, case_id, authority).await?;
 
 	let ctx_clone = ctx.clone();
 	let mm_clone = mm.clone();
@@ -601,10 +1172,102 @@ pub async fn create_fda_submission(
 
 	let now = OffsetDateTime::now_utc();
 	let submission_id = Uuid::new_v4();
-	let gateway_outcome = submit_to_gateway(case_id, &xml).await?;
+	let events_enabled = submission_events_table_exists(mm).await?;
+	let dispatch_enabled = submission_dispatch_state_table_exists(mm).await?;
+	let gateway = select_gateway_name(authority)?;
+	let dispatch = submit_to_gateway_with_retry(case_id, &xml, authority).await;
+
+	let (gateway_outcome, attempt_count) = match dispatch {
+		Ok((outcome, attempts)) => (outcome, attempts),
+		Err(failure) => {
+			let failed_remote = format!(
+				"FAILED-{}",
+				submission_id.simple().to_string().to_uppercase()
+			);
+			mm.dbx()
+				.begin_txn()
+				.await
+				.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+			set_full_context_dbx_or_rollback(
+				mm.dbx(),
+				ctx.user_id(),
+				ctx.organization_id(),
+				ctx.role(),
+			)
+			.await?;
+			set_compliance_context_dbx(
+				mm.dbx(),
+				ctx.change_reason(),
+				ctx.e_signature_id(),
+			)
+			.await
+			.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+			mm.dbx()
+				.execute(
+					sqlx::query(
+						"INSERT INTO case_submissions (
+							id, case_id, gateway, remote_submission_id, status, xml_bytes,
+							submitted_by, submitted_at, created_at, updated_at
+						)
+						VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now(), now())",
+					)
+					.bind(submission_id)
+					.bind(case_id)
+					.bind(&gateway)
+					.bind(&failed_remote)
+					.bind(status_to_db(&SubmissionStatus::Rejected))
+					.bind(xml.len() as i32)
+					.bind(ctx.user_id())
+					.bind(now),
+				)
+				.await
+				.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+			if events_enabled {
+				append_submission_event(
+					mm,
+					submission_id,
+					"submission_dispatch_failed",
+					Some(json!({
+						"case_id": case_id,
+						"gateway": gateway,
+						"error": failure.message,
+						"attempts": failure.attempts,
+						"next_retry_at": failure.next_retry_at,
+					})),
+				)
+				.await?;
+			}
+			if dispatch_enabled {
+				upsert_dispatch_state_submit_failure(
+					mm,
+					submission_id,
+					now,
+					failure.attempts as i32,
+					&failure.message,
+					failure.next_retry_at,
+				)
+				.await?;
+			}
+
+			mm.dbx()
+				.commit_txn()
+				.await
+				.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+			return Err(Error::BadRequest {
+				message: format!(
+					"submission dispatch failed after {} attempt(s); submission_id={submission_id}: {}",
+					failure.attempts, failure.message
+				),
+			});
+		}
+	};
+
 	let remote_submission_id = gateway_outcome.remote_submission_id;
 	let ack1 = gateway_outcome.ack1;
-	let gateway = gateway_outcome.gateway;
+	let actual_gateway = gateway_outcome.gateway;
 
 	mm.dbx()
 		.begin_txn()
@@ -626,18 +1289,19 @@ pub async fn create_fda_submission(
 		.execute(
 			sqlx::query(
 				"UPDATE cases
-				 SET status = 'submitted',
-				     submitted_by = $2,
-				     submitted_at = $3,
-				     raw_xml = $4,
-				     dirty_c = false,
-				     dirty_d = false,
-				     dirty_e = false,
-				     dirty_f = false,
-				     dirty_g = false,
-				     dirty_h = false,
-				     updated_at = now()
-				 WHERE id = $1",
+					 SET status = 'submitted',
+					     submitted_by = $2,
+					     submitted_at = $3,
+					     raw_xml = $4,
+					     dirty_c = false,
+					     dirty_d = false,
+					     dirty_e = false,
+					     dirty_f = false,
+					     dirty_g = false,
+					     dirty_h = false,
+					     updated_at = now()
+					 WHERE id = $1
+					   AND status = 'validated'",
 			)
 			.bind(case_id)
 			.bind(ctx.user_id())
@@ -649,7 +1313,10 @@ pub async fn create_fda_submission(
 	if updated == 0 {
 		let _ = mm.dbx().rollback_txn().await;
 		return Err(Error::BadRequest {
-			message: format!("case not found: {case_id}"),
+			message: format!(
+				"case must be in 'validated' status before {} submission",
+				authority.as_str().to_ascii_uppercase()
+			),
 		});
 	}
 
@@ -664,7 +1331,7 @@ pub async fn create_fda_submission(
 			)
 			.bind(submission_id)
 			.bind(case_id)
-			.bind(gateway)
+			.bind(&actual_gateway)
 			.bind(&remote_submission_id)
 			.bind(status_to_db(&SubmissionStatus::Ack1Received))
 			.bind(xml.len() as i32)
@@ -673,6 +1340,29 @@ pub async fn create_fda_submission(
 		)
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if events_enabled {
+		append_submission_event(
+			mm,
+			submission_id,
+			"submission_created",
+			Some(json!({
+				"case_id": case_id,
+				"gateway": actual_gateway,
+				"remote_submission_id": remote_submission_id,
+				"status": "ack1_received",
+			})),
+		)
+		.await?;
+	}
+	if dispatch_enabled {
+		upsert_dispatch_state_submit_success(
+			mm,
+			submission_id,
+			now,
+			attempt_count as i32,
+		)
+		.await?;
+	}
 
 	mm.dbx()
 		.execute(
@@ -697,6 +1387,21 @@ pub async fn create_fda_submission(
 		)
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if events_enabled {
+		append_submission_event(
+			mm,
+			submission_id,
+			"ack_recorded",
+			Some(json!({
+				"source": "gateway_submit_response",
+				"ack_level": ack1.level,
+				"success": ack1.success,
+				"ack_code": ack1.code,
+				"ack_message": ack1.message,
+			})),
+		)
+		.await?;
+	}
 	mm.dbx()
 		.commit_txn()
 		.await
@@ -714,22 +1419,153 @@ pub async fn create_fda_submission(
 	compose_submission_record(row, acks)
 }
 
+pub async fn create_submission_idempotent(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	authority: SubmissionAuthority,
+	idempotency_key: Option<String>,
+) -> Result<SubmissionRecord> {
+	let normalized_key = idempotency_key
+		.map(|v| v.trim().to_string())
+		.filter(|v| !v.is_empty());
+	let idempotency_enabled = submission_idempotency_table_exists(mm).await?;
+	if normalized_key.is_some() && !idempotency_enabled {
+		return Err(Error::BadRequest {
+			message:
+				"submission idempotency is not available: apply submission_idempotency schema first"
+					.to_string(),
+		});
+	}
+
+	if idempotency_enabled {
+		if let Some(key) = normalized_key.as_deref() {
+			if let Some(existing_id) =
+				find_submission_idempotency(mm, case_id, authority, key).await?
+			{
+				return get_submission(ctx, mm, existing_id).await?.ok_or(
+					Error::BadRequest {
+						message: format!(
+							"idempotent submission reference not found: {existing_id}"
+						),
+					},
+				);
+			}
+		}
+	}
+
+	let record = match create_submission(ctx, mm, case_id, authority).await {
+		Ok(record) => record,
+		Err(err) => {
+			if idempotency_enabled
+				&& normalized_key.is_some()
+				&& is_case_not_validated_for_submission_error(&err)
+			{
+				if let Some(existing_id) = wait_for_submission_idempotency(
+					mm,
+					case_id,
+					authority,
+					normalized_key.as_deref().unwrap_or_default(),
+				)
+				.await?
+				{
+					return get_submission(ctx, mm, existing_id).await?.ok_or(
+						Error::BadRequest {
+							message: format!(
+								"idempotent submission reference not found: {existing_id}"
+							),
+						},
+					);
+				}
+			}
+			return Err(err);
+		}
+	};
+
+	if idempotency_enabled {
+		if let Some(key) = normalized_key.as_deref() {
+			insert_submission_idempotency(
+				mm,
+				case_id,
+				authority,
+				key,
+				record.id,
+				ctx.user_id(),
+			)
+			.await?;
+		}
+	}
+	Ok(record)
+}
+
+fn is_case_not_validated_for_submission_error(err: &Error) -> bool {
+	match err {
+		Error::BadRequest { message } => {
+			message.contains("case must be in 'validated' status before")
+		}
+		_ => false,
+	}
+}
+
+async fn wait_for_submission_idempotency(
+	mm: &ModelManager,
+	case_id: Uuid,
+	authority: SubmissionAuthority,
+	key: &str,
+) -> Result<Option<Uuid>> {
+	for _ in 0..10 {
+		if let Some(existing_id) =
+			find_submission_idempotency(mm, case_id, authority, key).await?
+		{
+			return Ok(Some(existing_id));
+		}
+		sleep(Duration::from_millis(50)).await;
+	}
+	Ok(None)
+}
+
 pub async fn assert_case_ready_for_fda_submission(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<()> {
+	assert_case_ready_for_submission(ctx, mm, case_id, SubmissionAuthority::Fda)
+		.await
+}
+
+pub async fn assert_case_ready_for_submission(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	authority: SubmissionAuthority,
+) -> Result<()> {
 	let case = CaseBmc::get(ctx, mm, case_id).await?;
-	if !is_fda_profile(case.validation_profile.as_deref()) {
-		return Err(Error::BadRequest {
-			message: "case validation_profile must be fda for FDA submission"
-				.to_string(),
-		});
+	match authority {
+		SubmissionAuthority::Fda => {
+			if !is_fda_profile(case.validation_profile.as_deref()) {
+				return Err(Error::BadRequest {
+					message:
+						"case validation_profile must be fda for FDA submission"
+							.to_string(),
+				});
+			}
+		}
+		SubmissionAuthority::Mfds => {
+			if !is_mfds_profile(case.validation_profile.as_deref()) {
+				return Err(Error::BadRequest {
+					message:
+						"case validation_profile must be mfds for MFDS submission"
+							.to_string(),
+				});
+			}
+		}
 	}
 	if !case.status.eq_ignore_ascii_case("validated") {
 		return Err(Error::BadRequest {
-			message: "case must be in 'validated' status before FDA submission"
-				.to_string(),
+			message: format!(
+				"case must be in 'validated' status before {} submission",
+				authority.as_str().to_ascii_uppercase()
+			),
 		});
 	}
 	Ok(())
@@ -810,6 +1646,8 @@ pub async fn apply_mock_ack(
 		})?;
 	let current_status = status_from_db(&row.status)?;
 	let merged_status = merge_submission_status(&current_status, &incoming_status);
+	let events_enabled = submission_events_table_exists(mm).await?;
+	let dispatch_enabled = submission_dispatch_state_table_exists(mm).await?;
 	let is_duplicate = ack_event_exists(
 		mm,
 		submission_id,
@@ -844,6 +1682,35 @@ pub async fn apply_mock_ack(
 			)
 			.await
 			.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+		if events_enabled {
+			append_submission_event(
+				mm,
+				submission_id,
+				"ack_recorded",
+				Some(json!({
+					"source": "mock_ack",
+					"ack_level": input.level,
+					"success": input.success,
+					"ack_code": input.code,
+					"ack_message": input.message,
+				})),
+			)
+			.await?;
+		}
+	} else if events_enabled {
+		append_submission_event(
+			mm,
+			submission_id,
+			"ack_duplicate_ignored",
+			Some(json!({
+				"source": "mock_ack",
+				"ack_level": input.level,
+				"success": input.success,
+				"ack_code": input.code,
+				"ack_message": input.message,
+			})),
+		)
+		.await?;
 	}
 
 	mm.dbx()
@@ -859,6 +1726,21 @@ pub async fn apply_mock_ack(
 		)
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if events_enabled && merged_status != current_status {
+		append_submission_event(
+			mm,
+			submission_id,
+			"status_changed",
+			Some(json!({
+				"from": status_to_db(&current_status),
+				"to": status_to_db(&merged_status),
+			})),
+		)
+		.await?;
+	}
+	if dispatch_enabled && is_submission_terminal(&merged_status) {
+		mark_dispatch_terminal(mm, submission_id, now).await?;
+	}
 
 	mm.dbx()
 		.commit_txn()
@@ -923,6 +1805,8 @@ pub async fn apply_gateway_ack_by_remote(
 		})?;
 	let current_status = status_from_db(&row.status)?;
 	let merged_status = merge_submission_status(&current_status, &incoming_status);
+	let events_enabled = submission_events_table_exists(mm).await?;
+	let dispatch_enabled = submission_dispatch_state_table_exists(mm).await?;
 	let is_duplicate = ack_event_exists(
 		mm,
 		row.id,
@@ -958,6 +1842,35 @@ pub async fn apply_gateway_ack_by_remote(
 			)
 			.await
 			.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+		if events_enabled {
+			append_submission_event(
+				mm,
+				row.id,
+				"ack_recorded",
+				Some(json!({
+					"source": "gateway_callback",
+					"ack_level": input.ack_level,
+					"success": input.success,
+					"ack_code": input.ack_code,
+					"ack_message": input.ack_message,
+				})),
+			)
+			.await?;
+		}
+	} else if events_enabled {
+		append_submission_event(
+			mm,
+			row.id,
+			"ack_duplicate_ignored",
+			Some(json!({
+				"source": "gateway_callback",
+				"ack_level": input.ack_level,
+				"success": input.success,
+				"ack_code": input.ack_code,
+				"ack_message": input.ack_message,
+			})),
+		)
+		.await?;
 	}
 
 	mm.dbx()
@@ -973,6 +1886,21 @@ pub async fn apply_gateway_ack_by_remote(
 		)
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if events_enabled && merged_status != current_status {
+		append_submission_event(
+			mm,
+			row.id,
+			"status_changed",
+			Some(json!({
+				"from": status_to_db(&current_status),
+				"to": status_to_db(&merged_status),
+			})),
+		)
+		.await?;
+	}
+	if dispatch_enabled && is_submission_terminal(&merged_status) {
+		mark_dispatch_terminal(mm, row.id, now).await?;
+	}
 
 	let mut row_for_response = row.clone();
 	row_for_response.status = status_to_db(&merged_status).to_string();
@@ -985,6 +1913,420 @@ pub async fn apply_gateway_ack_by_remote(
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 
 	Ok(response)
+}
+
+pub async fn list_submission_events(
+	_ctx: &Ctx,
+	mm: &ModelManager,
+	submission_id: Uuid,
+) -> Result<Vec<SubmissionEventRecord>> {
+	if !submission_events_table_exists(mm).await? {
+		return Ok(Vec::new());
+	}
+	let rows = mm
+		.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, SubmissionEventRow>(
+				"SELECT id, submission_id, event_type, event_data, created_at
+				 FROM submission_events
+				 WHERE submission_id = $1
+				 ORDER BY created_at ASC",
+			)
+			.bind(submission_id),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(rows
+		.into_iter()
+		.map(|row| SubmissionEventRecord {
+			id: row.id,
+			submission_id: row.submission_id,
+			event_type: row.event_type,
+			event_data: row.event_data,
+			created_at: row.created_at,
+		})
+		.collect())
+}
+
+pub async fn get_submission_dispatch_state(
+	_ctx: &Ctx,
+	mm: &ModelManager,
+	submission_id: Uuid,
+) -> Result<Option<SubmissionDispatchStateRecord>> {
+	if !submission_dispatch_state_table_exists(mm).await? {
+		return Ok(None);
+	}
+	let row = mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, SubmissionDispatchStateRow>(
+				"SELECT submission_id, attempt_count, last_attempt_at, last_error, next_retry_at, terminal_at, created_at, updated_at
+				 FROM submission_dispatch_state
+				 WHERE submission_id = $1",
+			)
+			.bind(submission_id),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(row.map(|r| SubmissionDispatchStateRecord {
+		submission_id: r.submission_id,
+		attempt_count: r.attempt_count,
+		last_attempt_at: r.last_attempt_at,
+		last_error: r.last_error,
+		next_retry_at: r.next_retry_at,
+		terminal_at: r.terminal_at,
+		created_at: r.created_at,
+		updated_at: r.updated_at,
+	}))
+}
+
+pub async fn reconcile_due_submissions(
+	mm: &ModelManager,
+	limit: i64,
+) -> Result<SubmissionReconcileResult> {
+	let safe_limit = limit.clamp(1, 100);
+	if !submission_dispatch_state_table_exists(mm).await? {
+		let result = SubmissionReconcileResult {
+			attempted: 0,
+			succeeded: 0,
+			failed: 0,
+			skipped: 0,
+			processed_submission_ids: Vec::new(),
+		};
+		record_reconcile_result(&result);
+		return Ok(result);
+	}
+	let system_ctx = Ctx::root_ctx();
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	let due_rows = async {
+		set_full_context_dbx(
+			mm.dbx(),
+			system_ctx.user_id(),
+			system_ctx.organization_id(),
+			system_ctx.role(),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+		mm.dbx()
+			.fetch_all(
+				sqlx::query_as::<_, (Uuid,)>(
+					"SELECT submission_id
+					 FROM submission_dispatch_state
+					 WHERE next_retry_at IS NOT NULL
+					   AND next_retry_at <= now()
+					   AND terminal_at IS NULL
+					 ORDER BY next_retry_at ASC
+					 LIMIT $1",
+				)
+				.bind(safe_limit),
+			)
+			.await
+			.map_err(|e| Error::from(lib_core::model::Error::from(e)))
+	}
+	.await;
+	match due_rows {
+		Ok(rows) => {
+			mm.dbx()
+				.commit_txn()
+				.await
+				.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+			let due_rows = rows;
+
+			let mut result = SubmissionReconcileResult {
+				attempted: 0,
+				succeeded: 0,
+				failed: 0,
+				skipped: 0,
+				processed_submission_ids: Vec::new(),
+			};
+
+			for row in due_rows {
+				let submission_id = row.0;
+				result.attempted += 1;
+				result.processed_submission_ids.push(submission_id);
+				match reconcile_one_submission(mm, submission_id).await? {
+					ReconcileOutcome::Succeeded => result.succeeded += 1,
+					ReconcileOutcome::Failed => result.failed += 1,
+					ReconcileOutcome::Skipped => result.skipped += 1,
+				}
+			}
+
+			record_reconcile_result(&result);
+			Ok(result)
+		}
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(err)
+		}
+	}
+}
+
+enum ReconcileOutcome {
+	Succeeded,
+	Failed,
+	Skipped,
+}
+
+async fn reconcile_one_submission(
+	mm: &ModelManager,
+	submission_id: Uuid,
+) -> Result<ReconcileOutcome> {
+	let system_ctx = Ctx::root_ctx();
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	let row = async {
+		set_full_context_dbx(
+			mm.dbx(),
+			system_ctx.user_id(),
+			system_ctx.organization_id(),
+			system_ctx.role(),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+		mm.dbx()
+			.fetch_optional(
+				sqlx::query_as::<_, CaseSubmissionRow>(
+					"SELECT id, case_id, gateway, remote_submission_id, status, xml_bytes, submitted_by, submitted_at
+					 FROM case_submissions
+					 WHERE id = $1",
+				)
+				.bind(submission_id),
+			)
+			.await
+			.map_err(|e| Error::from(lib_core::model::Error::from(e)))
+	}
+	.await;
+	match row {
+		Ok(row) => {
+			mm.dbx()
+				.commit_txn()
+				.await
+				.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+			let Some(row) = row else {
+				return Ok(ReconcileOutcome::Skipped);
+			};
+			if !row.status.eq_ignore_ascii_case("rejected") {
+				return Ok(ReconcileOutcome::Skipped);
+			}
+			let case = match CaseBmc::get(&system_ctx, mm, row.case_id).await {
+				Ok(case) => case,
+				Err(ModelError::EntityUuidNotFound { .. }) => {
+					return Ok(ReconcileOutcome::Skipped);
+				}
+				Err(e) => return Err(Error::from(e)),
+			};
+			let authority =
+				authority_from_case_profile(case.validation_profile.as_deref())?;
+
+			let ctx_clone = system_ctx.clone();
+			let mm_clone = mm.clone();
+			let case_id = row.case_id;
+			let xml = task::spawn_blocking(move || {
+				Handle::current()
+					.block_on(export_case_xml(&ctx_clone, &mm_clone, case_id))
+			})
+			.await
+			.map_err(|err| Error::BadRequest {
+				message: format!("reconcile export task failed: {err}"),
+			})?
+			.map_err(Error::from)?;
+
+			let events_enabled = submission_events_table_exists(mm).await?;
+			let dispatch_enabled =
+				submission_dispatch_state_table_exists(mm).await?;
+			let now = OffsetDateTime::now_utc();
+			let prior_attempts =
+				get_dispatch_attempt_count(mm, submission_id).await?;
+
+			match submit_to_gateway_with_retry(row.case_id, &xml, authority).await {
+				Ok((outcome, attempts)) => {
+					mm.dbx()
+						.begin_txn()
+						.await
+						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+					set_full_context_dbx_or_rollback(
+						mm.dbx(),
+						system_ctx.user_id(),
+						system_ctx.organization_id(),
+						system_ctx.role(),
+					)
+					.await?;
+					set_compliance_context_dbx(
+						mm.dbx(),
+						system_ctx.change_reason(),
+						system_ctx.e_signature_id(),
+					)
+					.await
+					.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+					mm.dbx()
+						.execute(
+							sqlx::query(
+								"UPDATE cases
+								 SET status = 'submitted',
+								     submitted_by = $2,
+								     submitted_at = $3,
+								     raw_xml = $4,
+								     dirty_c = false,
+								     dirty_d = false,
+								     dirty_e = false,
+								     dirty_f = false,
+								     dirty_g = false,
+								     dirty_h = false,
+								     updated_at = now()
+								 WHERE id = $1",
+							)
+							.bind(row.case_id)
+							.bind(system_ctx.user_id())
+							.bind(now)
+							.bind(xml.as_bytes()),
+						)
+						.await
+						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+					mm.dbx()
+						.execute(
+							sqlx::query(
+								"UPDATE case_submissions
+								 SET gateway = $2,
+								     remote_submission_id = $3,
+								     status = $4,
+								     updated_at = now()
+								 WHERE id = $1",
+							)
+							.bind(submission_id)
+							.bind(outcome.gateway)
+							.bind(outcome.remote_submission_id)
+							.bind(status_to_db(&SubmissionStatus::Ack1Received)),
+						)
+						.await
+						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+					mm.dbx()
+						.execute(
+							sqlx::query(
+								"INSERT INTO submission_acks (
+									submission_id, ack_level, success, ack_code, ack_message, received_at, raw_payload
+								)
+								VALUES ($1, $2, $3, $4, $5, $6, $7)",
+							)
+							.bind(submission_id)
+							.bind(outcome.ack1.level as i16)
+							.bind(outcome.ack1.success)
+							.bind(outcome.ack1.code.as_deref())
+							.bind(outcome.ack1.message.as_deref())
+							.bind(outcome.ack1.received_at)
+							.bind(json!({
+								"source": "reconcile_retry",
+								"level": outcome.ack1.level,
+								"success": outcome.ack1.success,
+								"code": outcome.ack1.code,
+								"message": outcome.ack1.message,
+							})),
+						)
+						.await
+						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+					if events_enabled {
+						append_submission_event(
+							mm,
+							submission_id,
+							"submission_retried",
+							Some(json!({
+								"status": "ack1_received",
+								"attempts": attempts,
+							})),
+						)
+						.await?;
+					}
+					if dispatch_enabled {
+						upsert_dispatch_state_submit_success(
+							mm,
+							submission_id,
+							now,
+							prior_attempts + attempts as i32,
+						)
+						.await?;
+					}
+
+					mm.dbx()
+						.commit_txn()
+						.await
+						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+					Ok(ReconcileOutcome::Succeeded)
+				}
+				Err(failure) => {
+					if dispatch_enabled {
+						mm.dbx().begin_txn().await.map_err(|e| {
+							Error::from(lib_core::model::Error::from(e))
+						})?;
+						set_full_context_dbx_or_rollback(
+							mm.dbx(),
+							system_ctx.user_id(),
+							system_ctx.organization_id(),
+							system_ctx.role(),
+						)
+						.await?;
+						set_compliance_context_dbx(
+							mm.dbx(),
+							system_ctx.change_reason(),
+							system_ctx.e_signature_id(),
+						)
+						.await
+						.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+						upsert_dispatch_state_submit_failure(
+							mm,
+							submission_id,
+							now,
+							prior_attempts + failure.attempts as i32,
+							&failure.message,
+							failure.next_retry_at,
+						)
+						.await?;
+						if events_enabled {
+							append_submission_event(
+								mm,
+								submission_id,
+								"submission_retry_failed",
+								Some(json!({
+									"attempts": failure.attempts,
+									"error": failure.message,
+									"next_retry_at": failure.next_retry_at,
+								})),
+							)
+							.await?;
+						}
+						mm.dbx().commit_txn().await.map_err(|e| {
+							Error::from(lib_core::model::Error::from(e))
+						})?;
+					}
+					Ok(ReconcileOutcome::Failed)
+				}
+			}
+		}
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(err)
+		}
+	}
+}
+
+pub async fn reconcile_due_submissions_with_runtime_status(
+	mm: &ModelManager,
+	limit: i64,
+) -> Result<SubmissionReconcileResult> {
+	match reconcile_due_submissions(mm, limit).await {
+		Ok(result) => Ok(result),
+		Err(err) => {
+			record_reconcile_error(&err.to_string());
+			Err(err)
+		}
+	}
 }
 
 #[cfg(test)]

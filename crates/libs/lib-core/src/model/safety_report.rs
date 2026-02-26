@@ -1,10 +1,10 @@
 // Section C - Safety Report Identification
 
-use crate::ctx::Ctx;
+use crate::ctx::{Ctx, SYSTEM_USER_ID};
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
 use crate::model::modql_utils::uuid_to_sea_value;
-use crate::model::store::set_full_context_dbx_or_rollback;
+use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
@@ -422,13 +422,7 @@ impl SafetyReportIdentificationBmc {
 		data: SafetyReportIdentificationForCreate,
 	) -> Result<Uuid> {
 		mm.dbx().begin_txn().await?;
-		set_full_context_dbx_or_rollback(
-			mm.dbx(),
-			ctx.user_id(),
-			ctx.organization_id(),
-			ctx.role(),
-		)
-		.await?;
+		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 
 		let sql = format!(
 			"INSERT INTO {} (case_id, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, created_at, updated_at, created_by)
@@ -483,14 +477,42 @@ impl SafetyReportIdentificationBmc {
 			.map(str::trim)
 			.map(|v| !v.is_empty())
 			.unwrap_or(false);
+
+		if should_mark_nullified {
+			let row = mm
+				.dbx()
+				.fetch_optional(
+					sqlx::query_as::<_, (String,)>(
+						"SELECT status FROM cases WHERE id = $1",
+					)
+					.bind(case_id),
+				)
+				.await?;
+			let (current_status,) =
+				row.ok_or(crate::model::Error::EntityUuidNotFound {
+					entity: "cases",
+					id: case_id,
+				})?;
+			let currently_nullified =
+				current_status.trim().eq_ignore_ascii_case("nullified");
+			let has_reason = ctx
+				.change_reason()
+				.map(|v| !v.trim().is_empty())
+				.unwrap_or(false);
+			let has_signature = ctx.e_signature_id().is_some();
+			if !currently_nullified
+				&& !is_system_context(ctx)
+				&& !(has_reason && has_signature)
+			{
+				return Err(crate::model::Error::Store(
+					"compliance context required for nullification status transition"
+						.to_string(),
+				));
+			}
+		}
+
 		mm.dbx().begin_txn().await?;
-		set_full_context_dbx_or_rollback(
-			mm.dbx(),
-			ctx.user_id(),
-			ctx.organization_id(),
-			ctx.role(),
-		)
-		.await?;
+		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 
 		let sql = format!(
 			"UPDATE {}
@@ -562,13 +584,7 @@ impl SafetyReportIdentificationBmc {
 		case_id: Uuid,
 	) -> Result<()> {
 		mm.dbx().begin_txn().await?;
-		set_full_context_dbx_or_rollback(
-			mm.dbx(),
-			ctx.user_id(),
-			ctx.organization_id(),
-			ctx.role(),
-		)
-		.await?;
+		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 
 		let sql = format!("DELETE FROM {} WHERE case_id = $1", Self::TABLE);
 		let result = mm.dbx().execute(sqlx::query(&sql).bind(case_id)).await?;
@@ -582,6 +598,11 @@ impl SafetyReportIdentificationBmc {
 		mm.dbx().commit_txn().await?;
 		Ok(())
 	}
+}
+
+fn is_system_context(ctx: &Ctx) -> bool {
+	ctx.user_id()
+		== Uuid::parse_str(SYSTEM_USER_ID).expect("Invalid system user UUID")
 }
 
 pub struct SenderInformationBmc;

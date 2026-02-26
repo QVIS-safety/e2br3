@@ -50,6 +50,8 @@ pub struct AuditLog {
 	pub e_signature_id: Option<Uuid>,
 	#[sqlx(default)]
 	pub user_display: Option<String>,
+	#[sqlx(default)]
+	pub changed_fields: Option<JsonValue>,
 	pub old_values: Option<JsonValue>,
 	pub new_values: Option<JsonValue>,
 	pub ip_address: Option<String>, // Stored as TEXT in DB
@@ -65,6 +67,7 @@ pub struct AuditLogForCreate {
 	pub action: String,
 	pub reason_for_change: Option<String>,
 	pub e_signature_id: Option<Uuid>,
+	pub changed_fields: Option<JsonValue>,
 	pub old_values: Option<JsonValue>,
 	pub new_values: Option<JsonValue>,
 	pub ip_address: Option<String>, // Stored as TEXT in DB
@@ -87,6 +90,9 @@ enum AuditLogIden {
 	RecordId,
 	Action,
 	UserId,
+	ReasonForChange,
+	ESignatureId,
+	ChangedFields,
 	OldValues,
 	NewValues,
 	IpAddress,
@@ -201,7 +207,7 @@ impl AuditLogBmc {
 		audit_c: AuditLogForCreate,
 	) -> Result<i64> {
 		let user_id = ctx.user_id();
-		let sql = "INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id";
+		let sql = "INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, changed_fields, old_values, new_values, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id";
 
 		let (id,) = mm
 			.dbx()
@@ -213,6 +219,7 @@ impl AuditLogBmc {
 					.bind(user_id)
 					.bind(audit_c.reason_for_change)
 					.bind(audit_c.e_signature_id)
+					.bind(audit_c.changed_fields)
 					.bind(audit_c.old_values)
 					.bind(audit_c.new_values)
 					.bind(audit_c.ip_address)
@@ -238,6 +245,9 @@ impl AuditLogBmc {
 				AuditLogIden::RecordId,
 				AuditLogIden::Action,
 				AuditLogIden::UserId,
+				AuditLogIden::ReasonForChange,
+				AuditLogIden::ESignatureId,
+				AuditLogIden::ChangedFields,
 				AuditLogIden::OldValues,
 				AuditLogIden::NewValues,
 				AuditLogIden::IpAddress,

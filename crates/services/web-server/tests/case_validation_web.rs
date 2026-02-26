@@ -221,11 +221,18 @@ async fn update_case_status(
 	case_id: Uuid,
 	status_value: &str,
 ) -> Result<(StatusCode, Value)> {
-	let body = json!({
+	let mut body = json!({
 		"data": {
 			"status": status_value
 		}
 	});
+	if matches!(status_value, "submitted" | "nullified") {
+		body["reason_for_change"] = json!("status transition for compliance test");
+		body["e_signature"] = json!({
+			"meaning": "status transition",
+			"password": "adminpwd"
+		});
+	}
 	let req = Request::builder()
 		.method("PUT")
 		.uri(format!("/api/cases/{case_id}"))
@@ -457,6 +464,11 @@ async fn test_nullification_code_marks_case_nullified() -> Result<()> {
 			"data": {
 				"nullification_code": "1",
 				"nullification_reason": "Duplicate report"
+			},
+			"reason_for_change": "nullify duplicate case",
+			"e_signature": {
+				"meaning": "nullify case",
+				"password": "adminpwd"
 			}
 		}),
 	)
@@ -466,6 +478,38 @@ async fn test_nullification_code_marks_case_nullified() -> Result<()> {
 	let (status, body) = get_case(&app, &cookie, case_id).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["status"].as_str(), Some("nullified"));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_nullification_code_requires_compliance_payload() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let (status, body) = update_safety_report(
+		&app,
+		&cookie,
+		case_id,
+		json!({
+			"data": {
+				"nullification_code": "1",
+				"nullification_reason": "Duplicate report"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body.to_string().contains("reason_for_change is required"),
+		"{body:?}"
+	);
 	Ok(())
 }
 

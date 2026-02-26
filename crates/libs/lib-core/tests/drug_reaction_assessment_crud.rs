@@ -83,6 +83,9 @@ async fn test_drug_reaction_assessment_crud() -> Result<()> {
 	let related_c = RelatednessAssessmentForCreate {
 		drug_reaction_assessment_id: assessment_id,
 		sequence_number: 1,
+		source_of_assessment: None,
+		method_of_assessment: None,
+		result_of_assessment: None,
 	};
 	let related_id = RelatednessAssessmentBmc::create(&ctx, &mm, related_c).await?;
 	let related = RelatednessAssessmentBmc::get(&ctx, &mm, related_id).await?;
