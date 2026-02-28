@@ -38,12 +38,17 @@ pub async fn init_dev() {
 }
 
 async fn maybe_set_demo_pwd() {
-	let pwd = match std::env::var("DEMO_USER_PWD") {
-		Ok(value) if !value.trim().is_empty() => value,
-		_ => return,
-	};
 	let email = std::env::var("DEMO_USER_EMAIL")
 		.unwrap_or_else(|_| "demo.user@example.com".to_string());
+	let pwd = match std::env::var("DEMO_USER_PWD") {
+		Ok(value) if !value.trim().is_empty() => value,
+		_ => {
+			warn!(
+				"FOR-DEV-ONLY - DEMO_USER_PWD not set; falling back to default demo password."
+			);
+			"welcome".to_string()
+		}
+	};
 
 	let mm = match ModelManager::new().await {
 		Ok(mm) => mm,
@@ -108,8 +113,7 @@ async fn maybe_set_demo_pwd() {
 	}
 
 	if let Err(err) = UserBmc::update_pwd(&ctx, &mm, user.id, &pwd).await {
-		warn!("FOR-DEV-ONLY - demo pwd update failed: {err}");
-		return;
+		panic!("FOR-DEV-ONLY - demo pwd update failed for {email}: {err}");
 	}
 
 	info!("FOR-DEV-ONLY - demo pwd synced for {email}");

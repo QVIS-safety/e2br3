@@ -78,15 +78,14 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 		let translation_text =
 			first_text(&mut xpath, &node, EReactionPaths::TRANSLATION_TEXT);
 		let primary = first_text(&mut xpath, &node, EReactionPaths::PRIMARY_TEXT)
+			.or_else(|| first_text(&mut xpath, &node, EReactionPaths::PRIMARY_TEXT_ALT))
 			.or_else(|| translation_text.clone())
-			.ok_or_else(|| Error::InvalidXml {
-				message: format!(
-					"ICH.E.i.1.1a.REQUIRED: reaction text missing for reaction index {}",
-					idx + 1
-				),
-				line: None,
-				column: None,
-			})?;
+			.unwrap_or_else(|| {
+				eprintln!(
+					"[import_e2b_xml] reactions[{idx}] missing E.i.1.1a text; importing empty primary_source_reaction for downstream validation"
+				);
+				String::new()
+			});
 
 		let reaction_meddra_version = clamp_str(
 			first_attr(&mut xpath, &node, EReactionPaths::MEDDRA_VERSION),

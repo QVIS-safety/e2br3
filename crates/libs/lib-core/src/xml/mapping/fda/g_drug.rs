@@ -12,9 +12,9 @@ impl GDrugPaths {
 	pub const PRODUCT_NAME_2: &'static str =
 		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:name[2]";
 	pub const MPID: &'static str =
-		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@code";
+		"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:id/@extension | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@code)[1]";
 	pub const MPID_VERSION: &'static str =
-		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@codeSystemVersion";
+		"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:code/@codeSystemVersion | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@codeSystemVersion)[1]";
 	pub const INVESTIGATIONAL_BLINDED: &'static str =
 		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:subjectOf/hl7:observation[hl7:code[@code='G.k.2.5']]/hl7:value/@value";
 	pub const MANUFACTURER_NAME: &'static str =

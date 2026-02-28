@@ -5,16 +5,24 @@ use crate::model::message_header::MessageHeader;
 use crate::model::narrative::NarrativeInformation;
 use crate::model::patient::PatientInformation;
 use crate::model::reaction::Reaction;
-use crate::model::safety_report::{PrimarySource, SafetyReportIdentification};
+use crate::model::safety_report::{
+	PrimarySource, SafetyReportIdentification, SenderInformation,
+};
+use crate::model::test_result::TestResult;
 use crate::model::{ModelManager, Result};
 use crate::xml::validate::{
 	build_report, has_any_primary_source_content, has_patient_initials,
-	push_issue_by_code, push_issue_if_rule_invalid, should_require_case_narrative,
+	has_test_payload, push_issue_by_code, push_issue_if_conditioned_value_invalid,
+	push_issue_if_rule_invalid, should_require_case_narrative,
 	should_require_patient_initials, CaseValidationReport, RuleFacts,
-	ValidationIssue, ValidationProfile, CASE_RULE_ICH_C13_REQUIRED,
-	CASE_RULE_ICH_C1_REQUIRED, CASE_RULE_ICH_C2R4_REQUIRED,
-	CASE_RULE_ICH_D1_REQUIRED, CASE_RULE_ICH_EI11A_REQUIRED,
-	CASE_RULE_ICH_EI7_REQUIRED, CASE_RULE_ICH_GK1_REQUIRED,
+	ValidationIssue, ValidationProfile, CASE_RULE_ICH_C11_REQUIRED,
+	CASE_RULE_ICH_C12_REQUIRED, CASE_RULE_ICH_C13_REQUIRED,
+	CASE_RULE_ICH_C14_REQUIRED, CASE_RULE_ICH_C15_REQUIRED,
+	CASE_RULE_ICH_C17_REQUIRED, CASE_RULE_ICH_C1_REQUIRED,
+	CASE_RULE_ICH_C2R4_REQUIRED, CASE_RULE_ICH_C31_REQUIRED,
+	CASE_RULE_ICH_C32_REQUIRED, CASE_RULE_ICH_D1_REQUIRED,
+	CASE_RULE_ICH_EI11A_REQUIRED, CASE_RULE_ICH_EI7_REQUIRED,
+	CASE_RULE_ICH_FR2_REQUIRED, CASE_RULE_ICH_GK1_REQUIRED,
 	CASE_RULE_ICH_GK22_REQUIRED, CASE_RULE_ICH_H1_REQUIRED,
 	CASE_RULE_ICH_N_REQUIRED,
 };
@@ -78,20 +86,35 @@ async fn list_primary_sources(
 		.map_err(Into::into)
 }
 
+async fn get_sender_optional(
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<Option<SenderInformation>> {
+	let sql = "SELECT * FROM sender_information WHERE case_id = $1 ORDER BY created_at LIMIT 1";
+	mm.dbx()
+		.fetch_optional(sqlx::query_as::<_, SenderInformation>(sql).bind(case_id))
+		.await
+		.map_err(Into::into)
+}
+
 pub async fn validate_case(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<CaseValidationReport> {
-	let _case: Case = CaseBmc::get(ctx, mm, case_id).await?;
+	let case: Case = CaseBmc::get(ctx, mm, case_id).await?;
 
 	let report = get_safety_report_optional(mm, case_id).await?;
 	let header = get_message_header_optional(mm, case_id).await?;
+	let sender = get_sender_optional(mm, case_id).await?;
 	let patient = get_patient_optional(mm, case_id).await?;
 	let narrative = get_narrative_optional(mm, case_id).await?;
 	let primary_sources = list_primary_sources(mm, case_id).await?;
 	let reactions: Vec<Reaction> =
 		crate::model::reaction::ReactionBmc::list_by_case(ctx, mm, case_id).await?;
+	let tests: Vec<TestResult> =
+		crate::model::test_result::TestResultBmc::list_by_case(ctx, mm, case_id)
+			.await?;
 	let drugs: Vec<DrugInformation> =
 		crate::model::drug::DrugInformationBmc::list_by_case(ctx, mm, case_id)
 			.await?;
@@ -113,11 +136,97 @@ pub async fn validate_case(
 	if let Some(report) = report.as_ref() {
 		let _ = push_issue_if_rule_invalid(
 			&mut issues,
+			CASE_RULE_ICH_C11_REQUIRED,
+			"safetyReportIdentification.safetyReportId",
+			Some(case.safety_report_id.as_str()),
+			None,
+			RuleFacts::default(),
+		);
+		let transmission_date = report.transmission_date.to_string();
+		let _ = push_issue_if_rule_invalid(
+			&mut issues,
+			CASE_RULE_ICH_C12_REQUIRED,
+			"safetyReportIdentification.transmissionDate",
+			Some(transmission_date.as_str()),
+			None,
+			RuleFacts::default(),
+		);
+		let _ = push_issue_if_rule_invalid(
+			&mut issues,
 			CASE_RULE_ICH_C13_REQUIRED,
 			"safetyReportIdentification.reportType",
 			Some(report.report_type.as_str()),
 			None,
 			RuleFacts::default(),
+		);
+		let date_first_received = report.date_first_received_from_source.to_string();
+		let _ = push_issue_if_rule_invalid(
+			&mut issues,
+			CASE_RULE_ICH_C14_REQUIRED,
+			"safetyReportIdentification.dateFirstReceivedFromSource",
+			Some(date_first_received.as_str()),
+			None,
+			RuleFacts::default(),
+		);
+		let date_most_recent = report.date_of_most_recent_information.to_string();
+		let _ = push_issue_if_rule_invalid(
+			&mut issues,
+			CASE_RULE_ICH_C15_REQUIRED,
+			"safetyReportIdentification.dateOfMostRecentInformation",
+			Some(date_most_recent.as_str()),
+			None,
+			RuleFacts::default(),
+		);
+		let fulfil_expedited = if report.fulfil_expedited_criteria {
+			"1"
+		} else {
+			"2"
+		};
+		let _ = push_issue_if_rule_invalid(
+			&mut issues,
+			CASE_RULE_ICH_C17_REQUIRED,
+			"safetyReportIdentification.fulfilExpeditedCriteria",
+			Some(fulfil_expedited),
+			None,
+			RuleFacts::default(),
+		);
+	}
+
+	if let Some(sender) = sender.as_ref() {
+		let _ = push_issue_if_rule_invalid(
+			&mut issues,
+			CASE_RULE_ICH_C31_REQUIRED,
+			"safetyReportIdentification.senderType",
+			Some(sender.sender_type.as_str()),
+			None,
+			RuleFacts::default(),
+		);
+		let _ = push_issue_if_rule_invalid(
+			&mut issues,
+			CASE_RULE_ICH_C32_REQUIRED,
+			"safetyReportIdentification.senderOrganization",
+			Some(sender.organization_name.as_str()),
+			None,
+			RuleFacts::default(),
+		);
+	} else {
+		push_issue_by_code(
+			&mut issues,
+			CASE_RULE_ICH_C31_REQUIRED,
+			"safetyReportIdentification.senderType",
+		);
+		push_issue_by_code(
+			&mut issues,
+			CASE_RULE_ICH_C32_REQUIRED,
+			"safetyReportIdentification.senderOrganization",
+		);
+	}
+
+	if primary_sources.is_empty() {
+		push_issue_by_code(
+			&mut issues,
+			CASE_RULE_ICH_C2R4_REQUIRED,
+			"primarySources.0.qualification",
 		);
 	}
 
@@ -138,6 +247,14 @@ pub async fn validate_case(
 			);
 		});
 
+	if patient.is_none() {
+		push_issue_by_code(
+			&mut issues,
+			CASE_RULE_ICH_D1_REQUIRED,
+			"patientInformation.patientInitials",
+		);
+	}
+
 	if let Some(patient) = patient.as_ref() {
 		if should_require_patient_initials(patient) && !has_patient_initials(patient)
 		{
@@ -147,6 +264,19 @@ pub async fn validate_case(
 				"patientInformation.patientInitials",
 			);
 		}
+	}
+
+	if reactions.is_empty() {
+		push_issue_by_code(
+			&mut issues,
+			CASE_RULE_ICH_EI11A_REQUIRED,
+			"reactions.0.primarySourceReaction",
+		);
+		push_issue_by_code(
+			&mut issues,
+			CASE_RULE_ICH_EI7_REQUIRED,
+			"reactions.0.reactionOutcome",
+		);
 	}
 
 	reactions.iter().enumerate().for_each(|(idx, reaction)| {
@@ -168,6 +298,37 @@ pub async fn validate_case(
 		);
 	});
 
+	tests.iter().enumerate().for_each(|(idx, test)| {
+		let has_payload = has_test_payload(test);
+		let _ = push_issue_if_conditioned_value_invalid(
+			&mut issues,
+			CASE_RULE_ICH_FR2_REQUIRED,
+			CASE_RULE_ICH_FR2_REQUIRED,
+			CASE_RULE_ICH_FR2_REQUIRED,
+			format!("testResults.{idx}.testName"),
+			Some(test.test_name.as_str()),
+			None,
+			RuleFacts {
+				ich_test_payload_present: Some(has_payload),
+				..RuleFacts::default()
+			},
+			RuleFacts::default(),
+		);
+	});
+
+	if drugs.is_empty() {
+		push_issue_by_code(
+			&mut issues,
+			CASE_RULE_ICH_GK1_REQUIRED,
+			"drugs.0.drugCharacterization",
+		);
+		push_issue_by_code(
+			&mut issues,
+			CASE_RULE_ICH_GK22_REQUIRED,
+			"drugs.0.medicinalProduct",
+		);
+	}
+
 	drugs.iter().enumerate().for_each(|(idx, drug)| {
 		let _ = push_issue_if_rule_invalid(
 			&mut issues,
@@ -186,6 +347,14 @@ pub async fn validate_case(
 			RuleFacts::default(),
 		);
 	});
+
+	if narrative.is_none() {
+		push_issue_by_code(
+			&mut issues,
+			CASE_RULE_ICH_H1_REQUIRED,
+			"narrative.caseNarrative",
+		);
+	}
 
 	if let Some(narrative) = narrative.as_ref() {
 		if should_require_case_narrative(narrative) {

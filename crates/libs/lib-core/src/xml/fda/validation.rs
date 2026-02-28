@@ -4,7 +4,7 @@ use crate::model::reaction::Reaction;
 use crate::model::safety_report::{PrimarySource, SafetyReportIdentification};
 use crate::model::{ModelManager, Result};
 use crate::xml::validate::{
-	build_report, has_any_primary_source_content,
+	build_report, has_any_primary_source_content, push_issue_by_code,
 	push_issue_if_conditioned_value_invalid,
 	should_case_validator_require_required_intervention, CaseValidationReport,
 	RuleFacts, ValidationIssue, ValidationProfile, CASE_RULE_FDA_C112_RECOMMENDED,
@@ -112,20 +112,19 @@ pub async fn validate_case(
 			if !has_primary_source_content {
 				return;
 			}
-			let _ = push_issue_if_conditioned_value_invalid(
-				&mut issues,
-				CASE_RULE_FDA_C2R2_EMAIL_REQUIRED,
-				CASE_RULE_FDA_C2R2_EMAIL_REQUIRED,
-				CASE_RULE_FDA_C2R2_EMAIL_REQUIRED,
-				&format!("primarySources.{idx}.reporterEmail"),
-				source.email.as_deref(),
-				None,
-				RuleFacts {
-					fda_primary_source_present: Some(has_primary_source_content),
-					..RuleFacts::default()
-				},
-				RuleFacts::default(),
-			);
+			if source
+				.email
+				.as_deref()
+				.map(str::trim)
+				.filter(|v| !v.is_empty())
+				.is_none()
+			{
+				push_issue_by_code(
+					&mut issues,
+					CASE_RULE_FDA_C2R2_EMAIL_REQUIRED,
+					format!("primarySources.{idx}.reporterEmail"),
+				);
+			}
 		});
 
 	if let Some(patient) = patient.as_ref() {

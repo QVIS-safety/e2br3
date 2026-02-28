@@ -5,7 +5,8 @@ use axum::http::StatusCode;
 use axum::Json;
 use lib_core::model::acs::{has_permission, AUDIT_LIST};
 use lib_core::model::audit::{
-	AuditLog, AuditLogBmc, AuditLogFilter, CaseVersion, CaseVersionBmc,
+	AuditChainVerificationReport, AuditLog, AuditLogBmc, AuditLogFilter,
+	CaseVersion, CaseVersionBmc,
 };
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::ParamsList;
@@ -98,4 +99,26 @@ pub async fn list_case_versions(
 		.map_err(WebError::Model)?;
 
 	Ok((StatusCode::OK, Json(DataRestResult { data: versions })))
+}
+
+/// GET /api/audit-logs/verify-integrity
+/// Verifies the append-only audit hash chain integrity.
+/// **Requires AuditLog.List permission (admin or manager)**
+pub async fn verify_audit_log_integrity(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<AuditChainVerificationReport>>,
+)> {
+	let ctx = ctx_w.0;
+	tracing::debug!("{:<12} - rest verify_audit_log_integrity", "HANDLER");
+
+	require_audit_permission(&ctx)?;
+
+	let report = AuditLogBmc::verify_hash_chain(&ctx, &mm)
+		.await
+		.map_err(WebError::Model)?;
+
+	Ok((StatusCode::OK, Json(DataRestResult { data: report })))
 }

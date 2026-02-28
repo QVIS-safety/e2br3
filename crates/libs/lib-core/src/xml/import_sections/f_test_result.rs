@@ -61,14 +61,12 @@ pub fn parse_f_test_results(xml: &[u8]) -> Result<Vec<FTestResultImport>> {
 			.or_else(|| {
 				first_attr(&mut xpath, &node, FTestResultPaths::TEST_NAME_DISPLAY)
 			})
-			.ok_or_else(|| Error::InvalidXml {
-				message: format!(
-					"ICH.F.r.2.REQUIRED: test name missing for sequence {}",
-					idx + 1
-				),
-				line: None,
-				column: None,
-			})?;
+			.unwrap_or_else(|| {
+				eprintln!(
+					"[import_e2b_xml] test_results[{idx}] missing F.r.2 test_name; importing empty test_name for downstream validation"
+				);
+				String::new()
+			});
 		let test_meddra_code =
 			first_attr(&mut xpath, &node, FTestResultPaths::TEST_MEDDRA_CODE);
 		let test_meddra_version = clamp_str(

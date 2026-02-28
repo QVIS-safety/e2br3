@@ -20,6 +20,15 @@ use tokio::task;
 use tokio::time::sleep;
 use uuid::Uuid;
 
+const SYSTEM_REASON_ACK_CALLBACK: &str =
+	"system submission: gateway ack callback processing";
+const SYSTEM_REASON_RECONCILE_SCAN: &str =
+	"system submission: reconcile due submissions scan";
+const SYSTEM_REASON_RECONCILE_RETRY: &str =
+	"system submission: reconcile retry dispatch";
+const SYSTEM_REASON_RECONCILE_EXPORT: &str =
+	"system submission: reconcile retry export";
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum SubmissionAuthority {
@@ -1763,7 +1772,8 @@ pub async fn apply_gateway_ack_by_remote(
 ) -> Result<SubmissionRecord> {
 	let incoming_status = status_from_ack(input.ack_level, input.success)?;
 	let now = OffsetDateTime::now_utc();
-	let system_ctx = Ctx::root_ctx();
+	let system_ctx = Ctx::root_ctx()
+		.with_compliance(Some(SYSTEM_REASON_ACK_CALLBACK.to_string()), None);
 
 	mm.dbx()
 		.begin_txn()
@@ -1996,7 +2006,8 @@ pub async fn reconcile_due_submissions(
 		record_reconcile_result(&result);
 		return Ok(result);
 	}
-	let system_ctx = Ctx::root_ctx();
+	let system_ctx = Ctx::root_ctx()
+		.with_compliance(Some(SYSTEM_REASON_RECONCILE_SCAN.to_string()), None);
 	mm.dbx()
 		.begin_txn()
 		.await
@@ -2074,7 +2085,8 @@ async fn reconcile_one_submission(
 	mm: &ModelManager,
 	submission_id: Uuid,
 ) -> Result<ReconcileOutcome> {
-	let system_ctx = Ctx::root_ctx();
+	let system_ctx = Ctx::root_ctx()
+		.with_compliance(Some(SYSTEM_REASON_RECONCILE_RETRY.to_string()), None);
 	mm.dbx()
 		.begin_txn()
 		.await
@@ -2123,7 +2135,10 @@ async fn reconcile_one_submission(
 			let authority =
 				authority_from_case_profile(case.validation_profile.as_deref())?;
 
-			let ctx_clone = system_ctx.clone();
+			let ctx_clone = system_ctx.with_compliance(
+				Some(SYSTEM_REASON_RECONCILE_EXPORT.to_string()),
+				None,
+			);
 			let mm_clone = mm.clone();
 			let case_id = row.case_id;
 			let xml = task::spawn_blocking(move || {

@@ -27,13 +27,20 @@ use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::Error;
 use lib_web::middleware::mw_auth::CtxW;
-use modql::filter::{ListOptions, OpValValue, OpValsValue};
+use modql::filter::{
+	ListOptions, OpValString, OpValValue, OpValsString, OpValsValue,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use time::{Date, Month, OffsetDateTime};
 use tokio::runtime::Handle;
 use tokio::task;
 use uuid::Uuid;
+
+const SYSTEM_VALIDATION_REASON_AUTO: &str =
+	"system validation: automatic case status synchronization";
+const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
+	"system validation: validator mark-validated endpoint";
 
 // This macro generates all 5 CRUD functions:
 // - create_case
@@ -277,8 +284,12 @@ pub async fn update_case_guarded(
 		};
 		let desired = if report.ok { "validated" } else { "checked" };
 		if entity.status.trim().to_ascii_lowercase() != desired {
+			let system_validation_ctx = ctx.with_compliance(
+				Some(SYSTEM_VALIDATION_REASON_AUTO.to_string()),
+				None,
+			);
 			CaseBmc::update(
-				&ctx,
+				&system_validation_ctx,
 				&mm,
 				id,
 				CaseForUpdate {
@@ -404,8 +415,10 @@ pub async fn mark_case_validated_by_validator(
 		});
 	}
 
+	let validator_ctx = ctx
+		.with_compliance(Some(SYSTEM_VALIDATION_REASON_VALIDATOR.to_string()), None);
 	CaseBmc::update(
-		&ctx,
+		&validator_ctx,
 		&mm,
 		id,
 		CaseForUpdate {
@@ -519,12 +532,9 @@ async fn list_potential_duplicates(
 	key: &CaseIntakeCheckInput,
 ) -> Result<Vec<CaseIntakeDuplicateMatch>> {
 	let safety_report_id = key.safety_report_id.trim();
-	let cases = CaseBmc::list(ctx, mm, None, None).await?;
+	let cases = cases_by_safety_report_id(ctx, mm, safety_report_id).await?;
 	let mut matches = Vec::new();
-	for case in cases
-		.into_iter()
-		.filter(|case| case.safety_report_id == safety_report_id)
-	{
+	for case in cases.into_iter() {
 		let safety =
 			match SafetyReportIdentificationBmc::get_by_case(ctx, mm, case.id).await
 			{
@@ -741,14 +751,38 @@ async fn next_case_version(
 	mm: &ModelManager,
 	safety_report_id: &str,
 ) -> Result<i32> {
-	let max = CaseBmc::list(ctx, mm, None, None)
+	let max = cases_by_safety_report_id(ctx, mm, safety_report_id)
 		.await?
 		.into_iter()
-		.filter(|case| case.safety_report_id == safety_report_id)
 		.map(|case| case.version)
 		.max()
 		.unwrap_or(0);
 	Ok(max + 1)
+}
+
+async fn cases_by_safety_report_id(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	safety_report_id: &str,
+) -> Result<Vec<Case>> {
+	CaseBmc::list(
+		ctx,
+		mm,
+		Some(vec![CaseFilter {
+			organization_id: None,
+			safety_report_id: Some(OpValsString::from(vec![OpValString::Eq(
+				safety_report_id.to_string(),
+			)])),
+			status: None,
+		}]),
+		Some(ListOptions {
+			limit: Some(100),
+			offset: None,
+			order_bys: Some("version".into()),
+		}),
+	)
+	.await
+	.map_err(Into::into)
 }
 
 fn message_sender_identifier() -> String {

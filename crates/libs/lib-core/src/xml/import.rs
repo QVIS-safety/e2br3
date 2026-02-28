@@ -2903,18 +2903,16 @@ fn parse_past_drug_history(xml: &[u8]) -> Result<Vec<PastDrugHistoryImport>> {
 			&node,
 			"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:name",
 		);
-		let mpid = first_attr(
+		let mpid = first_value(
 			&mut xpath,
 			&node,
-			"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code",
-			"code",
+			"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:id/@extension | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@code)[1]",
 		);
 		let mpid_version = clamp_str(
-			first_attr(
+			first_value(
 				&mut xpath,
 				&node,
-				"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code",
-				"codeSystemVersion",
+				"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:code/@codeSystemVersion | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@codeSystemVersion)[1]",
 			),
 			10,
 			"past_drug_history.mpid_version",
@@ -3226,18 +3224,16 @@ fn parse_parent_information(xml: &[u8]) -> Result<Option<ParentImport>> {
 			&obs,
 			"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:name",
 		);
-		let mpid = first_attr(
+		let mpid = first_value(
 			&mut xpath,
 			&obs,
-			"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code",
-			"code",
+			"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:id/@extension | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@code)[1]",
 		);
 		let mpid_version = clamp_str(
-			first_attr(
+			first_value(
 				&mut xpath,
 				&obs,
-				"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code",
-				"codeSystemVersion",
+				"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:code/@codeSystemVersion | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@codeSystemVersion)[1]",
 			),
 			10,
 			"parent_past_drug.mpid_version",
@@ -3346,14 +3342,12 @@ fn parse_test_results(xml: &[u8]) -> Result<Vec<TestResultImport>> {
 	for (idx, node) in nodes.into_iter().enumerate() {
 		let test_name = first_text(&mut xpath, &node, "hl7:code/hl7:originalText")
 			.or_else(|| first_attr(&mut xpath, &node, "hl7:code", "displayName"))
-			.ok_or_else(|| Error::InvalidXml {
-				message: format!(
-					"ICH.F.r.2.REQUIRED: test name missing for sequence {}",
-					idx + 1
-				),
-				line: None,
-				column: None,
-			})?;
+			.unwrap_or_else(|| {
+				eprintln!(
+					"[import_e2b_xml] test_results[{idx}] missing F.r.2 test_name; importing empty test_name for downstream validation"
+				);
+				String::new()
+			});
 		let test_meddra_code = first_attr(&mut xpath, &node, "hl7:code", "code");
 		let test_meddra_version = clamp_str(
 			first_attr(&mut xpath, &node, "hl7:code", "codeSystemVersion"),
@@ -3685,14 +3679,12 @@ fn parse_reactions(xml: &[u8], case_id: Uuid) -> Result<Vec<ReactionImport>> {
 				"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='30']]/hl7:value",
 			)
 		})
-		.ok_or_else(|| Error::InvalidXml {
-			message: format!(
-				"ICH.E.i.1.1a.REQUIRED: reaction text missing for reaction index {}",
-				idx + 1
-			),
-			line: None,
-			column: None,
-		})?;
+		.unwrap_or_else(|| {
+			eprintln!(
+				"[import_e2b_xml] reactions[{idx}] missing E.i.1.1a text; importing empty primary_source_reaction for downstream validation"
+			);
+			String::new()
+		});
 
 		let reaction_c = ReactionForCreate {
 			case_id,
@@ -3914,6 +3906,14 @@ fn first_attr(
 	let expr = format!("{expr}/@{attr}");
 	xpath
 		.findvalues(&expr, Some(node))
+		.ok()?
+		.into_iter()
+		.find(|v| !v.trim().is_empty())
+}
+
+fn first_value(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
+	xpath
+		.findvalues(expr, Some(node))
 		.ok()?
 		.into_iter()
 		.find(|v| !v.trim().is_empty())
@@ -4800,18 +4800,16 @@ fn parse_drugs(xml: &[u8]) -> Result<Vec<DrugImport>> {
 		);
 
 		let drug_characterization = "1".to_string();
-		let mpid = first_attr(
+		let mpid = first_value(
 			&mut xpath,
 			&node,
-			"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code",
-			"code",
+			"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:id/@extension | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@code)[1]",
 		);
 		let mpid_version = clamp_str(
-			first_attr(
+			first_value(
 				&mut xpath,
 				&node,
-				"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code",
-				"codeSystemVersion",
+				"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:code/@codeSystemVersion | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@codeSystemVersion)[1]",
 			),
 			10,
 			"drug_information.mpid_version",

@@ -61,6 +61,59 @@ CREATE TRIGGER update_e_signatures_updated_at BEFORE UPDATE ON e_signatures
 -- Audit Trail Trigger
 -- ============================================================================
 
+-- Build append-only hash chain for audit logs (Part 11 / Annex 11 integrity).
+CREATE OR REPLACE FUNCTION audit_logs_hash_chain_before_insert()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_prev_hash TEXT;
+    v_payload TEXT;
+BEGIN
+    IF NEW.created_at IS NULL THEN
+        NEW.created_at := NOW();
+    END IF;
+
+    -- Serialize inserts so each row references the exact previous row.
+    LOCK TABLE audit_logs IN SHARE ROW EXCLUSIVE MODE;
+
+    SELECT entry_hash
+      INTO v_prev_hash
+      FROM audit_logs
+     ORDER BY id DESC
+     LIMIT 1;
+
+    NEW.prev_hash := COALESCE(v_prev_hash, repeat('0', 64));
+
+    v_payload := concat_ws(
+        '|',
+        COALESCE(NEW.id::TEXT, ''),
+        NEW.prev_hash,
+        NEW.table_name,
+        NEW.record_id::TEXT,
+        NEW.action,
+        NEW.user_id::TEXT,
+        COALESCE(NEW.reason_for_change, ''),
+        COALESCE(NEW.e_signature_id::TEXT, ''),
+        COALESCE(NEW.old_values::TEXT, 'null'),
+        COALESCE(NEW.new_values::TEXT, 'null'),
+        COALESCE(NEW.changed_fields::TEXT, 'null'),
+        COALESCE(NEW.ip_address::TEXT, ''),
+        COALESCE(NEW.user_agent, ''),
+        to_char(NEW.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+    );
+
+    NEW.entry_hash := encode(digest(v_payload, 'sha256'), 'hex');
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_audit_logs_hash_chain_before_insert ON audit_logs;
+CREATE TRIGGER trg_audit_logs_hash_chain_before_insert
+    BEFORE INSERT ON audit_logs
+    FOR EACH ROW EXECUTE FUNCTION audit_logs_hash_chain_before_insert();
+
 -- Improved audit trigger function using helper function
 CREATE OR REPLACE FUNCTION audit_trigger_function()
 RETURNS TRIGGER

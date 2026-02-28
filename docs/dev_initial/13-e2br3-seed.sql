@@ -39,10 +39,50 @@ BEGIN
     VALUES (v_org_id, 'Demo Organization', 'internal', '123 Demo St', 'Metropolis', 'CA', '12345', 'US', 'demo@example.com', '555-1234', true, '00000000-0000-0000-0000-000000000001'::UUID, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
-    -- Insert demo user
-    INSERT INTO users (id, organization_id, email, username, role, active, must_change_password, created_by, created_at, updated_at)
-    VALUES (v_user_id, v_org_id, 'demo.user@example.com', 'demo_user', 'admin', true, false, '00000000-0000-0000-0000-000000000001'::UUID, NOW(), NOW())
-    ON CONFLICT (id) DO NOTHING;
+    -- Insert demo user with deterministic dev password hash for "welcome".
+    -- Hash is tied to the default dev SERVICE_PWD_KEY.
+    INSERT INTO users (
+        id,
+        organization_id,
+        email,
+        username,
+        pwd,
+        pwd_salt,
+        token_salt,
+        role,
+        active,
+        must_change_password,
+        created_by,
+        created_at,
+        updated_at
+    )
+    VALUES (
+        v_user_id,
+        v_org_id,
+        'demo.user@example.com',
+        'demo_user',
+        '#02#$argon2id$v=19$m=19456,t=2,p=1$B0RCYSuiRr6tIIJVTVqABA$lhortXyud6bAy7oSK7NOVqR72TCmhVOcP9nG6bB+qXw',
+        '07444261-2ba2-46be-ad20-82554d5a8004'::UUID,
+        '1b2091af-64ff-43ea-a47b-3cdf8f9995c5'::UUID,
+        'admin',
+        true,
+        false,
+        '00000000-0000-0000-0000-000000000001'::UUID,
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET
+        organization_id = EXCLUDED.organization_id,
+        email = EXCLUDED.email,
+        username = EXCLUDED.username,
+        pwd = EXCLUDED.pwd,
+        pwd_salt = EXCLUDED.pwd_salt,
+        token_salt = EXCLUDED.token_salt,
+        role = EXCLUDED.role,
+        active = EXCLUDED.active,
+        must_change_password = EXCLUDED.must_change_password,
+        updated_at = NOW();
 
     -- Switch context to demo user for remaining demo data
     PERFORM set_config('app.current_user_id', v_user_id::text, true);

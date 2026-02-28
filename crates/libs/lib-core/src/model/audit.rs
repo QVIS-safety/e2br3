@@ -56,6 +56,10 @@ pub struct AuditLog {
 	pub new_values: Option<JsonValue>,
 	pub ip_address: Option<String>, // Stored as TEXT in DB
 	pub user_agent: Option<String>,
+	#[sqlx(default)]
+	pub prev_hash: Option<String>,
+	#[sqlx(default)]
+	pub entry_hash: Option<String>,
 	#[serde(with = "time::serde::rfc3339")]
 	pub created_at: OffsetDateTime,
 }
@@ -80,6 +84,17 @@ pub struct AuditLogFilter {
 	pub action: Option<OpValsString>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct AuditChainVerificationReport {
+	pub total_rows: i64,
+	pub verified_ok_rows: i64,
+	pub broken_rows: i64,
+	pub first_broken_id: Option<i64>,
+	pub first_broken_reason: Option<String>,
+	#[serde(with = "time::serde::rfc3339")]
+	pub checked_at: OffsetDateTime,
+}
+
 const LIST_LIMIT_DEFAULT: i64 = 1000;
 const LIST_LIMIT_MAX: i64 = 5000;
 
@@ -97,6 +112,8 @@ enum AuditLogIden {
 	NewValues,
 	IpAddress,
 	UserAgent,
+	PrevHash,
+	EntryHash,
 	CreatedAt,
 }
 
@@ -174,6 +191,10 @@ impl DbBmc for AuditLogBmc {
 }
 
 impl AuditLogBmc {
+	fn is_hex_hash64(value: &str) -> bool {
+		value.len() == 64 && value.chars().all(|c| c.is_ascii_hexdigit())
+	}
+
 	fn is_metadata_only_update(log: &AuditLog) -> bool {
 		if log.action != "UPDATE" {
 			return false;
@@ -252,6 +273,8 @@ impl AuditLogBmc {
 				AuditLogIden::NewValues,
 				AuditLogIden::IpAddress,
 				AuditLogIden::UserAgent,
+				AuditLogIden::PrevHash,
+				AuditLogIden::EntryHash,
 				AuditLogIden::CreatedAt,
 			])
 			.expr_as(
@@ -322,6 +345,113 @@ impl AuditLogBmc {
 			.into_iter()
 			.filter(|log| !Self::is_metadata_only_update(log))
 			.collect())
+	}
+
+	pub async fn verify_hash_chain(
+		_ctx: &Ctx,
+		mm: &ModelManager,
+	) -> Result<AuditChainVerificationReport> {
+		Self::verify_hash_chain_since(_ctx, mm, None).await
+	}
+
+	pub async fn verify_hash_chain_since(
+		_ctx: &Ctx,
+		mm: &ModelManager,
+		since_id: Option<i64>,
+	) -> Result<AuditChainVerificationReport> {
+		#[derive(Debug, FromRow)]
+		struct ChainRow {
+			id: i64,
+			prev_hash: Option<String>,
+			entry_hash: Option<String>,
+			expected_prev_hash: Option<String>,
+			expected_entry_hash: String,
+		}
+
+		let sql = r#"
+			WITH chain AS (
+				SELECT
+					id,
+					prev_hash,
+					entry_hash,
+					LAG(entry_hash) OVER (ORDER BY id ASC) AS expected_prev_hash,
+					encode(
+						digest(
+							concat_ws(
+								'|',
+								COALESCE(id::TEXT, ''),
+								COALESCE(prev_hash, ''),
+								table_name,
+								record_id::TEXT,
+								action,
+								user_id::TEXT,
+								COALESCE(reason_for_change, ''),
+								COALESCE(e_signature_id::TEXT, ''),
+								COALESCE(old_values::TEXT, 'null'),
+								COALESCE(new_values::TEXT, 'null'),
+								COALESCE(changed_fields::TEXT, 'null'),
+								COALESCE(ip_address::TEXT, ''),
+								COALESCE(user_agent, ''),
+								to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+							),
+							'sha256'
+						),
+						'hex'
+					) AS expected_entry_hash
+				FROM audit_logs
+			)
+			SELECT id, prev_hash, entry_hash, expected_prev_hash, expected_entry_hash
+			FROM chain
+			WHERE ($1::BIGINT IS NULL OR id >= $1)
+			ORDER BY id ASC
+		"#;
+
+		let rows: Vec<ChainRow> = mm
+			.dbx()
+			.fetch_all(sqlx::query_as(sql).bind(since_id))
+			.await?;
+		let mut broken_rows = 0_i64;
+		let mut first_broken_id = None;
+		let mut first_broken_reason = None;
+
+		for row in &rows {
+			let expected_prev = row
+				.expected_prev_hash
+				.clone()
+				.unwrap_or_else(|| "0".repeat(64));
+			let prev_hash = row.prev_hash.as_deref().unwrap_or("");
+			let entry_hash = row.entry_hash.as_deref().unwrap_or("");
+
+			let reason = if !Self::is_hex_hash64(prev_hash) {
+				Some("prev_hash is not a 64-char hex value".to_string())
+			} else if !Self::is_hex_hash64(entry_hash) {
+				Some("entry_hash is not a 64-char hex value".to_string())
+			} else if prev_hash != expected_prev {
+				Some("prev_hash does not match previous entry_hash".to_string())
+			} else if entry_hash != row.expected_entry_hash {
+				Some("entry_hash does not match recomputed payload hash".to_string())
+			} else {
+				None
+			};
+
+			if let Some(reason) = reason {
+				broken_rows += 1;
+				if first_broken_id.is_none() {
+					first_broken_id = Some(row.id);
+					first_broken_reason = Some(reason);
+				}
+			}
+		}
+
+		let total_rows = rows.len() as i64;
+		Ok(AuditChainVerificationReport {
+			total_rows,
+			verified_ok_rows: total_rows - broken_rows,
+			broken_rows,
+			first_broken_id,
+			first_broken_reason,
+			checked_at: OffsetDateTime::now_utc(),
+		})
 	}
 }
 

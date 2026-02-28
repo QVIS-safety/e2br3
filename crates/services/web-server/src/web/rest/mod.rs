@@ -564,6 +564,10 @@ pub fn routes_audit(mm: ModelManager) -> Router {
 	Router::new()
 		.route("/audit-logs", get(audit_rest::list_audit_logs))
 		.route(
+			"/audit-logs/verify-integrity",
+			get(audit_rest::verify_audit_log_integrity),
+		)
+		.route(
 			"/audit-logs/by-record/{table_name}/{record_id}",
 			get(audit_rest::list_audit_logs_by_record),
 		)

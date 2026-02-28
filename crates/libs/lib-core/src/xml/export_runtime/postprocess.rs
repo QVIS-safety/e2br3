@@ -170,21 +170,41 @@ async fn apply_patient_section(
 
 	if let Some(drug) = past_drugs.into_iter().next() {
 		let base = "(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='2']]/hl7:component[1]/hl7:substanceAdministration)[1]";
-		if let Some(v) = drug.mpid_version.as_deref() {
-			set_attr_first(
-				xpath,
-				&format!("{base}/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code"),
-				"codeSystemVersion",
-				v,
+		if drug.mpid.is_some() || drug.mpid_version.is_some() {
+			let mpid_xpath = format!(
+				"{base}/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]"
 			);
-		}
-		if let Some(v) = drug.mpid.as_deref() {
-			set_attr_first(
-				xpath,
-				&format!("{base}/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code"),
-				"code",
-				v,
-			);
+			if xpath
+				.findnodes(&mpid_xpath, None)
+				.map(|nodes| nodes.is_empty())
+				.unwrap_or(true)
+			{
+				append_fragment_child(
+					doc,
+					parser,
+					xpath,
+					&format!(
+						"{base}/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct"
+					),
+					"<asIdentifiedEntity classCode=\"IDENT\"><id/><code code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"/></asIdentifiedEntity>",
+				)?;
+			}
+			if let Some(v) = drug.mpid.as_deref() {
+				set_attr_first(
+					xpath,
+					&format!("{mpid_xpath}/hl7:id"),
+					"extension",
+					v,
+				);
+			}
+			if let Some(v) = drug.mpid_version.as_deref() {
+				set_attr_first(
+					xpath,
+					&format!("{mpid_xpath}/hl7:code"),
+					"codeSystemVersion",
+					v,
+				);
+			}
 		}
 		if let Some(v) = drug.start_date {
 			ensure_d8_effective_time(xpath, doc, parser, base)?;

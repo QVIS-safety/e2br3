@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS organizations (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name VARCHAR(500) NOT NULL,
@@ -253,6 +255,8 @@ CREATE TABLE if NOT EXISTS audit_logs (
     ip_address INET,
     user_agent TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    prev_hash CHAR(64) NOT NULL,
+    entry_hash CHAR(64) NOT NULL,
 
     CONSTRAINT audit_action_valid CHECK (action IN ('CREATE', 'UPDATE', 'DELETE', 'SUBMIT', 'NULLIFY'))
 );
@@ -262,6 +266,8 @@ CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
 CREATE INDEX idx_audit_logs_esignature ON audit_logs(e_signature_id);
 CREATE INDEX idx_audit_logs_changed_fields ON audit_logs USING GIN (changed_fields);
+CREATE INDEX idx_audit_logs_prev_hash ON audit_logs(prev_hash);
+CREATE UNIQUE INDEX idx_audit_logs_entry_hash ON audit_logs(entry_hash);
 
 ALTER TABLE audit_logs
     ADD COLUMN IF NOT EXISTS changed_fields JSONB;

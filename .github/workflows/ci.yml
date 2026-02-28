@@ -121,6 +121,7 @@ jobs:
           SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
           SERVICE_TOKEN_DURATION_SEC: "1800"
           SERVICE_WEB_FOLDER: "web-folder/"
+          DEMO_USER_FORCE_SYNC: "1"
         run: cargo test --all
 
       - name: Release Validation Gates
@@ -135,10 +136,13 @@ jobs:
           E2BR3_XSD_PATH: deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd
           E2BR3_MFDS_EXAMPLES_DIR: docs/refs/instances
           E2BR3_MFDS_REQUIRE_VALIDATION_OK: "0"
+          DEMO_USER_FORCE_SYNC: "1"
         run: |
-          cargo test -p lib-core --test xml_schema_business_ci
-          cargo test -p web-server --test roundtrip_profiles_web
-          cargo test -p web-server --test mfds_import_samples_web
+          cargo test -p lib-core --test xml xml_schema_business_ci
+          cargo test -p lib-core --test validation_matrix
+          cargo test -p web-server --test validation_layers
+          cargo test -p web-server --test xml roundtrip_profiles_web
+          cargo test -p web-server --test xml mfds_import_samples_web
 
   # ============================================
   # Job 4: Build Docker image (main branch only)

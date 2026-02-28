@@ -88,105 +88,112 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		code: "ICH.C.1.1.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
-		blocking: false,
+		blocking: true,
 		message: "[C.1.1] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.2.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
-		blocking: false,
+		blocking: true,
 		message: "[C.1.2] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.3.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
-		blocking: false,
+		blocking: true,
 		message: "[C.1.3] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.4.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
-		blocking: false,
+		blocking: true,
 		message: "[C.1.4] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.5.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
-		blocking: false,
+		blocking: true,
 		message: "[C.1.5] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.7.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
-		blocking: false,
+		blocking: true,
 		message: "[C.1.7] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.3.1.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "sender",
-		blocking: false,
+		blocking: true,
 		message: "[C.3.1] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.3.2.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "sender",
-		blocking: false,
+		blocking: true,
 		message: "[C.3.2] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.4.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "reporter",
-		blocking: false,
+		blocking: true,
 		message: "[C.2.r.4] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.1.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "patient",
-		blocking: false,
+		blocking: true,
 		message: "[D.1] This Element is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.2.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message: "[F.r.2] is required when test payload is present.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.1.1a.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "reactions",
-		blocking: false,
+		blocking: true,
 		message: "[E.i.1.1a] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.7.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "reactions",
-		blocking: false,
+		blocking: true,
 		message: "[E.i.7] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.1.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "drugs",
-		blocking: false,
+		blocking: true,
 		message: "[G.k.1] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.2.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "drugs",
-		blocking: false,
+		blocking: true,
 		message: "[G.k.2.2] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.H.1.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "narrative",
-		blocking: false,
+		blocking: true,
 		message: "[H.1] This Element is required.",
 	},
 	// FDA profile overlays
@@ -194,7 +201,7 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		code: "FDA.C.1.7.1.REQUIRED",
 		profile: ValidationProfile::Fda,
 		section: "case-identification",
-		blocking: false,
+		blocking: true,
 		message: "FDA requires [C.1.7.1] when expedited criteria is fulfilled.",
 	},
 	ValidationRuleMetadata {
@@ -205,17 +212,39 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		message: "FDA recommends [C.1.12] combination product report indicator.",
 	},
 	ValidationRuleMetadata {
+		code: "FDA.C.1.12.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "case-identification",
+		blocking: true,
+		message: "FDA requires [C.1.12] combination product report indicator.",
+	},
+	ValidationRuleMetadata {
 		code: "FDA.C.2.r.2.EMAIL.REQUIRED",
 		profile: ValidationProfile::Fda,
 		section: "reporter",
-		blocking: false,
+		blocking: true,
 		message: "FDA requires reporter email when primary source is present.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.D.11.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "patient",
+		blocking: true,
+		message: "FDA requires [D.11] patient race when patient payload is present.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.D.12.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "patient",
+		blocking: true,
+		message:
+			"FDA requires [D.12] patient ethnicity when patient payload is present.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.E.i.3.2h.REQUIRED",
 		profile: ValidationProfile::Fda,
 		section: "reactions",
-		blocking: false,
+		blocking: true,
 		message:
 			"FDA requires [E.i.3.2h] when other medically important condition is selected.",
 	},
@@ -1034,6 +1063,7 @@ pub enum RuleCondition {
 	MfdsDrugDomesticKr,
 	MfdsDrugForeignNonKr,
 	MfdsSenderTypeDisallowed,
+	IchTestPayloadPresent,
 }
 
 impl RuleCondition {
@@ -1067,6 +1097,7 @@ impl RuleCondition {
 			Self::MfdsDrugDomesticKr => "mfds_drug_domestic_kr",
 			Self::MfdsDrugForeignNonKr => "mfds_drug_foreign_non_kr",
 			Self::MfdsSenderTypeDisallowed => "mfds_sender_type_disallowed",
+			Self::IchTestPayloadPresent => "ich_test_payload_present",
 		}
 	}
 }
@@ -1094,6 +1125,7 @@ pub struct RuleFacts {
 	pub mfds_drug_domestic_kr: Option<bool>,
 	pub mfds_drug_foreign_non_kr: Option<bool>,
 	pub mfds_sender_type_disallowed: Option<bool>,
+	pub ich_test_payload_present: Option<bool>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1132,6 +1164,10 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 	ConditionBinding {
 		code: "ICH.D.7.2.CONDITIONAL",
 		condition: RuleCondition::IchMedicalHistoryMissingD72Text,
+	},
+	ConditionBinding {
+		code: "ICH.F.r.2.REQUIRED",
+		condition: RuleCondition::IchTestPayloadPresent,
 	},
 	ConditionBinding {
 		code: "FDA.C.1.7.1.REQUIRED",
@@ -1253,6 +1289,10 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "ICH.D.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.F.r.2.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
@@ -1651,6 +1691,9 @@ pub fn is_rule_condition_satisfied(code: &str, facts: RuleFacts) -> bool {
 		RuleCondition::MfdsSenderTypeDisallowed => {
 			facts.mfds_sender_type_disallowed.unwrap_or(false)
 		}
+		RuleCondition::IchTestPayloadPresent => {
+			facts.ich_test_payload_present.unwrap_or(false)
+		}
 	}
 }
 
@@ -1843,7 +1886,7 @@ mod tests {
 		.expect("import-phase rule should exist");
 		assert_eq!(case_rule.section, "case-identification");
 		assert_eq!(import_rule.section, "xml");
-		assert!(!case_rule.blocking);
+		assert!(case_rule.blocking);
 		assert!(import_rule.blocking);
 	}
 

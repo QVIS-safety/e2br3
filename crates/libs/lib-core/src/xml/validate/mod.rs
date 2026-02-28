@@ -10,6 +10,8 @@ mod export_transform_registry;
 mod f_test_result_policy;
 mod g_drug_policy;
 mod h_narrative_policy;
+pub mod rule_layer_contract;
+pub mod rule_test_matrix;
 mod xml_detector_registry;
 
 pub use c_reporter_policy::has_any_primary_source_content;

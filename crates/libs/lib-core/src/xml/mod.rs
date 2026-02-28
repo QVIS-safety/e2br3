@@ -18,8 +18,6 @@ pub mod error;
 pub mod parser;
 pub mod types;
 pub mod xml_validation;
-mod xml_validation_fda;
-mod xml_validation_ich;
 
 pub use error::Error;
 pub type Result<T> = core::result::Result<T, Error>;
