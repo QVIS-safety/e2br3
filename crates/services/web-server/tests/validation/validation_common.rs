@@ -177,12 +177,29 @@ pub async fn create_message_header(
 	case_id: Uuid,
 	batch_receiver_identifier: Option<&str>,
 ) -> Result<Uuid> {
+	create_message_header_with_receiver(
+		app,
+		cookie,
+		case_id,
+		batch_receiver_identifier,
+		"RECEIVER01",
+	)
+	.await
+}
+
+pub async fn create_message_header_with_receiver(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	batch_receiver_identifier: Option<&str>,
+	message_receiver_identifier: &str,
+) -> Result<Uuid> {
 	let body = json!({
 		"data": {
 			"case_id": case_id,
 			"message_number": format!("MSG-{case_id}"),
 			"message_sender_identifier": "SENDER01",
-			"message_receiver_identifier": "RECEIVER01",
+			"message_receiver_identifier": message_receiver_identifier,
 			"message_date": "20240201010101",
 			"batch_receiver_identifier": batch_receiver_identifier
 		}
@@ -197,6 +214,94 @@ pub async fn create_message_header(
 	if status != StatusCode::CREATED && status != StatusCode::OK {
 		return Err(format!(
 			"create message-header failed: status={status} body={value}"
+		)
+		.into());
+	}
+	extract_id(&value)
+}
+
+pub async fn create_study_information(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	study_name: Option<&str>,
+	sponsor_study_number: Option<&str>,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"case_id": case_id,
+			"study_name": study_name,
+			"sponsor_study_number": sponsor_study_number
+		}
+	});
+	let (status, value) = post_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/safety-report/studies"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create study-information failed: status={status} body={value}"
+		)
+		.into());
+	}
+	extract_id(&value)
+}
+
+pub async fn update_study_information(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	study_id: Uuid,
+	body: Value,
+) -> Result<()> {
+	let (status, value) = put_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/safety-report/studies/{study_id}"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update study-information failed: status={status} body={value}"
+		)
+		.into());
+	}
+	Ok(())
+}
+
+pub async fn create_study_registration(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	study_id: Uuid,
+	sequence_number: i32,
+	registration_number: &str,
+	country_code: Option<&str>,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"study_information_id": study_id,
+			"sequence_number": sequence_number,
+			"registration_number": registration_number,
+			"country_code": country_code
+		}
+	});
+	let (status, value) = post_json(
+		app,
+		cookie,
+		format!(
+			"/api/cases/{case_id}/safety-report/studies/{study_id}/registrations"
+		),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create study-registration failed: status={status} body={value}"
 		)
 		.into());
 	}
@@ -427,6 +532,44 @@ pub async fn create_drug(
 		);
 	}
 	extract_id(&value)
+}
+
+pub async fn create_drug_device_characteristic(
+	ctx: &ValidationCtx,
+	drug_id: Uuid,
+	sequence_number: i32,
+	code: Option<&str>,
+	value_type: Option<&str>,
+	value_code: Option<&str>,
+	value_value: Option<&str>,
+) -> Result<Uuid> {
+	ctx.mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		ctx.mm.dbx(),
+		SqlxUuid::parse_str(&ctx.admin_id.to_string())?,
+		SqlxUuid::parse_str(&ctx.org_id.to_string())?,
+		lib_core::ctx::ROLE_ADMIN,
+	)
+	.await?;
+	let sql = "INSERT INTO drug_device_characteristics \
+		(drug_id, sequence_number, code, value_type, value_code, value_value, created_at, updated_at, created_by) \
+		VALUES ($1, $2, $3, $4, $5, $6, now(), now(), $7) RETURNING id";
+	let (id,) = ctx
+		.mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (SqlxUuid,)>(sql)
+				.bind(SqlxUuid::parse_str(&drug_id.to_string())?)
+				.bind(sequence_number)
+				.bind(code)
+				.bind(value_type)
+				.bind(value_code)
+				.bind(value_value)
+				.bind(SqlxUuid::parse_str(&ctx.admin_id.to_string())?),
+		)
+		.await?;
+	ctx.mm.dbx().commit_txn().await?;
+	Ok(Uuid::parse_str(&id.to_string())?)
 }
 
 pub async fn update_drug(

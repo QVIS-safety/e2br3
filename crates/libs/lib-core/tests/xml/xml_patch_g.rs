@@ -224,4 +224,29 @@ fn patch_g_drug_emits_relatedness_assessment_values() {
 	assert!(patched.contains("RTDG18"));
 	assert!(patched.contains("RTDG19"));
 	assert!(patched.contains("RTDG20"));
+	let parser = Parser::default();
+	let doc = parser.parse_string(&patched).expect("parse");
+	let mut xpath = Context::new(&doc).expect("xpath");
+	xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
+	let gk1_ref = xpath
+		.findvalue(
+			"//hl7:causalityAssessment[hl7:code[@code='20']]/hl7:subject2/hl7:productUseReference/hl7:id/@root",
+			None,
+		)
+		.expect("query gk1 ref");
+	let related_reaction_ref = xpath
+		.findvalue(
+			"//hl7:causalityAssessment[hl7:code[@code='39']]/hl7:subject1/hl7:adverseEffectReference/hl7:id/@root",
+			None,
+		)
+		.expect("query relatedness reaction ref");
+	let related_drug_ref = xpath
+		.findvalue(
+			"//hl7:causalityAssessment[hl7:code[@code='39']]/hl7:subject2/hl7:productUseReference/hl7:id/@root",
+			None,
+		)
+		.expect("query relatedness drug ref");
+	assert_eq!(gk1_ref.trim(), drug_id.to_string());
+	assert_eq!(related_reaction_ref.trim(), reaction_id.to_string());
+	assert_eq!(related_drug_ref.trim(), drug_id.to_string());
 }

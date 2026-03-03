@@ -21,7 +21,7 @@ use lib_core::model::safety_report::{
 	StudyInformationFilter,
 };
 use lib_core::xml::validate::ValidationProfile;
-use lib_core::xml::{export_case_xml, validate_e2b_xml};
+use lib_core::xml::{export_case_xml, validate_e2b_xml, validate_e2b_xml_business};
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
@@ -1026,21 +1026,39 @@ pub async fn export_case(
 	})??;
 
 	if should_validate_export_xml(profile) {
-		let report = validate_e2b_xml(xml.as_bytes(), None).map_err(|err| {
-			Error::BadRequest {
-				message: format!("export XML validation failed: {err}"),
-			}
-		})?;
-		if !report.ok {
-			let first = report
+		let schema_report =
+			validate_e2b_xml(xml.as_bytes(), None).map_err(|err| {
+				Error::BadRequest {
+					message: format!("export XML validation failed: {err}"),
+				}
+			})?;
+		if !schema_report.ok {
+			let first = schema_report
 				.errors
 				.first()
 				.map(|e| e.message.clone())
 				.unwrap_or_else(|| "unknown validation error".to_string());
 			return Err(Error::BadRequest {
 				message: format!(
-					"exported XML failed validation ({} issue(s)); first: {first}",
-					report.errors.len()
+					"exported XML failed schema/basic validation ({} issue(s)); first: {first}",
+					schema_report.errors.len()
+				),
+			});
+		}
+		let business_report = validate_e2b_xml_business(xml.as_bytes(), None)
+			.map_err(|err| Error::BadRequest {
+				message: format!("export XML business validation failed: {err}"),
+			})?;
+		if !business_report.ok {
+			let first = business_report
+				.errors
+				.first()
+				.map(|e| e.message.clone())
+				.unwrap_or_else(|| "unknown business validation error".to_string());
+			return Err(Error::BadRequest {
+				message: format!(
+					"exported XML failed business validation ({} issue(s)); first: {first}",
+					business_report.errors.len()
 				),
 			});
 		}

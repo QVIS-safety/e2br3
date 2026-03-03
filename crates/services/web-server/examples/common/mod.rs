@@ -176,7 +176,7 @@ impl FlowClient {
 					"sex": "2",
 					"age_group": "5",
 					"race_code": "C41260",
-					"ethnicity_code": "2135-2",
+					"ethnicity_code": "C41222",
 					"medical_history_text": "None"
 				}
 			}),

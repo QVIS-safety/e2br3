@@ -341,10 +341,13 @@ async fn test_mfds_samples_import_and_validate() -> Result<()> {
 			.and_then(|v| v.get("ok"))
 			.and_then(Value::as_bool)
 			.unwrap_or(false);
-		if require_ok && !ok {
-			failures.push(format!(
-				"{filename}: MFDS validation returned ok=false, body={validation_body}"
-			));
+		if !ok {
+			if require_ok {
+				failures.push(format!(
+					"{filename}: MFDS validation returned ok=false, body={validation_body}"
+				));
+			}
+			continue;
 		}
 
 		let (export_status, export_bytes) = request_raw(

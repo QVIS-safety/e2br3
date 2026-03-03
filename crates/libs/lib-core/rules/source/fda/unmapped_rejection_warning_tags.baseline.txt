@@ -1,0 +1,1 @@
+# Intentionally empty: all FDA rejection/warning tags with actionable source text are mapped.

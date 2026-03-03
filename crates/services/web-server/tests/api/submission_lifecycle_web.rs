@@ -384,8 +384,8 @@ async fn create_patient(
 		.body(Body::from(
 			json!({
 				"data": {
-					"race_code": "2106-3",
-					"ethnicity_code": "2186-5"
+					"race_code": "C41260",
+					"ethnicity_code": "C41222"
 				}
 			})
 			.to_string(),
@@ -432,7 +432,10 @@ async fn create_reaction(
 		.uri(format!("/api/cases/{case_id}/reactions/{reaction_id}"))
 		.header("cookie", cookie)
 		.header("content-type", "application/json")
-		.body(Body::from(json!({ "data": { "outcome": "1" }}).to_string()))?;
+		.body(Body::from(
+			json!({ "data": { "outcome": "1", "reaction_language": "en" }})
+				.to_string(),
+		))?;
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;

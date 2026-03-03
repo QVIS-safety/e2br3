@@ -225,8 +225,8 @@ async fn create_patient(
 	}
 	let update = json!({
 		"data": {
-			"race_code": "2106-3",
-			"ethnicity_code": "2186-5"
+			"race_code": "C41260",
+			"ethnicity_code": "C41222"
 		}
 	});
 	let req = Request::builder()
@@ -282,7 +282,8 @@ async fn create_reaction(
 	let reaction_id = value["data"]["id"].as_str().ok_or("missing reaction id")?;
 	let update = json!({
 		"data": {
-			"outcome": "1"
+			"outcome": "1",
+			"reaction_language": "en"
 		}
 	});
 	let req = Request::builder()

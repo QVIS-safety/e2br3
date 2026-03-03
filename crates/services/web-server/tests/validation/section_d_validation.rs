@@ -42,3 +42,18 @@ async fn d_section_fda_race_and_ethnicity_rules_are_enforced() -> Result<()> {
 	assert_has_code(&report, "FDA.D.12.REQUIRED");
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn d_section_fda_race_and_ethnicity_reject_invalid_codes() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("1"), Some("1")).await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "fda").await?;
+	assert_has_code(&report, "FDA.D.11.REQUIRED");
+	assert_has_code(&report, "FDA.D.12.REQUIRED");
+	Ok(())
+}

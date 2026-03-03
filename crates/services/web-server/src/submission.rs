@@ -6,7 +6,10 @@ use lib_core::model::store::{
 };
 use lib_core::model::Error as ModelError;
 use lib_core::model::ModelManager;
-use lib_core::xml::{export_case_xml, should_skip_xml_validation, validate_e2b_xml};
+use lib_core::xml::{
+	export_case_xml, should_skip_xml_validation, validate_e2b_xml,
+	validate_e2b_xml_business,
+};
 use lib_rest_core::{Error, Result};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde::{Deserialize, Serialize};
@@ -1160,9 +1163,10 @@ pub async fn create_submission(
 	})?
 	.map_err(Error::from)?;
 	if !should_skip_xml_validation() {
-		let report = validate_e2b_xml(xml.as_bytes(), None).map_err(Error::from)?;
-		if !report.ok {
-			let preview = report
+		let schema_report =
+			validate_e2b_xml(xml.as_bytes(), None).map_err(Error::from)?;
+		if !schema_report.ok {
+			let preview = schema_report
 				.errors
 				.iter()
 				.take(3)
@@ -1171,8 +1175,26 @@ pub async fn create_submission(
 				.join("; ");
 			return Err(Error::BadRequest {
 				message: format!(
-					"cannot submit case: XML validation failed ({} issue(s)): {}",
-					report.errors.len(),
+					"cannot submit case: XML schema/basic validation failed ({} issue(s)): {}",
+					schema_report.errors.len(),
+					preview
+				),
+			});
+		}
+		let business_report =
+			validate_e2b_xml_business(xml.as_bytes(), None).map_err(Error::from)?;
+		if !business_report.ok {
+			let preview = business_report
+				.errors
+				.iter()
+				.take(3)
+				.map(|err| err.message.as_str())
+				.collect::<Vec<_>>()
+				.join("; ");
+			return Err(Error::BadRequest {
+				message: format!(
+					"cannot submit case: XML business validation failed ({} issue(s)): {}",
+					business_report.errors.len(),
 					preview
 				),
 			});

@@ -12,16 +12,17 @@ use crate::model::test_result::TestResult;
 use crate::model::{ModelManager, Result};
 use crate::xml::validate::{
 	build_report, has_any_primary_source_content, has_patient_initials,
-	has_test_payload, push_issue_by_code, push_issue_if_conditioned_value_invalid,
-	push_issue_if_rule_invalid, should_require_case_narrative,
-	should_require_patient_initials, CaseValidationReport, RuleFacts,
-	ValidationIssue, ValidationProfile, CASE_RULE_ICH_C11_REQUIRED,
-	CASE_RULE_ICH_C12_REQUIRED, CASE_RULE_ICH_C13_REQUIRED,
-	CASE_RULE_ICH_C14_REQUIRED, CASE_RULE_ICH_C15_REQUIRED,
-	CASE_RULE_ICH_C17_REQUIRED, CASE_RULE_ICH_C1_REQUIRED,
-	CASE_RULE_ICH_C2R4_REQUIRED, CASE_RULE_ICH_C31_REQUIRED,
-	CASE_RULE_ICH_C32_REQUIRED, CASE_RULE_ICH_D1_REQUIRED,
-	CASE_RULE_ICH_EI11A_REQUIRED, CASE_RULE_ICH_EI7_REQUIRED,
+	has_test_payload, has_text, push_issue_by_code,
+	push_issue_if_conditioned_value_invalid, push_issue_if_rule_invalid,
+	should_require_case_narrative, should_require_patient_initials,
+	CaseValidationReport, RuleFacts, ValidationIssue, ValidationProfile,
+	CASE_RULE_ICH_C11_REQUIRED, CASE_RULE_ICH_C12_REQUIRED,
+	CASE_RULE_ICH_C13_REQUIRED, CASE_RULE_ICH_C14_REQUIRED,
+	CASE_RULE_ICH_C15_REQUIRED, CASE_RULE_ICH_C17_REQUIRED,
+	CASE_RULE_ICH_C1_REQUIRED, CASE_RULE_ICH_C2R4_REQUIRED,
+	CASE_RULE_ICH_C31_REQUIRED, CASE_RULE_ICH_C32_REQUIRED,
+	CASE_RULE_ICH_D1_REQUIRED, CASE_RULE_ICH_EI11A_REQUIRED,
+	CASE_RULE_ICH_EI11B_REQUIRED, CASE_RULE_ICH_EI7_REQUIRED,
 	CASE_RULE_ICH_FR2_REQUIRED, CASE_RULE_ICH_GK1_REQUIRED,
 	CASE_RULE_ICH_GK22_REQUIRED, CASE_RULE_ICH_H1_REQUIRED,
 	CASE_RULE_ICH_N_REQUIRED,
@@ -296,6 +297,16 @@ pub async fn validate_case(
 			None,
 			RuleFacts::default(),
 		);
+		if has_text(Some(reaction.primary_source_reaction.as_str())) {
+			let _ = push_issue_if_rule_invalid(
+				&mut issues,
+				CASE_RULE_ICH_EI11B_REQUIRED,
+				format!("reactions.{idx}.reactionLanguage"),
+				reaction.reaction_language.as_deref(),
+				None,
+				RuleFacts::default(),
+			);
+		}
 	});
 
 	tests.iter().enumerate().for_each(|(idx, test)| {

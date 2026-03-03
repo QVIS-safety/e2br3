@@ -40,7 +40,13 @@ pub fn patch_g_drugs(
 	// Remove template causality blocks so we don't leak hardcoded product/reaction IDs.
 	remove_nodes(
 		&mut xpath,
-		"//hl7:adverseEventAssessment/hl7:component[hl7:causalityAssessment]",
+		"//*[local-name()='adverseEventAssessment']/*[(local-name()='component' or local-name()='component1') and .//*[local-name()='causalityAssessment']]",
+	);
+	// Preserve schema element ordering by rebuilding component1 blocks after G patching.
+	// Narrative patch (H) runs later and rehydrates comment component1 entries.
+	remove_nodes(
+		&mut xpath,
+		"//*[local-name()='adverseEventAssessment']/*[local-name()='component1']",
 	);
 
 	for drug in drugs {
@@ -107,41 +113,30 @@ fn relatedness_fragment(
 	relatedness: &RelatednessAssessment,
 ) -> String {
 	let mut out = String::new();
-	let mut text_bits: Vec<String> = Vec::new();
-	if let Some(source) = relatedness.source_of_assessment.as_deref() {
-		text_bits.push(format!("source={}", xml_escape(source)));
-	}
-	if let Some(interval) = assessment.time_interval_value.as_ref() {
-		if let Some(unit) = assessment.time_interval_unit.as_deref() {
-			text_bits.push(format!(
-				"interval={} {}",
-				xml_escape(&interval.to_string()),
-				xml_escape(unit)
-			));
-		} else {
-			text_bits
-				.push(format!("interval={}", xml_escape(&interval.to_string())));
-		}
+	out.push_str("<component typeCode=\"COMP\"><causalityAssessment classCode=\"OBS\" moodCode=\"EVN\">");
+	out.push_str("<code code=\"39\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"causality\"/>");
+	if let Some(result) = relatedness.result_of_assessment.as_deref() {
+		out.push_str("<value xsi:type=\"ST\">");
+		out.push_str(&xml_escape(result));
+		out.push_str("</value>");
 	}
 	if let Some(method) = relatedness.method_of_assessment.as_deref() {
-		text_bits.push(format!("method={}", xml_escape(method)));
+		out.push_str("<methodCode><originalText>");
+		out.push_str(&xml_escape(method));
+		out.push_str("</originalText></methodCode>");
 	}
-	if let Some(result) = relatedness.result_of_assessment.as_deref() {
-		text_bits.push(format!("result={}", xml_escape(result)));
+	if let Some(source) = relatedness.source_of_assessment.as_deref() {
+		out.push_str("<author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\"><code><originalText>");
+		out.push_str(&xml_escape(source));
+		out.push_str("</originalText></code></assignedEntity></author>");
 	}
-	let summary = if text_bits.is_empty() {
-		format!(
-			"relatedness assessment={} drug={} reaction={}",
-			assessment.id, drug_id, assessment.reaction_id
-		)
-	} else {
-		text_bits.join("; ")
-	};
-	out.push_str("<component1 typeCode=\"COMP\"><observationEvent classCode=\"OBS\" moodCode=\"EVN\">");
-	out.push_str("<code code=\"39\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"causality\"/>");
-	out.push_str("<value xsi:type=\"ED\">");
-	out.push_str(&summary);
-	out.push_str("</value></observationEvent></component1>");
+	out.push_str("<subject1 typeCode=\"SUBJ\"><adverseEffectReference classCode=\"OBS\" moodCode=\"EVN\"><id root=\"");
+	out.push_str(&xml_escape(&assessment.reaction_id.to_string()));
+	out.push_str("\"/></adverseEffectReference></subject1>");
+	out.push_str("<subject2 typeCode=\"SUBJ\"><productUseReference classCode=\"SBADM\" moodCode=\"EVN\"><id root=\"");
+	out.push_str(&xml_escape(&drug_id.to_string()));
+	out.push_str("\"/></productUseReference></subject2>");
+	out.push_str("</causalityAssessment></component>");
 	out
 }
 
@@ -166,11 +161,17 @@ fn causality_role_fragment(drug: &DrugInformation) -> Result<String> {
 		})?;
 	let display = drug_characterization_display_name(role_code);
 	Ok(format!(
-		"<component1 typeCode=\"COMP\">\
-			<observationEvent classCode=\"OBS\" moodCode=\"EVN\">\
+		"<component typeCode=\"COMP\">\
+			<causalityAssessment classCode=\"OBS\" moodCode=\"EVN\">\
 				<code code=\"20\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"interventionCharacterization\"/>\
 				<value xsi:type=\"CE\" code=\"{role_code}\" displayName=\"{display}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.13\"/>\
-			</observationEvent>\
-		</component1>"
+				<subject2 typeCode=\"SUBJ\">\
+					<productUseReference classCode=\"SBADM\" moodCode=\"EVN\">\
+						<id root=\"{drug_id}\"/>\
+					</productUseReference>\
+				</subject2>\
+			</causalityAssessment>\
+		</component>"
+		, drug_id = drug.id
 	))
 }

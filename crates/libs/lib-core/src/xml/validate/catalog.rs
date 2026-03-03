@@ -169,6 +169,14 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		message: "[E.i.1.1a] is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.E.i.1.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"[E.i.1.1b] is required when [E.i.1.1a] is provided.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.E.i.7.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "reactions",
@@ -224,6 +232,62 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		section: "reporter",
 		blocking: true,
 		message: "FDA requires reporter email when primary source is present.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.5.5a.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "study",
+		blocking: true,
+		message:
+			"FDA requires [C.5.5a] IND Number where AE Occurred when C.1.3 is 1/2 and message receiver is CDER_IND/CBER_IND (6 digits).",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.5.5b.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "study",
+		blocking: true,
+		message:
+			"FDA requires [C.5.5b] Pre-ANDA Number where AE Occurred when C.1.3 is 2 and message receiver is CDER_IND_EXEMPT_BA_BE (6 digits).",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.5.6.r.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "study",
+		blocking: true,
+		message:
+			"FDA requires [C.5.6.r] cross reported IND when [C.5.5a] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.K.1.A.CONDITIONAL",
+		profile: ValidationProfile::Fda,
+		section: "drugs",
+		blocking: true,
+		message:
+			"FDA [G.K.1.A]=1 is allowed only when [C.1.12]=true, [G.K.12.r.1]=true, and [G.k.1]=4 for the same product.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.K.12.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "drugs",
+		blocking: true,
+		message:
+			"FDA postmarket requires at least one suspect product with [G.K.12.r.1]=true when [C.1.7.1]=5.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.K.12.R.11.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "drugs",
+		blocking: false,
+		message:
+			"FDA recommends [G.K.12.R.11] when [G.K.12.r.1]=true and [C.1.7.1]=4.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.K.12.R.3.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "drugs",
+		blocking: true,
+		message:
+			"FDA requires [G.K.12.R.3] when [G.K.12.r.1]=true for postmarket ICSRs.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.D.11.REQUIRED",
@@ -1054,6 +1118,9 @@ pub enum RuleCondition {
 	FdaReactionOtherMedicallyImportantTrue,
 	FdaPrimarySourcePresent,
 	FdaPatientPayloadPresent,
+	FdaIndNumberRequired,
+	FdaPreAndaNumberRequired,
+	FdaCrossReportedIndRequired,
 	FdaPreAndaRequired,
 	FdaPreAndaForbidden,
 	FdaGk10aRequired,
@@ -1084,6 +1151,9 @@ impl RuleCondition {
 			}
 			Self::FdaPrimarySourcePresent => "fda_primary_source_present",
 			Self::FdaPatientPayloadPresent => "fda_patient_payload_present",
+			Self::FdaIndNumberRequired => "fda_ind_number_required",
+			Self::FdaPreAndaNumberRequired => "fda_pre_anda_number_required",
+			Self::FdaCrossReportedIndRequired => "fda_cross_reported_ind_required",
 			Self::FdaPreAndaRequired => "fda_pre_anda_required",
 			Self::FdaPreAndaForbidden => "fda_pre_anda_forbidden",
 			Self::FdaGk10aRequired => "fda_g_k_10a_required",
@@ -1111,8 +1181,11 @@ pub struct RuleFacts {
 	pub fda_combination_product_true: Option<bool>,
 	pub fda_primary_source_present: Option<bool>,
 	pub fda_patient_payload_present: Option<bool>,
+	pub fda_type_of_report_is_one_or_two: Option<bool>,
 	pub fda_type_of_report_is_two: Option<bool>,
+	pub fda_msg_receiver_is_cder_ind_or_cber_ind: Option<bool>,
 	pub fda_msg_receiver_is_cder_ind_exempt_ba_be: Option<bool>,
+	pub fda_has_ind_number: Option<bool>,
 	pub fda_has_pre_anda: Option<bool>,
 	pub fda_batch_receiver_is_zzfda: Option<bool>,
 	pub fda_msg_receiver_is_cder_or_cber: Option<bool>,
@@ -1178,6 +1251,14 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 		condition: RuleCondition::FdaPrimarySourcePresent,
 	},
 	ConditionBinding {
+		code: "FDA.C.5.5a.REQUIRED",
+		condition: RuleCondition::FdaIndNumberRequired,
+	},
+	ConditionBinding {
+		code: "FDA.C.5.6.r.REQUIRED",
+		condition: RuleCondition::FdaCrossReportedIndRequired,
+	},
+	ConditionBinding {
 		code: "FDA.D.11.REQUIRED",
 		condition: RuleCondition::FdaPatientPayloadPresent,
 	},
@@ -1239,6 +1320,9 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 enum ValuePolicy {
 	NonEmpty,
 	NonEmptyOrNullFlavor,
+	SixDigitsNumeric,
+	FdaRaceCodeOrNullFlavor,
+	FdaEthnicityCodeOrNullFlavor,
 	FdaGk10aCodeOrNa,
 	FdaLocalCriteriaCodeByFacts,
 	IchC13ConditionalMustBeTwo,
@@ -1300,6 +1384,10 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
+		code: "ICH.E.i.1.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
 		code: "ICH.E.i.7.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
@@ -1316,6 +1404,14 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
+		code: "FDA.C.5.5a.REQUIRED",
+		policy: ValuePolicy::SixDigitsNumeric,
+	},
+	ValuePolicyBinding {
+		code: "FDA.C.5.5b.REQUIRED",
+		policy: ValuePolicy::SixDigitsNumeric,
+	},
+	ValuePolicyBinding {
 		code: "FDA.C.1.12.REQUIRED",
 		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
@@ -1325,11 +1421,11 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "FDA.D.11.REQUIRED",
-		policy: ValuePolicy::NonEmptyOrNullFlavor,
+		policy: ValuePolicy::FdaRaceCodeOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "FDA.D.12.REQUIRED",
-		policy: ValuePolicy::NonEmptyOrNullFlavor,
+		policy: ValuePolicy::FdaEthnicityCodeOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "FDA.E.i.3.2h.REQUIRED",
@@ -1656,6 +1752,21 @@ pub fn is_rule_condition_satisfied(code: &str, facts: RuleFacts) -> bool {
 		RuleCondition::FdaPatientPayloadPresent => {
 			facts.fda_patient_payload_present.unwrap_or(false)
 		}
+		RuleCondition::FdaIndNumberRequired => {
+			facts.fda_type_of_report_is_one_or_two.unwrap_or(false)
+				&& facts
+					.fda_msg_receiver_is_cder_ind_or_cber_ind
+					.unwrap_or(false)
+		}
+		RuleCondition::FdaPreAndaNumberRequired => {
+			facts.fda_type_of_report_is_two.unwrap_or(false)
+				&& facts
+					.fda_msg_receiver_is_cder_ind_exempt_ba_be
+					.unwrap_or(false)
+		}
+		RuleCondition::FdaCrossReportedIndRequired => {
+			facts.fda_has_ind_number.unwrap_or(false)
+		}
 		RuleCondition::FdaPreAndaRequired => {
 			facts.fda_type_of_report_is_two.unwrap_or(false)
 				&& facts
@@ -1715,6 +1826,23 @@ pub fn is_rule_value_valid(
 			let has_value =
 				value_code.map(|v| !v.trim().is_empty()).unwrap_or(false);
 			has_value || null_flavor.is_some()
+		}
+		Some(ValuePolicy::SixDigitsNumeric) => value_code
+			.map(str::trim)
+			.map(|v| v.len() == 6 && v.chars().all(|ch| ch.is_ascii_digit()))
+			.unwrap_or(false),
+		Some(ValuePolicy::FdaRaceCodeOrNullFlavor) => {
+			let value = value_code.map(str::trim).filter(|v| !v.is_empty());
+			let code_ok = matches!(
+				value,
+				Some("C16352" | "C41259" | "C41260" | "C41219" | "C41261")
+			);
+			code_ok || null_flavor.is_some()
+		}
+		Some(ValuePolicy::FdaEthnicityCodeOrNullFlavor) => {
+			let value = value_code.map(str::trim).filter(|v| !v.is_empty());
+			let code_ok = matches!(value, Some("C17459" | "C41222"));
+			code_ok || null_flavor.is_some()
 		}
 		Some(ValuePolicy::FdaGk10aCodeOrNa) => {
 			let code_ok = value_code.map(|v| v == "1" || v == "2").unwrap_or(false);
@@ -2031,6 +2159,21 @@ mod tests {
 				..RuleFacts::default()
 			}
 		));
+		assert!(is_rule_condition_satisfied(
+			"FDA.C.5.5a.REQUIRED",
+			RuleFacts {
+				fda_type_of_report_is_one_or_two: Some(true),
+				fda_msg_receiver_is_cder_ind_or_cber_ind: Some(true),
+				..RuleFacts::default()
+			}
+		));
+		assert!(is_rule_condition_satisfied(
+			"FDA.C.5.6.r.REQUIRED",
+			RuleFacts {
+				fda_has_ind_number: Some(true),
+				..RuleFacts::default()
+			}
+		));
 		assert!(!is_rule_condition_satisfied(
 			"FDA.D.11.REQUIRED",
 			RuleFacts {
@@ -2161,15 +2304,51 @@ mod tests {
 			RuleFacts::default()
 		));
 		assert!(is_rule_value_valid(
+			"FDA.C.5.5a.REQUIRED",
+			Some("123456"),
+			None,
+			RuleFacts::default()
+		));
+		assert!(!is_rule_value_valid(
+			"FDA.C.5.5a.REQUIRED",
+			Some("ABC123"),
+			None,
+			RuleFacts::default()
+		));
+		assert!(is_rule_value_valid(
+			"FDA.C.5.5b.REQUIRED",
+			Some("234567"),
+			None,
+			RuleFacts::default()
+		));
+		assert!(is_rule_value_valid(
 			"FDA.D.11.REQUIRED",
-			Some("2106-3"),
+			Some("C41260"),
+			None,
+			RuleFacts::default()
+		));
+		assert!(is_rule_value_valid(
+			"FDA.D.12.REQUIRED",
+			Some("C41222"),
 			None,
 			RuleFacts::default()
 		));
 		assert!(!is_rule_value_valid(
 			"FDA.D.11.REQUIRED",
-			Some(""),
+			Some("1"),
 			None,
+			RuleFacts::default()
+		));
+		assert!(!is_rule_value_valid(
+			"FDA.D.12.REQUIRED",
+			Some("1"),
+			None,
+			RuleFacts::default()
+		));
+		assert!(is_rule_value_valid(
+			"FDA.D.11.REQUIRED",
+			None,
+			Some("NI"),
 			RuleFacts::default()
 		));
 		assert!(is_rule_value_valid(

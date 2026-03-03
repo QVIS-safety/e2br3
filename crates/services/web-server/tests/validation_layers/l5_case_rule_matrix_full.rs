@@ -1,11 +1,12 @@
 use super::validation_common::{
 	assert_has_code, create_active_substance, create_drug,
-	create_drug_reaction_assessment, create_message_header, create_narrative,
+	create_drug_device_characteristic, create_drug_reaction_assessment,
+	create_message_header, create_message_header_with_receiver, create_narrative,
 	create_patient, create_primary_source, create_reaction,
 	create_relatedness_assessment, create_safety_report, create_safety_report_with,
-	create_sender, create_test_result, db_exec_case_sql, issue_codes, setup_case,
-	update_drug, update_patient, update_primary_source, update_reaction,
-	update_safety_report, validate_case,
+	create_sender, create_study_information, create_test_result, db_exec_case_sql,
+	issue_codes, setup_case, update_drug, update_patient, update_primary_source,
+	update_reaction, update_safety_report, validate_case,
 };
 use crate::common::Result;
 use lib_core::xml::validate::rule_test_matrix::CASE_RULE_TEST_MATRIX;
@@ -140,6 +141,26 @@ async fn assert_rule_violation_for_code(code: &str) -> Result<()> {
 				.await?;
 			// No reaction row => both E.i.1.1a and E.i.7 required.
 		}
+		"ICH.E.i.1.1b.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA"))
+				.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			let reaction_id =
+				create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache")
+					.await?;
+			update_reaction(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				reaction_id,
+				json!({"data": { "reaction_language": "" }}),
+			)
+			.await?;
+		}
 		"ICH.G.k.1.REQUIRED" => {
 			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 			create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA"))
@@ -234,6 +255,229 @@ async fn assert_rule_violation_for_code(code: &str) -> Result<()> {
 				.await?;
 			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
 				.await?;
+		}
+		"FDA.C.5.5a.REQUIRED" => {
+			create_safety_report_with(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				"1",
+				false,
+			)
+			.await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZFDA_PREMKT"),
+				"CDER_IND",
+			)
+			.await?;
+			create_study_information(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("Study"),
+				Some("ABC123"),
+			)
+			.await?;
+		}
+		"FDA.C.5.5b.REQUIRED" => {
+			create_safety_report_with(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				"2",
+				false,
+			)
+			.await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZFDA_PREMKT"),
+				"CDER_IND_EXEMPT_BA_BE",
+			)
+			.await?;
+			create_study_information(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("Study"),
+				Some("ABCDE1"),
+			)
+			.await?;
+		}
+		"FDA.C.5.6.r.REQUIRED" => {
+			create_safety_report_with(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				"1",
+				false,
+			)
+			.await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZFDA_PREMKT"),
+				"CBER_IND",
+			)
+			.await?;
+			create_study_information(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("Study"),
+				Some("123456"),
+			)
+			.await?;
+		}
+		"FDA.G.K.12.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, true).await?;
+			create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA"))
+				.await?;
+			update_safety_report(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				json!({"data": { "combination_product_report_indicator": "1", "local_criteria_report_type": "5" }}),
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache")
+				.await?;
+			create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A")
+				.await?;
+		}
+		"FDA.G.K.12.R.3.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, true).await?;
+			create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA"))
+				.await?;
+			update_safety_report(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				json!({"data": { "combination_product_report_indicator": "1", "local_criteria_report_type": "1" }}),
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache")
+				.await?;
+			let drug_id =
+				create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A")
+					.await?;
+			let _ = create_drug_device_characteristic(
+				&ctx,
+				drug_id,
+				1,
+				Some("FDA.G.k.12.r.1"),
+				Some("BL"),
+				Some("1"),
+				Some("true"),
+			)
+			.await?;
+		}
+		"FDA.G.K.12.R.11.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, true).await?;
+			create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA"))
+				.await?;
+			update_safety_report(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				json!({"data": { "combination_product_report_indicator": "1", "local_criteria_report_type": "4" }}),
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache")
+				.await?;
+			let drug_id =
+				create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A")
+					.await?;
+			let _ = create_drug_device_characteristic(
+				&ctx,
+				drug_id,
+				1,
+				Some("FDA.G.k.12.r.1"),
+				Some("BL"),
+				Some("1"),
+				Some("true"),
+			)
+			.await?;
+		}
+		"FDA.G.K.1.A.CONDITIONAL" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, true).await?;
+			create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA"))
+				.await?;
+			update_safety_report(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				json!({"data": { "combination_product_report_indicator": "2", "local_criteria_report_type": "1" }}),
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache")
+				.await?;
+			let drug_id =
+				create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A")
+					.await?;
+			let _ = create_drug_device_characteristic(
+				&ctx,
+				drug_id,
+				1,
+				Some("FDA.G.k.1.a"),
+				Some("BL"),
+				Some("1"),
+				Some("1"),
+			)
+			.await?;
 		}
 		"FDA.D.11.REQUIRED" | "FDA.D.12.REQUIRED" => {
 			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
@@ -509,7 +753,7 @@ async fn build_valid_ich_case(
 		&ctx.cookie,
 		ctx.case_id,
 		reaction_id,
-		json!({"data": { "outcome": "1" }}),
+		json!({"data": { "outcome": "1", "reaction_language": "en" }}),
 	)
 	.await?;
 	create_test_result(&ctx.app, &ctx.cookie, ctx.case_id, 1, "LFT").await?;
@@ -548,7 +792,7 @@ async fn build_valid_fda_case(
 		&ctx.app,
 		&ctx.cookie,
 		ctx.case_id,
-		json!({"data": { "race_code": "1", "ethnicity_code": "1" }}),
+		json!({"data": { "race_code": "C41260", "ethnicity_code": "C41222" }}),
 	)
 	.await?;
 	let reaction_id =
@@ -558,7 +802,7 @@ async fn build_valid_fda_case(
 		&ctx.cookie,
 		ctx.case_id,
 		reaction_id,
-		json!({"data": { "outcome": "1" }}),
+		json!({"data": { "outcome": "1", "reaction_language": "en" }}),
 	)
 	.await?;
 	create_test_result(&ctx.app, &ctx.cookie, ctx.case_id, 1, "LFT").await?;

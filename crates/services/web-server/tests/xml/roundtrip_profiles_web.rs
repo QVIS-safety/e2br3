@@ -94,6 +94,89 @@ async fn request_raw(
 	Ok((status, bytes.to_vec()))
 }
 
+async fn ensure_reaction_language(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<()> {
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"GET",
+		&format!("/api/cases/{case_id}/reactions"),
+		None,
+		Body::empty(),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!("list reactions status {} body {}", status, body).into());
+	}
+	let Some(reactions) = body.get("data").and_then(Value::as_array) else {
+		return Ok(());
+	};
+	for reaction in reactions {
+		let Some(reaction_id) = reaction.get("id").and_then(Value::as_str) else {
+			continue;
+		};
+		let has_text = reaction
+			.get("primary_source_reaction")
+			.and_then(Value::as_str)
+			.map(|v| !v.trim().is_empty())
+			.unwrap_or(false);
+		let has_language = reaction
+			.get("reaction_language")
+			.and_then(Value::as_str)
+			.map(|v| !v.trim().is_empty())
+			.unwrap_or(false);
+		if has_text && !has_language {
+			let (status, body) = request_json(
+				app,
+				cookie,
+				"PUT",
+				&format!("/api/cases/{case_id}/reactions/{reaction_id}"),
+				Some("application/json"),
+				Body::from(
+					serde_json::json!({
+						"data": { "reaction_language": "en" }
+					})
+					.to_string(),
+				),
+			)
+			.await?;
+			if status != StatusCode::OK {
+				return Err(format!(
+					"update reaction language status {} body {}",
+					status, body
+				)
+				.into());
+			}
+		}
+	}
+	Ok(())
+}
+
+async fn mark_case_validated(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<()> {
+	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!("/api/cases/{case_id}/validator/mark-validated"))
+		.header("cookie", cookie)
+		.header("x-validator-token", "validator-secret")
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let bytes = to_bytes(res.into_body(), usize::MAX).await?;
+	let body = serde_json::from_slice::<Value>(&bytes)?;
+	if status != StatusCode::OK {
+		return Err(format!("mark validated status {} body {}", status, body).into());
+	}
+	Ok(())
+}
+
 #[serial]
 #[tokio::test]
 async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<()> {
@@ -163,6 +246,31 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			failures.push(format!("{}: missing case_id", fixture.filename));
 			continue;
 		};
+		if let Err(err) = ensure_reaction_language(&app, &cookie, case_id).await {
+			failures.push(format!("{}: {err}", fixture.filename));
+			continue;
+		}
+		let (update_status, update_body) = request_json(
+			&app,
+			&cookie,
+			"PUT",
+			&format!("/api/cases/{case_id}"),
+			Some("application/json"),
+			Body::from(
+				serde_json::json!({
+					"data": { "validation_profile": fixture.profile }
+				})
+				.to_string(),
+			),
+		)
+		.await?;
+		if update_status != StatusCode::OK {
+			failures.push(format!(
+				"{}: failed to set validation_profile {} body={}",
+				fixture.filename, update_status, update_body
+			));
+			continue;
+		}
 
 		let (validation_status, validation_body) = request_json(
 			&app,
@@ -183,19 +291,24 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			));
 			continue;
 		}
-		if fixture.require_ok {
-			let ok = validation_body
-				.get("data")
-				.and_then(|v| v.get("ok"))
-				.and_then(Value::as_bool)
-				.unwrap_or(false);
-			if !ok {
-				failures.push(format!(
-					"{}: expected ok=true for profile {}, body={}",
-					fixture.filename, fixture.profile, validation_body
-				));
-				continue;
-			}
+		let ok = validation_body
+			.get("data")
+			.and_then(|v| v.get("ok"))
+			.and_then(Value::as_bool)
+			.unwrap_or(false);
+		if fixture.require_ok && !ok {
+			failures.push(format!(
+				"{}: expected ok=true for profile {}, body={}",
+				fixture.filename, fixture.profile, validation_body
+			));
+			continue;
+		}
+		if !ok {
+			continue;
+		}
+		if let Err(err) = mark_case_validated(&app, &cookie, case_id).await {
+			failures.push(format!("{}: {err}", fixture.filename));
+			continue;
 		}
 
 		let (export_status, export_bytes) = request_raw(

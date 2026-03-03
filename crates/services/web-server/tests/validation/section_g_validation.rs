@@ -1,7 +1,8 @@
 use super::validation_common::{
-	assert_has_code, create_drug, create_message_header, create_patient,
-	create_primary_source, create_reaction, create_safety_report, create_sender,
-	put_json, setup_case, update_drug, validate_case,
+	assert_has_code, create_drug, create_drug_device_characteristic,
+	create_message_header, create_patient, create_primary_source, create_reaction,
+	create_safety_report, create_sender, put_json, setup_case, update_drug,
+	update_safety_report, validate_case,
 };
 use crate::common::Result;
 use axum::http::StatusCode;
@@ -83,5 +84,136 @@ async fn g_section_mfds_domestic_product_code_rule_is_enforced() -> Result<()> {
 	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "mfds").await?;
 	assert_has_code(&report, "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_fda_gk12_required_when_local_criteria_is_5() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, true).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	update_safety_report(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		json!({"data": { "combination_product_report_indicator": "1", "local_criteria_report_type": "5" }}),
+	)
+	.await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "fda").await?;
+	assert_has_code(&report, "FDA.G.K.12.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_fda_gk12r3_required_when_malfunction_true() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, true).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	update_safety_report(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		json!({"data": { "combination_product_report_indicator": "1", "local_criteria_report_type": "1" }}),
+	)
+	.await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	let drug_id =
+		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	let _ = create_drug_device_characteristic(
+		&ctx,
+		drug_id,
+		1,
+		Some("FDA.G.k.12.r.1"),
+		Some("BL"),
+		Some("1"),
+		Some("true"),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "fda").await?;
+	assert_has_code(&report, "FDA.G.K.12.R.3.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_fda_gk12r11_required_when_local_criteria_4_and_malfunction(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, true).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	update_safety_report(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		json!({"data": { "combination_product_report_indicator": "1", "local_criteria_report_type": "4" }}),
+	)
+	.await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	let drug_id =
+		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	let _ = create_drug_device_characteristic(
+		&ctx,
+		drug_id,
+		1,
+		Some("FDA.G.k.12.r.1"),
+		Some("BL"),
+		Some("1"),
+		Some("true"),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "fda").await?;
+	assert_has_code(&report, "FDA.G.K.12.R.11.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_fda_gk1a_requires_combination_malfunction_and_role4() -> Result<()>
+{
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, true).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	update_safety_report(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		json!({"data": { "combination_product_report_indicator": "2", "local_criteria_report_type": "1" }}),
+	)
+	.await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	let drug_id =
+		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	let _ = create_drug_device_characteristic(
+		&ctx,
+		drug_id,
+		1,
+		Some("FDA.G.k.1.a"),
+		Some("BL"),
+		Some("1"),
+		Some("1"),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "fda").await?;
+	assert_has_code(&report, "FDA.G.K.1.A.CONDITIONAL");
 	Ok(())
 }

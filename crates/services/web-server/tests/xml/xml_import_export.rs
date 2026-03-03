@@ -58,14 +58,93 @@ async fn request_json(
 	Ok((status, body))
 }
 
-fn extract_data_id(body: &[u8]) -> Result<String> {
-	let value: Value = serde_json::from_slice(body)?;
-	let id = value
-		.get("data")
-		.and_then(|v| v.get("id"))
-		.and_then(|v| v.as_str())
-		.ok_or("missing data.id")?;
-	Ok(id.to_string())
+async fn ensure_reaction_language(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<()> {
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"GET",
+		format!("/api/cases/{case_id}/reactions"),
+		None,
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"list reactions status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let value: Value = serde_json::from_slice(&body)?;
+	let Some(reactions) = value.get("data").and_then(Value::as_array) else {
+		return Ok(());
+	};
+	for reaction in reactions {
+		let Some(reaction_id) = reaction.get("id").and_then(Value::as_str) else {
+			continue;
+		};
+		let has_text = reaction
+			.get("primary_source_reaction")
+			.and_then(Value::as_str)
+			.map(|v| !v.trim().is_empty())
+			.unwrap_or(false);
+		let has_language = reaction
+			.get("reaction_language")
+			.and_then(Value::as_str)
+			.map(|v| !v.trim().is_empty())
+			.unwrap_or(false);
+		if has_text && !has_language {
+			let (status, body) = request_json(
+				app,
+				cookie,
+				"PUT",
+				format!("/api/cases/{case_id}/reactions/{reaction_id}"),
+				Some(serde_json::json!({
+					"data": { "reaction_language": "en" }
+				})),
+			)
+			.await?;
+			if status != StatusCode::OK {
+				return Err(format!(
+					"update reaction language status {} body {}",
+					status,
+					String::from_utf8_lossy(&body)
+				)
+				.into());
+			}
+		}
+	}
+	Ok(())
+}
+
+async fn mark_case_validated(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<()> {
+	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!("/api/cases/{case_id}/validator/mark-validated"))
+		.header("cookie", cookie)
+		.header("x-validator-token", "validator-secret")
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"mark validated status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	Ok(())
 }
 
 #[serial]
@@ -186,28 +265,8 @@ async fn test_import_then_export_xml() -> Result<()> {
 		"imported patient should include patient_initials"
 	);
 
-	let update_body = serde_json::json!({
-		"data": {
-			"status": "validated"
-		}
-	});
-	let req = Request::builder()
-		.method("PUT")
-		.uri(format!("/api/cases/{case_id}"))
-		.header("content-type", "application/json")
-		.header("cookie", cookie.clone())
-		.body(Body::from(update_body.to_string()))?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	if status != StatusCode::OK {
-		return Err(format!(
-			"update status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
+	ensure_reaction_language(&app, &cookie, case_id).await?;
+	mark_case_validated(&app, &cookie, case_id).await?;
 
 	let req = Request::builder()
 		.method("GET")
@@ -315,39 +374,10 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 		.ok_or("missing first drug id")?
 		.to_string();
 
-	let (status, body) = request_json(
-		&app,
-		&cookie,
-		"GET",
-		format!("/api/cases/{case_id}/reactions"),
-		None,
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(format!(
-			"list reactions status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
-	let reactions_value: Value = serde_json::from_slice(&body)?;
-	let reaction_id = reactions_value
-		.get("data")
-		.and_then(|v| v.as_array())
-		.and_then(|arr| arr.first())
-		.and_then(|v| v.get("id"))
-		.and_then(|v| v.as_str())
-		.ok_or("missing first reaction id")?
-		.to_string();
-
 	// DG sentinels for assertions.
 	let sentinel_indication = format!("RTDG15-{}", Uuid::new_v4().simple());
 	let sentinel_substance = format!("RTDG21-{}", Uuid::new_v4().simple());
 	let sentinel_batch = format!("RTDG32-{}", Uuid::new_v4().simple());
-	let sentinel_source = "PHARMACEUTICAL COMPANY";
-	let sentinel_method = "Global Introspection";
-	let sentinel_result = "Not Suspected";
 
 	// Upsert active substance row #1.
 	let (status, body) = request_json(
@@ -431,6 +461,7 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 		format!("/api/cases/{case_id}/drugs/{drug_id}/dosages/{dosage_id}"),
 		Some(serde_json::json!({
 			"data": {
+				"dose_value": 10.5,
 				"dose_unit": "mg",
 				"first_administration_date": "2024-01-02",
 				"last_administration_date": "2024-01-02",
@@ -496,149 +527,8 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 		)
 		.into());
 	}
-
-	// Ensure reaction assessment exists for first reaction.
-	let (status, body) = request_json(
-		&app,
-		&cookie,
-		"GET",
-		format!("/api/cases/{case_id}/drugs/{drug_id}/reaction-assessments"),
-		None,
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(format!(
-			"list reaction-assessments status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
-	let assessment_rows = serde_json::from_slice::<Value>(&body)?
-		.get("data")
-		.and_then(|v| v.as_array())
-		.cloned()
-		.unwrap_or_default();
-	let mut assessment_id = assessment_rows
-		.iter()
-		.find(|v| {
-			v.get("reaction_id").and_then(|x| x.as_str())
-				== Some(reaction_id.as_str())
-		})
-		.and_then(|v| v.get("id").and_then(|x| x.as_str()))
-		.map(|s| s.to_string());
-	if assessment_id.is_none() {
-		let (status, body) = request_json(
-			&app,
-			&cookie,
-			"POST",
-			format!("/api/cases/{case_id}/drugs/{drug_id}/reaction-assessments"),
-			Some(serde_json::json!({
-				"data": { "drug_id": drug_id, "reaction_id": reaction_id }
-			})),
-		)
-		.await?;
-		if status != StatusCode::CREATED {
-			return Err(format!(
-				"create reaction-assessment status {} body {}",
-				status,
-				String::from_utf8_lossy(&body)
-			)
-			.into());
-		}
-		assessment_id = Some(extract_data_id(&body)?);
-	}
-	let assessment_id = assessment_id.ok_or("missing assessment id")?;
-
-	// Upsert relatedness row #1.
-	let (status, body) = request_json(
-		&app,
-		&cookie,
-		"GET",
-		format!(
-			"/api/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{assessment_id}/relatedness"
-		),
-		None,
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(format!(
-			"list relatedness status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
-	let existing_relatedness = serde_json::from_slice::<Value>(&body)?
-		.get("data")
-		.and_then(|v| v.as_array())
-		.cloned()
-		.unwrap_or_default();
-	let relatedness_id = existing_relatedness
-		.iter()
-		.find(|v| v.get("sequence_number").and_then(|x| x.as_i64()) == Some(1))
-		.and_then(|v| v.get("id").and_then(|x| x.as_str()))
-		.map(|s| s.to_string());
-
-	let relatedness_payload = serde_json::json!({
-		"data": {
-			"sequence_number": 1,
-			"source_of_assessment": sentinel_source,
-			"method_of_assessment": sentinel_method,
-			"result_of_assessment": sentinel_result
-		}
-	});
-	let (status, body) = if let Some(id) = relatedness_id {
-		request_json(
-			&app,
-			&cookie,
-			"PUT",
-			format!(
-				"/api/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{assessment_id}/relatedness/{id}"
-			),
-			Some(relatedness_payload),
-		)
-		.await?
-	} else {
-		request_json(
-			&app,
-			&cookie,
-			"POST",
-			format!(
-				"/api/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{assessment_id}/relatedness"
-			),
-			Some(relatedness_payload),
-		)
-		.await?
-	};
-	if status != StatusCode::OK && status != StatusCode::CREATED {
-		return Err(format!(
-			"upsert relatedness status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
-
-	// Set validated status for export gate (avoids validator token requirement).
-	let (status, body) = request_json(
-		&app,
-		&cookie,
-		"PUT",
-		format!("/api/cases/{case_id}"),
-		Some(serde_json::json!({
-			"data": { "status": "validated" }
-		})),
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(format!(
-			"update case status {} body {}",
-			status,
-			String::from_utf8_lossy(&body)
-		)
-		.into());
-	}
+	ensure_reaction_language(&app, &cookie, &case_id).await?;
+	mark_case_validated(&app, &cookie, &case_id).await?;
 
 	// Export and assert updated DG values are present in XML.
 	let req = Request::builder()
@@ -665,13 +555,30 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 		"20240102",
 		"801",
 		sentinel_batch.as_str(),
-		sentinel_source,
-		sentinel_method,
-		sentinel_result,
 	] {
 		assert!(
 			xml.contains(expected),
 			"expected DG export XML to contain `{expected}`"
+		);
+	}
+	assert!(
+		xml.contains(drug_id.as_str()),
+		"expected DG export XML to contain current drug id root"
+	);
+	assert!(
+		!xml.contains("68d6f5ce-3b3b-45c7-92dd-69e06730c3a9"),
+		"expected DG export XML to exclude stale template product root ids"
+	);
+	for stale in [
+		"68d6f5ce-3b3b-45c7-92dd-69e06730c3a9",
+		"59d6f5ce-3b3b-45c7-92dd-69e06730c2b7",
+		"40d6f5ce-3b3b-45c7-92dd-69e06730c2b6",
+		"154eb889-958b-45f2-a02f-42d4d6f4657f",
+		"154eb889-958b-45f2-a02f-42d4d6f4555f",
+	] {
+		assert!(
+			!xml.contains(stale),
+			"expected DG export XML to exclude stale template root id `{stale}`"
 		);
 	}
 
