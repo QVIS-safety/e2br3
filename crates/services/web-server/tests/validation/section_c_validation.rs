@@ -2,7 +2,7 @@ use super::validation_common::{
 	assert_has_code, create_message_header, create_message_header_with_receiver,
 	create_primary_source, create_safety_report, create_safety_report_with,
 	create_sender, create_study_information, create_study_registration, setup_case,
-	update_primary_source, validate_case,
+	update_primary_source, update_study_information, validate_case,
 };
 use crate::common::Result;
 use serde_json::json;
@@ -154,5 +154,50 @@ async fn c_section_fda_cross_reported_ind_required_when_ind_is_populated(
 	assert!(!super::validation_common::issue_codes(&report)
 		.iter()
 		.any(|c| c == "FDA.C.5.6.r.REQUIRED"));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn c_section_mfds_c2r4_kr1_required_when_qualification_is_3() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZMFDS"))
+		.await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("3")).await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "mfds").await?;
+	assert_has_code(&report, "MFDS.C.2.r.4.KR.1.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn c_section_mfds_c54_kr1_required_when_study_type_reaction_is_3() -> Result<()>
+{
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZMFDS"))
+		.await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	let study_id = create_study_information(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		Some("Study"),
+		Some("S-1"),
+	)
+	.await?;
+	update_study_information(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		study_id,
+		json!({"data": { "study_type_reaction": "3", "study_type_reaction_kr1": null }}),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "mfds").await?;
+	assert_has_code(&report, "MFDS.C.5.4.KR.1.REQUIRED");
 	Ok(())
 }

@@ -154,6 +154,7 @@ async fn create_study(
 		case_id,
 		study_name: Some("Study".to_string()),
 		sponsor_study_number: Some("SN-1".to_string()),
+		study_type_reaction_kr1: None,
 	};
 	Ok(StudyInformationBmc::create(ctx, mm, data).await?)
 }
@@ -575,6 +576,7 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			source_of_assessment: None,
 			method_of_assessment: None,
 			result_of_assessment: None,
+			result_of_assessment_kr2: None,
 		},
 	)
 	.await?;
@@ -587,6 +589,7 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			source_of_assessment: None,
 			method_of_assessment: None,
 			result_of_assessment: None,
+			result_of_assessment_kr2: None,
 		},
 	)
 	.await?;

@@ -203,6 +203,7 @@ fn patch_g_drug_emits_relatedness_assessment_values() {
 		source_of_assessment: Some("RTDG18".to_string()),
 		method_of_assessment: Some("RTDG19".to_string()),
 		result_of_assessment: Some("RTDG20".to_string()),
+		result_of_assessment_kr2: None,
 		created_at: OffsetDateTime::now_utc(),
 		updated_at: OffsetDateTime::now_utc(),
 		created_by: Uuid::new_v4(),

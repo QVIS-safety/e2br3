@@ -1,0 +1,135 @@
+# MFDS Full Guideline Coverage Audit (Heuristic)
+
+- Generated at (UTC): `2026-03-07T08:32:01Z`
+- Source guideline text: `/tmp/mfds_full_doc.txt`
+- Catalog source: `crates/libs/lib-core/src/xml/validate/catalog.rs`
+
+## High-confidence Result (MFDS KR overlay rows)
+
+- Official KR element IDs (normalized): `14`
+- Internal MFDS profile rules: `18`
+- Missing KR element IDs: `0`
+- Conclusion: MFDS KR overlay business-rule rows are fully covered.
+
+## Full-document Heuristic Result
+
+- Method: parse element-like IDs from PDF text and nearby `적합성` labels; compare to element-like IDs encoded in catalog rule codes.
+- Inferred required/conditional element IDs from PDF: `128`
+- Required/conditional IDs with direct catalog rule-ID match: `17`
+- Inferred required/conditional IDs without direct catalog rule-ID match: `111`
+- Important: this over-approximates “missing” because some requirements are enforced via XSD/XML or handled outside case-rule codes.
+
+## Inferred Missing IDs (Direct rule-ID parity only)
+
+- `C.1.11`
+- `C.1.11.2`
+- `C.1.6`
+- `C.1.6.1`
+- `C.1.6.1.r`
+- `C.1.6.1.r.1`
+- `C.1.8`
+- `C.1.8.1`
+- `C.1.8.2`
+- `C.1.9`
+- `C.1.9.1.r.1`
+- `C.1.9.1.r.2`
+- `C.2.r`
+- `C.2.r.3`
+- `C.2.r.5`
+- `C.5`
+- `C.5.4`
+- `D.10.2.2`
+- `D.10.2.2a`
+- `D.10.2.2b`
+- `D.10.6`
+- `D.10.7`
+- `D.10.7.1.r`
+- `D.10.7.1.r.1a`
+- `D.10.7.1.r.1b`
+- `D.10.8.r.2a`
+- `D.10.8.r.3a`
+- `D.10.8.r.6a`
+- `D.10.8.r.6b`
+- `D.10.8.r.7a`
+- `D.2`
+- `D.2.2.1a`
+- `D.2.2.1b`
+- `D.2.2a`
+- `D.2.2b`
+- `D.7.1`
+- `D.7.1.r.1a`
+- `D.7.1.r.1b`
+- `D.8`
+- `D.8.r.1`
+- `D.8.r.2a`
+- `D.8.r.3a`
+- `D.8.r.6a`
+- `D.8.r.6b`
+- `D.8.r.7a`
+- `D.8.r.7b`
+- `D.9.2.r.1a`
+- `D.9.2.r.1b`
+- `D.9.2.r.2`
+- `D.9.3`
+- `D.9.4.r`
+- `D.9.4.r.1a`
+- `D.9.4.r.1b`
+- `D.9.4.r.2`
+- `E.i.2.1a`
+- `E.i.2.1b`
+- `E.i.3`
+- `E.i.3.2a`
+- `E.i.3.2b`
+- `E.i.3.2c`
+- `E.i.3.2d`
+- `E.i.3.2e`
+- `E.i.3.2f`
+- `E.i.6a`
+- `E.i.6b`
+- `F.r.1`
+- `F.r.2.1`
+- `F.r.2.2a`
+- `F.r.2.2b`
+- `F.r.3.1`
+- `F.r.3.2`
+- `F.r.3.3`
+- `F.r.3.4`
+- `G.k.2.1`
+- `G.k.2.1.1a`
+- `G.k.2.1.2a`
+- `G.k.2.3.r.1`
+- `G.k.2.3.r.2a`
+- `G.k.2.3.r.3b`
+- `G.k.3.2`
+- `G.k.4.r.10.2a`
+- `G.k.4.r.11.2a`
+- `G.k.4.r.1b`
+- `G.k.4.r.3`
+- `G.k.4.r.6a`
+- `G.k.4.r.6b`
+- `G.k.4.r.9.2a`
+- `G.k.5a`
+- `G.k.6a`
+- `G.k.6b`
+- `G.k.7.r.2a`
+- `G.k.7.r.2b`
+- `G.k.9.i.3.1a`
+- `G.k.9.i.3.1b`
+- `G.k.9.i.3.2a`
+- `G.k.9.i.3.2b`
+- `H.3.r`
+- `H.3.r.1a`
+- `H.3.r.1b`
+- `H.5`
+- `H.5.r.1b`
+- `N.1`
+- `N.1.1`
+- `N.1.2`
+- `N.1.3`
+- `N.1.5`
+- `N.2.r`
+- `N.2.r.1`
+- `N.2.r.2`
+- `N.2.r.3`
+- `N.2.r.4`
+

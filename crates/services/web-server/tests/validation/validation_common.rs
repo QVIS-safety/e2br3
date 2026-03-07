@@ -431,6 +431,121 @@ pub async fn update_patient(
 	Ok(())
 }
 
+pub async fn create_past_drug_history(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	sequence_number: i32,
+	drug_name: Option<&str>,
+	mpid: Option<&str>,
+	mpid_version: Option<&str>,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"sequence_number": sequence_number,
+			"drug_name": drug_name,
+			"mpid": mpid,
+			"mpid_version": mpid_version
+		}
+	});
+	let (status, value) = post_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/patient/past-drugs"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create past-drug-history failed: status={status} body={value}"
+		)
+		.into());
+	}
+	extract_id(&value)
+}
+
+pub async fn create_parent_information(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	sex: Option<&str>,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"sex": sex,
+			"medical_history_text": null
+		}
+	});
+	let (status, value) = post_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/patient/parents"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create parent-information failed: status={status} body={value}"
+		)
+		.into());
+	}
+	extract_id(&value)
+}
+
+pub async fn create_parent_past_drug_history(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	parent_id: Uuid,
+	sequence_number: i32,
+	drug_name: Option<&str>,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"sequence_number": sequence_number,
+			"drug_name": drug_name
+		}
+	});
+	let (status, value) = post_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/patient/parent/{parent_id}/past-drugs"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create parent-past-drug-history failed: status={status} body={value}"
+		)
+		.into());
+	}
+	extract_id(&value)
+}
+
+pub async fn update_parent_past_drug_history(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	parent_id: Uuid,
+	id: Uuid,
+	body: Value,
+) -> Result<()> {
+	let (status, value) = put_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/patient/parent/{parent_id}/past-drugs/{id}"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update parent-past-drug-history failed: status={status} body={value}"
+		)
+		.into());
+	}
+	Ok(())
+}
+
 pub async fn create_reaction(
 	app: &Router,
 	cookie: &str,
@@ -666,6 +781,7 @@ pub async fn create_relatedness_assessment(
 	source_of_assessment: Option<&str>,
 	method_of_assessment: Option<&str>,
 	result_of_assessment: Option<&str>,
+	result_of_assessment_kr2: Option<&str>,
 ) -> Result<Uuid> {
 	let body = json!({
 		"data": {
@@ -673,7 +789,8 @@ pub async fn create_relatedness_assessment(
 			"sequence_number": sequence_number,
 			"source_of_assessment": source_of_assessment,
 			"method_of_assessment": method_of_assessment,
-			"result_of_assessment": result_of_assessment
+			"result_of_assessment": result_of_assessment,
+			"result_of_assessment_kr2": result_of_assessment_kr2
 		}
 	});
 	let (status, value) = post_json(

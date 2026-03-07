@@ -38,3 +38,28 @@ The importer classifies row profile from:
 
 This keeps FDA-specific rows (`profile=fda`) separate from core ICH rows (`profile=ich`) in one normalized format.
 
+## MFDS Coverage Audit
+
+- Script: `scripts/rules/audit_mfds_rule_coverage.py`
+- Inputs:
+  - MFDS core workbook (`Core Data Elements and Business Rules.xlsx`)
+  - MFDS individual validation workbook (`Individual item validation rules.xlsx`)
+- Output:
+  - JSON coverage report
+  - Markdown summary
+
+### Usage
+
+```bash
+python3 scripts/rules/audit_mfds_rule_coverage.py \
+  --core-xlsx /path/to/core_rules.xlsx \
+  --individual-xlsx /path/to/individual_rules.xlsx \
+  --out-json docs/generated/mfds_rule_coverage_audit.json \
+  --out-md docs/generated/mfds_rule_coverage_audit.md
+```
+
+### Notes
+
+- The audit normalizes known MFDS element-id aliases that are semantically the same:
+  - `G.k.2.3.r.KR.1a` == `G.k.2.3.r.1.KR.1a`
+  - `G.k.2.3.r.KR.1b` == `G.k.2.3.r.1.KR.1b`

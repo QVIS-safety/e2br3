@@ -325,6 +325,8 @@ CREATE TABLE relatedness_assessments (
 
     -- G.k.9.i.2.r.3 - Result of Assessment
     result_of_assessment VARCHAR(50),
+    -- MFDS.G.k.9.i.2.r.3.KR.2 - Additional KR assessment result text
+    result_of_assessment_kr2 VARCHAR(2000),
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

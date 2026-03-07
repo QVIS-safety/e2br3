@@ -1,0 +1,17 @@
+{
+  "generated_at_utc": "2026-03-07T08:00:07Z",
+  "snapshot_source_file": "/tmp/fda_core_regional_rules.xlsx",
+  "snapshot_fda_row_count": 83,
+  "snapshot_fda_unique_tag_count": 43,
+  "snapshot_fda_rw_unique_tag_count": 11,
+  "catalog_fda_rule_count": 18,
+  "rw_tags_mapped_count": 11,
+  "rw_tags_unmapped_count": 0,
+  "rw_tags_unmapped": [],
+  "catalog_fda_rules_not_backed_by_snapshot_tag_prefix_count": 3,
+  "catalog_fda_rules_not_backed_by_snapshot_tag_prefix": [
+    "FDA.C.2.R.2.EMAIL.REQUIRED",
+    "FDA.G.K.12.REQUIRED",
+    "FDA.N.1.4.REQUIRED"
+  ]
+}

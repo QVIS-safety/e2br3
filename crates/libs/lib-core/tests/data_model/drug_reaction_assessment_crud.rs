@@ -84,6 +84,7 @@ async fn test_drug_reaction_assessment_crud() -> Result<()> {
 		source_of_assessment: None,
 		method_of_assessment: None,
 		result_of_assessment: None,
+		result_of_assessment_kr2: None,
 	};
 	let related_id = RelatednessAssessmentBmc::create(&ctx, &mm, related_c).await?;
 	let related = RelatednessAssessmentBmc::get(&ctx, &mm, related_id).await?;
@@ -93,6 +94,7 @@ async fn test_drug_reaction_assessment_crud() -> Result<()> {
 		source_of_assessment: Some("Reporter".to_string()),
 		method_of_assessment: Some("Expert judgement".to_string()),
 		result_of_assessment: Some("Related".to_string()),
+		result_of_assessment_kr2: None,
 	};
 	RelatednessAssessmentBmc::update(&ctx, &mm, related_id, related_u).await?;
 	let related = RelatednessAssessmentBmc::get(&ctx, &mm, related_id).await?;

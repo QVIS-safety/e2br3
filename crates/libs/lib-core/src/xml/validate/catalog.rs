@@ -314,11 +314,59 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 	},
 	// MFDS profile overlays
 	ValidationRuleMetadata {
+		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "reporter",
+		blocking: true,
+		message:
+			"MFDS requires [C.2.r.4.KR.1] when reporter qualification [C.2.r.4] is other health professional (3).",
+	},
+	ValidationRuleMetadata {
 		code: "MFDS.C.3.1.KR.1.REQUIRED",
 		profile: ValidationProfile::Mfds,
 		section: "case-identification",
 		blocking: true,
 		message: "MFDS KR profile does not allow sender type 3.",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.C.5.4.KR.1.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "study",
+		blocking: true,
+		message:
+			"MFDS requires [C.5.4.KR.1] when study type [C.5.4] is other studies (3).",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "patient",
+		blocking: false,
+		message:
+			"MFDS requires past drug code [D.8.r.1.KR.1b] for KR/FR receiver profiles.",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "patient",
+		blocking: false,
+		message:
+			"MFDS requires past drug code version [D.8.r.1.KR.1a] for FR when [D.8.r.1.KR.1b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.D.10.8.r.1.KR.1b.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "patient",
+		blocking: false,
+		message:
+			"MFDS requires parent past drug code [D.10.8.r.1.KR.1b] for KR/FR receiver profiles.",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.D.10.8.r.1.KR.1a.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "patient",
+		blocking: false,
+		message:
+			"MFDS requires parent past drug code version [D.10.8.r.1.KR.1a] for FR when [D.10.8.r.1.KR.1b] is provided.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
@@ -344,6 +392,38 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 			"MFDS domestic cases should provide KR ingredient coding for each active substance.",
 	},
 	ValidationRuleMetadata {
+		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "drugs",
+		blocking: true,
+		message:
+			"MFDS requires product code [G.k.2.1.KR.1b] for KR/FR receiver profiles.",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.G.k.2.1.KR.1a.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "drugs",
+		blocking: false,
+		message:
+			"MFDS requires product code version [G.k.2.1.KR.1a] for FR when product code is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "drugs",
+		blocking: false,
+		message:
+			"MFDS requires substance code [G.k.2.3.r.1.KR.1b] for KR/FR when product code is not provided.",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "drugs",
+		blocking: false,
+		message:
+			"MFDS requires substance code version [G.k.2.3.r.1.KR.1a] for FR when substance code is provided.",
+	},
+	ValidationRuleMetadata {
 		code: "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
 		profile: ValidationProfile::Mfds,
 		section: "drugs",
@@ -357,7 +437,15 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		section: "drugs",
 		blocking: true,
 		message:
-			"MFDS requires KR result of assessment when source of assessment is present.",
+			"MFDS requires WHO-UMC result when source is present and method is WHO-UMC (1).",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "drugs",
+		blocking: false,
+		message:
+			"MFDS requires KRCT result when source is present, method is KRCT (2), and report is clinical (CT/CU).",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.9.i.2.r.1.REQUIRED",
@@ -1126,10 +1214,23 @@ pub enum RuleCondition {
 	FdaGk10aRequired,
 	FdaPremarketReportTypeMustBeTwo,
 	MfdsRelatednessSourcePresent,
+	MfdsRelatednessMethodRequiredContext,
+	MfdsRelatednessKr1RequiredContext,
+	MfdsRelatednessKr2RequiredContext,
 	MfdsRelatednessMethodOrResultPresent,
+	MfdsProductCodeRequiredContext,
+	MfdsProductVersionRequiredContext,
+	MfdsSubstanceCodeRequiredContext,
+	MfdsSubstanceVersionRequiredContext,
+	MfdsPastDrugCodeRequiredContext,
+	MfdsPastDrugVersionRequiredContext,
+	MfdsParentPastDrugCodeRequiredContext,
+	MfdsParentPastDrugVersionRequiredContext,
 	MfdsDrugDomesticKr,
 	MfdsDrugForeignNonKr,
 	MfdsSenderTypeDisallowed,
+	MfdsPrimarySourceQualificationIsThree,
+	MfdsStudyTypeReactionIsThree,
 	IchTestPayloadPresent,
 }
 
@@ -1161,12 +1262,51 @@ impl RuleCondition {
 				"fda_premarket_report_type_must_be_two"
 			}
 			Self::MfdsRelatednessSourcePresent => "mfds_relatedness_source_present",
+			Self::MfdsRelatednessMethodRequiredContext => {
+				"mfds_relatedness_method_required_context"
+			}
+			Self::MfdsRelatednessKr1RequiredContext => {
+				"mfds_relatedness_kr1_required_context"
+			}
+			Self::MfdsRelatednessKr2RequiredContext => {
+				"mfds_relatedness_kr2_required_context"
+			}
 			Self::MfdsRelatednessMethodOrResultPresent => {
 				"mfds_relatedness_method_or_result_present"
+			}
+			Self::MfdsProductCodeRequiredContext => {
+				"mfds_product_code_required_context"
+			}
+			Self::MfdsProductVersionRequiredContext => {
+				"mfds_product_version_required_context"
+			}
+			Self::MfdsSubstanceCodeRequiredContext => {
+				"mfds_substance_code_required_context"
+			}
+			Self::MfdsSubstanceVersionRequiredContext => {
+				"mfds_substance_version_required_context"
+			}
+			Self::MfdsPastDrugCodeRequiredContext => {
+				"mfds_past_drug_code_required_context"
+			}
+			Self::MfdsPastDrugVersionRequiredContext => {
+				"mfds_past_drug_version_required_context"
+			}
+			Self::MfdsParentPastDrugCodeRequiredContext => {
+				"mfds_parent_past_drug_code_required_context"
+			}
+			Self::MfdsParentPastDrugVersionRequiredContext => {
+				"mfds_parent_past_drug_version_required_context"
 			}
 			Self::MfdsDrugDomesticKr => "mfds_drug_domestic_kr",
 			Self::MfdsDrugForeignNonKr => "mfds_drug_foreign_non_kr",
 			Self::MfdsSenderTypeDisallowed => "mfds_sender_type_disallowed",
+			Self::MfdsPrimarySourceQualificationIsThree => {
+				"mfds_primary_source_qualification_is_three"
+			}
+			Self::MfdsStudyTypeReactionIsThree => {
+				"mfds_study_type_reaction_is_three"
+			}
 			Self::IchTestPayloadPresent => "ich_test_payload_present",
 		}
 	}
@@ -1193,11 +1333,24 @@ pub struct RuleFacts {
 	pub fda_msg_receiver_is_premarket: Option<bool>,
 	pub fda_study_type_is_1_2_3: Option<bool>,
 	pub mfds_relatedness_source_present: Option<bool>,
+	pub mfds_relatedness_method_required_context: Option<bool>,
+	pub mfds_relatedness_kr1_required_context: Option<bool>,
+	pub mfds_relatedness_kr2_required_context: Option<bool>,
 	pub mfds_relatedness_method_present: Option<bool>,
 	pub mfds_relatedness_result_present: Option<bool>,
+	pub mfds_product_code_required_context: Option<bool>,
+	pub mfds_product_version_required_context: Option<bool>,
+	pub mfds_substance_code_required_context: Option<bool>,
+	pub mfds_substance_version_required_context: Option<bool>,
+	pub mfds_past_drug_code_required_context: Option<bool>,
+	pub mfds_past_drug_version_required_context: Option<bool>,
+	pub mfds_parent_past_drug_code_required_context: Option<bool>,
+	pub mfds_parent_past_drug_version_required_context: Option<bool>,
 	pub mfds_drug_domestic_kr: Option<bool>,
 	pub mfds_drug_foreign_non_kr: Option<bool>,
 	pub mfds_sender_type_disallowed: Option<bool>,
+	pub mfds_primary_source_qualification_is_three: Option<bool>,
+	pub mfds_study_type_reaction_is_three: Option<bool>,
 	pub ich_test_payload_present: Option<bool>,
 }
 
@@ -1287,16 +1440,60 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 		condition: RuleCondition::FdaReactionOtherMedicallyImportantTrue,
 	},
 	ConditionBinding {
+		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
+		condition: RuleCondition::MfdsPrimarySourceQualificationIsThree,
+	},
+	ConditionBinding {
 		code: "MFDS.C.3.1.KR.1.REQUIRED",
 		condition: RuleCondition::MfdsSenderTypeDisallowed,
 	},
 	ConditionBinding {
+		code: "MFDS.C.5.4.KR.1.REQUIRED",
+		condition: RuleCondition::MfdsStudyTypeReactionIsThree,
+	},
+	ConditionBinding {
+		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
+		condition: RuleCondition::MfdsPastDrugCodeRequiredContext,
+	},
+	ConditionBinding {
+		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
+		condition: RuleCondition::MfdsPastDrugVersionRequiredContext,
+	},
+	ConditionBinding {
+		code: "MFDS.D.10.8.r.1.KR.1b.REQUIRED",
+		condition: RuleCondition::MfdsParentPastDrugCodeRequiredContext,
+	},
+	ConditionBinding {
+		code: "MFDS.D.10.8.r.1.KR.1a.REQUIRED",
+		condition: RuleCondition::MfdsParentPastDrugVersionRequiredContext,
+	},
+	ConditionBinding {
+		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
+		condition: RuleCondition::MfdsProductCodeRequiredContext,
+	},
+	ConditionBinding {
+		code: "MFDS.G.k.2.1.KR.1a.REQUIRED",
+		condition: RuleCondition::MfdsProductVersionRequiredContext,
+	},
+	ConditionBinding {
+		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+		condition: RuleCondition::MfdsSubstanceCodeRequiredContext,
+	},
+	ConditionBinding {
+		code: "MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
+		condition: RuleCondition::MfdsSubstanceVersionRequiredContext,
+	},
+	ConditionBinding {
 		code: "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
-		condition: RuleCondition::MfdsRelatednessSourcePresent,
+		condition: RuleCondition::MfdsRelatednessMethodRequiredContext,
 	},
 	ConditionBinding {
 		code: "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-		condition: RuleCondition::MfdsRelatednessSourcePresent,
+		condition: RuleCondition::MfdsRelatednessKr1RequiredContext,
+	},
+	ConditionBinding {
+		code: "MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
+		condition: RuleCondition::MfdsRelatednessKr2RequiredContext,
 	},
 	ConditionBinding {
 		code: "MFDS.G.k.9.i.2.r.1.REQUIRED",
@@ -1444,6 +1641,10 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::IchC13ConditionalMustBeTwo,
 	},
 	ValuePolicyBinding {
+		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
 		code: "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
@@ -1456,6 +1657,38 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
+		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.D.10.8.r.1.KR.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.D.10.8.r.1.KR.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.G.k.2.1.KR.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
 		code: "MFDS.G.k.9.i.2.r.1.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
@@ -1465,6 +1698,14 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.C.5.4.KR.1.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 ];
@@ -1789,10 +2030,43 @@ pub fn is_rule_condition_satisfied(code: &str, facts: RuleFacts) -> bool {
 		RuleCondition::MfdsRelatednessSourcePresent => {
 			facts.mfds_relatedness_source_present.unwrap_or(false)
 		}
+		RuleCondition::MfdsRelatednessMethodRequiredContext => facts
+			.mfds_relatedness_method_required_context
+			.unwrap_or(false),
+		RuleCondition::MfdsRelatednessKr1RequiredContext => {
+			facts.mfds_relatedness_kr1_required_context.unwrap_or(false)
+		}
+		RuleCondition::MfdsRelatednessKr2RequiredContext => {
+			facts.mfds_relatedness_kr2_required_context.unwrap_or(false)
+		}
 		RuleCondition::MfdsRelatednessMethodOrResultPresent => {
 			facts.mfds_relatedness_method_present.unwrap_or(false)
 				|| facts.mfds_relatedness_result_present.unwrap_or(false)
 		}
+		RuleCondition::MfdsProductCodeRequiredContext => {
+			facts.mfds_product_code_required_context.unwrap_or(false)
+		}
+		RuleCondition::MfdsProductVersionRequiredContext => {
+			facts.mfds_product_version_required_context.unwrap_or(false)
+		}
+		RuleCondition::MfdsSubstanceCodeRequiredContext => {
+			facts.mfds_substance_code_required_context.unwrap_or(false)
+		}
+		RuleCondition::MfdsSubstanceVersionRequiredContext => facts
+			.mfds_substance_version_required_context
+			.unwrap_or(false),
+		RuleCondition::MfdsPastDrugCodeRequiredContext => {
+			facts.mfds_past_drug_code_required_context.unwrap_or(false)
+		}
+		RuleCondition::MfdsPastDrugVersionRequiredContext => facts
+			.mfds_past_drug_version_required_context
+			.unwrap_or(false),
+		RuleCondition::MfdsParentPastDrugCodeRequiredContext => facts
+			.mfds_parent_past_drug_code_required_context
+			.unwrap_or(false),
+		RuleCondition::MfdsParentPastDrugVersionRequiredContext => facts
+			.mfds_parent_past_drug_version_required_context
+			.unwrap_or(false),
 		RuleCondition::MfdsDrugDomesticKr => {
 			facts.mfds_drug_domestic_kr.unwrap_or(false)
 		}
@@ -1801,6 +2075,12 @@ pub fn is_rule_condition_satisfied(code: &str, facts: RuleFacts) -> bool {
 		}
 		RuleCondition::MfdsSenderTypeDisallowed => {
 			facts.mfds_sender_type_disallowed.unwrap_or(false)
+		}
+		RuleCondition::MfdsPrimarySourceQualificationIsThree => facts
+			.mfds_primary_source_qualification_is_three
+			.unwrap_or(false),
+		RuleCondition::MfdsStudyTypeReactionIsThree => {
+			facts.mfds_study_type_reaction_is_three.unwrap_or(false)
 		}
 		RuleCondition::IchTestPayloadPresent => {
 			facts.ich_test_payload_present.unwrap_or(false)
@@ -2201,6 +2481,34 @@ mod tests {
 			RuleFacts {
 				mfds_relatedness_method_present: Some(true),
 				mfds_relatedness_result_present: Some(false),
+				..RuleFacts::default()
+			}
+		));
+		assert!(is_rule_condition_satisfied(
+			"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
+			RuleFacts {
+				mfds_relatedness_method_required_context: Some(true),
+				..RuleFacts::default()
+			}
+		));
+		assert!(is_rule_condition_satisfied(
+			"MFDS.G.k.2.1.KR.1b.REQUIRED",
+			RuleFacts {
+				mfds_product_code_required_context: Some(true),
+				..RuleFacts::default()
+			}
+		));
+		assert!(is_rule_condition_satisfied(
+			"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
+			RuleFacts {
+				mfds_relatedness_kr1_required_context: Some(true),
+				..RuleFacts::default()
+			}
+		));
+		assert!(!is_rule_condition_satisfied(
+			"MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
+			RuleFacts {
+				mfds_relatedness_kr2_required_context: Some(false),
 				..RuleFacts::default()
 			}
 		));

@@ -176,6 +176,7 @@ async fn test_safety_report_submodels_crud() -> Result<()> {
 		case_id,
 		sequence_number: 1,
 		qualification: Some("1".to_string()),
+		qualification_kr1: None,
 	};
 	let primary_id = PrimarySourceBmc::create(&ctx, &mm, primary_c).await?;
 	let primary = PrimarySourceBmc::get(&ctx, &mm, primary_id).await?;
@@ -196,6 +197,7 @@ async fn test_safety_report_submodels_crud() -> Result<()> {
 		country_code: None,
 		email: None,
 		qualification: None,
+		qualification_kr1: None,
 		primary_source_regulatory: Some("1".to_string()),
 	};
 	PrimarySourceBmc::update(&ctx, &mm, primary_id, primary_u).await?;
@@ -231,6 +233,7 @@ async fn test_safety_report_submodels_crud() -> Result<()> {
 		case_id,
 		study_name: Some("Study A".to_string()),
 		sponsor_study_number: Some("SSN-1".to_string()),
+		study_type_reaction_kr1: None,
 	};
 	let study_id = StudyInformationBmc::create(&ctx, &mm, study_c).await?;
 	let study = StudyInformationBmc::get(&ctx, &mm, study_id).await?;
@@ -240,6 +243,7 @@ async fn test_safety_report_submodels_crud() -> Result<()> {
 		study_name: Some("Study B".to_string()),
 		sponsor_study_number: None,
 		study_type_reaction: Some("01".to_string()),
+		study_type_reaction_kr1: None,
 	};
 	StudyInformationBmc::update(&ctx, &mm, study_id, study_u).await?;
 	let study = StudyInformationBmc::get(&ctx, &mm, study_id).await?;

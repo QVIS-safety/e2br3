@@ -2,11 +2,13 @@ use super::validation_common::{
 	assert_has_code, create_active_substance, create_drug,
 	create_drug_device_characteristic, create_drug_reaction_assessment,
 	create_message_header, create_message_header_with_receiver, create_narrative,
-	create_patient, create_primary_source, create_reaction,
-	create_relatedness_assessment, create_safety_report, create_safety_report_with,
-	create_sender, create_study_information, create_test_result, db_exec_case_sql,
-	issue_codes, setup_case, update_drug, update_patient, update_primary_source,
-	update_reaction, update_safety_report, validate_case,
+	create_parent_information, create_parent_past_drug_history,
+	create_past_drug_history, create_patient, create_primary_source,
+	create_reaction, create_relatedness_assessment, create_safety_report,
+	create_safety_report_with, create_sender, create_study_information,
+	create_test_result, db_exec_case_sql, issue_codes, setup_case, update_drug,
+	update_parent_past_drug_history, update_patient, update_primary_source,
+	update_reaction, update_safety_report, update_study_information, validate_case,
 };
 use crate::common::Result;
 use lib_core::xml::validate::rule_test_matrix::CASE_RULE_TEST_MATRIX;
@@ -508,6 +510,343 @@ async fn assert_rule_violation_for_code(code: &str) -> Result<()> {
 			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "3", "Sender Org")
 				.await?;
 		}
+		"MFDS.C.2.r.4.KR.1.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZMFDS"),
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("3"))
+				.await?;
+		}
+		"MFDS.C.5.4.KR.1.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZMFDS"),
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			let study_id = create_study_information(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("Study"),
+				Some("S-1"),
+			)
+			.await?;
+			update_study_information(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				study_id,
+				json!({"data": { "study_type_reaction": "3", "study_type_reaction_kr1": null }}),
+			)
+			.await?;
+		}
+		"MFDS.D.8.r.1.KR.1b.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZMFDS"),
+				"KR",
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			let _ = create_past_drug_history(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				1,
+				Some("Past Drug"),
+				None,
+				None,
+			)
+			.await?;
+		}
+		"MFDS.D.8.r.1.KR.1a.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZMFDS"),
+				"FR",
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			let _ = create_past_drug_history(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				1,
+				Some("Past Drug"),
+				Some("WHOMPID-001"),
+				None,
+			)
+			.await?;
+		}
+		"MFDS.D.10.8.r.1.KR.1b.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZMFDS"),
+				"KR",
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			let parent_id = create_parent_information(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("2"),
+			)
+			.await?;
+			let _ = create_parent_past_drug_history(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				parent_id,
+				1,
+				Some("Parent Past Drug"),
+			)
+			.await?;
+		}
+		"MFDS.D.10.8.r.1.KR.1a.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZMFDS"),
+				"FR",
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			let parent_id = create_parent_information(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("2"),
+			)
+			.await?;
+			let parent_past_id = create_parent_past_drug_history(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				parent_id,
+				1,
+				Some("Parent Past Drug"),
+			)
+			.await?;
+			update_parent_past_drug_history(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				parent_id,
+				parent_past_id,
+				json!({"data": { "mpid": "WHOMPID-001", "mpid_version": null }}),
+			)
+			.await?;
+		}
+		"MFDS.G.k.2.1.KR.1b.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZMFDS"),
+				"KR",
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache")
+				.await?;
+			let _ =
+				create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A")
+					.await?;
+		}
+		"MFDS.G.k.2.1.KR.1a.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZMFDS"),
+				"FR",
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache")
+				.await?;
+			let drug_id =
+				create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A")
+					.await?;
+			update_drug(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				drug_id,
+				json!({"data": { "mpid": "WHOMPID-001", "mpid_version": null }}),
+			)
+			.await?;
+		}
+		"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZMFDS"),
+				"KR",
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache")
+				.await?;
+			let drug_id =
+				create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A")
+					.await?;
+			let _ = create_active_substance(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				drug_id,
+				1,
+				Some("Substance"),
+				None,
+			)
+			.await?;
+		}
+		"MFDS.G.k.2.3.r.1.KR.1a.REQUIRED" => {
+			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+			create_message_header_with_receiver(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("ZZMFDS"),
+				"FR",
+			)
+			.await?;
+			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
+				.await?;
+			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+				.await?;
+			create_patient(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				Some("AB"),
+				Some("1"),
+			)
+			.await?;
+			create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache")
+				.await?;
+			let drug_id =
+				create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A")
+					.await?;
+			let _ = create_active_substance(
+				&ctx.app,
+				&ctx.cookie,
+				ctx.case_id,
+				drug_id,
+				1,
+				Some("Substance"),
+				Some("CAS-001"),
+			)
+			.await?;
+		}
 		"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED" => {
 			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 			create_message_header(
@@ -625,15 +964,36 @@ async fn assert_rule_violation_for_code(code: &str) -> Result<()> {
 		}
 		"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED"
 		| "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED"
+		| "MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED"
 		| "MFDS.G.k.9.i.2.r.1.REQUIRED" => {
-			create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
-			create_message_header(
-				&ctx.app,
-				&ctx.cookie,
-				ctx.case_id,
-				Some("ZZMFDS"),
-			)
-			.await?;
+			if code == "MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED" {
+				create_safety_report_with(
+					&ctx.app,
+					&ctx.cookie,
+					ctx.case_id,
+					"2",
+					false,
+				)
+				.await?;
+				create_message_header_with_receiver(
+					&ctx.app,
+					&ctx.cookie,
+					ctx.case_id,
+					Some("ZZMFDS"),
+					"CT",
+				)
+				.await?;
+			} else {
+				create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false)
+					.await?;
+				create_message_header(
+					&ctx.app,
+					&ctx.cookie,
+					ctx.case_id,
+					Some("ZZMFDS"),
+				)
+				.await?;
+			}
 			create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org")
 				.await?;
 			create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
@@ -672,6 +1032,7 @@ async fn assert_rule_violation_for_code(code: &str) -> Result<()> {
 						Some("1"),
 						None,
 						Some("1"),
+						None,
 					)
 					.await?;
 				}
@@ -686,6 +1047,22 @@ async fn assert_rule_violation_for_code(code: &str) -> Result<()> {
 						Some("1"),
 						Some("1"),
 						None,
+						None,
+					)
+					.await?;
+				}
+				"MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED" => {
+					let _ = create_relatedness_assessment(
+						&ctx.app,
+						&ctx.cookie,
+						ctx.case_id,
+						drug_id,
+						assessment_id,
+						1,
+						Some("1"),
+						Some("2"),
+						None,
+						None,
 					)
 					.await?;
 				}
@@ -699,6 +1076,7 @@ async fn assert_rule_violation_for_code(code: &str) -> Result<()> {
 						1,
 						None,
 						Some("1"),
+						None,
 						None,
 					)
 					.await?;
@@ -818,7 +1196,17 @@ async fn build_valid_mfds_case(
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZMFDS"))
 		.await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
-	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	let primary_id =
+		create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1"))
+			.await?;
+	update_primary_source(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		primary_id,
+		json!({"data": { "qualification_kr1": "1" }}),
+	)
+	.await?;
 	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
 		.await?;
 	let reaction_id =
@@ -833,6 +1221,22 @@ async fn build_valid_mfds_case(
 	.await?;
 	create_test_result(&ctx.app, &ctx.cookie, ctx.case_id, 1, "LFT").await?;
 	create_narrative(&ctx.app, &ctx.cookie, ctx.case_id, "valid narrative").await?;
+	let study_id = create_study_information(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		Some("Study"),
+		Some("S-1"),
+	)
+	.await?;
+	update_study_information(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		study_id,
+		json!({"data": { "study_type_reaction": "3", "study_type_reaction_kr1": "1" }}),
+	)
+	.await?;
 
 	let domestic_drug =
 		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug KR").await?;
@@ -884,6 +1288,7 @@ async fn build_valid_mfds_case(
 		Some("1"),
 		Some("1"),
 		Some("1"),
+		Some("Narrative justification"),
 	)
 	.await?;
 

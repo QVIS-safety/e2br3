@@ -88,6 +88,8 @@ pub struct RelatednessAssessment {
 
 	// G.k.9.i.2.r.3 - Result of Assessment
 	pub result_of_assessment: Option<String>,
+	// MFDS.G.k.9.i.2.r.3.KR.2 - Additional KR assessment result text
+	pub result_of_assessment_kr2: Option<String>,
 
 	// Timestamps
 	pub created_at: OffsetDateTime,
@@ -103,6 +105,7 @@ pub struct RelatednessAssessmentForCreate {
 	pub source_of_assessment: Option<String>,
 	pub method_of_assessment: Option<String>,
 	pub result_of_assessment: Option<String>,
+	pub result_of_assessment_kr2: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -110,6 +113,7 @@ pub struct RelatednessAssessmentForUpdate {
 	pub source_of_assessment: Option<String>,
 	pub method_of_assessment: Option<String>,
 	pub result_of_assessment: Option<String>,
+	pub result_of_assessment_kr2: Option<String>,
 }
 
 #[derive(FilterNodes, Deserialize, Default)]

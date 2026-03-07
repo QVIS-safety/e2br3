@@ -199,6 +199,8 @@ pub struct PrimarySource {
 
 	// C.2.r.4 - Qualification (MANDATORY within primary source)
 	pub qualification: Option<String>,
+	// MFDS.C.2.r.4.KR.1 - Other health professional type
+	pub qualification_kr1: Option<String>,
 
 	// C.2.r.5 - Primary Source for Regulatory Purposes (MANDATORY)
 	pub primary_source_regulatory: Option<String>,
@@ -215,6 +217,7 @@ pub struct PrimarySourceForCreate {
 	pub case_id: Uuid,
 	pub sequence_number: i32,
 	pub qualification: Option<String>,
+	pub qualification_kr1: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -233,6 +236,7 @@ pub struct PrimarySourceForUpdate {
 	pub country_code: Option<String>,
 	pub email: Option<String>,
 	pub qualification: Option<String>,
+	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 }
 
@@ -344,6 +348,8 @@ pub struct StudyInformation {
 	pub study_name: Option<String>,
 	pub sponsor_study_number: Option<String>,
 	pub study_type_reaction: Option<String>,
+	// MFDS.C.5.4.KR.1 - Other studies type
+	pub study_type_reaction_kr1: Option<String>,
 
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -356,6 +362,7 @@ pub struct StudyInformationForCreate {
 	pub case_id: Uuid,
 	pub study_name: Option<String>,
 	pub sponsor_study_number: Option<String>,
+	pub study_type_reaction_kr1: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -363,6 +370,7 @@ pub struct StudyInformationForUpdate {
 	pub study_name: Option<String>,
 	pub sponsor_study_number: Option<String>,
 	pub study_type_reaction: Option<String>,
+	pub study_type_reaction_kr1: Option<String>,
 }
 
 #[derive(FilterNodes, Deserialize, Default)]

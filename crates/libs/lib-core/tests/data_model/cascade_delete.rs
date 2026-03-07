@@ -562,6 +562,7 @@ async fn test_case_delete_cascades_all_children_comprehensive() -> Result<()> {
 		case_id,
 		sequence_number: 1,
 		qualification: Some("1".to_string()),
+		qualification_kr1: None,
 	};
 	PrimarySourceBmc::create(&ctx, &mm, primary_c).await?;
 

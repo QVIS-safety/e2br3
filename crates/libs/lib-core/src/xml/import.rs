@@ -664,6 +664,7 @@ async fn import_primary_sources(
 				case_id,
 				sequence_number: 1,
 				qualification: primary.qualification.clone(),
+				qualification_kr1: None,
 			},
 		)
 		.await?
@@ -688,6 +689,7 @@ async fn import_primary_sources(
 			country_code: primary.country_code,
 			email: primary.email,
 			qualification: primary.qualification,
+			qualification_kr1: None,
 			primary_source_regulatory: primary.primary_source_regulatory,
 		},
 	)
@@ -927,6 +929,7 @@ async fn import_study_information(
 				case_id,
 				study_name: study.study_name.clone(),
 				sponsor_study_number: study.sponsor_study_number.clone(),
+				study_type_reaction_kr1: None,
 			},
 		)
 		.await?
@@ -940,6 +943,7 @@ async fn import_study_information(
 			study_name: study.study_name,
 			sponsor_study_number: study.sponsor_study_number,
 			study_type_reaction: study.study_type_reaction,
+			study_type_reaction_kr1: None,
 		},
 	)
 	.await;
@@ -4710,6 +4714,7 @@ async fn import_drug_reaction_assessments(
 					source_of_assessment: rel.source_of_assessment,
 					method_of_assessment: rel.method_of_assessment,
 					result_of_assessment: rel.result_of_assessment,
+					result_of_assessment_kr2: None,
 				},
 			)
 			.await;
@@ -4723,6 +4728,7 @@ async fn import_drug_reaction_assessments(
 					source_of_assessment: rel.source_of_assessment.clone(),
 					method_of_assessment: rel.method_of_assessment.clone(),
 					result_of_assessment: rel.result_of_assessment.clone(),
+					result_of_assessment_kr2: None,
 				},
 			)
 			.await?;
@@ -4734,6 +4740,7 @@ async fn import_drug_reaction_assessments(
 					source_of_assessment: rel.source_of_assessment,
 					method_of_assessment: rel.method_of_assessment,
 					result_of_assessment: rel.result_of_assessment,
+					result_of_assessment_kr2: None,
 				},
 			)
 			.await;

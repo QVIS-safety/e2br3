@@ -164,6 +164,8 @@ CREATE TABLE study_information (
 
     -- C.5.3 - Study Type Reaction
     study_type_reaction VARCHAR(2),  -- E2B(R3) code list
+    -- MFDS.C.5.4.KR.1 - Other studies type (KR extension)
+    study_type_reaction_kr1 VARCHAR(1) CHECK (study_type_reaction_kr1 IN ('1', '2', '3', '4')),
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -227,6 +229,8 @@ CREATE TABLE primary_sources (
     -- C.2.r.4 - Qualification (MANDATORY within primary source - E2B(R3) codes)
     qualification VARCHAR(1) CHECK (qualification IN ('1', '2', '3', '4', '5')),
     -- 1=Physician, 2=Pharmacist, 3=Other health professional, 4=Lawyer, 5=Consumer
+    -- MFDS.C.2.r.4.KR.1 - Other health professional type (KR extension)
+    qualification_kr1 VARCHAR(1) CHECK (qualification_kr1 IN ('1', '2')),
 
     -- C.2.r.5 - Primary Source for Regulatory Purposes (MANDATORY)
     primary_source_regulatory VARCHAR(1) CHECK (primary_source_regulatory IN ('1', '2', '3')),

@@ -710,8 +710,19 @@ async fn submit_to_gateway(
 				message: format!("failed to initialize AS2 submitter client: {err}"),
 			})?;
 		let callback_url = std::env::var("AS2_ACK_CALLBACK_URL").ok();
-		let resp = client
-			.post(&submit_url)
+		let mut req = client.post(&submit_url);
+		if let Ok(token) = std::env::var("AS2_SUBMITTER_TOKEN")
+			.or_else(|_| std::env::var("AS2_CALLBACK_TOKEN"))
+		{
+			let token = token.trim();
+			if !token.is_empty() {
+				req = req
+					.header("x-api-token", token)
+					.header("x-callback-token", token)
+					.header(AUTHORIZATION, format!("Bearer {token}"));
+			}
+		}
+		let resp = req
 			.json(&json!({
 				"caseId": case_id.to_string(),
 				"authority": authority.as_str(),
