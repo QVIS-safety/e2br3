@@ -15,7 +15,7 @@ use lib_core::model::drug_reaction_assessment::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use uuid::Uuid;
 
@@ -24,11 +24,12 @@ use uuid::Uuid;
 pub async fn create_drug_reaction_assessment(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id)): Path<(Uuid, Uuid)>,
+	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
 	Json(params): Json<ParamsForCreate<DrugReactionAssessmentForCreate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<DrugReactionAssessment>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_REACTION_ASSESSMENT_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest create_drug_reaction_assessment drug_id={}",
 		"HANDLER",
@@ -94,11 +95,12 @@ pub async fn get_drug_reaction_assessment(
 pub async fn update_drug_reaction_assessment(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
 	Json(params): Json<ParamsForUpdate<DrugReactionAssessmentForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<DrugReactionAssessment>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_REACTION_ASSESSMENT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest update_drug_reaction_assessment id={}",
 		"HANDLER",
@@ -117,10 +119,11 @@ pub async fn update_drug_reaction_assessment(
 pub async fn delete_drug_reaction_assessment(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_REACTION_ASSESSMENT_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest delete_drug_reaction_assessment id={}",
 		"HANDLER",

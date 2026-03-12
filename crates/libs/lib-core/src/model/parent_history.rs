@@ -5,6 +5,7 @@ use crate::ctx::Ctx;
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
 use crate::model::modql_utils::uuid_to_sea_value;
+use crate::model::store::set_full_context_dbx_or_rollback;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
@@ -31,12 +32,14 @@ pub struct ParentMedicalHistory {
 
 	// D.10.7.1.r.2 - Start Date
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 
 	// D.10.7.1.r.3 - Continuing
 	pub continuing: Option<bool>,
 
 	// D.10.7.1.r.4 - End Date
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 
 	// D.10.7.1.r.5 - Comments
 	pub comments: Option<String>,
@@ -53,6 +56,8 @@ pub struct ParentMedicalHistoryForCreate {
 	pub parent_id: Uuid,
 	pub sequence_number: i32,
 	pub meddra_code: Option<String>,
+	pub start_date_null_flavor: Option<String>,
+	pub end_date_null_flavor: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -64,12 +69,14 @@ pub struct ParentMedicalHistoryForUpdate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 	pub continuing: Option<bool>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 	pub comments: Option<String>,
 }
 
@@ -91,6 +98,7 @@ pub struct ParentPastDrugHistory {
 
 	// D.10.8.r.1 - Drug Name
 	pub drug_name: Option<String>,
+	pub drug_name_null_flavor: Option<String>,
 
 	// D.10.8.r.2 - MPID
 	pub mpid: Option<String>,
@@ -102,9 +110,11 @@ pub struct ParentPastDrugHistory {
 
 	// D.10.8.r.4 - Start Date
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 
 	// D.10.8.r.5 - End Date
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 
 	// D.10.8.r.6a/b - Indication (MedDRA)
 	pub indication_meddra_version: Option<String>,
@@ -126,11 +136,15 @@ pub struct ParentPastDrugHistoryForCreate {
 	pub parent_id: Uuid,
 	pub sequence_number: i32,
 	pub drug_name: Option<String>,
+	pub drug_name_null_flavor: Option<String>,
+	pub start_date_null_flavor: Option<String>,
+	pub end_date_null_flavor: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
 pub struct ParentPastDrugHistoryForUpdate {
 	pub drug_name: Option<String>,
+	pub drug_name_null_flavor: Option<String>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
 	pub phpid: Option<String>,
@@ -140,11 +154,13 @@ pub struct ParentPastDrugHistoryForUpdate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 	pub indication_meddra_version: Option<String>,
 	pub indication_meddra_code: Option<String>,
 	pub reaction_meddra_version: Option<String>,
@@ -242,7 +258,68 @@ impl ParentPastDrugHistoryBmc {
 		id: Uuid,
 		data: ParentPastDrugHistoryForUpdate,
 	) -> Result<()> {
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
+
+		let sql = format!(
+			"UPDATE {} SET
+			 drug_name = CASE WHEN $1::varchar IS NOT NULL THEN NULL ELSE COALESCE($2, drug_name) END,
+			 drug_name_null_flavor = CASE WHEN $2::varchar IS NOT NULL THEN NULL ELSE COALESCE($1, drug_name_null_flavor) END,
+			 mpid = COALESCE($3, mpid),
+			 mpid_version = COALESCE($4, mpid_version),
+			 phpid = COALESCE($5, phpid),
+			 phpid_version = COALESCE($6, phpid_version),
+			 start_date = CASE WHEN $8::varchar IS NOT NULL THEN NULL ELSE COALESCE($7, start_date) END,
+			 start_date_null_flavor = CASE WHEN $7::date IS NOT NULL THEN NULL ELSE COALESCE($8, start_date_null_flavor) END,
+			 end_date = CASE WHEN $10::varchar IS NOT NULL THEN NULL ELSE COALESCE($9, end_date) END,
+			 end_date_null_flavor = CASE WHEN $9::date IS NOT NULL THEN NULL ELSE COALESCE($10, end_date_null_flavor) END,
+			 indication_meddra_version = COALESCE($11, indication_meddra_version),
+			 indication_meddra_code = COALESCE($12, indication_meddra_code),
+			 reaction_meddra_version = COALESCE($13, reaction_meddra_version),
+			 reaction_meddra_code = COALESCE($14, reaction_meddra_code),
+			 updated_at = now(),
+			 updated_by = $15
+			 WHERE id = $16",
+			Self::TABLE
+		);
+
+		let result = mm
+			.dbx()
+			.execute(
+				sqlx::query(&sql)
+					.bind(data.drug_name_null_flavor)
+					.bind(data.drug_name)
+					.bind(data.mpid)
+					.bind(data.mpid_version)
+					.bind(data.phpid)
+					.bind(data.phpid_version)
+					.bind(data.start_date)
+					.bind(data.start_date_null_flavor)
+					.bind(data.end_date)
+					.bind(data.end_date_null_flavor)
+					.bind(data.indication_meddra_version)
+					.bind(data.indication_meddra_code)
+					.bind(data.reaction_meddra_version)
+					.bind(data.reaction_meddra_code)
+					.bind(ctx.user_id())
+					.bind(id),
+			)
+			.await?;
+		if result == 0 {
+			mm.dbx().rollback_txn().await?;
+			return Err(crate::model::Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
+		}
+		mm.dbx().commit_txn().await?;
+		Ok(())
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {

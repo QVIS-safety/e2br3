@@ -83,11 +83,18 @@ async fn create_user(
 	let user_c = UserForCreate {
 		organization_id: org_id,
 		email: format!("rls-user-{suffix}@example.com"),
-		username: format!("rls_user_{suffix}"),
+		username: Some(format!("rls_user_{suffix}")),
 		pwd_clear: "pwd123".to_string(),
 		role: Some(ROLE_USER.to_string()),
 		first_name: None,
 		last_name: None,
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 	};
 	Ok(UserBmc::create(ctx, mm, user_c).await?)
 }
@@ -154,6 +161,7 @@ async fn create_study(
 		case_id,
 		study_name: Some("Study".to_string()),
 		sponsor_study_number: Some("SN-1".to_string()),
+		study_type_reaction: None,
 		study_type_reaction_kr1: None,
 	};
 	Ok(StudyInformationBmc::create(ctx, mm, data).await?)
@@ -441,6 +449,7 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			dose_form_termid: None,
 			dose_form_termid_version: None,
 			route_of_administration: None,
+			route_termid_version: None,
 			parent_route: None,
 			parent_route_termid: None,
 			parent_route_termid_version: None,
@@ -472,6 +481,7 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			dose_form_termid: None,
 			dose_form_termid_version: None,
 			route_of_administration: None,
+			route_termid_version: None,
 			parent_route: None,
 			parent_route_termid: None,
 			parent_route_termid_version: None,

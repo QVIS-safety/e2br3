@@ -16,6 +16,14 @@ use tokio::time::{sleep, Duration};
 use tower::ServiceExt;
 use uuid::Uuid;
 
+fn parse_json_or_raw(body: &[u8]) -> Value {
+	let raw = String::from_utf8_lossy(body).trim().to_string();
+	if raw.is_empty() {
+		return json!({});
+	}
+	serde_json::from_slice::<Value>(body).unwrap_or_else(|_| json!({ "raw": raw }))
+}
+
 fn clear_esg_env() {
 	std::env::remove_var("FDA_ESG_ENABLED");
 	std::env::remove_var("FDA_ESG_BASE_URL");
@@ -54,7 +62,7 @@ async fn post_json(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value = serde_json::from_slice::<Value>(&body)?;
+	let value = parse_json_or_raw(&body);
 	Ok((status, value))
 }
 
@@ -77,7 +85,7 @@ async fn post_json_with_headers(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value = serde_json::from_slice::<Value>(&body)?;
+	let value = parse_json_or_raw(&body);
 	Ok((status, value))
 }
 
@@ -94,7 +102,7 @@ async fn get_json(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value = serde_json::from_slice::<Value>(&body)?;
+	let value = parse_json_or_raw(&body);
 	Ok((status, value))
 }
 
@@ -274,6 +282,32 @@ async fn create_message_header(
 		)
 		.into());
 	}
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/cases/{case_id}/message-header"))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({
+				"data": {
+					"batch_number": format!("BATCH-{case_id}"),
+					"batch_sender_identifier": "BATCH-SENDER",
+					"batch_receiver_identifier": "BATCH-RECEIVER",
+					"batch_transmission_date": [2024, 32, 1, 1, 1, 0, 0, 0, 0]
+				}
+			})
+			.to_string(),
+		))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = parse_json_or_raw(&body);
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update message header failed: status={status} body={value}"
+		)
+		.into());
+	}
 	Ok(())
 }
 
@@ -433,8 +467,13 @@ async fn create_reaction(
 		.header("cookie", cookie)
 		.header("content-type", "application/json")
 		.body(Body::from(
-			json!({ "data": { "outcome": "1", "reaction_language": "en" }})
-				.to_string(),
+			json!({ "data": {
+				"reaction_meddra_version": "27.0",
+				"reaction_meddra_code": "10019211",
+				"outcome": "1",
+				"reaction_language": "en"
+			}})
+			.to_string(),
 		))?;
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();

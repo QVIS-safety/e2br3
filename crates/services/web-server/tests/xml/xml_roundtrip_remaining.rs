@@ -114,11 +114,12 @@ async fn setup_imported_case() -> Result<(axum::Router, String, String)> {
 	let import_value: Value = serde_json::from_slice(&import_body)?;
 	let case_id = import_value
 		.get("data")
-		.and_then(|v| v.get("case_id"))
+		.and_then(|v| v.get("case_id").or_else(|| v.get("caseId")))
 		.and_then(|v| v.as_str())
 		.ok_or("missing case_id in import response")?
 		.to_string();
 	ensure_reaction_language(&app, &cookie, &case_id).await?;
+	ensure_batch_transmission_date(&app, &cookie, &case_id).await?;
 
 	Ok((app, cookie, case_id))
 }
@@ -186,6 +187,60 @@ async fn ensure_reaction_language(
 	Ok(())
 }
 
+async fn ensure_batch_transmission_date(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<()> {
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"GET",
+		format!("/api/cases/{case_id}/message-header"),
+		None,
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"get message-header status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let value: Value = serde_json::from_slice(&body)?;
+	let has_batch_transmission_date = value
+		.get("data")
+		.and_then(|v| v.get("batch_transmission_date"))
+		.and_then(Value::as_array)
+		.map(|v| !v.is_empty())
+		.unwrap_or(false);
+	if has_batch_transmission_date {
+		return Ok(());
+	}
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/message-header"),
+		Some(serde_json::json!({
+			"data": {
+				"batch_transmission_date": [2024, 32, 1, 1, 1, 0, 0, 0, 0]
+			}
+		})),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update batch_transmission_date status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	Ok(())
+}
+
 async fn set_validated(
 	app: &axum::Router,
 	cookie: &str,
@@ -202,10 +257,20 @@ async fn set_validated(
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	if status != StatusCode::OK {
+		let (validation_status, validation_body) = request_json(
+			app,
+			cookie,
+			"GET",
+			format!("/api/cases/{case_id}/validation?profile=fda"),
+			None,
+		)
+		.await?;
 		return Err(format!(
-			"mark validated status {} body {}",
+			"mark validated status {} body {} validation_status {} validation_body {}",
 			status,
-			String::from_utf8_lossy(&body)
+			String::from_utf8_lossy(&body),
+			validation_status,
+			String::from_utf8_lossy(&validation_body)
 		)
 		.into());
 	}
@@ -782,6 +847,7 @@ async fn test_roundtrip_ci_si_fields() -> Result<()> {
 	let sentinel_msg_number = format!("RTSI-MSG-{}", Uuid::new_v4().simple());
 	let sentinel_msg_sender = format!("RTSI-MS-{}", Uuid::new_v4().simple());
 	let sentinel_msg_receiver = format!("RTSI-MR-{}", Uuid::new_v4().simple());
+	let sentinel_study_type_reaction = "1";
 
 	let (status, body) = request_json(
 		&app,
@@ -822,6 +888,7 @@ async fn test_roundtrip_ci_si_fields() -> Result<()> {
 				"batch_number": sentinel_batch,
 				"batch_sender_identifier": sentinel_batch_sender,
 				"batch_receiver_identifier": sentinel_batch_receiver,
+				"batch_transmission_date": [2024, 32, 1, 1, 1, 0, 0, 0, 0],
 				"message_number": sentinel_msg_number,
 				"message_sender_identifier": sentinel_msg_sender,
 				"message_receiver_identifier": sentinel_msg_receiver,
@@ -833,6 +900,76 @@ async fn test_roundtrip_ci_si_fields() -> Result<()> {
 	if status != StatusCode::OK {
 		return Err(format!(
 			"update message-header status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+
+	let (status, body) = request_json(
+		&app,
+		&cookie,
+		"GET",
+		format!("/api/cases/{case_id}/safety-report/studies"),
+		None,
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"list studies status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let study_id = serde_json::from_slice::<Value>(&body)?
+		.get("data")
+		.and_then(|v| v.as_array())
+		.and_then(|arr| arr.first())
+		.and_then(|v| v.get("id"))
+		.and_then(|v| v.as_str())
+		.map(|v| v.to_string());
+	let study_id = if let Some(study_id) = study_id {
+		study_id
+	} else {
+		let (status, body) = request_json(
+			&app,
+			&cookie,
+			"POST",
+			format!("/api/cases/{case_id}/safety-report/studies"),
+			Some(serde_json::json!({
+				"data": {
+					"case_id": case_id,
+					"study_name": "CI/SI Roundtrip Study"
+				}
+			})),
+		)
+		.await?;
+		if status != StatusCode::CREATED {
+			return Err(format!(
+				"create study-information status {} body {}",
+				status,
+				String::from_utf8_lossy(&body)
+			)
+			.into());
+		}
+		extract_data_id(&body)?
+	};
+	let (status, body) = request_json(
+		&app,
+		&cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/safety-report/studies/{study_id}"),
+		Some(serde_json::json!({
+			"data": {
+				"study_type_reaction": sentinel_study_type_reaction
+			}
+		})),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update study-information status {} body {}",
 			status,
 			String::from_utf8_lossy(&body)
 		)

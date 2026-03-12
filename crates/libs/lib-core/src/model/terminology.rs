@@ -113,6 +113,16 @@ pub struct E2bCodeListFilter {
 	pub active: Option<OpValsBool>,
 }
 
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct UcumUnit {
+	pub id: i32,
+	pub code: String,
+	pub display_name: String,
+	pub description: Option<String>,
+	pub unit_type: Option<String>,
+	pub active: bool,
+}
+
 // -- BMCs
 
 pub struct MeddraTermBmc;
@@ -235,5 +245,24 @@ impl E2bCodeListBmc {
 			.fetch_all(sqlx::query_as::<_, E2bCodeList>(&sql).bind(list_name))
 			.await?;
 		Ok(codes)
+	}
+}
+
+pub struct UcumUnitBmc;
+impl DbBmc for UcumUnitBmc {
+	const TABLE: &'static str = "ucum_units";
+}
+
+impl UcumUnitBmc {
+	pub async fn list_all(_ctx: &Ctx, mm: &ModelManager) -> Result<Vec<UcumUnit>> {
+		let sql = format!(
+			"SELECT id, code, display_name, description, unit_type, active FROM {} WHERE active = true ORDER BY unit_type NULLS LAST, code",
+			Self::TABLE
+		);
+		let units = mm
+			.dbx()
+			.fetch_all(sqlx::query_as::<_, UcumUnit>(&sql))
+			.await?;
+		Ok(units)
 	}
 }

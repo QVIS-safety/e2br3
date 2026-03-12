@@ -12,12 +12,22 @@ pub use self::error::{Error, Result};
 
 /// System role for full administrative access
 pub const ROLE_ADMIN: &str = "admin";
+/// Alias role for database administration access
+pub const ROLE_ADB_ADMIN: &str = "adb_admin";
 /// Role for management-level access (case approval, user viewing)
 pub const ROLE_MANAGER: &str = "manager";
+/// Role for pharmacovigilance manager access
+pub const ROLE_PVM: &str = "pvm";
+/// Role for head of PV access
+pub const ROLE_HEAD_PV: &str = "head_pv";
 /// Role for regular user access (case CRUD)
 pub const ROLE_USER: &str = "user";
+/// Role for pharmacovigilance specialist access
+pub const ROLE_PVS: &str = "pvs";
 /// Role for read-only access
 pub const ROLE_VIEWER: &str = "viewer";
+/// Role for sponsor read-oriented access
+pub const ROLE_SPONSOR: &str = "sponsor";
 
 // System UUIDs
 pub const SYSTEM_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
@@ -59,16 +69,14 @@ impl Ctx {
 		organization_id: uuid::Uuid,
 		role: String,
 	) -> Result<Self> {
+		let role = role.trim().to_ascii_lowercase();
 		if user_id.is_nil() {
 			return Err(Error::CtxCannotNewNilUuid);
 		}
 		if organization_id.is_nil() && role != ROLE_ADMIN {
 			return Err(Error::CtxCannotNewNilOrgId);
 		}
-		if !matches!(
-			role.as_str(),
-			ROLE_ADMIN | ROLE_MANAGER | ROLE_USER | ROLE_VIEWER
-		) {
+		if role.is_empty() {
 			return Err(Error::CtxCannotNewInvalidRole);
 		}
 
@@ -131,19 +139,21 @@ impl Ctx {
 
 	// Role check helpers
 	pub fn is_admin(&self) -> bool {
-		self.role == ROLE_ADMIN
+		self.role == ROLE_ADMIN || self.role == ROLE_ADB_ADMIN
 	}
 
 	pub fn is_manager(&self) -> bool {
 		self.role == ROLE_MANAGER
+			|| self.role == ROLE_PVM
+			|| self.role == ROLE_HEAD_PV
 	}
 
 	pub fn is_user(&self) -> bool {
-		self.role == ROLE_USER
+		self.role == ROLE_USER || self.role == ROLE_PVS
 	}
 
 	pub fn is_viewer(&self) -> bool {
-		self.role == ROLE_VIEWER
+		self.role == ROLE_VIEWER || self.role == ROLE_SPONSOR
 	}
 
 	/// Returns true if the user has at least manager-level access (admin or manager)

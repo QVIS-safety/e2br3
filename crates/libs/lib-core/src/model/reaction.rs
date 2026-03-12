@@ -40,17 +40,25 @@ pub struct Reaction {
 
 	// E.i.3.2 - Seriousness Criteria
 	pub criteria_death: bool,
+	pub criteria_death_null_flavor: Option<String>,
 	pub criteria_life_threatening: bool,
+	pub criteria_life_threatening_null_flavor: Option<String>,
 	pub criteria_hospitalization: bool,
+	pub criteria_hospitalization_null_flavor: Option<String>,
 	pub criteria_disabling: bool,
+	pub criteria_disabling_null_flavor: Option<String>,
 	pub criteria_congenital_anomaly: bool,
+	pub criteria_congenital_anomaly_null_flavor: Option<String>,
 	pub criteria_other_medically_important: bool,
+	pub criteria_other_medically_important_null_flavor: Option<String>,
 	// FDA.E.i.3.2h - Required Intervention (FDA)
 	pub required_intervention: Option<String>,
 
 	// E.i.4-6 - Timing
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 	pub duration_value: Option<Decimal>,
 	pub duration_unit: Option<String>,
 
@@ -87,22 +95,30 @@ pub struct ReactionForUpdate {
 	pub term_highlighted: Option<bool>,
 	pub serious: Option<bool>,
 	pub criteria_death: Option<bool>,
+	pub criteria_death_null_flavor: Option<String>,
 	pub criteria_life_threatening: Option<bool>,
+	pub criteria_life_threatening_null_flavor: Option<String>,
 	pub criteria_hospitalization: Option<bool>,
+	pub criteria_hospitalization_null_flavor: Option<String>,
 	pub criteria_disabling: Option<bool>,
+	pub criteria_disabling_null_flavor: Option<String>,
 	pub criteria_congenital_anomaly: Option<bool>,
+	pub criteria_congenital_anomaly_null_flavor: Option<String>,
 	pub criteria_other_medically_important: Option<bool>,
+	pub criteria_other_medically_important_null_flavor: Option<String>,
 	pub required_intervention: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 	pub duration_value: Option<Decimal>,
 	pub duration_unit: Option<String>,
 	pub outcome: Option<String>,
@@ -198,21 +214,29 @@ impl ReactionBmc {
 			     term_highlighted = COALESCE($7, term_highlighted),
 			     serious = COALESCE($8, serious),
 			     criteria_death = COALESCE($9, criteria_death),
-			     criteria_life_threatening = COALESCE($10, criteria_life_threatening),
-			     criteria_hospitalization = COALESCE($11, criteria_hospitalization),
-			     criteria_disabling = COALESCE($12, criteria_disabling),
-			     criteria_congenital_anomaly = COALESCE($13, criteria_congenital_anomaly),
-			     criteria_other_medically_important = COALESCE($14, criteria_other_medically_important),
-			     required_intervention = COALESCE($15, required_intervention),
-			     start_date = COALESCE($16, start_date),
-			     end_date = COALESCE($17, end_date),
-			     duration_value = COALESCE($18, duration_value),
-			     duration_unit = COALESCE($19, duration_unit),
-			     outcome = COALESCE($20, outcome),
-			     medical_confirmation = COALESCE($21, medical_confirmation),
-			     country_code = COALESCE($22, country_code),
+			     criteria_death_null_flavor = COALESCE($10, criteria_death_null_flavor),
+			     criteria_life_threatening = COALESCE($11, criteria_life_threatening),
+			     criteria_life_threatening_null_flavor = COALESCE($12, criteria_life_threatening_null_flavor),
+			     criteria_hospitalization = COALESCE($13, criteria_hospitalization),
+			     criteria_hospitalization_null_flavor = COALESCE($14, criteria_hospitalization_null_flavor),
+			     criteria_disabling = COALESCE($15, criteria_disabling),
+			     criteria_disabling_null_flavor = COALESCE($16, criteria_disabling_null_flavor),
+			     criteria_congenital_anomaly = COALESCE($17, criteria_congenital_anomaly),
+			     criteria_congenital_anomaly_null_flavor = COALESCE($18, criteria_congenital_anomaly_null_flavor),
+			     criteria_other_medically_important = COALESCE($19, criteria_other_medically_important),
+			     criteria_other_medically_important_null_flavor = COALESCE($20, criteria_other_medically_important_null_flavor),
+			     required_intervention = COALESCE($21, required_intervention),
+			     start_date = CASE WHEN $23 IS NOT NULL THEN NULL ELSE COALESCE($22, start_date) END,
+			     start_date_null_flavor = CASE WHEN $22 IS NOT NULL THEN NULL ELSE COALESCE($23, start_date_null_flavor) END,
+			     end_date = CASE WHEN $25 IS NOT NULL THEN NULL ELSE COALESCE($24, end_date) END,
+			     end_date_null_flavor = CASE WHEN $24 IS NOT NULL THEN NULL ELSE COALESCE($25, end_date_null_flavor) END,
+			     duration_value = COALESCE($26, duration_value),
+			     duration_unit = COALESCE($27, duration_unit),
+			     outcome = COALESCE($28, outcome),
+			     medical_confirmation = COALESCE($29, medical_confirmation),
+			     country_code = COALESCE($30, country_code),
 			     updated_at = now(),
-			     updated_by = $23
+			     updated_by = $31
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -229,14 +253,22 @@ impl ReactionBmc {
 					.bind(reaction_u.term_highlighted)
 					.bind(reaction_u.serious)
 					.bind(reaction_u.criteria_death)
+					.bind(reaction_u.criteria_death_null_flavor)
 					.bind(reaction_u.criteria_life_threatening)
+					.bind(reaction_u.criteria_life_threatening_null_flavor)
 					.bind(reaction_u.criteria_hospitalization)
+					.bind(reaction_u.criteria_hospitalization_null_flavor)
 					.bind(reaction_u.criteria_disabling)
+					.bind(reaction_u.criteria_disabling_null_flavor)
 					.bind(reaction_u.criteria_congenital_anomaly)
+					.bind(reaction_u.criteria_congenital_anomaly_null_flavor)
 					.bind(reaction_u.criteria_other_medically_important)
+					.bind(reaction_u.criteria_other_medically_important_null_flavor)
 					.bind(reaction_u.required_intervention)
 					.bind(reaction_u.start_date)
+					.bind(reaction_u.start_date_null_flavor)
 					.bind(reaction_u.end_date)
+					.bind(reaction_u.end_date_null_flavor)
 					.bind(reaction_u.duration_value)
 					.bind(reaction_u.duration_unit)
 					.bind(reaction_u.outcome)
@@ -321,21 +353,27 @@ impl ReactionBmc {
 			     term_highlighted = COALESCE($8, term_highlighted),
 			     serious = COALESCE($9, serious),
 			     criteria_death = COALESCE($10, criteria_death),
-			     criteria_life_threatening = COALESCE($11, criteria_life_threatening),
-			     criteria_hospitalization = COALESCE($12, criteria_hospitalization),
-			     criteria_disabling = COALESCE($13, criteria_disabling),
-			     criteria_congenital_anomaly = COALESCE($14, criteria_congenital_anomaly),
-			     criteria_other_medically_important = COALESCE($15, criteria_other_medically_important),
-			     required_intervention = COALESCE($16, required_intervention),
-			     start_date = COALESCE($17, start_date),
-			     end_date = COALESCE($18, end_date),
-			     duration_value = COALESCE($19, duration_value),
-			     duration_unit = COALESCE($20, duration_unit),
-			     outcome = COALESCE($21, outcome),
-			     medical_confirmation = COALESCE($22, medical_confirmation),
-			     country_code = COALESCE($23, country_code),
+			     criteria_death_null_flavor = COALESCE($11, criteria_death_null_flavor),
+			     criteria_life_threatening = COALESCE($12, criteria_life_threatening),
+			     criteria_life_threatening_null_flavor = COALESCE($13, criteria_life_threatening_null_flavor),
+			     criteria_hospitalization = COALESCE($14, criteria_hospitalization),
+			     criteria_hospitalization_null_flavor = COALESCE($15, criteria_hospitalization_null_flavor),
+			     criteria_disabling = COALESCE($16, criteria_disabling),
+			     criteria_disabling_null_flavor = COALESCE($17, criteria_disabling_null_flavor),
+			     criteria_congenital_anomaly = COALESCE($18, criteria_congenital_anomaly),
+			     criteria_congenital_anomaly_null_flavor = COALESCE($19, criteria_congenital_anomaly_null_flavor),
+			     criteria_other_medically_important = COALESCE($20, criteria_other_medically_important),
+			     criteria_other_medically_important_null_flavor = COALESCE($21, criteria_other_medically_important_null_flavor),
+			     required_intervention = COALESCE($22, required_intervention),
+			     start_date = COALESCE($23, start_date),
+			     end_date = COALESCE($24, end_date),
+			     duration_value = COALESCE($25, duration_value),
+			     duration_unit = COALESCE($26, duration_unit),
+			     outcome = COALESCE($27, outcome),
+			     medical_confirmation = COALESCE($28, medical_confirmation),
+			     country_code = COALESCE($29, country_code),
 			     updated_at = now(),
-			     updated_by = $24
+			     updated_by = $30
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -353,11 +391,17 @@ impl ReactionBmc {
 					.bind(reaction_u.term_highlighted)
 					.bind(reaction_u.serious)
 					.bind(reaction_u.criteria_death)
+					.bind(reaction_u.criteria_death_null_flavor)
 					.bind(reaction_u.criteria_life_threatening)
+					.bind(reaction_u.criteria_life_threatening_null_flavor)
 					.bind(reaction_u.criteria_hospitalization)
+					.bind(reaction_u.criteria_hospitalization_null_flavor)
 					.bind(reaction_u.criteria_disabling)
+					.bind(reaction_u.criteria_disabling_null_flavor)
 					.bind(reaction_u.criteria_congenital_anomaly)
+					.bind(reaction_u.criteria_congenital_anomaly_null_flavor)
 					.bind(reaction_u.criteria_other_medically_important)
+					.bind(reaction_u.criteria_other_medically_important_null_flavor)
 					.bind(reaction_u.required_intervention)
 					.bind(reaction_u.start_date)
 					.bind(reaction_u.end_date)

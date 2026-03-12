@@ -21,6 +21,7 @@ pub struct TestResult {
 
 	// F.r.1 - Test Date
 	pub test_date: Option<Date>,
+	pub test_date_null_flavor: Option<String>,
 
 	// F.r.2 - Test Name
 	pub test_name: String,
@@ -73,6 +74,7 @@ pub struct TestResultForUpdate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub test_date: Option<Date>,
+	pub test_date_null_flavor: Option<String>,
 	pub test_meddra_version: Option<String>,
 	pub test_meddra_code: Option<String>,
 	pub test_result_code: Option<String>,
@@ -159,19 +161,20 @@ impl TestResultBmc {
 		let sql = format!(
 			"UPDATE {}
 			 SET test_name = COALESCE($2, test_name),
-			     test_date = COALESCE($3, test_date),
-			     test_meddra_version = COALESCE($4, test_meddra_version),
-			     test_meddra_code = COALESCE($5, test_meddra_code),
-			     test_result_code = COALESCE($6, test_result_code),
-			     test_result_value = COALESCE($7, test_result_value),
-			     test_result_unit = COALESCE($8, test_result_unit),
-			     result_unstructured = COALESCE($9, result_unstructured),
-			     normal_low_value = COALESCE($10, normal_low_value),
-			     normal_high_value = COALESCE($11, normal_high_value),
-			     comments = COALESCE($12, comments),
-			     more_info_available = COALESCE($13, more_info_available),
+			     test_date = CASE WHEN $3 IS NOT NULL THEN $3 ELSE CASE WHEN $4 IS NOT NULL THEN NULL ELSE test_date END END,
+			     test_date_null_flavor = CASE WHEN $3 IS NOT NULL THEN NULL ELSE COALESCE($4, test_date_null_flavor) END,
+			     test_meddra_version = COALESCE($5, test_meddra_version),
+			     test_meddra_code = COALESCE($6, test_meddra_code),
+			     test_result_code = COALESCE($7, test_result_code),
+			     test_result_value = COALESCE($8, test_result_value),
+			     test_result_unit = COALESCE($9, test_result_unit),
+			     result_unstructured = COALESCE($10, result_unstructured),
+			     normal_low_value = COALESCE($11, normal_low_value),
+			     normal_high_value = COALESCE($12, normal_high_value),
+			     comments = COALESCE($13, comments),
+			     more_info_available = COALESCE($14, more_info_available),
 			     updated_at = now(),
-			     updated_by = $14
+			     updated_by = $15
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -182,6 +185,7 @@ impl TestResultBmc {
 					.bind(id)
 					.bind(test_u.test_name)
 					.bind(test_u.test_date)
+					.bind(test_u.test_date_null_flavor)
 					.bind(test_u.test_meddra_version)
 					.bind(test_u.test_meddra_code)
 					.bind(test_u.test_result_code)
@@ -264,19 +268,20 @@ impl TestResultBmc {
 		let sql = format!(
 			"UPDATE {}
 			 SET test_name = COALESCE($3, test_name),
-			     test_date = COALESCE($4, test_date),
-			     test_meddra_version = COALESCE($5, test_meddra_version),
-			     test_meddra_code = COALESCE($6, test_meddra_code),
-			     test_result_code = COALESCE($7, test_result_code),
-			     test_result_value = COALESCE($8, test_result_value),
-			     test_result_unit = COALESCE($9, test_result_unit),
-			     result_unstructured = COALESCE($10, result_unstructured),
-			     normal_low_value = COALESCE($11, normal_low_value),
-			     normal_high_value = COALESCE($12, normal_high_value),
-			     comments = COALESCE($13, comments),
-			     more_info_available = COALESCE($14, more_info_available),
+			     test_date = CASE WHEN $4 IS NOT NULL THEN $4 ELSE CASE WHEN $5 IS NOT NULL THEN NULL ELSE test_date END END,
+			     test_date_null_flavor = CASE WHEN $4 IS NOT NULL THEN NULL ELSE COALESCE($5, test_date_null_flavor) END,
+			     test_meddra_version = COALESCE($6, test_meddra_version),
+			     test_meddra_code = COALESCE($7, test_meddra_code),
+			     test_result_code = COALESCE($8, test_result_code),
+			     test_result_value = COALESCE($9, test_result_value),
+			     test_result_unit = COALESCE($10, test_result_unit),
+			     result_unstructured = COALESCE($11, result_unstructured),
+			     normal_low_value = COALESCE($12, normal_low_value),
+			     normal_high_value = COALESCE($13, normal_high_value),
+			     comments = COALESCE($14, comments),
+			     more_info_available = COALESCE($15, more_info_available),
 			     updated_at = now(),
-			     updated_by = $15
+			     updated_by = $16
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -288,6 +293,7 @@ impl TestResultBmc {
 					.bind(case_id)
 					.bind(test_u.test_name)
 					.bind(test_u.test_date)
+					.bind(test_u.test_date_null_flavor)
 					.bind(test_u.test_meddra_version)
 					.bind(test_u.test_meddra_code)
 					.bind(test_u.test_result_code)

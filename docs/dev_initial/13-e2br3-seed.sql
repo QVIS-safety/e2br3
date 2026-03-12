@@ -6,6 +6,7 @@ DECLARE
     v_case_id UUID := '22222222-2222-2222-2222-222222222222';
     v_case_version_id UUID := '22222222-2222-2222-2222-222222222223';
     v_message_header_id UUID := '33333333-3333-3333-3333-333333333333';
+    v_receiver_info_id UUID := '33333333-3333-3333-3333-333333333334';
     v_safety_ident_id UUID := '44444444-4444-4444-4444-444444444444';
     v_sender_info_id UUID := '55555555-5555-5555-5555-555555555555';
     v_study_info_id UUID := '66666666-6666-6666-6666-666666666666';
@@ -97,6 +98,28 @@ BEGIN
 
     INSERT INTO message_headers (id, case_id, batch_number, batch_sender_identifier, message_type, message_format_version, message_format_release, message_number, message_sender_identifier, message_receiver_identifier, message_date_format, message_date, created_by, created_at, updated_at)
     VALUES (v_message_header_id, v_case_id, 'B-001', 'SENDER-1', 'ichicsr', '2.1', '2.0', 'MSG-001', 'ORG-SENDER', 'ORG-RECEIVER', '204', '20240101120000', v_user_id, NOW(), NOW())
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO receiver_information (
+        id,
+        case_id,
+        receiver_type,
+        organization_name,
+        country_code,
+        created_by,
+        created_at,
+        updated_at
+    )
+    VALUES (
+        v_receiver_info_id,
+        v_case_id,
+        '2',
+        'FDA',
+        'US',
+        v_user_id,
+        NOW(),
+        NOW()
+    )
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO safety_report_identification (id, case_id, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, receiver_organization, created_by, created_at, updated_at)
@@ -207,8 +230,40 @@ BEGIN
     )
     ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO reactions (id, case_id, sequence_number, primary_source_reaction, serious, outcome, created_by, created_at, updated_at)
-    VALUES (v_reaction_id, v_case_id, 1, 'Headache', FALSE, '0', v_user_id, NOW(), NOW())
+    INSERT INTO reactions (
+        id,
+        case_id,
+        sequence_number,
+        primary_source_reaction,
+        serious,
+        criteria_death,
+        criteria_life_threatening,
+        criteria_hospitalization,
+        criteria_disabling,
+        criteria_congenital_anomaly,
+        criteria_other_medically_important,
+        outcome,
+        created_by,
+        created_at,
+        updated_at
+    )
+    VALUES (
+        v_reaction_id,
+        v_case_id,
+        1,
+        'Headache',
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        FALSE,
+        '0',
+        v_user_id,
+        NOW(),
+        NOW()
+    )
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO test_results (id, case_id, sequence_number, test_date, test_name, created_by, created_at, updated_at)

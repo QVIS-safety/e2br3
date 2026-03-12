@@ -23,6 +23,10 @@ pub struct GDrugImport {
 	pub manufacturer_name: Option<String>,
 	pub manufacturer_country: Option<String>,
 	pub batch_lot_number: Option<String>,
+	pub cumulative_dose_first_reaction_value: Option<Decimal>,
+	pub cumulative_dose_first_reaction_unit: Option<String>,
+	pub gestation_period_exposure_value: Option<Decimal>,
+	pub gestation_period_exposure_unit: Option<String>,
 	pub dosage_text: Option<String>,
 	pub action_taken: Option<String>,
 	pub rechallenge: Option<String>,
@@ -58,6 +62,7 @@ pub struct GDrugDosageImport {
 	pub dose_value: Option<Decimal>,
 	pub dose_unit: Option<String>,
 	pub route: Option<String>,
+	pub route_termid_version: Option<String>,
 	pub dose_form: Option<String>,
 	pub dose_form_termid: Option<String>,
 	pub dose_form_termid_version: Option<String>,
@@ -161,6 +166,19 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 		let dosage_text = first_text(&mut xpath, &node, GDrugPaths::DOSAGE_TEXT);
 		let batch_lot_number =
 			first_text(&mut xpath, &node, GDrugPaths::BATCH_LOT_NUMBER);
+		let cumulative_dose_first_reaction_value =
+			first_attr(&mut xpath, &node, GDrugPaths::CUMULATIVE_DOSE_VALUE)
+				.and_then(|v| v.parse::<Decimal>().ok());
+		let cumulative_dose_first_reaction_unit =
+			first_attr(&mut xpath, &node, GDrugPaths::CUMULATIVE_DOSE_UNIT);
+		let gestation_period_exposure_value =
+			first_attr(&mut xpath, &node, GDrugPaths::GESTATION_EXPOSURE_VALUE)
+				.and_then(|v| v.parse::<Decimal>().ok());
+		let gestation_period_exposure_unit = normalize_code3(first_attr(
+			&mut xpath,
+			&node,
+			GDrugPaths::GESTATION_EXPOSURE_UNIT,
+		));
 		let fda_additional_info_coded = clamp_str(
 			first_attr(&mut xpath, &node, GDrugPaths::FDA_ADDITIONAL_INFO),
 			10,
@@ -238,6 +256,10 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 				&dose,
 				GDrugPaths::ROUTE_CODE,
 			));
+			let route_termid_version = clamp_str(
+				first_attr(&mut xpath, &dose, GDrugPaths::ROUTE_CODE_SYSTEM_VERSION),
+				10,
+			);
 			let dose_form =
 				first_text(&mut xpath, &dose, GDrugPaths::DOSE_FORM_TEXT);
 			let dose_form_termid =
@@ -275,6 +297,7 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 				dose_value,
 				dose_unit,
 				route,
+				route_termid_version,
 				dose_form,
 				dose_form_termid,
 				dose_form_termid_version,
@@ -360,6 +383,10 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			manufacturer_name,
 			manufacturer_country,
 			batch_lot_number,
+			cumulative_dose_first_reaction_value,
+			cumulative_dose_first_reaction_unit,
+			gestation_period_exposure_value,
+			gestation_period_exposure_unit,
 			dosage_text,
 			action_taken,
 			rechallenge,

@@ -19,7 +19,7 @@ use lib_core::model::patient::{ParentInformationBmc, PatientInformationBmc};
 use lib_core::model::{self, ModelManager};
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValValue, OpValsValue};
 use serde_json::json;
@@ -70,6 +70,7 @@ pub async fn create_parent_medical_history(
 ) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PARENT_MEDICAL_HISTORY_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	ensure_parent_case(&ctx, &mm, case_id, parent_id).await?;
 	tracing::debug!(
 		"{:<12} - rest create_parent_medical_history parent_id={}",
@@ -149,6 +150,7 @@ pub async fn update_parent_medical_history(
 ) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PARENT_MEDICAL_HISTORY_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest update_parent_medical_history id={}",
 		"HANDLER",
@@ -173,6 +175,7 @@ pub async fn delete_parent_medical_history(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PARENT_MEDICAL_HISTORY_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest delete_parent_medical_history id={}",
 		"HANDLER",
@@ -198,6 +201,7 @@ pub async fn create_parent_past_drug_history(
 ) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PARENT_PAST_DRUG_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	ensure_parent_case(&ctx, &mm, case_id, parent_id).await?;
 	tracing::debug!(
 		"{:<12} - rest create_parent_past_drug_history parent_id={}",
@@ -282,6 +286,7 @@ pub async fn update_parent_past_drug_history(
 ) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PARENT_PAST_DRUG_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest update_parent_past_drug_history id={}",
 		"HANDLER",
@@ -311,6 +316,7 @@ pub async fn delete_parent_past_drug_history(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PARENT_PAST_DRUG_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest delete_parent_past_drug_history id={}",
 		"HANDLER",

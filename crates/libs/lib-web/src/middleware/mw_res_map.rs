@@ -105,6 +105,24 @@ fn map_model_error_to_client(
 						Some(serde_json::Value::String(detail)),
 					);
 				}
+				if debug_errors {
+					let mut detail = format!(
+						"db_error code={} message={}",
+						code,
+						db_err.message()
+					);
+					if let Some(constraint) = db_err.constraint() {
+						detail.push_str(&format!(" constraint={constraint}"));
+					}
+					if let Some(table) = db_err.table() {
+						detail.push_str(&format!(" table={table}"));
+					}
+					return (
+						StatusCode::BAD_REQUEST,
+						ClientError::SERVICE_ERROR,
+						Some(serde_json::Value::String(detail)),
+					);
+				}
 				return (
 					StatusCode::BAD_REQUEST,
 					ClientError::SERVICE_ERROR,

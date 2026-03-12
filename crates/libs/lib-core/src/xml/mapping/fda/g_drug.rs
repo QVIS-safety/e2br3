@@ -30,6 +30,14 @@ impl GDrugPaths {
 	pub const DOSAGE_TEXT: &'static str = "hl7:text";
 	pub const BATCH_LOT_NUMBER: &'static str =
 		"hl7:consumable/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText";
+	pub const CUMULATIVE_DOSE_VALUE: &'static str =
+		"hl7:outboundRelationship2[@typeCode='SUMM']/hl7:observation[hl7:code[@code='14']]/hl7:value/@value";
+	pub const CUMULATIVE_DOSE_UNIT: &'static str =
+		"hl7:outboundRelationship2[@typeCode='SUMM']/hl7:observation[hl7:code[@code='14']]/hl7:value/@unit";
+	pub const GESTATION_EXPOSURE_VALUE: &'static str =
+		"hl7:outboundRelationship2[@typeCode='PERT']/hl7:observation[hl7:code[@code='16']]/hl7:value/@value";
+	pub const GESTATION_EXPOSURE_UNIT: &'static str =
+		"hl7:outboundRelationship2[@typeCode='PERT']/hl7:observation[hl7:code[@code='16']]/hl7:value/@unit";
 	pub const FDA_ADDITIONAL_INFO: &'static str =
 		"hl7:outboundRelationship2[@typeCode='REFR']/hl7:observation[hl7:code[@code='9']]/hl7:value/@code";
 	pub const PARENT_ROUTE_TERMID_VERSION: &'static str =
@@ -73,6 +81,8 @@ impl GDrugPaths {
 	pub const DOSE_VALUE: &'static str = "hl7:doseQuantity/@value";
 	pub const DOSE_UNIT: &'static str = "hl7:doseQuantity/@unit";
 	pub const ROUTE_CODE: &'static str = "hl7:routeCode/@code";
+	pub const ROUTE_CODE_SYSTEM_VERSION: &'static str =
+		"hl7:routeCode/@codeSystemVersion";
 	pub const DOSE_FORM_TEXT: &'static str =
 		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:formCode/hl7:originalText";
 	pub const DOSE_FORM_TERMID: &'static str =

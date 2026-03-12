@@ -1,0 +1,5460 @@
+{
+  "generated_at_utc": "2026-03-07T09:18:58+00:00",
+  "source_manifest": "docs/generated/mfds_pdf_manifest_draft_2026-03-07.json",
+  "summary": {
+    "total_implementable_candidates": 227,
+    "high_priority": 108,
+    "medium_priority": 0,
+    "low_priority": 119
+  },
+  "rules": [
+    {
+      "rule_id": "DRAFT.MFDS.C.1.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 777,
+        "excerpt": "C.1.1 보고자관리번호 2.16.840.1.113883.3.989.2.1.3.1 C.1.8.1 전세계 고유식별번호 2.16.840.1.113883.3.989.2.1.3.2 C.1.9.1.r.1., 보고자관리번호 자료원 2.16.840.1.113883.3.989.2.1.3.3"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.11",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.11",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1544,
+        "excerpt": "C.1.11.1에 입력한다.(C.1.11.1 사용자 지침 참조) - 27 -"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.11.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.11.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1784,
+        "excerpt": "C.1.11.1 보고 무효화/수정 이 데이터 항목에는 이전에 전송된 ICSR이 완전히 무효(삭제)인 (예: 사례 전 체가 잘못인 것이 판명된 경우) 또는 수정된 것(예: 내부 검토 후 또는 전문가"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.11.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.11.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1803,
+        "excerpt": "C.1.11.2 보고 무효화/수정 이유 이 항목은 이전에 전송된 ICSR이 완전히 무효인 (예: 사례 전체가 잘못인 것이 판명된 경우) 또는 수정된(예: 내부 검토 후 또는 전문가의 의견에 따라 이상"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1481,
+        "excerpt": "C.1.2 작성일 이 데이터 항목에는 타임 스탬프 기능을 가지고 해당 ICSR 버전 번호에 상당한다. 안 사용자 지침 전 메시지의 ICSR 및 한 개의 ICSR의 반복(예: 버전)마다 모든 작성일 값이 다르게 해 (user guidance) 야 한다. 최신 버전의 ICSR이 최신 날짜가 된다. 이전 버전의 ICSR은 오래된 날짜가"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 719,
+        "excerpt": "C.1.3 보고 유형 2.16.840.1.113883.3.989.2.1.1.2 C.1.8.2 본 이상사례 보고의 첫 발신자 2.16.840.1.113883.3.989.2.1.1.3 C.1.11.1 보고 무효화/수정 2.16.840.1.113883.3.989.2.1.1.5 C.2.r.4 자격 (Qualification) 2.16.840.1.113883.3.989.2.1.1.6"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1527,
+        "excerpt": "C.1.4 최초 발생인지일 최초 사례를 전송하는 조직에게, 이 데이터 항목은 정보를 원보고자로부터 얻은 날짜 사용자 지침 이며, 3.3.1항에 정한 바와 같이 4개의 최소 기준을 기재한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1540,
+        "excerpt": "C.1.5 가장 최근의 발생인지일 이 데이터 항목에는 발신자가 원보고자로부터 추적정보를 입수한 각 날짜를 입력한다. 사용자 지침 그러나 다른 이유(예: 발신자에 의한 내부 검토)에서 사례가 수정되는 경우 이 날짜를 (user guidance) 변경하지 않고 본 사례가 발신자에 의해 수정된 것을 나타내는 「수정」의 값을"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.6",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.6",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1566,
+        "excerpt": "C.1.6 발신자가 보유하고 있는 사용 가능한 기타 자료 원보고자로부터 입수한 자료(예: 진료기록, 병원진료기록, 부검보고서, ECG 기록용지, 흉부 X-선 사진, 사진)를 개별적으로 입력한다. 실제로 수신자에게 전달되지 않는 경우에도 발신자가 보유하 고 있는 모든 문서를 입력한다. 이용 가능한 문헌 서지 정보는 C.4에서 작성하여 C.1.6에는 중복"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.6.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.6.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1572,
+        "excerpt": "C.1.6.1 사용가능한 추가 자료가 있는가? 사용자 지침 정보 재전송 시 발신자(재전송자)가 가능한 자료를 보유하고 있는 경우에만 이 데이터 (user guidance) 항목에 「true」를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.6.1.R.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.6.1.r.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1588,
+        "excerpt": "C.1.6.1.r.1 발신자가 보유하고 있는 자료 사용자 지침 해당 ICSR에 관련된 발신자가 보유하고 있는 자료(예: 진료 기록, 병원 진료 기록, 부검 (user guidance) 보고, ECG 기록 용지, 흉부 X-선 사진, 사진)를 이 데이터 항목에 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.6.1.R.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.6.1.r.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1597,
+        "excerpt": "C.1.6.1.r.2 포함되는 자료 사용자 지침 발신자가 C.1.6.1.r.1에 나와 있는 자료를 보내게 되면 이 데이터 항목에 그 실제 내용 (user guidance) 을 입력한다. 적합성 선택사항"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.7",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.7",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1614,
+        "excerpt": "C.1.7 이 보고는 해당 국가의 신속보고 기준에 해당하는가? 이 데이터 항목에는 해당 사례가 발신자 국가의 신속보고 의무를 충족하는지 여부를 사용자 지침 나타내는데 사용되는 신속의 정의는 해당 국가의 규제 요건에 따른다. 발신자와 수신 (user guidance) 자의 국가가 다를 경우 수신자는 정보가 자국의 규제 요건에 맞지 않을 수 있다는 점"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.8",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.8",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1476,
+        "excerpt": "C.1.8.1에는 다음의 표기가 사용된다: <id extension=\"country code-company name-report no\"root=2.16.840.1.113883.3.989. 2.1.3.2\"/>"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.8.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.8.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1646,
+        "excerpt": "C.1.8.1 전세계 고유식별번호 C.1.8항을 참조한다. 사용자 지침 식별번호의 생성에 사용되는 데이터 항목은 시간이 경과함에 따라 바뀔 수 있기 때문 (user guidance) 에(예: 국가코드가 최신이 아닌 경우) 수신자는 이 데이터 항목의 값을 그대로 받아 개"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.8.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.8.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1640,
+        "excerpt": "C.1.8.2 입력내용을 변경하지 않는다. 규제 당국이 최초 발신자인 경우는 C.1.8.2에 「규제 당국」에 해당하는 값=1을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.9",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.9",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1697,
+        "excerpt": "C.1.9 기타 보고자관리번호 C.1.9.1 이전 전송에서의 기타 보고자관리번호 「true」인 경우에 한하여 이 데이터 항목에 입력한다. 과거에 다른 식별자를 사용하여 두 당"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.9.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.9.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1699,
+        "excerpt": "C.1.9.1 이전 전송에서의 기타 보고자관리번호 「true」인 경우에 한하여 이 데이터 항목에 입력한다. 과거에 다른 식별자를 사용하여 두 당 사용자 지침 사자 간에 해당 ICSR을 교환하거나 다른 식별자와 함께 해당 ICSR을 교환한 경우 다른 식별"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.9.1.R.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.9.1.r.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1715,
+        "excerpt": "C.1.9.1.r.1 보고자관리번호 자료원"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.1.9.1.R.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.1.9.1.r.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1737,
+        "excerpt": "C.1.9.1.r.2 보고자관리번호 이 반복 가능한 데이터 항목은 C.1.9.1.r.1과 함께 입력하면 본 사례에 대해 ICH ICSR의 전 사용자 지침 자적 전송에 사용된 다른 사례 식별자를 알 수 있다. 다른 발신자에게 받은 사례 보고의"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.1.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.1.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1859,
+        "excerpt": "C.2.r.1.1 보고자의 직위"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.1.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.1.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1879,
+        "excerpt": "C.2.r.1.2 보고자의 이름 사용자 지침 이 데이터 항목에는 보고자의 이름을 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.1.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.1.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1892,
+        "excerpt": "C.2.r.1.3 보고자의 중간 이름 사용자 지침 이 데이터 항목에는 보고자의 중간 이름을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.1.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.1.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1920,
+        "excerpt": "C.2.r.1.4 보고자의 성"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.2.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.2.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1941,
+        "excerpt": "C.2.r.2.1 보고자의 조직 사용자 지침 이 데이터 항목에는 보고자의 조직 이름을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.2.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.2.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1956,
+        "excerpt": "C.2.r.2.2 보고자의 부서 사용자 지침 이 데이터 항목에는 보고자의 부서 이름을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.2.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.2.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1971,
+        "excerpt": "C.2.r.2.3 보고자의 주소(번지) 사용자 지침 이 데이터 항목에는 보고자의 주소를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.2.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.2.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1986,
+        "excerpt": "C.2.r.2.4 보고자의 주소(시군구 등) - 35 -"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.2.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.2.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2004,
+        "excerpt": "C.2.r.2.5 보고자의 주소(특별시, 광역시, 도 등) 사용자 지침 이 데이터 항목에는 보고자의 특별시, 광역시, 도 등을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.2.6",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.2.6",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2019,
+        "excerpt": "C.2.r.2.6 보고자의 주소(우편번호) 사용자 지침 이 데이터 항목에는 보고자의 우편번호를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.2.R.2.7",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.2.r.2.7",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2034,
+        "excerpt": "C.2.r.2.7 보고자의 전화번호 이 데이터 항목에는 국가 코드 및 지역 번호를 포함한 보고자의 전화번호를 입력한다. 국제 전화가 가능한 표기법(예: +cc)에 숫자를 입력하고 국내 통화에 대한 지역 번호를 포함하지 않는다. 예를 들어 국내에서 선두에 제로를 사용하는 국가에 대해서는 국내"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2128,
+        "excerpt": "C.3.1 발신자 유형 이 데이터 항목에는 발신자(조직 또는 개인)의 유형을 입력한다. 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2150,
+        "excerpt": "C.3.2 발신자의 조직 사용자 지침 이 데이터 항목에는 발신자의 조직 이름(예: 회사 이름 또는 규제 당국이름)을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2160,
+        "excerpt": "C.3.3 보고 전송 책임자 발신자의 발신자의 부서 발신자의 직위 발신자 이름 발신자의 성"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.3.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.3.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2174,
+        "excerpt": "C.3.3.1 발신자의 부서 사용자 지침 이 데이터 항목에는 발신자의 부서 이름을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.3.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.3.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2187,
+        "excerpt": "C.3.3.2 발신자의 직위 사용자 지침 이 데이터 항목에는 발신자의 직위를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.3.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.3.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2200,
+        "excerpt": "C.3.3.3 발신자의 이름 사용자 지침 이 데이터 항목에는 발신자의 이름을 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.3.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.3.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2217,
+        "excerpt": "C.3.3.4 발신자의 중간 이름 사용자 지침 이 데이터 항목에는 발신자의 중간 이름을 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.3.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.3.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2239,
+        "excerpt": "C.3.3.5 발신자의 성 사용자 지침 이 데이터 항목에는 발신자의 성을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2252,
+        "excerpt": "C.3.4 발신자의 주소, FAX 번호, 전화번호 및 이메일 주소 발신자의 발신자의 발신자의 발신자의 발신자의 발신자의 주소 발신자의 발신자의"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.4.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.4.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2272,
+        "excerpt": "C.3.4.1 발신자의 주소(번지) 사용자 지침 이 데이터 항목에는 발신자의 번지를 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.4.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.4.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2285,
+        "excerpt": "C.3.4.2 발신자의 주소(시군구 등) 사용자 지침 이 데이터 항목에는 발신자의 시군구 등을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.4.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.4.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2298,
+        "excerpt": "C.3.4.3 발신자의 주소(특별시, 광역시, 도 등) 사용자 지침 이 데이터 항목에는 발신자의 특별시, 광역시, 도 등을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.4.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.4.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2311,
+        "excerpt": "C.3.4.4 발신자의 주소(우편번호) 사용자 지침 이 데이터 항목에는 발신자의 우편번호를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.4.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.4.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2324,
+        "excerpt": "C.3.4.5 발신자의 주소(국가코드) 사용자 지침 이 데이터 항목에는 영문자 두자로 된 ISO 3166 Part 1 코드(ISO 3166-1 alpha-2)를 (user guidance) 입력하여 발신자의 국가코드를 나타낸다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.4.6",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.4.6",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2342,
+        "excerpt": "C.3.4.6 발신자의 전화번호 이 데이터 항목에는 국가 코드 및 지역 번호를 포함한 발신자의 전화번호를 입력한다. 국제 전화가 가능한 표기법(예: +cc)에 숫자를 입력하고 국내 통화에 대한 지역 번호를"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.4.7",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.4.7",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2363,
+        "excerpt": "C.3.4.7 발신자의 FAX 번호 이 데이터 항목에는 국가 코드 및 지역 번호를 포함한 발신자의 FAX 번호를 입력한다. 국제 전화가 가능한 표기법(예: +cc)에 숫자를 입력하고 국내 통화에 대한 지역 번호를"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.3.4.8",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.3.4.8",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2384,
+        "excerpt": "C.3.4.8 발신자의 이메일 주소 사용자 지침 이 데이터 항목에는 발신자의 이메일 주소를 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.5.1.R.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.5.1.r.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2456,
+        "excerpt": "C.5.1.r.1 연구 등록 번호 이 데이터 항목에는 보고 지역에서 부여된 연구의 등록번호를 입력한다(예: 유럽경제 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.5.1.R.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.5.1.r.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2481,
+        "excerpt": "C.5.1.r.2 연구 등록 국가 이 데이터 항목에는 C.5.1.r.1.에 표시된 연구 등록 번호를 부여한 국가를 입력하는 데 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.5.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.5.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2499,
+        "excerpt": "C.5.2 연구 제목 사용자 지침 이 데이터 항목에는 해당 ICSR이 보고되는 규제 당국에 등록된 연구 제목을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.5.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.5.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2513,
+        "excerpt": "C.5.3 의뢰자 연구 번호 사용자 지침 이 데이터 항목에는 발신자가 의뢰자나, 스폰서에 의해 연구 번호가 알려진 경우에만 (user guidance) 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.C.5.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "C.5.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2530,
+        "excerpt": "C.5.4 약물이상반응/이상사례가 관찰된 연구 유형 사용자 지침 이 데이터 항목은 「보고 유형」(C.1.3)이 「시험에서 보고」에 해당하는 경우에 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.1.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.1.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2644,
+        "excerpt": "D.1.1.1에는 다음의 표기가 사용된다: 기재규칙 <id extension=\"medical record number\"root=\"2.16.840.1.113883.3.989.2.1.3.7\"/><code (business rule)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.1.1.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.1.1.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2631,
+        "excerpt": "D.1.1.1 환자의 의무기록번호 및 자료원(의사 의무기록번호) 사용자 지침 D.1.1항을 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.1.1.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.1.1.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2652,
+        "excerpt": "D.1.1.2 환자의 진료기록번호 및 자료원(전문의 진료기록번호) 사용자 지침 D.1.1항을 참조한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.1.1.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.1.1.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2675,
+        "excerpt": "D.1.1.3 환자의 진료기록번호 및 자료원(병원 진료기록번호) 사용자 지침 D.1.1항을 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.1.1.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.1.1.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2696,
+        "excerpt": "D.1.1.4 환자의 진료기록번호 및 자료원(조사 번호) 사용자 지침 D.1.1항을 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3372,
+        "excerpt": "D.10.1 부모 정보 사용자 지침 D.1항을 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3390,
+        "excerpt": "D.10.2 부모 연령 정보 자녀 또는 태아에게 이상반응/이상사례가 발현했을 때 부모의 나이를 입력한다. D.10.2.1 또는 D.10.2.2 데이터 항목 중 하나를 선택한다. 이 경우, 사용할 수 있는 가장 정확한 정보를 바탕으 로 선택해야 하며, 지역의 개인정보 보호 규정을 준수한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.2.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.2.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3398,
+        "excerpt": "D.10.2.1 부모의 생년월일 사용자 지침 이 데이터 항목에는 부모의 생년월일을 입력한다. 정확하지 않은 날짜를 사용할 수 있 (user guidance) 다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.2.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.2.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3392,
+        "excerpt": "D.10.2.2 데이터 항목 중 하나를 선택한다. 이 경우, 사용할 수 있는 가장 정확한 정보를 바탕으 로 선택해야 하며, 지역의 개인정보 보호 규정을 준수한다. 만약 정확한 생년월일을 알 수 없는 경우에는 정확하지 않은 날짜를 사용할 수 있다. 또는 대략"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.2.2.B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.2.2.b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 744,
+        "excerpt": "D.10.2.2.b 부모의 나이(단위) 2.16.840.1.113883.3.989.2.1.1.26 E.i.6b 이상반응/이상사례의 지속 기간(단위) 2.16.840.1.113883.3.989.2.1.1.26 G.k.2.3.r.3b 용량(단위) 2.16.840.1.113883.3.989.2.1.1.25 G.k.4.r.1b 투여량(단위) 2.16.840.1.113883.3.989.2.1.1.25"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.2.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.2.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3420,
+        "excerpt": "D.10.2.2a 부모의 연령(숫자) 사용자 지침 이 데이터 항목에는 부모의 나이(숫자)를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.2.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.2.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3430,
+        "excerpt": "D.10.2.2b 부모의 연령(단위) 사용자 지침 이 데이터 항목에는 부모의 나이 단위를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3441,
+        "excerpt": "D.10.3 부모(어머니)의 최종 월경일 사용자 지침 이 데이터 항목에는 부모(어머니)의 마지막 월경 날짜를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3455,
+        "excerpt": "D.10.4 부모의 체중(kg) 사용자 지침 이 데이터 항목에는 부모의 체중을 킬로그램(kg) 단위로 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3466,
+        "excerpt": "D.10.5 부모의 신장(cm) 사용자 지침 이 데이터 항목에는 부모의 신장을 센티미터(cm) 단위로 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.6",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.6",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3485,
+        "excerpt": "D.10.6 부모의 성별 사용자 지침 이 데이터 항목에는 부모의 성별을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.7",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.7",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3501,
+        "excerpt": "D.10.7 부모의 과거 병력 및 동반증상 D.10.7.1.r 부모에 대한 구조화된 정보"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.7.1.R.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.7.1.r.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3505,
+        "excerpt": "D.10.7.1.r.1a 부모의 과거 병력 및 동반증상의 MedDRA 버전 사용자 지침 이 데이터 항목에는 D.10.7.1.r.1b의 MedDRA 버전을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.7.1.R.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.7.1.r.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3517,
+        "excerpt": "D.10.7.1.r.1b 부모의 과거 병력 및 동반증상(질병/수술처치/기타)(MedDRA 코드) 사용자 지침 이 데이터 항목에는 부모의 관련 병력 및 동반증상의 MedDRA LLT 코드를 입력한다. (user guidance) D.7.1.r항을 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.7.1.R.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.7.1.r.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3526,
+        "excerpt": "D.10.7.1.r.2 시작일 사용자 지침 이 데이터 항목에는 D.10.7.1.r의 “의학적 상태”의 시작 날짜를 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.7.1.R.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.7.1.r.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3544,
+        "excerpt": "D.10.7.1.r.3 지속여부 사용자 지침 이 데이터 항목에는 보고 시점에서 D.10.7.1.r의 “의학적 상태”가 아직도 계속되고 있는 (user guidance) 지 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.7.1.R.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.7.1.r.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3557,
+        "excerpt": "D.10.7.1.r.4 종료일 사용자 지침 이 데이터 항목에는 D.10.7.1.r의 “의학적 상태”의 종료 날짜를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.7.1.R.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.7.1.r.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3574,
+        "excerpt": "D.10.7.1.r.5 비고 사용자 지침 구조화 된 데이터 항목에 입력할 수 없는 “의학적 상태”에 대한 추가적인 관련 정보를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.7.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.7.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3584,
+        "excerpt": "D.10.7.2 부모의 관련 병력 및 동반증상의 상세내용 사용자 지침 이 데이터 항목에는 D.10.7.1.r 항에 코딩할 수 없는 부모의 기타 치료경력 및 수반 증 (user guidance) 상에 대한 정보를 입력한다. 적합성 선택사항"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3598,
+        "excerpt": "D.10.8.r.1 보고된 의약품명 이 데이터 항목은 보고자가 보고한 의약품 이름을 입력한다. 1개의 의약품이 단일 제 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3610,
+        "excerpt": "D.10.8.r.2a MPID 버전 날짜/번호 사용자 지침 D.8.r항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3620,
+        "excerpt": "D.10.8.r.2b 의약품식별자(MPID) 사용자 지침 D.8.r항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.3A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.3a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3633,
+        "excerpt": "D.10.8.r.3a PhPID 버전 날짜/번호 사용자 지침 D.8.r항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.3B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.3b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3643,
+        "excerpt": "D.10.8.r.3b 제제식별자(PhPID) 사용자 지침 D.8.r항 참조한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3661,
+        "excerpt": "D.10.8.r.4 시작일 사용자 지침 이 데이터 항목에는 부모의 과거 관련 의약품 투여 시작일을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3678,
+        "excerpt": "D.10.8.r.5 종료일 사용자 지침 이 데이터 항목에는 부모의 과거 관련 의약품 투여 종료일을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.6A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.6a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3695,
+        "excerpt": "D.10.8.r.6a 적응증에 대한 MedDRA 버전 사용자 지침 이 데이터 항목에는 D.10.8.r.6b의 MedDRA 버전을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.6B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.6b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3707,
+        "excerpt": "D.10.8.r.6b 적응증(MedDRA 코드) 사용자 지침 이 데이터 항목에는 의약품을 사용한 이유(적응증)에 대한 MedDRA LLT 코드를 입력 (user guidance) 한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.7A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.7a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3719,
+        "excerpt": "D.10.8.r.7a 이상반응에 대한 MedDRA 버전 사용자 지침 이 데이터 항목에는 D.10.8.r.7b의 MedDRA 버전을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.10.8.R.7B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.10.8.r.7b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 703,
+        "excerpt": "D.10.8.r.7b 이상반응(MedDRA 코드) 2.16.840.1.113883.6.613 E.i.2.1b 이상반응/이상사례(MedDRA 코드) 2.16.840.1.113883.6.613 F.r.2.2b 검사명(MedDRA 코드) 2.16.840.1.113883.6.613 G.k.7.r.2b 적응증(MedDRA 코드) 2.16.840.1.113883.6.613"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.2.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.2.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2725,
+        "excerpt": "D.2.1 생년월일 이 데이터 항목에는 환자의 생년월일로 정확한 날짜(예: 일, 월, 연도)를 입력한다. 정확 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.2.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.2.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2746,
+        "excerpt": "D.2.2 이상반응/이상사례 발현 당시의 연령 여러 이상반응/이상사례가 발생한 경우, 첫 번째 이상반응/이상사례 발현시의 연령을 사용한다. 태아의 이상반응/이상사례의 경우에는 “태아에서 이상반응/이상사례 발현시 임신기간”(D.2.2.1)을 사용한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.2.2.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.2.2.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2784,
+        "excerpt": "D.2.2.1a 태아에서 이상반응/이상사례 발현 당시의 임신기간(숫자) 사용자 지침 이 데이터 항목에는 태아에게 이상반응/이상사례가 관찰되었을 때 임신기간의 값(숫자) (user guidance) 을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.2.2.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.2.2.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2793,
+        "excerpt": "D.2.2.1b 태아에서의 이상반응/이상사례 발현시의 임신기간(단위) 사용자 지침 이 데이터 항목에는 태아에게 이상반응/이상사례가 관찰되었을 때 임신기간의 값(단위) (user guidance) 을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.2.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.2.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2754,
+        "excerpt": "D.2.2a 이상반응/이상사례 발현 당시의 연령(숫자) 사용자 지침 D.2.2항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.2.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.2.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2764,
+        "excerpt": "D.2.2b 이상반응/이상사례 발현 당시의 연령(단위) 사용자 지침 D.2.2항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.2.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.2.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2802,
+        "excerpt": "D.2.3 환자의 연령대(보고자에 따라) 이 데이터 항목 허용치의 용어는 본 문서에서 정의하지 않고, 보고자가 사용한 용어 사용자 지침 (즉, 원보고자가 표현한 대로)를 반영하기 위한 것이다. 이 항목은 연령에 대하여 더"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.7.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.7.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2924,
+        "excerpt": "D.7.1.r항을 참조한다. (user guidance) 적합성 선택사항, 그러나 D.7.1.r.1a에 입력 값이 있는 경우 필수 데이터 유형 8N"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.7.1.R.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.7.1.r.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2910,
+        "excerpt": "D.7.1.r.1a 과거 병력 및 동반증상에 대한 MedDRA 버전 사용자 지침 이 데이터 항목에는 D.7.1.r.1b의 MedDRA 버전을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.7.1.R.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.7.1.r.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2922,
+        "excerpt": "D.7.1.r.1b 과거 병력 및 동반증상(질병/수술처치/기타)(MedDRA 코드) 사용자 지침 D.7.1.r항을 참조한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.7.1.R.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.7.1.r.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2932,
+        "excerpt": "D.7.1.r.2 시작일 사용자 지침 이 데이터 항목에는 D.7.1.r.1b 항의 “의학적 상태”가 시작한 날짜를 입력한다. 시작일 및 종료일 모 (user guidance) 두에 대하여 대략적인 날짜를 입력할 수 있지만, 되도록 정확한 날짜를 입력하는 것이 바람직하다. 적합성 선택사항"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.7.1.R.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.7.1.r.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2951,
+        "excerpt": "D.7.1.r.3 지속여부 사용자 지침 이 데이터 항목에는 보고시점에서 D.7.1.r.1b의 ‘의학적 상태’가 계속되고 있는지를 입 (user guidance) 력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.7.1.R.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.7.1.r.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2962,
+        "excerpt": "D.7.1.r.4 종료일 이 데이터 항목에는 D.7.1.r.1b항의 ‘의학적 상태’의 종료일을 입력한다. 작일 및 종료일 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.7.1.R.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.7.1.r.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2981,
+        "excerpt": "D.7.1.r.5 비고 이 데이터 항목에는 D.7.1.r.1b에 “과거 병력 및 동반증상의 구조화된 정보”에 입력하지 못한 ‘의학적 상태’에 대한 추가적인 정보를 입력한다. 예를 들어, 조산의 경우, 여기에"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.7.1.R.6",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.7.1.r.6",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 2995,
+        "excerpt": "D.7.1.r.6 가족력 유전질환과 같이 D.7.1.r항 “관련 병력 및 동반증상의 구조화된 정보”에 나타내는 의학 적 정보가 다른 가족에서도 존재한다고 보고된 경우 이 데이터 항목에 “예(true)\"를 입 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.7.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.7.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3017,
+        "excerpt": "D.7.2 약물이상반응/이상사례를 제외한 관련 병력 및 동반증상의 상세내용 이 데이터 항목에는 D.7.1.r로 구조화할 수 없는 기타 병력 및 동반 증상에 대한 정보 사용자 지침 를 입력한다. 또한 병력 및 동반증상을 보고하지 않는 경우 여기에 “None\"이라고 입력"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.7.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.7.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3035,
+        "excerpt": "D.7.3 병용요법 이 데이터 항목에는 이상반응 발생 시기에 방사선요법, 약효군, 식이보조제 또는 G항 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.8.R.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.8.r.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3118,
+        "excerpt": "D.8.r.2a MPID 버전 날짜/번호 사용자 지침 이 데이터 항목에는 D.8.r.2b 버전의 날짜를 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.8.R.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.8.r.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3132,
+        "excerpt": "D.8.r.2b 의약품식별자(MPID) 사용자 지침 D.8.r.1 및 ICH M5 구현 지침에 따라 이 데이터항목은 가장 특이적인 식별자 MPID 또는 PhPID (user guidance) 중 하나를 입력한다. 보고된 의약품의 MPID와 PhPID가 없는 경우에는 이 항목을 비워둔다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.8.R.3A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.8.r.3a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3144,
+        "excerpt": "D.8.r.3a PhPID 버전 날짜/번호 사용자 지침 이 데이터 항목에는 D.8.r.3b의 버전 날짜를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.8.R.3B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.8.r.3b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3154,
+        "excerpt": "D.8.r.3b 제제식별자(PhPID) D.8.r.1 및 ICH M5 구현 지침에 따라 이 데이터 항목은 가장 특이적인 식별자 MPID 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.8.R.6A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.8.r.6a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3204,
+        "excerpt": "D.8.r.6a 적응증에 대한 MedDRA 버전 사용자 지침 이 데이터 항목에는 D.8.r.6b의 MedDRA 버전을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.8.R.6B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.8.r.6b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3216,
+        "excerpt": "D.8.r.6b 적응증(MedDRA 코드) 사용자 지침 이 데이터 항목에는 의약품을 사용한 이유(적응증)에 대한 MedDRA LLT 코드를 입력 (user guidance) 한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.8.R.7A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.8.r.7a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3225,
+        "excerpt": "D.8.r.7a 이상반응에 대한 MedDRA 버전 사용자 지침 이 데이터 항목에는 D.8.r.7b의 MedDRA 버전을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.8.R.7B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.8.r.7b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3237,
+        "excerpt": "D.8.r.7b 이상반응(MedDRA 코드) 이 데이터 항목을 입력하기 위해서는 의학적 판단이 필요하다. 이 데이터 항목에는 사용자 지침 D.8.r에서 입력한 의약품의 이전 사용경험에 대한 정보를 입력한다. D.8.r을 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.9.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.9.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3255,
+        "excerpt": "D.9.1 사망일 사용자 지침 이 데이터 항목은 보고된 환자의 사망 날짜를 입력한다. 대략적인 날짜를 입력할 수 (user guidance) 있다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.9.2.R.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.9.2.r.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3278,
+        "excerpt": "D.9.2.r.1a 보고된 사망원인의 MedDRA 버전 사용자 지침 이 데이터 항목에는 D.9.2.r.1b의 MedDRA 버전을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.9.2.R.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.9.2.r.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3290,
+        "excerpt": "D.9.2.r.1b 보고된 사망원인(MedDRA 코드) 사용자 지침 이 데이터 항목에는 보고된 사망 원인에 해당하는 MedDRA LLT 코드를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.9.2.R.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.9.2.r.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3300,
+        "excerpt": "D.9.2.r.2 보고된 사망원인(자유기재)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.9.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.9.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3313,
+        "excerpt": "D.9.3 부검 실시여부 사용자 지침 이 데이터 항목에는 부검이 실시되었는지 여부를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.9.4.R.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.9.4.r.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3329,
+        "excerpt": "D.9.4.r.1a 부검에 의한 사망원인의 MedDRA 버전 사용자 지침 이 데이터 항목에는 D.9.4.r.1b의 MedDRA 버전을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.9.4.R.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.9.4.r.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3341,
+        "excerpt": "D.9.4.r.1b 부검에 의한 사망원인(MedDRA 코드) 사용자 지침 이 데이터 항목에는 부검에 의한 사인에 해당하는 MedDRA LLT 코드를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.D.9.4.R.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "D.9.4.r.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3351,
+        "excerpt": "D.9.4.r.2 부검에 의한 사망원인(자유기재) 이 데이터 항목에는 원보고자가 부검에 의한 사인을 기술하기 위하여 사용한 단어 및/ 사용자 지침 또는 짧은 문구를 입력한다. 텍스트는 국제전송을 위하여 영문 번역으로 제공해야 한"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3758,
+        "excerpt": "E.i.1 원보고자가 보고한 이상반응/이상사례 E.i.1.1a 모국어로 기재된 원보고자가 보고한 이상반응/이상사례"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.1.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.1.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3760,
+        "excerpt": "E.i.1.1a 모국어로 기재된 원보고자가 보고한 이상반응/이상사례 이 데이터 항목에는 이상반응/이상사례를 기술하기 위하여 원보고자가 사용한 단어 및 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.1.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.1.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3772,
+        "excerpt": "E.i.1.1b 원보고자가 이상반응/이상사례 보고에 사용한 언어 사용자 지침 국제표준코드, 언어 이름 코드--Part 2: alpha-3 코드를 이용하여 E.i.1.1a에 사용된 언 (user guidance) 어를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.1.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.1.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3781,
+        "excerpt": "E.i.1.2 원보고자에 의해 보고된 이상반응/이상사례 이 데이터 항목에는 이상반응/이상사례를 기술하기 위하여 사용한 원보고자의 단어 및 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.2.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.2.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3793,
+        "excerpt": "E.i.2.1a 이상반응/이상사례에 대한 MedDRA 버전 사용자 지침 이 데이터 항목에는 E.i.2.1b의 MedDRA 버전을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.2.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.2.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3805,
+        "excerpt": "E.i.2.1b 이상반응/이상사례(MedDRA 코드) 이 데이터 항목은 원보고자에 의해 보고된 이상반응/이상사례와 가장 일치하는 사용자 지침 MedDRA LLT를 입력한다. 예외적인 경우로서 해당 MedDRA 용어가 발견되지 않을 때 (user guidance) 는 발신자가 임상적인 판단에 따라 MedDRA에서 가장 유사한 용어를 선택할 수 있다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3854,
+        "excerpt": "E.i.3.2항 참조한다. (user guidance) 적합성 필수 데이터 유형 불린(Boolean)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.3.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.3.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3821,
+        "excerpt": "E.i.3.1 보고자가 강조한 용어 강조한 용어는 명시된 원보고자가 사례를 보고하도록 한 주요 원인이 된 이상반응/이 상사례를 의미한다. 그것이 원보고자에 의해 명확하게 제공되지 않았다면, 주요한(강조"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.3.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.3.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3843,
+        "excerpt": "E.i.3.2 각 이상사례에 대한 중대성 기준 이상반응/이상사례의 중대성의 기준은 ICH E2A14) 및 E2D15) 지침의 정의에 근거한다. 하나 이 상의 중대성 기준을 선택할 수 있다. 이상반응이 중대하지 않을 때에는 이 데이터 항목은 모두 비워둔다. 이상반응의 중대성은 보고자가 제공하지만, 그렇지 않은 경우에는 발신자가 평가한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.3.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.3.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3851,
+        "excerpt": "E.i.3.2a 사망 사용자 지침 E.i.3.2항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.3.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.3.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3871,
+        "excerpt": "E.i.3.2b 생명의 위협 사용자 지침 E.i.3.2항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.3.2C",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.3.2c",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3883,
+        "excerpt": "E.i.3.2c 입원 또는 입원기간의 연장 사용자 지침 E.i.3.2항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.3.2D",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.3.2d",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3895,
+        "excerpt": "E.i.3.2d 중대한 불구나 기능저하 사용자 지침 E.i.3.2항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.3.2E",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.3.2e",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3907,
+        "excerpt": "E.i.3.2e 선천적 기형 초래 사용자 지침 E.i.3.2항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.3.2F",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.3.2f",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3919,
+        "excerpt": "E.i.3.2f 기타 의학적으로 중요한 상황 사용자 지침 E.i.3.2항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3934,
+        "excerpt": "E.i.4 이상반응/이상사례 발현일 이 데이터 항목에는 이상반응/이상사례 발현 날짜를 입력한다. 증후 및 증상과 함께 사용자 지침 진단명이 보고되는 등 여러 용어가 보고되고, 보고자가 각 이상반응/이상사례마다 명"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3952,
+        "excerpt": "E.i.5 이상반응/이상사례 종료일 이 데이터 항목에는 이상반응/이상사례가 “회복 또는 회복했지만 후유증이 있음(E.i.7)\" 사용자 지침 으로 보고된 날짜를 입력한다. 증후 및 증상과 함께 진단명이 보고되는 등 여러 용어"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.6A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.6a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3970,
+        "excerpt": "E.i.6a 이상반응/이상사례의 지속 기간 일반적으로 이 항목은 이상반응/이상사례의 발현일 및 종료일로부터 계산한다. 약물과 민반응(아나필락시스), 부정맥 등 지속시간이 짧은 이상반응/이상사례의 경우에는 정확"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.6B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.6b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3984,
+        "excerpt": "E.i.6b 이상반응/이상사례의 지속 기간(단위) 사용자 지침 이 데이터 항목에는 E.i.6a항에 기록한 값의 시간 단위를 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.7",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.7",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 3998,
+        "excerpt": "E.i.7 최종 관찰시 이상반응/이상사례의 결과 이 데이터 항목에는 이상반응/이상사례 보고 시 최신 결과를 입력한다. 비가역적인 선천성 기형의 경우 “회복되지 않았음”을 선택한다. 기타 비가역적인 의학"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.8",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.8",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4019,
+        "excerpt": "E.i.8 의약전문인의 의학적 확인(진료사실확인) 이 데이터 항목은 변호사, 소비자 등 비 의약전문가가 이상반응을 보고할 때 의약전문 사용자 지침 가가 그 이상반응 발현을 확인하였는지 나타낼 때 사용할 수 있다. 의약전문가가 인과"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.E.I.9",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "E.i.9",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4037,
+        "excerpt": "E.i.9 이상반응/이상사례가 발현한 국가의 식별 이 데이터 항목에는 이상반응이 발현한 국가를 입력한다. 사용자 지침 예를 들어, A국에 거주하는 환자가 B국을 여행하는 동안 “두통” 이상반응을 경험하였 (user guidance) 을 때, 이 증상이 의심되는 약물이상반응으로 C국의 의약전문가에 의해 보고되었다면"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4074,
+        "excerpt": "F.r.1 검사 날짜 사용자 지침 이 데이터 항목에는 검사 또는 처리 날짜를 입력한다. 대략적인 날짜를 사용할 수 있 (user guidance) 다. 적합성 선택사항, 그러나 F.r.2항에 입력 값이 있는 경우 필수"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4093,
+        "excerpt": "F.r.2 검사명 F.r.2.1 검사명(자유기재) 사용자 지침 이 데이터 항목에는 적절한 MedDRA 코드를 찾을 수 없을 때 시행된 검사항목에 대"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.2.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.2.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4095,
+        "excerpt": "F.r.2.1 검사명(자유기재) 사용자 지침 이 데이터 항목에는 적절한 MedDRA 코드를 찾을 수 없을 때 시행된 검사항목에 대 (user guidance) 하여 자유롭게 기술한다. 적합성 선택사항, 그러나 F.r.1항에 입력하고, F.r.2.2b에 입력하지 않는 경우 필수"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.2.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.2.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4104,
+        "excerpt": "F.r.2.2a 검사명의 MedDRA 버전 사용자 지침 이 데이터 항목에는 F.r.2.2b항에 입력한 MedDRA 버전을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.2.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.2.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4116,
+        "excerpt": "F.r.2.2b 검사명(MedDRA 코드) 사용자 지침 이 데이터 항목에는 검사 이름에 해당하는 MedDRA LLT 코드를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4126,
+        "excerpt": "F.r.3 검사 결과 검사 결과는 F의 각 블록에 필요하다. 검사 결과의 설명에 숫자를 사용할 수 없는 경우에는 관리용어 를 사용하도록 규정되어야 한다. 검사 결과 및 단위를 분할할 수 없는 경우에는 F.r.3.4항목을 사용한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.3.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.3.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4130,
+        "excerpt": "F.r.3.1 검사 결과(코드) 사용자 지침 이 데이터 항목에는 기술적인 코드를 사용하여 검사결과를 나타낼 수 있다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.3.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.3.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4152,
+        "excerpt": "F.r.3.2 검사 결과(값/한정기호16)) 사용자 지침 이 데이터 항목에는 검사결과 값(양)을 입력한다. 적절한 값에 한정기호의 기호를 추가 (user guidance) 할 수 있다. 사용할 수 있는 한정기호는 “초과”, “미만\", \"이상” 및 “이하\"이다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.3.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.3.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4165,
+        "excerpt": "F.r.3.3 검사 결과(단위) 이 데이터 항목에는 검사 결과 값에 대한 단위를 입력한다. UCUM 코드로 입력하는 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.3.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.3.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4179,
+        "excerpt": "F.r.3.4 검사 결과에 대한 비정형 데이터(자유기재) “검사결과(값)”와 “검사결과(단위)”를 구분할 수 없는 경우(대부분은 검사단위의 UCUM 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4191,
+        "excerpt": "F.r.4 정상범위 하한값 16) 한정기호/한정자(Qauntifier): 논리학, 수학, 철학, 컴퓨터과학 등에서 사용하고 있는 형식체계에서 사용되는 기호로,"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4212,
+        "excerpt": "F.r.5 정상범위 상한값 사용자 지침 이 데이터 항목에는 검사의 정상범위 중 상한값을 입력한다. 일반적으로 이 값은 검사 (user guidance) 결과를 제공하는 검사실에서 제시한다. F.r.3.3항에 사용한 단위와 같은 단위를 사용한다. 적합성 선택사항"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.6",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.6",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4225,
+        "excerpt": "F.r.6 비고 사용자 지침 이 데이터 항목에는 본 결과에 대하여 보고자가 쓴 관련 있는 의견을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.F.R.7",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "F.r.7",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4235,
+        "excerpt": "F.r.7 추가 정보 여부 발신자가 검사 및 검사결과에 대한 추가 정보를 가지고 있는 경우, 이 데이터 항목에 사용자 지침 입력한다. 예를 들어, “true\"는 심전도(ECG) 기록, 흉부 X선 사진 등 더 자세한 자료가 (user guidance) 있음을 의미한다. ”false\"는 발신자에게 더 이상의 자료가 없음을 의미한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 730,
+        "excerpt": "G.k.1 의약품 구분의 정의 2.16.840.1.113883.3.989.2.1.1.13 G.k.4.r.10.2b, 투여 경로 ID, 2.16.840.1.113883.3.989.2.1.1.14 G.k.4.r.11.2b 부모의 투여경로 ID"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.11",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.11",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5184,
+        "excerpt": "G.k.11 의약품에 대한 추가정보(자유기재) 사용자 지침 이 데이터 항목에는 G.k.10.r에 포함되지 않은 추가정보를 자유로운 형식으로 기재한다. (user guidance) 예를 들어, G.k.4.r.7의 로트 번호의 유효기간을 이 항목에 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4321,
+        "excerpt": "G.k.2 의약품의 식별 제품명 또는 주성분명은 원보고자가 보고한 표현대로 G.k.2.2항에 입력한다. 의약품의 식별을 표 준화하기 위하여 ICH M5 구현 지침을 사용해야 한다. M5가 이용 가능하게 되면, 의약품을 식별 하는 데 있어서 가장 정확하게 구조화된 정보를 입력할 수 있어 중복된 정보를 반복하여 입력할"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4335,
+        "excerpt": "G.k.2.1 의약품식별자/제제식별자 G.k.2.1.1a 의약품식별자(MPID) 버전 날짜/번호 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.1.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.1.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4337,
+        "excerpt": "G.k.2.1.1a 의약품식별자(MPID) 버전 날짜/번호 사용자 지침 이 데이터 항목에는 G.k.2.1.1b 버전의 날짜를 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.1.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.1.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4347,
+        "excerpt": "G.k.2.1.1b 의약품식별자(MPID) 사용자 지침 G.k.2.2항 및 ICH M5 IDMP 지침에 따라 가장 특이적인 식별자 MPID 또는 PhPID 중 하 (user guidance) 나를 입력한다. 보고된 의약품의 MPID와 PhPID가 없는 경우에는 이 항목을 비워둔다. 적합성 선택사항"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.1.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.1.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4364,
+        "excerpt": "G.k.2.1.2a 제제식별자(PhPID) 버전 날짜/번호 사용자 지침 이 데이터 항목에는 G.k.2.1.2b 버전의 날짜를 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.1.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.1.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4374,
+        "excerpt": "G.k.2.1.2b 제제식별자(PhPID) 사용자 지침 G.k.2.2항 및 ICH M5 구현가이드에 따라 가장 특이적인 식별자 MPID 또는 PhPID 중 하 (user guidance) 나를 입력한다. 보고된 의약품의 MPID와 PhPID가 없는 경우에는 이 항목을 비워둔다. 적합성 선택사항, G.k.2.1.1항에 입력하는 경우는 입력하지 않는다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4388,
+        "excerpt": "G.k.2.2 원보고자에 의해 보고된 의약품명 이 데이터 항목은 보고자가 보고한 의약품 이름을 입력한다. 1개의 의약품이 단일 제 사용자 지침 조자에 의해 제조되고 있어도 국가별로 서로 다른 상표 이름을 가진 경우 입력에 유의"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4493,
+        "excerpt": "G.k.2.3.r항에 의심의약품으로 ”위약\"을 입력한다. 적합성 선택사항 데이터 유형 불린(Boolean) OID 없음"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.3.R.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.3.r.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4406,
+        "excerpt": "G.k.2.3.r.1 성분명/특정성분명 사용자 지침 G.k.2.3.r.2b항 “성분명/특정성분명 TermID\"가 없는 경우에는 그 성분의 기술 정보를 입 (user guidance) 력한다. 여기에 의료기기명을 입력할 수 있다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.3.R.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.3.r.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4418,
+        "excerpt": "G.k.2.3.r.2a 성분명/특정성분명 TermID 버전 날짜/번호 사용자 지침 이 데이터 항목에는 성분명 TermID 버전의 날짜를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.3.R.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.3.r.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4428,
+        "excerpt": "G.k.2.3.r.2b 성분명/특정성분명 TermID 사용자 지침 G.k.2.1.1의 MPID 및 G.k.2.1.2의 PhPID가 모두 없는 경우, 이 성분명의 TermID를 사용 (user guidance) 한다. ICH M5 구현 지침을 사용가능하게 될 때까지 이 항목은 공란으로 한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.3.R.3A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.3.r.3a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4437,
+        "excerpt": "G.k.2.3.r.3a 용량(숫자) G.k.2.1.2항의 PhPID를 사용할 수 없는 경우, 성분의 함량을 나타내는 보다 낮은 수치 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.3.R.3B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.3.r.3b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4449,
+        "excerpt": "G.k.2.3.r.3b 용량(단위) 사용자 지침 이 데이터 항목에는 G.k.2.3.r.3a항에서 사용된 단위를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4459,
+        "excerpt": "G.k.2.4 의약품을 구입한 국가의 식별 사용자 지침 이 데이터 항목에는 의약품을 구입한 국가를 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.2.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.2.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4484,
+        "excerpt": "G.k.2.5 임상시험약의 맹검 여부 이 데이터 항목은 임상시험에서 발생한 ICSR에만 적용 가능하다. ICH E2A 지침은 맹 검 중인 임상시험에서 개별 이상사례 안전성 보고서는 보고하지 않는 것으로 하고 있"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4501,
+        "excerpt": "G.k.3 의약품 품목허가 소유권자 및 허가/신청번호 보고된 의약품의 ICH M5에 해당하는 MPID가 없는 경우에는 사례보고를 전송할 때, 그 보고를 하는 국가의 품목허가 승인/신청 번호와 허가권자 이름을 함께 입력한다. 제약업체들은 의심의약 품에 대한 본 정보를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.3.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.3.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4506,
+        "excerpt": "G.k.3.1 허가번호/신청번호 G.k.2.1.1항의 MPID가 없는 경우는 개별이상사례보고를 전송할 때 그 보고 국가에서의 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.3.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.3.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "conditional_required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4528,
+        "excerpt": "G.k.3.2 허가국/신청국 사용자 지침 G.k.2.1.1항의 MPID가 없는 경우에는 개별이상사례보고를 전송할 때, 의약품 품목허가 (user guidance) 가 승인된 국가를 이 데이터 항목에 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.3.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.3.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4542,
+        "excerpt": "G.k.3.3 허가권자/신청자의 이름 사용자 지침 이 데이터 항목에는 의약품 포장에 표시되는 제조판매 허가 승인 보유자의 이름을 입 (user guidance) 력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.10",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.10",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4767,
+        "excerpt": "G.k.4.r.10 투여 경로 G.k.4.r.10.1 투여 경로(자유기재)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.10.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.10.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4769,
+        "excerpt": "G.k.4.r.10.1 투여 경로(자유기재) G.k.4.r.10.2b항의 투여경로 ID가 없는 경우, 이 데이터 항목에 투여경로에 관한 설명을 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.10.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.10.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4786,
+        "excerpt": "G.k.4.r.10.2a 투여 경로 ID 버전 날짜/번호 사용자 지침 이 데이터 항목에는 의약품 투여경로 TermID 버전의 날짜를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.10.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.10.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4798,
+        "excerpt": "G.k.4.r.10.2b 투여 경로 ID 투여경로는 ICH M5의 투여경로 관리용어의 ID를 입력한다. M5가 이용가능하게 될 때까지 이 지침의 부록 I(F)에 기록된 기존의 코드표를 사용한다. 이외의 식별자를 이 데이터 항목에 사용하지 않는다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.11",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.11",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4818,
+        "excerpt": "G.k.4.r.11 부모-자녀/태아보고의 경우 부모에서 투여 경로 G.k.4.r.11.1 부모에서의 투여 경로(자유기재)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.11.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.11.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4820,
+        "excerpt": "G.k.4.r.11.1 부모에서의 투여 경로(자유기재) - 88 -"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.11.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.11.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4839,
+        "excerpt": "G.k.4.r.11.2a 부모에서의 투여 경로 ID 버전 날짜/번호 사용자 지침 이 데이터 항목에는 의약품 투여경로 TermID 버전의 날짜를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.11.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.11.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4849,
+        "excerpt": "G.k.4.r.11.2b 부모에서의 투여 경로 ID 이 데이터 항목은 G.k.4.r.1에서 G.k.4.r.3에서 기술한 부모가 사용하는 의약품에 대한 투 사용자 지침 여경로를 입력한다. 투여경로는 ICH M5의 투여경로 관리용어의 ID를 입력한다. M5가"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4585,
+        "excerpt": "G.k.4.r.1a 투여량(숫자) 사용자 지침 이 데이터 항목에는 각 의약품의 투여량을 숫자로 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4595,
+        "excerpt": "G.k.4.r.1b 투여량(단위) 사용자 지침 이 데이터 항목은 G.k.4.r.1a항에 입력한 투여량의 단위를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4607,
+        "excerpt": "G.k.4.r.2 투여간격 단위(숫자) 이 데이터 항목에는 G.k.4.r.1a 및 G.k.4.r.1b항의 시간간격 값(양)을 입력한다. G.k.4.r.2 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4619,
+        "excerpt": "G.k.4.r.3 투여간격 단위 이 데이터 항목에는 G.k.4.r.3항 투여 간격의 단위를 가장 적절히 표현하는 UCUM 코드 를 입력한다. 구체적인 투여 간격은 모르지만, 의약품이 주기적으로 또는 필요시 사용"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4642,
+        "excerpt": "G.k.4.r.4 의약품 투여 시작일 사용자 지침 이 데이터 항목에는 의약품 투여 시작일을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4657,
+        "excerpt": "G.k.4.r.5 의약품 투여 종료일 이 데이터 항목에는 의약품 투여 종료일을 입력한다. 이상반응/이상사례가 발현된 후 사용자 지침 에도 투여를 계속하는 경우에는 이 데이터 항목을 공란으로 하며, G.k.8의 “의약품 사"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.6A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.6a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4673,
+        "excerpt": "G.k.4.r.6a 의약품 투여 기간(숫자) 보통 의약품 투여기간은 투여 시작일 및 종료일로부터 계산된다. 그러나 분 또는 시간 처럼 더 자세한 투여기간 정보가 도움이 될 수 있다. 또한 이 데이터 항목은 보고 시"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.6B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.6b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4686,
+        "excerpt": "G.k.4.r.6b 의약품 투여 기간(단위) 사용자 지침 이 데이터 항목에는 G.k.4.r.6a항의 의약품 투여기간에 해당하는 단위를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.7",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.7",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4701,
+        "excerpt": "G.k.4.r.7 배치/로트 번호 이 데이터 항목에는 의약품의 배치 또는 로트 번호를 입력한다. 이 정보는 예방접종 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.8",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.8",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4713,
+        "excerpt": "G.k.4.r.8 투여량을 나타내는 기술 정보 구조화된 투여량 정보를 표시할 수 없거나, 구조화된 투여량에 관련하여 보다 자세한 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.9",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.9",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4725,
+        "excerpt": "G.k.4.r.9 의약품 제형 G.k.4.r.9.1 의약품 제형(자유기재)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.9.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.9.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4727,
+        "excerpt": "G.k.4.r.9.1 의약품 제형(자유기재) 사용자 지침 G.k.4.r.9.2b항에 해당하는 의약품 제형의 TermID가 없는 경우, 이 데이터 항목에 의약 (user guidance) 품 제형에 대한 설명을 자유롭게 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.9.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.9.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4740,
+        "excerpt": "G.k.4.r.9.2a 의약품 제형 ID 버전 날짜 사용자 지침 이 데이터 항목에는 의약품 제형 TermID 버전의 날짜를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.4.R.9.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.4.r.9.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4750,
+        "excerpt": "G.k.4.r.9.2b 의약품 제형 ID G.k.2.1.2항의 PhPID가 없는 경우, 의약품 제형에 대해서는 ICH M5 의약품 제형 관리 사용자 지침 용어의 ID를 입력한다. 의약품 제형의 ID가 없는 경우에는 G.k.4.r.9.1의 자유기재 항목"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.5A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.5a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4866,
+        "excerpt": "G.k.5a 첫 이상반응/이상사례 발현까지의 약물의 누적 투여량(숫자) 사용자 지침 이 데이터 항목에는 첫 번째 증상 또는 이상반응/이상사례가 발현하기까지 약물 투여 (user guidance) 량의 누적 값을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.5B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.5b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 756,
+        "excerpt": "G.k.5b 2.16.840.1.113883.3.989.2.1.1.25 투여량(단위) G.k.6b 노출 시 임신 기간(단위) 2.16.840.1.113883.3.989.2.1.1.26 의약품의 투여 시작 후 이상반응/이상사례"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.6A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.6a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4891,
+        "excerpt": "G.k.6a 노출시 임신 기간(숫자) 사용자 지침 이 데이터 항목에는 가장 처음 약물에 노출된 시점의 임신기간을 숫자로 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.6B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.6b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4904,
+        "excerpt": "G.k.6b 노출시 임신 기간(단위) 사용자 지침 이 데이터 항목에는 G.k.6a항의 단위를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.7.R.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.7.r.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4918,
+        "excerpt": "G.k.7.r.1 원보고자에 의해 보고된 적응증 이 데이터 항목에는 적응증을 기술하기 위하여 원보고자가 사용한 단어 및/또는 짧은 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.7.R.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.7.r.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4937,
+        "excerpt": "G.k.7.r.2a 적응증에 대한 MedDRA 버전 사용자 지침 이 데이터 항목에는 G.k.7.r.2b항의 MedDRA 버전을 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.7.R.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.7.r.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4953,
+        "excerpt": "G.k.7.r.2b 적응증(MedDRA 코드) 사용자 지침 이 데이터 항목에는 적응증에 대한 MedDRA LLT 코드를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.8",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.8",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4965,
+        "excerpt": "G.k.8 의약품에 수반되는 조치 이 데이터 항목에는 이상반응/이상사례의 결과로 의약품에 수반되는 조치를 입력한다. 값 “1(투여중지)”은 E.i.7의 최종 관찰시 이상반응/이상사례의 결과와 함께 투여 중단"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.9.I",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.9.i",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 4984,
+        "excerpt": "G.k.9.i 의약품-이상반응/이상사례 매트릭스(행렬)(필요시 반복) 본 항목은 E절에서 기술한 각 이상반응/이상사례(i)와 의심의약품(k) 사이의 인과관계의 정도를 전송하기 위한 수단을 제공한다. 반복항목(r)은 다른 보고원 또는 평가방법에 의한 인과관계의 평 가를 나타내는데 사용된다. 보고의 목적에서 보면, 자발적 보고에 대한 인과관계의 묵시적인 의"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.9.I.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.9.i.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5045,
+        "excerpt": "G.k.9.i.1 평가 대상인 이상반응/이상사례 이 데이터 항목에는 메시지 안의 기술 참조 항목을 입력한다. 이것은 E.i에서 어떤 이 사용자 지침 상반응/이상사례를 평가 대상으로 하고 있는지를 확인하기 위해 사용한다. 이것은 사"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.9.I.2.R.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.9.i.2.r.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5065,
+        "excerpt": "G.k.9.i.2.r.1 평가 정보원 사용자 지침 이 데이터 항목에는 G.k.9.i.2.r.3항에 입력한 평가의 정보원을 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.9.I.2.R.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.9.i.2.r.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5075,
+        "excerpt": "G.k.9.i.2.r.2 평가 방법 사용자 지침 이 데이터 항목에는 G.k.9.i.2.r.3항에 입력한 평가 방법을 입력한다. 예를 들면, 일반적 (user guidance) 인 관찰평가, 알고리즘, 베이지안 분석 등이 있다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.9.I.2.R.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.9.i.2.r.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5084,
+        "excerpt": "G.k.9.i.2.r.3 평가 결과 사용자 지침 이 데이터 항목에는 인과관계의 평가 결과를 입력한다. “값“은 평가에 사용된 방법에 (user guidance) 따라 달라질 수 있다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.9.I.3.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.9.i.3.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5093,
+        "excerpt": "G.k.9.i.3.1a 의약품 투여 시작 후 이상반응/이상사례 발현까지의 시간 간격(숫자) 이 데이터 항목에는 의약품 투여 시작 후 이상반응/이상사례 발현까지의 시간 간격 값(양)을 입 력한다. 다른 날짜에 대한 정보를 알 수 있다고 해도 예를 들어 아나필락시스(anaphylaxis) 등"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.9.I.3.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.9.i.3.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5107,
+        "excerpt": "G.k.9.i.3.1b 의약품 투여 시작 후 이상반응/이상사례 발현까지의 시간 간격(단위) 사용자 지침 이 데이터 항목에는 G.k.9.i.3.1a에 입력한 시간의 단위를 입력한다. (user guidance)"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.9.I.3.2A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.9.i.3.2a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5121,
+        "excerpt": "G.k.9.i.3.2a 의약품 최종 투여에서 이상반응/이상사례 발현까지의 시간 간격(숫자) 이 데이터 항목에는 의약품 투여 종료 후 이상반응/이상사례 발현까지의 시간 간격 값 (양)을 입력한다. 다른 날짜에 대한 정보를 알 수 있다고 해도 예를 들어 아나필락시스"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.9.I.3.2B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.9.i.3.2b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5134,
+        "excerpt": "G.k.9.i.3.2b 의약품 최종 투여에서 이상반응/이상사례 발현까지의 시간 간격(단위) 사용자 지침 이 데이터 항목에는 G.k.9.i.3.2a에 입력한 시간의 단위를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.G.K.9.I.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "G.k.9.i.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "unspecified",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 735,
+        "excerpt": "G.k.9.i.4 재투여로 인한 이상반응이 다시 일어났는가? 2.16.840.1.113883.3.989.2.1.1.16 G.k.10.r 의약품에 대한 추가 정보(코드) (필요시 반복) 2.16.840.1.113883.3.989.2.1.1.17 표 4: E2B(R3) 데이터 항목 및 ICH ICSR 메시지 코드 OID(ICH 제한된 UCUM 코드)"
+      },
+      "confidence": 0.35,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.H.3.R.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "H.3.r.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5227,
+        "excerpt": "H.3.r.1a 발신자에 의한 진단명, 증후군 및/또는 이상반응/이상사례의 재분류에 대한 MedDRA 버전 사용자 지침"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.H.3.R.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "H.3.r.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5240,
+        "excerpt": "H.3.r.1b 발신자에 의한 진단명, 증후군 및/또는 이상반응/이상사례의 재분류(MedDRA 코드) 사용자 지침 이 데이터 항목은 발신자가 징후와 증상을 연관시켜 간결한 진단명으로 보고할 수 있도 (user guidance) 록 하고 있다. 용어 선택의 근거를 H.4항에 입력한다. MedDRA LLT 코드를 사용한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.H.5.R.1A",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "H.5.r.1a",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "optional",
+      "enforcement_candidate": "optional_or_manual_review",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5271,
+        "excerpt": "H.5.r.1a 사례 개요 및 보고자의 의견 진술 정보 사용자 지침 H.5.r항 참조한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "low",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.H.5.R.1B",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "H.5.r.1b",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 5281,
+        "excerpt": "H.5.r.1b 사례 개요 및 보고자의 의견 기재 언어 사용자 지침 국제표준코드, 언어 이름 코드--Part 2: alpha-3 코드를 이용하여 H.5.r.1a에 사용된 언 (user guidance) 어를 입력한다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.N.1.1",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "N.1.1",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1259,
+        "excerpt": "N.1.1 배치의 메시지 유형 사용자 지침 이 데이터 항목에는 전송되는 정보의 종류에 대한 정보가 포함된다. 하나의 ICH ICSR (user guidance) 배치에 하나 이상의 ICSR(ICSRs)을 포함할 수 있다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.N.1.2",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "N.1.2",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1281,
+        "excerpt": "N.1.2 배치 번호"
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.N.1.3",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "N.1.3",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1300,
+        "excerpt": "N.1.3 배치 발신자 식별자 사용자 지침 이 데이터 항목에는 예를 들어 회사 이름이나 규제 당국 등 ICSR 보고의 전송원(ICH (user guidance) ICSR 배치 파일의 작성자)을 정의한다. 수신자의 고유 식별자이다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.N.1.4",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "N.1.4",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1313,
+        "excerpt": "N.1.4 배치 수신자 식별자 사용자 지침 이 데이터 항목에는 ICSR 배치 파일의 전송 대상을 정의한다. 발신자의 고유 식별자 (user guidance) 이다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    },
+    {
+      "rule_id": "DRAFT.MFDS.N.1.5",
+      "authority": "mfds",
+      "profile": "ich_or_mfds_guidance",
+      "element_id": "N.1.5",
+      "phase": [
+        "case_validate",
+        "xml_import",
+        "xml_export",
+        "submit_gate"
+      ],
+      "conformance_hint": "required",
+      "enforcement_candidate": "required",
+      "source_kind": "pdf_guidance",
+      "source_ref": {
+        "file": "/Users/hyundonghoon/Downloads/개별+이상사례+전자보고양식(E2B(R3))가이드라인(민원인안내서).pdf",
+        "line_number_1_based": 1326,
+        "excerpt": "N.1.5 배치 전송 날짜 사용자 지침 이 데이터 항목에는 ICH ICSR 배치 파일이 전송된 날짜이다."
+      },
+      "confidence": 0.75,
+      "status": "draft_review_required",
+      "implementation_priority": "high",
+      "manifest_track": "implementable_leaf_candidate"
+    }
+  ]
+}

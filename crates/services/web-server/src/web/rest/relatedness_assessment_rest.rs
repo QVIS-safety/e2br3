@@ -15,7 +15,7 @@ use lib_core::model::drug_reaction_assessment::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValValue, OpValsValue};
 use serde_json::json;
@@ -25,11 +25,12 @@ use uuid::Uuid;
 pub async fn create_relatedness_assessment(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, _drug_id, assessment_id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, _drug_id, assessment_id)): Path<(Uuid, Uuid, Uuid)>,
 	Json(params): Json<ParamsForCreate<RelatednessAssessmentForCreate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<RelatednessAssessment>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, RELATEDNESS_ASSESSMENT_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
 	data.drug_reaction_assessment_id = assessment_id;
@@ -79,11 +80,12 @@ pub async fn get_relatedness_assessment(
 pub async fn update_relatedness_assessment(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, _drug_id, _assessment_id, id)): Path<(Uuid, Uuid, Uuid, Uuid)>,
+	Path((case_id, _drug_id, _assessment_id, id)): Path<(Uuid, Uuid, Uuid, Uuid)>,
 	Json(params): Json<ParamsForUpdate<RelatednessAssessmentForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<RelatednessAssessment>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, RELATEDNESS_ASSESSMENT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	RelatednessAssessmentBmc::update(&ctx, &mm, id, data).await?;
 	let entity = RelatednessAssessmentBmc::get(&ctx, &mm, id).await?;
@@ -94,10 +96,11 @@ pub async fn update_relatedness_assessment(
 pub async fn delete_relatedness_assessment(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, _drug_id, _assessment_id, id)): Path<(Uuid, Uuid, Uuid, Uuid)>,
+	Path((case_id, _drug_id, _assessment_id, id)): Path<(Uuid, Uuid, Uuid, Uuid)>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, RELATEDNESS_ASSESSMENT_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	RelatednessAssessmentBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }

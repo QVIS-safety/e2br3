@@ -30,6 +30,10 @@ fn export_g_drug_basic() {
 		manufacturer_name: Some("Maker".to_string()),
 		manufacturer_country: Some("US".to_string()),
 		batch_lot_number: Some("LOT1".to_string()),
+		cumulative_dose_first_reaction_value: Some(150.into()),
+		cumulative_dose_first_reaction_unit: Some("mg".to_string()),
+		gestation_period_exposure_value: Some(10.into()),
+		gestation_period_exposure_unit: Some("wk".to_string()),
 		dosage_text: Some("Take once daily".to_string()),
 		action_taken: Some("5".to_string()),
 		rechallenge: Some("1".to_string()),
@@ -38,6 +42,9 @@ fn export_g_drug_basic() {
 		parent_route_termid_version: Some("1".to_string()),
 		parent_dosage_text: Some("Parent dose".to_string()),
 		fda_additional_info_coded: Some("1".to_string()),
+		drug_additional_info_codes_json: None,
+		fda_specialized_product_category: None,
+		fda_device_info_json: None,
 		created_at: OffsetDateTime::now_utc(),
 		updated_at: OffsetDateTime::now_utc(),
 		created_by: Uuid::new_v4(),
@@ -84,6 +91,7 @@ fn export_g_drug_basic() {
 		dose_form_termid: Some("DF1".to_string()),
 		dose_form_termid_version: Some("1".to_string()),
 		route_of_administration: Some("PO".to_string()),
+		route_termid_version: Some("1".to_string()),
 		parent_route: Some("oral".to_string()),
 		parent_route_termid: Some("001".to_string()),
 		parent_route_termid_version: Some("1".to_string()),
@@ -179,4 +187,18 @@ fn export_g_drug_basic() {
 		)
 		.unwrap();
 	assert_eq!(first_admin, "20240101080000");
+	let cumulative_value = xpath
+		.findvalue(
+			"//hl7:substanceAdministration/hl7:outboundRelationship2[@typeCode='SUMM']/hl7:observation[hl7:code[@code='14']]/hl7:value/@value",
+			None,
+		)
+		.unwrap();
+	assert_eq!(cumulative_value, "150");
+	let gestation_unit = xpath
+		.findvalue(
+			"//hl7:substanceAdministration/hl7:outboundRelationship2[@typeCode='PERT']/hl7:observation[hl7:code[@code='16']]/hl7:value/@unit",
+			None,
+		)
+		.unwrap();
+	assert_eq!(gestation_unit, "wk");
 }

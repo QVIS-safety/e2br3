@@ -38,6 +38,13 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(50) NOT NULL DEFAULT 'user',
     first_name VARCHAR(100),
     last_name VARCHAR(100),
+    comments TEXT,
+    other_information TEXT,
+    access_start_at TIMESTAMPTZ,
+    access_end_at TIMESTAMPTZ,
+    access_sender_ids TEXT,
+    access_product_ids TEXT,
+    access_study_ids TEXT,
     active BOOLEAN DEFAULT true,
     must_change_password BOOLEAN NOT NULL DEFAULT false,
     last_login_at TIMESTAMP WITH TIME ZONE,
@@ -49,7 +56,25 @@ CREATE TABLE IF NOT EXISTS users (
     updated_by UUID,
 
     CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
-    CONSTRAINT user_role_valid CHECK (role IN ('admin', 'manager', 'user', 'viewer'))
+    CONSTRAINT user_role_valid CHECK (char_length(trim(role)) > 0)
+);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+    key text PRIMARY KEY,
+    value jsonb NOT NULL DEFAULT '{}'::jsonb,
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    updated_by uuid NULL REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS app_roles (
+    role_name text PRIMARY KEY,
+    display_name text NOT NULL,
+    can_view boolean NOT NULL DEFAULT true,
+    can_review boolean NOT NULL DEFAULT false,
+    can_lock boolean NOT NULL DEFAULT false,
+    can_admin boolean NOT NULL DEFAULT false,
+    active boolean NOT NULL DEFAULT true,
+    updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_users_organization ON users(organization_id);
@@ -72,6 +97,12 @@ CREATE TABLE if NOT EXISTS cases (
     dg_prd_key TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'draft',
     validation_profile VARCHAR(10),
+    appendices_json TEXT,
+    mfds_report_type TEXT,
+    report_year VARCHAR(10),
+    source_document_name TEXT,
+    source_document_base64 TEXT,
+    source_document_media_type TEXT,
 
     -- Workflow tracking
     created_by UUID NOT NULL REFERENCES users(id),
@@ -96,7 +127,7 @@ CREATE TABLE if NOT EXISTS cases (
 
     -- Unique constraint: one active version per safety_report_id
     CONSTRAINT unique_safety_report_version UNIQUE (safety_report_id, version),
-    CONSTRAINT case_status_valid CHECK (status IN ('draft', 'checked', 'validated', 'submitted', 'archived', 'nullified')),
+    CONSTRAINT case_status_valid CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'archived', 'nullified')),
     CONSTRAINT case_validation_profile_valid CHECK (validation_profile IS NULL OR validation_profile IN ('ich', 'fda', 'mfds'))
 );
 
@@ -196,6 +227,63 @@ CREATE TABLE if NOT EXISTS submission_idempotency (
 );
 
 CREATE INDEX idx_submission_idempotency_submission ON submission_idempotency(submission_id);
+
+    -- ============================================================================
+    -- 4.5 XML Import History
+    -- ============================================================================
+CREATE TABLE if NOT EXISTS xml_import_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    uploaded_file_name VARCHAR(255) NOT NULL,
+    source_file_name VARCHAR(255) NOT NULL,
+    case_id UUID REFERENCES cases(id) ON DELETE SET NULL,
+    case_number VARCHAR(100),
+    status VARCHAR(20) NOT NULL,
+    error_message TEXT,
+    validation_profile VARCHAR(16),
+    uploaded_by UUID NOT NULL REFERENCES users(id),
+    uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT xml_import_history_status_valid CHECK (
+        status IN ('success', 'warning', 'error')
+    ),
+    CONSTRAINT xml_import_history_profile_valid CHECK (
+        validation_profile IS NULL OR validation_profile IN ('ich', 'fda', 'mfds')
+    )
+);
+
+CREATE INDEX idx_xml_import_history_uploaded_at ON xml_import_history(uploaded_at DESC);
+CREATE INDEX idx_xml_import_history_case ON xml_import_history(case_id, uploaded_at DESC);
+CREATE INDEX idx_xml_import_history_user ON xml_import_history(uploaded_by, uploaded_at DESC);
+
+    -- ============================================================================
+    -- 4.6 XML Export History
+    -- ============================================================================
+CREATE TABLE if NOT EXISTS xml_export_history (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    case_number VARCHAR(100),
+    file_name VARCHAR(255) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    error_message TEXT,
+    validation_profile VARCHAR(16),
+    exported_by UUID NOT NULL REFERENCES users(id),
+    exported_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT xml_export_history_status_valid CHECK (
+        status IN ('success', 'error')
+    ),
+    CONSTRAINT xml_export_history_profile_valid CHECK (
+        validation_profile IS NULL OR validation_profile IN ('ich', 'fda', 'mfds')
+    )
+);
+
+CREATE INDEX idx_xml_export_history_exported_at ON xml_export_history(exported_at DESC);
+CREATE INDEX idx_xml_export_history_case ON xml_export_history(case_id, exported_at DESC);
+CREATE INDEX idx_xml_export_history_user ON xml_export_history(exported_by, exported_at DESC);
 
     -- ============================================================================
     -- 4.5 Submission ACKs (durable ACK history)
@@ -837,7 +925,54 @@ CREATE POLICY submission_acks_via_submission ON submission_acks
     );
 
 -- ============================================================================
--- 9.8 Electronic Signatures Table RLS
+-- 9.8 XML Import History Table RLS
+-- ============================================================================
+ALTER TABLE xml_import_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE xml_import_history FORCE ROW LEVEL SECURITY;
+CREATE POLICY xml_import_history_org_isolation ON xml_import_history
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        uploaded_by = get_current_user_context()
+        OR EXISTS (
+            SELECT 1 FROM users u
+            WHERE u.id = xml_import_history.uploaded_by
+            AND (
+                u.organization_id = current_organization_id()
+                OR is_current_user_admin()
+            )
+        )
+    )
+    WITH CHECK (
+        uploaded_by = get_current_user_context()
+        OR is_current_user_admin()
+    );
+
+-- ============================================================================
+-- 9.9 XML Export History Table RLS
+-- ============================================================================
+ALTER TABLE xml_export_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE xml_export_history FORCE ROW LEVEL SECURITY;
+CREATE POLICY xml_export_history_via_case ON xml_export_history
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = xml_export_history.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = xml_export_history.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+-- ============================================================================
+-- 9.10 Electronic Signatures Table RLS
 -- ============================================================================
 ALTER TABLE e_signatures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE e_signatures FORCE ROW LEVEL SECURITY;
@@ -862,7 +997,7 @@ CREATE POLICY e_signatures_via_case ON e_signatures
     );
 
 -- ============================================================================
--- 9.9 Users Table RLS
+-- 9.11 Users Table RLS
 -- ============================================================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users FORCE ROW LEVEL SECURITY;
@@ -884,7 +1019,7 @@ CREATE POLICY users_org_isolation_modify ON users
     WITH CHECK (is_current_user_admin());
 
 -- ============================================================================
--- 9.10 Organizations Table RLS
+-- 9.12 Organizations Table RLS
 -- ============================================================================
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations FORCE ROW LEVEL SECURITY;

@@ -1,0 +1,919 @@
+{
+  "summary": {
+    "candidate_count": 91,
+    "high_priority_count": 57,
+    "medium_priority_count": 34
+  },
+  "candidates": [
+    {
+      "element_id": "C.1.11.2",
+      "rule_code_candidate": "ICH.C.1.11.2.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1803,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.C.1.11.2",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "C.1.6.1.r.1",
+      "rule_code_candidate": "ICH.C.1.6.1.r.1.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1588,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.C.1.6.1.R.1",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "C.1.9.1.r.1",
+      "rule_code_candidate": "ICH.C.1.9.1.r.1.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1715,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.C.1.9.1.R.1",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "C.1.9.1.r.2",
+      "rule_code_candidate": "ICH.C.1.9.1.r.2.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1737,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.C.1.9.1.R.2",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "C.5.4",
+      "rule_code_candidate": "ICH.C.5.4.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 2530,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.C.5.4",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.10.2.2a",
+      "rule_code_candidate": "ICH.D.10.2.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3420,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.10.2.2A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.10.2.2b",
+      "rule_code_candidate": "ICH.D.10.2.2b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3430,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.10.2.2B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.10.6",
+      "rule_code_candidate": "ICH.D.10.6.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3485,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.10.6",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.10.7.1.r.1a",
+      "rule_code_candidate": "ICH.D.10.7.1.r.1a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3505,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.10.7.1.R.1A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.10.7.1.r.1b",
+      "rule_code_candidate": "ICH.D.10.7.1.r.1b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3517,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.10.7.1.R.1B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.10.8.r.6a",
+      "rule_code_candidate": "ICH.D.10.8.r.6a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3695,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.10.8.R.6A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.10.8.r.6b",
+      "rule_code_candidate": "ICH.D.10.8.r.6b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3707,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.10.8.R.6B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.10.8.r.7a",
+      "rule_code_candidate": "ICH.D.10.8.r.7a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3719,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.10.8.R.7A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.2.2.1a",
+      "rule_code_candidate": "ICH.D.2.2.1a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 2784,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.2.2.1A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.2.2.1b",
+      "rule_code_candidate": "ICH.D.2.2.1b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 2793,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.2.2.1B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.2.2a",
+      "rule_code_candidate": "ICH.D.2.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 2754,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.2.2A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.2.2b",
+      "rule_code_candidate": "ICH.D.2.2b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 2764,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.2.2B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.7.1.r.1a",
+      "rule_code_candidate": "ICH.D.7.1.r.1a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 2910,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.7.1.R.1A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.7.1.r.1b",
+      "rule_code_candidate": "ICH.D.7.1.r.1b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 2922,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.7.1.R.1B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.8.r.6a",
+      "rule_code_candidate": "ICH.D.8.r.6a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3204,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.8.R.6A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.8.r.6b",
+      "rule_code_candidate": "ICH.D.8.r.6b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3216,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.8.R.6B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.8.r.7a",
+      "rule_code_candidate": "ICH.D.8.r.7a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3225,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.8.R.7A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.8.r.7b",
+      "rule_code_candidate": "ICH.D.8.r.7b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3237,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.8.R.7B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.9.2.r.1a",
+      "rule_code_candidate": "ICH.D.9.2.r.1a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3278,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.9.2.R.1A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.9.2.r.1b",
+      "rule_code_candidate": "ICH.D.9.2.r.1b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3290,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.9.2.R.1B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.9.2.r.2",
+      "rule_code_candidate": "ICH.D.9.2.r.2.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3300,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.9.2.R.2",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.9.3",
+      "rule_code_candidate": "ICH.D.9.3.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3313,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.9.3",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.9.4.r.1a",
+      "rule_code_candidate": "ICH.D.9.4.r.1a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3329,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.9.4.R.1A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.9.4.r.1b",
+      "rule_code_candidate": "ICH.D.9.4.r.1b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3341,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.9.4.R.1B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "D.9.4.r.2",
+      "rule_code_candidate": "ICH.D.9.4.r.2.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3351,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.D.9.4.R.2",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "E.i.6a",
+      "rule_code_candidate": "ICH.E.i.6a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3970,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.E.I.6A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "E.i.6b",
+      "rule_code_candidate": "ICH.E.i.6b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3984,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.E.I.6B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "F.r.1",
+      "rule_code_candidate": "ICH.F.r.1.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4074,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.F.R.1",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "F.r.2.1",
+      "rule_code_candidate": "ICH.F.r.2.1.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4095,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.F.R.2.1",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "F.r.2.2a",
+      "rule_code_candidate": "ICH.F.r.2.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4104,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.F.R.2.2A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "F.r.2.2b",
+      "rule_code_candidate": "ICH.F.r.2.2b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4116,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.F.R.2.2B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "F.r.3.1",
+      "rule_code_candidate": "ICH.F.r.3.1.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4130,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.F.R.3.1",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "F.r.3.2",
+      "rule_code_candidate": "ICH.F.r.3.2.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4152,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.F.R.3.2",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "F.r.3.3",
+      "rule_code_candidate": "ICH.F.r.3.3.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4165,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.F.R.3.3",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "F.r.3.4",
+      "rule_code_candidate": "ICH.F.r.3.4.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4179,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.F.R.3.4",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.2.3.r.3b",
+      "rule_code_candidate": "ICH.G.k.2.3.r.3b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4449,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.2.3.R.3B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.4.r.1b",
+      "rule_code_candidate": "ICH.G.k.4.r.1b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4595,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.4.R.1B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.4.r.3",
+      "rule_code_candidate": "ICH.G.k.4.r.3.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4619,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.4.R.3",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.4.r.6a",
+      "rule_code_candidate": "ICH.G.k.4.r.6a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4673,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.4.R.6A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.4.r.6b",
+      "rule_code_candidate": "ICH.G.k.4.r.6b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4686,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.4.R.6B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.5a",
+      "rule_code_candidate": "ICH.G.k.5a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4866,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.5A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.6a",
+      "rule_code_candidate": "ICH.G.k.6a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4891,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.6A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.6b",
+      "rule_code_candidate": "ICH.G.k.6b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4904,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.6B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.7.r.2a",
+      "rule_code_candidate": "ICH.G.k.7.r.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4937,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.7.R.2A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.7.r.2b",
+      "rule_code_candidate": "ICH.G.k.7.r.2b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4953,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.7.R.2B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.9.i.3.1a",
+      "rule_code_candidate": "ICH.G.k.9.i.3.1a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 5093,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.9.I.3.1A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.9.i.3.1b",
+      "rule_code_candidate": "ICH.G.k.9.i.3.1b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 5107,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.9.I.3.1B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.9.i.3.2a",
+      "rule_code_candidate": "ICH.G.k.9.i.3.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 5121,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.9.I.3.2A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "G.k.9.i.3.2b",
+      "rule_code_candidate": "ICH.G.k.9.i.3.2b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 5134,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.G.K.9.I.3.2B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "H.3.r.1a",
+      "rule_code_candidate": "ICH.H.3.r.1a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 5227,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.H.3.R.1A",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "H.3.r.1b",
+      "rule_code_candidate": "ICH.H.3.r.1b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 5240,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.H.3.R.1B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "H.5.r.1b",
+      "rule_code_candidate": "ICH.H.5.r.1b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 5281,
+      "workbook_support": true,
+      "workbook_tag_key": "ICH.H.5.R.1B",
+      "workbook_severity": "rejection",
+      "priority": "high"
+    },
+    {
+      "element_id": "C.1.11",
+      "rule_code_candidate": "ICH.C.1.11.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1544,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "C.1.6.1",
+      "rule_code_candidate": "ICH.C.1.6.1.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1572,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "C.1.6",
+      "rule_code_candidate": "ICH.C.1.6.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1566,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "C.1.8.1",
+      "rule_code_candidate": "ICH.C.1.8.1.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1646,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "C.1.8.2",
+      "rule_code_candidate": "ICH.C.1.8.2.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1640,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "C.1.8",
+      "rule_code_candidate": "ICH.C.1.8.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1476,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "C.1.9",
+      "rule_code_candidate": "ICH.C.1.9.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1697,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "D.10.7",
+      "rule_code_candidate": "ICH.D.10.7.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3501,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "D.10.8.r.2a",
+      "rule_code_candidate": "ICH.D.10.8.r.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3610,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "D.10.8.r.3a",
+      "rule_code_candidate": "ICH.D.10.8.r.3a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3633,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "D.2.2",
+      "rule_code_candidate": "ICH.D.2.2.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 2746,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "D.7.1",
+      "rule_code_candidate": "ICH.D.7.1.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 2924,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "D.8.r.2a",
+      "rule_code_candidate": "ICH.D.8.r.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3118,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "D.8.r.3a",
+      "rule_code_candidate": "ICH.D.8.r.3a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3144,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "E.i.2.1a",
+      "rule_code_candidate": "ICH.E.i.2.1a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3793,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "E.i.2.1b",
+      "rule_code_candidate": "ICH.E.i.2.1b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3805,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "E.i.3.2",
+      "rule_code_candidate": "ICH.E.i.3.2.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3843,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "E.i.3.2a",
+      "rule_code_candidate": "ICH.E.i.3.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3851,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "E.i.3.2b",
+      "rule_code_candidate": "ICH.E.i.3.2b.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3871,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "E.i.3.2c",
+      "rule_code_candidate": "ICH.E.i.3.2c.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3883,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "E.i.3.2d",
+      "rule_code_candidate": "ICH.E.i.3.2d.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3895,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "E.i.3.2e",
+      "rule_code_candidate": "ICH.E.i.3.2e.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3907,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "E.i.3.2f",
+      "rule_code_candidate": "ICH.E.i.3.2f.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3919,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "E.i.3",
+      "rule_code_candidate": "ICH.E.i.3.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 3854,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "F.r.3",
+      "rule_code_candidate": "ICH.F.r.3.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4126,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "G.k.2.1.1a",
+      "rule_code_candidate": "ICH.G.k.2.1.1a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4337,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "G.k.2.1.2a",
+      "rule_code_candidate": "ICH.G.k.2.1.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4364,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "G.k.2.1",
+      "rule_code_candidate": "ICH.G.k.2.1.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4335,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "G.k.2.3.r.1",
+      "rule_code_candidate": "ICH.G.k.2.3.r.1.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4406,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "G.k.2.3.r.2a",
+      "rule_code_candidate": "ICH.G.k.2.3.r.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4418,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "G.k.4.r.10.2a",
+      "rule_code_candidate": "ICH.G.k.4.r.10.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4786,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "G.k.4.r.11.2a",
+      "rule_code_candidate": "ICH.G.k.4.r.11.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4839,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "G.k.4.r.9.2a",
+      "rule_code_candidate": "ICH.G.k.4.r.9.2a.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 4740,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    },
+    {
+      "element_id": "N.1.5",
+      "rule_code_candidate": "ICH.N.1.5.REQUIRED",
+      "pdf_conformance_hint": "required",
+      "pdf_source_line": 1326,
+      "workbook_support": false,
+      "workbook_tag_key": null,
+      "workbook_severity": null,
+      "priority": "medium"
+    }
+  ]
+}

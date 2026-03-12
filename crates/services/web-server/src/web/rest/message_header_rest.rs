@@ -11,7 +11,7 @@ use lib_core::model::message_header::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use std::borrow::Cow;
 use uuid::Uuid;
@@ -35,6 +35,7 @@ pub async fn create_message_header(
 ) -> Result<(StatusCode, Json<DataRestResult<MessageHeader>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, MESSAGE_HEADER_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
 	data.case_id = case_id;
@@ -83,6 +84,7 @@ pub async fn update_message_header(
 ) -> Result<(StatusCode, Json<DataRestResult<MessageHeader>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, MESSAGE_HEADER_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	MessageHeaderBmc::update_by_case(&ctx, &mm, case_id, data).await?;
 	let entity = MessageHeaderBmc::get_by_case(&ctx, &mm, case_id).await?;
@@ -96,6 +98,7 @@ pub async fn delete_message_header(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, MESSAGE_HEADER_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	MessageHeaderBmc::delete_by_case(&ctx, &mm, case_id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }

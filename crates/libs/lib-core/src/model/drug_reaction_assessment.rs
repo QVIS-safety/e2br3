@@ -24,20 +24,24 @@ pub struct DrugReactionAssessment {
 	pub drug_id: Uuid,
 	pub reaction_id: Uuid,
 
-	// G.k.9.i.1 - Time Interval between Drug Administration and Reaction Onset
-	pub time_interval_value: Option<Decimal>,
-	pub time_interval_unit: Option<String>, // 800-805
+	// G.k.9.i.3.1a/b - Time Interval between Beginning of Drug Administration and Start of Reaction / Event
+	pub administration_start_interval_value: Option<Decimal>,
+	pub administration_start_interval_unit: Option<String>, // 800-805
 
-	// G.k.9.i.3.1 - Did Reaction Recur on Readministration - Action
+	// G.k.9.i.3.2a/b - Time Interval between Last Dose of Drug and Start of Reaction / Event
+	pub last_dose_interval_value: Option<Decimal>,
+	pub last_dose_interval_unit: Option<String>, // 800-805
+
+	// G.k.9.i.4.r.1 - Did Reaction Recur on Readministration - Action
 	pub recurrence_action: Option<String>, // 1-4
 
-	// G.k.9.i.3.2a - MedDRA Version for Reported Term for Reaction Recurred
+	// G.k.9.i.4.r.2a - MedDRA Version for Reported Term for Reaction Recurred
 	pub recurrence_meddra_version: Option<String>,
 
-	// G.k.9.i.3.2b - Reported Term for Reaction Recurred (MedDRA code)
+	// G.k.9.i.4.r.2b - Reported Term for Reaction Recurred (MedDRA code)
 	pub recurrence_meddra_code: Option<String>,
 
-	// G.k.9.i.4 - Did Reaction Recur on Readministration
+	// G.k.9.i.4.r.3 - Did Reaction Recur on Readministration
 	pub reaction_recurred: Option<String>, // 1-3
 
 	// Timestamps
@@ -55,8 +59,10 @@ pub struct DrugReactionAssessmentForCreate {
 
 #[derive(Fields, Deserialize)]
 pub struct DrugReactionAssessmentForUpdate {
-	pub time_interval_value: Option<Decimal>,
-	pub time_interval_unit: Option<String>,
+	pub administration_start_interval_value: Option<Decimal>,
+	pub administration_start_interval_unit: Option<String>,
+	pub last_dose_interval_value: Option<Decimal>,
+	pub last_dose_interval_unit: Option<String>,
 	pub recurrence_action: Option<String>,
 	pub recurrence_meddra_version: Option<String>,
 	pub recurrence_meddra_code: Option<String>,
@@ -274,14 +280,16 @@ impl DrugReactionAssessmentBmc {
 
 		let sql = format!(
 			"UPDATE {}
-			 SET time_interval_value = COALESCE($2, time_interval_value),
-			     time_interval_unit = COALESCE($3, time_interval_unit),
-			     recurrence_action = COALESCE($4, recurrence_action),
-			     recurrence_meddra_version = COALESCE($5, recurrence_meddra_version),
-			     recurrence_meddra_code = COALESCE($6, recurrence_meddra_code),
-			     reaction_recurred = COALESCE($7, reaction_recurred),
+			 SET administration_start_interval_value = COALESCE($2, administration_start_interval_value),
+			     administration_start_interval_unit = COALESCE($3, administration_start_interval_unit),
+			     last_dose_interval_value = COALESCE($4, last_dose_interval_value),
+			     last_dose_interval_unit = COALESCE($5, last_dose_interval_unit),
+			     recurrence_action = COALESCE($6, recurrence_action),
+			     recurrence_meddra_version = COALESCE($7, recurrence_meddra_version),
+			     recurrence_meddra_code = COALESCE($8, recurrence_meddra_code),
+			     reaction_recurred = COALESCE($9, reaction_recurred),
 			     updated_at = now(),
-			     updated_by = $8
+			     updated_by = $10
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -290,8 +298,10 @@ impl DrugReactionAssessmentBmc {
 			.execute(
 				sqlx::query(&sql)
 					.bind(id)
-					.bind(data.time_interval_value)
-					.bind(data.time_interval_unit)
+					.bind(data.administration_start_interval_value)
+					.bind(data.administration_start_interval_unit)
+					.bind(data.last_dose_interval_value)
+					.bind(data.last_dose_interval_unit)
 					.bind(data.recurrence_action)
 					.bind(data.recurrence_meddra_version)
 					.bind(data.recurrence_meddra_code)

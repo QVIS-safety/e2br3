@@ -15,6 +15,7 @@ use tokio::time::{interval, Duration};
 use tracing::info;
 use tracing::warn;
 use tracing_subscriber::EnvFilter;
+use web::rest::admin_role_rest;
 
 // endregion: --- Modules
 
@@ -31,6 +32,9 @@ async fn main() -> Result<()> {
 	config::validate_submission_runtime_config().map_err(Error::Config)?;
 
 	let mm = ModelManager::new().await?;
+	admin_role_rest::refresh_dynamic_roles(&mm)
+		.await
+		.map_err(|err| Error::Config(err.to_string()))?;
 	start_reconcile_worker(mm.clone());
 
 	// -- Define Routes

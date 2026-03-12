@@ -48,6 +48,6 @@ pub use d_patient::patch_d_patient;
 pub use e_f_sections::{patch_e_reactions, patch_f_test_results};
 pub use g_drug::patch_g_drugs;
 pub use h_narrative::patch_h_narrative;
-pub use types::{CSafetyReportPatch, DPatientPatch};
+pub use types::{CSafetyReportPatch, DPatientDeathCausePatch, DPatientPatch};
 
 use helpers::*;

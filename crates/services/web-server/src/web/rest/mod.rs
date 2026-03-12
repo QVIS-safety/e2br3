@@ -14,6 +14,8 @@ pub mod safety_report_rest;
 pub mod test_result_rest;
 
 // Newly enabled modules
+pub mod admin_role_rest;
+pub mod admin_settings_rest;
 pub mod audit_rest;
 pub mod case_identifiers_rest;
 pub mod drug_reaction_assessment_rest;
@@ -208,6 +210,18 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(drug_sub_rest::get_drug_indication)
 			.put(drug_sub_rest::update_drug_indication)
 			.delete(drug_sub_rest::delete_drug_indication),
+	)
+	// Drug Device Characteristics (collection per drug) - FDA G.k.1.a / G.k.12.*
+	.route(
+		"/cases/{case_id}/drugs/{drug_id}/device-characteristics",
+		get(drug_sub_rest::list_drug_device_characteristics)
+			.post(drug_sub_rest::create_drug_device_characteristic),
+	)
+	.route(
+		"/cases/{case_id}/drugs/{drug_id}/device-characteristics/{id}",
+		get(drug_sub_rest::get_drug_device_characteristic)
+			.put(drug_sub_rest::update_drug_device_characteristic)
+			.delete(drug_sub_rest::delete_drug_device_characteristic),
 	)
 	// Drug-Reaction Assessments (collection per drug) - G.k.9.i
 	.route(
@@ -430,6 +444,12 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		"/cases/{case_id}/validation",
 		get(case_validation_rest::validate_case),
 	)
+	.route(
+		"/cases/{case_id}/validation/all",
+		get(case_validation_rest::validate_case_all),
+	)
+	.route("/exports/history", get(case_rest::list_xml_export_history))
+	.route("/cases/link-options", get(case_rest::list_case_link_options))
 	.route("/cases/{id}/export/xml", get(case_rest::export_case))
 	.route("/cases/{id}/lifecycle", get(case_rest::get_case_lifecycle))
 	.route(
@@ -480,6 +500,21 @@ pub fn routes_users(mm: ModelManager) -> Router {
 			get(user_rest::get_user)
 				.put(user_rest::update_user)
 				.delete(user_rest::delete_user),
+		)
+		.route(
+			"/admin/settings",
+			get(admin_settings_rest::get_admin_settings)
+				.put(admin_settings_rest::update_admin_settings),
+		)
+		.route(
+			"/admin/roles",
+			get(admin_role_rest::list_admin_roles)
+				.post(admin_role_rest::create_admin_role),
+		)
+		.route(
+			"/admin/roles/{role_name}",
+			axum::routing::delete(admin_role_rest::delete_admin_role)
+				.put(admin_role_rest::update_admin_role),
 		)
 		.with_state(mm)
 }
@@ -545,12 +580,17 @@ pub fn routes_terminology(mm: ModelManager) -> Router {
 			"/terminology/code-lists",
 			get(terminology_rest::get_code_list),
 		)
+		.route(
+			"/terminology/ucum-units",
+			get(terminology_rest::list_ucum_units),
+		)
 		.with_state(mm)
 }
 
 /// Routes for /api/import
 pub fn routes_import(mm: ModelManager) -> Router {
 	Router::new()
+		.route("/import/xml/history", get(import_rest::list_import_history))
 		.route(
 			"/import/xml/validate",
 			axum::routing::post(import_rest::validate_xml),
@@ -587,6 +627,10 @@ pub fn routes_validation(mm: ModelManager) -> Router {
 /// Routes for /api/submissions
 pub fn routes_submissions(mm: ModelManager) -> Router {
 	Router::new()
+		.route(
+			"/submissions/history",
+			get(submission_rest::list_all_submission_history),
+		)
 		.route(
 			"/submissions/{id}",
 			get(submission_rest::get_case_submission),

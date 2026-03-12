@@ -2,7 +2,10 @@ use crate::ctx::Ctx;
 use crate::model;
 use crate::model::case::CaseBmc;
 use crate::model::narrative::NarrativeInformationBmc;
-use crate::model::patient::PatientInformationBmc;
+use crate::model::patient::{
+	AutopsyCauseOfDeath, PatientDeathInformation, PatientInformationBmc,
+	ReportedCauseOfDeath,
+};
 use crate::model::reaction::Reaction;
 use crate::model::safety_report::SafetyReportIdentificationBmc;
 use crate::model::safety_report::SenderInformation;
@@ -95,7 +98,20 @@ pub async fn export_case_xml(
 			let patient = PatientInformationBmc::get_by_case(ctx, mm, case_id)
 				.await
 				.map_err(Error::from)?;
-			let xml = export_d_patient_patch(raw_xml, &patient)?;
+			let death_info = fetch_death_info(mm, patient.id).await?;
+			let reported_causes =
+				fetch_reported_causes(mm, death_info.as_ref().map(|death| death.id))
+					.await?;
+			let autopsy_causes =
+				fetch_autopsy_causes(mm, death_info.as_ref().map(|death| death.id))
+					.await?;
+			let xml = export_d_patient_patch(
+				raw_xml,
+				&patient,
+				death_info.as_ref(),
+				&reported_causes,
+				&autopsy_causes,
+			)?;
 			return apply_section_postprocess(ctx, mm, case_id, xml).await;
 		}
 
@@ -349,7 +365,20 @@ async fn export_case_xml_from_db(
 		let patient = PatientInformationBmc::get_by_case(ctx, mm, case_id)
 			.await
 			.map_err(Error::from)?;
-		xml = export_d_patient_patch(xml.as_bytes(), &patient)?;
+		let death_info = fetch_death_info(mm, patient.id).await?;
+		let reported_causes =
+			fetch_reported_causes(mm, death_info.as_ref().map(|death| death.id))
+				.await?;
+		let autopsy_causes =
+			fetch_autopsy_causes(mm, death_info.as_ref().map(|death| death.id))
+				.await?;
+		xml = export_d_patient_patch(
+			xml.as_bytes(),
+			&patient,
+			death_info.as_ref(),
+			&reported_causes,
+			&autopsy_causes,
+		)?;
 	}
 	if case.dirty_e {
 		let sql =
@@ -398,4 +427,58 @@ async fn export_case_xml_from_db(
 
 fn base_export_skeleton() -> &'static str {
 	include_str!("../../../../../docs/refs/instances/FAERS2022Scenario1.xml")
+}
+
+async fn fetch_death_info(
+	mm: &ModelManager,
+	patient_id: sqlx::types::Uuid,
+) -> Result<Option<PatientDeathInformation>> {
+	mm.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, PatientDeathInformation>(
+				"SELECT * FROM patient_death_information WHERE patient_id = $1 LIMIT 1",
+			)
+			.bind(patient_id),
+		)
+		.await
+		.map_err(model::Error::from)
+		.map_err(Error::from)
+}
+
+async fn fetch_reported_causes(
+	mm: &ModelManager,
+	death_info_id: Option<sqlx::types::Uuid>,
+) -> Result<Vec<ReportedCauseOfDeath>> {
+	let Some(death_info_id) = death_info_id else {
+		return Ok(Vec::new());
+	};
+	mm.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, ReportedCauseOfDeath>(
+				"SELECT * FROM reported_causes_of_death WHERE death_info_id = $1 ORDER BY sequence_number",
+			)
+			.bind(death_info_id),
+		)
+		.await
+		.map_err(model::Error::from)
+		.map_err(Error::from)
+}
+
+async fn fetch_autopsy_causes(
+	mm: &ModelManager,
+	death_info_id: Option<sqlx::types::Uuid>,
+) -> Result<Vec<AutopsyCauseOfDeath>> {
+	let Some(death_info_id) = death_info_id else {
+		return Ok(Vec::new());
+	};
+	mm.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, AutopsyCauseOfDeath>(
+				"SELECT * FROM autopsy_causes_of_death WHERE death_info_id = $1 ORDER BY sequence_number",
+			)
+			.bind(death_info_id),
+		)
+		.await
+		.map_err(model::Error::from)
+		.map_err(Error::from)
 }

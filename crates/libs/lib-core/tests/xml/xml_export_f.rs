@@ -14,6 +14,7 @@ fn export_f_test_basic() {
 		case_id: Uuid::new_v4(),
 		sequence_number: 1,
 		test_date: Some(Date::from_calendar_date(2024, Month::January, 3).unwrap()),
+		test_date_null_flavor: None,
 		test_name: "ALT".to_string(),
 		test_meddra_version: Some("24.1".to_string()),
 		test_meddra_code: Some("10001552".to_string()),

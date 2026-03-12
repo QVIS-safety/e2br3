@@ -11,7 +11,7 @@ use lib_core::model::patient::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use std::borrow::Cow;
 use uuid::Uuid;
@@ -35,6 +35,7 @@ pub async fn create_patient(
 ) -> Result<(StatusCode, Json<DataRestResult<PatientInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
 	data.case_id = case_id;
@@ -84,6 +85,7 @@ pub async fn update_patient(
 ) -> Result<(StatusCode, Json<DataRestResult<PatientInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	PatientInformationBmc::update_by_case(&ctx, &mm, case_id, data).await?;
 	let entity = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
@@ -97,6 +99,7 @@ pub async fn delete_patient(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	PatientInformationBmc::delete_by_case(&ctx, &mm, case_id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }

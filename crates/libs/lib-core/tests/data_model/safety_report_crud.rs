@@ -233,6 +233,7 @@ async fn test_safety_report_submodels_crud() -> Result<()> {
 		case_id,
 		study_name: Some("Study A".to_string()),
 		sponsor_study_number: Some("SSN-1".to_string()),
+		study_type_reaction: None,
 		study_type_reaction_kr1: None,
 	};
 	let study_id = StudyInformationBmc::create(&ctx, &mm, study_c).await?;

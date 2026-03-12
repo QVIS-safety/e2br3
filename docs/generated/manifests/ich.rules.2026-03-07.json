@@ -1,0 +1,1582 @@
+{
+  "manifest": "ich",
+  "generated_at_utc": "2026-03-08T08:37:55+00:00",
+  "source": {
+    "catalog_rs": "crates/libs/lib-core/src/xml/validate/catalog.rs"
+  },
+  "summary": {
+    "ich_rule_count": 104,
+    "ich_case_rule_count": 62,
+    "ich_xml_rule_count": 42,
+    "blocking_count": 93,
+    "warning_count": 3,
+    "info_count": 8,
+    "import_phase_count": 69,
+    "case_validate_phase_count": 25,
+    "export_phase_count": 12
+  },
+  "ich_rules": [
+    {
+      "code": "ICH.C.1.1.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[C.1.1] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.1.2.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[C.1.2] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.1.3.CONDITIONAL",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "C.1.3 must be 2 when premarket receiver and FDA.C.5.5b are present with study type 1/2/3.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "FdaPremarketReportTypeMustBeTwo",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.C.1.3.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[C.1.3] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.1.4.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[C.1.4] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.1.5.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[C.1.5] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.1.7.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[C.1.7] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.1.9.1.CONDITIONAL",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "C.1.9.1 is true but C.1.9.1.r.1/.r.2 are missing.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "IchCaseHistoryTrueMissingPriorIds",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.1.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "Safety report identification is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.2.r.1.ID.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "reporter",
+      "blocking": true,
+      "message": "primaryRole/id has extension and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.2.r.1.ID.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "reporter",
+      "blocking": true,
+      "message": "primaryRole/id missing extension; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.2.r.1.ID.ROOT_3_6.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "reporter",
+      "blocking": true,
+      "message": "primaryRole/id with root 2.16.840.1.113883.3.989.2.1.3.6 requires extension or nullFlavor.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.2.r.2.NAME.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "reporter",
+      "blocking": true,
+      "message": "primaryRole name element has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.2.r.2.NAME.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "reporter",
+      "blocking": true,
+      "message": "primaryRole name element is empty; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.2.r.3.ORG_NAME.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "reporter",
+      "blocking": true,
+      "message": "representedOrganization/name has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.2.r.3.ORG_NAME.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "reporter",
+      "blocking": true,
+      "message": "representedOrganization/name is empty; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.2.r.4.REQUIRED",
+      "profile": "ich",
+      "section": "reporter",
+      "blocking": true,
+      "message": "[C.2.r.4] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.3.1.REQUIRED",
+      "profile": "ich",
+      "section": "sender",
+      "blocking": true,
+      "message": "[C.3.1] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.3.2.REQUIRED",
+      "profile": "ich",
+      "section": "sender",
+      "blocking": true,
+      "message": "[C.3.2] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.5.TITLE.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "study",
+      "blocking": true,
+      "message": "researchStudy/title has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.C.5.TITLE.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "study",
+      "blocking": true,
+      "message": "researchStudy/title is empty; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.D.1.REQUIRED",
+      "profile": "ich",
+      "section": "patient",
+      "blocking": true,
+      "message": "[D.1] This Element is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.D.2.BIRTHTIME.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "patient",
+      "blocking": true,
+      "message": "birthTime has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.D.2.BIRTHTIME.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "patient",
+      "blocking": true,
+      "message": "birthTime missing value; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.D.5.SEX.CONDITIONAL",
+      "profile": "ich",
+      "section": "patient",
+      "blocking": true,
+      "message": "administrativeGenderCode missing code; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.D.7.2.CONDITIONAL",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "D.7.2 must be provided when D.7.1.r.1b is not provided.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "IchMedicalHistoryMissingD72Text",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.D.EFFECTIVETIME.LOW_HIGH.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "patient",
+      "blocking": true,
+      "message": "patient effectiveTime low/high missing value; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.D.PARENT.BIRTHTIME.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "patient",
+      "blocking": true,
+      "message": "associatedPerson birthTime has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.D.PARENT.BIRTHTIME.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "patient",
+      "blocking": true,
+      "message": "associatedPerson birthTime missing value; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.D.PARENT.NAME.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "patient",
+      "blocking": true,
+      "message": "associatedPerson name element has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.D.PARENT.NAME.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "patient",
+      "blocking": true,
+      "message": "associatedPerson name element is empty; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "relatedInvestigation/code has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "relatedInvestigation/code missing code; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.1.1a.REQUIRED",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "[E.i.1.1a] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.1.1b.REQUIRED",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "[E.i.1.1b] is required when [E.i.1.1a] is provided.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.1.2.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "reaction translation has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.1.2.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "reaction translation missing value; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.2.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "reaction term has code and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.2.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "reaction term missing code; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "reaction effectiveTime low/high missing value; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.4-6.CONDITIONAL",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": false,
+      "message": "Reaction should include start, end, or duration.",
+      "category": "xml_structure",
+      "severity": "warning",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.7.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "reaction outcome value has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.7.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "reaction outcome value missing code; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.7.REQUIRED",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "[E.i.7] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.E.i.9.COUNTRY.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "reactions",
+      "blocking": true,
+      "message": "reaction country missing code; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.F.r.2.REQUIRED",
+      "profile": "ich",
+      "section": "tests",
+      "blocking": true,
+      "message": "[F.r.2] is required when test payload is present.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "IchTestPayloadPresent",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.G.k.1.REQUIRED",
+      "profile": "ich",
+      "section": "drugs",
+      "blocking": true,
+      "message": "[G.k.1] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.G.k.2.2.REQUIRED",
+      "profile": "ich",
+      "section": "drugs",
+      "blocking": true,
+      "message": "[G.k.2.2] is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.G.k.2.3.NAME.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "drugs",
+      "blocking": true,
+      "message": "ingredientSubstance/name has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.G.k.2.3.NAME.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "drugs",
+      "blocking": true,
+      "message": "ingredientSubstance/name is empty; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.G.k.4.r.10.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "drugs",
+      "blocking": true,
+      "message": "formCode missing code/codeSystem/originalText; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.G.k.4.r.11.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "drugs",
+      "blocking": true,
+      "message": "routeCode missing code; originalText or nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.G.k.4.r.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "drugs",
+      "blocking": true,
+      "message": "drug effectiveTime low/high missing value; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.G.k.4.r.4-8.CONDITIONAL",
+      "profile": "ich",
+      "section": "drugs",
+      "blocking": true,
+      "message": "Drug requires start, end, or duration.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.G.k.9.i.2.ID.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "drugs",
+      "blocking": true,
+      "message": "adverseEventAssessment/id has extension and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.G.k.9.i.2.ID.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "drugs",
+      "blocking": true,
+      "message": "adverseEventAssessment/id missing extension; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.H.1.REQUIRED",
+      "profile": "ich",
+      "section": "narrative",
+      "blocking": true,
+      "message": "[H.1] This Element is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.N.1.1.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[N.1.1] Batch number is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.N.1.2.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[N.1.2] Batch sender identifier is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.N.1.3.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[N.1.3] Batch receiver identifier is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.N.1.4.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[N.1.4] Date of batch transmission is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.N.2.r.2.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[N.2.r.2] Message sender identifier is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.N.2.r.3.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "[N.2.r.3] Message receiver identifier is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.N.REQUIRED",
+      "profile": "ich",
+      "section": "case-identification",
+      "blocking": true,
+      "message": "Message header is required.",
+      "category": "case_business",
+      "severity": "blocking",
+      "phases": [
+        "case_validate"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": false
+    },
+    {
+      "code": "ICH.XML.BL.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "BL value has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.BL.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "BL value missing value; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.CODE.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "code has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.CODE.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "code missing code/codeSystem; nullFlavor is required when originalText is absent.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.COUNTRY.CODE.FORMAT.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "ISO country code must be 2 uppercase letters.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import",
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "NormalizeInvalidCodeToNullFlavorNi",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.DOCUMENT.TEXT.COMPRESSION.FORBIDDEN",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": false,
+      "message": "Document text compression attribute must be removed for export compatibility.",
+      "category": "xml_structure",
+      "severity": "warning",
+      "phases": [
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "RemoveDocumentTextCompression",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.DOSE_QUANTITY.VALUE_UNIT.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "doseQuantity must include value and unit.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.EFFECTIVETIME.WIDTH.REQUIRES_BOUND",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "effectiveTime with width must include low/high.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.GK11.EMPTY.PRUNE",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": false,
+      "message": "Empty G.k.11 relationships should be pruned during export.",
+      "category": "xml_structure",
+      "severity": "info",
+      "phases": [
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "RemoveEmptyGk11Relationships",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.INV_CHAR_BL.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "investigationCharacteristic BL has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.INV_CHAR_BL.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "investigationCharacteristic BL missing value; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.IVL_TS.OPERATOR_A.BOUND_REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "IVL_TS operator='A' must include low, high, or width.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.LOW_HIGH.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "low/high has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.LOW_HIGH.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "low/high missing value; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.MEDDRA.CODE.FORMAT.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "MedDRA code must be 8 digits.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import",
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "NormalizeInvalidCodeToNullFlavorNi",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.MEDDRA.VERSION.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "MedDRA code requires codeSystemVersion.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.OPTIONAL.PATH.EMPTY.PRUNE",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": false,
+      "message": "Optional-path nodes without real data should be pruned during export.",
+      "category": "xml_structure",
+      "severity": "info",
+      "phases": [
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "RemoveOptionalPathEmptyNodes",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.PERIOD.VALUE_UNIT.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "period must include value and unit.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.PIVL_TS.PERIOD.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "PIVL_TS must include period.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.PIVL_TS.PERIOD.VALUE_UNIT.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "PIVL_TS period must include value and unit.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.PLACEHOLDER.CODESYSTEMVERSION.PRUNE",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": false,
+      "message": "Known placeholder codeSystemVersion attributes should be removed during export.",
+      "category": "xml_structure",
+      "severity": "info",
+      "phases": [
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "RemovePlaceholderCodeSystemVersion",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.PLACEHOLDER.VALUE.FORBIDDEN",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "Placeholder values are not allowed in XML content or attributes.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.PLACEHOLDER.VALUE.PRUNE",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": false,
+      "message": "Known placeholder value nodes should be pruned during export.",
+      "category": "xml_structure",
+      "severity": "info",
+      "phases": [
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "RemovePlaceholderValueNodes",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.RACE.EMPTY.PRUNE",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": false,
+      "message": "Empty race nodes should be pruned during export.",
+      "category": "xml_structure",
+      "severity": "info",
+      "phases": [
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "RemoveRaceEmptyNodes",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.RACE.NI.PRUNE",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": false,
+      "message": "Race NI placeholder nodes should be pruned during export.",
+      "category": "xml_structure",
+      "severity": "info",
+      "phases": [
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "RemoveRaceNiNodes",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.ROOT.ITSVERSION.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "Root ITSVersion must be present and set to XML_1.0.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.ROOT.SCHEMALOCATION.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "Root xsi:schemaLocation must be present and reference the expected root schema.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.STRUCTURAL.EMPTY.PRUNE",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": false,
+      "message": "Empty structural wrapper nodes should be pruned during export.",
+      "category": "xml_structure",
+      "severity": "info",
+      "phases": [
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "RemoveEmptyStructuralNodes",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.SUMMARY.LANGUAGE.JA.FORBIDDEN",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": false,
+      "message": "Summary language=JA attribute must be removed for export compatibility.",
+      "category": "xml_structure",
+      "severity": "warning",
+      "phases": [
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "RemoveSummaryLanguageJa",
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.SXPR_TS.COMP.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "SXPR_TS must include at least one comp element.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.TELECOM.FORMAT.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "telecom value must start with tel:, fax:, or mailto:.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.TELECOM.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "telecom has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.TELECOM.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "telecom missing value; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.TESTRESULT.IVL_PQ.COMPONENT.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "IVL_PQ must include low/high/center.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.TESTRESULT.IVL_PQ.VALUE_UNIT.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "IVL_PQ low/high/center must include value and unit.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.TESTRESULT.PQ.VALUE_UNIT.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "PQ must include value and unit.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.TESTRESULT.XSI_TYPE.UNSUPPORTED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "Unsupported test result xsi:type.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.TEXT.NULLFLAVOR.FORBIDDEN",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "text/originalText has value and nullFlavor; nullFlavor must be absent when value present.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.TEXT.NULLFLAVOR.REQUIRED",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": true,
+      "message": "text/originalText is empty; nullFlavor is required.",
+      "category": "xml_structure",
+      "severity": "blocking",
+      "phases": [
+        "import"
+      ],
+      "condition": "Always",
+      "export_directive": null,
+      "is_xml_rule": true
+    },
+    {
+      "code": "ICH.XML.XSI_TYPE.NORMALIZE",
+      "profile": "ich",
+      "section": "xml",
+      "blocking": false,
+      "message": "Promote non-namespaced type attribute to xsi:type for export compatibility.",
+      "category": "xml_structure",
+      "severity": "info",
+      "phases": [
+        "export"
+      ],
+      "condition": "Always",
+      "export_directive": "NormalizeTypeAttributeToXsiType",
+      "is_xml_rule": true
+    }
+  ]
+}

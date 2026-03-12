@@ -92,6 +92,20 @@ pub struct SubmissionRecord {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubmissionHistoryRecord {
+	pub submission_id: Uuid,
+	pub case_id: Uuid,
+	pub case_number: String,
+	pub gateway: String,
+	pub remote_submission_id: String,
+	pub status: SubmissionStatus,
+	pub xml_bytes: usize,
+	pub submitted_by: Uuid,
+	pub submitted_by_email: Option<String>,
+	pub submitted_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubmissionEventRecord {
 	pub id: Uuid,
 	pub submission_id: Uuid,
@@ -249,6 +263,20 @@ struct SubmissionDispatchStateRow {
 	updated_at: OffsetDateTime,
 }
 
+#[derive(Debug, Clone, FromRow)]
+struct SubmissionHistoryRow {
+	submission_id: Uuid,
+	case_id: Uuid,
+	case_number: String,
+	gateway: String,
+	remote_submission_id: String,
+	status: String,
+	xml_bytes: i32,
+	submitted_by: Uuid,
+	submitted_by_email: Option<String>,
+	submitted_at: OffsetDateTime,
+}
+
 #[derive(Debug)]
 struct GatewaySubmissionOutcome {
 	gateway: String,
@@ -363,6 +391,19 @@ fn status_to_db(status: &SubmissionStatus) -> &'static str {
 		SubmissionStatus::Ack3Received => "ack3_received",
 		SubmissionStatus::Ack4Received => "ack4_received",
 		SubmissionStatus::Rejected => "rejected",
+	}
+}
+
+fn status_from_db(status: &str) -> Result<SubmissionStatus> {
+	match status.trim().to_ascii_lowercase().as_str() {
+		"ack1_received" => Ok(SubmissionStatus::Ack1Received),
+		"ack2_received" => Ok(SubmissionStatus::Ack2Received),
+		"ack3_received" => Ok(SubmissionStatus::Ack3Received),
+		"ack4_received" => Ok(SubmissionStatus::Ack4Received),
+		"rejected" => Ok(SubmissionStatus::Rejected),
+		other => Err(Error::BadRequest {
+			message: format!("unknown submission status: {other}"),
+		}),
 	}
 }
 
@@ -626,19 +667,6 @@ async fn mark_dispatch_terminal(
 		eprintln!("dispatch state write skipped (terminal): {err}");
 	}
 	Ok(())
-}
-
-fn status_from_db(status: &str) -> Result<SubmissionStatus> {
-	match status.trim().to_ascii_lowercase().as_str() {
-		"ack1_received" => Ok(SubmissionStatus::Ack1Received),
-		"ack2_received" => Ok(SubmissionStatus::Ack2Received),
-		"ack3_received" => Ok(SubmissionStatus::Ack3Received),
-		"ack4_received" => Ok(SubmissionStatus::Ack4Received),
-		"rejected" => Ok(SubmissionStatus::Rejected),
-		other => Err(Error::BadRequest {
-			message: format!("invalid submission status in database: '{other}'"),
-		}),
-	}
 }
 
 fn status_from_ack(level: u8, success: bool) -> Result<SubmissionStatus> {
@@ -1093,6 +1121,50 @@ async fn list_submission_rows_by_case(
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 	Ok(rows)
+}
+
+pub async fn list_submission_history(
+	_ctx: &Ctx,
+	mm: &ModelManager,
+) -> Result<Vec<SubmissionHistoryRecord>> {
+	let rows = mm
+		.dbx()
+		.fetch_all(sqlx::query_as::<_, SubmissionHistoryRow>(
+			"SELECT cs.id AS submission_id,
+				        cs.case_id,
+				        c.safety_report_id AS case_number,
+				        cs.gateway,
+				        cs.remote_submission_id,
+				        cs.status,
+				        cs.xml_bytes,
+				        cs.submitted_by,
+				        u.email AS submitted_by_email,
+				        cs.submitted_at
+				   FROM case_submissions cs
+				   JOIN cases c ON c.id = cs.case_id
+				   LEFT JOIN users u ON u.id = cs.submitted_by
+				  ORDER BY cs.submitted_at DESC
+				  LIMIT 200",
+		))
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+	rows.into_iter()
+		.map(|row| {
+			Ok(SubmissionHistoryRecord {
+				submission_id: row.submission_id,
+				case_id: row.case_id,
+				case_number: row.case_number,
+				gateway: row.gateway,
+				remote_submission_id: row.remote_submission_id,
+				status: status_from_db(&row.status)?,
+				xml_bytes: row.xml_bytes as usize,
+				submitted_by: row.submitted_by,
+				submitted_by_email: row.submitted_by_email,
+				submitted_at: row.submitted_at,
+			})
+		})
+		.collect()
 }
 
 async fn list_ack_rows(

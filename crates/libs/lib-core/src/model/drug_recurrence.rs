@@ -3,6 +3,7 @@
 use crate::ctx::Ctx;
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
+use crate::model::modql_utils::uuid_to_sea_value;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
@@ -56,6 +57,7 @@ pub struct DrugRecurrenceInformationForUpdate {
 
 #[derive(FilterNodes, Deserialize, Default)]
 pub struct DrugRecurrenceInformationFilter {
+	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub drug_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
 }

@@ -1,16 +1,40 @@
-use crate::model::patient::PatientInformation;
-use crate::xml::raw::patch::{patch_d_patient, DPatientPatch};
+use crate::model::patient::{
+	AutopsyCauseOfDeath, PatientDeathInformation, PatientInformation,
+	ReportedCauseOfDeath,
+};
+use crate::xml::raw::patch::{
+	patch_d_patient, DPatientDeathCausePatch, DPatientPatch,
+};
 use crate::xml::Result;
 use libxml::parser::Parser;
 
 pub fn export_d_patient_patch(
 	raw_xml: &[u8],
 	patient: &PatientInformation,
+	death_info: Option<&PatientDeathInformation>,
+	reported_causes: &[ReportedCauseOfDeath],
+	autopsy_causes: &[AutopsyCauseOfDeath],
 ) -> Result<String> {
 	let patient_name = build_patient_name(patient);
 	let age_value = patient.age_at_time_of_onset.as_ref().map(|v| v.to_string());
 	let weight_kg = patient.weight_kg.as_ref().map(|v| v.to_string());
 	let height_cm = patient.height_cm.as_ref().map(|v| v.to_string());
+	let reported_cause_patches: Vec<DPatientDeathCausePatch<'_>> = reported_causes
+		.iter()
+		.map(|cause| DPatientDeathCausePatch {
+			meddra_version: cause.meddra_version.as_deref(),
+			meddra_code: cause.meddra_code.as_deref(),
+			comments: cause.comments.as_deref(),
+		})
+		.collect();
+	let autopsy_cause_patches: Vec<DPatientDeathCausePatch<'_>> = autopsy_causes
+		.iter()
+		.map(|cause| DPatientDeathCausePatch {
+			meddra_version: cause.meddra_version.as_deref(),
+			meddra_code: cause.meddra_code.as_deref(),
+			comments: cause.comments.as_deref(),
+		})
+		.collect();
 
 	let patch = DPatientPatch {
 		patient_name: patient_name.as_deref(),
@@ -20,6 +44,10 @@ pub fn export_d_patient_patch(
 		age_unit: patient.age_unit.as_deref(),
 		weight_kg: weight_kg.as_deref(),
 		height_cm: height_cm.as_deref(),
+		date_of_death: death_info.and_then(|death| death.date_of_death),
+		autopsy_performed: death_info.and_then(|death| death.autopsy_performed),
+		reported_causes: &reported_cause_patches,
+		autopsy_causes: &autopsy_cause_patches,
 	};
 
 	patch_d_patient(raw_xml, &patch)
@@ -37,7 +65,7 @@ pub fn export_d_patient_xml(patient: &PatientInformation) -> Result<String> {
 		}
 	})?;
 	let raw = doc.to_string();
-	export_d_patient_patch(raw.as_bytes(), patient)
+	export_d_patient_patch(raw.as_bytes(), patient, None, &[], &[])
 }
 
 fn base_d_patient_skeleton() -> &'static str {

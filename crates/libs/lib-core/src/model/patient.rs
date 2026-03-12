@@ -39,6 +39,10 @@ pub struct PatientInformation {
 	pub weight_kg: Option<Decimal>,
 	pub height_cm: Option<Decimal>,
 	pub sex: Option<String>,
+	pub patient_initials_null_flavor: Option<String>,
+	pub birth_date_null_flavor: Option<String>,
+	pub age_at_time_of_onset_null_flavor: Option<String>,
+	pub sex_null_flavor: Option<String>,
 
 	// FDA.D.11 / FDA.D.12 - Race / Ethnicity (FDA)
 	pub race_code: Option<String>,
@@ -46,6 +50,7 @@ pub struct PatientInformation {
 
 	// D.6 - Last Menstrual Period
 	pub last_menstrual_period_date: Option<Date>,
+	pub last_menstrual_period_date_null_flavor: Option<String>,
 
 	// D.7.2 - Medical history
 	pub medical_history_text: Option<String>,
@@ -72,12 +77,15 @@ pub struct PatientInformationForUpdate {
 	pub patient_initials: Option<String>,
 	pub patient_given_name: Option<String>,
 	pub patient_family_name: Option<String>,
+	pub patient_initials_null_flavor: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub birth_date: Option<Date>,
+	pub birth_date_null_flavor: Option<String>,
 	pub age_at_time_of_onset: Option<Decimal>,
+	pub age_at_time_of_onset_null_flavor: Option<String>,
 	pub age_unit: Option<String>,
 	pub gestation_period: Option<Decimal>,
 	pub gestation_period_unit: Option<String>,
@@ -85,6 +93,7 @@ pub struct PatientInformationForUpdate {
 	pub weight_kg: Option<Decimal>,
 	pub height_cm: Option<Decimal>,
 	pub sex: Option<String>,
+	pub sex_null_flavor: Option<String>,
 	pub race_code: Option<String>,
 	pub ethnicity_code: Option<String>,
 	#[serde(
@@ -92,6 +101,7 @@ pub struct PatientInformationForUpdate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub last_menstrual_period_date: Option<Date>,
+	pub last_menstrual_period_date_null_flavor: Option<String>,
 	pub medical_history_text: Option<String>,
 	pub concomitant_therapy: Option<bool>,
 }
@@ -154,8 +164,10 @@ pub struct MedicalHistoryEpisode {
 
 	// D.7.1.r.2-4
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 	pub continuing: Option<bool>,
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 	pub comments: Option<String>,
 	pub family_history: Option<bool>,
 
@@ -170,6 +182,8 @@ pub struct MedicalHistoryEpisodeForCreate {
 	pub patient_id: Uuid,
 	pub sequence_number: i32,
 	pub meddra_code: Option<String>,
+	pub start_date_null_flavor: Option<String>,
+	pub end_date_null_flavor: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -181,12 +195,14 @@ pub struct MedicalHistoryEpisodeForUpdate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 	pub continuing: Option<bool>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 	pub comments: Option<String>,
 	pub family_history: Option<bool>,
 }
@@ -208,6 +224,7 @@ pub struct PastDrugHistory {
 
 	// D.8.r.1 - Drug Name
 	pub drug_name: Option<String>,
+	pub drug_name_null_flavor: Option<String>,
 
 	// D.8.r.2-3 - Product IDs
 	pub mpid: Option<String>,
@@ -217,7 +234,9 @@ pub struct PastDrugHistory {
 
 	// D.8.r.4-5 - Dates
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 
 	// D.8.r.6a - Indication
 	pub indication_meddra_version: Option<String>,
@@ -238,6 +257,7 @@ pub struct PastDrugHistoryForCreate {
 	pub patient_id: Uuid,
 	pub sequence_number: i32,
 	pub drug_name: Option<String>,
+	pub drug_name_null_flavor: Option<String>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
 	pub phpid: Option<String>,
@@ -247,11 +267,13 @@ pub struct PastDrugHistoryForCreate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 	pub indication_meddra_version: Option<String>,
 	pub indication_meddra_code: Option<String>,
 	pub reaction_meddra_version: Option<String>,
@@ -261,6 +283,7 @@ pub struct PastDrugHistoryForCreate {
 #[derive(Fields, Deserialize)]
 pub struct PastDrugHistoryForUpdate {
 	pub drug_name: Option<String>,
+	pub drug_name_null_flavor: Option<String>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
 	pub phpid: Option<String>,
@@ -270,11 +293,13 @@ pub struct PastDrugHistoryForUpdate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 	pub indication_meddra_version: Option<String>,
 	pub indication_meddra_code: Option<String>,
 	pub reaction_meddra_version: Option<String>,
@@ -297,6 +322,7 @@ pub struct PatientDeathInformation {
 
 	// D.9.1 - Date of Death
 	pub date_of_death: Option<Date>,
+	pub date_of_death_null_flavor: Option<String>,
 
 	// D.9.3 - Autopsy
 	pub autopsy_performed: Option<bool>,
@@ -315,6 +341,7 @@ pub struct PatientDeathInformationForCreate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub date_of_death: Option<Date>,
+	pub date_of_death_null_flavor: Option<String>,
 	pub autopsy_performed: Option<bool>,
 }
 
@@ -325,6 +352,7 @@ pub struct PatientDeathInformationForUpdate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub date_of_death: Option<Date>,
+	pub date_of_death_null_flavor: Option<String>,
 	pub autopsy_performed: Option<bool>,
 }
 
@@ -343,6 +371,7 @@ pub struct ReportedCauseOfDeath {
 	pub sequence_number: i32,
 	pub meddra_version: Option<String>,
 	pub meddra_code: Option<String>,
+	pub comments: Option<String>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -360,6 +389,7 @@ pub struct ReportedCauseOfDeathForCreate {
 pub struct ReportedCauseOfDeathForUpdate {
 	pub meddra_version: Option<String>,
 	pub meddra_code: Option<String>,
+	pub comments: Option<String>,
 }
 
 #[derive(FilterNodes, Deserialize, Default)]
@@ -378,6 +408,7 @@ pub struct AutopsyCauseOfDeath {
 	pub sequence_number: i32,
 	pub meddra_version: Option<String>,
 	pub meddra_code: Option<String>,
+	pub comments: Option<String>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -395,6 +426,7 @@ pub struct AutopsyCauseOfDeathForCreate {
 pub struct AutopsyCauseOfDeathForUpdate {
 	pub meddra_version: Option<String>,
 	pub meddra_code: Option<String>,
+	pub comments: Option<String>,
 }
 
 #[derive(FilterNodes, Deserialize, Default)]
@@ -413,9 +445,12 @@ pub struct ParentInformation {
 
 	pub parent_identification: Option<String>,
 	pub parent_birth_date: Option<Date>,
+	pub parent_birth_date_null_flavor: Option<String>,
 	pub parent_age: Option<Decimal>,
+	pub parent_age_null_flavor: Option<String>,
 	pub parent_age_unit: Option<String>,
 	pub last_menstrual_period_date: Option<Date>,
+	pub last_menstrual_period_date_null_flavor: Option<String>,
 	pub weight_kg: Option<Decimal>,
 	pub height_cm: Option<Decimal>,
 	pub sex: Option<String>,
@@ -442,13 +477,16 @@ pub struct ParentInformationForUpdate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub parent_birth_date: Option<Date>,
+	pub parent_birth_date_null_flavor: Option<String>,
 	pub parent_age: Option<Decimal>,
+	pub parent_age_null_flavor: Option<String>,
 	pub parent_age_unit: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub last_menstrual_period_date: Option<Date>,
+	pub last_menstrual_period_date_null_flavor: Option<String>,
 	pub weight_kg: Option<Decimal>,
 	pub height_cm: Option<Decimal>,
 	pub sex: Option<String>,
@@ -547,25 +585,30 @@ impl PatientInformationBmc {
 
 		let sql = format!(
 			"UPDATE {}
-			 SET patient_initials = COALESCE($2, patient_initials),
+			 SET patient_initials = CASE WHEN $5 IS NOT NULL THEN NULL ELSE COALESCE($2, patient_initials) END,
 			     patient_given_name = COALESCE($3, patient_given_name),
 			     patient_family_name = COALESCE($4, patient_family_name),
-			     birth_date = COALESCE($5, birth_date),
-			     age_at_time_of_onset = COALESCE($6, age_at_time_of_onset),
-			     age_unit = COALESCE($7, age_unit),
-			     gestation_period = COALESCE($8, gestation_period),
-			     gestation_period_unit = COALESCE($9, gestation_period_unit),
-			     age_group = COALESCE($10, age_group),
-			     weight_kg = COALESCE($11, weight_kg),
-			     height_cm = COALESCE($12, height_cm),
-			     sex = COALESCE($13, sex),
-			     race_code = COALESCE($14, race_code),
-			     ethnicity_code = COALESCE($15, ethnicity_code),
-			     last_menstrual_period_date = COALESCE($16, last_menstrual_period_date),
-			     medical_history_text = COALESCE($17, medical_history_text),
-			     concomitant_therapy = COALESCE($18, concomitant_therapy),
+			     patient_initials_null_flavor = CASE WHEN $2 IS NOT NULL THEN NULL ELSE COALESCE($5, patient_initials_null_flavor) END,
+			     birth_date = CASE WHEN $7 IS NOT NULL THEN NULL ELSE COALESCE($6, birth_date) END,
+			     birth_date_null_flavor = CASE WHEN $6 IS NOT NULL THEN NULL ELSE COALESCE($7, birth_date_null_flavor) END,
+			     age_at_time_of_onset = CASE WHEN $9 IS NOT NULL THEN NULL ELSE COALESCE($8, age_at_time_of_onset) END,
+			     age_at_time_of_onset_null_flavor = CASE WHEN $8 IS NOT NULL THEN NULL ELSE COALESCE($9, age_at_time_of_onset_null_flavor) END,
+			     age_unit = CASE WHEN $9 IS NOT NULL THEN NULL ELSE COALESCE($10, age_unit) END,
+			     gestation_period = COALESCE($11, gestation_period),
+			     gestation_period_unit = COALESCE($12, gestation_period_unit),
+			     age_group = COALESCE($13, age_group),
+			     weight_kg = COALESCE($14, weight_kg),
+			     height_cm = COALESCE($15, height_cm),
+			     sex = CASE WHEN $17 IS NOT NULL THEN NULL ELSE COALESCE($16, sex) END,
+			     sex_null_flavor = CASE WHEN $16 IS NOT NULL THEN NULL ELSE COALESCE($17, sex_null_flavor) END,
+			     race_code = COALESCE($18, race_code),
+			     ethnicity_code = COALESCE($19, ethnicity_code),
+			     last_menstrual_period_date = CASE WHEN $21 IS NOT NULL THEN NULL ELSE COALESCE($20, last_menstrual_period_date) END,
+			     last_menstrual_period_date_null_flavor = CASE WHEN $20 IS NOT NULL THEN NULL ELSE COALESCE($21, last_menstrual_period_date_null_flavor) END,
+			     medical_history_text = COALESCE($22, medical_history_text),
+			     concomitant_therapy = COALESCE($23, concomitant_therapy),
 			     updated_at = now(),
-			     updated_by = $19
+			     updated_by = $24
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -577,8 +620,11 @@ impl PatientInformationBmc {
 					.bind(data.patient_initials)
 					.bind(data.patient_given_name)
 					.bind(data.patient_family_name)
+					.bind(data.patient_initials_null_flavor)
 					.bind(data.birth_date)
+					.bind(data.birth_date_null_flavor)
 					.bind(data.age_at_time_of_onset)
+					.bind(data.age_at_time_of_onset_null_flavor)
 					.bind(data.age_unit)
 					.bind(data.gestation_period)
 					.bind(data.gestation_period_unit)
@@ -586,9 +632,11 @@ impl PatientInformationBmc {
 					.bind(data.weight_kg)
 					.bind(data.height_cm)
 					.bind(data.sex)
+					.bind(data.sex_null_flavor)
 					.bind(data.race_code)
 					.bind(data.ethnicity_code)
 					.bind(data.last_menstrual_period_date)
+					.bind(data.last_menstrual_period_date_null_flavor)
 					.bind(data.medical_history_text)
 					.bind(data.concomitant_therapy)
 					.bind(ctx.user_id()),
@@ -665,25 +713,30 @@ impl PatientInformationBmc {
 
 		let sql = format!(
 			"UPDATE {}
-			 SET patient_initials = COALESCE($2, patient_initials),
+			 SET patient_initials = CASE WHEN $5 IS NOT NULL THEN NULL ELSE COALESCE($2, patient_initials) END,
 			     patient_given_name = COALESCE($3, patient_given_name),
 			     patient_family_name = COALESCE($4, patient_family_name),
-			     birth_date = COALESCE($5, birth_date),
-			     age_at_time_of_onset = COALESCE($6, age_at_time_of_onset),
-			     age_unit = COALESCE($7, age_unit),
-			     gestation_period = COALESCE($8, gestation_period),
-			     gestation_period_unit = COALESCE($9, gestation_period_unit),
-			     age_group = COALESCE($10, age_group),
-			     weight_kg = COALESCE($11, weight_kg),
-			     height_cm = COALESCE($12, height_cm),
-			     sex = COALESCE($13, sex),
-			     race_code = COALESCE($14, race_code),
-			     ethnicity_code = COALESCE($15, ethnicity_code),
-			     last_menstrual_period_date = COALESCE($16, last_menstrual_period_date),
-			     medical_history_text = COALESCE($17, medical_history_text),
-			     concomitant_therapy = COALESCE($18, concomitant_therapy),
+			     patient_initials_null_flavor = CASE WHEN $2 IS NOT NULL THEN NULL ELSE COALESCE($5, patient_initials_null_flavor) END,
+			     birth_date = CASE WHEN $7 IS NOT NULL THEN NULL ELSE COALESCE($6, birth_date) END,
+			     birth_date_null_flavor = CASE WHEN $6 IS NOT NULL THEN NULL ELSE COALESCE($7, birth_date_null_flavor) END,
+			     age_at_time_of_onset = CASE WHEN $9 IS NOT NULL THEN NULL ELSE COALESCE($8, age_at_time_of_onset) END,
+			     age_at_time_of_onset_null_flavor = CASE WHEN $8 IS NOT NULL THEN NULL ELSE COALESCE($9, age_at_time_of_onset_null_flavor) END,
+			     age_unit = CASE WHEN $9 IS NOT NULL THEN NULL ELSE COALESCE($10, age_unit) END,
+			     gestation_period = COALESCE($11, gestation_period),
+			     gestation_period_unit = COALESCE($12, gestation_period_unit),
+			     age_group = COALESCE($13, age_group),
+			     weight_kg = COALESCE($14, weight_kg),
+			     height_cm = COALESCE($15, height_cm),
+			     sex = CASE WHEN $17 IS NOT NULL THEN NULL ELSE COALESCE($16, sex) END,
+			     sex_null_flavor = CASE WHEN $16 IS NOT NULL THEN NULL ELSE COALESCE($17, sex_null_flavor) END,
+			     race_code = COALESCE($18, race_code),
+			     ethnicity_code = COALESCE($19, ethnicity_code),
+			     last_menstrual_period_date = CASE WHEN $21 IS NOT NULL THEN NULL ELSE COALESCE($20, last_menstrual_period_date) END,
+			     last_menstrual_period_date_null_flavor = CASE WHEN $20 IS NOT NULL THEN NULL ELSE COALESCE($21, last_menstrual_period_date_null_flavor) END,
+			     medical_history_text = COALESCE($22, medical_history_text),
+			     concomitant_therapy = COALESCE($23, concomitant_therapy),
 			     updated_at = now(),
-			     updated_by = $19
+			     updated_by = $24
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -695,8 +748,11 @@ impl PatientInformationBmc {
 					.bind(data.patient_initials)
 					.bind(data.patient_given_name)
 					.bind(data.patient_family_name)
+					.bind(data.patient_initials_null_flavor)
 					.bind(data.birth_date)
+					.bind(data.birth_date_null_flavor)
 					.bind(data.age_at_time_of_onset)
+					.bind(data.age_at_time_of_onset_null_flavor)
 					.bind(data.age_unit)
 					.bind(data.gestation_period)
 					.bind(data.gestation_period_unit)
@@ -704,9 +760,11 @@ impl PatientInformationBmc {
 					.bind(data.weight_kg)
 					.bind(data.height_cm)
 					.bind(data.sex)
+					.bind(data.sex_null_flavor)
 					.bind(data.race_code)
 					.bind(data.ethnicity_code)
 					.bind(data.last_menstrual_period_date)
+					.bind(data.last_menstrual_period_date_null_flavor)
 					.bind(data.medical_history_text)
 					.bind(data.concomitant_therapy)
 					.bind(ctx.user_id()),
@@ -878,7 +936,68 @@ impl PastDrugHistoryBmc {
 		id: Uuid,
 		data: PastDrugHistoryForUpdate,
 	) -> Result<()> {
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
+
+		let sql = format!(
+			"UPDATE {} SET
+			 drug_name = CASE WHEN $1::varchar IS NOT NULL THEN NULL ELSE COALESCE($2, drug_name) END,
+			 drug_name_null_flavor = CASE WHEN $2::varchar IS NOT NULL THEN NULL ELSE COALESCE($1, drug_name_null_flavor) END,
+			 mpid = COALESCE($3, mpid),
+			 mpid_version = COALESCE($4, mpid_version),
+			 phpid = COALESCE($5, phpid),
+			 phpid_version = COALESCE($6, phpid_version),
+			 start_date = CASE WHEN $8::varchar IS NOT NULL THEN NULL ELSE COALESCE($7, start_date) END,
+			 start_date_null_flavor = CASE WHEN $7::date IS NOT NULL THEN NULL ELSE COALESCE($8, start_date_null_flavor) END,
+			 end_date = CASE WHEN $10::varchar IS NOT NULL THEN NULL ELSE COALESCE($9, end_date) END,
+			 end_date_null_flavor = CASE WHEN $9::date IS NOT NULL THEN NULL ELSE COALESCE($10, end_date_null_flavor) END,
+			 indication_meddra_version = COALESCE($11, indication_meddra_version),
+			 indication_meddra_code = COALESCE($12, indication_meddra_code),
+			 reaction_meddra_version = COALESCE($13, reaction_meddra_version),
+			 reaction_meddra_code = COALESCE($14, reaction_meddra_code),
+			 updated_at = now(),
+			 updated_by = $15
+			 WHERE id = $16",
+			Self::TABLE
+		);
+
+		let result = mm
+			.dbx()
+			.execute(
+				sqlx::query(&sql)
+					.bind(data.drug_name_null_flavor)
+					.bind(data.drug_name)
+					.bind(data.mpid)
+					.bind(data.mpid_version)
+					.bind(data.phpid)
+					.bind(data.phpid_version)
+					.bind(data.start_date)
+					.bind(data.start_date_null_flavor)
+					.bind(data.end_date)
+					.bind(data.end_date_null_flavor)
+					.bind(data.indication_meddra_version)
+					.bind(data.indication_meddra_code)
+					.bind(data.reaction_meddra_version)
+					.bind(data.reaction_meddra_code)
+					.bind(ctx.user_id())
+					.bind(id),
+			)
+			.await?;
+		if result == 0 {
+			mm.dbx().rollback_txn().await?;
+			return Err(crate::model::Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
+		}
+		mm.dbx().commit_txn().await?;
+		Ok(())
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
@@ -923,7 +1042,53 @@ impl PatientDeathInformationBmc {
 		id: Uuid,
 		data: PatientDeathInformationForUpdate,
 	) -> Result<()> {
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
+
+		let sql = format!(
+			"UPDATE {} SET
+			 date_of_death = CASE
+			 	WHEN $1::varchar IS NOT NULL THEN NULL
+			 	ELSE COALESCE($2, date_of_death)
+			 END,
+			 date_of_death_null_flavor = CASE
+			 	WHEN $1::varchar IS NOT NULL THEN $1
+			 	WHEN $2::date IS NOT NULL THEN NULL
+			 	ELSE date_of_death_null_flavor
+			 END,
+			 autopsy_performed = COALESCE($3, autopsy_performed),
+			 updated_at = now(),
+			 updated_by = $4
+			 WHERE id = $5",
+			Self::TABLE
+		);
+
+		let result = mm
+			.dbx()
+			.execute(
+				sqlx::query(&sql)
+					.bind(data.date_of_death_null_flavor)
+					.bind(data.date_of_death)
+					.bind(data.autopsy_performed)
+					.bind(ctx.user_id())
+					.bind(id),
+			)
+			.await?;
+		if result == 0 {
+			mm.dbx().rollback_txn().await?;
+			return Err(crate::model::Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
+		}
+		mm.dbx().commit_txn().await?;
+		Ok(())
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
@@ -1058,7 +1223,88 @@ impl ParentInformationBmc {
 		id: Uuid,
 		data: ParentInformationForUpdate,
 	) -> Result<()> {
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
+
+		let sql = format!(
+			"UPDATE {} SET
+			 parent_identification = COALESCE($1, parent_identification),
+			 parent_birth_date = CASE
+			 	WHEN $2::varchar IS NOT NULL THEN NULL
+			 	ELSE COALESCE($3, parent_birth_date)
+			 END,
+			 parent_birth_date_null_flavor = CASE
+			 	WHEN $2::varchar IS NOT NULL THEN $2
+			 	WHEN $3::date IS NOT NULL THEN NULL
+			 	ELSE parent_birth_date_null_flavor
+			 END,
+			 parent_age = CASE
+			 	WHEN $4::varchar IS NOT NULL THEN NULL
+			 	ELSE COALESCE($5, parent_age)
+			 END,
+			 parent_age_null_flavor = CASE
+			 	WHEN $4::varchar IS NOT NULL THEN $4
+			 	WHEN $5::numeric IS NOT NULL THEN NULL
+			 	ELSE parent_age_null_flavor
+			 END,
+			 parent_age_unit = CASE
+			 	WHEN $4::varchar IS NOT NULL THEN NULL
+			 	ELSE COALESCE($6, parent_age_unit)
+			 END,
+			 last_menstrual_period_date = CASE
+			 	WHEN $7::varchar IS NOT NULL THEN NULL
+			 	ELSE COALESCE($8, last_menstrual_period_date)
+			 END,
+			 last_menstrual_period_date_null_flavor = CASE
+			 	WHEN $7::varchar IS NOT NULL THEN $7
+			 	WHEN $8::date IS NOT NULL THEN NULL
+			 	ELSE last_menstrual_period_date_null_flavor
+			 END,
+			 weight_kg = COALESCE($9, weight_kg),
+			 height_cm = COALESCE($10, height_cm),
+			 sex = COALESCE($11, sex),
+			 medical_history_text = COALESCE($12, medical_history_text),
+			 updated_at = now(),
+			 updated_by = $13
+			 WHERE id = $14",
+			Self::TABLE
+		);
+
+		let result = mm
+			.dbx()
+			.execute(
+				sqlx::query(&sql)
+					.bind(data.parent_identification)
+					.bind(data.parent_birth_date_null_flavor)
+					.bind(data.parent_birth_date)
+					.bind(data.parent_age_null_flavor)
+					.bind(data.parent_age)
+					.bind(data.parent_age_unit)
+					.bind(data.last_menstrual_period_date_null_flavor)
+					.bind(data.last_menstrual_period_date)
+					.bind(data.weight_kg)
+					.bind(data.height_cm)
+					.bind(data.sex)
+					.bind(data.medical_history_text)
+					.bind(ctx.user_id())
+					.bind(id),
+			)
+			.await?;
+		if result == 0 {
+			mm.dbx().rollback_txn().await?;
+			return Err(crate::model::Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
+		}
+		mm.dbx().commit_txn().await?;
+		Ok(())
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {

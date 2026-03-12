@@ -190,10 +190,12 @@ async fn test_viewer_cannot_create_user() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_create_user_missing_required_fields_fails() -> Result<()> {
+async fn test_create_user_missing_optional_fields_uses_backend_defaults(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let suffix = Uuid::new_v4();
 
 	let app = web_server::app(mm);
 	// Mirrors the currently documented frontend payload shape that omits
@@ -201,7 +203,7 @@ async fn test_create_user_missing_required_fields_fails() -> Result<()> {
 	let body = json!({
 		"data": {
 			"organization_id": seed.org_id,
-			"email": "missing-fields@example.com",
+			"email": format!("missing-fields-{suffix}@example.com"),
 			"role": "user"
 		}
 	});
@@ -212,8 +214,23 @@ async fn test_create_user_missing_required_fields_fails() -> Result<()> {
 		.header("content-type", "application/json")
 		.body(Body::from(body.to_string()))?;
 	let res = app.oneshot(req).await?;
+	let status = res.status();
+	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
+	let json: serde_json::Value = serde_json::from_slice(&body)?;
 
-	assert_eq!(res.status(), StatusCode::UNPROCESSABLE_ENTITY);
+	assert_eq!(status, StatusCode::CREATED, "{json:?}");
+	assert_eq!(
+		json["data"]["email"].as_str(),
+		Some(format!("missing-fields-{suffix}@example.com").as_str())
+	);
+	assert_eq!(json["data"]["role"].as_str(), Some("user"));
+	assert!(
+		json["data"]["username"]
+			.as_str()
+			.map(|value| !value.trim().is_empty())
+			.unwrap_or(false),
+		"{json:?}"
+	);
 	Ok(())
 }
 

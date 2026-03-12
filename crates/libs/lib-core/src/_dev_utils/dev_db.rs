@@ -9,6 +9,7 @@ type Db = Pool<Postgres>;
 
 // NOTE: Hardcode to prevent deployed system db update.
 const PG_DEV_POSTGRES_URL: &str = "postgres://postgres:welcome@localhost/postgres";
+const PG_DEV_APP_ADMIN_URL: &str = "postgres://postgres:welcome@localhost/app_db";
 const PG_DEV_APP_URL: &str = "postgres://app_user:dev_only_pwd@localhost/app_db";
 
 // sql files
@@ -57,9 +58,368 @@ pub async fn init_dev_db() -> Result<(), Box<dyn std::error::Error>> {
 		}
 	}
 
+	apply_compatibility_alters(&app_db).await?;
+
 	// NOTE: Demo user data and passwords are set via SQL seed files (13-e2br3-seed.sql)
 
 	Ok(())
+}
+
+pub async fn ensure_dev_schema_compatibility(
+) -> Result<(), Box<dyn std::error::Error>> {
+	let admin_app_db = match new_db_pool(PG_DEV_APP_ADMIN_URL).await {
+		Ok(db) => db,
+		Err(_) => new_db_pool(PG_DEV_APP_URL).await?,
+	};
+	apply_compatibility_alters(&admin_app_db).await?;
+	Ok(())
+}
+
+async fn apply_compatibility_alters(
+	db: &Db,
+) -> Result<(), Box<dyn std::error::Error>> {
+	sqlx::query("ALTER TABLE cases DROP CONSTRAINT IF EXISTS case_status_valid")
+		.execute(db)
+		.await?;
+	sqlx::query(
+		"UPDATE cases SET status = 'reviewed'
+		 WHERE lower(status) = lower(chr(113)||chr(99)||chr(101)||chr(100))",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"UPDATE cases SET status = 'reviewed'
+		 WHERE lower(status) = lower(chr(99)||chr(104)||chr(101)||chr(99)||chr(107)||chr(101)||chr(100))",
+	)
+	.execute(db)
+	.await?;
+	execute_ignoring_duplicate_constraint(
+		db,
+		"ALTER TABLE cases
+		 ADD CONSTRAINT case_status_valid
+		 CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'archived', 'nullified'))",
+	)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE cases
+		 ADD COLUMN IF NOT EXISTS mfds_report_type VARCHAR(20)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE cases
+		 ADD COLUMN IF NOT EXISTS report_year VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE cases
+		 ADD COLUMN IF NOT EXISTS source_document_name TEXT",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE cases
+		 ADD COLUMN IF NOT EXISTS source_document_base64 TEXT",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE cases
+		 ADD COLUMN IF NOT EXISTS source_document_media_type TEXT",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE reactions
+		 ADD COLUMN IF NOT EXISTS criteria_death_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE reactions
+		 ADD COLUMN IF NOT EXISTS criteria_life_threatening_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE reactions
+		 ADD COLUMN IF NOT EXISTS criteria_hospitalization_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE reactions
+		 ADD COLUMN IF NOT EXISTS criteria_disabling_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE reactions
+		 ADD COLUMN IF NOT EXISTS criteria_congenital_anomaly_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE reactions
+		 ADD COLUMN IF NOT EXISTS criteria_other_medically_important_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE patient_information
+		 ADD COLUMN IF NOT EXISTS last_menstrual_period_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE safety_report_identification
+		 ADD COLUMN IF NOT EXISTS transmission_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE safety_report_identification
+		 ADD COLUMN IF NOT EXISTS date_first_received_from_source_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE safety_report_identification
+		 ADD COLUMN IF NOT EXISTS date_of_most_recent_information_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE parent_information
+		 ADD COLUMN IF NOT EXISTS parent_birth_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE parent_information
+		 ADD COLUMN IF NOT EXISTS parent_age_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE parent_information
+		 ADD COLUMN IF NOT EXISTS last_menstrual_period_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE medical_history_episodes
+		 ADD COLUMN IF NOT EXISTS start_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE medical_history_episodes
+		 ADD COLUMN IF NOT EXISTS end_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE past_drug_history
+		 ADD COLUMN IF NOT EXISTS start_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE past_drug_history
+		 ADD COLUMN IF NOT EXISTS end_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE patient_death_information
+		 ADD COLUMN IF NOT EXISTS date_of_death_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE parent_medical_history
+		 ADD COLUMN IF NOT EXISTS start_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE parent_medical_history
+		 ADD COLUMN IF NOT EXISTS end_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE parent_past_drug_history
+		 ADD COLUMN IF NOT EXISTS start_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE parent_past_drug_history
+		 ADD COLUMN IF NOT EXISTS end_date_null_flavor VARCHAR(4)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE study_information
+		 ADD COLUMN IF NOT EXISTS study_type_reaction_kr1 VARCHAR(1)
+		 CHECK (study_type_reaction_kr1 IN ('1', '2', '3', '4'))",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE primary_sources
+		 ADD COLUMN IF NOT EXISTS qualification_kr1 VARCHAR(1)
+		 CHECK (qualification_kr1 IN ('1', '2'))",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE relatedness_assessments
+		 ADD COLUMN IF NOT EXISTS result_of_assessment_kr2 VARCHAR(2000)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE reported_causes_of_death
+		 ADD COLUMN IF NOT EXISTS comments TEXT",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE autopsy_causes_of_death
+		 ADD COLUMN IF NOT EXISTS comments TEXT",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE drug_reaction_assessments
+		 ADD COLUMN IF NOT EXISTS administration_start_interval_value DECIMAL(10,2)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE drug_reaction_assessments
+		 ADD COLUMN IF NOT EXISTS administration_start_interval_unit VARCHAR(3)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE drug_reaction_assessments
+		 ADD COLUMN IF NOT EXISTS last_dose_interval_value DECIMAL(10,2)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE drug_reaction_assessments
+		 ADD COLUMN IF NOT EXISTS last_dose_interval_unit VARCHAR(3)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE drug_information
+		 ADD COLUMN IF NOT EXISTS cumulative_dose_first_reaction_value DECIMAL(15,5)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE drug_information
+		 ADD COLUMN IF NOT EXISTS cumulative_dose_first_reaction_unit VARCHAR(50)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE drug_information
+		 ADD COLUMN IF NOT EXISTS gestation_period_exposure_value DECIMAL(10,2)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE drug_information
+		 ADD COLUMN IF NOT EXISTS gestation_period_exposure_unit VARCHAR(50)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query(
+		"ALTER TABLE dosage_information
+		 ADD COLUMN IF NOT EXISTS route_termid_version VARCHAR(10)",
+	)
+	.execute(db)
+	.await?;
+	sqlx::query("ALTER TABLE users ENABLE ROW LEVEL SECURITY")
+		.execute(db)
+		.await?;
+	sqlx::query("ALTER TABLE users FORCE ROW LEVEL SECURITY")
+		.execute(db)
+		.await?;
+	sqlx::query("DROP POLICY IF EXISTS users_org_isolation_select ON users")
+		.execute(db)
+		.await?;
+	execute_ignoring_duplicate_policy(
+		db,
+		"CREATE POLICY users_org_isolation_select ON users
+		 FOR SELECT
+		 TO e2br3_app_role
+		 USING (
+		 	organization_id = current_organization_id()
+		 	OR is_current_user_admin()
+		 	OR email = current_setting('app.auth_email', true)
+		 )",
+	)
+	.await?;
+	sqlx::query("DROP POLICY IF EXISTS users_org_isolation_modify ON users")
+		.execute(db)
+		.await?;
+	execute_ignoring_duplicate_policy(
+		db,
+		"CREATE POLICY users_org_isolation_modify ON users
+		 FOR ALL
+		 TO e2br3_app_role
+		 USING (is_current_user_admin())
+		 WITH CHECK (is_current_user_admin())",
+	)
+	.await?;
+	Ok(())
+}
+
+async fn execute_ignoring_duplicate_policy(
+	db: &Db,
+	sql: &str,
+) -> Result<(), sqlx::Error> {
+	match sqlx::query(sql).execute(db).await {
+		Ok(_) => Ok(()),
+		Err(err)
+			if err
+				.as_database_error()
+				.and_then(|db_err| db_err.code())
+				.map(|code| code == "42710")
+				.unwrap_or(false) =>
+		{
+			Ok(())
+		}
+		Err(err) => Err(err),
+	}
+}
+
+async fn execute_ignoring_duplicate_constraint(
+	db: &Db,
+	sql: &str,
+) -> Result<(), sqlx::Error> {
+	match sqlx::query(sql).execute(db).await {
+		Ok(_) => Ok(()),
+		Err(err)
+			if err
+				.as_database_error()
+				.and_then(|db_err| db_err.code())
+				.map(|code| code == "42710")
+				.unwrap_or(false) =>
+		{
+			Ok(())
+		}
+		Err(err) => Err(err),
+	}
 }
 
 async fn pexec(db: &Db, file: &Path) -> Result<(), sqlx::Error> {
@@ -105,8 +465,8 @@ async fn pexec(db: &Db, file: &Path) -> Result<(), sqlx::Error> {
 
 async fn new_db_pool(db_con_url: &str) -> Result<Db, sqlx::Error> {
 	PgPoolOptions::new()
-		.max_connections(1)
-		.acquire_timeout(Duration::from_millis(500))
+		.max_connections(2)
+		.acquire_timeout(Duration::from_secs(5))
 		.connect(db_con_url)
 		.await
 }

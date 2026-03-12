@@ -1,7 +1,7 @@
 use crate::common::{
-	audit_log_count, begin_test_ctx, commit_test_ctx, create_case_fixture,
-	delete_case_fixture, demo_ctx, demo_org_id, demo_user_id, init_test_mm,
-	reset_role, set_auditor_role, set_current_user, Result,
+	audit_log_count, begin_test_ctx, commit_test_ctx, create_case_fixture, demo_ctx,
+	demo_org_id, demo_user_id, init_test_mm, reset_role, set_auditor_role,
+	set_current_user, Result,
 };
 use lib_core::model::audit::AuditLogBmc;
 use lib_core::model::case::{CaseBmc, CaseForUpdate};
@@ -25,6 +25,12 @@ async fn test_audit_trail_cases() -> Result<()> {
 		dg_prd_key: None,
 		status: Some("validated".to_string()),
 		validation_profile: None,
+		appendices_json: None,
+		mfds_report_type: None,
+		report_year: None,
+		source_document_name: None,
+		source_document_base64: None,
+		source_document_media_type: None,
 		submitted_by: None,
 		submitted_at: None,
 		raw_xml: None,
@@ -149,7 +155,6 @@ async fn test_audit_trail_cases() -> Result<()> {
 		"DELETE audit log should not have new_values"
 	);
 
-	delete_case_fixture(&mm, case_id).await.ok();
 	commit_test_ctx(&mm).await?;
 	Ok(())
 }
@@ -175,6 +180,12 @@ async fn test_noop_update_does_not_create_audit_log() -> Result<()> {
 			dg_prd_key: None,
 			status: None,
 			validation_profile: None,
+			appendices_json: None,
+			mfds_report_type: None,
+			report_year: None,
+			source_document_name: None,
+			source_document_base64: None,
+			source_document_media_type: None,
 			submitted_by: None,
 			submitted_at: None,
 			raw_xml: None,
@@ -198,7 +209,6 @@ async fn test_noop_update_does_not_create_audit_log() -> Result<()> {
 		"metadata-only no-op update must not be visible in audit trail"
 	);
 
-	delete_case_fixture(&mm, case_id).await.ok();
 	commit_test_ctx(&mm).await?;
 	Ok(())
 }
@@ -222,6 +232,12 @@ async fn test_audit_log_hash_chain_integrity() -> Result<()> {
 			dg_prd_key: None,
 			status: Some("validated".to_string()),
 			validation_profile: None,
+			appendices_json: None,
+			mfds_report_type: None,
+			report_year: None,
+			source_document_name: None,
+			source_document_base64: None,
+			source_document_media_type: None,
 			submitted_by: None,
 			submitted_at: None,
 			raw_xml: None,
@@ -289,7 +305,6 @@ async fn test_audit_log_hash_chain_integrity() -> Result<()> {
 		);
 	}
 
-	delete_case_fixture(&mm, case_id).await.ok();
 	commit_test_ctx(&mm).await?;
 	Ok(())
 }
@@ -313,6 +328,12 @@ async fn test_audit_log_hash_chain_verification_report_is_clean() -> Result<()> 
 			dg_prd_key: None,
 			status: Some("validated".to_string()),
 			validation_profile: None,
+			appendices_json: None,
+			mfds_report_type: None,
+			report_year: None,
+			source_document_name: None,
+			source_document_base64: None,
+			source_document_media_type: None,
 			submitted_by: None,
 			submitted_at: None,
 			raw_xml: None,
@@ -361,7 +382,7 @@ async fn test_audit_log_hash_chain_verification_report_is_clean() -> Result<()> 
 	assert!(report.first_broken_id.is_none());
 	assert!(report.first_broken_reason.is_none());
 
-	delete_case_fixture(&mm, case_id).await.ok();
+	CaseBmc::delete(&ctx, &mm, case_id).await?;
 	commit_test_ctx(&mm).await?;
 	Ok(())
 }

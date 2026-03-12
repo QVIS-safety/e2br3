@@ -21,6 +21,7 @@ fn patch_f_test_updates_raw_xml() {
 		case_id: Uuid::new_v4(),
 		sequence_number: 1,
 		test_date: None,
+		test_date_null_flavor: None,
 		test_name: "ALT".to_string(),
 		test_meddra_version: None,
 		test_meddra_code: None,

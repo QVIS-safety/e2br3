@@ -49,7 +49,7 @@ async fn create_safety_report(
 	app: &axum::Router,
 	cookie: &str,
 	case_id: Uuid,
-) -> Result<StatusCode> {
+) -> Result<(StatusCode, String)> {
 	let body = json!({
 		"data": {
 			"case_id": case_id,
@@ -67,7 +67,9 @@ async fn create_safety_report(
 		.header("content-type", "application/json")
 		.body(Body::from(body.to_string()))?;
 	let res = app.clone().oneshot(req).await?;
-	Ok(res.status())
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, String::from_utf8_lossy(&body).to_string()))
 }
 
 #[serial]
@@ -80,10 +82,10 @@ async fn test_admin_can_create_safety_report() -> Result<()> {
 
 	let case_id =
 		create_case(&app, &cookie_header(&token.to_string()), seed.org_id).await?;
-	let status =
+	let (status, body) =
 		create_safety_report(&app, &cookie_header(&token.to_string()), case_id)
 			.await?;
-	assert_eq!(status, StatusCode::CREATED);
+	assert_eq!(status, StatusCode::CREATED, "{body}");
 	Ok(())
 }
 
@@ -100,7 +102,7 @@ async fn test_viewer_cannot_create_safety_report() -> Result<()> {
 	let case_id =
 		create_case(&app, &cookie_header(&admin_token.to_string()), seed.org_id)
 			.await?;
-	let status = create_safety_report(
+	let (status, _body) = create_safety_report(
 		&app,
 		&cookie_header(&viewer_token.to_string()),
 		case_id,

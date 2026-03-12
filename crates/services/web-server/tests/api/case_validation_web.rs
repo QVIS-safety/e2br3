@@ -282,6 +282,8 @@ async fn create_reaction(
 	let reaction_id = value["data"]["id"].as_str().ok_or("missing reaction id")?;
 	let update = json!({
 		"data": {
+			"reaction_meddra_version": "27.0",
+			"reaction_meddra_code": "10019211",
 			"outcome": "1",
 			"reaction_language": "en"
 		}
@@ -408,6 +410,31 @@ async fn create_message_header(
 	if status != StatusCode::CREATED {
 		return Err(format!(
 			"create message header status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let update = json!({
+		"data": {
+			"batch_number": format!("BATCH-{case_id}"),
+			"batch_sender_identifier": "BATCH-SENDER",
+			"batch_receiver_identifier": "BATCH-RECEIVER",
+			"batch_transmission_date": [2024, 32, 1, 1, 1, 0, 0, 0, 0]
+		}
+	});
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/cases/{case_id}/message-header"))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(update.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update message header status {} body {}",
 			status,
 			String::from_utf8_lossy(&body)
 		)
@@ -764,7 +791,7 @@ async fn test_nullification_code_requires_compliance_payload() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_case_save_auto_statuses_checked_when_blocking_issues_exist(
+async fn test_case_save_auto_statuses_reviewed_when_blocking_issues_exist(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -776,7 +803,7 @@ async fn test_case_save_auto_statuses_checked_when_blocking_issues_exist(
 	let (status, body) =
 		update_case_status(&app, &cookie, case_id, "validated").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["status"].as_str(), Some("checked"));
+	assert_eq!(body["data"]["status"].as_str(), Some("reviewed"));
 
 	Ok(())
 }
@@ -942,8 +969,8 @@ async fn test_case_save_allows_validated_to_draft_transition() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires DB migration/owner privileges to add 'checked' to case_status_valid constraint"]
-async fn test_case_can_be_marked_checked() -> Result<()> {
+#[ignore = "requires DB migration/owner privileges to add 'reviewed' to case_status_valid constraint"]
+async fn test_case_can_be_marked_reviewed() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -952,9 +979,64 @@ async fn test_case_can_be_marked_checked() -> Result<()> {
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) =
-		update_case_status(&app, &cookie, case_id, "checked").await?;
+		update_case_status(&app, &cookie, case_id, "reviewed").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["status"].as_str(), Some("checked"));
+	assert_eq!(body["data"]["status"].as_str(), Some("reviewed"));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_can_be_marked_locked() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let (status, body) =
+		update_case_status(&app, &cookie, case_id, "locked").await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["status"].as_str(), Some("locked"));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_locked_case_rejects_content_updates() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let (status, body) =
+		update_case_status(&app, &cookie, case_id, "locked").await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/cases/{case_id}"))
+		.header("cookie", &cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({
+				"data": {
+					"safety_report_id": "LOCKED-EDIT-BLOCKED"
+				}
+			})
+			.to_string(),
+		))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let body: Value = serde_json::from_slice(&body)?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(body.to_string().contains("locked cases are read-only"));
 
 	Ok(())
 }

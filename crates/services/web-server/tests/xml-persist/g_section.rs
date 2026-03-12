@@ -19,5 +19,9 @@ async fn g_section_forms_persist_to_exported_xml() -> crate::common::Result<()> 
 	let xml = export_case_xml(&ctx, case_id).await?;
 	assert!(xml.contains("Persist Drug"));
 	assert!(xml.contains("Persist Substance"));
+	assert!(xml.contains("Persist Device Brand"));
+	assert!(xml.contains("Persist Common Device"));
+	assert!(xml.contains("COMBINATION"));
+	assert!(xml.contains("ADD-CODE-1"));
 	Ok(())
 }

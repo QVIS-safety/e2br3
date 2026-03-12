@@ -7,10 +7,11 @@ use crate::model::case_identifiers::{
 	OtherCaseIdentifierForUpdate,
 };
 use crate::model::drug::{
-	DosageInformationBmc, DosageInformationForCreate, DrugActiveSubstanceBmc,
-	DrugActiveSubstanceForCreate, DrugDeviceCharacteristicBmc,
-	DrugDeviceCharacteristicForCreate, DrugIndicationBmc, DrugIndicationForCreate,
+	structured_fda_device_info_to_json, DosageInformationBmc,
+	DosageInformationForCreate, DrugActiveSubstanceBmc,
+	DrugActiveSubstanceForCreate, DrugIndicationBmc, DrugIndicationForCreate,
 	DrugInformationBmc, DrugInformationForCreate, DrugInformationForUpdate,
+	FdaDeviceCodeEntry, FdaDeviceInfoData,
 };
 use crate::model::drug_reaction_assessment::{
 	DrugReactionAssessmentBmc, DrugReactionAssessmentForCreate,
@@ -103,6 +104,7 @@ struct DrugDosageImport {
 	dose_value: Option<Decimal>,
 	dose_unit: Option<String>,
 	route: Option<String>,
+	route_termid_version: Option<String>,
 	dose_form: Option<String>,
 	dose_form_termid: Option<String>,
 	dose_form_termid_version: Option<String>,
@@ -122,13 +124,8 @@ struct DrugIndicationImport {
 #[derive(Debug)]
 struct DrugDeviceCharacteristicImport {
 	code: Option<String>,
-	code_system: Option<String>,
-	code_display_name: Option<String>,
-	value_type: Option<String>,
 	value_value: Option<String>,
 	value_code: Option<String>,
-	value_code_system: Option<String>,
-	value_display_name: Option<String>,
 }
 
 #[derive(Debug)]
@@ -145,6 +142,10 @@ struct DrugImport {
 	manufacturer_name: Option<String>,
 	manufacturer_country: Option<String>,
 	batch_lot_number: Option<String>,
+	cumulative_dose_first_reaction_value: Option<Decimal>,
+	cumulative_dose_first_reaction_unit: Option<String>,
+	gestation_period_exposure_value: Option<Decimal>,
+	gestation_period_exposure_unit: Option<String>,
 	dosage_text: Option<String>,
 	action_taken: Option<String>,
 	rechallenge: Option<String>,
@@ -171,12 +172,83 @@ struct DrugObservationImport {
 	drug_sequence: i32,
 	sequence_number: i32,
 	reaction_xml_id: Option<Uuid>,
-	time_interval_value: Option<Decimal>,
-	time_interval_unit: Option<String>,
+	administration_start_interval_value: Option<Decimal>,
+	administration_start_interval_unit: Option<String>,
+	last_dose_interval_value: Option<Decimal>,
+	last_dose_interval_unit: Option<String>,
 	reaction_recurred: Option<String>,
 	rechallenge_action: Option<String>,
 	recurrence_meddra_version: Option<String>,
 	recurrence_meddra_code: Option<String>,
+}
+
+fn normalize_characteristic_code(value: Option<&str>) -> String {
+	value
+		.unwrap_or("")
+		.trim()
+		.to_ascii_uppercase()
+		.replace(['.', '_', '-'], "")
+}
+
+fn import_fda_device_info(
+	characteristics: &[DrugDeviceCharacteristicImport],
+) -> (Option<String>, Option<serde_json::Value>) {
+	let mut info = FdaDeviceInfoData::default();
+	let mut specialized_product_category = None;
+
+	for characteristic in characteristics {
+		let normalized =
+			normalize_characteristic_code(characteristic.code.as_deref());
+		let code_value = characteristic
+			.value_code
+			.as_deref()
+			.or(characteristic.value_value.as_deref())
+			.map(str::trim)
+			.filter(|value| !value.is_empty())
+			.map(str::to_string);
+		let text_value = characteristic
+			.value_value
+			.as_deref()
+			.or(characteristic.value_code.as_deref())
+			.map(str::trim)
+			.filter(|value| !value.is_empty())
+			.map(str::to_string);
+
+		match normalized.as_str() {
+			"FDAGK101" => specialized_product_category = code_value,
+			"FDAGK12R1" => {
+				info.malfunction = code_value
+					.as_deref()
+					.map(|value| matches!(value, "1" | "true" | "TRUE" | "True"))
+			}
+			"FDAGK12R2R" => info.follow_up_types.push(FdaDeviceCodeEntry {
+				value_code: code_value,
+			}),
+			"FDAGK12R3R" => info.device_problem_codes.push(FdaDeviceCodeEntry {
+				value_code: code_value,
+			}),
+			"FDAGK12R4" => info.device_brand_name = text_value,
+			"FDAGK12R5" => info.common_device_name = text_value,
+			"FDAGK12R6" => info.device_product_code = code_value,
+			"FDAGK12R71A" => info.manufacturer_name = text_value,
+			"FDAGK12R71B" => info.manufacturer_address = text_value,
+			"FDAGK12R71C" => info.manufacturer_city = text_value,
+			"FDAGK12R71D" => info.manufacturer_state = text_value,
+			"FDAGK12R71E" => info.manufacturer_country = code_value,
+			"FDAGK12R8" => info.device_usage = code_value,
+			"FDAGK12R9" => info.device_lot_number = text_value,
+			"FDAGK12R10" => info.operator_of_device = code_value,
+			"FDAGK12R11R" => info.remedial_actions.push(FdaDeviceCodeEntry {
+				value_code: code_value,
+			}),
+			_ => {}
+		}
+	}
+
+	(
+		specialized_product_category,
+		structured_fda_device_info_to_json(Some(info)),
+	)
 }
 
 #[derive(Debug)]
@@ -219,6 +291,7 @@ impl ImportIdMap {
 pub struct XmlImportRequest {
 	pub xml: Vec<u8>,
 	pub filename: Option<String>,
+	pub validation_profile: Option<String>,
 }
 
 pub async fn import_e2b_xml(
@@ -247,8 +320,10 @@ pub async fn import_e2b_xml(
 				column: None,
 			})?;
 	let header_extract = extract_message_header(&req.xml).ok();
-	let inferred_validation_profile =
-		infer_validation_profile(header_extract.as_ref());
+	let inferred_validation_profile = req
+		.validation_profile
+		.clone()
+		.unwrap_or_else(|| infer_validation_profile(header_extract.as_ref()));
 
 	let next_version = {
 		let dbx = mm.dbx();
@@ -282,6 +357,12 @@ pub async fn import_e2b_xml(
 			dg_prd_key: None,
 			status: Some("draft".to_string()),
 			validation_profile: Some(inferred_validation_profile),
+			appendices_json: None,
+			mfds_report_type: None,
+			report_year: None,
+			source_document_name: None,
+			source_document_base64: None,
+			source_document_media_type: None,
 			version: Some(next_version),
 		},
 	)
@@ -416,6 +497,12 @@ pub async fn import_e2b_xml(
 			dg_prd_key: None,
 			status: None,
 			validation_profile: None,
+			appendices_json: None,
+			mfds_report_type: None,
+			report_year: None,
+			source_document_name: None,
+			source_document_base64: None,
+			source_document_media_type: None,
 			submitted_by: None,
 			submitted_at: None,
 			dirty_c: Some(false),
@@ -430,6 +517,7 @@ pub async fn import_e2b_xml(
 
 	Ok(XmlImportResult {
 		case_id: Some(case_id.to_string()),
+		case_number: Some(safety_report_id),
 		case_version: Some(i64::from(next_version)),
 		xml_key: None,
 		parsed_json_id: Some(version_id.to_string()),
@@ -466,15 +554,65 @@ async fn import_reactions(
 					term_highlighted: entry.term_highlighted,
 					serious: entry.serious,
 					criteria_death: entry.criteria_death,
+					criteria_death_null_flavor: Some(
+						if entry.criteria_death == Some(true) {
+							None
+						} else {
+							Some("NI".to_string())
+						},
+					)
+					.flatten(),
 					criteria_life_threatening: entry.criteria_life_threatening,
+					criteria_life_threatening_null_flavor: Some(
+						if entry.criteria_life_threatening == Some(true) {
+							None
+						} else {
+							Some("NI".to_string())
+						},
+					)
+					.flatten(),
 					criteria_hospitalization: entry.criteria_hospitalization,
+					criteria_hospitalization_null_flavor: Some(
+						if entry.criteria_hospitalization == Some(true) {
+							None
+						} else {
+							Some("NI".to_string())
+						},
+					)
+					.flatten(),
 					criteria_disabling: entry.criteria_disabling,
+					criteria_disabling_null_flavor: Some(
+						if entry.criteria_disabling == Some(true) {
+							None
+						} else {
+							Some("NI".to_string())
+						},
+					)
+					.flatten(),
 					criteria_congenital_anomaly: entry.criteria_congenital_anomaly,
+					criteria_congenital_anomaly_null_flavor: Some(
+						if entry.criteria_congenital_anomaly == Some(true) {
+							None
+						} else {
+							Some("NI".to_string())
+						},
+					)
+					.flatten(),
 					criteria_other_medically_important: entry
 						.criteria_other_medically_important,
+					criteria_other_medically_important_null_flavor: Some(
+						if entry.criteria_other_medically_important == Some(true) {
+							None
+						} else {
+							Some("NI".to_string())
+						},
+					)
+					.flatten(),
 					required_intervention: entry.required_intervention,
 					start_date: entry.start_date,
+					start_date_null_flavor: None,
 					end_date: entry.end_date,
+					end_date_null_flavor: None,
 					duration_value: entry.duration_value,
 					duration_unit: entry.duration_unit,
 					outcome: entry.outcome,
@@ -535,17 +673,27 @@ async fn import_safety_report(
 
 	let report_c = SafetyReportIdentificationForCreate {
 		case_id,
-		transmission_date: report.transmission_date,
+		transmission_date: Some(report.transmission_date),
+		transmission_date_null_flavor: None,
 		report_type: report.report_type.clone(),
-		date_first_received_from_source: report.date_first_received_from_source,
-		date_of_most_recent_information: report.date_of_most_recent_information,
+		date_first_received_from_source: Some(
+			report.date_first_received_from_source,
+		),
+		date_first_received_from_source_null_flavor: None,
+		date_of_most_recent_information: Some(
+			report.date_of_most_recent_information,
+		),
+		date_of_most_recent_information_null_flavor: None,
 		fulfil_expedited_criteria: report.fulfil_expedited_criteria,
 	};
 	let report_u = SafetyReportIdentificationForUpdate {
 		transmission_date: None,
+		transmission_date_null_flavor: None,
 		report_type: Some(report.report_type),
 		date_first_received_from_source: None,
+		date_first_received_from_source_null_flavor: None,
 		date_of_most_recent_information: None,
+		date_of_most_recent_information_null_flavor: None,
 		fulfil_expedited_criteria: None,
 		local_criteria_report_type: report.local_criteria_report_type,
 		combination_product_report_indicator: report
@@ -663,8 +811,22 @@ async fn import_primary_sources(
 			PrimarySourceForCreate {
 				case_id,
 				sequence_number: 1,
+				reporter_title: primary.reporter_title.clone(),
+				reporter_given_name: primary.reporter_given_name.clone(),
+				reporter_middle_name: primary.reporter_middle_name.clone(),
+				reporter_family_name: primary.reporter_family_name.clone(),
+				organization: primary.organization.clone(),
+				department: primary.department.clone(),
+				street: primary.street.clone(),
+				city: primary.city.clone(),
+				state: primary.state.clone(),
+				postcode: primary.postcode.clone(),
+				telephone: primary.telephone.clone(),
+				country_code: primary.country_code.clone(),
+				email: primary.email.clone(),
 				qualification: primary.qualification.clone(),
 				qualification_kr1: None,
+				primary_source_regulatory: primary.primary_source_regulatory.clone(),
 			},
 		)
 		.await?
@@ -929,6 +1091,7 @@ async fn import_study_information(
 				case_id,
 				study_name: study.study_name.clone(),
 				sponsor_study_number: study.sponsor_study_number.clone(),
+				study_type_reaction: study.study_type_reaction.clone(),
 				study_type_reaction_kr1: None,
 			},
 		)
@@ -1139,8 +1302,10 @@ async fn import_medical_history(
 					meddra_version: entry.meddra_version,
 					meddra_code: entry.meddra_code.clone(),
 					start_date: entry.start_date,
+					start_date_null_flavor: None,
 					continuing: entry.continuing,
 					end_date: entry.end_date,
+					end_date_null_flavor: None,
 					comments: entry.comments,
 					family_history: entry.family_history,
 				},
@@ -1154,6 +1319,8 @@ async fn import_medical_history(
 					patient_id,
 					sequence_number: seq,
 					meddra_code: entry.meddra_code.clone(),
+					start_date_null_flavor: None,
+					end_date_null_flavor: None,
 				},
 			)
 			.await?;
@@ -1165,8 +1332,10 @@ async fn import_medical_history(
 					meddra_version: entry.meddra_version,
 					meddra_code: entry.meddra_code.clone(),
 					start_date: entry.start_date,
+					start_date_null_flavor: None,
 					continuing: entry.continuing,
 					end_date: entry.end_date,
+					end_date_null_flavor: None,
 					comments: entry.comments,
 					family_history: entry.family_history,
 				},
@@ -1205,12 +1374,15 @@ async fn import_past_drug_history(
 				id,
 				PastDrugHistoryForUpdate {
 					drug_name: entry.drug_name,
+					drug_name_null_flavor: None,
 					mpid: entry.mpid,
 					mpid_version: entry.mpid_version,
 					phpid: entry.phpid,
 					phpid_version: entry.phpid_version,
 					start_date: entry.start_date,
+					start_date_null_flavor: None,
 					end_date: entry.end_date,
+					end_date_null_flavor: None,
 					indication_meddra_version: entry.indication_meddra_version,
 					indication_meddra_code: entry.indication_meddra_code,
 					reaction_meddra_version: entry.reaction_meddra_version,
@@ -1226,12 +1398,15 @@ async fn import_past_drug_history(
 					patient_id,
 					sequence_number: seq,
 					drug_name: entry.drug_name,
+					drug_name_null_flavor: None,
 					mpid: entry.mpid,
 					mpid_version: entry.mpid_version,
 					phpid: entry.phpid,
 					phpid_version: entry.phpid_version,
 					start_date: entry.start_date,
+					start_date_null_flavor: None,
 					end_date: entry.end_date,
+					end_date_null_flavor: None,
 					indication_meddra_version: entry.indication_meddra_version,
 					indication_meddra_code: entry.indication_meddra_code,
 					reaction_meddra_version: entry.reaction_meddra_version,
@@ -1273,6 +1448,7 @@ async fn import_patient_death(
 			PatientDeathInformationForCreate {
 				patient_id,
 				date_of_death: death.date_of_death,
+				date_of_death_null_flavor: None,
 				autopsy_performed: death.autopsy_performed,
 			},
 		)
@@ -1285,6 +1461,7 @@ async fn import_patient_death(
 		death_id,
 		PatientDeathInformationForUpdate {
 			date_of_death: death.date_of_death,
+			date_of_death_null_flavor: None,
 			autopsy_performed: death.autopsy_performed,
 		},
 	)
@@ -1312,6 +1489,7 @@ async fn import_patient_death(
 				ReportedCauseOfDeathForUpdate {
 					meddra_version: cause.meddra_version,
 					meddra_code: cause.meddra_code.clone(),
+					comments: cause.comments.clone(),
 				},
 			)
 			.await;
@@ -1333,6 +1511,7 @@ async fn import_patient_death(
 				ReportedCauseOfDeathForUpdate {
 					meddra_version: cause.meddra_version,
 					meddra_code: cause.meddra_code.clone(),
+					comments: cause.comments.clone(),
 				},
 			)
 			.await;
@@ -1361,6 +1540,7 @@ async fn import_patient_death(
 				AutopsyCauseOfDeathForUpdate {
 					meddra_version: cause.meddra_version,
 					meddra_code: cause.meddra_code.clone(),
+					comments: cause.comments.clone(),
 				},
 			)
 			.await;
@@ -1382,6 +1562,7 @@ async fn import_patient_death(
 				AutopsyCauseOfDeathForUpdate {
 					meddra_version: cause.meddra_version,
 					meddra_code: cause.meddra_code.clone(),
+					comments: cause.comments.clone(),
 				},
 			)
 			.await;
@@ -1433,9 +1614,12 @@ async fn import_parent_information(
 		ParentInformationForUpdate {
 			parent_identification: parent.parent_identification,
 			parent_birth_date: parent.parent_birth_date,
+			parent_birth_date_null_flavor: None,
 			parent_age: parent.parent_age,
+			parent_age_null_flavor: None,
 			parent_age_unit: parent.parent_age_unit,
 			last_menstrual_period_date: parent.last_menstrual_period_date,
+			last_menstrual_period_date_null_flavor: None,
 			weight_kg: parent.weight_kg,
 			height_cm: parent.height_cm,
 			sex: parent.sex,
@@ -1467,8 +1651,10 @@ async fn import_parent_information(
 					meddra_version: entry.meddra_version,
 					meddra_code: entry.meddra_code,
 					start_date: entry.start_date,
+					start_date_null_flavor: None,
 					continuing: entry.continuing,
 					end_date: entry.end_date,
+					end_date_null_flavor: None,
 					comments: entry.comments,
 				},
 			)
@@ -1482,6 +1668,8 @@ async fn import_parent_information(
 					parent_id,
 					sequence_number: seq,
 					meddra_code,
+					start_date_null_flavor: None,
+					end_date_null_flavor: None,
 				},
 			)
 			.await?;
@@ -1493,8 +1681,10 @@ async fn import_parent_information(
 					meddra_version: entry.meddra_version,
 					meddra_code: entry.meddra_code,
 					start_date: entry.start_date,
+					start_date_null_flavor: None,
 					continuing: entry.continuing,
 					end_date: entry.end_date,
+					end_date_null_flavor: None,
 					comments: entry.comments,
 				},
 			)
@@ -1523,12 +1713,15 @@ async fn import_parent_information(
 				id,
 				ParentPastDrugHistoryForUpdate {
 					drug_name: entry.drug_name,
+					drug_name_null_flavor: None,
 					mpid: entry.mpid,
 					mpid_version: entry.mpid_version,
 					phpid: entry.phpid,
 					phpid_version: entry.phpid_version,
 					start_date: entry.start_date,
+					start_date_null_flavor: None,
 					end_date: entry.end_date,
+					end_date_null_flavor: None,
 					indication_meddra_version: entry.indication_meddra_version,
 					indication_meddra_code: entry.indication_meddra_code,
 					reaction_meddra_version: entry.reaction_meddra_version,
@@ -1545,6 +1738,9 @@ async fn import_parent_information(
 					parent_id,
 					sequence_number: seq,
 					drug_name,
+					drug_name_null_flavor: None,
+					start_date_null_flavor: None,
+					end_date_null_flavor: None,
 				},
 			)
 			.await?;
@@ -1554,12 +1750,15 @@ async fn import_parent_information(
 				id,
 				ParentPastDrugHistoryForUpdate {
 					drug_name: entry.drug_name,
+					drug_name_null_flavor: None,
 					mpid: entry.mpid,
 					mpid_version: entry.mpid_version,
 					phpid: entry.phpid,
 					phpid_version: entry.phpid_version,
 					start_date: entry.start_date,
+					start_date_null_flavor: None,
 					end_date: entry.end_date,
+					end_date_null_flavor: None,
 					indication_meddra_version: entry.indication_meddra_version,
 					indication_meddra_code: entry.indication_meddra_code,
 					reaction_meddra_version: entry.reaction_meddra_version,
@@ -1623,6 +1822,7 @@ async fn import_test_results(
 				TestResultForUpdate {
 					test_name: Some(entry.test_name),
 					test_date: entry.test_date,
+					test_date_null_flavor: None,
 					test_meddra_version: entry.test_meddra_version,
 					test_meddra_code: entry.test_meddra_code,
 					test_result_code: entry.test_result_code,
@@ -1654,6 +1854,7 @@ async fn import_test_results(
 				TestResultForUpdate {
 					test_name: Some(entry.test_name),
 					test_date: entry.test_date,
+					test_date_null_flavor: None,
 					test_meddra_version: entry.test_meddra_version,
 					test_meddra_code: entry.test_meddra_code,
 					test_result_code: entry.test_result_code,
@@ -1743,8 +1944,11 @@ async fn import_patient_information(
 			patient_initials: patient.patient_initials,
 			patient_given_name: patient.patient_given_name,
 			patient_family_name: patient.patient_family_name,
+			patient_initials_null_flavor: None,
 			birth_date: patient.birth_date,
+			birth_date_null_flavor: None,
 			age_at_time_of_onset: patient.age_at_time_of_onset,
+			age_at_time_of_onset_null_flavor: None,
 			age_unit: patient.age_unit,
 			gestation_period: patient.gestation_period,
 			gestation_period_unit: patient.gestation_period_unit,
@@ -1752,9 +1956,11 @@ async fn import_patient_information(
 			weight_kg: patient.weight_kg,
 			height_cm: patient.height_cm,
 			sex: patient.sex,
+			sex_null_flavor: None,
 			race_code: patient.race_code,
 			ethnicity_code: patient.ethnicity_code,
 			last_menstrual_period_date: patient.last_menstrual_period_date,
+			last_menstrual_period_date_null_flavor: None,
 			medical_history_text: patient.medical_history_text,
 			concomitant_therapy: patient.concomitant_therapy,
 		},
@@ -1989,6 +2195,7 @@ struct DeathImport {
 struct DeathCauseImport {
 	meddra_version: Option<String>,
 	meddra_code: Option<String>,
+	comments: Option<String>,
 }
 
 #[derive(Debug)]
@@ -2368,6 +2575,7 @@ fn parse_primary_source(xml: &[u8]) -> Result<Option<PrimarySourceImport>> {
 		&["1", "2", "3"],
 		"primary_sources.primary_source_regulatory",
 	)
+	.map(|value| if value == "3" { "2".to_string() } else { value })
 	.or(Some("1".to_string()));
 
 	if reporter_given_name.is_none()
@@ -3019,9 +3227,11 @@ fn parse_patient_death(xml: &[u8]) -> Result<Option<DeathImport>> {
 			10,
 			"death.meddra_version",
 		);
+		let comments = first_text(&mut xpath, &node, "hl7:originalText");
 		reported_causes.push(DeathCauseImport {
 			meddra_version,
 			meddra_code,
+			comments,
 		});
 	}
 
@@ -3043,9 +3253,11 @@ fn parse_patient_death(xml: &[u8]) -> Result<Option<DeathImport>> {
 			10,
 			"death.autopsy_meddra_version",
 		);
+		let comments = first_text(&mut xpath, &node, "hl7:originalText");
 		autopsy_causes.push(DeathCauseImport {
 			meddra_version,
 			meddra_code,
+			comments,
 		});
 	}
 
@@ -3803,11 +4015,17 @@ fn parse_reactions(xml: &[u8], case_id: Uuid) -> Result<Vec<ReactionImport>> {
 			term_highlighted,
 			serious,
 			criteria_death,
+			criteria_death_null_flavor: if criteria_death == Some(true) { None } else { Some("NI".to_string()) },
 			criteria_life_threatening,
+			criteria_life_threatening_null_flavor: if criteria_life_threatening == Some(true) { None } else { Some("NI".to_string()) },
 			criteria_hospitalization,
+			criteria_hospitalization_null_flavor: if criteria_hospitalization == Some(true) { None } else { Some("NI".to_string()) },
 			criteria_disabling,
+			criteria_disabling_null_flavor: if criteria_disabling == Some(true) { None } else { Some("NI".to_string()) },
 			criteria_congenital_anomaly,
+			criteria_congenital_anomaly_null_flavor: if criteria_congenital_anomaly == Some(true) { None } else { Some("NI".to_string()) },
 			criteria_other_medically_important,
+			criteria_other_medically_important_null_flavor: if criteria_other_medically_important == Some(true) { None } else { Some("NI".to_string()) },
 			required_intervention: clamp_str(
 				first_attr(
 					&mut xpath,
@@ -3831,11 +4049,12 @@ fn parse_reactions(xml: &[u8], case_id: Uuid) -> Result<Vec<ReactionImport>> {
 					"hl7:effectiveTime/hl7:low",
 					"value",
 				)
-			})
-			.and_then(parse_date),
-			end_date: first_attr(
-				&mut xpath,
-				&node,
+				})
+				.and_then(parse_date),
+				start_date_null_flavor: None,
+				end_date: first_attr(
+					&mut xpath,
+					&node,
 				"hl7:effectiveTime/hl7:comp[@xsi:type='IVL_TS']/hl7:high",
 				"value",
 			)
@@ -3846,11 +4065,12 @@ fn parse_reactions(xml: &[u8], case_id: Uuid) -> Result<Vec<ReactionImport>> {
 					"hl7:effectiveTime/hl7:high",
 					"value",
 				)
-			})
-			.and_then(parse_date),
-			duration_value: first_attr(
-				&mut xpath,
-				&node,
+				})
+				.and_then(parse_date),
+				end_date_null_flavor: None,
+				duration_value: first_attr(
+					&mut xpath,
+					&node,
 				"hl7:effectiveTime/hl7:comp[@operator='A']/hl7:width",
 				"value",
 			)
@@ -4312,6 +4532,13 @@ async fn import_drugs(
 				manufacturer_name: entry.manufacturer_name,
 				manufacturer_country: entry.manufacturer_country,
 				batch_lot_number: entry.batch_lot_number,
+				cumulative_dose_first_reaction_value: entry
+					.cumulative_dose_first_reaction_value,
+				cumulative_dose_first_reaction_unit: entry
+					.cumulative_dose_first_reaction_unit,
+				gestation_period_exposure_value: entry
+					.gestation_period_exposure_value,
+				gestation_period_exposure_unit: entry.gestation_period_exposure_unit,
 				dosage_text: entry.dosage_text,
 				action_taken: entry.action_taken,
 				rechallenge: entry.rechallenge,
@@ -4345,6 +4572,7 @@ async fn import_drugs(
 						dose_value: dose.dose_value,
 						dose_unit: dose.dose_unit,
 						route: dose.route,
+						route_termid_version: dose.route_termid_version,
 						dose_form: dose.dose_form,
 						dose_form_termid: dose.dose_form_termid,
 						dose_form_termid_version: dose.dose_form_termid_version,
@@ -4369,13 +4597,8 @@ async fn import_drugs(
 					.into_iter()
 					.map(|ch| DrugDeviceCharacteristicImport {
 						code: ch.code,
-						code_system: ch.code_system,
-						code_display_name: ch.code_display_name,
-						value_type: ch.value_type,
 						value_value: ch.value_value,
 						value_code: ch.value_code,
-						value_code_system: ch.value_code_system,
-						value_display_name: ch.value_display_name,
 					})
 					.collect(),
 			})
@@ -4386,6 +4609,8 @@ async fn import_drugs(
 	let mut map = ImportIdMap::default();
 
 	for drug in imports {
+		let (fda_specialized_product_category, fda_device_info_json) =
+			import_fda_device_info(&drug.characteristics);
 		let drug_id = DrugInformationBmc::create(
 			ctx,
 			mm,
@@ -4409,6 +4634,13 @@ async fn import_drugs(
 				manufacturer_name: drug.manufacturer_name,
 				manufacturer_country: drug.manufacturer_country,
 				batch_lot_number: drug.batch_lot_number,
+				cumulative_dose_first_reaction_value: drug
+					.cumulative_dose_first_reaction_value,
+				cumulative_dose_first_reaction_unit: drug
+					.cumulative_dose_first_reaction_unit,
+				gestation_period_exposure_value: drug
+					.gestation_period_exposure_value,
+				gestation_period_exposure_unit: drug.gestation_period_exposure_unit,
 				dosage_text: drug.dosage_text,
 				action_taken: drug.action_taken,
 				rechallenge: drug.rechallenge,
@@ -4424,6 +4656,9 @@ async fn import_drugs(
 				parent_route_termid_version: drug.parent_route_termid_version,
 				parent_dosage_text: drug.parent_dosage_text,
 				fda_additional_info_coded: drug.fda_additional_info_coded,
+				drug_additional_info_codes_json: None,
+				fda_specialized_product_category,
+				fda_device_info_json,
 			},
 		)
 		.await?;
@@ -4468,6 +4703,7 @@ async fn import_drugs(
 					dose_form_termid: dose.dose_form_termid,
 					dose_form_termid_version: dose.dose_form_termid_version,
 					route_of_administration: dose.route,
+					route_termid_version: dose.route_termid_version,
 					parent_route: dose.parent_route,
 					parent_route_termid: dose.parent_route_termid,
 					parent_route_termid_version: dose.parent_route_termid_version,
@@ -4489,26 +4725,6 @@ async fn import_drugs(
 					indication_text: ind.text,
 					indication_meddra_version: ind.version,
 					indication_meddra_code: ind.code,
-				},
-			)
-			.await?;
-		}
-
-		for (cidx, ch) in drug.characteristics.into_iter().enumerate() {
-			let _ = DrugDeviceCharacteristicBmc::create(
-				ctx,
-				mm,
-				DrugDeviceCharacteristicForCreate {
-					drug_id,
-					sequence_number: (cidx + 1) as i32,
-					code: ch.code,
-					code_system: ch.code_system,
-					code_display_name: ch.code_display_name,
-					value_type: ch.value_type,
-					value_value: ch.value_value,
-					value_code: ch.value_code,
-					value_code_system: ch.value_code_system,
-					value_display_name: ch.value_display_name,
 				},
 			)
 			.await?;
@@ -4639,8 +4855,13 @@ async fn import_drug_reaction_assessments(
 			mm,
 			assessment_id,
 			DrugReactionAssessmentForUpdate {
-				time_interval_value: obs.time_interval_value,
-				time_interval_unit: obs.time_interval_unit.clone(),
+				administration_start_interval_value: obs
+					.administration_start_interval_value,
+				administration_start_interval_unit: obs
+					.administration_start_interval_unit
+					.clone(),
+				last_dose_interval_value: obs.last_dose_interval_value,
+				last_dose_interval_unit: obs.last_dose_interval_unit.clone(),
 				recurrence_action: obs.rechallenge_action.clone(),
 				recurrence_meddra_version: obs.recurrence_meddra_version.clone(),
 				recurrence_meddra_code: obs.recurrence_meddra_code.clone(),
@@ -4883,6 +5104,35 @@ fn parse_drugs(xml: &[u8]) -> Result<Vec<DrugImport>> {
 			&node,
 			"hl7:consumable/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText",
 		);
+		let cumulative_dose_first_reaction_value = first_attr(
+			&mut xpath,
+			&node,
+			"hl7:outboundRelationship2[@typeCode='SUMM']/hl7:observation[hl7:code[@code='14']]/hl7:value",
+			"value",
+		)
+		.and_then(|v| v.parse::<Decimal>().ok());
+		let cumulative_dose_first_reaction_unit = first_attr(
+			&mut xpath,
+			&node,
+			"hl7:outboundRelationship2[@typeCode='SUMM']/hl7:observation[hl7:code[@code='14']]/hl7:value",
+			"unit",
+		);
+		let gestation_period_exposure_value = first_attr(
+			&mut xpath,
+			&node,
+			"hl7:outboundRelationship2[@typeCode='PERT']/hl7:observation[hl7:code[@code='16']]/hl7:value",
+			"value",
+		)
+		.and_then(|v| v.parse::<Decimal>().ok());
+		let gestation_period_exposure_unit = normalize_code3(
+			first_attr(
+				&mut xpath,
+				&node,
+				"hl7:outboundRelationship2[@typeCode='PERT']/hl7:observation[hl7:code[@code='16']]/hl7:value",
+				"unit",
+			),
+			"drug_information.gestation_period_exposure_unit",
+		);
 		let fda_additional_info_coded = clamp_str(
 			first_attr(
 				&mut xpath,
@@ -5024,6 +5274,11 @@ fn parse_drugs(xml: &[u8]) -> Result<Vec<DrugImport>> {
 				first_attr(&mut xpath, &dose, "hl7:routeCode", "code"),
 				"dosage_information.route_of_administration",
 			);
+			let route_termid_version = clamp_str(
+				first_attr(&mut xpath, &dose, "hl7:routeCode", "codeSystemVersion"),
+				10,
+				"dosage_information.route_termid_version",
+			);
 			let dose_form = first_text(
 				&mut xpath,
 				&dose,
@@ -5083,6 +5338,7 @@ fn parse_drugs(xml: &[u8]) -> Result<Vec<DrugImport>> {
 				dose_value,
 				dose_unit,
 				route,
+				route_termid_version,
 				dose_form,
 				dose_form_termid,
 				dose_form_termid_version,
@@ -5124,30 +5380,12 @@ fn parse_drugs(xml: &[u8]) -> Result<Vec<DrugImport>> {
 		let mut characteristics = Vec::new();
 		for ch in chars.into_iter() {
 			let code = first_attr(&mut xpath, &ch, "hl7:code", "code");
-			let code_system = first_attr(&mut xpath, &ch, "hl7:code", "codeSystem");
-			let code_display_name =
-				first_attr(&mut xpath, &ch, "hl7:code", "displayName");
-			let value_type = clamp_str(
-				first_attr(&mut xpath, &ch, "hl7:value", "xsi:type")
-					.or_else(|| first_attr(&mut xpath, &ch, "hl7:value", "type")),
-				10,
-				"drug_device_characteristics.value_type",
-			);
 			let value_value = first_attr(&mut xpath, &ch, "hl7:value", "value");
 			let value_code = first_attr(&mut xpath, &ch, "hl7:value", "code");
-			let value_code_system =
-				first_attr(&mut xpath, &ch, "hl7:value", "codeSystem");
-			let value_display_name =
-				first_attr(&mut xpath, &ch, "hl7:value", "displayName");
 			characteristics.push(DrugDeviceCharacteristicImport {
 				code,
-				code_system,
-				code_display_name,
-				value_type,
 				value_value,
 				value_code,
-				value_code_system,
-				value_display_name,
 			});
 		}
 
@@ -5164,6 +5402,10 @@ fn parse_drugs(xml: &[u8]) -> Result<Vec<DrugImport>> {
 			manufacturer_name,
 			manufacturer_country,
 			batch_lot_number,
+			cumulative_dose_first_reaction_value,
+			cumulative_dose_first_reaction_unit,
+			gestation_period_exposure_value,
+			gestation_period_exposure_unit,
 			dosage_text,
 			action_taken,
 			rechallenge,
@@ -5241,7 +5483,11 @@ fn parse_drug_observations(xml: &[u8]) -> Result<Vec<DrugObservationImport>> {
 				line: None,
 				column: None,
 			})?;
-		let mut time_map: HashMap<Uuid, (Option<Decimal>, Option<String>)> =
+		let mut administration_start_map: HashMap<
+			Uuid,
+			(Option<Decimal>, Option<String>),
+		> = HashMap::new();
+		let mut last_dose_map: HashMap<Uuid, (Option<Decimal>, Option<String>)> =
 			HashMap::new();
 		for rel in time_rels {
 			let rel_type = rel.get_attribute("typeCode");
@@ -5256,9 +5502,9 @@ fn parse_drug_observations(xml: &[u8]) -> Result<Vec<DrugObservationImport>> {
 			let unit = first_attr(&mut xpath, &rel, "hl7:pauseQuantity", "unit");
 			if let Some(reaction_id) = reaction_id {
 				if matches!(rel_type.as_deref(), Some("SAS")) {
-					time_map.insert(reaction_id, (value, unit));
-				} else {
-					time_map.entry(reaction_id).or_insert((value, unit));
+					administration_start_map.insert(reaction_id, (value, unit));
+				} else if matches!(rel_type.as_deref(), Some("SAE")) {
+					last_dose_map.insert(reaction_id, (value, unit));
 				}
 			}
 		}
@@ -5276,11 +5522,32 @@ fn parse_drug_observations(xml: &[u8]) -> Result<Vec<DrugObservationImport>> {
 				"hl7:outboundRelationship1[@typeCode='REFR']/hl7:actReference/hl7:id",
 				"root",
 			));
-			let (time_interval_value, time_interval_unit) =
+			let (
+				administration_start_interval_value,
+				administration_start_interval_unit,
+			) = if let Some(id) = reaction_xml_id {
+				administration_start_map
+					.get(&id)
+					.cloned()
+					.unwrap_or((None, None))
+			} else if administration_start_map.len() == 1 {
+				administration_start_map
+					.values()
+					.next()
+					.cloned()
+					.unwrap_or((None, None))
+			} else {
+				(None, None)
+			};
+			let (last_dose_interval_value, last_dose_interval_unit) =
 				if let Some(id) = reaction_xml_id {
-					time_map.get(&id).cloned().unwrap_or((None, None))
-				} else if time_map.len() == 1 {
-					time_map.values().next().cloned().unwrap_or((None, None))
+					last_dose_map.get(&id).cloned().unwrap_or((None, None))
+				} else if last_dose_map.len() == 1 {
+					last_dose_map
+						.values()
+						.next()
+						.cloned()
+						.unwrap_or((None, None))
 				} else {
 					(None, None)
 				};
@@ -5315,8 +5582,10 @@ fn parse_drug_observations(xml: &[u8]) -> Result<Vec<DrugObservationImport>> {
 				drug_sequence,
 				sequence_number,
 				reaction_xml_id,
-				time_interval_value,
-				time_interval_unit,
+				administration_start_interval_value,
+				administration_start_interval_unit,
+				last_dose_interval_value,
+				last_dose_interval_unit,
 				reaction_recurred,
 				rechallenge_action,
 				recurrence_meddra_version,
@@ -5413,4 +5682,34 @@ fn parse_relatedness_assessments(xml: &[u8]) -> Result<Vec<RelatednessImport>> {
 	}
 
 	Ok(items)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::parse_patient_death;
+
+	#[test]
+	fn parse_patient_death_reads_reported_and_autopsy_comments() {
+		let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+			.parent()
+			.and_then(|p| p.parent())
+			.and_then(|p| p.parent())
+			.expect("workspace root")
+			.to_path_buf();
+		let xml =
+			std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario6.xml"))
+				.expect("read sample xml");
+
+		let death = parse_patient_death(&xml)
+			.expect("parse death")
+			.expect("death block");
+		assert_eq!(
+			death.reported_causes[0].comments.as_deref(),
+			Some("Progressive multifocal leukoencephalopathy")
+		);
+		assert_eq!(
+			death.autopsy_causes[0].comments.as_deref(),
+			Some("What we learned during the autopsy")
+		);
+	}
 }

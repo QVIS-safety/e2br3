@@ -1,5 +1,6 @@
 use super::{
-	find_canonical_rule_for_phase, ValidationPhase, CASE_VALIDATOR_RULE_CODES,
+	canonical_rules_for_phase, find_canonical_rule_for_phase, RuleCategory,
+	ValidationPhase,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -10,7 +11,11 @@ pub struct RuleLayerContract {
 }
 
 pub fn rule_layer_contract(code: &str) -> Option<RuleLayerContract> {
-	let is_case = CASE_VALIDATOR_RULE_CODES.contains(&code);
+	let is_case = canonical_rules_for_phase(ValidationPhase::CaseValidate)
+		.into_iter()
+		.any(|rule| {
+			rule.category == RuleCategory::CaseBusiness && rule.code == code
+		});
 	let is_xsd = matches!(
 		code,
 		"ICH.XML.ROOT.ITSVERSION.REQUIRED"

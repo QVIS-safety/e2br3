@@ -9,6 +9,7 @@ use modql::filter::{FilterNodes, ListOptions, OpValsString, OpValsValue};
 use sea_query::{Expr, Iden, PostgresQueryBuilder, Query};
 use sea_query_binder::SqlxBinder;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use sqlx::postgres::PgRow;
 use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
@@ -34,6 +35,13 @@ pub struct User {
 	pub role: String,
 	pub first_name: Option<String>,
 	pub last_name: Option<String>,
+	pub comments: Option<String>,
+	pub other_information: Option<String>,
+	pub access_start_at: Option<OffsetDateTime>,
+	pub access_end_at: Option<OffsetDateTime>,
+	pub access_sender_ids: Option<String>,
+	pub access_product_ids: Option<String>,
+	pub access_study_ids: Option<String>,
 	pub active: bool,
 	pub must_change_password: bool,
 	pub last_login_at: Option<OffsetDateTime>,
@@ -49,11 +57,18 @@ pub struct User {
 pub struct UserForCreate {
 	pub organization_id: Uuid,
 	pub email: String,
-	pub username: String,
+	pub username: Option<String>,
 	pub pwd_clear: String,
 	pub role: Option<String>,
 	pub first_name: Option<String>,
 	pub last_name: Option<String>,
+	pub comments: Option<String>,
+	pub other_information: Option<String>,
+	pub access_start_at: Option<OffsetDateTime>,
+	pub access_end_at: Option<OffsetDateTime>,
+	pub access_sender_ids: Option<Vec<String>>,
+	pub access_product_ids: Option<Vec<String>>,
+	pub access_study_ids: Option<Vec<String>>,
 }
 
 #[derive(Fields)]
@@ -64,6 +79,13 @@ pub struct UserForInsert {
 	pub role: Option<String>,
 	pub first_name: Option<String>,
 	pub last_name: Option<String>,
+	pub comments: Option<String>,
+	pub other_information: Option<String>,
+	pub access_start_at: Option<OffsetDateTime>,
+	pub access_end_at: Option<OffsetDateTime>,
+	pub access_sender_ids: Option<String>,
+	pub access_product_ids: Option<String>,
+	pub access_study_ids: Option<String>,
 }
 
 #[derive(Clone, FromRow, Fields, Debug)]
@@ -96,9 +118,17 @@ pub struct UserForAuth {
 #[derive(Fields, Deserialize)]
 pub struct UserForUpdate {
 	pub email: Option<String>,
+	pub username: Option<String>,
 	pub role: Option<String>,
 	pub first_name: Option<String>,
 	pub last_name: Option<String>,
+	pub comments: Option<String>,
+	pub other_information: Option<String>,
+	pub access_start_at: Option<OffsetDateTime>,
+	pub access_end_at: Option<OffsetDateTime>,
+	pub access_sender_ids: Option<String>,
+	pub access_product_ids: Option<String>,
+	pub access_study_ids: Option<String>,
 	pub active: Option<bool>,
 	pub last_login_at: Option<OffsetDateTime>,
 }
@@ -139,6 +169,21 @@ impl UserBmc {
 		email.trim().to_ascii_lowercase()
 	}
 
+	fn serialize_id_scope(values: Option<Vec<String>>) -> Option<String> {
+		values.and_then(|items| {
+			let normalized = items
+				.into_iter()
+				.map(|item| item.trim().to_string())
+				.filter(|item| !item.is_empty())
+				.collect::<Vec<_>>();
+			if normalized.is_empty() {
+				None
+			} else {
+				Some(json!(normalized).to_string())
+			}
+		})
+	}
+
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
@@ -152,8 +197,22 @@ impl UserBmc {
 			role,
 			first_name,
 			last_name,
+			comments,
+			other_information,
+			access_start_at,
+			access_end_at,
+			access_sender_ids,
+			access_product_ids,
+			access_study_ids,
 		} = user_c;
 		let email = Self::normalize_email(&email);
+		let username = username
+			.map(|value| value.trim().to_string())
+			.filter(|value| !value.is_empty())
+			.unwrap_or_else(|| email.clone());
+		let access_sender_ids = Self::serialize_id_scope(access_sender_ids);
+		let access_product_ids = Self::serialize_id_scope(access_product_ids);
+		let access_study_ids = Self::serialize_id_scope(access_study_ids);
 		let role = role
 			.map(|role| role.trim().to_ascii_lowercase())
 			.unwrap_or_else(|| ROLE_USER.to_string());
@@ -166,6 +225,13 @@ impl UserBmc {
 			role: Some(role),
 			first_name,
 			last_name,
+			comments,
+			other_information,
+			access_start_at,
+			access_end_at,
+			access_sender_ids,
+			access_product_ids,
+			access_study_ids,
 		};
 
 		// Start (or reuse) the transaction on the current dbx so request context is preserved.
@@ -486,14 +552,13 @@ impl UserBmc {
 				organization_id,
 				email,
 				username,
-				CASE
-					WHEN lower(trim(role)) IN ('admin', 'manager', 'user', 'viewer')
-						THEN lower(trim(role))
-					ELSE 'user'
-				END AS role,
+				lower(trim(role)) AS role,
 				token_salt
 			FROM users
 			WHERE email = $1
+			  AND active = true
+			  AND (access_start_at IS NULL OR access_start_at <= now())
+			  AND (access_end_at IS NULL OR access_end_at >= now())
 			LIMIT 1
 			"#,
 		)
@@ -532,17 +597,16 @@ impl UserBmc {
 				organization_id,
 				email,
 				username,
-					CASE
-						WHEN lower(trim(role)) IN ('admin', 'manager', 'user', 'viewer')
-							THEN lower(trim(role))
-						ELSE 'user'
-					END AS role,
+					lower(trim(role)) AS role,
 					must_change_password,
 					pwd,
 					pwd_salt,
 					token_salt
 			FROM users
 			WHERE email = $1
+			  AND active = true
+			  AND (access_start_at IS NULL OR access_start_at <= now())
+			  AND (access_end_at IS NULL OR access_end_at >= now())
 			LIMIT 1
 			"#,
 		)

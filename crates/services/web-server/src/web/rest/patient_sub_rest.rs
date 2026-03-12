@@ -34,7 +34,7 @@ use lib_core::model::patient::{
 use lib_core::model::{self, ModelManager};
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValValue, OpValsValue};
 use serde_json::json;
@@ -97,6 +97,7 @@ pub async fn create_patient_identifier(
 ) -> Result<(StatusCode, Json<DataRestResult<PatientIdentifier>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_IDENTIFIER_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
 
 	let ParamsForCreate { data } = params;
@@ -151,11 +152,12 @@ pub async fn get_patient_identifier(
 pub async fn update_patient_identifier(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, id)): Path<(Uuid, Uuid)>,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
 	Json(params): Json<ParamsForUpdate<PatientIdentifierForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<PatientIdentifier>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_IDENTIFIER_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 
 	let ParamsForUpdate { data } = params;
 	PatientIdentifierBmc::update(&ctx, &mm, id, data).await?;
@@ -167,10 +169,11 @@ pub async fn update_patient_identifier(
 pub async fn delete_patient_identifier(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, id)): Path<(Uuid, Uuid)>,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<PatientIdentifier>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_IDENTIFIER_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 
 	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
 	PatientIdentifierBmc::delete(&ctx, &mm, id).await?;
@@ -188,6 +191,7 @@ pub async fn create_medical_history_episode(
 ) -> Result<(StatusCode, Json<DataRestResult<MedicalHistoryEpisode>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, MEDICAL_HISTORY_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
 
 	let ParamsForCreate { data } = params;
@@ -255,6 +259,7 @@ pub async fn update_medical_history_episode(
 ) -> Result<(StatusCode, Json<DataRestResult<MedicalHistoryEpisode>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, MEDICAL_HISTORY_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
 	ensure_patient_scope(
@@ -279,6 +284,7 @@ pub async fn delete_medical_history_episode(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, MEDICAL_HISTORY_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
 	ensure_patient_scope(
 		&ctx,
@@ -304,6 +310,7 @@ pub async fn create_past_drug_history(
 ) -> Result<(StatusCode, Json<DataRestResult<PastDrugHistory>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PAST_DRUG_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
 
 	let ParamsForCreate { data } = params;
@@ -371,6 +378,7 @@ pub async fn update_past_drug_history(
 ) -> Result<(StatusCode, Json<DataRestResult<PastDrugHistory>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PAST_DRUG_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
 	ensure_patient_scope(
@@ -395,6 +403,7 @@ pub async fn delete_past_drug_history(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PAST_DRUG_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
 	ensure_patient_scope(
 		&ctx,
@@ -420,6 +429,7 @@ pub async fn create_patient_death_information(
 ) -> Result<(StatusCode, Json<DataRestResult<PatientDeathInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_DEATH_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
 
 	let ParamsForCreate { data } = params;
@@ -489,6 +499,7 @@ pub async fn update_patient_death_information(
 ) -> Result<(StatusCode, Json<DataRestResult<PatientDeathInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_DEATH_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = PatientDeathInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_patient_scope(
@@ -513,6 +524,7 @@ pub async fn delete_patient_death_information(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_DEATH_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = PatientDeathInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_patient_scope(
 		&ctx,
@@ -538,6 +550,7 @@ pub async fn create_reported_cause_of_death(
 ) -> Result<(StatusCode, Json<DataRestResult<ReportedCauseOfDeath>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DEATH_CAUSE_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	ensure_death_info_case(&ctx, &mm, case_id, death_info_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
@@ -602,6 +615,7 @@ pub async fn update_reported_cause_of_death(
 ) -> Result<(StatusCode, Json<DataRestResult<ReportedCauseOfDeath>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DEATH_CAUSE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = ReportedCauseOfDeathBmc::get(&ctx, &mm, id).await?;
 	if entity.death_info_id != death_info_id {
@@ -625,6 +639,7 @@ pub async fn delete_reported_cause_of_death(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DEATH_CAUSE_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = ReportedCauseOfDeathBmc::get(&ctx, &mm, id).await?;
 	if entity.death_info_id != death_info_id {
 		return Err(model::Error::EntityUuidNotFound {
@@ -649,6 +664,7 @@ pub async fn create_autopsy_cause_of_death(
 ) -> Result<(StatusCode, Json<DataRestResult<AutopsyCauseOfDeath>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DEATH_CAUSE_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	ensure_death_info_case(&ctx, &mm, case_id, death_info_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
@@ -713,6 +729,7 @@ pub async fn update_autopsy_cause_of_death(
 ) -> Result<(StatusCode, Json<DataRestResult<AutopsyCauseOfDeath>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DEATH_CAUSE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = AutopsyCauseOfDeathBmc::get(&ctx, &mm, id).await?;
 	if entity.death_info_id != death_info_id {
@@ -736,6 +753,7 @@ pub async fn delete_autopsy_cause_of_death(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DEATH_CAUSE_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = AutopsyCauseOfDeathBmc::get(&ctx, &mm, id).await?;
 	if entity.death_info_id != death_info_id {
 		return Err(model::Error::EntityUuidNotFound {
@@ -760,6 +778,7 @@ pub async fn create_parent_information(
 ) -> Result<(StatusCode, Json<DataRestResult<ParentInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PARENT_INFORMATION_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
 
 	let ParamsForCreate { data } = params;
@@ -826,6 +845,7 @@ pub async fn update_parent_information(
 ) -> Result<(StatusCode, Json<DataRestResult<ParentInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PARENT_INFORMATION_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_patient_scope(
@@ -850,6 +870,7 @@ pub async fn delete_parent_information(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PARENT_INFORMATION_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_patient_scope(
 		&ctx,

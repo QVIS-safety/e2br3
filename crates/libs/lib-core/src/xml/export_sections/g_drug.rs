@@ -257,6 +257,38 @@ pub(crate) fn drug_fragment(
 		out.push_str(&xml_escape(rechallenge));
 		out.push_str("\"/></observation></outboundRelationship2>");
 	}
+	if drug.cumulative_dose_first_reaction_value.is_some()
+		|| drug.cumulative_dose_first_reaction_unit.is_some()
+	{
+		out.push_str("<outboundRelationship2 typeCode=\"SUMM\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"14\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"cumulativeDoseToReaction\"/><value xsi:type=\"PQ\"");
+		if let Some(v) = drug.cumulative_dose_first_reaction_value.as_ref() {
+			out.push_str(" value=\"");
+			out.push_str(&xml_escape(&v.to_string()));
+			out.push_str("\"");
+		}
+		if let Some(u) = drug.cumulative_dose_first_reaction_unit.as_deref() {
+			out.push_str(" unit=\"");
+			out.push_str(&xml_escape(u));
+			out.push_str("\"");
+		}
+		out.push_str("/></observation></outboundRelationship2>");
+	}
+	if drug.gestation_period_exposure_value.is_some()
+		|| drug.gestation_period_exposure_unit.is_some()
+	{
+		out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"16\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"gestationPeriod\"/><value xsi:type=\"PQ\"");
+		if let Some(v) = drug.gestation_period_exposure_value.as_ref() {
+			out.push_str(" value=\"");
+			out.push_str(&xml_escape(&v.to_string()));
+			out.push_str("\"");
+		}
+		if let Some(u) = drug.gestation_period_exposure_unit.as_deref() {
+			out.push_str(" unit=\"");
+			out.push_str(&xml_escape(u));
+			out.push_str("\"");
+		}
+		out.push_str("/></observation></outboundRelationship2>");
+	}
 	if let Some(code) = drug.fda_additional_info_coded.as_deref() {
 		out.push_str("<outboundRelationship2 typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"9\"/><value xsi:type=\"CE\" code=\"");
 		out.push_str(&xml_escape(code));
@@ -350,7 +382,13 @@ pub(crate) fn drug_fragment(
 		if let Some(route) = dose.route_of_administration.as_deref() {
 			out.push_str("<routeCode code=\"");
 			out.push_str(&xml_escape(route));
-			out.push_str("\"/>");
+			out.push_str("\"");
+			if let Some(ver) = dose.route_termid_version.as_deref() {
+				out.push_str(" codeSystemVersion=\"");
+				out.push_str(&xml_escape(ver));
+				out.push_str("\"");
+			}
+			out.push_str("/>");
 		}
 		if dose.dose_value.is_some() || dose.dose_unit.is_some() {
 			out.push_str("<doseQuantity");

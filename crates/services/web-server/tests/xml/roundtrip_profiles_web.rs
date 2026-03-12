@@ -155,6 +155,60 @@ async fn ensure_reaction_language(
 	Ok(())
 }
 
+async fn ensure_batch_transmission_date(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<()> {
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"GET",
+		&format!("/api/cases/{case_id}/message-header"),
+		None,
+		Body::empty(),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(
+			format!("get message-header status {} body {}", status, body).into(),
+		);
+	}
+	let has_batch_transmission_date = body
+		.get("data")
+		.and_then(|v| v.get("batch_transmission_date"))
+		.and_then(Value::as_array)
+		.map(|v| !v.is_empty())
+		.unwrap_or(false);
+	if has_batch_transmission_date {
+		return Ok(());
+	}
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"PUT",
+		&format!("/api/cases/{case_id}/message-header"),
+		Some("application/json"),
+		Body::from(
+			serde_json::json!({
+				"data": {
+					"batch_transmission_date": [2024, 32, 1, 1, 1, 0, 0, 0, 0]
+				}
+			})
+			.to_string(),
+		),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update batch_transmission_date status {} body {}",
+			status, body
+		)
+		.into());
+	}
+	Ok(())
+}
+
 async fn mark_case_validated(
 	app: &axum::Router,
 	cookie: &str,
@@ -240,13 +294,19 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 		}
 		let Some(case_id) = import_body
 			.get("data")
-			.and_then(|v| v.get("case_id"))
+			.and_then(|v| v.get("case_id").or_else(|| v.get("caseId")))
 			.and_then(Value::as_str)
 		else {
 			failures.push(format!("{}: missing case_id", fixture.filename));
 			continue;
 		};
 		if let Err(err) = ensure_reaction_language(&app, &cookie, case_id).await {
+			failures.push(format!("{}: {err}", fixture.filename));
+			continue;
+		}
+		if let Err(err) =
+			ensure_batch_transmission_date(&app, &cookie, case_id).await
+		{
 			failures.push(format!("{}: {err}", fixture.filename));
 			continue;
 		}

@@ -1,0 +1,11 @@
+{
+  "source_manifest": "docs/generated/manifests/ich.rules.2026-03-07.json",
+  "summary": {
+    "canonical_ich_rule_count": 104,
+    "workbook_ich_row_count": 0,
+    "mfds_pdf_ich_guidance_row_count": 0,
+    "triage_status_counts": {},
+    "needs_new_canonical_rule_count": 0
+  },
+  "rows": []
+}

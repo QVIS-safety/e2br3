@@ -35,7 +35,7 @@ pub struct XmlValidatorConfig {
 impl Default for XmlValidatorConfig {
 	fn default() -> Self {
 		Self {
-			max_bytes: 5 * 1024 * 1024,
+			max_bytes: 10 * 1024 * 1024,
 			allowed_roots: &["MCCI_IN200100UV01", "MCCI_IN200101UV01"],
 			xsd_path: xsd_path_from_env(),
 			require_schema_location: true,

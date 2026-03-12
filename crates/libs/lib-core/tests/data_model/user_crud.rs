@@ -28,11 +28,18 @@ async fn test_user_create_ok() -> Result<()> {
 	let user_c = UserForCreate {
 		organization_id: demo_org_id(),
 		email: format!("{fx_username}@example.com"),
-		username: fx_username.to_string(),
+		username: Some(fx_username.to_string()),
 		pwd_clear: fx_pwd_clear.to_string(),
 		role: Some("user".to_string()),
 		first_name: Some("Test".to_string()),
 		last_name: Some("User".to_string()),
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 	};
 
 	let user_id = UserBmc::create(&ctx, &mm, user_c).await?;
@@ -65,20 +72,34 @@ async fn test_user_create_duplicate_email() -> Result<()> {
 	let user_c_1 = UserForCreate {
 		organization_id: demo_org_id(),
 		email: fx_email.clone(),
-		username: fx_username_1.to_string(),
+		username: Some(fx_username_1.to_string()),
 		pwd_clear: "test_create_dup_email pwd 01".to_string(),
 		role: Some("user".to_string()),
 		first_name: Some("Test".to_string()),
 		last_name: Some("User".to_string()),
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 	};
 	let user_c_2 = UserForCreate {
 		organization_id: demo_org_id(),
 		email: fx_email.clone(),
-		username: fx_username_2.to_string(),
+		username: Some(fx_username_2.to_string()),
 		pwd_clear: "test_create_dup_email pwd 02".to_string(),
 		role: Some("user".to_string()),
 		first_name: Some("Test".to_string()),
 		last_name: Some("User".to_string()),
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 	};
 
 	let user_id_1 = UserBmc::create(&ctx, &mm, user_c_1).await?;
@@ -113,11 +134,18 @@ async fn test_user_update_pwd_ok() -> Result<()> {
 	let user_c = UserForCreate {
 		organization_id: demo_org_id(),
 		email: format!("{fx_username}@example.com"),
-		username: fx_username.to_string(),
+		username: Some(fx_username.to_string()),
 		pwd_clear: fx_pwd_clear_1.to_string(),
 		role: Some("user".to_string()),
 		first_name: Some("Test".to_string()),
 		last_name: Some("User".to_string()),
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 	};
 	let user_id = UserBmc::create(&ctx, &mm, user_c).await?;
 
@@ -170,19 +198,34 @@ async fn test_user_update_ok() -> Result<()> {
 	let user_c = UserForCreate {
 		organization_id: demo_org_id(),
 		email: fx_email.clone(),
-		username: fx_username.to_string(),
+		username: Some(fx_username.to_string()),
 		pwd_clear: "test_update pwd 01".to_string(),
 		role: Some("user".to_string()),
 		first_name: Some("Test".to_string()),
 		last_name: Some("User".to_string()),
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 	};
 
 	let user_id = UserBmc::create(&ctx, &mm, user_c).await?;
 	let user_u = UserForUpdate {
 		email: None,
+		username: None,
 		role: Some("admin".to_string()),
 		first_name: Some("Updated".to_string()),
 		last_name: None,
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 		active: Some(false),
 		last_login_at: None,
 	};

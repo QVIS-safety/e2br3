@@ -7,17 +7,20 @@ CREATE TABLE safety_report_identification (
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
 
     -- C.1.2 - Date of Creation (MANDATORY)
-    transmission_date DATE NOT NULL,
+    transmission_date DATE,
+    transmission_date_null_flavor VARCHAR(4) CHECK (transmission_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.3 - Type of Report (MANDATORY - E2B(R3) codes)
     report_type VARCHAR(1) NOT NULL CHECK (report_type IN ('1', '2', '3', '4')),
     -- 1=Spontaneous report, 2=Report from study, 3=Other, 4=Not available
 
     -- C.1.4 - Date Report Was First Received from Source (MANDATORY)
-    date_first_received_from_source DATE NOT NULL,
+    date_first_received_from_source DATE,
+    date_first_received_from_source_null_flavor VARCHAR(4) CHECK (date_first_received_from_source_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.5 - Date of Most Recent Information (MANDATORY)
-    date_of_most_recent_information DATE NOT NULL,
+    date_of_most_recent_information DATE,
+    date_of_most_recent_information_null_flavor VARCHAR(4) CHECK (date_of_most_recent_information_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.7 - Fulfils Expedited Criteria (MANDATORY)
     fulfil_expedited_criteria BOOLEAN NOT NULL,
@@ -233,8 +236,8 @@ CREATE TABLE primary_sources (
     qualification_kr1 VARCHAR(1) CHECK (qualification_kr1 IN ('1', '2')),
 
     -- C.2.r.5 - Primary Source for Regulatory Purposes (MANDATORY)
-    primary_source_regulatory VARCHAR(1) CHECK (primary_source_regulatory IN ('1', '2', '3')),
-    -- 1=Yes, 2=No, 3=Unknown
+    primary_source_regulatory VARCHAR(1) CHECK (primary_source_regulatory IN ('1', '2')),
+    -- 1=Yes, 2=No
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

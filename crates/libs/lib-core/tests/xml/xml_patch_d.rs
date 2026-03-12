@@ -1,4 +1,6 @@
-use lib_core::xml::raw::patch::{patch_d_patient, DPatientPatch};
+use lib_core::xml::raw::patch::{
+	patch_d_patient, DPatientDeathCausePatch, DPatientPatch,
+};
 use libxml::parser::Parser;
 use libxml::xpath::Context;
 use sqlx::types::time::Date;
@@ -23,6 +25,10 @@ fn patch_d_section_updates_values() {
 		age_unit: Some("a"),
 		weight_kg: Some("72"),
 		height_cm: Some("168"),
+		date_of_death: None,
+		autopsy_performed: None,
+		reported_causes: &[],
+		autopsy_causes: &[],
 	};
 
 	let patched = patch_d_patient(&xml, &patch).expect("patch xml");
@@ -80,4 +86,62 @@ fn patch_d_section_updates_values() {
 		)
 		.unwrap();
 	assert_eq!(height, "168");
+}
+
+#[test]
+fn patch_d_section_updates_death_cause_comments() {
+	let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+		.parent()
+		.and_then(|p| p.parent())
+		.and_then(|p| p.parent())
+		.expect("workspace root")
+		.to_path_buf();
+	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario6.xml"))
+		.expect("read sample xml");
+
+	let reported = [DPatientDeathCausePatch {
+		meddra_version: Some("12.0"),
+		meddra_code: Some("10036807"),
+		comments: Some("Updated reported cause"),
+	}];
+	let autopsy = [DPatientDeathCausePatch {
+		meddra_version: Some("12.0"),
+		meddra_code: Some("10067063"),
+		comments: Some("Updated autopsy cause"),
+	}];
+	let patch = DPatientPatch {
+		patient_name: None,
+		sex: None,
+		birth_date: None,
+		age_value: None,
+		age_unit: None,
+		weight_kg: None,
+		height_cm: None,
+		date_of_death: None,
+		autopsy_performed: Some(true),
+		reported_causes: &reported,
+		autopsy_causes: &autopsy,
+	};
+
+	let patched = patch_d_patient(&xml, &patch).expect("patch xml");
+	let parser = Parser::default();
+	let doc = parser.parse_string(&patched).expect("parse patched");
+	let mut xpath = Context::new(&doc).expect("xpath");
+	xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
+
+	let reported_text = xpath
+		.findvalue(
+			"(//hl7:observation[hl7:code[@code='32']]/hl7:value/hl7:originalText/text())[1]",
+			None,
+		)
+		.unwrap();
+	assert_eq!(reported_text, "Updated reported cause");
+
+	let autopsy_text = xpath
+		.findvalue(
+			"(//hl7:observation[hl7:code[@code='5']]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='8']]/hl7:value/hl7:originalText/text())[1]",
+			None,
+		)
+		.unwrap();
+	assert_eq!(autopsy_text, "Updated autopsy cause");
 }

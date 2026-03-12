@@ -9,6 +9,7 @@ CREATE TABLE test_results (
 
     -- F.r.1 - Test Date
     test_date DATE,
+    test_date_null_flavor VARCHAR(10),
 
     -- F.r.2 - Test Name (free text or MedDRA coded)
     test_name VARCHAR(250) NOT NULL,

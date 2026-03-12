@@ -1,10 +1,11 @@
 use super::validation_common::{
-	assert_has_code, create_active_substance, create_drug,
-	create_drug_device_characteristic, create_drug_reaction_assessment,
-	create_message_header, create_message_header_with_receiver, create_patient,
-	create_primary_source, create_reaction, create_relatedness_assessment,
-	create_safety_report, create_safety_report_with, create_sender, put_json,
-	setup_case, update_drug, update_safety_report, validate_case,
+	assert_has_code, create_active_substance, create_dosage, create_drug,
+	create_drug_device_characteristic, create_drug_indication,
+	create_drug_reaction_assessment, create_message_header,
+	create_message_header_with_receiver, create_patient, create_primary_source,
+	create_reaction, create_relatedness_assessment, create_safety_report,
+	create_safety_report_with, create_sender, put_json, setup_case, update_drug,
+	update_safety_report, validate_case,
 };
 use crate::common::Result;
 use axum::http::StatusCode;
@@ -59,6 +60,339 @@ async fn g_section_medicinal_product_rule_is_enforced() -> Result<()> {
 	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_has_code(&report, "ICH.G.k.2.2.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_active_substance_and_dosage_pair_rules_are_enforced() -> Result<()>
+{
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	let drug_id =
+		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	let substance_id = create_active_substance(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		drug_id,
+		1,
+		Some("Substance A"),
+		None,
+	)
+	.await?;
+	let dosage_id =
+		create_dosage(&ctx.app, &ctx.cookie, ctx.case_id, drug_id, 1).await?;
+	let (status, body) = put_json(
+		&ctx.app,
+		&ctx.cookie,
+		format!(
+			"/api/cases/{}/drugs/{drug_id}/active-substances/{substance_id}",
+			ctx.case_id
+		),
+		json!({"data": { "strength_value": "10", "strength_unit": "" }}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, body) = put_json(
+		&ctx.app,
+		&ctx.cookie,
+		format!(
+			"/api/cases/{}/drugs/{drug_id}/dosages/{dosage_id}",
+			ctx.case_id
+		),
+		json!({"data": {
+			"dose_value": "5",
+			"dose_unit": "",
+			"frequency_value": "2",
+			"frequency_unit": "",
+			"duration_value": "4",
+			"duration_unit": ""
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.G.k.2.3.r.3b.REQUIRED");
+	assert_has_code(&report, "ICH.G.k.4.r.1b.REQUIRED");
+	assert_has_code(&report, "ICH.G.k.4.r.3.REQUIRED");
+	assert_has_code(&report, "ICH.G.k.4.r.6b.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_identifier_term_version_rules_are_enforced() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	let drug_id =
+		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	let substance_id = create_active_substance(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		drug_id,
+		1,
+		Some("Substance A"),
+		None,
+	)
+	.await?;
+	let dosage_id =
+		create_dosage(&ctx.app, &ctx.cookie, ctx.case_id, drug_id, 1).await?;
+
+	update_drug(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		drug_id,
+		json!({"data": {
+			"mpid": "WHOMPID-001",
+			"mpid_version": "",
+			"phpid": "WHOPHPID-001",
+			"phpid_version": ""
+		}}),
+	)
+	.await?;
+	let (status, body) = put_json(
+		&ctx.app,
+		&ctx.cookie,
+		format!(
+			"/api/cases/{}/drugs/{drug_id}/active-substances/{substance_id}",
+			ctx.case_id
+		),
+		json!({"data": {
+			"substance_termid": "TERM-001",
+			"substance_termid_version": ""
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, body) = put_json(
+		&ctx.app,
+		&ctx.cookie,
+		format!(
+			"/api/cases/{}/drugs/{drug_id}/dosages/{dosage_id}",
+			ctx.case_id
+		),
+		json!({"data": {
+			"dose_form_termid": "DF-001",
+			"dose_form_termid_version": "",
+			"route_of_administration": "001",
+			"route_termid_version": "",
+			"parent_route_termid": "ROUTE-001",
+			"parent_route_termid_version": ""
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.G.k.2.1.1a.REQUIRED");
+	assert_has_code(&report, "ICH.G.k.2.1.2a.REQUIRED");
+	assert_has_code(&report, "ICH.G.k.2.3.r.2a.REQUIRED");
+	assert_has_code(&report, "ICH.G.k.4.r.9.2a.REQUIRED");
+	assert_has_code(&report, "ICH.G.k.4.r.10.2a.REQUIRED");
+	assert_has_code(&report, "ICH.G.k.4.r.11.2a.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_active_substance_name_is_required_when_termid_missing(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	let drug_id =
+		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	let _ = create_active_substance(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		drug_id,
+		1,
+		None,
+		None,
+	)
+	.await?;
+
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.G.k.2.3.r.1.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_duration_value_is_required_when_duration_unit_present(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	let drug_id =
+		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	let dosage_id =
+		create_dosage(&ctx.app, &ctx.cookie, ctx.case_id, drug_id, 1).await?;
+	let (status, body) = put_json(
+		&ctx.app,
+		&ctx.cookie,
+		format!(
+			"/api/cases/{}/drugs/{drug_id}/dosages/{dosage_id}",
+			ctx.case_id
+		),
+		json!({"data": {
+			"duration_value": null,
+			"duration_unit": "801"
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.G.k.4.r.6a.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_drug_indication_meddra_pair_rules_are_enforced() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	let drug_id =
+		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	let indication_id = create_drug_indication(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		drug_id,
+		1,
+		Some("Pain"),
+	)
+	.await?;
+	let (status, body) = put_json(
+		&ctx.app,
+		&ctx.cookie,
+		format!(
+			"/api/cases/{}/drugs/{drug_id}/indications/{indication_id}",
+			ctx.case_id
+		),
+		json!({"data": {
+			"indication_meddra_version": "27.0",
+			"indication_meddra_code": ""
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.G.k.7.r.2b.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_drug_level_pair_rules_are_enforced() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	let drug_id =
+		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	update_drug(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		drug_id,
+		json!({"data": {
+			"cumulative_dose_first_reaction_value": "10",
+			"cumulative_dose_first_reaction_unit": "",
+			"gestation_period_exposure_value": null,
+			"gestation_period_exposure_unit": "wk"
+		}}),
+	)
+	.await?;
+
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.G.k.5b.REQUIRED");
+	assert_has_code(&report, "ICH.G.k.6a.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_section_drug_reaction_assessment_interval_pair_rules_are_enforced(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	let reaction_id =
+		create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	let drug_id =
+		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
+	let assessment_id = create_drug_reaction_assessment(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		drug_id,
+		reaction_id,
+	)
+	.await?;
+	let (status, body) = put_json(
+		&ctx.app,
+		&ctx.cookie,
+		format!(
+			"/api/cases/{}/drugs/{drug_id}/reaction-assessments/{assessment_id}",
+			ctx.case_id
+		),
+		json!({"data": {
+			"administration_start_interval_value": "12",
+			"administration_start_interval_unit": "",
+			"last_dose_interval_value": null,
+			"last_dose_interval_unit": "805"
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.G.k.9.i.3.1b.REQUIRED");
+	assert_has_code(&report, "ICH.G.k.9.i.3.2a.REQUIRED");
 	Ok(())
 }
 

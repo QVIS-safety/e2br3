@@ -181,6 +181,7 @@ async fn test_patient_submodels_crud() -> Result<()> {
 	let reported_u = ReportedCauseOfDeathForUpdate {
 		meddra_version: Some("26.0".to_string()),
 		meddra_code: None,
+		comments: None,
 	};
 	ReportedCauseOfDeathBmc::update(&ctx, &mm, reported_id, reported_u).await?;
 	let reported = ReportedCauseOfDeathBmc::get(&ctx, &mm, reported_id).await?;
@@ -198,6 +199,7 @@ async fn test_patient_submodels_crud() -> Result<()> {
 	let autopsy_u = AutopsyCauseOfDeathForUpdate {
 		meddra_version: Some("26.0".to_string()),
 		meddra_code: None,
+		comments: None,
 	};
 	AutopsyCauseOfDeathBmc::update(&ctx, &mm, autopsy_id, autopsy_u).await?;
 	let autopsy = AutopsyCauseOfDeathBmc::get(&ctx, &mm, autopsy_id).await?;

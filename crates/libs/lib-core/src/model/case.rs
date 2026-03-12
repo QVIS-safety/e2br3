@@ -23,6 +23,12 @@ pub struct Case {
 	pub dg_prd_key: Option<String>,
 	pub status: String,
 	pub validation_profile: Option<String>,
+	pub appendices_json: Option<String>,
+	pub mfds_report_type: Option<String>,
+	pub report_year: Option<String>,
+	pub source_document_name: Option<String>,
+	pub source_document_base64: Option<String>,
+	pub source_document_media_type: Option<String>,
 
 	// Workflow
 	pub created_by: Uuid,
@@ -51,6 +57,12 @@ pub struct CaseForCreate {
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
 	pub validation_profile: Option<String>,
+	pub appendices_json: Option<String>,
+	pub mfds_report_type: Option<String>,
+	pub report_year: Option<String>,
+	pub source_document_name: Option<String>,
+	pub source_document_base64: Option<String>,
+	pub source_document_media_type: Option<String>,
 	pub version: Option<i32>,
 }
 
@@ -60,6 +72,12 @@ pub struct CaseForUpdate {
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
 	pub validation_profile: Option<String>,
+	pub appendices_json: Option<String>,
+	pub mfds_report_type: Option<String>,
+	pub report_year: Option<String>,
+	pub source_document_name: Option<String>,
+	pub source_document_base64: Option<String>,
+	pub source_document_media_type: Option<String>,
 	pub submitted_by: Option<Uuid>,
 	pub submitted_at: Option<OffsetDateTime>,
 	pub raw_xml: Option<Vec<u8>>,

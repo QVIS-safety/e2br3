@@ -29,7 +29,7 @@ use lib_core::model::safety_report::{
 use lib_core::model::{self, ModelManager};
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValValue, OpValsValue};
 use serde_json::json;
@@ -75,6 +75,12 @@ async fn mark_case_dirty_c(
 			dg_prd_key: None,
 			status: None,
 			validation_profile: None,
+			appendices_json: None,
+			mfds_report_type: None,
+			report_year: None,
+			source_document_name: None,
+			source_document_base64: None,
+			source_document_media_type: None,
 			submitted_by: None,
 			submitted_at: None,
 			raw_xml: None,
@@ -90,6 +96,111 @@ async fn mark_case_dirty_c(
 	.map_err(Into::into)
 }
 
+fn normalize_primary_source_regulatory_value(
+	value: Option<String>,
+) -> Result<Option<String>> {
+	let normalized = value.and_then(|raw| {
+		let trimmed = raw.trim();
+		if trimmed.is_empty() {
+			None
+		} else {
+			Some(trimmed.to_string())
+		}
+	});
+	match normalized.as_deref() {
+		None => Ok(None),
+		Some("1") => Ok(Some("1".to_string())),
+		Some("2") | Some("3") => Ok(Some("2".to_string())),
+		Some(other) => Err(Error::BadRequest {
+			message: format!("invalid C.2.r.5 value '{other}' (expected: 1 or 2)"),
+		}),
+	}
+}
+
+fn primary_source_flag_update(value: &str) -> PrimarySourceForUpdate {
+	PrimarySourceForUpdate {
+		reporter_title: None,
+		reporter_given_name: None,
+		reporter_middle_name: None,
+		reporter_family_name: None,
+		organization: None,
+		department: None,
+		street: None,
+		city: None,
+		state: None,
+		postcode: None,
+		telephone: None,
+		country_code: None,
+		email: None,
+		qualification: None,
+		qualification_kr1: None,
+		primary_source_regulatory: Some(value.to_string()),
+	}
+}
+
+async fn normalize_primary_source_flags(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	preferred_primary_id: Option<Uuid>,
+) -> Result<()> {
+	let filter = PrimarySourceFilter {
+		case_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			case_id.to_string()
+		))])),
+		..Default::default()
+	};
+	let mut entities = PrimarySourceBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	if entities.is_empty() {
+		return Ok(());
+	}
+	entities.sort_by_key(|entity| entity.sequence_number);
+
+	let chosen_primary_id = preferred_primary_id
+		.filter(|preferred| entities.iter().any(|entity| entity.id == *preferred))
+		.or_else(|| {
+			entities.iter().find_map(|entity| {
+				(normalize_primary_source_regulatory_value(
+					entity.primary_source_regulatory.clone(),
+				)
+				.ok()
+				.flatten()
+				.as_deref() == Some("1"))
+				.then_some(entity.id)
+			})
+		})
+		.unwrap_or(entities[0].id);
+
+	for entity in entities {
+		let desired = if entity.id == chosen_primary_id {
+			"1"
+		} else {
+			"2"
+		};
+		let current = normalize_primary_source_regulatory_value(
+			entity.primary_source_regulatory.clone(),
+		)?
+		.unwrap_or_else(|| "2".to_string());
+		if current != desired {
+			PrimarySourceBmc::update(
+				ctx,
+				mm,
+				entity.id,
+				primary_source_flag_update(desired),
+			)
+			.await?;
+		}
+	}
+
+	Ok(())
+}
+
 // -- Sender Information (C.3.x)
 
 /// POST /api/cases/{case_id}/safety-report/senders
@@ -101,6 +212,7 @@ pub async fn create_sender_information(
 ) -> Result<(StatusCode, Json<DataRestResult<SenderInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SENDER_INFORMATION_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
 	data.case_id = case_id;
@@ -155,6 +267,7 @@ pub async fn update_sender_information(
 ) -> Result<(StatusCode, Json<DataRestResult<SenderInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SENDER_INFORMATION_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = SenderInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "sender_information")?;
@@ -171,6 +284,7 @@ pub async fn delete_sender_information(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SENDER_INFORMATION_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = SenderInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "sender_information")?;
 	SenderInformationBmc::delete(&ctx, &mm, id).await?;
@@ -188,11 +302,21 @@ pub async fn create_primary_source(
 ) -> Result<(StatusCode, Json<DataRestResult<PrimarySource>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRIMARY_SOURCE_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
 	data.case_id = case_id;
+	data.primary_source_regulatory =
+		normalize_primary_source_regulatory_value(data.primary_source_regulatory)?;
 
 	let id = PrimarySourceBmc::create(&ctx, &mm, data).await?;
+	let preferred_primary_id = PrimarySourceBmc::get(&ctx, &mm, id)
+		.await?
+		.primary_source_regulatory
+		.as_deref()
+		.filter(|value| *value == "1")
+		.map(|_| id);
+	normalize_primary_source_flags(&ctx, &mm, case_id, preferred_primary_id).await?;
 	mark_case_dirty_c(&ctx, &mm, case_id).await?;
 	let entity = PrimarySourceBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
@@ -244,10 +368,21 @@ pub async fn update_primary_source(
 ) -> Result<(StatusCode, Json<DataRestResult<PrimarySource>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRIMARY_SOURCE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
+	let mut data = data;
+	data.primary_source_regulatory =
+		normalize_primary_source_regulatory_value(data.primary_source_regulatory)?;
 	let entity = PrimarySourceBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "primary_sources")?;
 	PrimarySourceBmc::update(&ctx, &mm, id, data).await?;
+	let preferred_primary_id = PrimarySourceBmc::get(&ctx, &mm, id)
+		.await?
+		.primary_source_regulatory
+		.as_deref()
+		.filter(|value| *value == "1")
+		.map(|_| id);
+	normalize_primary_source_flags(&ctx, &mm, case_id, preferred_primary_id).await?;
 	mark_case_dirty_c(&ctx, &mm, case_id).await?;
 	let entity = PrimarySourceBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
@@ -261,9 +396,11 @@ pub async fn delete_primary_source(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRIMARY_SOURCE_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = PrimarySourceBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "primary_sources")?;
 	PrimarySourceBmc::delete(&ctx, &mm, id).await?;
+	normalize_primary_source_flags(&ctx, &mm, case_id, None).await?;
 	mark_case_dirty_c(&ctx, &mm, case_id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
@@ -279,6 +416,7 @@ pub async fn create_literature_reference(
 ) -> Result<(StatusCode, Json<DataRestResult<LiteratureReference>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, LITERATURE_REFERENCE_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
 	data.case_id = case_id;
@@ -334,6 +472,7 @@ pub async fn update_literature_reference(
 ) -> Result<(StatusCode, Json<DataRestResult<LiteratureReference>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, LITERATURE_REFERENCE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = LiteratureReferenceBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "literature_references")?;
@@ -350,6 +489,7 @@ pub async fn delete_literature_reference(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, LITERATURE_REFERENCE_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = LiteratureReferenceBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "literature_references")?;
 	LiteratureReferenceBmc::delete(&ctx, &mm, id).await?;
@@ -367,6 +507,7 @@ pub async fn create_study_information(
 ) -> Result<(StatusCode, Json<DataRestResult<StudyInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, STUDY_INFORMATION_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
 	data.case_id = case_id;
@@ -421,6 +562,7 @@ pub async fn update_study_information(
 ) -> Result<(StatusCode, Json<DataRestResult<StudyInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, STUDY_INFORMATION_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = StudyInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "study_information")?;
@@ -437,6 +579,7 @@ pub async fn delete_study_information(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, STUDY_INFORMATION_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = StudyInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "study_information")?;
 	StudyInformationBmc::delete(&ctx, &mm, id).await?;
@@ -454,6 +597,7 @@ pub async fn create_study_registration_number(
 ) -> Result<(StatusCode, Json<DataRestResult<StudyRegistrationNumber>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, STUDY_REGISTRATION_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	ensure_study_case(&ctx, &mm, case_id, study_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
@@ -521,6 +665,7 @@ pub async fn update_study_registration_number(
 ) -> Result<(StatusCode, Json<DataRestResult<StudyRegistrationNumber>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, STUDY_REGISTRATION_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = StudyRegistrationNumberBmc::get(&ctx, &mm, id).await?;
 	if entity.study_information_id != study_id {
@@ -544,6 +689,7 @@ pub async fn delete_study_registration_number(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, STUDY_REGISTRATION_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = StudyRegistrationNumberBmc::get(&ctx, &mm, id).await?;
 	if entity.study_information_id != study_id {
 		return Err(model::Error::EntityUuidNotFound {

@@ -12,5 +12,7 @@ mod section_f_validation;
 mod section_g_validation;
 #[path = "validation/section_h_validation.rs"]
 mod section_h_validation;
+#[path = "validation/section_n_validation.rs"]
+mod section_n_validation;
 #[path = "validation/validation_common.rs"]
 mod validation_common;

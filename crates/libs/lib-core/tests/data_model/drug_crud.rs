@@ -40,6 +40,10 @@ async fn test_drug_information_crud() -> Result<()> {
 		manufacturer_name: None,
 		manufacturer_country: None,
 		batch_lot_number: None,
+		cumulative_dose_first_reaction_value: None,
+		cumulative_dose_first_reaction_unit: None,
+		gestation_period_exposure_value: None,
+		gestation_period_exposure_unit: None,
 		dosage_text: None,
 		action_taken: Some("1".to_string()),
 		rechallenge: None,
@@ -54,6 +58,9 @@ async fn test_drug_information_crud() -> Result<()> {
 		parent_route_termid_version: None,
 		parent_dosage_text: None,
 		fda_additional_info_coded: None,
+		drug_additional_info_codes_json: None,
+		fda_specialized_product_category: None,
+		fda_device_info_json: None,
 	};
 	DrugInformationBmc::update_in_case(&ctx, &mm, case_id, drug_id, drug_u).await?;
 	let drug = DrugInformationBmc::get_in_case(&ctx, &mm, case_id, drug_id).await?;
@@ -134,6 +141,7 @@ async fn test_drug_submodels_crud() -> Result<()> {
 		dose_form_termid: None,
 		dose_form_termid_version: None,
 		route_of_administration: None,
+		route_termid_version: None,
 		parent_route: None,
 		parent_route_termid: None,
 		parent_route_termid_version: None,
@@ -162,6 +170,7 @@ async fn test_drug_submodels_crud() -> Result<()> {
 		dose_form_termid: None,
 		dose_form_termid_version: None,
 		route_of_administration: None,
+		route_termid_version: None,
 		parent_route: None,
 		parent_route_termid: None,
 		parent_route_termid_version: None,

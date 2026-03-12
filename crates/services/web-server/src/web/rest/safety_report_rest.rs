@@ -14,7 +14,7 @@ use lib_core::model::safety_report::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Error, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::Deserialize;
 use std::borrow::Cow;
@@ -40,6 +40,7 @@ pub async fn create_safety_report_identification(
 ) -> Result<(StatusCode, Json<DataRestResult<SafetyReportIdentification>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SAFETY_REPORT_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
 	data.case_id = case_id;
@@ -95,6 +96,7 @@ pub async fn update_safety_report_identification(
 ) -> Result<(StatusCode, Json<DataRestResult<SafetyReportIdentification>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let SafetyReportUpdateRequest {
 		data,
 		reason_for_change,
@@ -157,6 +159,7 @@ pub async fn delete_safety_report_identification(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SAFETY_REPORT_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	SafetyReportIdentificationBmc::delete_by_case(&ctx, &mm, case_id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }

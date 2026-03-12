@@ -9,7 +9,7 @@ use lib_core::model::acs::{
 };
 use lib_core::model::terminology::{
 	E2bCodeList, E2bCodeListBmc, IsoCountry, IsoCountryBmc, MeddraTerm,
-	MeddraTermBmc, WhodrugProduct, WhodrugProductBmc,
+	MeddraTermBmc, UcumUnit, UcumUnitBmc, WhodrugProduct, WhodrugProductBmc,
 };
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_result::DataRestResult;
@@ -203,6 +203,20 @@ pub async fn get_code_list(
 		E2bCodeListBmc::get_by_list_name(&ctx, &mm, &params.list_name).await?;
 
 	Ok((StatusCode::OK, Json(DataRestResult { data: codes })))
+}
+
+/// GET /api/terminology/ucum-units
+pub async fn list_ucum_units(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+) -> Result<(StatusCode, Json<DataRestResult<Vec<UcumUnit>>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, TERMINOLOGY_READ)?;
+	tracing::debug!("{:<12} - rest list_ucum_units", "HANDLER");
+
+	let units = UcumUnitBmc::list_all(&ctx, &mm).await?;
+
+	Ok((StatusCode::OK, Json(DataRestResult { data: units })))
 }
 
 /// POST /api/terminology/import/meddra?version=27.1&language=en&dry_run=false

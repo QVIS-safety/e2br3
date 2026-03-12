@@ -165,6 +165,12 @@ fn get_data_array_len(body: &Value) -> Result<usize> {
 		.len())
 }
 
+fn import_case_id(body: &Value) -> Option<&str> {
+	body.get("data")
+		.and_then(|v| v.get("case_id").or_else(|| v.get("caseId")))
+		.and_then(Value::as_str)
+}
+
 #[serial]
 #[tokio::test]
 async fn test_mfds_samples_import_and_validate() -> Result<()> {
@@ -220,11 +226,7 @@ async fn test_mfds_samples_import_and_validate() -> Result<()> {
 			continue;
 		}
 
-		let Some(case_id) = body
-			.get("data")
-			.and_then(|v| v.get("case_id"))
-			.and_then(Value::as_str)
-		else {
+		let Some(case_id) = import_case_id(&body) else {
 			failures.push(format!("{filename}: missing case_id in import response"));
 			continue;
 		};

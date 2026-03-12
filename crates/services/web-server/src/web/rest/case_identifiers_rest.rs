@@ -16,7 +16,7 @@ use lib_core::model::case_identifiers::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValValue, OpValsValue};
 use serde_json::json;
@@ -33,6 +33,7 @@ pub async fn create_other_case_identifier(
 ) -> Result<(StatusCode, Json<DataRestResult<OtherCaseIdentifier>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_IDENTIFIER_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest create_other_case_identifier case_id={}",
 		"HANDLER",
@@ -103,11 +104,12 @@ pub async fn get_other_case_identifier(
 pub async fn update_other_case_identifier(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, id)): Path<(Uuid, Uuid)>,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
 	Json(params): Json<ParamsForUpdate<OtherCaseIdentifierForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<OtherCaseIdentifier>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_IDENTIFIER_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest update_other_case_identifier id={}",
 		"HANDLER",
@@ -125,10 +127,11 @@ pub async fn update_other_case_identifier(
 pub async fn delete_other_case_identifier(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, id)): Path<(Uuid, Uuid)>,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_IDENTIFIER_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest delete_other_case_identifier id={}",
 		"HANDLER",
@@ -151,6 +154,7 @@ pub async fn create_linked_report_number(
 ) -> Result<(StatusCode, Json<DataRestResult<LinkedReportNumber>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_IDENTIFIER_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest create_linked_report_number case_id={}",
 		"HANDLER",
@@ -221,11 +225,12 @@ pub async fn get_linked_report_number(
 pub async fn update_linked_report_number(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, id)): Path<(Uuid, Uuid)>,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
 	Json(params): Json<ParamsForUpdate<LinkedReportNumberForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<LinkedReportNumber>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_IDENTIFIER_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest update_linked_report_number id={}",
 		"HANDLER",
@@ -243,10 +248,11 @@ pub async fn update_linked_report_number(
 pub async fn delete_linked_report_number(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, id)): Path<(Uuid, Uuid)>,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_IDENTIFIER_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest delete_linked_report_number id={}",
 		"HANDLER",

@@ -174,7 +174,6 @@ INSERT INTO e2b_code_lists (list_name, code, display_name, sort_order) VALUES
 -- Primary Source Regulatory (C.2.r.5)
 ('primary_source_regulatory', '1', 'Yes', 1),
 ('primary_source_regulatory', '2', 'No', 2),
-('primary_source_regulatory', '3', 'Unknown', 3),
 
 -- Study Type (C.5.4)
 ('study_type', '1', 'Clinical trial', 1),

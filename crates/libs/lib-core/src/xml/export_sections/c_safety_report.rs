@@ -28,12 +28,18 @@ pub fn export_c_safety_report_patch(
 
 	let patch = CSafetyReportPatch {
 		report_unique_id: &case.safety_report_id,
-		transmission_date: report.transmission_date,
+		transmission_date: report.transmission_date.expect(
+			"transmission_date must be present before exporting section C",
+		),
 		transmission_date_value: header.map(|h| h.message_date.as_str()),
 		transmission_date_time: header.and_then(|h| h.batch_transmission_date),
 		report_type: &report.report_type,
-		date_first_received: report.date_first_received_from_source,
-		date_most_recent: report.date_of_most_recent_information,
+		date_first_received: report
+			.date_first_received_from_source
+			.expect("date_first_received_from_source must be present before exporting section C"),
+		date_most_recent: report
+			.date_of_most_recent_information
+			.expect("date_of_most_recent_information must be present before exporting section C"),
 		fulfil_expedited: report.fulfil_expedited_criteria,
 		worldwide_unique_id: report.worldwide_unique_id.as_deref(),
 		local_criteria_report_type,

@@ -1,4 +1,4 @@
-use lib_core::xml::validate::{find_canonical_rule, CANONICAL_RULES};
+use lib_core::xml::validate::{find_canonical_rule, VALIDATION_RULES};
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -13,7 +13,7 @@ struct ValidationRuleExport {
 }
 
 fn main() {
-	let mut out: Vec<ValidationRuleExport> = CANONICAL_RULES
+	let mut out: Vec<ValidationRuleExport> = VALIDATION_RULES
 		.iter()
 		.map(|rule| {
 			let canonical = find_canonical_rule(rule.code)

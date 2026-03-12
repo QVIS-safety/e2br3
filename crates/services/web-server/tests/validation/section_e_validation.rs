@@ -57,3 +57,85 @@ async fn e_section_reaction_language_rule_is_enforced_when_text_present(
 	assert_has_code(&report, "ICH.E.i.1.1b.REQUIRED");
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn e_section_reaction_duration_unit_is_required_when_value_present(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let reaction_id =
+		create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	update_reaction(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		reaction_id,
+		json!({"data": { "duration_value": "5", "duration_unit": null }}),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.E.i.6b.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn e_section_reaction_duration_value_is_required_when_unit_present(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let reaction_id =
+		create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	update_reaction(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		reaction_id,
+		json!({"data": { "duration_value": null, "duration_unit": "d" }}),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.E.i.6a.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn e_section_reaction_meddra_version_is_required_when_code_present(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let reaction_id =
+		create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+	update_reaction(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		reaction_id,
+		json!({"data": { "reaction_meddra_code": "10027940", "reaction_meddra_version": null }}),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.E.i.2.1a.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn e_section_reaction_meddra_code_is_required_when_reaction_present(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
+	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
+	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
+
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_has_code(&report, "ICH.E.i.2.1b.REQUIRED");
+	Ok(())
+}

@@ -49,8 +49,10 @@ async fn test_drug_reaction_assessment_crud() -> Result<()> {
 	assert_eq!(assessment.drug_id, drug_id);
 
 	let assessment_u = DrugReactionAssessmentForUpdate {
-		time_interval_value: Some(Decimal::new(12, 0)),
-		time_interval_unit: Some("805".to_string()),
+		administration_start_interval_value: Some(Decimal::new(12, 0)),
+		administration_start_interval_unit: Some("805".to_string()),
+		last_dose_interval_value: Some(Decimal::new(3, 0)),
+		last_dose_interval_unit: Some("804".to_string()),
 		recurrence_action: Some("1".to_string()),
 		recurrence_meddra_version: Some("25.0".to_string()),
 		recurrence_meddra_code: Some("10012345".to_string()),
@@ -60,7 +62,11 @@ async fn test_drug_reaction_assessment_crud() -> Result<()> {
 		.await?;
 	let assessment =
 		DrugReactionAssessmentBmc::get(&ctx, &mm, assessment_id).await?;
-	assert_eq!(assessment.time_interval_unit.as_deref(), Some("805"));
+	assert_eq!(
+		assessment.administration_start_interval_unit.as_deref(),
+		Some("805")
+	);
+	assert_eq!(assessment.last_dose_interval_unit.as_deref(), Some("804"));
 	assert_eq!(assessment.reaction_recurred.as_deref(), Some("1"));
 
 	let by_drug =

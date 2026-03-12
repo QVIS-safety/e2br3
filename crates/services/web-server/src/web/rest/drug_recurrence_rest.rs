@@ -15,7 +15,7 @@ use lib_core::model::drug_recurrence::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValValue, OpValsValue};
 use serde_json::json;
@@ -26,11 +26,12 @@ use uuid::Uuid;
 pub async fn create_drug_recurrence(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id)): Path<(Uuid, Uuid)>,
+	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
 	Json(params): Json<ParamsForCreate<DrugRecurrenceInformationForCreate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<DrugRecurrenceInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_RECURRENCE_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest create_drug_recurrence drug_id={}",
 		"HANDLER",
@@ -104,11 +105,12 @@ pub async fn get_drug_recurrence(
 pub async fn update_drug_recurrence(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
 	Json(params): Json<ParamsForUpdate<DrugRecurrenceInformationForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<DrugRecurrenceInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_RECURRENCE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!("{:<12} - rest update_drug_recurrence id={}", "HANDLER", id);
 
 	let ParamsForUpdate { data } = params;
@@ -123,10 +125,11 @@ pub async fn update_drug_recurrence(
 pub async fn delete_drug_recurrence(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_RECURRENCE_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!("{:<12} - rest delete_drug_recurrence id={}", "HANDLER", id);
 
 	DrugRecurrenceInformationBmc::delete(&ctx, &mm, id).await?;

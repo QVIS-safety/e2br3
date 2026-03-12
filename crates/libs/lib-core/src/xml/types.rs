@@ -23,6 +23,7 @@ pub struct ParsedE2b {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XmlImportResult {
 	pub case_id: Option<String>,
+	pub case_number: Option<String>,
 	pub case_version: Option<i64>,
 	pub xml_key: Option<String>,
 	pub parsed_json_id: Option<String>,

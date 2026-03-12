@@ -190,6 +190,12 @@ async fn test_case_update_not_found() -> Result<()> {
 		dg_prd_key: None,
 		status: Some("validated".to_string()),
 		validation_profile: None,
+		appendices_json: None,
+		mfds_report_type: None,
+		report_year: None,
+		source_document_name: None,
+		source_document_base64: None,
+		source_document_media_type: None,
 		submitted_by: None,
 		submitted_at: None,
 		raw_xml: None,
@@ -228,9 +234,17 @@ async fn test_user_update_not_found() -> Result<()> {
 
 	let user_u = UserForUpdate {
 		email: None,
+		username: None,
 		role: Some("admin".to_string()),
 		first_name: None,
 		last_name: None,
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 		active: None,
 		last_login_at: None,
 	};
@@ -436,20 +450,34 @@ async fn test_user_duplicate_username() -> Result<()> {
 	let user_c_1 = UserForCreate {
 		organization_id: demo_org_id(),
 		email: format!("{fx_username}@example.com"),
-		username: fx_username.to_string(),
+		username: Some(fx_username.to_string()),
 		pwd_clear: "password123".to_string(),
 		role: Some("user".to_string()),
 		first_name: Some("Test".to_string()),
 		last_name: Some("User".to_string()),
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 	};
 	let user_c_2 = UserForCreate {
 		organization_id: demo_org_id(),
 		email: format!("different-{suffix}@example.com"),
-		username: fx_username.to_string(), // Same username
+		username: Some(fx_username.to_string()), // Same username
 		pwd_clear: "password456".to_string(),
 		role: Some("user".to_string()),
 		first_name: Some("Test".to_string()),
 		last_name: Some("User".to_string()),
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 	};
 
 	begin_test_ctx(&mm, &ctx).await?;
@@ -504,11 +532,18 @@ async fn test_user_create_invalid_organization() -> Result<()> {
 	let user_c = UserForCreate {
 		organization_id: fake_org_id,
 		email: format!("fk_test-{suffix}@example.com"),
-		username: format!("fk_test_user-{suffix}"),
+		username: Some(format!("fk_test_user-{suffix}")),
 		pwd_clear: "password123".to_string(),
 		role: Some("user".to_string()),
 		first_name: Some("Test".to_string()),
 		last_name: Some("User".to_string()),
+		comments: None,
+		other_information: None,
+		access_start_at: None,
+		access_end_at: None,
+		access_sender_ids: None,
+		access_product_ids: None,
+		access_study_ids: None,
 	};
 
 	let result = UserBmc::create(&ctx, &mm, user_c).await;
@@ -677,6 +712,10 @@ async fn test_drug_update_in_wrong_case() -> Result<()> {
 		manufacturer_name: None,
 		manufacturer_country: None,
 		batch_lot_number: None,
+		cumulative_dose_first_reaction_value: None,
+		cumulative_dose_first_reaction_unit: None,
+		gestation_period_exposure_value: None,
+		gestation_period_exposure_unit: None,
 		dosage_text: None,
 		action_taken: None,
 		rechallenge: None,
@@ -691,6 +730,9 @@ async fn test_drug_update_in_wrong_case() -> Result<()> {
 		parent_route_termid_version: None,
 		parent_dosage_text: None,
 		fda_additional_info_coded: None,
+		drug_additional_info_codes_json: None,
+		fda_specialized_product_category: None,
+		fda_device_info_json: None,
 	};
 	let result =
 		DrugInformationBmc::update_in_case(&ctx, &mm, case_id_2, drug_id, drug_u)

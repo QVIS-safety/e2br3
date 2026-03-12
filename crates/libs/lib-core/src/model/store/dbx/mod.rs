@@ -151,6 +151,9 @@ impl Dbx {
 						data
 					}
 					Err(err) => {
+						tracing::error!(
+							"Dbx::fetch_one transaction query failed: {err}"
+						);
 						let _ = txn_holder.txn.rollback().await;
 						return Err(err.into());
 					}
@@ -183,6 +186,9 @@ impl Dbx {
 						data
 					}
 					Err(err) => {
+						tracing::error!(
+							"Dbx::fetch_optional transaction query failed: {err}"
+						);
 						let _ = txn_holder.txn.rollback().await;
 						return Err(err.into());
 					}
@@ -215,6 +221,9 @@ impl Dbx {
 						data
 					}
 					Err(err) => {
+						tracing::error!(
+							"Dbx::fetch_all transaction query failed: {err}"
+						);
 						let _ = txn_holder.txn.rollback().await;
 						return Err(err.into());
 					}
@@ -243,6 +252,9 @@ impl Dbx {
 						done.rows_affected()
 					}
 					Err(err) => {
+						tracing::error!(
+							"Dbx::execute transaction query failed: {err}"
+						);
 						let _ = txn_holder.txn.rollback().await;
 						return Err(err.into());
 					}

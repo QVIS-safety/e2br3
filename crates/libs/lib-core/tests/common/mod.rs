@@ -12,10 +12,82 @@ pub type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 #[allow(dead_code)]
 pub const DEMO_ROLE: &str = "admin";
 
+fn system_user_id() -> Uuid {
+	uuid::uuid!("00000000-0000-0000-0000-000000000001")
+}
+
+async fn ensure_demo_seed(mm: &ModelManager) -> Result<()> {
+	sqlx::query("SELECT set_config('app.current_user_id', $1, false)")
+		.bind(system_user_id().to_string())
+		.execute(mm.dbx().db())
+		.await?;
+	sqlx::query("SELECT set_config('app.current_org_id', $1, false)")
+		.bind(demo_org_id().to_string())
+		.execute(mm.dbx().db())
+		.await?;
+	sqlx::query("SELECT set_config('app.current_user_role', $1, false)")
+		.bind(DEMO_ROLE)
+		.execute(mm.dbx().db())
+		.await?;
+
+	sqlx::query(
+		"INSERT INTO organizations (
+			id, name, org_type, address, city, state, postcode, country_code,
+			contact_email, contact_phone, active, created_by, created_at, updated_at
+		) VALUES (
+			$1, 'Demo Organization', 'internal', '123 Demo St', 'Metropolis',
+			'CA', '12345', 'US', 'demo@example.com', '555-1234', true, $2, NOW(), NOW()
+		)
+		ON CONFLICT (id) DO NOTHING",
+	)
+	.bind(demo_org_id())
+	.bind(system_user_id())
+	.execute(mm.dbx().db())
+	.await?;
+
+	sqlx::query(
+		"INSERT INTO users (
+			id, organization_id, email, username, pwd, pwd_salt, token_salt,
+			role, active, must_change_password, created_by, created_at, updated_at
+		) VALUES (
+			$1, $2, 'demo.user@example.com', 'demo_user',
+			'#02#$argon2id$v=19$m=19456,t=2,p=1$B0RCYSuiRr6tIIJVTVqABA$lhortXyud6bAy7oSK7NOVqR72TCmhVOcP9nG6bB+qXw',
+			'07444261-2ba2-46be-ad20-82554d5a8004'::UUID,
+			'1b2091af-64ff-43ea-a47b-3cdf8f9995c5'::UUID,
+			'admin', true, false, $3, NOW(), NOW()
+		)
+		ON CONFLICT (id) DO UPDATE SET
+			organization_id = EXCLUDED.organization_id,
+			email = EXCLUDED.email,
+			username = EXCLUDED.username,
+			pwd = EXCLUDED.pwd,
+			pwd_salt = EXCLUDED.pwd_salt,
+			token_salt = EXCLUDED.token_salt,
+			role = EXCLUDED.role,
+			active = EXCLUDED.active,
+			must_change_password = EXCLUDED.must_change_password,
+			updated_at = NOW()",
+	)
+	.bind(demo_user_id())
+	.bind(demo_org_id())
+	.bind(system_user_id())
+	.execute(mm.dbx().db())
+	.await?;
+
+	Ok(())
+}
+
 #[allow(dead_code)]
 pub async fn init_test_mm() -> ModelManager {
+	std::env::set_var("DEMO_USER_FORCE_SYNC", "1");
 	_dev_utils::init_dev().await;
+	_dev_utils::ensure_dev_schema_compatibility()
+		.await
+		.expect("ensure_dev_schema_compatibility failed in test setup");
 	let mm = ModelManager::new().await.unwrap();
+	ensure_demo_seed(&mm)
+		.await
+		.expect("ensure_demo_seed failed in test setup");
 	set_full_context_dbx(mm.dbx(), demo_user_id(), demo_org_id(), DEMO_ROLE)
 		.await
 		.expect("set_full_context failed in test setup");
@@ -97,6 +169,7 @@ pub async fn create_case_fixture(
 	org_id: Uuid,
 	user_id: Uuid,
 ) -> Result<Uuid> {
+	ensure_demo_seed(mm).await?;
 	let case_id = Uuid::new_v4();
 	let safety_report_id = format!("SR-TEST-{case_id}");
 

@@ -5,6 +5,7 @@ use lib_auth::token::generate_web_token;
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
+use uuid::Uuid;
 
 fn parse_json_or_raw(body: &[u8]) -> Value {
 	let raw = String::from_utf8_lossy(body).trim().to_string();
@@ -76,6 +77,53 @@ fn extract_case_id(body: &Value) -> Result<String> {
 		.to_string())
 }
 
+fn intake_basis(
+	safety_report_id: &str,
+	day_of_year: u32,
+	report_type: &str,
+) -> Value {
+	json!({
+		"safety_report_id": safety_report_id,
+		"date_of_most_recent_information": [2024, day_of_year],
+		"report_type": report_type,
+		"patient_initials": intake_patient_initials(safety_report_id),
+		"reaction_meddra_code": "10019211",
+		"ae_start_date": [2024, day_of_year]
+	})
+}
+
+fn intake_patient_initials(safety_report_id: &str) -> String {
+	let suffix: String = safety_report_id
+		.chars()
+		.filter(|c| c.is_ascii_alphanumeric())
+		.rev()
+		.take(6)
+		.collect::<Vec<_>>()
+		.into_iter()
+		.rev()
+		.collect();
+	format!("P{}", suffix.to_ascii_uppercase())
+}
+
+fn intake_data(
+	safety_report_id: &str,
+	day_of_year: u32,
+	report_type: &str,
+	extra: Value,
+) -> Value {
+	let mut base = intake_basis(safety_report_id, day_of_year, report_type);
+	let base_map = base
+		.as_object_mut()
+		.expect("intake basis should be a JSON object");
+	let extra_map = extra
+		.as_object()
+		.expect("intake extra should be a JSON object");
+	for (key, value) in extra_map {
+		base_map.insert(key.clone(), value.clone());
+	}
+	base
+}
+
 #[serial]
 #[tokio::test]
 async fn test_case_intake_duplicate_check_and_create() -> Result<()> {
@@ -85,15 +133,12 @@ async fn test_case_intake_duplicate_check_and_create() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 
-	let safety_report_id = format!("INTAKE-{}", uuid::Uuid::new_v4());
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 
 	let intake_body = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 120],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 120, "1", json!({
 			"validation_profile": "fda"
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/from-intake", intake_body).await?;
@@ -101,11 +146,7 @@ async fn test_case_intake_duplicate_check_and_create() -> Result<()> {
 	let case_id = extract_case_id(&body)?;
 
 	let dup_check = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 120],
-			"report_type": "1"
-		}
+		"data": intake_data(&safety_report_id, 120, "1", json!({}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", dup_check).await?;
@@ -157,14 +198,11 @@ async fn test_case_from_intake_blocks_duplicates_without_override() -> Result<()
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 
-	let safety_report_id = format!("INTAKE-{}", uuid::Uuid::new_v4());
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let intake_body = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 121],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 121, "1", json!({
 			"validation_profile": "ich"
-		}
+		}))
 	});
 	let (status, _) =
 		post_json(&app, &cookie, "/api/cases/from-intake", intake_body.clone())
@@ -180,13 +218,10 @@ async fn test_case_from_intake_blocks_duplicates_without_override() -> Result<()
 		.contains("duplicate case detected"));
 
 	let override_body = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 121],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 121, "1", json!({
 			"validation_profile": "ich",
 			"allow_duplicate_override": true
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/from-intake", override_body).await?;
@@ -206,14 +241,11 @@ async fn test_case_lifecycle_lists_versions_for_same_safety_report_id() -> Resul
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 
-	let safety_report_id = format!("INTAKE-{}", uuid::Uuid::new_v4());
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let first = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 200],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 200, "1", json!({
 			"validation_profile": "fda"
-		}
+		}))
 	});
 	let (status, first_body) =
 		post_json(&app, &cookie, "/api/cases/from-intake", first).await?;
@@ -221,13 +253,10 @@ async fn test_case_lifecycle_lists_versions_for_same_safety_report_id() -> Resul
 	let first_case_id = extract_case_id(&first_body)?;
 
 	let second = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 200],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 200, "1", json!({
 			"validation_profile": "fda",
 			"allow_duplicate_override": true
-		}
+		}))
 	});
 	let (status, second_body) =
 		post_json(&app, &cookie, "/api/cases/from-intake", second).await?;
@@ -269,27 +298,21 @@ async fn test_case_intake_duplicate_check_respects_dg_prd_key_filter() -> Result
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 
-	let safety_report_id = format!("INTAKE-{}", uuid::Uuid::new_v4());
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let create_body = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 122],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 122, "1", json!({
 			"validation_profile": "fda",
 			"dg_prd_key": "DG-A"
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/from-intake", create_body).await?;
 	assert_eq!(status, StatusCode::CREATED, "{body:?}");
 
 	let same_key_check = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 122],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 122, "1", json!({
 			"dg_prd_key": "DG-A"
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", same_key_check).await?;
@@ -297,12 +320,9 @@ async fn test_case_intake_duplicate_check_respects_dg_prd_key_filter() -> Result
 	assert_eq!(body["data"]["duplicate"], true, "{body:?}");
 
 	let different_key_check = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 122],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 122, "1", json!({
 			"dg_prd_key": "DG-B"
-		}
+		}))
 	});
 	let (status, body) = post_json(
 		&app,
@@ -327,75 +347,39 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 
-	let safety_report_id = format!("INTAKE-{}", uuid::Uuid::new_v4());
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let create_body = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 123],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 123, "1", json!({
 			"validation_profile": "ich"
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/from-intake", create_body).await?;
 	assert_eq!(status, StatusCode::CREATED, "{body:?}");
 	let case_id = extract_case_id(&body)?;
+	let expected_initials = intake_patient_initials(&safety_report_id);
 
-	let (status, patient_body) = post_json(
+	let (status, patient_body) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}/patient")).await?;
+	assert_eq!(status, StatusCode::OK, "{patient_body:?}");
+
+	let (status, patient_update_body) = put_json(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/patient"),
 		json!({
 			"data": {
-				"case_id": case_id,
-				"patient_initials": "AB",
+				"patient_initials": expected_initials,
+				"age_at_time_of_onset": 0.0,
 				"sex": "1"
 			}
 		}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{patient_body:?}");
-
-	let (status, reaction_body) = post_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/reactions"),
-		json!({
-			"data": {
-				"case_id": case_id,
-				"sequence_number": 1,
-				"primary_source_reaction": "Headache"
-			}
-		}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{reaction_body:?}");
-	let reaction_id = reaction_body["data"]["id"]
-		.as_str()
-		.ok_or("missing reaction id")?
-		.to_string();
-
-	let (status, reaction_update_body) = put_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/reactions/{reaction_id}"),
-		json!({
-			"data": {
-				"reaction_meddra_version": "27.0",
-				"reaction_meddra_code": "10019211",
-				"start_date": [2024, 123]
-			}
-		}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{reaction_update_body:?}");
+	assert_eq!(status, StatusCode::OK, "{patient_update_body:?}");
 
 	let base_match = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 123],
-			"report_type": "1"
-		}
+		"data": intake_data(&safety_report_id, 123, "1", json!({}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", base_match).await?;
@@ -403,12 +387,9 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	assert_eq!(body["data"]["duplicate"], true, "{body:?}");
 
 	let d1_match = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 123],
-			"report_type": "1",
-			"patient_initials": "AB"
-		}
+		"data": intake_data(&safety_report_id, 123, "1", json!({
+			"patient_initials": expected_initials
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", d1_match).await?;
@@ -416,12 +397,9 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	assert_eq!(body["data"]["duplicate"], true, "{body:?}");
 
 	let d1_mismatch = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 123],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 123, "1", json!({
 			"patient_initials": "ZZ"
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", d1_mismatch).await?;
@@ -429,12 +407,11 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	assert_eq!(body["data"]["duplicate"], false, "{body:?}");
 
 	let d5_match = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 123],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 123, "1", json!({
+			"patient_initials": null,
+			"age_d2_2a": "0.0",
 			"sex_d5": "1"
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", d5_match).await?;
@@ -442,12 +419,11 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	assert_eq!(body["data"]["duplicate"], true, "{body:?}");
 
 	let d5_mismatch = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 123],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 123, "1", json!({
+			"patient_initials": null,
+			"age_d2_2a": "0.0",
 			"sex_d5": "2"
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", d5_mismatch).await?;
@@ -455,12 +431,9 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	assert_eq!(body["data"]["duplicate"], false, "{body:?}");
 
 	let e_i_2_1_b_match = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 123],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 123, "1", json!({
 			"reaction_meddra_code": "10019211"
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", e_i_2_1_b_match).await?;
@@ -468,12 +441,9 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	assert_eq!(body["data"]["duplicate"], true, "{body:?}");
 
 	let e_i_2_1_b_mismatch = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 123],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 123, "1", json!({
 			"reaction_meddra_code": "99999999"
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", e_i_2_1_b_mismatch)
@@ -482,12 +452,9 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	assert_eq!(body["data"]["duplicate"], false, "{body:?}");
 
 	let e_i_4_match = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 123],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 123, "1", json!({
 			"ae_start_date": [2024, 123]
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", e_i_4_match).await?;
@@ -495,12 +462,9 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	assert_eq!(body["data"]["duplicate"], true, "{body:?}");
 
 	let e_i_4_mismatch = json!({
-		"data": {
-			"safety_report_id": safety_report_id,
-			"date_of_most_recent_information": [2024, 123],
-			"report_type": "1",
+		"data": intake_data(&safety_report_id, 123, "1", json!({
 			"ae_start_date": [2024, 124]
-		}
+		}))
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", e_i_4_mismatch).await?;

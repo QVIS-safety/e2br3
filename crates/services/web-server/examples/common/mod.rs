@@ -487,15 +487,15 @@ impl FlowClient {
 	}
 
 	pub async fn mark_case_validated(&self, case_id: &str) -> Result<()> {
-		self.mark_case_checked(case_id).await?;
+		self.mark_case_reviewed(case_id).await?;
 		self.mark_case_validated_via_validator(case_id).await?;
 		Ok(())
 	}
 
-	pub async fn mark_case_checked(&self, case_id: &str) -> Result<()> {
+	pub async fn mark_case_reviewed(&self, case_id: &str) -> Result<()> {
 		self.put_json(
 			&format!("/api/cases/{case_id}"),
-			json!({ "data": { "status": "checked" } }),
+			json!({ "data": { "status": "reviewed" } }),
 		)
 		.await?;
 		Ok(())

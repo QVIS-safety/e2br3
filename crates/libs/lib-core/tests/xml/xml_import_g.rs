@@ -17,6 +17,40 @@ fn import_g_drug_basic() {
 }
 
 #[test]
+fn import_g_drug_reads_cumulative_dose_and_gestation_exposure() {
+	let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+		.parent()
+		.and_then(|p| p.parent())
+		.and_then(|p| p.parent())
+		.expect("workspace root")
+		.to_path_buf();
+	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario6.xml"))
+		.expect("read sample xml");
+
+	let drugs = parse_g_drugs(&xml).expect("parse");
+	let drug = drugs.first().expect("at least one drug");
+	assert_eq!(
+		drug.cumulative_dose_first_reaction_value
+			.as_ref()
+			.map(|v| v.to_string())
+			.as_deref(),
+		Some("150")
+	);
+	assert_eq!(
+		drug.cumulative_dose_first_reaction_unit.as_deref(),
+		Some("mg")
+	);
+	assert_eq!(
+		drug.gestation_period_exposure_value
+			.as_ref()
+			.map(|v| v.to_string())
+			.as_deref(),
+		Some("10")
+	);
+	assert_eq!(drug.gestation_period_exposure_unit.as_deref(), Some("wk"));
+}
+
+#[test]
 fn import_g_drug_requires_medicinal_product_name() {
 	let xml = br#"<?xml version="1.0" encoding="utf-8"?>
 <MCCI_IN200100UV01 xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">

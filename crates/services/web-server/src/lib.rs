@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 pub mod config;
+pub mod openapi;
 pub mod submission;
 pub mod web;
 
@@ -22,6 +23,7 @@ pub fn app(mm: ModelManager) -> Router {
 	let routes_login = web::routes_login::routes(mm.clone());
 
 	Router::new()
+		.merge(openapi::router())
 		.nest("/auth/v1", routes_login)
 		.nest("/api", routes_rest)
 		.nest("/internal", routes_internal)

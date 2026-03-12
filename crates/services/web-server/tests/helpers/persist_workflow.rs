@@ -561,7 +561,79 @@ pub async fn fill_section_g(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {
 	}
 	let drug_id = extract_id(&value)?;
 
-	let body = json!({"data": {"drug_id": drug_id, "sequence_number": 1, "substance_name": "Persist Substance"}});
+	let additional_info_codes =
+		json!([{"value_code": "ADD-CODE-1"}, {"value_code": "ADD-CODE-2"}]);
+	let fda_device_info = json!({
+		"malfunction": true,
+		"follow_up_types": [{"value_code": "FU-1"}],
+		"device_problem_codes": [{"value_code": "DP-1"}],
+		"device_brand_name": "Persist Device Brand",
+		"common_device_name": "Persist Common Device",
+		"device_product_code": "PDCODE",
+		"manufacturer_name": "Persist Device Mfr",
+		"manufacturer_address": "1 Device Way",
+		"manufacturer_city": "Seoul",
+		"manufacturer_state": "Seoul",
+		"manufacturer_country": "KR",
+		"device_usage": "1",
+		"device_lot_number": "DL-001",
+		"operator_of_device": "2",
+		"remedial_actions": [{"value_code": "RA-1"}]
+	});
+	let body = json!({
+		"data": {
+			"medicinal_product": "Persist Drug",
+			"drug_characterization": "1",
+			"brand_name": "Persist Brand",
+			"manufacturer_name": "Persist Manufacturer",
+			"manufacturer_country": "US",
+			"batch_lot_number": "LOT-123",
+			"cumulative_dose_first_reaction_value": "12.5",
+			"cumulative_dose_first_reaction_unit": "mg",
+			"gestation_period_exposure_value": "2",
+			"gestation_period_exposure_unit": "week",
+			"dosage_text": "Persist legacy dosage text",
+			"action_taken": "1",
+			"rechallenge": "1",
+			"investigational_product_blinded": false,
+			"mpid": "Persist-MPID",
+			"mpid_version": "2026.03",
+			"phpid": "Persist-PhPID",
+			"phpid_version": "2026.04",
+			"obtain_drug_country": "KR",
+			"parent_route": "Oral parent route",
+			"parent_route_termid": "PARENT-ROUTE-ID",
+			"parent_route_termid_version": "1.0",
+			"parent_dosage_text": "Persist parent dosage",
+			"fda_additional_info_coded": "FDA-ADD-1",
+			"drug_additional_info_codes_json": additional_info_codes,
+			"fda_specialized_product_category": "COMBINATION",
+			"fda_device_info_json": fda_device_info
+		}
+	});
+	let (status, value) = request_json(
+		&ctx.app,
+		&ctx.cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/drugs/{drug_id}"),
+		Some(body),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(
+			format!("drug update failed: status={status} body={value}").into()
+		);
+	}
+
+	let body = json!({"data": {
+		"drug_id": drug_id,
+		"sequence_number": 1,
+		"substance_name": "Persist Substance",
+		"substance_termid": "SUB-TERM-1",
+		"substance_termid_version": "26.1",
+		"strength_value": "10.0",
+		"strength_unit": "mg"
+	}});
 	let (status, value) = request_json(
 		&ctx.app,
 		&ctx.cookie,
@@ -576,8 +648,53 @@ pub async fn fill_section_g(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {
 		)
 		.into());
 	}
+	let active_substance_id = extract_id(&value)?;
 
-	let body = json!({"data": {"drug_id": drug_id, "sequence_number": 1}});
+	let body = json!({"data": {
+		"substance_name": "Persist Substance Updated",
+		"substance_termid": "SUB-TERM-2",
+		"substance_termid_version": "27.0",
+		"strength_value": "12.5",
+		"strength_unit": "mL"
+	}});
+	let (status, value) = request_json(
+		&ctx.app,
+		&ctx.cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/drugs/{drug_id}/active-substances/{active_substance_id}"),
+		Some(body),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"active-substance update failed: status={status} body={value}"
+		)
+		.into());
+	}
+
+	let body = json!({"data": {
+		"drug_id": drug_id,
+		"sequence_number": 1,
+		"dose_value": "1.5",
+		"dose_unit": "tablet",
+		"number_of_units": 2,
+		"frequency_value": "3",
+		"frequency_unit": "day",
+		"first_administration_date": "2026-03-01",
+		"last_administration_date": "2026-03-05",
+		"duration_value": "4",
+		"duration_unit": "804",
+		"batch_lot_number": "DOSAGE-LOT-1",
+		"dosage_text": "Persist dosage detail",
+		"dose_form": "Tablet",
+		"dose_form_termid": "DF-1",
+		"dose_form_termid_version": "2026.1",
+		"route_of_administration": "048",
+		"route_termid_version": "2026.2",
+		"parent_route": "Parent oral",
+		"parent_route_termid": "PR-1",
+		"parent_route_termid_version": "2026.3"
+	}});
 	let (status, value) = request_json(
 		&ctx.app,
 		&ctx.cookie,
@@ -589,8 +706,38 @@ pub async fn fill_section_g(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {
 	if status != StatusCode::CREATED {
 		return Err(format!("dosage failed: status={status} body={value}").into());
 	}
+	let dosage_id = extract_id(&value)?;
 
-	let body = json!({"data": {"drug_id": drug_id, "sequence_number": 1, "indication_text": "Persist indication"}});
+	let body = json!({"data": {
+		"dosage_text": "Persist dosage detail updated",
+		"dose_form_termid": "DF-2",
+		"dose_form_termid_version": "2027.1",
+		"route_of_administration": "061",
+		"route_termid_version": "2027.2",
+		"parent_route_termid": "PR-2",
+		"parent_route_termid_version": "2027.3"
+	}});
+	let (status, value) = request_json(
+		&ctx.app,
+		&ctx.cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/drugs/{drug_id}/dosages/{dosage_id}"),
+		Some(body),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(
+			format!("dosage update failed: status={status} body={value}").into(),
+		);
+	}
+
+	let body = json!({"data": {
+		"drug_id": drug_id,
+		"sequence_number": 1,
+		"indication_text": "Persist indication",
+		"indication_meddra_version": "26.0",
+		"indication_meddra_code": "135790"
+	}});
 	let (status, value) = request_json(
 		&ctx.app,
 		&ctx.cookie,
@@ -603,6 +750,48 @@ pub async fn fill_section_g(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {
 		return Err(
 			format!("indication failed: status={status} body={value}").into()
 		);
+	}
+	let indication_id = extract_id(&value)?;
+
+	let body = json!({"data": {
+		"indication_text": "Persist indication updated",
+		"indication_meddra_version": "27.0",
+		"indication_meddra_code": "246810"
+	}});
+	let (status, value) = request_json(
+		&ctx.app,
+		&ctx.cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/drugs/{drug_id}/indications/{indication_id}"),
+		Some(body),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"indication update failed: status={status} body={value}"
+		)
+		.into());
+	}
+
+	let body = json!({"data": {
+		"drug_id": drug_id,
+		"sequence_number": 1,
+		"code": "FDA.G.k.12.r.3",
+		"value_code": "1"
+	}});
+	let (status, value) = request_json(
+		&ctx.app,
+		&ctx.cookie,
+		"POST",
+		format!("/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"),
+		Some(body),
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"device-characteristic failed: status={status} body={value}"
+		)
+		.into());
 	}
 
 	let body = json!({"data": {"drug_id": drug_id, "sequence_number": 1}});
@@ -618,6 +807,28 @@ pub async fn fill_section_g(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {
 		return Err(
 			format!("recurrence failed: status={status} body={value}").into()
 		);
+	}
+	let recurrence_id = extract_id(&value)?;
+
+	let body = json!({"data": {
+		"rechallenge_action": "1",
+		"reaction_meddra_version": "26.0",
+		"reaction_meddra_code": "10012345",
+		"reaction_recurred": "2"
+	}});
+	let (status, value) = request_json(
+		&ctx.app,
+		&ctx.cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/drugs/{drug_id}/recurrences/{recurrence_id}"),
+		Some(body),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"recurrence update failed: status={status} body={value}"
+		)
+		.into());
 	}
 
 	let reaction_id = fill_section_e(ctx, case_id).await?;
@@ -640,9 +851,37 @@ pub async fn fill_section_g(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {
 	let assessment_id = extract_id(&value)?;
 
 	let body = json!({"data": {
+		"administration_start_interval_value": "5",
+		"administration_start_interval_unit": "804",
+		"last_dose_interval_value": "2",
+		"last_dose_interval_unit": "804",
+		"recurrence_action": "1",
+		"recurrence_meddra_version": "27.0",
+		"recurrence_meddra_code": "10054321",
+		"reaction_recurred": "1"
+	}});
+	let (status, value) = request_json(
+		&ctx.app,
+		&ctx.cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{assessment_id}"),
+		Some(body),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"reaction-assessment update failed: status={status} body={value}"
+		)
+		.into());
+	}
+
+	let body = json!({"data": {
 		"drug_reaction_assessment_id": assessment_id,
 		"sequence_number": 1,
-		"result_of_assessment": "1"
+		"source_of_assessment": "1",
+		"method_of_assessment": "1",
+		"result_of_assessment": "1",
+		"result_of_assessment_kr2": "Persist KR2"
 	}});
 	let (status, value) = request_json(
 		&ctx.app,
@@ -659,6 +898,22 @@ pub async fn fill_section_g(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {
 	}
 
 	Ok(())
+}
+
+pub async fn db_fetch_json_by_case(
+	ctx: &PersistTestCtx,
+	sql: &str,
+	case_id: Uuid,
+) -> Result<Value> {
+	ctx.mm.dbx().begin_txn().await?;
+	set_full_context_dbx(ctx.mm.dbx(), ctx.admin_id, ctx.org_id, ROLE_ADMIN).await?;
+	let (value,) = ctx
+		.mm
+		.dbx()
+		.fetch_one(sqlx::query_as::<_, (Value,)>(sql).bind(case_id))
+		.await?;
+	ctx.mm.dbx().commit_txn().await?;
+	Ok(value)
 }
 
 pub async fn fill_section_h(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {

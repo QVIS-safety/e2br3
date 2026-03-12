@@ -1,0 +1,6330 @@
+{
+  "source_file": "/Users/hyundonghoon/Downloads/FDA E2B(R3) Core and Regional Data Elements and Business Rules - Version 1.7.xlsx",
+  "record_count": 632,
+  "counts_by_profile": {
+    "fda": 83,
+    "ich": 549
+  },
+  "rules": [
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.1.12",
+      "tag_key": "FDA.C.1.12",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.1.12",
+      "tag_key": "FDA.C.1.12",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.1.7.1",
+      "tag_key": "FDA.C.1.7.1",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.1.7.1",
+      "tag_key": "FDA.C.1.7.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.1.7.1",
+      "tag_key": "FDA.C.1.7.1",
+      "severity": "rejection",
+      "message": "For postmarket ICSRs\nIf Combination Product Report Indicator (FDA.C.1.12) = True and Does This Case Fulfil the Local Criteria for an Expedited Report? (C.1.7) = True, Observation Code: (Value allowed: 1, 4)"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.2.r.2.5.1",
+      "tag_key": "FDA.C.2.R.2.5.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.2.r.2.8",
+      "tag_key": "FDA.C.2.R.2.8",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.2.r.2.8",
+      "tag_key": "FDA.C.2.R.2.8",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.3.4.1.1",
+      "tag_key": "FDA.C.3.4.1.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.5.5a",
+      "tag_key": "FDA.C.5.5A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.5.5a",
+      "tag_key": "FDA.C.5.5A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.5.5a",
+      "tag_key": "FDA.C.5.5A",
+      "severity": "rejection",
+      "message": "If Type of Report (C.1.3) is (1=Spontaneous or 2=Report from study) and Message Receiver Identifier (N.2.r.3) = 'CDER_IND' or 'CBER_IND' then IND Number where AE Occurred (FDA.C.5.5a) is required. The format must be \"123456\".  \n\nFor IND safety reports submitted from an aggregate analysis (312.32(c)(1)(i)(C)) from trials conducted under more than one IND, use the \u201cParent\u201d IND number"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.5.5b",
+      "tag_key": "FDA.C.5.5B",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.5.5b",
+      "tag_key": "FDA.C.5.5B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.5.5b",
+      "tag_key": "FDA.C.5.5B",
+      "severity": "rejection",
+      "message": "If Type of Report (C.1.3) is 2=Report from study and Message Receiver Identifier (N.2.r.3) = 'CDER_IND_EXEMPT_BA_BE' then Pre-ANDA Number where AE Occurred (FDA.C.5.5b) is required. The format must be \"234567\" for IND-exempt BA/BE study."
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.5.6.r",
+      "tag_key": "FDA.C.5.6.R",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.5.6.r",
+      "tag_key": "FDA.C.5.6.R",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.C.5.6.r",
+      "tag_key": "FDA.C.5.6.R",
+      "severity": "rejection",
+      "message": "If IND Number where AE Occurred (FDA.C.5.5a) is populated, then IND number of cross reported IND (FDA.C.5.6.r) is required. Use nullFlavor=NA if there are no other cross reported IND"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.D.11.r.1",
+      "tag_key": "FDA.D.11",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.D.11.r.1",
+      "tag_key": "FDA.D.11",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.D.11.r",
+      "tag_key": "FDA.D.11.R",
+      "severity": "warning",
+      "message": "Appropriate nullFlavor must be used if FDA.D.11.r (Patient Race Code) is not reportable.\n\nIf Patient (name or initials) (D.1) is nullFlavor \"NA\" or \"SUMMARY\" then use nullFlavor: NA\n\nIf Patient (name or initials) (D.1) is \"AGGREGATE\"  then use nullFlavor: NA"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.D.12",
+      "tag_key": "FDA.D.12",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.D.12",
+      "tag_key": "FDA.D.12",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.D.12",
+      "tag_key": "FDA.D.12",
+      "severity": "warning",
+      "message": "Appropriate nullFlavor must be used if FDA.D.12 (Patient Ethnicity Code) is not reportable.\n\nIf Patient (name or initials) (D.1) is nullFlavor \"NA\" or \"SUMMARY\" then use nullFlavor: NA\n\nIf Patient (name or initials) (D.1) is \"AGGREGATE\"  then use nullFlavor: NA"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.E.i.3.2h",
+      "tag_key": "FDA.E.I.3.2H",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.E.i.3.2h",
+      "tag_key": "FDA.E.I.3.2H",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.1.a",
+      "tag_key": "FDA.G.K.1.A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.1.a",
+      "tag_key": "FDA.G.K.1.A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.1.a",
+      "tag_key": "FDA.G.K.1.A",
+      "severity": "rejection",
+      "message": "For Similar Device Observation Code: (Value allowed: 1) is only allowed if Combination Product Report Indicator (FDA.C.1.12) is 'true', Malfunction (FDA.G.k.12.r.1) is 'true' and Characterisation of Drug Role (G.k.1) = '4' (Drug Not Administered) under 21 CFR 4.102(c) and 803.50"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.10.1",
+      "tag_key": "FDA.G.K.10.1",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.10.1",
+      "tag_key": "FDA.G.K.10.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.10a",
+      "tag_key": "FDA.G.K.10A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.10a",
+      "tag_key": "FDA.G.K.10A",
+      "severity": "warning",
+      "message": "If Pre-ANDA Number where AE Occurred (FDA.C.5.5b) is present, then the Observation Code: (Value allowed: 1, 2) must be used to describe the drug\u2019s role in the IND-Exempt BA/BE study. Use nullFlavor 'NA' for all other drugs or if information is not available."
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.1",
+      "tag_key": "FDA.G.K.12.R.1",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.1",
+      "tag_key": "FDA.G.K.12.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.1",
+      "tag_key": "FDA.G.K.12.R.1",
+      "severity": "rejection",
+      "message": "For postmarket ICSRs\nIf Local Criteria Report Type (FDA.C.1.7.1) = 5, then Malfunction (FDA.G.k.12.r.1) must be 'true' for at least one suspect product"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.10",
+      "tag_key": "FDA.G.K.12.R.10",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.10",
+      "tag_key": "FDA.G.K.12.R.10",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.11.r",
+      "tag_key": "FDA.G.K.12.R.11.R",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.11.r",
+      "tag_key": "FDA.G.K.12.R.11.R",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.11.r",
+      "tag_key": "FDA.G.K.12.R.11.R",
+      "severity": "warning",
+      "message": "For postmarket ICSRs\nRequired, if Malfunction (FDA.G.k.12.r.1) is 'true' and Local Criteria Report Type (FDA.C.1.7.1) = 4 (5-Day)."
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.2.r",
+      "tag_key": "FDA.G.K.12.R.2.R",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.2.r",
+      "tag_key": "FDA.G.K.12.R.2.R",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.3.r",
+      "tag_key": "FDA.G.K.12.R.3.R",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.3.r",
+      "tag_key": "FDA.G.K.12.R.3.R",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.3.r",
+      "tag_key": "FDA.G.K.12.R.3.R",
+      "severity": "rejection",
+      "message": "For postmarket ICSRs\nRequired, if Malfunction (FDA.G.k.12.r.1) is 'true'. FDA will only validate format. One or more codes can be provided."
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.4",
+      "tag_key": "FDA.G.K.12.R.4",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.4",
+      "tag_key": "FDA.G.K.12.R.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.4",
+      "tag_key": "FDA.G.K.12.R.4",
+      "severity": "rejection",
+      "message": "For postmarket ICSRs\nIf Combination Product Report Indicator (FDA.C.1.12) is true, then provide the  device brand name and the common device name. Either can be null however, if both are null a value for Device Product Code (FDA.G.k.12.r.6) is required"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.5",
+      "tag_key": "FDA.G.K.12.R.5",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.5",
+      "tag_key": "FDA.G.K.12.R.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.5",
+      "tag_key": "FDA.G.K.12.R.5",
+      "severity": "rejection",
+      "message": "For postmarket ICSRs\nIf Combination Product Report Indicator (FDA.C.1.12) is true, then provide the  device brand name and the common device name. Either can be null however, if both are null a value for Device Product Code (FDA.G.k.12.r.6) is required"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.6",
+      "tag_key": "FDA.G.K.12.R.6",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.6",
+      "tag_key": "FDA.G.K.12.R.6",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.6",
+      "tag_key": "FDA.G.K.12.R.6",
+      "severity": "rejection",
+      "message": "For postmarket ICSRs\nIf both Device Brand Name (FDA.G.k.12.r.4) and Common Device Name (FDA.G.k.12.r.5) are null, then the value for Device Product Code (FDA.G.k.12.r.6) is required"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7",
+      "tag_key": "FDA.G.K.12.R.7",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7",
+      "tag_key": "FDA.G.K.12.R.7",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7.1a",
+      "tag_key": "FDA.G.K.12.R.7.1A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7.1a",
+      "tag_key": "FDA.G.K.12.R.7.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7.1b",
+      "tag_key": "FDA.G.K.12.R.7.1B",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7.1b",
+      "tag_key": "FDA.G.K.12.R.7.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7.1c",
+      "tag_key": "FDA.G.K.12.R.7.1C",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7.1c",
+      "tag_key": "FDA.G.K.12.R.7.1C",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7.1d",
+      "tag_key": "FDA.G.K.12.R.7.1D",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7.1d",
+      "tag_key": "FDA.G.K.12.R.7.1D",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7.1e",
+      "tag_key": "FDA.G.K.12.R.7.1E",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.7.1e",
+      "tag_key": "FDA.G.K.12.R.7.1E",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.8",
+      "tag_key": "FDA.G.K.12.R.8",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.8",
+      "tag_key": "FDA.G.K.12.R.8",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.9",
+      "tag_key": "FDA.G.K.12.R.9",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.12.r.9",
+      "tag_key": "FDA.G.K.12.R.9",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.13.r",
+      "tag_key": "FDA.G.K.13.R",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.2.2.1",
+      "tag_key": "FDA.G.K.2.2.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G2.k.1",
+      "tag_key": "FDA.G2.K.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G2.k.2a",
+      "tag_key": "FDA.G2.K.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G2.k.2b",
+      "tag_key": "FDA.G2.K.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G2.k.3",
+      "tag_key": "FDA.G2.K.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G2.k.4a",
+      "tag_key": "FDA.G2.K.4A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G2.k.4b",
+      "tag_key": "FDA.G2.K.4B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G2.k.5",
+      "tag_key": "FDA.G2.K.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G2.k.6",
+      "tag_key": "FDA.G2.K.6",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G2.k.7",
+      "tag_key": "FDA.G2.K.7",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "fda",
+      "scope": "profile_overlay",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G2.k.8",
+      "tag_key": "FDA.G2.K.8",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.A.1",
+      "tag_key": "ICH.ACK.A.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.A.2",
+      "tag_key": "ICH.ACK.A.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.A.2.CSV",
+      "tag_key": "ICH.ACK.A.2.CSV",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.A.3",
+      "tag_key": "ICH.ACK.A.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.A.3.CSV",
+      "tag_key": "ICH.ACK.A.3.CSV",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.A.4",
+      "tag_key": "ICH.ACK.A.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.A.5",
+      "tag_key": "ICH.ACK.A.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.B.r.1",
+      "tag_key": "ICH.ACK.B.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.B.r.2",
+      "tag_key": "ICH.ACK.B.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.B.r.3",
+      "tag_key": "ICH.ACK.B.R.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.B.r.4",
+      "tag_key": "ICH.ACK.B.R.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.B.r.5",
+      "tag_key": "ICH.ACK.B.R.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.B.r.5.CSV",
+      "tag_key": "ICH.ACK.B.R.5.CSV",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.B.r.6",
+      "tag_key": "ICH.ACK.B.R.6",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.B.r.7",
+      "tag_key": "ICH.ACK.B.R.7",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.M.1",
+      "tag_key": "ICH.ACK.M.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.M.2",
+      "tag_key": "ICH.ACK.M.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.M.3",
+      "tag_key": "ICH.ACK.M.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Acknowledgment",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "ACK.M.4",
+      "tag_key": "ICH.ACK.M.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.1",
+      "tag_key": "ICH.C.1.1",
+      "severity": "",
+      "message": "A two character country code will be used in all instances for the country component of the Unique Identifier. The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union. In this case, \u2018EU\u2019 will be accepted as the country code.\nThe format of C.1.1 ensures a unique report identifier for the sender of particular ICSR.\nThe use of a \u2018-\u2019 (dash/hyphen) should be avoided in the \u2018company or regulator name\u2019.\nBoth the \u2018Sender's (case) Safety Report Unique Identifier\u2019 (C.1.1) and the \u2018Worldwide Unique Case Identification Number\u2019 (C.1.8.1) data elements are mapped to the repeatable XML attribute<id> in the \u2018investigationEvent\u2019 entity in the HL7 ICSR model (See Appendix I (D) the Reference Instances).ICH uses two value\uff0d\u20182.16.840.1.113883.3.989.2.1.3.1\u2019 and \u20182.16.840.1.113883.3.989.2.1.3.2\u2019\uff0din the root portion of the investigationEvent.id to distinguish C.1.1 and C.1.8.1.\nThe following notation will be used to represent C.1.1:\n<id extension=\"country code-company name-report no\" root=\"2.16.840.1.113883.3.989.2.1.3.1\"/>\nThe following notation will be used to represent C.1.8.1:\n<id extension=\"country code-company name-report no\" root=\"2.16.840.1.113883.3.989.2.1.3.2\"/>"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.1",
+      "tag_key": "ICH.C.1.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.10.r",
+      "tag_key": "ICH.C.1.10.R",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.10.r",
+      "tag_key": "ICH.C.1.10.R",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.10.r",
+      "tag_key": "ICH.C.1.10.R",
+      "severity": "warning",
+      "message": "For premarket ICSRs\nIf Patient (name or initials) (D.1) = AGGREGRATE, then Identification Number of the Report Which Is Linked to This Report (C.1.10.r ) should be provided for all Sender\u2019s (case) Safety Report Unique Identifier (C.1.1) that makes up an Aggregate Analysis as per 312.32(c)(1)(i)(C) whether previously sent to FAERS or to eCTD (use Manufacturer Control Number (MCN))"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.11.1",
+      "tag_key": "ICH.C.1.11.1",
+      "severity": "",
+      "message": "Initial report cannot be a nullified or amendent report"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.11.1",
+      "tag_key": "ICH.C.1.11.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.11.1",
+      "tag_key": "ICH.C.1.11.1",
+      "severity": "rejection",
+      "message": "\u00fc"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.11.2",
+      "tag_key": "ICH.C.1.11.2",
+      "severity": "",
+      "message": "Optional, but required when C.1.11.1 is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.11.2",
+      "tag_key": "ICH.C.1.11.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.11.2",
+      "tag_key": "ICH.C.1.11.2",
+      "severity": "rejection",
+      "message": "Optional, but required when C.1.11.1 is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.2",
+      "tag_key": "ICH.C.1.2",
+      "severity": "",
+      "message": "Minimum precision required is date and time to the second.\nThe date specified cannot refer to a future date; the time zone may have to be specified.\n(i.e. \u2018CCYYMMDDhhmmss[+/-ZZzz]\u2019)"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.2",
+      "tag_key": "ICH.C.1.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.3",
+      "tag_key": "ICH.C.1.3",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.3",
+      "tag_key": "ICH.C.1.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.3",
+      "tag_key": "ICH.C.1.3",
+      "severity": "rejection",
+      "message": "If Batch Receiver Identifier (N.1.4) = ZZFDA_PREMKT and Message Receiver Identifier (N.2.r.3) = 'CDER_IND' or 'CBER_IND' or 'CDER_IND_EXEMPT_BA_BE' and (IND Number where AE Occurred (FDA.C.5.5a) or Pre-ANDA Number where AE Occurred (FDA.C.5.5b)) is provided and Study Type Where Reaction(s) / Event(s) Were Observed (C.5.4) = (1, 2 or 3) then Type of Report (C.1.3) must be 2=Report from Study"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.4",
+      "tag_key": "ICH.C.1.4",
+      "severity": "",
+      "message": "Minimum precision required is the day (i.e. \u2018CCYYMMDD\u2019).\nThe date specified cannot refer to a future date."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.4",
+      "tag_key": "ICH.C.1.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.5",
+      "tag_key": "ICH.C.1.5",
+      "severity": "",
+      "message": "Minimum precision required is the day (i.e. \u2018CCYYMMDD\u2019).\nThe date specified cannot refer to a future date."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.5",
+      "tag_key": "ICH.C.1.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.6.1",
+      "tag_key": "ICH.C.1.6.1",
+      "severity": "",
+      "message": "For further information on how to attach documents to an ICSR, please see Section 3.5 (of IG)"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.6.1",
+      "tag_key": "ICH.C.1.6.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.6.1.r.1",
+      "tag_key": "ICH.C.1.6.1.R.1",
+      "severity": "",
+      "message": "Optional, but required if C.1.6.1 is \u2018true\u2019."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.6.1.r.1",
+      "tag_key": "ICH.C.1.6.1.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.6.1.r.1",
+      "tag_key": "ICH.C.1.6.1.R.1",
+      "severity": "rejection",
+      "message": "Optional, but required if C.1.6.1 is \u2018true\u2019."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.6.1.r.2",
+      "tag_key": "ICH.C.1.6.1.R.2",
+      "severity": "",
+      "message": "For further information on how to attach documents to an ICSR, please see Section 3.5.\nBecause a receiver\u2019s system may have particular configurations on handling attachments, \u2018Value Allowed\u2019 is defined by each region."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.6.1.r.2",
+      "tag_key": "ICH.C.1.6.1.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.6.1.r.2",
+      "tag_key": "ICH.C.1.6.1.R.2",
+      "severity": "rejection",
+      "message": "Compression is not used for US reporting and encoding is limited to B64."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.7",
+      "tag_key": "ICH.C.1.7",
+      "severity": "",
+      "message": "*\u2019nullFlavor\u2019 is only allowed when sender is retransmitting a case that was first received ICH E2B (R2) format, where the equivalent data element for C.1.7 was optionally not populated; in other cases, only \u2018false\u2019 or \u2018true\u2019 should be used."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.7",
+      "tag_key": "ICH.C.1.7",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.7",
+      "tag_key": "ICH.C.1.7",
+      "severity": "rejection",
+      "message": "FDA does not support use of the nullFlavor 'NI' for this data element in initial submissions. Initial submissions with nullFlavor NI will be rejected."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.8.1",
+      "tag_key": "ICH.C.1.8.1",
+      "severity": "",
+      "message": "Both the \u2018Sender's (case) Safety Report Unique Identifier\u2019 (C.1.1) and the \u2018Worldwide Unique Case Identification\u2019 (C.1.8) data elements are mapped to the repeatable XML attribute<id> in the \u2018investigationEvent\u2019 entity in the HL7 ICSR model. (See the Reference Instance)ICH uses two values - \u20182.16.840.1.113883.3.989.2.1.3.1\u2019 and \u20182.16.840.1.113883.3.989.2.1.3.2\u2019 in the root portion of the investigationEvent.id to distinguish C.1.1 and C.1.8.\nThe following notation will be used to represent C.1.1:\n<id extension=\"country code-company name-report no\" root=\" 2.16.840.1.113883.3.989.2.1.3.1 \"/>\nThe following notation will be used to represent C.1.8:\n<id extension=\"country code-company name-report no\" root=\" 2.16.840.1.113883.3.989.2.1.3.2\"/>\nAlthough the attribute <id> can repeat in the message, but there must be a single instance of the <id> attribute with the root value of \u20182.16.840.1.113883.3.989.2.1.3.2 \u2018 for a particular case safety report."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.8.1",
+      "tag_key": "ICH.C.1.8.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.8.2",
+      "tag_key": "ICH.C.1.8.2",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.8.2",
+      "tag_key": "ICH.C.1.8.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.9.1",
+      "tag_key": "ICH.C.1.9.1",
+      "severity": "",
+      "message": "False is not a value allowed for this data element. This required data element should either be \u2018true\u2019 or \u2018nullFlavor\u2019."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.9.1",
+      "tag_key": "ICH.C.1.9.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.9.1.r.1",
+      "tag_key": "ICH.C.1.9.1.R.1",
+      "severity": "",
+      "message": "Optional, but required if C.1.9.1=\u2018true\u2019.\n\nThe following notation will be used to represent C.1.9.1.r.1:\n<idassigningAuthorityName=\"C.1.9.1.r.1\" extension=\"C.1.9.1.r.2\" root=\"2.16.840.1.113883.3.989.2.1.3.3\"/>\n\nThe root indicates the namespace of C.1.9.1, the actual \u2018Source of the Case Identifier\u2019 (C.1.9.1.r.1) and the \u2018Case Identifier\u2019 (C.1.9.1.r.2) are populated at id and extension, respectively."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.9.1.r.1",
+      "tag_key": "ICH.C.1.9.1.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.9.1.r.1",
+      "tag_key": "ICH.C.1.9.1.R.1",
+      "severity": "rejection",
+      "message": "If Other Case Identifiers in Previous Transmissions (C.1.9.1) = True then Source(s) of the Case Identifier (C.1.9.1.r.1) cannot be empty"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.9.1.r.2",
+      "tag_key": "ICH.C.1.9.1.R.2",
+      "severity": "",
+      "message": "Optional, but required if C.1.9.1=\u2018true\u2019.\n\nThe following notation will be used to represent C.1.9.1.r.2:\n<idassigningAuthorityName=\"C.1.9.1.r.1\" extension=\"C.1.9.1.r.2\" root=\"2.16.840.1.113883.3.989.2.1.3.3\"/>\nThe root indicates the namespace of C.1.9.1, the actual source of the case identifier (C.1.9.1.r.1) and case identifier (C.1.9.1.r.2) are populated at id and extension, respectively."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.9.1.r.2",
+      "tag_key": "ICH.C.1.9.1.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.1.9.1.r.2",
+      "tag_key": "ICH.C.1.9.1.R.2",
+      "severity": "rejection",
+      "message": "If Other Case Identifiers in Previous Transmissions (C.1.9.1) = True and Source(s) of the Case Identifier (C.1.9.1.r.1) is available then Case Identifier(s) (C.1.9.1.r.2) cannot be empty"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.1.1",
+      "tag_key": "ICH.C.2.R.1.1",
+      "severity": "",
+      "message": "See the business rules for C.2.r."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.1.1",
+      "tag_key": "ICH.C.2.R.1.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.1.2",
+      "tag_key": "ICH.C.2.R.1.2",
+      "severity": "",
+      "message": "See the business rules for C.2.r."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.1.2",
+      "tag_key": "ICH.C.2.R.1.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.1.3",
+      "tag_key": "ICH.C.2.R.1.3",
+      "severity": "",
+      "message": "See the business rules for C.2.r.\nISO / HL7 27953-2 does not support the concept of \u2018middle name\u2019, thus to transmit this in the message it is necessary to repeat the \u2018given name\u2019 tag. The first \u2018given name\u2019 tag captures reporter\u2019s given name and the second \u2018given name\u2019 tag captures reporter\u2019s middle name. The order of the tags indicate the order of the names.\n<name>\n<prefix>C.2.r.1.1</prefix>\n<!--C.2.r.1.1: Reporter's Title #1 -->\n<given>C.2.r.1.2</given>\n<!--C.2.r.1.2: Reporter's Given Name #1 -->\n<given>C.2.r.1.3</given>\n<!--C.2.r.1.3: Reporter's Middle Name #1 -->\n<family>C.2.r.1.4</family>\n<!--C.2.r.1.4: Reporter's Family Name #1 -->\n</name>"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.1.3",
+      "tag_key": "ICH.C.2.R.1.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.1.4",
+      "tag_key": "ICH.C.2.R.1.4",
+      "severity": "",
+      "message": "See the business rules for C.2.r."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.1.4",
+      "tag_key": "ICH.C.2.R.1.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.1",
+      "tag_key": "ICH.C.2.R.2.1",
+      "severity": "",
+      "message": "See the business rules for C.2.r."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.1",
+      "tag_key": "ICH.C.2.R.2.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.2",
+      "tag_key": "ICH.C.2.R.2.2",
+      "severity": "",
+      "message": "See the business rules for C.2.r."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.2",
+      "tag_key": "ICH.C.2.R.2.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.3",
+      "tag_key": "ICH.C.2.R.2.3",
+      "severity": "",
+      "message": "See the business rules for C.2.r."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.3",
+      "tag_key": "ICH.C.2.R.2.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.4",
+      "tag_key": "ICH.C.2.R.2.4",
+      "severity": "",
+      "message": "See the business rules for C.2.r."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.4",
+      "tag_key": "ICH.C.2.R.2.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.5",
+      "tag_key": "ICH.C.2.R.2.5",
+      "severity": "",
+      "message": "See the business rules for C.2.r."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.5",
+      "tag_key": "ICH.C.2.R.2.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.6",
+      "tag_key": "ICH.C.2.R.2.6",
+      "severity": "",
+      "message": "See the business rules for C.2.r."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.6",
+      "tag_key": "ICH.C.2.R.2.6",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.7",
+      "tag_key": "ICH.C.2.R.2.7",
+      "severity": "",
+      "message": "See the business rules for C.2.r."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.2.7",
+      "tag_key": "ICH.C.2.R.2.7",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.3",
+      "tag_key": "ICH.C.2.R.3",
+      "severity": "",
+      "message": "Optional, but required if C.2.r.5 = 1.\n\nA two character country code will be used in all instances.\nThe country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union.In this case, \u2018EU\u2019 will be accepted as the country code."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.3",
+      "tag_key": "ICH.C.2.R.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.3",
+      "tag_key": "ICH.C.2.R.3",
+      "severity": "rejection",
+      "message": "Optional, but required if C.2.r.5 = 1."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.4",
+      "tag_key": "ICH.C.2.R.4",
+      "severity": "",
+      "message": "Optional, but required if C.2.r.5 = 1.\n\nIf the reporter's qualification is unknown to the sender, this data element should be left blank with nullFlavor = UNK.   Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missiong or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.4",
+      "tag_key": "ICH.C.2.R.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.4",
+      "tag_key": "ICH.C.2.R.4",
+      "severity": "rejection",
+      "message": "Optional, but required if C.2.r.5 = 1."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.5",
+      "tag_key": "ICH.C.2.R.5",
+      "severity": "",
+      "message": "It is required that one Primary Source of Information (C.2) be flagged as Primary source for regulatory purposes.  Therefore this data element must be set to '1' once, and only once, for C.2 block in each ICH ICSR message.  Do not use this element to rank sources either sequentially, chronologically, or heirarchically."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.5",
+      "tag_key": "ICH.C.2.R.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.2.r.5",
+      "tag_key": "ICH.C.2.R.5",
+      "severity": "rejection",
+      "message": "\u00fc"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.1",
+      "tag_key": "ICH.C.3.1",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.1",
+      "tag_key": "ICH.C.3.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.2",
+      "tag_key": "ICH.C.3.2",
+      "severity": "",
+      "message": "Required if the \u2018Sender Type\u2019 (C.3.1) is not coded as 7 (Patient / Consumer)."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.2",
+      "tag_key": "ICH.C.3.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.2",
+      "tag_key": "ICH.C.3.2",
+      "severity": "rejection",
+      "message": "Required if the \u2018Sender Type\u2019 (C.3.1) is not coded as 7 (Patient / Consumer)."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.3.1",
+      "tag_key": "ICH.C.3.3.1",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.3.1",
+      "tag_key": "ICH.C.3.3.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.3.2",
+      "tag_key": "ICH.C.3.3.2",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.3.2",
+      "tag_key": "ICH.C.3.3.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.3.3",
+      "tag_key": "ICH.C.3.3.3",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.3.3",
+      "tag_key": "ICH.C.3.3.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.3.4",
+      "tag_key": "ICH.C.3.3.4",
+      "severity": "",
+      "message": "ISO / HL7 27953-2 does not support the concept of \u2018middle name\u2019, thus to transmit this in the message it is necessary to repeat the \u2018given name\u2019 tag. The first \u2018given name\u2019 tag captures sender\u2019s given name and the second \u2018given name\u2019 tag captures sender\u2019s middle name. The order of the tags indicate the order of the names.\n<name>\n<prefix>C.3.3.2</prefix>\n<!--C.3.3.2: Sender's Title #1 -->\n<given>C.3.3.3</given>\n<!--C.3.3.3: Sender's Given Name #1 -->\n<given>C.3.4</given>\n<!--C.3.3.4: Sender's Middle Name #1 -->\n<family>C.3.3.5</family>\n<!--C.3.3.5: Sender's Family Name #1 -->\n</name>"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.3.4",
+      "tag_key": "ICH.C.3.3.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.3.5",
+      "tag_key": "ICH.C.3.3.5",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.3.5",
+      "tag_key": "ICH.C.3.3.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.1",
+      "tag_key": "ICH.C.3.4.1",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.1",
+      "tag_key": "ICH.C.3.4.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.2",
+      "tag_key": "ICH.C.3.4.2",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.2",
+      "tag_key": "ICH.C.3.4.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.3",
+      "tag_key": "ICH.C.3.4.3",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.3",
+      "tag_key": "ICH.C.3.4.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.4",
+      "tag_key": "ICH.C.3.4.4",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.4",
+      "tag_key": "ICH.C.3.4.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.5",
+      "tag_key": "ICH.C.3.4.5",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.5",
+      "tag_key": "ICH.C.3.4.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.6",
+      "tag_key": "ICH.C.3.4.6",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.6",
+      "tag_key": "ICH.C.3.4.6",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.7",
+      "tag_key": "ICH.C.3.4.7",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.7",
+      "tag_key": "ICH.C.3.4.7",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.8",
+      "tag_key": "ICH.C.3.4.8",
+      "severity": "",
+      "message": "See the business rules for C.3.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.3.4.8",
+      "tag_key": "ICH.C.3.4.8",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.4.r.1",
+      "tag_key": "ICH.C.4.R.1",
+      "severity": "",
+      "message": "Please see Section 3.3.6 (of IG) for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.4.r.1",
+      "tag_key": "ICH.C.4.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.4.r.2",
+      "tag_key": "ICH.C.4.R.2",
+      "severity": "",
+      "message": "For further information on how to attach documents to an ICSR, please see Section 3.5.\nBecause a receiver\u2019s system may have particular configurations on handling attachments, \u2018Value Allowed\u2019 is defined by each region."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.4.r.2",
+      "tag_key": "ICH.C.4.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.1.r.1",
+      "tag_key": "ICH.C.5.1.R.1",
+      "severity": "",
+      "message": "Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.\nThe following notation will be used to represent C.5.1.r.1:\n<id extension=\"study registration number\" root=\"2.16.840.1.113883.3.989.2.1.3.6\"/>\nThe root indicates the namespace of C.5.1.r.1, the actual study registration number is populated at id extension."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.1.r.1",
+      "tag_key": "ICH.C.5.1.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.1.r.2",
+      "tag_key": "ICH.C.5.1.R.2",
+      "severity": "",
+      "message": "A two character country code will be used in all instances.   The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union.   In this case, 'EU' will be accepted as the country code.   Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.1.r.2",
+      "tag_key": "ICH.C.5.1.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.2",
+      "tag_key": "ICH.C.5.2",
+      "severity": "",
+      "message": "Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.2",
+      "tag_key": "ICH.C.5.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.3",
+      "tag_key": "ICH.C.5.3",
+      "severity": "",
+      "message": "Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.   The following notation will be used to represent C.5.3: <id extension=\"sponsor study number\" root=\"2.16.840.1.113883.3.989.2.1.3.5\"/>     The root indicates the namespace of C.5.3, the actual sponsor study number is populated at id extension."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.3",
+      "tag_key": "ICH.C.5.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.4",
+      "tag_key": "ICH.C.5.4",
+      "severity": "",
+      "message": "Optional, but required if C.1.3=2(Report from study)"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.4",
+      "tag_key": "ICH.C.5.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "C.5.4",
+      "tag_key": "ICH.C.5.4",
+      "severity": "rejection",
+      "message": "Optional, but required if C.1.3=2(Report from study)"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1",
+      "tag_key": "ICH.D.1",
+      "severity": "",
+      "message": "If the initials are known to the sender but cannot be transmitted due to data privacy requirements, this data element should be left blank with nullFlavor = MSK.\nPlease see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1",
+      "tag_key": "ICH.D.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1",
+      "tag_key": "ICH.D.1",
+      "severity": "rejection",
+      "message": "For postmarket ICSRs\nThe element must use nullFlavor \"NA\" where no patient is involved. (e.g. Medication error, Compounding)\n\nFor combination product, if a single report is reported for a malfunction without an adverse event, the element value must use nullFlavor \"NA\".\n\nFor combination product, if there are multiple malfunction reports with no adverse event, then the element value should be \u201cSUMMARY\u201d."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1.1.1",
+      "tag_key": "ICH.D.1.1.1",
+      "severity": "",
+      "message": "Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.\nThe following notation will be used to represent D.1.1.1:\n<id extension=\"medical record number\" root=\"2.16.840.1.113883.3.989.2.1.3.7\"/>\n<code code=\"gpmrn\"codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"/> The root indicates the namespace of D.1.1.1, the actual medical record number is populated at id extension. The code of \u2018gpmn\u2019 is populated to distinguish from D.1.1.2 to D.1.1.4."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1.1.1",
+      "tag_key": "ICH.D.1.1.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1.1.2",
+      "tag_key": "ICH.D.1.1.2",
+      "severity": "",
+      "message": "Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.\nThe following notation will be used to represent D.1.1.2:\n<id extension=\"medical record number\"root=\"2.16.840.1.113883.3.989.2.1.3.8\"/>\n<code code=\"specialistMrn\"codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"/>\nThe root indicates the namespace of D.1.1.2, the actual medical record number is populated at id extension. The code of \u2018specialistMrn\u2019 is populated to distinguish from D.1.1.1, D.1.1.3 and D.1.1.4."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1.1.2",
+      "tag_key": "ICH.D.1.1.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1.1.3",
+      "tag_key": "ICH.D.1.1.3",
+      "severity": "",
+      "message": "Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.\nThe following notation will be used to represent D.1.1.3:\n<id extension=\" medical record number \" root=\"2.16.840.1.113883.3.989.2.1.3.9\"/>\n<code code=\"hospitalMrn\"codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"/>\nThe root indicates the namespace of D.1.1.3, the actual medical record number is populated at id extension. The code of \u2018hospitalMrn\u2019 is populated to distinguish from D.1.1.1, D.1.1.2 and D.1.1.4."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1.1.3",
+      "tag_key": "ICH.D.1.1.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1.1.4",
+      "tag_key": "ICH.D.1.1.4",
+      "severity": "",
+      "message": "Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.\nThe following notation will be used to represent D.1.1.4:\n<id extension=\" medical record number \" root=\"2.16.840.1.113883.3.989.2.1.3.10\"/>\n<code code=\"investigation\"codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"/>\nThe root indicates the namespace of D.1.1.4, the actual medical record number is populated at id extension. The code of \u2018investigation\u2019 is populated to distinguish from D.1.1.1 to D.1.1.3."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.1.1.4",
+      "tag_key": "ICH.D.1.1.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.1",
+      "tag_key": "ICH.D.10.1",
+      "severity": "",
+      "message": "If the name or initials of the parent are unknown to the sender, this data element should be left blank with nullFlavor=UNK.\nIf the name or initials are known to the sender but cannot be transmitted due to data privacy requirements, this data element should be left blank with nullFlavor=MSK.\nPlease see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.1",
+      "tag_key": "ICH.D.10.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.2.1",
+      "tag_key": "ICH.D.10.2.1",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \u2018CCYY\u2019).\nThe date specified cannot refer to a future date.\nIf the date of birth is known to the sender but cannot be transmitted due to data privacy requirements, this data element should be left blank with nullFlavor set to \u2018MSK\u2019.\nPlease see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.2.1",
+      "tag_key": "ICH.D.10.2.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.2.2a",
+      "tag_key": "ICH.D.10.2.2A",
+      "severity": "",
+      "message": "Optional, but required if D.10.2.2b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.2.2a",
+      "tag_key": "ICH.D.10.2.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.2.2a",
+      "tag_key": "ICH.D.10.2.2A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.10.2.2b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.2.2b",
+      "tag_key": "ICH.D.10.2.2B",
+      "severity": "",
+      "message": "Optional, but required if D.10.2.2a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.2.2b",
+      "tag_key": "ICH.D.10.2.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.2.2b",
+      "tag_key": "ICH.D.10.2.2B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.10.2.2a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.3",
+      "tag_key": "ICH.D.10.3",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.3",
+      "tag_key": "ICH.D.10.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.4",
+      "tag_key": "ICH.D.10.4",
+      "severity": "",
+      "message": "Fractions or decimals are allowed using a period (dot).  No commas are allowed in this numeric data element."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.4",
+      "tag_key": "ICH.D.10.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.5",
+      "tag_key": "ICH.D.10.5",
+      "severity": "",
+      "message": "Provide rounded number.   No fractions, decimals, and commas are allowed in this numeric data element."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.5",
+      "tag_key": "ICH.D.10.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.6",
+      "tag_key": "ICH.D.10.6",
+      "severity": "",
+      "message": "Required, if any data element in D.10 section is populated.\nIf the sex of the parent is known to the sender but cannot be transmitted due to data privacy requirements, this data element should be left blank with nullFlavor='MSK'.   Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.6",
+      "tag_key": "ICH.D.10.6",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.6",
+      "tag_key": "ICH.D.10.6",
+      "severity": "rejection",
+      "message": "Required, if any data element in D.10 section is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.1a",
+      "tag_key": "ICH.D.10.7.1.R.1A",
+      "severity": "",
+      "message": "Optional, but required if D.10.7.1.r.1b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.1a",
+      "tag_key": "ICH.D.10.7.1.R.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.1a",
+      "tag_key": "ICH.D.10.7.1.R.1A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.10.7.1.r.1b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.1b",
+      "tag_key": "ICH.D.10.7.1.R.1B",
+      "severity": "",
+      "message": "Optional, but required if D.10.7.1.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.1b",
+      "tag_key": "ICH.D.10.7.1.R.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.1b",
+      "tag_key": "ICH.D.10.7.1.R.1B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.10.7.1.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.2",
+      "tag_key": "ICH.D.10.7.1.R.2",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.2",
+      "tag_key": "ICH.D.10.7.1.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.3",
+      "tag_key": "ICH.D.10.7.1.R.3",
+      "severity": "",
+      "message": "Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.3",
+      "tag_key": "ICH.D.10.7.1.R.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.4",
+      "tag_key": "ICH.D.10.7.1.R.4",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.4",
+      "tag_key": "ICH.D.10.7.1.R.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.5",
+      "tag_key": "ICH.D.10.7.1.R.5",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.1.r.5",
+      "tag_key": "ICH.D.10.7.1.R.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.2",
+      "tag_key": "ICH.D.10.7.2",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.7.2",
+      "tag_key": "ICH.D.10.7.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.1",
+      "tag_key": "ICH.D.10.8.R.1",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.1",
+      "tag_key": "ICH.D.10.8.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.2a",
+      "tag_key": "ICH.D.10.8.R.2A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.2a",
+      "tag_key": "ICH.D.10.8.R.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.2b",
+      "tag_key": "ICH.D.10.8.R.2B",
+      "severity": "",
+      "message": "Any given drug entry may have either MPID or PhPID, but NOT both."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.2b",
+      "tag_key": "ICH.D.10.8.R.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.3a",
+      "tag_key": "ICH.D.10.8.R.3A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.3a",
+      "tag_key": "ICH.D.10.8.R.3A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.3b",
+      "tag_key": "ICH.D.10.8.R.3B",
+      "severity": "",
+      "message": "Any given drug entry may have either MPID or PhPID, but NOT both."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.3b",
+      "tag_key": "ICH.D.10.8.R.3B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.4",
+      "tag_key": "ICH.D.10.8.R.4",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.4",
+      "tag_key": "ICH.D.10.8.R.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.5",
+      "tag_key": "ICH.D.10.8.R.5",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.5",
+      "tag_key": "ICH.D.10.8.R.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.6a",
+      "tag_key": "ICH.D.10.8.R.6A",
+      "severity": "",
+      "message": "Optional, but required if D.10.8.r.6b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.6a",
+      "tag_key": "ICH.D.10.8.R.6A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.6a",
+      "tag_key": "ICH.D.10.8.R.6A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.10.8.r.6b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.6b",
+      "tag_key": "ICH.D.10.8.R.6B",
+      "severity": "",
+      "message": "Optional, but required if D.10.8.r.6a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.6b",
+      "tag_key": "ICH.D.10.8.R.6B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.6b",
+      "tag_key": "ICH.D.10.8.R.6B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.10.8.r.6a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.7a",
+      "tag_key": "ICH.D.10.8.R.7A",
+      "severity": "",
+      "message": "Optional, but required if D.10.8.r.7b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.7a",
+      "tag_key": "ICH.D.10.8.R.7A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.7a",
+      "tag_key": "ICH.D.10.8.R.7A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.10.8.r.7b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.7b",
+      "tag_key": "ICH.D.10.8.R.7B",
+      "severity": "",
+      "message": "Optional, but required if D.10.8.r.7a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.7b",
+      "tag_key": "ICH.D.10.8.R.7B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.10.8.r.7b",
+      "tag_key": "ICH.D.10.8.R.7B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.10.8.r.7a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.1",
+      "tag_key": "ICH.D.2.1",
+      "severity": "",
+      "message": "Minimum precision required is the day (i.e. \u2018CCYYMMDD\u2019).\nThe date specified cannot refer to a future date.\nIf the date of birth is known to the sender but cannot be transmitted due to data privacy requirements, this data element should be left blank with nullFlavor = MSK.\nPlease see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.1",
+      "tag_key": "ICH.D.2.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2.1a",
+      "tag_key": "ICH.D.2.2.1A",
+      "severity": "",
+      "message": "Optional, but required if D.2.2.1b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2.1a",
+      "tag_key": "ICH.D.2.2.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2.1a",
+      "tag_key": "ICH.D.2.2.1A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.2.2.1b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2.1b",
+      "tag_key": "ICH.D.2.2.1B",
+      "severity": "",
+      "message": "Optional, but required if D.2.2.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2.1b",
+      "tag_key": "ICH.D.2.2.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2.1b",
+      "tag_key": "ICH.D.2.2.1B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.2.2.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2a",
+      "tag_key": "ICH.D.2.2A",
+      "severity": "",
+      "message": "Optional, but required if D.2.2b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2a",
+      "tag_key": "ICH.D.2.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2a",
+      "tag_key": "ICH.D.2.2A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.2.2b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2b",
+      "tag_key": "ICH.D.2.2B",
+      "severity": "",
+      "message": "Optional, but required if D.2.2a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2b",
+      "tag_key": "ICH.D.2.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.2b",
+      "tag_key": "ICH.D.2.2B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.2.2a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.3",
+      "tag_key": "ICH.D.2.3",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.2.3",
+      "tag_key": "ICH.D.2.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.3",
+      "tag_key": "ICH.D.3",
+      "severity": "",
+      "message": "Fractions or decimals are allowed using a period (dot).  No commas are allowed in this numeric data element."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.3",
+      "tag_key": "ICH.D.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.4",
+      "tag_key": "ICH.D.4",
+      "severity": "",
+      "message": "Provide rounded number.   No fractions, decimals, and commas are allowed in this numeric data element."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.4",
+      "tag_key": "ICH.D.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.5",
+      "tag_key": "ICH.D.5",
+      "severity": "",
+      "message": "If the sex is known to the sender but cannot be transmitted due to data privacy requirements, then leave the data element blank and use the nullFlavor element with 'MSK' as masked.   Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.5",
+      "tag_key": "ICH.D.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.6",
+      "tag_key": "ICH.D.6",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.6",
+      "tag_key": "ICH.D.6",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.1a",
+      "tag_key": "ICH.D.7.1.R.1A",
+      "severity": "",
+      "message": "Optional, but required if D.7.1.r.1b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.1a",
+      "tag_key": "ICH.D.7.1.R.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.1a",
+      "tag_key": "ICH.D.7.1.R.1A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.7.1.r.1b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.1b",
+      "tag_key": "ICH.D.7.1.R.1B",
+      "severity": "",
+      "message": "Optional, but required if D.7.1.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.1b",
+      "tag_key": "ICH.D.7.1.R.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.1b",
+      "tag_key": "ICH.D.7.1.R.1B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.7.1.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.2",
+      "tag_key": "ICH.D.7.1.R.2",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.2",
+      "tag_key": "ICH.D.7.1.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.3",
+      "tag_key": "ICH.D.7.1.R.3",
+      "severity": "",
+      "message": "Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.3",
+      "tag_key": "ICH.D.7.1.R.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.4",
+      "tag_key": "ICH.D.7.1.R.4",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.4",
+      "tag_key": "ICH.D.7.1.R.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.5",
+      "tag_key": "ICH.D.7.1.R.5",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.5",
+      "tag_key": "ICH.D.7.1.R.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.6",
+      "tag_key": "ICH.D.7.1.R.6",
+      "severity": "",
+      "message": "When Parent Medical history already is provided in D.10.7, do not set this data element to 'true' (Yes) for similar medical concepts also coded for the patient."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.1.r.6",
+      "tag_key": "ICH.D.7.1.R.6",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.2",
+      "tag_key": "ICH.D.7.2",
+      "severity": "",
+      "message": "Optional, but required if Section D.7.1 is null.\nThis data element captures information about any other medical history\nthat could not be coded in D.7.1.r.\nAlso, the term \u2018None\u2019 should be used here when there is no relevant\nmedical history and no concurrent conditions reported.\nIf relevant medical history is not documented at the time of the report, this\ndata element is set to unknown (i.e. nullFlavor=UNK) and should not be\nconfused with \u2018None\u2019.\nIf the relevant medical history is unknown to the sender (e.g. not reported), this data element should be left blank with nullFlavor = UNK.\nPlease see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.2",
+      "tag_key": "ICH.D.7.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.2",
+      "tag_key": "ICH.D.7.2",
+      "severity": "rejection",
+      "message": "Optional, but required if Section D.7.1 is null."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.3",
+      "tag_key": "ICH.D.7.3",
+      "severity": "",
+      "message": "This data element indicates at the time of the reaction there were\nconcomitant therapies such as radiotherapy, drug class, dietary\nsupplements or other products not otherwise describable in Section G.\nWhen this data element is set to \u2018true\u2019, details should be provided in the\nnarrative Section H.1."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.7.3",
+      "tag_key": "ICH.D.7.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.1",
+      "tag_key": "ICH.D.8.R.1",
+      "severity": "",
+      "message": "Optional, but required by the schema if any data element in section D.8.r\nis used.\nNullflavor=NA should be used when there is no previous exposure to a drug or vaccine.\nNull flavor = UNK is allowed when there is previous drug history but the name of the drug or vaccine is not known."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.1",
+      "tag_key": "ICH.D.8.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.1",
+      "tag_key": "ICH.D.8.R.1",
+      "severity": "rejection",
+      "message": "Optional, but required by the schema if any data element in section D.8.r\nis used."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.2a",
+      "tag_key": "ICH.D.8.R.2A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.2a",
+      "tag_key": "ICH.D.8.R.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.2b",
+      "tag_key": "ICH.D.8.R.2B",
+      "severity": "",
+      "message": "Any given drug entry may have either MPID or PhPID, but NOT both."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.2b",
+      "tag_key": "ICH.D.8.R.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.3a",
+      "tag_key": "ICH.D.8.R.3A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.3a",
+      "tag_key": "ICH.D.8.R.3A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.3b",
+      "tag_key": "ICH.D.8.R.3B",
+      "severity": "",
+      "message": "Any given drug entry may have either MPID or PhPID, but NOT both."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.3b",
+      "tag_key": "ICH.D.8.R.3B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.4",
+      "tag_key": "ICH.D.8.R.4",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.4",
+      "tag_key": "ICH.D.8.R.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.5",
+      "tag_key": "ICH.D.8.R.5",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.5",
+      "tag_key": "ICH.D.8.R.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.6a",
+      "tag_key": "ICH.D.8.R.6A",
+      "severity": "",
+      "message": "Optional, but required if D.8.r.6b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.6a",
+      "tag_key": "ICH.D.8.R.6A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.6a",
+      "tag_key": "ICH.D.8.R.6A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.8.r.6b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.6b",
+      "tag_key": "ICH.D.8.R.6B",
+      "severity": "",
+      "message": "Optional, but required if D.8.r.6a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.6b",
+      "tag_key": "ICH.D.8.R.6B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.6b",
+      "tag_key": "ICH.D.8.R.6B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.8.r.6a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.7a",
+      "tag_key": "ICH.D.8.R.7A",
+      "severity": "",
+      "message": "Optional, but required if D.8.r.7b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.7a",
+      "tag_key": "ICH.D.8.R.7A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.7a",
+      "tag_key": "ICH.D.8.R.7A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.8.r.7b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.7b",
+      "tag_key": "ICH.D.8.R.7B",
+      "severity": "",
+      "message": "Optional, but required if D.8.r.7a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.7b",
+      "tag_key": "ICH.D.8.R.7B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.8.r.7b",
+      "tag_key": "ICH.D.8.R.7B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.8.r.7a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.1",
+      "tag_key": "ICH.D.9.1",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.1",
+      "tag_key": "ICH.D.9.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.1",
+      "tag_key": "ICH.D.9.1",
+      "severity": "rejection",
+      "message": "For premarket ICSRs, if Results in Death (E.i.3.2a) is ture then Date of Death is required."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.2.r.1a",
+      "tag_key": "ICH.D.9.2.R.1A",
+      "severity": "",
+      "message": "Optional, but required if D.9.2.r.1b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.2.r.1a",
+      "tag_key": "ICH.D.9.2.R.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.2.r.1a",
+      "tag_key": "ICH.D.9.2.R.1A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.9.2.r.1b is populated. Only 1 MedDRA version is allowed per ICSR. For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.2.r.1b",
+      "tag_key": "ICH.D.9.2.R.1B",
+      "severity": "",
+      "message": "Optional, but required if D.9.2.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.2.r.1b",
+      "tag_key": "ICH.D.9.2.R.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.2.r.1b",
+      "tag_key": "ICH.D.9.2.R.1B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.9.2.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.2.r.2",
+      "tag_key": "ICH.D.9.2.R.2",
+      "severity": "",
+      "message": "Optional, but required if D.9.2.r.1 is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.2.r.2",
+      "tag_key": "ICH.D.9.2.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.2.r.2",
+      "tag_key": "ICH.D.9.2.R.2",
+      "severity": "rejection",
+      "message": "Optional, but required if D.9.2.r.1 is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.3",
+      "tag_key": "ICH.D.9.3",
+      "severity": "",
+      "message": "Optional, but required if D.9.1 is populated\nPlease see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.3",
+      "tag_key": "ICH.D.9.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.3",
+      "tag_key": "ICH.D.9.3",
+      "severity": "rejection",
+      "message": "Optional, but required if D.9.1 is populated\nPlease see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.4.r.1a",
+      "tag_key": "ICH.D.9.4.R.1A",
+      "severity": "",
+      "message": "Optional, but required if D.9.4.r.1b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.4.r.1a",
+      "tag_key": "ICH.D.9.4.R.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.4.r.1a",
+      "tag_key": "ICH.D.9.4.R.1A",
+      "severity": "rejection",
+      "message": "Optional, but required if D.9.4.r.1b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.4.r.1b",
+      "tag_key": "ICH.D.9.4.R.1B",
+      "severity": "",
+      "message": "Optional, but required if D.9.4.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.4.r.1b",
+      "tag_key": "ICH.D.9.4.R.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.4.r.1b",
+      "tag_key": "ICH.D.9.4.R.1B",
+      "severity": "rejection",
+      "message": "Optional, but required if D.9.4.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.4.r.2",
+      "tag_key": "ICH.D.9.4.R.2",
+      "severity": "",
+      "message": "Optional, but required if D.9.4.r.1 is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.4.r.2",
+      "tag_key": "ICH.D.9.4.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "D.9.4.r.2",
+      "tag_key": "ICH.D.9.4.R.2",
+      "severity": "rejection",
+      "message": "Optional, but required if D.9.4.r.1 is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.1.1a",
+      "tag_key": "ICH.E.I.1.1A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.1.1a",
+      "tag_key": "ICH.E.I.1.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.1.1b",
+      "tag_key": "ICH.E.I.1.1B",
+      "severity": "",
+      "message": "Optional, but required if E.i.1.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.1.1b",
+      "tag_key": "ICH.E.I.1.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.1.1b",
+      "tag_key": "ICH.E.I.1.1B",
+      "severity": "rejection",
+      "message": "Optional, but required if E.i.1.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.1.2",
+      "tag_key": "ICH.E.I.1.2",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.1.2",
+      "tag_key": "ICH.E.I.1.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.2.1a",
+      "tag_key": "ICH.E.I.2.1A",
+      "severity": "",
+      "message": "Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.2.1a",
+      "tag_key": "ICH.E.I.2.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.2.1b",
+      "tag_key": "ICH.E.I.2.1B",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.2.1b",
+      "tag_key": "ICH.E.I.2.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.1",
+      "tag_key": "ICH.E.I.3.1",
+      "severity": "",
+      "message": "See E.i.3.2 for the 'seriousness' assessment of the highlighted term."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.1",
+      "tag_key": "ICH.E.I.3.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2a",
+      "tag_key": "ICH.E.I.3.2A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2a",
+      "tag_key": "ICH.E.I.3.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2b",
+      "tag_key": "ICH.E.I.3.2B",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2b",
+      "tag_key": "ICH.E.I.3.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2c",
+      "tag_key": "ICH.E.I.3.2C",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2c",
+      "tag_key": "ICH.E.I.3.2C",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2d",
+      "tag_key": "ICH.E.I.3.2D",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2d",
+      "tag_key": "ICH.E.I.3.2D",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2e",
+      "tag_key": "ICH.E.I.3.2E",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2e",
+      "tag_key": "ICH.E.I.3.2E",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2f",
+      "tag_key": "ICH.E.I.3.2F",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.3.2f",
+      "tag_key": "ICH.E.I.3.2F",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.4",
+      "tag_key": "ICH.E.I.4",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.4",
+      "tag_key": "ICH.E.I.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.5",
+      "tag_key": "ICH.E.I.5",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. \"CCYY\").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.5",
+      "tag_key": "ICH.E.I.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.6a",
+      "tag_key": "ICH.E.I.6A",
+      "severity": "",
+      "message": "Optional, but required if E.i.6b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.6a",
+      "tag_key": "ICH.E.I.6A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.6a",
+      "tag_key": "ICH.E.I.6A",
+      "severity": "rejection",
+      "message": "Optional, but required if E.i.6b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.6b",
+      "tag_key": "ICH.E.I.6B",
+      "severity": "",
+      "message": "Optional, but required if E.i.6a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.6b",
+      "tag_key": "ICH.E.I.6B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.6b",
+      "tag_key": "ICH.E.I.6B",
+      "severity": "rejection",
+      "message": "Optional, but required if E.i.6a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.7",
+      "tag_key": "ICH.E.I.7",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.7",
+      "tag_key": "ICH.E.I.7",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.8",
+      "tag_key": "ICH.E.I.8",
+      "severity": "",
+      "message": "False' means the event is not confirmed, it does not mean the event did not occur.   If the event is reported by a healthcare professional, this is not transmitted."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.8",
+      "tag_key": "ICH.E.I.8",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.9",
+      "tag_key": "ICH.E.I.9",
+      "severity": "",
+      "message": "A two character country code will be used in all instances.   The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union.   In this case, 'EU' will be accepted as the country code."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "E.i.9",
+      "tag_key": "ICH.E.I.9",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.1",
+      "tag_key": "ICH.F.R.1",
+      "severity": "",
+      "message": "Optional, but required if F.r.2 is populated. Minimum precision required is the year (i.e. 'CCYY').  The date specified cannot refer to a future date.  If the test date is unknown, use NullFlavor =UNK.  Please see sectin 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted data."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.1",
+      "tag_key": "ICH.F.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.1",
+      "tag_key": "ICH.F.R.1",
+      "severity": "rejection",
+      "message": "Optional, but required if F.r.2 is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.2.1",
+      "tag_key": "ICH.F.R.2.1",
+      "severity": "",
+      "message": "Optional, but required if F.r.1 is populated and F.r.2.2b is not populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.2.1",
+      "tag_key": "ICH.F.R.2.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.2.1",
+      "tag_key": "ICH.F.R.2.1",
+      "severity": "rejection",
+      "message": "Optional, but required if F.r.1 is populated and F.r.2.2b is not populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.2.2a",
+      "tag_key": "ICH.F.R.2.2A",
+      "severity": "",
+      "message": "Optional, but required when F.r.2.2b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.2.2a",
+      "tag_key": "ICH.F.R.2.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.2.2a",
+      "tag_key": "ICH.F.R.2.2A",
+      "severity": "rejection",
+      "message": "Optional, but required when F.r.2.2b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.2.2b",
+      "tag_key": "ICH.F.R.2.2B",
+      "severity": "",
+      "message": "Optional, but required when F.r.1 is populated and F.r.2.1 is not populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.2.2b",
+      "tag_key": "ICH.F.R.2.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.2.2b",
+      "tag_key": "ICH.F.R.2.2B",
+      "severity": "rejection",
+      "message": "Optional, but required when F.r.1 is populated and F.r.2.1 is not populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.1",
+      "tag_key": "ICH.F.R.3.1",
+      "severity": "",
+      "message": "Optional, but required if F.r.2 is populated, and neither F.r.3.2 nor F.r.3.4 is populated. This data element can be used when a numeric value cannot describe the result."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.1",
+      "tag_key": "ICH.F.R.3.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.1",
+      "tag_key": "ICH.F.R.3.1",
+      "severity": "rejection",
+      "message": "Optional, but required if F.r.2 is populated, and neither F.r.3.2 nor F.r.3.4 is populated. This data element can be used when a numeric value cannot describe the result."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.2",
+      "tag_key": "ICH.F.R.3.2",
+      "severity": "",
+      "message": "Optional, but required if F.r.2 is populated, and F.r.3.1 and F.r.3.4 is not populated. If results and units cannot be split, F.r.3.4 should be used."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.2",
+      "tag_key": "ICH.F.R.3.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.2",
+      "tag_key": "ICH.F.R.3.2",
+      "severity": "rejection",
+      "message": "Optional, but required if F.r.2 is populated, and F.r.3.1 and F.r.3.4 is not populated. If results and units cannot be split, F.r.3.4 should be used."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.3",
+      "tag_key": "ICH.F.R.3.3",
+      "severity": "",
+      "message": "Optional, but required if F.r.3.2 is populated. Constrained UCUM is not provided for this unit.  Select most appropriate unit from UCUM codes."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.3",
+      "tag_key": "ICH.F.R.3.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.3",
+      "tag_key": "ICH.F.R.3.3",
+      "severity": "rejection",
+      "message": "Optional, but required if F.r.3.2 is populated. Constrained UCUM is not provided for this unit.  Select most appropriate unit from UCUM codes."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.4",
+      "tag_key": "ICH.F.R.3.4",
+      "severity": "",
+      "message": "Optional, but required if F.r.2 is populated, and F.r.3 is not populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.4",
+      "tag_key": "ICH.F.R.3.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.3.4",
+      "tag_key": "ICH.F.R.3.4",
+      "severity": "rejection",
+      "message": "Optional, but required if F.r.2 is populated, and F.r.3 is not populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.4",
+      "tag_key": "ICH.F.R.4",
+      "severity": "",
+      "message": "The value will be transmitted as physical quantity (PQ) as separate amount and unit and following line indicates this value is normal low value:\n<valuexsi:type=\"PQ\" value=\"40\" unit=\"mg/dl\"/>\n<interpretationCode code=\"L\"codeSystem=\"2.16.840.1.113883.5.83\"/>"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.4",
+      "tag_key": "ICH.F.R.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.5",
+      "tag_key": "ICH.F.R.5",
+      "severity": "",
+      "message": "The value will be transmitted as physical quantity (PQ) as separate amount and unit and following line indicates this value is normal high value :\n<valuexsi:type=\"PQ\" value=\"80\" unit=\"mg/dl\"/>\n<interpretationCode code=\"H\"codeSystem=\"2.16.840.1.113883.5.83\"/>"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.5",
+      "tag_key": "ICH.F.R.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.6",
+      "tag_key": "ICH.F.R.6",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.6",
+      "tag_key": "ICH.F.R.6",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.7",
+      "tag_key": "ICH.F.R.7",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "F.r.7",
+      "tag_key": "ICH.F.R.7",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "FDA.G.k.10a",
+      "tag_key": "ICH.FDA.G.K.10A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.1",
+      "tag_key": "ICH.G.K.1",
+      "severity": "",
+      "message": "Each ICSR must contain at least one 'Suspect', 'Interacting', or 'Drug Not Administered'"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.1",
+      "tag_key": "ICH.G.K.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.1",
+      "tag_key": "ICH.G.K.1",
+      "severity": "warning",
+      "message": "For postmarket ICSRs\nThe first product (under section G) should have this data element answered as \u20181\u2019 (=Suspect) or \u20183\u2019 (=Interacting), unless the product has at least once device constituent part where Malfunction (FDA.G.k.12.r.1) is \u201ctrue\u201d, in which case the Observation Code: (Value allowed: 1, 3, 4)"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.10.r",
+      "tag_key": "ICH.G.K.10.R",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.10.r",
+      "tag_key": "ICH.G.K.10.R",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.11",
+      "tag_key": "ICH.G.K.11",
+      "severity": "",
+      "message": "If provided, this element needs to be separated and independent from any value selected in the code list for G.k.10.r"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.11",
+      "tag_key": "ICH.G.K.11",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.1.1a",
+      "tag_key": "ICH.G.K.2.1.1A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.1.1a",
+      "tag_key": "ICH.G.K.2.1.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.1.1b",
+      "tag_key": "ICH.G.K.2.1.1B",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.1.1b",
+      "tag_key": "ICH.G.K.2.1.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.1.2a",
+      "tag_key": "ICH.G.K.2.1.2A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.1.2a",
+      "tag_key": "ICH.G.K.2.1.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.1.2b",
+      "tag_key": "ICH.G.K.2.1.2B",
+      "severity": "",
+      "message": "Any given drug entry may have either MPID or PhPID, but NOT both."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.1.2b",
+      "tag_key": "ICH.G.K.2.1.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.2",
+      "tag_key": "ICH.G.K.2.2",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.2",
+      "tag_key": "ICH.G.K.2.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.2",
+      "tag_key": "ICH.G.K.2.2",
+      "severity": "warning",
+      "message": "For premarket ICSRs, Medicinal Product Name as Reported by the Primary Source (G.k.2.2) does not match the product name for the application number provided in IND Number where AE Occurred (FDA.C.5.5a) or Pre-ANDA Number where AE Occurred (FDA.C.5.5b)"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.1",
+      "tag_key": "ICH.G.K.2.3.R.1",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.1",
+      "tag_key": "ICH.G.K.2.3.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.2a",
+      "tag_key": "ICH.G.K.2.3.R.2A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.2a",
+      "tag_key": "ICH.G.K.2.3.R.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.2b",
+      "tag_key": "ICH.G.K.2.3.R.2B",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.2b",
+      "tag_key": "ICH.G.K.2.3.R.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.3a",
+      "tag_key": "ICH.G.K.2.3.R.3A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.3a",
+      "tag_key": "ICH.G.K.2.3.R.3A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.3b",
+      "tag_key": "ICH.G.K.2.3.R.3B",
+      "severity": "",
+      "message": "Optional, but required if G.k.2.3.r.3a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.3b",
+      "tag_key": "ICH.G.K.2.3.R.3B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.3.r.3b",
+      "tag_key": "ICH.G.K.2.3.R.3B",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.2.3.r.3a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.4",
+      "tag_key": "ICH.G.K.2.4",
+      "severity": "",
+      "message": "A two character country code will be used in all instances.   The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union.   In this case, 'EU' will be accepted as a country code."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.4",
+      "tag_key": "ICH.G.K.2.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.5",
+      "tag_key": "ICH.G.K.2.5",
+      "severity": "",
+      "message": "The value for this data element should be set to 'true' for ICSRs from clinical trials when the product status is still blinded at the time the ICSR is created.  Otherwise, this data element should not be transmitted."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.2.5",
+      "tag_key": "ICH.G.K.2.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.3.1",
+      "tag_key": "ICH.G.K.3.1",
+      "severity": "",
+      "message": "The following notation will be used to represent G.k.3.1:\n<id extension=\"authorisation / application number\" root=\"2.16.840.1.113883.3.989.2.1.3.4\"/>\nThe root indicates the namespace of G.k.3.1, the actual authorisation/ application number is populated at id extension."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.3.1",
+      "tag_key": "ICH.G.K.3.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.3.1",
+      "tag_key": "ICH.G.K.3.1",
+      "severity": "rejection",
+      "message": "Authorisation / Application Number (G.K.3.1) should not contain \u201cIND\u201d or \u201cPANDA\u201d number when Batch Receiver Identifier (N.1.4) = \u201cZZFDA\u201d and Message Receiver Identifier (N.2.r.3) = \"CDER\" and Type of Report (C.1.3) = 2 and Study Type Where Reaction(s) / Event(s) Were Observed (C.5.4) = 2 or 3"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.3.2",
+      "tag_key": "ICH.G.K.3.2",
+      "severity": "",
+      "message": "Optional, but required if G.k.3.1 is provided.\nA two character country code will be used in all instances. The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union. In this case, \u2018EU\u2019 will be accepted as the country code."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.3.2",
+      "tag_key": "ICH.G.K.3.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.3.2",
+      "tag_key": "ICH.G.K.3.2",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.3.1 is provided."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.3.3",
+      "tag_key": "ICH.G.K.3.3",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.3.3",
+      "tag_key": "ICH.G.K.3.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.10.1",
+      "tag_key": "ICH.G.K.4.R.10.1",
+      "severity": "",
+      "message": "Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.10.1",
+      "tag_key": "ICH.G.K.4.R.10.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.10.2a",
+      "tag_key": "ICH.G.K.4.R.10.2A",
+      "severity": "",
+      "message": "Whereas each individual EDQM term has a version number and a\nversion date it is not required to transmit this information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.10.2a",
+      "tag_key": "ICH.G.K.4.R.10.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.10.2b",
+      "tag_key": "ICH.G.K.4.R.10.2B",
+      "severity": "",
+      "message": "Example:\nROA-20001000"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.10.2b",
+      "tag_key": "ICH.G.K.4.R.10.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.11.1",
+      "tag_key": "ICH.G.K.4.R.11.1",
+      "severity": "",
+      "message": "Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.11.1",
+      "tag_key": "ICH.G.K.4.R.11.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.11.2a",
+      "tag_key": "ICH.G.K.4.R.11.2A",
+      "severity": "",
+      "message": "Whereas each individual EDQM term has a version number and a\nversion date it is not required to transmit this information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.11.2a",
+      "tag_key": "ICH.G.K.4.R.11.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.11.2b",
+      "tag_key": "ICH.G.K.4.R.11.2B",
+      "severity": "",
+      "message": "Example:\nROA-20001000"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.11.2b",
+      "tag_key": "ICH.G.K.4.R.11.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.1a",
+      "tag_key": "ICH.G.K.4.R.1A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.1a",
+      "tag_key": "ICH.G.K.4.R.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.1b",
+      "tag_key": "ICH.G.K.4.R.1B",
+      "severity": "",
+      "message": "Optional, but required if G.k.4.r.1a is populated.\nUCUM allows using non-unit expression for symbols not in UCUM.  In this case, {DF} can be used in XML message."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.1b",
+      "tag_key": "ICH.G.K.4.R.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.1b",
+      "tag_key": "ICH.G.K.4.R.1B",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.4.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.2",
+      "tag_key": "ICH.G.K.4.R.2",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.2",
+      "tag_key": "ICH.G.K.4.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.3",
+      "tag_key": "ICH.G.K.4.R.3",
+      "severity": "",
+      "message": "Optional, but required if G.k.4.r.2 is populated. \nUCUM allows using non-unit expression for symbols not in UCUM. In this case, {cyclical}, {as necessary}, and {total} can be used in XML message."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.3",
+      "tag_key": "ICH.G.K.4.R.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.3",
+      "tag_key": "ICH.G.K.4.R.3",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.4.r.2 is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.4",
+      "tag_key": "ICH.G.K.4.R.4",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. 'CCYY').  The date specified cannot refer to a future date. Please see sectin 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted data."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.4",
+      "tag_key": "ICH.G.K.4.R.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.5",
+      "tag_key": "ICH.G.K.4.R.5",
+      "severity": "",
+      "message": "Minimum precision required is the year (i.e. 'CCYY').  The date specified cannot refer to a future date.  Please see sectin 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted data."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.5",
+      "tag_key": "ICH.G.K.4.R.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.6a",
+      "tag_key": "ICH.G.K.4.R.6A",
+      "severity": "",
+      "message": "Optional, but required if G.k.4.r.6b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.6a",
+      "tag_key": "ICH.G.K.4.R.6A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.6a",
+      "tag_key": "ICH.G.K.4.R.6A",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.4.r.6b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.6b",
+      "tag_key": "ICH.G.K.4.R.6B",
+      "severity": "",
+      "message": "Optional, but required if G.k.4.r.6a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.6b",
+      "tag_key": "ICH.G.K.4.R.6B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.6b",
+      "tag_key": "ICH.G.K.4.R.6B",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.4.r.6a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.7",
+      "tag_key": "ICH.G.K.4.R.7",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.7",
+      "tag_key": "ICH.G.K.4.R.7",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.8",
+      "tag_key": "ICH.G.K.4.R.8",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.8",
+      "tag_key": "ICH.G.K.4.R.8",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.9.1",
+      "tag_key": "ICH.G.K.4.R.9.1",
+      "severity": "",
+      "message": "Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.9.1",
+      "tag_key": "ICH.G.K.4.R.9.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.9.2a",
+      "tag_key": "ICH.G.K.4.R.9.2A",
+      "severity": "",
+      "message": "Whereas each individual EDQM term has a version number and a\nversion date it is not required to transmit this information"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.9.2a",
+      "tag_key": "ICH.G.K.4.R.9.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.9.2b",
+      "tag_key": "ICH.G.K.4.R.9.2B",
+      "severity": "",
+      "message": "Examples:\nBDF-0069, PDF-11008000, PFT-16040, CDF-50041200"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.4.r.9.2b",
+      "tag_key": "ICH.G.K.4.R.9.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.5a",
+      "tag_key": "ICH.G.K.5A",
+      "severity": "",
+      "message": "Optional, but required if G.k.5b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.5a",
+      "tag_key": "ICH.G.K.5A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.5a",
+      "tag_key": "ICH.G.K.5A",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.5b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.5b",
+      "tag_key": "ICH.G.K.5B",
+      "severity": "",
+      "message": "Optional, but required if G.k.5a is populated.\nUCUM allows using non-unit expression for symbols not in UCUM.   In this case, {DF} can be used in XML message."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.5b",
+      "tag_key": "ICH.G.K.5B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.5b",
+      "tag_key": "ICH.G.K.5B",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.5a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.6a",
+      "tag_key": "ICH.G.K.6A",
+      "severity": "",
+      "message": "Optional, but required if G.k.6b is populated.\nThe gestational age is expressed in terms of days, weeks, months, or trimester (G.k.6b)."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.6a",
+      "tag_key": "ICH.G.K.6A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.6a",
+      "tag_key": "ICH.G.K.6A",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.6b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.6b",
+      "tag_key": "ICH.G.K.6B",
+      "severity": "",
+      "message": "Optional, but required if G.k.6a is populated.\nUnits commonly used in clinical practice but not defined in UCUM can be trasmitted using curly braces like e.g. {trimester}."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.6b",
+      "tag_key": "ICH.G.K.6B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.6b",
+      "tag_key": "ICH.G.K.6B",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.6a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.7.r.1",
+      "tag_key": "ICH.G.K.7.R.1",
+      "severity": "",
+      "message": "Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.  Please use nullFlavor with original text attribute in the XML instance (See Appendix I (D) the Reference Instance)."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.7.r.1",
+      "tag_key": "ICH.G.K.7.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.7.r.2a",
+      "tag_key": "ICH.G.K.7.R.2A",
+      "severity": "",
+      "message": "Optional, but required if G.k.7.r.2b is populated.\nOnly 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.7.r.2a",
+      "tag_key": "ICH.G.K.7.R.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.7.r.2a",
+      "tag_key": "ICH.G.K.7.R.2A",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.7.r.2b is populated.\nOnly 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.7.r.2b",
+      "tag_key": "ICH.G.K.7.R.2B",
+      "severity": "",
+      "message": "Optional, but required if G.k.7.r.2a is populated.\nIf nullFlavor is used in G.k.7.r.1, select an appropriate MedDRA term to reflect that the indication is not available."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.7.r.2b",
+      "tag_key": "ICH.G.K.7.R.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.7.r.2b",
+      "tag_key": "ICH.G.K.7.R.2B",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.7.r.2a is populated.\nIf nullFlavor is used in G.k.7.r.1, select an appropriate MedDRA term to reflect that the indication is not available."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.8",
+      "tag_key": "ICH.G.K.8",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.8",
+      "tag_key": "ICH.G.K.8",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.1",
+      "tag_key": "ICH.G.K.9.I.1",
+      "severity": "",
+      "message": "This is not a user entered element."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.1",
+      "tag_key": "ICH.G.K.9.I.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.2.r.1",
+      "tag_key": "ICH.G.K.9.I.2.R.1",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.2.r.1",
+      "tag_key": "ICH.G.K.9.I.2.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.2.r.1",
+      "tag_key": "ICH.G.K.9.I.2.R.1",
+      "severity": "rejection",
+      "message": "For premarket ICSRs\nRequired, if Element Value for Type of Report (C.1.3) is 2 (=Report from study) and IND Number where AE Occurred (FDA.C.5.5a) is provided.\nDefault Source of Assessment (G.k.9.i.2.r.1 ) to \"Sponsor\""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.2.r.2",
+      "tag_key": "ICH.G.K.9.I.2.R.2",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.2.r.2",
+      "tag_key": "ICH.G.K.9.I.2.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.2.r.2",
+      "tag_key": "ICH.G.K.9.I.2.R.2",
+      "severity": "rejection",
+      "message": "For premarket ICSRs\nRequired, if Element Value for Type of Report (C.1.3) is 2 (=Report from study) and IND Number where AE Occurred (FDA.C.5.5a) is provided.\nDefault Method of Assessment (G.k.9.i.2.r.2) to \u201cFDA\u201d to differentiate from other assessment methods."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.2.r.3",
+      "tag_key": "ICH.G.K.9.I.2.R.3",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.2.r.3",
+      "tag_key": "ICH.G.K.9.I.2.R.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.2.r.3",
+      "tag_key": "ICH.G.K.9.I.2.R.3",
+      "severity": "rejection",
+      "message": "For premarket ICSRs\nRequired, if Element Value for Type of Report (C.1.3) is 2 (=Report from study) and IND Number where AE Occurred (FDA.C.5.5a) is provided\nFor IND Safety Reports, at least one suspect product should have relatedness of drug to reaction/event\nFor Result of Assessment (G.k.9.i.2.r.3) use the value \"Suspected\" or \"Not Suspected\""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.1a",
+      "tag_key": "ICH.G.K.9.I.3.1A",
+      "severity": "",
+      "message": "Optional, but required if G.k.9.i.3.1b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.1a",
+      "tag_key": "ICH.G.K.9.I.3.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.1a",
+      "tag_key": "ICH.G.K.9.I.3.1A",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.9.i.3.1b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.1b",
+      "tag_key": "ICH.G.K.9.I.3.1B",
+      "severity": "",
+      "message": "Optional, but required if G.k.9.i.3.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.1b",
+      "tag_key": "ICH.G.K.9.I.3.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.1b",
+      "tag_key": "ICH.G.K.9.I.3.1B",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.9.i.3.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.2a",
+      "tag_key": "ICH.G.K.9.I.3.2A",
+      "severity": "",
+      "message": "Optional, but required if G.k.9.i.3.2b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.2a",
+      "tag_key": "ICH.G.K.9.I.3.2A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.2a",
+      "tag_key": "ICH.G.K.9.I.3.2A",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.9.i.3.2b is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.2b",
+      "tag_key": "ICH.G.K.9.I.3.2B",
+      "severity": "",
+      "message": "Optional, but required if G.k.9.i.3.2a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.2b",
+      "tag_key": "ICH.G.K.9.I.3.2B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.3.2b",
+      "tag_key": "ICH.G.K.9.I.3.2B",
+      "severity": "rejection",
+      "message": "Optional, but required if G.k.9.i.3.2a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.4",
+      "tag_key": "ICH.G.K.9.I.4",
+      "severity": "",
+      "message": "If the sender does not know whether a rechallenge was performed, this data element should not be transmitted."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "G.k.9.i.4",
+      "tag_key": "ICH.G.K.9.I.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.1",
+      "tag_key": "ICH.H.1",
+      "severity": "",
+      "message": "Each ICSR must include a narrative.  This data element should not be confused with Reporter's or Sender's comments."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.1",
+      "tag_key": "ICH.H.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.2",
+      "tag_key": "ICH.H.2",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.2",
+      "tag_key": "ICH.H.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.3.r.1a",
+      "tag_key": "ICH.H.3.R.1A",
+      "severity": "",
+      "message": "Optional, but required if H.3.r.1b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.3.r.1a",
+      "tag_key": "ICH.H.3.R.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.3.r.1a",
+      "tag_key": "ICH.H.3.R.1A",
+      "severity": "rejection",
+      "message": "Optional, but required if H.3.r.1b is populated. Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.3.r.1b",
+      "tag_key": "ICH.H.3.R.1B",
+      "severity": "",
+      "message": "Optional, but required if H.3.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.3.r.1b",
+      "tag_key": "ICH.H.3.R.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.3.r.1b",
+      "tag_key": "ICH.H.3.R.1B",
+      "severity": "rejection",
+      "message": "Optional, but required if H.3.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.4",
+      "tag_key": "ICH.H.4",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.4",
+      "tag_key": "ICH.H.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.5.r.1a",
+      "tag_key": "ICH.H.5.R.1A",
+      "severity": "",
+      "message": "-"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.5.r.1a",
+      "tag_key": "ICH.H.5.R.1A",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.5.r.1b",
+      "tag_key": "ICH.H.5.R.1B",
+      "severity": "",
+      "message": "Required if H.5.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.5.r.1b",
+      "tag_key": "ICH.H.5.R.1B",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "H.5.r.1b",
+      "tag_key": "ICH.H.5.R.1B",
+      "severity": "rejection",
+      "message": "Required if H.5.r.1a is populated."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.1",
+      "tag_key": "ICH.N.1.1",
+      "severity": "",
+      "message": "Note the \u2018Value Allowed\u2019 for this data element is case sensitive, e.g. only lower case characters should be used for this data element.\nOther codes may be used regionally."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.1",
+      "tag_key": "ICH.N.1.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.2",
+      "tag_key": "ICH.N.1.2",
+      "severity": "",
+      "message": "The following notation will be used to represent N.1.2: <id extension=\u201dbatch number\" root=\"2.16.840.1.113883.3.989.2.1.3.22\"/>\nThe root indicates the namespace of N.1.2, the actual batch number is populated at id extension."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.2",
+      "tag_key": "ICH.N.1.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.3",
+      "tag_key": "ICH.N.1.3",
+      "severity": "",
+      "message": "The following notation will be used to represent N.1.3: <id extension=\"sender identifier\" root=\"2.16.840.1.113883.3.989.2.1.3.13\"/>\nThe root indicates the namespace of N.1.3, the actual batch sender identifier is populated at id extension.\nThe sender identifier should be agreed between trading partners."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.3",
+      "tag_key": "ICH.N.1.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.4",
+      "tag_key": "ICH.N.1.4",
+      "severity": "",
+      "message": "The following notation will be used to represent N.1.4:\n<id extension=\"receiver identifier\" root=\"2.16.840.1.113883.3.989.2.1.3.14\"/>\nThe root indicates the namespace of N.1.4, the actual batch receiver identifier is populated at id extension.\nThe receiver identifier should be agreed between trading partners."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.4",
+      "tag_key": "ICH.N.1.4",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.4",
+      "tag_key": "ICH.N.1.4",
+      "severity": "rejection",
+      "message": "For ICSR sent to the postmaket route use the value \"ZZFDA\"."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.5",
+      "tag_key": "ICH.N.1.5",
+      "severity": "",
+      "message": "The full precision of date and time must be recorded down to the second.\n(i.e. \u2018CCYYMMDDhhmmss[+/-ZZzz]\u2019).\nThe date specified cannot refer to a future date.\nThe date should be local time at point of transmission of ICSR message."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.1.5",
+      "tag_key": "ICH.N.1.5",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.2.r.1",
+      "tag_key": "ICH.N.2.R.1",
+      "severity": "",
+      "message": "The value is the same as C.1.1.Therefore the notation would be:\n<id extension=\"message identifier\" root=\"2.16.840.1.113883.3.989.2.1.3.1\"/>"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.2.r.1",
+      "tag_key": "ICH.N.2.R.1",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.2.r.2",
+      "tag_key": "ICH.N.2.R.2",
+      "severity": "",
+      "message": "The following notation will be used to represent N.2.r.2:\n<id extension=\"message sender identifier\"root=\"2.16.840.1.113883.3.989.2.1.3.11\"/>\nThe root indicates the namespace of N.2.r.2, the actual message sender identifier is populated at id extension.\nThe sender identifier should be agreed between trading partners."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.2.r.2",
+      "tag_key": "ICH.N.2.R.2",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.2.r.2",
+      "tag_key": "ICH.N.2.R.2",
+      "severity": "rejection",
+      "message": "\u00fc"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.2.r.3",
+      "tag_key": "ICH.N.2.R.3",
+      "severity": "",
+      "message": "The following notation will be used to represent N.2.r.3:\n<id extension=\"message receiver identifier\" root=\"2.16.840.1.113883.3.989.2.1.3.12\"/>\nThe root indicates the namespace of N.2.r.3, the actual message receiver identifier is populated at id extension. The receiver identifier should be agreed between trading partners."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.2.r.3",
+      "tag_key": "ICH.N.2.R.3",
+      "severity": "",
+      "message": ""
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "Rejection and Warning Rules",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.2.r.3",
+      "tag_key": "ICH.N.2.R.3",
+      "severity": "rejection",
+      "message": "For postmarket ICSRs\nUse the value \"CDER\". If Batch Receiver Identifier (N.1.4) = \"ZZFDA\", then Message Receiver Identifier (N.2.r.3) must be 'CDER'"
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR Data Elements",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.2.r.4",
+      "tag_key": "ICH.N.2.R.4",
+      "severity": "",
+      "message": "The value must be the same as C.1.2.\nThe full precision of date and time must be recorded down to the second (i.e. CCYYMMDDhhmmss[+/-ZZzz])."
+    },
+    {
+      "profile": "ich",
+      "scope": "core",
+      "sheet": "ICSR XPath",
+      "sheet_kind": "unknown",
+      "tag_id_raw": "N.2.r.4",
+      "tag_key": "ICH.N.2.R.4",
+      "severity": "",
+      "message": ""
+    }
+  ]
+}

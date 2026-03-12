@@ -2,7 +2,12 @@
 //!
 //! Defines resources, actions, and the permission matrix for RBAC.
 
-use crate::ctx::{ROLE_ADMIN, ROLE_MANAGER, ROLE_USER, ROLE_VIEWER};
+use crate::ctx::{
+	ROLE_ADB_ADMIN, ROLE_ADMIN, ROLE_HEAD_PV, ROLE_MANAGER, ROLE_PVM, ROLE_PVS,
+	ROLE_SPONSOR, ROLE_USER, ROLE_VIEWER,
+};
+use std::collections::HashMap;
+use std::sync::{OnceLock, RwLock};
 
 // region:    --- Resource Enum
 
@@ -24,6 +29,7 @@ pub enum Resource {
 	DrugDosage,
 	DrugIndication,
 	DrugSubstance,
+	DrugDeviceCharacteristic,
 	DrugReactionAssessment,
 	RelatednessAssessment,
 	DrugRecurrence,
@@ -182,6 +188,17 @@ pub const DRUG_INDICATION_DELETE: Permission =
 	Permission::new(Resource::DrugIndication, Action::Delete);
 pub const DRUG_INDICATION_LIST: Permission =
 	Permission::new(Resource::DrugIndication, Action::List);
+
+pub const DRUG_DEVICE_CHARACTERISTIC_CREATE: Permission =
+	Permission::new(Resource::DrugDeviceCharacteristic, Action::Create);
+pub const DRUG_DEVICE_CHARACTERISTIC_READ: Permission =
+	Permission::new(Resource::DrugDeviceCharacteristic, Action::Read);
+pub const DRUG_DEVICE_CHARACTERISTIC_UPDATE: Permission =
+	Permission::new(Resource::DrugDeviceCharacteristic, Action::Update);
+pub const DRUG_DEVICE_CHARACTERISTIC_DELETE: Permission =
+	Permission::new(Resource::DrugDeviceCharacteristic, Action::Delete);
+pub const DRUG_DEVICE_CHARACTERISTIC_LIST: Permission =
+	Permission::new(Resource::DrugDeviceCharacteristic, Action::List);
 
 pub const DRUG_REACTION_ASSESSMENT_CREATE: Permission =
 	Permission::new(Resource::DrugReactionAssessment, Action::Create);
@@ -552,6 +569,11 @@ fn admin_permissions() -> &'static [Permission] {
 		DRUG_INDICATION_UPDATE,
 		DRUG_INDICATION_DELETE,
 		DRUG_INDICATION_LIST,
+		DRUG_DEVICE_CHARACTERISTIC_CREATE,
+		DRUG_DEVICE_CHARACTERISTIC_READ,
+		DRUG_DEVICE_CHARACTERISTIC_UPDATE,
+		DRUG_DEVICE_CHARACTERISTIC_DELETE,
+		DRUG_DEVICE_CHARACTERISTIC_LIST,
 		DRUG_REACTION_ASSESSMENT_CREATE,
 		DRUG_REACTION_ASSESSMENT_READ,
 		DRUG_REACTION_ASSESSMENT_UPDATE,
@@ -755,6 +777,11 @@ fn manager_permissions() -> &'static [Permission] {
 		DRUG_INDICATION_UPDATE,
 		DRUG_INDICATION_DELETE,
 		DRUG_INDICATION_LIST,
+		DRUG_DEVICE_CHARACTERISTIC_CREATE,
+		DRUG_DEVICE_CHARACTERISTIC_READ,
+		DRUG_DEVICE_CHARACTERISTIC_UPDATE,
+		DRUG_DEVICE_CHARACTERISTIC_DELETE,
+		DRUG_DEVICE_CHARACTERISTIC_LIST,
 		DRUG_REACTION_ASSESSMENT_CREATE,
 		DRUG_REACTION_ASSESSMENT_READ,
 		DRUG_REACTION_ASSESSMENT_UPDATE,
@@ -944,6 +971,10 @@ fn user_permissions() -> &'static [Permission] {
 		DRUG_INDICATION_READ,
 		DRUG_INDICATION_UPDATE,
 		DRUG_INDICATION_LIST,
+		DRUG_DEVICE_CHARACTERISTIC_CREATE,
+		DRUG_DEVICE_CHARACTERISTIC_READ,
+		DRUG_DEVICE_CHARACTERISTIC_UPDATE,
+		DRUG_DEVICE_CHARACTERISTIC_LIST,
 		DRUG_REACTION_ASSESSMENT_CREATE,
 		DRUG_REACTION_ASSESSMENT_READ,
 		DRUG_REACTION_ASSESSMENT_UPDATE,
@@ -1159,32 +1190,94 @@ fn viewer_permissions() -> &'static [Permission] {
 
 // endregion: --- Role Permission Mappings
 
+fn dynamic_roles() -> &'static RwLock<HashMap<String, Vec<Permission>>> {
+	static DYNAMIC_ROLES: OnceLock<RwLock<HashMap<String, Vec<Permission>>>> =
+		OnceLock::new();
+	DYNAMIC_ROLES.get_or_init(|| RwLock::new(HashMap::new()))
+}
+
+pub fn replace_dynamic_roles(map: HashMap<String, Vec<Permission>>) {
+	if let Ok(mut guard) = dynamic_roles().write() {
+		*guard = map;
+	}
+}
+
+pub fn upsert_dynamic_role_permissions(role: &str, permissions: Vec<Permission>) {
+	if let Ok(mut guard) = dynamic_roles().write() {
+		guard.insert(role.trim().to_ascii_lowercase(), permissions);
+	}
+}
+
+pub fn remove_dynamic_role(role: &str) {
+	if let Ok(mut guard) = dynamic_roles().write() {
+		guard.remove(&role.trim().to_ascii_lowercase());
+	}
+}
+
+pub fn permissions_for_privileges(
+	can_view: bool,
+	can_review: bool,
+	can_lock: bool,
+	can_admin: bool,
+) -> Vec<Permission> {
+	if can_admin {
+		return admin_permissions().to_vec();
+	}
+	if can_review || can_lock {
+		return manager_permissions().to_vec();
+	}
+	if can_view {
+		return viewer_permissions().to_vec();
+	}
+	Vec::new()
+}
+
 // region:    --- Permission Checking Functions
 
 /// Returns the permissions for a given role
 pub fn role_permissions(role: &str) -> &'static [Permission] {
 	match role {
 		ROLE_ADMIN => admin_permissions(),
+		ROLE_ADB_ADMIN => admin_permissions(),
 		ROLE_MANAGER => manager_permissions(),
+		ROLE_PVM => manager_permissions(),
+		ROLE_HEAD_PV => manager_permissions(),
 		ROLE_USER => user_permissions(),
+		ROLE_PVS => user_permissions(),
 		ROLE_VIEWER => viewer_permissions(),
+		ROLE_SPONSOR => viewer_permissions(),
 		_ => &[], // Unknown role has no permissions
 	}
 }
 
 /// Checks if a role has a specific permission
 pub fn has_permission(role: &str, permission: Permission) -> bool {
+	if let Ok(guard) = dynamic_roles().read() {
+		if let Some(perms) = guard.get(&role.trim().to_ascii_lowercase()) {
+			return perms.contains(&permission);
+		}
+	}
 	role_permissions(role).contains(&permission)
 }
 
 /// Checks if a role has any of the given permissions
 pub fn has_any_permission(role: &str, permissions: &[Permission]) -> bool {
+	if let Ok(guard) = dynamic_roles().read() {
+		if let Some(role_perms) = guard.get(&role.trim().to_ascii_lowercase()) {
+			return permissions.iter().any(|p| role_perms.contains(p));
+		}
+	}
 	let role_perms = role_permissions(role);
 	permissions.iter().any(|p| role_perms.contains(p))
 }
 
 /// Checks if a role has all of the given permissions
 pub fn has_all_permissions(role: &str, permissions: &[Permission]) -> bool {
+	if let Ok(guard) = dynamic_roles().read() {
+		if let Some(role_perms) = guard.get(&role.trim().to_ascii_lowercase()) {
+			return permissions.iter().all(|p| role_perms.contains(p));
+		}
+	}
 	let role_perms = role_permissions(role);
 	permissions.iter().all(|p| role_perms.contains(p))
 }

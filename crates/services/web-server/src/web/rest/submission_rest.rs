@@ -14,10 +14,10 @@ use uuid::Uuid;
 use crate::submission::{
 	apply_gateway_ack_by_remote, apply_mock_ack, create_submission_idempotent,
 	get_reconcile_runtime_status, get_submission, get_submission_dispatch_state,
-	list_by_case, list_submission_events,
+	list_by_case, list_submission_events, list_submission_history,
 	reconcile_due_submissions_with_runtime_status, GatewayAckCallbackInput,
 	MockAckInput, SubmissionAuthority, SubmissionDispatchStateRecord,
-	SubmissionEventRecord, SubmissionReconcileResult,
+	SubmissionEventRecord, SubmissionHistoryRecord, SubmissionReconcileResult,
 	SubmissionReconcileRuntimeStatus, SubmissionRecord,
 };
 
@@ -29,6 +29,11 @@ pub struct CaseSubmissionList {
 #[derive(Debug, Serialize)]
 pub struct SubmissionEventList {
 	pub items: Vec<SubmissionEventRecord>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SubmissionHistoryList {
+	pub items: Vec<SubmissionHistoryRecord>,
 }
 
 #[derive(Debug, Serialize)]
@@ -179,6 +184,22 @@ pub async fn list_submission_event_history(
 		StatusCode::OK,
 		Json(DataRestResult {
 			data: SubmissionEventList { items: rows },
+		}),
+	))
+}
+
+/// GET /api/submissions/history
+pub async fn list_all_submission_history(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+) -> Result<(StatusCode, Json<DataRestResult<SubmissionHistoryList>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	let rows = list_submission_history(&ctx, &mm).await?;
+	Ok((
+		StatusCode::OK,
+		Json(DataRestResult {
+			data: SubmissionHistoryList { items: rows },
 		}),
 	))
 }

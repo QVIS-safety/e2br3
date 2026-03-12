@@ -68,21 +68,188 @@ impl RuleSeverity {
 	}
 }
 
-pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
-	// ICH core
+pub const VALIDATION_RULES: &[
+	ValidationRuleMetadata
+] = &[
 	ValidationRuleMetadata {
-		code: "ICH.C.1.REQUIRED",
-		profile: ValidationProfile::Ich,
+		code: "FDA.C.1.12.RECOMMENDED",
+		profile: ValidationProfile::Fda,
 		section: "case-identification",
-		blocking: true,
-		message: "Safety report identification is required.",
+		blocking: false,
+		message: "FDA recommends [C.1.12] combination product report indicator.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.N.REQUIRED",
-		profile: ValidationProfile::Ich,
+		code: "FDA.C.1.12.REQUIRED",
+		profile: ValidationProfile::Fda,
 		section: "case-identification",
 		blocking: true,
-		message: "Message header is required.",
+		message: "FDA requires [C.1.12] combination product report indicator.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.1.12.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "xml",
+		blocking: true,
+		message: "FDA.C.1.12 combination product report indicator is required.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.1.7.1.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "case-identification",
+		blocking: true,
+		message: "FDA requires [C.1.7.1] when expedited criteria is fulfilled.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.1.7.1.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "xml",
+		blocking: true,
+		message: "FDA.C.1.7.1 local criteria report type is required.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.1.7.1.REQUIRED.MISSING_CODE",
+		profile: ValidationProfile::Fda,
+		section: "xml",
+		blocking: true,
+		message:
+			"FDA.C.1.7.1 local criteria report type missing code; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.2.r.2.EMAIL.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "reporter",
+		blocking: true,
+		message: "FDA requires reporter email when primary source is present.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.5.5a.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "study",
+		blocking: true,
+		message:
+			"FDA requires [C.5.5a] IND Number where AE Occurred when C.1.3 is 1/2 and message receiver is CDER_IND/CBER_IND (6 digits).",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.5.5b.FORBIDDEN",
+		profile: ValidationProfile::Fda,
+		section: "xml",
+		blocking: true,
+		message:
+			"FDA.C.5.5b must not be provided for postmarket (N.1.4=ZZFDA, N.2.r.3=CDER/CBER).",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.5.5b.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "study",
+		blocking: true,
+		message:
+			"FDA requires [C.5.5b] Pre-ANDA Number where AE Occurred when C.1.3 is 2 and message receiver is CDER_IND_EXEMPT_BA_BE (6 digits).",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.5.5b.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "xml",
+		blocking: true,
+		message:
+			"FDA.C.5.5b is required when C.1.3=2 and N.2.r.3=CDER_IND_EXEMPT_BA_BE.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.5.6.r.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "study",
+		blocking: true,
+		message:
+			"FDA requires [C.5.6.r] cross reported IND when [C.5.5a] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.D.11.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "patient",
+		blocking: true,
+		message: "FDA requires [D.11] patient race when patient payload is present.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.D.11.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "xml",
+		blocking: true,
+		message: "FDA.D.11 patient race is required.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.D.12.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "patient",
+		blocking: true,
+		message:
+			"FDA requires [D.12] patient ethnicity when patient payload is present.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.D.12.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "xml",
+		blocking: true,
+		message: "FDA.D.12 patient ethnicity is required.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.E.i.3.2h.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "reactions",
+		blocking: true,
+		message:
+			"FDA requires [E.i.3.2h] when other medically important condition is selected.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.E.i.3.2h.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "xml",
+		blocking: true,
+		message: "FDA.E.i.3.2h required intervention is required.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.K.1.A.CONDITIONAL",
+		profile: ValidationProfile::Fda,
+		section: "drugs",
+		blocking: true,
+		message:
+			"FDA [G.K.1.A]=1 is allowed only when [C.1.12]=true, [G.K.12.r.1]=true, and [G.k.1]=4 for the same product.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.K.12.R.11.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "drugs",
+		blocking: false,
+		message:
+			"FDA recommends [G.K.12.R.11] when [G.K.12.r.1]=true and [C.1.7.1]=4.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.K.12.R.3.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "drugs",
+		blocking: true,
+		message:
+			"FDA requires [G.K.12.R.3] when [G.K.12.r.1]=true for postmarket ICSRs.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.K.12.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "drugs",
+		blocking: true,
+		message:
+			"FDA postmarket requires at least one suspect product with [G.K.12.r.1]=true when [C.1.7.1]=5.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.k.10a.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "xml",
+		blocking: true,
+		message: "FDA.G.k.10a is required when FDA.C.5.5b is present.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.N.1.4.REQUIRED",
+		profile: ValidationProfile::Fda,
+		section: "xml",
+		blocking: true,
+		message: "FDA.N.1.4 batch receiver identifier missing.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.1.REQUIRED",
@@ -92,11 +259,27 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		message: "[C.1.1] is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.C.1.11.2.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message:
+			"[C.1.11.2] Nullification reason is required when [C.1.11.1] is provided.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.C.1.2.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.2] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.3.CONDITIONAL",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message:
+			"C.1.3 must be 2 when premarket receiver and FDA.C.5.5b are present with study type 1/2/3.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.3.REQUIRED",
@@ -120,11 +303,110 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		message: "[C.1.5] is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.C.1.6.1.r.1.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message:
+			"[C.1.6.1.r.1] Document description is required when additional documents are available.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.C.1.7.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.7] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.9.1.CONDITIONAL",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "C.1.9.1 is true but C.1.9.1.r.1/.r.2 are missing.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.9.1.r.1.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message:
+			"[C.1.9.1.r.1] Source of the case identifier is required when an other case identifier row is present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.9.1.r.2.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message:
+			"[C.1.9.1.r.2] Case identifier is required when an other case identifier row is present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "Safety report identification is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.2.r.1.ID.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "reporter",
+		blocking: true,
+		message:
+			"primaryRole/id has extension and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.2.r.1.ID.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reporter",
+		blocking: true,
+		message: "primaryRole/id missing extension; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.2.r.1.ID.ROOT_3_6.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reporter",
+		blocking: true,
+		message:
+			"primaryRole/id with root 2.16.840.1.113883.3.989.2.1.3.6 requires extension or nullFlavor.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.2.r.2.NAME.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "reporter",
+		blocking: true,
+		message:
+			"primaryRole name element has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.2.r.2.NAME.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reporter",
+		blocking: true,
+		message: "primaryRole name element is empty; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.2.r.3.ORG_NAME.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "reporter",
+		blocking: true,
+		message:
+			"representedOrganization/name has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.2.r.3.ORG_NAME.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reporter",
+		blocking: true,
+		message:
+			"representedOrganization/name is empty; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.2.r.4.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reporter",
+		blocking: true,
+		message: "[C.2.r.4] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.3.1.REQUIRED",
@@ -141,11 +423,27 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		message: "[C.3.2] is required.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.C.2.r.4.REQUIRED",
+		code: "ICH.C.5.4.REQUIRED",
 		profile: ValidationProfile::Ich,
-		section: "reporter",
+		section: "study",
 		blocking: true,
-		message: "[C.2.r.4] is required.",
+		message:
+			"[C.5.4] Study type where reaction(s) / event(s) were observed is required when [C.1.3] is report from study (2).",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.5.TITLE.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "study",
+		blocking: true,
+		message:
+			"researchStudy/title has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.5.TITLE.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "study",
+		blocking: true,
+		message: "researchStudy/title is empty; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.1.REQUIRED",
@@ -155,11 +453,344 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		message: "[D.1] This Element is required.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.F.r.2.REQUIRED",
+		code: "ICH.D.10.2.2a.REQUIRED",
 		profile: ValidationProfile::Ich,
-		section: "tests",
+		section: "patient",
 		blocking: true,
-		message: "[F.r.2] is required when test payload is present.",
+		message:
+			"[D.10.2.2a] Parent age is required when [D.10.2.2b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.2.2b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.2.2b] Parent age unit is required when [D.10.2.2a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.6.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.10.6] Parent sex is required when parent data is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.7.1.r.1a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.7.1.r.1a] Parent medical history MedDRA version is required when [D.10.7.1.r.1b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.7.1.r.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.7.1.r.1b] Parent medical history MedDRA code is required when [D.10.7.1.r.1a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.8.r.2b/D.10.8.r.3b] Any given parent past drug entry may have either MPID or PhPID, but not both.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.8.r.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.8.r.2a] Parent past drug MPID version is required when [D.10.8.r.2b] MPID is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.8.r.3a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.8.r.3a] Parent past drug PhPID version is required when [D.10.8.r.3b] PhPID is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.8.r.6a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.8.r.6a] Parent past drug indication MedDRA version is required when [D.10.8.r.6b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.8.r.6b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.8.r.6b] Parent past drug indication MedDRA code is required when [D.10.8.r.6a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.8.r.7a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.8.r.7a] Parent past drug reaction MedDRA version is required when [D.10.8.r.7b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.8.r.7b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.8.r.7b] Parent past drug reaction MedDRA code is required when [D.10.8.r.7a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.2.2.1a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.2.2.1a] Gestation period is required when [D.2.2.1b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.2.2.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.2.2.1b] Gestation period unit is required when [D.2.2.1a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.2.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.2.2a] Age at time of onset is required when [D.2.2b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.2.2b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.2.2b] Age unit is required when [D.2.2a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.2.BIRTHTIME.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"birthTime has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.2.BIRTHTIME.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message: "birthTime missing value; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.5.SEX.CONDITIONAL",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message: "administrativeGenderCode missing code; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.7.1.r.1a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.7.1.r.1a] MedDRA version for medical history is required when [D.7.1.r.1b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.7.1.r.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.7.1.r.1b] Medical history MedDRA code is required when [D.7.1.r.1a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.7.2.CONDITIONAL",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "D.7.2 must be provided when D.7.1.r.1b is not provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.8.MPID_PHPID.EXCLUSIVE",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.8.r.2b/D.8.r.3b] Any given past drug entry may have either MPID or PhPID, but not both.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.8.r.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.8.r.2a] Past drug MPID version is required when [D.8.r.2b] MPID is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.8.r.3a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.8.r.3a] Past drug PhPID version is required when [D.8.r.3b] PhPID is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.8.r.6a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.8.r.6a] Indication MedDRA version is required when [D.8.r.6b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.8.r.6b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.8.r.6b] Indication MedDRA code is required when [D.8.r.6a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.8.r.7a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.8.r.7a] Reaction MedDRA version is required when [D.8.r.7b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.8.r.7b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.8.r.7b] Reaction MedDRA code is required when [D.8.r.7a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.9.2.r.1a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.9.2.r.1a] Reported cause of death MedDRA version is required when [D.9.2.r.1b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.9.2.r.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.9.2.r.1b] Reported cause of death MedDRA code is required when [D.9.2.r.1a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.9.2.r.2.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.9.2.r.2] Reported cause of death comments are required when [D.9.2.r.1] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.9.3.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.9.3] Autopsy was performed is required when [D.9.1] date of death is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.9.4.r.1a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.9.4.r.1a] Autopsy cause of death MedDRA version is required when [D.9.4.r.1b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.9.4.r.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.9.4.r.1b] Autopsy cause of death MedDRA code is required when [D.9.4.r.1a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.9.4.r.2.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.9.4.r.2] Autopsy cause of death comments are required when [D.9.4.r.1] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.EFFECTIVETIME.LOW_HIGH.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"patient effectiveTime low/high missing value; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.PARENT.BIRTHTIME.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"associatedPerson birthTime has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.PARENT.BIRTHTIME.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"associatedPerson birthTime missing value; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.PARENT.NAME.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"associatedPerson name element has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.PARENT.NAME.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"associatedPerson name element is empty; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"relatedInvestigation/code has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"relatedInvestigation/code missing code; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.1.1a.REQUIRED",
@@ -177,11 +808,180 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 			"[E.i.1.1b] is required when [E.i.1.1a] is provided.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.E.i.1.2.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"reaction translation has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.1.2.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "reaction translation missing value; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.2.1a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"[E.i.2.1a] Reaction MedDRA version is required when [E.i.2.1b] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.2.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"[E.i.2.1b] Reaction MedDRA code is required when a reaction row is present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.2.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"reaction term has code and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.2.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "reaction term missing code; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"reaction effectiveTime low/high missing value; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.4-6.CONDITIONAL",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: false,
+		message: "Reaction should include start, end, or duration.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.6a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"[E.i.6a] Reaction duration is required when [E.i.6b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.6b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"[E.i.6b] Reaction duration unit is required when [E.i.6a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.7.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"reaction outcome value has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.7.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "reaction outcome value missing code; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.E.i.7.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "reactions",
 		blocking: true,
 		message: "[E.i.7] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.9.COUNTRY.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "reaction country missing code; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.1.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message: "[F.r.1] Test date is required when [F.r.2] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.2.1.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message:
+			"[F.r.2.1] Test name (free text) is required when [F.r.1] is populated and [F.r.2.2b] is not populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.2.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message:
+			"[F.r.2.2a] Test name MedDRA version is required when [F.r.2.2b] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.2.2b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message:
+			"[F.r.2.2b] Test name MedDRA code is required when [F.r.1] is populated and [F.r.2.1] is not populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.2.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message: "[F.r.2] is required when test payload is present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.3.1.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message:
+			"[F.r.3.1] Test result (coded) is required when [F.r.2] is populated and neither [F.r.3.2] nor [F.r.3.4] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.3.2.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message:
+			"[F.r.3.2] Test result (value/finding) is required when [F.r.2] is populated and [F.r.3.1] and [F.r.3.4] are not populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.3.3.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message:
+			"[F.r.3.3] Test result unit is required when [F.r.3.2] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.3.4.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message:
+			"[F.r.3.4] Result unstructured data is required when [F.r.2] is populated and [F.r.3] is not populated.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.1.REQUIRED",
@@ -191,11 +991,248 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		message: "[G.k.1] is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.G.k.2.1.1a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.2.1.1a] MPID version is required when [G.k.2.1.1b] MPID is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.2.1.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.2.1.2a] PhPID version is required when [G.k.2.1.2b] PhPID is populated.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.G.k.2.2.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "drugs",
 		blocking: true,
 		message: "[G.k.2.2] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.2.3.NAME.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"ingredientSubstance/name has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.2.3.NAME.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message: "ingredientSubstance/name is empty; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.2.3.r.1.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.2.3.r.1] Substance name is required when an active substance row has no TermID.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.2.3.r.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.2.3.r.2a] Substance TermID version is required when [G.k.2.3.r.2b] TermID is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.2.3.r.3b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.2.3.r.3b] Strength unit is required when [G.k.2.3.r.3a] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.10.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.4.r.10.2a] Route of administration TermID version is required when [G.k.4.r.10.2b] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.10.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"formCode missing code/codeSystem/originalText; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.11.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.4.r.11.2a] Parent route TermID version is required when [G.k.4.r.11.2b] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.11.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message: "routeCode missing code; originalText or nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.4.r.1b] Dose unit is required when [G.k.4.r.1a] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.3.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.4.r.3] Time interval unit is required when [G.k.4.r.2] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"drug effectiveTime low/high missing value; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.4-8.CONDITIONAL",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message: "Drug requires start, end, or duration.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.6a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.4.r.6a] Duration value is required when [G.k.4.r.6b] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.6b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.4.r.6b] Duration unit is required when [G.k.4.r.6a] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.9.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.4.r.9.2a] Dose form TermID version is required when [G.k.4.r.9.2b] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.5a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.5a] Cumulative dose to first reaction value is required when [G.k.5b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.5b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.5b] Cumulative dose to first reaction unit is required when [G.k.5a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.6a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.6a] Gestation period at exposure value is required when [G.k.6b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.6b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.6b] Gestation period at exposure unit is required when [G.k.6a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.7.r.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.7.r.2a] Indication MedDRA version is required when [G.k.7.r.2b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.7.r.2b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.7.r.2b] Indication MedDRA code is required when [G.k.7.r.2a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.9.i.2.ID.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"adverseEventAssessment/id has extension and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.9.i.2.ID.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"adverseEventAssessment/id missing extension; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.9.i.3.1a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.9.i.3.1a] Administration start interval value is required when [G.k.9.i.3.1b] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.9.i.3.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.9.i.3.1b] Administration start interval unit is required when [G.k.9.i.3.1a] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.9.i.3.2a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.9.i.3.2a] Last-dose interval value is required when [G.k.9.i.3.2b] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.9.i.3.2b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.9.i.3.2b] Last-dose interval unit is required when [G.k.9.i.3.2a] is populated.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.H.1.REQUIRED",
@@ -204,115 +1241,374 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		blocking: true,
 		message: "[H.1] This Element is required.",
 	},
-	// FDA profile overlays
 	ValidationRuleMetadata {
-		code: "FDA.C.1.7.1.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "case-identification",
+		code: "ICH.H.3.r.1a.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "narrative",
 		blocking: true,
-		message: "FDA requires [C.1.7.1] when expedited criteria is fulfilled.",
+		message:
+			"[H.3.r.1a] Sender diagnosis MedDRA version is required when [H.3.r.1b] is populated.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.C.1.12.RECOMMENDED",
-		profile: ValidationProfile::Fda,
+		code: "ICH.H.3.r.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "narrative",
+		blocking: true,
+		message:
+			"[H.3.r.1b] Sender diagnosis MedDRA code is required when [H.3.r.1a] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.H.5.r.1b.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "narrative",
+		blocking: true,
+		message:
+			"[H.5.r.1b] Case summary language is required when [H.5.r.1a] summary type is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.N.1.2.REQUIRED",
+		profile: ValidationProfile::Ich,
 		section: "case-identification",
+		blocking: true,
+		message: "[N.1.2] Batch number is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.N.1.3.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[N.1.3] Batch sender identifier is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.N.1.4.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[N.1.4] Batch receiver identifier is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.N.1.5.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[N.1.5] Date of batch transmission is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.N.2.r.2.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[N.2.r.2] Message sender identifier is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.N.2.r.3.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[N.2.r.3] Message receiver identifier is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.N.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "Message header is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.BL.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message:
+			"BL value has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.BL.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "BL value missing value; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.CODE.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message:
+			"code has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.CODE.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message:
+			"code missing code/codeSystem; nullFlavor is required when originalText is absent.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.COUNTRY.CODE.FORMAT.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "ISO country code must be 2 uppercase letters.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.DOCUMENT.TEXT.COMPRESSION.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: false,
-		message: "FDA recommends [C.1.12] combination product report indicator.",
+		message:
+			"Document text compression attribute must be removed for export compatibility.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.C.1.12.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "case-identification",
+		code: "ICH.XML.DOSE_QUANTITY.VALUE_UNIT.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
-		message: "FDA requires [C.1.12] combination product report indicator.",
+		message: "doseQuantity must include value and unit.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.C.2.r.2.EMAIL.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "reporter",
+		code: "ICH.XML.EFFECTIVETIME.WIDTH.REQUIRES_BOUND",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
-		message: "FDA requires reporter email when primary source is present.",
+		message: "effectiveTime with width must include low/high.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.C.5.5a.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "study",
+		code: "ICH.XML.GK11.EMPTY.PRUNE",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: false,
+		message: "Empty G.k.11 relationships should be pruned during export.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.INV_CHAR_BL.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
 		message:
-			"FDA requires [C.5.5a] IND Number where AE Occurred when C.1.3 is 1/2 and message receiver is CDER_IND/CBER_IND (6 digits).",
+			"investigationCharacteristic BL has value and nullFlavor; nullFlavor must be absent when value present.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.C.5.5b.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "study",
+		code: "ICH.XML.INV_CHAR_BL.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
 		message:
-			"FDA requires [C.5.5b] Pre-ANDA Number where AE Occurred when C.1.3 is 2 and message receiver is CDER_IND_EXEMPT_BA_BE (6 digits).",
+			"investigationCharacteristic BL missing value; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.C.5.6.r.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "study",
+		code: "ICH.XML.IVL_TS.OPERATOR_A.BOUND_REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "IVL_TS operator='A' must include low, high, or width.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.LOW_HIGH.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
 		message:
-			"FDA requires [C.5.6.r] cross reported IND when [C.5.5a] is populated.",
+			"low/high has value and nullFlavor; nullFlavor must be absent when value present.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.G.K.1.A.CONDITIONAL",
-		profile: ValidationProfile::Fda,
-		section: "drugs",
+		code: "ICH.XML.LOW_HIGH.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
-		message:
-			"FDA [G.K.1.A]=1 is allowed only when [C.1.12]=true, [G.K.12.r.1]=true, and [G.k.1]=4 for the same product.",
+		message: "low/high missing value; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.G.K.12.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "drugs",
+		code: "ICH.XML.MEDDRA.CODE.FORMAT.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
-		message:
-			"FDA postmarket requires at least one suspect product with [G.K.12.r.1]=true when [C.1.7.1]=5.",
+		message: "MedDRA code must be 8 digits.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.G.K.12.R.11.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "drugs",
+		code: "ICH.XML.MEDDRA.VERSION.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "MedDRA code requires codeSystemVersion.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.OPTIONAL.PATH.EMPTY.PRUNE",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: false,
 		message:
-			"FDA recommends [G.K.12.R.11] when [G.K.12.r.1]=true and [C.1.7.1]=4.",
+			"Optional-path nodes without real data should be pruned during export.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.G.K.12.R.3.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "drugs",
+		code: "ICH.XML.PERIOD.VALUE_UNIT.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "period must include value and unit.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.PIVL_TS.PERIOD.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "PIVL_TS must include period.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.PIVL_TS.PERIOD.VALUE_UNIT.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "PIVL_TS period must include value and unit.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.PLACEHOLDER.CODESYSTEMVERSION.PRUNE",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: false,
+		message: "Known placeholder codeSystemVersion attributes should be removed during export.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.PLACEHOLDER.VALUE.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "Placeholder values are not allowed in XML content or attributes.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.PLACEHOLDER.VALUE.PRUNE",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: false,
+		message: "Known placeholder value nodes should be pruned during export.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.RACE.EMPTY.PRUNE",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: false,
+		message: "Empty race nodes should be pruned during export.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.RACE.NI.PRUNE",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: false,
+		message: "Race NI placeholder nodes should be pruned during export.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.ROOT.ITSVERSION.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "Root ITSVersion must be present and set to XML_1.0.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.ROOT.SCHEMALOCATION.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
 		message:
-			"FDA requires [G.K.12.R.3] when [G.K.12.r.1]=true for postmarket ICSRs.",
+			"Root xsi:schemaLocation must be present and reference the expected root schema.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.D.11.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "patient",
+		code: "ICH.XML.STRUCTURAL.EMPTY.PRUNE",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: false,
+		message:
+			"Empty structural wrapper nodes should be pruned during export.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.SUMMARY.LANGUAGE.JA.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: false,
+		message:
+			"Summary language=JA attribute must be removed for export compatibility.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.SXPR_TS.COMP.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
-		message: "FDA requires [D.11] patient race when patient payload is present.",
+		message: "SXPR_TS must include at least one comp element.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.D.12.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "patient",
+		code: "ICH.XML.TELECOM.FORMAT.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
 		message:
-			"FDA requires [D.12] patient ethnicity when patient payload is present.",
+			"telecom value must start with tel:, fax:, or mailto:.",
 	},
 	ValidationRuleMetadata {
-		code: "FDA.E.i.3.2h.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "reactions",
+		code: "ICH.XML.TELECOM.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "xml",
 		blocking: true,
 		message:
-			"FDA requires [E.i.3.2h] when other medically important condition is selected.",
+			"telecom has value and nullFlavor; nullFlavor must be absent when value present.",
 	},
-	// MFDS profile overlays
+	ValidationRuleMetadata {
+		code: "ICH.XML.TELECOM.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "telecom missing value; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.TESTRESULT.IVL_PQ.COMPONENT.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "IVL_PQ must include low/high/center.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.TESTRESULT.IVL_PQ.VALUE_UNIT.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "IVL_PQ low/high/center must include value and unit.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.TESTRESULT.PQ.VALUE_UNIT.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "PQ must include value and unit.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.TESTRESULT.XSI_TYPE.UNSUPPORTED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "Unsupported test result xsi:type.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.TEXT.NULLFLAVOR.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message:
+			"text/originalText has value and nullFlavor; nullFlavor must be absent when value present.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.TEXT.NULLFLAVOR.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: true,
+		message: "text/originalText is empty; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.XML.XSI_TYPE.NORMALIZE",
+		profile: ValidationProfile::Ich,
+		section: "xml",
+		blocking: false,
+		message:
+			"Promote non-namespaced type attribute to xsi:type for export compatibility.",
+	},
 	ValidationRuleMetadata {
 		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
 		profile: ValidationProfile::Mfds,
@@ -337,20 +1633,12 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 			"MFDS requires [C.5.4.KR.1] when study type [C.5.4] is other studies (3).",
 	},
 	ValidationRuleMetadata {
-		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
+		code: "MFDS.D.10.8.r.1.KR.1a.REQUIRED",
 		profile: ValidationProfile::Mfds,
 		section: "patient",
 		blocking: false,
 		message:
-			"MFDS requires past drug code [D.8.r.1.KR.1b] for KR/FR receiver profiles.",
-	},
-	ValidationRuleMetadata {
-		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
-		profile: ValidationProfile::Mfds,
-		section: "patient",
-		blocking: false,
-		message:
-			"MFDS requires past drug code version [D.8.r.1.KR.1a] for FR when [D.8.r.1.KR.1b] is provided.",
+			"MFDS requires parent past drug code version [D.10.8.r.1.KR.1a] for FR when [D.10.8.r.1.KR.1b] is provided.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.D.10.8.r.1.KR.1b.REQUIRED",
@@ -361,43 +1649,20 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 			"MFDS requires parent past drug code [D.10.8.r.1.KR.1b] for KR/FR receiver profiles.",
 	},
 	ValidationRuleMetadata {
-		code: "MFDS.D.10.8.r.1.KR.1a.REQUIRED",
+		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
 		profile: ValidationProfile::Mfds,
 		section: "patient",
 		blocking: false,
 		message:
-			"MFDS requires parent past drug code version [D.10.8.r.1.KR.1a] for FR when [D.10.8.r.1.KR.1b] is provided.",
+			"MFDS requires past drug code version [D.8.r.1.KR.1a] for FR when [D.8.r.1.KR.1b] is provided.",
 	},
 	ValidationRuleMetadata {
-		code: "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
+		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
 		profile: ValidationProfile::Mfds,
-		section: "drugs",
-		blocking: true,
-		message: "MFDS domestic cases require KR product coding for the drug.",
-	},
-	ValidationRuleMetadata {
-		code: "MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
-		profile: ValidationProfile::Mfds,
-		section: "drugs",
+		section: "patient",
 		blocking: false,
 		message:
-			"MFDS foreign-use products should provide WHO MPID/KR product coding.",
-	},
-	ValidationRuleMetadata {
-		code: "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
-		profile: ValidationProfile::Mfds,
-		section: "drugs",
-		blocking: false,
-		message:
-			"MFDS domestic cases should provide KR ingredient coding for each active substance.",
-	},
-	ValidationRuleMetadata {
-		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
-		profile: ValidationProfile::Mfds,
-		section: "drugs",
-		blocking: true,
-		message:
-			"MFDS requires product code [G.k.2.1.KR.1b] for KR/FR receiver profiles.",
+			"MFDS requires past drug code [D.8.r.1.KR.1b] for KR/FR receiver profiles.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.2.1.KR.1a.REQUIRED",
@@ -408,12 +1673,12 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 			"MFDS requires product code version [G.k.2.1.KR.1a] for FR when product code is provided.",
 	},
 	ValidationRuleMetadata {
-		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
 		profile: ValidationProfile::Mfds,
 		section: "drugs",
-		blocking: false,
+		blocking: true,
 		message:
-			"MFDS requires substance code [G.k.2.3.r.1.KR.1b] for KR/FR when product code is not provided.",
+			"MFDS requires product code [G.k.2.1.KR.1b] for KR/FR receiver profiles.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
@@ -422,6 +1687,22 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 		blocking: false,
 		message:
 			"MFDS requires substance code version [G.k.2.3.r.1.KR.1a] for FR when substance code is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "drugs",
+		blocking: false,
+		message:
+			"MFDS requires substance code [G.k.2.3.r.1.KR.1b] for KR/FR when product code is not provided.",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.G.k.9.i.2.r.1.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "drugs",
+		blocking: true,
+		message:
+			"MFDS requires source of assessment when KR method/result values are provided.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
@@ -448,682 +1729,29 @@ pub const VALIDATION_RULES: &[ValidationRuleMetadata] = &[
 			"MFDS requires KRCT result when source is present, method is KRCT (2), and report is clinical (CT/CU).",
 	},
 	ValidationRuleMetadata {
-		code: "MFDS.G.k.9.i.2.r.1.REQUIRED",
+		code: "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
+		profile: ValidationProfile::Mfds,
+		section: "drugs",
+		blocking: false,
+		message:
+			"MFDS domestic cases should provide KR ingredient coding for each active substance.",
+	},
+	ValidationRuleMetadata {
+		code: "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
 		profile: ValidationProfile::Mfds,
 		section: "drugs",
 		blocking: true,
-		message:
-			"MFDS requires source of assessment when KR method/result values are provided.",
-	},
-	// XML-level coded checks
-	ValidationRuleMetadata {
-		code: "ICH.XML.ROOT.ITSVERSION.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "Root ITSVersion must be present and set to XML_1.0.",
+		message: "MFDS domestic cases require KR product coding for the drug.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.XML.ROOT.SCHEMALOCATION.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"Root xsi:schemaLocation must be present and reference the expected root schema.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.PLACEHOLDER.VALUE.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "Placeholder values are not allowed in XML content or attributes.",
-	},
-	ValidationRuleMetadata {
-		code: "FDA.N.1.4.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "xml",
-		blocking: true,
-		message: "FDA.N.1.4 batch receiver identifier missing.",
-	},
-	ValidationRuleMetadata {
-		code: "FDA.C.1.7.1.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "xml",
-		blocking: true,
-		message: "FDA.C.1.7.1 local criteria report type is required.",
-	},
-	ValidationRuleMetadata {
-		code: "FDA.C.1.7.1.REQUIRED.MISSING_CODE",
-		profile: ValidationProfile::Fda,
-		section: "xml",
-		blocking: true,
-		message:
-			"FDA.C.1.7.1 local criteria report type missing code; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "FDA.C.1.12.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "xml",
-		blocking: true,
-		message: "FDA.C.1.12 combination product report indicator is required.",
-	},
-	ValidationRuleMetadata {
-		code: "FDA.D.11.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "xml",
-		blocking: true,
-		message: "FDA.D.11 patient race is required.",
-	},
-	ValidationRuleMetadata {
-		code: "FDA.D.12.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "xml",
-		blocking: true,
-		message: "FDA.D.12 patient ethnicity is required.",
-	},
-	ValidationRuleMetadata {
-		code: "FDA.E.i.3.2h.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "xml",
-		blocking: true,
-		message: "FDA.E.i.3.2h required intervention is required.",
-	},
-	ValidationRuleMetadata {
-		code: "FDA.G.k.10a.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "xml",
-		blocking: true,
-		message: "FDA.G.k.10a is required when FDA.C.5.5b is present.",
-	},
-	ValidationRuleMetadata {
-		code: "FDA.C.5.5b.REQUIRED",
-		profile: ValidationProfile::Fda,
-		section: "xml",
-		blocking: true,
-		message:
-			"FDA.C.5.5b is required when C.1.3=2 and N.2.r.3=CDER_IND_EXEMPT_BA_BE.",
-	},
-	ValidationRuleMetadata {
-		code: "FDA.C.5.5b.FORBIDDEN",
-		profile: ValidationProfile::Fda,
-		section: "xml",
-		blocking: true,
-		message:
-			"FDA.C.5.5b must not be provided for postmarket (N.1.4=ZZFDA, N.2.r.3=CDER/CBER).",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.1.3.CONDITIONAL",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"C.1.3 must be 2 when premarket receiver and FDA.C.5.5b are present with study type 1/2/3.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.7.2.CONDITIONAL",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "D.7.2 must be provided when D.7.1.r.1b is not provided.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.1.9.1.CONDITIONAL",
-		profile: ValidationProfile::Ich,
-		section: "case-identification",
-		blocking: true,
-		message: "C.1.9.1 is true but C.1.9.1.r.1/.r.2 are missing.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.4-6.CONDITIONAL",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: false,
-		message: "Reaction should include start, end, or duration.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.4.r.4-8.CONDITIONAL",
-		profile: ValidationProfile::Ich,
+		code: "MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
+		profile: ValidationProfile::Mfds,
 		section: "drugs",
-		blocking: true,
-		message: "Drug requires start, end, or duration.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.EFFECTIVETIME.WIDTH.REQUIRES_BOUND",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "effectiveTime with width must include low/high.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.SXPR_TS.COMP.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "SXPR_TS must include at least one comp element.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.PIVL_TS.PERIOD.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "PIVL_TS must include period.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.PIVL_TS.PERIOD.VALUE_UNIT.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "PIVL_TS period must include value and unit.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.IVL_TS.OPERATOR_A.BOUND_REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "IVL_TS operator='A' must include low, high, or width.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.DOSE_QUANTITY.VALUE_UNIT.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "doseQuantity must include value and unit.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.PERIOD.VALUE_UNIT.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "period must include value and unit.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.MEDDRA.CODE.FORMAT.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "MedDRA code must be 8 digits.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.MEDDRA.VERSION.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "MedDRA code requires codeSystemVersion.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.COUNTRY.CODE.FORMAT.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "ISO country code must be 2 uppercase letters.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.XSI_TYPE.NORMALIZE",
-		profile: ValidationProfile::Ich,
-		section: "xml",
 		blocking: false,
 		message:
-			"Promote non-namespaced type attribute to xsi:type for export compatibility.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.DOCUMENT.TEXT.COMPRESSION.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: false,
-		message:
-			"Document text compression attribute must be removed for export compatibility.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.SUMMARY.LANGUAGE.JA.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: false,
-		message:
-			"Summary language=JA attribute must be removed for export compatibility.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.PLACEHOLDER.VALUE.PRUNE",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: false,
-		message: "Known placeholder value nodes should be pruned during export.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.PLACEHOLDER.CODESYSTEMVERSION.PRUNE",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: false,
-		message: "Known placeholder codeSystemVersion attributes should be removed during export.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.RACE.NI.PRUNE",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: false,
-		message: "Race NI placeholder nodes should be pruned during export.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.RACE.EMPTY.PRUNE",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: false,
-		message: "Empty race nodes should be pruned during export.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.GK11.EMPTY.PRUNE",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: false,
-		message: "Empty G.k.11 relationships should be pruned during export.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.OPTIONAL.PATH.EMPTY.PRUNE",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: false,
-		message:
-			"Optional-path nodes without real data should be pruned during export.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.STRUCTURAL.EMPTY.PRUNE",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: false,
-		message:
-			"Empty structural wrapper nodes should be pruned during export.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.TESTRESULT.IVL_PQ.VALUE_UNIT.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "IVL_PQ low/high/center must include value and unit.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.TESTRESULT.IVL_PQ.COMPONENT.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "IVL_PQ must include low/high/center.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.TESTRESULT.PQ.VALUE_UNIT.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "PQ must include value and unit.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.TESTRESULT.XSI_TYPE.UNSUPPORTED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "Unsupported test result xsi:type.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.5.SEX.CONDITIONAL",
-		profile: ValidationProfile::Ich,
-		section: "patient",
-		blocking: true,
-		message: "administrativeGenderCode missing code; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.TELECOM.FORMAT.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"telecom value must start with tel:, fax:, or mailto:.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.TELECOM.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "telecom missing value; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.TELECOM.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"telecom has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.7.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: true,
-		message: "reaction outcome value missing code; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.7.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"reaction outcome value has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.2.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: true,
-		message: "reaction term missing code; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.2.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"reaction term has code and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.1.2.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: true,
-		message: "reaction translation missing value; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.1.2.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"reaction translation has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.CODE.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"code missing code/codeSystem; nullFlavor is required when originalText is absent.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.CODE.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"code has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.4.r.11.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "drugs",
-		blocking: true,
-		message: "routeCode missing code; originalText or nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.4.r.10.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "drugs",
-		blocking: true,
-		message:
-			"formCode missing code/codeSystem/originalText; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.BL.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "BL value missing value; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.BL.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"BL value has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.INV_CHAR_BL.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"investigationCharacteristic BL missing value; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.INV_CHAR_BL.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"investigationCharacteristic BL has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"relatedInvestigation/code missing code; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"relatedInvestigation/code has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.9.COUNTRY.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: true,
-		message: "reaction country missing code; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.2.3.NAME.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "drugs",
-		blocking: true,
-		message: "ingredientSubstance/name is empty; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.2.3.NAME.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "drugs",
-		blocking: true,
-		message:
-			"ingredientSubstance/name has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.2.r.2.NAME.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "reporter",
-		blocking: true,
-		message: "primaryRole name element is empty; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.2.r.2.NAME.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "reporter",
-		blocking: true,
-		message:
-			"primaryRole name element has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.2.r.3.ORG_NAME.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "reporter",
-		blocking: true,
-		message:
-			"representedOrganization/name is empty; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.2.r.3.ORG_NAME.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "reporter",
-		blocking: true,
-		message:
-			"representedOrganization/name has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.2.r.1.ID.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "reporter",
-		blocking: true,
-		message: "primaryRole/id missing extension; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.2.r.1.ID.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "reporter",
-		blocking: true,
-		message:
-			"primaryRole/id has extension and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.2.r.1.ID.ROOT_3_6.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "reporter",
-		blocking: true,
-		message:
-			"primaryRole/id with root 2.16.840.1.113883.3.989.2.1.3.6 requires extension or nullFlavor.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.2.BIRTHTIME.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "patient",
-		blocking: true,
-		message: "birthTime missing value; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.2.BIRTHTIME.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "patient",
-		blocking: true,
-		message:
-			"birthTime has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.PARENT.NAME.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "patient",
-		blocking: true,
-		message:
-			"associatedPerson name element is empty; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.PARENT.NAME.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "patient",
-		blocking: true,
-		message:
-			"associatedPerson name element has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.PARENT.BIRTHTIME.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "patient",
-		blocking: true,
-		message:
-			"associatedPerson birthTime missing value; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.PARENT.BIRTHTIME.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "patient",
-		blocking: true,
-		message:
-			"associatedPerson birthTime has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.5.TITLE.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "study",
-		blocking: true,
-		message: "researchStudy/title is empty; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.C.5.TITLE.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "study",
-		blocking: true,
-		message:
-			"researchStudy/title has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.9.i.2.ID.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "drugs",
-		blocking: true,
-		message:
-			"adverseEventAssessment/id missing extension; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.9.i.2.ID.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "drugs",
-		blocking: true,
-		message:
-			"adverseEventAssessment/id has extension and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.TEXT.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "text/originalText is empty; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.TEXT.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"text/originalText has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.LOW_HIGH.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message: "low/high missing value; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.LOW_HIGH.NULLFLAVOR.FORBIDDEN",
-		profile: ValidationProfile::Ich,
-		section: "xml",
-		blocking: true,
-		message:
-			"low/high has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"reaction effectiveTime low/high missing value; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.4.r.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "drugs",
-		blocking: true,
-		message:
-			"drug effectiveTime low/high missing value; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.EFFECTIVETIME.LOW_HIGH.NULLFLAVOR.REQUIRED",
-		profile: ValidationProfile::Ich,
-		section: "patient",
-		blocking: true,
-		message:
-			"patient effectiveTime low/high missing value; nullFlavor is required.",
+			"MFDS foreign-use products should provide WHO MPID/KR product coding.",
 	},
 ];
-
-pub const CANONICAL_RULES: &[ValidationRuleMetadata] = VALIDATION_RULES;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExportDirective {
@@ -1202,6 +1830,7 @@ pub enum RuleCondition {
 	Always,
 	IchCaseHistoryTrueMissingPriorIds,
 	IchMedicalHistoryMissingD72Text,
+	IchReportTypeIsStudy,
 	FdaFulfilExpeditedCriteriaTrue,
 	FdaReactionOtherMedicallyImportantTrue,
 	FdaPrimarySourcePresent,
@@ -1244,6 +1873,7 @@ impl RuleCondition {
 			Self::IchMedicalHistoryMissingD72Text => {
 				"ich_medical_history_missing_d72_text"
 			}
+			Self::IchReportTypeIsStudy => "ich_report_type_is_study",
 			Self::FdaFulfilExpeditedCriteriaTrue => {
 				"fda_fulfil_expedited_criteria_true"
 			}
@@ -1316,6 +1946,7 @@ impl RuleCondition {
 pub struct RuleFacts {
 	pub ich_case_history_true_missing_prior_ids: Option<bool>,
 	pub ich_medical_history_missing_d72_text: Option<bool>,
+	pub ich_report_type_is_study: Option<bool>,
 	pub fda_fulfil_expedited_criteria: Option<bool>,
 	pub fda_reaction_other_medically_important: Option<bool>,
 	pub fda_combination_product_true: Option<bool>,
@@ -1384,18 +2015,6 @@ struct ConditionBinding {
 
 const CONDITION_BINDINGS: &[ConditionBinding] = &[
 	ConditionBinding {
-		code: "ICH.C.1.9.1.CONDITIONAL",
-		condition: RuleCondition::IchCaseHistoryTrueMissingPriorIds,
-	},
-	ConditionBinding {
-		code: "ICH.D.7.2.CONDITIONAL",
-		condition: RuleCondition::IchMedicalHistoryMissingD72Text,
-	},
-	ConditionBinding {
-		code: "ICH.F.r.2.REQUIRED",
-		condition: RuleCondition::IchTestPayloadPresent,
-	},
-	ConditionBinding {
 		code: "FDA.C.1.7.1.REQUIRED",
 		condition: RuleCondition::FdaFulfilExpeditedCriteriaTrue,
 	},
@@ -1406,6 +2025,14 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 	ConditionBinding {
 		code: "FDA.C.5.5a.REQUIRED",
 		condition: RuleCondition::FdaIndNumberRequired,
+	},
+	ConditionBinding {
+		code: "FDA.C.5.5b.FORBIDDEN",
+		condition: RuleCondition::FdaPreAndaForbidden,
+	},
+	ConditionBinding {
+		code: "FDA.C.5.5b.REQUIRED",
+		condition: RuleCondition::FdaPreAndaRequired,
 	},
 	ConditionBinding {
 		code: "FDA.C.5.6.r.REQUIRED",
@@ -1420,12 +2047,8 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 		condition: RuleCondition::FdaPatientPayloadPresent,
 	},
 	ConditionBinding {
-		code: "FDA.C.5.5b.REQUIRED",
-		condition: RuleCondition::FdaPreAndaRequired,
-	},
-	ConditionBinding {
-		code: "FDA.C.5.5b.FORBIDDEN",
-		condition: RuleCondition::FdaPreAndaForbidden,
+		code: "FDA.E.i.3.2h.REQUIRED",
+		condition: RuleCondition::FdaReactionOtherMedicallyImportantTrue,
 	},
 	ConditionBinding {
 		code: "FDA.G.k.10a.REQUIRED",
@@ -1436,8 +2059,20 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 		condition: RuleCondition::FdaPremarketReportTypeMustBeTwo,
 	},
 	ConditionBinding {
-		code: "FDA.E.i.3.2h.REQUIRED",
-		condition: RuleCondition::FdaReactionOtherMedicallyImportantTrue,
+		code: "ICH.C.1.9.1.CONDITIONAL",
+		condition: RuleCondition::IchCaseHistoryTrueMissingPriorIds,
+	},
+	ConditionBinding {
+		code: "ICH.C.5.4.REQUIRED",
+		condition: RuleCondition::IchReportTypeIsStudy,
+	},
+	ConditionBinding {
+		code: "ICH.D.7.2.CONDITIONAL",
+		condition: RuleCondition::IchMedicalHistoryMissingD72Text,
+	},
+	ConditionBinding {
+		code: "ICH.F.r.2.REQUIRED",
+		condition: RuleCondition::IchTestPayloadPresent,
 	},
 	ConditionBinding {
 		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
@@ -1452,36 +2087,40 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 		condition: RuleCondition::MfdsStudyTypeReactionIsThree,
 	},
 	ConditionBinding {
-		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
-		condition: RuleCondition::MfdsPastDrugCodeRequiredContext,
-	},
-	ConditionBinding {
-		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
-		condition: RuleCondition::MfdsPastDrugVersionRequiredContext,
+		code: "MFDS.D.10.8.r.1.KR.1a.REQUIRED",
+		condition: RuleCondition::MfdsParentPastDrugVersionRequiredContext,
 	},
 	ConditionBinding {
 		code: "MFDS.D.10.8.r.1.KR.1b.REQUIRED",
 		condition: RuleCondition::MfdsParentPastDrugCodeRequiredContext,
 	},
 	ConditionBinding {
-		code: "MFDS.D.10.8.r.1.KR.1a.REQUIRED",
-		condition: RuleCondition::MfdsParentPastDrugVersionRequiredContext,
+		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
+		condition: RuleCondition::MfdsPastDrugVersionRequiredContext,
 	},
 	ConditionBinding {
-		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
-		condition: RuleCondition::MfdsProductCodeRequiredContext,
+		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
+		condition: RuleCondition::MfdsPastDrugCodeRequiredContext,
 	},
 	ConditionBinding {
 		code: "MFDS.G.k.2.1.KR.1a.REQUIRED",
 		condition: RuleCondition::MfdsProductVersionRequiredContext,
 	},
 	ConditionBinding {
-		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
-		condition: RuleCondition::MfdsSubstanceCodeRequiredContext,
+		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
+		condition: RuleCondition::MfdsProductCodeRequiredContext,
 	},
 	ConditionBinding {
 		code: "MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
 		condition: RuleCondition::MfdsSubstanceVersionRequiredContext,
+	},
+	ConditionBinding {
+		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+		condition: RuleCondition::MfdsSubstanceCodeRequiredContext,
+	},
+	ConditionBinding {
+		code: "MFDS.G.k.9.i.2.r.1.REQUIRED",
+		condition: RuleCondition::MfdsRelatednessMethodOrResultPresent,
 	},
 	ConditionBinding {
 		code: "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
@@ -1496,15 +2135,11 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 		condition: RuleCondition::MfdsRelatednessKr2RequiredContext,
 	},
 	ConditionBinding {
-		code: "MFDS.G.k.9.i.2.r.1.REQUIRED",
-		condition: RuleCondition::MfdsRelatednessMethodOrResultPresent,
-	},
-	ConditionBinding {
-		code: "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
+		code: "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
 		condition: RuleCondition::MfdsDrugDomesticKr,
 	},
 	ConditionBinding {
-		code: "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
+		code: "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
 		condition: RuleCondition::MfdsDrugDomesticKr,
 	},
 	ConditionBinding {
@@ -1533,72 +2168,16 @@ struct ValuePolicyBinding {
 
 const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
-		code: "ICH.C.1.1.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		code: "FDA.C.1.12.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
-		code: "ICH.C.1.2.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		code: "FDA.C.1.7.1.REQUIRED",
+		policy: ValuePolicy::FdaLocalCriteriaCodeByFacts,
 	},
 	ValuePolicyBinding {
-		code: "ICH.C.1.3.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.C.1.4.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.C.1.5.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.C.1.7.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.C.3.1.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.C.3.2.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.C.2.r.4.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.D.1.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.F.r.2.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.E.i.1.1a.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.E.i.1.1b.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.E.i.7.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.G.k.1.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.G.k.2.2.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.H.1.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		code: "FDA.C.1.7.1.REQUIRED.MISSING_CODE",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "FDA.C.5.5a.REQUIRED",
@@ -1607,14 +2186,6 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
 		code: "FDA.C.5.5b.REQUIRED",
 		policy: ValuePolicy::SixDigitsNumeric,
-	},
-	ValuePolicyBinding {
-		code: "FDA.C.1.12.REQUIRED",
-		policy: ValuePolicy::NonEmptyOrNullFlavor,
-	},
-	ValuePolicyBinding {
-		code: "FDA.C.1.7.1.REQUIRED.MISSING_CODE",
-		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "FDA.D.11.REQUIRED",
@@ -1633,39 +2204,355 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::FdaGk10aCodeOrNa,
 	},
 	ValuePolicyBinding {
-		code: "FDA.C.1.7.1.REQUIRED",
-		policy: ValuePolicy::FdaLocalCriteriaCodeByFacts,
+		code: "ICH.C.1.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.1.3.CONDITIONAL",
 		policy: ValuePolicy::IchC13ConditionalMustBeTwo,
 	},
 	ValuePolicyBinding {
+		code: "ICH.C.1.3.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.4.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.5.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.6.1.r.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.7.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.9.1.r.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.1.9.1.r.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.2.r.4.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.3.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.3.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.5.4.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.2.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.2.2b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.6.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.7.1.r.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.7.1.r.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.8.r.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.8.r.3a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.8.r.6a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.8.r.6b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.8.r.7a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.10.8.r.7b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.7.1.r.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.7.1.r.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.8.r.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.8.r.3a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.8.r.6a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.8.r.6b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.8.r.7a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.8.r.7b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.9.2.r.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.9.2.r.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.9.2.r.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.9.3.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.9.4.r.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.9.4.r.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.9.4.r.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.E.i.1.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.E.i.1.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.E.i.2.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.E.i.2.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.E.i.7.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.F.r.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.F.r.2.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.F.r.2.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.F.r.2.2b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.F.r.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.F.r.3.3.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.2.1.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.2.1.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.2.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.2.3.r.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.2.3.r.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.2.3.r.3b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.4.r.10.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.4.r.11.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.4.r.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.4.r.3.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.4.r.6a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.4.r.6b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.4.r.9.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.5a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.5b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.6a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.6b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.7.r.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.7.r.2b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.9.i.3.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.9.i.3.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.9.i.3.2a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.G.k.9.i.3.2b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.H.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.H.3.r.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.H.3.r.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.H.5.r.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.N.1.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.N.1.3.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.N.1.4.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.N.1.5.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.N.2.r.2.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.N.2.r.3.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
 		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
-		code: "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "MFDS.D.10.8.r.1.KR.1b.REQUIRED",
+		code: "MFDS.C.5.4.KR.1.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
@@ -1673,7 +2560,15 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
-		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
+		code: "MFDS.D.10.8.r.1.KR.1b.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
@@ -1681,11 +2576,15 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
-		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
 		code: "MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
@@ -1705,7 +2604,15 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
-		code: "MFDS.C.5.4.KR.1.REQUIRED",
+		code: "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
 		policy: ValuePolicy::NonEmpty,
 	},
 ];
@@ -1717,10 +2624,10 @@ struct PresencePolicyBinding {
 
 const REQUIRED_PRESENCE_BINDINGS: &[PresencePolicyBinding] = &[
 	PresencePolicyBinding {
-		code: "FDA.N.1.4.REQUIRED",
+		code: "FDA.C.2.r.2.EMAIL.REQUIRED",
 	},
 	PresencePolicyBinding {
-		code: "FDA.C.2.r.2.EMAIL.REQUIRED",
+		code: "FDA.N.1.4.REQUIRED",
 	},
 ];
 
@@ -1870,7 +2777,7 @@ pub fn find_canonical_rule_for_phase(
 	code: &str,
 	phase: ValidationPhase,
 ) -> Option<CanonicalRule<'static>> {
-	CANONICAL_RULES
+	VALIDATION_RULES
 		.iter()
 		.filter(|rule| rule.code == code)
 		.map(to_canonical_rule)
@@ -1880,7 +2787,7 @@ pub fn find_canonical_rule_for_phase(
 pub fn find_canonical_rule(code: &str) -> Option<CanonicalRule<'static>> {
 	find_canonical_rule_for_phase(code, ValidationPhase::CaseValidate).or_else(
 		|| {
-			CANONICAL_RULES
+			VALIDATION_RULES
 				.iter()
 				.find(|rule| rule.code == code)
 				.map(to_canonical_rule)
@@ -1891,7 +2798,7 @@ pub fn find_canonical_rule(code: &str) -> Option<CanonicalRule<'static>> {
 pub fn canonical_rules_for_profile(
 	profile: ValidationProfile,
 ) -> Vec<CanonicalRule<'static>> {
-	CANONICAL_RULES
+	VALIDATION_RULES
 		.iter()
 		.filter(|rule| {
 			matches!(rule.profile, ValidationProfile::Ich) || rule.profile == profile
@@ -1911,7 +2818,7 @@ pub fn canonical_rules_for_profile_phase(
 }
 
 pub fn canonical_rules_all() -> Vec<CanonicalRule<'static>> {
-	CANONICAL_RULES.iter().map(to_canonical_rule).collect()
+	VALIDATION_RULES.iter().map(to_canonical_rule).collect()
 }
 
 pub fn canonical_rules_for_phase(
@@ -1980,6 +2887,9 @@ pub fn is_rule_condition_satisfied(code: &str, facts: RuleFacts) -> bool {
 			.unwrap_or(false),
 		RuleCondition::IchMedicalHistoryMissingD72Text => {
 			facts.ich_medical_history_missing_d72_text.unwrap_or(false)
+		}
+		RuleCondition::IchReportTypeIsStudy => {
+			facts.ich_report_type_is_study.unwrap_or(false)
 		}
 		RuleCondition::FdaFulfilExpeditedCriteriaTrue => {
 			facts.fda_fulfil_expedited_criteria.unwrap_or(false)

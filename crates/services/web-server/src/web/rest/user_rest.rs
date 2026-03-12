@@ -16,6 +16,7 @@ use lib_rest_core::rest_result::DataRestResult;
 use lib_web::middleware::mw_auth::CtxW;
 use lib_web::{Error as WebError, Result};
 use serde::Deserialize;
+use sqlx::types::time::OffsetDateTime;
 use uuid::Uuid;
 
 fn require_admin_role(ctx: &lib_core::ctx::Ctx) -> Result<()> {
@@ -31,10 +32,17 @@ fn require_admin_role(ctx: &lib_core::ctx::Ctx) -> Result<()> {
 pub struct UserForCreateAdminPayload {
 	pub organization_id: Uuid,
 	pub email: String,
-	pub username: String,
+	pub username: Option<String>,
 	pub role: Option<String>,
 	pub first_name: Option<String>,
 	pub last_name: Option<String>,
+	pub comments: Option<String>,
+	pub other_information: Option<String>,
+	pub access_start_at: Option<OffsetDateTime>,
+	pub access_end_at: Option<OffsetDateTime>,
+	pub access_sender_ids: Option<Vec<String>>,
+	pub access_product_ids: Option<Vec<String>>,
+	pub access_study_ids: Option<Vec<String>>,
 }
 
 /// POST /api/users
@@ -75,6 +83,13 @@ pub async fn create_user(
 		role: data.role,
 		first_name: data.first_name,
 		last_name: data.last_name,
+		comments: data.comments,
+		other_information: data.other_information,
+		access_start_at: data.access_start_at,
+		access_end_at: data.access_end_at,
+		access_sender_ids: data.access_sender_ids,
+		access_product_ids: data.access_product_ids,
+		access_study_ids: data.access_study_ids,
 	};
 	let id = UserBmc::create(&ctx, &mm, create)
 		.await

@@ -17,7 +17,7 @@ use lib_core::model::narrative::{
 use lib_core::model::{self, ModelManager};
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_case_write_allowed, require_permission, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValValue, OpValsValue};
 use serde_json::json;
@@ -62,6 +62,7 @@ pub async fn create_sender_diagnosis(
 ) -> Result<(StatusCode, Json<DataRestResult<SenderDiagnosis>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SENDER_DIAGNOSIS_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let narrative_id = narrative_id_for_case(&ctx, &mm, case_id).await?;
 
 	let ParamsForCreate { data } = params;
@@ -129,6 +130,7 @@ pub async fn update_sender_diagnosis(
 ) -> Result<(StatusCode, Json<DataRestResult<SenderDiagnosis>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SENDER_DIAGNOSIS_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = SenderDiagnosisBmc::get(&ctx, &mm, id).await?;
 	ensure_narrative_scope(
@@ -153,6 +155,7 @@ pub async fn delete_sender_diagnosis(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SENDER_DIAGNOSIS_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = SenderDiagnosisBmc::get(&ctx, &mm, id).await?;
 	ensure_narrative_scope(
 		&ctx,
@@ -178,6 +181,7 @@ pub async fn create_case_summary_information(
 ) -> Result<(StatusCode, Json<DataRestResult<CaseSummaryInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_SUMMARY_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let narrative_id = narrative_id_for_case(&ctx, &mm, case_id).await?;
 
 	let ParamsForCreate { data } = params;
@@ -248,6 +252,7 @@ pub async fn update_case_summary_information(
 ) -> Result<(StatusCode, Json<DataRestResult<CaseSummaryInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_SUMMARY_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let ParamsForUpdate { data } = params;
 	let entity = CaseSummaryInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_narrative_scope(
@@ -272,6 +277,7 @@ pub async fn delete_case_summary_information(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_SUMMARY_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let entity = CaseSummaryInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_narrative_scope(
 		&ctx,

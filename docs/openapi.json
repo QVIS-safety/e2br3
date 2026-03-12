@@ -1,0 +1,7430 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "E2BR3 Backend API",
+    "description": "OpenAPI documentation for the Axum-based E2BR3 backend. Authenticated API routes use the HTTP-only `auth-token` cookie. Internal machine-to-machine routes use the `x-callback-token` header.",
+    "license": {
+      "name": ""
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/audit-logs": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "operationId": "list_audit_logs",
+        "parameters": [
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "JSON-encoded filters",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "list_options.limit",
+            "in": "query",
+            "description": "Limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "list_options.offset",
+            "in": "query",
+            "description": "Offset",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/audit-logs/by-record/{table_name}/{record_id}": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "operationId": "list_audit_logs_by_record",
+        "parameters": [
+          {
+            "name": "table_name",
+            "in": "path",
+            "description": "Table name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "record_id",
+            "in": "path",
+            "description": "Record ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit logs by record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/audit-logs/verify-integrity": {
+      "get": {
+        "tags": [
+          "audit"
+        ],
+        "operationId": "verify_audit_log_integrity",
+        "responses": {
+          "200": {
+            "description": "Audit log integrity check",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "operationId": "list_cases",
+        "parameters": [
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "JSON-encoded filters",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "list_options.limit",
+            "in": "query",
+            "description": "Limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "list_options.offset",
+            "in": "query",
+            "description": "Offset",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "list_options.order_bys",
+            "in": "query",
+            "description": "Sort order",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cases list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "operationId": "create_case",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Case created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid case payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/link-options": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "list_case_link_options",
+        "responses": {
+          "200": {
+            "description": "Case link options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/drugs": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "list_case_drugs",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Drug collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DrugInformationListResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "create_case_drug",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDrugInformationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Drug created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DrugInformationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/drugs/{id}": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "get_case_drug",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Drug ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Drug item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DrugInformationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "update_case_drug",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Drug ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDrugInformationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Drug updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DrugInformationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "delete_case_drug",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Drug ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Drug deleted"
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/message-header": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "get_case_message_header",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message header",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageHeaderResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/narrative": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "get_case_narrative",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Narrative",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NarrativeInformationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/patient": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "get_case_patient",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patient for case",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientInformationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "update_case_patient",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePatientInformationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Patient updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientInformationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "create_case_patient",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePatientInformationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Patient created or updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatientInformationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/reactions": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "list_case_reactions",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reaction collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionListResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "create_case_reaction",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReactionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Reaction created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/reactions/{id}": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "get_case_reaction",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Reaction ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reaction item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "update_case_reaction",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Reaction ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateReactionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Reaction updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "delete_case_reaction",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Reaction ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reaction deleted"
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/receiver": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "get_case_receiver",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Receiver information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiverInformationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/safety-report": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "get_case_safety_report",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Safety report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SafetyReportIdentificationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/test-results": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "list_case_test_results",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Test result collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestResultListResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "create_case_test_result",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTestResultRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Test result created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestResultResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/test-results/{id}": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "get_case_test_result",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Test result ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Test result item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestResultResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "update_case_test_result",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Test result ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTestResultRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Test result updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestResultResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "delete_case_test_result",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Test result ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Test result deleted"
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/validation": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "validate_case",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "profile",
+            "in": "query",
+            "description": "Validation profile override",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case validation report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/validation/all": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "validate_case_all",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All profile validation report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{case_id}/versions": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "list_case_versions",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{id}": {
+      "get": {
+        "tags": [
+          "cases"
+        ],
+        "operationId": "get_case",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Case not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "cases"
+        ],
+        "operationId": "update_case",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Case updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid case payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Case not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "cases"
+        ],
+        "operationId": "delete_case",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Case deleted"
+          },
+          "404": {
+            "description": "Case not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{id}/export/xml": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "export_case_xml",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case XML export"
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{id}/lifecycle": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "get_case_lifecycle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case lifecycle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{id}/submissions": {
+      "get": {
+        "tags": [
+          "submissions"
+        ],
+        "operationId": "list_case_submissions",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission history for case",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseSubmissionListResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{id}/submissions/fda": {
+      "post": {
+        "tags": [
+          "submissions"
+        ],
+        "operationId": "submit_case_to_fda",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplianceActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "FDA submission queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRecordResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/{id}/submissions/mfds": {
+      "post": {
+        "tags": [
+          "submissions"
+        ],
+        "operationId": "submit_case_to_mfds",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ComplianceActionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "MFDS submission queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRecordResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/exports/history": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "list_xml_export_history",
+        "responses": {
+          "200": {
+            "description": "XML export history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/import/xml": {
+      "post": {
+        "tags": [
+          "import"
+        ],
+        "operationId": "import_xml",
+        "responses": {
+          "200": {
+            "description": "XML import result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/import/xml/history": {
+      "get": {
+        "tags": [
+          "import"
+        ],
+        "operationId": "list_import_history",
+        "responses": {
+          "200": {
+            "description": "XML import history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/import/xml/validate": {
+      "post": {
+        "tags": [
+          "import"
+        ],
+        "operationId": "validate_import_xml",
+        "responses": {
+          "200": {
+            "description": "XML validation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/organizations": {
+      "get": {
+        "tags": [
+          "organizations"
+        ],
+        "operationId": "list_organizations",
+        "parameters": [
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "JSON-encoded filters",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "list_options.limit",
+            "in": "query",
+            "description": "Limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "list_options.offset",
+            "in": "query",
+            "description": "Offset",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "list_options.order_bys",
+            "in": "query",
+            "description": "Sort order",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organizations list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin role required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "organizations"
+        ],
+        "operationId": "create_organization",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrganizationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Organization created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin role required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/organizations/{id}": {
+      "get": {
+        "tags": [
+          "organizations"
+        ],
+        "operationId": "get_organization",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Organization details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "organizations"
+        ],
+        "operationId": "update_organization",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrganizationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Organization updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganizationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "organizations"
+        ],
+        "operationId": "delete_organization",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Organization ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Organization deleted"
+          },
+          "404": {
+            "description": "Organization not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/presave-templates": {
+      "get": {
+        "tags": [
+          "presave-templates"
+        ],
+        "operationId": "list_presave_templates",
+        "parameters": [
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "description": "Filter active templates only",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Presave templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "presave-templates"
+        ],
+        "operationId": "create_presave_template",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenericDataRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Presave template created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/presave-templates/{id}": {
+      "get": {
+        "tags": [
+          "presave-templates"
+        ],
+        "operationId": "get_presave_template",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Presave template",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "presave-templates"
+        ],
+        "operationId": "delete_presave_template",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Presave template deleted"
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "presave-templates"
+        ],
+        "operationId": "update_presave_template",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenericDataRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Presave template updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/presave-templates/{id}/audit": {
+      "get": {
+        "tags": [
+          "presave-templates"
+        ],
+        "operationId": "list_presave_template_audits",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Presave template audit trail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/submissions/history": {
+      "get": {
+        "tags": [
+          "submissions"
+        ],
+        "operationId": "list_all_submission_history",
+        "responses": {
+          "200": {
+            "description": "Submission history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionHistoryListResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/submissions/{id}": {
+      "get": {
+        "tags": [
+          "submissions"
+        ],
+        "operationId": "get_case_submission",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Submission ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRecordResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/submissions/{id}/acks/mock": {
+      "post": {
+        "tags": [
+          "submissions"
+        ],
+        "operationId": "post_mock_ack",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Submission ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MockAckInputDoc"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Mock ACK posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRecordResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/submissions/{id}/dispatch-state": {
+      "get": {
+        "tags": [
+          "submissions"
+        ],
+        "operationId": "get_submission_dispatch_state_view",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Submission ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dispatch state view",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionDispatchStateResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/submissions/{id}/events": {
+      "get": {
+        "tags": [
+          "submissions"
+        ],
+        "operationId": "list_submission_event_history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Submission ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission event history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionEventListResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/code-lists": {
+      "get": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "get_code_list",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Code list name",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Code list entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/countries": {
+      "get": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "list_countries",
+        "responses": {
+          "200": {
+            "description": "Country list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/import/meddra": {
+      "post": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "import_meddra",
+        "responses": {
+          "200": {
+            "description": "MedDRA import started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/import/whodrug": {
+      "post": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "import_whodrug",
+        "responses": {
+          "200": {
+            "description": "WHO Drug import started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/meddra": {
+      "get": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "search_meddra",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Search term",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "MedDRA results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/releases": {
+      "get": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "list_terminology_releases",
+        "responses": {
+          "200": {
+            "description": "Terminology releases",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/releases/{dictionary}/{version}/activate": {
+      "post": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "activate_terminology_release",
+        "parameters": [
+          {
+            "name": "dictionary",
+            "in": "path",
+            "description": "Dictionary key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "description": "Release version",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Release activated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/releases/{dictionary}/{version}/approve": {
+      "post": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "approve_terminology_release",
+        "parameters": [
+          {
+            "name": "dictionary",
+            "in": "path",
+            "description": "Dictionary key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "description": "Release version",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Release approved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/releases/{dictionary}/{version}/rollback": {
+      "post": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "rollback_terminology_release",
+        "parameters": [
+          {
+            "name": "dictionary",
+            "in": "path",
+            "description": "Dictionary key",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "description": "Release version",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Release rolled back",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/ucum-units": {
+      "get": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "list_ucum_units",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Unit search term",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "UCUM units",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/terminology/whodrug": {
+      "get": {
+        "tags": [
+          "terminology"
+        ],
+        "operationId": "search_whodrug",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Search term",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "WHO Drug results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "list_users",
+        "parameters": [
+          {
+            "name": "filters",
+            "in": "query",
+            "description": "JSON-encoded filters",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "list_options.limit",
+            "in": "query",
+            "description": "Limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "list_options.offset",
+            "in": "query",
+            "description": "Offset",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "list_options.order_bys",
+            "in": "query",
+            "description": "Sort order",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin role required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "create_user",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin role required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "get_current_user",
+        "responses": {
+          "200": {
+            "description": "Current user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/users/me/password": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "set_my_password",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetMyPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Password updated"
+          },
+          "400": {
+            "description": "Invalid password payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "get_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "update_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "User updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "users"
+        ],
+        "operationId": "delete_user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "User deleted"
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/validation/rules": {
+      "get": {
+        "tags": [
+          "validation"
+        ],
+        "operationId": "list_validation_rules",
+        "responses": {
+          "200": {
+            "description": "Validation rule catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/auth/v1/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/v1/logoff": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "logoff",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogoffRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Session cleared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoffResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/v1/refresh": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "operationId": "refresh",
+        "responses": {
+          "200": {
+            "description": "Session refreshed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/internal/submissions/callbacks/ack": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "operationId": "post_gateway_ack_callback",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GatewayAckCallbackInputDoc"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Gateway ACK callback accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionRecordResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "callback_token": []
+          }
+        ]
+      }
+    },
+    "/internal/submissions/reconcile": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "operationId": "post_reconcile_due_submissions",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReconcileRequestInputDoc"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Submission reconciliation triggered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionReconcileResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "callback_token": []
+          }
+        ]
+      }
+    },
+    "/internal/submissions/reconcile/status": {
+      "get": {
+        "tags": [
+          "internal"
+        ],
+        "operationId": "get_reconcile_status",
+        "responses": {
+          "200": {
+            "description": "Reconciliation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionReconcileStatusResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "callback_token": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CaseDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "safety_report_id",
+          "version",
+          "status",
+          "created_by",
+          "dirty_c",
+          "dirty_d",
+          "dirty_e",
+          "dirty_f",
+          "dirty_g",
+          "dirty_h",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "appendices_json": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "dg_prd_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dirty_c": {
+            "type": "boolean"
+          },
+          "dirty_d": {
+            "type": "boolean"
+          },
+          "dirty_e": {
+            "type": "boolean"
+          },
+          "dirty_f": {
+            "type": "boolean"
+          },
+          "dirty_g": {
+            "type": "boolean"
+          },
+          "dirty_h": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "mfds_report_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "organization_id": {
+            "type": "string"
+          },
+          "raw_xml": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "report_year": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "safety_report_id": {
+            "type": "string"
+          },
+          "source_document_base64": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_media_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "submitted_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submitted_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validation_profile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CaseForCreateDoc": {
+        "type": "object",
+        "required": [
+          "organization_id",
+          "safety_report_id"
+        ],
+        "properties": {
+          "appendices_json": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dg_prd_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mfds_report_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "organization_id": {
+            "type": "string"
+          },
+          "report_year": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "safety_report_id": {
+            "type": "string"
+          },
+          "source_document_base64": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_media_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validation_profile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "CaseForUpdateDoc": {
+        "type": "object",
+        "properties": {
+          "appendices_json": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dg_prd_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dirty_c": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "dirty_d": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "dirty_e": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "dirty_f": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "dirty_g": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "dirty_h": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "mfds_report_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "raw_xml": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "report_year": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "safety_report_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_base64": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_media_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submitted_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submitted_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validation_profile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CaseListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseDoc"
+            }
+          }
+        }
+      },
+      "CaseResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CaseDoc"
+          }
+        }
+      },
+      "CaseSubmissionListDoc": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubmissionRecordDoc"
+            }
+          }
+        }
+      },
+      "CaseSubmissionListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CaseSubmissionListDoc"
+          }
+        }
+      },
+      "ComplianceActionInputDoc": {
+        "type": "object",
+        "required": [
+          "reason_for_change",
+          "e_signature"
+        ],
+        "properties": {
+          "e_signature": {
+            "$ref": "#/components/schemas/ESignatureInputDoc"
+          },
+          "reason_for_change": {
+            "type": "string"
+          }
+        }
+      },
+      "ComplianceActionRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ComplianceActionInputDoc"
+          }
+        }
+      },
+      "CreateCaseRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CaseForCreateDoc"
+          }
+        }
+      },
+      "CreateDrugInformationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DrugInformationForCreateDoc"
+          }
+        }
+      },
+      "CreateMessageHeaderRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MessageHeaderForCreateDoc"
+          }
+        }
+      },
+      "CreateNarrativeInformationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/NarrativeInformationForCreateDoc"
+          }
+        }
+      },
+      "CreateOrganizationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OrganizationForCreateDoc"
+          }
+        }
+      },
+      "CreatePatientInformationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PatientInformationForCreateDoc"
+          }
+        }
+      },
+      "CreateReactionRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReactionForCreateDoc"
+          }
+        }
+      },
+      "CreateReceiverInformationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReceiverInformationForCreateDoc"
+          }
+        }
+      },
+      "CreateSafetyReportIdentificationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SafetyReportIdentificationForCreateDoc"
+          }
+        }
+      },
+      "CreateTestResultRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TestResultForCreateDoc"
+          }
+        }
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UserForCreateAdminPayloadDoc"
+          }
+        }
+      },
+      "DrugInformationDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "case_id",
+          "sequence_number",
+          "drug_characterization",
+          "medicinal_product",
+          "drug_additional_info_codes_json",
+          "fda_device_info_json",
+          "created_at",
+          "updated_at",
+          "created_by"
+        ],
+        "properties": {
+          "action_taken": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_lot_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "brand_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "case_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "cumulative_dose_first_reaction_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cumulative_dose_first_reaction_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dosage_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "drug_additional_info_codes_json": {
+            "type": "object"
+          },
+          "drug_characterization": {
+            "type": "string"
+          },
+          "fda_additional_info_coded": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fda_device_info_json": {
+            "type": "object"
+          },
+          "fda_specialized_product_category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gestation_period_exposure_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gestation_period_exposure_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "investigational_product_blinded": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "manufacturer_country": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manufacturer_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "medicinal_product": {
+            "type": "string"
+          },
+          "mpid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mpid_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "obtain_drug_country": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_dosage_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_route": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_route_termid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_route_termid_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phpid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phpid_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rechallenge": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sequence_number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "DrugInformationForCreateDoc": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "sequence_number",
+          "drug_characterization",
+          "medicinal_product"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "drug_characterization": {
+            "type": "string"
+          },
+          "medicinal_product": {
+            "type": "string"
+          },
+          "sequence_number": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DrugInformationForUpdateDoc": {
+        "type": "object",
+        "required": [
+          "drug_additional_info_codes_json",
+          "fda_device_info_json"
+        ],
+        "properties": {
+          "action_taken": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_lot_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "brand_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cumulative_dose_first_reaction_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cumulative_dose_first_reaction_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dosage_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "drug_additional_info_codes_json": {
+            "type": "object"
+          },
+          "drug_characterization": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fda_additional_info_coded": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fda_device_info_json": {
+            "type": "object"
+          },
+          "fda_specialized_product_category": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gestation_period_exposure_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gestation_period_exposure_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "investigational_product_blinded": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "manufacturer_country": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "manufacturer_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "medicinal_product": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mpid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mpid_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "obtain_drug_country": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_dosage_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_route": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_route_termid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "parent_route_termid_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phpid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phpid_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rechallenge": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "DrugInformationListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DrugInformationDoc"
+            }
+          }
+        }
+      },
+      "DrugInformationResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DrugInformationDoc"
+          }
+        }
+      },
+      "ESignatureInputDoc": {
+        "type": "object",
+        "required": [
+          "meaning",
+          "password"
+        ],
+        "properties": {
+          "meaning": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "GatewayAckCallbackInputDoc": {
+        "type": "object",
+        "required": [
+          "remote_submission_id",
+          "ack_level",
+          "success"
+        ],
+        "properties": {
+          "ack_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ack_level": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "ack_message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "remote_submission_id": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "GenericDataRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "GenericDataResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "object"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "pwd"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "pwd": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "required": [
+          "result"
+        ],
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/LoginResult"
+          }
+        }
+      },
+      "LoginResult": {
+        "type": "object",
+        "required": [
+          "success",
+          "must_change_password"
+        ],
+        "properties": {
+          "must_change_password": {
+            "type": "boolean"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LogoffRequest": {
+        "type": "object",
+        "required": [
+          "logoff"
+        ],
+        "properties": {
+          "logoff": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LogoffResponse": {
+        "type": "object",
+        "required": [
+          "result"
+        ],
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/LogoffResult"
+          }
+        }
+      },
+      "LogoffResult": {
+        "type": "object",
+        "required": [
+          "logged_off"
+        ],
+        "properties": {
+          "logged_off": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MessageHeaderDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "case_id",
+          "message_type",
+          "message_format_version",
+          "message_format_release",
+          "message_number",
+          "message_sender_identifier",
+          "message_receiver_identifier",
+          "message_date_format",
+          "message_date",
+          "created_at",
+          "updated_at",
+          "created_by"
+        ],
+        "properties": {
+          "batch_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_receiver_identifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_sender_identifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_transmission_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "case_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "message_date": {
+            "type": "string"
+          },
+          "message_date_format": {
+            "type": "string"
+          },
+          "message_format_release": {
+            "type": "string"
+          },
+          "message_format_version": {
+            "type": "string"
+          },
+          "message_number": {
+            "type": "string"
+          },
+          "message_receiver_identifier": {
+            "type": "string"
+          },
+          "message_sender_identifier": {
+            "type": "string"
+          },
+          "message_type": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "MessageHeaderForCreateDoc": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "message_number",
+          "message_sender_identifier",
+          "message_receiver_identifier",
+          "message_date"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "message_date": {
+            "type": "string"
+          },
+          "message_number": {
+            "type": "string"
+          },
+          "message_receiver_identifier": {
+            "type": "string"
+          },
+          "message_sender_identifier": {
+            "type": "string"
+          }
+        }
+      },
+      "MessageHeaderForUpdateDoc": {
+        "type": "object",
+        "properties": {
+          "batch_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_receiver_identifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_sender_identifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "batch_transmission_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message_receiver_identifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message_sender_identifier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "MessageHeaderResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MessageHeaderDoc"
+          }
+        }
+      },
+      "MockAckInputDoc": {
+        "type": "object",
+        "required": [
+          "level",
+          "success"
+        ],
+        "properties": {
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "NarrativeInformationDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "case_id",
+          "case_narrative",
+          "created_at",
+          "updated_at",
+          "created_by"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "case_narrative": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "reporter_comments": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sender_comments": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "NarrativeInformationForCreateDoc": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "case_narrative"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "case_narrative": {
+            "type": "string"
+          }
+        }
+      },
+      "NarrativeInformationForUpdateDoc": {
+        "type": "object",
+        "properties": {
+          "case_narrative": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reporter_comments": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sender_comments": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "NarrativeInformationResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/NarrativeInformationDoc"
+          }
+        }
+      },
+      "OrganizationDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "active",
+          "created_at",
+          "updated_at",
+          "created_by"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OrganizationForCreateDoc": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OrganizationForUpdateDoc": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contact_phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "OrganizationListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganizationDoc"
+            }
+          }
+        }
+      },
+      "OrganizationResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OrganizationDoc"
+          }
+        }
+      },
+      "PatientInformationDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "case_id",
+          "created_at",
+          "updated_at",
+          "created_by"
+        ],
+        "properties": {
+          "age_at_time_of_onset": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "age_at_time_of_onset_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "age_group": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "age_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "birth_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "birth_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "case_id": {
+            "type": "string"
+          },
+          "concomitant_therapy": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "ethnicity_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gestation_period": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gestation_period_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "height_cm": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_menstrual_period_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_menstrual_period_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "medical_history_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_family_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_given_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_initials": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_initials_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "race_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sex": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sex_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "weight_kg": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PatientInformationForCreateDoc": {
+        "type": "object",
+        "required": [
+          "case_id"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "concomitant_therapy": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "patient_initials": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sex": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PatientInformationForUpdateDoc": {
+        "type": "object",
+        "properties": {
+          "age_at_time_of_onset": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "age_at_time_of_onset_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "age_group": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "age_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "birth_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "birth_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "concomitant_therapy": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "ethnicity_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gestation_period": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "gestation_period_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "height_cm": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_menstrual_period_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_menstrual_period_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "medical_history_text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_family_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_given_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_initials": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_initials_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "race_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sex": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sex_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "weight_kg": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "PatientInformationResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PatientInformationDoc"
+          }
+        }
+      },
+      "ReactionDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "case_id",
+          "sequence_number",
+          "primary_source_reaction",
+          "criteria_death",
+          "criteria_life_threatening",
+          "criteria_hospitalization",
+          "criteria_disabling",
+          "criteria_congenital_anomaly",
+          "criteria_other_medically_important",
+          "created_at",
+          "updated_at",
+          "created_by"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "country_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "criteria_congenital_anomaly": {
+            "type": "boolean"
+          },
+          "criteria_congenital_anomaly_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_death": {
+            "type": "boolean"
+          },
+          "criteria_death_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_disabling": {
+            "type": "boolean"
+          },
+          "criteria_disabling_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_hospitalization": {
+            "type": "boolean"
+          },
+          "criteria_hospitalization_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_life_threatening": {
+            "type": "boolean"
+          },
+          "criteria_life_threatening_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_other_medically_important": {
+            "type": "boolean"
+          },
+          "criteria_other_medically_important_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "end_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "medical_confirmation": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "primary_source_reaction": {
+            "type": "string"
+          },
+          "primary_source_reaction_translation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_language": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_meddra_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_meddra_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required_intervention": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sequence_number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "serious": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "term_highlighted": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ReactionForCreateDoc": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "sequence_number",
+          "primary_source_reaction"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "primary_source_reaction": {
+            "type": "string"
+          },
+          "sequence_number": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ReactionForUpdateDoc": {
+        "type": "object",
+        "properties": {
+          "country_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_congenital_anomaly": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "criteria_congenital_anomaly_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_death": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "criteria_death_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_disabling": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "criteria_disabling_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_hospitalization": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "criteria_hospitalization_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_life_threatening": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "criteria_life_threatening_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "criteria_other_medically_important": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "criteria_other_medically_important_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "duration_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "end_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "end_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "medical_confirmation": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "primary_source_reaction": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "primary_source_reaction_translation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_language": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_meddra_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_meddra_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "required_intervention": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "serious": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "start_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "term_highlighted": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      },
+      "ReactionListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReactionDoc"
+            }
+          }
+        }
+      },
+      "ReactionResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReactionDoc"
+          }
+        }
+      },
+      "ReceiverInformationDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "case_id",
+          "created_at",
+          "updated_at",
+          "created_by"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "department": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fax": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "organization_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "receiver_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state_province": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "street_address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "telephone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ReceiverInformationForCreateDoc": {
+        "type": "object",
+        "required": [
+          "case_id"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "organization_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "receiver_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ReceiverInformationForUpdateDoc": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "department": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fax": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "organization_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "receiver_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state_province": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "street_address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "telephone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ReceiverInformationResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReceiverInformationDoc"
+          }
+        }
+      },
+      "ReconcileRequestInputDoc": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "RefreshData": {
+        "type": "object",
+        "required": [
+          "expiresAt"
+        ],
+        "properties": {
+          "expiresAt": {
+            "type": "string"
+          }
+        }
+      },
+      "RefreshResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RefreshData"
+          }
+        }
+      },
+      "SafetyReportIdentificationDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "case_id",
+          "report_type",
+          "fulfil_expedited_criteria",
+          "created_at",
+          "updated_at",
+          "created_by"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "combination_product_report_indicator": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "date_first_received_from_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_first_received_from_source_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_of_most_recent_information": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_of_most_recent_information_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fulfil_expedited_criteria": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "local_criteria_report_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nullification_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nullification_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "receiver_organization": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "report_type": {
+            "type": "string"
+          },
+          "transmission_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transmission_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "worldwide_unique_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SafetyReportIdentificationForCreateDoc": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "report_type",
+          "fulfil_expedited_criteria"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "date_first_received_from_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_first_received_from_source_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_of_most_recent_information": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_of_most_recent_information_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fulfil_expedited_criteria": {
+            "type": "boolean"
+          },
+          "report_type": {
+            "type": "string"
+          },
+          "transmission_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transmission_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SafetyReportIdentificationForUpdateDoc": {
+        "type": "object",
+        "properties": {
+          "combination_product_report_indicator": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_first_received_from_source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_first_received_from_source_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_of_most_recent_information": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_of_most_recent_information_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fulfil_expedited_criteria": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "local_criteria_report_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nullification_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "nullification_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "receiver_organization": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "report_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transmission_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transmission_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "worldwide_unique_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SafetyReportIdentificationResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SafetyReportIdentificationDoc"
+          }
+        }
+      },
+      "SetMyPasswordBodyDoc": {
+        "type": "object",
+        "required": [
+          "new_password"
+        ],
+        "properties": {
+          "new_password": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      },
+      "SetMyPasswordRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SetMyPasswordBodyDoc"
+          }
+        }
+      },
+      "SubmissionAckDoc": {
+        "type": "object",
+        "required": [
+          "level",
+          "success",
+          "received_at"
+        ],
+        "properties": {
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "received_at": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SubmissionDispatchStateDataDoc": {
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/SubmissionDispatchStateRecordDoc"
+          }
+        }
+      },
+      "SubmissionDispatchStateRecordDoc": {
+        "type": "object",
+        "required": [
+          "submission_id",
+          "attempt_count",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "attempt_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "last_attempt_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "next_retry_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submission_id": {
+            "type": "string"
+          },
+          "terminal_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "SubmissionDispatchStateResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SubmissionDispatchStateDataDoc"
+          }
+        }
+      },
+      "SubmissionEventListDoc": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubmissionEventRecordDoc"
+            }
+          }
+        }
+      },
+      "SubmissionEventListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SubmissionEventListDoc"
+          }
+        }
+      },
+      "SubmissionEventRecordDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "submission_id",
+          "event_type",
+          "event_data",
+          "created_at"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string"
+          },
+          "event_data": {
+            "type": "object"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "submission_id": {
+            "type": "string"
+          }
+        }
+      },
+      "SubmissionHistoryListDoc": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubmissionHistoryRecordDoc"
+            }
+          }
+        }
+      },
+      "SubmissionHistoryListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SubmissionHistoryListDoc"
+          }
+        }
+      },
+      "SubmissionHistoryRecordDoc": {
+        "type": "object",
+        "required": [
+          "submission_id",
+          "case_id",
+          "case_number",
+          "gateway",
+          "remote_submission_id",
+          "status",
+          "xml_bytes",
+          "submitted_by",
+          "submitted_at"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "case_number": {
+            "type": "string"
+          },
+          "gateway": {
+            "type": "string"
+          },
+          "remote_submission_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "submission_id": {
+            "type": "string"
+          },
+          "submitted_at": {
+            "type": "string"
+          },
+          "submitted_by": {
+            "type": "string"
+          },
+          "submitted_by_email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "xml_bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "SubmissionReconcileDataDoc": {
+        "type": "object",
+        "required": [
+          "result"
+        ],
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/SubmissionReconcileResultDoc"
+          }
+        }
+      },
+      "SubmissionReconcileResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SubmissionReconcileDataDoc"
+          }
+        }
+      },
+      "SubmissionReconcileResultDoc": {
+        "type": "object",
+        "required": [
+          "attempted",
+          "succeeded",
+          "failed",
+          "skipped",
+          "processed_submission_ids"
+        ],
+        "properties": {
+          "attempted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "processed_submission_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "succeeded": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "SubmissionReconcileRuntimeStatusDoc": {
+        "type": "object",
+        "required": [
+          "total_runs",
+          "total_errors",
+          "total_attempted",
+          "total_succeeded",
+          "total_failed",
+          "total_skipped"
+        ],
+        "properties": {
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_run_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_success_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total_attempted": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_errors": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_failed": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_runs": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_skipped": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "total_succeeded": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "SubmissionReconcileStatusDataDoc": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/SubmissionReconcileRuntimeStatusDoc"
+          }
+        }
+      },
+      "SubmissionReconcileStatusResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SubmissionReconcileStatusDataDoc"
+          }
+        }
+      },
+      "SubmissionRecordDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "case_id",
+          "gateway",
+          "remote_submission_id",
+          "status",
+          "xml_bytes",
+          "submitted_by",
+          "submitted_at"
+        ],
+        "properties": {
+          "ack1": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionAckDoc"
+              }
+            ]
+          },
+          "ack2": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionAckDoc"
+              }
+            ]
+          },
+          "ack3": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionAckDoc"
+              }
+            ]
+          },
+          "ack4": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/SubmissionAckDoc"
+              }
+            ]
+          },
+          "case_id": {
+            "type": "string"
+          },
+          "gateway": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "remote_submission_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "submitted_at": {
+            "type": "string"
+          },
+          "submitted_by": {
+            "type": "string"
+          },
+          "xml_bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "SubmissionRecordResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SubmissionRecordDoc"
+          }
+        }
+      },
+      "TestResultDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "case_id",
+          "sequence_number",
+          "test_name",
+          "created_at",
+          "updated_at",
+          "created_by"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "comments": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "more_info_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "normal_high_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "normal_low_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result_unstructured": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sequence_number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "test_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_meddra_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_meddra_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_name": {
+            "type": "string"
+          },
+          "test_result_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_result_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_result_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TestResultForCreateDoc": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "sequence_number",
+          "test_name"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "sequence_number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "test_name": {
+            "type": "string"
+          }
+        }
+      },
+      "TestResultForUpdateDoc": {
+        "type": "object",
+        "properties": {
+          "comments": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "more_info_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "normal_high_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "normal_low_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "result_unstructured": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_date_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_meddra_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_meddra_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_result_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_result_unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "test_result_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "TestResultListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestResultDoc"
+            }
+          }
+        }
+      },
+      "TestResultResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TestResultDoc"
+          }
+        }
+      },
+      "UpdateCaseRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CaseForUpdateDoc"
+          }
+        }
+      },
+      "UpdateDrugInformationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DrugInformationForUpdateDoc"
+          }
+        }
+      },
+      "UpdateMessageHeaderRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MessageHeaderForUpdateDoc"
+          }
+        }
+      },
+      "UpdateNarrativeInformationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/NarrativeInformationForUpdateDoc"
+          }
+        }
+      },
+      "UpdateOrganizationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OrganizationForUpdateDoc"
+          }
+        }
+      },
+      "UpdatePatientInformationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PatientInformationForUpdateDoc"
+          }
+        }
+      },
+      "UpdateReactionRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReactionForUpdateDoc"
+          }
+        }
+      },
+      "UpdateReceiverInformationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ReceiverInformationForUpdateDoc"
+          }
+        }
+      },
+      "UpdateSafetyReportIdentificationRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SafetyReportIdentificationForUpdateDoc"
+          }
+        }
+      },
+      "UpdateTestResultRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TestResultForUpdateDoc"
+          }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UserForUpdateDoc"
+          }
+        }
+      },
+      "UserDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "email",
+          "username",
+          "role",
+          "active",
+          "must_change_password",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "access_end_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "access_product_ids": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "access_sender_ids": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "access_start_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "access_study_ids": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "comments": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "last_login_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "must_change_password": {
+            "type": "boolean"
+          },
+          "organization_id": {
+            "type": "string"
+          },
+          "other_information": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "UserForCreateAdminPayloadDoc": {
+        "type": "object",
+        "required": [
+          "organization_id",
+          "email"
+        ],
+        "properties": {
+          "access_end_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "access_product_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "access_sender_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "access_start_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "access_study_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "comments": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": "string"
+          },
+          "first_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "organization_id": {
+            "type": "string"
+          },
+          "other_information": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UserForUpdateDoc": {
+        "type": "object",
+        "properties": {
+          "access_end_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "access_product_ids": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "access_sender_ids": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "access_start_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "access_study_ids": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "comments": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "first_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_login_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "last_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "other_information": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "UserListResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDoc"
+            }
+          }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UserDoc"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "auth_token": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "auth-token"
+      },
+      "callback_token": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-callback-token"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "auth",
+      "description": "Authentication and session lifecycle"
+    },
+    {
+      "name": "organizations",
+      "description": "Organization administration"
+    },
+    {
+      "name": "users",
+      "description": "User administration and profile"
+    },
+    {
+      "name": "cases",
+      "description": "Case CRUD operations"
+    },
+    {
+      "name": "case-subresources",
+      "description": "Nested case resources and workflows"
+    },
+    {
+      "name": "presave-templates",
+      "description": "Reusable presave templates"
+    },
+    {
+      "name": "terminology",
+      "description": "Terminology search and release management"
+    },
+    {
+      "name": "import",
+      "description": "XML validation and import"
+    },
+    {
+      "name": "audit",
+      "description": "Audit log APIs"
+    },
+    {
+      "name": "validation",
+      "description": "Validation rule catalog"
+    },
+    {
+      "name": "submissions",
+      "description": "Submission history and ACK processing"
+    },
+    {
+      "name": "internal",
+      "description": "Internal machine-to-machine callbacks"
+    }
+  ]
+}

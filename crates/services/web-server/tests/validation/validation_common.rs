@@ -10,6 +10,15 @@ use sqlx::types::Uuid as SqlxUuid;
 use tower::ServiceExt;
 use uuid::Uuid;
 
+fn parse_json_or_raw(body: &[u8]) -> Result<Value> {
+	let raw = String::from_utf8_lossy(body).trim().to_string();
+	if raw.is_empty() {
+		return Ok(Value::Null);
+	}
+	Ok(serde_json::from_slice::<Value>(body)
+		.unwrap_or_else(|_| json!({ "raw": raw })))
+}
+
 pub struct ValidationCtx {
 	pub app: Router,
 	pub cookie: String,
@@ -51,7 +60,8 @@ pub async fn post_json(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	Ok((status, serde_json::from_slice::<Value>(&body)?))
+	let value = parse_json_or_raw(&body)?;
+	Ok((status, value))
 }
 
 pub async fn put_json(
@@ -69,7 +79,8 @@ pub async fn put_json(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	Ok((status, serde_json::from_slice::<Value>(&body)?))
+	let value = parse_json_or_raw(&body)?;
+	Ok((status, value))
 }
 
 pub async fn get_json(
@@ -85,7 +96,7 @@ pub async fn get_json(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	Ok((status, serde_json::from_slice::<Value>(&body)?))
+	Ok((status, parse_json_or_raw(&body)?))
 }
 
 pub async fn create_case(app: &Router, cookie: &str, org_id: Uuid) -> Result<Uuid> {
@@ -367,6 +378,38 @@ pub async fn create_primary_source(
 	extract_id(&value)
 }
 
+pub async fn create_other_case_identifier(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	sequence_number: i32,
+	source_of_identifier: &str,
+	case_identifier: &str,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"case_id": case_id,
+			"sequence_number": sequence_number,
+			"source_of_identifier": source_of_identifier,
+			"case_identifier": case_identifier
+		}
+	});
+	let (status, value) = post_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/other-identifiers"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create other-case-identifier failed: status={status} body={value}"
+		)
+		.into());
+	}
+	extract_id(&value)
+}
+
 pub async fn update_primary_source(
 	app: &Router,
 	cookie: &str,
@@ -440,8 +483,18 @@ pub async fn create_past_drug_history(
 	mpid: Option<&str>,
 	mpid_version: Option<&str>,
 ) -> Result<Uuid> {
+	let (status, patient_value) =
+		get_json(app, cookie, format!("/api/cases/{case_id}/patient")).await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"get patient for past-drug-history failed: status={status} body={patient_value}"
+		)
+		.into());
+	}
+	let patient_id = extract_id(&patient_value)?;
 	let body = json!({
 		"data": {
+			"patient_id": patient_id,
 			"sequence_number": sequence_number,
 			"drug_name": drug_name,
 			"mpid": mpid,
@@ -470,8 +523,18 @@ pub async fn create_parent_information(
 	case_id: Uuid,
 	sex: Option<&str>,
 ) -> Result<Uuid> {
+	let (status, patient_value) =
+		get_json(app, cookie, format!("/api/cases/{case_id}/patient")).await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"get patient for parent-information failed: status={status} body={patient_value}"
+		)
+		.into());
+	}
+	let patient_id = extract_id(&patient_value)?;
 	let body = json!({
 		"data": {
+			"patient_id": patient_id,
 			"sex": sex,
 			"medical_history_text": null
 		}
@@ -502,6 +565,7 @@ pub async fn create_parent_past_drug_history(
 ) -> Result<Uuid> {
 	let body = json!({
 		"data": {
+			"parent_id": parent_id,
 			"sequence_number": sequence_number,
 			"drug_name": drug_name
 		}
@@ -620,7 +684,21 @@ pub async fn create_test_result(
 		)
 		.into());
 	}
-	extract_id(&value)
+	let id = extract_id(&value)?;
+	let (status, value) = put_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/test-results/{id}"),
+		json!({"data": { "result_unstructured": "Baseline result" }}),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"prime test-result failed: status={status} body={value}"
+		)
+		.into());
+	}
+	Ok(id)
 }
 
 pub async fn create_drug(
@@ -742,6 +820,65 @@ pub async fn create_active_substance(
 	extract_id(&value)
 }
 
+pub async fn create_dosage(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	drug_id: Uuid,
+	sequence_number: i32,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"drug_id": drug_id,
+			"sequence_number": sequence_number
+		}
+	});
+	let (status, value) = post_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}/dosages"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(
+			format!("create dosage failed: status={status} body={value}").into(),
+		);
+	}
+	extract_id(&value)
+}
+
+pub async fn create_drug_indication(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	drug_id: Uuid,
+	sequence_number: i32,
+	indication_text: Option<&str>,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"drug_id": drug_id,
+			"sequence_number": sequence_number,
+			"indication_text": indication_text
+		}
+	});
+	let (status, value) = post_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}/indications"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create drug-indication failed: status={status} body={value}"
+		)
+		.into());
+	}
+	extract_id(&value)
+}
+
 pub async fn create_drug_reaction_assessment(
 	app: &Router,
 	cookie: &str,
@@ -827,6 +964,68 @@ pub async fn create_narrative(
 	if status != StatusCode::CREATED && status != StatusCode::OK {
 		return Err(format!(
 			"create narrative failed: status={status} body={value}"
+		)
+		.into());
+	}
+	extract_id(&value)
+}
+
+pub async fn create_sender_diagnosis(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	narrative_id: Uuid,
+	sequence_number: i32,
+	diagnosis_meddra_code: Option<&str>,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"narrative_id": narrative_id,
+			"sequence_number": sequence_number,
+			"diagnosis_meddra_code": diagnosis_meddra_code
+		}
+	});
+	let (status, value) = post_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/narrative/sender-diagnoses"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create sender-diagnosis failed: status={status} body={value}"
+		)
+		.into());
+	}
+	extract_id(&value)
+}
+
+pub async fn create_case_summary(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	narrative_id: Uuid,
+	sequence_number: i32,
+	summary_text: &str,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"narrative_id": narrative_id,
+			"sequence_number": sequence_number,
+			"summary_text": summary_text
+		}
+	});
+	let (status, value) = post_json(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/narrative/summaries"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create case-summary failed: status={status} body={value}"
 		)
 		.into());
 	}

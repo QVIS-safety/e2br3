@@ -1,7 +1,7 @@
 use crate::model;
 use crate::model::drug::{
-	DosageInformation, DrugActiveSubstance, DrugDeviceCharacteristic,
-	DrugIndication, DrugInformation,
+	derive_fda_device_characteristics, DosageInformation, DrugActiveSubstance,
+	DrugDeviceCharacteristic, DrugIndication, DrugInformation,
 };
 use crate::model::drug_reaction_assessment::{
 	DrugReactionAssessment, RelatednessAssessment,
@@ -82,7 +82,7 @@ pub(crate) async fn load_drug_export_bundle(
 			.map_err(Error::from)?
 	};
 
-	let characteristics = if drug_ids.is_empty() {
+	let raw_characteristics = if drug_ids.is_empty() {
 		Vec::new()
 	} else {
 		mm.dbx()
@@ -96,6 +96,20 @@ pub(crate) async fn load_drug_export_bundle(
 			.map_err(model::Error::from)
 			.map_err(Error::from)?
 	};
+	let mut characteristics = Vec::new();
+	for drug in &drugs {
+		let derived = derive_fda_device_characteristics(drug);
+		if derived.is_empty() {
+			characteristics.extend(
+				raw_characteristics
+					.iter()
+					.filter(|row| row.drug_id == drug.id)
+					.cloned(),
+			);
+		} else {
+			characteristics.extend(derived);
+		}
+	}
 
 	let assessments = if drug_ids.is_empty() {
 		Vec::new()

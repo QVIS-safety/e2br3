@@ -42,7 +42,15 @@ CREATE TABLE drug_information (
     -- G.k.3.4 - Batch/Lot Number
     batch_lot_number VARCHAR(200),
 
-    -- G.k.5 - Dosage Text
+    -- G.k.5 - Cumulative Dose to First Reaction
+    cumulative_dose_first_reaction_value DECIMAL(15,5),
+    cumulative_dose_first_reaction_unit VARCHAR(50),
+
+    -- G.k.6 - Gestation Period at Time of Exposure
+    gestation_period_exposure_value DECIMAL(10,2),
+    gestation_period_exposure_unit VARCHAR(50),
+
+    -- Application-level legacy dosage text
     dosage_text TEXT,
 
     -- G.k.7 - Action(s) Taken with Drug (E2B(R3) codes)
@@ -66,6 +74,15 @@ CREATE TABLE drug_information (
 
     -- FDA.G.k.10a - Additional Information on Drug (coded)
     fda_additional_info_coded VARCHAR(10),
+
+    -- G.k.10.r - Additional Information on Drug (coded, repeating)
+    drug_additional_info_codes_json JSONB,
+
+    -- FDA.G.k.10.1 - FDA Specialized Product Category
+    fda_specialized_product_category VARCHAR(60),
+
+    -- FDA.G.k.12.r - Structured FDA device information payload
+    fda_device_info_json JSONB,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -155,6 +172,7 @@ CREATE TABLE dosage_information (
 
     -- G.k.4.r.10 - Route of Administration
     route_of_administration VARCHAR(3),  -- E2B(R3) code list
+    route_termid_version VARCHAR(10),
 
     -- G.k.4.r.11 - Parent Route of Administration
     parent_route VARCHAR(50),
@@ -276,21 +294,25 @@ CREATE TABLE drug_reaction_assessments (
     drug_id UUID NOT NULL REFERENCES drug_information(id) ON DELETE CASCADE,
     reaction_id UUID NOT NULL REFERENCES reactions(id) ON DELETE CASCADE,
 
-    -- G.k.9.i.1 - Time Interval between Drug Administration and Reaction Onset
-    time_interval_value DECIMAL(10,2),
-    time_interval_unit VARCHAR(3),  -- 800-805 (decade, year, month, week, day, hour)
+    -- G.k.9.i.3.1a/b - Time Interval between Beginning of Drug Administration and Start of Reaction / Event
+    administration_start_interval_value DECIMAL(10,2),
+    administration_start_interval_unit VARCHAR(3),  -- 800-805 (decade, year, month, week, day, hour)
 
-    -- G.k.9.i.3.1 - Did Reaction Recur on Readministration - Action
+    -- G.k.9.i.3.2a/b - Time Interval between Last Dose of Drug and Start of Reaction / Event
+    last_dose_interval_value DECIMAL(10,2),
+    last_dose_interval_unit VARCHAR(3),  -- 800-805 (decade, year, month, week, day, hour)
+
+    -- G.k.9.i.4.r.1 - Did Reaction Recur on Readministration - Action
     recurrence_action VARCHAR(1) CHECK (recurrence_action IN ('1', '2', '3', '4')),
     -- 1=Drug readministered, 2=Drug not readministered, 3=Unknown, 4=Not applicable
 
-    -- G.k.9.i.3.2a - MedDRA Version for Reported Term for Reaction Recurred
+    -- G.k.9.i.4.r.2a - MedDRA Version for Reported Term for Reaction Recurred
     recurrence_meddra_version VARCHAR(10),
 
-    -- G.k.9.i.3.2b - Reported Term for Reaction Recurred (MedDRA code)
+    -- G.k.9.i.4.r.2b - Reported Term for Reaction Recurred (MedDRA code)
     recurrence_meddra_code VARCHAR(20),
 
-    -- G.k.9.i.4 - Did Reaction Recur on Readministration
+    -- G.k.9.i.4.r.3 - Did Reaction Recur on Readministration
     reaction_recurred VARCHAR(1) CHECK (reaction_recurred IN ('1', '2', '3')),
     -- 1=Yes, 2=No, 3=Unknown
 

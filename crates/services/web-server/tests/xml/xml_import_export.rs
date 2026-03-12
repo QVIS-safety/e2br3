@@ -121,6 +121,61 @@ async fn ensure_reaction_language(
 	Ok(())
 }
 
+async fn ensure_batch_transmission_date(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<()> {
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"GET",
+		format!("/api/cases/{case_id}/message-header"),
+		None,
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"get message-header status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let value: Value = serde_json::from_slice(&body)?;
+	let has_batch_transmission_date = value
+		.get("data")
+		.and_then(|v| v.get("batch_transmission_date"))
+		.and_then(Value::as_array)
+		.map(|v| !v.is_empty())
+		.unwrap_or(false);
+	if has_batch_transmission_date {
+		return Ok(());
+	}
+
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/message-header"),
+		Some(serde_json::json!({
+			"data": {
+				"batch_transmission_date": [2024, 32, 1, 1, 1, 0, 0, 0, 0]
+			}
+		})),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update batch_transmission_date status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	Ok(())
+}
+
 async fn mark_case_validated(
 	app: &axum::Router,
 	cookie: &str,
@@ -137,10 +192,20 @@ async fn mark_case_validated(
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	if status != StatusCode::OK {
+		let (validation_status, validation_body) = request_json(
+			app,
+			cookie,
+			"GET",
+			format!("/api/cases/{case_id}/validation?profile=fda"),
+			None,
+		)
+		.await?;
 		return Err(format!(
-			"mark validated status {} body {}",
+			"mark validated status {} body {} validation_status {} validation_body {}",
 			status,
-			String::from_utf8_lossy(&body)
+			String::from_utf8_lossy(&body),
+			validation_status,
+			String::from_utf8_lossy(&validation_body)
 		)
 		.into());
 	}
@@ -207,7 +272,7 @@ async fn test_import_then_export_xml() -> Result<()> {
 	let value: Value = serde_json::from_slice(&body)?;
 	let case_id = value
 		.get("data")
-		.and_then(|v| v.get("case_id"))
+		.and_then(|v| v.get("case_id").or_else(|| v.get("caseId")))
 		.and_then(|v| v.as_str())
 		.ok_or("missing case_id in import response")?;
 
@@ -266,6 +331,7 @@ async fn test_import_then_export_xml() -> Result<()> {
 	);
 
 	ensure_reaction_language(&app, &cookie, case_id).await?;
+	ensure_batch_transmission_date(&app, &cookie, case_id).await?;
 	mark_case_validated(&app, &cookie, case_id).await?;
 
 	let req = Request::builder()
@@ -342,7 +408,7 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 	let import_value: Value = serde_json::from_slice(&import_body)?;
 	let case_id = import_value
 		.get("data")
-		.and_then(|v| v.get("case_id"))
+		.and_then(|v| v.get("case_id").or_else(|| v.get("caseId")))
 		.and_then(|v| v.as_str())
 		.ok_or("missing case_id in import response")?
 		.to_string();
@@ -514,7 +580,8 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 		Some(serde_json::json!({
 			"data": {
 				"indication_text": sentinel_indication,
-				"indication_meddra_version": "25.0"
+				"indication_meddra_version": "25.0",
+				"indication_meddra_code": "10019211"
 			}
 		})),
 	)
@@ -528,6 +595,7 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 		.into());
 	}
 	ensure_reaction_language(&app, &cookie, &case_id).await?;
+	ensure_batch_transmission_date(&app, &cookie, &case_id).await?;
 	mark_case_validated(&app, &cookie, &case_id).await?;
 
 	// Export and assert updated DG values are present in XML.
