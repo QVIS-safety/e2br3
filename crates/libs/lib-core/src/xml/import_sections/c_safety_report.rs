@@ -15,9 +15,11 @@ pub struct CSafetyReportImport {
 	pub date_first_received_from_source: Date,
 	pub date_of_most_recent_information: Date,
 	pub fulfil_expedited_criteria: bool,
+	pub additional_documents_available: Option<bool>,
 	pub local_criteria_report_type: Option<String>,
 	pub combination_product_report_indicator: Option<String>,
 	pub worldwide_unique_id: Option<String>,
+	pub first_sender_type: Option<String>,
 	pub nullification_code: Option<String>,
 	pub nullification_reason: Option<String>,
 }
@@ -75,6 +77,10 @@ pub fn parse_c_safety_report(xml: &[u8]) -> Result<Option<CSafetyReportImport>> 
 		CSafetyReportPaths::FULFIL_EXPEDITED,
 	))
 	.unwrap_or(false);
+	let additional_documents_available = parse_bool_value(first_value_root(
+		&mut xpath,
+		CSafetyReportPaths::ADDITIONAL_DOCUMENTS_AVAILABLE,
+	));
 
 	let local_criteria_report_type = normalize_code(
 		first_value_root(
@@ -96,6 +102,10 @@ pub fn parse_c_safety_report(xml: &[u8]) -> Result<Option<CSafetyReportImport>> 
 		first_value_root(&mut xpath, CSafetyReportPaths::WORLDWIDE_UNIQUE_ID_EXT),
 		100,
 	);
+	let first_sender_type = normalize_code(
+		first_value_root(&mut xpath, CSafetyReportPaths::FIRST_SENDER_TYPE),
+		&["1", "2", "3", "4", "5", "6"],
+	);
 
 	let nullification_code = normalize_code(
 		first_value_root(&mut xpath, CSafetyReportPaths::NULLIFICATION_CODE),
@@ -113,9 +123,11 @@ pub fn parse_c_safety_report(xml: &[u8]) -> Result<Option<CSafetyReportImport>> 
 		date_first_received_from_source,
 		date_of_most_recent_information,
 		fulfil_expedited_criteria,
+		additional_documents_available,
 		local_criteria_report_type,
 		combination_product_report_indicator,
 		worldwide_unique_id,
+		first_sender_type,
 		nullification_code,
 		nullification_reason,
 	}))

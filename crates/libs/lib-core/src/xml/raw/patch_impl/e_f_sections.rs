@@ -28,7 +28,9 @@ pub fn patch_e_reactions(raw_xml: &[u8], reactions: &[Reaction]) -> Result<Strin
 		&mut xpath,
 		"//hl7:primaryRole/hl7:subjectOf2[hl7:observation/hl7:code[@code='29' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]",
 	);
-	for reaction in reactions {
+	let mut ordered: Vec<&Reaction> = reactions.iter().collect();
+	ordered.sort_by_key(|reaction| reaction.sequence_number);
+	for reaction in ordered {
 		let fragment = reaction_fragment(reaction)?;
 		append_fragment_child(
 			&mut doc,
@@ -70,7 +72,9 @@ pub fn patch_f_test_results(raw_xml: &[u8], tests: &[TestResult]) -> Result<Stri
 		&mut xpath,
 		"//hl7:primaryRole/hl7:subjectOf2[hl7:organizer/hl7:code[@code='3' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]",
 	);
-	for test in tests {
+	let mut ordered: Vec<&TestResult> = tests.iter().collect();
+	ordered.sort_by_key(|test| test.sequence_number);
+	for test in ordered {
 		let fragment = test_result_fragment(test);
 		append_fragment_child(
 			&mut doc,

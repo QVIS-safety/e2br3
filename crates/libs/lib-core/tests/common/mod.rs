@@ -17,18 +17,9 @@ fn system_user_id() -> Uuid {
 }
 
 async fn ensure_demo_seed(mm: &ModelManager) -> Result<()> {
-	sqlx::query("SELECT set_config('app.current_user_id', $1, false)")
-		.bind(system_user_id().to_string())
-		.execute(mm.dbx().db())
-		.await?;
-	sqlx::query("SELECT set_config('app.current_org_id', $1, false)")
-		.bind(demo_org_id().to_string())
-		.execute(mm.dbx().db())
-		.await?;
-	sqlx::query("SELECT set_config('app.current_user_role', $1, false)")
-		.bind(DEMO_ROLE)
-		.execute(mm.dbx().db())
-		.await?;
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, system_user_id()).await?;
+	set_org_context(&mut tx, demo_org_id(), DEMO_ROLE).await?;
 
 	sqlx::query(
 		"INSERT INTO organizations (
@@ -42,7 +33,7 @@ async fn ensure_demo_seed(mm: &ModelManager) -> Result<()> {
 	)
 	.bind(demo_org_id())
 	.bind(system_user_id())
-	.execute(mm.dbx().db())
+	.execute(&mut *tx)
 	.await?;
 
 	sqlx::query(
@@ -71,8 +62,10 @@ async fn ensure_demo_seed(mm: &ModelManager) -> Result<()> {
 	.bind(demo_user_id())
 	.bind(demo_org_id())
 	.bind(system_user_id())
-	.execute(mm.dbx().db())
+	.execute(&mut *tx)
 	.await?;
+
+	tx.commit().await?;
 
 	Ok(())
 }
@@ -105,13 +98,13 @@ pub fn unique_suffix() -> String {
 
 #[allow(dead_code)]
 pub fn demo_org_id() -> Uuid {
-	// NOTE: Seeded by sql/dev_initial/00-recreate-db.sql
+	// NOTE: Seeded by db/admin/00-recreate-db.sql
 	uuid::uuid!("00000000-0000-0000-0000-000000000001")
 }
 
 #[allow(dead_code)]
 pub fn demo_user_id() -> Uuid {
-	// NOTE: Seeded by sql/dev_initial/13-e2br3-seed.sql
+	// NOTE: Seeded by db/seed/001-demo-seed.sql
 	uuid::uuid!("11111111-1111-1111-1111-111111111111")
 }
 

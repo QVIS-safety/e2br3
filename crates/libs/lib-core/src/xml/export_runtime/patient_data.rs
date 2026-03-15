@@ -76,6 +76,27 @@ pub(super) async fn fetch_case_summaries(
 	.map_err(Error::from)
 }
 
+pub(super) async fn fetch_sender_diagnoses(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	narrative_id: sqlx::types::Uuid,
+) -> Result<Vec<SenderDiagnosis>> {
+	let filter = SenderDiagnosisFilter {
+		narrative_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			narrative_id.to_string()
+		))])),
+		..Default::default()
+	};
+	SenderDiagnosisBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await
+	.map_err(Error::from)
+}
+
 pub(super) async fn fetch_past_drug_history(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -88,6 +109,27 @@ pub(super) async fn fetch_past_drug_history(
 		..Default::default()
 	};
 	PastDrugHistoryBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await
+	.map_err(Error::from)
+}
+
+pub(super) async fn fetch_medical_history_episodes(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	patient_id: sqlx::types::Uuid,
+) -> Result<Vec<MedicalHistoryEpisode>> {
+	let filter = MedicalHistoryEpisodeFilter {
+		patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			patient_id.to_string()
+		))])),
+		..Default::default()
+	};
+	MedicalHistoryEpisodeBmc::list(
 		ctx,
 		mm,
 		Some(vec![filter]),
@@ -120,12 +162,12 @@ pub(super) fn ensure_patient_observation(
 	append_fragment_child(doc, parser, xpath, "//hl7:primaryRole", &fragment)
 }
 
-pub(super) fn ensure_patient_history_text(
+pub(super) fn ensure_patient_history_organizer(
 	xpath: &mut Context,
 	doc: &mut Document,
 	parser: &Parser,
 ) -> Result<()> {
-	let path = "//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]";
+	let path = "//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]";
 	if xpath
 		.findnodes(path, None)
 		.map(|n| !n.is_empty())
@@ -138,7 +180,30 @@ pub(super) fn ensure_patient_history_text(
 		parser,
 		xpath,
 		"//hl7:primaryRole",
-		"<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\"/><component typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"18\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"ED\"/></observation></component></organizer></subjectOf2>",
+		"<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\"/></organizer></subjectOf2>",
+	)
+}
+
+pub(super) fn ensure_patient_history_text(
+	xpath: &mut Context,
+	doc: &mut Document,
+	parser: &Parser,
+) -> Result<()> {
+	ensure_patient_history_organizer(xpath, doc, parser)?;
+	let path = "//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]";
+	if xpath
+		.findnodes(path, None)
+		.map(|n| !n.is_empty())
+		.unwrap_or(false)
+	{
+		return Ok(());
+	}
+	append_fragment_child(
+		doc,
+		parser,
+		xpath,
+		"//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]",
+		"<component typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"18\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"ED\"/></observation></component>",
 	)
 }
 

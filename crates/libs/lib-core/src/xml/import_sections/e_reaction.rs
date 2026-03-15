@@ -22,14 +22,22 @@ pub struct EReactionImport {
 	pub term_highlighted: Option<bool>,
 	pub serious: Option<bool>,
 	pub criteria_death: Option<bool>,
+	pub criteria_death_null_flavor: Option<String>,
 	pub criteria_life_threatening: Option<bool>,
+	pub criteria_life_threatening_null_flavor: Option<String>,
 	pub criteria_hospitalization: Option<bool>,
+	pub criteria_hospitalization_null_flavor: Option<String>,
 	pub criteria_disabling: Option<bool>,
+	pub criteria_disabling_null_flavor: Option<String>,
 	pub criteria_congenital_anomaly: Option<bool>,
+	pub criteria_congenital_anomaly_null_flavor: Option<String>,
 	pub criteria_other_medically_important: Option<bool>,
+	pub criteria_other_medically_important_null_flavor: Option<String>,
 	pub required_intervention: Option<String>,
 	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
 	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
 	pub duration_value: Option<Decimal>,
 	pub duration_unit: Option<String>,
 	pub outcome: Option<String>,
@@ -110,36 +118,70 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 			"1" | "2" => Some(false),
 			_ => None,
 		});
-		let criteria_death = parse_bool_value(first_attr(
-			&mut xpath,
-			&node,
-			EReactionPaths::CRITERIA_DEATH,
-		));
-		let criteria_life_threatening = parse_bool_value(first_attr(
-			&mut xpath,
-			&node,
-			EReactionPaths::CRITERIA_LIFE_THREATENING,
-		));
-		let criteria_hospitalization = parse_bool_value(first_attr(
-			&mut xpath,
-			&node,
-			EReactionPaths::CRITERIA_HOSPITALIZATION,
-		));
-		let criteria_disabling = parse_bool_value(first_attr(
-			&mut xpath,
-			&node,
-			EReactionPaths::CRITERIA_DISABLING,
-		));
-		let criteria_congenital_anomaly = parse_bool_value(first_attr(
-			&mut xpath,
-			&node,
-			EReactionPaths::CRITERIA_CONGENITAL,
-		));
-		let criteria_other_medically_important = parse_bool_value(first_attr(
-			&mut xpath,
-			&node,
-			EReactionPaths::CRITERIA_OTHER,
-		));
+		let (criteria_death, criteria_death_null_flavor) =
+			parse_bool_with_null_flavor(
+				first_attr(&mut xpath, &node, EReactionPaths::CRITERIA_DEATH),
+				first_attr(
+					&mut xpath,
+					&node,
+					EReactionPaths::CRITERIA_DEATH_NULL_FLAVOR,
+				),
+			);
+		let (criteria_life_threatening, criteria_life_threatening_null_flavor) =
+			parse_bool_with_null_flavor(
+				first_attr(
+					&mut xpath,
+					&node,
+					EReactionPaths::CRITERIA_LIFE_THREATENING,
+				),
+				first_attr(
+					&mut xpath,
+					&node,
+					EReactionPaths::CRITERIA_LIFE_THREATENING_NULL_FLAVOR,
+				),
+			);
+		let (criteria_hospitalization, criteria_hospitalization_null_flavor) =
+			parse_bool_with_null_flavor(
+				first_attr(
+					&mut xpath,
+					&node,
+					EReactionPaths::CRITERIA_HOSPITALIZATION,
+				),
+				first_attr(
+					&mut xpath,
+					&node,
+					EReactionPaths::CRITERIA_HOSPITALIZATION_NULL_FLAVOR,
+				),
+			);
+		let (criteria_disabling, criteria_disabling_null_flavor) =
+			parse_bool_with_null_flavor(
+				first_attr(&mut xpath, &node, EReactionPaths::CRITERIA_DISABLING),
+				first_attr(
+					&mut xpath,
+					&node,
+					EReactionPaths::CRITERIA_DISABLING_NULL_FLAVOR,
+				),
+			);
+		let (criteria_congenital_anomaly, criteria_congenital_anomaly_null_flavor) =
+			parse_bool_with_null_flavor(
+				first_attr(&mut xpath, &node, EReactionPaths::CRITERIA_CONGENITAL),
+				first_attr(
+					&mut xpath,
+					&node,
+					EReactionPaths::CRITERIA_CONGENITAL_NULL_FLAVOR,
+				),
+			);
+		let (
+			criteria_other_medically_important,
+			criteria_other_medically_important_null_flavor,
+		) = parse_bool_with_null_flavor(
+			first_attr(&mut xpath, &node, EReactionPaths::CRITERIA_OTHER),
+			first_attr(
+				&mut xpath,
+				&node,
+				EReactionPaths::CRITERIA_OTHER_NULL_FLAVOR,
+			),
+		);
 		let criteria_any_true = [
 			criteria_death,
 			criteria_life_threatening,
@@ -166,11 +208,29 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 				first_attr(&mut xpath, &node, EReactionPaths::START_DATE_FALLBACK)
 			})
 			.and_then(parse_date);
+		let start_date_null_flavor =
+			first_attr(&mut xpath, &node, EReactionPaths::START_DATE_NULL_FLAVOR)
+				.or_else(|| {
+					first_attr(
+						&mut xpath,
+						&node,
+						EReactionPaths::START_DATE_NULL_FLAVOR_FALLBACK,
+					)
+				});
 		let end_date = first_attr(&mut xpath, &node, EReactionPaths::END_DATE)
 			.or_else(|| {
 				first_attr(&mut xpath, &node, EReactionPaths::END_DATE_FALLBACK)
 			})
 			.and_then(parse_date);
+		let end_date_null_flavor =
+			first_attr(&mut xpath, &node, EReactionPaths::END_DATE_NULL_FLAVOR)
+				.or_else(|| {
+					first_attr(
+						&mut xpath,
+						&node,
+						EReactionPaths::END_DATE_NULL_FLAVOR_FALLBACK,
+					)
+				});
 		let duration_value =
 			first_attr(&mut xpath, &node, EReactionPaths::DURATION_VALUE)
 				.and_then(|v| v.parse::<Decimal>().ok());
@@ -199,14 +259,22 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 			term_highlighted,
 			serious,
 			criteria_death,
+			criteria_death_null_flavor,
 			criteria_life_threatening,
+			criteria_life_threatening_null_flavor,
 			criteria_hospitalization,
+			criteria_hospitalization_null_flavor,
 			criteria_disabling,
+			criteria_disabling_null_flavor,
 			criteria_congenital_anomaly,
+			criteria_congenital_anomaly_null_flavor,
 			criteria_other_medically_important,
+			criteria_other_medically_important_null_flavor,
 			required_intervention,
 			start_date,
+			start_date_null_flavor,
 			end_date,
+			end_date_null_flavor,
 			duration_value,
 			duration_unit,
 			outcome,
@@ -244,6 +312,13 @@ fn parse_bool_value(value: Option<String>) -> Option<bool> {
 		"false" | "0" => Some(false),
 		_ => None,
 	}
+}
+
+fn parse_bool_with_null_flavor(
+	value: Option<String>,
+	null_flavor: Option<String>,
+) -> (Option<bool>, Option<String>) {
+	(parse_bool_value(value), null_flavor)
 }
 
 fn clamp_str(value: Option<String>, max: usize) -> Option<String> {

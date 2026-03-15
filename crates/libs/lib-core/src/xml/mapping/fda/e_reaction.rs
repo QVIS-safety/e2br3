@@ -27,16 +27,28 @@ impl EReactionPaths {
 	// Seriousness criteria
 	pub const CRITERIA_DEATH: &'static str =
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='34']]/hl7:value/@value";
+	pub const CRITERIA_DEATH_NULL_FLAVOR: &'static str =
+		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='34']]/hl7:value/@nullFlavor";
 	pub const CRITERIA_LIFE_THREATENING: &'static str =
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='21']]/hl7:value/@value";
+	pub const CRITERIA_LIFE_THREATENING_NULL_FLAVOR: &'static str =
+		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='21']]/hl7:value/@nullFlavor";
 	pub const CRITERIA_HOSPITALIZATION: &'static str =
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='33']]/hl7:value/@value";
+	pub const CRITERIA_HOSPITALIZATION_NULL_FLAVOR: &'static str =
+		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='33']]/hl7:value/@nullFlavor";
 	pub const CRITERIA_DISABLING: &'static str =
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='35']]/hl7:value/@value";
+	pub const CRITERIA_DISABLING_NULL_FLAVOR: &'static str =
+		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='35']]/hl7:value/@nullFlavor";
 	pub const CRITERIA_CONGENITAL: &'static str =
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='12']]/hl7:value/@value";
+	pub const CRITERIA_CONGENITAL_NULL_FLAVOR: &'static str =
+		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='12']]/hl7:value/@nullFlavor";
 	pub const CRITERIA_OTHER: &'static str =
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='26']]/hl7:value/@value";
+	pub const CRITERIA_OTHER_NULL_FLAVOR: &'static str =
+		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='26']]/hl7:value/@nullFlavor";
 
 	// FDA.E.i.3.2h Required Intervention
 	pub const REQUIRED_INTERVENTION: &'static str =
@@ -46,9 +58,17 @@ impl EReactionPaths {
 	pub const START_DATE: &'static str =
 		"hl7:effectiveTime/hl7:comp[@xsi:type='IVL_TS']/hl7:low/@value";
 	pub const START_DATE_FALLBACK: &'static str = "hl7:effectiveTime/hl7:low/@value";
+	pub const START_DATE_NULL_FLAVOR: &'static str =
+		"hl7:effectiveTime/hl7:comp[@xsi:type='IVL_TS']/hl7:low/@nullFlavor";
+	pub const START_DATE_NULL_FLAVOR_FALLBACK: &'static str =
+		"hl7:effectiveTime/hl7:low/@nullFlavor";
 	pub const END_DATE: &'static str =
 		"hl7:effectiveTime/hl7:comp[@xsi:type='IVL_TS']/hl7:high/@value";
 	pub const END_DATE_FALLBACK: &'static str = "hl7:effectiveTime/hl7:high/@value";
+	pub const END_DATE_NULL_FLAVOR: &'static str =
+		"hl7:effectiveTime/hl7:comp[@xsi:type='IVL_TS']/hl7:high/@nullFlavor";
+	pub const END_DATE_NULL_FLAVOR_FALLBACK: &'static str =
+		"hl7:effectiveTime/hl7:high/@nullFlavor";
 	pub const DURATION_VALUE: &'static str =
 		"hl7:effectiveTime/hl7:comp[@operator='A']/hl7:width/@value";
 	pub const DURATION_UNIT: &'static str =

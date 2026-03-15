@@ -3,13 +3,18 @@ use crate::xml::Result;
 
 pub fn export_h_narrative_xml(narrative: &NarrativeInformation) -> Result<String> {
 	let mut components = String::new();
+
+	// H.2 - reporter comments.
 	if let Some(comments) = narrative.reporter_comments.as_deref() {
 		components.push_str(&comment_fragment(comments, "3"));
 	}
+
+	// H.4 - sender comments.
 	if let Some(comments) = narrative.sender_comments.as_deref() {
 		components.push_str(&comment_fragment(comments, "1"));
 	}
 
+	// H.1 - case narrative.
 	let xml = base_h_narrative_skeleton()
 		.replace("{CASE_NARRATIVE}", &xml_escape(&narrative.case_narrative))
 		.replace("{COMMENTS}", &components);

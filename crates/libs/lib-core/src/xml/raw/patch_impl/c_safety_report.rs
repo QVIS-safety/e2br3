@@ -42,37 +42,65 @@ pub fn patch_c_safety_report(
 
 	// C.1.2 Date of Creation
 	ensure_control_act_effective_time(&mut doc, &parser, &mut xpath)?;
-	set_attr_first(
-		&mut xpath,
-		"//hl7:controlActProcess/hl7:effectiveTime",
-		"value",
-		&clamp_14_digit_datetime_not_future(
-			&patch
-				.transmission_date_value
-				.filter(|v| is_14_digit_datetime(v))
-				.map(|v| v.to_string())
-				.or_else(|| patch.transmission_date_time.map(fmt_offset_datetime))
-				.unwrap_or_else(|| fmt_date_time_fallback(patch.transmission_date)),
-		),
-	);
+	let transmission_time_path = "//hl7:controlActProcess/hl7:effectiveTime";
+	if let Some(transmission_date) = patch.transmission_date {
+		remove_attr_first(&mut xpath, transmission_time_path, "nullFlavor");
+		set_attr_first(
+			&mut xpath,
+			transmission_time_path,
+			"value",
+			&clamp_14_digit_datetime_not_future(
+				&patch
+					.transmission_date_value
+					.filter(|v| is_14_digit_datetime(v))
+					.map(|v| v.to_string())
+					.or_else(|| {
+						patch.transmission_date_time.map(fmt_offset_datetime)
+					})
+					.unwrap_or_else(|| fmt_date_time_fallback(transmission_date)),
+			),
+		);
+	} else if let Some(null_flavor) = patch.transmission_date_null_flavor {
+		remove_attr_first(&mut xpath, transmission_time_path, "value");
+		set_attr_first(
+			&mut xpath,
+			transmission_time_path,
+			"nullFlavor",
+			null_flavor,
+		);
+	}
 
 	// C.1.4 Date First Received
 	ensure_investigation_effective_time(&mut doc, &parser, &mut xpath)?;
-	set_attr_first(
-		&mut xpath,
-		"//hl7:investigationEvent/hl7:effectiveTime/hl7:low",
-		"value",
-		&fmt_date(patch.date_first_received),
-	);
+	let first_received_path = "//hl7:investigationEvent/hl7:effectiveTime/hl7:low";
+	if let Some(date_first_received) = patch.date_first_received {
+		remove_attr_first(&mut xpath, first_received_path, "nullFlavor");
+		set_attr_first(
+			&mut xpath,
+			first_received_path,
+			"value",
+			&fmt_date(date_first_received),
+		);
+	} else if let Some(null_flavor) = patch.date_first_received_null_flavor {
+		remove_attr_first(&mut xpath, first_received_path, "value");
+		set_attr_first(&mut xpath, first_received_path, "nullFlavor", null_flavor);
+	}
 
 	// C.1.5 Date Most Recent
 	ensure_investigation_availability_time(&mut doc, &parser, &mut xpath)?;
-	set_attr_first(
-		&mut xpath,
-		"//hl7:investigationEvent/hl7:availabilityTime",
-		"value",
-		&fmt_date(patch.date_most_recent),
-	);
+	let most_recent_path = "//hl7:investigationEvent/hl7:availabilityTime";
+	if let Some(date_most_recent) = patch.date_most_recent {
+		remove_attr_first(&mut xpath, most_recent_path, "nullFlavor");
+		set_attr_first(
+			&mut xpath,
+			most_recent_path,
+			"value",
+			&fmt_date(date_most_recent),
+		);
+	} else if let Some(null_flavor) = patch.date_most_recent_null_flavor {
+		remove_attr_first(&mut xpath, most_recent_path, "value");
+		set_attr_first(&mut xpath, most_recent_path, "nullFlavor", null_flavor);
+	}
 
 	// C.1.7 Expedited criteria
 	ensure_observation_event_component(
@@ -90,6 +118,29 @@ pub fn patch_c_safety_report(
 		if patch.fulfil_expedited { "true" } else { "false" },
 	);
 
+	// C.1.6.1 Additional Documents Available
+	if let Some(value) = patch.additional_documents_available {
+		ensure_observation_event_component(
+			&mut doc,
+			&parser,
+			&mut xpath,
+			"1",
+			"2.16.840.1.113883.3.989.2.1.1.19",
+			"BL",
+		)?;
+		set_attr_first(
+			&mut xpath,
+			"//hl7:component/hl7:observationEvent[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value",
+			"value",
+			if value { "true" } else { "false" },
+		);
+	} else {
+		remove_nodes(
+			&mut xpath,
+			"//hl7:component/hl7:observationEvent[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]",
+		);
+	}
+
 	// C.1.8.1 Worldwide Unique Case Identification
 	if let Some(worldwide_id) = patch.worldwide_unique_id {
 		ensure_investigation_id(
@@ -103,6 +154,11 @@ pub fn patch_c_safety_report(
 			"//hl7:controlActProcess/hl7:subject/hl7:investigationEvent/hl7:id[@root='2.16.840.1.113883.3.989.2.1.3.2']",
 			"extension",
 			worldwide_id,
+		);
+	} else {
+		remove_nodes(
+			&mut xpath,
+			"//hl7:controlActProcess/hl7:subject/hl7:investigationEvent/hl7:id[@root='2.16.840.1.113883.3.989.2.1.3.2']",
 		);
 	}
 
@@ -127,6 +183,11 @@ pub fn patch_c_safety_report(
 			"FDA.C.1.7.1.REQUIRED",
 			"//hl7:component/hl7:observationEvent[hl7:code[@code='C54588' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value",
 		);
+	} else {
+		remove_nodes(
+			&mut xpath,
+			"//hl7:component/hl7:observationEvent[hl7:code[@code='C54588' and @codeSystem='2.16.840.1.113883.3.26.1.1']]",
+		);
 	}
 
 	// FDA.C.1.12 Combination Product Report Indicator
@@ -150,6 +211,11 @@ pub fn patch_c_safety_report(
 			&mut xpath,
 			"FDA.C.1.12.REQUIRED",
 			"//hl7:component/hl7:observationEvent[hl7:code[@code='C156384' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value",
+		);
+	} else {
+		remove_nodes(
+			&mut xpath,
+			"//hl7:component/hl7:observationEvent[hl7:code[@code='C156384' and @codeSystem='2.16.840.1.113883.3.26.1.1']]",
 		);
 	}
 
@@ -187,6 +253,11 @@ pub fn patch_c_safety_report(
 			"code",
 			code,
 		);
+	} else {
+		remove_nodes(
+			&mut xpath,
+			"//hl7:investigationEvent/hl7:subjectOf2/hl7:investigationCharacteristic[hl7:code[@code='3' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.23']]",
+		);
 	}
 
 	// C.1.11.2 Nullification/Amendment Reason
@@ -203,6 +274,26 @@ pub fn patch_c_safety_report(
 			&mut xpath,
 			"//hl7:investigationEvent/hl7:subjectOf2/hl7:investigationCharacteristic[hl7:code[@code='4' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.23']]/hl7:value/hl7:originalText",
 			reason,
+		);
+	} else {
+		remove_nodes(
+			&mut xpath,
+			"//hl7:investigationEvent/hl7:subjectOf2/hl7:investigationCharacteristic[hl7:code[@code='4' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.23']]",
+		);
+	}
+
+	// C.1.8.2 First Sender of This Case
+	if let Some(code) = patch.first_sender_type {
+		set_attr_first(
+			&mut xpath,
+			"//hl7:outboundRelationship[hl7:relatedInvestigation/hl7:code[@code='1']]/hl7:relatedInvestigation/hl7:subjectOf2/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:code",
+			"code",
+			code,
+		);
+	} else {
+		remove_nodes(
+			&mut xpath,
+			"//hl7:outboundRelationship[hl7:relatedInvestigation/hl7:code[@code='1']]",
 		);
 	}
 

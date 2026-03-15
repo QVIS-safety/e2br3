@@ -11,6 +11,7 @@ pub(super) async fn apply_section_n(
 	let Some(header) = header else {
 		return Ok(());
 	};
+	let report = fetch_safety_report_identification(mm, case_id).await?;
 
 	if let Some(batch_number) = header.batch_number.as_deref() {
 		set_attr_first(
@@ -18,6 +19,14 @@ pub(super) async fn apply_section_n(
 			"/hl7:MCCI_IN200100UV01/hl7:id",
 			"extension",
 			batch_number,
+		);
+	}
+	if !header.message_type.trim().is_empty() {
+		set_attr_first(
+			xpath,
+			"/hl7:MCCI_IN200100UV01/hl7:name",
+			"displayName",
+			&header.message_type,
 		);
 	}
 	if let Some(batch_tx) = header.batch_transmission_date {
@@ -110,52 +119,40 @@ pub(super) async fn apply_section_n(
 			&header.message_receiver_identifier,
 		)?;
 		let base = "/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization";
-		if let Some(v) = receiver.organization_name.as_deref() {
+		if let Some(v) = receiver.receiver_type.as_deref() {
+			set_attr_first(xpath, &format!("{base}/hl7:code"), "code", v);
+		}
+		if let Some(v) = receiver.organization_name.as_deref().or_else(|| {
+			report
+				.as_ref()
+				.and_then(|r| r.receiver_organization.as_deref())
+		}) {
 			set_text_first(xpath, &format!("{base}/hl7:name"), v);
 		}
 		if let Some(v) = receiver.department.as_deref() {
-			set_text_first(
-				xpath,
-				&format!(
-					"{base}/hl7:notificationParty/hl7:contactOrganization/hl7:name"
-				),
-				v,
-			);
+			set_text_first(xpath, &format!("{base}/hl7:desc"), v);
 		}
 		if let Some(v) = receiver.street_address.as_deref() {
 			set_text_first(
 				xpath,
-				&format!(
-					"{base}/hl7:notificationParty/hl7:addr/hl7:streetAddressLine"
-				),
+				&format!("{base}/hl7:addr/hl7:streetAddressLine"),
 				v,
 			);
 		}
 		if let Some(v) = receiver.city.as_deref() {
-			set_text_first(
-				xpath,
-				&format!("{base}/hl7:notificationParty/hl7:addr/hl7:city"),
-				v,
-			);
+			set_text_first(xpath, &format!("{base}/hl7:addr/hl7:city"), v);
 		}
 		if let Some(v) = receiver.state_province.as_deref() {
-			set_text_first(
-				xpath,
-				&format!("{base}/hl7:notificationParty/hl7:addr/hl7:state"),
-				v,
-			);
+			set_text_first(xpath, &format!("{base}/hl7:addr/hl7:state"), v);
 		}
 		if let Some(v) = receiver.postcode.as_deref() {
-			set_text_first(
-				xpath,
-				&format!("{base}/hl7:notificationParty/hl7:addr/hl7:postalCode"),
-				v,
-			);
+			set_text_first(xpath, &format!("{base}/hl7:addr/hl7:postalCode"), v);
 		}
 		if let Some(v) = receiver.country_code.as_deref() {
-			set_text_first(
+			set_attr_first(
 				xpath,
-				&format!("{base}/hl7:notificationParty/hl7:addr/hl7:country"),
+				&format!("{base}/hl7:addr/hl7:country"),
+				"code",
 				v,
 			);
 		}
@@ -167,9 +164,7 @@ pub(super) async fn apply_section_n(
 			};
 			set_attr_first(
 				xpath,
-				&format!(
-					"{base}/hl7:notificationParty/hl7:telecom[starts-with(@value,'tel:')]"
-				),
+				&format!("{base}/hl7:telecom[starts-with(@value,'tel:')]"),
 				"value",
 				&value,
 			);
@@ -182,9 +177,7 @@ pub(super) async fn apply_section_n(
 			};
 			set_attr_first(
 				xpath,
-				&format!(
-					"{base}/hl7:notificationParty/hl7:telecom[starts-with(@value,'fax:')]"
-				),
+				&format!("{base}/hl7:telecom[starts-with(@value,'fax:')]"),
 				"value",
 				&value,
 			);
@@ -197,9 +190,7 @@ pub(super) async fn apply_section_n(
 			};
 			set_attr_first(
 				xpath,
-				&format!(
-					"{base}/hl7:notificationParty/hl7:telecom[starts-with(@value,'mailto:')]"
-				),
+				&format!("{base}/hl7:telecom[starts-with(@value,'mailto:')]"),
 				"value",
 				&value,
 			);
@@ -237,6 +228,24 @@ pub(super) async fn fetch_receiver_information(
 	let sql = "SELECT * FROM receiver_information WHERE case_id = $1 LIMIT 1";
 	mm.dbx()
 		.fetch_optional(sqlx::query_as::<_, ReceiverInformation>(sql).bind(case_id))
+		.await
+		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
+}
+
+async fn fetch_safety_report_identification(
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+) -> Result<Option<crate::model::safety_report::SafetyReportIdentification>> {
+	let sql =
+		"SELECT * FROM safety_report_identification WHERE case_id = $1 LIMIT 1";
+	mm.dbx()
+		.fetch_optional(
+			sqlx::query_as::<
+				_,
+				crate::model::safety_report::SafetyReportIdentification,
+			>(sql)
+			.bind(case_id),
+		)
 		.await
 		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
 }

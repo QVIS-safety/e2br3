@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>E2BR3 Backend API Docs</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="./swagger-ui/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="./swagger-ui/favicon-16x16.png">
+  <link rel="stylesheet" href="./swagger-ui/swagger-ui.css">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f6f8fb;
+    }
+
+    .topbar {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="./swagger-ui/swagger-ui-bundle.js"></script>
+  <script src="./swagger-ui/swagger-ui-standalone-preset.js"></script>
+  <script>
+    window.ui = SwaggerUIBundle({
+      url: "./openapi.json",
+      dom_id: "#swagger-ui",
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIStandalonePreset
+      ],
+      deepLinking: true,
+      docExpansion: "list",
+      displayRequestDuration: true,
+      defaultModelsExpandDepth: 1,
+      defaultModelExpandDepth: 2
+    });
+  </script>
+</body>
+</html>

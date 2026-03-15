@@ -1,2 +1,0 @@
-ALTER TABLE cases
-  ADD COLUMN IF NOT EXISTS appendices_json TEXT;

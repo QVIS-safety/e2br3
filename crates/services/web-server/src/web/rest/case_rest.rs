@@ -36,10 +36,14 @@ use modql::filter::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashSet;
+use std::io::{Cursor, Write};
 use time::{Date, Month, OffsetDateTime};
 use tokio::runtime::Handle;
 use tokio::task;
 use uuid::Uuid;
+use zip::write::SimpleFileOptions;
+use zip::{CompressionMethod, ZipWriter};
 
 const SYSTEM_VALIDATION_REASON_AUTO: &str =
 	"system validation: automatic case status synchronization";
@@ -397,6 +401,8 @@ pub async fn update_case_guarded(
 					status: Some(desired.to_string()),
 					validation_profile: None,
 					appendices_json: None,
+					review_receivers_json: None,
+					workflow_routes_json: None,
 					mfds_report_type: None,
 					report_year: None,
 					source_document_name: None,
@@ -522,6 +528,8 @@ pub async fn mark_case_validated_by_validator(
 			status: Some("validated".to_string()),
 			validation_profile: None,
 			appendices_json: None,
+			review_receivers_json: None,
+			workflow_routes_json: None,
 			mfds_report_type: None,
 			report_year: None,
 			source_document_name: None,
@@ -1172,6 +1180,8 @@ pub async fn create_case_from_intake(
 			Some(value) => normalize_appendices_json(value)?,
 			None => json!([profile_enum.as_str()]).to_string(),
 		}),
+		review_receivers_json: None,
+		workflow_routes_json: None,
 		mfds_report_type: data.mfds_report_type.clone(),
 		report_year: data.report_year.clone(),
 		source_document_name: data.source_document_name.clone(),
@@ -1213,6 +1223,8 @@ pub async fn create_case_from_intake(
 			),
 			date_of_most_recent_information_null_flavor: None,
 			fulfil_expedited_criteria: false,
+			first_sender_type: None,
+			additional_documents_available: None,
 		},
 	)
 	.await?;
@@ -1391,7 +1403,133 @@ pub async fn export_case(
 ) -> Result<Response> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, XML_EXPORT)?;
-	let case = CaseBmc::get(&ctx, &mm, id).await?;
+	let (case, xml) = generate_validated_case_xml(&ctx, &mm, id).await?;
+	let file_name = format!("{}-{}.xml", case.safety_report_id.as_str(), id);
+	if let Err(err) = record_xml_export(
+		&ctx,
+		&mm,
+		id,
+		Some(case.safety_report_id.as_str()),
+		&file_name,
+		case.validation_profile.as_deref(),
+		"success",
+		None,
+	)
+	.await
+	{
+		tracing::warn!("failed to record xml export history: {err}");
+	}
+
+	let mut response = (StatusCode::OK, xml).into_response();
+	response.headers_mut().insert(
+		header::CONTENT_TYPE,
+		header::HeaderValue::from_static("application/xml"),
+	);
+	response.headers_mut().insert(
+		header::CONTENT_DISPOSITION,
+		header::HeaderValue::from_str(&format!(
+			"attachment; filename=\"{file_name}\""
+		))
+		.map_err(|err| Error::BadRequest {
+			message: format!("invalid export filename header: {err}"),
+		})?,
+	);
+	Ok(response)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BulkXmlExportInput {
+	pub case_ids: Vec<Uuid>,
+}
+
+pub async fn export_cases_zip(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	axum::Json(input): axum::Json<BulkXmlExportInput>,
+) -> Result<Response> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, XML_EXPORT)?;
+	if input.case_ids.is_empty() {
+		return Err(Error::BadRequest {
+			message: "case_ids is required".to_string(),
+		});
+	}
+
+	let mut unique_case_ids = Vec::new();
+	let mut seen = HashSet::new();
+	for case_id in input.case_ids {
+		if seen.insert(case_id) {
+			unique_case_ids.push(case_id);
+		}
+	}
+
+	let mut cursor = Cursor::new(Vec::new());
+	let options =
+		SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+	{
+		let mut zip = ZipWriter::new(&mut cursor);
+		for case_id in unique_case_ids {
+			let (case, xml) =
+				generate_validated_case_xml(&ctx, &mm, case_id).await?;
+			let file_name =
+				format!("{}-{}.xml", case.safety_report_id.as_str(), case_id);
+			zip.start_file(file_name.clone(), options).map_err(|err| {
+				Error::BadRequest {
+					message: format!("failed to start zip entry: {err}"),
+				}
+			})?;
+			zip.write_all(xml.as_bytes())
+				.map_err(|err| Error::BadRequest {
+					message: format!("failed to write zip entry: {err}"),
+				})?;
+			if let Err(err) = record_xml_export(
+				&ctx,
+				&mm,
+				case_id,
+				Some(case.safety_report_id.as_str()),
+				&file_name,
+				case.validation_profile.as_deref(),
+				"success",
+				None,
+			)
+			.await
+			{
+				tracing::warn!("failed to record xml export history: {err}");
+			}
+		}
+		zip.finish().map_err(|err| Error::BadRequest {
+			message: format!("failed to finalize zip export: {err}"),
+		})?;
+	}
+
+	let bytes = cursor.into_inner();
+	let file_name = format!(
+		"e2br3-bulk-export-{}.zip",
+		OffsetDateTime::now_utc().unix_timestamp()
+	);
+	let mut response = (StatusCode::OK, bytes).into_response();
+	response.headers_mut().insert(
+		header::CONTENT_TYPE,
+		header::HeaderValue::from_static("application/zip"),
+	);
+	response.headers_mut().insert(
+		header::CONTENT_DISPOSITION,
+		header::HeaderValue::from_str(&format!(
+			"attachment; filename=\"{file_name}\""
+		))
+		.map_err(|err| Error::BadRequest {
+			message: format!("invalid export filename header: {err}"),
+		})?,
+	);
+	Ok(response)
+}
+
+async fn generate_validated_case_xml(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	id: Uuid,
+) -> Result<(Case, String)> {
+	let case = CaseBmc::get(ctx, mm, id).await?;
 	let profile = case
 		.validation_profile
 		.as_deref()
@@ -1446,37 +1584,7 @@ pub async fn export_case(
 		}
 	}
 
-	let file_name = format!("{}-{}.xml", case.safety_report_id.as_str(), id);
-	if let Err(err) = record_xml_export(
-		&ctx,
-		&mm,
-		id,
-		Some(case.safety_report_id.as_str()),
-		&file_name,
-		case.validation_profile.as_deref(),
-		"success",
-		None,
-	)
-	.await
-	{
-		tracing::warn!("failed to record xml export history: {err}");
-	}
-
-	let mut response = (StatusCode::OK, xml).into_response();
-	response.headers_mut().insert(
-		header::CONTENT_TYPE,
-		header::HeaderValue::from_static("application/xml"),
-	);
-	response.headers_mut().insert(
-		header::CONTENT_DISPOSITION,
-		header::HeaderValue::from_str(&format!(
-			"attachment; filename=\"{file_name}\""
-		))
-		.map_err(|err| Error::BadRequest {
-			message: format!("invalid export filename header: {err}"),
-		})?,
-	);
-	Ok(response)
+	Ok((case, xml))
 }
 
 async fn record_xml_export(

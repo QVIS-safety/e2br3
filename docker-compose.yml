@@ -17,18 +17,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Mount SQL init scripts (runs on first startup only)
-      - ./docs/dev_initial/03-safetydb-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./docs/dev_initial/04-e2br3_N.sql:/docker-entrypoint-initdb.d/02-e2br3_N.sql:ro
-      - ./docs/dev_initial/05-e2br3_C.sql:/docker-entrypoint-initdb.d/03-e2br3_C.sql:ro
-      - ./docs/dev_initial/06-e2br3_D.sql:/docker-entrypoint-initdb.d/04-e2br3_D.sql:ro
-      - ./docs/dev_initial/07-e2br3_E.sql:/docker-entrypoint-initdb.d/05-e2br3_E.sql:ro
-      - ./docs/dev_initial/08-e2br3_F.sql:/docker-entrypoint-initdb.d/06-e2br3_F.sql:ro
-      - ./docs/dev_initial/09-e2br3_G.sql:/docker-entrypoint-initdb.d/07-e2br3_G.sql:ro
-      - ./docs/dev_initial/10-e2br3_H.sql:/docker-entrypoint-initdb.d/08-e2br3_H.sql:ro
-      - ./docs/dev_initial/11-terminology.sql:/docker-entrypoint-initdb.d/09-terminology.sql:ro
-      - ./docs/dev_initial/12-triggers.sql:/docker-entrypoint-initdb.d/10-triggers.sql:ro
-      - ./docs/dev_initial/13-e2br3-seed.sql:/docker-entrypoint-initdb.d/11-seed.sql:ro
-      - ./docs/dev_initial/14-presave-templates.sql:/docker-entrypoint-initdb.d/12-presave-templates.sql:ro
+      - ./db:/db:ro
+      - ./scripts/db/list_init_sql.sh:/app-scripts/list_init_sql.sh:ro
+      - ./deploy/docker/postgres-init/01-run-all.sh:/docker-entrypoint-initdb.d/01-run-all.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U app_user -d app_db"]
       interval: 10s

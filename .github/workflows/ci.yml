@@ -95,19 +95,9 @@ jobs:
         run: |
           psql -h localhost -U app_user -d app_db -v ON_ERROR_STOP=1 \
             -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-          for f in \
-            docs/dev_initial/03-safetydb-schema.sql \
-            docs/dev_initial/04-e2br3_N.sql \
-            docs/dev_initial/05-e2br3_C.sql \
-            docs/dev_initial/06-e2br3_D.sql \
-            docs/dev_initial/07-e2br3_E.sql \
-            docs/dev_initial/08-e2br3_F.sql \
-            docs/dev_initial/09-e2br3_G.sql \
-            docs/dev_initial/10-e2br3_H.sql \
-            docs/dev_initial/11-terminology.sql \
-            docs/dev_initial/12-triggers.sql \
-            docs/dev_initial/13-e2br3-seed.sql; do
-            psql -h localhost -U app_user -d app_db -v ON_ERROR_STOP=1 -f "$f"
+          sh scripts/db/list_init_sql.sh db 1 |
+          while IFS= read -r f; do
+            psql -h localhost -U app_user -d app_db -v ON_ERROR_STOP=1 -f "db/$f"
           done
 
       - name: Run tests

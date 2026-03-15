@@ -4,6 +4,7 @@ use axum::extract::{Multipart, Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use csv::ReaderBuilder;
+use lib_core::ctx::{Ctx, ROLE_ADB_ADMIN};
 use lib_core::model::acs::{
 	TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT, TERMINOLOGY_READ,
 };
@@ -32,6 +33,15 @@ pub struct TerminologySearchParams {
 
 fn default_limit() -> i64 {
 	20
+}
+
+fn require_system_admin(ctx: &Ctx) -> Result<()> {
+	if ctx.role() != ROLE_ADB_ADMIN {
+		return Err(Error::PermissionDenied {
+			required_permission: "adb_admin".to_string(),
+		});
+	}
+	Ok(())
 }
 
 #[derive(Deserialize)]
@@ -228,6 +238,7 @@ pub async fn import_meddra(
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyImportResult>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TERMINOLOGY_IMPORT)?;
+	require_system_admin(&ctx)?;
 	let language = params.language.unwrap_or_else(|| "en".to_string());
 
 	let bytes = read_upload_bytes(multipart).await?;
@@ -274,6 +285,7 @@ pub async fn import_whodrug(
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyImportResult>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TERMINOLOGY_IMPORT)?;
+	require_system_admin(&ctx)?;
 	let language = params.language.unwrap_or_else(|| "en".to_string());
 
 	let bytes = read_upload_bytes(multipart).await?;
@@ -319,6 +331,7 @@ pub async fn list_releases(
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<TerminologyReleaseRow>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TERMINOLOGY_READ)?;
+	require_system_admin(&ctx)?;
 
 	let dictionary = params.dictionary.as_deref();
 	let language = params.language.as_deref();
@@ -336,6 +349,7 @@ pub async fn approve_release(
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyReleaseRow>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TERMINOLOGY_APPROVE)?;
+	require_system_admin(&ctx)?;
 	let language = params.language.unwrap_or_else(|| "en".to_string());
 	validate_dictionary(&path.dictionary)?;
 
@@ -380,6 +394,7 @@ pub async fn activate_release(
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyReleaseRow>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TERMINOLOGY_APPROVE)?;
+	require_system_admin(&ctx)?;
 	let language = params.language.unwrap_or_else(|| "en".to_string());
 
 	let data = activate_release_tx(
@@ -404,6 +419,7 @@ pub async fn rollback_release(
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyReleaseRow>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TERMINOLOGY_APPROVE)?;
+	require_system_admin(&ctx)?;
 	let language = params.language.unwrap_or_else(|| "en".to_string());
 
 	let data = activate_release_tx(

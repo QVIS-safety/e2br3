@@ -6,6 +6,7 @@
 - `.env.prod.example`: Template for required runtime environment variables.
 - `deploy.sh`: Pull and rollout script used by CD.
 - `init-rds.sh`: One-time SQL bootstrap runner for RDS.
+- `../../db/`: Organized SQL source tree (`admin/`, `bootstrap/`, `migrations/`, `seed/`).
 
 ## One-time setup on EC2
 
@@ -16,12 +17,14 @@
    - `docker-compose.prod.yml`
    - `.env.prod.example` as `.env.prod`
    - `deploy.sh`
+   - `schemas/`
 4. Make script executable:
    - `chmod +x /opt/e2br3/deploy.sh`
 5. Fill `/opt/e2br3/.env.prod` with real secrets and RDS URL.
-6. Put XSD files under `/opt/e2br3/schemas/multicacheschemas/...`.
-   - Ensure `/opt/e2br3/.env.prod` has `E2BR3_SCHEMAS_DIR=/opt/e2br3/schemas`
-     so the container bind-mount includes `/app/schemas/multicacheschemas/...`.
+6. Ensure `/opt/e2br3/.env.prod` has `E2BR3_SCHEMAS_DIR=/opt/e2br3/schemas`
+   so the container bind-mount includes `/app/schemas/...`.
+   - `deploy.sh` now syncs the bundled `schemas/` tree into that runtime directory on each deploy,
+     so newly added XSDs are included automatically.
 
 ## One-time RDS bootstrap
 
@@ -32,7 +35,7 @@ DATABASE_URL='postgres://<user>:<pwd>@<rds-endpoint>:5432/app_db?sslmode=require
 ./deploy/ec2/init-rds.sh
 ```
 
-Optional: reset DB/user first (destructive, runs `00-recreate-db.sql`):
+Optional: reset DB/user first (destructive, runs `db/admin/00-recreate-db.sql`):
 
 ```sh
 RESET_DB=1 \
@@ -52,8 +55,10 @@ RESET_DB=1 DATABASE_URL="$SERVICE_DB_URL" ./deploy/ec2/init-rds.sh
 ```
 
 `init-rds.sh` will use `SERVICE_DB_ROOT_URL` from the env file as `ROOT_DATABASE_URL`.
+It currently applies `db/bootstrap/*.sql` and then `db/seed/*.sql` when `INCLUDE_SEED=1`.
+`db/migrations/` is reserved for future incremental changes.
 
-To skip dev seed data (`13-e2br3-seed.sql`):
+To skip dev seed data (`db/seed/*.sql`):
 
 ```sh
 INCLUDE_SEED=0 DATABASE_URL='postgres://<user>:<pwd>@<rds-endpoint>:5432/app_db?sslmode=require' \

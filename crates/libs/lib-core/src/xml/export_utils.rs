@@ -27,6 +27,14 @@ pub(crate) fn set_text_first(xpath: &mut Context, path: &str, value: &str) {
 	}
 }
 
+pub(crate) fn remove_attr_first(xpath: &mut Context, path: &str, attr: &str) {
+	if let Ok(nodes) = xpath.findnodes(path, None) {
+		if let Some(mut node) = nodes.into_iter().next() {
+			let _ = node.remove_attribute(attr);
+		}
+	}
+}
+
 pub(crate) fn fmt_datetime(dt: OffsetDateTime) -> String {
 	let dt = dt.to_offset(UtcOffset::UTC);
 	format!(

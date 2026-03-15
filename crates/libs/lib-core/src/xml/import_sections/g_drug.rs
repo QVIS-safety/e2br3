@@ -35,6 +35,17 @@ pub struct GDrugImport {
 	pub parent_route_termid_version: Option<String>,
 	pub parent_dosage_text: Option<String>,
 	pub fda_additional_info_coded: Option<String>,
+	pub fda_specialized_product_category: Option<String>,
+	pub fda_device_brand_name: Option<String>,
+	pub fda_common_device_name: Option<String>,
+	pub fda_device_product_code: Option<String>,
+	pub fda_device_manufacturer_name: Option<String>,
+	pub fda_device_manufacturer_address: Option<String>,
+	pub fda_device_manufacturer_city: Option<String>,
+	pub fda_device_manufacturer_state: Option<String>,
+	pub fda_device_manufacturer_country: Option<String>,
+	pub fda_device_lot_number: Option<String>,
+	pub fda_operator_of_device: Option<String>,
 	pub substances: Vec<GDrugSubstanceImport>,
 	pub dosages: Vec<GDrugDosageImport>,
 	pub indications: Vec<GDrugIndicationImport>,
@@ -183,6 +194,34 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			first_attr(&mut xpath, &node, GDrugPaths::FDA_ADDITIONAL_INFO),
 			10,
 		);
+		let fda_specialized_product_category = first_attr(
+			&mut xpath,
+			&node,
+			GDrugPaths::FDA_SPECIALIZED_PRODUCT_CATEGORY,
+		);
+		let fda_device_brand_name =
+			first_text(&mut xpath, &node, GDrugPaths::DEVICE_BRAND_NAME);
+		let fda_common_device_name =
+			first_text(&mut xpath, &node, GDrugPaths::COMMON_DEVICE_NAME);
+		let fda_device_product_code =
+			first_attr(&mut xpath, &node, GDrugPaths::DEVICE_PRODUCT_CODE);
+		let fda_device_manufacturer_name =
+			first_text(&mut xpath, &node, GDrugPaths::DEVICE_MANUFACTURER_NAME);
+		let fda_device_manufacturer_address =
+			first_text(&mut xpath, &node, GDrugPaths::DEVICE_MANUFACTURER_ADDRESS);
+		let fda_device_manufacturer_city =
+			first_text(&mut xpath, &node, GDrugPaths::DEVICE_MANUFACTURER_CITY);
+		let fda_device_manufacturer_state =
+			first_text(&mut xpath, &node, GDrugPaths::DEVICE_MANUFACTURER_STATE);
+		let fda_device_manufacturer_country = normalize_iso2(first_text(
+			&mut xpath,
+			&node,
+			GDrugPaths::DEVICE_MANUFACTURER_COUNTRY,
+		));
+		let fda_device_lot_number =
+			first_text(&mut xpath, &node, GDrugPaths::DEVICE_LOT_NUMBER);
+		let fda_operator_of_device =
+			first_attr(&mut xpath, &node, GDrugPaths::DEVICE_OPERATOR_CODE);
 		let parent_route_termid_version = clamp_str(
 			first_attr(&mut xpath, &node, GDrugPaths::PARENT_ROUTE_TERMID_VERSION),
 			10,
@@ -395,6 +434,17 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			parent_route_termid_version,
 			parent_dosage_text,
 			fda_additional_info_coded,
+			fda_specialized_product_category,
+			fda_device_brand_name,
+			fda_common_device_name,
+			fda_device_product_code,
+			fda_device_manufacturer_name,
+			fda_device_manufacturer_address,
+			fda_device_manufacturer_city,
+			fda_device_manufacturer_state,
+			fda_device_manufacturer_country,
+			fda_device_lot_number,
+			fda_operator_of_device,
 			substances,
 			dosages: dosage_list,
 			indications,

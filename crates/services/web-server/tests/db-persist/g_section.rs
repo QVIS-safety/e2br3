@@ -34,6 +34,8 @@ async fn g_section_forms_persist_to_db_after_save() -> crate::common::Result<()>
 	assert_eq!(drug["mpid_version"], "2026.03");
 	assert_eq!(drug["phpid"], "Persist-PhPID");
 	assert_eq!(drug["brand_name"], "Persist Brand");
+	assert_eq!(drug["drug_generic_name"], "Persist Generic");
+	assert_eq!(drug["drug_authorization_number"], "AUTH-123");
 	assert_eq!(drug["manufacturer_name"], "Persist Manufacturer");
 	assert_eq!(drug["obtain_drug_country"], "KR");
 	assert_eq!(drug["parent_route_termid"], "PARENT-ROUTE-ID");
@@ -47,6 +49,8 @@ async fn g_section_forms_persist_to_db_after_save() -> crate::common::Result<()>
 			'mpid_version', mpid_version,
 			'phpid', phpid,
 			'phpid_version', phpid_version,
+			'drug_generic_name', drug_generic_name,
+			'drug_authorization_number', drug_authorization_number,
 			'obtain_drug_country', obtain_drug_country,
 			'drug_additional_info_codes_json', drug_additional_info_codes_json,
 			'fda_device_info_json', fda_device_info_json,
@@ -57,6 +61,8 @@ async fn g_section_forms_persist_to_db_after_save() -> crate::common::Result<()>
 	.await?;
 	assert_eq!(db_drug["mpid"], "Persist-MPID");
 	assert_eq!(db_drug["phpid_version"], "2026.04");
+	assert_eq!(db_drug["drug_generic_name"], "Persist Generic");
+	assert_eq!(db_drug["drug_authorization_number"], "AUTH-123");
 	assert_eq!(db_drug["obtain_drug_country"], "KR");
 	assert_eq!(
 		db_drug["drug_additional_info_codes_json"][0]["value_code"],

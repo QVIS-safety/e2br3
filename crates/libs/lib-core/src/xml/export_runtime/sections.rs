@@ -214,6 +214,61 @@ pub(super) async fn apply_case_summary_section(
 			language,
 		);
 	}
+	if let Some(summary_type) = summary.summary_type.as_deref() {
+		set_attr_first(
+			xpath,
+			"//hl7:investigationEvent/hl7:component/hl7:observationEvent[hl7:code[@code='36']]/hl7:author/hl7:assignedEntity/hl7:code",
+			"code",
+			summary_type,
+		);
+	}
+	Ok(())
+}
+
+pub(super) async fn apply_sender_diagnosis_section(
+	ctx: &Ctx,
+	doc: &mut Document,
+	parser: &Parser,
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+	xpath: &mut Context,
+) -> Result<()> {
+	let narrative =
+		match NarrativeInformationBmc::get_by_case(ctx, mm, case_id).await {
+			Ok(v) => v,
+			Err(_) => return Ok(()),
+		};
+	let diagnoses = fetch_sender_diagnoses(ctx, mm, narrative.id).await?;
+
+	remove_nodes(
+		xpath,
+		"//hl7:investigationEvent/hl7:component/hl7:adverseEventAssessment/hl7:component1/hl7:observationEvent[hl7:code[@code='15'] and hl7:author/hl7:assignedEntity/hl7:code[@code='1']]",
+	);
+
+	for diagnosis in diagnoses {
+		let mut attrs = String::from("xsi:type=\"CE\"");
+		if let Some(code) = diagnosis.diagnosis_meddra_code.as_deref() {
+			attrs.push_str(&format!(" code=\"{}\"", xml_escape(code)));
+		}
+		attrs.push_str(" codeSystem=\"2.16.840.1.113883.6.163\"");
+		if let Some(version) = diagnosis.diagnosis_meddra_version.as_deref() {
+			attrs.push_str(&format!(
+				" codeSystemVersion=\"{}\"",
+				xml_escape(version)
+			));
+		}
+		let fragment = format!(
+			"<component1 typeCode=\"COMP\"><observationEvent classCode=\"OBS\" moodCode=\"EVN\"><code code=\"15\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"diagnosis\"/><value {attrs}/><author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\"><code code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.21\" displayName=\"sender\"/></assignedEntity></author></observationEvent></component1>"
+		);
+		append_fragment_child(
+			doc,
+			parser,
+			xpath,
+			"//hl7:investigationEvent/hl7:component/hl7:adverseEventAssessment",
+			&fragment,
+		)?;
+	}
+
 	Ok(())
 }
 
@@ -236,19 +291,13 @@ pub(super) fn ensure_receiver_agent_nodes(
 		"<asAgent classCode=\"AGNT\">\
 			<representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\">\
 				<id root=\"2.16.840.1.113883.3.989.2.1.3.14\" extension=\"{escaped}\"/>\
+				<code/>\
 				<name/>\
-				<notificationParty classCode=\"CON\">\
-					<id root=\"2.16.840.1.113883.3.989.2.1.3.14\" extension=\"{escaped}-contact\"/>\
-					<addr><streetAddressLine/><city/><state/><postalCode/><country/></addr>\
-					<telecom value=\"tel:\"/>\
-					<telecom value=\"fax:\"/>\
-					<telecom value=\"mailto:\"/>\
-					<contactOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\">\
-						<id root=\"2.16.840.1.113883.3.989.2.1.3.14\" extension=\"{escaped}-org\"/>\
-						<name>Receiver Contact</name>\
-						<contactParty classCode=\"CON\"/>\
-					</contactOrganization>\
-				</notificationParty>\
+				<desc/>\
+				<addr><streetAddressLine/><city/><state/><postalCode/><country/></addr>\
+				<telecom value=\"tel:\"/>\
+				<telecom value=\"fax:\"/>\
+				<telecom value=\"mailto:\"/>\
 			</representedOrganization>\
 		</asAgent>"
 	);
@@ -446,59 +495,6 @@ fn reorder_investigation_event_children(xpath: &mut Context) {
 		xpath.findnodes("//hl7:investigationEvent/hl7:subjectOf2", None)
 	{
 		for mut node in subject2_nodes {
-			if let Some(mut parent) = node.get_parent() {
-				node.unlink_node();
-				let _ = parent.add_child(&mut node);
-			}
-		}
-	}
-}
-
-pub(super) fn ensure_d8_effective_time(
-	xpath: &mut Context,
-	doc: &mut Document,
-	parser: &Parser,
-	base: &str,
-) -> Result<()> {
-	let effective_time_xpath = format!("{base}/hl7:effectiveTime");
-	let has_effective_time = xpath
-		.findnodes(&effective_time_xpath, None)
-		.map(|nodes| !nodes.is_empty())
-		.unwrap_or(false);
-	if !has_effective_time {
-		append_fragment_child(
-			doc,
-			parser,
-			xpath,
-			base,
-			"<effectiveTime xsi:type=\"IVL_TS\"><low/><high/></effectiveTime>",
-		)?;
-	}
-
-	let has_low = xpath
-		.findnodes(&format!("{base}/hl7:effectiveTime/hl7:low"), None)
-		.map(|nodes| !nodes.is_empty())
-		.unwrap_or(false);
-	if !has_low {
-		append_fragment_child(doc, parser, xpath, &effective_time_xpath, "<low/>")?;
-	}
-
-	let has_high = xpath
-		.findnodes(&format!("{base}/hl7:effectiveTime/hl7:high"), None)
-		.map(|nodes| !nodes.is_empty())
-		.unwrap_or(false);
-	if !has_high {
-		append_fragment_child(doc, parser, xpath, &effective_time_xpath, "<high/>")?;
-	}
-
-	reorder_d8_substance_administration_children(xpath, base);
-	Ok(())
-}
-
-fn reorder_d8_substance_administration_children(xpath: &mut Context, base: &str) {
-	let child_path = format!("{base}/*[not(self::hl7:effectiveTime)]");
-	if let Ok(nodes) = xpath.findnodes(&child_path, None) {
-		for mut node in nodes {
 			if let Some(mut parent) = node.get_parent() {
 				node.unlink_node();
 				let _ = parent.add_child(&mut node);

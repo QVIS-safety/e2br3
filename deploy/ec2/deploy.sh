@@ -5,6 +5,8 @@ APP_DIR="${APP_DIR:-/opt/e2br3}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 ENV_FILE="${ENV_FILE:-.env.prod}"
 IMAGE_REF="${IMAGE_REF:-}"
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+BUNDLED_SCHEMAS_DIR="${SCRIPT_DIR}/schemas"
 
 if [ -z "${IMAGE_REF}" ]; then
   echo "IMAGE_REF is required (for example ghcr.io/<owner>/e2br3-web-server:<sha>)"
@@ -29,6 +31,18 @@ set -a
 set +a
 
 SCHEMAS_DIR="${E2BR3_SCHEMAS_DIR:-${APP_DIR}/schemas}"
+if [ -d "${BUNDLED_SCHEMAS_DIR}" ]; then
+  echo "Syncing bundled schemas from ${BUNDLED_SCHEMAS_DIR} to ${SCHEMAS_DIR}"
+  mkdir -p "${SCHEMAS_DIR}"
+  cp -R "${BUNDLED_SCHEMAS_DIR}/." "${SCHEMAS_DIR}/"
+fi
+
+if [ ! -d "${SCHEMAS_DIR}/coreschemas" ] || [ ! -d "${SCHEMAS_DIR}/multicacheschemas" ]; then
+  echo "Missing schema directories under ${SCHEMAS_DIR}."
+  echo "Expected at least coreschemas/ and multicacheschemas/."
+  exit 1
+fi
+
 if [ ! -f "${SCHEMAS_DIR}/multicacheschemas/MCCI_IN200100UV01.xsd" ] && \
    [ ! -f "${SCHEMAS_DIR}/MCCI_IN200100UV01.xsd" ]; then
   echo "Missing schema file under ${SCHEMAS_DIR}."

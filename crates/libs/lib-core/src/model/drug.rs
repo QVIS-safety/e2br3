@@ -43,6 +43,8 @@ pub struct DrugInformation {
 
 	// G.k.3.2 - Brand Name
 	pub brand_name: Option<String>,
+	pub drug_generic_name: Option<String>,
+	pub drug_authorization_number: Option<String>,
 
 	// G.k.3.3 - Manufacturer
 	pub manufacturer_name: Option<String>,
@@ -102,6 +104,8 @@ pub struct DrugInformationForUpdate {
 	pub medicinal_product: Option<String>,
 	pub drug_characterization: Option<String>,
 	pub brand_name: Option<String>,
+	pub drug_generic_name: Option<String>,
+	pub drug_authorization_number: Option<String>,
 	pub manufacturer_name: Option<String>,
 	pub manufacturer_country: Option<String>,
 	pub batch_lot_number: Option<String>,
@@ -950,32 +954,34 @@ impl DrugInformationBmc {
 			 SET medicinal_product = COALESCE($2, medicinal_product),
 			     drug_characterization = COALESCE($3, drug_characterization),
 			     brand_name = COALESCE($4, brand_name),
-			     manufacturer_name = COALESCE($5, manufacturer_name),
-			     manufacturer_country = COALESCE($6, manufacturer_country),
-			     batch_lot_number = COALESCE($7, batch_lot_number),
-			     cumulative_dose_first_reaction_value = COALESCE($8, cumulative_dose_first_reaction_value),
-			     cumulative_dose_first_reaction_unit = COALESCE($9, cumulative_dose_first_reaction_unit),
-			     gestation_period_exposure_value = COALESCE($10, gestation_period_exposure_value),
-			     gestation_period_exposure_unit = COALESCE($11, gestation_period_exposure_unit),
-			     dosage_text = COALESCE($12, dosage_text),
-			     action_taken = COALESCE($13, action_taken),
-			     rechallenge = COALESCE($14, rechallenge),
-			     investigational_product_blinded = COALESCE($15, investigational_product_blinded),
-			     mpid = COALESCE($16, mpid),
-			     mpid_version = COALESCE($17, mpid_version),
-			     phpid = COALESCE($18, phpid),
-			     phpid_version = COALESCE($19, phpid_version),
-			     obtain_drug_country = COALESCE($20, obtain_drug_country),
-			     parent_route = COALESCE($21, parent_route),
-			     parent_route_termid = COALESCE($22, parent_route_termid),
-			     parent_route_termid_version = COALESCE($23, parent_route_termid_version),
-			     parent_dosage_text = COALESCE($24, parent_dosage_text),
-			     fda_additional_info_coded = COALESCE($25, fda_additional_info_coded),
-			     drug_additional_info_codes_json = COALESCE($26, drug_additional_info_codes_json),
-			     fda_specialized_product_category = COALESCE($27, fda_specialized_product_category),
-			     fda_device_info_json = COALESCE($28, fda_device_info_json),
+			     drug_generic_name = COALESCE($5, drug_generic_name),
+			     drug_authorization_number = COALESCE($6, drug_authorization_number),
+			     manufacturer_name = COALESCE($7, manufacturer_name),
+			     manufacturer_country = COALESCE($8, manufacturer_country),
+			     batch_lot_number = COALESCE($9, batch_lot_number),
+			     cumulative_dose_first_reaction_value = COALESCE($10, cumulative_dose_first_reaction_value),
+			     cumulative_dose_first_reaction_unit = COALESCE($11, cumulative_dose_first_reaction_unit),
+			     gestation_period_exposure_value = COALESCE($12, gestation_period_exposure_value),
+			     gestation_period_exposure_unit = COALESCE($13, gestation_period_exposure_unit),
+			     dosage_text = COALESCE($14, dosage_text),
+			     action_taken = COALESCE($15, action_taken),
+			     rechallenge = COALESCE($16, rechallenge),
+			     investigational_product_blinded = COALESCE($17, investigational_product_blinded),
+			     mpid = COALESCE($18, mpid),
+			     mpid_version = COALESCE($19, mpid_version),
+			     phpid = COALESCE($20, phpid),
+			     phpid_version = COALESCE($21, phpid_version),
+			     obtain_drug_country = COALESCE($22, obtain_drug_country),
+			     parent_route = COALESCE($23, parent_route),
+			     parent_route_termid = COALESCE($24, parent_route_termid),
+			     parent_route_termid_version = COALESCE($25, parent_route_termid_version),
+			     parent_dosage_text = COALESCE($26, parent_dosage_text),
+			     fda_additional_info_coded = COALESCE($27, fda_additional_info_coded),
+			     drug_additional_info_codes_json = COALESCE($28, drug_additional_info_codes_json),
+			     fda_specialized_product_category = COALESCE($29, fda_specialized_product_category),
+			     fda_device_info_json = COALESCE($30, fda_device_info_json),
 			     updated_at = now(),
-			     updated_by = $29
+			     updated_by = $31
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -987,6 +993,8 @@ impl DrugInformationBmc {
 					.bind(drug_u.medicinal_product)
 					.bind(drug_u.drug_characterization)
 					.bind(drug_u.brand_name)
+					.bind(drug_u.drug_generic_name)
+					.bind(drug_u.drug_authorization_number)
 					.bind(drug_u.manufacturer_name)
 					.bind(drug_u.manufacturer_country)
 					.bind(drug_u.batch_lot_number)
@@ -1087,32 +1095,34 @@ impl DrugInformationBmc {
 			 SET medicinal_product = COALESCE($3, medicinal_product),
 			     drug_characterization = COALESCE($4, drug_characterization),
 			     brand_name = COALESCE($5, brand_name),
-			     manufacturer_name = COALESCE($6, manufacturer_name),
-			     manufacturer_country = COALESCE($7, manufacturer_country),
-			     batch_lot_number = COALESCE($8, batch_lot_number),
-			     cumulative_dose_first_reaction_value = COALESCE($9, cumulative_dose_first_reaction_value),
-			     cumulative_dose_first_reaction_unit = COALESCE($10, cumulative_dose_first_reaction_unit),
-			     gestation_period_exposure_value = COALESCE($11, gestation_period_exposure_value),
-			     gestation_period_exposure_unit = COALESCE($12, gestation_period_exposure_unit),
-			     dosage_text = COALESCE($13, dosage_text),
-			     action_taken = COALESCE($14, action_taken),
-			     rechallenge = COALESCE($15, rechallenge),
-			     investigational_product_blinded = COALESCE($16, investigational_product_blinded),
-			     mpid = COALESCE($17, mpid),
-			     mpid_version = COALESCE($18, mpid_version),
-			     phpid = COALESCE($19, phpid),
-			     phpid_version = COALESCE($20, phpid_version),
-			     obtain_drug_country = COALESCE($21, obtain_drug_country),
-			     parent_route = COALESCE($22, parent_route),
-			     parent_route_termid = COALESCE($23, parent_route_termid),
-			     parent_route_termid_version = COALESCE($24, parent_route_termid_version),
-			     parent_dosage_text = COALESCE($25, parent_dosage_text),
-			     fda_additional_info_coded = COALESCE($26, fda_additional_info_coded),
-			     drug_additional_info_codes_json = COALESCE($27, drug_additional_info_codes_json),
-			     fda_specialized_product_category = COALESCE($28, fda_specialized_product_category),
-			     fda_device_info_json = COALESCE($29, fda_device_info_json),
+			     drug_generic_name = COALESCE($6, drug_generic_name),
+			     drug_authorization_number = COALESCE($7, drug_authorization_number),
+			     manufacturer_name = COALESCE($8, manufacturer_name),
+			     manufacturer_country = COALESCE($9, manufacturer_country),
+			     batch_lot_number = COALESCE($10, batch_lot_number),
+			     cumulative_dose_first_reaction_value = COALESCE($11, cumulative_dose_first_reaction_value),
+			     cumulative_dose_first_reaction_unit = COALESCE($12, cumulative_dose_first_reaction_unit),
+			     gestation_period_exposure_value = COALESCE($13, gestation_period_exposure_value),
+			     gestation_period_exposure_unit = COALESCE($14, gestation_period_exposure_unit),
+			     dosage_text = COALESCE($15, dosage_text),
+			     action_taken = COALESCE($16, action_taken),
+			     rechallenge = COALESCE($17, rechallenge),
+			     investigational_product_blinded = COALESCE($18, investigational_product_blinded),
+			     mpid = COALESCE($19, mpid),
+			     mpid_version = COALESCE($20, mpid_version),
+			     phpid = COALESCE($21, phpid),
+			     phpid_version = COALESCE($22, phpid_version),
+			     obtain_drug_country = COALESCE($23, obtain_drug_country),
+			     parent_route = COALESCE($24, parent_route),
+			     parent_route_termid = COALESCE($25, parent_route_termid),
+			     parent_route_termid_version = COALESCE($26, parent_route_termid_version),
+			     parent_dosage_text = COALESCE($27, parent_dosage_text),
+			     fda_additional_info_coded = COALESCE($28, fda_additional_info_coded),
+			     drug_additional_info_codes_json = COALESCE($29, drug_additional_info_codes_json),
+			     fda_specialized_product_category = COALESCE($30, fda_specialized_product_category),
+			     fda_device_info_json = COALESCE($31, fda_device_info_json),
 			     updated_at = now(),
-			     updated_by = $30
+			     updated_by = $32
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -1125,6 +1135,8 @@ impl DrugInformationBmc {
 					.bind(drug_u.medicinal_product)
 					.bind(drug_u.drug_characterization)
 					.bind(drug_u.brand_name)
+					.bind(drug_u.drug_generic_name)
+					.bind(drug_u.drug_authorization_number)
 					.bind(drug_u.manufacturer_name)
 					.bind(drug_u.manufacturer_country)
 					.bind(drug_u.batch_lot_number)

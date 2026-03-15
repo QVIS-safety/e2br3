@@ -14,6 +14,7 @@ pub fn export_c_safety_report_patch(
 	header: Option<&MessageHeader>,
 	sender: Option<&SenderInformation>,
 ) -> Result<String> {
+	// C.1 / C.1.1 / C.1.2 / C.1.4 - expedited/report-type local overrides.
 	let combination_true = report
 		.combination_product_report_indicator
 		.as_deref()
@@ -27,27 +28,37 @@ pub fn export_c_safety_report_patch(
 		};
 
 	let patch = CSafetyReportPatch {
+		// C.1.8 / message envelope linkage.
 		report_unique_id: &case.safety_report_id,
-		transmission_date: report.transmission_date.expect(
-			"transmission_date must be present before exporting section C",
-		),
+		transmission_date: report.transmission_date,
+		transmission_date_null_flavor: report
+			.transmission_date_null_flavor
+			.as_deref(),
 		transmission_date_value: header.map(|h| h.message_date.as_str()),
 		transmission_date_time: header.and_then(|h| h.batch_transmission_date),
+
+		// C.1.3 / C.1.5 / C.1.6 / C.1.7 - core report dates and type.
 		report_type: &report.report_type,
-		date_first_received: report
-			.date_first_received_from_source
-			.expect("date_first_received_from_source must be present before exporting section C"),
-		date_most_recent: report
-			.date_of_most_recent_information
-			.expect("date_of_most_recent_information must be present before exporting section C"),
+		date_first_received: report.date_first_received_from_source,
+		date_first_received_null_flavor: report
+			.date_first_received_from_source_null_flavor
+			.as_deref(),
+		date_most_recent: report.date_of_most_recent_information,
+		date_most_recent_null_flavor: report
+			.date_of_most_recent_information_null_flavor
+			.as_deref(),
 		fulfil_expedited: report.fulfil_expedited_criteria,
+		additional_documents_available: report.additional_documents_available,
 		worldwide_unique_id: report.worldwide_unique_id.as_deref(),
+		first_sender_type: report.first_sender_type.as_deref(),
 		local_criteria_report_type,
 		combination_product_indicator: report
 			.combination_product_report_indicator
 			.as_deref(),
 		nullification_code: report.nullification_code.as_deref(),
 		nullification_reason: report.nullification_reason.as_deref(),
+
+		// C.2.r.* - sender details.
 		sender_type: sender.and_then(|s| Some(s.sender_type.as_str())),
 		sender_org_name: sender.and_then(|s| Some(s.organization_name.as_str())),
 		sender_department: sender.and_then(|s| s.department.as_deref()),

@@ -1,9 +1,3 @@
-#[path = "xml/xml_export_e.rs"]
-mod xml_export_e;
-#[path = "xml/xml_export_f.rs"]
-mod xml_export_f;
-#[path = "xml/xml_export_g.rs"]
-mod xml_export_g;
 #[path = "xml/xml_export_h.rs"]
 mod xml_export_h;
 #[path = "xml/xml_import_c.rs"]
@@ -20,12 +14,6 @@ mod xml_import_h;
 mod xml_patch_c;
 #[path = "xml/xml_patch_d.rs"]
 mod xml_patch_d;
-#[path = "xml/xml_patch_e.rs"]
-mod xml_patch_e;
-#[path = "xml/xml_patch_f.rs"]
-mod xml_patch_f;
-#[path = "xml/xml_patch_g.rs"]
-mod xml_patch_g;
 #[path = "xml/xml_patch_h.rs"]
 mod xml_patch_h;
 #[path = "xml/xml_schema_business_ci.rs"]

@@ -138,6 +138,8 @@ fn export_g_drug_basic() {
 		&[dosage],
 		&[indication],
 		&[characteristic],
+		&[],
+		&[],
 	)
 	.expect("export xml");
 	let parser = Parser::default();

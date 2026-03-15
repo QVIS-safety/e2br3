@@ -11,6 +11,7 @@ impl FTestResultPaths {
 	pub const TEST_MEDDRA_CODE: &'static str = "hl7:code/@code";
 	pub const TEST_MEDDRA_VERSION: &'static str = "hl7:code/@codeSystemVersion";
 	pub const TEST_DATE: &'static str = "hl7:effectiveTime/@value";
+	pub const TEST_DATE_NULL_FLAVOR: &'static str = "hl7:effectiveTime/@nullFlavor";
 	pub const RESULT_CODE: &'static str = "hl7:interpretationCode/@code";
 	pub const RESULT_VALUE: &'static str = "hl7:value/hl7:center/@value";
 	pub const RESULT_VALUE_FALLBACK: &'static str = "hl7:value/@value";

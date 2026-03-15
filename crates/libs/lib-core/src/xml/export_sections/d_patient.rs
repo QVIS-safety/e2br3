@@ -15,10 +15,13 @@ pub fn export_d_patient_patch(
 	reported_causes: &[ReportedCauseOfDeath],
 	autopsy_causes: &[AutopsyCauseOfDeath],
 ) -> Result<String> {
+	// D.1 / D.2 / D.4 / D.5 - patient core.
 	let patient_name = build_patient_name(patient);
 	let age_value = patient.age_at_time_of_onset.as_ref().map(|v| v.to_string());
 	let weight_kg = patient.weight_kg.as_ref().map(|v| v.to_string());
 	let height_cm = patient.height_cm.as_ref().map(|v| v.to_string());
+
+	// D.9 / D.10 - reported and autopsy causes.
 	let reported_cause_patches: Vec<DPatientDeathCausePatch<'_>> = reported_causes
 		.iter()
 		.map(|cause| DPatientDeathCausePatch {
@@ -37,6 +40,7 @@ pub fn export_d_patient_patch(
 		.collect();
 
 	let patch = DPatientPatch {
+		// D.1 / D.2 / D.4 / D.5 / D.6.
 		patient_name: patient_name.as_deref(),
 		sex: patient.sex.as_deref(),
 		birth_date: patient.birth_date,
@@ -44,6 +48,8 @@ pub fn export_d_patient_patch(
 		age_unit: patient.age_unit.as_deref(),
 		weight_kg: weight_kg.as_deref(),
 		height_cm: height_cm.as_deref(),
+
+		// D.9 / D.10.
 		date_of_death: death_info.and_then(|death| death.date_of_death),
 		autopsy_performed: death_info.and_then(|death| death.autopsy_performed),
 		reported_causes: &reported_cause_patches,

@@ -248,7 +248,9 @@ pub async fn fill_section_c(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {
 		"report_type": "1",
 		"date_first_received_from_source": [2024, 1],
 		"date_of_most_recent_information": [2024, 1],
-		"fulfil_expedited_criteria": false
+		"fulfil_expedited_criteria": false,
+		"first_sender_type": "2",
+		"additional_documents_available": true
 	}});
 	let (status, value) = request_json(
 		&ctx.app,
@@ -585,6 +587,8 @@ pub async fn fill_section_g(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {
 			"medicinal_product": "Persist Drug",
 			"drug_characterization": "1",
 			"brand_name": "Persist Brand",
+			"drug_generic_name": "Persist Generic",
+			"drug_authorization_number": "AUTH-123",
 			"manufacturer_name": "Persist Manufacturer",
 			"manufacturer_country": "US",
 			"batch_lot_number": "LOT-123",

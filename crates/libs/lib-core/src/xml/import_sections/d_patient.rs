@@ -14,9 +14,13 @@ pub struct DPatientImport {
 	pub patient_initials: Option<String>,
 	pub patient_given_name: Option<String>,
 	pub patient_family_name: Option<String>,
+	pub patient_initials_null_flavor: Option<String>,
 	pub birth_date: Option<Date>,
+	pub birth_date_null_flavor: Option<String>,
 	pub sex: Option<String>,
+	pub sex_null_flavor: Option<String>,
 	pub age_at_time_of_onset: Option<Decimal>,
+	pub age_at_time_of_onset_null_flavor: Option<String>,
 	pub age_unit: Option<String>,
 	pub gestation_period: Option<Decimal>,
 	pub gestation_period_unit: Option<String>,
@@ -26,6 +30,7 @@ pub struct DPatientImport {
 	pub race_code: Option<String>,
 	pub ethnicity_code: Option<String>,
 	pub last_menstrual_period_date: Option<Date>,
+	pub last_menstrual_period_date_null_flavor: Option<String>,
 	pub medical_history_text: Option<String>,
 	pub concomitant_therapy: Option<bool>,
 }
@@ -55,14 +60,22 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 	let patient_name = first_text_root(&mut xpath, DPatientPaths::PATIENT_NAME);
 	let (patient_given_name, patient_family_name, patient_initials) =
 		split_patient_name(patient_name.as_deref());
+	let patient_initials_null_flavor =
+		first_value_root(&mut xpath, DPatientPaths::PATIENT_NAME_NULL_FLAVOR);
 
 	let sex =
 		normalize_sex_code(first_value_root(&mut xpath, DPatientPaths::SEX_CODE));
+	let sex_null_flavor =
+		first_value_root(&mut xpath, DPatientPaths::SEX_NULL_FLAVOR);
 	let birth_date =
 		first_value_root(&mut xpath, DPatientPaths::BIRTH_DATE).and_then(parse_date);
+	let birth_date_null_flavor =
+		first_value_root(&mut xpath, DPatientPaths::BIRTH_DATE_NULL_FLAVOR);
 	let age_at_time_of_onset =
 		first_value_root(&mut xpath, DPatientPaths::AGE_VALUE)
 			.and_then(|v| v.parse::<Decimal>().ok());
+	let age_at_time_of_onset_null_flavor =
+		first_value_root(&mut xpath, DPatientPaths::AGE_NULL_FLAVOR);
 	let age_unit = normalize_code3(
 		first_value_root(&mut xpath, DPatientPaths::AGE_UNIT),
 		"patient_information.age_unit",
@@ -85,6 +98,8 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 		.and_then(|v| v.parse::<Decimal>().ok());
 	let last_menstrual_period_date =
 		first_value_root(&mut xpath, DPatientPaths::LMP_DATE).and_then(parse_date);
+	let last_menstrual_period_date_null_flavor =
+		first_value_root(&mut xpath, DPatientPaths::LMP_DATE_NULL_FLAVOR);
 	let race_code = first_value_root(&mut xpath, DPatientPaths::RACE_CODE);
 	let ethnicity_code = first_value_root(&mut xpath, DPatientPaths::ETHNICITY_CODE);
 	let medical_history_text =
@@ -102,6 +117,11 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 		&& gestation_period.is_none()
 		&& weight_kg.is_none()
 		&& height_cm.is_none()
+		&& patient_initials_null_flavor.is_none()
+		&& birth_date_null_flavor.is_none()
+		&& age_at_time_of_onset_null_flavor.is_none()
+		&& sex_null_flavor.is_none()
+		&& last_menstrual_period_date_null_flavor.is_none()
 	{
 		return Ok(None);
 	}
@@ -110,9 +130,13 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 		patient_initials,
 		patient_given_name,
 		patient_family_name,
+		patient_initials_null_flavor,
 		birth_date,
+		birth_date_null_flavor,
 		sex,
+		sex_null_flavor,
 		age_at_time_of_onset,
+		age_at_time_of_onset_null_flavor,
 		age_unit,
 		gestation_period,
 		gestation_period_unit,
@@ -122,6 +146,7 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 		race_code,
 		ethnicity_code,
 		last_menstrual_period_date,
+		last_menstrual_period_date_null_flavor,
 		medical_history_text,
 		concomitant_therapy,
 	}))

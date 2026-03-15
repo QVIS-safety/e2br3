@@ -345,6 +345,17 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 	)
 	// Literature References (collection per case) - C.4.r
 	.route(
+		"/cases/{case_id}/safety-report/documents",
+		get(safety_report_sub_rest::list_documents_held_by_sender)
+			.post(safety_report_sub_rest::create_documents_held_by_sender),
+	)
+	.route(
+		"/cases/{case_id}/safety-report/documents/{id}",
+		get(safety_report_sub_rest::get_documents_held_by_sender)
+			.put(safety_report_sub_rest::update_documents_held_by_sender)
+			.delete(safety_report_sub_rest::delete_documents_held_by_sender),
+	)
+	.route(
 		"/cases/{case_id}/safety-report/literature",
 		get(safety_report_sub_rest::list_literature_references)
 			.post(safety_report_sub_rest::create_literature_reference),
@@ -450,6 +461,7 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 	)
 	.route("/exports/history", get(case_rest::list_xml_export_history))
 	.route("/cases/link-options", get(case_rest::list_case_link_options))
+	.route("/cases/export/xml", axum::routing::post(case_rest::export_cases_zip))
 	.route("/cases/{id}/export/xml", get(case_rest::export_case))
 	.route("/cases/{id}/lifecycle", get(case_rest::get_case_lifecycle))
 	.route(

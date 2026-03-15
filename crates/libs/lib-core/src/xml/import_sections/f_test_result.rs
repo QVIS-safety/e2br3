@@ -13,6 +13,7 @@ use time::Month;
 pub struct FTestResultImport {
 	pub test_name: String,
 	pub test_date: Option<Date>,
+	pub test_date_null_flavor: Option<String>,
 	pub test_meddra_version: Option<String>,
 	pub test_meddra_code: Option<String>,
 	pub test_result_code: Option<String>,
@@ -75,6 +76,11 @@ pub fn parse_f_test_results(xml: &[u8]) -> Result<Vec<FTestResultImport>> {
 		);
 		let test_date = first_attr(&mut xpath, &node, FTestResultPaths::TEST_DATE)
 			.and_then(parse_date);
+		let test_date_null_flavor = if test_date.is_some() {
+			None
+		} else {
+			first_attr(&mut xpath, &node, FTestResultPaths::TEST_DATE_NULL_FLAVOR)
+		};
 		let test_result_code =
 			first_attr(&mut xpath, &node, FTestResultPaths::RESULT_CODE);
 		let test_result_value = first_attr(
@@ -109,6 +115,7 @@ pub fn parse_f_test_results(xml: &[u8]) -> Result<Vec<FTestResultImport>> {
 		items.push(FTestResultImport {
 			test_name,
 			test_date,
+			test_date_null_flavor,
 			test_meddra_version,
 			test_meddra_code,
 			test_result_code,

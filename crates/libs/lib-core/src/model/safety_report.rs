@@ -48,6 +48,12 @@ pub struct SafetyReportIdentification {
 	// C.1.8.1 - Worldwide Unique Case Identification
 	pub worldwide_unique_id: Option<String>,
 
+	// C.1.8.2 - First Sender of This Case
+	pub first_sender_type: Option<String>,
+
+	// C.1.6.1 - Are Additional Documents Available?
+	pub additional_documents_available: Option<bool>,
+
 	// C.1.11.1 - Nullification/Amendment Code
 	pub nullification_code: Option<String>,
 
@@ -87,6 +93,8 @@ pub struct SafetyReportIdentificationForCreate {
 	pub date_of_most_recent_information: Option<Date>,
 	pub date_of_most_recent_information_null_flavor: Option<String>,
 	pub fulfil_expedited_criteria: bool,
+	pub first_sender_type: Option<String>,
+	pub additional_documents_available: Option<bool>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -114,6 +122,8 @@ pub struct SafetyReportIdentificationForUpdate {
 	pub local_criteria_report_type: Option<String>,
 	pub combination_product_report_indicator: Option<String>,
 	pub worldwide_unique_id: Option<String>,
+	pub first_sender_type: Option<String>,
+	pub additional_documents_available: Option<bool>,
 	pub nullification_code: Option<String>,
 	pub nullification_reason: Option<String>,
 	pub receiver_organization: Option<String>,
@@ -466,8 +476,8 @@ impl SafetyReportIdentificationBmc {
 		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, transmission_date, transmission_date_null_flavor, report_type, date_first_received_from_source, date_first_received_from_source_null_flavor, date_of_most_recent_information, date_of_most_recent_information_null_flavor, fulfil_expedited_criteria, created_at, updated_at, created_by)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now(), $10)
+			"INSERT INTO {} (case_id, transmission_date, transmission_date_null_flavor, report_type, date_first_received_from_source, date_first_received_from_source_null_flavor, date_of_most_recent_information, date_of_most_recent_information_null_flavor, fulfil_expedited_criteria, first_sender_type, additional_documents_available, created_at, updated_at, created_by)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), now(), $12)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -484,6 +494,8 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.date_of_most_recent_information)
 					.bind(data.date_of_most_recent_information_null_flavor)
 					.bind(data.fulfil_expedited_criteria)
+					.bind(data.first_sender_type)
+					.bind(data.additional_documents_available)
 					.bind(ctx.user_id()),
 			)
 			.await?;
@@ -571,11 +583,13 @@ impl SafetyReportIdentificationBmc {
 			     local_criteria_report_type = COALESCE($10, local_criteria_report_type),
 			     combination_product_report_indicator = COALESCE($11, combination_product_report_indicator),
 			     worldwide_unique_id = COALESCE($12, worldwide_unique_id),
-			     nullification_code = COALESCE($13, nullification_code),
-			     nullification_reason = COALESCE($14, nullification_reason),
-			     receiver_organization = COALESCE($15, receiver_organization),
+			     first_sender_type = COALESCE($13, first_sender_type),
+			     additional_documents_available = COALESCE($14, additional_documents_available),
+			     nullification_code = COALESCE($15, nullification_code),
+			     nullification_reason = COALESCE($16, nullification_reason),
+			     receiver_organization = COALESCE($17, receiver_organization),
 			     updated_at = now(),
-			     updated_by = $16
+			     updated_by = $18
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -595,6 +609,8 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.local_criteria_report_type)
 					.bind(data.combination_product_report_indicator)
 					.bind(data.worldwide_unique_id)
+					.bind(data.first_sender_type)
+					.bind(data.additional_documents_available)
 					.bind(data.nullification_code)
 					.bind(data.nullification_reason)
 					.bind(data.receiver_organization)

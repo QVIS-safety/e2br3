@@ -11,16 +11,15 @@ use crate::model::test_result::TestResult;
 use crate::xml::error::Error;
 use crate::xml::export_sections::e_reaction::reaction_fragment;
 use crate::xml::export_sections::f_test_result::test_result_fragment;
-use crate::xml::export_sections::g_drug::drug_fragment;
+use crate::xml::export_sections::g_drug::{
+	causality_role_fragment, drug_fragment, relatedness_fragment,
+};
 use crate::xml::export_sections::h_narrative::comment_fragment;
 use crate::xml::raw::dom_utils::{
 	append_fragment_child, remove_attr_first, remove_nodes, set_attr_first,
 	set_text_first,
 };
-use crate::xml::validate::{
-	drug_characterization_display_name, normalize_drug_characterization,
-	should_clear_null_flavor_on_value,
-};
+use crate::xml::validate::should_clear_null_flavor_on_value;
 use crate::xml::Result;
 use libxml::parser::Parser;
 use libxml::tree::Document;

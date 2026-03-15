@@ -13,6 +13,7 @@ pub fn normalize_drug_characterization(value: &str) -> Option<&'static str> {
 		"1" => Some("1"),
 		"2" => Some("2"),
 		"3" => Some("3"),
+		"4" => Some("4"),
 		_ => None,
 	}
 }
@@ -22,6 +23,7 @@ pub fn drug_characterization_display_name(code: &str) -> &'static str {
 		"1" => "Suspect",
 		"2" => "Concomitant",
 		"3" => "Interacting",
+		"4" => "Drug Not Administered",
 		_ => "Concomitant",
 	}
 }
@@ -41,5 +43,6 @@ mod tests {
 		assert_eq!(normalize_drug_characterization("1"), Some("1"));
 		assert_eq!(normalize_drug_characterization("2"), Some("2"));
 		assert_eq!(normalize_drug_characterization("3"), Some("3"));
+		assert_eq!(normalize_drug_characterization("4"), Some("4"));
 	}
 }

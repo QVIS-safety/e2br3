@@ -8,8 +8,11 @@ use crate::xml::Result;
 use sqlx::types::time::Date;
 
 pub fn export_e_reactions_xml(reactions: &[Reaction]) -> Result<String> {
+	let mut ordered: Vec<&Reaction> = reactions.iter().collect();
+	ordered.sort_by_key(|reaction| reaction.sequence_number);
+
 	let mut reactions_xml = String::new();
-	for reaction in reactions {
+	for reaction in ordered {
 		reactions_xml.push_str(&reaction_fragment(reaction)?);
 	}
 	let xml = base_e_reaction_skeleton().replace("{REACTIONS}", &reactions_xml);
@@ -26,8 +29,11 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 		"<code code=\"29\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/>",
 	);
 
+	// E.i.4 / E.i.5 / E.i.6 - reaction timing.
 	if reaction.start_date.is_some()
+		|| reaction.start_date_null_flavor.is_some()
 		|| reaction.end_date.is_some()
+		|| reaction.end_date_null_flavor.is_some()
 		|| reaction.duration_value.is_some()
 	{
 		let has_duration = reaction.duration_value.is_some();
@@ -36,32 +42,20 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 		} else {
 			out.push_str("<effectiveTime xsi:type=\"IVL_TS\">");
 		}
-		if let Some(start) = reaction.start_date {
-			if has_duration {
-				out.push_str(
-					"<comp xsi:type=\"IVL_TS\" operator=\"A\"><low value=\"",
-				);
-				out.push_str(&fmt_date(start));
-				out.push_str("\"/></comp>");
-			} else {
-				out.push_str("<low value=\"");
-				out.push_str(&fmt_date(start));
-				out.push_str("\"/>");
-			}
-		}
-		if let Some(end) = reaction.end_date {
-			if has_duration {
-				out.push_str(
-					"<comp xsi:type=\"IVL_TS\" operator=\"A\"><high value=\"",
-				);
-				out.push_str(&fmt_date(end));
-				out.push_str("\"/></comp>");
-			} else {
-				out.push_str("<high value=\"");
-				out.push_str(&fmt_date(end));
-				out.push_str("\"/>");
-			}
-		}
+		append_time_boundary_fragment(
+			&mut out,
+			"low",
+			reaction.start_date,
+			reaction.start_date_null_flavor.as_deref(),
+			has_duration,
+		);
+		append_time_boundary_fragment(
+			&mut out,
+			"high",
+			reaction.end_date,
+			reaction.end_date_null_flavor.as_deref(),
+			has_duration,
+		);
 		if let Some(width) = reaction.duration_value.as_ref() {
 			out.push_str("<comp xsi:type=\"IVL_TS\" operator=\"A\"><width value=\"");
 			out.push_str(&xml_escape(&width.to_string()));
@@ -76,6 +70,7 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 		out.push_str("</effectiveTime>");
 	}
 
+	// E.i.1 / E.i.2 - reported reaction term and translation.
 	let meddracode = reaction
 		.reaction_meddra_code
 		.as_deref()
@@ -111,44 +106,64 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 		out.push_str("</originalText></value>");
 	}
 	out.push_str(&observation_rel_translation(reaction));
+
+	// E.i.3.1 / E.i.3.2 - highlighted term and seriousness criteria.
 	if let Some(term_code) =
 		term_highlight_code(reaction.term_highlighted, reaction.serious)
 	{
 		out.push_str(&observation_rel_code("37", &term_code));
 	}
 
-	out.push_str(&observation_rel_bool_or_ni("34", reaction.criteria_death));
-	out.push_str(&observation_rel_bool_or_ni(
+	out.push_str(&observation_rel_bool_or_null_flavor(
+		"34",
+		reaction.criteria_death,
+		reaction.criteria_death_null_flavor.as_deref(),
+	));
+	out.push_str(&observation_rel_bool_or_null_flavor(
 		"21",
 		reaction.criteria_life_threatening,
+		reaction.criteria_life_threatening_null_flavor.as_deref(),
 	));
-	out.push_str(&observation_rel_bool_or_ni(
+	out.push_str(&observation_rel_bool_or_null_flavor(
 		"33",
 		reaction.criteria_hospitalization,
+		reaction.criteria_hospitalization_null_flavor.as_deref(),
 	));
-	out.push_str(&observation_rel_bool_or_ni(
+	out.push_str(&observation_rel_bool_or_null_flavor(
 		"35",
 		reaction.criteria_disabling,
+		reaction.criteria_disabling_null_flavor.as_deref(),
 	));
-	out.push_str(&observation_rel_bool_or_ni(
+	out.push_str(&observation_rel_bool_or_null_flavor(
 		"12",
 		reaction.criteria_congenital_anomaly,
+		reaction.criteria_congenital_anomaly_null_flavor.as_deref(),
 	));
-	out.push_str(&observation_rel_bool_or_ni(
+	out.push_str(&observation_rel_bool_or_null_flavor(
 		"26",
 		reaction.criteria_other_medically_important,
+		reaction
+			.criteria_other_medically_important_null_flavor
+			.as_deref(),
 	));
 
+	// FDA.E.i.3.2h - required intervention.
 	out.push_str(&observation_rel_required_intervention(
 		reaction.required_intervention.as_deref(),
 	));
 
+	// E.i.7 / E.i.8 / E.i.9 - outcome, medical confirmation, country.
 	out.push_str(&observation_rel_outcome(
 		reaction.outcome.as_deref(),
 		reaction.sequence_number,
 	)?);
 	if let Some(value) = reaction.medical_confirmation {
 		out.push_str(&observation_rel_bool("24", value));
+	}
+	if let Some(code) = reaction.country_code.as_deref() {
+		out.push_str("<location><locatedEntity><locatedPlace><code code=\"");
+		out.push_str(&xml_escape(code));
+		out.push_str("\"/></locatedPlace></locatedEntity></location>");
 	}
 
 	out.push_str("</observation></subjectOf2>");
@@ -169,13 +184,60 @@ fn observation_rel_code(code: &str, value: &str) -> String {
 	)
 }
 
-fn observation_rel_bool_or_ni(code: &str, value: bool) -> String {
+fn observation_rel_bool_or_null_flavor(
+	code: &str,
+	value: bool,
+	null_flavor: Option<&str>,
+) -> String {
 	if value {
 		observation_rel_bool(code, true)
 	} else {
 		format!(
-			"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"{code}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" nullFlavor=\"NI\"/></observation></outboundRelationship2>"
+			"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"{code}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" nullFlavor=\"{}\"/></observation></outboundRelationship2>",
+			xml_escape(null_flavor.unwrap_or("NI"))
 		)
+	}
+}
+
+fn append_time_boundary_fragment(
+	out: &mut String,
+	tag: &str,
+	date: Option<Date>,
+	null_flavor: Option<&str>,
+	has_duration: bool,
+) {
+	match (date, null_flavor) {
+		(Some(value), _) => {
+			if has_duration {
+				out.push_str("<comp xsi:type=\"IVL_TS\" operator=\"A\"><");
+				out.push_str(tag);
+				out.push_str(" value=\"");
+				out.push_str(&fmt_date(value));
+				out.push_str("\"/></comp>");
+			} else {
+				out.push('<');
+				out.push_str(tag);
+				out.push_str(" value=\"");
+				out.push_str(&fmt_date(value));
+				out.push_str("\"/>");
+			}
+		}
+		(None, Some(null_flavor)) => {
+			if has_duration {
+				out.push_str("<comp xsi:type=\"IVL_TS\" operator=\"A\"><");
+				out.push_str(tag);
+				out.push_str(" nullFlavor=\"");
+				out.push_str(&xml_escape(null_flavor));
+				out.push_str("\"/></comp>");
+			} else {
+				out.push('<');
+				out.push_str(tag);
+				out.push_str(" nullFlavor=\"");
+				out.push_str(&xml_escape(null_flavor));
+				out.push_str("\"/>");
+			}
+		}
+		(None, None) => {}
 	}
 }
 

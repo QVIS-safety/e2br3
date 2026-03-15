@@ -8,14 +8,17 @@ use lib_core::model::acs::{
 	LITERATURE_REFERENCE_LIST, LITERATURE_REFERENCE_READ,
 	LITERATURE_REFERENCE_UPDATE, PRIMARY_SOURCE_CREATE, PRIMARY_SOURCE_DELETE,
 	PRIMARY_SOURCE_LIST, PRIMARY_SOURCE_READ, PRIMARY_SOURCE_UPDATE,
-	SENDER_INFORMATION_CREATE, SENDER_INFORMATION_DELETE, SENDER_INFORMATION_LIST,
-	SENDER_INFORMATION_READ, SENDER_INFORMATION_UPDATE, STUDY_INFORMATION_CREATE,
-	STUDY_INFORMATION_DELETE, STUDY_INFORMATION_LIST, STUDY_INFORMATION_READ,
-	STUDY_INFORMATION_UPDATE, STUDY_REGISTRATION_CREATE, STUDY_REGISTRATION_DELETE,
-	STUDY_REGISTRATION_LIST, STUDY_REGISTRATION_READ, STUDY_REGISTRATION_UPDATE,
+	SAFETY_REPORT_READ, SAFETY_REPORT_UPDATE, SENDER_INFORMATION_CREATE,
+	SENDER_INFORMATION_DELETE, SENDER_INFORMATION_LIST, SENDER_INFORMATION_READ,
+	SENDER_INFORMATION_UPDATE, STUDY_INFORMATION_CREATE, STUDY_INFORMATION_DELETE,
+	STUDY_INFORMATION_LIST, STUDY_INFORMATION_READ, STUDY_INFORMATION_UPDATE,
+	STUDY_REGISTRATION_CREATE, STUDY_REGISTRATION_DELETE, STUDY_REGISTRATION_LIST,
+	STUDY_REGISTRATION_READ, STUDY_REGISTRATION_UPDATE,
 };
 use lib_core::model::case::{CaseBmc, CaseForUpdate};
 use lib_core::model::safety_report::{
+	DocumentsHeldBySender, DocumentsHeldBySenderBmc, DocumentsHeldBySenderFilter,
+	DocumentsHeldBySenderForCreate, DocumentsHeldBySenderForUpdate,
 	LiteratureReference, LiteratureReferenceBmc, LiteratureReferenceFilter,
 	LiteratureReferenceForCreate, LiteratureReferenceForUpdate, PrimarySource,
 	PrimarySourceBmc, PrimarySourceFilter, PrimarySourceForCreate,
@@ -76,6 +79,8 @@ async fn mark_case_dirty_c(
 			status: None,
 			validation_profile: None,
 			appendices_json: None,
+			review_receivers_json: None,
+			workflow_routes_json: None,
 			mfds_report_type: None,
 			report_year: None,
 			source_document_name: None,
@@ -406,6 +411,95 @@ pub async fn delete_primary_source(
 }
 
 // -- Literature References (C.4.r)
+
+/// POST /api/cases/{case_id}/safety-report/documents
+pub async fn create_documents_held_by_sender(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(params): Json<ParamsForCreate<DocumentsHeldBySenderForCreate>>,
+) -> Result<(StatusCode, Json<DataRestResult<DocumentsHeldBySender>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let ParamsForCreate { data } = params;
+	let mut data = data;
+	data.case_id = case_id;
+
+	let id = DocumentsHeldBySenderBmc::create(&ctx, &mm, data).await?;
+	let entity = DocumentsHeldBySenderBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+}
+
+/// GET /api/cases/{case_id}/safety-report/documents
+pub async fn list_documents_held_by_sender(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<DataRestResult<Vec<DocumentsHeldBySender>>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SAFETY_REPORT_READ)?;
+	let filter = DocumentsHeldBySenderFilter {
+		case_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			case_id.to_string()
+		))])),
+		..Default::default()
+	};
+	let entities = DocumentsHeldBySenderBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+}
+
+/// GET /api/cases/{case_id}/safety-report/documents/{id}
+pub async fn get_documents_held_by_sender(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<DocumentsHeldBySender>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SAFETY_REPORT_READ)?;
+	let entity = DocumentsHeldBySenderBmc::get(&ctx, &mm, id).await?;
+	ensure_case_scope(case_id, entity.case_id, id, "documents_held_by_sender")?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+/// PUT /api/cases/{case_id}/safety-report/documents/{id}
+pub async fn update_documents_held_by_sender(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+	Json(params): Json<ParamsForUpdate<DocumentsHeldBySenderForUpdate>>,
+) -> Result<(StatusCode, Json<DataRestResult<DocumentsHeldBySender>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let ParamsForUpdate { data } = params;
+	let entity = DocumentsHeldBySenderBmc::get(&ctx, &mm, id).await?;
+	ensure_case_scope(case_id, entity.case_id, id, "documents_held_by_sender")?;
+	DocumentsHeldBySenderBmc::update(&ctx, &mm, id, data).await?;
+	let entity = DocumentsHeldBySenderBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+/// DELETE /api/cases/{case_id}/safety-report/documents/{id}
+pub async fn delete_documents_held_by_sender(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = DocumentsHeldBySenderBmc::get(&ctx, &mm, id).await?;
+	ensure_case_scope(case_id, entity.case_id, id, "documents_held_by_sender")?;
+	DocumentsHeldBySenderBmc::delete(&ctx, &mm, id).await?;
+	Ok(StatusCode::NO_CONTENT)
+}
 
 /// POST /api/cases/{case_id}/safety-report/literature
 pub async fn create_literature_reference(

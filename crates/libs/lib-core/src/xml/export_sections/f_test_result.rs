@@ -3,8 +3,11 @@ use crate::xml::Result;
 use sqlx::types::time::Date;
 
 pub fn export_f_test_results_xml(results: &[TestResult]) -> Result<String> {
+	let mut ordered: Vec<&TestResult> = results.iter().collect();
+	ordered.sort_by_key(|result| result.sequence_number);
+
 	let mut items_xml = String::new();
-	for result in results {
+	for result in ordered {
 		items_xml.push_str(&test_result_fragment(result));
 	}
 	let xml = base_f_test_result_skeleton().replace("{TESTS}", &items_xml);
@@ -18,6 +21,8 @@ pub(crate) fn test_result_fragment(result: &TestResult) -> String {
 		"<code code=\"3\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\"/>",
 	);
 	out.push_str("<component typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\">");
+
+	// F.r.3.1 / F.r.3.2 - test identity.
 	out.push_str("<code");
 	if let Some(code) = result.test_meddra_code.as_deref() {
 		out.push_str(" code=\"");
@@ -37,18 +42,25 @@ pub(crate) fn test_result_fragment(result: &TestResult) -> String {
 	out.push_str("</originalText>");
 	out.push_str("</code>");
 
+	// F.r.2.1 - test date.
 	if let Some(date) = result.test_date {
 		out.push_str("<effectiveTime value=\"");
 		out.push_str(&fmt_date(date));
 		out.push_str("\"/>");
+	} else if let Some(null_flavor) = result.test_date_null_flavor.as_deref() {
+		out.push_str("<effectiveTime nullFlavor=\"");
+		out.push_str(&xml_escape(null_flavor));
+		out.push_str("\"/>");
 	}
 
+	// F.r.3.3 - coded test result.
 	if let Some(code) = result.test_result_code.as_deref() {
 		out.push_str("<interpretationCode code=\"");
 		out.push_str(&xml_escape(code));
 		out.push_str("\"/>");
 	}
 
+	// F.r.3.4 - result value and unit.
 	if result.test_result_value.is_some() || result.result_unstructured.is_some() {
 		out.push_str("<value");
 		if let Some(val) = result.test_result_value.as_deref() {
@@ -68,6 +80,7 @@ pub(crate) fn test_result_fragment(result: &TestResult) -> String {
 		out.push_str("</value>");
 	}
 
+	// F.r.3.4 supplemental ranges.
 	if result.normal_low_value.is_some() || result.normal_high_value.is_some() {
 		out.push_str("<referenceRange>");
 		if let Some(low) = result.normal_low_value.as_deref() {
@@ -87,6 +100,7 @@ pub(crate) fn test_result_fragment(result: &TestResult) -> String {
 		out.push_str("</referenceRange>");
 	}
 
+	// F.r.1 / F.r.2.2a - comments and more info.
 	if let Some(comments) = result.comments.as_deref() {
 		out.push_str("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"10\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value>");
 		out.push_str(&xml_escape(comments));

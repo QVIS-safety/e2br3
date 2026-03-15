@@ -511,7 +511,7 @@ pub const FDA_STATIC_VALUE_NODE_RULES: &[ValueNodeRuleSpec] = &[
 			"FDA.D.12 patient ethnicity missing code; nullFlavor is required",
 	},
 	ValueNodeRuleSpec {
-		xpath: "//hl7:observation[hl7:code[@code='29' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='726' and @codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.32']]/hl7:value",
+		xpath: "//hl7:observation[hl7:code[@code='29' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='7' and @codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.3']]/hl7:value",
 		value_attr: "value",
 		rule_code: "FDA.E.i.3.2h.REQUIRED",
 		fallback_message:

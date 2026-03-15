@@ -28,9 +28,17 @@ impl CSafetyReportPaths {
 	pub const FULFIL_EXPEDITED: &'static str =
 		"//hl7:component/hl7:observationEvent[hl7:code[@code='23' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value/@value";
 
+	// C.1.6.1 Are Additional Documents Available?
+	pub const ADDITIONAL_DOCUMENTS_AVAILABLE: &'static str =
+		"//hl7:component/hl7:observationEvent[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value/@value";
+
 	// C.1.8.1 Worldwide Unique Case Identification Number
 	pub const WORLDWIDE_UNIQUE_ID_EXT: &'static str =
 		"//hl7:controlActProcess/hl7:subject/hl7:investigationEvent/hl7:id[@root='2.16.840.1.113883.3.989.2.1.3.2']/@extension";
+
+	// C.1.8.2 First Sender of This Case
+	pub const FIRST_SENDER_TYPE: &'static str =
+		"//hl7:outboundRelationship[@typeCode='SPRT'][hl7:relatedInvestigation/hl7:code[@code='1']]/hl7:relatedInvestigation/hl7:subjectOf2/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:code/@code";
 
 	// C.1.11.1 Nullification/Amendment Code
 	pub const NULLIFICATION_CODE: &'static str =

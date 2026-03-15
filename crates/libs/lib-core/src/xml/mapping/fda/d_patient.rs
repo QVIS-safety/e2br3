@@ -5,20 +5,28 @@ pub struct DPatientPaths;
 impl DPatientPaths {
 	// D.1 Patient initials/name
 	pub const PATIENT_NAME: &'static str = "//hl7:primaryRole/hl7:player1/hl7:name";
+	pub const PATIENT_NAME_NULL_FLAVOR: &'static str =
+		"//hl7:primaryRole/hl7:player1/hl7:name/@nullFlavor";
 
 	// D.5 Sex
 	pub const SEX_CODE: &'static str =
 		"//hl7:primaryRole/hl7:player1/hl7:administrativeGenderCode/@code";
+	pub const SEX_NULL_FLAVOR: &'static str =
+		"//hl7:primaryRole/hl7:player1/hl7:administrativeGenderCode/@nullFlavor";
 
 	// D.2.1 Date of Birth
 	pub const BIRTH_DATE: &'static str =
 		"//hl7:primaryRole/hl7:player1/hl7:birthTime/@value";
+	pub const BIRTH_DATE_NULL_FLAVOR: &'static str =
+		"//hl7:primaryRole/hl7:player1/hl7:birthTime/@nullFlavor";
 
 	// D.2.2 Age at Time of Onset (value/unit)
 	pub const AGE_VALUE: &'static str =
 		"//hl7:subjectOf2/hl7:observation[hl7:code[@code='3' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value/@value";
 	pub const AGE_UNIT: &'static str =
 		"//hl7:subjectOf2/hl7:observation[hl7:code[@code='3' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value/@unit";
+	pub const AGE_NULL_FLAVOR: &'static str =
+		"//hl7:subjectOf2/hl7:observation[hl7:code[@code='3' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value/@nullFlavor";
 
 	// D.2.2.1 Gestation period (value/unit)
 	pub const GESTATION_VALUE: &'static str =
@@ -49,6 +57,8 @@ impl DPatientPaths {
 	// D.6 Last Menstrual Period
 	pub const LMP_DATE: &'static str =
 		"//hl7:subjectOf2/hl7:observation[hl7:code[@code='22' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value/@value";
+	pub const LMP_DATE_NULL_FLAVOR: &'static str =
+		"//hl7:subjectOf2/hl7:observation[hl7:code[@code='22' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value/@nullFlavor";
 
 	// D.7.2 Medical history text
 	pub const MEDICAL_HISTORY_TEXT: &'static str =

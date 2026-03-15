@@ -49,24 +49,48 @@ pub fn patch_g_drugs(
 		"//*[local-name()='adverseEventAssessment']/*[local-name()='component1']",
 	);
 
-	for drug in drugs {
-		let subs: Vec<&DrugActiveSubstance> =
-			substances.iter().filter(|s| s.drug_id == drug.id).collect();
-		let doses: Vec<&DosageInformation> =
-			dosages.iter().filter(|d| d.drug_id == drug.id).collect();
-		let inds: Vec<&DrugIndication> = indications
-			.iter()
-			.filter(|i| i.drug_id == drug.id)
-			.collect();
-		let chars: Vec<&DrugDeviceCharacteristic> = characteristics
-			.iter()
-			.filter(|c| c.drug_id == drug.id)
-			.collect();
-		let drug_assessments: Vec<&DrugReactionAssessment> = assessments
-			.iter()
-			.filter(|a| a.drug_id == drug.id)
-			.collect();
-		let fragment = drug_fragment(drug, &subs, &doses, &inds, &chars);
+	let mut ordered_drugs: Vec<&DrugInformation> = drugs.iter().collect();
+	ordered_drugs.sort_by_key(|drug| drug.sequence_number);
+
+	for drug in ordered_drugs {
+		let subs: Vec<&DrugActiveSubstance> = {
+			let mut rows: Vec<&DrugActiveSubstance> =
+				substances.iter().filter(|s| s.drug_id == drug.id).collect();
+			rows.sort_by_key(|row| row.sequence_number);
+			rows
+		};
+		let doses: Vec<&DosageInformation> = {
+			let mut rows: Vec<&DosageInformation> =
+				dosages.iter().filter(|d| d.drug_id == drug.id).collect();
+			rows.sort_by_key(|row| row.sequence_number);
+			rows
+		};
+		let inds: Vec<&DrugIndication> = {
+			let mut rows: Vec<&DrugIndication> = indications
+				.iter()
+				.filter(|i| i.drug_id == drug.id)
+				.collect();
+			rows.sort_by_key(|row| row.sequence_number);
+			rows
+		};
+		let chars: Vec<&DrugDeviceCharacteristic> = {
+			let mut rows: Vec<&DrugDeviceCharacteristic> = characteristics
+				.iter()
+				.filter(|c| c.drug_id == drug.id)
+				.collect();
+			rows.sort_by_key(|row| row.sequence_number);
+			rows
+		};
+		let drug_assessments: Vec<&DrugReactionAssessment> = {
+			let mut rows: Vec<&DrugReactionAssessment> = assessments
+				.iter()
+				.filter(|a| a.drug_id == drug.id)
+				.collect();
+			rows.sort_by_key(|row| row.reaction_id);
+			rows
+		};
+		let fragment =
+			drug_fragment(drug, &subs, &doses, &inds, &chars, &drug_assessments)?;
 		append_fragment_child(
 			&mut doc,
 			&parser,
@@ -74,22 +98,20 @@ pub fn patch_g_drugs(
 			"//hl7:primaryRole",
 			&fragment,
 		)?;
-		let role_fragment = causality_role_fragment(drug)?;
+		let causality_fragment = causality_role_fragment(drug)?;
 		append_fragment_child(
 			&mut doc,
 			&parser,
 			&mut xpath,
 			"//hl7:adverseEventAssessment",
-			&role_fragment,
+			&causality_fragment,
 		)?;
 		for assessment in drug_assessments {
-			let rows: Vec<&RelatednessAssessment> = relatedness
+			let mut rows: Vec<&RelatednessAssessment> = relatedness
 				.iter()
 				.filter(|r| r.drug_reaction_assessment_id == assessment.id)
 				.collect();
-			if rows.is_empty() {
-				continue;
-			}
+			rows.sort_by_key(|row| row.sequence_number);
 			for row in rows {
 				let related_fragment =
 					relatedness_fragment(drug.id, assessment, row);
@@ -105,73 +127,4 @@ pub fn patch_g_drugs(
 	}
 
 	Ok(doc.to_string())
-}
-
-fn relatedness_fragment(
-	drug_id: sqlx::types::Uuid,
-	assessment: &DrugReactionAssessment,
-	relatedness: &RelatednessAssessment,
-) -> String {
-	let mut out = String::new();
-	out.push_str("<component typeCode=\"COMP\"><causalityAssessment classCode=\"OBS\" moodCode=\"EVN\">");
-	out.push_str("<code code=\"39\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"causality\"/>");
-	if let Some(result) = relatedness.result_of_assessment.as_deref() {
-		out.push_str("<value xsi:type=\"ST\">");
-		out.push_str(&xml_escape(result));
-		out.push_str("</value>");
-	}
-	if let Some(method) = relatedness.method_of_assessment.as_deref() {
-		out.push_str("<methodCode><originalText>");
-		out.push_str(&xml_escape(method));
-		out.push_str("</originalText></methodCode>");
-	}
-	if let Some(source) = relatedness.source_of_assessment.as_deref() {
-		out.push_str("<author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\"><code><originalText>");
-		out.push_str(&xml_escape(source));
-		out.push_str("</originalText></code></assignedEntity></author>");
-	}
-	out.push_str("<subject1 typeCode=\"SUBJ\"><adverseEffectReference classCode=\"OBS\" moodCode=\"EVN\"><id root=\"");
-	out.push_str(&xml_escape(&assessment.reaction_id.to_string()));
-	out.push_str("\"/></adverseEffectReference></subject1>");
-	out.push_str("<subject2 typeCode=\"SUBJ\"><productUseReference classCode=\"SBADM\" moodCode=\"EVN\"><id root=\"");
-	out.push_str(&xml_escape(&drug_id.to_string()));
-	out.push_str("\"/></productUseReference></subject2>");
-	out.push_str("</causalityAssessment></component>");
-	out
-}
-
-fn xml_escape(value: &str) -> String {
-	value
-		.replace('&', "&amp;")
-		.replace('<', "&lt;")
-		.replace('>', "&gt;")
-		.replace('"', "&quot;")
-		.replace('\'', "&apos;")
-}
-
-fn causality_role_fragment(drug: &DrugInformation) -> Result<String> {
-	let role_code = normalize_drug_characterization(&drug.drug_characterization)
-		.ok_or_else(|| Error::InvalidXml {
-			message: format!(
-				"ICH.G.k.1.REQUIRED: drug characterization missing or invalid for drug sequence {}",
-				drug.sequence_number
-			),
-			line: None,
-			column: None,
-		})?;
-	let display = drug_characterization_display_name(role_code);
-	Ok(format!(
-		"<component typeCode=\"COMP\">\
-			<causalityAssessment classCode=\"OBS\" moodCode=\"EVN\">\
-				<code code=\"20\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"interventionCharacterization\"/>\
-				<value xsi:type=\"CE\" code=\"{role_code}\" displayName=\"{display}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.13\"/>\
-				<subject2 typeCode=\"SUBJ\">\
-					<productUseReference classCode=\"SBADM\" moodCode=\"EVN\">\
-						<id root=\"{drug_id}\"/>\
-					</productUseReference>\
-				</subject2>\
-			</causalityAssessment>\
-		</component>"
-		, drug_id = drug.id
-	))
 }

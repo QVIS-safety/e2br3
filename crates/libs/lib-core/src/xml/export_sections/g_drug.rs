@@ -2,6 +2,12 @@ use crate::model::drug::{
 	DosageInformation, DrugActiveSubstance, DrugDeviceCharacteristic,
 	DrugIndication, DrugInformation,
 };
+use crate::model::drug_reaction_assessment::{
+	DrugReactionAssessment, RelatednessAssessment,
+};
+use crate::xml::validate::{
+	drug_characterization_display_name, normalize_drug_characterization,
+};
 use crate::xml::Result;
 use sqlx::types::time::{Date, Time};
 use std::collections::HashMap;
@@ -12,6 +18,8 @@ pub fn export_g_drugs_xml(
 	dosages: &[DosageInformation],
 	indications: &[DrugIndication],
 	characteristics: &[DrugDeviceCharacteristic],
+	assessments: &[DrugReactionAssessment],
+	relatedness: &[RelatednessAssessment],
 ) -> Result<String> {
 	let mut subs_by_drug: HashMap<sqlx::types::Uuid, Vec<&DrugActiveSubstance>> =
 		HashMap::new();
@@ -41,8 +49,26 @@ pub fn export_g_drugs_xml(
 			.or_default()
 			.push(ch);
 	}
+
+	for rows in subs_by_drug.values_mut() {
+		rows.sort_by_key(|row| row.sequence_number);
+	}
+	for rows in dosages_by_drug.values_mut() {
+		rows.sort_by_key(|row| row.sequence_number);
+	}
+	for rows in indications_by_drug.values_mut() {
+		rows.sort_by_key(|row| row.sequence_number);
+	}
+	for rows in characteristics_by_drug.values_mut() {
+		rows.sort_by_key(|row| row.sequence_number);
+	}
+
+	let mut ordered_drugs: Vec<&DrugInformation> = drugs.iter().collect();
+	ordered_drugs.sort_by_key(|drug| drug.sequence_number);
+
 	let mut items_xml = String::new();
-	for drug in drugs {
+	let mut causality_xml = String::new();
+	for drug in ordered_drugs {
 		let subs = subs_by_drug.get(&drug.id).cloned().unwrap_or_default();
 		let doses = dosages_by_drug.get(&drug.id).cloned().unwrap_or_default();
 		let inds = indications_by_drug
@@ -53,9 +79,28 @@ pub fn export_g_drugs_xml(
 			.get(&drug.id)
 			.cloned()
 			.unwrap_or_default();
-		items_xml.push_str(&drug_fragment(drug, &subs, &doses, &inds, &chars));
+		let mut drug_assessments: Vec<&DrugReactionAssessment> = assessments
+			.iter()
+			.filter(|assessment| assessment.drug_id == drug.id)
+			.collect();
+		drug_assessments.sort_by_key(|assessment| assessment.reaction_id);
+		items_xml.push_str(&drug_fragment(
+			drug,
+			&subs,
+			&doses,
+			&inds,
+			&chars,
+			&drug_assessments,
+		)?);
+		causality_xml.push_str(&drug_causality_fragments(
+			drug,
+			&drug_assessments,
+			relatedness,
+		)?);
 	}
-	let xml = base_g_drug_skeleton().replace("{DRUGS}", &items_xml);
+	let xml = base_g_drug_skeleton()
+		.replace("{DRUGS}", &items_xml)
+		.replace("{CAUSALITY}", &causality_xml);
 	Ok(xml)
 }
 
@@ -65,13 +110,24 @@ pub(crate) fn drug_fragment(
 	dosages: &[&DosageInformation],
 	indications: &[&DrugIndication],
 	characteristics: &[&DrugDeviceCharacteristic],
-) -> String {
+	assessments: &[&DrugReactionAssessment],
+) -> Result<String> {
 	let mut out = String::new();
+	let product_name = drug
+		.medicinal_product
+		.trim()
+		.is_empty()
+		.then(|| drug.drug_generic_name.as_deref())
+		.flatten()
+		.unwrap_or(&drug.medicinal_product);
+
 	out.push_str("<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\">");
 	out.push_str(
 		"<code code=\"4\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\"/>",
 	);
 	out.push_str("<component typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">");
+
+	// G.k.2 / G.k.5 / G.k.6 - core product identity.
 	out.push_str("<id root=\"");
 	out.push_str(&xml_escape(&drug.id.to_string()));
 	out.push_str("\"/>");
@@ -84,7 +140,7 @@ pub(crate) fn drug_fragment(
 		"<consumable typeCode=\"CSM\"><instanceOfKind classCode=\"INST\"><kindOfProduct classCode=\"MMAT\" determinerCode=\"KIND\">",
 	);
 	out.push_str("<name>");
-	out.push_str(&xml_escape(&drug.medicinal_product));
+	out.push_str(&xml_escape(product_name));
 	out.push_str("</name>");
 	if let Some(brand) = drug.brand_name.as_deref() {
 		out.push_str("<name>");
@@ -125,6 +181,8 @@ pub(crate) fn drug_fragment(
 		}
 		out.push_str("/></asIdentifiedEntity>");
 	}
+
+	// G.k.2.5 / G.k.2.3 - blinded/manufacturer metadata.
 	if let Some(blinded) = drug.investigational_product_blinded {
 		let val = if blinded { "true" } else { "false" };
 		out.push_str(
@@ -133,10 +191,23 @@ pub(crate) fn drug_fragment(
 		out.push_str(val);
 		out.push_str("\"/></observation></subjectOf>");
 	}
-	if let Some(name) = drug.manufacturer_name.as_deref() {
-		out.push_str("<asManufacturedProduct><subjectOf><approval><holder><role><playingOrganization><name>");
-		out.push_str(&xml_escape(name));
-		out.push_str("</name></playingOrganization></role></holder>");
+	if drug.manufacturer_name.is_some()
+		|| drug.manufacturer_country.is_some()
+		|| drug.drug_authorization_number.is_some()
+	{
+		out.push_str("<asManufacturedProduct classCode=\"MANU\"><subjectOf typeCode=\"SBJ\"><approval classCode=\"CNTRCT\" moodCode=\"EVN\">");
+		if let Some(number) = drug.drug_authorization_number.as_deref() {
+			out.push_str(
+				"<id root=\"2.16.840.1.113883.3.989.2.1.3.4\" extension=\"",
+			);
+			out.push_str(&xml_escape(number));
+			out.push_str("\"/>");
+		}
+		if let Some(name) = drug.manufacturer_name.as_deref() {
+			out.push_str("<holder typeCode=\"HLD\"><role classCode=\"HLD\"><playingOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name>");
+			out.push_str(&xml_escape(name));
+			out.push_str("</name></playingOrganization></role></holder>");
+		}
 		if let Some(country) = drug.manufacturer_country.as_deref() {
 			out.push_str("<author><territorialAuthority><territory><code code=\"");
 			out.push_str(&xml_escape(country));
@@ -144,6 +215,8 @@ pub(crate) fn drug_fragment(
 		}
 		out.push_str("</approval></subjectOf></asManufacturedProduct>");
 	}
+
+	// G.k.2.3.r.* - active substances.
 	if !substances.is_empty() {
 		for sub in substances {
 			out.push_str("<ingredient>");
@@ -186,8 +259,16 @@ pub(crate) fn drug_fragment(
 			out.push_str("</ingredientSubstance>");
 			out.push_str("</ingredient>");
 		}
+	} else if let Some(name) = drug.drug_generic_name.as_deref() {
+		let name = name.trim();
+		if !name.is_empty() {
+			out.push_str("<ingredient><ingredientSubstance><name>");
+			out.push_str(&xml_escape(name));
+			out.push_str("</name></ingredientSubstance></ingredient>");
+		}
 	}
 
+	// FDA device characteristics.
 	if !characteristics.is_empty() {
 		for ch in characteristics {
 			out.push_str("<part><partProduct><asManufacturedProduct><subjectOf><characteristic>");
@@ -238,6 +319,8 @@ pub(crate) fn drug_fragment(
 			out.push_str("</characteristic></subjectOf></asManufacturedProduct></partProduct></part>");
 		}
 	}
+
+	// G.k.4.r.* / G.k.7 / FDA supplemental product metadata.
 	if let Some(batch) = drug.batch_lot_number.as_deref() {
 		out.push_str("<part><partProduct><instanceOfKind><productInstanceInstance><lotNumberText>");
 		out.push_str(&xml_escape(batch));
@@ -252,10 +335,14 @@ pub(crate) fn drug_fragment(
 	}
 	out.push_str("</instanceOfKind></consumable>");
 
+	// G.k.9.i.4 / G.k.4.r.10 / G.k.4.r.11 / G.k.10.
 	if let Some(rechallenge) = drug.rechallenge.as_deref() {
 		out.push_str("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"31\"/><value xsi:type=\"CE\" code=\"");
 		out.push_str(&xml_escape(rechallenge));
 		out.push_str("\"/></observation></outboundRelationship2>");
+	}
+	for assessment in assessments {
+		out.push_str(&drug_recurrence_fragment(assessment));
 	}
 	if drug.cumulative_dose_first_reaction_value.is_some()
 		|| drug.cumulative_dose_first_reaction_unit.is_some()
@@ -466,6 +553,7 @@ pub(crate) fn drug_fragment(
 		out.push_str("\"/></act></inboundRelationship>");
 	}
 
+	// G.k.8 - indications.
 	for ind in indications {
 		out.push_str("<inboundRelationship typeCode=\"RSON\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"19\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"indication\"/><value xsi:type=\"CE\"");
 		if let Some(code) = ind.indication_meddra_code.as_deref() {
@@ -488,7 +576,177 @@ pub(crate) fn drug_fragment(
 	}
 
 	out.push_str("</substanceAdministration></component></organizer></subjectOf2>");
+	Ok(out)
+}
+
+fn drug_recurrence_fragment(assessment: &DrugReactionAssessment) -> String {
+	let mut out = String::new();
+
+	if assessment.administration_start_interval_value.is_some()
+		|| assessment.administration_start_interval_unit.is_some()
+	{
+		out.push_str("<outboundRelationship1 typeCode=\"SAS\"><pauseQuantity");
+		if let Some(value) = assessment.administration_start_interval_value.as_ref()
+		{
+			out.push_str(" value=\"");
+			out.push_str(&xml_escape(&value.to_string()));
+			out.push_str("\"");
+		}
+		if let Some(unit) = assessment.administration_start_interval_unit.as_deref()
+		{
+			out.push_str(" unit=\"");
+			out.push_str(&xml_escape(unit));
+			out.push_str("\"");
+		}
+		out.push_str(
+			"/><actReference classCode=\"ACT\" moodCode=\"EVN\"><id root=\"",
+		);
+		out.push_str(&xml_escape(&assessment.reaction_id.to_string()));
+		out.push_str("\"/></actReference></outboundRelationship1>");
+	}
+	if assessment.last_dose_interval_value.is_some()
+		|| assessment.last_dose_interval_unit.is_some()
+	{
+		out.push_str("<outboundRelationship1 typeCode=\"SAE\"><pauseQuantity");
+		if let Some(value) = assessment.last_dose_interval_value.as_ref() {
+			out.push_str(" value=\"");
+			out.push_str(&xml_escape(&value.to_string()));
+			out.push_str("\"");
+		}
+		if let Some(unit) = assessment.last_dose_interval_unit.as_deref() {
+			out.push_str(" unit=\"");
+			out.push_str(&xml_escape(unit));
+			out.push_str("\"");
+		}
+		out.push_str(
+			"/><actReference classCode=\"ACT\" moodCode=\"EVN\"><id root=\"",
+		);
+		out.push_str(&xml_escape(&assessment.reaction_id.to_string()));
+		out.push_str("\"/></actReference></outboundRelationship1>");
+	}
+	if assessment.reaction_recurred.is_some()
+		|| assessment.recurrence_action.is_some()
+		|| assessment.recurrence_meddra_version.is_some()
+		|| assessment.recurrence_meddra_code.is_some()
+	{
+		out.push_str(
+			"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"31\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/>",
+		);
+		out.push_str("<value xsi:type=\"CE\"");
+		if let Some(code) = assessment.reaction_recurred.as_deref() {
+			out.push_str(" code=\"");
+			out.push_str(&xml_escape(code));
+			out.push_str("\"");
+		}
+		out.push_str("/>");
+		out.push_str(
+			"<outboundRelationship1 typeCode=\"REFR\"><actReference classCode=\"ACT\" moodCode=\"EVN\"><id root=\"",
+		);
+		out.push_str(&xml_escape(&assessment.reaction_id.to_string()));
+		out.push_str("\"/></actReference></outboundRelationship1>");
+		if let Some(action) = assessment.recurrence_action.as_deref() {
+			out.push_str(
+				"<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"G.k.8.r.1\"/><value xsi:type=\"CE\" code=\"",
+			);
+			out.push_str(&xml_escape(action));
+			out.push_str("\"/></observation></outboundRelationship2>");
+		}
+		if assessment.recurrence_meddra_version.is_some()
+			|| assessment.recurrence_meddra_code.is_some()
+		{
+			out.push_str(
+				"<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"G.k.8.r.2\"/><value xsi:type=\"CE\" codeSystem=\"2.16.840.1.113883.6.163\"",
+			);
+			if let Some(version) = assessment.recurrence_meddra_version.as_deref() {
+				out.push_str(" codeSystemVersion=\"");
+				out.push_str(&xml_escape(version));
+				out.push_str("\"");
+			}
+			if let Some(code) = assessment.recurrence_meddra_code.as_deref() {
+				out.push_str(" code=\"");
+				out.push_str(&xml_escape(code));
+				out.push_str("\"");
+			}
+			out.push_str("/></observation></outboundRelationship2>");
+		}
+		out.push_str("</observation></outboundRelationship2>");
+	}
+
 	out
+}
+
+pub(crate) fn drug_causality_fragments(
+	drug: &DrugInformation,
+	assessments: &[&DrugReactionAssessment],
+	relatedness: &[RelatednessAssessment],
+) -> Result<String> {
+	let mut out = String::new();
+
+	// G.k.1 - intervention characterization.
+	out.push_str(&causality_role_fragment(drug)?);
+
+	// G.k.9.i.2.r / G.k.9.i.3.* - relatedness rows.
+	for assessment in assessments {
+		let mut rows: Vec<&RelatednessAssessment> = relatedness
+			.iter()
+			.filter(|row| row.drug_reaction_assessment_id == assessment.id)
+			.collect();
+		rows.sort_by_key(|row| row.sequence_number);
+		for row in rows {
+			out.push_str(&relatedness_fragment(drug.id, assessment, row));
+		}
+	}
+	Ok(out)
+}
+
+pub(crate) fn relatedness_fragment(
+	drug_id: sqlx::types::Uuid,
+	assessment: &DrugReactionAssessment,
+	relatedness: &RelatednessAssessment,
+) -> String {
+	let mut out = String::new();
+	out.push_str("<component typeCode=\"COMP\"><causalityAssessment classCode=\"OBS\" moodCode=\"EVN\">");
+	out.push_str("<code code=\"39\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"causality\"/>");
+	if let Some(result) = relatedness.result_of_assessment.as_deref() {
+		out.push_str("<value xsi:type=\"ST\">");
+		out.push_str(&xml_escape(result));
+		out.push_str("</value>");
+	}
+	if let Some(method) = relatedness.method_of_assessment.as_deref() {
+		out.push_str("<methodCode><originalText>");
+		out.push_str(&xml_escape(method));
+		out.push_str("</originalText></methodCode>");
+	}
+	if let Some(source) = relatedness.source_of_assessment.as_deref() {
+		out.push_str("<author typeCode=\"AUT\"><assignedEntity classCode=\"ASSIGNED\"><code><originalText>");
+		out.push_str(&xml_escape(source));
+		out.push_str("</originalText></code></assignedEntity></author>");
+	}
+	out.push_str("<subject1 typeCode=\"SUBJ\"><adverseEffectReference classCode=\"OBS\" moodCode=\"EVN\"><id root=\"");
+	out.push_str(&xml_escape(&assessment.reaction_id.to_string()));
+	out.push_str("\"/></adverseEffectReference></subject1>");
+	out.push_str("<subject2 typeCode=\"SUBJ\"><productUseReference classCode=\"SBADM\" moodCode=\"EVN\"><id root=\"");
+	out.push_str(&xml_escape(&drug_id.to_string()));
+	out.push_str("\"/></productUseReference></subject2>");
+	out.push_str("</causalityAssessment></component>");
+	out
+}
+
+pub(crate) fn causality_role_fragment(drug: &DrugInformation) -> Result<String> {
+	let role_code = normalize_drug_characterization(&drug.drug_characterization)
+		.ok_or_else(|| crate::xml::error::Error::InvalidXml {
+			message: format!(
+				"ICH.G.k.1.REQUIRED: drug characterization missing or invalid for drug sequence {}",
+				drug.sequence_number
+			),
+			line: None,
+			column: None,
+		})?;
+	let display = drug_characterization_display_name(role_code);
+	Ok(format!(
+		"<component typeCode=\"COMP\"><causalityAssessment classCode=\"OBS\" moodCode=\"EVN\"><code code=\"20\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" displayName=\"interventionCharacterization\"/><value xsi:type=\"CE\" code=\"{role_code}\" displayName=\"{display}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.13\"/><subject2 typeCode=\"SUBJ\"><productUseReference classCode=\"SBADM\" moodCode=\"EVN\"><id root=\"{drug_id}\"/></productUseReference></subject2></causalityAssessment></component>",
+		drug_id = drug.id
+	))
 }
 
 fn fmt_date(date: Date) -> String {
@@ -537,6 +795,7 @@ fn base_g_drug_skeleton() -> &'static str {
 \t\t\t\t\t\t\t\t\t{DRUGS}\
 \t\t\t\t\t\t\t\t</primaryRole>\
 \t\t\t\t\t\t\t</subject1>\
+\t\t\t\t\t\t\t{CAUSALITY}\
 \t\t\t\t\t\t</adverseEventAssessment>\
 \t\t\t\t\t</component>\
 \t\t\t\t</investigationEvent>\
