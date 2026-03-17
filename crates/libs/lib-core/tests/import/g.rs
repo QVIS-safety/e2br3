@@ -23,8 +23,17 @@ fn import_g_section_all_fields_from_scenario6() {
 	assert_eq!(first.drug_characterization, "1");
 	assert_eq!(first.mpid.as_deref(), Some("894444-28525-765"));
 	assert_eq!(first.mpid_version.as_deref(), Some("2014110112"));
+	assert_eq!(first.phpid, None);
+	assert_eq!(first.phpid_version, None);
 	assert_eq!(first.investigational_product_blinded, None);
 	assert_eq!(first.obtain_drug_country.as_deref(), Some("US"));
+	assert_eq!(
+		first.drug_authorization_number.as_deref(),
+		Some("BLA012345")
+	);
+	// FDA.G.k.2.2.1 is intentionally unsupported until a verified source
+	// mapping or fixture is available, so the parser currently exposes no
+	// separate generic-name value.
 	assert_eq!(
 		first.manufacturer_name.as_deref(),
 		Some("Pharmacia and Upjohn Company")
@@ -108,10 +117,15 @@ fn import_g_section_all_fields_from_scenario6() {
 		first_dosage.dosage_text.as_deref(),
 		Some("unstructured dosing information, e.g. take by mouth 2 times a day with food ")
 	);
+	assert_eq!(first_dosage.number_of_units, Some(10));
 	assert_eq!(first_dosage.frequency_value, Some(decimal("10")));
 	assert_eq!(first_dosage.frequency_unit.as_deref(), Some("d"));
 	assert_eq!(first_dosage.start_date, Some(date(2009, 1, 1)));
+	assert_eq!(first_dosage.start_time, None);
+	assert_eq!(first_dosage.start_date_null_flavor, None);
 	assert_eq!(first_dosage.end_date, Some(date(2009, 1, 1)));
+	assert_eq!(first_dosage.end_time, None);
+	assert_eq!(first_dosage.end_date_null_flavor, None);
 	assert_eq!(first_dosage.duration_value, Some(decimal("4")));
 	assert_eq!(first_dosage.duration_unit.as_deref(), Some("wk"));
 	assert_eq!(first_dosage.dose_value, Some(decimal("10")));
@@ -182,4 +196,24 @@ fn import_g_section_all_fields_from_scenario6() {
 	assert_eq!(last_characteristic.value_code, None);
 	assert_eq!(last_characteristic.value_code_system, None);
 	assert_eq!(last_characteristic.value_display_name, None);
+}
+
+#[test]
+fn import_g_dosage_null_flavor_from_scenario1() {
+	let xml = fixture("FAERS2022Scenario1.xml");
+	let drugs = parse_g_drugs(&xml).expect("parse");
+	let first = &drugs[0];
+	let first_dosage = &first.dosages[0];
+
+	assert_eq!(
+		first.drug_authorization_number.as_deref(),
+		Some("NDA012345")
+	);
+	assert_eq!(first_dosage.number_of_units, None);
+	assert_eq!(first_dosage.start_date, None);
+	assert_eq!(first_dosage.start_time, None);
+	assert_eq!(first_dosage.start_date_null_flavor.as_deref(), Some("ASKU"));
+	assert_eq!(first_dosage.end_date, None);
+	assert_eq!(first_dosage.end_time, None);
+	assert_eq!(first_dosage.end_date_null_flavor.as_deref(), Some("ASKU"));
 }

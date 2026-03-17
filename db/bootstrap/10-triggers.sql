@@ -1611,113 +1611,113 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Section C tables
-CREATE TRIGGER trg_dirty_c_safety_report_identification
+CREATE TRIGGER aa_dirty_c_safety_report_identification
   AFTER INSERT OR UPDATE OR DELETE ON safety_report_identification
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
-CREATE TRIGGER trg_dirty_c_sender_information
+CREATE TRIGGER aa_dirty_c_sender_information
   AFTER INSERT OR UPDATE OR DELETE ON sender_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
-CREATE TRIGGER trg_dirty_c_literature_references
+CREATE TRIGGER aa_dirty_c_literature_references
   AFTER INSERT OR UPDATE OR DELETE ON literature_references
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
-CREATE TRIGGER trg_dirty_c_documents_held_by_sender
+CREATE TRIGGER aa_dirty_c_documents_held_by_sender
   AFTER INSERT OR UPDATE OR DELETE ON documents_held_by_sender
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
-CREATE TRIGGER trg_dirty_c_study_information
+CREATE TRIGGER aa_dirty_c_study_information
   AFTER INSERT OR UPDATE OR DELETE ON study_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
-CREATE TRIGGER trg_dirty_c_study_registration_numbers
+CREATE TRIGGER aa_dirty_c_study_registration_numbers
   AFTER INSERT OR UPDATE OR DELETE ON study_registration_numbers
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c_from_study_info();
-CREATE TRIGGER trg_dirty_c_primary_sources
+CREATE TRIGGER aa_dirty_c_primary_sources
   AFTER INSERT OR UPDATE OR DELETE ON primary_sources
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
-CREATE TRIGGER trg_dirty_c_receiver_information
+CREATE TRIGGER aa_dirty_c_receiver_information
   AFTER INSERT OR UPDATE OR DELETE ON receiver_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
-CREATE TRIGGER trg_dirty_c_other_case_identifiers
+CREATE TRIGGER aa_dirty_c_other_case_identifiers
   AFTER INSERT OR UPDATE OR DELETE ON other_case_identifiers
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
-CREATE TRIGGER trg_dirty_c_linked_report_numbers
+CREATE TRIGGER aa_dirty_c_linked_report_numbers
   AFTER INSERT OR UPDATE OR DELETE ON linked_report_numbers
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
 
 -- Section D tables
-CREATE TRIGGER trg_dirty_d_patient_information
+CREATE TRIGGER aa_dirty_d_patient_information
   AFTER INSERT OR UPDATE OR DELETE ON patient_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_d();
-CREATE TRIGGER trg_dirty_d_patient_identifiers
+CREATE TRIGGER aa_dirty_d_patient_identifiers
   AFTER INSERT OR UPDATE OR DELETE ON patient_identifiers
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_d_from_patient();
-CREATE TRIGGER trg_dirty_d_medical_history_episodes
+CREATE TRIGGER aa_dirty_d_medical_history_episodes
   AFTER INSERT OR UPDATE OR DELETE ON medical_history_episodes
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_d_from_patient();
-CREATE TRIGGER trg_dirty_d_past_drug_history
+CREATE TRIGGER aa_dirty_d_past_drug_history
   AFTER INSERT OR UPDATE OR DELETE ON past_drug_history
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_d_from_patient();
-CREATE TRIGGER trg_dirty_d_patient_death_information
+CREATE TRIGGER aa_dirty_d_patient_death_information
   AFTER INSERT OR UPDATE OR DELETE ON patient_death_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_d_from_patient();
-CREATE TRIGGER trg_dirty_d_reported_causes_of_death
+CREATE TRIGGER aa_dirty_d_reported_causes_of_death
   AFTER INSERT OR UPDATE OR DELETE ON reported_causes_of_death
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_d_from_death_info();
-CREATE TRIGGER trg_dirty_d_autopsy_causes_of_death
+CREATE TRIGGER aa_dirty_d_autopsy_causes_of_death
   AFTER INSERT OR UPDATE OR DELETE ON autopsy_causes_of_death
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_d_from_death_info();
-CREATE TRIGGER trg_dirty_d_parent_information
+CREATE TRIGGER aa_dirty_d_parent_information
   AFTER INSERT OR UPDATE OR DELETE ON parent_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_d_from_patient();
-CREATE TRIGGER trg_dirty_d_parent_medical_history
+CREATE TRIGGER aa_dirty_d_parent_medical_history
   AFTER INSERT OR UPDATE OR DELETE ON parent_medical_history
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_d_from_parent();
-CREATE TRIGGER trg_dirty_d_parent_past_drug_history
+CREATE TRIGGER aa_dirty_d_parent_past_drug_history
   AFTER INSERT OR UPDATE OR DELETE ON parent_past_drug_history
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_d_from_parent();
 
 -- Section E tables
-CREATE TRIGGER trg_dirty_e_reactions
+CREATE TRIGGER aa_dirty_e_reactions
   AFTER INSERT OR UPDATE OR DELETE ON reactions
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_e();
 
 -- Section F tables
-CREATE TRIGGER trg_dirty_f_test_results
+CREATE TRIGGER aa_dirty_f_test_results
   AFTER INSERT OR UPDATE OR DELETE ON test_results
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_f();
 
 -- Section G tables
-CREATE TRIGGER trg_dirty_g_drug_information
+CREATE TRIGGER aa_dirty_g_drug_information
   AFTER INSERT OR UPDATE OR DELETE ON drug_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g();
-CREATE TRIGGER trg_dirty_g_drug_active_substances
+CREATE TRIGGER aa_dirty_g_drug_active_substances
   AFTER INSERT OR UPDATE OR DELETE ON drug_active_substances
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g_from_drug();
-CREATE TRIGGER trg_dirty_g_dosage_information
+CREATE TRIGGER aa_dirty_g_dosage_information
   AFTER INSERT OR UPDATE OR DELETE ON dosage_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g_from_drug();
-CREATE TRIGGER trg_dirty_g_drug_indications
+CREATE TRIGGER aa_dirty_g_drug_indications
   AFTER INSERT OR UPDATE OR DELETE ON drug_indications
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g_from_drug();
-CREATE TRIGGER trg_dirty_g_drug_device_characteristics
+CREATE TRIGGER aa_dirty_g_drug_device_characteristics
   AFTER INSERT OR UPDATE OR DELETE ON drug_device_characteristics
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g_from_drug();
-CREATE TRIGGER trg_dirty_g_drug_recurrence_information
+CREATE TRIGGER aa_dirty_g_drug_recurrence_information
   AFTER INSERT OR UPDATE OR DELETE ON drug_recurrence_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g_from_drug();
-CREATE TRIGGER trg_dirty_g_drug_reaction_assessments
+CREATE TRIGGER aa_dirty_g_drug_reaction_assessments
   AFTER INSERT OR UPDATE OR DELETE ON drug_reaction_assessments
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g_from_drug();
-CREATE TRIGGER trg_dirty_g_relatedness_assessments
+CREATE TRIGGER aa_dirty_g_relatedness_assessments
   AFTER INSERT OR UPDATE OR DELETE ON relatedness_assessments
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g_from_drug();
 
 -- Section H tables
-CREATE TRIGGER trg_dirty_h_narrative_information
+CREATE TRIGGER aa_dirty_h_narrative_information
   AFTER INSERT OR UPDATE OR DELETE ON narrative_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_h();
-CREATE TRIGGER trg_dirty_h_sender_diagnoses
+CREATE TRIGGER aa_dirty_h_sender_diagnoses
   AFTER INSERT OR UPDATE OR DELETE ON sender_diagnoses
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_h_from_narrative();
-CREATE TRIGGER trg_dirty_h_case_summary_information
+CREATE TRIGGER aa_dirty_h_case_summary_information
   AFTER INSERT OR UPDATE OR DELETE ON case_summary_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_h_from_narrative();
 

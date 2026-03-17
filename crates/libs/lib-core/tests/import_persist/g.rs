@@ -1,5 +1,6 @@
 use lib_core::model::drug::{
-	parse_fda_device_info_json, DrugActiveSubstance, DrugDeviceCharacteristic,
+	parse_drug_additional_info_codes_json, parse_fda_device_info_json,
+	DosageInformation, DrugActiveSubstance, DrugDeviceCharacteristic,
 	DrugIndication, DrugInformation,
 };
 use lib_core::model::drug_reaction_assessment::{
@@ -35,6 +36,12 @@ async fn imports_g_drug_models() {
 	let indications_one: Vec<DrugIndication> = list_by_uuid(
 		&imported,
 		"SELECT * FROM drug_indications WHERE drug_id = $1 ORDER BY sequence_number",
+		drugs[0].id,
+	)
+	.await;
+	let dosages_one: Vec<DosageInformation> = list_by_uuid(
+		&imported,
+		"SELECT * FROM dosage_information WHERE drug_id = $1 ORDER BY sequence_number",
 		drugs[0].id,
 	)
 	.await;
@@ -106,6 +113,23 @@ async fn imports_g_drug_models() {
 		indications_one[1].indication_meddra_code.as_deref(),
 		Some("10047340")
 	);
+
+	assert_eq!(dosages_one.len(), 2);
+	assert_eq!(dosages_one[0].drug_id, drugs[0].id);
+	assert_eq!(dosages_one[0].sequence_number, 1);
+	assert_eq!(dosages_one[0].number_of_units, Some(10));
+	assert_eq!(dosages_one[0].frequency_value, Some(decimal("10")));
+	assert_eq!(dosages_one[0].frequency_unit.as_deref(), Some("d"));
+	assert_eq!(
+		dosages_one[0].first_administration_date,
+		Some(crate::common::date(2009, 1, 1))
+	);
+	assert_eq!(dosages_one[0].first_administration_time, None);
+	assert_eq!(
+		dosages_one[0].last_administration_date,
+		Some(crate::common::date(2009, 1, 1))
+	);
+	assert_eq!(dosages_one[0].last_administration_time, None);
 
 	assert_eq!(characteristics_one.len(), 10);
 	assert_eq!(characteristics_one[0].drug_id, drugs[0].id);
@@ -258,6 +282,9 @@ async fn imports_g_linkage_models() {
 		})
 		.collect::<Vec<_>>();
 	related_summary.sort();
+	// KR.2 is intentionally unsupported in XML import until a canonical MFDS
+	// XML mapping/fixture is available, so current fixture imports must leave it
+	// unset.
 	assert_eq!(
 		related_summary,
 		vec![
@@ -293,6 +320,59 @@ async fn imports_g_linkage_models() {
 	);
 }
 
+#[serial]
+#[tokio::test]
+async fn imports_g_dosage_null_flavor_fields() {
+	let imported = import_fixture("FAERS2022Scenario1.xml").await;
+	let drugs: Vec<DrugInformation> = list_by_uuid(
+		&imported,
+		"SELECT * FROM drug_information WHERE case_id = $1 ORDER BY sequence_number",
+		imported.case_id,
+	)
+	.await;
+	assert_eq!(drugs.len(), 3);
+	assert_eq!(
+		drugs[0].drug_authorization_number.as_deref(),
+		Some("NDA012345")
+	);
+	assert_eq!(drugs[1].medicinal_product, "Drug B");
+	assert_eq!(drugs[2].medicinal_product, "Drug C");
+
+	let dosages: Vec<DosageInformation> = list_by_uuid(
+		&imported,
+		"SELECT * FROM dosage_information WHERE drug_id = $1 ORDER BY sequence_number",
+		drugs[0].id,
+	)
+	.await;
+	assert_eq!(dosages.len(), 1);
+	assert_eq!(dosages[0].drug_id, drugs[0].id);
+	assert_eq!(dosages[0].sequence_number, 1);
+	assert_eq!(dosages[0].dose_value, None);
+	assert_eq!(dosages[0].dose_unit, None);
+	assert_eq!(dosages[0].number_of_units, None);
+	assert_eq!(dosages[0].frequency_value, None);
+	assert_eq!(dosages[0].frequency_unit, None);
+	assert_eq!(dosages[0].first_administration_date, None);
+	assert_eq!(dosages[0].first_administration_time, None);
+	assert_eq!(dosages[0].last_administration_date, None);
+	assert_eq!(dosages[0].last_administration_time, None);
+	assert_eq!(dosages[0].duration_value, None);
+	assert_eq!(dosages[0].duration_unit, None);
+	assert_eq!(dosages[0].batch_lot_number.as_deref(), Some("UNKNOWN"));
+	assert_eq!(dosages[0].dosage_text, None);
+	assert_eq!(dosages[0].dose_form, None);
+	assert_eq!(dosages[0].dose_form_termid, None);
+	assert_eq!(dosages[0].dose_form_termid_version, None);
+	assert_eq!(dosages[0].route_of_administration.as_deref(), Some("001"));
+	assert_eq!(
+		dosages[0].route_termid_version.as_deref(),
+		Some("2014.10.30")
+	);
+	assert_eq!(dosages[0].parent_route, None);
+	assert_eq!(dosages[0].parent_route_termid, None);
+	assert_eq!(dosages[0].parent_route_termid_version, None);
+}
+
 fn assert_drug_one(imported: &crate::common::ImportedCase, drug: &DrugInformation) {
 	assert_eq!(drug.case_id, imported.case_id);
 	assert_eq!(drug.sequence_number, 1);
@@ -305,8 +385,10 @@ fn assert_drug_one(imported: &crate::common::ImportedCase, drug: &DrugInformatio
 	assert_eq!(drug.investigational_product_blinded, None);
 	assert_eq!(drug.obtain_drug_country.as_deref(), Some("US"));
 	assert_eq!(drug.brand_name, None);
+	// FDA.G.k.2.2.1 is intentionally unsupported until a verified source
+	// mapping or fixture is available, so persistence must leave it unset.
 	assert_eq!(drug.drug_generic_name, None);
-	assert_eq!(drug.drug_authorization_number, None);
+	assert_eq!(drug.drug_authorization_number.as_deref(), Some("BLA012345"));
 	assert_eq!(
 		drug.manufacturer_name.as_deref(),
 		Some("Pharmacia and Upjohn Company")
@@ -334,7 +416,11 @@ fn assert_drug_one(imported: &crate::common::ImportedCase, drug: &DrugInformatio
 		Some("Somthing seemed strange about the way it went down.")
 	);
 	assert_eq!(drug.fda_additional_info_coded.as_deref(), Some("4"));
-	assert_eq!(drug.drug_additional_info_codes_json, None);
+	let additional_info = parse_drug_additional_info_codes_json(
+		drug.drug_additional_info_codes_json.as_ref(),
+	);
+	assert_eq!(additional_info.len(), 1);
+	assert_eq!(additional_info[0].value_code.as_deref(), Some("4"));
 	assert_eq!(
 		drug.fda_specialized_product_category.as_deref(),
 		Some("C102835")
@@ -412,8 +498,10 @@ fn assert_drug_two(imported: &crate::common::ImportedCase, drug: &DrugInformatio
 	assert_eq!(drug.investigational_product_blinded, None);
 	assert_eq!(drug.obtain_drug_country, None);
 	assert_eq!(drug.brand_name, None);
+	// FDA.G.k.2.2.1 is intentionally unsupported until a verified source
+	// mapping or fixture is available, so persistence must leave it unset.
 	assert_eq!(drug.drug_generic_name, None);
-	assert_eq!(drug.drug_authorization_number, None);
+	assert_eq!(drug.drug_authorization_number.as_deref(), Some("BLA012345"));
 	assert_eq!(drug.manufacturer_name.as_deref(), Some("Big Biopharma"));
 	assert_eq!(drug.manufacturer_country.as_deref(), Some("US"));
 	assert_eq!(drug.batch_lot_number, None);

@@ -54,7 +54,7 @@ async fn imports_h_persisted_models() {
 	assert_eq!(case_summaries.len(), 1);
 	assert_eq!(case_summaries[0].narrative_id, narrative.id);
 	assert_eq!(case_summaries[0].sequence_number, 1);
-	assert_eq!(case_summaries[0].summary_type, None);
+	assert_eq!(case_summaries[0].summary_type.as_deref(), Some("2"));
 	assert_eq!(case_summaries[0].language_code.as_deref(), Some("en"));
 	assert_eq!(
 		case_summaries[0].summary_text.as_deref(),

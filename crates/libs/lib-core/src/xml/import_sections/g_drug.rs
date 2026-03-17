@@ -7,6 +7,7 @@ use libxml::parser::Parser;
 use libxml::tree::Node;
 use libxml::xpath::Context;
 use rust_decimal::Decimal;
+use sqlx::types::time::Time;
 use sqlx::types::Uuid;
 
 #[derive(Debug)]
@@ -18,8 +19,11 @@ pub struct GDrugImport {
 	pub drug_characterization: String,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
+	pub phpid: Option<String>,
+	pub phpid_version: Option<String>,
 	pub investigational_product_blinded: Option<bool>,
 	pub obtain_drug_country: Option<String>,
+	pub drug_authorization_number: Option<String>,
 	pub manufacturer_name: Option<String>,
 	pub manufacturer_country: Option<String>,
 	pub batch_lot_number: Option<String>,
@@ -66,8 +70,13 @@ pub struct GDrugDosageImport {
 	pub dosage_text: Option<String>,
 	pub frequency_value: Option<Decimal>,
 	pub frequency_unit: Option<String>,
+	pub number_of_units: Option<i32>,
 	pub start_date: Option<sqlx::types::time::Date>,
+	pub start_time: Option<Time>,
+	pub start_date_null_flavor: Option<String>,
 	pub end_date: Option<sqlx::types::time::Date>,
+	pub end_time: Option<Time>,
+	pub end_date_null_flavor: Option<String>,
 	pub duration_value: Option<Decimal>,
 	pub duration_unit: Option<String>,
 	pub dose_value: Option<Decimal>,
@@ -151,9 +160,14 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 		let mpid = first_attr(&mut xpath, &node, GDrugPaths::MPID);
 		let mpid_version =
 			clamp_str(first_attr(&mut xpath, &node, GDrugPaths::MPID_VERSION), 10);
+		let phpid = first_attr(&mut xpath, &node, GDrugPaths::PHPID);
+		let phpid_version =
+			clamp_str(first_attr(&mut xpath, &node, GDrugPaths::PHPID_VERSION), 10);
 		let investigational_product_blinded =
 			first_attr(&mut xpath, &node, GDrugPaths::INVESTIGATIONAL_BLINDED)
 				.and_then(parse_bool);
+		let drug_authorization_number =
+			first_attr(&mut xpath, &node, GDrugPaths::DRUG_AUTHORIZATION_NUMBER);
 		let manufacturer_name =
 			first_text(&mut xpath, &node, GDrugPaths::MANUFACTURER_NAME);
 		let manufacturer_country = normalize_iso2(first_attr(
@@ -273,12 +287,38 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 				&dose,
 				GDrugPaths::DOSAGE_FREQUENCY_UNIT,
 			));
+			let effective_time_null_flavor = first_attr(
+				&mut xpath,
+				&dose,
+				GDrugPaths::DOSAGE_EFFECTIVE_TIME_NULL_FLAVOR,
+			);
+			let number_of_units =
+				first_attr(&mut xpath, &dose, GDrugPaths::DOSAGE_FREQUENCY_VALUE)
+					.and_then(|v| v.parse::<i32>().ok());
 			let start_date =
 				first_attr(&mut xpath, &dose, GDrugPaths::DOSAGE_START_DATE)
 					.and_then(parse_date);
+			let start_time =
+				first_attr(&mut xpath, &dose, GDrugPaths::DOSAGE_START_DATE)
+					.and_then(parse_time);
+			let start_date_null_flavor = first_attr(
+				&mut xpath,
+				&dose,
+				GDrugPaths::DOSAGE_START_DATE_NULL_FLAVOR,
+			)
+			.or_else(|| effective_time_null_flavor.clone());
 			let end_date =
 				first_attr(&mut xpath, &dose, GDrugPaths::DOSAGE_END_DATE)
 					.and_then(parse_date);
+			let end_time =
+				first_attr(&mut xpath, &dose, GDrugPaths::DOSAGE_END_DATE)
+					.and_then(parse_time);
+			let end_date_null_flavor = first_attr(
+				&mut xpath,
+				&dose,
+				GDrugPaths::DOSAGE_END_DATE_NULL_FLAVOR,
+			)
+			.or_else(|| effective_time_null_flavor.clone());
 			let duration_value =
 				first_attr(&mut xpath, &dose, GDrugPaths::DOSAGE_DURATION_VALUE)
 					.and_then(|v| v.parse::<Decimal>().ok());
@@ -329,8 +369,13 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 				dosage_text,
 				frequency_value,
 				frequency_unit,
+				number_of_units,
 				start_date,
+				start_time,
+				start_date_null_flavor,
 				end_date,
+				end_time,
+				end_date_null_flavor,
 				duration_value,
 				duration_unit,
 				dose_value,
@@ -417,8 +462,11 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			drug_characterization,
 			mpid,
 			mpid_version,
+			phpid,
+			phpid_version,
 			investigational_product_blinded,
 			obtain_drug_country,
+			drug_authorization_number,
 			manufacturer_name,
 			manufacturer_country,
 			batch_lot_number,
@@ -537,4 +585,15 @@ fn parse_date(value: String) -> Option<sqlx::types::time::Date> {
 	let d: u8 = digits[6..8].parse().ok()?;
 	let month = time::Month::try_from(m).ok()?;
 	sqlx::types::time::Date::from_calendar_date(y, month, d).ok()
+}
+
+fn parse_time(value: String) -> Option<Time> {
+	let digits: String = value.chars().filter(|c| c.is_ascii_digit()).collect();
+	if digits.len() < 14 {
+		return None;
+	}
+	let hour: u8 = digits[8..10].parse().ok()?;
+	let minute: u8 = digits[10..12].parse().ok()?;
+	let second: u8 = digits[12..14].parse().ok()?;
+	Time::from_hms(hour, minute, second).ok()
 }

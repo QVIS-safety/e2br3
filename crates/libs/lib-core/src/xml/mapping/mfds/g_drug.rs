@@ -12,4 +12,8 @@ impl GMfdsDrugPaths {
 		"G.k.9.i.2.r.3.KR.1",
 		"G.k.9.i.2.r.3.KR.2",
 	];
+
+	// Note: G.k.9.i.2.r.3.KR.2 is recognized as an MFDS field id, but the
+	// canonical XML source path is not yet defined in local mappings/fixtures, so
+	// import currently leaves it unsupported on purpose.
 }

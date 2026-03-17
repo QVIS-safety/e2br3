@@ -1,4 +1,20 @@
 use crate::ctx::Ctx;
+use crate::model::case_identifiers::{
+	LinkedReportNumberBmc, LinkedReportNumberForCreate, LinkedReportNumberForUpdate,
+	OtherCaseIdentifierBmc, OtherCaseIdentifierForCreate,
+	OtherCaseIdentifierForUpdate,
+};
+use crate::model::receiver::{
+	ReceiverInformationBmc, ReceiverInformationForCreate,
+	ReceiverInformationForUpdate,
+};
+use crate::model::safety_report::{
+	DocumentsHeldBySenderBmc, DocumentsHeldBySenderForCreate,
+	DocumentsHeldBySenderForUpdate, LiteratureReferenceBmc,
+	LiteratureReferenceForCreate, LiteratureReferenceForUpdate, PrimarySourceBmc,
+	PrimarySourceForCreate, PrimarySourceForUpdate, SenderInformationBmc,
+	SenderInformationForCreate, SenderInformationForUpdate,
+};
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::{self, ModelManager};
 use crate::xml::import_runtime::shared;
@@ -13,13 +29,13 @@ pub(crate) async fn import_section_c(
 	header: Option<&shared::MessageHeaderExtract>,
 ) -> Result<()> {
 	import_c_1_safety_report(ctx, mm, xml, case_id, header).await?;
-	shared::import_sender_information(ctx, mm, xml, case_id, header).await?;
-	shared::import_primary_sources(ctx, mm, xml, case_id).await?;
-	shared::import_case_identifiers(ctx, mm, xml, case_id).await?;
-	shared::import_documents_held_by_sender(ctx, mm, xml, case_id).await?;
-	shared::import_literature_references(ctx, mm, xml, case_id).await?;
+	import_c_2_sender_information(ctx, mm, xml, case_id, header).await?;
+	import_c_3_primary_sources(ctx, mm, xml, case_id).await?;
+	import_c_4_case_identifiers(ctx, mm, xml, case_id).await?;
+	import_c_4_documents_held_by_sender(ctx, mm, xml, case_id).await?;
+	import_c_4_literature_references(ctx, mm, xml, case_id).await?;
 	import_c_5_study_information(ctx, mm, xml, case_id).await?;
-	shared::import_receiver_information(ctx, mm, xml, case_id).await?;
+	import_c_6_receiver_information(ctx, mm, xml, case_id).await?;
 	Ok(())
 }
 
@@ -127,6 +143,353 @@ async fn import_c_1_safety_report(
 	}
 	mm.dbx().commit_txn().await.map_err(model::Error::from)?;
 
+	Ok(())
+}
+
+async fn import_c_2_sender_information(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	xml: &[u8],
+	case_id: Uuid,
+	header: Option<&shared::MessageHeaderExtract>,
+) -> Result<()> {
+	let Some(sender) = shared::parse_sender_information(xml, header)? else {
+		return Ok(());
+	};
+
+	let sender_id = if let Some((id,)) = mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, (Uuid,)>(
+				"SELECT id FROM sender_information WHERE case_id = $1 LIMIT 1",
+			)
+			.bind(case_id),
+		)
+		.await
+		.map_err(model::Error::from)?
+	{
+		id
+	} else {
+		SenderInformationBmc::create(
+			ctx,
+			mm,
+			SenderInformationForCreate {
+				case_id,
+				sender_type: sender.sender_type.clone(),
+				organization_name: sender.organization_name.clone(),
+			},
+		)
+		.await?
+	};
+
+	let _ = SenderInformationBmc::update(
+		ctx,
+		mm,
+		sender_id,
+		SenderInformationForUpdate {
+			sender_type: Some(sender.sender_type),
+			organization_name: Some(sender.organization_name),
+			department: sender.department,
+			street_address: sender.street_address,
+			city: sender.city,
+			state: sender.state,
+			postcode: sender.postcode,
+			country_code: sender.country_code,
+			person_title: sender.person_title,
+			person_given_name: sender.person_given_name,
+			person_middle_name: sender.person_middle_name,
+			person_family_name: sender.person_family_name,
+			telephone: sender.telephone,
+			fax: sender.fax,
+			email: sender.email,
+		},
+	)
+	.await;
+
+	Ok(())
+}
+
+async fn import_c_3_primary_sources(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	xml: &[u8],
+	case_id: Uuid,
+) -> Result<()> {
+	let primary_sources = shared::parse_primary_sources(xml)?;
+	if primary_sources.is_empty() {
+		return Ok(());
+	}
+
+	for (idx, primary) in primary_sources.into_iter().enumerate() {
+		let seq = (idx + 1) as i32;
+		let primary_id = if let Some((id,)) = mm
+			.dbx()
+			.fetch_optional(
+				sqlx::query_as::<_, (Uuid,)>(
+					"SELECT id FROM primary_sources WHERE case_id = $1 AND sequence_number = $2 LIMIT 1",
+				)
+				.bind(case_id)
+				.bind(seq),
+			)
+			.await
+			.map_err(model::Error::from)?
+		{
+			id
+		} else {
+			PrimarySourceBmc::create(
+				ctx,
+				mm,
+				PrimarySourceForCreate {
+					case_id,
+					sequence_number: seq,
+					reporter_title: primary.reporter_title.clone(),
+					reporter_given_name: primary.reporter_given_name.clone(),
+					reporter_middle_name: primary.reporter_middle_name.clone(),
+					reporter_family_name: primary.reporter_family_name.clone(),
+					organization: primary.organization.clone(),
+					department: primary.department.clone(),
+					street: primary.street.clone(),
+					city: primary.city.clone(),
+					state: primary.state.clone(),
+					postcode: primary.postcode.clone(),
+					telephone: primary.telephone.clone(),
+					country_code: primary.country_code.clone(),
+					email: primary.email.clone(),
+					qualification: primary.qualification.clone(),
+					qualification_kr1: None,
+					primary_source_regulatory: primary.primary_source_regulatory.clone(),
+				},
+			)
+			.await?
+		};
+
+		let _ = PrimarySourceBmc::update(
+			ctx,
+			mm,
+			primary_id,
+			PrimarySourceForUpdate {
+				reporter_title: primary.reporter_title,
+				reporter_given_name: primary.reporter_given_name,
+				reporter_middle_name: primary.reporter_middle_name,
+				reporter_family_name: primary.reporter_family_name,
+				organization: primary.organization,
+				department: primary.department,
+				street: primary.street,
+				city: primary.city,
+				state: primary.state,
+				postcode: primary.postcode,
+				telephone: primary.telephone,
+				country_code: primary.country_code,
+				email: primary.email,
+				qualification: primary.qualification,
+				qualification_kr1: None,
+				primary_source_regulatory: primary.primary_source_regulatory,
+			},
+		)
+		.await;
+	}
+
+	Ok(())
+}
+
+async fn import_c_4_case_identifiers(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	xml: &[u8],
+	case_id: Uuid,
+) -> Result<()> {
+	let other_ids = shared::parse_other_case_identifiers(xml)?;
+	for (idx, entry) in other_ids.into_iter().enumerate() {
+		let seq = (idx + 1) as i32;
+		let existing: Option<Uuid> = mm
+			.dbx()
+			.fetch_optional(
+				sqlx::query_as::<_, (Uuid,)>(
+					"SELECT id FROM other_case_identifiers WHERE case_id = $1 AND sequence_number = $2 LIMIT 1",
+				)
+				.bind(case_id)
+				.bind(seq),
+			)
+			.await
+			.map_err(model::Error::from)?
+			.map(|v| v.0);
+		if let Some(id) = existing {
+			let _ = OtherCaseIdentifierBmc::update(
+				ctx,
+				mm,
+				id,
+				OtherCaseIdentifierForUpdate {
+					source_of_identifier: Some(entry.source_of_identifier),
+					case_identifier: Some(entry.case_identifier),
+				},
+			)
+			.await;
+		} else {
+			let _ = OtherCaseIdentifierBmc::create(
+				ctx,
+				mm,
+				OtherCaseIdentifierForCreate {
+					case_id,
+					sequence_number: seq,
+					source_of_identifier: entry.source_of_identifier,
+					case_identifier: entry.case_identifier,
+				},
+			)
+			.await?;
+		}
+	}
+
+	let linked = shared::parse_linked_reports(xml)?;
+	for (idx, entry) in linked.into_iter().enumerate() {
+		let seq = (idx + 1) as i32;
+		let existing: Option<Uuid> = mm
+			.dbx()
+			.fetch_optional(
+				sqlx::query_as::<_, (Uuid,)>(
+					"SELECT id FROM linked_report_numbers WHERE case_id = $1 AND sequence_number = $2 LIMIT 1",
+				)
+				.bind(case_id)
+				.bind(seq),
+			)
+			.await
+			.map_err(model::Error::from)?
+			.map(|v| v.0);
+		if let Some(id) = existing {
+			let _ = LinkedReportNumberBmc::update(
+				ctx,
+				mm,
+				id,
+				LinkedReportNumberForUpdate {
+					linked_report_number: Some(entry.linked_report_number),
+				},
+			)
+			.await;
+		} else {
+			let _ = LinkedReportNumberBmc::create(
+				ctx,
+				mm,
+				LinkedReportNumberForCreate {
+					case_id,
+					sequence_number: seq,
+					linked_report_number: entry.linked_report_number,
+				},
+			)
+			.await?;
+		}
+	}
+
+	Ok(())
+}
+
+async fn import_c_4_documents_held_by_sender(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	xml: &[u8],
+	case_id: Uuid,
+) -> Result<()> {
+	let documents = shared::parse_documents_held_by_sender(xml)?;
+	for (idx, doc) in documents.into_iter().enumerate() {
+		let seq = (idx + 1) as i32;
+		let existing: Option<Uuid> = mm
+			.dbx()
+			.fetch_optional(
+				sqlx::query_as::<_, (Uuid,)>(
+					"SELECT id FROM documents_held_by_sender WHERE case_id = $1 AND sequence_number = $2 LIMIT 1",
+				)
+				.bind(case_id)
+				.bind(seq),
+			)
+			.await
+			.map_err(model::Error::from)?
+			.map(|v| v.0);
+		if let Some(id) = existing {
+			let _ = DocumentsHeldBySenderBmc::update(
+				ctx,
+				mm,
+				id,
+				DocumentsHeldBySenderForUpdate {
+					title: doc.title,
+					document_base64: doc.document_base64,
+					media_type: doc.media_type,
+					representation: doc.representation,
+					compression: doc.compression,
+					sequence_number: Some(seq),
+				},
+			)
+			.await;
+		} else {
+			let _ = DocumentsHeldBySenderBmc::create(
+				ctx,
+				mm,
+				DocumentsHeldBySenderForCreate {
+					case_id,
+					title: doc.title,
+					document_base64: doc.document_base64,
+					media_type: doc.media_type,
+					representation: doc.representation,
+					compression: doc.compression,
+					sequence_number: seq,
+				},
+			)
+			.await?;
+		}
+	}
+	Ok(())
+}
+
+async fn import_c_4_literature_references(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	xml: &[u8],
+	case_id: Uuid,
+) -> Result<()> {
+	let references = shared::parse_literature_references(xml)?;
+	for (idx, entry) in references.into_iter().enumerate() {
+		let seq = (idx + 1) as i32;
+		let existing: Option<Uuid> = mm
+			.dbx()
+			.fetch_optional(
+				sqlx::query_as::<_, (Uuid,)>(
+					"SELECT id FROM literature_references WHERE case_id = $1 AND sequence_number = $2 LIMIT 1",
+				)
+				.bind(case_id)
+				.bind(seq),
+			)
+			.await
+			.map_err(model::Error::from)?
+			.map(|v| v.0);
+		if let Some(id) = existing {
+			let _ = LiteratureReferenceBmc::update(
+				ctx,
+				mm,
+				id,
+				LiteratureReferenceForUpdate {
+					reference_text: Some(entry.reference_text),
+					sequence_number: Some(seq),
+					document_base64: entry.document_base64,
+					media_type: entry.media_type,
+					representation: entry.representation,
+					compression: entry.compression,
+				},
+			)
+			.await;
+		} else {
+			let _ = LiteratureReferenceBmc::create(
+				ctx,
+				mm,
+				LiteratureReferenceForCreate {
+					case_id,
+					reference_text: entry.reference_text,
+					sequence_number: seq,
+					document_base64: entry.document_base64,
+					media_type: entry.media_type,
+					representation: entry.representation,
+					compression: entry.compression,
+				},
+			)
+			.await?;
+		}
+	}
 	Ok(())
 }
 
@@ -244,6 +607,74 @@ async fn import_c_5_study_information(
 		)));
 	}
 	mm.dbx().commit_txn().await.map_err(model::Error::from)?;
+
+	Ok(())
+}
+
+async fn import_c_6_receiver_information(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	xml: &[u8],
+	case_id: Uuid,
+) -> Result<()> {
+	let Some(receiver) = shared::parse_receiver_information(xml)? else {
+		return Ok(());
+	};
+
+	if ReceiverInformationBmc::get_by_case_optional(ctx, mm, case_id)
+		.await?
+		.is_some()
+	{
+		let _ = ReceiverInformationBmc::update_by_case(
+			ctx,
+			mm,
+			case_id,
+			ReceiverInformationForUpdate {
+				receiver_type: receiver.receiver_type,
+				organization_name: receiver.organization_name,
+				department: receiver.department,
+				street_address: receiver.street_address,
+				city: receiver.city,
+				state_province: receiver.state_province,
+				postcode: receiver.postcode,
+				country_code: receiver.country_code,
+				telephone: receiver.telephone,
+				fax: receiver.fax,
+				email: receiver.email,
+			},
+		)
+		.await;
+	} else {
+		let _ = ReceiverInformationBmc::create(
+			ctx,
+			mm,
+			ReceiverInformationForCreate {
+				case_id,
+				receiver_type: receiver.receiver_type,
+				organization_name: receiver.organization_name,
+			},
+		)
+		.await?;
+		let _ = ReceiverInformationBmc::update_by_case(
+			ctx,
+			mm,
+			case_id,
+			ReceiverInformationForUpdate {
+				receiver_type: None,
+				organization_name: None,
+				department: receiver.department,
+				street_address: receiver.street_address,
+				city: receiver.city,
+				state_province: receiver.state_province,
+				postcode: receiver.postcode,
+				country_code: receiver.country_code,
+				telephone: receiver.telephone,
+				fax: receiver.fax,
+				email: receiver.email,
+			},
+		)
+		.await;
+	}
 
 	Ok(())
 }

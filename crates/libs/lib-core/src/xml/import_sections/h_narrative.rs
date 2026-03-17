@@ -160,7 +160,12 @@ pub fn parse_h_case_summaries(xml: &[u8]) -> Result<Vec<HCaseSummaryImport>> {
 	for (idx, node) in nodes.into_iter().enumerate() {
 		items.push(HCaseSummaryImport {
 			sequence_number: (idx + 1) as i32,
-			summary_type: None,
+			summary_type: first_attr(
+				&mut xpath,
+				&node,
+				"hl7:author/hl7:assignedEntity/hl7:code",
+				"code",
+			),
 			language_code: normalize_lang2(first_attr(
 				&mut xpath,
 				&node,

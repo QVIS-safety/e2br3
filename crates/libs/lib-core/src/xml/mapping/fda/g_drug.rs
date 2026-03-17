@@ -15,8 +15,14 @@ impl GDrugPaths {
 		"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:id/@extension | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@code)[1]";
 	pub const MPID_VERSION: &'static str =
 		"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:code/@codeSystemVersion | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@codeSystemVersion)[1]";
+	pub const PHPID: &'static str =
+		"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='PhPID' or @code='PHPID']]/hl7:id/@extension)[1]";
+	pub const PHPID_VERSION: &'static str =
+		"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='PhPID' or @code='PHPID']]/hl7:code/@codeSystemVersion)[1]";
 	pub const INVESTIGATIONAL_BLINDED: &'static str =
 		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:subjectOf/hl7:observation[hl7:code[@code='G.k.2.5']]/hl7:value/@value";
+	pub const DRUG_AUTHORIZATION_NUMBER: &'static str =
+		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asManufacturedProduct/hl7:subjectOf/hl7:approval/hl7:id/@extension";
 	pub const MANUFACTURER_NAME: &'static str =
 		"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asManufacturedProduct/hl7:subjectOf/hl7:approval/hl7:holder/hl7:role/hl7:playingOrganization/hl7:name";
 	pub const MANUFACTURER_COUNTRY: &'static str =
@@ -72,10 +78,16 @@ impl GDrugPaths {
 		"hl7:effectiveTime/hl7:comp[@xsi:type='PIVL_TS']/hl7:period/@value";
 	pub const DOSAGE_FREQUENCY_UNIT: &'static str =
 		"hl7:effectiveTime/hl7:comp[@xsi:type='PIVL_TS']/hl7:period/@unit";
+	pub const DOSAGE_EFFECTIVE_TIME_NULL_FLAVOR: &'static str =
+		"hl7:effectiveTime/@nullFlavor";
 	pub const DOSAGE_START_DATE: &'static str =
 		"hl7:effectiveTime/hl7:comp[@operator='A']/hl7:low/@value";
+	pub const DOSAGE_START_DATE_NULL_FLAVOR: &'static str =
+		"hl7:effectiveTime/hl7:comp[@operator='A']/hl7:low/@nullFlavor";
 	pub const DOSAGE_END_DATE: &'static str =
 		"hl7:effectiveTime/hl7:comp[@operator='A']/hl7:high/@value";
+	pub const DOSAGE_END_DATE_NULL_FLAVOR: &'static str =
+		"hl7:effectiveTime/hl7:comp[@operator='A']/hl7:high/@nullFlavor";
 	pub const DOSAGE_DURATION_VALUE: &'static str =
 		"hl7:effectiveTime/hl7:comp[@operator='A']/hl7:width/@value";
 	pub const DOSAGE_DURATION_UNIT: &'static str =

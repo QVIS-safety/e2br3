@@ -52,7 +52,7 @@ fn import_h_section_all_fields_from_scenario6() {
 
 	assert_eq!(summaries.len(), 1);
 	assert_eq!(summaries[0].sequence_number, 1);
-	assert_eq!(summaries[0].summary_type, None);
+	assert_eq!(summaries[0].summary_type.as_deref(), Some("2"));
 	assert_eq!(summaries[0].language_code.as_deref(), Some("en"));
 	assert_eq!(summaries[0].summary_text.as_deref(), Some("H.5.r.1a 1"));
 }
