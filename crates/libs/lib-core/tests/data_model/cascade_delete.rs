@@ -90,6 +90,7 @@ async fn test_case_delete_cascades_to_drug_information() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Cascade Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -230,19 +231,24 @@ async fn test_case_delete_cascades_to_safety_report_identification() -> Result<(
 	// Create safety report identification
 	let report_c = SafetyReportIdentificationForCreate {
 		case_id,
-		transmission_date: Date::from_calendar_date(2024, Month::January, 1)?,
+		transmission_date: Some(Date::from_calendar_date(2024, Month::January, 1)?),
+		transmission_date_null_flavor: None,
 		report_type: "1".to_string(),
-		date_first_received_from_source: Date::from_calendar_date(
+		date_first_received_from_source: Some(Date::from_calendar_date(
 			2024,
 			Month::January,
 			1,
-		)?,
-		date_of_most_recent_information: Date::from_calendar_date(
+		)?),
+		date_first_received_from_source_null_flavor: None,
+		date_of_most_recent_information: Some(Date::from_calendar_date(
 			2024,
 			Month::January,
 			1,
-		)?,
+		)?),
+		date_of_most_recent_information_null_flavor: None,
 		fulfil_expedited_criteria: true,
+		first_sender_type: None,
+		additional_documents_available: None,
 	};
 	let report_id =
 		SafetyReportIdentificationBmc::create(&ctx, &mm, report_c).await?;
@@ -323,6 +329,7 @@ async fn test_drug_delete_cascades_to_dosage_and_substances() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Parent Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -430,6 +437,8 @@ async fn test_patient_delete_cascades_to_medical_history() -> Result<()> {
 		patient_id,
 		sequence_number: 1,
 		meddra_code: Some("12345678".to_string()),
+		start_date_null_flavor: None,
+		end_date_null_flavor: None,
 	};
 	let history_id = MedicalHistoryEpisodeBmc::create(&ctx, &mm, history_c).await?;
 
@@ -534,19 +543,24 @@ async fn test_case_delete_cascades_all_children_comprehensive() -> Result<()> {
 	// Create safety report
 	let report_c = SafetyReportIdentificationForCreate {
 		case_id,
-		transmission_date: Date::from_calendar_date(2024, Month::January, 1)?,
+		transmission_date: Some(Date::from_calendar_date(2024, Month::January, 1)?),
+		transmission_date_null_flavor: None,
 		report_type: "1".to_string(),
-		date_first_received_from_source: Date::from_calendar_date(
+		date_first_received_from_source: Some(Date::from_calendar_date(
 			2024,
 			Month::January,
 			1,
-		)?,
-		date_of_most_recent_information: Date::from_calendar_date(
+		)?),
+		date_first_received_from_source_null_flavor: None,
+		date_of_most_recent_information: Some(Date::from_calendar_date(
 			2024,
 			Month::January,
 			1,
-		)?,
+		)?),
+		date_of_most_recent_information_null_flavor: None,
 		fulfil_expedited_criteria: true,
+		first_sender_type: None,
+		additional_documents_available: None,
 	};
 	SafetyReportIdentificationBmc::create(&ctx, &mm, report_c).await?;
 
@@ -562,8 +576,22 @@ async fn test_case_delete_cascades_all_children_comprehensive() -> Result<()> {
 	let primary_c = PrimarySourceForCreate {
 		case_id,
 		sequence_number: 1,
+		reporter_title: None,
+		reporter_given_name: None,
+		reporter_middle_name: None,
+		reporter_family_name: None,
+		organization: None,
+		department: None,
+		street: None,
+		city: None,
+		state: None,
+		postcode: None,
+		telephone: None,
+		country_code: None,
+		email: None,
 		qualification: Some("1".to_string()),
 		qualification_kr1: None,
+		primary_source_regulatory: None,
 	};
 	PrimarySourceBmc::create(&ctx, &mm, primary_c).await?;
 
@@ -602,6 +630,7 @@ async fn test_case_delete_cascades_all_children_comprehensive() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 

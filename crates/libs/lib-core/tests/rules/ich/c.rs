@@ -3,13 +3,13 @@ use crate::common::{
 	demo_user_id, init_test_mm, set_current_user, Result,
 };
 use crate::support::{
-	assert_has_issue, assert_has_xml_rule, assert_lacks_issue,
-	assert_lacks_xml_rule, blank_safety_report_update,
+	assert_has_issue, assert_has_xml_rule, assert_issue_metadata,
+	assert_lacks_issue, assert_lacks_xml_rule, blank_safety_report_update,
 	create_case_with_safety_report, read_base_xml_fixture, update_safety_report,
 	validate_business_xml, validate_case,
 };
 use lib_core::model::e_signature::{ESignatureBmc, ESignatureForCreate};
-use lib_core::xml::validate::{
+use lib_core::validation::{
 	is_rule_condition_satisfied, is_rule_value_valid, RuleFacts, ValidationProfile,
 };
 use serial_test::serial;
@@ -78,6 +78,12 @@ async fn ich_c_1_11_2_required_false() -> Result<()> {
 	let report = validate_case(&ctx, &mm, case_id, ValidationProfile::Ich).await?;
 
 	assert_has_issue(&report, "ICH.C.1.11.2.REQUIRED");
+	assert_issue_metadata(
+		&report,
+		"ICH.C.1.11.2.REQUIRED",
+		"C",
+		Some("safetyReportIdentification.nullificationReason"),
+	);
 	commit_test_ctx(&mm).await?;
 	Ok(())
 }

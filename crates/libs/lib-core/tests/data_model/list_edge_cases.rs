@@ -78,6 +78,7 @@ async fn test_substance_list_with_limit() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -135,6 +136,7 @@ async fn test_substance_list_with_offset() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Offset Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -382,6 +384,7 @@ async fn test_list_consistency_after_modifications() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Consistency Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 

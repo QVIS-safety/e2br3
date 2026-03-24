@@ -9,7 +9,7 @@ use crate::support::{
 use lib_core::model::message_header::{
 	MessageHeaderBmc, MessageHeaderForCreate, MessageHeaderForUpdate,
 };
-use lib_core::xml::validate::ValidationProfile;
+use lib_core::validation::ValidationProfile;
 use serial_test::serial;
 use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;

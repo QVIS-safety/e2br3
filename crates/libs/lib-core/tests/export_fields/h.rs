@@ -9,10 +9,11 @@ use lib_core::model::narrative::{
 	NarrativeInformationForCreate, NarrativeInformationForUpdate,
 	SenderDiagnosisBmc, SenderDiagnosisForCreate, SenderDiagnosisForUpdate,
 };
+use serial_test::serial;
 
 #[tokio::test]
+#[serial]
 async fn export_h_patches_narrative_sender_diagnosis_and_summary() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let (ctx, mm) = begin_export_test().await?;
 	let case_id = create_case_with_safety_report(&ctx, &mm).await?;
 	let narrative_id = NarrativeInformationBmc::create(
@@ -86,24 +87,33 @@ async fn export_h_patches_narrative_sender_diagnosis_and_summary() -> Result<()>
 	finish_export_test(&mm).await?;
 
 	let (_doc, mut xpath) = parse_xpath(&xml);
+	// H.1
 	assert_eq!(
 		xpath
 			.findvalue("//hl7:investigationEvent/hl7:text", None)
 			.unwrap(),
 		"Narrative"
 	);
+	// H.2
 	assert_eq!(
 		xpath.findvalue("//hl7:investigationEvent/hl7:component/hl7:adverseEventAssessment/hl7:component1/hl7:observationEvent[hl7:code[@code='10'] and hl7:author/hl7:assignedEntity/hl7:code[@code='3']]/hl7:value", None).unwrap(),
 		"Reporter comment"
 	);
+	// H.4
 	assert_eq!(
 		xpath.findvalue("//hl7:investigationEvent/hl7:component/hl7:adverseEventAssessment/hl7:component1/hl7:observationEvent[hl7:code[@code='10'] and hl7:author/hl7:assignedEntity/hl7:code[@code='1']]/hl7:value", None).unwrap(),
 		"Sender comment"
 	);
+	// H.3.r.1
 	assert_eq!(
 		xpath.findvalue("//hl7:investigationEvent/hl7:component/hl7:adverseEventAssessment/hl7:component1/hl7:observationEvent[hl7:code[@code='15'] and hl7:author/hl7:assignedEntity/hl7:code[@code='1']]/hl7:value/@code", None).unwrap(),
 		"10047319"
 	);
+	assert_eq!(
+		xpath.findvalue("//hl7:investigationEvent/hl7:component/hl7:adverseEventAssessment/hl7:component1/hl7:observationEvent[hl7:code[@code='15'] and hl7:author/hl7:assignedEntity/hl7:code[@code='1']]/hl7:value/@codeSystemVersion", None).unwrap(),
+		"12.0"
+	);
+	// H.5.r.1 / H.5.r.2 / H.5.r.3
 	assert_eq!(
 		xpath.findvalue("//hl7:investigationEvent/hl7:component/hl7:observationEvent[hl7:code[@code='36']]/hl7:value", None).unwrap(),
 		"Summary text"
@@ -111,6 +121,10 @@ async fn export_h_patches_narrative_sender_diagnosis_and_summary() -> Result<()>
 	assert_eq!(
 		xpath.findvalue("//hl7:investigationEvent/hl7:component/hl7:observationEvent[hl7:code[@code='36']]/hl7:author/hl7:assignedEntity/hl7:code/@code", None).unwrap(),
 		"1"
+	);
+	assert_eq!(
+		xpath.findvalue("//hl7:investigationEvent/hl7:component/hl7:observationEvent[hl7:code[@code='36']]/hl7:value/@language", None).unwrap(),
+		"en"
 	);
 	Ok(())
 }

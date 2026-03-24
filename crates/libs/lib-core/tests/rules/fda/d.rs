@@ -3,7 +3,7 @@ use crate::support::{
 	assert_has_xml_rule, assert_lacks_xml_rule, read_base_xml_fixture,
 	validate_business_xml,
 };
-use lib_core::xml::validate::{
+use lib_core::validation::{
 	is_rule_condition_satisfied, is_rule_value_valid, RuleFacts,
 };
 

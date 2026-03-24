@@ -393,7 +393,7 @@ async fn imports_d_persisted_models() {
 }
 
 fn assert_patient_core(patient: &PatientInformation) {
-	assert_eq!(patient.patient_initials.as_deref(), Some("SMS"));
+	assert_eq!(patient.patient_initials.as_deref(), Some("SM"));
 	assert_eq!(patient.patient_given_name, None);
 	assert_eq!(patient.patient_family_name, None);
 	assert_eq!(patient.birth_date, Some(date(2014, 10, 1)));

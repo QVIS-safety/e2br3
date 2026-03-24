@@ -1,4 +1,4 @@
-use lib_core::xml::validate::{
+use lib_core::validation::{
 	is_rule_condition_satisfied, is_rule_value_valid, RuleFacts,
 };
 

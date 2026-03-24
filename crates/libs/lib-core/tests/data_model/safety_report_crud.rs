@@ -29,19 +29,24 @@ async fn test_safety_report_identification_crud() -> Result<()> {
 
 	let report_c = SafetyReportIdentificationForCreate {
 		case_id,
-		transmission_date: Date::from_calendar_date(2024, Month::January, 1)?,
+		transmission_date: Some(Date::from_calendar_date(2024, Month::January, 1)?),
+		transmission_date_null_flavor: None,
 		report_type: "1".to_string(),
-		date_first_received_from_source: Date::from_calendar_date(
+		date_first_received_from_source: Some(Date::from_calendar_date(
 			2024,
 			Month::January,
 			1,
-		)?,
-		date_of_most_recent_information: Date::from_calendar_date(
+		)?),
+		date_first_received_from_source_null_flavor: None,
+		date_of_most_recent_information: Some(Date::from_calendar_date(
 			2024,
 			Month::January,
 			1,
-		)?,
+		)?),
+		date_of_most_recent_information_null_flavor: None,
 		fulfil_expedited_criteria: true,
+		first_sender_type: None,
+		additional_documents_available: None,
 	};
 	let report_id =
 		SafetyReportIdentificationBmc::create(&ctx, &mm, report_c).await?;
@@ -51,11 +56,16 @@ async fn test_safety_report_identification_crud() -> Result<()> {
 
 	let report_u = SafetyReportIdentificationForUpdate {
 		transmission_date: None,
+		transmission_date_null_flavor: None,
 		report_type: Some("2".to_string()),
 		date_first_received_from_source: None,
+		date_first_received_from_source_null_flavor: None,
 		date_of_most_recent_information: None,
+		date_of_most_recent_information_null_flavor: None,
 		fulfil_expedited_criteria: None,
 		worldwide_unique_id: Some("WUID-1".to_string()),
+		first_sender_type: None,
+		additional_documents_available: None,
 		nullification_code: None,
 		nullification_reason: None,
 		receiver_organization: Some("Receiver".to_string()),
@@ -87,29 +97,39 @@ async fn test_safety_report_nullification_requires_compliance_context() -> Resul
 
 	let report_c = SafetyReportIdentificationForCreate {
 		case_id,
-		transmission_date: Date::from_calendar_date(2024, Month::January, 1)?,
+		transmission_date: Some(Date::from_calendar_date(2024, Month::January, 1)?),
+		transmission_date_null_flavor: None,
 		report_type: "1".to_string(),
-		date_first_received_from_source: Date::from_calendar_date(
+		date_first_received_from_source: Some(Date::from_calendar_date(
 			2024,
 			Month::January,
 			1,
-		)?,
-		date_of_most_recent_information: Date::from_calendar_date(
+		)?),
+		date_first_received_from_source_null_flavor: None,
+		date_of_most_recent_information: Some(Date::from_calendar_date(
 			2024,
 			Month::January,
 			1,
-		)?,
+		)?),
+		date_of_most_recent_information_null_flavor: None,
 		fulfil_expedited_criteria: true,
+		first_sender_type: None,
+		additional_documents_available: None,
 	};
 	SafetyReportIdentificationBmc::create(&ctx, &mm, report_c).await?;
 
 	let report_u = SafetyReportIdentificationForUpdate {
 		transmission_date: None,
+		transmission_date_null_flavor: None,
 		report_type: None,
 		date_first_received_from_source: None,
+		date_first_received_from_source_null_flavor: None,
 		date_of_most_recent_information: None,
+		date_of_most_recent_information_null_flavor: None,
 		fulfil_expedited_criteria: None,
 		worldwide_unique_id: None,
+		first_sender_type: None,
+		additional_documents_available: None,
 		nullification_code: Some("1".to_string()),
 		nullification_reason: Some("duplicate report".to_string()),
 		receiver_organization: None,
@@ -175,8 +195,22 @@ async fn test_safety_report_submodels_crud() -> Result<()> {
 	let primary_c = PrimarySourceForCreate {
 		case_id,
 		sequence_number: 1,
+		reporter_title: None,
+		reporter_given_name: None,
+		reporter_middle_name: None,
+		reporter_family_name: None,
+		organization: None,
+		department: None,
+		street: None,
+		city: None,
+		state: None,
+		postcode: None,
+		telephone: None,
+		country_code: None,
+		email: None,
 		qualification: Some("1".to_string()),
 		qualification_kr1: None,
+		primary_source_regulatory: None,
 	};
 	let primary_id = PrimarySourceBmc::create(&ctx, &mm, primary_c).await?;
 	let primary = PrimarySourceBmc::get(&ctx, &mm, primary_id).await?;

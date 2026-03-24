@@ -6,11 +6,12 @@ use crate::common::Result;
 use lib_core::model::test_result::{
 	TestResultBmc, TestResultForCreate, TestResultForUpdate,
 };
+use serial_test::serial;
 
 #[tokio::test]
+#[serial]
 async fn export_f_rebuilds_test_results_in_sequence_order_and_exports_fields(
 ) -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_F", "1");
 	let (ctx, mm) = begin_export_test().await?;
 	let case_id = create_case_with_safety_report(&ctx, &mm).await?;
 
@@ -94,6 +95,7 @@ async fn export_f_rebuilds_test_results_in_sequence_order_and_exports_fields(
 		xpath.findvalue("count(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])", None).unwrap(),
 		"2"
 	);
+	// F.r.2
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:code/hl7:originalText", None).unwrap(),
 		"ALT"
@@ -103,6 +105,32 @@ async fn export_f_rebuilds_test_results_in_sequence_order_and_exports_fields(
 		"AST"
 	);
 	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:code/@displayName", None).unwrap(),
+		"ALT"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]//hl7:code/@displayName", None).unwrap(),
+		"AST"
+	);
+	// F.r.2.1
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]/hl7:component/hl7:observation/hl7:code/@code", None).unwrap(),
+		"10001552"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]/hl7:component/hl7:observation/hl7:code/@codeSystemVersion", None).unwrap(),
+		"27.0"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]/hl7:component/hl7:observation/hl7:code/@code", None).unwrap(),
+		"10003561"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]/hl7:component/hl7:observation/hl7:code/@codeSystemVersion", None).unwrap(),
+		"27.0"
+	);
+	// F.r.1
+	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:effectiveTime/@value", None).unwrap(),
 		"20240103"
 	);
@@ -110,9 +138,70 @@ async fn export_f_rebuilds_test_results_in_sequence_order_and_exports_fields(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]//hl7:effectiveTime/@nullFlavor", None).unwrap(),
 		"UNK"
 	);
+	// F.r.3.1
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:interpretationCode/@code", None).unwrap(),
+		"N"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]//hl7:interpretationCode/@code", None).unwrap(),
+		"H"
+	);
+	// F.r.3.2 / F.r.3.3 / F.r.3.4
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:value/@value", None).unwrap(),
 		"25"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:value/@unit", None).unwrap(),
+		"U/L"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:value/text()", None).unwrap(),
+		"Normal"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]//hl7:value/@value", None).unwrap(),
+		"55"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]//hl7:value/@unit", None).unwrap(),
+		"U/L"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]//hl7:value/text()", None).unwrap(),
+		"Above range"
+	);
+	// F.r.4 / F.r.5
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:referenceRange/hl7:observationRange[hl7:interpretationCode[@code='L']]/hl7:value/@value", None).unwrap(),
+		"0"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:referenceRange/hl7:observationRange[hl7:interpretationCode[@code='H']]/hl7:value/@value", None).unwrap(),
+		"40"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]//hl7:referenceRange/hl7:observationRange[hl7:interpretationCode[@code='L']]/hl7:value/@value", None).unwrap(),
+		"0"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]//hl7:referenceRange/hl7:observationRange[hl7:interpretationCode[@code='H']]/hl7:value/@value", None).unwrap(),
+		"40"
+	);
+	// F.r.6
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='10']]/hl7:value", None).unwrap(),
+		"All normal"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='10']]/hl7:value", None).unwrap(),
+		"Needs follow-up"
+	);
+	// F.r.7
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[1]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='11']]/hl7:value/@value", None).unwrap(),
+		"false"
 	);
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='3']])[2]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='11']]/hl7:value/@value", None).unwrap(),

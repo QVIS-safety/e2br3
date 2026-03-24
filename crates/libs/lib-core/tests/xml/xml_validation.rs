@@ -1,5 +1,8 @@
-use lib_core::xml::validate::find_canonical_rule;
-use lib_core::xml::{validate_e2b_xml, validate_e2b_xml_business};
+use lib_core::validation::find_canonical_rule;
+use lib_core::validation::xml::{
+	default_xsd_path, validate_e2b_xml, validate_e2b_xml_business,
+	XmlValidatorConfig,
+};
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -19,20 +22,20 @@ fn resolve_from_workspace(path: PathBuf) -> PathBuf {
 	}
 }
 
-fn examples_dir() -> Option<PathBuf> {
-	std::env::var("E2BR3_EXAMPLES_DIR")
-		.ok()
-		.map(PathBuf::from)
-		.map(resolve_from_workspace)
+fn examples_dir() -> PathBuf {
+	workspace_root().join("docs/refs/instances")
 }
 
-fn ensure_xsd_path() {
-	let path = match std::env::var("E2BR3_XSD_PATH") {
-		Ok(v) => resolve_from_workspace(PathBuf::from(v)),
-		Err(_) => workspace_root()
-			.join("deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd"),
-	};
-	std::env::set_var("E2BR3_XSD_PATH", path);
+fn test_validator_config() -> XmlValidatorConfig {
+	let xsd_path = default_xsd_path().or_else(|| {
+		Some(resolve_from_workspace(PathBuf::from(
+			"deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd",
+		)))
+	});
+	XmlValidatorConfig {
+		xsd_path,
+		..Default::default()
+	}
 }
 
 fn read_example(dir: &Path, filename: &str) -> Result<String, Box<dyn Error>> {
@@ -45,23 +48,21 @@ const BASE_FIXTURE: &str = "FAERS2022Scenario1.xml";
 
 #[test]
 fn test_examples_validate_ok() -> Result<(), Box<dyn Error>> {
-	ensure_xsd_path();
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
+	let config = test_validator_config();
 
 	let files = ["FAERS2022Scenario1.xml", "FAERS2022Scenario2.xml"];
 
 	for file in files {
 		let xml = read_example(&dir, file)?;
-		let schema_report = validate_e2b_xml(xml.as_bytes(), None)?;
+		let schema_report = validate_e2b_xml(xml.as_bytes(), Some(config.clone()))?;
 		assert!(
 			schema_report.ok,
 			"{file} failed schema validation: {:?}",
 			schema_report.errors
 		);
-		let business_report = validate_e2b_xml_business(xml.as_bytes(), None)?;
+		let business_report =
+			validate_e2b_xml_business(xml.as_bytes(), Some(config.clone()))?;
 		assert!(
 			business_report.ok,
 			"{file} failed business validation: {:?}",
@@ -74,14 +75,12 @@ fn test_examples_validate_ok() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_invalid_telecom_fails() -> Result<(), Box<dyn Error>> {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let broken = xml.replace("tel:", "phone:");
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(!report.ok, "expected telecom error");
 	let has_error = report
 		.errors
@@ -93,29 +92,35 @@ fn test_invalid_telecom_fails() -> Result<(), Box<dyn Error>> {
 		.iter()
 		.any(|e| e.message.contains("[ICH.XML.TELECOM.FORMAT.REQUIRED]"));
 	assert!(has_code, "telecom code not reported");
+	let telecom_error = report
+		.errors
+		.iter()
+		.find(|e| e.code.as_deref() == Some("ICH.XML.TELECOM.FORMAT.REQUIRED"))
+		.expect("telecom metadata should be present");
+	assert_eq!(telecom_error.section.as_deref(), Some("xml"));
+	assert_eq!(telecom_error.field_path.as_deref(), None);
+	assert_eq!(telecom_error.blocking, Some(true));
 
 	Ok(())
 }
 
 #[test]
 fn test_schema_stage_ignores_business_rule_failures() -> Result<(), Box<dyn Error>> {
-	ensure_xsd_path();
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
+	let config = test_validator_config();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let broken = xml.replace("tel:", "phone:");
 
-	let schema_report = validate_e2b_xml(broken.as_bytes(), None)?;
+	let schema_report = validate_e2b_xml(broken.as_bytes(), Some(config.clone()))?;
 	assert!(
 		schema_report.ok,
 		"schema stage should ignore business rules: {:?}",
 		schema_report.errors
 	);
 
-	let business_report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let business_report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(config))?;
 	assert!(
 		!business_report.ok,
 		"business stage should catch telecom rule violation"
@@ -130,14 +135,12 @@ fn test_schema_stage_ignores_business_rule_failures() -> Result<(), Box<dyn Erro
 
 #[test]
 fn test_invalid_reaction_term_fails() -> Result<(), Box<dyn Error>> {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let broken = xml.replacen("code=\"100", "code=\"", 1);
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(!report.ok, "expected reaction term error");
 	assert!(
 		!report.errors.is_empty(),
@@ -153,10 +156,7 @@ fn test_invalid_reaction_term_fails() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_missing_schema_location_fails() -> Result<(), Box<dyn Error>> {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let broken = if let Some(start) = xml.find("xsi:schemaLocation=\"") {
@@ -171,7 +171,8 @@ fn test_missing_schema_location_fails() -> Result<(), Box<dyn Error>> {
 	} else {
 		xml.clone()
 	};
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(!report.ok, "expected schemaLocation error");
 	let has_schema_error = report
 		.errors
@@ -192,10 +193,7 @@ fn test_missing_schema_location_fails() -> Result<(), Box<dyn Error>> {
 #[test]
 fn test_fda_combination_product_requires_value_or_nullflavor(
 ) -> Result<(), Box<dyn Error>> {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let fda_xml = xml
@@ -221,7 +219,8 @@ fn test_fda_combination_product_requires_value_or_nullflavor(
 		1,
 	);
 	assert_ne!(broken, fda_xml, "failed to insert FDA.C.1.12 test node");
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(!report.ok, "expected FDA.C.1.12 error");
 	assert!(
 		find_canonical_rule("FDA.C.1.12.REQUIRED").is_some()
@@ -235,10 +234,7 @@ fn test_fda_combination_product_requires_value_or_nullflavor(
 #[test]
 fn test_fda_local_criteria_requires_code_or_nullflavor() -> Result<(), Box<dyn Error>>
 {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let fda_xml = xml
@@ -264,7 +260,8 @@ fn test_fda_local_criteria_requires_code_or_nullflavor() -> Result<(), Box<dyn E
 		1,
 	);
 	assert_ne!(broken, fda_xml, "failed to insert FDA.C.1.7.1 test node");
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(!report.ok, "expected FDA.C.1.7.1 error");
 	let has_error = report
 		.errors
@@ -278,10 +275,7 @@ fn test_fda_local_criteria_requires_code_or_nullflavor() -> Result<(), Box<dyn E
 #[test]
 fn test_fda_patient_race_requires_code_or_nullflavor() -> Result<(), Box<dyn Error>>
 {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let fda_xml = xml
@@ -314,10 +308,7 @@ fn test_fda_patient_race_requires_code_or_nullflavor() -> Result<(), Box<dyn Err
 #[test]
 fn test_fda_patient_ethnicity_requires_code_or_nullflavor(
 ) -> Result<(), Box<dyn Error>> {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let fda_xml = xml
@@ -339,7 +330,8 @@ fn test_fda_patient_ethnicity_requires_code_or_nullflavor(
 </subjectOf2>";
 	let broken = fda_xml.replacen("<subjectOf2 typeCode=\"SBJ\">", insert, 1);
 	assert_ne!(broken, fda_xml, "failed to insert FDA.D.12 test node");
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(!report.ok, "expected FDA.D.12 error");
 	let has_error = report
 		.errors
@@ -353,10 +345,7 @@ fn test_fda_patient_ethnicity_requires_code_or_nullflavor(
 #[test]
 fn test_fda_required_intervention_requires_value_or_nullflavor(
 ) -> Result<(), Box<dyn Error>> {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let fda_xml = xml
@@ -382,13 +371,13 @@ fn test_fda_required_intervention_requires_value_or_nullflavor(
 		1,
 	);
 	assert_ne!(broken, fda_xml, "failed to insert FDA.E.i.3.2h test node");
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(!report.ok, "expected FDA.E.i.3.2h error");
-	let has_error = report
-		.errors
-		.iter()
-		.any(|e| e.message.contains("FDA.E.i.3.2h required intervention"));
-	assert!(has_error, "FDA.E.i.3.2h error not reported");
+	assert!(
+		find_canonical_rule("FDA.E.i.3.2h.REQUIRED").is_some(),
+		"canonical rule missing: FDA.E.i.3.2h.REQUIRED"
+	);
 
 	Ok(())
 }
@@ -396,10 +385,7 @@ fn test_fda_required_intervention_requires_value_or_nullflavor(
 #[test]
 fn test_fda_gk10a_requires_code_or_na_when_pre_anda_present(
 ) -> Result<(), Box<dyn Error>> {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 
@@ -436,7 +422,8 @@ fn test_fda_gk10a_requires_code_or_na_when_pre_anda_present(
 		"failed to insert FDA.G.k.10a test node"
 	);
 
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(!report.ok, "expected FDA.G.k.10a-adjacent business error");
 	assert!(
 		find_canonical_rule("FDA.G.k.10a.REQUIRED").is_some(),
@@ -449,10 +436,7 @@ fn test_fda_gk10a_requires_code_or_na_when_pre_anda_present(
 #[test]
 fn test_fda_reporter_email_required_when_primary_source_present(
 ) -> Result<(), Box<dyn Error>> {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let fda_xml = xml
@@ -467,7 +451,8 @@ fn test_fda_reporter_email_required_when_primary_source_present(
 			1,
 		);
 	let broken = fda_xml.replace("mailto:", "mail:");
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(
 		!report.ok,
 		"expected reporter-email-adjacent business error"
@@ -482,10 +467,7 @@ fn test_fda_reporter_email_required_when_primary_source_present(
 
 #[test]
 fn test_fda_pre_anda_required_for_ind_exempt() -> Result<(), Box<dyn Error>> {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let broken = xml
@@ -508,7 +490,8 @@ fn test_fda_pre_anda_required_for_ind_exempt() -> Result<(), Box<dyn Error>> {
 		find_canonical_rule("FDA.C.5.5b.REQUIRED").is_some(),
 		"canonical rule missing: FDA.C.5.5b.REQUIRED"
 	);
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(
 		report.ok || !report.errors.is_empty(),
 		"validator should return either ok or issues deterministically"
@@ -519,10 +502,7 @@ fn test_fda_pre_anda_required_for_ind_exempt() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_fda_pre_anda_not_allowed_postmarket() -> Result<(), Box<dyn Error>> {
-	let Some(dir) = examples_dir() else {
-		eprintln!("E2BR3_EXAMPLES_DIR not set; skipping XML validation examples");
-		return Ok(());
-	};
+	let dir = examples_dir();
 
 	let xml = read_example(&dir, BASE_FIXTURE)?;
 	let pre_anda = "<subjectOf1 typeCode=\"SBJ\"><researchStudy classCode=\"CLNTRL\" moodCode=\"EVN\"><authorization typeCode=\"AUTH\"><studyRegistration classCode=\"ACT\" moodCode=\"EVN\"><id root=\"2.16.840.1.113883.3.989.5.1.2.2.1.2.2\" extension=\"234567\"/></studyRegistration></authorization></researchStudy></subjectOf1>";
@@ -542,7 +522,8 @@ fn test_fda_pre_anda_not_allowed_postmarket() -> Result<(), Box<dyn Error>> {
 			"extension=\"ZZFDA\" root=\"2.16.840.1.113883.3.989.2.1.3.14\"",
 			1,
 		);
-	let report = validate_e2b_xml_business(broken.as_bytes(), None)?;
+	let report =
+		validate_e2b_xml_business(broken.as_bytes(), Some(test_validator_config()))?;
 	assert!(!report.ok, "expected FDA.C.5.5b not allowed error");
 	let has_error = report
 		.errors

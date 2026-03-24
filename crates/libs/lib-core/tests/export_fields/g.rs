@@ -15,11 +15,12 @@ use lib_core::model::drug_reaction_assessment::{
 	RelatednessAssessmentForCreate,
 };
 use lib_core::model::reaction::{ReactionBmc, ReactionForCreate, ReactionForUpdate};
+use serial_test::serial;
 
 #[tokio::test]
+#[serial]
 async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 ) -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_G", "1");
 	let (ctx, mm) = begin_export_test().await?;
 	let case_id = create_case_with_safety_report(&ctx, &mm).await?;
 
@@ -79,6 +80,7 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 			sequence_number: 2,
 			drug_characterization: "2".to_string(),
 			medicinal_product: "Beta".to_string(),
+			drug_generic_name: None,
 		},
 	)
 	.await?;
@@ -128,6 +130,7 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 			sequence_number: 1,
 			drug_characterization: "1".to_string(),
 			medicinal_product: "Alpha".to_string(),
+			drug_generic_name: None,
 		},
 	)
 	.await?;
@@ -256,6 +259,23 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 		},
 	)
 	.await?;
+	DrugDeviceCharacteristicBmc::create(
+		&ctx,
+		&mm,
+		DrugDeviceCharacteristicForCreate {
+			drug_id: first_drug_id,
+			sequence_number: 2,
+			code: Some("C2".to_string()),
+			code_system: Some("CS2".to_string()),
+			code_display_name: Some("Mode".to_string()),
+			value_type: Some("CE".to_string()),
+			value_value: None,
+			value_code: Some("VC1".to_string()),
+			value_code_system: Some("VCS1".to_string()),
+			value_display_name: Some("Coded Value".to_string()),
+		},
+	)
+	.await?;
 	let assessment_id = DrugReactionAssessmentBmc::create(
 		&ctx,
 		&mm,
@@ -310,8 +330,9 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 		xpath.findvalue("count(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])", None).unwrap(),
 		"2"
 	);
+	// G.k.1 / G.k.2.2
 	assert_eq!(
-		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:kindOfProduct/hl7:name[1]", None).unwrap(),
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]/hl7:component/hl7:substanceAdministration/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:name[1]", None).unwrap(),
 		"Alpha"
 	);
 	assert_eq!(
@@ -319,41 +340,249 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 		"Generic Beta"
 	);
 	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]/hl7:component/hl7:substanceAdministration/hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:name[2]", None).unwrap(),
+		"Brand A"
+	);
+	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[2]//hl7:ingredientSubstance/hl7:name", None).unwrap(),
 		"Generic Beta"
 	);
 	assert_eq!(
+		xpath.findvalue("//hl7:adverseEventAssessment/hl7:component/hl7:causalityAssessment[hl7:code[@code='20']]/hl7:value/@code", None).unwrap(),
+		"1"
+	);
+	// G.k.2.4 / G.k.2.5
+	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:id/@extension", None).unwrap(),
 		"MPID123"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:code/@codeSystemVersion", None).unwrap(),
+		"1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:asIdentifiedEntity[hl7:code[@code='PHPID']]/hl7:id/@extension", None).unwrap(),
+		"PHPID123"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:asIdentifiedEntity[hl7:code[@code='PHPID']]/hl7:code/@codeSystemVersion", None).unwrap(),
+		"1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:subjectOf/hl7:observation[hl7:code[@code='G.k.2.5']]/hl7:value/@value", None).unwrap(),
+		"false"
+	);
+	// G.k.3.1 / G.k.3.2 / G.k.3.3 / G.k.3.4
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:productEvent/hl7:performer/hl7:assignedEntity/hl7:representedOrganization/hl7:addr/hl7:country", None).unwrap(),
+		"US"
 	);
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:asManufacturedProduct/hl7:subjectOf/hl7:approval/hl7:id[@root='2.16.840.1.113883.3.989.2.1.3.4']/@extension", None).unwrap(),
 		"AUTH-1"
 	);
 	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:asManufacturedProduct/hl7:subjectOf/hl7:approval/hl7:holder/hl7:role/hl7:playingOrganization/hl7:name", None).unwrap(),
+		"Maker"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:asManufacturedProduct/hl7:subjectOf/hl7:approval/hl7:author/hl7:territorialAuthority/hl7:territory/hl7:code/@code", None).unwrap(),
+		"US"
+	);
+	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:ingredientSubstance/hl7:name", None).unwrap(),
 		"Substance"
 	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:part/hl7:partProduct/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText", None).unwrap(),
+		"LOT1"
+	);
+	// G.k.2.3.r
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:ingredientSubstance/hl7:code/@code", None).unwrap(),
+		"S1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:ingredientSubstance/hl7:code/@codeSystemVersion", None).unwrap(),
+		"1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:ingredient/hl7:quantity/hl7:numerator/@value", None).unwrap(),
+		"1.00000"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:ingredient/hl7:quantity/hl7:numerator/@unit", None).unwrap(),
+		"mg"
+	);
+	// G.k.4.r
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration[hl7:doseQuantity]/hl7:text", None).unwrap(),
 		"Dose text"
 	);
 	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:doseQuantity/@value", None).unwrap(),
+		"1.00000"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:doseQuantity/@unit", None).unwrap(),
+		"mg"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:effectiveTime[1]/hl7:comp/hl7:period/@value", None).unwrap(),
+		"1.00"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:effectiveTime[1]/hl7:comp/hl7:period/@unit", None).unwrap(),
+		"d"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:effectiveTime[2]/hl7:comp/hl7:low/@value", None).unwrap(),
+		"20240101080000"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:effectiveTime[2]/hl7:comp/hl7:high/@value", None).unwrap(),
+		"20240102080000"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:effectiveTime[2]/hl7:comp/hl7:width/@value", None).unwrap(),
+		"1.00"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:effectiveTime[2]/hl7:comp/hl7:width/@unit", None).unwrap(),
+		"d"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:routeCode/@code", None).unwrap(),
+		"PO"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:routeCode/@codeSystemVersion", None).unwrap(),
+		"1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration//hl7:formCode/@code", None).unwrap(),
+		"DF1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration//hl7:formCode/@codeSystemVersion", None).unwrap(),
+		"1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration//hl7:formCode/hl7:originalText", None).unwrap(),
+		"Tablet"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration//hl7:lotNumberText", None).unwrap(),
+		"LOT1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='G.k.4.r.11']]/hl7:value/@code", None).unwrap(),
+		"001"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='G.k.4.r.11']]/hl7:value/@codeSystemVersion", None).unwrap(),
+		"1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='G.k.4.r.11']]/hl7:value/hl7:originalText", None).unwrap(),
+		"oral"
+	);
+	// G.k.5 / G.k.6 / G.k.7
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='14']]/hl7:value/@value", None).unwrap(),
+		"150.00000"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='14']]/hl7:value/@unit", None).unwrap(),
+		"mg"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='16']]/hl7:value/@value", None).unwrap(),
+		"10.00"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='16']]/hl7:value/@unit", None).unwrap(),
+		"wk"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:inboundRelationship/hl7:act/hl7:code/@code", None).unwrap(),
+		"5"
+	);
+	// G.k.8
+	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:inboundRelationship/hl7:observation[hl7:code[@code='19']]/hl7:value/@code", None).unwrap(),
 		"10012345"
 	);
 	assert_eq!(
-		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic/hl7:value/@value", None).unwrap(),
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:inboundRelationship/hl7:observation[hl7:code[@code='19']]/hl7:value/@codeSystemVersion", None).unwrap(),
+		"27.0"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:inboundRelationship/hl7:observation[hl7:code[@code='19']]/hl7:value/hl7:originalText", None).unwrap(),
+		"Indication"
+	);
+	// G.k.10 / FDA device/additional info
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic/hl7:value/text()", None).unwrap(),
 		"Val"
 	);
 	assert_eq!(
-		xpath.findvalue("//hl7:adverseEventAssessment/hl7:component/hl7:causalityAssessment[hl7:code[@code='20']]/hl7:value/@code", None).unwrap(),
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic/hl7:code/@code", None).unwrap(),
+		"C1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic/hl7:code/@codeSystem", None).unwrap(),
+		"CS1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic/hl7:code/@displayName", None).unwrap(),
+		"Device"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic/hl7:value/@xsi:type", None).unwrap(),
+		"ST"
+	);
+	assert_eq!(
+		xpath.findvalue("((//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic)[2]/hl7:code/@code", None).unwrap(),
+		"C2"
+	);
+	assert_eq!(
+		xpath.findvalue("((//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic)[2]/hl7:code/@codeSystem", None).unwrap(),
+		"CS2"
+	);
+	assert_eq!(
+		xpath.findvalue("((//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic)[2]/hl7:code/@displayName", None).unwrap(),
+		"Mode"
+	);
+	assert_eq!(
+		xpath.findvalue("((//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic)[2]/hl7:value/@xsi:type", None).unwrap(),
+		"CE"
+	);
+	assert_eq!(
+		xpath.findvalue("((//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic)[2]/hl7:value/@code", None).unwrap(),
+		"VC1"
+	);
+	assert_eq!(
+		xpath.findvalue("((//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic)[2]/hl7:value/@codeSystem", None).unwrap(),
+		"VCS1"
+	);
+	assert_eq!(
+		xpath.findvalue("((//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:characteristic)[2]/hl7:value/@displayName", None).unwrap(),
+		"Coded Value"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='9']]/hl7:value/@code", None).unwrap(),
 		"1"
 	);
 	assert_eq!(
-		xpath.findvalue("//hl7:adverseEventAssessment/hl7:component/hl7:causalityAssessment[hl7:code[@code='39']]/hl7:value", None).unwrap(),
-		"related"
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='G.k.4.r.11']]/hl7:value/@code", None).unwrap(),
+		"001"
 	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2/hl7:observation[hl7:code[@code='2']]/hl7:value", None).unwrap(),
+		"Parent dose"
+	);
+	// G.k.8 / G.k.9 recurrences
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship1[@typeCode='SAS']/hl7:pauseQuantity/@value", None).unwrap(),
 		"2.00"
@@ -373,6 +602,23 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2[@typeCode='PERT']/hl7:observation[hl7:code[@code='31']]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='G.k.8.r.2']]/hl7:value/@code", None).unwrap(),
 		"10019211"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='4']])[1]//hl7:outboundRelationship2[@typeCode='PERT']/hl7:observation[hl7:code[@code='31']]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='G.k.8.r.2']]/hl7:value/@codeSystemVersion", None).unwrap(),
+		"27.0"
+	);
+	// G.k.9 relatedness
+	assert_eq!(
+		xpath.findvalue("//hl7:adverseEventAssessment/hl7:component/hl7:causalityAssessment[hl7:code[@code='39']]/hl7:value", None).unwrap(),
+		"related"
+	);
+	assert_eq!(
+		xpath.findvalue("//hl7:adverseEventAssessment/hl7:component/hl7:causalityAssessment[hl7:code[@code='39']]/hl7:methodCode/hl7:originalText", None).unwrap(),
+		"WHO"
+	);
+	assert_eq!(
+		xpath.findvalue("//hl7:adverseEventAssessment/hl7:component/hl7:causalityAssessment[hl7:code[@code='39']]/hl7:author/hl7:assignedEntity/hl7:code/hl7:originalText", None).unwrap(),
+		"Reporter"
 	);
 	Ok(())
 }

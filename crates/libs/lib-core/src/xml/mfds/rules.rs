@@ -1,4 +1,4 @@
-use crate::xml::validate::{
+use crate::validation::{
 	has_text, push_issue_by_code, push_issue_if_condition_violated,
 	push_issue_if_conditioned_value_invalid, MfdsValidationContext, RuleFacts,
 	ValidationContext, ValidationIssue,
@@ -29,20 +29,28 @@ pub(crate) fn apply_mfds_rules(
 	mfds_ctx: &MfdsValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let report_type_is_study = validation_ctx
-		.safety_report
-		.as_ref()
-		.map(|r| r.report_type.as_str())
-		== Some("2");
-	let receiver_code = validation_ctx
-		.message_header
-		.as_ref()
-		.map(|h| h.message_receiver_identifier.trim().to_ascii_uppercase())
-		.unwrap_or_default();
-	let receiver_is_ct_or_cu = receiver_code == "CT" || receiver_code == "CU";
-	let receiver_is_kr = receiver_code == "KR";
-	let receiver_is_fr = receiver_code == "FR";
+	crate::validation::case::sections::c::collect_mfds_issues(
+		validation_ctx,
+		mfds_ctx,
+		issues,
+	);
+	crate::validation::case::sections::d::collect_mfds_issues(
+		validation_ctx,
+		mfds_ctx,
+		issues,
+	);
+	crate::validation::case::sections::g::collect_mfds_issues(
+		validation_ctx,
+		mfds_ctx,
+		issues,
+	);
+}
 
+pub(crate) fn collect_c_issues(
+	validation_ctx: &ValidationContext,
+	mfds_ctx: &MfdsValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
 	mfds_ctx
 		.senders
 		.iter()
@@ -99,6 +107,20 @@ pub(crate) fn apply_mfds_rules(
 				},
 			);
 		});
+}
+
+pub(crate) fn collect_d_issues(
+	validation_ctx: &ValidationContext,
+	mfds_ctx: &MfdsValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
+	let receiver_code = validation_ctx
+		.message_header
+		.as_ref()
+		.map(|h| h.message_receiver_identifier.trim().to_ascii_uppercase())
+		.unwrap_or_default();
+	let receiver_is_kr = receiver_code == "KR";
+	let receiver_is_fr = receiver_code == "FR";
 
 	mfds_ctx
 		.past_drugs
@@ -176,6 +198,26 @@ pub(crate) fn apply_mfds_rules(
 			},
 		);
 	});
+}
+
+pub(crate) fn collect_g_issues(
+	validation_ctx: &ValidationContext,
+	mfds_ctx: &MfdsValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
+	let report_type_is_study = validation_ctx
+		.safety_report
+		.as_ref()
+		.map(|r| r.report_type.as_str())
+		== Some("2");
+	let receiver_code = validation_ctx
+		.message_header
+		.as_ref()
+		.map(|h| h.message_receiver_identifier.trim().to_ascii_uppercase())
+		.unwrap_or_default();
+	let receiver_is_ct_or_cu = receiver_code == "CT" || receiver_code == "CU";
+	let receiver_is_kr = receiver_code == "KR";
+	let receiver_is_fr = receiver_code == "FR";
 
 	let mut domestic_drug_ids = std::collections::HashSet::new();
 	let mut drug_index_by_id = std::collections::HashMap::new();

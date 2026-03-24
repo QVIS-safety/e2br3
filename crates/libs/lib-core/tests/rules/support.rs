@@ -5,10 +5,12 @@ use lib_core::model::safety_report::{
 	SafetyReportIdentificationForUpdate,
 };
 use lib_core::model::ModelManager;
-use lib_core::xml::validate::{
-	validate_case_for_profile, CaseValidationReport, ValidationProfile,
+use lib_core::validation::xml::validate_e2b_xml_business;
+use lib_core::validation::{
+	find_canonical_rule, validate_case_for_profile, CaseValidationReport,
+	ValidationProfile,
 };
-use lib_core::xml::{validate_e2b_xml_business, XmlValidationReport};
+use lib_core::xml::XmlValidationReport;
 use sqlx::types::time::Date;
 use sqlx::types::Uuid;
 use std::fs;
@@ -104,6 +106,36 @@ pub fn assert_has_issue(report: &CaseValidationReport, code: &str) {
 	);
 }
 
+pub fn assert_issue_metadata(
+	report: &CaseValidationReport,
+	code: &str,
+	section: &str,
+	field_path: Option<&str>,
+) {
+	let issue = report
+		.issues
+		.iter()
+		.find(|issue| issue.code == code)
+		.unwrap_or_else(|| panic!("expected issue {code}"));
+	let canonical = find_canonical_rule(code)
+		.unwrap_or_else(|| panic!("missing canonical rule {code}"));
+	if section.len() == 1 {
+		assert!(
+			code.contains(&format!(".{section}.")),
+			"expected section shorthand {section} to match rule code {code}"
+		);
+	}
+	assert_eq!(
+		issue.section, canonical.section,
+		"unexpected section for {code}"
+	);
+	assert_eq!(
+		issue.field_path.as_deref(),
+		field_path,
+		"unexpected field_path for {code}"
+	);
+}
+
 pub fn assert_lacks_issue(report: &CaseValidationReport, code: &str) {
 	assert!(
 		report.issues.iter().all(|issue| issue.code != code),
@@ -145,6 +177,20 @@ pub fn assert_has_xml_rule(report: &XmlValidationReport, code: &str) {
 			.map(|error| error.message.as_str())
 			.collect::<Vec<_>>()
 	);
+}
+
+#[allow(dead_code)]
+pub fn assert_has_xml_rule_metadata(
+	report: &XmlValidationReport,
+	code: &str,
+	section: Option<&str>,
+) {
+	let error = report
+		.errors
+		.iter()
+		.find(|error| error.code.as_deref() == Some(code))
+		.unwrap_or_else(|| panic!("expected XML report to contain {code}"));
+	assert_eq!(error.section.as_deref(), section);
 }
 
 pub fn assert_lacks_xml_rule(report: &XmlValidationReport, code: &str) {

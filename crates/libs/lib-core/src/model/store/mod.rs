@@ -3,7 +3,7 @@
 pub(in crate::model) mod dbx;
 
 use crate::core_config;
-use crate::ctx::Ctx;
+use crate::ctx::{Ctx, ROLE_ADB_ADMIN};
 use crate::model::Error;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres, Transaction};
@@ -77,9 +77,10 @@ pub async fn set_org_context(
 	organization_id: Uuid,
 	role: &str,
 ) -> Result<(), Error> {
+	let db_role = canonical_db_role(role);
 	sqlx::query("SELECT set_org_context($1, $2)")
 		.bind(organization_id)
-		.bind(role)
+		.bind(db_role)
 		.execute(&mut **tx)
 		.await
 		.map_err(|e| Error::Store(format!("Failed to set org context: {e}")))?;
@@ -94,14 +95,23 @@ pub async fn set_org_context_dbx(
 	organization_id: Uuid,
 	role: &str,
 ) -> Result<(), Error> {
+	let db_role = canonical_db_role(role);
 	let query = sqlx::query("SELECT set_org_context($1, $2)")
 		.bind(organization_id)
-		.bind(role);
+		.bind(db_role);
 	dbx.execute(query)
 		.await
 		.map_err(|e| Error::Store(format!("Failed to set org context: {e}")))?;
 
 	Ok(())
+}
+
+fn canonical_db_role(role: &str) -> &str {
+	if role == ROLE_ADB_ADMIN {
+		"admin"
+	} else {
+		role
+	}
 }
 
 /// Sets optional compliance context for audit enrichment.

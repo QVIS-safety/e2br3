@@ -8,7 +8,7 @@ use crate::support::{
 	validate_business_xml, validate_case,
 };
 use lib_core::model::reaction::{ReactionBmc, ReactionForCreate, ReactionForUpdate};
-use lib_core::xml::validate::{find_canonical_rule, ValidationProfile};
+use lib_core::validation::{find_canonical_rule, ValidationProfile};
 use rust_decimal::Decimal;
 use serial_test::serial;
 

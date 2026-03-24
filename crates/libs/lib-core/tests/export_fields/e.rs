@@ -4,11 +4,12 @@ use super::support::{
 };
 use crate::common::Result;
 use lib_core::model::reaction::{ReactionBmc, ReactionForCreate, ReactionForUpdate};
+use serial_test::serial;
 
 #[tokio::test]
+#[serial]
 async fn export_e_rebuilds_reactions_in_sequence_order_and_exports_fields(
 ) -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_E", "1");
 	let (ctx, mm) = begin_export_test().await?;
 	let case_id = create_case_with_safety_report(&ctx, &mm).await?;
 
@@ -127,6 +128,7 @@ async fn export_e_rebuilds_reactions_in_sequence_order_and_exports_fields(
 		xpath.findvalue("count(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])", None).unwrap(),
 		"2"
 	);
+	// E.i.1.1
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:value/hl7:originalText", None).unwrap(),
 		"Headache"
@@ -135,12 +137,105 @@ async fn export_e_rebuilds_reactions_in_sequence_order_and_exports_fields(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:value/hl7:originalText", None).unwrap(),
 		"Fever"
 	);
+	// E.i.1.2
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='30']]/hl7:value", None).unwrap(),
 		"Head pain"
 	);
 	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='30']]/hl7:value", None).unwrap(),
+		"Pyrexia"
+	);
+	// E.i.2.1
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:value/@code", None).unwrap(),
+		"10019211"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:value/@codeSystemVersion", None).unwrap(),
+		"27.0"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:value/@code", None).unwrap(),
+		"10016256"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:value/@codeSystemVersion", None).unwrap(),
+		"27.0"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:value/hl7:originalText/@language", None).unwrap(),
+		"en"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:value/hl7:originalText/@language", None).unwrap(),
+		"en"
+	);
+	// E.i.3
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='37']]/hl7:value/@code", None).unwrap(),
+		"3"
+	);
+	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='7']]/hl7:value/@value", None).unwrap(),
+		"false"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='7']]/hl7:value/@value", None).unwrap(),
+		"true"
+	);
+	// E.i.3.2
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='34']]/hl7:value/@value", None).unwrap(),
+		"true"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='21']]/hl7:value/@nullFlavor", None).unwrap(),
+		"NI"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='33']]/hl7:value/@nullFlavor", None).unwrap(),
+		"NI"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='35']]/hl7:value/@nullFlavor", None).unwrap(),
+		"NI"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='12']]/hl7:value/@nullFlavor", None).unwrap(),
+		"NI"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='26']]/hl7:value/@value", None).unwrap(),
+		"true"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='34']]/hl7:value/@nullFlavor", None).unwrap(),
+		"MSK"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='21']]/hl7:value/@nullFlavor", None).unwrap(),
+		"NI"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='33']]/hl7:value/@nullFlavor", None).unwrap(),
+		"UNK"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='35']]/hl7:value/@nullFlavor", None).unwrap(),
+		"ASKU"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='12']]/hl7:value/@nullFlavor", None).unwrap(),
+		"NI"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='26']]/hl7:value/@nullFlavor", None).unwrap(),
+		"MSK"
+	);
+	// FDA.E.i.3.2h
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='7' and @codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.3']]/hl7:value/@value", None).unwrap(),
 		"false"
 	);
 	assert_eq!(
@@ -148,12 +243,25 @@ async fn export_e_rebuilds_reactions_in_sequence_order_and_exports_fields(
 		"2"
 	);
 	assert_eq!(
-		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:location/hl7:locatedEntity/hl7:locatedPlace/hl7:code/@code", None).unwrap(),
-		"KR"
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='7' and @codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.3']]/hl7:value/@value", None).unwrap(),
+		"true"
+	);
+	// E.i.4-E.i.6
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:effectiveTime/hl7:comp/hl7:low/@value", None).unwrap(),
+		"20240102"
 	);
 	assert_eq!(
-		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='34']]/hl7:value/@nullFlavor", None).unwrap(),
-		"MSK"
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:effectiveTime/hl7:comp/hl7:high/@value", None).unwrap(),
+		"20240104"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:effectiveTime/hl7:comp/hl7:width/@value", None).unwrap(),
+		"2.00"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:effectiveTime/hl7:comp/hl7:width/@unit", None).unwrap(),
+		"d"
 	);
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:effectiveTime/hl7:low/@nullFlavor", None).unwrap(),
@@ -162,6 +270,27 @@ async fn export_e_rebuilds_reactions_in_sequence_order_and_exports_fields(
 	assert_eq!(
 		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:effectiveTime/hl7:high/@nullFlavor", None).unwrap(),
 		"MSK"
+	);
+	// E.i.7-E.i.9
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='27']]/hl7:value/@code", None).unwrap(),
+		"1"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='24']]/hl7:value/@value", None).unwrap(),
+		"true"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:outboundRelationship2/hl7:observation[hl7:code[@code='24']]/hl7:value/@value", None).unwrap(),
+		"false"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[1]/hl7:location/hl7:locatedEntity/hl7:locatedPlace/hl7:code/@code", None).unwrap(),
+		"KR"
+	);
+	assert_eq!(
+		xpath.findvalue("(//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='29']])[2]/hl7:location/hl7:locatedEntity/hl7:locatedPlace/hl7:code/@code", None).unwrap(),
+		"US"
 	);
 	Ok(())
 }

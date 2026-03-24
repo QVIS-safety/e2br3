@@ -6,10 +6,9 @@ use lib_core::model::store::{
 };
 use lib_core::model::Error as ModelError;
 use lib_core::model::ModelManager;
-use lib_core::xml::{
-	export_case_xml, should_skip_xml_validation, validate_e2b_xml,
-	validate_e2b_xml_business,
-};
+use lib_core::validation::xml::should_skip_xml_validation;
+use lib_core::validation::RegulatoryAuthority;
+use lib_core::xml::{export_case_xml, validate_e2b_xml, validate_e2b_xml_business};
 use lib_rest_core::{Error, Result};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde::{Deserialize, Serialize};
@@ -52,6 +51,22 @@ impl SubmissionAuthority {
 			"fda" => Some(Self::Fda),
 			"mfds" => Some(Self::Mfds),
 			_ => None,
+		}
+	}
+}
+
+impl TryFrom<RegulatoryAuthority> for SubmissionAuthority {
+	type Error = Error;
+
+	fn try_from(value: RegulatoryAuthority) -> Result<Self> {
+		match value {
+			RegulatoryAuthority::Fda => Ok(Self::Fda),
+			RegulatoryAuthority::Mfds => Ok(Self::Mfds),
+			RegulatoryAuthority::Ich => Err(Error::BadRequest {
+				message:
+					"case validation_profile must be fda or mfds for submission"
+						.to_string(),
+			}),
 		}
 	}
 }
@@ -357,31 +372,12 @@ fn parse_timeout_secs(name: &str, default_secs: u64) -> u64 {
 		.unwrap_or(default_secs)
 }
 
-fn is_fda_profile(case_profile: Option<&str>) -> bool {
-	case_profile
-		.map(|v| v.eq_ignore_ascii_case("fda"))
-		.unwrap_or(true)
-}
-
-fn is_mfds_profile(case_profile: Option<&str>) -> bool {
-	case_profile
-		.map(|v| v.eq_ignore_ascii_case("mfds"))
-		.unwrap_or(false)
-}
-
 fn authority_from_case_profile(
 	case_profile: Option<&str>,
 ) -> Result<SubmissionAuthority> {
-	if is_mfds_profile(case_profile) {
-		return Ok(SubmissionAuthority::Mfds);
-	}
-	if is_fda_profile(case_profile) {
-		return Ok(SubmissionAuthority::Fda);
-	}
-	Err(Error::BadRequest {
-		message: "case validation_profile must be fda or mfds for submission"
-			.to_string(),
-	})
+	let authority = RegulatoryAuthority::from_case_profile(case_profile)
+		.unwrap_or(RegulatoryAuthority::Fda);
+	SubmissionAuthority::try_from(authority)
 }
 
 fn status_to_db(status: &SubmissionStatus) -> &'static str {
@@ -1654,25 +1650,19 @@ pub async fn assert_case_ready_for_submission(
 	authority: SubmissionAuthority,
 ) -> Result<()> {
 	let case = CaseBmc::get(ctx, mm, case_id).await?;
-	match authority {
-		SubmissionAuthority::Fda => {
-			if !is_fda_profile(case.validation_profile.as_deref()) {
-				return Err(Error::BadRequest {
-					message:
-						"case validation_profile must be fda for FDA submission"
-							.to_string(),
-				});
-			}
-		}
-		SubmissionAuthority::Mfds => {
-			if !is_mfds_profile(case.validation_profile.as_deref()) {
-				return Err(Error::BadRequest {
-					message:
-						"case validation_profile must be mfds for MFDS submission"
-							.to_string(),
-				});
-			}
-		}
+	let case_authority =
+		authority_from_case_profile(case.validation_profile.as_deref())?;
+	if case_authority != authority {
+		let expected = match authority {
+			SubmissionAuthority::Fda => "fda",
+			SubmissionAuthority::Mfds => "mfds",
+		};
+		return Err(Error::BadRequest {
+			message: format!(
+				"case validation_profile must be {expected} for {} submission",
+				authority.as_str().to_ascii_uppercase()
+			),
+		});
 	}
 	if !case.status.eq_ignore_ascii_case("validated") {
 		return Err(Error::BadRequest {

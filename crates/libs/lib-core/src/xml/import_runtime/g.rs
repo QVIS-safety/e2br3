@@ -17,7 +17,8 @@ use crate::model::drug_recurrence::{
 use crate::model::store::set_full_context_dbx;
 use crate::model::ModelManager;
 use crate::xml::error::Error;
-use crate::xml::import_runtime::shared::{self, ImportIdMap};
+use crate::xml::import_runtime::helpers::g as g_helpers;
+use crate::xml::import_runtime::shared::ImportIdMap;
 use crate::xml::Result;
 use sqlx::types::Uuid;
 use std::collections::HashMap;
@@ -41,133 +42,121 @@ async fn import_drugs(
 	xml: &[u8],
 	case_id: Uuid,
 ) -> Result<ImportIdMap> {
-	let use_v2 = std::env::var("XML_V2_IMPORT_G").unwrap_or_default() == "1";
-	let imports = if use_v2 {
-		let parsed = crate::xml::import_sections::g_drug::parse_g_drugs(xml)?;
-		parsed
-			.into_iter()
-			.map(|entry| shared::DrugImport {
-				xml_id: entry.xml_id,
-				sequence_number: entry.sequence_number,
-				medicinal_product: entry.medicinal_product,
-				brand_name: entry.brand_name,
-				drug_characterization: entry.drug_characterization,
-				mpid: entry.mpid,
-				mpid_version: entry.mpid_version,
-				phpid: entry.phpid,
-				phpid_version: entry.phpid_version,
-				investigational_product_blinded: entry
-					.investigational_product_blinded,
-				obtain_drug_country: entry.obtain_drug_country,
-				drug_authorization_number: entry.drug_authorization_number,
-				manufacturer_name: entry.manufacturer_name,
-				manufacturer_country: entry.manufacturer_country,
-				batch_lot_number: entry.batch_lot_number,
-				cumulative_dose_first_reaction_value: entry
-					.cumulative_dose_first_reaction_value,
-				cumulative_dose_first_reaction_unit: entry
-					.cumulative_dose_first_reaction_unit,
-				gestation_period_exposure_value: entry
-					.gestation_period_exposure_value,
-				gestation_period_exposure_unit: entry.gestation_period_exposure_unit,
-				dosage_text: entry.dosage_text,
-				action_taken: entry.action_taken,
-				rechallenge: entry.rechallenge,
-				parent_route: entry.parent_route,
-				parent_route_termid: entry.parent_route_termid,
-				parent_route_termid_version: entry.parent_route_termid_version,
-				parent_dosage_text: entry.parent_dosage_text,
-				fda_additional_info_coded: entry.fda_additional_info_coded,
-				fda_specialized_product_category: entry
-					.fda_specialized_product_category,
-				fda_device_brand_name: entry.fda_device_brand_name,
-				fda_common_device_name: entry.fda_common_device_name,
-				fda_device_product_code: entry.fda_device_product_code,
-				fda_device_manufacturer_name: entry.fda_device_manufacturer_name,
-				fda_device_manufacturer_address: entry
-					.fda_device_manufacturer_address,
-				fda_device_manufacturer_city: entry.fda_device_manufacturer_city,
-				fda_device_manufacturer_state: entry.fda_device_manufacturer_state,
-				fda_device_manufacturer_country: entry
-					.fda_device_manufacturer_country,
-				fda_device_lot_number: entry.fda_device_lot_number,
-				fda_operator_of_device: entry.fda_operator_of_device,
-				substances: entry
-					.substances
-					.into_iter()
-					.map(|sub| shared::DrugSubstanceImport {
-						substance_name: sub.substance_name,
-						substance_termid: sub.substance_termid,
-						substance_termid_version: sub.substance_termid_version,
-						strength_value: sub.strength_value,
-						strength_unit: sub.strength_unit,
-					})
-					.collect(),
-				dosages: entry
-					.dosages
-					.into_iter()
-					.map(|dose| shared::DrugDosageImport {
-						dosage_text: dose.dosage_text,
-						frequency_value: dose.frequency_value,
-						frequency_unit: dose.frequency_unit,
-						number_of_units: dose.number_of_units,
-						start_date: dose.start_date,
-						start_time: dose.start_time,
-						start_date_null_flavor: dose.start_date_null_flavor,
-						end_date: dose.end_date,
-						end_time: dose.end_time,
-						end_date_null_flavor: dose.end_date_null_flavor,
-						duration_value: dose.duration_value,
-						duration_unit: dose.duration_unit,
-						dose_value: dose.dose_value,
-						dose_unit: dose.dose_unit,
-						route: dose.route,
-						route_termid_version: dose.route_termid_version,
-						dose_form: dose.dose_form,
-						dose_form_termid: dose.dose_form_termid,
-						dose_form_termid_version: dose.dose_form_termid_version,
-						batch_lot: dose.batch_lot,
-						parent_route_termid: dose.parent_route_termid,
-						parent_route_termid_version: dose
-							.parent_route_termid_version,
-						parent_route: dose.parent_route,
-					})
-					.collect(),
-				indications: entry
-					.indications
-					.into_iter()
-					.map(|ind| shared::DrugIndicationImport {
-						text: ind.text,
-						version: ind.version,
-						code: ind.code,
-					})
-					.collect(),
-				characteristics: entry
-					.characteristics
-					.into_iter()
-					.map(|ch| shared::DrugDeviceCharacteristicImport {
-						code: ch.code,
-						code_system: ch.code_system,
-						code_display_name: ch.code_display_name,
-						value_type: ch.value_type,
-						value_value: ch.value_value,
-						value_code: ch.value_code,
-						value_code_system: ch.value_code_system,
-						value_display_name: ch.value_display_name,
-					})
-					.collect(),
-			})
-			.collect::<Vec<_>>()
-	} else {
-		shared::parse_drugs(xml)?
-	};
+	let imports = crate::xml::import_sections::g_drug::parse_g_drugs(xml)?
+		.into_iter()
+		.map(|entry| g_helpers::DrugImport {
+			xml_id: entry.xml_id,
+			sequence_number: entry.sequence_number,
+			medicinal_product: entry.medicinal_product,
+			brand_name: entry.brand_name,
+			drug_characterization: entry.drug_characterization,
+			mpid: entry.mpid,
+			mpid_version: entry.mpid_version,
+			phpid: entry.phpid,
+			phpid_version: entry.phpid_version,
+			investigational_product_blinded: entry.investigational_product_blinded,
+			obtain_drug_country: entry.obtain_drug_country,
+			drug_authorization_number: entry.drug_authorization_number,
+			manufacturer_name: entry.manufacturer_name,
+			manufacturer_country: entry.manufacturer_country,
+			batch_lot_number: entry.batch_lot_number,
+			cumulative_dose_first_reaction_value: entry
+				.cumulative_dose_first_reaction_value,
+			cumulative_dose_first_reaction_unit: entry
+				.cumulative_dose_first_reaction_unit,
+			gestation_period_exposure_value: entry.gestation_period_exposure_value,
+			gestation_period_exposure_unit: entry.gestation_period_exposure_unit,
+			dosage_text: entry.dosage_text,
+			action_taken: entry.action_taken,
+			rechallenge: entry.rechallenge,
+			parent_route: entry.parent_route,
+			parent_route_termid: entry.parent_route_termid,
+			parent_route_termid_version: entry.parent_route_termid_version,
+			parent_dosage_text: entry.parent_dosage_text,
+			fda_additional_info_coded: entry.fda_additional_info_coded,
+			fda_specialized_product_category: entry.fda_specialized_product_category,
+			fda_device_brand_name: entry.fda_device_brand_name,
+			fda_common_device_name: entry.fda_common_device_name,
+			fda_device_product_code: entry.fda_device_product_code,
+			fda_device_manufacturer_name: entry.fda_device_manufacturer_name,
+			fda_device_manufacturer_address: entry.fda_device_manufacturer_address,
+			fda_device_manufacturer_city: entry.fda_device_manufacturer_city,
+			fda_device_manufacturer_state: entry.fda_device_manufacturer_state,
+			fda_device_manufacturer_country: entry.fda_device_manufacturer_country,
+			fda_device_lot_number: entry.fda_device_lot_number,
+			fda_operator_of_device: entry.fda_operator_of_device,
+			substances: entry
+				.substances
+				.into_iter()
+				.map(|sub| g_helpers::DrugSubstanceImport {
+					substance_name: sub.substance_name,
+					substance_termid: sub.substance_termid,
+					substance_termid_version: sub.substance_termid_version,
+					strength_value: sub.strength_value,
+					strength_unit: sub.strength_unit,
+				})
+				.collect(),
+			dosages: entry
+				.dosages
+				.into_iter()
+				.map(|dose| g_helpers::DrugDosageImport {
+					dosage_text: dose.dosage_text,
+					frequency_value: dose.frequency_value,
+					frequency_unit: dose.frequency_unit,
+					number_of_units: dose.number_of_units,
+					start_date: dose.start_date,
+					start_time: dose.start_time,
+					start_date_null_flavor: dose.start_date_null_flavor,
+					end_date: dose.end_date,
+					end_time: dose.end_time,
+					end_date_null_flavor: dose.end_date_null_flavor,
+					duration_value: dose.duration_value,
+					duration_unit: dose.duration_unit,
+					dose_value: dose.dose_value,
+					dose_unit: dose.dose_unit,
+					route: dose.route,
+					route_termid_version: dose.route_termid_version,
+					dose_form: dose.dose_form,
+					dose_form_termid: dose.dose_form_termid,
+					dose_form_termid_version: dose.dose_form_termid_version,
+					batch_lot: dose.batch_lot,
+					parent_route_termid: dose.parent_route_termid,
+					parent_route_termid_version: dose.parent_route_termid_version,
+					parent_route: dose.parent_route,
+				})
+				.collect(),
+			indications: entry
+				.indications
+				.into_iter()
+				.map(|ind| g_helpers::DrugIndicationImport {
+					text: ind.text,
+					version: ind.version,
+					code: ind.code,
+				})
+				.collect(),
+			characteristics: entry
+				.characteristics
+				.into_iter()
+				.map(|ch| g_helpers::DrugDeviceCharacteristicImport {
+					code: ch.code,
+					code_system: ch.code_system,
+					code_display_name: ch.code_display_name,
+					value_type: ch.value_type,
+					value_value: ch.value_value,
+					value_code: ch.value_code,
+					value_code_system: ch.value_code_system,
+					value_display_name: ch.value_display_name,
+				})
+				.collect(),
+		})
+		.collect::<Vec<_>>();
 	let mut map = ImportIdMap::default();
 
 	for drug in imports {
 		let (fda_specialized_product_category, fda_device_info_json) =
-			shared::import_fda_device_info(&drug, &drug.characteristics);
+			g_helpers::import_fda_device_info(&drug, &drug.characteristics);
 		let drug_additional_info_codes_json =
-			shared::build_drug_additional_info_codes_json(
+			g_helpers::build_drug_additional_info_codes_json(
 				drug.fda_additional_info_coded.as_deref(),
 			);
 		let drug_id = DrugInformationBmc::create(
@@ -178,6 +167,7 @@ async fn import_drugs(
 				sequence_number: drug.sequence_number,
 				drug_characterization: drug.drug_characterization.clone(),
 				medicinal_product: drug.medicinal_product.clone(),
+				drug_generic_name: None,
 			},
 		)
 		.await?;
@@ -362,7 +352,7 @@ async fn import_drug_recurrences(
 	xml: &[u8],
 	drug_map: &ImportIdMap,
 ) -> Result<()> {
-	let observations = shared::parse_drug_observations(xml)?;
+	let observations = g_helpers::parse_drug_observations(xml)?;
 	for obs in observations {
 		let Some(drug_id) =
 			drug_map.resolve(obs.drug_xml_id, Some(obs.drug_sequence))
@@ -430,7 +420,7 @@ async fn import_drug_reaction_assessments(
 	drug_map: &ImportIdMap,
 	reaction_map: &ImportIdMap,
 ) -> Result<()> {
-	let observations = shared::parse_drug_observations(xml)?;
+	let observations = g_helpers::parse_drug_observations(xml)?;
 	let mut assessment_map: HashMap<(Uuid, Uuid), Uuid> = HashMap::new();
 	for obs in &observations {
 		let drug_id = drug_map.resolve(obs.drug_xml_id, Some(obs.drug_sequence));
@@ -488,7 +478,7 @@ async fn import_drug_reaction_assessments(
 		.await;
 	}
 
-	let relatedness = shared::parse_relatedness_assessments(xml)?;
+	let relatedness = g_helpers::parse_relatedness_assessments(xml)?;
 	let mut seq_map: HashMap<(Uuid, Uuid), i32> = HashMap::new();
 	for rel in relatedness {
 		let drug_id = drug_map.resolve(rel.drug_xml_id, None);

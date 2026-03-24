@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use lib_core::model::acs::CASE_READ;
 use lib_core::model::ModelManager;
-use lib_core::xml::validate::{
+use lib_core::validation::{
 	canonical_rules_all, canonical_rules_for_profile, canonical_rules_version,
 	ValidationProfile,
 };

@@ -191,6 +191,8 @@ async fn test_case_update_not_found() -> Result<()> {
 		status: Some("validated".to_string()),
 		validation_profile: None,
 		appendices_json: None,
+		review_receivers_json: None,
+		workflow_routes_json: None,
 		mfds_report_type: None,
 		report_year: None,
 		source_document_name: None,
@@ -570,6 +572,7 @@ async fn test_drug_create_invalid_case() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 
 	let result = DrugInformationBmc::create(&ctx, &mm, drug_c).await;
@@ -664,6 +667,7 @@ async fn test_drug_get_in_wrong_case() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -701,6 +705,7 @@ async fn test_drug_update_in_wrong_case() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -709,6 +714,8 @@ async fn test_drug_update_in_wrong_case() -> Result<()> {
 		medicinal_product: Some("Hacked Drug".to_string()),
 		drug_characterization: None,
 		brand_name: None,
+		drug_generic_name: None,
+		drug_authorization_number: None,
 		manufacturer_name: None,
 		manufacturer_country: None,
 		batch_lot_number: None,

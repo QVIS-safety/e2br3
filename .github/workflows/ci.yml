@@ -100,7 +100,7 @@ jobs:
             psql -h localhost -U app_user -d app_db -v ON_ERROR_STOP=1 -f "db/$f"
           done
 
-      - name: Run tests
+      - name: Run lib-core tests
         env:
           # Skip local dev DB bootstrap; CI already initializes the schema
           SKIP_DEV_INIT: "1"
@@ -112,7 +112,18 @@ jobs:
           SERVICE_TOKEN_DURATION_SEC: "1800"
           SERVICE_WEB_FOLDER: "web-folder/"
           DEMO_USER_FORCE_SYNC: "1"
-        run: cargo test --all
+        run: cargo test -p lib-core -j1 -- --test-threads=1
+
+      - name: Run remaining workspace tests
+        env:
+          SKIP_DEV_INIT: "1"
+          SERVICE_DB_URL: postgres://app_user:dev_only_pwd@localhost/app_db
+          SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
+          SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
+          SERVICE_TOKEN_DURATION_SEC: "1800"
+          SERVICE_WEB_FOLDER: "web-folder/"
+          DEMO_USER_FORCE_SYNC: "1"
+        run: cargo test --workspace --exclude lib-core
 
       - name: Release Validation Gates
         env:
@@ -130,9 +141,10 @@ jobs:
         run: |
           cargo test -p lib-core --test xml xml_schema_business_ci
           cargo test -p lib-core --test validation_matrix
-          cargo test -p web-server --test validation_layers
-          cargo test -p web-server --test xml roundtrip_profiles_web
-          cargo test -p web-server --test xml mfds_import_samples_web
+          cargo test -p web-server --test validation -- --test-threads=1
+          cargo test -p web-server --test workflow -- --test-threads=1
+          cargo test -p web-server --test smoke roundtrip_profiles_web -- --nocapture --test-threads=1
+          cargo test -p web-server --test smoke mfds_import_samples_web -- --nocapture --test-threads=1
 
   # ============================================
   # Job 4: Build Docker image (main branch only)

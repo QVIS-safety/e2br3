@@ -6,10 +6,12 @@ use lib_core::model::case::CaseBmc;
 use lib_core::model::drug::{
 	DosageInformationBmc, DosageInformationForCreate, DosageInformationForUpdate,
 	DrugActiveSubstanceBmc, DrugActiveSubstanceForCreate,
-	DrugActiveSubstanceForUpdate, DrugIndicationBmc, DrugIndicationForCreate,
+	DrugActiveSubstanceFilter, DrugActiveSubstanceForUpdate,
+	DrugIndicationBmc, DrugIndicationFilter, DrugIndicationForCreate,
 	DrugIndicationForUpdate, DrugInformationBmc, DrugInformationForCreate,
-	DrugInformationForUpdate,
+	DrugInformationForUpdate, DosageInformationFilter,
 };
+use modql::filter::{OpValValue, OpValsValue};
 use rust_decimal::Decimal;
 use serial_test::serial;
 
@@ -28,6 +30,7 @@ async fn test_drug_information_crud() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Demo Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 	let drug = DrugInformationBmc::get(&ctx, &mm, drug_id).await?;
@@ -37,6 +40,8 @@ async fn test_drug_information_crud() -> Result<()> {
 		medicinal_product: Some("Updated Drug".to_string()),
 		drug_characterization: None,
 		brand_name: None,
+		drug_generic_name: None,
+		drug_authorization_number: None,
 		manufacturer_name: None,
 		manufacturer_country: None,
 		batch_lot_number: None,
@@ -90,6 +95,7 @@ async fn test_drug_submodels_crud() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Submodel Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -118,7 +124,18 @@ async fn test_drug_submodels_crud() -> Result<()> {
 	let substance = DrugActiveSubstanceBmc::get(&ctx, &mm, substance_id).await?;
 	assert_eq!(substance.substance_name.as_deref(), Some("Substance B"));
 
-	let substances = DrugActiveSubstanceBmc::list(&ctx, &mm, None, None).await?;
+	let substances = DrugActiveSubstanceBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![DrugActiveSubstanceFilter {
+			drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(
+				drug_id.to_string().into(),
+			)])),
+			sequence_number: None,
+		}]),
+		None,
+	)
+	.await?;
 	assert!(substances.iter().any(|s| s.id == substance_id));
 
 	let dosage_c = DosageInformationForCreate {
@@ -181,7 +198,18 @@ async fn test_drug_submodels_crud() -> Result<()> {
 	let dosage = DosageInformationBmc::get(&ctx, &mm, dosage_id).await?;
 	assert_eq!(dosage.dose_unit.as_deref(), Some("tab"));
 
-	let dosage_list = DosageInformationBmc::list(&ctx, &mm, None, None).await?;
+	let dosage_list = DosageInformationBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![DosageInformationFilter {
+			drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(
+				drug_id.to_string().into(),
+			)])),
+			sequence_number: None,
+		}]),
+		None,
+	)
+	.await?;
 	assert!(dosage_list.iter().any(|d| d.id == dosage_id));
 
 	let indication_c = DrugIndicationForCreate {
@@ -204,7 +232,18 @@ async fn test_drug_submodels_crud() -> Result<()> {
 	let indication = DrugIndicationBmc::get(&ctx, &mm, indication_id).await?;
 	assert_eq!(indication.indication_text.as_deref(), Some("Fever"));
 
-	let indications = DrugIndicationBmc::list(&ctx, &mm, None, None).await?;
+	let indications = DrugIndicationBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![DrugIndicationFilter {
+			drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(
+				drug_id.to_string().into(),
+			)])),
+			sequence_number: None,
+		}]),
+		None,
+	)
+	.await?;
 	assert!(indications.iter().any(|i| i.id == indication_id));
 
 	DrugIndicationBmc::delete(&ctx, &mm, indication_id).await?;

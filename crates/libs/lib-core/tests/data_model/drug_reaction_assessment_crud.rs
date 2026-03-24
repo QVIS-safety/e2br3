@@ -7,8 +7,10 @@ use lib_core::model::drug::{DrugInformationBmc, DrugInformationForCreate};
 use lib_core::model::drug_reaction_assessment::{
 	DrugReactionAssessmentBmc, DrugReactionAssessmentForCreate,
 	DrugReactionAssessmentForUpdate, RelatednessAssessmentBmc,
-	RelatednessAssessmentForCreate, RelatednessAssessmentForUpdate,
+	RelatednessAssessmentFilter, RelatednessAssessmentForCreate,
+	RelatednessAssessmentForUpdate,
 };
+use modql::filter::{OpValValue, OpValsValue};
 use lib_core::model::reaction::{ReactionBmc, ReactionForCreate};
 use rust_decimal::Decimal;
 use serial_test::serial;
@@ -28,6 +30,7 @@ async fn test_drug_reaction_assessment_crud() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Assessment Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -106,7 +109,18 @@ async fn test_drug_reaction_assessment_crud() -> Result<()> {
 	let related = RelatednessAssessmentBmc::get(&ctx, &mm, related_id).await?;
 	assert_eq!(related.source_of_assessment.as_deref(), Some("Reporter"));
 
-	let related_list = RelatednessAssessmentBmc::list(&ctx, &mm, None, None).await?;
+	let related_list = RelatednessAssessmentBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![RelatednessAssessmentFilter {
+			drug_reaction_assessment_id: Some(OpValsValue::from(vec![
+				OpValValue::Eq(assessment_id.to_string().into()),
+			])),
+			sequence_number: None,
+		}]),
+		None,
+	)
+	.await?;
 	assert!(related_list.iter().any(|r| r.id == related_id));
 
 	RelatednessAssessmentBmc::delete(&ctx, &mm, related_id).await?;

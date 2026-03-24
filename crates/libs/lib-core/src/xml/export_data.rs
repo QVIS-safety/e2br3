@@ -98,16 +98,41 @@ pub(crate) async fn load_drug_export_bundle(
 	};
 	let mut characteristics = Vec::new();
 	for drug in &drugs {
-		let derived = derive_fda_device_characteristics(drug);
-		if derived.is_empty() {
-			characteristics.extend(
-				raw_characteristics
-					.iter()
-					.filter(|row| row.drug_id == drug.id)
-					.cloned(),
-			);
+		let mut raw_rows: Vec<_> = raw_characteristics
+			.iter()
+			.filter(|row| {
+				row.drug_id == drug.id
+					&& row
+						.code
+						.as_deref()
+						.map(|value| !value.trim().is_empty())
+						.unwrap_or(false)
+			})
+			.cloned()
+			.collect();
+		raw_rows.sort_by_key(|row| row.sequence_number);
+		if raw_rows.is_empty() {
+			characteristics.extend(derive_fda_device_characteristics(drug));
 		} else {
-			characteristics.extend(derived);
+			let seen_codes: std::collections::HashSet<_> = raw_rows
+				.iter()
+				.filter_map(|row| row.code.as_deref().map(str::trim))
+				.filter(|value| !value.is_empty())
+				.map(str::to_string)
+				.collect();
+			characteristics.extend(raw_rows);
+			characteristics.extend(
+				derive_fda_device_characteristics(drug)
+					.into_iter()
+					.filter(|row| {
+						row.code
+							.as_deref()
+							.map(str::trim)
+							.filter(|value| !value.is_empty())
+							.map(|code| !seen_codes.contains(code))
+							.unwrap_or(true)
+					}),
+			);
 		}
 	}
 

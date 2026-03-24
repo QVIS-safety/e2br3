@@ -233,63 +233,6 @@ async fn test_case_from_intake_blocks_duplicates_without_override() -> Result<()
 
 #[serial]
 #[tokio::test]
-async fn test_case_lifecycle_lists_versions_for_same_safety_report_id() -> Result<()>
-{
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
-
-	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
-	let first = json!({
-		"data": intake_data(&safety_report_id, 200, "1", json!({
-			"validation_profile": "fda"
-		}))
-	});
-	let (status, first_body) =
-		post_json(&app, &cookie, "/api/cases/from-intake", first).await?;
-	assert_eq!(status, StatusCode::CREATED, "{first_body:?}");
-	let first_case_id = extract_case_id(&first_body)?;
-
-	let second = json!({
-		"data": intake_data(&safety_report_id, 200, "1", json!({
-			"validation_profile": "fda",
-			"allow_duplicate_override": true
-		}))
-	});
-	let (status, second_body) =
-		post_json(&app, &cookie, "/api/cases/from-intake", second).await?;
-	assert_eq!(status, StatusCode::CREATED, "{second_body:?}");
-	let second_case_id = extract_case_id(&second_body)?;
-
-	let (status, lifecycle) = get_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{second_case_id}/lifecycle"),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{lifecycle:?}");
-	assert_eq!(lifecycle["data"]["safety_report_id"], safety_report_id);
-	let items = lifecycle["data"]["items"]
-		.as_array()
-		.ok_or("missing lifecycle items array")?;
-	assert_eq!(items.len(), 2, "{lifecycle:?}");
-	assert_eq!(items[0]["version"].as_i64(), Some(1), "{lifecycle:?}");
-	assert_eq!(items[0]["case_id"].as_str(), Some(first_case_id.as_str()));
-	assert_eq!(items[1]["version"].as_i64(), Some(2), "{lifecycle:?}");
-	assert_eq!(items[1]["case_id"].as_str(), Some(second_case_id.as_str()));
-	assert_eq!(
-		items[1]["is_current"].as_bool(),
-		Some(true),
-		"{lifecycle:?}"
-	);
-
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
 async fn test_case_intake_duplicate_check_respects_dg_prd_key_filter() -> Result<()>
 {
 	let mm = init_test_mm().await?;

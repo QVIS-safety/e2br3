@@ -13,13 +13,14 @@ use lib_core::model::receiver::{
 use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SafetyReportIdentificationForUpdate,
 };
+use serial_test::serial;
 use sqlx::types::time::{Date, PrimitiveDateTime, Time};
 use sqlx::types::Uuid;
 use time::Month;
 
 #[tokio::test]
+#[serial]
 async fn export_n_patches_message_header_and_receiver_end_to_end() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_C", "1");
 	let (ctx, mm) = begin_export_test().await?;
 	let case_id = create_case_with_safety_report(&ctx, &mm).await?;
 	let message_number = format!("MSG-N-{}", Uuid::new_v4());
@@ -96,6 +97,7 @@ async fn export_n_patches_message_header_and_receiver_end_to_end() -> Result<()>
 	finish_export_test(&mm).await?;
 
 	let (_doc, mut xpath) = parse_xpath(&xml);
+	// N.1 batch header
 	assert_eq!(
 		xpath
 			.findvalue("/hl7:MCCI_IN200100UV01/hl7:id/@extension", None)
@@ -122,6 +124,12 @@ async fn export_n_patches_message_header_and_receiver_end_to_end() -> Result<()>
 	);
 	assert_eq!(
 		xpath
+			.findvalue("/hl7:MCCI_IN200100UV01/hl7:creationTime/@value", None)
+			.unwrap(),
+		"20240102030405"
+	);
+	assert_eq!(
+		xpath
 			.findvalue(
 				"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:id/@extension",
 				None
@@ -131,10 +139,47 @@ async fn export_n_patches_message_header_and_receiver_end_to_end() -> Result<()>
 	);
 	assert_eq!(
 		xpath
+			.findvalue(
+				"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:sender/hl7:device/hl7:id/@extension",
+				None
+			)
+			.unwrap(),
+		"MSG-SENDER"
+	);
+	assert_eq!(
+		xpath
+			.findvalue(
+				"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:receiver/hl7:device/hl7:id/@extension",
+				None
+			)
+			.unwrap(),
+		"MSG-RECV"
+	);
+	assert_eq!(
+		xpath
+			.findvalue(
+				"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:creationTime/@value",
+				None
+			)
+			.unwrap(),
+		"20240102030405"
+	);
+	assert_eq!(
+		xpath
+			.findvalue(
+				"/hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:controlActProcess/hl7:effectiveTime/@value",
+				None
+			)
+			.unwrap(),
+		"20240102030405"
+	);
+	assert_eq!(
+		xpath
 			.findvalue("/hl7:MCCI_IN200100UV01/hl7:name/@displayName", None)
 			.unwrap(),
 		"ichicsr"
 	);
+	// N.2 receiver organization
 	assert_eq!(
 		xpath.findvalue("/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:code/@code", None).unwrap(),
 		"2"
@@ -148,8 +193,32 @@ async fn export_n_patches_message_header_and_receiver_end_to_end() -> Result<()>
 		"PV"
 	);
 	assert_eq!(
+		xpath.findvalue("/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:addr/hl7:streetAddressLine", None).unwrap(),
+		"2 Main St"
+	);
+	assert_eq!(
+		xpath.findvalue("/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:addr/hl7:city", None).unwrap(),
+		"Busan"
+	);
+	assert_eq!(
+		xpath.findvalue("/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:addr/hl7:state", None).unwrap(),
+		"KR-26"
+	);
+	assert_eq!(
+		xpath.findvalue("/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:addr/hl7:postalCode", None).unwrap(),
+		"54321"
+	);
+	assert_eq!(
 		xpath.findvalue("/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:addr/hl7:country/@code", None).unwrap(),
 		"KR"
+	);
+	assert_eq!(
+		xpath.findvalue("/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:telecom[starts-with(@value,'tel:')]/@value", None).unwrap(),
+		"tel:0511234567"
+	);
+	assert_eq!(
+		xpath.findvalue("/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:telecom[starts-with(@value,'fax:')]/@value", None).unwrap(),
+		"fax:0517654321"
 	);
 	assert_eq!(
 		xpath.findvalue("/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:telecom[starts-with(@value,'mailto:')]/@value", None).unwrap(),
@@ -159,8 +228,8 @@ async fn export_n_patches_message_header_and_receiver_end_to_end() -> Result<()>
 }
 
 #[tokio::test]
+#[serial]
 async fn export_n_falls_back_to_report_receiver_organization() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_C", "1");
 	let (ctx, mm) = begin_export_test().await?;
 	let case_id = create_case_with_safety_report(&ctx, &mm).await?;
 	MessageHeaderBmc::create(

@@ -1,7 +1,7 @@
 use crate::model::drug::DrugDeviceCharacteristic;
 use crate::model::ModelManager;
 use crate::model::Result;
-use crate::xml::validate::{
+use crate::validation::{
 	has_any_primary_source_content, list_drug_characteristics,
 	list_study_registrations, push_issue_by_code,
 	push_issue_if_conditioned_value_invalid,
@@ -41,6 +41,30 @@ fn is_six_digit_numeric(value: Option<&str>) -> bool {
 }
 
 pub(crate) async fn apply_fda_rules(
+	mm: &ModelManager,
+	validation_ctx: &ValidationContext,
+	fda_ctx: &FdaValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) -> Result<()> {
+	crate::validation::case::sections::c::collect_fda_issues(
+		mm,
+		validation_ctx,
+		fda_ctx,
+		issues,
+	)
+	.await?;
+	crate::validation::case::sections::d::collect_fda_issues(validation_ctx, issues);
+	crate::validation::case::sections::e::collect_fda_issues(validation_ctx, issues);
+	crate::validation::case::sections::g::collect_fda_issues(
+		mm,
+		validation_ctx,
+		issues,
+	)
+	.await?;
+	Ok(())
+}
+
+pub(crate) async fn collect_c_issues(
 	mm: &ModelManager,
 	validation_ctx: &ValidationContext,
 	fda_ctx: &FdaValidationContext,
@@ -242,7 +266,13 @@ pub(crate) async fn apply_fda_rules(
 				);
 			}
 		});
+	Ok(())
+}
 
+pub(crate) fn collect_d_issues(
+	validation_ctx: &ValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
 	if let Some(patient) = validation_ctx.patient.as_ref() {
 		let _ = push_issue_if_conditioned_value_invalid(
 			issues,
@@ -273,7 +303,12 @@ pub(crate) async fn apply_fda_rules(
 			RuleFacts::default(),
 		);
 	}
+}
 
+pub(crate) fn collect_e_issues(
+	validation_ctx: &ValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
 	if should_case_validator_require_required_intervention() {
 		validation_ctx
 			.reactions
@@ -298,6 +333,91 @@ pub(crate) async fn apply_fda_rules(
 				);
 			});
 	}
+}
 
+pub(crate) async fn collect_g_issues(
+	mm: &ModelManager,
+	validation_ctx: &ValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) -> Result<()> {
+	let local_criteria = validation_ctx
+		.safety_report
+		.as_ref()
+		.and_then(|r| r.local_criteria_report_type.as_deref());
+	let combination_true = validation_ctx
+		.safety_report
+		.as_ref()
+		.and_then(|r| r.combination_product_report_indicator.as_deref())
+		== Some("1");
+
+	let mut has_malfunction_any = false;
+	let mut has_malfunction_suspect = false;
+	let mut has_gk12r3 = false;
+	let mut has_gk12r11 = false;
+	let mut has_invalid_gk1a = false;
+
+	for drug in &validation_ctx.drugs {
+		let chars = list_drug_characteristics(mm, drug.id).await?;
+		let malfunction_this_drug = chars.iter().any(|ch| {
+			characteristic_code_matches(ch.code.as_deref(), "FDA.G.k.12.r.1")
+				&& is_truthy_characteristic(ch)
+		});
+		if malfunction_this_drug {
+			has_malfunction_any = true;
+			if drug.drug_characterization == "1" {
+				has_malfunction_suspect = true;
+			}
+		}
+		if chars.iter().any(|ch| {
+			characteristic_code_matches(ch.code.as_deref(), "FDA.G.k.12.r.3")
+		}) {
+			has_gk12r3 = true;
+		}
+		if chars.iter().any(|ch| {
+			characteristic_code_matches(ch.code.as_deref(), "FDA.G.k.12.r.11")
+		}) {
+			has_gk12r11 = true;
+		}
+		let has_gk1a_one = chars.iter().any(|ch| {
+			characteristic_code_matches(ch.code.as_deref(), "FDA.G.k.1.a")
+				&& is_code_one_characteristic(ch)
+		});
+		if has_gk1a_one
+			&& !(combination_true
+				&& malfunction_this_drug
+				&& drug.drug_characterization == "4")
+		{
+			has_invalid_gk1a = true;
+		}
+	}
+
+	if local_criteria == Some("5") && !has_malfunction_suspect {
+		push_issue_by_code(
+			issues,
+			"FDA.G.K.12.REQUIRED",
+			"drugs.0.deviceCharacteristics.0.valueCode",
+		);
+	}
+	if has_malfunction_any && !has_gk12r3 {
+		push_issue_by_code(
+			issues,
+			"FDA.G.K.12.R.3.REQUIRED",
+			"drugs.0.deviceCharacteristics.0.valueCode",
+		);
+	}
+	if local_criteria == Some("4") && has_malfunction_any && !has_gk12r11 {
+		push_issue_by_code(
+			issues,
+			"FDA.G.K.12.R.11.REQUIRED",
+			"drugs.0.deviceCharacteristics.0.valueCode",
+		);
+	}
+	if has_invalid_gk1a {
+		push_issue_by_code(
+			issues,
+			"FDA.G.K.1.A.CONDITIONAL",
+			"drugs.0.deviceCharacteristics.0.valueCode",
+		);
+	}
 	Ok(())
 }

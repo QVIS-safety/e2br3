@@ -47,9 +47,12 @@ async fn test_parent_history_crud() -> Result<()> {
 	let parent_u = ParentInformationForUpdate {
 		parent_identification: None,
 		parent_birth_date: None,
+		parent_birth_date_null_flavor: None,
 		parent_age: None,
+		parent_age_null_flavor: None,
 		parent_age_unit: None,
 		last_menstrual_period_date: None,
+		last_menstrual_period_date_null_flavor: None,
 		weight_kg: None,
 		height_cm: None,
 		sex: None,
@@ -66,6 +69,8 @@ async fn test_parent_history_crud() -> Result<()> {
 		parent_id,
 		sequence_number: 1,
 		meddra_code: Some("10012345".to_string()),
+		start_date_null_flavor: None,
+		end_date_null_flavor: None,
 	};
 	let med_history_id =
 		ParentMedicalHistoryBmc::create(&ctx, &mm, med_history_c).await?;
@@ -77,8 +82,10 @@ async fn test_parent_history_crud() -> Result<()> {
 		meddra_version: Some("25.0".to_string()),
 		meddra_code: None,
 		start_date: None,
+		start_date_null_flavor: None,
 		continuing: None,
 		end_date: None,
+		end_date_null_flavor: None,
 		comments: Some("Family history noted".to_string()),
 	};
 	ParentMedicalHistoryBmc::update(&ctx, &mm, med_history_id, med_history_u)
@@ -97,6 +104,9 @@ async fn test_parent_history_crud() -> Result<()> {
 		parent_id,
 		sequence_number: 1,
 		drug_name: Some("Legacy Drug".to_string()),
+		drug_name_null_flavor: None,
+		start_date_null_flavor: None,
+		end_date_null_flavor: None,
 	};
 	let past_drug_id =
 		ParentPastDrugHistoryBmc::create(&ctx, &mm, past_drug_c).await?;
@@ -105,12 +115,15 @@ async fn test_parent_history_crud() -> Result<()> {
 
 	let past_drug_u = ParentPastDrugHistoryForUpdate {
 		drug_name: Some("Updated Drug".to_string()),
+		drug_name_null_flavor: None,
 		mpid: Some("MP-123".to_string()),
 		mpid_version: None,
 		phpid: None,
 		phpid_version: None,
 		start_date: None,
+		start_date_null_flavor: None,
 		end_date: None,
+		end_date_null_flavor: None,
 		indication_meddra_version: None,
 		indication_meddra_code: Some("10078901".to_string()),
 		reaction_meddra_version: None,

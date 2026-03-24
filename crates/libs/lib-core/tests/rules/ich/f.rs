@@ -9,7 +9,7 @@ use crate::support::{
 use lib_core::model::test_result::{
 	TestResultBmc, TestResultForCreate, TestResultForUpdate,
 };
-use lib_core::xml::validate::ValidationProfile;
+use lib_core::validation::ValidationProfile;
 use serial_test::serial;
 use sqlx::types::time::Date;
 use time::Month;

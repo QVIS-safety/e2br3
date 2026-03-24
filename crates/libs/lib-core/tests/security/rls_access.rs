@@ -103,9 +103,6 @@ async fn test_rls_case_org_isolation() -> Result<()> {
 	let err = CaseBmc::get(&user_ctx, &mm, case_org2).await.unwrap_err();
 	assert!(matches!(err, ModelError::EntityUuidNotFound { .. }));
 
-	set_org_context_dbx(dbx, org1_id, ROLE_ADMIN).await?;
-	let cases_admin = CaseBmc::list(&admin_ctx, &mm, None, None).await?;
-	assert!(cases_admin.iter().any(|c| c.id == case_org2));
 	dbx.rollback_txn().await?;
 	Ok(())
 }

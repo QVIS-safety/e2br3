@@ -7,7 +7,7 @@ use lib_core::model::store::{
 	set_full_context_dbx, set_full_context_dbx_or_rollback,
 };
 use lib_core::model::ModelManager;
-use lib_core::xml::xml_validation::{
+use lib_core::validation::xml::{
 	should_skip_xml_validation, validate_e2b_xml_basic,
 };
 use lib_core::xml::{
@@ -262,6 +262,7 @@ async fn import_single_xml(
 			xml,
 			filename: Some(filename.clone()),
 			validation_profile: validation_profile.clone(),
+			skip_validation: false,
 		},
 	)
 	.await;

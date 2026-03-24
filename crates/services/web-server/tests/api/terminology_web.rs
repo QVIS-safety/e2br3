@@ -1,4 +1,6 @@
-use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
+use crate::common::{
+	cookie_header, init_test_mm, seed_org_with_adb_admin_and_viewer, Result,
+};
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
@@ -11,11 +13,17 @@ use zip::write::SimpleFileOptions;
 use zip::CompressionMethod;
 use zip::ZipWriter;
 
+async fn seed_terminology_admin(
+	mm: &lib_core::model::ModelManager,
+) -> Result<crate::common::SeedOrgUsers> {
+	seed_org_with_adb_admin_and_viewer(mm, "adminpwd", "viewpwd").await
+}
+
 #[serial]
 #[tokio::test]
 async fn test_admin_can_access_terminology_endpoints() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 
@@ -96,7 +104,7 @@ async fn test_admin_can_access_terminology_endpoints() -> Result<()> {
 #[tokio::test]
 async fn test_viewer_cannot_access_terminology_endpoints() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 
@@ -126,7 +134,7 @@ async fn test_viewer_cannot_access_terminology_endpoints() -> Result<()> {
 #[tokio::test]
 async fn test_viewer_cannot_approve_activate_or_rollback_release() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -162,7 +170,7 @@ async fn test_viewer_cannot_approve_activate_or_rollback_release() -> Result<()>
 #[tokio::test]
 async fn test_admin_can_dry_run_meddra_import() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -201,7 +209,7 @@ async fn test_admin_can_dry_run_meddra_import() -> Result<()> {
 #[tokio::test]
 async fn test_admin_dry_run_meddra_import_rejects_invalid_zip() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -230,7 +238,7 @@ async fn test_admin_dry_run_meddra_import_rejects_invalid_zip() -> Result<()> {
 #[tokio::test]
 async fn test_admin_can_dry_run_whodrug_import() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -266,7 +274,7 @@ async fn test_admin_can_dry_run_whodrug_import() -> Result<()> {
 #[tokio::test]
 async fn test_admin_can_list_terminology_releases() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -290,7 +298,7 @@ async fn test_admin_can_list_terminology_releases() -> Result<()> {
 #[tokio::test]
 async fn test_admin_dry_run_whodrug_import_rejects_missing_columns() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -320,7 +328,7 @@ async fn test_admin_dry_run_whodrug_import_rejects_missing_columns() -> Result<(
 #[tokio::test]
 async fn test_admin_release_actions_validate_dictionary_and_target() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -349,7 +357,7 @@ async fn test_admin_release_actions_validate_dictionary_and_target() -> Result<(
 async fn test_admin_can_meddra_approve_activate_and_rollback_release() -> Result<()>
 {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -525,7 +533,7 @@ async fn test_admin_can_meddra_approve_activate_and_rollback_release() -> Result
 async fn test_reimport_same_version_is_idempotent_for_meddra_and_whodrug(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -627,7 +635,7 @@ async fn test_reimport_same_version_is_idempotent_for_meddra_and_whodrug(
 #[tokio::test]
 async fn test_language_specific_activation_and_search_switching() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -785,7 +793,7 @@ async fn test_language_specific_activation_and_search_switching() -> Result<()> 
 async fn test_whodrug_parser_accepts_zipped_delimited_and_alternate_headers(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -843,7 +851,7 @@ async fn test_whodrug_parser_accepts_zipped_delimited_and_alternate_headers(
 async fn test_imported_terminology_can_be_used_in_case_generation_flow() -> Result<()>
 {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
@@ -1046,7 +1054,7 @@ async fn test_imported_terminology_can_be_used_in_case_generation_flow() -> Resu
 #[tokio::test]
 async fn test_admin_can_approve_activate_and_rollback_release() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = seed_terminology_admin(&mm).await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);

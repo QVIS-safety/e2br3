@@ -1,5 +1,5 @@
 use lib_core::model::narrative::NarrativeInformation;
-use lib_core::xml::export_sections::h_narrative::export_h_narrative_xml;
+use lib_core::xml::export::sections::h::export_h_narrative_xml;
 use libxml::parser::Parser;
 use libxml::xpath::Context;
 use sqlx::types::Uuid;

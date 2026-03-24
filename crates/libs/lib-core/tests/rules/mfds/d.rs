@@ -1,4 +1,4 @@
-use lib_core::xml::validate::{is_rule_condition_satisfied, RuleFacts};
+use lib_core::validation::{is_rule_condition_satisfied, RuleFacts};
 
 #[test]
 fn mfds_d_8_r_1_kr_1a_required_false() {

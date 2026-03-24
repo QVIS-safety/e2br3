@@ -1,7 +1,9 @@
 use libxml::parser::Parser;
 use libxml::xpath::Context;
 
-use lib_core::xml::raw::patch::{patch_c_safety_report, CSafetyReportPatch};
+use lib_core::xml::export::roundtrip::{
+	patch_c_safety_report, CSafetyReportPatch,
+};
 use sqlx::types::time::Date;
 use time::Month;
 

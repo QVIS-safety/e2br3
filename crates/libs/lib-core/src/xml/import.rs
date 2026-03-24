@@ -6,10 +6,10 @@ use crate::model::message_header::{
 };
 use crate::model::store::set_full_context_dbx;
 use crate::model::{self, ModelManager};
+use crate::validation::xml::validate_e2b_xml;
 use crate::xml::error::Error;
 use crate::xml::import_runtime::{c, d, e, f, g, h, shared};
 use crate::xml::types::XmlImportResult;
-use crate::xml::xml_validation::{should_skip_xml_validation, validate_e2b_xml};
 use crate::xml::{parse_e2b_xml, Result};
 use serde_json::json;
 
@@ -18,6 +18,7 @@ pub struct XmlImportRequest {
 	pub xml: Vec<u8>,
 	pub filename: Option<String>,
 	pub validation_profile: Option<String>,
+	pub skip_validation: bool,
 }
 
 pub async fn import_e2b_xml(
@@ -26,7 +27,7 @@ pub async fn import_e2b_xml(
 	req: XmlImportRequest,
 ) -> Result<XmlImportResult> {
 	let mm = mm.new_with_txn()?;
-	if !should_skip_xml_validation() {
+	if !req.skip_validation {
 		let report = validate_e2b_xml(&req.xml, None)?;
 		if !report.ok {
 			return Err(Error::XsdValidationFailed {

@@ -40,6 +40,8 @@ async fn test_case_crud() -> Result<()> {
 		status: Some("validated".to_string()),
 		validation_profile: None,
 		appendices_json: None,
+		review_receivers_json: None,
+		workflow_routes_json: None,
 		mfds_report_type: None,
 		report_year: None,
 		source_document_name: None,

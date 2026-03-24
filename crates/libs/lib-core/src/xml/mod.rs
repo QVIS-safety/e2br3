@@ -1,9 +1,5 @@
 pub mod export;
-mod export_adapters;
 mod export_data;
-mod export_postprocess;
-mod export_runtime;
-pub mod export_sections;
 mod export_utils;
 pub mod fda;
 pub mod ich;
@@ -14,7 +10,6 @@ pub mod mapping;
 pub mod mfds;
 pub mod model;
 pub mod raw;
-pub mod validate;
 
 pub mod error;
 pub mod parser;
@@ -24,12 +19,13 @@ pub mod xml_validation;
 pub use error::Error;
 pub type Result<T> = core::result::Result<T, Error>;
 
+pub use crate::validation::xml::should_skip_xml_validation;
 pub use export::export_case_xml;
 pub use import::{import_e2b_xml, XmlImportRequest};
 pub use parser::parse_e2b_xml;
 pub use types::ParsedE2b;
 pub use types::{XmlImportResult, XmlValidationError, XmlValidationReport};
 pub use xml_validation::{
-	should_skip_xml_validation, validate_e2b_xml, validate_e2b_xml_basic,
+	default_xsd_path, validate_e2b_xml, validate_e2b_xml_basic,
 	validate_e2b_xml_business, XmlValidatorConfig,
 };

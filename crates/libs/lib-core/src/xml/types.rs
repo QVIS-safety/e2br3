@@ -3,6 +3,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct XmlValidationError {
 	pub message: String,
+	pub code: Option<String>,
+	pub section: Option<String>,
+	pub field_path: Option<String>,
+	pub blocking: Option<bool>,
 	pub line: Option<usize>,
 	pub column: Option<usize>,
 }

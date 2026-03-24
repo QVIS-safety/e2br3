@@ -84,7 +84,6 @@ async fn imports_f_persisted_models() {
 #[serial]
 #[tokio::test]
 async fn imports_f_test_date_null_flavor() {
-	std::env::set_var("E2BR3_SKIP_XML_VALIDATE", "1");
 	let mm = init_test_mm().await;
 	let ctx = demo_ctx();
 	let xml = scenario6_with_first_test_date_null_flavor().into_bytes();
@@ -96,6 +95,7 @@ async fn imports_f_test_date_null_flavor() {
 			xml,
 			filename: Some("FAERS2022Scenario6-f-nullflavor.xml".to_string()),
 			validation_profile: Some("fda".to_string()),
+			skip_validation: true,
 		},
 	)
 	.await

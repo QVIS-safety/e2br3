@@ -1,4 +1,4 @@
-use lib_core::xml::validate::{find_canonical_rule, VALIDATION_RULES};
+use lib_core::validation::{find_canonical_rule, VALIDATION_RULES};
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]

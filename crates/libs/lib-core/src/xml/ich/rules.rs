@@ -1,4 +1,4 @@
-use crate::xml::validate::{
+use crate::validation::{
 	has_any_primary_source_content, has_patient_initials, has_test_payload,
 	has_text, push_issue_by_code, push_issue_if_conditioned_value_invalid,
 	push_issue_if_rule_invalid, should_require_case_narrative,
@@ -9,76 +9,48 @@ pub(crate) fn apply_ich_rules(
 	validation_ctx: &ValidationContext,
 ) -> Vec<ValidationIssue> {
 	let mut issues: Vec<ValidationIssue> = Vec::new();
+	crate::validation::case::sections::c::collect_ich_issues(
+		validation_ctx,
+		&mut issues,
+	);
+	crate::validation::case::sections::d::collect_ich_issues(
+		validation_ctx,
+		&mut issues,
+	);
+	crate::validation::case::sections::e::collect_ich_issues(
+		validation_ctx,
+		&mut issues,
+	);
+	crate::validation::case::sections::f::collect_ich_issues(
+		validation_ctx,
+		&mut issues,
+	);
+	crate::validation::case::sections::g::collect_ich_issues(
+		validation_ctx,
+		&mut issues,
+	);
+	crate::validation::case::sections::h::collect_ich_issues(
+		validation_ctx,
+		&mut issues,
+	);
+	crate::validation::case::sections::n::collect_ich_issues(
+		validation_ctx,
+		&mut issues,
+	);
+	issues
+}
 
+pub(crate) fn collect_c_issues(
+	validation_ctx: &ValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
 	if validation_ctx.safety_report.is_none() {
-		push_issue_by_code(
-			&mut issues,
-			"ICH.C.1.REQUIRED",
-			"safetyReportIdentification",
-		);
-	}
-
-	if validation_ctx.message_header.is_none() {
-		push_issue_by_code(&mut issues, "ICH.N.REQUIRED", "messageHeader");
-	}
-	if let Some(header) = validation_ctx.message_header.as_ref() {
-		let _ = push_issue_if_rule_invalid(
-			&mut issues,
-			"ICH.N.1.2.REQUIRED",
-			"messageHeader.batchNumber",
-			header.batch_number.as_deref(),
-			None,
-			RuleFacts::default(),
-		);
-		let _ = push_issue_if_rule_invalid(
-			&mut issues,
-			"ICH.N.1.3.REQUIRED",
-			"messageHeader.batchSenderIdentifier",
-			header.batch_sender_identifier.as_deref(),
-			None,
-			RuleFacts::default(),
-		);
-		let _ = push_issue_if_rule_invalid(
-			&mut issues,
-			"ICH.N.1.4.REQUIRED",
-			"messageHeader.batchReceiverIdentifier",
-			header.batch_receiver_identifier.as_deref(),
-			None,
-			RuleFacts::default(),
-		);
-		let _ = push_issue_if_rule_invalid(
-			&mut issues,
-			"ICH.N.1.5.REQUIRED",
-			"messageHeader.batchTransmissionDate",
-			if header.batch_transmission_date.is_some() {
-				Some("1")
-			} else {
-				None
-			},
-			None,
-			RuleFacts::default(),
-		);
-		let _ = push_issue_if_rule_invalid(
-			&mut issues,
-			"ICH.N.2.r.2.REQUIRED",
-			"messageHeader.messageSenderIdentifier",
-			Some(header.message_sender_identifier.as_str()),
-			None,
-			RuleFacts::default(),
-		);
-		let _ = push_issue_if_rule_invalid(
-			&mut issues,
-			"ICH.N.2.r.3.REQUIRED",
-			"messageHeader.messageReceiverIdentifier",
-			Some(header.message_receiver_identifier.as_str()),
-			None,
-			RuleFacts::default(),
-		);
+		push_issue_by_code(issues, "ICH.C.1.REQUIRED", "safetyReportIdentification");
 	}
 
 	if let Some(report) = validation_ctx.safety_report.as_ref() {
 		let _ = push_issue_if_rule_invalid(
-			&mut issues,
+			issues,
 			"ICH.C.1.1.REQUIRED",
 			"safetyReportIdentification.safetyReportId",
 			Some(validation_ctx.case.safety_report_id.as_str()),
@@ -88,7 +60,7 @@ pub(crate) fn apply_ich_rules(
 		let transmission_date =
 			report.transmission_date.map(|value| value.to_string());
 		let _ = push_issue_if_rule_invalid(
-			&mut issues,
+			issues,
 			"ICH.C.1.2.REQUIRED",
 			"safetyReportIdentification.transmissionDate",
 			transmission_date.as_deref(),
@@ -96,7 +68,7 @@ pub(crate) fn apply_ich_rules(
 			RuleFacts::default(),
 		);
 		let _ = push_issue_if_rule_invalid(
-			&mut issues,
+			issues,
 			"ICH.C.1.3.REQUIRED",
 			"safetyReportIdentification.reportType",
 			Some(report.report_type.as_str()),
@@ -107,7 +79,7 @@ pub(crate) fn apply_ich_rules(
 			.date_first_received_from_source
 			.map(|value| value.to_string());
 		let _ = push_issue_if_rule_invalid(
-			&mut issues,
+			issues,
 			"ICH.C.1.4.REQUIRED",
 			"safetyReportIdentification.dateFirstReceivedFromSource",
 			date_first_received.as_deref(),
@@ -120,7 +92,7 @@ pub(crate) fn apply_ich_rules(
 			.date_of_most_recent_information
 			.map(|value| value.to_string());
 		let _ = push_issue_if_rule_invalid(
-			&mut issues,
+			issues,
 			"ICH.C.1.5.REQUIRED",
 			"safetyReportIdentification.dateOfMostRecentInformation",
 			date_most_recent.as_deref(),
@@ -135,7 +107,7 @@ pub(crate) fn apply_ich_rules(
 			"2"
 		};
 		let _ = push_issue_if_rule_invalid(
-			&mut issues,
+			issues,
 			"ICH.C.1.7.REQUIRED",
 			"safetyReportIdentification.fulfilExpeditedCriteria",
 			Some(fulfil_expedited),
@@ -146,14 +118,14 @@ pub(crate) fn apply_ich_rules(
 			&& !has_text(report.nullification_reason.as_deref())
 		{
 			push_issue_by_code(
-				&mut issues,
+				issues,
 				"ICH.C.1.11.2.REQUIRED",
 				"safetyReportIdentification.nullificationReason",
 			);
 		}
 		if report.report_type.trim() == "2" && validation_ctx.studies.is_empty() {
 			push_issue_by_code(
-				&mut issues,
+				issues,
 				"ICH.C.5.4.REQUIRED",
 				"studyInformation.0.studyTypeReaction",
 			);
@@ -166,7 +138,7 @@ pub(crate) fn apply_ich_rules(
 		.enumerate()
 		.for_each(|(idx, identifier)| {
 			let _ = push_issue_if_rule_invalid(
-				&mut issues,
+				issues,
 				"ICH.C.1.9.1.r.1.REQUIRED",
 				format!("otherCaseIdentifiers.{idx}.sourceOfIdentifier"),
 				Some(identifier.source_of_identifier.as_str()),
@@ -174,7 +146,7 @@ pub(crate) fn apply_ich_rules(
 				RuleFacts::default(),
 			);
 			let _ = push_issue_if_rule_invalid(
-				&mut issues,
+				issues,
 				"ICH.C.1.9.1.r.2.REQUIRED",
 				format!("otherCaseIdentifiers.{idx}.caseIdentifier"),
 				Some(identifier.case_identifier.as_str()),
@@ -189,7 +161,7 @@ pub(crate) fn apply_ich_rules(
 		.enumerate()
 		.for_each(|(idx, document)| {
 			let _ = push_issue_if_rule_invalid(
-				&mut issues,
+				issues,
 				"ICH.C.1.6.1.r.1.REQUIRED",
 				format!("documentsHeldBySender.{idx}.documentDescription"),
 				document.title.as_deref(),
@@ -210,7 +182,7 @@ pub(crate) fn apply_ich_rules(
 			.enumerate()
 			.for_each(|(idx, study)| {
 				let _ = push_issue_if_conditioned_value_invalid(
-					&mut issues,
+					issues,
 					"ICH.C.5.4.REQUIRED",
 					"ICH.C.5.4.REQUIRED",
 					"ICH.C.5.4.REQUIRED",
@@ -228,7 +200,7 @@ pub(crate) fn apply_ich_rules(
 
 	if let Some(sender) = validation_ctx.sender.as_ref() {
 		let _ = push_issue_if_rule_invalid(
-			&mut issues,
+			issues,
 			"ICH.C.3.1.REQUIRED",
 			"safetyReportIdentification.senderType",
 			Some(sender.sender_type.as_str()),
@@ -236,7 +208,7 @@ pub(crate) fn apply_ich_rules(
 			RuleFacts::default(),
 		);
 		let _ = push_issue_if_rule_invalid(
-			&mut issues,
+			issues,
 			"ICH.C.3.2.REQUIRED",
 			"safetyReportIdentification.senderOrganization",
 			Some(sender.organization_name.as_str()),
@@ -245,12 +217,12 @@ pub(crate) fn apply_ich_rules(
 		);
 	} else {
 		push_issue_by_code(
-			&mut issues,
+			issues,
 			"ICH.C.3.1.REQUIRED",
 			"safetyReportIdentification.senderType",
 		);
 		push_issue_by_code(
-			&mut issues,
+			issues,
 			"ICH.C.3.2.REQUIRED",
 			"safetyReportIdentification.senderOrganization",
 		);
@@ -258,7 +230,7 @@ pub(crate) fn apply_ich_rules(
 
 	if validation_ctx.primary_sources.is_empty() {
 		push_issue_by_code(
-			&mut issues,
+			issues,
 			"ICH.C.2.r.4.REQUIRED",
 			"primarySources.0.qualification",
 		);
@@ -273,7 +245,7 @@ pub(crate) fn apply_ich_rules(
 				return;
 			}
 			let _ = push_issue_if_rule_invalid(
-				&mut issues,
+				issues,
 				"ICH.C.2.r.4.REQUIRED",
 				format!("primarySources.{idx}.qualification"),
 				source.qualification.as_deref(),
@@ -281,10 +253,15 @@ pub(crate) fn apply_ich_rules(
 				RuleFacts::default(),
 			);
 		});
+}
 
+pub(crate) fn collect_d_issues(
+	validation_ctx: &ValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
 	if validation_ctx.patient.is_none() {
 		push_issue_by_code(
-			&mut issues,
+			issues,
 			"ICH.D.1.REQUIRED",
 			"patientInformation.patientInitials",
 		);
@@ -294,7 +271,7 @@ pub(crate) fn apply_ich_rules(
 		if should_require_patient_initials(patient) && !has_patient_initials(patient)
 		{
 			push_issue_by_code(
-				&mut issues,
+				issues,
 				"ICH.D.1.REQUIRED",
 				"patientInformation.patientInitials",
 			);
@@ -303,14 +280,14 @@ pub(crate) fn apply_ich_rules(
 		let age_unit_present = has_text(patient.age_unit.as_deref());
 		if age_unit_present && !age_value_present {
 			push_issue_by_code(
-				&mut issues,
+				issues,
 				"ICH.D.2.2a.REQUIRED",
 				"patientInformation.ageAtTimeOfOnset",
 			);
 		}
 		if age_value_present && !age_unit_present {
 			push_issue_by_code(
-				&mut issues,
+				issues,
 				"ICH.D.2.2b.REQUIRED",
 				"patientInformation.ageUnit",
 			);
@@ -320,14 +297,14 @@ pub(crate) fn apply_ich_rules(
 			has_text(patient.gestation_period_unit.as_deref());
 		if gestation_unit_present && !gestation_value_present {
 			push_issue_by_code(
-				&mut issues,
+				issues,
 				"ICH.D.2.2.1a.REQUIRED",
 				"patientInformation.gestationPeriod",
 			);
 		}
 		if gestation_value_present && !gestation_unit_present {
 			push_issue_by_code(
-				&mut issues,
+				issues,
 				"ICH.D.2.2.1b.REQUIRED",
 				"patientInformation.gestationPeriodUnit",
 			);
@@ -343,14 +320,14 @@ pub(crate) fn apply_ich_rules(
 			let meddra_version_present = has_text(episode.meddra_version.as_deref());
 			if meddra_code_present && !meddra_version_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.7.1.r.1a.REQUIRED",
 					format!("patientInformation.medicalHistory.{idx}.meddraVersion"),
 				);
 			}
 			if meddra_version_present && !meddra_code_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.7.1.r.1b.REQUIRED",
 					format!("patientInformation.medicalHistory.{idx}.meddraCode"),
 				);
@@ -366,7 +343,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(past_drug.mpid_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.8.r.2a.REQUIRED",
 					format!("patientInformation.pastDrugs.{idx}.mpidVersion"),
 				);
@@ -375,7 +352,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(past_drug.phpid_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.8.r.3a.REQUIRED",
 					format!("patientInformation.pastDrugs.{idx}.phpidVersion"),
 				);
@@ -386,7 +363,7 @@ pub(crate) fn apply_ich_rules(
 				has_text(past_drug.indication_meddra_version.as_deref());
 			if indication_code_present && !indication_version_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.8.r.6a.REQUIRED",
 					format!(
 						"patientInformation.pastDrugs.{idx}.indicationMeddraVersion"
@@ -395,7 +372,7 @@ pub(crate) fn apply_ich_rules(
 			}
 			if indication_version_present && !indication_code_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.8.r.6b.REQUIRED",
 					format!(
 						"patientInformation.pastDrugs.{idx}.indicationMeddraCode"
@@ -409,7 +386,7 @@ pub(crate) fn apply_ich_rules(
 				has_text(past_drug.reaction_meddra_version.as_deref());
 			if reaction_code_present && !reaction_version_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.8.r.7a.REQUIRED",
 					format!(
 						"patientInformation.pastDrugs.{idx}.reactionMeddraVersion"
@@ -418,7 +395,7 @@ pub(crate) fn apply_ich_rules(
 			}
 			if reaction_version_present && !reaction_code_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.8.r.7b.REQUIRED",
 					format!("patientInformation.pastDrugs.{idx}.reactionMeddraCode"),
 				);
@@ -427,7 +404,7 @@ pub(crate) fn apply_ich_rules(
 				&& has_text(past_drug.phpid.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.8.MPID_PHPID.EXCLUSIVE",
 					format!("patientInformation.pastDrugs.{idx}.mpid"),
 				);
@@ -443,7 +420,7 @@ pub(crate) fn apply_ich_rules(
 			let meddra_version_present = has_text(cause.meddra_version.as_deref());
 			if meddra_code_present && !meddra_version_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.9.2.r.1a.REQUIRED",
 					format!(
 						"patientInformation.death.reportedCauses.{idx}.meddraVersion"
@@ -452,7 +429,7 @@ pub(crate) fn apply_ich_rules(
 			}
 			if meddra_version_present && !meddra_code_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.9.2.r.1b.REQUIRED",
 					format!(
 						"patientInformation.death.reportedCauses.{idx}.meddraCode"
@@ -463,7 +440,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(cause.comments.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.9.2.r.2.REQUIRED",
 					format!(
 						"patientInformation.death.reportedCauses.{idx}.comments"
@@ -477,7 +454,7 @@ pub(crate) fn apply_ich_rules(
 			&& death_info.autopsy_performed.is_none()
 		{
 			push_issue_by_code(
-				&mut issues,
+				issues,
 				"ICH.D.9.3.REQUIRED",
 				"patientInformation.death.autopsyPerformed",
 			);
@@ -493,7 +470,7 @@ pub(crate) fn apply_ich_rules(
 			let meddra_version_present = has_text(cause.meddra_version.as_deref());
 			if meddra_code_present && !meddra_version_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.9.4.r.1a.REQUIRED",
 					format!(
 						"patientInformation.death.autopsyCauses.{idx}.meddraVersion"
@@ -502,7 +479,7 @@ pub(crate) fn apply_ich_rules(
 			}
 			if meddra_version_present && !meddra_code_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.9.4.r.1b.REQUIRED",
 					format!(
 						"patientInformation.death.autopsyCauses.{idx}.meddraCode"
@@ -513,7 +490,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(cause.comments.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.9.4.r.2.REQUIRED",
 					format!("patientInformation.death.autopsyCauses.{idx}.comments"),
 				);
@@ -530,14 +507,14 @@ pub(crate) fn apply_ich_rules(
 				has_text(parent.parent_age_unit.as_deref());
 			if parent_age_unit_present && !parent_age_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.2.2a.REQUIRED",
 					format!("patientInformation.parents.{idx}.parentAge"),
 				);
 			}
 			if parent_age_present && !parent_age_unit_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.2.2b.REQUIRED",
 					format!("patientInformation.parents.{idx}.parentAgeUnit"),
 				);
@@ -553,7 +530,7 @@ pub(crate) fn apply_ich_rules(
 					|| has_text(parent.medical_history_text.as_deref());
 			if parent_has_payload && !has_text(parent.sex.as_deref()) {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.6.REQUIRED",
 					format!("patientInformation.parents.{idx}.sex"),
 				);
@@ -569,7 +546,7 @@ pub(crate) fn apply_ich_rules(
 			let meddra_version_present = has_text(episode.meddra_version.as_deref());
 			if meddra_code_present && !meddra_version_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.7.1.r.1a.REQUIRED",
 					format!(
 						"patientInformation.parents.0.medicalHistory.{idx}.meddraVersion"
@@ -578,7 +555,7 @@ pub(crate) fn apply_ich_rules(
 			}
 			if meddra_version_present && !meddra_code_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.7.1.r.1b.REQUIRED",
 					format!(
 						"patientInformation.parents.0.medicalHistory.{idx}.meddraCode"
@@ -596,7 +573,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(past_drug.mpid_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.8.r.2a.REQUIRED",
 					format!(
 						"patientInformation.parents.0.pastDrugs.{idx}.mpidVersion"
@@ -607,7 +584,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(past_drug.phpid_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.8.r.3a.REQUIRED",
 					format!(
 						"patientInformation.parents.0.pastDrugs.{idx}.phpidVersion"
@@ -620,7 +597,7 @@ pub(crate) fn apply_ich_rules(
 				has_text(past_drug.indication_meddra_version.as_deref());
 			if indication_code_present && !indication_version_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.8.r.6a.REQUIRED",
 					format!(
 						"patientInformation.parents.0.pastDrugs.{idx}.indicationMeddraVersion"
@@ -629,7 +606,7 @@ pub(crate) fn apply_ich_rules(
 			}
 			if indication_version_present && !indication_code_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.8.r.6b.REQUIRED",
 					format!(
 						"patientInformation.parents.0.pastDrugs.{idx}.indicationMeddraCode"
@@ -642,7 +619,7 @@ pub(crate) fn apply_ich_rules(
 				has_text(past_drug.reaction_meddra_version.as_deref());
 			if reaction_code_present && !reaction_version_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.8.r.7a.REQUIRED",
 					format!(
 						"patientInformation.parents.0.pastDrugs.{idx}.reactionMeddraVersion"
@@ -651,7 +628,7 @@ pub(crate) fn apply_ich_rules(
 			}
 			if reaction_version_present && !reaction_code_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.8.r.7b.REQUIRED",
 					format!(
 						"patientInformation.parents.0.pastDrugs.{idx}.reactionMeddraCode"
@@ -662,21 +639,26 @@ pub(crate) fn apply_ich_rules(
 				&& has_text(past_drug.phpid.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
 					format!("patientInformation.parents.0.pastDrugs.{idx}.mpid"),
 				);
 			}
 		});
+}
 
+pub(crate) fn collect_e_issues(
+	validation_ctx: &ValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
 	if validation_ctx.reactions.is_empty() {
 		push_issue_by_code(
-			&mut issues,
+			issues,
 			"ICH.E.i.1.1a.REQUIRED",
 			"reactions.0.primarySourceReaction",
 		);
 		push_issue_by_code(
-			&mut issues,
+			issues,
 			"ICH.E.i.7.REQUIRED",
 			"reactions.0.reactionOutcome",
 		);
@@ -688,7 +670,7 @@ pub(crate) fn apply_ich_rules(
 		.enumerate()
 		.for_each(|(idx, reaction)| {
 			let _ = push_issue_if_rule_invalid(
-				&mut issues,
+				issues,
 				"ICH.E.i.1.1a.REQUIRED",
 				format!("reactions.{idx}.primarySourceReaction"),
 				Some(reaction.primary_source_reaction.as_str()),
@@ -696,7 +678,7 @@ pub(crate) fn apply_ich_rules(
 				RuleFacts::default(),
 			);
 			let _ = push_issue_if_rule_invalid(
-				&mut issues,
+				issues,
 				"ICH.E.i.7.REQUIRED",
 				format!("reactions.{idx}.reactionOutcome"),
 				reaction.outcome.as_deref(),
@@ -707,14 +689,14 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(reaction.reaction_meddra_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.E.i.2.1a.REQUIRED",
 					format!("reactions.{idx}.reactionMeddraVersion"),
 				);
 			}
 			if !has_text(reaction.reaction_meddra_code.as_deref()) {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.E.i.2.1b.REQUIRED",
 					format!("reactions.{idx}.reactionMeddraCode"),
 				);
@@ -723,21 +705,21 @@ pub(crate) fn apply_ich_rules(
 			let duration_unit_present = has_text(reaction.duration_unit.as_deref());
 			if duration_unit_present && !duration_value_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.E.i.6a.REQUIRED",
 					format!("reactions.{idx}.durationValue"),
 				);
 			}
 			if duration_value_present && !duration_unit_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.E.i.6b.REQUIRED",
 					format!("reactions.{idx}.durationUnit"),
 				);
 			}
 			if has_text(Some(reaction.primary_source_reaction.as_str())) {
 				let _ = push_issue_if_rule_invalid(
-					&mut issues,
+					issues,
 					"ICH.E.i.1.1b.REQUIRED",
 					format!("reactions.{idx}.reactionLanguage"),
 					reaction.reaction_language.as_deref(),
@@ -746,7 +728,12 @@ pub(crate) fn apply_ich_rules(
 				);
 			}
 		});
+}
 
+pub(crate) fn collect_f_issues(
+	validation_ctx: &ValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
 	validation_ctx
 		.tests
 		.iter()
@@ -754,7 +741,7 @@ pub(crate) fn apply_ich_rules(
 		.for_each(|(idx, test)| {
 			let has_payload = has_test_payload(test);
 			let _ = push_issue_if_conditioned_value_invalid(
-				&mut issues,
+				issues,
 				"ICH.F.r.2.REQUIRED",
 				"ICH.F.r.2.REQUIRED",
 				"ICH.F.r.2.REQUIRED",
@@ -782,35 +769,35 @@ pub(crate) fn apply_ich_rules(
 				has_text(test.result_unstructured.as_deref());
 			if free_text_present && !test_date_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.F.r.1.REQUIRED",
 					format!("testResults.{idx}.testDate"),
 				);
 			}
 			if test_date_present && !meddra_code_present && !free_text_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.F.r.2.1.REQUIRED",
 					format!("testResults.{idx}.testName"),
 				);
 			}
 			if meddra_code_present && !meddra_version_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.F.r.2.2a.REQUIRED",
 					format!("testResults.{idx}.testMeddraVersion"),
 				);
 			}
 			if test_date_present && !free_text_present && !meddra_code_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.F.r.2.2b.REQUIRED",
 					format!("testResults.{idx}.testMeddraCode"),
 				);
 			}
 			if test_result_value_present && !test_result_unit_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.F.r.3.3.REQUIRED",
 					format!("testResults.{idx}.testResultUnit"),
 				);
@@ -821,31 +808,36 @@ pub(crate) fn apply_ich_rules(
 				&& !result_unstructured_present
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.F.r.3.1.REQUIRED",
 					format!("testResults.{idx}.testResultCode"),
 				);
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.F.r.3.2.REQUIRED",
 					format!("testResults.{idx}.testResultValue"),
 				);
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.F.r.3.4.REQUIRED",
 					format!("testResults.{idx}.resultUnstructured"),
 				);
 			}
 		});
+}
 
+pub(crate) fn collect_g_issues(
+	validation_ctx: &ValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
 	if validation_ctx.drugs.is_empty() {
 		push_issue_by_code(
-			&mut issues,
+			issues,
 			"ICH.G.k.1.REQUIRED",
 			"drugs.0.drugCharacterization",
 		);
 		push_issue_by_code(
-			&mut issues,
+			issues,
 			"ICH.G.k.2.2.REQUIRED",
 			"drugs.0.medicinalProduct",
 		);
@@ -857,7 +849,7 @@ pub(crate) fn apply_ich_rules(
 		.enumerate()
 		.for_each(|(idx, drug)| {
 			let _ = push_issue_if_rule_invalid(
-				&mut issues,
+				issues,
 				"ICH.G.k.1.REQUIRED",
 				format!("drugs.{idx}.drugCharacterization"),
 				Some(drug.drug_characterization.as_str()),
@@ -865,7 +857,7 @@ pub(crate) fn apply_ich_rules(
 				RuleFacts::default(),
 			);
 			let _ = push_issue_if_rule_invalid(
-				&mut issues,
+				issues,
 				"ICH.G.k.2.2.REQUIRED",
 				format!("drugs.{idx}.medicinalProduct"),
 				Some(drug.medicinal_product.as_str()),
@@ -876,7 +868,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(drug.mpid_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.2.1.1a.REQUIRED",
 					format!("drugs.{idx}.mpidVersion"),
 				);
@@ -885,7 +877,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(drug.phpid_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.2.1.2a.REQUIRED",
 					format!("drugs.{idx}.phpidVersion"),
 				);
@@ -896,14 +888,14 @@ pub(crate) fn apply_ich_rules(
 				has_text(drug.cumulative_dose_first_reaction_unit.as_deref());
 			if cumulative_unit_present && !cumulative_value_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.5a.REQUIRED",
 					format!("drugs.{idx}.cumulativeDoseFirstReactionValue"),
 				);
 			}
 			if cumulative_value_present && !cumulative_unit_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.5b.REQUIRED",
 					format!("drugs.{idx}.cumulativeDoseFirstReactionUnit"),
 				);
@@ -914,14 +906,14 @@ pub(crate) fn apply_ich_rules(
 				has_text(drug.gestation_period_exposure_unit.as_deref());
 			if gestation_unit_present && !gestation_value_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.6a.REQUIRED",
 					format!("drugs.{idx}.gestationPeriodExposureValue"),
 				);
 			}
 			if gestation_value_present && !gestation_unit_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.6b.REQUIRED",
 					format!("drugs.{idx}.gestationPeriodExposureUnit"),
 				);
@@ -937,7 +929,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(substance.substance_name.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.2.3.r.1.REQUIRED",
 					format!("drugs.0.activeSubstances.{idx}.substanceName"),
 				);
@@ -946,7 +938,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(substance.substance_termid_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.2.3.r.2a.REQUIRED",
 					format!("drugs.0.activeSubstances.{idx}.substanceTermIdVersion"),
 				);
@@ -955,7 +947,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(substance.strength_unit.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.2.3.r.3b.REQUIRED",
 					format!("drugs.0.activeSubstances.{idx}.strengthUnit"),
 				);
@@ -970,7 +962,7 @@ pub(crate) fn apply_ich_rules(
 			if dosage.dose_value.is_some() && !has_text(dosage.dose_unit.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.4.r.1b.REQUIRED",
 					format!("drugs.0.dosages.{idx}.doseUnit"),
 				);
@@ -979,7 +971,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(dosage.frequency_unit.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.4.r.3.REQUIRED",
 					format!("drugs.0.dosages.{idx}.frequencyUnit"),
 				);
@@ -988,14 +980,14 @@ pub(crate) fn apply_ich_rules(
 			let duration_unit_present = has_text(dosage.duration_unit.as_deref());
 			if duration_unit_present && !duration_value_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.4.r.6a.REQUIRED",
 					format!("drugs.0.dosages.{idx}.durationValue"),
 				);
 			}
 			if duration_value_present && !duration_unit_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.4.r.6b.REQUIRED",
 					format!("drugs.0.dosages.{idx}.durationUnit"),
 				);
@@ -1004,7 +996,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(dosage.dose_form_termid_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.4.r.9.2a.REQUIRED",
 					format!("drugs.0.dosages.{idx}.doseFormTermIdVersion"),
 				);
@@ -1013,7 +1005,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(dosage.route_termid_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.4.r.10.2a.REQUIRED",
 					format!("drugs.0.dosages.{idx}.routeTermIdVersion"),
 				);
@@ -1022,7 +1014,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(dosage.parent_route_termid_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.4.r.11.2a.REQUIRED",
 					format!("drugs.0.dosages.{idx}.parentRouteTermIdVersion"),
 				);
@@ -1040,14 +1032,14 @@ pub(crate) fn apply_ich_rules(
 				has_text(indication.indication_meddra_version.as_deref());
 			if meddra_code_present && !meddra_version_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.7.r.2a.REQUIRED",
 					format!("drugs.0.indications.{idx}.indicationMeddraVersion"),
 				);
 			}
 			if meddra_version_present && !meddra_code_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.7.r.2b.REQUIRED",
 					format!("drugs.0.indications.{idx}.indicationMeddraCode"),
 				);
@@ -1065,7 +1057,7 @@ pub(crate) fn apply_ich_rules(
 				has_text(assessment.administration_start_interval_unit.as_deref());
 			if admin_unit_present && !admin_value_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.9.i.3.1a.REQUIRED",
 					format!(
 						"drugs.0.reactionAssessments.{idx}.administrationStartIntervalValue"
@@ -1074,7 +1066,7 @@ pub(crate) fn apply_ich_rules(
 			}
 			if admin_value_present && !admin_unit_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.9.i.3.1b.REQUIRED",
 					format!(
 						"drugs.0.reactionAssessments.{idx}.administrationStartIntervalUnit"
@@ -1087,7 +1079,7 @@ pub(crate) fn apply_ich_rules(
 				has_text(assessment.last_dose_interval_unit.as_deref());
 			if last_dose_unit_present && !last_dose_value_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.9.i.3.2a.REQUIRED",
 					format!(
 						"drugs.0.reactionAssessments.{idx}.lastDoseIntervalValue"
@@ -1096,7 +1088,7 @@ pub(crate) fn apply_ich_rules(
 			}
 			if last_dose_value_present && !last_dose_unit_present {
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.G.k.9.i.3.2b.REQUIRED",
 					format!(
 						"drugs.0.reactionAssessments.{idx}.lastDoseIntervalUnit"
@@ -1104,19 +1096,20 @@ pub(crate) fn apply_ich_rules(
 				);
 			}
 		});
+}
 
+pub(crate) fn collect_h_issues(
+	validation_ctx: &ValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
 	if validation_ctx.narrative.is_none() {
-		push_issue_by_code(
-			&mut issues,
-			"ICH.H.1.REQUIRED",
-			"narrative.caseNarrative",
-		);
+		push_issue_by_code(issues, "ICH.H.1.REQUIRED", "narrative.caseNarrative");
 	}
 
 	if let Some(narrative) = validation_ctx.narrative.as_ref() {
 		if should_require_case_narrative(narrative) {
 			let _ = push_issue_if_rule_invalid(
-				&mut issues,
+				issues,
 				"ICH.H.1.REQUIRED",
 				"narrative.caseNarrative",
 				Some(narrative.case_narrative.as_str()),
@@ -1132,7 +1125,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(diagnosis.diagnosis_meddra_version.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.H.3.r.1a.REQUIRED",
 					format!(
 						"narrative.senderDiagnoses.{idx}.diagnosisMeddraVersion"
@@ -1143,7 +1136,7 @@ pub(crate) fn apply_ich_rules(
 				&& !has_text(diagnosis.diagnosis_meddra_code.as_deref())
 			{
 				push_issue_by_code(
-					&mut issues,
+					issues,
 					"ICH.H.3.r.1b.REQUIRED",
 					format!("narrative.senderDiagnoses.{idx}.diagnosisMeddraCode"),
 				);
@@ -1158,7 +1151,7 @@ pub(crate) fn apply_ich_rules(
 		.for_each(|(idx, summary)| {
 			if has_text(summary.summary_type.as_deref()) {
 				let _ = push_issue_if_rule_invalid(
-					&mut issues,
+					issues,
 					"ICH.H.5.r.1b.REQUIRED",
 					format!("narrative.caseSummaries.{idx}.languageCode"),
 					summary.language_code.as_deref(),
@@ -1167,8 +1160,69 @@ pub(crate) fn apply_ich_rules(
 				);
 			}
 		});
+}
 
-	issues
+pub(crate) fn collect_n_issues(
+	validation_ctx: &ValidationContext,
+	issues: &mut Vec<ValidationIssue>,
+) {
+	if validation_ctx.message_header.is_none() {
+		push_issue_by_code(issues, "ICH.N.REQUIRED", "messageHeader");
+	}
+	if let Some(header) = validation_ctx.message_header.as_ref() {
+		let _ = push_issue_if_rule_invalid(
+			issues,
+			"ICH.N.1.2.REQUIRED",
+			"messageHeader.batchNumber",
+			header.batch_number.as_deref(),
+			None,
+			RuleFacts::default(),
+		);
+		let _ = push_issue_if_rule_invalid(
+			issues,
+			"ICH.N.1.3.REQUIRED",
+			"messageHeader.batchSenderIdentifier",
+			header.batch_sender_identifier.as_deref(),
+			None,
+			RuleFacts::default(),
+		);
+		let _ = push_issue_if_rule_invalid(
+			issues,
+			"ICH.N.1.4.REQUIRED",
+			"messageHeader.batchReceiverIdentifier",
+			header.batch_receiver_identifier.as_deref(),
+			None,
+			RuleFacts::default(),
+		);
+		let _ = push_issue_if_rule_invalid(
+			issues,
+			"ICH.N.1.5.REQUIRED",
+			"messageHeader.batchTransmissionDate",
+			if header.batch_transmission_date.is_some() {
+				Some("1")
+			} else {
+				None
+			},
+			None,
+			RuleFacts::default(),
+		);
+		let _ = push_issue_if_rule_invalid(
+			issues,
+			"ICH.N.2.r.2.REQUIRED",
+			"messageHeader.messageSenderIdentifier",
+			Some(header.message_sender_identifier.as_str()),
+			None,
+			RuleFacts::default(),
+		);
+		let _ = push_issue_if_rule_invalid(
+			issues,
+			"ICH.N.2.r.3.REQUIRED",
+			"messageHeader.messageReceiverIdentifier",
+			Some(header.message_receiver_identifier.as_str()),
+			None,
+			RuleFacts::default(),
+		);
+	}
 }
 
 #[cfg(test)]
@@ -1198,7 +1252,7 @@ mod tests {
 		SenderInformation, StudyInformation,
 	};
 	use crate::model::test_result::TestResult;
-	use crate::xml::validate::ValidationContext;
+	use crate::validation::ValidationContext;
 	use rust_decimal::Decimal;
 	use sqlx::types::time::{Date, OffsetDateTime};
 	use sqlx::types::Uuid;
@@ -1818,10 +1872,7 @@ mod tests {
 		assert_has_issue(&issues, "ICH.G.k.7.r.2b.REQUIRED");
 	}
 
-	fn assert_has_issue(
-		issues: &[crate::xml::validate::ValidationIssue],
-		code: &str,
-	) {
+	fn assert_has_issue(issues: &[crate::validation::ValidationIssue], code: &str) {
 		assert!(
 			issues.iter().any(|issue| issue.code == code),
 			"expected issue {code}, got {:?}",
@@ -1907,6 +1958,8 @@ mod tests {
 			status: "draft".to_string(),
 			validation_profile: Some("ich".to_string()),
 			appendices_json: None,
+			review_receivers_json: None,
+			workflow_routes_json: None,
 			mfds_report_type: None,
 			report_year: None,
 			source_document_name: None,
@@ -1933,14 +1986,19 @@ mod tests {
 		SafetyReportIdentification {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
-			transmission_date: sample_date(),
+			transmission_date: Some(sample_date()),
+			transmission_date_null_flavor: None,
 			report_type: "1".to_string(),
-			date_first_received_from_source: sample_date(),
-			date_of_most_recent_information: sample_date(),
+			date_first_received_from_source: Some(sample_date()),
+			date_first_received_from_source_null_flavor: None,
+			date_of_most_recent_information: Some(sample_date()),
+			date_of_most_recent_information_null_flavor: None,
 			fulfil_expedited_criteria: true,
 			local_criteria_report_type: None,
 			combination_product_report_indicator: None,
 			worldwide_unique_id: None,
+			first_sender_type: None,
+			additional_documents_available: None,
 			nullification_code: None,
 			nullification_reason: None,
 			receiver_organization: None,
@@ -2028,9 +2086,14 @@ mod tests {
 			weight_kg: None,
 			height_cm: None,
 			sex: Some("1".to_string()),
+			patient_initials_null_flavor: None,
+			birth_date_null_flavor: None,
+			age_at_time_of_onset_null_flavor: None,
+			sex_null_flavor: None,
 			race_code: None,
 			ethnicity_code: None,
 			last_menstrual_period_date: None,
+			last_menstrual_period_date_null_flavor: None,
 			medical_history_text: None,
 			concomitant_therapy: None,
 			created_at: now,
@@ -2132,14 +2195,22 @@ mod tests {
 			term_highlighted: None,
 			serious: None,
 			criteria_death: false,
+			criteria_death_null_flavor: None,
 			criteria_life_threatening: false,
+			criteria_life_threatening_null_flavor: None,
 			criteria_hospitalization: false,
+			criteria_hospitalization_null_flavor: None,
 			criteria_disabling: false,
+			criteria_disabling_null_flavor: None,
 			criteria_congenital_anomaly: false,
+			criteria_congenital_anomaly_null_flavor: None,
 			criteria_other_medically_important: false,
+			criteria_other_medically_important_null_flavor: None,
 			required_intervention: None,
 			start_date: None,
+			start_date_null_flavor: None,
 			end_date: None,
+			end_date_null_flavor: None,
 			duration_value: None,
 			duration_unit: None,
 			outcome: Some("1".to_string()),
@@ -2175,6 +2246,7 @@ mod tests {
 			case_id: Uuid::nil(),
 			sequence_number: 1,
 			test_date: None,
+			test_date_null_flavor: None,
 			test_name: "ALT".to_string(),
 			test_meddra_version: None,
 			test_meddra_code: None,
@@ -2202,8 +2274,10 @@ mod tests {
 			meddra_version: None,
 			meddra_code: None,
 			start_date: None,
+			start_date_null_flavor: None,
 			continuing: None,
 			end_date: None,
+			end_date_null_flavor: None,
 			comments: None,
 			family_history: None,
 			created_at: now,
@@ -2220,12 +2294,15 @@ mod tests {
 			patient_id: Uuid::nil(),
 			sequence_number: 1,
 			drug_name: Some("Past Drug".to_string()),
+			drug_name_null_flavor: None,
 			mpid: None,
 			mpid_version: None,
 			phpid: None,
 			phpid_version: None,
 			start_date: None,
+			start_date_null_flavor: None,
 			end_date: None,
+			end_date_null_flavor: None,
 			indication_meddra_version: None,
 			indication_meddra_code: None,
 			reaction_meddra_version: None,
@@ -2243,6 +2320,7 @@ mod tests {
 			id: Uuid::nil(),
 			patient_id: Uuid::nil(),
 			date_of_death: Some(sample_date()),
+			date_of_death_null_flavor: None,
 			autopsy_performed: Some(true),
 			created_at: now,
 			updated_at: now,
@@ -2290,9 +2368,12 @@ mod tests {
 			patient_id: Uuid::nil(),
 			parent_identification: None,
 			parent_birth_date: None,
+			parent_birth_date_null_flavor: None,
 			parent_age: None,
+			parent_age_null_flavor: None,
 			parent_age_unit: None,
 			last_menstrual_period_date: None,
+			last_menstrual_period_date_null_flavor: None,
 			weight_kg: None,
 			height_cm: None,
 			sex: Some("2".to_string()),
@@ -2313,8 +2394,10 @@ mod tests {
 			meddra_version: None,
 			meddra_code: None,
 			start_date: None,
+			start_date_null_flavor: None,
 			continuing: None,
 			end_date: None,
+			end_date_null_flavor: None,
 			comments: None,
 			created_at: now,
 			updated_at: now,
@@ -2330,12 +2413,15 @@ mod tests {
 			parent_id: Uuid::nil(),
 			sequence_number: 1,
 			drug_name: Some("Parent Past Drug".to_string()),
+			drug_name_null_flavor: None,
 			mpid: None,
 			mpid_version: None,
 			phpid: None,
 			phpid_version: None,
 			start_date: None,
+			start_date_null_flavor: None,
 			end_date: None,
+			end_date_null_flavor: None,
 			indication_meddra_version: None,
 			indication_meddra_code: None,
 			reaction_meddra_version: None,
@@ -2362,6 +2448,8 @@ mod tests {
 			investigational_product_blinded: None,
 			obtain_drug_country: None,
 			brand_name: None,
+			drug_generic_name: None,
+			drug_authorization_number: None,
 			manufacturer_name: None,
 			manufacturer_country: None,
 			batch_lot_number: None,

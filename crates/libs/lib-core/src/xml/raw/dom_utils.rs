@@ -4,7 +4,7 @@ use libxml::parser::Parser;
 use libxml::tree::{Document, Node, NodeType};
 use libxml::xpath::Context;
 
-pub(super) fn append_fragment_child(
+pub(crate) fn append_fragment_child(
 	doc: &mut Document,
 	parser: &Parser,
 	xpath: &mut Context,
@@ -37,7 +37,7 @@ pub(super) fn append_fragment_child(
 	Ok(())
 }
 
-pub(super) fn remove_nodes(xpath: &mut Context, path: &str) {
+pub(crate) fn remove_nodes(xpath: &mut Context, path: &str) {
 	if let Ok(nodes) = xpath.findnodes(path, None) {
 		for mut node in nodes {
 			node.unlink_node();
@@ -87,7 +87,7 @@ fn wrap_fragment(fragment: &str, ns: &str) -> String {
 	)
 }
 
-pub(super) fn set_attr_first(
+pub(crate) fn set_attr_first(
 	xpath: &mut Context,
 	path: &str,
 	attr: &str,
@@ -100,7 +100,7 @@ pub(super) fn set_attr_first(
 	}
 }
 
-pub(super) fn set_text_first(xpath: &mut Context, path: &str, value: &str) {
+pub(crate) fn set_text_first(xpath: &mut Context, path: &str, value: &str) {
 	if let Ok(nodes) = xpath.findnodes(path, None) {
 		if let Some(mut node) = nodes.into_iter().next() {
 			let _ = node.set_content(value);
@@ -108,7 +108,7 @@ pub(super) fn set_text_first(xpath: &mut Context, path: &str, value: &str) {
 	}
 }
 
-pub(super) fn remove_attr_first(xpath: &mut Context, path: &str, attr: &str) {
+pub(crate) fn remove_attr_first(xpath: &mut Context, path: &str, attr: &str) {
 	if let Ok(nodes) = xpath.findnodes(path, None) {
 		if let Some(mut node) = nodes.into_iter().next() {
 			let _ = node.remove_attribute(attr);

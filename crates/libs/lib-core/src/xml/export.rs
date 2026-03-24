@@ -2,11 +2,16 @@ use crate::ctx::Ctx;
 use crate::model::case::CaseBmc;
 use crate::model::ModelManager;
 use crate::xml::error::Error;
-use crate::xml::export_adapters::{
-	apply_dirty_sections_from_db, try_fast_path_export, try_fresh_section_export,
+use crate::xml::export::mode::{
+	apply_dirty_sections_from_db, apply_section_postprocess, try_fast_path_export,
+	try_fresh_section_export,
 };
-use crate::xml::export_runtime::apply_section_postprocess;
 use crate::xml::Result;
+
+pub(crate) mod mode;
+pub mod roundtrip;
+pub mod sections;
+pub(crate) mod shared;
 
 pub async fn export_case_xml(
 	ctx: &Ctx,

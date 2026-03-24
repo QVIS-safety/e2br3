@@ -12,6 +12,7 @@ use lib_core::model::narrative::{
 use lib_core::xml::export_case_xml;
 use libxml::parser::Parser;
 use libxml::xpath::Context;
+use serial_test::serial;
 
 async fn create_validated_raw_xml_case(
 	raw_xml: &str,
@@ -115,8 +116,8 @@ fn replace_first_required_intervention_value(
 }
 
 #[tokio::test]
+#[serial]
 async fn fda_c_1_12_required_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_C", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"<value xsi:type=\"BL\" value=\"false\"/>",
 		"<value xsi:type=\"BL\" value=\"false\" nullFlavor=\"NI\"/>",
@@ -149,8 +150,8 @@ async fn fda_c_1_12_required_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn fda_c_1_12_required_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_C", "1");
 	let raw_xml = export_base_xml()?;
 	let (ctx, mm, case_id) =
 		create_validated_raw_xml_case(&raw_xml, true, false).await?;
@@ -172,8 +173,8 @@ async fn fda_c_1_12_required_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn fda_c_1_7_1_required_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_C", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"<value xsi:type=\"CE\" code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.5.1.2.2.1.1.1\" displayName=\"15-Day\"/>",
 		"<value xsi:type=\"CE\" code=\"1\" codeSystem=\"2.16.840.1.113883.3.989.5.1.2.2.1.1.1\" displayName=\"15-Day\" nullFlavor=\"NI\"/>",
@@ -206,8 +207,8 @@ async fn fda_c_1_7_1_required_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn fda_c_1_7_1_required_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_C", "1");
 	let raw_xml = export_base_xml()?;
 	let (ctx, mm, case_id) =
 		create_validated_raw_xml_case(&raw_xml, true, false).await?;
@@ -229,8 +230,8 @@ async fn fda_c_1_7_1_required_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn fda_e_i_3_2h_required_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = replace_first_required_intervention_value(
 		&export_base_xml()?,
 		"<value xsi:type=\"BL\"/>",
@@ -259,8 +260,8 @@ async fn fda_e_i_3_2h_required_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn fda_e_i_3_2h_required_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = replace_first_required_intervention_value(
 		&export_base_xml()?,
 		"<value xsi:type=\"BL\" value=\"true\" nullFlavor=\"NI\"/>",

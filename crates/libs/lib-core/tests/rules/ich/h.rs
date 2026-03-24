@@ -12,7 +12,7 @@ use lib_core::model::narrative::{
 	NarrativeInformationForCreate, NarrativeInformationForUpdate,
 	SenderDiagnosisBmc, SenderDiagnosisForCreate, SenderDiagnosisForUpdate,
 };
-use lib_core::xml::validate::ValidationProfile;
+use lib_core::validation::ValidationProfile;
 use serial_test::serial;
 use sqlx::types::Uuid;
 

@@ -6,8 +6,9 @@ use lib_core::model::acs::CASE_READ;
 use lib_core::model::case::CaseBmc;
 use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::ModelManager;
-use lib_core::xml::validate::{
-	validate_case_for_profile, CaseValidationReport, ValidationProfile,
+use lib_core::validation::{
+	infer_regulatory_authority_from_receivers, validate_case_for_profile,
+	CaseValidationReport, ValidationProfile,
 };
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -88,21 +89,16 @@ async fn resolve_profile(
 			Err(err) => return Err(err.into()),
 		};
 
-	let inferred = header
-		.as_ref()
-		.and_then(|h| h.batch_receiver_identifier.as_deref())
-		.map(|v| v.trim().to_ascii_uppercase());
+	let authority = infer_regulatory_authority_from_receivers(
+		header
+			.as_ref()
+			.and_then(|h| h.batch_receiver_identifier.as_deref()),
+		header
+			.as_ref()
+			.map(|h| h.message_receiver_identifier.as_str()),
+	);
 
-	let is_mfds = inferred
-		.as_deref()
-		.map(|value| value.contains("MFDS"))
-		.unwrap_or(false);
-
-	Ok(if is_mfds {
-		ValidationProfile::Mfds
-	} else {
-		ValidationProfile::Fda
-	})
+	Ok(authority.to_validation_profile())
 }
 
 async fn resolve_profiles(

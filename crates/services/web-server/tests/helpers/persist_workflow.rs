@@ -130,6 +130,7 @@ pub async fn save_case(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {
 	Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn set_case_status(
 	ctx: &PersistTestCtx,
 	case_id: Uuid,

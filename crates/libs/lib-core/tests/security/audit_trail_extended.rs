@@ -39,6 +39,7 @@ async fn test_audit_trail_drug_information() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Audit Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 	assert_eq!(
@@ -51,6 +52,8 @@ async fn test_audit_trail_drug_information() -> Result<()> {
 		medicinal_product: Some("Updated Audit Drug".to_string()),
 		drug_characterization: None,
 		brand_name: None,
+		drug_generic_name: None,
+		drug_authorization_number: None,
 		manufacturer_name: None,
 		manufacturer_country: None,
 		batch_lot_number: None,
@@ -173,7 +176,9 @@ async fn test_audit_trail_reactions() -> Result<()> {
 		required_intervention: None,
 		country_code: None,
 		start_date: None,
+		start_date_null_flavor: None,
 		end_date: None,
+		end_date_null_flavor: None,
 		duration_value: None,
 		duration_unit: None,
 		medical_confirmation: None,
@@ -239,7 +244,9 @@ async fn test_audit_trail_patient_information() -> Result<()> {
 		patient_given_name: None,
 		patient_family_name: None,
 		birth_date: None,
+		birth_date_null_flavor: None,
 		age_at_time_of_onset: None,
+		age_at_time_of_onset_null_flavor: None,
 		age_unit: None,
 		gestation_period: None,
 		gestation_period_unit: None,
@@ -249,7 +256,10 @@ async fn test_audit_trail_patient_information() -> Result<()> {
 		weight_kg: None,
 		height_cm: None,
 		sex: None,
+		patient_initials_null_flavor: None,
+		sex_null_flavor: None,
 		last_menstrual_period_date: None,
+		last_menstrual_period_date_null_flavor: None,
 		medical_history_text: Some("Test history".to_string()),
 		concomitant_therapy: None,
 	};
@@ -450,6 +460,7 @@ async fn test_audit_log_list_all() -> Result<()> {
 			sequence_number: i,
 			drug_characterization: "1".to_string(),
 			medicinal_product: format!("Query Test Drug {i}"),
+			drug_generic_name: None,
 		};
 		let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 		drug_ids.push(drug_id);
@@ -525,7 +536,9 @@ async fn test_audit_log_chronological_order() -> Result<()> {
 		required_intervention: None,
 		country_code: None,
 		start_date: None,
+		start_date_null_flavor: None,
 		end_date: None,
+		end_date_null_flavor: None,
 		duration_value: None,
 		duration_unit: None,
 		medical_confirmation: None,
@@ -651,6 +664,7 @@ async fn test_audit_log_captures_all_changed_fields() -> Result<()> {
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Field Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -659,6 +673,8 @@ async fn test_audit_log_captures_all_changed_fields() -> Result<()> {
 		medicinal_product: Some("Updated Product".to_string()),
 		drug_characterization: Some("2".to_string()),
 		brand_name: Some("Test Brand".to_string()),
+		drug_generic_name: None,
+		drug_authorization_number: None,
 		manufacturer_name: Some("Test Manufacturer".to_string()),
 		manufacturer_country: None,
 		batch_lot_number: None,

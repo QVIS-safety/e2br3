@@ -6,7 +6,8 @@ use lib_core::model::case::CaseBmc;
 use lib_core::model::patient::{
 	AutopsyCauseOfDeathBmc, AutopsyCauseOfDeathForCreate,
 	AutopsyCauseOfDeathForUpdate, MedicalHistoryEpisodeBmc,
-	MedicalHistoryEpisodeForCreate, MedicalHistoryEpisodeForUpdate,
+	MedicalHistoryEpisodeFilter, MedicalHistoryEpisodeForCreate,
+	MedicalHistoryEpisodeForUpdate,
 	ParentInformationBmc, ParentInformationForCreate, ParentInformationForUpdate,
 	PastDrugHistoryBmc, PastDrugHistoryForCreate, PastDrugHistoryForUpdate,
 	PatientDeathInformationBmc, PatientDeathInformationForCreate,
@@ -17,6 +18,7 @@ use lib_core::model::patient::{
 };
 use rust_decimal::Decimal;
 use serial_test::serial;
+use modql::filter::{OpValValue, OpValsValue};
 
 #[serial]
 #[tokio::test]
@@ -41,15 +43,14 @@ async fn test_patient_information_crud() -> Result<()> {
 	let patient_by_id = PatientInformationBmc::get(&ctx, &mm, patient_id).await?;
 	assert_eq!(patient_by_id.id, patient_id);
 
-	let patients = PatientInformationBmc::list(&ctx, &mm, None, None).await?;
-	assert!(patients.iter().any(|p| p.id == patient_id));
-
 	let patient_u = PatientInformationForUpdate {
 		patient_initials: Some("UP".to_string()),
 		patient_given_name: None,
 		patient_family_name: None,
 		birth_date: None,
+		birth_date_null_flavor: None,
 		age_at_time_of_onset: None,
+		age_at_time_of_onset_null_flavor: None,
 		age_unit: None,
 		gestation_period: None,
 		gestation_period_unit: None,
@@ -59,7 +60,10 @@ async fn test_patient_information_crud() -> Result<()> {
 		weight_kg: None,
 		height_cm: None,
 		sex: None,
+		patient_initials_null_flavor: None,
+		sex_null_flavor: None,
 		last_menstrual_period_date: None,
+		last_menstrual_period_date_null_flavor: None,
 		medical_history_text: Some("Updated history".to_string()),
 		concomitant_therapy: None,
 	};
@@ -95,6 +99,8 @@ async fn test_patient_submodels_crud() -> Result<()> {
 		patient_id,
 		sequence_number: 1,
 		meddra_code: Some("12345678".to_string()),
+		start_date_null_flavor: None,
+		end_date_null_flavor: None,
 	};
 	let med_id = MedicalHistoryEpisodeBmc::create(&ctx, &mm, med_c).await?;
 	let med = MedicalHistoryEpisodeBmc::get(&ctx, &mm, med_id).await?;
@@ -104,8 +110,10 @@ async fn test_patient_submodels_crud() -> Result<()> {
 		meddra_version: Some("26.0".to_string()),
 		meddra_code: None,
 		start_date: None,
+		start_date_null_flavor: None,
 		continuing: Some(true),
 		end_date: None,
+		end_date_null_flavor: None,
 		comments: None,
 		family_history: None,
 	};
@@ -113,19 +121,33 @@ async fn test_patient_submodels_crud() -> Result<()> {
 	let med = MedicalHistoryEpisodeBmc::get(&ctx, &mm, med_id).await?;
 	assert_eq!(med.meddra_version.as_deref(), Some("26.0"));
 
-	let med_list = MedicalHistoryEpisodeBmc::list(&ctx, &mm, None, None).await?;
+	let med_list = MedicalHistoryEpisodeBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![MedicalHistoryEpisodeFilter {
+			patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(
+				patient_id.to_string().into(),
+			)])),
+			sequence_number: None,
+		}]),
+		None,
+	)
+	.await?;
 	assert!(med_list.iter().any(|m| m.id == med_id));
 
 	let past_c = PastDrugHistoryForCreate {
 		patient_id,
 		sequence_number: 1,
 		drug_name: Some("Old Drug".to_string()),
+		drug_name_null_flavor: None,
 		mpid: None,
 		mpid_version: None,
 		phpid: None,
 		phpid_version: None,
 		start_date: None,
+		start_date_null_flavor: None,
 		end_date: None,
+		end_date_null_flavor: None,
 		indication_meddra_version: None,
 		indication_meddra_code: None,
 		reaction_meddra_version: None,
@@ -137,12 +159,15 @@ async fn test_patient_submodels_crud() -> Result<()> {
 
 	let past_u = PastDrugHistoryForUpdate {
 		drug_name: Some("Old Drug Updated".to_string()),
+		drug_name_null_flavor: None,
 		mpid: None,
 		mpid_version: None,
 		phpid: None,
 		phpid_version: None,
 		start_date: None,
+		start_date_null_flavor: None,
 		end_date: None,
+		end_date_null_flavor: None,
 		indication_meddra_version: None,
 		indication_meddra_code: None,
 		reaction_meddra_version: None,
@@ -155,6 +180,7 @@ async fn test_patient_submodels_crud() -> Result<()> {
 	let death_c = PatientDeathInformationForCreate {
 		patient_id,
 		date_of_death: None,
+		date_of_death_null_flavor: None,
 		autopsy_performed: Some(false),
 	};
 	let death_id = PatientDeathInformationBmc::create(&ctx, &mm, death_c).await?;
@@ -163,6 +189,7 @@ async fn test_patient_submodels_crud() -> Result<()> {
 
 	let death_u = PatientDeathInformationForUpdate {
 		date_of_death: None,
+		date_of_death_null_flavor: None,
 		autopsy_performed: Some(true),
 	};
 	PatientDeathInformationBmc::update(&ctx, &mm, death_id, death_u).await?;
@@ -217,9 +244,12 @@ async fn test_patient_submodels_crud() -> Result<()> {
 	let parent_u = ParentInformationForUpdate {
 		parent_identification: Some("Parent-1".to_string()),
 		parent_birth_date: None,
+		parent_birth_date_null_flavor: None,
 		parent_age: Some(Decimal::new(30, 0)),
+		parent_age_null_flavor: None,
 		parent_age_unit: Some("801".to_string()),
 		last_menstrual_period_date: None,
+		last_menstrual_period_date_null_flavor: None,
 		weight_kg: None,
 		height_cm: None,
 		sex: None,

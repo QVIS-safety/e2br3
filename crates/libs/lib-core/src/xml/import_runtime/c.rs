@@ -17,7 +17,7 @@ use crate::model::safety_report::{
 };
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::{self, ModelManager};
-use crate::xml::import_runtime::shared;
+use crate::xml::import_runtime::{helpers::c as c_helpers, shared};
 use crate::xml::{error::Error, Result};
 use sqlx::types::Uuid;
 
@@ -153,7 +153,7 @@ async fn import_c_2_sender_information(
 	case_id: Uuid,
 	header: Option<&shared::MessageHeaderExtract>,
 ) -> Result<()> {
-	let Some(sender) = shared::parse_sender_information(xml, header)? else {
+	let Some(sender) = c_helpers::parse_sender_information(xml, header)? else {
 		return Ok(());
 	};
 
@@ -215,7 +215,7 @@ async fn import_c_3_primary_sources(
 	xml: &[u8],
 	case_id: Uuid,
 ) -> Result<()> {
-	let primary_sources = shared::parse_primary_sources(xml)?;
+	let primary_sources = c_helpers::parse_primary_sources(xml)?;
 	if primary_sources.is_empty() {
 		return Ok(());
 	}
@@ -298,7 +298,7 @@ async fn import_c_4_case_identifiers(
 	xml: &[u8],
 	case_id: Uuid,
 ) -> Result<()> {
-	let other_ids = shared::parse_other_case_identifiers(xml)?;
+	let other_ids = c_helpers::parse_other_case_identifiers(xml)?;
 	for (idx, entry) in other_ids.into_iter().enumerate() {
 		let seq = (idx + 1) as i32;
 		let existing: Option<Uuid> = mm
@@ -339,7 +339,7 @@ async fn import_c_4_case_identifiers(
 		}
 	}
 
-	let linked = shared::parse_linked_reports(xml)?;
+	let linked = c_helpers::parse_linked_reports(xml)?;
 	for (idx, entry) in linked.into_iter().enumerate() {
 		let seq = (idx + 1) as i32;
 		let existing: Option<Uuid> = mm
@@ -387,7 +387,7 @@ async fn import_c_4_documents_held_by_sender(
 	xml: &[u8],
 	case_id: Uuid,
 ) -> Result<()> {
-	let documents = shared::parse_documents_held_by_sender(xml)?;
+	let documents = c_helpers::parse_documents_held_by_sender(xml)?;
 	for (idx, doc) in documents.into_iter().enumerate() {
 		let seq = (idx + 1) as i32;
 		let existing: Option<Uuid> = mm
@@ -443,7 +443,7 @@ async fn import_c_4_literature_references(
 	xml: &[u8],
 	case_id: Uuid,
 ) -> Result<()> {
-	let references = shared::parse_literature_references(xml)?;
+	let references = c_helpers::parse_literature_references(xml)?;
 	for (idx, entry) in references.into_iter().enumerate() {
 		let seq = (idx + 1) as i32;
 		let existing: Option<Uuid> = mm
@@ -499,7 +499,7 @@ async fn import_c_5_study_information(
 	xml: &[u8],
 	case_id: Uuid,
 ) -> Result<()> {
-	let Some(study) = shared::parse_study_information(xml)? else {
+	let Some(study) = c_helpers::parse_study_information(xml)? else {
 		return Ok(());
 	};
 
@@ -617,7 +617,7 @@ async fn import_c_6_receiver_information(
 	xml: &[u8],
 	case_id: Uuid,
 ) -> Result<()> {
-	let Some(receiver) = shared::parse_receiver_information(xml)? else {
+	let Some(receiver) = c_helpers::parse_receiver_information(xml)? else {
 		return Ok(());
 	};
 

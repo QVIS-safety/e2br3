@@ -16,14 +16,21 @@ pub struct ImportedCase {
 }
 
 pub async fn import_fixture(name: &str) -> ImportedCase {
-	import_fixture_with_profile(name, Some("fda")).await
+	import_fixture_with_options(name, Some("fda"), true).await
 }
 
 pub async fn import_fixture_with_profile(
 	name: &str,
 	validation_profile: Option<&str>,
 ) -> ImportedCase {
-	std::env::set_var("E2BR3_SKIP_XML_VALIDATE", "1");
+	import_fixture_with_options(name, validation_profile, true).await
+}
+
+pub async fn import_fixture_with_options(
+	name: &str,
+	validation_profile: Option<&str>,
+	skip_validation: bool,
+) -> ImportedCase {
 	let mm = init_test_mm().await;
 	let ctx = demo_ctx();
 	let result = import_e2b_xml(
@@ -33,6 +40,7 @@ pub async fn import_fixture_with_profile(
 			xml: fixture(name),
 			filename: Some(name.to_string()),
 			validation_profile: validation_profile.map(str::to_string),
+			skip_validation,
 		},
 	)
 	.await

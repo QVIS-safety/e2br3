@@ -24,7 +24,9 @@ use lib_core::model::safety_report::{
 use lib_core::model::store::{
 	set_full_context_dbx, set_full_context_dbx_or_rollback,
 };
-use lib_core::xml::validate::{validate_case_for_profile, ValidationProfile};
+use lib_core::validation::{
+	validate_case_for_profile, RegulatoryAuthority, ValidationProfile,
+};
 use lib_core::xml::{export_case_xml, validate_e2b_xml, validate_e2b_xml_business};
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
@@ -384,6 +386,9 @@ pub async fn update_case_guarded(
 			.as_deref()
 			.and_then(ValidationProfile::parse)
 			.unwrap_or(ValidationProfile::Fda);
+		// This validation pass is only for automatic status synchronization.
+		// Field-level issue rendering in the wizard comes from the explicit
+		// validation endpoints after save/review actions.
 		let report = validate_case_for_profile(&ctx, &mm, id, profile).await?;
 		let desired = if report.ok { "validated" } else { "reviewed" };
 		if entity.status.trim().to_ascii_lowercase() != desired {
@@ -1013,20 +1018,15 @@ fn non_empty(input: Option<&str>) -> Option<String> {
 }
 
 fn message_receiver_identifier(profile: ValidationProfile) -> String {
-	match profile {
-		ValidationProfile::Fda => {
-			std::env::var("E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA")
-				.unwrap_or_else(|_| "CDER".to_string())
-		}
-		ValidationProfile::Ich => {
-			std::env::var("E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH")
-				.unwrap_or_else(|_| "ICHTEST".to_string())
-		}
-		ValidationProfile::Mfds => {
-			std::env::var("E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS")
-				.unwrap_or_else(|_| "MFDS".to_string())
-		}
-	}
+	let authority = RegulatoryAuthority::from_validation_profile(profile);
+	let env_name = match authority {
+		RegulatoryAuthority::Fda => "E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA",
+		RegulatoryAuthority::Ich => "E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH",
+		RegulatoryAuthority::Mfds => "E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS",
+	};
+	std::env::var(env_name).unwrap_or_else(|_| {
+		authority.default_message_receiver_identifier().to_string()
+	})
 }
 
 fn format_message_timestamp_utc(now: OffsetDateTime) -> String {
@@ -1160,7 +1160,7 @@ pub async fn create_case_from_intake(
 			})?
 			.as_str()
 			.to_string(),
-		None => "fda".to_string(),
+		None => RegulatoryAuthority::Fda.as_str().to_string(),
 	};
 	let profile_enum =
 		ValidationProfile::parse(&profile).ok_or_else(|| Error::BadRequest {
@@ -1553,15 +1553,30 @@ async fn generate_validated_case_xml(
 				}
 			})?;
 		if !schema_report.ok {
-			let first = schema_report
+			let debug_path =
+				std::env::temp_dir().join(format!("e2br3-export-debug-{id}.xml"));
+			let _ = std::fs::write(&debug_path, &xml);
+			let details = schema_report
 				.errors
-				.first()
-				.map(|e| e.message.clone())
-				.unwrap_or_else(|| "unknown validation error".to_string());
+				.iter()
+				.take(8)
+				.map(|e| match (e.line, e.column) {
+					(Some(line), Some(column)) => {
+						format!("{} [line {}, col {}]", e.message, line, column)
+					}
+					(Some(line), None) => {
+						format!("{} [line {}]", e.message, line)
+					}
+					_ => e.message.clone(),
+				})
+				.collect::<Vec<_>>()
+				.join(" | ");
 			return Err(Error::BadRequest {
 				message: format!(
-					"exported XML failed schema/basic validation ({} issue(s)); first: {first}",
-					schema_report.errors.len()
+					"exported XML failed schema/basic validation ({} issue(s)); details: {}; debug_xml: {}",
+					schema_report.errors.len(),
+					details,
+					debug_path.display()
 				),
 			});
 		}
@@ -1758,7 +1773,10 @@ fn should_validate_export_xml(profile: ValidationProfile) -> bool {
 			return true;
 		}
 	}
-	if matches!(profile, ValidationProfile::Fda) {
+	if matches!(
+		RegulatoryAuthority::from_validation_profile(profile),
+		RegulatoryAuthority::Fda
+	) {
 		return true;
 	}
 	match std::env::var("E2BR3_EXPORT_VALIDATE") {

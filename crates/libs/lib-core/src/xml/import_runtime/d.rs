@@ -19,7 +19,7 @@ use crate::model::patient::{
 	ReportedCauseOfDeathForUpdate,
 };
 use crate::model::ModelManager;
-use crate::xml::import_runtime::shared;
+use crate::xml::import_runtime::helpers::d as d_helpers;
 use crate::xml::Result;
 use sqlx::types::Uuid;
 
@@ -46,7 +46,7 @@ async fn import_patient_identifiers(
 	xml: &[u8],
 	patient_id: Uuid,
 ) -> Result<()> {
-	let ids = shared::parse_patient_identifiers(xml)?;
+	let ids = d_helpers::parse_patient_identifiers(xml)?;
 	for (idx, entry) in ids.into_iter().enumerate() {
 		let seq = (idx + 1) as i32;
 		let existing: Option<Uuid> = mm
@@ -95,7 +95,7 @@ async fn import_medical_history(
 	xml: &[u8],
 	patient_id: Uuid,
 ) -> Result<()> {
-	let episodes = shared::parse_medical_history(xml)?;
+	let episodes = d_helpers::parse_medical_history(xml)?;
 	for (idx, entry) in episodes.into_iter().enumerate() {
 		let seq = (idx + 1) as i32;
 		let existing: Option<Uuid> = mm
@@ -169,7 +169,7 @@ async fn import_past_drug_history(
 	xml: &[u8],
 	patient_id: Uuid,
 ) -> Result<()> {
-	let items = shared::parse_past_drug_history(xml)?;
+	let items = d_helpers::parse_past_drug_history(xml)?;
 	for (idx, entry) in items.into_iter().enumerate() {
 		let seq = (idx + 1) as i32;
 		let existing: Option<Uuid> = mm
@@ -242,7 +242,7 @@ async fn import_patient_death(
 	xml: &[u8],
 	patient_id: Uuid,
 ) -> Result<()> {
-	let Some(death) = shared::parse_patient_death(xml)? else {
+	let Some(death) = d_helpers::parse_patient_death(xml)? else {
 		return Ok(());
 	};
 
@@ -395,7 +395,7 @@ async fn import_parent_information(
 	xml: &[u8],
 	patient_id: Uuid,
 ) -> Result<()> {
-	let Some(parent) = shared::parse_parent_information(xml)? else {
+	let Some(parent) = d_helpers::parse_parent_information(xml)? else {
 		return Ok(());
 	};
 
@@ -596,38 +596,33 @@ async fn import_patient_information(
 	xml: &[u8],
 	case_id: Uuid,
 ) -> Result<Option<Uuid>> {
-	let use_v2 = std::env::var("XML_V2_IMPORT_D").unwrap_or_default() == "1";
-	let Some(patient) = (if use_v2 {
-		crate::xml::import_sections::d_patient::parse_d_patient(xml)?.map(
-			|patient| shared::PatientImport {
-				patient_initials: patient.patient_initials,
-				patient_given_name: patient.patient_given_name,
-				patient_family_name: patient.patient_family_name,
-				patient_initials_null_flavor: patient.patient_initials_null_flavor,
-				birth_date: patient.birth_date,
-				birth_date_null_flavor: patient.birth_date_null_flavor,
-				sex: patient.sex,
-				sex_null_flavor: patient.sex_null_flavor,
-				age_at_time_of_onset: patient.age_at_time_of_onset,
-				age_at_time_of_onset_null_flavor: patient
-					.age_at_time_of_onset_null_flavor,
-				age_unit: patient.age_unit,
-				gestation_period: patient.gestation_period,
-				gestation_period_unit: patient.gestation_period_unit,
-				age_group: patient.age_group,
-				weight_kg: patient.weight_kg,
-				height_cm: patient.height_cm,
-				race_code: patient.race_code,
-				ethnicity_code: patient.ethnicity_code,
-				last_menstrual_period_date: patient.last_menstrual_period_date,
-				last_menstrual_period_date_null_flavor: patient
-					.last_menstrual_period_date_null_flavor,
-				medical_history_text: patient.medical_history_text,
-				concomitant_therapy: patient.concomitant_therapy,
-			},
-		)
-	} else {
-		shared::parse_patient_information(xml)?
+	let Some(patient) = crate::xml::import_sections::d_patient::parse_d_patient(
+		xml,
+	)?
+	.map(|patient| d_helpers::PatientImport {
+		patient_initials: patient.patient_initials,
+		patient_given_name: patient.patient_given_name,
+		patient_family_name: patient.patient_family_name,
+		patient_initials_null_flavor: patient.patient_initials_null_flavor,
+		birth_date: patient.birth_date,
+		birth_date_null_flavor: patient.birth_date_null_flavor,
+		sex: patient.sex,
+		sex_null_flavor: patient.sex_null_flavor,
+		age_at_time_of_onset: patient.age_at_time_of_onset,
+		age_at_time_of_onset_null_flavor: patient.age_at_time_of_onset_null_flavor,
+		age_unit: patient.age_unit,
+		gestation_period: patient.gestation_period,
+		gestation_period_unit: patient.gestation_period_unit,
+		age_group: patient.age_group,
+		weight_kg: patient.weight_kg,
+		height_cm: patient.height_cm,
+		race_code: patient.race_code,
+		ethnicity_code: patient.ethnicity_code,
+		last_menstrual_period_date: patient.last_menstrual_period_date,
+		last_menstrual_period_date_null_flavor: patient
+			.last_menstrual_period_date_null_flavor,
+		medical_history_text: patient.medical_history_text,
+		concomitant_therapy: patient.concomitant_therapy,
 	}) else {
 		return Ok(None);
 	};

@@ -21,6 +21,7 @@ use lib_core::xml::export_case_xml;
 use libxml::parser::Parser;
 use libxml::xpath::Context;
 use rust_decimal::Decimal;
+use serial_test::serial;
 use sqlx::types::time::Date;
 use sqlx::types::Uuid;
 use time::Month;
@@ -88,9 +89,9 @@ fn parse_xpath(xml: &str) -> (libxml::tree::Document, Context) {
 }
 
 #[tokio::test]
+#[serial]
 async fn export_runtime_patches_patient_gestation_age_group_and_concomitant(
 ) -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_D", "1");
 	let mm = init_test_mm().await;
 	let ctx = demo_ctx();
 
@@ -188,8 +189,8 @@ async fn export_runtime_patches_patient_gestation_age_group_and_concomitant(
 }
 
 #[tokio::test]
+#[serial]
 async fn export_runtime_patches_sender_diagnosis_in_h_section() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let mm = init_test_mm().await;
 	let ctx = demo_ctx();
 
@@ -255,8 +256,8 @@ async fn export_runtime_patches_sender_diagnosis_in_h_section() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn export_runtime_clears_stale_optional_c_nodes() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_C", "1");
 	let mm = init_test_mm().await;
 	let ctx = demo_ctx();
 

@@ -8,6 +8,7 @@ use lib_core::model::narrative::{
 	NarrativeInformationBmc, NarrativeInformationForCreate,
 };
 use lib_core::xml::export_case_xml;
+use serial_test::serial;
 
 async fn create_validated_raw_xml_case(
 	raw_xml: &str,
@@ -78,8 +79,8 @@ fn export_base_xml() -> Result<String> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_country_code_format_required_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"<code code=\"US\" codeSystem=\"1.0.3166.1.2.2\"/>",
 		"<code code=\"USA\" codeSystem=\"1.0.3166.1.2.2\"/>",
@@ -97,8 +98,8 @@ async fn ich_xml_country_code_format_required_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_country_code_format_required_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?;
 	let (ctx, mm, case_id) =
 		create_validated_raw_xml_case(&raw_xml, true, true).await?;
@@ -111,8 +112,8 @@ async fn ich_xml_country_code_format_required_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_document_text_compression_forbidden_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"</investigationEvent>",
 		"<document><text compression=\"gzip\">encoded</text></document></investigationEvent>",
@@ -129,8 +130,8 @@ async fn ich_xml_document_text_compression_forbidden_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_document_text_compression_forbidden_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?;
 	let (ctx, mm, case_id) =
 		create_validated_raw_xml_case(&raw_xml, true, true).await?;
@@ -143,8 +144,8 @@ async fn ich_xml_document_text_compression_forbidden_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_meddra_code_format_required_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"<value xsi:type=\"CE\" code=\"10027940\" codeSystem=\"2.16.840.1.113883.6.163\" codeSystemVersion=\"25.0\"/>",
 		"<value xsi:type=\"CE\" code=\"BAD\" codeSystem=\"2.16.840.1.113883.6.163\" codeSystemVersion=\"25.0\"/>",
@@ -163,8 +164,8 @@ async fn ich_xml_meddra_code_format_required_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_meddra_code_format_required_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?;
 	let (ctx, mm, case_id) =
 		create_validated_raw_xml_case(&raw_xml, true, true).await?;
@@ -177,8 +178,8 @@ async fn ich_xml_meddra_code_format_required_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_xsi_type_normalize_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"</investigationEvent>",
 		"<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"3\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\"/><component typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><value type=\"PQ\" value=\"1\" unit=\"mg\"/></observation></component></organizer></subjectOf2></investigationEvent>",
@@ -196,8 +197,8 @@ async fn ich_xml_xsi_type_normalize_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_xsi_type_normalize_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?;
 	let (ctx, mm, case_id) =
 		create_validated_raw_xml_case(&raw_xml, true, true).await?;
@@ -210,8 +211,8 @@ async fn ich_xml_xsi_type_normalize_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_placeholder_codesystemversion_prune_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"<value xsi:type=\"CE\" code=\"5\" displayName=\"Adult\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.9\"/>",
 		"<value xsi:type=\"CE\" code=\"5\" displayName=\"Adult\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.9\" codeSystemVersion=\"D.8.r.6a\"/>",
@@ -228,8 +229,8 @@ async fn ich_xml_placeholder_codesystemversion_prune_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_placeholder_codesystemversion_prune_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?;
 	let (ctx, mm, case_id) =
 		create_validated_raw_xml_case(&raw_xml, true, true).await?;
@@ -242,8 +243,8 @@ async fn ich_xml_placeholder_codesystemversion_prune_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_placeholder_value_prune_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"<value xsi:type=\"CE\" code=\"5\" displayName=\"Adult\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.9\"/>",
 		"<value xsi:type=\"CE\" code=\"D.2.3\" displayName=\"Adult\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.9\"/>",
@@ -260,8 +261,8 @@ async fn ich_xml_placeholder_value_prune_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_placeholder_value_prune_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?;
 	let (ctx, mm, case_id) =
 		create_validated_raw_xml_case(&raw_xml, true, true).await?;
@@ -274,8 +275,8 @@ async fn ich_xml_placeholder_value_prune_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_race_ni_prune_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"<value xsi:type=\"CE\" code=\"C41260\" displayName=\"Asian\" codeSystem=\"2.16.840.1.113883.3.26.1.1\"/>",
 		"<value xsi:type=\"CE\" code=\"NI\" displayName=\"No Information\" codeSystem=\"2.16.840.1.113883.3.26.1.1\"/>",
@@ -292,8 +293,8 @@ async fn ich_xml_race_ni_prune_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_race_ni_prune_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?;
 	let (ctx, mm, case_id) =
 		create_validated_raw_xml_case(&raw_xml, true, true).await?;
@@ -306,8 +307,8 @@ async fn ich_xml_race_ni_prune_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_race_empty_prune_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"<value xsi:type=\"CE\" code=\"C41260\" displayName=\"Asian\" codeSystem=\"2.16.840.1.113883.3.26.1.1\"/>",
 		"<value xsi:type=\"CE\" nullFlavor=\"NI\"/>",
@@ -324,8 +325,8 @@ async fn ich_xml_race_empty_prune_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_race_empty_prune_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?;
 	let (ctx, mm, case_id) =
 		create_validated_raw_xml_case(&raw_xml, true, true).await?;
@@ -338,8 +339,8 @@ async fn ich_xml_race_empty_prune_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_gk11_empty_prune_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"</kindOfProduct>",
 		"<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"2\"/></observation></outboundRelationship2></kindOfProduct>",
@@ -356,8 +357,8 @@ async fn ich_xml_gk11_empty_prune_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_gk11_empty_prune_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"</kindOfProduct>",
 		"<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"2\"/><value>real</value></observation></outboundRelationship2></kindOfProduct>",
@@ -374,8 +375,8 @@ async fn ich_xml_gk11_empty_prune_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_optional_path_empty_prune_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"</substanceAdministration>",
 		"<inboundRelationship/></substanceAdministration>",
@@ -392,8 +393,8 @@ async fn ich_xml_optional_path_empty_prune_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_optional_path_empty_prune_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"</substanceAdministration>",
 		"<inboundRelationship><act classCode=\"ACT\" moodCode=\"EVN\"><code code=\"1\"/></act></inboundRelationship></substanceAdministration>",
@@ -410,8 +411,8 @@ async fn ich_xml_optional_path_empty_prune_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_structural_empty_prune_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"</investigationEvent>",
 		"<subjectOf2 typeCode=\"SBJ\"/></investigationEvent>",
@@ -428,8 +429,8 @@ async fn ich_xml_structural_empty_prune_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_structural_empty_prune_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"</investigationEvent>",
 		"<subjectOf2 typeCode=\"SBJ\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"99\"/></observation></subjectOf2></investigationEvent>",
@@ -446,8 +447,8 @@ async fn ich_xml_structural_empty_prune_true() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_summary_language_ja_forbidden_false() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"</investigationEvent>",
 		"<component><observationEvent classCode=\"OBS\" moodCode=\"EVN\"><code code=\"36\"/><value language=\"JA\">summary</value></observationEvent></component></investigationEvent>",
@@ -464,8 +465,8 @@ async fn ich_xml_summary_language_ja_forbidden_false() -> Result<()> {
 }
 
 #[tokio::test]
+#[serial]
 async fn ich_xml_summary_language_ja_forbidden_true() -> Result<()> {
-	std::env::set_var("XML_V2_PATCH_H", "1");
 	let raw_xml = export_base_xml()?.replacen(
 		"</investigationEvent>",
 		"<component><observationEvent classCode=\"OBS\" moodCode=\"EVN\"><code code=\"36\"/><value language=\"EN\">summary</value></observationEvent></component></investigationEvent>",

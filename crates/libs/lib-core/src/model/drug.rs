@@ -97,6 +97,7 @@ pub struct DrugInformationForCreate {
 	pub sequence_number: i32,
 	pub drug_characterization: String,
 	pub medicinal_product: String,
+	pub drug_generic_name: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -353,7 +354,7 @@ fn characteristic_boolean_entry(
 		code_display_name: None,
 		value_type: Some("BL".to_string()),
 		value_value: Some(if value { "true" } else { "false" }.to_string()),
-		value_code: Some(if value { "1" } else { "2" }.to_string()),
+		value_code: None,
 		value_code_system: None,
 		value_display_name: None,
 		created_at: OffsetDateTime::UNIX_EPOCH,
@@ -471,56 +472,56 @@ pub fn derive_fda_device_characteristics(
 			&mut rows,
 			&mut sequence_number,
 			drug.id,
-			"FDA.G.k.12.r.4",
+			"FDAGK12R4",
 			info.device_brand_name.as_deref(),
 		);
 		push_text_row(
 			&mut rows,
 			&mut sequence_number,
 			drug.id,
-			"FDA.G.k.12.r.5",
+			"FDAGK12R5",
 			info.common_device_name.as_deref(),
 		);
 		push_code_row(
 			&mut rows,
 			&mut sequence_number,
 			drug.id,
-			"FDA.G.k.12.r.6",
+			"FDAGK12R6",
 			info.device_product_code.as_deref(),
 		);
 		push_text_row(
 			&mut rows,
 			&mut sequence_number,
 			drug.id,
-			"FDA.G.k.12.r.7.1a",
+			"FDAGK12R71A",
 			info.manufacturer_name.as_deref(),
 		);
 		push_text_row(
 			&mut rows,
 			&mut sequence_number,
 			drug.id,
-			"FDA.G.k.12.r.7.1b",
+			"FDAGK12R71B",
 			info.manufacturer_address.as_deref(),
 		);
 		push_text_row(
 			&mut rows,
 			&mut sequence_number,
 			drug.id,
-			"FDA.G.k.12.r.7.1c",
+			"FDAGK12R71C",
 			info.manufacturer_city.as_deref(),
 		);
 		push_text_row(
 			&mut rows,
 			&mut sequence_number,
 			drug.id,
-			"FDA.G.k.12.r.7.1d",
+			"FDAGK12R71D",
 			info.manufacturer_state.as_deref(),
 		);
 		push_code_row(
 			&mut rows,
 			&mut sequence_number,
 			drug.id,
-			"FDA.G.k.12.r.7.1e",
+			"FDAGK12R71E",
 			info.manufacturer_country.as_deref(),
 		);
 		push_code_row(
@@ -534,14 +535,14 @@ pub fn derive_fda_device_characteristics(
 			&mut rows,
 			&mut sequence_number,
 			drug.id,
-			"FDA.G.k.12.r.9",
+			"FDAGK12R9",
 			info.device_lot_number.as_deref(),
 		);
 		push_code_row(
 			&mut rows,
 			&mut sequence_number,
 			drug.id,
-			"FDA.G.k.12.r.10",
+			"FDAGK12R10",
 			info.operator_of_device.as_deref(),
 		);
 		for entry in info.remedial_actions {
@@ -896,8 +897,8 @@ impl DrugInformationBmc {
 		.await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, sequence_number, drug_characterization, medicinal_product, created_at, updated_at, created_by)
-			 VALUES ($1, $2, $3, $4, now(), now(), $5)
+			"INSERT INTO {} (case_id, sequence_number, drug_characterization, medicinal_product, drug_generic_name, created_at, updated_at, created_by)
+			 VALUES ($1, $2, $3, $4, $5, now(), now(), $6)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -909,6 +910,7 @@ impl DrugInformationBmc {
 					.bind(drug_c.sequence_number)
 					.bind(drug_c.drug_characterization)
 					.bind(drug_c.medicinal_product)
+					.bind(drug_c.drug_generic_name)
 					.bind(ctx.user_id()),
 			)
 			.await?;

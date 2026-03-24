@@ -30,6 +30,7 @@ async fn test_test_result_crud() -> Result<()> {
 	let test_u = TestResultForUpdate {
 		test_name: Some("Updated Test".to_string()),
 		test_date: None,
+		test_date_null_flavor: None,
 		test_meddra_version: None,
 		test_meddra_code: None,
 		test_result_code: None,

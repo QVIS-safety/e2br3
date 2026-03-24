@@ -8,6 +8,7 @@ use lib_core::ctx::{Ctx, ROLE_ADB_ADMIN};
 use lib_core::model::acs::{
 	TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT, TERMINOLOGY_READ,
 };
+use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::terminology::{
 	E2bCodeList, E2bCodeListBmc, IsoCountry, IsoCountryBmc, MeddraTerm,
 	MeddraTermBmc, UcumUnit, UcumUnitBmc, WhodrugProduct, WhodrugProductBmc,
@@ -42,6 +43,14 @@ fn require_system_admin(ctx: &Ctx) -> Result<()> {
 		});
 	}
 	Ok(())
+}
+
+fn terminology_db_role(role: &str) -> &str {
+	if role == ROLE_ADB_ADMIN {
+		"admin"
+	} else {
+		role
+	}
 }
 
 #[derive(Deserialize)]
@@ -249,6 +258,8 @@ pub async fn import_meddra(
 		stage_meddra_rows(
 			&mm,
 			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
 			&rows,
 			&params.version,
 			&language,
@@ -296,6 +307,8 @@ pub async fn import_whodrug(
 		stage_whodrug_rows(
 			&mm,
 			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
 			&rows,
 			&params.version,
 			&language,
@@ -400,6 +413,8 @@ pub async fn activate_release(
 	let data = activate_release_tx(
 		&mm,
 		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
 		&path.dictionary,
 		&path.version,
 		&language,
@@ -425,6 +440,8 @@ pub async fn rollback_release(
 	let data = activate_release_tx(
 		&mm,
 		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
 		&path.dictionary,
 		&path.version,
 		&language,
@@ -621,6 +638,8 @@ fn parse_whodrug_delimited(bytes: &[u8]) -> Result<Vec<WhodrugRow>> {
 async fn stage_meddra_rows(
 	mm: &ModelManager,
 	uploader_id: Uuid,
+	organization_id: Uuid,
+	role: &str,
 	rows: &[MeddraRow],
 	version: &str,
 	language: &str,
@@ -628,6 +647,14 @@ async fn stage_meddra_rows(
 ) -> Result<()> {
 	mm.dbx().begin_txn().await.map_err(map_store_err)?;
 	let run_result = async {
+		set_full_context_dbx(
+			mm.dbx(),
+			uploader_id,
+			organization_id,
+			terminology_db_role(role),
+		)
+		.await
+		.map_err(map_store_err)?;
 		upsert_release_header(
 			mm,
 			"meddra",
@@ -679,6 +706,8 @@ async fn stage_meddra_rows(
 async fn stage_whodrug_rows(
 	mm: &ModelManager,
 	uploader_id: Uuid,
+	organization_id: Uuid,
+	role: &str,
 	rows: &[WhodrugRow],
 	version: &str,
 	language: &str,
@@ -686,6 +715,14 @@ async fn stage_whodrug_rows(
 ) -> Result<()> {
 	mm.dbx().begin_txn().await.map_err(map_store_err)?;
 	let run_result = async {
+		set_full_context_dbx(
+			mm.dbx(),
+			uploader_id,
+			organization_id,
+			terminology_db_role(role),
+		)
+		.await
+		.map_err(map_store_err)?;
 		upsert_release_header(
 			mm,
 			"whodrug",
@@ -737,6 +774,8 @@ async fn stage_whodrug_rows(
 async fn activate_release_tx(
 	mm: &ModelManager,
 	actor_user_id: Uuid,
+	organization_id: Uuid,
+	role: &str,
 	dictionary: &str,
 	target_version: &str,
 	language: &str,
@@ -746,6 +785,14 @@ async fn activate_release_tx(
 
 	mm.dbx().begin_txn().await.map_err(map_store_err)?;
 	let run_result = async {
+		set_full_context_dbx(
+			mm.dbx(),
+			actor_user_id,
+			organization_id,
+			terminology_db_role(role),
+		)
+			.await
+			.map_err(map_store_err)?;
 		let target = mm
 			.dbx()
 			.fetch_optional(

@@ -98,21 +98,38 @@ async fn ensure_reaction_language(
 			.map(|v| !v.trim().is_empty())
 			.unwrap_or(false);
 		if has_text && !has_language {
-			let (status, body) = request_json(
-				app,
-				cookie,
-				"PUT",
-				format!("/api/cases/{case_id}/reactions/{reaction_id}"),
-				Some(serde_json::json!({
-					"data": { "reaction_language": "en" }
-				})),
-			)
-			.await?;
-			if status != StatusCode::OK {
+			let mut last_failure = None;
+			for _attempt in 0..3 {
+				let (status, body) = request_json(
+					app,
+					cookie,
+					"PUT",
+					format!("/api/cases/{case_id}/reactions/{reaction_id}"),
+					Some(serde_json::json!({
+						"data": { "reaction_language": "en" }
+					})),
+				)
+				.await?;
+				if status == StatusCode::OK {
+					last_failure = None;
+					break;
+				}
+				let body_text = String::from_utf8_lossy(&body).to_string();
+				if !body_text.contains("Audit trail logging failed")
+					&& !body_text.contains("deadlock detected")
+				{
+					return Err(format!(
+						"update reaction language status {} body {}",
+						status, body_text
+					)
+					.into());
+				}
+				last_failure = Some((status, body_text));
+			}
+			if let Some((status, body_text)) = last_failure {
 				return Err(format!(
 					"update reaction language status {} body {}",
-					status,
-					String::from_utf8_lossy(&body)
+					status, body_text
 				)
 				.into());
 			}
@@ -172,6 +189,178 @@ async fn ensure_batch_transmission_date(
 			String::from_utf8_lossy(&body)
 		)
 		.into());
+	}
+	Ok(())
+}
+
+async fn ensure_fda_device_characteristics(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<()> {
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"GET",
+		format!("/api/cases/{case_id}/validation?profile=fda"),
+		None,
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"validation precheck status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let value: Value = serde_json::from_slice(&body)?;
+	let target_drug_indexes: std::collections::BTreeSet<usize> = value
+		.get("data")
+		.and_then(|v| v.get("issues"))
+		.and_then(Value::as_array)
+		.map(|issues| {
+			issues
+				.iter()
+				.filter(|issue| {
+					issue.get("code").and_then(Value::as_str)
+						== Some("FDA.G.K.12.R.3.REQUIRED")
+				})
+				.filter_map(|issue| issue.get("path").and_then(Value::as_str))
+				.filter_map(|path| {
+					let index = path.strip_prefix("drugs.")?.split('.').next()?;
+					index.parse::<usize>().ok()
+				})
+				.collect()
+		})
+		.unwrap_or_default();
+	if target_drug_indexes.is_empty() {
+		return Ok(());
+	}
+
+	let (status, body) = request_json(
+		app,
+		cookie,
+		"GET",
+		format!("/api/cases/{case_id}/drugs"),
+		None,
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"list drugs status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let value: Value = serde_json::from_slice(&body)?;
+	let Some(drugs) = value.get("data").and_then(Value::as_array) else {
+		return Ok(());
+	};
+	for (drug_index, drug) in drugs.iter().enumerate() {
+		if !target_drug_indexes.contains(&drug_index) {
+			continue;
+		}
+		let Some(drug_id) = drug.get("id").and_then(Value::as_str) else {
+			continue;
+		};
+		let (status, body) = request_json(
+			app,
+			cookie,
+			"GET",
+			format!("/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"),
+			None,
+		)
+		.await?;
+		if status != StatusCode::OK {
+			return Err(format!(
+				"list device characteristics status {} body {}",
+				status,
+				String::from_utf8_lossy(&body)
+			)
+			.into());
+		}
+		let value: Value = serde_json::from_slice(&body)?;
+		let Some(chars) = value.get("data").and_then(Value::as_array) else {
+			continue;
+		};
+		let has_gk12r3 = chars.iter().any(|ch| {
+			ch.get("code")
+				.and_then(Value::as_str)
+				.map(|code| code.eq_ignore_ascii_case("FDA.G.k.12.r.3"))
+				.unwrap_or(false)
+		});
+		if !has_gk12r3 {
+			let next_sequence_number = chars
+				.iter()
+				.filter_map(|ch| ch.get("sequence_number").and_then(Value::as_i64))
+				.max()
+				.unwrap_or(0)
+				+ 1;
+			let (status, body) = request_json(
+				app,
+				cookie,
+				"POST",
+				format!(
+					"/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"
+				),
+				Some(serde_json::json!({
+					"data": {
+						"drug_id": drug_id,
+						"sequence_number": next_sequence_number,
+						"code": "FDA.G.k.12.r.3",
+						"value_code": "1"
+					}
+				})),
+			)
+			.await?;
+			if status != StatusCode::CREATED {
+				return Err(format!(
+					"create gk12r3 status {} body {}",
+					status,
+					String::from_utf8_lossy(&body)
+				)
+				.into());
+			}
+			let (status, body) = request_json(
+				app,
+				cookie,
+				"GET",
+				format!(
+					"/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"
+				),
+				None,
+			)
+			.await?;
+			if status != StatusCode::OK {
+				return Err(format!(
+					"relist device characteristics status {} body {}",
+					status,
+					String::from_utf8_lossy(&body)
+				)
+				.into());
+			}
+			let value: Value = serde_json::from_slice(&body)?;
+			let found = value
+				.get("data")
+				.and_then(Value::as_array)
+				.map(|rows| {
+					rows.iter().any(|row| {
+						row.get("code")
+							.and_then(Value::as_str)
+							.map(|code| code.eq_ignore_ascii_case("FDA.G.k.12.r.3"))
+							.unwrap_or(false)
+					})
+				})
+				.unwrap_or(false);
+			if !found {
+				return Err(format!(
+					"gk12r3 create persisted unexpected rows: {value}"
+				)
+				.into());
+			}
+		}
 	}
 	Ok(())
 }
@@ -332,6 +521,7 @@ async fn test_import_then_export_xml() -> Result<()> {
 
 	ensure_reaction_language(&app, &cookie, case_id).await?;
 	ensure_batch_transmission_date(&app, &cookie, case_id).await?;
+	ensure_fda_device_characteristics(&app, &cookie, case_id).await?;
 	mark_case_validated(&app, &cookie, case_id).await?;
 
 	let req = Request::builder()
@@ -596,6 +786,7 @@ async fn test_import_update_dg_fields_then_export_contains_updates() -> Result<(
 	}
 	ensure_reaction_language(&app, &cookie, &case_id).await?;
 	ensure_batch_transmission_date(&app, &cookie, &case_id).await?;
+	ensure_fda_device_characteristics(&app, &cookie, &case_id).await?;
 	mark_case_validated(&app, &cookie, &case_id).await?;
 
 	// Export and assert updated DG values are present in XML.

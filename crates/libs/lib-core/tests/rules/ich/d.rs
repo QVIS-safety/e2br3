@@ -16,7 +16,7 @@ use lib_core::model::patient::{
 	PastDrugHistoryForCreate, PastDrugHistoryForUpdate, PatientInformationBmc,
 	PatientInformationForCreate, PatientInformationForUpdate,
 };
-use lib_core::xml::validate::{
+use lib_core::validation::{
 	is_rule_condition_satisfied, is_rule_value_valid, RuleFacts, ValidationProfile,
 };
 use rust_decimal::Decimal;

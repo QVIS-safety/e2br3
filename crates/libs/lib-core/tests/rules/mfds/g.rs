@@ -16,7 +16,7 @@ use lib_core::model::drug_reaction_assessment::{
 };
 use lib_core::model::message_header::{MessageHeaderBmc, MessageHeaderForCreate};
 use lib_core::model::reaction::{ReactionBmc, ReactionForCreate};
-use lib_core::xml::validate::ValidationProfile;
+use lib_core::validation::ValidationProfile;
 use serial_test::serial;
 use sqlx::types::Uuid;
 
@@ -88,6 +88,7 @@ async fn create_mfds_drug_case(
 			case_id,
 			sequence_number: 1,
 			drug_characterization: "1".to_string(),
+			drug_generic_name: None,
 			medicinal_product: "MFDS Drug".to_string(),
 		},
 	)

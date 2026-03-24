@@ -12,7 +12,7 @@ use lib_core::model::drug::{
 	DrugDeviceCharacteristicBmc, DrugDeviceCharacteristicForCreate,
 	DrugInformationBmc, DrugInformationForCreate,
 };
-use lib_core::xml::validate::ValidationProfile;
+use lib_core::validation::ValidationProfile;
 use serial_test::serial;
 use sqlx::types::Uuid;
 
@@ -57,6 +57,7 @@ async fn create_fda_drug_case(
 			case_id,
 			sequence_number: 1,
 			drug_characterization: drug_characterization.to_string(),
+			drug_generic_name: None,
 			medicinal_product: "Device Product".to_string(),
 		},
 	)

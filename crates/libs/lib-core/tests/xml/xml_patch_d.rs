@@ -1,4 +1,4 @@
-use lib_core::xml::raw::patch::{
+use lib_core::xml::export::roundtrip::{
 	patch_d_patient, DPatientDeathCausePatch, DPatientPatch,
 };
 use libxml::parser::Parser;

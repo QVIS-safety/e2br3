@@ -123,6 +123,7 @@ async fn create_drug(
 		sequence_number: 1,
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
+		drug_generic_name: None,
 	};
 	Ok(DrugInformationBmc::create(ctx, mm, data).await?)
 }
@@ -175,6 +176,7 @@ async fn create_patient_death(
 	let data = PatientDeathInformationForCreate {
 		patient_id,
 		date_of_death: None,
+		date_of_death_null_flavor: None,
 		autopsy_performed: None,
 	};
 	Ok(PatientDeathInformationBmc::create(ctx, mm, data).await?)
@@ -258,6 +260,8 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			patient_id: patient1,
 			sequence_number: 1,
 			meddra_code: None,
+			start_date_null_flavor: None,
+			end_date_null_flavor: None,
 		},
 	)
 	.await?;
@@ -268,6 +272,8 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			patient_id: patient2,
 			sequence_number: 1,
 			meddra_code: None,
+			start_date_null_flavor: None,
+			end_date_null_flavor: None,
 		},
 	)
 	.await?;
@@ -279,12 +285,15 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			patient_id: patient1,
 			sequence_number: 1,
 			drug_name: None,
+			drug_name_null_flavor: None,
 			mpid: None,
 			mpid_version: None,
 			phpid: None,
 			phpid_version: None,
 			start_date: None,
+			start_date_null_flavor: None,
 			end_date: None,
+			end_date_null_flavor: None,
 			indication_meddra_version: None,
 			indication_meddra_code: None,
 			reaction_meddra_version: None,
@@ -299,12 +308,15 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			patient_id: patient2,
 			sequence_number: 1,
 			drug_name: None,
+			drug_name_null_flavor: None,
 			mpid: None,
 			mpid_version: None,
 			phpid: None,
 			phpid_version: None,
 			start_date: None,
+			start_date_null_flavor: None,
 			end_date: None,
+			end_date_null_flavor: None,
 			indication_meddra_version: None,
 			indication_meddra_code: None,
 			reaction_meddra_version: None,
@@ -362,6 +374,8 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			parent_id: parent1,
 			sequence_number: 1,
 			meddra_code: None,
+			start_date_null_flavor: None,
+			end_date_null_flavor: None,
 		},
 	)
 	.await?;
@@ -372,6 +386,8 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			parent_id: parent2,
 			sequence_number: 1,
 			meddra_code: None,
+			start_date_null_flavor: None,
+			end_date_null_flavor: None,
 		},
 	)
 	.await?;
@@ -383,6 +399,9 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			parent_id: parent1,
 			sequence_number: 1,
 			drug_name: None,
+			drug_name_null_flavor: None,
+			start_date_null_flavor: None,
+			end_date_null_flavor: None,
 		},
 	)
 	.await?;
@@ -393,6 +412,9 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			parent_id: parent2,
 			sequence_number: 1,
 			drug_name: None,
+			drug_name_null_flavor: None,
+			start_date_null_flavor: None,
+			end_date_null_flavor: None,
 		},
 	)
 	.await?;
