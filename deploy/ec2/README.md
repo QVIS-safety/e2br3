@@ -28,6 +28,8 @@
 7. Keep `SERVICE_PWD_KEY` stable across deployments and bootstrap runs.
    Seeded user password hashes are derived from `SERVICE_PWD_KEY`, so changing the key later will make
    existing passwords fail with `403 LOGIN_FAIL`.
+8. The app now re-syncs the built-in demo admin user (`demo.user@example.com` / `welcome`)
+   through application code on startup, instead of relying on a hard-coded SQL password hash.
 
 ## One-time RDS bootstrap
 
@@ -70,22 +72,9 @@ INCLUDE_SEED=0 DATABASE_URL='postgres://<user>:<pwd>@<rds-endpoint>:5432/app_db?
 
 ## Recovering login after changing `SERVICE_PWD_KEY`
 
-If the app returns `403 LOGIN_FAIL` for an existing user right after an EC2 deploy, verify that the
-running container and the database bootstrap used the same `SERVICE_PWD_KEY`. If the key changed,
-reset the password using the current runtime key:
-
-```sh
-cd /opt/e2br3/e2br3
-set -a
-. /opt/e2br3/.env.prod
-set +a
-E2BR3_RESET_EMAIL='demo.user@example.com' \
-E2BR3_RESET_PASSWORD='choose-a-new-password' \
-cargo run -p web-server --example reset_user_password
-```
-
-After that, log in with the new password. This helper re-hashes the password using the current
-`SERVICE_PWD_KEY`.
+If the app returns `403 LOGIN_FAIL` for the built-in demo user right after an EC2 deploy, verify that the
+running container and the database bootstrap used the same `SERVICE_PWD_KEY`, then redeploy the updated app.
+On startup it will re-hash the built-in demo user password with the current runtime key.
 
 ## Manual deploy
 

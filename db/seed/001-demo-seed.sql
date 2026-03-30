@@ -40,8 +40,8 @@ BEGIN
     VALUES (v_org_id, 'Demo Organization', 'internal', '123 Demo St', 'Metropolis', 'CA', '12345', 'US', 'demo@example.com', '555-1234', true, '00000000-0000-0000-0000-000000000001'::UUID, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
-    -- Insert demo user with deterministic dev password hash for "welcome".
-    -- Hash is tied to the default dev SERVICE_PWD_KEY.
+    -- Insert demo user identity without a password hash.
+    -- The runtime bootstrap step should set the password using the current SERVICE_PWD_KEY.
     INSERT INTO users (
         id,
         organization_id,
@@ -62,7 +62,7 @@ BEGIN
         v_org_id,
         'demo.user@example.com',
         'demo_user',
-        '#02#$argon2id$v=19$m=19456,t=2,p=1$B0RCYSuiRr6tIIJVTVqABA$lhortXyud6bAy7oSK7NOVqR72TCmhVOcP9nG6bB+qXw',
+        NULL,
         '07444261-2ba2-46be-ad20-82554d5a8004'::UUID,
         '1b2091af-64ff-43ea-a47b-3cdf8f9995c5'::UUID,
         'admin',

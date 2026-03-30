@@ -5,6 +5,7 @@
 mod config;
 mod error;
 mod submission;
+mod bootstrap;
 mod web;
 
 pub use self::error::{Error, Result};
@@ -32,6 +33,7 @@ async fn main() -> Result<()> {
 	config::validate_submission_runtime_config().map_err(Error::Config)?;
 
 	let mm = ModelManager::new().await?;
+	bootstrap::bootstrap_admin_user(&mm).await?;
 	admin_role_rest::refresh_dynamic_roles(&mm)
 		.await
 		.map_err(|err| Error::Config(err.to_string()))?;
