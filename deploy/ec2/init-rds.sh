@@ -17,6 +17,7 @@ INCLUDE_SEED="${INCLUDE_SEED:-1}"
 RESET_DB="${RESET_DB:-0}"
 LIST_SQL_SCRIPT="${PROJECT_DIR}/scripts/db/list_init_sql.sh"
 DB_DIR="${PROJECT_DIR}/db"
+SQL_EXEC_URL=""
 
 if [ -z "${DATABASE_URL}" ]; then
   echo "DATABASE_URL is required."
@@ -62,7 +63,30 @@ if [ "${RESET_DB}" = "1" ]; then
   psql "${ROOT_DATABASE_URL}" -v ON_ERROR_STOP=1 -f "${recreate_path}"
 fi
 
-echo "Applying SQL files to: ${DATABASE_URL}"
+SQL_EXEC_URL="${DATABASE_URL}"
+if [ -n "${ROOT_DATABASE_URL}" ]; then
+  derived_exec_url="$(python3 - "${ROOT_DATABASE_URL}" "${DATABASE_URL}" <<'PY'
+import sys
+from urllib.parse import urlsplit, urlunsplit
+
+root_url = sys.argv[1]
+target_url = sys.argv[2]
+root = urlsplit(root_url)
+target = urlsplit(target_url)
+
+path = target.path or ""
+if not path.startswith("/"):
+    path = "/" + path
+
+print(urlunsplit((root.scheme, root.netloc, path, root.query or target.query, root.fragment)))
+PY
+)"
+  if [ -n "${derived_exec_url}" ]; then
+    SQL_EXEC_URL="${derived_exec_url}"
+  fi
+fi
+
+echo "Applying SQL files to: ${SQL_EXEC_URL}"
 
 sh "${LIST_SQL_SCRIPT}" "${DB_DIR}" "${INCLUDE_SEED}" |
 while IFS= read -r f; do
@@ -72,7 +96,7 @@ while IFS= read -r f; do
     exit 1
   fi
   echo "==> ${f}"
-  psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 -f "${path}"
+  psql "${SQL_EXEC_URL}" -v ON_ERROR_STOP=1 -f "${path}"
 done
 
 echo "RDS bootstrap complete."

@@ -1,9 +1,11 @@
 use crate::Result;
 use lib_core::ctx::{Ctx, ROLE_ADMIN};
-use lib_core::model::organization::OrganizationBmc;
-use lib_core::model::user::{User, UserBmc, UserForCreate, UserForUpdate};
+use lib_core::model::store::set_full_context_dbx;
+use lib_core::model::user::{UserBmc, UserForCreate, UserForUpdate};
 use lib_core::model::ModelManager;
 use lib_core::model::Result as ModelResult;
+use sqlx::query;
+use sqlx::query_as;
 use sqlx::types::Uuid;
 use tracing::info;
 
@@ -15,17 +17,86 @@ const DEMO_ORG_ID: &str = "00000000-0000-0000-0000-000000000001";
 pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 	let root_ctx = Ctx::root_ctx();
 	let org_id = Uuid::parse_str(DEMO_ORG_ID).expect("invalid demo org id");
-	if !org_exists(&root_ctx, mm, org_id).await? {
-		return Ok(());
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(dbx_into_web)?;
+	if let Err(err) = set_full_context_dbx(
+		mm.dbx(),
+		root_ctx.user_id(),
+		root_ctx.organization_id(),
+		root_ctx.role(),
+	)
+	.await
+	{
+		mm.dbx()
+			.rollback_txn()
+			.await
+			.map_err(dbx_into_web)?;
+		return Err(err.into());
 	}
+	if !org_exists(mm, org_id).await? {
+		let insert = query(
+			r#"
+			INSERT INTO organizations (
+				id, name, org_type, address, city, state, postcode, country_code,
+				contact_email, contact_phone, active, created_by, created_at, updated_at
+			) VALUES (
+				$1, $2, $3, $4, $5, $6, $7, $8,
+				$9, $10, $11, $12, NOW(), NOW()
+			)
+			ON CONFLICT (id) DO NOTHING
+			"#,
+		)
+		.bind(org_id)
+		.bind("Demo Organization")
+		.bind("internal")
+		.bind("123 Demo St")
+		.bind("Metropolis")
+		.bind("CA")
+		.bind("12345")
+		.bind("US")
+		.bind("demo@example.com")
+		.bind("555-1234")
+		.bind(true)
+		.bind(root_ctx.user_id());
+		if let Err(err) = mm.dbx().execute(insert).await {
+			mm.dbx()
+				.rollback_txn()
+				.await
+				.map_err(dbx_into_web)?;
+			return Err(dbx_into_web(err));
+		}
+		mm.dbx()
+			.commit_txn()
+			.await
+			.map_err(dbx_into_web)?;
+		info!(
+			"BOOTSTRAP - created demo organization {} with id {}",
+			"Demo Organization", org_id
+		);
+	}
+	let existing_user_id: Option<(Uuid,)> = mm
+		.dbx()
+		.fetch_optional(
+			query_as::<_, (Uuid,)>(
+				"SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1",
+			)
+			.bind(DEMO_EMAIL),
+		)
+		.await
+		.map_err(|err| crate::Error::Model(lib_core::model::Error::Dbx(err)))?;
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(dbx_into_web)?;
 
-	let existing: Option<User> = UserBmc::first_by_email(&root_ctx, mm, DEMO_EMAIL).await?;
-	match existing {
-		Some(user) => {
+	match existing_user_id {
+		Some((user_id,)) => {
 			UserBmc::update_pwd_and_clear_must_change(
 				&root_ctx,
 				mm,
-				user.id,
+				user_id,
 				DEMO_PASSWORD,
 			)
 			.await?;
@@ -46,7 +117,7 @@ pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 				active: Some(true),
 				last_login_at: None,
 			};
-			UserBmc::update(&root_ctx, mm, user.id, user_u).await?;
+			UserBmc::update(&root_ctx, mm, user_id, user_u).await?;
 			info!(
 				"BOOTSTRAP - synced demo admin user {}",
 				DEMO_EMAIL
@@ -80,14 +151,19 @@ pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 	Ok(())
 }
 
-async fn org_exists(
-	ctx: &Ctx,
-	mm: &ModelManager,
-	org_id: Uuid,
-) -> ModelResult<bool> {
-	match OrganizationBmc::get(ctx, mm, org_id).await {
-		Ok(_) => Ok(true),
-		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => Ok(false),
-		Err(err) => Err(err),
-	}
+async fn org_exists(mm: &ModelManager, org_id: Uuid) -> ModelResult<bool> {
+	let (exists,) = mm
+		.dbx()
+		.fetch_one(
+			query_as::<_, (bool,)>(
+				"SELECT EXISTS (SELECT 1 FROM organizations WHERE id = $1)",
+			)
+			.bind(org_id),
+		)
+		.await?;
+	Ok(exists)
+}
+
+fn dbx_into_web<E: core::fmt::Display>(err: E) -> crate::Error {
+	crate::Error::Config(err.to_string())
 }

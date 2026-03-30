@@ -60,6 +60,9 @@ RESET_DB=1 DATABASE_URL="$SERVICE_DB_URL" ./deploy/ec2/init-rds.sh
 ```
 
 `init-rds.sh` will use `SERVICE_DB_ROOT_URL` from the env file as `ROOT_DATABASE_URL`.
+When `ROOT_DATABASE_URL` is available, it derives an admin connection to the target app database
+and uses that for applying `db/bootstrap/*.sql` and `db/seed/*.sql`. This avoids role/GRANT failures
+when `SERVICE_DB_URL` points at the lower-privilege `app_user`.
 It currently applies `db/bootstrap/*.sql` and then `db/seed/*.sql` when `INCLUDE_SEED=1`.
 `db/migrations/` is reserved for future incremental changes.
 
@@ -74,7 +77,8 @@ INCLUDE_SEED=0 DATABASE_URL='postgres://<user>:<pwd>@<rds-endpoint>:5432/app_db?
 
 If the app returns `403 LOGIN_FAIL` for the built-in demo user right after an EC2 deploy, verify that the
 running container and the database bootstrap used the same `SERVICE_PWD_KEY`, then redeploy the updated app.
-On startup it will re-hash the built-in demo user password with the current runtime key.
+On startup it now ensures the built-in demo organization exists and re-hashes the built-in demo user password
+with the current runtime key.
 
 ## Manual deploy
 
