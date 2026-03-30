@@ -66,3 +66,7 @@ path = "examples/import_export/fda_xml_roundtrip.rs"
 [[example]]
 name = "import_export_ich_roundtrip"
 path = "examples/import_export/ich_xml_roundtrip.rs"
+
+[[example]]
+name = "reset_user_password"
+path = "examples/reset_user_password.rs"
