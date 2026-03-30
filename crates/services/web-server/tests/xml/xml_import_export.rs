@@ -36,6 +36,79 @@ fn resolved_xsd_path() -> std::path::PathBuf {
 	}
 }
 
+fn fixture_xml(filename: &str) -> Result<String> {
+	Ok(std::fs::read_to_string(
+		workspace_root().join("docs/refs/instances").join(filename),
+	)?)
+}
+
+fn scenario6_with_first_test_date_null_flavor() -> Result<String> {
+	let xml = fixture_xml("FAERS2022Scenario6.xml")?;
+	let original = "<originalText>Calcium Level</originalText>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<!--  F.r.2.1 Test Name (free text) #1 -->\n\t\t\t\t\t\t\t\t\t\t\t\t\t</code>\n\t\t\t\t\t\t\t\t\t\t\t\t\t<effectiveTime value=\"20090101\"/>";
+	let replacement = "<originalText>Calcium Level</originalText>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<!--  F.r.2.1 Test Name (free text) #1 -->\n\t\t\t\t\t\t\t\t\t\t\t\t\t</code>\n\t\t\t\t\t\t\t\t\t\t\t\t\t<effectiveTime nullFlavor=\"UNK\"/>";
+	let updated = xml.replacen(original, replacement, 1);
+	if updated == xml {
+		return Err("fixture patch should replace one F.r.1 date".into());
+	}
+	Ok(updated)
+}
+
+async fn import_xml_string(
+	app: &axum::Router,
+	cookie: &str,
+	filename: &str,
+	xml: &str,
+) -> Result<Value> {
+	let boundary = "X-BOUNDARY-XML-IMPORT-NULLFLAVOR";
+	let body = format!(
+		"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\nContent-Type: application/xml\r\n\r\n{xml}\r\n--{boundary}--\r\n"
+	);
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/import/xml")
+		.header(
+			"content-type",
+			format!("multipart/form-data; boundary={boundary}"),
+		)
+		.header("cookie", cookie)
+		.body(Body::from(body))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"import status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	Ok(serde_json::from_slice(&body)?)
+}
+
+fn import_case_id(import_value: &Value) -> Result<&str> {
+	import_value
+		.get("data")
+		.and_then(|v| v.get("case_id").or_else(|| v.get("caseId")))
+		.and_then(Value::as_str)
+		.or_else(|| {
+			import_value
+				.get("data")
+				.and_then(|v| {
+					v.get("imported_cases").or_else(|| v.get("importedCases"))
+				})
+				.and_then(Value::as_array)
+				.and_then(|rows| {
+					rows.iter().find_map(|row| {
+						row.get("case_id")
+							.or_else(|| row.get("caseId"))
+							.and_then(Value::as_str)
+					})
+				})
+		})
+		.ok_or_else(|| format!("missing case_id in import response: {import_value}").into())
+}
+
 async fn request_json(
 	app: &axum::Router,
 	cookie: &str,
@@ -544,6 +617,95 @@ async fn test_import_then_export_xml() -> Result<()> {
 	let xml = String::from_utf8_lossy(&body);
 	assert!(xml.contains("<MCCI_IN200100UV01"));
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_import_f_nullflavor_then_readback_test_results() -> Result<()> {
+	init_test_env().await;
+	std::env::set_var("E2BR3_XSD_PATH", resolved_xsd_path());
+
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let xml = scenario6_with_first_test_date_null_flavor()?;
+
+	let import_value = import_xml_string(
+		&app,
+		&cookie,
+		"FAERS2022Scenario6-nullflavor.xml",
+		&xml,
+	)
+	.await?;
+	let case_id = import_case_id(&import_value)?;
+
+	let (status, body) = request_json(
+		&app,
+		&cookie,
+		"GET",
+		format!("/api/cases/{case_id}/test-results"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let value: Value = serde_json::from_slice(&body)?;
+	let tests = value["data"].as_array().ok_or("missing test results array")?;
+	assert!(
+		tests.iter().any(|row| {
+			row.get("test_name").and_then(Value::as_str) == Some("Calcium Level")
+				&& row.get("test_date_null_flavor").and_then(Value::as_str)
+					== Some("UNK")
+		}),
+		"expected imported test result with test_date_null_flavor=UNK, got {value}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_import_e_nullflavor_then_readback_reactions() -> Result<()> {
+	init_test_env().await;
+	std::env::set_var("E2BR3_XSD_PATH", resolved_xsd_path());
+
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "admin_pwd", "viewer_pwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let xml = fixture_xml("FAERS2022Scenario6.xml")?;
+
+	let import_value = import_xml_string(
+		&app,
+		&cookie,
+		"FAERS2022Scenario6.xml",
+		&xml,
+	)
+	.await?;
+	let case_id = import_case_id(&import_value)?;
+
+	let (status, body) = request_json(
+		&app,
+		&cookie,
+		"GET",
+		format!("/api/cases/{case_id}/reactions"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let value: Value = serde_json::from_slice(&body)?;
+	let reactions = value["data"].as_array().ok_or("missing reactions array")?;
+	assert!(
+		reactions.iter().any(|row| {
+			row.get("criteria_death_null_flavor").and_then(Value::as_str)
+				== Some("NI")
+				&& row.get("start_date_null_flavor").and_then(Value::as_str)
+					== Some("NASK")
+		}),
+		"expected imported reaction nullFlavor values, got {value}"
+	);
 	Ok(())
 }
 

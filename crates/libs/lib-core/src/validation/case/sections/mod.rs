@@ -85,7 +85,9 @@ mod tests {
 		];
 		canonical_rules_for_phase(ValidationPhase::CaseValidate)
 			.into_iter()
-			.filter(|rule| prefixes.iter().any(|prefix| rule.code.starts_with(prefix)))
+			.filter(|rule| {
+				prefixes.iter().any(|prefix| rule.code.starts_with(prefix))
+			})
 			.map(|rule| rule.code.to_string())
 			.collect()
 	}

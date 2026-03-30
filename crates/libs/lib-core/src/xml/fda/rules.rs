@@ -81,13 +81,13 @@ pub(crate) async fn collect_c_issues(
 			None,
 			RuleFacts {
 				fda_fulfil_expedited_criteria: Some(
-					report.fulfil_expedited_criteria,
+					report.fulfil_expedited_criteria.unwrap_or(false),
 				),
 				..RuleFacts::default()
 			},
 			RuleFacts {
 				fda_fulfil_expedited_criteria: Some(
-					report.fulfil_expedited_criteria,
+					report.fulfil_expedited_criteria.unwrap_or(false),
 				),
 				fda_combination_product_true: Some(
 					report.combination_product_report_indicator.as_deref()
@@ -95,6 +95,17 @@ pub(crate) async fn collect_c_issues(
 				),
 				..RuleFacts::default()
 			},
+		);
+		let _ = push_issue_if_conditioned_value_invalid(
+			issues,
+			"FDA.C.1.12.REQUIRED",
+			"FDA.C.1.12.REQUIRED",
+			"FDA.C.1.12.REQUIRED",
+			"safetyReportIdentification.combinationProductReportIndicator",
+			report.combination_product_report_indicator.as_deref(),
+			None,
+			RuleFacts::default(),
+			RuleFacts::default(),
 		);
 		let _ = push_issue_if_conditioned_value_invalid(
 			issues,
@@ -112,7 +123,7 @@ pub(crate) async fn collect_c_issues(
 	let type_of_report = validation_ctx
 		.safety_report
 		.as_ref()
-		.map(|r| r.report_type.as_str());
+		.and_then(|r| r.report_type.as_deref());
 	let message_receiver = validation_ctx
 		.message_header
 		.as_ref()

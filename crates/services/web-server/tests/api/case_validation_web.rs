@@ -791,7 +791,7 @@ async fn test_nullification_code_requires_compliance_payload() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_case_save_auto_statuses_reviewed_when_blocking_issues_exist(
+async fn test_case_save_does_not_auto_transition_status_when_updating_fields(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -800,10 +800,30 @@ async fn test_case_save_auto_statuses_reviewed_when_blocking_issues_exist(
 	let app = web_server::app(mm);
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	let (status, body) =
-		update_case_status(&app, &cookie, case_id, "validated").await?;
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/cases/{case_id}"))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({
+				"data": {
+					"safety_report_id": "UPDATED-SR-ID-001"
+				}
+			})
+			.to_string(),
+		))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = serde_json::from_slice::<Value>(
+		&to_bytes(res.into_body(), usize::MAX).await?,
+	)?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["status"].as_str(), Some("reviewed"));
+	assert_eq!(body["data"]["status"].as_str(), Some("draft"));
+	assert_eq!(
+		body["data"]["safetyReportId"].as_str(),
+		Some("UPDATED-SR-ID-001")
+	);
 
 	Ok(())
 }

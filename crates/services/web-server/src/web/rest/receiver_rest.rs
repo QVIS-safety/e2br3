@@ -70,10 +70,11 @@ pub async fn get_receiver(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(case_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<ReceiverInformation>>)> {
+) -> Result<(StatusCode, Json<DataRestResult<Option<ReceiverInformation>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, RECEIVER_READ)?;
-	let entity = ReceiverInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	let entity =
+		ReceiverInformationBmc::get_by_case_optional(&ctx, &mm, case_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 

@@ -2209,7 +2209,7 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.1.2.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.1.3.CONDITIONAL",
@@ -2221,11 +2221,11 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.1.4.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.1.5.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.1.6.1.r.1.REQUIRED",

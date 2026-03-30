@@ -34,8 +34,7 @@ pub fn should_emit_required_intervention_null_flavor_ni() -> bool {
 }
 
 pub fn should_case_validator_require_required_intervention() -> bool {
-	// Export policy currently emits FDA.E.i.3.2h as nullFlavor=NI for compatibility.
-	!should_emit_required_intervention_null_flavor_ni()
+	true
 }
 
 #[cfg(test)]
@@ -64,6 +63,6 @@ mod tests {
 	#[test]
 	fn required_intervention_policy_tracks_catalog_directive() {
 		assert!(should_emit_required_intervention_null_flavor_ni());
-		assert!(!should_case_validator_require_required_intervention());
+		assert!(should_case_validator_require_required_intervention());
 	}
 }

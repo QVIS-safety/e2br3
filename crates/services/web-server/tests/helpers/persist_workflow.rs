@@ -8,6 +8,7 @@ use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
 use serde_json::{json, Value};
 use tower::ServiceExt;
+use tokio::time::{sleep, Duration};
 use uuid::Uuid;
 
 pub struct PersistTestCtx {
@@ -20,7 +21,20 @@ pub struct PersistTestCtx {
 
 pub async fn setup() -> Result<PersistTestCtx> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let seed = loop {
+		match seed_org_with_users(&mm, "adminpwd", "viewpwd").await {
+			Ok(seed) => break seed,
+			Err(err)
+				if err
+					.to_string()
+					.to_ascii_lowercase()
+					.contains("deadlock detected") =>
+			{
+				sleep(Duration::from_millis(100)).await;
+			}
+			Err(err) => return Err(err),
+		}
+	};
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm.clone());

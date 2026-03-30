@@ -71,7 +71,7 @@ pub(crate) fn collect_c_issues(
 			issues,
 			"ICH.C.1.3.REQUIRED",
 			"safetyReportIdentification.reportType",
-			Some(report.report_type.as_str()),
+			report.report_type.as_deref(),
 			None,
 			RuleFacts::default(),
 		);
@@ -101,16 +101,11 @@ pub(crate) fn collect_c_issues(
 				.as_deref(),
 			RuleFacts::default(),
 		);
-		let fulfil_expedited = if report.fulfil_expedited_criteria {
-			"1"
-		} else {
-			"2"
-		};
 		let _ = push_issue_if_rule_invalid(
 			issues,
 			"ICH.C.1.7.REQUIRED",
 			"safetyReportIdentification.fulfilExpeditedCriteria",
-			Some(fulfil_expedited),
+			report.fulfil_expedited_criteria.map(|value| if value { "1" } else { "2" }),
 			None,
 			RuleFacts::default(),
 		);
@@ -123,7 +118,9 @@ pub(crate) fn collect_c_issues(
 				"safetyReportIdentification.nullificationReason",
 			);
 		}
-		if report.report_type.trim() == "2" && validation_ctx.studies.is_empty() {
+		if report.report_type.as_deref().map(str::trim) == Some("2")
+			&& validation_ctx.studies.is_empty()
+		{
 			push_issue_by_code(
 				issues,
 				"ICH.C.5.4.REQUIRED",
@@ -173,7 +170,7 @@ pub(crate) fn collect_c_issues(
 	let report_type_is_study = validation_ctx
 		.safety_report
 		.as_ref()
-		.map(|report| report.report_type.trim() == "2")
+		.map(|report| report.report_type.as_deref().map(str::trim) == Some("2"))
 		.unwrap_or(false);
 	if report_type_is_study {
 		validation_ctx

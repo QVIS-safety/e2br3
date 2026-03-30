@@ -10,8 +10,8 @@ use lib_core::model::drug_reaction_assessment::{
 	RelatednessAssessmentFilter, RelatednessAssessmentForCreate,
 	RelatednessAssessmentForUpdate,
 };
-use modql::filter::{OpValValue, OpValsValue};
 use lib_core::model::reaction::{ReactionBmc, ReactionForCreate};
+use modql::filter::{OpValValue, OpValsValue};
 use rust_decimal::Decimal;
 use serial_test::serial;
 

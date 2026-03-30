@@ -252,7 +252,7 @@ pub fn export_c_safety_report_patch(
 		.map(is_true_like)
 		.unwrap_or(false);
 	let local_criteria_report_type =
-		if !report.fulfil_expedited_criteria && !combination_true {
+		if !report.fulfil_expedited_criteria.unwrap_or(false) && !combination_true {
 			Some("2")
 		} else {
 			report.local_criteria_report_type.as_deref()
@@ -266,7 +266,7 @@ pub fn export_c_safety_report_patch(
 			.as_deref(),
 		transmission_date_value: header.map(|h| h.message_date.as_str()),
 		transmission_date_time: header.and_then(|h| h.batch_transmission_date),
-		report_type: &report.report_type,
+		report_type: report.report_type.as_deref().unwrap_or(""),
 		date_first_received: report.date_first_received_from_source,
 		date_first_received_null_flavor: report
 			.date_first_received_from_source_null_flavor
@@ -275,7 +275,7 @@ pub fn export_c_safety_report_patch(
 		date_most_recent_null_flavor: report
 			.date_of_most_recent_information_null_flavor
 			.as_deref(),
-		fulfil_expedited: report.fulfil_expedited_criteria,
+		fulfil_expedited: report.fulfil_expedited_criteria.unwrap_or(false),
 		additional_documents_available: report.additional_documents_available,
 		worldwide_unique_id: report.worldwide_unique_id.as_deref(),
 		first_sender_type: report.first_sender_type.as_deref(),

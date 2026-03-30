@@ -3,6 +3,7 @@ use crate::persist_workflow::{
 	export_case_xml, fill_section_e, force_case_validated_for_export, request_json,
 	save_case, setup, validate_case_fda,
 };
+use serde_json::json;
 use serial_test::serial;
 
 #[serial]
@@ -35,5 +36,38 @@ async fn e_section_save_validate_export_roundtrip() -> crate::common::Result<()>
 
 	let xml = export_case_xml(&ctx, case_id).await?;
 	assert!(xml.contains("Persist Reaction Headache"));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn e_section_export_preserves_reaction_null_flavors(
+) -> crate::common::Result<()> {
+	disable_export_validation_for_test();
+	let ctx = setup().await?;
+	let case_id = create_case(&ctx).await?;
+	let reaction_id = fill_section_e(&ctx, case_id).await?;
+	let (status, body) = request_json(
+		&ctx.app,
+		&ctx.cookie,
+		"PUT",
+		format!("/api/cases/{case_id}/reactions/{reaction_id}"),
+		Some(json!({"data": {
+			"criteria_death": null,
+			"criteria_death_null_flavor": "MSK",
+			"start_date": null,
+			"start_date_null_flavor": "UNK"
+		}})),
+	)
+	.await?;
+	assert_eq!(status, axum::http::StatusCode::OK, "{body}");
+
+	save_case(&ctx, case_id).await?;
+	validate_case_fda(&ctx, case_id).await?;
+	force_case_validated_for_export(&ctx, case_id).await?;
+	let xml = export_case_xml(&ctx, case_id).await?;
+	assert!(xml.contains("Persist Reaction Headache"), "{xml}");
+	assert!(xml.contains("nullFlavor=\"MSK\""), "{xml}");
+	assert!(xml.contains("low nullFlavor=\"UNK\""), "{xml}");
 	Ok(())
 }

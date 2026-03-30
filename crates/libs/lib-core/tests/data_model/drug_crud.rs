@@ -4,12 +4,11 @@ use crate::common::{
 };
 use lib_core::model::case::CaseBmc;
 use lib_core::model::drug::{
-	DosageInformationBmc, DosageInformationForCreate, DosageInformationForUpdate,
-	DrugActiveSubstanceBmc, DrugActiveSubstanceForCreate,
-	DrugActiveSubstanceFilter, DrugActiveSubstanceForUpdate,
-	DrugIndicationBmc, DrugIndicationFilter, DrugIndicationForCreate,
-	DrugIndicationForUpdate, DrugInformationBmc, DrugInformationForCreate,
-	DrugInformationForUpdate, DosageInformationFilter,
+	DosageInformationBmc, DosageInformationFilter, DosageInformationForCreate,
+	DosageInformationForUpdate, DrugActiveSubstanceBmc, DrugActiveSubstanceFilter,
+	DrugActiveSubstanceForCreate, DrugActiveSubstanceForUpdate, DrugIndicationBmc,
+	DrugIndicationFilter, DrugIndicationForCreate, DrugIndicationForUpdate,
+	DrugInformationBmc, DrugInformationForCreate, DrugInformationForUpdate,
 };
 use modql::filter::{OpValValue, OpValsValue};
 use rust_decimal::Decimal;

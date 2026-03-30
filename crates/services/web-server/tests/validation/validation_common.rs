@@ -5,8 +5,11 @@ use axum::Router;
 use lib_auth::token::generate_web_token;
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
+use lib_core::validation::find_canonical_rule;
 use serde_json::{json, Value};
 use sqlx::types::Uuid as SqlxUuid;
+use std::collections::BTreeSet;
+use tokio::time::{sleep, Duration};
 use tower::ServiceExt;
 use uuid::Uuid;
 
@@ -1088,18 +1091,45 @@ pub fn assert_has_code(validation_body: &Value, code: &str) {
 	);
 }
 
+pub fn assert_lacks_code(validation_body: &Value, code: &str) {
+	let found = issue_codes(validation_body).into_iter().any(|c| c == code);
+	assert!(
+		!found,
+		"expected code {code} to be absent in validation report; got body={validation_body}"
+	);
+}
+
 pub async fn db_exec_case_sql(ctx: &ValidationCtx, sql: &str) -> Result<()> {
-	ctx.mm.dbx().begin_txn().await?;
-	set_full_context_dbx(
-		ctx.mm.dbx(),
-		SqlxUuid::parse_str(&ctx.admin_id.to_string())?,
-		SqlxUuid::parse_str(&ctx.org_id.to_string())?,
-		lib_core::ctx::ROLE_ADMIN,
-	)
-	.await?;
-	ctx.mm.dbx().execute(sqlx::query(sql)).await?;
-	ctx.mm.dbx().commit_txn().await?;
-	Ok(())
+	let admin_id = SqlxUuid::parse_str(&ctx.admin_id.to_string())?;
+	let org_id = SqlxUuid::parse_str(&ctx.org_id.to_string())?;
+	for attempt in 0..3 {
+		ctx.mm.dbx().begin_txn().await?;
+		set_full_context_dbx(
+			ctx.mm.dbx(),
+			admin_id,
+			org_id,
+			lib_core::ctx::ROLE_ADMIN,
+		)
+		.await?;
+		match ctx.mm.dbx().execute(sqlx::query(sql)).await {
+			Ok(_) => {
+				ctx.mm.dbx().commit_txn().await?;
+				return Ok(());
+			}
+			Err(err) => {
+				let _ = ctx.mm.dbx().rollback_txn().await;
+				let is_retryable = err
+					.to_string()
+					.contains("deadlock detected");
+				if is_retryable && attempt < 2 {
+					sleep(Duration::from_millis(50 * (attempt + 1) as u64)).await;
+					continue;
+				}
+				return Err(err.into());
+			}
+		}
+	}
+	unreachable!("db_exec_case_sql retry loop exhausted without returning")
 }
 
 fn extract_id(value: &Value) -> Result<Uuid> {
@@ -1107,4 +1137,232 @@ fn extract_id(value: &Value) -> Result<Uuid> {
 		.as_str()
 		.ok_or("missing data.id in response body")?;
 	Ok(Uuid::parse_str(id)?)
+}
+
+pub fn validation_issue<'a>(validation_body: &'a Value, code: &str) -> &'a Value {
+	let issues = validation_body
+		.get("data")
+		.and_then(|data| data.get("issues"))
+		.and_then(Value::as_array)
+		.unwrap_or_else(|| panic!("validation response missing data.issues: {validation_body}"));
+	let mut matches = issues.iter().filter(|issue| {
+		issue.get("code").and_then(Value::as_str) == Some(code)
+	});
+	let issue = matches
+		.next()
+		.unwrap_or_else(|| panic!("expected validation issue {code}, got {validation_body}"));
+	assert!(
+		matches.next().is_none(),
+		"expected validation issue {code} exactly once, got duplicates: {validation_body}"
+	);
+	issue
+}
+
+pub fn assert_banner_issue(validation_body: &Value, code: &str) {
+	let issue = validation_issue(validation_body, code);
+	let canonical =
+		find_canonical_rule(code).unwrap_or_else(|| panic!("missing canonical rule {code}"));
+	assert_eq!(
+		issue.get("code").and_then(Value::as_str),
+		Some(code),
+		"unexpected code payload for {code}: {validation_body}"
+	);
+	assert_eq!(
+		issue.get("message").and_then(Value::as_str),
+		Some(canonical.message),
+		"unexpected message for {code}: {validation_body}"
+	);
+	assert_eq!(
+		issue.get("section").and_then(Value::as_str),
+		Some(canonical.section),
+		"unexpected section for {code}: {validation_body}"
+	);
+	assert_eq!(
+		issue.get("blocking").and_then(Value::as_bool),
+		Some(canonical.blocking),
+		"unexpected blocking flag for {code}: {validation_body}"
+	);
+	let expected_field_path = expected_field_path_for_code(code)
+		.unwrap_or_else(|| panic!("missing expected field path for {code}"));
+	assert_eq!(
+		issue.get("field_path").and_then(Value::as_str),
+		Some(expected_field_path.as_str()),
+		"unexpected field_path for {code}: {validation_body}"
+	);
+}
+
+const KNOWN_NON_BANNER_FIELD_PATHS: &[&str] = &[
+	"caseSummaryInformation.0.languageCode",
+	"documentsHeldBySender.0.documentDescription",
+	"drugs.0.activeSubstances.0.substanceName",
+	"drugs.0.activeSubstances.0.substanceStrengthUnit",
+	"drugs.0.activeSubstances.0.substanceStrengthValue",
+	"drugs.0.activeSubstances.0.substanceTermId",
+	"drugs.0.activeSubstances.0.substanceTermIdVersion",
+	"drugs.0.dosageInformation.0.doseUnit",
+	"drugs.0.dosageInformation.0.durationUnit",
+	"drugs.0.dosageInformation.0.durationValue",
+	"drugs.0.dosageInformation.0.frequencyUnit",
+	"drugs.0.dosageInformation.0.parentRouteTermIdVersion",
+	"drugs.0.dosageInformation.0.routeTermIdVersion",
+	"drugs.0.dosageInformation.0.doseFormTermIdVersion",
+	"drugs.0.drugReactionAssessments.0.methodOfAssessment",
+	"drugs.0.drugReactionAssessments.0.resultOfAssessment",
+	"drugs.0.drugReactionAssessments.0.sourceOfAssessment",
+	"messageHeader.messageDate",
+	"messageHeader.messageNumber",
+	"messageHeader.messageReceiverIdentifier",
+	"messageHeader.messageSenderIdentifier",
+	"patientInformation.patientDeath.autopsyPerformed",
+	"reactions.0.reactionLanguage",
+];
+
+const KNOWN_NON_EMITTED_BANNER_RULE_CODES: &[&str] = &[];
+
+fn is_banner_capable_field_path(path: &str) -> bool {
+	!KNOWN_NON_BANNER_FIELD_PATHS.contains(&path)
+}
+
+fn section_source(section_letter: char) -> &'static str {
+	match section_letter {
+		'C' => include_str!("../../../../libs/lib-core/src/validation/case/sections/c.rs"),
+		'D' => include_str!("../../../../libs/lib-core/src/validation/case/sections/d.rs"),
+		'E' => include_str!("../../../../libs/lib-core/src/validation/case/sections/e.rs"),
+		'F' => include_str!("../../../../libs/lib-core/src/validation/case/sections/f.rs"),
+		'G' => include_str!("../../../../libs/lib-core/src/validation/case/sections/g.rs"),
+		'H' => include_str!("../../../../libs/lib-core/src/validation/case/sections/h.rs"),
+		'N' => include_str!("../../../../libs/lib-core/src/validation/case/sections/n.rs"),
+		_ => panic!("unsupported section {section_letter}"),
+	}
+}
+
+fn parse_field_path_entries(source: &str) -> Vec<(String, String)> {
+	let match_start = source
+		.find("match code {")
+		.unwrap_or_else(|| panic!("field_path_for_rule match not found"));
+	let after_match = &source[match_start + "match code {".len()..];
+	let match_end = after_match
+		.find("_ => None,")
+		.unwrap_or_else(|| panic!("field_path_for_rule terminator not found"));
+	let body = &after_match[..match_end];
+	let mut out = Vec::new();
+	let mut current_codes: Vec<String> = Vec::new();
+	let mut waiting_for_path = false;
+
+	for line in body.lines() {
+		let trimmed = line.trim();
+		if trimmed.is_empty() {
+			continue;
+		}
+		if trimmed.contains("=>") {
+			let head = trimmed
+				.split_once("=>")
+				.map(|(left, _)| left)
+				.unwrap_or(trimmed);
+			collect_rule_codes_from_fragment(head, &mut current_codes);
+			if let Some(path) = extract_some_path(trimmed) {
+				for code in current_codes.drain(..) {
+					out.push((code, path.clone()));
+				}
+				waiting_for_path = false;
+			} else {
+				waiting_for_path = true;
+			}
+			continue;
+		}
+		if waiting_for_path {
+			if let Some(path) = extract_some_path(trimmed) {
+				for code in current_codes.drain(..) {
+					out.push((code, path.clone()));
+				}
+				waiting_for_path = false;
+			}
+			continue;
+		}
+		collect_rule_codes_from_fragment(trimmed, &mut current_codes);
+	}
+
+	out
+}
+
+fn collect_rule_codes_from_fragment(fragment: &str, codes: &mut Vec<String>) {
+	let mut cursor = 0usize;
+	while let Some(open_rel) = fragment[cursor..].find('"') {
+		let open = cursor + open_rel + 1;
+		let close = fragment[open..]
+			.find('"')
+			.unwrap_or_else(|| panic!("unterminated quoted token in {fragment}"))
+			+ open;
+		let token = &fragment[open..close];
+		if token.starts_with("ICH.") || token.starts_with("FDA.") || token.starts_with("MFDS.") {
+			codes.push(token.to_string());
+		}
+		cursor = close + 1;
+	}
+}
+
+fn extract_some_path(fragment: &str) -> Option<String> {
+	if let Some(path_start_rel) = fragment.find("Some(\"") {
+		let path_start = path_start_rel + "Some(\"".len();
+		let path_end = fragment[path_start..].find('"')? + path_start;
+		return Some(fragment[path_start..path_end].to_string());
+	}
+	if fragment.starts_with('"') {
+		let path_end = fragment[1..].find('"')? + 1;
+		let token = &fragment[1..path_end];
+		if token.starts_with("ICH.") || token.starts_with("FDA.") || token.starts_with("MFDS.") {
+			return None;
+		}
+		return Some(token.to_string());
+	}
+	None
+}
+
+fn expected_entries_for_section(section_letter: char) -> Vec<(String, String)> {
+	parse_field_path_entries(section_source(section_letter))
+		.into_iter()
+		.filter(|(code, path)| {
+			is_banner_capable_field_path(path)
+				&& !KNOWN_NON_EMITTED_BANNER_RULE_CODES.contains(&code.as_str())
+		})
+		.collect()
+}
+
+pub fn expected_banner_rule_codes_for_section(section_letter: char) -> Vec<String> {
+	expected_entries_for_section(section_letter)
+		.into_iter()
+		.map(|(code, _)| code)
+		.collect()
+}
+
+pub fn expected_field_path_for_code(code: &str) -> Option<String> {
+	for section in ['C', 'D', 'E', 'F', 'G', 'H', 'N'] {
+		for (entry_code, path) in expected_entries_for_section(section) {
+			if entry_code == code {
+				return Some(path);
+			}
+		}
+	}
+	None
+}
+
+pub fn assert_section_rule_coverage(
+	section_letter: char,
+	tested_rule_codes: &[&str],
+) {
+	let expected = expected_banner_rule_codes_for_section(section_letter);
+	let actual = tested_rule_codes
+		.iter()
+		.map(|code| (*code).to_string())
+		.collect::<Vec<_>>();
+	assert_eq!(
+		actual, expected,
+		"banner-capable rule coverage drift for section {section_letter}"
+	);
+	let actual_set = actual.into_iter().collect::<BTreeSet<_>>();
+	let expected_set = expected.into_iter().collect::<BTreeSet<_>>();
+	assert_eq!(
+		actual_set, expected_set,
+		"banner-capable rule membership drift for section {section_letter}"
+	);
 }

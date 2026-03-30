@@ -47,8 +47,6 @@ use uuid::Uuid;
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
-const SYSTEM_VALIDATION_REASON_AUTO: &str =
-	"system validation: automatic case status synchronization";
 const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
 	"system validation: validator mark-validated endpoint";
 
@@ -375,59 +373,7 @@ pub async fn update_case_guarded(
 	};
 
 	CaseBmc::update(&ctx_for_update, &mm, id, data).await?;
-	let mut entity = CaseBmc::get(&ctx, &mm, id).await?;
-
-	let status = entity.status.trim().to_ascii_lowercase();
-	let auto_manage_status =
-		matches!(status.as_str(), "" | "draft" | "reviewed" | "validated");
-	if auto_manage_status {
-		let profile = entity
-			.validation_profile
-			.as_deref()
-			.and_then(ValidationProfile::parse)
-			.unwrap_or(ValidationProfile::Fda);
-		// This validation pass is only for automatic status synchronization.
-		// Field-level issue rendering in the wizard comes from the explicit
-		// validation endpoints after save/review actions.
-		let report = validate_case_for_profile(&ctx, &mm, id, profile).await?;
-		let desired = if report.ok { "validated" } else { "reviewed" };
-		if entity.status.trim().to_ascii_lowercase() != desired {
-			let system_validation_ctx = ctx.with_compliance(
-				Some(SYSTEM_VALIDATION_REASON_AUTO.to_string()),
-				None,
-			);
-			CaseBmc::update(
-				&system_validation_ctx,
-				&mm,
-				id,
-				CaseForUpdate {
-					safety_report_id: None,
-					dg_prd_key: None,
-					status: Some(desired.to_string()),
-					validation_profile: None,
-					appendices_json: None,
-					review_receivers_json: None,
-					workflow_routes_json: None,
-					mfds_report_type: None,
-					report_year: None,
-					source_document_name: None,
-					source_document_base64: None,
-					source_document_media_type: None,
-					submitted_by: None,
-					submitted_at: None,
-					raw_xml: None,
-					dirty_c: None,
-					dirty_d: None,
-					dirty_e: None,
-					dirty_f: None,
-					dirty_g: None,
-					dirty_h: None,
-				},
-			)
-			.await?;
-			entity = CaseBmc::get(&ctx, &mm, id).await?;
-		}
-	}
+	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
@@ -664,7 +610,10 @@ async fn list_potential_duplicates(
 		let row_date = safety
 			.as_ref()
 			.and_then(|s| s.date_of_most_recent_information);
-		let row_report = safety.as_ref().map(|s| s.report_type.clone());
+		let row_report = safety
+			.as_ref()
+			.map(|s| s.report_type.clone())
+			.flatten();
 		let primary_sources = PrimarySourceBmc::list(
 			ctx,
 			mm,
@@ -1213,7 +1162,7 @@ pub async fn create_case_from_intake(
 			case_id,
 			transmission_date: Some(data.date_of_most_recent_information),
 			transmission_date_null_flavor: None,
-			report_type: data.report_type,
+			report_type: Some(data.report_type),
 			date_first_received_from_source: Some(
 				data.date_of_most_recent_information,
 			),
@@ -1222,7 +1171,7 @@ pub async fn create_case_from_intake(
 				data.date_of_most_recent_information,
 			),
 			date_of_most_recent_information_null_flavor: None,
-			fulfil_expedited_criteria: false,
+			fulfil_expedited_criteria: Some(false),
 			first_sender_type: None,
 			additional_documents_available: None,
 		},

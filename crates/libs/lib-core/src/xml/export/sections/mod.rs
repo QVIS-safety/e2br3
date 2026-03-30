@@ -3,9 +3,7 @@ use crate::model;
 use crate::model::case::Case;
 use crate::model::message_header::MessageHeader;
 use crate::model::narrative::NarrativeInformationBmc;
-use crate::model::patient::{
-	PatientDeathInformation, PatientInformationBmc,
-};
+use crate::model::patient::{PatientDeathInformation, PatientInformationBmc};
 use crate::model::reaction::Reaction;
 use crate::model::receiver::ReceiverInformation;
 use crate::model::safety_report::PrimarySource;

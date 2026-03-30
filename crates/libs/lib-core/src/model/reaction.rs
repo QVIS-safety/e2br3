@@ -365,15 +365,17 @@ impl ReactionBmc {
 			     criteria_other_medically_important = COALESCE($20, criteria_other_medically_important),
 			     criteria_other_medically_important_null_flavor = COALESCE($21, criteria_other_medically_important_null_flavor),
 			     required_intervention = COALESCE($22, required_intervention),
-			     start_date = COALESCE($23, start_date),
-			     end_date = COALESCE($24, end_date),
-			     duration_value = COALESCE($25, duration_value),
-			     duration_unit = COALESCE($26, duration_unit),
-			     outcome = COALESCE($27, outcome),
-			     medical_confirmation = COALESCE($28, medical_confirmation),
-			     country_code = COALESCE($29, country_code),
+			     start_date = CASE WHEN $24 IS NOT NULL THEN NULL ELSE COALESCE($23, start_date) END,
+			     start_date_null_flavor = CASE WHEN $23 IS NOT NULL THEN NULL ELSE COALESCE($24, start_date_null_flavor) END,
+			     end_date = CASE WHEN $26 IS NOT NULL THEN NULL ELSE COALESCE($25, end_date) END,
+			     end_date_null_flavor = CASE WHEN $25 IS NOT NULL THEN NULL ELSE COALESCE($26, end_date_null_flavor) END,
+			     duration_value = COALESCE($27, duration_value),
+			     duration_unit = COALESCE($28, duration_unit),
+			     outcome = COALESCE($29, outcome),
+			     medical_confirmation = COALESCE($30, medical_confirmation),
+			     country_code = COALESCE($31, country_code),
 			     updated_at = now(),
-			     updated_by = $30
+			     updated_by = $32
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -404,7 +406,9 @@ impl ReactionBmc {
 					.bind(reaction_u.criteria_other_medically_important_null_flavor)
 					.bind(reaction_u.required_intervention)
 					.bind(reaction_u.start_date)
+					.bind(reaction_u.start_date_null_flavor)
 					.bind(reaction_u.end_date)
+					.bind(reaction_u.end_date_null_flavor)
 					.bind(reaction_u.duration_value)
 					.bind(reaction_u.duration_unit)
 					.bind(reaction_u.outcome)

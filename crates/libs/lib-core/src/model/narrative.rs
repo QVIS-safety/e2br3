@@ -193,6 +193,21 @@ impl NarrativeInformationBmc {
 		})
 	}
 
+	pub async fn get_by_case_optional(
+		_ctx: &crate::ctx::Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+	) -> Result<Option<NarrativeInformation>> {
+		let sql = format!("SELECT * FROM {} WHERE case_id = $1", Self::TABLE);
+		let narrative = mm
+			.dbx()
+			.fetch_optional(
+				sqlx::query_as::<_, NarrativeInformation>(&sql).bind(case_id),
+			)
+			.await?;
+		Ok(narrative)
+	}
+
 	pub async fn update_by_case(
 		ctx: &crate::ctx::Ctx,
 		mm: &ModelManager,

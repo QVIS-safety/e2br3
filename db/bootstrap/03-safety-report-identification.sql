@@ -11,7 +11,7 @@ CREATE TABLE safety_report_identification (
     transmission_date_null_flavor VARCHAR(4) CHECK (transmission_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.3 - Type of Report (MANDATORY - E2B(R3) codes)
-    report_type VARCHAR(1) NOT NULL CHECK (report_type IN ('1', '2', '3', '4')),
+    report_type VARCHAR(1) CHECK (report_type IS NULL OR report_type IN ('1', '2', '3', '4')),
     -- 1=Spontaneous report, 2=Report from study, 3=Other, 4=Not available
 
     -- C.1.4 - Date Report Was First Received from Source (MANDATORY)
@@ -23,7 +23,7 @@ CREATE TABLE safety_report_identification (
     date_of_most_recent_information_null_flavor VARCHAR(4) CHECK (date_of_most_recent_information_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.7 - Fulfils Expedited Criteria (MANDATORY)
-    fulfil_expedited_criteria BOOLEAN NOT NULL,
+    fulfil_expedited_criteria BOOLEAN,
 
     -- FDA.C.1.7.1 - Local Criteria Report Type (FDA)
     local_criteria_report_type VARCHAR(10),

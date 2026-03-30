@@ -184,13 +184,9 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 	if let Some(country) = reaction.country_code.as_deref() {
 		let country = country.trim();
 		if !country.is_empty() {
-			out.push_str(
-				"<location><locatedEntity><locatedPlace><code code=\"",
-			);
+			out.push_str("<location><locatedEntity><locatedPlace><code code=\"");
 			out.push_str(&xml_escape(country));
-			out.push_str(
-				"\"/></locatedPlace></locatedEntity></location>",
-			);
+			out.push_str("\"/></locatedPlace></locatedEntity></location>");
 		}
 	}
 	out.push_str("</observation></subjectOf2>");

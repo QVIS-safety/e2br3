@@ -70,10 +70,11 @@ pub async fn get_narrative_information(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(case_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<NarrativeInformation>>)> {
+) -> Result<(StatusCode, Json<DataRestResult<Option<NarrativeInformation>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, NARRATIVE_READ)?;
-	let entity = NarrativeInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	let entity =
+		NarrativeInformationBmc::get_by_case_optional(&ctx, &mm, case_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 

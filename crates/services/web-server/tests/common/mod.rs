@@ -13,7 +13,8 @@ use lib_core::model::ModelManager;
 use std::path::PathBuf;
 use uuid::Uuid;
 
-pub type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
+pub type Result<T> =
+	core::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 pub struct SeedUser {
 	pub id: Uuid,
@@ -63,7 +64,6 @@ pub async fn init_test_env() {
 	std::env::set_var("SERVICE_TOKEN_KEY", "ZmFrZV9rZXk");
 	std::env::set_var("SERVICE_TOKEN_DURATION_SEC", "3600");
 	std::env::set_var("E2BR3_DEBUG_ERRORS", "1");
-	std::env::set_var("DEMO_USER_FORCE_SYNC", "1");
 
 	// Keep integration tests deterministic even when direnv isn't loaded.
 	if std::env::var("E2BR3_EXAMPLES_DIR").is_err() {
@@ -83,8 +83,13 @@ pub async fn init_test_env() {
 pub async fn init_test_mm() -> Result<ModelManager> {
 	init_test_env().await;
 	_dev_utils::init_dev().await;
-	_dev_utils::ensure_dev_schema_compatibility().await?;
+	_dev_utils::ensure_dev_schema_compatibility()
+		.await
+		.map_err(|err| format!("{err}"))?;
 	let mm = ModelManager::new().await?;
+	mm.dbx()
+		.execute(sqlx::query("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+		.await?;
 	Ok(mm)
 }
 

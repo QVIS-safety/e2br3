@@ -14,8 +14,8 @@ mod case_validation_web;
 mod error_mapping_web;
 #[path = "api/middleware_ctx.rs"]
 mod middleware_ctx;
-#[path = "api/presave_templates_web.rs"]
-mod presave_templates_web;
+#[path = "api/presave_contract_web.rs"]
+mod presave_contract_web;
 #[path = "api/submission_lifecycle_web.rs"]
 mod submission_lifecycle_web;
 #[path = "api/submission_schema_guard_web.rs"]

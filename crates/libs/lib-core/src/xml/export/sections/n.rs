@@ -131,7 +131,9 @@ pub(crate) async fn apply_section_n(
 			xpath,
 			"/hl7:MCCI_IN200100UV01/hl7:receiver/hl7:device/hl7:asAgent",
 			&receiver,
-			report.as_ref().and_then(|r| r.receiver_organization.as_deref()),
+			report
+				.as_ref()
+				.and_then(|r| r.receiver_organization.as_deref()),
 		);
 		apply_receiver_organization(
 			doc,
@@ -218,16 +220,7 @@ fn ensure_top_level_receiver_agent_nodes(
 		"<asAgent classCode=\"AGNT\">\
 			<representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\">\
 				<id root=\"2.16.840.1.113883.3.989.2.1.3.14\" extension=\"{escaped}\"/>\
-				<code/>\
 				<name/>\
-				<desc/>\
-				<addr>\
-					<streetAddressLine/>\
-					<city/>\
-					<state/>\
-					<postalCode/>\
-					<country/>\
-				</addr>\
 			</representedOrganization>\
 		</asAgent>"
 	);
@@ -249,46 +242,15 @@ fn apply_receiver_organization(
 	report_receiver_organization: Option<&str>,
 ) {
 	let org_base = format!("{agent_base}/hl7:representedOrganization");
-	if let Some(value) = receiver.receiver_type.as_deref() {
-		set_attr_first(xpath, &format!("{org_base}/hl7:code"), "code", value);
-	}
+	remove_nodes(xpath, &format!("{org_base}/hl7:code"));
+	remove_nodes(xpath, &format!("{org_base}/hl7:desc"));
+	remove_nodes(xpath, &format!("{org_base}/hl7:addr"));
 	if let Some(value) = receiver
 		.organization_name
 		.as_deref()
 		.or(report_receiver_organization)
 	{
 		set_text_first(xpath, &format!("{org_base}/hl7:name"), value);
-	}
-	if let Some(value) = receiver.department.as_deref() {
-		set_text_first(xpath, &format!("{org_base}/hl7:desc"), value);
-	}
-	if let Some(value) = receiver.street_address.as_deref() {
-		set_text_first(
-			xpath,
-			&format!("{org_base}/hl7:addr/hl7:streetAddressLine"),
-			value,
-		);
-	}
-	if let Some(value) = receiver.city.as_deref() {
-		set_text_first(xpath, &format!("{org_base}/hl7:addr/hl7:city"), value);
-	}
-	if let Some(value) = receiver.state_province.as_deref() {
-		set_text_first(xpath, &format!("{org_base}/hl7:addr/hl7:state"), value);
-	}
-	if let Some(value) = receiver.postcode.as_deref() {
-		set_text_first(
-			xpath,
-			&format!("{org_base}/hl7:addr/hl7:postalCode"),
-			value,
-		);
-	}
-	if let Some(value) = receiver.country_code.as_deref() {
-		set_attr_first(
-			xpath,
-			&format!("{org_base}/hl7:addr/hl7:country"),
-			"code",
-			value,
-		);
 	}
 	if let Some(value) = receiver.telephone.as_deref() {
 		append_fragment_child_text_telecom(

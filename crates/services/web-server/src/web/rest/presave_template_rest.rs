@@ -6,8 +6,9 @@ use lib_core::model::acs::{
 	PRESAVE_TEMPLATE_LIST, PRESAVE_TEMPLATE_READ, PRESAVE_TEMPLATE_UPDATE,
 };
 use lib_core::model::presave_template::{
-	PresaveTemplate, PresaveTemplateAudit, PresaveTemplateAuditBmc,
-	PresaveTemplateBmc, PresaveTemplateForCreate, PresaveTemplateForUpdate,
+	PresaveEntityType, PresaveTemplate, PresaveTemplateAudit,
+	PresaveTemplateAuditBmc, PresaveTemplateBmc, PresaveTemplateForCreate,
+	PresaveTemplateForUpdate,
 };
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
@@ -19,7 +20,7 @@ use uuid::Uuid;
 #[derive(Debug, serde::Deserialize)]
 pub struct PresaveTemplateListQuery {
 	#[serde(rename = "entityType")]
-	pub entity_type: Option<String>,
+	pub entity_type: Option<PresaveEntityType>,
 }
 
 /// POST /api/presave-templates
@@ -89,7 +90,7 @@ pub async fn list_presave_templates(
 	}
 
 	let entities = if let Some(entity_type) = query.entity_type {
-		PresaveTemplateBmc::list_by_entity_type(&ctx, &mm, &entity_type)
+		PresaveTemplateBmc::list_by_entity_type(&ctx, &mm, entity_type)
 			.await
 			.map_err(WebError::Model)?
 	} else {

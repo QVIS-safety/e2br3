@@ -474,7 +474,7 @@ pub(crate) fn collect_mfds_issues(
 	let report_type_is_study = validation_ctx
 		.safety_report
 		.as_ref()
-		.map(|r| r.report_type.as_str())
+		.and_then(|r| r.report_type.as_deref())
 		== Some("2");
 	let receiver_code = validation_ctx
 		.message_header

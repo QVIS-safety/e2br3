@@ -1,0 +1,326 @@
+use super::save_fields_common::{
+	assert_bool, assert_date_tuple, assert_f64, assert_i64, assert_str, extract_id,
+	get_ok, post_created, put_ok, FieldCase,
+};
+use crate::common::Result;
+use crate::persist_workflow::{create_case, setup, PersistTestCtx};
+use serde_json::json;
+use serial_test::serial;
+use uuid::Uuid;
+
+fn reaction_field(id: &'static str) -> FieldCase {
+	FieldCase {
+		canonical_id: id,
+		endpoint: "/api/cases/{id}/reactions/{reaction_id}",
+	}
+}
+
+async fn create_reaction(ctx: &PersistTestCtx, case_id: Uuid) -> Result<Uuid> {
+	let value = post_created(
+		ctx,
+		reaction_field("E.i"),
+		format!("/api/cases/{case_id}/reactions"),
+		json!({"data": {
+			"case_id": case_id,
+			"sequence_number": 1,
+			"primary_source_reaction": "Headache"
+		}}),
+	)
+	.await?;
+	extract_id(&value)
+}
+
+macro_rules! reaction_single_field_test {
+	($name:ident, $canonical:literal, $payload:expr, $assert:expr) => {
+		#[tokio::test]
+		#[serial]
+		async fn $name() -> Result<()> {
+			let ctx = setup().await?;
+			let case_id = create_case(&ctx).await?;
+			let reaction_id = create_reaction(&ctx, case_id).await?;
+
+			put_ok(
+				&ctx,
+				reaction_field($canonical),
+				format!("/api/cases/{case_id}/reactions/{reaction_id}"),
+				json!({ "data": $payload }),
+			)
+			.await?;
+
+			let value = get_ok(
+				&ctx,
+				reaction_field($canonical),
+				format!("/api/cases/{case_id}/reactions/{reaction_id}"),
+			)
+			.await?;
+			($assert)(&value);
+			Ok(())
+		}
+	};
+}
+
+reaction_single_field_test!(
+	save_e_i_primary_source_reaction_only,
+	"E.i.primary_source_reaction",
+	json!({"primary_source_reaction": "Migraine"}),
+	|value| {
+		assert_i64(value, "sequence_number", 1);
+		assert_str(value, "primary_source_reaction", "Migraine");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_primary_source_reaction_translation_only,
+	"E.i.primary_source_reaction_translation",
+	json!({"primary_source_reaction_translation": "Migraine EN"}),
+	|value| {
+		assert_str(value, "primary_source_reaction_translation", "Migraine EN");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_reaction_language_only,
+	"E.i.reaction_language",
+	json!({"reaction_language": "ko"}),
+	|value| {
+		assert_str(value, "reaction_language", "ko");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_reaction_meddra_version_only,
+	"E.i.reaction_meddra_version",
+	json!({"reaction_meddra_version": "27.0"}),
+	|value| {
+		assert_str(value, "reaction_meddra_version", "27.0");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_reaction_meddra_code_only,
+	"E.i.reaction_meddra_code",
+	json!({"reaction_meddra_code": "100"}),
+	|value| {
+		assert_str(value, "reaction_meddra_code", "100");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_term_highlighted_only,
+	"E.i.term_highlighted",
+	json!({"term_highlighted": true}),
+	|value| {
+		assert_bool(value, "term_highlighted", true);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_serious_only,
+	"E.i.serious",
+	json!({"serious": true}),
+	|value| {
+		assert_bool(value, "serious", true);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_death_only,
+	"E.i.criteria_death",
+	json!({"criteria_death": true}),
+	|value| {
+		assert_bool(value, "criteria_death", true);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_death_null_flavor_only,
+	"E.i.criteria_death_null_flavor",
+	json!({"criteria_death_null_flavor": "UNK"}),
+	|value| {
+		assert_str(value, "criteria_death_null_flavor", "UNK");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_life_threatening_only,
+	"E.i.criteria_life_threatening",
+	json!({"criteria_life_threatening": true}),
+	|value| {
+		assert_bool(value, "criteria_life_threatening", true);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_life_threatening_null_flavor_only,
+	"E.i.criteria_life_threatening_null_flavor",
+	json!({"criteria_life_threatening_null_flavor": "UNK"}),
+	|value| {
+		assert_str(value, "criteria_life_threatening_null_flavor", "UNK");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_hospitalization_only,
+	"E.i.criteria_hospitalization",
+	json!({"criteria_hospitalization": true}),
+	|value| {
+		assert_bool(value, "criteria_hospitalization", true);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_hospitalization_null_flavor_only,
+	"E.i.criteria_hospitalization_null_flavor",
+	json!({"criteria_hospitalization_null_flavor": "UNK"}),
+	|value| {
+		assert_str(value, "criteria_hospitalization_null_flavor", "UNK");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_disabling_only,
+	"E.i.criteria_disabling",
+	json!({"criteria_disabling": true}),
+	|value| {
+		assert_bool(value, "criteria_disabling", true);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_disabling_null_flavor_only,
+	"E.i.criteria_disabling_null_flavor",
+	json!({"criteria_disabling_null_flavor": "UNK"}),
+	|value| {
+		assert_str(value, "criteria_disabling_null_flavor", "UNK");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_congenital_anomaly_only,
+	"E.i.criteria_congenital_anomaly",
+	json!({"criteria_congenital_anomaly": true}),
+	|value| {
+		assert_bool(value, "criteria_congenital_anomaly", true);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_congenital_anomaly_null_flavor_only,
+	"E.i.criteria_congenital_anomaly_null_flavor",
+	json!({"criteria_congenital_anomaly_null_flavor": "UNK"}),
+	|value| {
+		assert_str(value, "criteria_congenital_anomaly_null_flavor", "UNK");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_other_medically_important_only,
+	"E.i.criteria_other_medically_important",
+	json!({"criteria_other_medically_important": true}),
+	|value| {
+		assert_bool(value, "criteria_other_medically_important", true);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_criteria_other_medically_important_null_flavor_only,
+	"E.i.criteria_other_medically_important_null_flavor",
+	json!({"criteria_other_medically_important_null_flavor": "UNK"}),
+	|value| {
+		assert_str(
+			value,
+			"criteria_other_medically_important_null_flavor",
+			"UNK",
+		);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_required_intervention_only,
+	"E.i.required_intervention",
+	json!({"required_intervention": "1"}),
+	|value| {
+		assert_str(value, "required_intervention", "1");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_start_date_only,
+	"E.i.start_date",
+	json!({"start_date": [2024, 1, 1]}),
+	|value| {
+		assert_date_tuple(value, "start_date", &[2024, 1]);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_end_date_only,
+	"E.i.end_date",
+	json!({"end_date": [2024, 1, 2]}),
+	|value| {
+		assert_date_tuple(value, "end_date", &[2024, 2]);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_duration_value_only,
+	"E.i.duration_value",
+	json!({"duration_value": 2.0}),
+	|value| {
+		assert_f64(value, "duration_value", 2.0);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_duration_unit_only,
+	"E.i.duration_unit",
+	json!({"duration_unit": "d"}),
+	|value| {
+		assert_str(value, "duration_unit", "d");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_outcome_only,
+	"E.i.outcome",
+	json!({"outcome": "1"}),
+	|value| {
+		assert_str(value, "outcome", "1");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_medical_confirmation_only,
+	"E.i.medical_confirmation",
+	json!({"medical_confirmation": true}),
+	|value| {
+		assert_bool(value, "medical_confirmation", true);
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_country_code_only,
+	"E.i.country_code",
+	json!({"country_code": "KR"}),
+	|value| {
+		assert_str(value, "country_code", "KR");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_start_date_null_flavor_only,
+	"E.i.start_date_null_flavor",
+	json!({"start_date_null_flavor": "UNK"}),
+	|value| {
+		assert_str(value, "start_date_null_flavor", "UNK");
+	}
+);
+
+reaction_single_field_test!(
+	save_e_i_end_date_null_flavor_only,
+	"E.i.end_date_null_flavor",
+	json!({"end_date_null_flavor": "ASKU"}),
+	|value| {
+		assert_str(value, "end_date_null_flavor", "ASKU");
+	}
+);

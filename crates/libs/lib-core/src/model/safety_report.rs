@@ -26,7 +26,7 @@ pub struct SafetyReportIdentification {
 	pub transmission_date_null_flavor: Option<String>,
 
 	// C.1.3 - Type of Report (MANDATORY)
-	pub report_type: String,
+	pub report_type: Option<String>,
 
 	// C.1.4 - Date Report Was First Received from Source (MANDATORY)
 	pub date_first_received_from_source: Option<Date>,
@@ -37,7 +37,7 @@ pub struct SafetyReportIdentification {
 	pub date_of_most_recent_information_null_flavor: Option<String>,
 
 	// C.1.7 - Fulfils Expedited Criteria (MANDATORY)
-	pub fulfil_expedited_criteria: bool,
+	pub fulfil_expedited_criteria: Option<bool>,
 
 	// FDA.C.1.7.1 - Local Criteria Report Type (FDA)
 	pub local_criteria_report_type: Option<String>,
@@ -70,35 +70,9 @@ pub struct SafetyReportIdentification {
 	pub updated_by: Option<Uuid>,
 }
 
-#[derive(Fields, Deserialize)]
+#[derive(Deserialize)]
 pub struct SafetyReportIdentificationForCreate {
 	pub case_id: Uuid,
-	#[serde(
-		default,
-		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
-	)]
-	pub transmission_date: Option<Date>,
-	pub transmission_date_null_flavor: Option<String>,
-	pub report_type: String,
-	#[serde(
-		default,
-		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
-	)]
-	pub date_first_received_from_source: Option<Date>,
-	pub date_first_received_from_source_null_flavor: Option<String>,
-	#[serde(
-		default,
-		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
-	)]
-	pub date_of_most_recent_information: Option<Date>,
-	pub date_of_most_recent_information_null_flavor: Option<String>,
-	pub fulfil_expedited_criteria: bool,
-	pub first_sender_type: Option<String>,
-	pub additional_documents_available: Option<bool>,
-}
-
-#[derive(Fields, Deserialize)]
-pub struct SafetyReportIdentificationForUpdate {
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
@@ -119,6 +93,73 @@ pub struct SafetyReportIdentificationForUpdate {
 	pub date_of_most_recent_information: Option<Date>,
 	pub date_of_most_recent_information_null_flavor: Option<String>,
 	pub fulfil_expedited_criteria: Option<bool>,
+	pub first_sender_type: Option<String>,
+	pub additional_documents_available: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub enum PatchValue<T> {
+	#[default]
+	Missing,
+	Null,
+	Value(T),
+}
+
+impl<T> PatchValue<T> {
+	fn into_parts(self) -> (Option<T>, bool) {
+		match self {
+			Self::Missing => (None, false),
+			Self::Null => (None, true),
+			Self::Value(value) => (Some(value), false),
+		}
+	}
+}
+
+fn deserialize_patch_value<'de, D, T>(
+	deserializer: D,
+) -> std::result::Result<PatchValue<T>, D::Error>
+where
+	D: serde::Deserializer<'de>,
+	T: Deserialize<'de>,
+{
+	#[derive(Deserialize)]
+	#[serde(untagged)]
+	enum PatchInput<T> {
+		Null(()),
+		Value(T),
+	}
+
+	let value = PatchInput::<T>::deserialize(deserializer)?;
+	Ok(match value {
+		PatchInput::Null(()) => PatchValue::Null,
+		PatchInput::Value(value) => PatchValue::Value(value),
+	})
+}
+
+#[derive(Deserialize)]
+pub struct SafetyReportIdentificationForUpdate {
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub transmission_date: Option<Date>,
+	pub transmission_date_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_value")]
+	pub report_type: PatchValue<String>,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub date_first_received_from_source: Option<Date>,
+	pub date_first_received_from_source_null_flavor: Option<String>,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub date_of_most_recent_information: Option<Date>,
+	pub date_of_most_recent_information_null_flavor: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_value")]
+	pub fulfil_expedited_criteria: PatchValue<bool>,
 	pub local_criteria_report_type: Option<String>,
 	pub combination_product_report_indicator: Option<String>,
 	pub worldwide_unique_id: Option<String>,
@@ -527,6 +568,9 @@ impl SafetyReportIdentificationBmc {
 		case_id: Uuid,
 		data: SafetyReportIdentificationForUpdate,
 	) -> Result<()> {
+		let (report_type, clear_report_type) = data.report_type.into_parts();
+		let (fulfil_expedited_criteria, clear_fulfil_expedited_criteria) =
+			data.fulfil_expedited_criteria.into_parts();
 		let should_mark_nullified = data
 			.nullification_code
 			.as_deref()
@@ -574,22 +618,22 @@ impl SafetyReportIdentificationBmc {
 			"UPDATE {}
 			 SET transmission_date = CASE WHEN $3 IS NOT NULL THEN NULL ELSE COALESCE($2, transmission_date) END,
 			     transmission_date_null_flavor = CASE WHEN $2 IS NOT NULL THEN NULL ELSE COALESCE($3, transmission_date_null_flavor) END,
-			     report_type = COALESCE($4, report_type),
-			     date_first_received_from_source = CASE WHEN $6 IS NOT NULL THEN NULL ELSE COALESCE($5, date_first_received_from_source) END,
-			     date_first_received_from_source_null_flavor = CASE WHEN $5 IS NOT NULL THEN NULL ELSE COALESCE($6, date_first_received_from_source_null_flavor) END,
-			     date_of_most_recent_information = CASE WHEN $8 IS NOT NULL THEN NULL ELSE COALESCE($7, date_of_most_recent_information) END,
-			     date_of_most_recent_information_null_flavor = CASE WHEN $7 IS NOT NULL THEN NULL ELSE COALESCE($8, date_of_most_recent_information_null_flavor) END,
-			     fulfil_expedited_criteria = COALESCE($9, fulfil_expedited_criteria),
-			     local_criteria_report_type = COALESCE($10, local_criteria_report_type),
-			     combination_product_report_indicator = COALESCE($11, combination_product_report_indicator),
-			     worldwide_unique_id = COALESCE($12, worldwide_unique_id),
-			     first_sender_type = COALESCE($13, first_sender_type),
-			     additional_documents_available = COALESCE($14, additional_documents_available),
-			     nullification_code = COALESCE($15, nullification_code),
-			     nullification_reason = COALESCE($16, nullification_reason),
-			     receiver_organization = COALESCE($17, receiver_organization),
+			     report_type = CASE WHEN $4 THEN NULL ELSE COALESCE($5, report_type) END,
+			     date_first_received_from_source = CASE WHEN $7 IS NOT NULL THEN NULL ELSE COALESCE($6, date_first_received_from_source) END,
+			     date_first_received_from_source_null_flavor = CASE WHEN $6 IS NOT NULL THEN NULL ELSE COALESCE($7, date_first_received_from_source_null_flavor) END,
+			     date_of_most_recent_information = CASE WHEN $9 IS NOT NULL THEN NULL ELSE COALESCE($8, date_of_most_recent_information) END,
+			     date_of_most_recent_information_null_flavor = CASE WHEN $8 IS NOT NULL THEN NULL ELSE COALESCE($9, date_of_most_recent_information_null_flavor) END,
+			     fulfil_expedited_criteria = CASE WHEN $10 THEN NULL ELSE COALESCE($11, fulfil_expedited_criteria) END,
+			     local_criteria_report_type = COALESCE($12, local_criteria_report_type),
+			     combination_product_report_indicator = COALESCE($13, combination_product_report_indicator),
+			     worldwide_unique_id = COALESCE($14, worldwide_unique_id),
+			     first_sender_type = COALESCE($15, first_sender_type),
+			     additional_documents_available = COALESCE($16, additional_documents_available),
+			     nullification_code = COALESCE($17, nullification_code),
+			     nullification_reason = COALESCE($18, nullification_reason),
+			     receiver_organization = COALESCE($19, receiver_organization),
 			     updated_at = now(),
-			     updated_by = $18
+			     updated_by = $20
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -600,12 +644,14 @@ impl SafetyReportIdentificationBmc {
 					.bind(case_id)
 					.bind(data.transmission_date)
 					.bind(data.transmission_date_null_flavor)
-					.bind(data.report_type)
+					.bind(clear_report_type)
+					.bind(report_type)
 					.bind(data.date_first_received_from_source)
 					.bind(data.date_first_received_from_source_null_flavor)
 					.bind(data.date_of_most_recent_information)
 					.bind(data.date_of_most_recent_information_null_flavor)
-					.bind(data.fulfil_expedited_criteria)
+					.bind(clear_fulfil_expedited_criteria)
+					.bind(fulfil_expedited_criteria)
 					.bind(data.local_criteria_report_type)
 					.bind(data.combination_product_report_indicator)
 					.bind(data.worldwide_unique_id)

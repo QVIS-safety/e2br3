@@ -688,6 +688,8 @@ pub struct DosageInformation {
 	pub parent_route: Option<String>,
 	pub parent_route_termid: Option<String>,
 	pub parent_route_termid_version: Option<String>,
+	pub first_administration_date_null_flavor: Option<String>,
+	pub last_administration_date_null_flavor: Option<String>,
 
 	// Timestamps
 	pub created_at: OffsetDateTime,
