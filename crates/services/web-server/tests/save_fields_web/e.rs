@@ -22,8 +22,9 @@ async fn create_reaction(ctx: &PersistTestCtx, case_id: Uuid) -> Result<Uuid> {
 		format!("/api/cases/{case_id}/reactions"),
 		json!({"data": {
 			"case_id": case_id,
-			"sequence_number": 1,
-			"primary_source_reaction": "Headache"
+			"sequence_number": 1
+			,
+			"primary_source_reaction": "Seed reaction"
 		}}),
 	)
 	.await?;

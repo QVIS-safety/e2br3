@@ -21,6 +21,42 @@ fn receiver_field(id: &'static str) -> FieldCase {
 	}
 }
 
+async fn create_message_header(
+	ctx: &crate::persist_workflow::PersistTestCtx,
+	case_id: Uuid,
+) -> Result<()> {
+	post_created(
+		ctx,
+		message_header_field("N"),
+		format!("/api/cases/{case_id}/message-header"),
+		json!({"data": {
+			"case_id": case_id,
+			"message_number": format!("MSG-{case_id}"),
+			"message_sender_identifier": "SENDER",
+			"message_receiver_identifier": "RECV",
+			"message_date": "20240102030405"
+		}}),
+	)
+	.await?;
+	Ok(())
+}
+
+async fn create_receiver(
+	ctx: &crate::persist_workflow::PersistTestCtx,
+	case_id: Uuid,
+) -> Result<()> {
+	post_created(
+		ctx,
+		receiver_field("N.receiver"),
+		format!("/api/cases/{case_id}/receiver"),
+		json!({"data": {
+			"case_id": case_id
+		}}),
+	)
+	.await?;
+	Ok(())
+}
+
 macro_rules! message_header_single_field_test {
 	($name:ident, $canonical:literal, $payload:expr, $assert:expr) => {
 		#[tokio::test]
@@ -28,21 +64,7 @@ macro_rules! message_header_single_field_test {
 		async fn $name() -> Result<()> {
 			let ctx = setup().await?;
 			let case_id = create_case(&ctx).await?;
-			let initial_message_number = format!("MSG-{case_id}");
-
-			post_created(
-				&ctx,
-				message_header_field($canonical),
-				format!("/api/cases/{case_id}/message-header"),
-				json!({"data": {
-					"case_id": case_id,
-					"message_number": initial_message_number,
-					"message_sender_identifier": "SENDER",
-					"message_receiver_identifier": "RECV",
-					"message_date": "20240102030405"
-				}}),
-			)
-			.await?;
+			create_message_header(&ctx, case_id).await?;
 
 			put_ok(
 				&ctx,
@@ -71,18 +93,7 @@ macro_rules! receiver_single_field_test {
 		async fn $name() -> Result<()> {
 			let ctx = setup().await?;
 			let case_id = create_case(&ctx).await?;
-
-			post_created(
-				&ctx,
-				receiver_field($canonical),
-				format!("/api/cases/{case_id}/receiver"),
-				json!({"data": {
-					"case_id": case_id,
-					"receiver_type": "2",
-					"organization_name": "Receiver"
-				}}),
-			)
-			.await?;
+			create_receiver(&ctx, case_id).await?;
 
 			put_ok(
 				&ctx,
@@ -134,8 +145,7 @@ async fn save_n_message_number_only() -> Result<()> {
 	let ctx = setup().await?;
 	let case_id = create_case(&ctx).await?;
 	let initial_message_number = format!("MSG-{case_id}");
-	let updated_message_number =
-		format!("MSG-UPDATED-{}", Uuid::new_v4().simple());
+	let updated_message_number = format!("MSG-UPDATED-{}", Uuid::new_v4().simple());
 
 	post_created(
 		&ctx,

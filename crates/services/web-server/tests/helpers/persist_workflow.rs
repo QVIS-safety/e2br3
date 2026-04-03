@@ -7,8 +7,8 @@ use lib_core::ctx::ROLE_ADMIN;
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
 use serde_json::{json, Value};
-use tower::ServiceExt;
 use tokio::time::{sleep, Duration};
+use tower::ServiceExt;
 use uuid::Uuid;
 
 pub struct PersistTestCtx {
@@ -112,20 +112,39 @@ pub async fn create_case(ctx: &PersistTestCtx) -> Result<Uuid> {
 			"validation_profile": "fda"
 		}
 	});
-	let (status, value) = request_json(
-		&ctx.app,
-		&ctx.cookie,
-		"POST",
-		"/api/cases".to_string(),
-		Some(body),
-	)
-	.await?;
-	if status != StatusCode::CREATED {
+	let mut last_status = StatusCode::INTERNAL_SERVER_ERROR;
+	let mut last_value = json!(null);
+	for _ in 0..5 {
+		let (status, value) = request_json(
+			&ctx.app,
+			&ctx.cookie,
+			"POST",
+			"/api/cases".to_string(),
+			Some(body.clone()),
+		)
+		.await?;
+		if status == StatusCode::CREATED {
+			return extract_id(&value);
+		}
+		if value
+			.to_string()
+			.to_ascii_lowercase()
+			.contains("deadlock detected")
+		{
+			last_status = status;
+			last_value = value;
+			sleep(Duration::from_millis(100)).await;
+			continue;
+		}
 		return Err(
 			format!("create case failed: status={status} body={value}").into()
 		);
 	}
-	extract_id(&value)
+	Err(format!(
+		"create case failed after deadlock retries: status={} body={}",
+		last_status, last_value
+	)
+	.into())
 }
 
 pub async fn save_case(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()> {

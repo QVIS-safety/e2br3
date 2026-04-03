@@ -88,10 +88,7 @@ async fn create_patient(ctx: &PersistTestCtx, case_id: Uuid) -> Result<Uuid> {
 		patient_field("D.1.2"),
 		format!("/api/cases/{case_id}/patient"),
 		json!({"data": {
-			"case_id": case_id,
-			"patient_initials": "PT",
-			"sex": "1",
-			"concomitant_therapy": false
+			"case_id": case_id
 		}}),
 	)
 	.await?;

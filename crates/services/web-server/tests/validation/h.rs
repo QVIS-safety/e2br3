@@ -30,7 +30,8 @@ async fn h_ich_h_1_required_returns_banner_issue() -> Result<()> {
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
 	create_narrative(&ctx.app, &ctx.cookie, ctx.case_id, "").await?;
 	update_narrative(
@@ -53,7 +54,8 @@ async fn h_ich_h_3_r_1a_required_returns_banner_issue() -> Result<()> {
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
 	let narrative_id =
 		create_narrative(&ctx.app, &ctx.cookie, ctx.case_id, "Narrative").await?;
@@ -90,7 +92,8 @@ async fn h_ich_h_3_r_1b_required_returns_banner_issue() -> Result<()> {
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
 	let narrative_id =
 		create_narrative(&ctx.app, &ctx.cookie, ctx.case_id, "Narrative").await?;

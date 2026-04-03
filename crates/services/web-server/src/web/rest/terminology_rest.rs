@@ -4,7 +4,7 @@ use axum::extract::{Multipart, Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use csv::ReaderBuilder;
-use lib_core::ctx::{Ctx, ROLE_ADB_ADMIN};
+use lib_core::ctx::{Ctx, ROLE_ADMIN};
 use lib_core::model::acs::{
 	TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT, TERMINOLOGY_READ,
 };
@@ -37,16 +37,16 @@ fn default_limit() -> i64 {
 }
 
 fn require_system_admin(ctx: &Ctx) -> Result<()> {
-	if ctx.role() != ROLE_ADB_ADMIN {
+	if ctx.role() != ROLE_ADMIN {
 		return Err(Error::PermissionDenied {
-			required_permission: "adb_admin".to_string(),
+			required_permission: "admin".to_string(),
 		});
 	}
 	Ok(())
 }
 
 fn terminology_db_role(role: &str) -> &str {
-	if role == ROLE_ADB_ADMIN {
+	if role == ROLE_ADMIN {
 		"admin"
 	} else {
 		role

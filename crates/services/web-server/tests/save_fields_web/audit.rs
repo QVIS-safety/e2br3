@@ -3,7 +3,10 @@ use std::collections::BTreeSet;
 use serial_test::serial;
 
 const SUPPORTED_NULL_FLAVOR_FIELDS: &[(&str, &str)] = &[
-	("C.1.transmission_date_null_flavor", "transmission_date_null_flavor"),
+	(
+		"C.1.transmission_date_null_flavor",
+		"transmission_date_null_flavor",
+	),
 	(
 		"C.1.date_first_received_from_source_null_flavor",
 		"date_first_received_from_source_null_flavor",
@@ -12,7 +15,10 @@ const SUPPORTED_NULL_FLAVOR_FIELDS: &[(&str, &str)] = &[
 		"C.1.date_of_most_recent_information_null_flavor",
 		"date_of_most_recent_information_null_flavor",
 	),
-	("D.1.2.patient_initials_null_flavor", "patient_initials_null_flavor"),
+	(
+		"D.1.2.patient_initials_null_flavor",
+		"patient_initials_null_flavor",
+	),
 	("D.1.2.birth_date_null_flavor", "birth_date_null_flavor"),
 	(
 		"D.1.2.age_at_time_of_onset_null_flavor",
@@ -43,7 +49,10 @@ const SUPPORTED_NULL_FLAVOR_FIELDS: &[(&str, &str)] = &[
 	("D.10.7.r.drug_name_null_flavor", "drug_name_null_flavor"),
 	("D.10.7.r.start_date_null_flavor", "start_date_null_flavor"),
 	("D.10.7.r.end_date_null_flavor", "end_date_null_flavor"),
-	("E.i.criteria_death_null_flavor", "criteria_death_null_flavor"),
+	(
+		"E.i.criteria_death_null_flavor",
+		"criteria_death_null_flavor",
+	),
 	(
 		"E.i.criteria_life_threatening_null_flavor",
 		"criteria_life_threatening_null_flavor",

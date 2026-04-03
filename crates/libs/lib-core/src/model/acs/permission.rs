@@ -3,8 +3,8 @@
 //! Defines resources, actions, and the permission matrix for RBAC.
 
 use crate::ctx::{
-	ROLE_ADB_ADMIN, ROLE_ADMIN, ROLE_HEAD_PV, ROLE_MANAGER, ROLE_PVM, ROLE_PVS,
-	ROLE_SPONSOR, ROLE_USER, ROLE_VIEWER,
+	ROLE_ADMIN, ROLE_HEAD_PV, ROLE_MANAGER, ROLE_PVM, ROLE_PVS, ROLE_SPONSOR,
+	ROLE_USER, ROLE_VIEWER,
 };
 use std::collections::HashMap;
 use std::sync::{OnceLock, RwLock};
@@ -1238,7 +1238,6 @@ pub fn permissions_for_privileges(
 pub fn role_permissions(role: &str) -> &'static [Permission] {
 	match role {
 		ROLE_ADMIN => admin_permissions(),
-		ROLE_ADB_ADMIN => admin_permissions(),
 		ROLE_MANAGER => manager_permissions(),
 		ROLE_PVM => manager_permissions(),
 		ROLE_HEAD_PV => manager_permissions(),

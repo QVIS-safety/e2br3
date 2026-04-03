@@ -2,6 +2,7 @@ use crate::common::Result;
 use crate::persist_workflow::{create_case, request_json, PersistTestCtx};
 use axum::http::StatusCode;
 use serde_json::{json, Value};
+use tokio::time::{sleep, Duration};
 use uuid::Uuid;
 
 pub struct FieldCase {
@@ -42,16 +43,37 @@ pub async fn post_created(
 	uri: String,
 	body: Value,
 ) -> Result<Value> {
-	let (status, value) =
-		request_json(&ctx.app, &ctx.cookie, "POST", uri.clone(), Some(body)).await?;
-	if status != StatusCode::CREATED && status != StatusCode::OK {
+	let mut last_status = StatusCode::INTERNAL_SERVER_ERROR;
+	let mut last_value = json!(null);
+	for _ in 0..5 {
+		let (status, value) = request_json(
+			&ctx.app,
+			&ctx.cookie,
+			"POST",
+			uri.clone(),
+			Some(body.clone()),
+		)
+		.await?;
+		if status == StatusCode::CREATED || status == StatusCode::OK {
+			return Ok(value);
+		}
+		if value.to_string().contains("deadlock detected") {
+			last_status = status;
+			last_value = value;
+			sleep(Duration::from_millis(100)).await;
+			continue;
+		}
 		return Err(format!(
 			"{} create via {} failed: status={status} uri={uri} body={value}",
 			field.canonical_id, field.endpoint
 		)
 		.into());
 	}
-	Ok(value)
+	Err(format!(
+		"{} create via {} failed after deadlock retries: status={} uri={} body={}",
+		field.canonical_id, field.endpoint, last_status, uri, last_value
+	)
+	.into())
 }
 
 pub async fn put_ok(
@@ -60,16 +82,37 @@ pub async fn put_ok(
 	uri: String,
 	body: Value,
 ) -> Result<Value> {
-	let (status, value) =
-		request_json(&ctx.app, &ctx.cookie, "PUT", uri.clone(), Some(body)).await?;
-	if status != StatusCode::OK {
+	let mut last_status = StatusCode::INTERNAL_SERVER_ERROR;
+	let mut last_value = json!(null);
+	for _ in 0..5 {
+		let (status, value) = request_json(
+			&ctx.app,
+			&ctx.cookie,
+			"PUT",
+			uri.clone(),
+			Some(body.clone()),
+		)
+		.await?;
+		if status == StatusCode::OK {
+			return Ok(value);
+		}
+		if value.to_string().contains("deadlock detected") {
+			last_status = status;
+			last_value = value;
+			sleep(Duration::from_millis(100)).await;
+			continue;
+		}
 		return Err(format!(
 			"{} update via {} failed: status={status} uri={uri} body={value}",
 			field.canonical_id, field.endpoint
 		)
 		.into());
 	}
-	Ok(value)
+	Err(format!(
+		"{} update via {} failed after deadlock retries: status={} uri={} body={}",
+		field.canonical_id, field.endpoint, last_status, uri, last_value
+	)
+	.into())
 }
 
 pub async fn get_ok(
@@ -77,16 +120,31 @@ pub async fn get_ok(
 	field: FieldCase,
 	uri: String,
 ) -> Result<Value> {
-	let (status, value) =
-		request_json(&ctx.app, &ctx.cookie, "GET", uri.clone(), None).await?;
-	if status != StatusCode::OK {
+	let mut last_status = StatusCode::INTERNAL_SERVER_ERROR;
+	let mut last_value = json!(null);
+	for _ in 0..5 {
+		let (status, value) =
+			request_json(&ctx.app, &ctx.cookie, "GET", uri.clone(), None).await?;
+		if status == StatusCode::OK {
+			return Ok(value);
+		}
+		if value.to_string().contains("deadlock detected") {
+			last_status = status;
+			last_value = value;
+			sleep(Duration::from_millis(100)).await;
+			continue;
+		}
 		return Err(format!(
 			"{} read via {} failed: status={status} uri={uri} body={value}",
 			field.canonical_id, field.endpoint
 		)
 		.into());
 	}
-	Ok(value)
+	Err(format!(
+		"{} read via {} failed after deadlock retries: status={} uri={} body={}",
+		field.canonical_id, field.endpoint, last_status, uri, last_value
+	)
+	.into())
 }
 
 pub fn extract_id(value: &Value) -> Result<Uuid> {

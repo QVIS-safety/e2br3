@@ -35,7 +35,7 @@ async fn create_narrative(ctx: &PersistTestCtx, case_id: Uuid) -> Result<Uuid> {
 		format!("/api/cases/{case_id}/narrative"),
 		json!({"data": {
 			"case_id": case_id,
-			"case_narrative": "Narrative"
+			"case_narrative": "Seed narrative"
 		}}),
 	)
 	.await?;

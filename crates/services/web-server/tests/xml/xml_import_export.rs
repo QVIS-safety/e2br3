@@ -106,7 +106,9 @@ fn import_case_id(import_value: &Value) -> Result<&str> {
 					})
 				})
 		})
-		.ok_or_else(|| format!("missing case_id in import response: {import_value}").into())
+		.ok_or_else(|| {
+			format!("missing case_id in import response: {import_value}").into()
+		})
 }
 
 async fn request_json(
@@ -633,13 +635,9 @@ async fn test_import_f_nullflavor_then_readback_test_results() -> Result<()> {
 	let app = web_server::app(mm);
 	let xml = scenario6_with_first_test_date_null_flavor()?;
 
-	let import_value = import_xml_string(
-		&app,
-		&cookie,
-		"FAERS2022Scenario6-nullflavor.xml",
-		&xml,
-	)
-	.await?;
+	let import_value =
+		import_xml_string(&app, &cookie, "FAERS2022Scenario6-nullflavor.xml", &xml)
+			.await?;
 	let case_id = import_case_id(&import_value)?;
 
 	let (status, body) = request_json(
@@ -652,7 +650,9 @@ async fn test_import_f_nullflavor_then_readback_test_results() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
 	let value: Value = serde_json::from_slice(&body)?;
-	let tests = value["data"].as_array().ok_or("missing test results array")?;
+	let tests = value["data"]
+		.as_array()
+		.ok_or("missing test results array")?;
 	assert!(
 		tests.iter().any(|row| {
 			row.get("test_name").and_then(Value::as_str) == Some("Calcium Level")
@@ -677,13 +677,8 @@ async fn test_import_e_nullflavor_then_readback_reactions() -> Result<()> {
 	let app = web_server::app(mm);
 	let xml = fixture_xml("FAERS2022Scenario6.xml")?;
 
-	let import_value = import_xml_string(
-		&app,
-		&cookie,
-		"FAERS2022Scenario6.xml",
-		&xml,
-	)
-	.await?;
+	let import_value =
+		import_xml_string(&app, &cookie, "FAERS2022Scenario6.xml", &xml).await?;
 	let case_id = import_case_id(&import_value)?;
 
 	let (status, body) = request_json(
@@ -699,7 +694,8 @@ async fn test_import_e_nullflavor_then_readback_reactions() -> Result<()> {
 	let reactions = value["data"].as_array().ok_or("missing reactions array")?;
 	assert!(
 		reactions.iter().any(|row| {
-			row.get("criteria_death_null_flavor").and_then(Value::as_str)
+			row.get("criteria_death_null_flavor")
+				.and_then(Value::as_str)
 				== Some("NI")
 				&& row.get("start_date_null_flavor").and_then(Value::as_str)
 					== Some("NASK")

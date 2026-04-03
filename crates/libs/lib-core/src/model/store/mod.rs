@@ -3,7 +3,7 @@
 pub(in crate::model) mod dbx;
 
 use crate::core_config;
-use crate::ctx::{Ctx, ROLE_ADB_ADMIN};
+use crate::ctx::Ctx;
 use crate::model::Error;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres, Transaction};
@@ -107,11 +107,7 @@ pub async fn set_org_context_dbx(
 }
 
 fn canonical_db_role(role: &str) -> &str {
-	if role == ROLE_ADB_ADMIN {
-		"admin"
-	} else {
-		role
-	}
+	role
 }
 
 /// Sets optional compliance context for audit enrichment.

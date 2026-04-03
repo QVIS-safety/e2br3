@@ -2,10 +2,10 @@
 
 // region:    --- Modules
 
+mod bootstrap;
 mod config;
 mod error;
 mod submission;
-mod bootstrap;
 mod web;
 
 pub use self::error::{Error, Result};

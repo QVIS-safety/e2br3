@@ -86,7 +86,7 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		"ICH.N.1.4.REQUIRED" | "ICH.N.2.r.3.REQUIRED" => {
 			Some("messageHeader.messageReceiverIdentifier")
 		}
-		"ICH.N.1.5.REQUIRED" => Some("messageHeader.messageDate"),
+		"ICH.N.1.5.REQUIRED" => Some("messageHeader.batchTransmissionDate"),
 		_ => None,
 	}
 }

@@ -175,8 +175,8 @@ async fn import_c_2_sender_information(
 			mm,
 			SenderInformationForCreate {
 				case_id,
-				sender_type: sender.sender_type.clone(),
-				organization_name: sender.organization_name.clone(),
+				sender_type: Some(sender.sender_type.clone()),
+				organization_name: Some(sender.organization_name.clone()),
 			},
 		)
 		.await?

@@ -1,10 +1,9 @@
 use super::validation_common::{
 	assert_banner_issue, assert_lacks_code, assert_section_rule_coverage,
-	create_message_header,
-	create_other_case_identifier, create_primary_source, create_safety_report,
-	create_safety_report_with, create_sender, create_study_information,
-	db_exec_case_sql, put_json, setup_case, update_primary_source,
-	update_safety_report, validate_case,
+	create_message_header, create_other_case_identifier, create_primary_source,
+	create_safety_report, create_safety_report_with, create_sender,
+	create_study_information, db_exec_case_sql, post_json, put_json, setup_case,
+	update_primary_source, update_safety_report, validate_case,
 };
 use crate::common::Result;
 use axum::http::StatusCode;
@@ -252,6 +251,50 @@ async fn c_ich_c_3_1_required_returns_banner_issue() -> Result<()> {
 #[tokio::test]
 async fn c_ich_c_3_2_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.C.3.2.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn c_ich_c_3_1_required_returns_banner_issue_when_sender_row_lacks_type(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	post_json(
+		&ctx.app,
+		&ctx.cookie,
+		format!("/api/cases/{}/safety-report/senders", ctx.case_id),
+		json!({
+			"data": {
+				"case_id": ctx.case_id,
+				"organization_name": "Sender Org"
+			}
+		}),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.C.3.1.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn c_ich_c_3_2_required_returns_banner_issue_when_sender_row_lacks_org(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	post_json(
+		&ctx.app,
+		&ctx.cookie,
+		format!("/api/cases/{}/safety-report/senders", ctx.case_id),
+		json!({
+			"data": {
+				"case_id": ctx.case_id,
+				"sender_type": "1"
+			}
+		}),
+	)
+	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.C.3.2.REQUIRED");
 	Ok(())

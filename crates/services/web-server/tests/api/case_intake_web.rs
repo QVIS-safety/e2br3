@@ -191,6 +191,49 @@ async fn test_case_intake_duplicate_check_and_create() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_case_from_intake_persists_distinct_c_1_dates() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
+	let intake_body = json!({
+		"data": intake_data(&safety_report_id, 123, "1", json!({
+			"transmission_date": [2024, 121],
+			"date_first_received_from_source": [2024, 122],
+			"date_of_most_recent_information": [2024, 123],
+			"validation_profile": "ich"
+		}))
+	});
+	let (status, body) =
+		post_json(&app, &cookie, "/api/cases/from-intake", intake_body).await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let case_id = extract_case_id(&body)?;
+
+	let (status, value) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/safety-report"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["transmission_date"], json!([2024, 121]));
+	assert_eq!(
+		value["data"]["date_first_received_from_source"],
+		json!([2024, 122])
+	);
+	assert_eq!(
+		value["data"]["date_of_most_recent_information"],
+		json!([2024, 123])
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_from_intake_blocks_duplicates_without_override() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

@@ -557,6 +557,16 @@ pub struct CaseIntakeCheckResult {
 #[derive(Debug, Deserialize)]
 pub struct CaseFromIntakeInput {
 	pub safety_report_id: String,
+	#[serde(
+		default,
+		deserialize_with = "lib_core::serde::flex_date::deserialize_option_date"
+	)]
+	pub transmission_date: Option<Date>,
+	#[serde(
+		default,
+		deserialize_with = "lib_core::serde::flex_date::deserialize_option_date"
+	)]
+	pub date_first_received_from_source: Option<Date>,
 	#[serde(deserialize_with = "lib_core::serde::flex_date::deserialize_date")]
 	pub date_of_most_recent_information: Date,
 	pub report_type: String,
@@ -610,10 +620,7 @@ async fn list_potential_duplicates(
 		let row_date = safety
 			.as_ref()
 			.and_then(|s| s.date_of_most_recent_information);
-		let row_report = safety
-			.as_ref()
-			.map(|s| s.report_type.clone())
-			.flatten();
+		let row_report = safety.as_ref().map(|s| s.report_type.clone()).flatten();
 		let primary_sources = PrimarySourceBmc::list(
 			ctx,
 			mm,
@@ -1140,6 +1147,12 @@ pub async fn create_case_from_intake(
 	};
 	validate_case_create_payload(&case_create)?;
 	let case_id = CaseBmc::create(&ctx, &mm, case_create).await?;
+	let transmission_date = data
+		.transmission_date
+		.unwrap_or(data.date_of_most_recent_information);
+	let date_first_received_from_source = data
+		.date_first_received_from_source
+		.unwrap_or(data.date_of_most_recent_information);
 
 	let now = OffsetDateTime::now_utc();
 	MessageHeaderBmc::create(
@@ -1160,20 +1173,25 @@ pub async fn create_case_from_intake(
 		&mm,
 		SafetyReportIdentificationForCreate {
 			case_id,
-			transmission_date: Some(data.date_of_most_recent_information),
+			transmission_date: Some(transmission_date),
 			transmission_date_null_flavor: None,
 			report_type: Some(data.report_type),
-			date_first_received_from_source: Some(
-				data.date_of_most_recent_information,
-			),
+			date_first_received_from_source: Some(date_first_received_from_source),
 			date_first_received_from_source_null_flavor: None,
 			date_of_most_recent_information: Some(
 				data.date_of_most_recent_information,
 			),
 			date_of_most_recent_information_null_flavor: None,
 			fulfil_expedited_criteria: Some(false),
+			local_criteria_report_type: None,
+			combination_product_report_indicator: None,
 			first_sender_type: None,
 			additional_documents_available: None,
+			other_case_identifiers_exist: None,
+			worldwide_unique_id: None,
+			nullification_code: None,
+			nullification_reason: None,
+			receiver_organization: None,
 		},
 	)
 	.await?;

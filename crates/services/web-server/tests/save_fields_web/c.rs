@@ -1,6 +1,6 @@
 use super::save_fields_common::{
-	assert_bool, assert_date_tuple, assert_i64, assert_str, create_case_with_field,
-	extract_id, get_ok, post_created, put_ok, FieldCase,
+	assert_bool, assert_date_tuple, assert_i64, assert_null, assert_str,
+	create_case_with_field, extract_id, get_ok, post_created, put_ok, FieldCase,
 };
 use crate::common::Result;
 use crate::persist_workflow::{create_case, request_json, setup, PersistTestCtx};
@@ -87,14 +87,7 @@ async fn create_safety_report(ctx: &PersistTestCtx, case_id: Uuid) -> Result<()>
 		safety_report_field("C.1"),
 		format!("/api/cases/{case_id}/safety-report"),
 		json!({"data": {
-			"case_id": case_id,
-			"transmission_date": [2024, 1, 1],
-			"report_type": "1",
-			"date_first_received_from_source": [2024, 1, 2],
-			"date_of_most_recent_information": [2024, 1, 3],
-			"fulfil_expedited_criteria": true,
-			"first_sender_type": "2",
-			"additional_documents_available": true
+			"case_id": case_id
 		}}),
 	)
 	.await?;
@@ -107,9 +100,7 @@ async fn create_sender(ctx: &PersistTestCtx, case_id: Uuid) -> Result<Uuid> {
 		sender_field("C.2"),
 		format!("/api/cases/{case_id}/safety-report/senders"),
 		json!({"data": {
-			"case_id": case_id,
-			"sender_type": "1",
-			"organization_name": "Org"
+			"case_id": case_id
 		}}),
 	)
 	.await?;
@@ -185,7 +176,7 @@ async fn create_literature(ctx: &PersistTestCtx, case_id: Uuid) -> Result<Uuid> 
 		format!("/api/cases/{case_id}/safety-report/literature"),
 		json!({"data": {
 			"case_id": case_id,
-			"reference_text": "Ref",
+			"reference_text": "Seed reference",
 			"sequence_number": 1
 		}}),
 	)
@@ -663,6 +654,73 @@ safety_report_single_field_test!(
 		assert_bool(value, "additional_documents_available", false);
 	}
 );
+safety_report_single_field_test!(
+	save_c_1_other_case_identifiers_exist_only,
+	"C.1.other_case_identifiers_exist",
+	json!({"other_case_identifiers_exist": true}),
+	|value| {
+		assert_bool(value, "other_case_identifiers_exist", true);
+	}
+);
+
+#[tokio::test]
+#[serial]
+async fn save_c_1_local_criteria_report_type_on_first_create_persists() -> Result<()>
+{
+	let ctx = setup().await?;
+	let case_id = create_case(&ctx).await?;
+
+	post_created(
+		&ctx,
+		safety_report_field("C.1.local_criteria_report_type.create"),
+		format!("/api/cases/{case_id}/safety-report"),
+		json!({"data": {
+			"case_id": case_id,
+			"fulfil_expedited_criteria": true,
+			"local_criteria_report_type": "1"
+		}}),
+	)
+	.await?;
+
+	let value = get_ok(
+		&ctx,
+		safety_report_field("C.1.local_criteria_report_type.create"),
+		format!("/api/cases/{case_id}/safety-report"),
+	)
+	.await?;
+	assert_bool(&value, "fulfil_expedited_criteria", true);
+	assert_str(&value, "local_criteria_report_type", "1");
+	Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn save_c_1_combination_product_report_indicator_on_first_create_persists(
+) -> Result<()> {
+	let ctx = setup().await?;
+	let case_id = create_case(&ctx).await?;
+
+	post_created(
+		&ctx,
+		safety_report_field("C.1.combination_product_report_indicator.create"),
+		format!("/api/cases/{case_id}/safety-report"),
+		json!({"data": {
+			"case_id": case_id,
+			"combination_product_report_indicator": "2"
+		}}),
+	)
+	.await?;
+
+	let value = get_ok(
+		&ctx,
+		safety_report_field("C.1.combination_product_report_indicator.create"),
+		format!("/api/cases/{case_id}/safety-report"),
+	)
+	.await?;
+	assert_str(&value, "combination_product_report_indicator", "2");
+	Ok(())
+}
+
 #[tokio::test]
 #[serial]
 async fn save_c_1_nullification_code_only() -> Result<()> {
@@ -839,6 +897,66 @@ sender_single_field_test!(
 		assert_str(value, "email", "sender@example.com");
 	}
 );
+
+#[tokio::test]
+#[serial]
+async fn save_c_3_1_sender_type_without_sender_organization_persists() -> Result<()>
+{
+	let ctx = setup().await?;
+	let case_id = create_case(&ctx).await?;
+
+	let value = post_created(
+		&ctx,
+		sender_field("C.3.1"),
+		format!("/api/cases/{case_id}/safety-report/senders"),
+		json!({"data": {
+			"case_id": case_id,
+			"sender_type": "2"
+		}}),
+	)
+	.await?;
+	let sender_id = extract_id(&value)?;
+
+	let value = get_ok(
+		&ctx,
+		sender_field("C.3.1"),
+		format!("/api/cases/{case_id}/safety-report/senders/{sender_id}"),
+	)
+	.await?;
+	assert_str(&value, "sender_type", "2");
+	assert_null(&value, "organization_name");
+	Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn save_c_3_2_sender_organization_without_sender_type_persists() -> Result<()>
+{
+	let ctx = setup().await?;
+	let case_id = create_case(&ctx).await?;
+
+	let value = post_created(
+		&ctx,
+		sender_field("C.3.2"),
+		format!("/api/cases/{case_id}/safety-report/senders"),
+		json!({"data": {
+			"case_id": case_id,
+			"organization_name": "Partial Sender Org"
+		}}),
+	)
+	.await?;
+	let sender_id = extract_id(&value)?;
+
+	let value = get_ok(
+		&ctx,
+		sender_field("C.3.2"),
+		format!("/api/cases/{case_id}/safety-report/senders/{sender_id}"),
+	)
+	.await?;
+	assert_null(&value, "sender_type");
+	assert_str(&value, "organization_name", "Partial Sender Org");
+	Ok(())
+}
 
 primary_source_single_field_test!(
 	save_c_2_r_reporter_title_only,

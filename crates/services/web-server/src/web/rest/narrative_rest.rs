@@ -70,7 +70,10 @@ pub async fn get_narrative_information(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(case_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<Option<NarrativeInformation>>>)> {
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<Option<NarrativeInformation>>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, NARRATIVE_READ)?;
 	let entity =

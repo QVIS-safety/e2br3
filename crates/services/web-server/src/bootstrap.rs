@@ -17,10 +17,7 @@ const DEMO_ORG_ID: &str = "00000000-0000-0000-0000-000000000001";
 pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 	let root_ctx = Ctx::root_ctx();
 	let org_id = Uuid::parse_str(DEMO_ORG_ID).expect("invalid demo org id");
-	mm.dbx()
-		.begin_txn()
-		.await
-		.map_err(dbx_into_web)?;
+	mm.dbx().begin_txn().await.map_err(dbx_into_web)?;
 	if let Err(err) = set_full_context_dbx(
 		mm.dbx(),
 		root_ctx.user_id(),
@@ -29,10 +26,7 @@ pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 	)
 	.await
 	{
-		mm.dbx()
-			.rollback_txn()
-			.await
-			.map_err(dbx_into_web)?;
+		mm.dbx().rollback_txn().await.map_err(dbx_into_web)?;
 		return Err(err.into());
 	}
 	if !org_exists(mm, org_id).await? {
@@ -61,16 +55,10 @@ pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 		.bind(true)
 		.bind(root_ctx.user_id());
 		if let Err(err) = mm.dbx().execute(insert).await {
-			mm.dbx()
-				.rollback_txn()
-				.await
-				.map_err(dbx_into_web)?;
+			mm.dbx().rollback_txn().await.map_err(dbx_into_web)?;
 			return Err(dbx_into_web(err));
 		}
-		mm.dbx()
-			.commit_txn()
-			.await
-			.map_err(dbx_into_web)?;
+		mm.dbx().commit_txn().await.map_err(dbx_into_web)?;
 		info!(
 			"BOOTSTRAP - created demo organization {} with id {}",
 			"Demo Organization", org_id
@@ -86,10 +74,7 @@ pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 		)
 		.await
 		.map_err(|err| crate::Error::Model(lib_core::model::Error::Dbx(err)))?;
-	mm.dbx()
-		.commit_txn()
-		.await
-		.map_err(dbx_into_web)?;
+	mm.dbx().commit_txn().await.map_err(dbx_into_web)?;
 
 	match existing_user_id {
 		Some((user_id,)) => {
@@ -118,10 +103,7 @@ pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 				last_login_at: None,
 			};
 			UserBmc::update(&root_ctx, mm, user_id, user_u).await?;
-			info!(
-				"BOOTSTRAP - synced demo admin user {}",
-				DEMO_EMAIL
-			);
+			info!("BOOTSTRAP - synced demo admin user {}", DEMO_EMAIL);
 		}
 		None => {
 			let create = UserForCreate {

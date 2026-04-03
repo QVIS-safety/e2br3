@@ -36,14 +36,18 @@ fn g_rule_coverage_matches_backend_banner_contract() {
 	assert_section_rule_coverage('G', tested_rule_codes());
 }
 
-async fn setup_drug_case(
-) -> Result<(super::validation_common::ValidationCtx, uuid::Uuid, uuid::Uuid)> {
+async fn setup_drug_case() -> Result<(
+	super::validation_common::ValidationCtx,
+	uuid::Uuid,
+	uuid::Uuid,
+)> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	let reaction_id =
 		create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
 	let drug_id =
@@ -59,7 +63,8 @@ async fn g_ich_g_k_1_required_returns_banner_issue() -> Result<()> {
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.G.k.1.REQUIRED");
@@ -289,7 +294,8 @@ async fn g_ich_g_k_9_i_3_2b_required_returns_banner_issue() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn g_mfds_kr_domestic_productcode_required_returns_banner_issue() -> Result<()> {
+async fn g_mfds_kr_domestic_productcode_required_returns_banner_issue() -> Result<()>
+{
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header_with_receiver(
@@ -302,7 +308,8 @@ async fn g_mfds_kr_domestic_productcode_required_returns_banner_issue() -> Resul
 	.await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
 	let drug_id =
 		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
@@ -334,7 +341,8 @@ async fn g_mfds_g_k_2_1_kr_1b_required_returns_banner_issue() -> Result<()> {
 	.await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
 	let drug_id =
 		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
@@ -366,7 +374,8 @@ async fn g_mfds_kr_foreign_whompid_recommended_returns_banner_issue() -> Result<
 	.await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
 	let drug_id =
 		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
@@ -398,7 +407,8 @@ async fn g_mfds_g_k_2_1_kr_1a_required_returns_banner_issue() -> Result<()> {
 	.await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_reaction(&ctx.app, &ctx.cookie, ctx.case_id, 1, "Headache").await?;
 	let drug_id =
 		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;

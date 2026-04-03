@@ -1,5 +1,5 @@
 use crate::common::{
-	cookie_header, init_test_mm, seed_org_with_adb_admin_and_viewer, Result,
+	cookie_header, init_test_mm, seed_org_with_admin_and_viewer, Result,
 };
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
@@ -15,7 +15,7 @@ use zip::ZipWriter;
 async fn seed_terminology_admin(
 	mm: &lib_core::model::ModelManager,
 ) -> Result<crate::common::SeedOrgUsers> {
-	seed_org_with_adb_admin_and_viewer(mm, "adminpwd", "viewpwd").await
+	seed_org_with_admin_and_viewer(mm, "adminpwd", "viewpwd").await
 }
 
 #[serial]

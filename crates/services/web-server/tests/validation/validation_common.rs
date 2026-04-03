@@ -1118,9 +1118,7 @@ pub async fn db_exec_case_sql(ctx: &ValidationCtx, sql: &str) -> Result<()> {
 			}
 			Err(err) => {
 				let _ = ctx.mm.dbx().rollback_txn().await;
-				let is_retryable = err
-					.to_string()
-					.contains("deadlock detected");
+				let is_retryable = err.to_string().contains("deadlock detected");
 				if is_retryable && attempt < 2 {
 					sleep(Duration::from_millis(50 * (attempt + 1) as u64)).await;
 					continue;
@@ -1144,13 +1142,15 @@ pub fn validation_issue<'a>(validation_body: &'a Value, code: &str) -> &'a Value
 		.get("data")
 		.and_then(|data| data.get("issues"))
 		.and_then(Value::as_array)
-		.unwrap_or_else(|| panic!("validation response missing data.issues: {validation_body}"));
-	let mut matches = issues.iter().filter(|issue| {
-		issue.get("code").and_then(Value::as_str) == Some(code)
+		.unwrap_or_else(|| {
+			panic!("validation response missing data.issues: {validation_body}")
+		});
+	let mut matches = issues
+		.iter()
+		.filter(|issue| issue.get("code").and_then(Value::as_str) == Some(code));
+	let issue = matches.next().unwrap_or_else(|| {
+		panic!("expected validation issue {code}, got {validation_body}")
 	});
-	let issue = matches
-		.next()
-		.unwrap_or_else(|| panic!("expected validation issue {code}, got {validation_body}"));
 	assert!(
 		matches.next().is_none(),
 		"expected validation issue {code} exactly once, got duplicates: {validation_body}"
@@ -1160,8 +1160,8 @@ pub fn validation_issue<'a>(validation_body: &'a Value, code: &str) -> &'a Value
 
 pub fn assert_banner_issue(validation_body: &Value, code: &str) {
 	let issue = validation_issue(validation_body, code);
-	let canonical =
-		find_canonical_rule(code).unwrap_or_else(|| panic!("missing canonical rule {code}"));
+	let canonical = find_canonical_rule(code)
+		.unwrap_or_else(|| panic!("missing canonical rule {code}"));
 	assert_eq!(
 		issue.get("code").and_then(Value::as_str),
 		Some(code),
@@ -1225,13 +1225,27 @@ fn is_banner_capable_field_path(path: &str) -> bool {
 
 fn section_source(section_letter: char) -> &'static str {
 	match section_letter {
-		'C' => include_str!("../../../../libs/lib-core/src/validation/case/sections/c.rs"),
-		'D' => include_str!("../../../../libs/lib-core/src/validation/case/sections/d.rs"),
-		'E' => include_str!("../../../../libs/lib-core/src/validation/case/sections/e.rs"),
-		'F' => include_str!("../../../../libs/lib-core/src/validation/case/sections/f.rs"),
-		'G' => include_str!("../../../../libs/lib-core/src/validation/case/sections/g.rs"),
-		'H' => include_str!("../../../../libs/lib-core/src/validation/case/sections/h.rs"),
-		'N' => include_str!("../../../../libs/lib-core/src/validation/case/sections/n.rs"),
+		'C' => include_str!(
+			"../../../../libs/lib-core/src/validation/case/sections/c.rs"
+		),
+		'D' => include_str!(
+			"../../../../libs/lib-core/src/validation/case/sections/d.rs"
+		),
+		'E' => include_str!(
+			"../../../../libs/lib-core/src/validation/case/sections/e.rs"
+		),
+		'F' => include_str!(
+			"../../../../libs/lib-core/src/validation/case/sections/f.rs"
+		),
+		'G' => include_str!(
+			"../../../../libs/lib-core/src/validation/case/sections/g.rs"
+		),
+		'H' => include_str!(
+			"../../../../libs/lib-core/src/validation/case/sections/h.rs"
+		),
+		'N' => include_str!(
+			"../../../../libs/lib-core/src/validation/case/sections/n.rs"
+		),
 		_ => panic!("unsupported section {section_letter}"),
 	}
 }
@@ -1294,7 +1308,10 @@ fn collect_rule_codes_from_fragment(fragment: &str, codes: &mut Vec<String>) {
 			.unwrap_or_else(|| panic!("unterminated quoted token in {fragment}"))
 			+ open;
 		let token = &fragment[open..close];
-		if token.starts_with("ICH.") || token.starts_with("FDA.") || token.starts_with("MFDS.") {
+		if token.starts_with("ICH.")
+			|| token.starts_with("FDA.")
+			|| token.starts_with("MFDS.")
+		{
 			codes.push(token.to_string());
 		}
 		cursor = close + 1;
@@ -1310,7 +1327,10 @@ fn extract_some_path(fragment: &str) -> Option<String> {
 	if fragment.starts_with('"') {
 		let path_end = fragment[1..].find('"')? + 1;
 		let token = &fragment[1..path_end];
-		if token.starts_with("ICH.") || token.starts_with("FDA.") || token.starts_with("MFDS.") {
+		if token.starts_with("ICH.")
+			|| token.starts_with("FDA.")
+			|| token.starts_with("MFDS.")
+		{
 			return None;
 		}
 		return Some(token.to_string());

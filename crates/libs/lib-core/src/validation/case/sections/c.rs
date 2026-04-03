@@ -145,7 +145,9 @@ pub(crate) fn collect_ich_issues(
 			issues,
 			"ICH.C.1.7.REQUIRED",
 			"safetyReportIdentification.fulfilExpeditedCriteria",
-			report.fulfil_expedited_criteria.map(|value| if value { "1" } else { "2" }),
+			report
+				.fulfil_expedited_criteria
+				.map(|value| if value { "1" } else { "2" }),
 			None,
 			RuleFacts::default(),
 		);
@@ -240,7 +242,7 @@ pub(crate) fn collect_ich_issues(
 			issues,
 			"ICH.C.3.1.REQUIRED",
 			"safetyReportIdentification.senderType",
-			Some(sender.sender_type.as_str()),
+			sender.sender_type.as_deref(),
 			None,
 			RuleFacts::default(),
 		);
@@ -248,7 +250,7 @@ pub(crate) fn collect_ich_issues(
 			issues,
 			"ICH.C.3.2.REQUIRED",
 			"safetyReportIdentification.senderOrganization",
-			Some(sender.organization_name.as_str()),
+			sender.organization_name.as_deref(),
 			None,
 			RuleFacts::default(),
 		);
@@ -443,7 +445,11 @@ pub(crate) fn collect_mfds_issues(
 				format!("senderInformation.{idx}.senderType"),
 				RuleFacts {
 					mfds_sender_type_disallowed: Some(
-						sender.sender_type.trim() == "3",
+						sender
+							.sender_type
+							.as_deref()
+							.map(|value| value.trim() == "3")
+							.unwrap_or(false),
 					),
 					..RuleFacts::default()
 				},

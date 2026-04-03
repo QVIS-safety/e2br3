@@ -3,8 +3,7 @@
 use lib_auth::pwd::{self, ContentToHash};
 use lib_core::_dev_utils;
 use lib_core::ctx::{
-	ROLE_ADB_ADMIN, ROLE_ADMIN, ROLE_MANAGER, ROLE_USER, ROLE_VIEWER, SYSTEM_ORG_ID,
-	SYSTEM_USER_ID,
+	ROLE_ADMIN, ROLE_MANAGER, ROLE_USER, ROLE_VIEWER, SYSTEM_ORG_ID, SYSTEM_USER_ID,
 };
 use lib_core::model::store::{
 	set_full_context_dbx, set_org_context, set_user_context,
@@ -128,7 +127,7 @@ pub async fn seed_org_with_users(
 	})
 }
 
-pub async fn seed_org_with_adb_admin_and_viewer(
+pub async fn seed_org_with_admin_and_viewer(
 	mm: &ModelManager,
 	admin_pwd: &str,
 	viewer_pwd: &str,
@@ -137,14 +136,9 @@ pub async fn seed_org_with_adb_admin_and_viewer(
 	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_ADMIN).await?;
 
 	let org_id = insert_org(mm, system_user_id()).await?;
-	let admin = insert_user(
-		mm,
-		org_id,
-		ROLE_ADB_ADMIN,
-		system_user_id(),
-		Some(admin_pwd),
-	)
-	.await?;
+	let admin =
+		insert_user(mm, org_id, ROLE_ADMIN, system_user_id(), Some(admin_pwd))
+			.await?;
 	let viewer =
 		insert_user(mm, org_id, ROLE_VIEWER, system_user_id(), Some(viewer_pwd))
 			.await?;

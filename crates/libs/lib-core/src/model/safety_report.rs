@@ -54,6 +54,9 @@ pub struct SafetyReportIdentification {
 	// C.1.6.1 - Are Additional Documents Available?
 	pub additional_documents_available: Option<bool>,
 
+	// C.1.9.1 - Other Case Identifiers in Previous Transmissions
+	pub other_case_identifiers_exist: Option<bool>,
+
 	// C.1.11.1 - Nullification/Amendment Code
 	pub nullification_code: Option<String>,
 
@@ -93,8 +96,15 @@ pub struct SafetyReportIdentificationForCreate {
 	pub date_of_most_recent_information: Option<Date>,
 	pub date_of_most_recent_information_null_flavor: Option<String>,
 	pub fulfil_expedited_criteria: Option<bool>,
+	pub local_criteria_report_type: Option<String>,
+	pub combination_product_report_indicator: Option<String>,
 	pub first_sender_type: Option<String>,
 	pub additional_documents_available: Option<bool>,
+	pub other_case_identifiers_exist: Option<bool>,
+	pub worldwide_unique_id: Option<String>,
+	pub nullification_code: Option<String>,
+	pub nullification_reason: Option<String>,
+	pub receiver_organization: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -165,6 +175,7 @@ pub struct SafetyReportIdentificationForUpdate {
 	pub worldwide_unique_id: Option<String>,
 	pub first_sender_type: Option<String>,
 	pub additional_documents_available: Option<bool>,
+	pub other_case_identifiers_exist: Option<bool>,
 	pub nullification_code: Option<String>,
 	pub nullification_reason: Option<String>,
 	pub receiver_organization: Option<String>,
@@ -178,10 +189,10 @@ pub struct SenderInformation {
 	pub case_id: Uuid,
 
 	// C.3.1 - Sender Type (MANDATORY)
-	pub sender_type: String,
+	pub sender_type: Option<String>,
 
 	// C.3.2 - Sender's Organisation (MANDATORY)
-	pub organization_name: String,
+	pub organization_name: Option<String>,
 	pub department: Option<String>,
 	pub street_address: Option<String>,
 	pub city: Option<String>,
@@ -210,8 +221,8 @@ pub struct SenderInformation {
 #[derive(Fields, Deserialize)]
 pub struct SenderInformationForCreate {
 	pub case_id: Uuid,
-	pub sender_type: String,
-	pub organization_name: String,
+	pub sender_type: Option<String>,
+	pub organization_name: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -517,8 +528,8 @@ impl SafetyReportIdentificationBmc {
 		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, transmission_date, transmission_date_null_flavor, report_type, date_first_received_from_source, date_first_received_from_source_null_flavor, date_of_most_recent_information, date_of_most_recent_information_null_flavor, fulfil_expedited_criteria, first_sender_type, additional_documents_available, created_at, updated_at, created_by)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), now(), $12)
+			"INSERT INTO {} (case_id, transmission_date, transmission_date_null_flavor, report_type, date_first_received_from_source, date_first_received_from_source_null_flavor, date_of_most_recent_information, date_of_most_recent_information_null_flavor, fulfil_expedited_criteria, local_criteria_report_type, combination_product_report_indicator, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, now(), now(), $19)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -535,8 +546,15 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.date_of_most_recent_information)
 					.bind(data.date_of_most_recent_information_null_flavor)
 					.bind(data.fulfil_expedited_criteria)
+					.bind(data.local_criteria_report_type)
+					.bind(data.combination_product_report_indicator)
+					.bind(data.worldwide_unique_id)
 					.bind(data.first_sender_type)
 					.bind(data.additional_documents_available)
+					.bind(data.other_case_identifiers_exist)
+					.bind(data.nullification_code)
+					.bind(data.nullification_reason)
+					.bind(data.receiver_organization)
 					.bind(ctx.user_id()),
 			)
 			.await?;
@@ -629,11 +647,12 @@ impl SafetyReportIdentificationBmc {
 			     worldwide_unique_id = COALESCE($14, worldwide_unique_id),
 			     first_sender_type = COALESCE($15, first_sender_type),
 			     additional_documents_available = COALESCE($16, additional_documents_available),
-			     nullification_code = COALESCE($17, nullification_code),
-			     nullification_reason = COALESCE($18, nullification_reason),
-			     receiver_organization = COALESCE($19, receiver_organization),
+			     other_case_identifiers_exist = COALESCE($17, other_case_identifiers_exist),
+			     nullification_code = COALESCE($18, nullification_code),
+			     nullification_reason = COALESCE($19, nullification_reason),
+			     receiver_organization = COALESCE($20, receiver_organization),
 			     updated_at = now(),
-			     updated_by = $20
+			     updated_by = $21
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -657,6 +676,7 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.worldwide_unique_id)
 					.bind(data.first_sender_type)
 					.bind(data.additional_documents_available)
+					.bind(data.other_case_identifiers_exist)
 					.bind(data.nullification_code)
 					.bind(data.nullification_reason)
 					.bind(data.receiver_organization)

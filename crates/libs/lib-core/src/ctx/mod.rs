@@ -12,8 +12,6 @@ pub use self::error::{Error, Result};
 
 /// System role for full administrative access
 pub const ROLE_ADMIN: &str = "admin";
-/// Alias role for database administration access
-pub const ROLE_ADB_ADMIN: &str = "adb_admin";
 /// Role for management-level access (case approval, user viewing)
 pub const ROLE_MANAGER: &str = "manager";
 /// Role for pharmacovigilance manager access
@@ -139,7 +137,7 @@ impl Ctx {
 
 	// Role check helpers
 	pub fn is_admin(&self) -> bool {
-		self.role == ROLE_ADMIN || self.role == ROLE_ADB_ADMIN
+		self.role == ROLE_ADMIN
 	}
 
 	pub fn is_manager(&self) -> bool {

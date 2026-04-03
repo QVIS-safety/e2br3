@@ -70,7 +70,10 @@ pub async fn get_receiver(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(case_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<Option<ReceiverInformation>>>)> {
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<Option<ReceiverInformation>>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, RECEIVER_READ)?;
 	let entity =

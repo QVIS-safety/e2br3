@@ -72,7 +72,8 @@ async fn d_ich_d_2_2a_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	db_exec_case_sql(
 		&ctx,
 		&format!(
@@ -92,7 +93,8 @@ async fn d_ich_d_2_2b_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	update_patient(
 		&ctx.app,
 		&ctx.cookie,
@@ -111,7 +113,8 @@ async fn d_ich_d_2_2_1a_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	update_patient(
 		&ctx.app,
 		&ctx.cookie,
@@ -130,7 +133,8 @@ async fn d_ich_d_2_2_1b_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	update_patient(
 		&ctx.app,
 		&ctx.cookie,
@@ -150,7 +154,8 @@ async fn d_ich_d_7_1_r_1a_required_returns_banner_issue() -> Result<()> {
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
 	let patient_id =
-		create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+		create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+			.await?;
 	db_exec_case_sql(
 		&ctx,
 		&format!(
@@ -171,7 +176,8 @@ async fn d_ich_d_7_1_r_1b_required_returns_banner_issue() -> Result<()> {
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
 	let patient_id =
-		create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+		create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+			.await?;
 	db_exec_case_sql(
 		&ctx,
 		&format!(
@@ -191,7 +197,8 @@ async fn d_ich_d_8_pairs_and_exclusive_return_banner_issues() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	let past_id = create_past_drug_history(
 		&ctx.app,
 		&ctx.cookie,
@@ -226,7 +233,8 @@ async fn d_ich_d_8_r_6b_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_past_drug_history(
 		&ctx.app,
 		&ctx.cookie,
@@ -256,7 +264,8 @@ async fn d_ich_d_8_r_7a_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_past_drug_history(
 		&ctx.app,
 		&ctx.cookie,
@@ -286,9 +295,11 @@ async fn d_ich_parent_rules_return_banner_issues() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	let parent_id =
-		create_parent_information(&ctx.app, &ctx.cookie, ctx.case_id, Some("2")).await?;
+		create_parent_information(&ctx.app, &ctx.cookie, ctx.case_id, Some("2"))
+			.await?;
 	db_exec_case_sql(
 		&ctx,
 		&format!(
@@ -330,9 +341,11 @@ async fn d_ich_d_10_2_2b_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	let parent_id =
-		create_parent_information(&ctx.app, &ctx.cookie, ctx.case_id, Some("2")).await?;
+		create_parent_information(&ctx.app, &ctx.cookie, ctx.case_id, Some("2"))
+			.await?;
 	db_exec_case_sql(
 		&ctx,
 		&format!(
@@ -354,7 +367,8 @@ async fn d_fda_d_11_required_returns_banner_issue() -> Result<()> {
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "fda").await?;
 	assert_banner_issue(&report, "FDA.D.11.REQUIRED");
 	Ok(())
@@ -368,7 +382,8 @@ async fn d_fda_d_12_required_returns_banner_issue() -> Result<()> {
 	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "fda").await?;
 	assert_banner_issue(&report, "FDA.D.12.REQUIRED");
 	Ok(())
@@ -389,7 +404,8 @@ async fn d_mfds_past_drug_rules_return_banner_issues() -> Result<()> {
 	.await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_past_drug_history(
 		&ctx.app,
 		&ctx.cookie,
@@ -420,7 +436,8 @@ async fn d_mfds_d_8_r_1_kr_1a_required_returns_banner_issue() -> Result<()> {
 	.await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	create_past_drug_history(
 		&ctx.app,
 		&ctx.cookie,
@@ -451,9 +468,11 @@ async fn d_mfds_parent_past_drug_rules_return_banner_issues() -> Result<()> {
 	.await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	let parent_id =
-		create_parent_information(&ctx.app, &ctx.cookie, ctx.case_id, Some("2")).await?;
+		create_parent_information(&ctx.app, &ctx.cookie, ctx.case_id, Some("2"))
+			.await?;
 	create_parent_past_drug_history(
 		&ctx.app,
 		&ctx.cookie,
@@ -483,9 +502,11 @@ async fn d_mfds_d_10_8_r_1_kr_1a_required_returns_banner_issue() -> Result<()> {
 	.await?;
 	create_sender(&ctx.app, &ctx.cookie, ctx.case_id, "1", "Sender Org").await?;
 	create_primary_source(&ctx.app, &ctx.cookie, ctx.case_id, 1, Some("1")).await?;
-	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
 	let parent_id =
-		create_parent_information(&ctx.app, &ctx.cookie, ctx.case_id, Some("2")).await?;
+		create_parent_information(&ctx.app, &ctx.cookie, ctx.case_id, Some("2"))
+			.await?;
 	let parent_past_id = create_parent_past_drug_history(
 		&ctx.app,
 		&ctx.cookie,

@@ -40,6 +40,9 @@ CREATE TABLE safety_report_identification (
     -- C.1.6.1 - Are Additional Documents Available?
     additional_documents_available BOOLEAN,
 
+    -- C.1.9.1 - Other Case Identifiers in Previous Transmissions
+    other_case_identifiers_exist BOOLEAN,
+
     -- C.1.10.r - Linked Report Numbers (handled in separate table)
 
     -- C.1.11.1 - Nullification/Amendment Code
@@ -72,12 +75,12 @@ CREATE TABLE sender_information (
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
 
     -- C.3.1 - Sender Type (MANDATORY - E2B(R3) codes)
-    sender_type VARCHAR(1) NOT NULL CHECK (sender_type IN ('1', '2', '3', '4', '5', '6')),
+    sender_type VARCHAR(1) CHECK (sender_type IN ('1', '2', '3', '4', '5', '6')),
     -- 1=Pharmaceutical company, 2=Regulatory authority, 3=Health professional
     -- 4=Regional pharmacovigilance center, 5=WHO collaborating center, 6=Other
 
     -- C.3.2 - Sender's Organisation (MANDATORY)
-    organization_name VARCHAR(200) NOT NULL,
+    organization_name VARCHAR(200),
     department VARCHAR(100),
     street_address VARCHAR(100),
     city VARCHAR(50),
