@@ -91,6 +91,7 @@ async fn test_case_delete_cascades_to_drug_information() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Cascade Test Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -330,6 +331,7 @@ async fn test_drug_delete_cascades_to_dosage_and_substances() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Parent Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -348,12 +350,14 @@ async fn test_drug_delete_cascades_to_dosage_and_substances() -> Result<()> {
 		last_administration_time: None,
 		duration_value: None,
 		duration_unit: None,
+		continuing: None,
 		batch_lot_number: None,
 		dosage_text: None,
 		dose_form: None,
 		dose_form_termid: None,
 		dose_form_termid_version: None,
 		route_of_administration: None,
+		route_termid: None,
 		route_termid_version: None,
 		parent_route: None,
 		parent_route_termid: None,
@@ -631,6 +635,7 @@ async fn test_case_delete_cascades_all_children_comprehensive() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -648,12 +653,14 @@ async fn test_case_delete_cascades_all_children_comprehensive() -> Result<()> {
 		last_administration_time: None,
 		duration_value: None,
 		duration_unit: None,
+		continuing: None,
 		batch_lot_number: None,
 		dosage_text: None,
 		dose_form: None,
 		dose_form_termid: None,
 		dose_form_termid_version: None,
 		route_of_administration: None,
+		route_termid: None,
 		route_termid_version: None,
 		parent_route: None,
 		parent_route_termid: None,

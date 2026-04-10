@@ -2465,6 +2465,7 @@ mod tests {
 			parent_dosage_text: None,
 			fda_additional_info_coded: None,
 			drug_additional_info_codes_json: None,
+			drug_additional_information: None,
 			fda_specialized_product_category: None,
 			fda_device_info_json: None,
 			created_at: now,

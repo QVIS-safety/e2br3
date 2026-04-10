@@ -40,6 +40,7 @@ async fn test_audit_trail_drug_information() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Audit Test Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 	assert_eq!(
@@ -76,6 +77,7 @@ async fn test_audit_trail_drug_information() -> Result<()> {
 		parent_dosage_text: None,
 		fda_additional_info_coded: None,
 		drug_additional_info_codes_json: None,
+		drug_additional_information: None,
 		fda_specialized_product_category: None,
 		fda_device_info_json: None,
 	};
@@ -461,6 +463,7 @@ async fn test_audit_log_list_all() -> Result<()> {
 			drug_characterization: "1".to_string(),
 			medicinal_product: format!("Query Test Drug {i}"),
 			drug_generic_name: None,
+			..Default::default()
 		};
 		let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 		drug_ids.push(drug_id);
@@ -665,6 +668,7 @@ async fn test_audit_log_captures_all_changed_fields() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Field Test Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -697,6 +701,7 @@ async fn test_audit_log_captures_all_changed_fields() -> Result<()> {
 		parent_dosage_text: None,
 		fda_additional_info_coded: None,
 		drug_additional_info_codes_json: None,
+		drug_additional_information: None,
 		fda_specialized_product_category: None,
 		fda_device_info_json: None,
 	};

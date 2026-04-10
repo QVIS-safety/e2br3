@@ -82,6 +82,9 @@ CREATE TABLE drug_information (
     -- G.k.10.r - Additional Information on Drug (coded, repeating)
     drug_additional_info_codes_json JSONB,
 
+    -- G.k.11 - Additional Information on Drug (free text)
+    drug_additional_information TEXT,
+
     -- FDA.G.k.10.1 - FDA Specialized Product Category
     fda_specialized_product_category VARCHAR(60),
 
@@ -162,6 +165,7 @@ CREATE TABLE dosage_information (
     -- G.k.4.r.6 - Duration of Drug Administration
     duration_value DECIMAL(10,2),
     duration_unit VARCHAR(3),  -- 800-805 codes
+    continuing BOOLEAN,
 
     -- G.k.4.r.7 - Batch/Lot Number
     batch_lot_number VARCHAR(200),
@@ -176,6 +180,7 @@ CREATE TABLE dosage_information (
 
     -- G.k.4.r.10 - Route of Administration
     route_of_administration VARCHAR(3),  -- E2B(R3) code list
+    route_termid VARCHAR(50),
     route_termid_version VARCHAR(10),
 
     -- G.k.4.r.11 - Parent Route of Administration

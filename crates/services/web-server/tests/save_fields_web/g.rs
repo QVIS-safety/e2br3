@@ -262,6 +262,48 @@ macro_rules! drug_single_field_test {
 	};
 }
 
+macro_rules! drug_create_single_field_test {
+	($name:ident, $canonical:literal, $payload:expr, $assert:expr) => {
+		#[tokio::test]
+		#[serial]
+		async fn $name() -> Result<()> {
+			let ctx = setup().await?;
+			let case_id = create_case(&ctx).await?;
+			let mut data = json!({
+				"case_id": case_id,
+				"sequence_number": 1,
+				"drug_characterization": "1",
+				"medicinal_product": "Seed product"
+			});
+			if let Some(data_obj) = data.as_object_mut() {
+				if let Some(extra_obj) = json!($payload).as_object() {
+					for (key, value) in extra_obj {
+						data_obj.insert(key.clone(), value.clone());
+					}
+				}
+			}
+
+			let value = post_created(
+				&ctx,
+				drug_field($canonical),
+				format!("/api/cases/{case_id}/drugs"),
+				json!({ "data": data }),
+			)
+			.await?;
+			let drug_id = extract_id(&value)?;
+
+			let value = get_ok(
+				&ctx,
+				drug_field($canonical),
+				format!("/api/cases/{case_id}/drugs/{drug_id}"),
+			)
+			.await?;
+			($assert)(&value);
+			Ok(())
+		}
+	};
+}
+
 macro_rules! active_substance_single_field_test {
 	($name:ident, $canonical:literal, $payload:expr, $assert:expr) => {
 		#[tokio::test]
@@ -495,6 +537,35 @@ macro_rules! relatedness_single_field_test {
 	};
 }
 
+macro_rules! drug_json_field_test {
+	($name:ident, $canonical:literal, $payload:expr, $assert:expr) => {
+		#[tokio::test]
+		#[serial]
+		async fn $name() -> Result<()> {
+			let ctx = setup().await?;
+			let case_id = create_case(&ctx).await?;
+			let drug_id = create_drug(&ctx, case_id).await?;
+
+			put_ok(
+				&ctx,
+				drug_field($canonical),
+				format!("/api/cases/{case_id}/drugs/{drug_id}"),
+				json!({ "data": $payload }),
+			)
+			.await?;
+
+			let value = get_ok(
+				&ctx,
+				drug_field($canonical),
+				format!("/api/cases/{case_id}/drugs/{drug_id}"),
+			)
+			.await?;
+			($assert)(&value);
+			Ok(())
+		}
+	};
+}
+
 drug_single_field_test!(
 	save_g_k_drug_characterization_only,
 	"G.k.drug_characterization",
@@ -716,6 +787,18 @@ drug_single_field_test!(
 	}
 );
 drug_single_field_test!(
+	save_g_k_drug_additional_information_only,
+	"G.k.drug_additional_information",
+	json!({"drug_additional_information": "Additional information"}),
+	|value| {
+		assert_str(
+			value,
+			"drug_additional_information",
+			"Additional information"
+		);
+	}
+);
+drug_single_field_test!(
 	save_g_k_fda_specialized_product_category_only,
 	"G.k.fda_specialized_product_category",
 	json!({"fda_specialized_product_category": "device"}),
@@ -732,6 +815,55 @@ drug_single_field_test!(
 	}
 );
 
+drug_create_single_field_test!(
+	save_g_k_mpid_on_create_only,
+	"G.k.mpid.create",
+	json!({"mpid": "MPID"}),
+	|value| {
+		assert_str(value, "mpid", "MPID");
+	}
+);
+drug_create_single_field_test!(
+	save_g_k_mpid_version_on_create_only,
+	"G.k.mpid_version.create",
+	json!({"mpid_version": "1"}),
+	|value| {
+		assert_str(value, "mpid_version", "1");
+	}
+);
+drug_create_single_field_test!(
+	save_g_k_phpid_on_create_only,
+	"G.k.phpid.create",
+	json!({"phpid": "PHPID"}),
+	|value| {
+		assert_str(value, "phpid", "PHPID");
+	}
+);
+drug_create_single_field_test!(
+	save_g_k_phpid_version_on_create_only,
+	"G.k.phpid_version.create",
+	json!({"phpid_version": "2"}),
+	|value| {
+		assert_str(value, "phpid_version", "2");
+	}
+);
+drug_create_single_field_test!(
+	save_g_k_obtain_drug_country_on_create_only,
+	"G.k.obtain_drug_country.create",
+	json!({"obtain_drug_country": "US"}),
+	|value| {
+		assert_str(value, "obtain_drug_country", "US");
+	}
+);
+drug_create_single_field_test!(
+	save_g_k_investigational_product_blinded_on_create_only,
+	"G.k.investigational_product_blinded.create",
+	json!({"investigational_product_blinded": false}),
+	|value| {
+		assert_bool(value, "investigational_product_blinded", false);
+	}
+);
+
 active_substance_single_field_test!(
 	save_g_k_2_3_r_substance_name_only,
 	"G.k.2.3.r.substance_name",
@@ -743,7 +875,7 @@ active_substance_single_field_test!(
 );
 active_substance_single_field_test!(
 	save_g_k_2_3_r_substance_termid_only,
-	"G.k.2.3.r.substance_termid",
+	"G.k.2.3.r.2b",
 	json!({"substance_termid": "S2"}),
 	|value| {
 		assert_str(value, "substance_termid", "S2");
@@ -864,6 +996,14 @@ dosage_single_field_test!(
 	}
 );
 dosage_single_field_test!(
+	save_g_k_4_r_continuing_only,
+	"G.k.4.r.continuing",
+	json!({"continuing": true}),
+	|value| {
+		assert_bool(value, "continuing", true);
+	}
+);
+dosage_single_field_test!(
 	save_g_k_4_r_batch_lot_number_only,
 	"G.k.4.r.batch_lot_number",
 	json!({"batch_lot_number": "LOT2"}),
@@ -888,16 +1028,16 @@ dosage_single_field_test!(
 	}
 );
 dosage_single_field_test!(
-	save_g_k_4_r_dose_form_termid_only,
-	"G.k.4.r.dose_form_termid",
+	save_g_k_4_r_9_2b_only,
+	"G.k.4.r.9.2b",
 	json!({"dose_form_termid": "DF2"}),
 	|value| {
 		assert_str(value, "dose_form_termid", "DF2");
 	}
 );
 dosage_single_field_test!(
-	save_g_k_4_r_dose_form_termid_version_only,
-	"G.k.4.r.dose_form_termid_version",
+	save_g_k_4_r_9_2a_only,
+	"G.k.4.r.9.2a",
 	json!({"dose_form_termid_version": "2"}),
 	|value| {
 		assert_str(value, "dose_form_termid_version", "2");
@@ -912,11 +1052,19 @@ dosage_single_field_test!(
 	}
 );
 dosage_single_field_test!(
-	save_g_k_4_r_route_termid_version_only,
-	"G.k.4.r.route_termid_version",
+	save_g_k_4_r_10_2a_only,
+	"G.k.4.r.10.2a",
 	json!({"route_termid_version": "2"}),
 	|value| {
 		assert_str(value, "route_termid_version", "2");
+	}
+);
+dosage_single_field_test!(
+	save_g_k_4_r_10_2b_only,
+	"G.k.4.r.10.2b",
+	json!({"route_termid": "RT2"}),
+	|value| {
+		assert_str(value, "route_termid", "RT2");
 	}
 );
 dosage_single_field_test!(
@@ -928,16 +1076,16 @@ dosage_single_field_test!(
 	}
 );
 dosage_single_field_test!(
-	save_g_k_4_r_parent_route_termid_only,
-	"G.k.4.r.parent_route_termid",
+	save_g_k_4_r_11_2b_only,
+	"G.k.4.r.11.2b",
 	json!({"parent_route_termid": "002"}),
 	|value| {
 		assert_str(value, "parent_route_termid", "002");
 	}
 );
 dosage_single_field_test!(
-	save_g_k_4_r_parent_route_termid_version_only,
-	"G.k.4.r.parent_route_termid_version",
+	save_g_k_4_r_11_2a_only,
+	"G.k.4.r.11.2a",
 	json!({"parent_route_termid_version": "2"}),
 	|value| {
 		assert_str(value, "parent_route_termid_version", "2");
@@ -945,8 +1093,8 @@ dosage_single_field_test!(
 );
 
 indication_single_field_test!(
-	save_g_k_6_r_indication_text_only,
-	"G.k.6.r.indication_text",
+	save_g_k_7_r_1_only,
+	"G.k.7.r.1",
 	json!({"indication_text": "Indication 2"}),
 	|value| {
 		assert_i64(value, "sequence_number", 1);
@@ -954,16 +1102,16 @@ indication_single_field_test!(
 	}
 );
 indication_single_field_test!(
-	save_g_k_6_r_indication_meddra_version_only,
-	"G.k.6.r.indication_meddra_version",
+	save_g_k_7_r_2a_only,
+	"G.k.7.r.2a",
 	json!({"indication_meddra_version": "28.0"}),
 	|value| {
 		assert_str(value, "indication_meddra_version", "28.0");
 	}
 );
 indication_single_field_test!(
-	save_g_k_6_r_indication_meddra_code_only,
-	"G.k.6.r.indication_meddra_code",
+	save_g_k_7_r_2b_only,
+	"G.k.7.r.2b",
 	json!({"indication_meddra_code": "901"}),
 	|value| {
 		assert_str(value, "indication_meddra_code", "901");
@@ -1135,6 +1283,27 @@ assessment_single_field_test!(
 	}
 );
 
+#[tokio::test]
+#[serial]
+async fn save_g_k_9_i_reaction_id_on_create_only() -> Result<()> {
+	let ctx = setup().await?;
+	let case_id = create_case(&ctx).await?;
+	let drug_id = create_drug(&ctx, case_id).await?;
+	let reaction_id = create_reaction(&ctx, case_id).await?;
+	let assessment_id =
+		create_assessment(&ctx, case_id, drug_id, reaction_id).await?;
+
+	let value = get_ok(
+		&ctx,
+		drug_reaction_assessment_field("G.k.9.i.reaction_id"),
+		format!("/api/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{assessment_id}"),
+	)
+	.await?;
+
+	assert_eq!(value["data"]["reaction_id"], json!(reaction_id));
+	Ok(())
+}
+
 relatedness_single_field_test!(
 	save_g_k_9_i_2_r_source_of_assessment_only,
 	"G.k.9.i.2.r.source_of_assessment",
@@ -1166,5 +1335,182 @@ relatedness_single_field_test!(
 	json!({"result_of_assessment_kr2": "KR2"}),
 	|value| {
 		assert_str(value, "result_of_assessment_kr2", "KR2");
+	}
+);
+
+drug_json_field_test!(
+	save_g_k_10_r_only,
+	"G.k.10.r",
+	json!({"drug_additional_info_codes_json": [{"value_code": "A1"}]}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["drug_additional_info_codes_json"],
+			json!([{"value_code":"A1"}])
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_1_malfunction_only,
+	"FDA.G.k.12.r.1.malfunction",
+	json!({"fda_device_info_json": {"malfunction": true}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["malfunction"],
+			json!(true)
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_2_r_only,
+	"FDA.G.k.12.r.2.r",
+	json!({"fda_device_info_json": {"follow_up_types": [{"value_code": "FUT"}]}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["follow_up_types"],
+			json!([{"value_code":"FUT"}])
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_3_r_only,
+	"FDA.G.k.12.r.3.r",
+	json!({"fda_device_info_json": {"device_problem_codes": [{"value_code": "DPC"}]}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["device_problem_codes"],
+			json!([{"value_code":"DPC"}])
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_4_device_brand_name_only,
+	"FDA.G.k.12.r.4.device_brand_name",
+	json!({"fda_device_info_json": {"device_brand_name": "Brand"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["device_brand_name"],
+			json!("Brand")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_5_common_device_name_only,
+	"FDA.G.k.12.r.5.common_device_name",
+	json!({"fda_device_info_json": {"common_device_name": "Common"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["common_device_name"],
+			json!("Common")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_6_device_product_code_only,
+	"FDA.G.k.12.r.6.device_product_code",
+	json!({"fda_device_info_json": {"device_product_code": "P01"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["device_product_code"],
+			json!("P01")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_7_1a_manufacturer_name_only,
+	"FDA.G.k.12.r.7.1a.manufacturer_name",
+	json!({"fda_device_info_json": {"manufacturer_name": "Maker"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["manufacturer_name"],
+			json!("Maker")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_7_1b_manufacturer_address_only,
+	"FDA.G.k.12.r.7.1b.manufacturer_address",
+	json!({"fda_device_info_json": {"manufacturer_address": "Addr"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["manufacturer_address"],
+			json!("Addr")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_7_1c_manufacturer_city_only,
+	"FDA.G.k.12.r.7.1c.manufacturer_city",
+	json!({"fda_device_info_json": {"manufacturer_city": "Seoul"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["manufacturer_city"],
+			json!("Seoul")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_7_1d_manufacturer_state_only,
+	"FDA.G.k.12.r.7.1d.manufacturer_state",
+	json!({"fda_device_info_json": {"manufacturer_state": "CA"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["manufacturer_state"],
+			json!("CA")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_7_1e_manufacturer_country_only,
+	"FDA.G.k.12.r.7.1e.manufacturer_country",
+	json!({"fda_device_info_json": {"manufacturer_country": "US"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["manufacturer_country"],
+			json!("US")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_8_device_usage_only,
+	"FDA.G.k.12.r.8.device_usage",
+	json!({"fda_device_info_json": {"device_usage": "2"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["device_usage"],
+			json!("2")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_9_device_lot_number_only,
+	"FDA.G.k.12.r.9.device_lot_number",
+	json!({"fda_device_info_json": {"device_lot_number": "LOT-1"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["device_lot_number"],
+			json!("LOT-1")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_10_operator_of_device_only,
+	"FDA.G.k.12.r.10.operator_of_device",
+	json!({"fda_device_info_json": {"operator_of_device": "1"}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["operator_of_device"],
+			json!("1")
+		);
+	}
+);
+drug_json_field_test!(
+	save_fda_g_k_12_r_11_r_only,
+	"FDA.G.k.12.r.11.r",
+	json!({"fda_device_info_json": {"remedial_actions": [{"value_code": "RA"}]}}),
+	|value: &serde_json::Value| {
+		assert_eq!(
+			value["data"]["fda_device_info_json"]["remedial_actions"],
+			json!([{"value_code":"RA"}])
+		);
 	}
 );

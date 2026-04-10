@@ -31,6 +31,7 @@ async fn test_drug_reaction_assessment_crud() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Assessment Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 

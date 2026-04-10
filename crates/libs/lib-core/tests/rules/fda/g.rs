@@ -59,6 +59,7 @@ async fn create_fda_drug_case(
 			drug_characterization: drug_characterization.to_string(),
 			drug_generic_name: None,
 			medicinal_product: "Device Product".to_string(),
+			..Default::default()
 		},
 	)
 	.await?;

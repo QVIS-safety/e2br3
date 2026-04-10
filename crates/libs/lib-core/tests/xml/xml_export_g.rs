@@ -43,6 +43,7 @@ fn export_g_drug_basic() {
 		parent_dosage_text: Some("Parent dose".to_string()),
 		fda_additional_info_coded: Some("1".to_string()),
 		drug_additional_info_codes_json: None,
+		drug_additional_information: None,
 		fda_specialized_product_category: None,
 		fda_device_info_json: None,
 		created_at: OffsetDateTime::now_utc(),

@@ -34,6 +34,7 @@ async fn save_g_k_create() -> Result<()> {
 			drug_characterization: "1".to_string(),
 			medicinal_product: "Drug".to_string(),
 			drug_generic_name: Some("Generic".to_string()),
+			..Default::default()
 		},
 	)
 	.await?;
@@ -69,6 +70,39 @@ async fn save_g_k_create() -> Result<()> {
 	assert_eq!(row.drug_additional_info_codes_json, None);
 	assert_eq!(row.fda_specialized_product_category, None);
 	assert_eq!(row.fda_device_info_json, None);
+	finish(&mm).await
+}
+
+#[tokio::test]
+#[serial]
+async fn save_g_k_create_with_top_level_identifiers() -> Result<()> {
+	let (mm, ctx, case_id) = setup_case().await?;
+	let id = DrugInformationBmc::create(
+		&ctx,
+		&mm,
+		DrugInformationForCreate {
+			case_id,
+			sequence_number: 1,
+			drug_characterization: "1".to_string(),
+			medicinal_product: "Drug".to_string(),
+			drug_generic_name: Some("Generic".to_string()),
+			investigational_product_blinded: Some(false),
+			mpid: Some("MPID".to_string()),
+			mpid_version: Some("1".to_string()),
+			phpid: Some("PHPID".to_string()),
+			phpid_version: Some("2".to_string()),
+			obtain_drug_country: Some("US".to_string()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let row = DrugInformationBmc::get(&ctx, &mm, id).await?;
+	assert_eq!(row.investigational_product_blinded, Some(false));
+	assert_eq!(row.mpid.as_deref(), Some("MPID"));
+	assert_eq!(row.mpid_version.as_deref(), Some("1"));
+	assert_eq!(row.phpid.as_deref(), Some("PHPID"));
+	assert_eq!(row.phpid_version.as_deref(), Some("2"));
+	assert_eq!(row.obtain_drug_country.as_deref(), Some("US"));
 	finish(&mm).await
 }
 
@@ -110,6 +144,7 @@ async fn save_g_k_update() -> Result<()> {
 			parent_dosage_text: Some("Parent dose".to_string()),
 			fda_additional_info_coded: Some("1".to_string()),
 			drug_additional_info_codes_json: Some(json!(["A", "B"])),
+			drug_additional_information: Some("Additional information".to_string()),
 			fda_specialized_product_category: Some("device".to_string()),
 			fda_device_info_json: Some(json!({"device":"x"})),
 		},
@@ -148,6 +183,10 @@ async fn save_g_k_update() -> Result<()> {
 	assert_eq!(row.parent_dosage_text.as_deref(), Some("Parent dose"));
 	assert_eq!(row.fda_additional_info_coded.as_deref(), Some("1"));
 	assert_eq!(row.drug_additional_info_codes_json, Some(json!(["A", "B"])));
+	assert_eq!(
+		row.drug_additional_information.as_deref(),
+		Some("Additional information")
+	);
 	assert_eq!(
 		row.fda_specialized_product_category.as_deref(),
 		Some("device")
@@ -255,12 +294,14 @@ async fn save_g_k_4_r_create() -> Result<()> {
 			),
 			duration_value: Some(dec(2, 0)),
 			duration_unit: Some("d".to_string()),
+			continuing: None,
 			batch_lot_number: Some("LOT".to_string()),
 			dosage_text: Some("Dose".to_string()),
 			dose_form: Some("Tablet".to_string()),
 			dose_form_termid: Some("DF1".to_string()),
 			dose_form_termid_version: Some("1".to_string()),
 			route_of_administration: Some("PO".to_string()),
+			route_termid: Some("RO1".to_string()),
 			route_termid_version: Some("1".to_string()),
 			parent_route: Some("oral".to_string()),
 			parent_route_termid: Some("001".to_string()),
@@ -296,12 +337,14 @@ async fn save_g_k_4_r_create() -> Result<()> {
 	);
 	assert_eq!(row.duration_value, Some(dec(2, 0)));
 	assert_eq!(row.duration_unit.as_deref(), Some("d"));
+	assert_eq!(row.continuing, None);
 	assert_eq!(row.batch_lot_number.as_deref(), Some("LOT"));
 	assert_eq!(row.dosage_text.as_deref(), Some("Dose"));
 	assert_eq!(row.dose_form.as_deref(), Some("Tablet"));
 	assert_eq!(row.dose_form_termid.as_deref(), Some("DF1"));
 	assert_eq!(row.dose_form_termid_version.as_deref(), Some("1"));
 	assert_eq!(row.route_of_administration.as_deref(), Some("PO"));
+	assert_eq!(row.route_termid.as_deref(), Some("RO1"));
 	assert_eq!(row.route_termid_version.as_deref(), Some("1"));
 	assert_eq!(row.parent_route.as_deref(), Some("oral"));
 	assert_eq!(row.parent_route_termid.as_deref(), Some("001"));
@@ -331,12 +374,14 @@ async fn save_g_k_4_r_update() -> Result<()> {
 			last_administration_time: None,
 			duration_value: None,
 			duration_unit: None,
+			continuing: None,
 			batch_lot_number: None,
 			dosage_text: None,
 			dose_form: None,
 			dose_form_termid: None,
 			dose_form_termid_version: None,
 			route_of_administration: None,
+			route_termid: None,
 			route_termid_version: None,
 			parent_route: None,
 			parent_route_termid: None,
@@ -366,12 +411,14 @@ async fn save_g_k_4_r_update() -> Result<()> {
 			),
 			duration_value: Some(dec(3, 0)),
 			duration_unit: Some("wk".to_string()),
+			continuing: Some(true),
 			batch_lot_number: Some("LOT2".to_string()),
 			dosage_text: Some("Dose 2".to_string()),
 			dose_form: Some("Capsule".to_string()),
 			dose_form_termid: Some("DF2".to_string()),
 			dose_form_termid_version: Some("2".to_string()),
 			route_of_administration: Some("IV".to_string()),
+			route_termid: Some("RO2".to_string()),
 			route_termid_version: Some("2".to_string()),
 			parent_route: Some("iv".to_string()),
 			parent_route_termid: Some("002".to_string()),
@@ -407,12 +454,14 @@ async fn save_g_k_4_r_update() -> Result<()> {
 	);
 	assert_eq!(row.duration_value, Some(dec(3, 0)));
 	assert_eq!(row.duration_unit.as_deref(), Some("wk"));
+	assert_eq!(row.continuing, Some(true));
 	assert_eq!(row.batch_lot_number.as_deref(), Some("LOT2"));
 	assert_eq!(row.dosage_text.as_deref(), Some("Dose 2"));
 	assert_eq!(row.dose_form.as_deref(), Some("Capsule"));
 	assert_eq!(row.dose_form_termid.as_deref(), Some("DF2"));
 	assert_eq!(row.dose_form_termid_version.as_deref(), Some("2"));
 	assert_eq!(row.route_of_administration.as_deref(), Some("IV"));
+	assert_eq!(row.route_termid.as_deref(), Some("RO2"));
 	assert_eq!(row.route_termid_version.as_deref(), Some("2"));
 	assert_eq!(row.parent_route.as_deref(), Some("iv"));
 	assert_eq!(row.parent_route_termid.as_deref(), Some("002"));

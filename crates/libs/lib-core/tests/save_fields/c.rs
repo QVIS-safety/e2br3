@@ -30,14 +30,21 @@ async fn save_c_1_create() -> Result<()> {
 			case_id,
 			transmission_date: Some(date(2024, Month::January, 1)),
 			transmission_date_null_flavor: None,
-			report_type: "1".to_string(),
+			report_type: Some("1".to_string()),
 			date_first_received_from_source: Some(date(2024, Month::January, 2)),
 			date_first_received_from_source_null_flavor: None,
 			date_of_most_recent_information: Some(date(2024, Month::January, 3)),
 			date_of_most_recent_information_null_flavor: None,
-			fulfil_expedited_criteria: true,
+			fulfil_expedited_criteria: Some(true),
+			local_criteria_report_type: None,
+			combination_product_report_indicator: None,
 			first_sender_type: Some("2".to_string()),
 			additional_documents_available: Some(true),
+			other_case_identifiers_exist: None,
+			worldwide_unique_id: None,
+			nullification_code: None,
+			nullification_reason: None,
+			receiver_organization: None,
 		},
 	)
 	.await?;
@@ -45,7 +52,7 @@ async fn save_c_1_create() -> Result<()> {
 	assert_eq!(row.case_id, case_id);
 	assert_eq!(row.transmission_date, Some(date(2024, Month::January, 1)));
 	assert_eq!(row.transmission_date_null_flavor, None);
-	assert_eq!(row.report_type, "1");
+	assert_eq!(row.report_type.as_deref(), Some("1"));
 	assert_eq!(
 		row.date_first_received_from_source,
 		Some(date(2024, Month::January, 2))
@@ -56,7 +63,7 @@ async fn save_c_1_create() -> Result<()> {
 		Some(date(2024, Month::January, 3))
 	);
 	assert_eq!(row.date_of_most_recent_information_null_flavor, None);
-	assert_eq!(row.fulfil_expedited_criteria, true);
+	assert_eq!(row.fulfil_expedited_criteria, Some(true));
 	assert_eq!(row.local_criteria_report_type, None);
 	assert_eq!(row.combination_product_report_indicator, None);
 	assert_eq!(row.worldwide_unique_id, None);
@@ -79,14 +86,21 @@ async fn save_c_1_update() -> Result<()> {
 			case_id,
 			transmission_date: None,
 			transmission_date_null_flavor: Some("UNK".to_string()),
-			report_type: "1".to_string(),
+			report_type: Some("1".to_string()),
 			date_first_received_from_source: None,
 			date_first_received_from_source_null_flavor: Some("NI".to_string()),
 			date_of_most_recent_information: None,
 			date_of_most_recent_information_null_flavor: Some("ASKU".to_string()),
-			fulfil_expedited_criteria: false,
+			fulfil_expedited_criteria: Some(false),
+			local_criteria_report_type: None,
+			combination_product_report_indicator: None,
 			first_sender_type: None,
 			additional_documents_available: None,
+			other_case_identifiers_exist: None,
+			worldwide_unique_id: None,
+			nullification_code: None,
+			nullification_reason: None,
+			receiver_organization: None,
 		},
 	)
 	.await?;
@@ -97,17 +111,21 @@ async fn save_c_1_update() -> Result<()> {
 		SafetyReportIdentificationForUpdate {
 			transmission_date: Some(date(2024, Month::February, 1)),
 			transmission_date_null_flavor: None,
-			report_type: Some("2".to_string()),
+			report_type: lib_core::model::safety_report::PatchValue::Value(
+				"2".to_string(),
+			),
 			date_first_received_from_source: Some(date(2024, Month::February, 2)),
 			date_first_received_from_source_null_flavor: None,
 			date_of_most_recent_information: Some(date(2024, Month::February, 3)),
 			date_of_most_recent_information_null_flavor: None,
-			fulfil_expedited_criteria: Some(true),
+			fulfil_expedited_criteria:
+				lib_core::model::safety_report::PatchValue::Value(true),
 			local_criteria_report_type: Some("LOCAL".to_string()),
 			combination_product_report_indicator: Some("1".to_string()),
 			worldwide_unique_id: Some("WID".to_string()),
 			first_sender_type: Some("3".to_string()),
 			additional_documents_available: Some(false),
+			other_case_identifiers_exist: None,
 			nullification_code: None,
 			nullification_reason: None,
 			receiver_organization: Some("Receiver".to_string()),
@@ -118,7 +136,7 @@ async fn save_c_1_update() -> Result<()> {
 	assert_eq!(row.case_id, case_id);
 	assert_eq!(row.transmission_date, Some(date(2024, Month::February, 1)));
 	assert_eq!(row.transmission_date_null_flavor, None);
-	assert_eq!(row.report_type, "2");
+	assert_eq!(row.report_type.as_deref(), Some("2"));
 	assert_eq!(
 		row.date_first_received_from_source,
 		Some(date(2024, Month::February, 2))
@@ -129,7 +147,7 @@ async fn save_c_1_update() -> Result<()> {
 		Some(date(2024, Month::February, 3))
 	);
 	assert_eq!(row.date_of_most_recent_information_null_flavor, None);
-	assert_eq!(row.fulfil_expedited_criteria, true);
+	assert_eq!(row.fulfil_expedited_criteria, Some(true));
 	assert_eq!(row.local_criteria_report_type.as_deref(), Some("LOCAL"));
 	assert_eq!(
 		row.combination_product_report_indicator.as_deref(),
@@ -153,15 +171,15 @@ async fn save_c_2_create() -> Result<()> {
 		&mm,
 		SenderInformationForCreate {
 			case_id,
-			sender_type: "1".to_string(),
-			organization_name: "Org".to_string(),
+			sender_type: Some("1".to_string()),
+			organization_name: Some("Org".to_string()),
 		},
 	)
 	.await?;
 	let row = SenderInformationBmc::get(&ctx, &mm, id).await?;
 	assert_eq!(row.case_id, case_id);
-	assert_eq!(row.sender_type, "1");
-	assert_eq!(row.organization_name, "Org");
+	assert_eq!(row.sender_type.as_deref(), Some("1"));
+	assert_eq!(row.organization_name.as_deref(), Some("Org"));
 	assert_eq!(row.department, None);
 	assert_eq!(row.street_address, None);
 	assert_eq!(row.city, None);
@@ -187,8 +205,8 @@ async fn save_c_2_update() -> Result<()> {
 		&mm,
 		SenderInformationForCreate {
 			case_id,
-			sender_type: "1".to_string(),
-			organization_name: "Org".to_string(),
+			sender_type: Some("1".to_string()),
+			organization_name: Some("Org".to_string()),
 		},
 	)
 	.await?;
@@ -217,8 +235,8 @@ async fn save_c_2_update() -> Result<()> {
 	.await?;
 	let row = SenderInformationBmc::get(&ctx, &mm, id).await?;
 	assert_eq!(row.case_id, case_id);
-	assert_eq!(row.sender_type, "2");
-	assert_eq!(row.organization_name, "Org 2");
+	assert_eq!(row.sender_type.as_deref(), Some("2"));
+	assert_eq!(row.organization_name.as_deref(), Some("Org 2"));
 	assert_eq!(row.department.as_deref(), Some("Dept"));
 	assert_eq!(row.street_address.as_deref(), Some("123 St"));
 	assert_eq!(row.city.as_deref(), Some("Seoul"));

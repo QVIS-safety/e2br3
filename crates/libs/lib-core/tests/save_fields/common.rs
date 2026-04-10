@@ -64,6 +64,7 @@ pub async fn create_drug(
 			drug_characterization: "1".to_string(),
 			medicinal_product: "Drug".to_string(),
 			drug_generic_name: None,
+			..Default::default()
 		},
 	)
 	.await

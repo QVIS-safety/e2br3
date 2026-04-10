@@ -81,6 +81,7 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 			drug_characterization: "2".to_string(),
 			medicinal_product: "Beta".to_string(),
 			drug_generic_name: None,
+			..Default::default()
 		},
 	)
 	.await?;
@@ -116,6 +117,7 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 			parent_dosage_text: None,
 			fda_additional_info_coded: None,
 			drug_additional_info_codes_json: None,
+			drug_additional_information: None,
 			fda_specialized_product_category: None,
 			fda_device_info_json: None,
 		},
@@ -131,6 +133,7 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 			drug_characterization: "1".to_string(),
 			medicinal_product: "Alpha".to_string(),
 			drug_generic_name: None,
+			..Default::default()
 		},
 	)
 	.await?;
@@ -168,6 +171,7 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 			parent_dosage_text: Some("Parent dose".to_string()),
 			fda_additional_info_coded: Some("1".to_string()),
 			drug_additional_info_codes_json: None,
+			drug_additional_information: None,
 			fda_specialized_product_category: None,
 			fda_device_info_json: None,
 		},
@@ -215,12 +219,14 @@ async fn export_g_rebuilds_drugs_in_sequence_order_and_exports_related_data(
 			),
 			duration_value: Some(rust_decimal::Decimal::new(1, 0)),
 			duration_unit: Some("d".to_string()),
+			continuing: None,
 			batch_lot_number: Some("LOT1".to_string()),
 			dosage_text: Some("Dose text".to_string()),
 			dose_form: Some("Tablet".to_string()),
 			dose_form_termid: Some("DF1".to_string()),
 			dose_form_termid_version: Some("1".to_string()),
 			route_of_administration: Some("PO".to_string()),
+			route_termid: Some("RO1".to_string()),
 			route_termid_version: Some("1".to_string()),
 			parent_route: Some("oral".to_string()),
 			parent_route_termid: Some("001".to_string()),

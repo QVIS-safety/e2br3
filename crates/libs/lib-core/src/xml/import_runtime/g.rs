@@ -115,6 +115,7 @@ async fn import_drugs(
 					dose_value: dose.dose_value,
 					dose_unit: dose.dose_unit,
 					route: dose.route,
+					route_termid: None,
 					route_termid_version: dose.route_termid_version,
 					dose_form: dose.dose_form,
 					dose_form_termid: dose.dose_form_termid,
@@ -168,6 +169,7 @@ async fn import_drugs(
 				drug_characterization: drug.drug_characterization.clone(),
 				medicinal_product: drug.medicinal_product.clone(),
 				drug_generic_name: None,
+				..Default::default()
 			},
 		)
 		.await?;
@@ -210,6 +212,7 @@ async fn import_drugs(
 				parent_dosage_text: drug.parent_dosage_text,
 				fda_additional_info_coded: drug.fda_additional_info_coded,
 				drug_additional_info_codes_json,
+				drug_additional_information: None,
 				fda_specialized_product_category,
 				fda_device_info_json,
 			},
@@ -251,12 +254,14 @@ async fn import_drugs(
 					last_administration_time: dose.end_time,
 					duration_value: dose.duration_value,
 					duration_unit: dose.duration_unit,
+					continuing: None,
 					batch_lot_number: dose.batch_lot,
 					dosage_text: dose.dosage_text,
 					dose_form: dose.dose_form,
 					dose_form_termid: dose.dose_form_termid,
 					dose_form_termid_version: dose.dose_form_termid_version,
 					route_of_administration: dose.route,
+					route_termid: dose.route_termid,
 					route_termid_version: dose.route_termid_version,
 					parent_route: dose.parent_route,
 					parent_route_termid: dose.parent_route_termid,

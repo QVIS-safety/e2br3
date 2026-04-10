@@ -124,6 +124,7 @@ async fn create_drug(
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	Ok(DrugInformationBmc::create(ctx, mm, data).await?)
 }
@@ -465,12 +466,14 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			last_administration_time: None,
 			duration_value: None,
 			duration_unit: None,
+			continuing: None,
 			batch_lot_number: None,
 			dosage_text: None,
 			dose_form: None,
 			dose_form_termid: None,
 			dose_form_termid_version: None,
 			route_of_administration: None,
+			route_termid: None,
 			route_termid_version: None,
 			parent_route: None,
 			parent_route_termid: None,
@@ -497,12 +500,14 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 			last_administration_time: None,
 			duration_value: None,
 			duration_unit: None,
+			continuing: None,
 			batch_lot_number: None,
 			dosage_text: None,
 			dose_form: None,
 			dose_form_termid: None,
 			dose_form_termid_version: None,
 			route_of_administration: None,
+			route_termid: None,
 			route_termid_version: None,
 			parent_route: None,
 			parent_route_termid: None,

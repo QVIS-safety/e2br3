@@ -573,6 +573,7 @@ async fn test_drug_create_invalid_case() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 
 	let result = DrugInformationBmc::create(&ctx, &mm, drug_c).await;
@@ -668,6 +669,7 @@ async fn test_drug_get_in_wrong_case() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -706,6 +708,7 @@ async fn test_drug_update_in_wrong_case() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Test Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -738,6 +741,7 @@ async fn test_drug_update_in_wrong_case() -> Result<()> {
 		parent_dosage_text: None,
 		fda_additional_info_coded: None,
 		drug_additional_info_codes_json: None,
+		drug_additional_information: None,
 		fda_specialized_product_category: None,
 		fda_device_info_json: None,
 	};

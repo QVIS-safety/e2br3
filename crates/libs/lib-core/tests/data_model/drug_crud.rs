@@ -30,6 +30,7 @@ async fn test_drug_information_crud() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Demo Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 	let drug = DrugInformationBmc::get(&ctx, &mm, drug_id).await?;
@@ -63,6 +64,7 @@ async fn test_drug_information_crud() -> Result<()> {
 		parent_dosage_text: None,
 		fda_additional_info_coded: None,
 		drug_additional_info_codes_json: None,
+		drug_additional_information: None,
 		fda_specialized_product_category: None,
 		fda_device_info_json: None,
 	};
@@ -95,6 +97,7 @@ async fn test_drug_submodels_crud() -> Result<()> {
 		drug_characterization: "1".to_string(),
 		medicinal_product: "Submodel Drug".to_string(),
 		drug_generic_name: None,
+		..Default::default()
 	};
 	let drug_id = DrugInformationBmc::create(&ctx, &mm, drug_c).await?;
 
@@ -151,12 +154,14 @@ async fn test_drug_submodels_crud() -> Result<()> {
 		last_administration_time: None,
 		duration_value: None,
 		duration_unit: None,
+		continuing: None,
 		batch_lot_number: None,
 		dosage_text: None,
 		dose_form: None,
 		dose_form_termid: None,
 		dose_form_termid_version: None,
 		route_of_administration: None,
+		route_termid: None,
 		route_termid_version: None,
 		parent_route: None,
 		parent_route_termid: None,
@@ -180,12 +185,14 @@ async fn test_drug_submodels_crud() -> Result<()> {
 		last_administration_time: None,
 		duration_value: None,
 		duration_unit: None,
+		continuing: Some(true),
 		batch_lot_number: None,
 		dosage_text: Some("Dose text".to_string()),
 		dose_form: None,
 		dose_form_termid: None,
 		dose_form_termid_version: None,
 		route_of_administration: None,
+		route_termid: None,
 		route_termid_version: None,
 		parent_route: None,
 		parent_route_termid: None,
