@@ -514,3 +514,59 @@ async fn test_delete_case_soft_deletes_and_keeps_case_visible() -> Result<()> {
 
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn test_deleted_case_rejects_content_updates() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (create_status, create_body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(create_status, StatusCode::CREATED, "{create_body:?}");
+	let case_id = create_body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?
+		.to_string();
+
+	let (delete_status, delete_body) = delete_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({ "reason_for_change": "client requested soft delete" }),
+	)
+	.await?;
+	assert_eq!(delete_status, StatusCode::OK, "{delete_body:?}");
+
+	let (update_status, update_body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {
+				"report_year": "2027"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(update_status, StatusCode::BAD_REQUEST, "{update_body:?}");
+	assert!(
+		update_body.to_string().contains("deleted cases are read-only"),
+		"{update_body:?}"
+	);
+
+	Ok(())
+}
