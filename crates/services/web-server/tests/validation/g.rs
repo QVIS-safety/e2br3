@@ -26,7 +26,7 @@ pub(crate) fn tested_rule_codes() -> &'static [&'static str] {
 		"ICH.G.k.9.i.3.2b.REQUIRED",
 		"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
 		"MFDS.G.k.2.1.KR.1b.REQUIRED",
-		"MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
+		"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
 		"MFDS.G.k.2.1.KR.1a.REQUIRED",
 	]
 }
@@ -388,7 +388,7 @@ async fn g_mfds_kr_foreign_whompid_recommended_returns_banner_issue() -> Result<
 	)
 	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "mfds").await?;
-	assert_banner_issue(&report, "MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED");
+	assert_banner_issue(&report, "MFDS.KR.FOREIGN.WHOMPID.REQUIRED");
 	Ok(())
 }
 
