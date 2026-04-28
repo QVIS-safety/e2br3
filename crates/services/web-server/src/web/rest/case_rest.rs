@@ -216,6 +216,24 @@ fn case_status_update(status: String) -> InternalCaseForUpdate {
 	}
 }
 
+fn required_reason_for_change(
+	reason_for_change: Option<String>,
+	action: &str,
+) -> Result<String> {
+	reason_for_change
+		.and_then(|v| {
+			let trimmed = v.trim().to_string();
+			if trimmed.is_empty() {
+				None
+			} else {
+				Some(trimmed)
+			}
+		})
+		.ok_or_else(|| Error::BadRequest {
+			message: format!("reason_for_change is required for {action}"),
+		})
+}
+
 async fn next_case_version(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -285,6 +303,11 @@ pub struct PublicCaseUpdateRequest {
 	pub data: PublicCaseForUpdate,
 	pub reason_for_change: Option<String>,
 	pub e_signature: Option<ESignatureInput>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PublicCaseDeleteRequest {
+	pub reason_for_change: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -469,16 +492,10 @@ pub async fn update_case_guarded(
 		.unwrap_or(false);
 
 	let ctx_for_update = if requires_compliance {
-		let reason = reason_for_change
-			.and_then(|v| {
-				let trimmed = v.trim().to_string();
-				if trimmed.is_empty() { None } else { Some(trimmed) }
-			})
-			.ok_or(Error::BadRequest {
-				message:
-					"reason_for_change is required for submitted/nullified/deleted status transitions"
-						.to_string(),
-			})?;
+		let reason = required_reason_for_change(
+			reason_for_change,
+			"submitted/nullified/deleted status transitions",
+		)?;
 		let e_signature = e_signature.ok_or(Error::BadRequest {
 			message:
 				"e_signature is required for submitted/nullified/deleted status transitions"
@@ -515,12 +532,37 @@ pub async fn delete_case(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
-) -> Result<axum::http::StatusCode> {
+	payload: Option<Json<PublicCaseDeleteRequest>>,
+) -> Result<(axum::http::StatusCode, Json<DataRestResult<Case>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_DELETE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, id).await?;
-	CaseBmc::delete(&ctx, &mm, id).await?;
-	Ok(axum::http::StatusCode::NO_CONTENT)
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
+	let current = CaseBmc::get(&ctx, &mm, id).await?;
+	if !is_allowed_case_status_transition(&current.status, "deleted") {
+		return Err(Error::BadRequest {
+			message: format!(
+				"illegal case status transition: '{}' -> 'deleted'",
+				current.status
+			),
+		});
+	}
+	let reason = required_reason_for_change(
+		payload.and_then(|Json(params)| params.reason_for_change),
+		"delete",
+	)?;
+	let ctx_for_update = ctx.with_compliance(Some(reason), None);
+	CaseBmc::update(
+		&ctx_for_update,
+		&mm,
+		id,
+		case_status_update("deleted".to_string()),
+	)
+	.await?;
+	let entity = CaseBmc::get(&ctx, &mm, id).await?;
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// POST /api/cases/{id}/validator/mark-validated
@@ -596,7 +638,19 @@ pub async fn get_case_lifecycle(
 	require_permission(&ctx, CASE_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let case = CaseBmc::get(&ctx, &mm, id).await?;
-	let rows = CaseBmc::list(&ctx, &mm, None, None).await?;
+	let rows = CaseBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![CaseFilter {
+			organization_id: None,
+			safety_report_id: Some(OpValsString::from(vec![OpValString::Eq(
+				case.safety_report_id.clone(),
+			)])),
+			status: None,
+		}]),
+		None,
+	)
+	.await?;
 	let mut versions = Vec::new();
 	for row in rows {
 		if row.safety_report_id == case.safety_report_id

@@ -139,9 +139,12 @@ pub fn router() -> Router {
 			CaseForCreateDoc,
 			CaseForUpdateDoc,
 			CaseResponse,
+			RawCaseDoc,
+			RawCaseResponse,
 			CaseListResponse,
 			CreateCaseRequest,
 			UpdateCaseRequest,
+			DeleteCaseRequest,
 			CaseIntakeCheckInputDoc,
 			CaseIntakeDuplicateMatchDoc,
 			CaseIntakeCheckResultDoc,
@@ -385,6 +388,11 @@ struct UpdateCaseRequest {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct DeleteCaseRequest {
+	reason_for_change: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct CreateCaseIntakeCheckRequest {
 	data: CaseIntakeCheckInputDoc,
 }
@@ -397,6 +405,11 @@ struct CreateCaseFromIntakeRequest {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct CaseResponse {
 	data: CaseDoc,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct RawCaseResponse {
+	data: RawCaseDoc,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -734,6 +747,44 @@ struct CaseDoc {
 	is_locked: bool,
 	can_act_on_workflow: bool,
 	workflow_block_reason: Option<String>,
+	mfds_report_type: Option<String>,
+	report_year: Option<String>,
+	source_document_name: Option<String>,
+	source_document_base64: Option<String>,
+	source_document_media_type: Option<String>,
+	created_by: String,
+	updated_by: Option<String>,
+	submitted_by: Option<String>,
+	submitted_at: Option<String>,
+	raw_xml: Option<String>,
+	dirty_c: bool,
+	dirty_d: bool,
+	dirty_e: bool,
+	dirty_f: bool,
+	dirty_g: bool,
+	dirty_h: bool,
+	created_at: String,
+	updated_at: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct RawCaseDoc {
+	id: String,
+	organization_id: String,
+	safety_report_id: String,
+	version: i32,
+	dg_prd_key: Option<String>,
+	status: String,
+	validation_profile: Option<String>,
+	appendices_json: Option<String>,
+	review_receivers_json: Option<String>,
+	workflow_routes_json: Option<String>,
+	workflow_status: String,
+	workflow_assigned_role: Option<String>,
+	workflow_assigned_user_id: Option<String>,
+	workflow_due_at: Option<String>,
+	workflow_description: Option<String>,
+	workflow_updated_at: String,
 	mfds_report_type: Option<String>,
 	report_year: Option<String>,
 	source_document_name: Option<String>,
@@ -1849,8 +1900,10 @@ fn update_case() {}
 	params(
 		("id" = String, Path, description = "Case ID")
 	),
+	request_body = DeleteCaseRequest,
 	responses(
-		(status = 204, description = "Case deleted"),
+		(status = 200, description = "Case soft-deleted", body = RawCaseResponse),
+		(status = 400, description = "Invalid delete payload", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
 )]

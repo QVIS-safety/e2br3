@@ -730,6 +730,12 @@ pub async fn case_write_block_reason_for_case(
 	case: &Case,
 ) -> Result<Option<WorkflowBlockReason>> {
 	let legacy_status = case.status.trim();
+	if legacy_status.eq_ignore_ascii_case("deleted") {
+		return Ok(Some(WorkflowBlockReason {
+			code: "case_deleted",
+			message: "deleted cases are read-only".to_string(),
+		}));
+	}
 	if legacy_status.eq_ignore_ascii_case("locked") {
 		return Ok(Some(WorkflowBlockReason {
 			code: "case_locked",
