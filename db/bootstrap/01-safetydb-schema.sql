@@ -180,7 +180,7 @@ CREATE TABLE if NOT EXISTS cases (
 
     -- Unique constraint: one active version per safety_report_id
     CONSTRAINT unique_safety_report_version UNIQUE (safety_report_id, version),
-    CONSTRAINT case_status_valid CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'archived', 'nullified')),
+    CONSTRAINT case_status_valid CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'deleted', 'archived', 'nullified')),
     CONSTRAINT case_validation_profile_valid CHECK (validation_profile IS NULL OR validation_profile IN ('ich', 'fda', 'mfds'))
 );
 
