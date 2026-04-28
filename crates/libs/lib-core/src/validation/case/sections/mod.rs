@@ -235,5 +235,13 @@ mod tests {
 			),
 			"G.k.4.r"
 		);
+		assert_eq!(
+			resolve_validation_subsection("FDA.G.K.12.REQUIRED", None),
+			"G.k"
+		);
+		assert_eq!(
+			resolve_validation_subsection("ICH.N.REQUIRED", None),
+			"N"
+		);
 	}
 }
