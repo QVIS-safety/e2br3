@@ -15,9 +15,12 @@ pub(crate) fn tested_rule_codes() -> &'static [&'static str] {
 		"ICH.C.1.REQUIRED",
 		"ICH.C.1.1.REQUIRED",
 		"ICH.C.1.2.REQUIRED",
+		"ICH.C.1.2.FUTURE_DATE.FORBIDDEN",
 		"ICH.C.1.3.REQUIRED",
 		"ICH.C.1.4.REQUIRED",
+		"ICH.C.1.4.FUTURE_DATE.FORBIDDEN",
 		"ICH.C.1.5.REQUIRED",
+		"ICH.C.1.5.FUTURE_DATE.FORBIDDEN",
 		"ICH.C.1.7.REQUIRED",
 		"ICH.C.1.9.1.r.1.REQUIRED",
 		"ICH.C.1.11.2.REQUIRED",
@@ -25,6 +28,8 @@ pub(crate) fn tested_rule_codes() -> &'static [&'static str] {
 		"MFDS.C.3.1.KR.1.REQUIRED",
 		"ICH.C.3.2.REQUIRED",
 		"ICH.C.2.r.4.REQUIRED",
+		"ICH.C.2.r.2.1.REQUIRED",
+		"ICH.C.5.3.REQUIRED",
 		"ICH.C.5.4.REQUIRED",
 		"FDA.C.1.7.1.REQUIRED",
 		"FDA.C.1.12.RECOMMENDED",
@@ -110,6 +115,24 @@ async fn c_ich_c_1_2_allows_transmission_date_null_flavor() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn c_ich_c_1_2_future_date_returns_banner_issue() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE safety_report_identification SET transmission_date = DATE '2999-01-01', transmission_date_null_flavor = NULL WHERE case_id = '{}'",
+			ctx.case_id
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.C.1.2.FUTURE_DATE.FORBIDDEN");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn c_ich_c_1_3_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
@@ -146,6 +169,24 @@ async fn c_ich_c_1_4_required_returns_banner_issue() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn c_ich_c_1_4_future_date_returns_banner_issue() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE safety_report_identification SET date_first_received_from_source = DATE '2999-01-01', date_first_received_from_source_null_flavor = NULL WHERE case_id = '{}'",
+			ctx.case_id
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.C.1.4.FUTURE_DATE.FORBIDDEN");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn c_ich_c_1_5_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
@@ -159,6 +200,24 @@ async fn c_ich_c_1_5_required_returns_banner_issue() -> Result<()> {
 	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.C.1.5.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn c_ich_c_1_5_future_date_returns_banner_issue() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE safety_report_identification SET date_of_most_recent_information = DATE '2999-01-01', date_of_most_recent_information_null_flavor = NULL WHERE case_id = '{}'",
+			ctx.case_id
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.C.1.5.FUTURE_DATE.FORBIDDEN");
 	Ok(())
 }
 

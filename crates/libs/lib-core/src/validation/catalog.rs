@@ -274,6 +274,13 @@ pub const VALIDATION_RULES: &[
 		message: "[C.1.2] is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.C.1.2.FUTURE_DATE.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[C.1.2] must not be later than today.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.C.1.3.CONDITIONAL",
 		profile: ValidationProfile::Ich,
 		section: "xml",
@@ -296,11 +303,25 @@ pub const VALIDATION_RULES: &[
 		message: "[C.1.4] is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.C.1.4.FUTURE_DATE.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[C.1.4] must not be later than today.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.C.1.5.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.5] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.5.FUTURE_DATE.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[C.1.5] must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.6.1.r.1.REQUIRED",

@@ -14,6 +14,14 @@ fn is_six_digit_numeric(value: Option<&str>) -> bool {
 		.unwrap_or(false)
 }
 
+fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
+	let Some(value) = value else {
+		return false;
+	};
+	let today = sqlx::types::time::OffsetDateTime::now_utc().date();
+	value > today
+}
+
 pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	profile: ValidationProfile,
@@ -45,11 +53,20 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 			Some("safetyReportIdentification.safetyReportId")
 		}
 		"ICH.C.1.2.REQUIRED" => Some("safetyReportIdentification.transmissionDate"),
+		"ICH.C.1.2.FUTURE_DATE.FORBIDDEN" => {
+			Some("safetyReportIdentification.transmissionDate")
+		}
 		"ICH.C.1.3.REQUIRED" => Some("safetyReportIdentification.reportType"),
 		"ICH.C.1.4.REQUIRED" => {
 			Some("safetyReportIdentification.dateFirstReceivedFromSource")
 		}
+		"ICH.C.1.4.FUTURE_DATE.FORBIDDEN" => {
+			Some("safetyReportIdentification.dateFirstReceivedFromSource")
+		}
 		"ICH.C.1.5.REQUIRED" => {
+			Some("safetyReportIdentification.dateOfMostRecentInformation")
+		}
+		"ICH.C.1.5.FUTURE_DATE.FORBIDDEN" => {
 			Some("safetyReportIdentification.dateOfMostRecentInformation")
 		}
 		"ICH.C.1.7.REQUIRED" => {
@@ -109,6 +126,13 @@ pub(crate) fn collect_ich_issues(
 			report.transmission_date_null_flavor.as_deref(),
 			RuleFacts::default(),
 		);
+		if is_future_date(report.transmission_date) {
+			push_issue_by_code(
+				issues,
+				"ICH.C.1.2.FUTURE_DATE.FORBIDDEN",
+				"safetyReportIdentification.transmissionDate",
+			);
+		}
 		let _ = push_issue_if_rule_invalid(
 			issues,
 			"ICH.C.1.3.REQUIRED",
@@ -130,6 +154,13 @@ pub(crate) fn collect_ich_issues(
 				.as_deref(),
 			RuleFacts::default(),
 		);
+		if is_future_date(report.date_first_received_from_source) {
+			push_issue_by_code(
+				issues,
+				"ICH.C.1.4.FUTURE_DATE.FORBIDDEN",
+				"safetyReportIdentification.dateFirstReceivedFromSource",
+			);
+		}
 		let date_most_recent = report
 			.date_of_most_recent_information
 			.map(|value| value.to_string());
@@ -143,6 +174,13 @@ pub(crate) fn collect_ich_issues(
 				.as_deref(),
 			RuleFacts::default(),
 		);
+		if is_future_date(report.date_of_most_recent_information) {
+			push_issue_by_code(
+				issues,
+				"ICH.C.1.5.FUTURE_DATE.FORBIDDEN",
+				"safetyReportIdentification.dateOfMostRecentInformation",
+			);
+		}
 		let _ = push_issue_if_rule_invalid(
 			issues,
 			"ICH.C.1.7.REQUIRED",
