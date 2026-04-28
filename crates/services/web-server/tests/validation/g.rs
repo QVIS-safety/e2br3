@@ -1,9 +1,10 @@
 use super::validation_common::{
-	assert_banner_issue, assert_section_rule_coverage, create_dosage, create_drug,
-	create_drug_indication, create_drug_reaction_assessment, create_message_header,
+	assert_banner_issue, assert_lacks_code, assert_section_rule_coverage,
+	create_dosage, create_drug, create_drug_indication,
+	create_drug_reaction_assessment, create_message_header,
 	create_message_header_with_receiver, create_patient, create_primary_source,
-	create_reaction, create_safety_report, create_sender, put_json, setup_case,
-	update_drug, validate_case,
+	create_reaction, create_safety_report, create_sender, db_exec_case_sql,
+	put_json, setup_case, update_drug, validate_case,
 };
 use crate::common::Result;
 use axum::http::StatusCode;
@@ -75,6 +76,25 @@ async fn g_ich_g_k_4_r_4_5_future_date_returns_banner_issue() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{body}");
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn g_ich_dosage_date_null_flavor_does_not_emit_date_errors() -> Result<()> {
+	let (ctx, drug_id, _) = setup_drug_case().await?;
+	let dosage_id =
+		create_dosage(&ctx.app, &ctx.cookie, ctx.case_id, drug_id, 1).await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE dosage_information SET first_administration_date = NULL, first_administration_date_null_flavor = 'UNK', last_administration_date = NULL, last_administration_date_null_flavor = 'UNK' WHERE id = '{dosage_id}'"
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_lacks_code(&report, "ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN");
+	assert_lacks_code(&report, "ICH.G.k.4.r.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED");
 	Ok(())
 }
 

@@ -1,7 +1,7 @@
 use super::validation_common::{
-	assert_banner_issue, assert_section_rule_coverage, create_message_header,
-	create_safety_report, create_test_result, db_exec_case_sql, put_json,
-	setup_case, validate_case,
+	assert_banner_issue, assert_lacks_code, assert_section_rule_coverage,
+	create_message_header, create_safety_report, create_test_result,
+	db_exec_case_sql, put_json, setup_case, validate_case,
 };
 use crate::common::Result;
 use axum::http::StatusCode;
@@ -42,6 +42,27 @@ async fn f_ich_f_r_1_future_date_returns_banner_issue() -> Result<()> {
 	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.F.r.1.FUTURE_DATE.FORBIDDEN");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn f_ich_test_date_null_flavor_satisfies_required_date() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let test_id =
+		create_test_result(&ctx.app, &ctx.cookie, ctx.case_id, 1, "LFT").await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE test_results SET test_date = NULL, test_date_null_flavor = 'UNK' WHERE id = '{test_id}'"
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_lacks_code(&report, "ICH.F.r.1.REQUIRED");
+	assert_lacks_code(&report, "ICH.F.r.1.FUTURE_DATE.FORBIDDEN");
 	Ok(())
 }
 

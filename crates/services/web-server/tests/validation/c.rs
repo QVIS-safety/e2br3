@@ -187,6 +187,25 @@ async fn c_ich_c_1_4_future_date_returns_banner_issue() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn c_ich_c_1_4_allows_date_first_received_null_flavor() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE safety_report_identification SET date_first_received_from_source = NULL, date_first_received_from_source_null_flavor = 'UNK' WHERE case_id = '{}'",
+			ctx.case_id
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_lacks_code(&report, "ICH.C.1.4.REQUIRED");
+	assert_lacks_code(&report, "ICH.C.1.4.FUTURE_DATE.FORBIDDEN");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn c_ich_c_1_5_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
@@ -218,6 +237,25 @@ async fn c_ich_c_1_5_future_date_returns_banner_issue() -> Result<()> {
 	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.C.1.5.FUTURE_DATE.FORBIDDEN");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn c_ich_c_1_5_allows_date_most_recent_null_flavor() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE safety_report_identification SET date_of_most_recent_information = NULL, date_of_most_recent_information_null_flavor = 'UNK' WHERE case_id = '{}'",
+			ctx.case_id
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_lacks_code(&report, "ICH.C.1.5.REQUIRED");
+	assert_lacks_code(&report, "ICH.C.1.5.FUTURE_DATE.FORBIDDEN");
 	Ok(())
 }
 

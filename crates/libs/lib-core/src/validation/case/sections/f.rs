@@ -45,7 +45,8 @@ pub(crate) fn collect_ich_issues(
 				},
 				RuleFacts::default(),
 			);
-			let test_date_present = test.test_date.is_some();
+			let test_date_present = test.test_date.is_some()
+				|| has_text(test.test_date_null_flavor.as_deref());
 			let free_text_present = has_text(Some(test.test_name.as_str()));
 			let meddra_version_present =
 				has_text(test.test_meddra_version.as_deref());

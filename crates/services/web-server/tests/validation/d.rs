@@ -1,10 +1,11 @@
 use super::validation_common::{
-	assert_banner_issue, assert_section_rule_coverage, create_message_header,
-	create_message_header_with_receiver, create_parent_information,
-	create_parent_past_drug_history, create_past_drug_history, create_patient,
-	create_primary_source, create_safety_report, create_safety_report_with,
-	create_sender, db_exec_case_sql, setup_case, update_parent_past_drug_history,
-	update_patient, validate_case,
+	assert_banner_issue, assert_lacks_code, assert_section_rule_coverage,
+	create_message_header, create_message_header_with_receiver,
+	create_parent_information, create_parent_past_drug_history,
+	create_past_drug_history, create_patient, create_primary_source,
+	create_safety_report, create_safety_report_with, create_sender,
+	db_exec_case_sql, setup_case, update_parent_past_drug_history, update_patient,
+	validate_case,
 };
 use crate::common::Result;
 use serde_json::json;
@@ -99,6 +100,28 @@ async fn d_ich_d_2_1_future_date_returns_banner_issue() -> Result<()> {
 	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.D.2.1.FUTURE_DATE.FORBIDDEN");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn d_ich_birth_date_null_flavor_does_not_emit_date_errors() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE patient_information SET birth_date = NULL, birth_date_null_flavor = 'UNK' WHERE case_id = '{}'",
+			ctx.case_id
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_lacks_code(&report, "ICH.D.2.1.FUTURE_DATE.FORBIDDEN");
+	assert_lacks_code(&report, "ICH.D.2.BIRTHTIME.NULLFLAVOR.REQUIRED");
 	Ok(())
 }
 
