@@ -488,11 +488,11 @@ pub async fn delete_case(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
-	Json(params): Json<PublicCaseDeleteRequest>,
+	payload: Option<Json<PublicCaseDeleteRequest>>,
 ) -> Result<(axum::http::StatusCode, Json<DataRestResult<Case>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_DELETE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, id).await?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let current = CaseBmc::get(&ctx, &mm, id).await?;
 	if !is_allowed_case_status_transition(&current.status, "deleted") {
 		return Err(Error::BadRequest {
@@ -502,7 +502,10 @@ pub async fn delete_case(
 			),
 		});
 	}
-	let reason = required_reason_for_change(params.reason_for_change, "delete")?;
+	let reason = required_reason_for_change(
+		payload.and_then(|Json(params)| params.reason_for_change),
+		"delete",
+	)?;
 	let ctx_for_update = ctx.with_compliance(Some(reason), None);
 	CaseBmc::update(
 		&ctx_for_update,
@@ -582,7 +585,19 @@ pub async fn get_case_lifecycle(
 	require_permission(&ctx, CASE_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let case = CaseBmc::get(&ctx, &mm, id).await?;
-	let rows = CaseBmc::list(&ctx, &mm, None, None).await?;
+	let rows = CaseBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![CaseFilter {
+			organization_id: None,
+			safety_report_id: Some(OpValsString::from(vec![OpValString::Eq(
+				case.safety_report_id.clone(),
+			)])),
+			status: None,
+		}]),
+		None,
+	)
+	.await?;
 	let mut versions = Vec::new();
 	for row in rows {
 		if row.safety_report_id == case.safety_report_id

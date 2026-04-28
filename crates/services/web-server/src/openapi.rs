@@ -142,6 +142,7 @@ pub fn router() -> Router {
 			CaseListResponse,
 			CreateCaseRequest,
 			UpdateCaseRequest,
+			DeleteCaseRequest,
 			CaseIntakeCheckInputDoc,
 			CaseIntakeDuplicateMatchDoc,
 			CaseIntakeCheckResultDoc,
@@ -382,6 +383,11 @@ struct CreateCaseRequest {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct UpdateCaseRequest {
 	data: CaseForUpdateDoc,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct DeleteCaseRequest {
+	reason_for_change: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -1849,8 +1855,10 @@ fn update_case() {}
 	params(
 		("id" = String, Path, description = "Case ID")
 	),
+	request_body = DeleteCaseRequest,
 	responses(
-		(status = 204, description = "Case deleted"),
+		(status = 200, description = "Case soft-deleted", body = CaseResponse),
+		(status = 400, description = "Invalid delete payload", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
 )]

@@ -124,16 +124,17 @@ async fn test_public_case_update_ignores_system_managed_fields() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 
+	let report_id = format!("SR-{}", Uuid::new_v4());
 	let (create_status, create_body) = post_json(
 		&app,
 		&cookie,
 		"/api/cases",
-		json!({
-			"data": {
-				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
-				"status": "draft"
-			}
-		}),
+			json!({
+				"data": {
+					"safety_report_id": report_id,
+					"status": "draft"
+				}
+			}),
 	)
 	.await?;
 	assert_eq!(create_status, StatusCode::CREATED, "{create_body:?}");
@@ -411,13 +412,14 @@ async fn test_delete_case_soft_deletes_and_keeps_case_visible() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 
+	let report_id = format!("SR-{}", Uuid::new_v4());
 	let (create_status, create_body) = post_json(
 		&app,
 		&cookie,
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"safety_report_id": report_id,
 				"status": "draft"
 			}
 		}),
@@ -454,7 +456,12 @@ async fn test_delete_case_soft_deletes_and_keeps_case_visible() -> Result<()> {
 		"{get_body:?}"
 	);
 
-	let (list_status, list_body) = get_json(&app, &cookie, "/api/cases").await?;
+	let (list_status, list_body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases?filters%5Bsafety_report_id%5D%5B%24eq%5D={report_id}"),
+	)
+	.await?;
 	assert_eq!(list_status, StatusCode::OK, "{list_body:?}");
 	assert!(
 		list_body["data"].as_array().is_some_and(|items| items
