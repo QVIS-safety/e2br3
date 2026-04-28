@@ -609,6 +609,13 @@ pub const VALIDATION_RULES: &[
 			"[D.2.2.1b] Gestation period unit is required when [D.2.2.1a] is provided.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.D.2.1.FUTURE_DATE.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.2.1] Date of birth must not be later than today.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.D.2.2a.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "patient",
@@ -661,6 +668,13 @@ pub const VALIDATION_RULES: &[
 		blocking: true,
 		message:
 			"[D.7.1.r.1b] Medical history MedDRA code is required when [D.7.1.r.1a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.7.1.r.FUTURE_DATE.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.7.1.r] Medical history dates must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.7.2.CONDITIONAL",
@@ -923,6 +937,13 @@ pub const VALIDATION_RULES: &[
 			"reaction effectiveTime low/high missing value; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.E.i.4-5.FUTURE_DATE.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "[E.i.4/E.i.5] Reaction dates must not be later than today.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.E.i.4-6.CONDITIONAL",
 		profile: ValidationProfile::Ich,
 		section: "reactions",
@@ -980,6 +1001,13 @@ pub const VALIDATION_RULES: &[
 		section: "tests",
 		blocking: true,
 		message: "[F.r.1] Test date is required when [F.r.2] is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.F.r.1.FUTURE_DATE.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "tests",
+		blocking: true,
+		message: "[F.r.1] Test date must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.2.1.REQUIRED",
@@ -1167,6 +1195,14 @@ pub const VALIDATION_RULES: &[
 		blocking: true,
 		message:
 			"drug effectiveTime low/high missing value; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "drugs",
+		blocking: true,
+		message:
+			"[G.k.4.r.4/G.k.4.r.5] Drug administration dates must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.4-8.CONDITIONAL",

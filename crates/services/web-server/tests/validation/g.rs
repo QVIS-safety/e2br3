@@ -1,5 +1,5 @@
 use super::validation_common::{
-	assert_banner_issue, assert_section_rule_coverage, create_drug,
+	assert_banner_issue, assert_section_rule_coverage, create_dosage, create_drug,
 	create_drug_indication, create_drug_reaction_assessment, create_message_header,
 	create_message_header_with_receiver, create_patient, create_primary_source,
 	create_reaction, create_safety_report, create_sender, put_json, setup_case,
@@ -16,6 +16,7 @@ pub(crate) fn tested_rule_codes() -> &'static [&'static str] {
 		"ICH.G.k.2.1.1a.REQUIRED",
 		"ICH.G.k.2.1.2a.REQUIRED",
 		"ICH.G.k.2.2.REQUIRED",
+		"ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
 		"ICH.G.k.5a.REQUIRED",
 		"ICH.G.k.5b.REQUIRED",
 		"ICH.G.k.6a.REQUIRED",
@@ -53,6 +54,28 @@ async fn setup_drug_case() -> Result<(
 	let drug_id =
 		create_drug(&ctx.app, &ctx.cookie, ctx.case_id, 1, "1", "Drug A").await?;
 	Ok((ctx, drug_id, reaction_id))
+}
+
+#[serial]
+#[tokio::test]
+async fn g_ich_g_k_4_r_4_5_future_date_returns_banner_issue() -> Result<()> {
+	let (ctx, drug_id, _) = setup_drug_case().await?;
+	let dosage_id =
+		create_dosage(&ctx.app, &ctx.cookie, ctx.case_id, drug_id, 1).await?;
+	let (status, body) = put_json(
+		&ctx.app,
+		&ctx.cookie,
+		format!(
+			"/api/cases/{}/drugs/{drug_id}/dosages/{dosage_id}",
+			ctx.case_id
+		),
+		json!({"data": { "first_administration_date": "2999-01-01" }}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN");
+	Ok(())
 }
 
 #[serial]

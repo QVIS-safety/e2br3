@@ -2,8 +2,9 @@ use super::validation_common::{
 	assert_banner_issue, assert_section_rule_coverage, create_message_header,
 	create_message_header_with_receiver, create_parent_information,
 	create_parent_past_drug_history, create_past_drug_history, create_patient,
-	create_primary_source, create_safety_report, create_sender, db_exec_case_sql,
-	setup_case, update_parent_past_drug_history, update_patient, validate_case,
+	create_primary_source, create_safety_report, create_safety_report_with,
+	create_sender, db_exec_case_sql, setup_case, update_parent_past_drug_history,
+	update_patient, validate_case,
 };
 use crate::common::Result;
 use serde_json::json;
@@ -12,12 +13,15 @@ use serial_test::serial;
 pub(crate) fn tested_rule_codes() -> &'static [&'static str] {
 	&[
 		"ICH.D.1.REQUIRED",
+		"ICH.D.1.1.4.REQUIRED",
+		"ICH.D.2.1.FUTURE_DATE.FORBIDDEN",
 		"ICH.D.2.2a.REQUIRED",
 		"ICH.D.2.2b.REQUIRED",
 		"ICH.D.2.2.1a.REQUIRED",
 		"ICH.D.2.2.1b.REQUIRED",
 		"ICH.D.7.1.r.1a.REQUIRED",
 		"ICH.D.7.1.r.1b.REQUIRED",
+		"ICH.D.7.1.r.FUTURE_DATE.FORBIDDEN",
 		"ICH.D.8.r.2a.REQUIRED",
 		"ICH.D.8.r.3a.REQUIRED",
 		"ICH.D.8.r.6a.REQUIRED",
@@ -47,6 +51,18 @@ fn d_rule_coverage_matches_backend_banner_contract() {
 
 #[serial]
 #[tokio::test]
+async fn d_ich_d_1_1_4_required_returns_banner_issue() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report_with(&ctx.app, &ctx.cookie, ctx.case_id, "2", false)
+		.await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.D.1.1.4.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn d_ich_d_1_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
@@ -63,6 +79,26 @@ async fn d_ich_d_1_required_returns_banner_issue() -> Result<()> {
 	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.D.1.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn d_ich_d_2_1_future_date_returns_banner_issue() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+		.await?;
+	update_patient(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		json!({"data": { "birth_date": "2999-01-01" }}),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.D.2.1.FUTURE_DATE.FORBIDDEN");
 	Ok(())
 }
 
@@ -144,6 +180,28 @@ async fn d_ich_d_2_2_1b_required_returns_banner_issue() -> Result<()> {
 	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.D.2.2.1b.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn d_ich_d_7_1_r_future_date_returns_banner_issue() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let patient_id =
+		create_patient(&ctx.app, &ctx.cookie, ctx.case_id, Some("AB"), Some("1"))
+			.await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"INSERT INTO medical_history_episodes (id, patient_id, sequence_number, meddra_version, meddra_code, start_date, created_at, updated_at, created_by) VALUES (gen_random_uuid(), '{patient_id}', 1, '27.0', '10012345', '2999-01-01', now(), now(), '{}')",
+			ctx.admin_id
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.D.7.1.r.FUTURE_DATE.FORBIDDEN");
 	Ok(())
 }
 

@@ -45,6 +45,14 @@ fn is_code_one_characteristic(ch: &DrugDeviceCharacteristic) -> bool {
 	code == "1" || value == "1"
 }
 
+fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
+	let Some(value) = value else {
+		return false;
+	};
+	let today = sqlx::types::time::OffsetDateTime::now_utc().date();
+	value > today
+}
+
 pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	profile: ValidationProfile,
@@ -87,6 +95,9 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		"ICH.G.k.4.r.1b.REQUIRED" => Some("drugs.0.dosageInformation.0.doseUnit"),
 		"ICH.G.k.4.r.3.REQUIRED" => {
 			Some("drugs.0.dosageInformation.0.frequencyUnit")
+		}
+		"ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN" => {
+			Some("drugs.0.dosageInformation.0.dateRange")
 		}
 		"ICH.G.k.4.r.6a.REQUIRED" => {
 			Some("drugs.0.dosageInformation.0.durationValue")
@@ -328,6 +339,15 @@ pub(crate) fn collect_ich_issues(
 					issues,
 					"ICH.G.k.4.r.11.2a.REQUIRED",
 					format!("drugs.0.dosages.{idx}.parentRouteTermIdVersion"),
+				);
+			}
+			if is_future_date(dosage.first_administration_date)
+				|| is_future_date(dosage.last_administration_date)
+			{
+				push_issue_by_code(
+					issues,
+					"ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
+					format!("drugs.0.dosageInformation.{idx}.dateRange"),
 				);
 			}
 		});

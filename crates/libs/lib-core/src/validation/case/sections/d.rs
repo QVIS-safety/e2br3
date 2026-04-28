@@ -6,6 +6,14 @@ use crate::validation::{
 	ValidationIssue, ValidationProfile,
 };
 
+fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
+	let Some(value) = value else {
+		return false;
+	};
+	let today = sqlx::types::time::OffsetDateTime::now_utc().date();
+	value > today
+}
+
 pub(crate) fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	profile: ValidationProfile,
@@ -29,6 +37,9 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 	match code {
 		"ICH.D.1.REQUIRED" => Some("patientInformation.patientInitials"),
 		"ICH.D.1.1.4.REQUIRED" => Some("patientInformation.patientStudyNumber"),
+		"ICH.D.2.1.FUTURE_DATE.FORBIDDEN" => {
+			Some("patientInformation.patientBirthDate")
+		}
 		"ICH.D.2.2a.REQUIRED" => Some("patientInformation.patientAge.value"),
 		"ICH.D.2.2b.REQUIRED" => Some("patientInformation.patientAge.unit"),
 		"ICH.D.2.2.1a.REQUIRED" => Some("patientInformation.gestationPeriod.value"),
@@ -38,6 +49,9 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		}
 		"ICH.D.7.1.r.1b.REQUIRED" => {
 			Some("patientInformation.medicalHistoryEpisodes.0.meddraCode")
+		}
+		"ICH.D.7.1.r.FUTURE_DATE.FORBIDDEN" => {
+			Some("patientInformation.medicalHistoryEpisodes.0.dateRange")
 		}
 		"ICH.D.8.r.2a.REQUIRED" => {
 			Some("patientInformation.pastDrugHistory.0.mpidVersion")
@@ -146,6 +160,13 @@ pub(crate) fn collect_ich_issues(
 	}
 
 	if let Some(patient) = validation_ctx.patient.as_ref() {
+		if is_future_date(patient.birth_date) {
+			push_issue_by_code(
+				issues,
+				"ICH.D.2.1.FUTURE_DATE.FORBIDDEN",
+				"patientInformation.patientBirthDate",
+			);
+		}
 		let age_value_present = patient.age_at_time_of_onset.is_some();
 		let age_unit_present = has_text(patient.age_unit.as_deref());
 		if age_unit_present && !age_value_present {
@@ -200,6 +221,16 @@ pub(crate) fn collect_ich_issues(
 					issues,
 					"ICH.D.7.1.r.1b.REQUIRED",
 					format!("patientInformation.medicalHistory.{idx}.meddraCode"),
+				);
+			}
+			if is_future_date(episode.start_date) || is_future_date(episode.end_date)
+			{
+				push_issue_by_code(
+					issues,
+					"ICH.D.7.1.r.FUTURE_DATE.FORBIDDEN",
+					format!(
+						"patientInformation.medicalHistoryEpisodes.{idx}.dateRange"
+					),
 				);
 			}
 		});

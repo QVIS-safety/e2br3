@@ -4,6 +4,14 @@ use crate::validation::{
 	ValidationIssue, ValidationProfile,
 };
 
+fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
+	let Some(value) = value else {
+		return false;
+	};
+	let today = sqlx::types::time::OffsetDateTime::now_utc().date();
+	value > today
+}
+
 pub(crate) fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	profile: ValidationProfile,
@@ -54,6 +62,13 @@ pub(crate) fn collect_ich_issues(
 				push_issue_by_code(
 					issues,
 					"ICH.F.r.1.REQUIRED",
+					format!("testResults.{idx}.testDate"),
+				);
+			}
+			if is_future_date(test.test_date) {
+				push_issue_by_code(
+					issues,
+					"ICH.F.r.1.FUTURE_DATE.FORBIDDEN",
 					format!("testResults.{idx}.testDate"),
 				);
 			}
@@ -111,6 +126,7 @@ pub(crate) fn collect_ich_issues(
 
 pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 	match code {
+		"ICH.F.r.1.FUTURE_DATE.FORBIDDEN" => Some("testResults.0.testDate"),
 		"ICH.F.r.2.REQUIRED" | "ICH.F.r.2.1.REQUIRED" => {
 			Some("testResults.0.testName")
 		}
