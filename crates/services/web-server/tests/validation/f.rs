@@ -84,6 +84,7 @@ async fn f_ich_test_date_null_flavor_does_not_activate_name_code_rules() -> Resu
 	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_lacks_code(&report, "ICH.F.r.1.REQUIRED");
+	assert_lacks_code(&report, "ICH.F.r.2.REQUIRED");
 	assert_lacks_code(&report, "ICH.F.r.2.1.REQUIRED");
 	assert_lacks_code(&report, "ICH.F.r.2.2b.REQUIRED");
 	Ok(())
