@@ -3,29 +3,98 @@
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
-use lib_core::ctx::{Ctx, ROLE_ADMIN};
-use lib_core::model::acs::{
-	has_permission, USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE,
+use lib_core::ctx::{
+	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
+	ROLE_SYSTEM_ADMIN,
 };
+use lib_core::model::acs::{USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE};
 use lib_core::model::user::{
 	User, UserBmc, UserFilter, UserForCreate, UserForUpdate,
 };
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate, ParamsList};
 use lib_rest_core::rest_result::DataRestResult;
+use lib_rest_core::{
+	require_admin_role, require_permission, routing_profile_for_user,
+	validate_active_sender_selection, Error, Result,
+};
 use lib_web::middleware::mw_auth::CtxW;
-use lib_web::{Error as WebError, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
 use uuid::Uuid;
 
-fn require_admin_role(ctx: &lib_core::ctx::Ctx) -> Result<()> {
-	if !ctx.is_admin() {
-		return Err(WebError::AccessDenied {
-			required_role: "admin".to_string(),
-		});
-	}
-	Ok(())
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+pub enum ScopeListInput {
+	List(Vec<String>),
+	Encoded(String),
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserRoleMetadata {
+	pub canonical_role_id: String,
+	pub display_name: String,
+	pub is_builtin: bool,
+	pub is_editable: bool,
+	pub is_sponsor_admin: bool,
+	pub is_operational: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserScopeView {
+	pub assigned_sender_ids: Vec<String>,
+	pub assigned_product_ids: Vec<String>,
+	pub assigned_study_ids: Vec<String>,
+	pub access_blind_allowed: bool,
+	pub active_sender_identifier: Option<String>,
+	pub access_start_at: Option<OffsetDateTime>,
+	pub access_end_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserView {
+	pub id: Uuid,
+	pub organization_id: Uuid,
+	#[serde(rename = "organization_id")]
+	pub organization_id_legacy: Uuid,
+	pub email: String,
+	pub username: String,
+	pub role: String,
+	pub role_meta: UserRoleMetadata,
+	pub first_name: Option<String>,
+	pub last_name: Option<String>,
+	pub comments: Option<String>,
+	pub other_information: Option<String>,
+	pub scope: UserScopeView,
+	#[serde(rename = "access_sender_ids")]
+	pub access_sender_ids_legacy: Option<String>,
+	#[serde(rename = "access_product_ids")]
+	pub access_product_ids_legacy: Option<String>,
+	#[serde(rename = "access_study_ids")]
+	pub access_study_ids_legacy: Option<String>,
+	#[serde(rename = "access_blind_allowed")]
+	pub access_blind_allowed_legacy: Option<bool>,
+	#[serde(rename = "active_sender_identifier")]
+	pub active_sender_identifier_legacy: Option<String>,
+	pub active: bool,
+	pub must_change_password: bool,
+	#[serde(rename = "must_change_password")]
+	pub must_change_password_legacy: bool,
+	pub last_login_at: Option<OffsetDateTime>,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Option<Uuid>,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CurrentUserProfileView {
+	pub user: UserView,
+	pub routing: lib_rest_core::RoutingProfile,
 }
 
 #[derive(Debug, Deserialize)]
@@ -40,9 +109,148 @@ pub struct UserForCreateAdminPayload {
 	pub other_information: Option<String>,
 	pub access_start_at: Option<OffsetDateTime>,
 	pub access_end_at: Option<OffsetDateTime>,
-	pub access_sender_ids: Option<Vec<String>>,
-	pub access_product_ids: Option<Vec<String>>,
-	pub access_study_ids: Option<Vec<String>>,
+	pub active_sender_identifier: Option<String>,
+	pub access_sender_ids: Option<ScopeListInput>,
+	pub access_product_ids: Option<ScopeListInput>,
+	pub access_study_ids: Option<ScopeListInput>,
+	pub access_blind_allowed: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UserForUpdateAdminPayload {
+	pub email: Option<String>,
+	pub username: Option<String>,
+	pub role: Option<String>,
+	pub first_name: Option<String>,
+	pub last_name: Option<String>,
+	pub comments: Option<String>,
+	pub other_information: Option<String>,
+	pub access_start_at: Option<OffsetDateTime>,
+	pub access_end_at: Option<OffsetDateTime>,
+	pub active_sender_identifier: Option<String>,
+	pub access_sender_ids: Option<ScopeListInput>,
+	pub access_product_ids: Option<ScopeListInput>,
+	pub access_study_ids: Option<ScopeListInput>,
+	pub access_blind_allowed: Option<bool>,
+	pub active: Option<bool>,
+	pub last_login_at: Option<OffsetDateTime>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RoutingSelectionBody {
+	pub active_sender_identifier: Option<String>,
+}
+
+fn parse_scope_input(value: Option<ScopeListInput>) -> Option<Vec<String>> {
+	match value {
+		None => None,
+		Some(ScopeListInput::List(values)) => Some(values),
+		Some(ScopeListInput::Encoded(raw)) => {
+			serde_json::from_str::<Vec<String>>(&raw).ok().or_else(|| {
+				Some(
+					raw.split(',')
+						.map(|value| value.trim().to_string())
+						.filter(|value| !value.is_empty())
+						.collect::<Vec<_>>(),
+				)
+			})
+		}
+	}
+}
+
+fn serialize_scope_input(value: Option<ScopeListInput>) -> Option<String> {
+	parse_scope_input(value).and_then(|values| {
+		let values = values
+			.into_iter()
+			.map(|value| value.trim().to_string())
+			.filter(|value| !value.is_empty())
+			.collect::<Vec<_>>();
+		if values.is_empty() {
+			None
+		} else {
+			Some(serde_json::json!(values).to_string())
+		}
+	})
+}
+
+fn role_display_name(role: &str) -> String {
+	match canonical_role(role).as_str() {
+		ROLE_SYSTEM_ADMIN => "System Administrator".to_string(),
+		ROLE_SPONSOR_ADMIN_CRO => "Sponsor Administrator (CRO)".to_string(),
+		ROLE_SPONSOR_ADMIN_COMPANY => {
+			"Sponsor Administrator (Pharmaceutical Company)".to_string()
+		}
+		other => other.replace('_', " "),
+	}
+}
+
+fn role_metadata(role: &str) -> UserRoleMetadata {
+	let canonical_role_id = canonical_role(role);
+	let is_builtin = matches!(
+		canonical_role_id.as_str(),
+		ROLE_SYSTEM_ADMIN | ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
+	);
+	let is_sponsor_admin = matches!(
+		canonical_role_id.as_str(),
+		ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
+	);
+	UserRoleMetadata {
+		display_name: role_display_name(&canonical_role_id),
+		canonical_role_id: canonical_role_id.clone(),
+		is_builtin,
+		is_editable: !is_builtin,
+		is_sponsor_admin,
+		is_operational: canonical_role_id != ROLE_SYSTEM_ADMIN,
+	}
+}
+
+fn user_view(user: User) -> UserView {
+	let access_sender_ids = user.access_sender_ids.clone();
+	let access_product_ids = user.access_product_ids.clone();
+	let access_study_ids = user.access_study_ids.clone();
+	let access_blind_allowed = user.access_blind_allowed;
+	let active_sender_identifier = user.active_sender_identifier.clone();
+	UserView {
+		id: user.id,
+		organization_id: user.organization_id,
+		organization_id_legacy: user.organization_id,
+		email: user.email,
+		username: user.username,
+		role: user.role.clone(),
+		role_meta: role_metadata(&user.role),
+		first_name: user.first_name,
+		last_name: user.last_name,
+		comments: user.comments,
+		other_information: user.other_information,
+		scope: UserScopeView {
+			assigned_sender_ids: lib_rest_core::scope_values_from_raw(
+				access_sender_ids.as_deref(),
+			),
+			assigned_product_ids: lib_rest_core::scope_values_from_raw(
+				access_product_ids.as_deref(),
+			),
+			assigned_study_ids: lib_rest_core::scope_values_from_raw(
+				access_study_ids.as_deref(),
+			),
+			access_blind_allowed: access_blind_allowed == Some(true),
+			active_sender_identifier: active_sender_identifier.clone(),
+			access_start_at: user.access_start_at,
+			access_end_at: user.access_end_at,
+		},
+		access_sender_ids_legacy: access_sender_ids,
+		access_product_ids_legacy: access_product_ids,
+		access_study_ids_legacy: access_study_ids,
+		access_blind_allowed_legacy: access_blind_allowed,
+		active_sender_identifier_legacy: active_sender_identifier,
+		active: user.active,
+		must_change_password: user.must_change_password,
+		must_change_password_legacy: user.must_change_password,
+		last_login_at: user.last_login_at,
+		created_at: user.created_at,
+		updated_at: user.updated_at,
+		created_by: user.created_by,
+		updated_by: user.updated_by,
+	}
 }
 
 /// POST /api/users
@@ -52,24 +260,16 @@ pub async fn create_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Json(params): Json<ParamsForCreate<UserForCreateAdminPayload>>,
-) -> Result<(StatusCode, Json<DataRestResult<User>>)> {
+) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	tracing::debug!("{:<12} - rest create_user", "HANDLER");
 	require_admin_role(&ctx)?;
-
-	// Check permission
-	if !has_permission(ctx.role(), USER_CREATE) {
-		return Err(WebError::PermissionDenied {
-			required_permission: "User.Create".to_string(),
-		});
-	}
-
+	require_permission(&ctx, USER_CREATE)?;
 	let ParamsForCreate { data } = params;
 	let mut organization_id = data.organization_id;
 	if organization_id.is_nil() {
 		if ctx.organization_id().is_nil() {
-			return Err(WebError::AccessDenied {
-				required_role: "organization_id is required".to_string(),
+			return Err(Error::BadRequest {
+				message: "organization_id is required".to_string(),
 			});
 		}
 		organization_id = ctx.organization_id();
@@ -87,19 +287,16 @@ pub async fn create_user(
 		other_information: data.other_information,
 		access_start_at: data.access_start_at,
 		access_end_at: data.access_end_at,
-		access_sender_ids: data.access_sender_ids,
-		access_product_ids: data.access_product_ids,
-		access_study_ids: data.access_study_ids,
+		active_sender_identifier: data.active_sender_identifier,
+		access_sender_ids: parse_scope_input(data.access_sender_ids),
+		access_product_ids: parse_scope_input(data.access_product_ids),
+		access_study_ids: parse_scope_input(data.access_study_ids),
+		access_blind_allowed: data.access_blind_allowed,
 	};
-	let id = UserBmc::create(&ctx, &mm, create)
-		.await
-		.map_err(WebError::Model)?;
-	UserBmc::set_must_change_password(&ctx, &mm, id, true)
-		.await
-		.map_err(WebError::Model)?;
-	let entity = UserBmc::get(&ctx, &mm, id).await.map_err(WebError::Model)?;
-
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	let id = UserBmc::create(&ctx, &mm, create).await?;
+	UserBmc::set_must_change_password(&ctx, &mm, id, true).await?;
+	let entity: User = UserBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::CREATED, Json(DataRestResult { data: user_view(entity) })))
 }
 
 /// GET /api/users/:id
@@ -109,23 +306,12 @@ pub async fn get_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<User>>)> {
+) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	tracing::debug!("{:<12} - rest get_user id={}", "HANDLER", id);
 	require_admin_role(&ctx)?;
-
-	// Check permission
-	if !has_permission(ctx.role(), USER_READ) {
-		return Err(WebError::PermissionDenied {
-			required_permission: "User.Read".to_string(),
-		});
-	}
-
-	// Non-admin users can only view users in their organization
-	// (RLS will enforce this at the database level)
-	let entity = UserBmc::get(&ctx, &mm, id).await.map_err(WebError::Model)?;
-
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	require_permission(&ctx, USER_READ)?;
+	let entity: User = UserBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: user_view(entity) })))
 }
 
 #[derive(Debug, Deserialize)]
@@ -141,31 +327,28 @@ pub async fn set_my_password(
 	Json(params): Json<ParamsForCreate<SetMyPasswordBody>>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
-	tracing::debug!("{:<12} - rest set_my_password", "HANDLER");
-
 	let ParamsForCreate { data } = params;
 	let new_password = data.new_password.trim();
 	if new_password.is_empty() {
-		return Err(WebError::AccessDenied {
-			required_role: "new_password is required".to_string(),
+		return Err(Error::BadRequest {
+			message: "new_password is required".to_string(),
 		});
 	}
-
-	let privileged_ctx =
-		Ctx::new(ctx.user_id(), ctx.organization_id(), ROLE_ADMIN.to_string())
-			.map_err(|_| WebError::AccessDenied {
-				required_role: "valid user context".to_string(),
-			})?;
-
+	let privileged_ctx = Ctx::new(
+		ctx.user_id(),
+		ctx.organization_id(),
+		ROLE_SYSTEM_ADMIN.to_string(),
+	)
+	.map_err(|_| Error::BadRequest {
+		message: "valid user context required".to_string(),
+	})?;
 	UserBmc::update_pwd_and_clear_must_change(
 		&privileged_ctx,
 		&mm,
 		ctx.user_id(),
 		new_password,
 	)
-	.await
-	.map_err(WebError::Model)?;
-
+	.await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 
@@ -176,28 +359,14 @@ pub async fn list_users(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<User>>>)> {
+) -> Result<(StatusCode, Json<DataRestResult<Vec<UserView>>>)> {
 	let ctx = ctx_w.0;
-	tracing::debug!("{:<12} - rest list_users", "HANDLER");
 	require_admin_role(&ctx)?;
-
-	// Check permission
-	if !has_permission(ctx.role(), USER_LIST) {
-		return Err(WebError::PermissionDenied {
-			required_permission: "User.List".to_string(),
-		});
-	}
-
+	require_permission(&ctx, USER_LIST)?;
 	let params = ParamsList::<UserFilter>::from_raw_query(raw_query.as_deref())
-		.map_err(|message| {
-			WebError::from(lib_rest_core::Error::BadRequest { message })
-		})?;
-
-	// RLS will filter to users in the same organization (unless admin)
-	let entities = UserBmc::list(&ctx, &mm, params.filters, params.list_options)
-		.await
-		.map_err(WebError::Model)?;
-
+		.map_err(|message| Error::BadRequest { message })?;
+	let entities = UserBmc::list(&ctx, &mm, params.filters, params.list_options).await?;
+	let entities = entities.into_iter().map(user_view).collect::<Vec<_>>();
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
 
@@ -208,26 +377,33 @@ pub async fn update_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
-	Json(params): Json<ParamsForUpdate<UserForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<User>>)> {
+	Json(params): Json<ParamsForUpdate<UserForUpdateAdminPayload>>,
+) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	tracing::debug!("{:<12} - rest update_user id={}", "HANDLER", id);
 	require_admin_role(&ctx)?;
-
-	// Check permission
-	if !has_permission(ctx.role(), USER_UPDATE) {
-		return Err(WebError::PermissionDenied {
-			required_permission: "User.Update".to_string(),
-		});
-	}
-
+	require_permission(&ctx, USER_UPDATE)?;
 	let ParamsForUpdate { data } = params;
-	UserBmc::update(&ctx, &mm, id, data)
-		.await
-		.map_err(WebError::Model)?;
-	let entity = UserBmc::get(&ctx, &mm, id).await.map_err(WebError::Model)?;
-
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	let update = UserForUpdate {
+		email: data.email,
+		username: data.username,
+		role: data.role,
+		first_name: data.first_name,
+		last_name: data.last_name,
+		comments: data.comments,
+		other_information: data.other_information,
+		access_start_at: data.access_start_at,
+		access_end_at: data.access_end_at,
+		access_sender_ids: serialize_scope_input(data.access_sender_ids),
+		access_product_ids: serialize_scope_input(data.access_product_ids),
+		access_study_ids: serialize_scope_input(data.access_study_ids),
+		access_blind_allowed: data.access_blind_allowed,
+		active_sender_identifier: data.active_sender_identifier,
+		active: data.active,
+		last_login_at: data.last_login_at,
+	};
+	UserBmc::update(&ctx, &mm, id, update).await?;
+	let entity: User = UserBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: user_view(entity) })))
 }
 
 /// DELETE /api/users/:id
@@ -239,27 +415,14 @@ pub async fn delete_user(
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
-	tracing::debug!("{:<12} - rest delete_user id={}", "HANDLER", id);
 	require_admin_role(&ctx)?;
-
-	// Check permission
-	if !has_permission(ctx.role(), USER_DELETE) {
-		return Err(WebError::PermissionDenied {
-			required_permission: "User.Delete".to_string(),
-		});
-	}
-
-	// Prevent users from deleting themselves
+	require_permission(&ctx, USER_DELETE)?;
 	if id == ctx.user_id() {
-		return Err(WebError::AccessDenied {
-			required_role: "Cannot delete yourself".to_string(),
+		return Err(Error::BadRequest {
+			message: "cannot delete yourself".to_string(),
 		});
 	}
-
-	UserBmc::delete(&ctx, &mm, id)
-		.await
-		.map_err(WebError::Model)?;
-
+	UserBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 
@@ -269,13 +432,80 @@ pub async fn delete_user(
 pub async fn get_current_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-) -> Result<(StatusCode, Json<DataRestResult<User>>)> {
+) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	tracing::debug!("{:<12} - rest get_current_user", "HANDLER");
+	let entity: User = UserBmc::get(&ctx, &mm, ctx.user_id()).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: user_view(entity) })))
+}
 
-	let entity = UserBmc::get(&ctx, &mm, ctx.user_id())
-		.await
-		.map_err(WebError::Model)?;
+pub async fn get_current_user_profile(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+) -> Result<(StatusCode, Json<DataRestResult<CurrentUserProfileView>>)> {
+	let ctx = ctx_w.0;
+	let entity: User = UserBmc::get(&ctx, &mm, ctx.user_id()).await?;
+	let routing = routing_profile_for_user(&ctx, &mm).await?;
+	Ok((
+		StatusCode::OK,
+		Json(DataRestResult {
+			data: CurrentUserProfileView { user: user_view(entity), routing },
+		}),
+	))
+}
 
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+pub async fn get_current_user_routing(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+) -> Result<(StatusCode, Json<DataRestResult<lib_rest_core::RoutingProfile>>)> {
+	let ctx = ctx_w.0;
+	let routing = routing_profile_for_user(&ctx, &mm).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: routing })))
+}
+
+pub async fn update_current_user_routing(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Json(params): Json<ParamsForUpdate<RoutingSelectionBody>>,
+) -> Result<(StatusCode, Json<DataRestResult<lib_rest_core::RoutingProfile>>)> {
+	let ctx = ctx_w.0;
+	let next_sender = validate_active_sender_selection(
+		&ctx,
+		&mm,
+		params.data.active_sender_identifier.as_deref(),
+	)
+	.await?;
+	let routing_update_ctx = Ctx::new(
+		ctx.user_id(),
+		ctx.organization_id(),
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)
+	.map_err(|_| Error::BadRequest {
+		message: "valid routing update context required".to_string(),
+	})?;
+	UserBmc::update(
+		&routing_update_ctx,
+		&mm,
+		ctx.user_id(),
+		UserForUpdate {
+			email: None,
+			username: None,
+			role: None,
+			first_name: None,
+			last_name: None,
+			comments: None,
+			other_information: None,
+			access_start_at: None,
+			access_end_at: None,
+			access_sender_ids: None,
+			access_product_ids: None,
+			access_study_ids: None,
+			access_blind_allowed: None,
+			active_sender_identifier: next_sender,
+			active: None,
+			last_login_at: None,
+		},
+	)
+	.await?;
+	let routing = routing_profile_for_user(&ctx, &mm).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: routing })))
 }

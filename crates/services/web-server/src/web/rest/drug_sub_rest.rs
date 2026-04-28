@@ -72,10 +72,11 @@ pub async fn create_drug_active_substance(
 pub async fn list_drug_active_substances(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id)): Path<(Uuid, Uuid)>,
+	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<DrugActiveSubstance>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_SUBSTANCE_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let filter = DrugActiveSubstanceFilter {
 		drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
 			drug_id.to_string()
@@ -96,10 +97,11 @@ pub async fn list_drug_active_substances(
 pub async fn get_drug_active_substance(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<DrugActiveSubstance>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_SUBSTANCE_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let entity = DrugActiveSubstanceBmc::get(&ctx, &mm, id).await?;
 	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_active_substances")?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
@@ -163,10 +165,11 @@ pub async fn create_dosage_information(
 pub async fn list_dosage_information(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id)): Path<(Uuid, Uuid)>,
+	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<DosageInformation>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_DOSAGE_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let filter = DosageInformationFilter {
 		drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
 			drug_id.to_string()
@@ -187,10 +190,11 @@ pub async fn list_dosage_information(
 pub async fn get_dosage_information(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<DosageInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_DOSAGE_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let entity = DosageInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_drug_scope(drug_id, entity.drug_id, id, "dosage_information")?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
@@ -254,10 +258,11 @@ pub async fn create_drug_indication(
 pub async fn list_drug_indications(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id)): Path<(Uuid, Uuid)>,
+	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<DrugIndication>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_INDICATION_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let filter = DrugIndicationFilter {
 		drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
 			drug_id.to_string()
@@ -278,10 +283,11 @@ pub async fn list_drug_indications(
 pub async fn get_drug_indication(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<DrugIndication>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_INDICATION_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let entity = DrugIndicationBmc::get(&ctx, &mm, id).await?;
 	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_indications")?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
@@ -345,13 +351,14 @@ pub async fn create_drug_device_characteristic(
 pub async fn list_drug_device_characteristics(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id)): Path<(Uuid, Uuid)>,
+	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
 ) -> Result<(
 	StatusCode,
 	Json<DataRestResult<Vec<DrugDeviceCharacteristic>>>,
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_DEVICE_CHARACTERISTIC_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let filter = DrugDeviceCharacteristicFilter {
 		drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
 			drug_id.to_string()
@@ -372,10 +379,11 @@ pub async fn list_drug_device_characteristics(
 pub async fn get_drug_device_characteristic(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<DrugDeviceCharacteristic>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_DEVICE_CHARACTERISTIC_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let entity = DrugDeviceCharacteristicBmc::get(&ctx, &mm, id).await?;
 	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_device_characteristics")?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))

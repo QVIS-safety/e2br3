@@ -1,8 +1,0 @@
-{
-  "version": "0.0.63",
-  "socketPath": "/tmp/playwright-cli-tmp/playwright-cli/e05f328c2ccf0078/e2br3.sock",
-  "cli": {
-    "headed": true
-  },
-  "userDataDirPrefix": "/Users/hyundonghoon/projects/rust/e2br3/e2br3/output/playwright/home/Library/Caches/ms-playwright/daemon/e05f328c2ccf0078/ud-e2br3"
-}

@@ -61,6 +61,7 @@ async fn create_user(
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 	let user_id = UserBmc::create(ctx, mm, user_c).await?;
 	Ok(user_id)

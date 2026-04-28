@@ -51,13 +51,14 @@ pub async fn create_drug_reaction_assessment(
 pub async fn list_drug_reaction_assessments(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, drug_id)): Path<(Uuid, Uuid)>,
+	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
 ) -> Result<(
 	StatusCode,
 	Json<DataRestResult<Vec<DrugReactionAssessment>>>,
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_REACTION_ASSESSMENT_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest list_drug_reaction_assessments drug_id={}",
 		"HANDLER",
@@ -75,10 +76,11 @@ pub async fn list_drug_reaction_assessments(
 pub async fn get_drug_reaction_assessment(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<DrugReactionAssessment>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_REACTION_ASSESSMENT_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest get_drug_reaction_assessment id={}",
 		"HANDLER",

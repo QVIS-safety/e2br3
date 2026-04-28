@@ -40,6 +40,7 @@ async fn test_user_create_ok() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 
 	let user_id = UserBmc::create(&ctx, &mm, user_c).await?;
@@ -84,6 +85,7 @@ async fn test_user_create_duplicate_email() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 	let user_c_2 = UserForCreate {
 		organization_id: demo_org_id(),
@@ -100,6 +102,7 @@ async fn test_user_create_duplicate_email() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 
 	let user_id_1 = UserBmc::create(&ctx, &mm, user_c_1).await?;
@@ -146,6 +149,7 @@ async fn test_user_update_pwd_ok() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 	let user_id = UserBmc::create(&ctx, &mm, user_c).await?;
 
@@ -210,6 +214,7 @@ async fn test_user_update_ok() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 
 	let user_id = UserBmc::create(&ctx, &mm, user_c).await?;
@@ -226,6 +231,7 @@ async fn test_user_update_ok() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 		active: Some(false),
 		last_login_at: None,
 	};
@@ -233,7 +239,7 @@ async fn test_user_update_ok() -> Result<()> {
 	UserBmc::update(&ctx, &mm, user_id, user_u).await?;
 	let user: User = UserBmc::get(&ctx, &mm, user_id).await?;
 
-	assert_eq!(user.role, "admin");
+	assert_eq!(user.role, "sponsor_admin_cro");
 	assert_eq!(user.first_name.as_deref(), Some("Updated"));
 	assert!(!user.active);
 

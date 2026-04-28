@@ -311,27 +311,18 @@ async fn import_patient_death(
 			)
 			.await;
 		} else {
-			let id = ReportedCauseOfDeathBmc::create(
+			ReportedCauseOfDeathBmc::create(
 				ctx,
 				mm,
 				ReportedCauseOfDeathForCreate {
 					death_info_id: death_id,
 					sequence_number: seq,
-					meddra_code: cause.meddra_code.clone(),
-				},
-			)
-			.await?;
-			let _ = ReportedCauseOfDeathBmc::update(
-				ctx,
-				mm,
-				id,
-				ReportedCauseOfDeathForUpdate {
-					meddra_version: cause.meddra_version,
+					meddra_version: cause.meddra_version.clone(),
 					meddra_code: cause.meddra_code.clone(),
 					comments: cause.comments.clone(),
 				},
 			)
-			.await;
+			.await?;
 		}
 	}
 
@@ -362,27 +353,18 @@ async fn import_patient_death(
 			)
 			.await;
 		} else {
-			let id = AutopsyCauseOfDeathBmc::create(
+			AutopsyCauseOfDeathBmc::create(
 				ctx,
 				mm,
 				AutopsyCauseOfDeathForCreate {
 					death_info_id: death_id,
 					sequence_number: seq,
-					meddra_code: cause.meddra_code.clone(),
-				},
-			)
-			.await?;
-			let _ = AutopsyCauseOfDeathBmc::update(
-				ctx,
-				mm,
-				id,
-				AutopsyCauseOfDeathForUpdate {
-					meddra_version: cause.meddra_version,
+					meddra_version: cause.meddra_version.clone(),
 					meddra_code: cause.meddra_code.clone(),
 					comments: cause.comments.clone(),
 				},
 			)
-			.await;
+			.await?;
 		}
 	}
 
@@ -417,6 +399,20 @@ async fn import_parent_information(
 			mm,
 			ParentInformationForCreate {
 				patient_id,
+				parent_identification: parent.parent_identification.clone(),
+				parent_birth_date: parent.parent_birth_date,
+				parent_birth_date_null_flavor: parent
+					.parent_birth_date_null_flavor
+					.clone(),
+				parent_age: parent.parent_age,
+				parent_age_null_flavor: parent.parent_age_null_flavor.clone(),
+				parent_age_unit: parent.parent_age_unit.clone(),
+				last_menstrual_period_date: parent.last_menstrual_period_date,
+				last_menstrual_period_date_null_flavor: parent
+					.last_menstrual_period_date_null_flavor
+					.clone(),
+				weight_kg: parent.weight_kg,
+				height_cm: parent.height_cm,
 				sex: parent.sex.clone(),
 				medical_history_text: parent.medical_history_text.clone(),
 			},
@@ -648,45 +644,72 @@ async fn import_patient_information(
 			PatientInformationForCreate {
 				case_id,
 				patient_initials: patient.patient_initials.clone(),
+				patient_given_name: patient.patient_given_name.clone(),
+				patient_family_name: patient.patient_family_name.clone(),
+				patient_initials_null_flavor: patient
+					.patient_initials_null_flavor
+					.clone(),
+				birth_date: patient.birth_date,
+				birth_date_null_flavor: patient.birth_date_null_flavor.clone(),
+				age_at_time_of_onset: patient.age_at_time_of_onset,
+				age_at_time_of_onset_null_flavor: patient
+					.age_at_time_of_onset_null_flavor
+					.clone(),
+				age_unit: patient.age_unit.clone(),
+				gestation_period: patient.gestation_period,
+				gestation_period_unit: patient.gestation_period_unit.clone(),
+				age_group: patient.age_group.clone(),
+				weight_kg: patient.weight_kg,
+				height_cm: patient.height_cm,
 				sex: patient.sex.clone(),
+				sex_null_flavor: patient.sex_null_flavor.clone(),
+				race_code: patient.race_code.clone(),
+				ethnicity_code: patient.ethnicity_code.clone(),
+				last_menstrual_period_date: patient.last_menstrual_period_date,
+				last_menstrual_period_date_null_flavor: patient
+					.last_menstrual_period_date_null_flavor
+					.clone(),
+				medical_history_text: patient.medical_history_text.clone(),
 				concomitant_therapy: patient.concomitant_therapy,
 			},
 		)
 		.await?
 	};
 
-	PatientInformationBmc::update(
-		ctx,
-		mm,
-		patient_id,
-		PatientInformationForUpdate {
-			patient_initials: patient.patient_initials,
-			patient_given_name: patient.patient_given_name,
-			patient_family_name: patient.patient_family_name,
-			patient_initials_null_flavor: patient.patient_initials_null_flavor,
-			birth_date: patient.birth_date,
-			birth_date_null_flavor: patient.birth_date_null_flavor,
-			age_at_time_of_onset: patient.age_at_time_of_onset,
-			age_at_time_of_onset_null_flavor: patient
-				.age_at_time_of_onset_null_flavor,
-			age_unit: patient.age_unit,
-			gestation_period: patient.gestation_period,
-			gestation_period_unit: patient.gestation_period_unit,
-			age_group: patient.age_group,
-			weight_kg: patient.weight_kg,
-			height_cm: patient.height_cm,
-			sex: patient.sex,
-			sex_null_flavor: patient.sex_null_flavor,
-			race_code: patient.race_code,
-			ethnicity_code: patient.ethnicity_code,
-			last_menstrual_period_date: patient.last_menstrual_period_date,
-			last_menstrual_period_date_null_flavor: patient
-				.last_menstrual_period_date_null_flavor,
-			medical_history_text: patient.medical_history_text,
-			concomitant_therapy: patient.concomitant_therapy,
-		},
-	)
-	.await?;
+	if existing_id.is_some() {
+		PatientInformationBmc::update(
+			ctx,
+			mm,
+			patient_id,
+			PatientInformationForUpdate {
+				patient_initials: patient.patient_initials,
+				patient_given_name: patient.patient_given_name,
+				patient_family_name: patient.patient_family_name,
+				patient_initials_null_flavor: patient.patient_initials_null_flavor,
+				birth_date: patient.birth_date,
+				birth_date_null_flavor: patient.birth_date_null_flavor,
+				age_at_time_of_onset: patient.age_at_time_of_onset,
+				age_at_time_of_onset_null_flavor: patient
+					.age_at_time_of_onset_null_flavor,
+				age_unit: patient.age_unit,
+				gestation_period: patient.gestation_period,
+				gestation_period_unit: patient.gestation_period_unit,
+				age_group: patient.age_group,
+				weight_kg: patient.weight_kg,
+				height_cm: patient.height_cm,
+				sex: patient.sex,
+				sex_null_flavor: patient.sex_null_flavor,
+				race_code: patient.race_code,
+				ethnicity_code: patient.ethnicity_code,
+				last_menstrual_period_date: patient.last_menstrual_period_date,
+				last_menstrual_period_date_null_flavor: patient
+					.last_menstrual_period_date_null_flavor,
+				medical_history_text: patient.medical_history_text,
+				concomitant_therapy: patient.concomitant_therapy,
+			},
+		)
+		.await?;
+	}
 
 	Ok(Some(patient_id))
 }

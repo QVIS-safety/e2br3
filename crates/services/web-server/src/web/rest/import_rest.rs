@@ -1,11 +1,10 @@
-use axum::extract::{Multipart, State};
-use axum::http::StatusCode;
+use axum::extract::{Multipart, Path, State};
+use axum::http::{header, StatusCode};
+use axum::response::{IntoResponse, Response};
 use axum::Json;
 use lib_core::ctx::Ctx;
 use lib_core::model::acs::XML_IMPORT;
-use lib_core::model::store::{
-	set_full_context_dbx, set_full_context_dbx_or_rollback,
-};
+use lib_core::model::xml_import_history::XmlImportHistoryBmc;
 use lib_core::model::ModelManager;
 use lib_core::validation::xml::{
 	should_skip_xml_validation, validate_e2b_xml_basic,
@@ -17,9 +16,8 @@ use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::Serialize;
-use sqlx::FromRow;
 use std::io::{Cursor, Read};
-use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 use tracing::warn;
 use uuid::Uuid;
 use zip::ZipArchive;
@@ -50,7 +48,7 @@ pub struct XmlImportBatchResult {
 	parsed_json_id: Option<String>,
 }
 
-#[derive(Debug, Serialize, FromRow)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct XmlImportHistoryRecord {
 	id: Uuid,
@@ -63,8 +61,9 @@ pub struct XmlImportHistoryRecord {
 	validation_profile: Option<String>,
 	uploaded_by: Uuid,
 	uploader_email: Option<String>,
-	uploaded_at: OffsetDateTime,
+	uploaded_at: String,
 }
+
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -203,48 +202,19 @@ async fn record_import_history(
 	error_message: Option<&str>,
 	validation_profile: Option<&str>,
 ) -> Result<()> {
-	let dbx = mm.dbx();
-	dbx.begin_txn()
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	set_full_context_dbx_or_rollback(
-		dbx,
-		ctx.user_id(),
-		ctx.organization_id(),
-		ctx.role(),
+	XmlImportHistoryBmc::record(
+		mm,
+		ctx,
+		uploaded_file_name,
+		source_file_name,
+		case_id,
+		case_number,
+		status,
+		error_message,
+		validation_profile,
 	)
 	.await
-	.map_err(Error::from)?;
-
-	dbx.execute(
-		sqlx::query(
-			"INSERT INTO xml_import_history (
-				uploaded_file_name,
-				source_file_name,
-				case_id,
-				case_number,
-				status,
-				error_message,
-				validation_profile,
-				uploaded_by
-			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-		)
-		.bind(uploaded_file_name)
-		.bind(source_file_name)
-		.bind(case_id)
-		.bind(case_number)
-		.bind(status)
-		.bind(error_message)
-		.bind(validation_profile)
-		.bind(ctx.user_id()),
-	)
-	.await
-	.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-
-	dbx.commit_txn()
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	Ok(())
+	.map_err(Error::Model)
 }
 
 async fn import_single_xml(
@@ -334,38 +304,37 @@ pub async fn list_import_history(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, XML_IMPORT)?;
 
-	let dbx = mm.dbx();
-	dbx.begin_txn()
+	let rows = XmlImportHistoryBmc::list_all(&mm, &ctx)
 		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
-		.await
-		.map_err(Error::from)?;
-
-	let items = dbx
-		.fetch_all(sqlx::query_as::<_, XmlImportHistoryRecord>(
-			"SELECT h.id,
-			        h.uploaded_file_name,
-			        h.source_file_name,
-			        h.case_id,
-			        h.case_number,
-			        h.status,
-			        h.error_message,
-			        h.validation_profile,
-			        h.uploaded_by,
-			        u.email AS uploader_email,
-			        h.uploaded_at
-			   FROM xml_import_history h
-			   LEFT JOIN users u ON u.id = h.uploaded_by
-			  ORDER BY h.uploaded_at DESC, h.created_at DESC
-			  LIMIT 200",
-		))
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-
-	dbx.commit_txn()
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+		.map_err(Error::Model)?;
+	let mut items = Vec::with_capacity(rows.len());
+	for row in rows {
+		let allowed = match row.case_id {
+			Some(case_id) => {
+				lib_rest_core::case_matches_user_scope(&ctx, &mm, case_id).await?
+			}
+			None => ctx.can_admin_safety_db(),
+		};
+		if !allowed {
+			continue;
+		}
+		items.push(XmlImportHistoryRecord {
+			id: row.id,
+			uploaded_file_name: row.uploaded_file_name,
+			source_file_name: row.source_file_name,
+			case_id: row.case_id,
+			case_number: row.case_number,
+			status: row.status,
+			error_message: row.error_message,
+			validation_profile: row.validation_profile,
+			uploaded_by: row.uploaded_by,
+			uploader_email: row.uploader_email,
+			uploaded_at: row
+				.uploaded_at
+				.format(&Rfc3339)
+				.unwrap_or_else(|_| row.uploaded_at.to_string()),
+		});
+	}
 
 	Ok((
 		StatusCode::OK,
@@ -373,6 +342,63 @@ pub async fn list_import_history(
 			data: XmlImportHistoryList { items },
 		}),
 	))
+}
+
+pub async fn download_import_history_error(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(id): Path<Uuid>,
+) -> Result<Response> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, XML_IMPORT)?;
+
+	let row = XmlImportHistoryBmc::get_error_row(&mm, &ctx, id)
+		.await
+		.map_err(Error::Model)?;
+
+	let row = row.ok_or_else(|| Error::BadRequest {
+		message: format!("xml import history record {id} not found"),
+	})?;
+	match row.case_id {
+		Some(case_id) => {
+			lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+		}
+		None if ctx.can_admin_safety_db() => {}
+		None => {
+			return Err(Error::PermissionDenied {
+				required_permission: XML_IMPORT.to_string(),
+			});
+		}
+	}
+	let text = row.error_message.ok_or_else(|| Error::BadRequest {
+		message: format!("xml import history record {id} has no error details"),
+	})?;
+
+	let safe_source_name = row
+		.source_file_name
+		.chars()
+		.map(|ch| match ch {
+			'a'..='z' | 'A'..='Z' | '0'..='9' | '.' | '_' | '-' => ch,
+			_ => '_',
+		})
+		.collect::<String>();
+	let file_name = format!("import-error-{id}-{safe_source_name}.txt");
+
+	let mut response = (StatusCode::OK, text).into_response();
+	response.headers_mut().insert(
+		header::CONTENT_TYPE,
+		header::HeaderValue::from_static("text/plain; charset=utf-8"),
+	);
+	response.headers_mut().insert(
+		header::CONTENT_DISPOSITION,
+		header::HeaderValue::from_str(&format!(
+			"attachment; filename=\"{file_name}\""
+		))
+		.map_err(|err| Error::BadRequest {
+			message: format!("invalid import error filename header: {err}"),
+		})?,
+	);
+	Ok(response)
 }
 
 /// POST /api/import/xml/validate

@@ -44,10 +44,11 @@ pub async fn create_relatedness_assessment(
 pub async fn list_relatedness_assessments(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, _drug_id, assessment_id)): Path<(Uuid, Uuid, Uuid)>,
+	Path((case_id, _drug_id, assessment_id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<RelatednessAssessment>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, RELATEDNESS_ASSESSMENT_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let filter = RelatednessAssessmentFilter {
 		drug_reaction_assessment_id: Some(OpValsValue::from(vec![OpValValue::Eq(
 			json!(assessment_id.to_string()),
@@ -68,10 +69,11 @@ pub async fn list_relatedness_assessments(
 pub async fn get_relatedness_assessment(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, _drug_id, _assessment_id, id)): Path<(Uuid, Uuid, Uuid, Uuid)>,
+	Path((case_id, _drug_id, _assessment_id, id)): Path<(Uuid, Uuid, Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<RelatednessAssessment>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, RELATEDNESS_ASSESSMENT_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let entity = RelatednessAssessmentBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }

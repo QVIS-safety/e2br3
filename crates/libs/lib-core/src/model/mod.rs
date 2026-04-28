@@ -68,6 +68,7 @@ pub mod parent_history; // Parent medical history and past drug history
 
 // Controlled Terminologies
 pub mod terminology; // MedDRA, WHODrug, ISO countries, E2B code lists
+pub mod terminology_import; // Import/stage/activate pipeline for MedDRA and WHODrug
 
 // Audit and Versioning
 pub mod audit; // Audit logs and case versions
@@ -75,6 +76,19 @@ pub mod e_signature; // Electronic signatures for Part 11 critical actions
 
 // Presave Templates
 pub mod presave_template; // Reusable pre-case templates and template audit history
+
+// Admin
+pub mod admin_role; // Dynamic admin roles and permission cache
+pub mod admin_settings; // System settings (app_settings table)
+
+// Export Audit
+pub mod xml_export_history; // XML export audit trail
+
+// Case Intake / Duplicate Detection
+pub mod case_duplicate; // Duplicate matching logic and LATERAL JOIN scan query
+
+// Import Audit
+pub mod xml_import_history; // XML import audit trail
 
 // Utilities
 pub mod modql_utils;

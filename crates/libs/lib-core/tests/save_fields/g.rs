@@ -92,6 +92,15 @@ async fn save_g_k_create_with_top_level_identifiers() -> Result<()> {
 			phpid: Some("PHPID".to_string()),
 			phpid_version: Some("2".to_string()),
 			obtain_drug_country: Some("US".to_string()),
+			drug_authorization_number: Some("AUTH".to_string()),
+			manufacturer_name: Some("Maker".to_string()),
+			manufacturer_country: Some("KR".to_string()),
+			batch_lot_number: Some("LOT".to_string()),
+			action_taken: Some("1".to_string()),
+			rechallenge: Some("2".to_string()),
+			fda_additional_info_coded: Some("1".to_string()),
+			drug_additional_information: Some("Additional information".to_string()),
+			fda_specialized_product_category: Some("device".to_string()),
 			..Default::default()
 		},
 	)
@@ -103,6 +112,21 @@ async fn save_g_k_create_with_top_level_identifiers() -> Result<()> {
 	assert_eq!(row.phpid.as_deref(), Some("PHPID"));
 	assert_eq!(row.phpid_version.as_deref(), Some("2"));
 	assert_eq!(row.obtain_drug_country.as_deref(), Some("US"));
+	assert_eq!(row.drug_authorization_number.as_deref(), Some("AUTH"));
+	assert_eq!(row.manufacturer_name.as_deref(), Some("Maker"));
+	assert_eq!(row.manufacturer_country.as_deref(), Some("KR"));
+	assert_eq!(row.batch_lot_number.as_deref(), Some("LOT"));
+	assert_eq!(row.action_taken.as_deref(), Some("1"));
+	assert_eq!(row.rechallenge.as_deref(), Some("2"));
+	assert_eq!(row.fda_additional_info_coded.as_deref(), Some("1"));
+	assert_eq!(
+		row.drug_additional_information.as_deref(),
+		Some("Additional information")
+	);
+	assert_eq!(
+		row.fda_specialized_product_category.as_deref(),
+		Some("device")
+	);
 	finish(&mm).await
 }
 
@@ -543,16 +567,20 @@ async fn save_g_k_8_r_create() -> Result<()> {
 		DrugRecurrenceInformationForCreate {
 			drug_id,
 			sequence_number: 1,
+			rechallenge_action: Some("1".to_string()),
+			reaction_meddra_version: Some("27.0".to_string()),
+			reaction_meddra_code: Some("100".to_string()),
+			reaction_recurred: Some("2".to_string()),
 		},
 	)
 	.await?;
 	let row = DrugRecurrenceInformationBmc::get(&ctx, &mm, id).await?;
 	assert_eq!(row.drug_id, drug_id);
 	assert_eq!(row.sequence_number, 1);
-	assert_eq!(row.rechallenge_action, None);
-	assert_eq!(row.reaction_meddra_version, None);
-	assert_eq!(row.reaction_meddra_code, None);
-	assert_eq!(row.reaction_recurred, None);
+	assert_eq!(row.rechallenge_action.as_deref(), Some("1"));
+	assert_eq!(row.reaction_meddra_version.as_deref(), Some("27.0"));
+	assert_eq!(row.reaction_meddra_code.as_deref(), Some("100"));
+	assert_eq!(row.reaction_recurred.as_deref(), Some("2"));
 	finish(&mm).await
 }
 
@@ -567,6 +595,10 @@ async fn save_g_k_8_r_update() -> Result<()> {
 		DrugRecurrenceInformationForCreate {
 			drug_id,
 			sequence_number: 1,
+			rechallenge_action: None,
+			reaction_meddra_version: None,
+			reaction_meddra_code: None,
+			reaction_recurred: None,
 		},
 	)
 	.await?;
@@ -692,20 +724,28 @@ async fn save_g_k_9_i_create() -> Result<()> {
 		DrugReactionAssessmentForCreate {
 			drug_id,
 			reaction_id,
+			administration_start_interval_value: Some(dec(2, 0)),
+			administration_start_interval_unit: Some("d".to_string()),
+			last_dose_interval_value: Some(dec(1, 0)),
+			last_dose_interval_unit: Some("h".to_string()),
+			recurrence_action: Some("3".to_string()),
+			recurrence_meddra_version: Some("27.0".to_string()),
+			recurrence_meddra_code: Some("100".to_string()),
+			reaction_recurred: Some("1".to_string()),
 		},
 	)
 	.await?;
 	let row = DrugReactionAssessmentBmc::get(&ctx, &mm, id).await?;
 	assert_eq!(row.drug_id, drug_id);
 	assert_eq!(row.reaction_id, reaction_id);
-	assert_eq!(row.administration_start_interval_value, None);
-	assert_eq!(row.administration_start_interval_unit, None);
-	assert_eq!(row.last_dose_interval_value, None);
-	assert_eq!(row.last_dose_interval_unit, None);
-	assert_eq!(row.recurrence_action, None);
-	assert_eq!(row.recurrence_meddra_version, None);
-	assert_eq!(row.recurrence_meddra_code, None);
-	assert_eq!(row.reaction_recurred, None);
+	assert_eq!(row.administration_start_interval_value, Some(dec(2, 0)));
+	assert_eq!(row.administration_start_interval_unit.as_deref(), Some("d"));
+	assert_eq!(row.last_dose_interval_value, Some(dec(1, 0)));
+	assert_eq!(row.last_dose_interval_unit.as_deref(), Some("h"));
+	assert_eq!(row.recurrence_action.as_deref(), Some("3"));
+	assert_eq!(row.recurrence_meddra_version.as_deref(), Some("27.0"));
+	assert_eq!(row.recurrence_meddra_code.as_deref(), Some("100"));
+	assert_eq!(row.reaction_recurred.as_deref(), Some("1"));
 	finish(&mm).await
 }
 
@@ -721,6 +761,14 @@ async fn save_g_k_9_i_update() -> Result<()> {
 		DrugReactionAssessmentForCreate {
 			drug_id,
 			reaction_id,
+			administration_start_interval_value: None,
+			administration_start_interval_unit: None,
+			last_dose_interval_value: None,
+			last_dose_interval_unit: None,
+			recurrence_action: None,
+			recurrence_meddra_version: None,
+			recurrence_meddra_code: None,
+			reaction_recurred: None,
 		},
 	)
 	.await?;
@@ -766,6 +814,14 @@ async fn save_g_k_9_i_2_r_create() -> Result<()> {
 		DrugReactionAssessmentForCreate {
 			drug_id,
 			reaction_id,
+			administration_start_interval_value: None,
+			administration_start_interval_unit: None,
+			last_dose_interval_value: None,
+			last_dose_interval_unit: None,
+			recurrence_action: None,
+			recurrence_meddra_version: None,
+			recurrence_meddra_code: None,
+			reaction_recurred: None,
 		},
 	)
 	.await?;
@@ -805,6 +861,14 @@ async fn save_g_k_9_i_2_r_update() -> Result<()> {
 		DrugReactionAssessmentForCreate {
 			drug_id,
 			reaction_id,
+			administration_start_interval_value: None,
+			administration_start_interval_unit: None,
+			last_dose_interval_value: None,
+			last_dose_interval_unit: None,
+			recurrence_action: None,
+			recurrence_meddra_version: None,
+			recurrence_meddra_code: None,
+			reaction_recurred: None,
 		},
 	)
 	.await?;

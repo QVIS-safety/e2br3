@@ -253,6 +253,96 @@
         ]
       }
     },
+    "/api/cases/from-intake": {
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "operationId": "create_case_from_intake",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCaseFromIntakeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Case created from intake",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseFromIntakeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Duplicate hit hard-blocked, or incomplete basis requires explicit override",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/cases/intake-check": {
+      "post": {
+        "tags": [
+          "cases"
+        ],
+        "operationId": "check_case_intake_duplicate",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCaseIntakeCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Duplicate-check result with basis completeness and warnings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseIntakeCheckResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid intake-check payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
     "/api/cases/link-options": {
       "get": {
         "tags": [
@@ -1481,6 +1571,42 @@
         ]
       }
     },
+    "/api/cases/{id}/exports/history": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "list_case_xml_export_history",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Case ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case XML export history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenericDataResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
     "/api/cases/{id}/lifecycle": {
       "get": {
         "tags": [
@@ -1670,6 +1796,35 @@
         ]
       }
     },
+    "/api/exports/history/{id}/error.txt": {
+      "get": {
+        "tags": [
+          "case-subresources"
+        ],
+        "operationId": "download_xml_export_history_error",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Export history record id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Export error details text file"
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
     "/api/import/xml": {
       "post": {
         "tags": [
@@ -1711,6 +1866,35 @@
                 }
               }
             }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
+    "/api/import/xml/history/{id}/error.txt": {
+      "get": {
+        "tags": [
+          "import"
+        ],
+        "operationId": "download_import_history_error",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Import history record id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Import error details text file"
           }
         },
         "security": [
@@ -3334,6 +3518,11 @@
           "safety_report_id",
           "version",
           "status",
+          "workflow_status",
+          "workflow_updated_at",
+          "qc_state",
+          "is_locked",
+          "can_act_on_workflow",
           "created_by",
           "dirty_c",
           "dirty_d",
@@ -3350,6 +3539,9 @@
               "string",
               "null"
             ]
+          },
+          "can_act_on_workflow": {
+            "type": "boolean"
           },
           "created_at": {
             "type": "string"
@@ -3384,6 +3576,9 @@
           "id": {
             "type": "string"
           },
+          "is_locked": {
+            "type": "boolean"
+          },
           "mfds_report_type": {
             "type": [
               "string",
@@ -3393,6 +3588,9 @@
           "organization_id": {
             "type": "string"
           },
+          "qc_state": {
+            "type": "string"
+          },
           "raw_xml": {
             "type": [
               "string",
@@ -3400,6 +3598,12 @@
             ]
           },
           "report_year": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "review_receivers_json": {
             "type": [
               "string",
               "null"
@@ -3459,14 +3663,57 @@
           "version": {
             "type": "integer",
             "format": "int32"
+          },
+          "workflow_assigned_role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_assigned_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_block_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_due_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_routes_json": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_status": {
+            "type": "string"
+          },
+          "workflow_updated_at": {
+            "type": "string"
           }
         }
       },
       "CaseForCreateDoc": {
         "type": "object",
         "required": [
-          "organization_id",
-          "safety_report_id"
+          "safety_report_id",
+          "workflow_status",
+          "workflow_updated_at"
         ],
         "properties": {
           "appendices_json": {
@@ -3487,10 +3734,13 @@
               "null"
             ]
           },
-          "organization_id": {
-            "type": "string"
-          },
           "report_year": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "review_receivers_json": {
             "type": [
               "string",
               "null"
@@ -3529,12 +3779,41 @@
               "null"
             ]
           },
-          "version": {
+          "workflow_assigned_role": {
             "type": [
-              "integer",
+              "string",
               "null"
-            ],
-            "format": "int32"
+            ]
+          },
+          "workflow_assigned_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_due_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_routes_json": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_status": {
+            "type": "string"
+          },
+          "workflow_updated_at": {
+            "type": "string"
           }
         }
       },
@@ -3553,55 +3832,19 @@
               "null"
             ]
           },
-          "dirty_c": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "dirty_d": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "dirty_e": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "dirty_f": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "dirty_g": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
-          "dirty_h": {
-            "type": [
-              "boolean",
-              "null"
-            ]
-          },
           "mfds_report_type": {
             "type": [
               "string",
               "null"
             ]
           },
-          "raw_xml": {
+          "report_year": {
             "type": [
               "string",
               "null"
             ]
           },
-          "report_year": {
+          "review_receivers_json": {
             "type": [
               "string",
               "null"
@@ -3637,23 +3880,437 @@
               "null"
             ]
           },
-          "submitted_at": {
+          "validation_profile": {
             "type": [
               "string",
               "null"
             ]
           },
-          "submitted_by": {
+          "workflow_routes_json": {
             "type": [
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "CaseFromIntakeInputDoc": {
+        "type": "object",
+        "required": [
+          "safety_report_id",
+          "transmission_date",
+          "date_first_received_from_source",
+          "date_of_most_recent_information",
+          "report_type",
+          "ae_start_date"
+        ],
+        "properties": {
+          "ae_start_date": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "age_d2_2a": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "allow_duplicate_override": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Honored only when duplicate matches are empty and the duplicate basis\nis incomplete. Duplicate hits are always hard-blocked."
+          },
+          "appendices_json": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_first_received_from_source": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "date_of_most_recent_information": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "dg_prd_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "investigation_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mfds_report_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_initials": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_meddra_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_meddra_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "report_type": {
+            "type": "string"
+          },
+          "report_year": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reporter_organization": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "safety_report_id": {
+            "type": "string"
+          },
+          "sex_d5": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_base64": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_media_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sponsor_study_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transmission_date": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           },
           "validation_profile": {
             "type": [
               "string",
               "null"
             ]
+          }
+        }
+      },
+      "CaseFromIntakeResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CaseFromIntakeResultDoc"
+          }
+        }
+      },
+      "CaseFromIntakeResultDoc": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "safety_report_id",
+          "version"
+        ],
+        "properties": {
+          "case_id": {
+            "type": "string"
+          },
+          "safety_report_id": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CaseIntakeCheckInputDoc": {
+        "type": "object",
+        "required": [
+          "safety_report_id",
+          "date_of_most_recent_information",
+          "ae_start_date"
+        ],
+        "properties": {
+          "ae_start_date": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "age_d2_2a": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date_of_most_recent_information": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "dg_prd_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "investigation_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_initials": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_meddra_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_meddra_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "report_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reporter_organization": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "safety_report_id": {
+            "type": "string"
+          },
+          "sex_d5": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sponsor_study_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CaseIntakeCheckResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CaseIntakeCheckResultDoc"
+          }
+        }
+      },
+      "CaseIntakeCheckResultDoc": {
+        "type": "object",
+        "required": [
+          "duplicate",
+          "basis_complete",
+          "warnings",
+          "matches"
+        ],
+        "properties": {
+          "basis_complete": {
+            "type": "boolean",
+            "description": "True when enough duplicate-basis input exists to trust the check.\nThis is independent of whether warnings are present."
+          },
+          "duplicate": {
+            "type": "boolean"
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseIntakeDuplicateMatchDoc"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Informational messages for duplicate review. This can include\nincomplete-basis warnings as well as non-blocking missing-field notes."
+          }
+        }
+      },
+      "CaseIntakeDuplicateMatchDoc": {
+        "type": "object",
+        "required": [
+          "case_id",
+          "safety_report_id",
+          "version",
+          "status",
+          "created_at",
+          "date_of_most_recent_information",
+          "ae_start_date"
+        ],
+        "properties": {
+          "ae_start_date": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "age_d2_2a": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "case_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "date_of_most_recent_information": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "dg_prd_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "investigation_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patient_initials": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_meddra_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reaction_meddra_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "report_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reporter_organization": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "safety_report_id": {
+            "type": "string"
+          },
+          "sex_d5": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sponsor_study_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -3730,6 +4387,28 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/ComplianceActionInputDoc"
+          }
+        }
+      },
+      "CreateCaseFromIntakeRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CaseFromIntakeInputDoc"
+          }
+        }
+      },
+      "CreateCaseIntakeCheckRequest": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CaseIntakeCheckInputDoc"
           }
         }
       },
@@ -3917,8 +4596,20 @@
           "drug_additional_info_codes_json": {
             "type": "object"
           },
+          "drug_authorization_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "drug_characterization": {
             "type": "string"
+          },
+          "drug_generic_name": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "fda_additional_info_coded": {
             "type": [
@@ -4116,7 +4807,19 @@
           "drug_additional_info_codes_json": {
             "type": "object"
           },
+          "drug_authorization_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "drug_characterization": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "drug_generic_name": {
             "type": [
               "string",
               "null"
@@ -5800,13 +6503,67 @@
           "case_id": {
             "type": "string"
           },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country_code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "department": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fax": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "organization_name": {
             "type": [
               "string",
               "null"
             ]
           },
+          "postcode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "receiver_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state_province": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "street_address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "telephone": {
             "type": [
               "string",
               "null"
@@ -5942,6 +6699,12 @@
           "created_by"
         ],
         "properties": {
+          "additional_documents_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "case_id": {
             "type": "string"
           },
@@ -5976,6 +6739,12 @@
             ]
           },
           "date_of_most_recent_information_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "first_sender_type": {
             "type": [
               "string",
               "null"
@@ -6051,6 +6820,12 @@
           "fulfil_expedited_criteria"
         ],
         "properties": {
+          "additional_documents_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "case_id": {
             "type": "string"
           },
@@ -6073,6 +6848,12 @@
             ]
           },
           "date_of_most_recent_information_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "first_sender_type": {
             "type": [
               "string",
               "null"
@@ -6101,6 +6882,12 @@
       "SafetyReportIdentificationForUpdateDoc": {
         "type": "object",
         "properties": {
+          "additional_documents_available": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "combination_product_report_indicator": {
             "type": [
               "string",
@@ -6126,6 +6913,12 @@
             ]
           },
           "date_of_most_recent_information_null_flavor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "first_sender_type": {
             "type": [
               "string",
               "null"
@@ -6423,6 +7216,18 @@
           },
           "gateway": {
             "type": "string"
+          },
+          "latest_ack_received_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latest_event_type": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "remote_submission_id": {
             "type": "string"
@@ -7058,6 +7863,12 @@
           "updated_at"
         ],
         "properties": {
+          "access_blind_allowed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "access_end_at": {
             "type": [
               "string",
@@ -7143,7 +7954,9 @@
             ]
           },
           "role": {
-            "type": "string"
+            "type": "string",
+            "description": "Canonical role ID. Built-in values include `system_admin`,\n`sponsor_admin_cro`, and `sponsor_admin_company`; other values are\ncustom scoped roles.",
+            "example": "sponsor_admin_cro"
           },
           "updated_at": {
             "type": "string"
@@ -7166,6 +7979,12 @@
           "email"
         ],
         "properties": {
+          "access_blind_allowed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "access_end_at": {
             "type": [
               "string",
@@ -7239,7 +8058,9 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Canonical role ID to assign. Use built-in sponsor admin IDs for fixed\nadmin roles, or a custom role name for scoped users.",
+            "example": "pvs"
           },
           "username": {
             "type": [
@@ -7252,6 +8073,12 @@
       "UserForUpdateDoc": {
         "type": "object",
         "properties": {
+          "access_blind_allowed": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "access_end_at": {
             "type": [
               "string",
@@ -7328,7 +8155,9 @@
             "type": [
               "string",
               "null"
-            ]
+            ],
+            "description": "Canonical role ID. Legacy values are normalized by the backend to the\nnew client-aligned role system.",
+            "example": "sponsor_admin_company"
           },
           "username": {
             "type": [

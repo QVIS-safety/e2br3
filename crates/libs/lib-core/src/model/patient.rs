@@ -68,7 +68,34 @@ pub struct PatientInformation {
 pub struct PatientInformationForCreate {
 	pub case_id: Uuid,
 	pub patient_initials: Option<String>,
+	pub patient_given_name: Option<String>,
+	pub patient_family_name: Option<String>,
+	pub patient_initials_null_flavor: Option<String>,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub birth_date: Option<Date>,
+	pub birth_date_null_flavor: Option<String>,
+	pub age_at_time_of_onset: Option<Decimal>,
+	pub age_at_time_of_onset_null_flavor: Option<String>,
+	pub age_unit: Option<String>,
+	pub gestation_period: Option<Decimal>,
+	pub gestation_period_unit: Option<String>,
+	pub age_group: Option<String>,
+	pub weight_kg: Option<Decimal>,
+	pub height_cm: Option<Decimal>,
 	pub sex: Option<String>,
+	pub sex_null_flavor: Option<String>,
+	pub race_code: Option<String>,
+	pub ethnicity_code: Option<String>,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub last_menstrual_period_date: Option<Date>,
+	pub last_menstrual_period_date_null_flavor: Option<String>,
+	pub medical_history_text: Option<String>,
 	pub concomitant_therapy: Option<bool>,
 }
 
@@ -382,7 +409,9 @@ pub struct ReportedCauseOfDeath {
 pub struct ReportedCauseOfDeathForCreate {
 	pub death_info_id: Uuid,
 	pub sequence_number: i32,
+	pub meddra_version: Option<String>,
 	pub meddra_code: Option<String>,
+	pub comments: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -419,7 +448,9 @@ pub struct AutopsyCauseOfDeath {
 pub struct AutopsyCauseOfDeathForCreate {
 	pub death_info_id: Uuid,
 	pub sequence_number: i32,
+	pub meddra_version: Option<String>,
 	pub meddra_code: Option<String>,
+	pub comments: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -465,6 +496,24 @@ pub struct ParentInformation {
 #[derive(Fields, Deserialize)]
 pub struct ParentInformationForCreate {
 	pub patient_id: Uuid,
+	pub parent_identification: Option<String>,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub parent_birth_date: Option<Date>,
+	pub parent_birth_date_null_flavor: Option<String>,
+	pub parent_age: Option<Decimal>,
+	pub parent_age_null_flavor: Option<String>,
+	pub parent_age_unit: Option<String>,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub last_menstrual_period_date: Option<Date>,
+	pub last_menstrual_period_date_null_flavor: Option<String>,
+	pub weight_kg: Option<Decimal>,
+	pub height_cm: Option<Decimal>,
 	pub sex: Option<String>,
 	pub medical_history_text: Option<String>,
 }
@@ -522,8 +571,38 @@ impl PatientInformationBmc {
 		.await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, patient_initials, sex, concomitant_therapy, created_at, updated_at, created_by)
-			 VALUES ($1, $2, $3, $4, now(), now(), $5)
+			"INSERT INTO {} (
+				case_id,
+				patient_initials,
+				patient_given_name,
+				patient_family_name,
+				patient_initials_null_flavor,
+				birth_date,
+				birth_date_null_flavor,
+				age_at_time_of_onset,
+				age_at_time_of_onset_null_flavor,
+				age_unit,
+				gestation_period,
+				gestation_period_unit,
+				age_group,
+				weight_kg,
+				height_cm,
+				sex,
+				sex_null_flavor,
+				race_code,
+				ethnicity_code,
+				last_menstrual_period_date,
+				last_menstrual_period_date_null_flavor,
+				medical_history_text,
+				concomitant_therapy,
+				created_at,
+				updated_at,
+				created_by
+			)
+			 VALUES (
+			 	$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+			 	$16, $17, $18, $19, $20, $21, $22, $23, now(), now(), $24
+			 )
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -533,7 +612,26 @@ impl PatientInformationBmc {
 				sqlx::query_as::<_, (Uuid,)>(&sql)
 					.bind(data.case_id)
 					.bind(data.patient_initials)
+					.bind(data.patient_given_name)
+					.bind(data.patient_family_name)
+					.bind(data.patient_initials_null_flavor)
+					.bind(data.birth_date)
+					.bind(data.birth_date_null_flavor)
+					.bind(data.age_at_time_of_onset)
+					.bind(data.age_at_time_of_onset_null_flavor)
+					.bind(data.age_unit)
+					.bind(data.gestation_period)
+					.bind(data.gestation_period_unit)
+					.bind(data.age_group)
+					.bind(data.weight_kg)
+					.bind(data.height_cm)
 					.bind(data.sex)
+					.bind(data.sex_null_flavor)
+					.bind(data.race_code)
+					.bind(data.ethnicity_code)
+					.bind(data.last_menstrual_period_date)
+					.bind(data.last_menstrual_period_date_null_flavor)
+					.bind(data.medical_history_text)
 					.bind(data.concomitant_therapy)
 					.bind(ctx.user_id()),
 			)

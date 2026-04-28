@@ -64,6 +64,22 @@ pub struct TestResultForCreate {
 	pub case_id: Uuid,
 	pub sequence_number: i32,
 	pub test_name: String,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub test_date: Option<Date>,
+	pub test_date_null_flavor: Option<String>,
+	pub test_meddra_version: Option<String>,
+	pub test_meddra_code: Option<String>,
+	pub test_result_code: Option<String>,
+	pub test_result_value: Option<String>,
+	pub test_result_unit: Option<String>,
+	pub result_unstructured: Option<String>,
+	pub normal_low_value: Option<String>,
+	pub normal_high_value: Option<String>,
+	pub comments: Option<String>,
+	pub more_info_available: Option<bool>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -110,8 +126,18 @@ impl TestResultBmc {
 		.await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, sequence_number, test_name, created_at, updated_at, created_by)
-			 VALUES ($1, $2, $3, now(), now(), $4)
+			"INSERT INTO {} (
+			 case_id, sequence_number, test_name, test_date, test_date_null_flavor,
+			 test_meddra_version, test_meddra_code, test_result_code, test_result_value,
+			 test_result_unit, result_unstructured, normal_low_value, normal_high_value,
+			 comments, more_info_available, created_at, updated_at, created_by
+			)
+			 VALUES (
+			 $1, $2, $3, $4, $5,
+			 $6, $7, $8, $9,
+			 $10, $11, $12, $13,
+			 $14, $15, now(), now(), $16
+			)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -122,6 +148,18 @@ impl TestResultBmc {
 					.bind(test_c.case_id)
 					.bind(test_c.sequence_number)
 					.bind(test_c.test_name)
+					.bind(test_c.test_date)
+					.bind(test_c.test_date_null_flavor)
+					.bind(test_c.test_meddra_version)
+					.bind(test_c.test_meddra_code)
+					.bind(test_c.test_result_code)
+					.bind(test_c.test_result_value)
+					.bind(test_c.test_result_unit)
+					.bind(test_c.result_unstructured)
+					.bind(test_c.normal_low_value)
+					.bind(test_c.normal_high_value)
+					.bind(test_c.comments)
+					.bind(test_c.more_info_available)
 					.bind(ctx.user_id()),
 			)
 			.await?;

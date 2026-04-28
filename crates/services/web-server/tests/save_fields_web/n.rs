@@ -149,7 +149,7 @@ async fn save_n_message_number_only() -> Result<()> {
 
 	post_created(
 		&ctx,
-		message_header_field("N.message_number"),
+		message_header_field("N.1.2"),
 		format!("/api/cases/{case_id}/message-header"),
 		json!({"data": {
 			"case_id": case_id,
@@ -163,7 +163,7 @@ async fn save_n_message_number_only() -> Result<()> {
 
 	put_ok(
 		&ctx,
-		message_header_field("N.message_number"),
+		message_header_field("N.1.2"),
 		format!("/api/cases/{case_id}/message-header"),
 		json!({ "data": { "message_number": updated_message_number } }),
 	)
@@ -171,7 +171,7 @@ async fn save_n_message_number_only() -> Result<()> {
 
 	let value = get_ok(
 		&ctx,
-		message_header_field("N.message_number"),
+		message_header_field("N.1.2"),
 		format!("/api/cases/{case_id}/message-header"),
 	)
 	.await?;
@@ -180,7 +180,7 @@ async fn save_n_message_number_only() -> Result<()> {
 }
 message_header_single_field_test!(
 	save_n_message_sender_identifier_only,
-	"N.message_sender_identifier",
+	"N.2.r.2",
 	json!({"message_sender_identifier": "SENDER-2"}),
 	|value| {
 		assert_str(value, "message_sender_identifier", "SENDER-2");
@@ -188,7 +188,7 @@ message_header_single_field_test!(
 );
 message_header_single_field_test!(
 	save_n_message_receiver_identifier_only,
-	"N.message_receiver_identifier",
+	"N.2.r.3",
 	json!({"message_receiver_identifier": "RECV-2"}),
 	|value| {
 		assert_str(value, "message_receiver_identifier", "RECV-2");
@@ -213,7 +213,7 @@ async fn save_n_batch_transmission_date_only() -> Result<()> {
 
 	post_created(
 		&ctx,
-		message_header_field("N.batch_transmission_date"),
+		message_header_field("N.1.5"),
 		format!("/api/cases/{case_id}/message-header"),
 		json!({"data": {
 			"case_id": case_id,
@@ -227,7 +227,7 @@ async fn save_n_batch_transmission_date_only() -> Result<()> {
 
 	put_ok(
 		&ctx,
-		message_header_field("N.batch_transmission_date"),
+		message_header_field("N.1.5"),
 		format!("/api/cases/{case_id}/message-header"),
 		json!({ "data": { "batch_transmission_date": batch_transmission_date } }),
 	)
@@ -235,7 +235,7 @@ async fn save_n_batch_transmission_date_only() -> Result<()> {
 
 	let value = get_ok(
 		&ctx,
-		message_header_field("N.batch_transmission_date"),
+		message_header_field("N.1.5"),
 		format!("/api/cases/{case_id}/message-header"),
 	)
 	.await?;

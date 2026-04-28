@@ -7,8 +7,8 @@ use crate::model::drug::{
 };
 use crate::model::drug_reaction_assessment::{
 	DrugReactionAssessmentBmc, DrugReactionAssessmentForCreate,
-	DrugReactionAssessmentForUpdate, RelatednessAssessmentBmc,
-	RelatednessAssessmentForCreate, RelatednessAssessmentForUpdate,
+	RelatednessAssessmentBmc, RelatednessAssessmentForCreate,
+	RelatednessAssessmentForUpdate,
 };
 use crate::model::drug_recurrence::{
 	DrugRecurrenceInformationBmc, DrugRecurrenceInformationForCreate,
@@ -391,27 +391,19 @@ async fn import_drug_recurrences(
 			)
 			.await;
 		} else {
-			let id = DrugRecurrenceInformationBmc::create(
+			DrugRecurrenceInformationBmc::create(
 				ctx,
 				mm,
 				DrugRecurrenceInformationForCreate {
 					drug_id,
 					sequence_number: obs.sequence_number,
-				},
-			)
-			.await?;
-			let _ = DrugRecurrenceInformationBmc::update(
-				ctx,
-				mm,
-				id,
-				DrugRecurrenceInformationForUpdate {
 					rechallenge_action: obs.rechallenge_action,
 					reaction_meddra_version: obs.recurrence_meddra_version,
 					reaction_meddra_code: obs.recurrence_meddra_code,
 					reaction_recurred: obs.reaction_recurred,
 				},
 			)
-			.await;
+			.await?;
 		}
 	}
 
@@ -435,7 +427,7 @@ async fn import_drug_reaction_assessments(
 		};
 
 		let key = (drug_id, reaction_id);
-		let assessment_id = if let Some(id) = assessment_map.get(&key) {
+		let _assessment_id = if let Some(id) = assessment_map.get(&key) {
 			*id
 		} else if let Some(existing) =
 			DrugReactionAssessmentBmc::get_by_drug_and_reaction(
@@ -455,32 +447,23 @@ async fn import_drug_reaction_assessments(
 				DrugReactionAssessmentForCreate {
 					drug_id,
 					reaction_id,
+					administration_start_interval_value: obs
+						.administration_start_interval_value,
+					administration_start_interval_unit: obs
+						.administration_start_interval_unit
+						.clone(),
+					last_dose_interval_value: obs.last_dose_interval_value,
+					last_dose_interval_unit: obs.last_dose_interval_unit.clone(),
+					recurrence_action: obs.rechallenge_action.clone(),
+					recurrence_meddra_version: obs.recurrence_meddra_version.clone(),
+					recurrence_meddra_code: obs.recurrence_meddra_code.clone(),
+					reaction_recurred: obs.reaction_recurred.clone(),
 				},
 			)
 			.await?;
 			assessment_map.insert(key, id);
 			id
 		};
-
-		let _ = DrugReactionAssessmentBmc::update(
-			ctx,
-			mm,
-			assessment_id,
-			DrugReactionAssessmentForUpdate {
-				administration_start_interval_value: obs
-					.administration_start_interval_value,
-				administration_start_interval_unit: obs
-					.administration_start_interval_unit
-					.clone(),
-				last_dose_interval_value: obs.last_dose_interval_value,
-				last_dose_interval_unit: obs.last_dose_interval_unit.clone(),
-				recurrence_action: obs.rechallenge_action.clone(),
-				recurrence_meddra_version: obs.recurrence_meddra_version.clone(),
-				recurrence_meddra_code: obs.recurrence_meddra_code.clone(),
-				reaction_recurred: obs.reaction_recurred.clone(),
-			},
-		)
-		.await;
 	}
 
 	let relatedness = g_helpers::parse_relatedness_assessments(xml)?;
@@ -513,6 +496,14 @@ async fn import_drug_reaction_assessments(
 				DrugReactionAssessmentForCreate {
 					drug_id,
 					reaction_id,
+					administration_start_interval_value: None,
+					administration_start_interval_unit: None,
+					last_dose_interval_value: None,
+					last_dose_interval_unit: None,
+					recurrence_action: None,
+					recurrence_meddra_version: None,
+					recurrence_meddra_code: None,
+					reaction_recurred: None,
 				},
 			)
 			.await?;

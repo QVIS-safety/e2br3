@@ -10,9 +10,15 @@ pub use self::error::{Error, Result};
 
 // region:    --- Role Constants
 
-/// System role for full administrative access
-pub const ROLE_ADMIN: &str = "admin";
-/// Role for management-level access (case approval, user viewing)
+/// Platform/system role. Can provision safety-database access and run internal operations.
+pub const ROLE_SYSTEM_ADMIN: &str = "system_admin";
+/// Fixed in-database sponsor admin role for CRO deployments.
+pub const ROLE_SPONSOR_ADMIN_CRO: &str = "sponsor_admin_cro";
+/// Fixed in-database sponsor admin role for pharmaceutical-company deployments.
+pub const ROLE_SPONSOR_ADMIN_COMPANY: &str = "sponsor_admin_company";
+/// Legacy alias kept for backward compatibility with older seeds/tests.
+pub const ROLE_ADMIN: &str = ROLE_SYSTEM_ADMIN;
+/// Legacy management-level access role.
 pub const ROLE_MANAGER: &str = "manager";
 /// Role for pharmacovigilance manager access
 pub const ROLE_PVM: &str = "pvm";
@@ -54,7 +60,7 @@ impl Ctx {
 				.expect("Invalid system UUID"),
 			organization_id: uuid::Uuid::parse_str(SYSTEM_ORG_ID)
 				.expect("Invalid system org UUID"),
-			role: ROLE_ADMIN.to_string(),
+			role: ROLE_SYSTEM_ADMIN.to_string(),
 			change_reason: None,
 			e_signature_id: None,
 		}
@@ -67,11 +73,11 @@ impl Ctx {
 		organization_id: uuid::Uuid,
 		role: String,
 	) -> Result<Self> {
-		let role = role.trim().to_ascii_lowercase();
+		let role = canonical_role(&role);
 		if user_id.is_nil() {
 			return Err(Error::CtxCannotNewNilUuid);
 		}
-		if organization_id.is_nil() && role != ROLE_ADMIN {
+		if organization_id.is_nil() && role != ROLE_SYSTEM_ADMIN {
 			return Err(Error::CtxCannotNewNilOrgId);
 		}
 		if role.is_empty() {
@@ -137,7 +143,20 @@ impl Ctx {
 
 	// Role check helpers
 	pub fn is_admin(&self) -> bool {
-		self.role == ROLE_ADMIN
+		self.is_system_admin()
+	}
+
+	pub fn is_system_admin(&self) -> bool {
+		self.role == ROLE_SYSTEM_ADMIN
+	}
+
+	pub fn is_sponsor_admin(&self) -> bool {
+		self.role == ROLE_SPONSOR_ADMIN_CRO
+			|| self.role == ROLE_SPONSOR_ADMIN_COMPANY
+	}
+
+	pub fn can_admin_safety_db(&self) -> bool {
+		self.is_system_admin() || self.is_sponsor_admin()
 	}
 
 	pub fn is_manager(&self) -> bool {
@@ -156,11 +175,74 @@ impl Ctx {
 
 	/// Returns true if the user has at least manager-level access (admin or manager)
 	pub fn is_manager_or_above(&self) -> bool {
-		self.is_admin() || self.is_manager()
+		self.can_admin_safety_db() || self.is_manager()
 	}
 
 	/// Returns true if the user can modify data (not a viewer)
 	pub fn can_modify(&self) -> bool {
-		self.is_admin() || self.is_manager() || self.is_user()
+		self.can_admin_safety_db() || self.is_manager() || self.is_user()
+	}
+}
+
+pub fn canonical_role(role: &str) -> String {
+	match role.trim().to_ascii_lowercase().as_str() {
+		"admin" => ROLE_SPONSOR_ADMIN_CRO.to_string(),
+		"system-admin" => ROLE_SYSTEM_ADMIN.to_string(),
+		"system_admin" => ROLE_SYSTEM_ADMIN.to_string(),
+		"sponsor administrator(cro)" => ROLE_SPONSOR_ADMIN_CRO.to_string(),
+		"sponsor administrator (cro)" => ROLE_SPONSOR_ADMIN_CRO.to_string(),
+		"sponsor_admin_cro" => ROLE_SPONSOR_ADMIN_CRO.to_string(),
+		"sponsor administrator(pharmaceutical company)" => {
+			ROLE_SPONSOR_ADMIN_COMPANY.to_string()
+		}
+		"sponsor administrator (pharmaceutical company)" => {
+			ROLE_SPONSOR_ADMIN_COMPANY.to_string()
+		}
+		"sponsor_admin_company" => ROLE_SPONSOR_ADMIN_COMPANY.to_string(),
+		other => other.to_string(),
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn canonicalizes_client_role_labels() {
+		assert_eq!(canonical_role("system_admin"), ROLE_SYSTEM_ADMIN);
+		assert_eq!(
+			canonical_role("Sponsor Administrator (CRO)"),
+			ROLE_SPONSOR_ADMIN_CRO
+		);
+		assert_eq!(
+			canonical_role("Sponsor Administrator (Pharmaceutical Company)"),
+			ROLE_SPONSOR_ADMIN_COMPANY
+		);
+	}
+
+	#[test]
+	fn legacy_admin_string_maps_to_sponsor_admin_cro() {
+		assert_eq!(canonical_role("admin"), ROLE_SPONSOR_ADMIN_CRO);
+	}
+
+	#[test]
+	fn safety_db_admin_roles_are_distinct_from_system_admin() {
+		let sponsor_admin = Ctx::new(
+			uuid::Uuid::new_v4(),
+			uuid::Uuid::new_v4(),
+			ROLE_SPONSOR_ADMIN_CRO.to_string(),
+		)
+		.expect("ctx");
+		assert!(sponsor_admin.can_admin_safety_db());
+		assert!(!sponsor_admin.is_system_admin());
+
+		let system_admin = Ctx::new(
+			uuid::Uuid::new_v4(),
+			uuid::Uuid::nil(),
+			ROLE_SYSTEM_ADMIN.to_string(),
+		)
+		.expect("ctx");
+		assert!(system_admin.can_admin_safety_db());
+		assert!(system_admin.is_system_admin());
 	}
 }

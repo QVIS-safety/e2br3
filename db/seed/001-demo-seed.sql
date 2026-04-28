@@ -33,7 +33,7 @@ BEGIN
     -- Use system user for initial inserts (demo user doesn't exist yet)
     PERFORM set_config('app.current_user_id', '00000000-0000-0000-0000-000000000001', true);
     -- Required by RLS orgs_modify policy during bootstrap inserts.
-    PERFORM set_config('app.current_user_role', 'admin', true);
+    PERFORM set_config('app.current_user_role', 'system_admin', true);
 
     -- Insert demo organization (created by system user)
     INSERT INTO organizations (id, name, org_type, address, city, state, postcode, country_code, contact_email, contact_phone, active, created_by, created_at, updated_at)
@@ -65,7 +65,7 @@ BEGIN
         NULL,
         '07444261-2ba2-46be-ad20-82554d5a8004'::UUID,
         '1b2091af-64ff-43ea-a47b-3cdf8f9995c5'::UUID,
-        'admin',
+        'sponsor_admin_cro',
         true,
         false,
         '00000000-0000-0000-0000-000000000001'::UUID,

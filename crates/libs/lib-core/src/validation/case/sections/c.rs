@@ -68,6 +68,8 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 			Some("safetyReportIdentification.senderOrganization")
 		}
 		"ICH.C.2.r.4.REQUIRED" => Some("primarySources.0.qualification"),
+		"ICH.C.2.r.2.1.REQUIRED" => Some("primarySources.0.reporterOrganization"),
+		"ICH.C.5.3.REQUIRED" => Some("studyInformation.0.sponsorStudyNumber"),
 		"ICH.C.5.4.REQUIRED" => Some("studyInformation.studyTypeReaction"),
 		"FDA.C.1.7.1.REQUIRED" => {
 			Some("safetyReportIdentification.localCriteriaReportType")
@@ -234,7 +236,25 @@ pub(crate) fn collect_ich_issues(
 					},
 					RuleFacts::default(),
 				);
+				if study.sponsor_study_number.as_deref().map(str::trim).unwrap_or("").is_empty() {
+					push_issue_by_code(
+						issues,
+						"ICH.C.5.3.REQUIRED",
+						format!("studyInformation.{idx}.sponsorStudyNumber"),
+					);
+				}
 			});
+
+		let has_reporter_org = validation_ctx.primary_sources.iter().any(|s| {
+			!s.organization.as_deref().map(str::trim).unwrap_or("").is_empty()
+		});
+		if !has_reporter_org {
+			push_issue_by_code(
+				issues,
+				"ICH.C.2.r.2.1.REQUIRED",
+				"primarySources.0.reporterOrganization",
+			);
+		}
 	}
 
 	if let Some(sender) = validation_ctx.sender.as_ref() {

@@ -55,17 +55,28 @@ pub(crate) async fn import_section_f(
 		if let Some(id) = existing {
 			TestResultBmc::update(ctx, mm, id, update).await?;
 		} else {
-			let id = TestResultBmc::create(
+			TestResultBmc::create(
 				ctx,
 				mm,
 				TestResultForCreate {
 					case_id,
 					sequence_number,
 					test_name: entry.test_name,
+					test_date: update.test_date,
+					test_date_null_flavor: update.test_date_null_flavor.clone(),
+					test_meddra_version: update.test_meddra_version.clone(),
+					test_meddra_code: update.test_meddra_code.clone(),
+					test_result_code: update.test_result_code.clone(),
+					test_result_value: update.test_result_value.clone(),
+					test_result_unit: update.test_result_unit.clone(),
+					result_unstructured: update.result_unstructured.clone(),
+					normal_low_value: update.normal_low_value.clone(),
+					normal_high_value: update.normal_high_value.clone(),
+					comments: update.comments.clone(),
+					more_info_available: update.more_info_available,
 				},
 			)
 			.await?;
-			TestResultBmc::update(ctx, mm, id, update).await?;
 		}
 	}
 

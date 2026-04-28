@@ -12,7 +12,7 @@ use crate::model::narrative::{
 use crate::model::parent_history::{ParentMedicalHistory, ParentPastDrugHistory};
 use crate::model::patient::{
 	AutopsyCauseOfDeath, MedicalHistoryEpisode, ParentInformation, PastDrugHistory,
-	PatientDeathInformation, PatientInformation, ReportedCauseOfDeath,
+	PatientDeathInformation, PatientIdentifier, PatientInformation, ReportedCauseOfDeath,
 };
 use crate::model::reaction::Reaction;
 use crate::model::safety_report::{
@@ -52,6 +52,7 @@ pub struct ValidationContext {
 	pub indications: Vec<DrugIndication>,
 	pub dosages: Vec<DosageInformation>,
 	pub drug_reaction_assessments: Vec<DrugReactionAssessment>,
+	pub patient_identifiers: Vec<PatientIdentifier>,
 }
 
 pub async fn load_base_validation_context(
@@ -95,6 +96,7 @@ pub async fn load_base_validation_context(
 	let dosages = list_dosages(mm, &drugs).await?;
 	let drug_reaction_assessments =
 		list_drug_reaction_assessments(mm, &drugs).await?;
+	let patient_identifiers = list_patient_identifiers(mm, patient.as_ref()).await?;
 
 	Ok(ValidationContext {
 		case,
@@ -124,6 +126,7 @@ pub async fn load_base_validation_context(
 		indications,
 		dosages,
 		drug_reaction_assessments,
+		patient_identifiers,
 	})
 }
 
@@ -264,6 +267,20 @@ async fn list_drug_reaction_assessments(
 	let sql = "SELECT * FROM drug_reaction_assessments WHERE drug_id = ANY($1) ORDER BY drug_id, reaction_id";
 	mm.dbx()
 		.fetch_all(sqlx::query_as::<_, DrugReactionAssessment>(sql).bind(&drug_ids))
+		.await
+		.map_err(Into::into)
+}
+
+async fn list_patient_identifiers(
+	mm: &ModelManager,
+	patient: Option<&PatientInformation>,
+) -> Result<Vec<PatientIdentifier>> {
+	let Some(patient) = patient else {
+		return Ok(Vec::new());
+	};
+	let sql = "SELECT * FROM patient_identifiers WHERE patient_id = $1 ORDER BY sequence_number";
+	mm.dbx()
+		.fetch_all(sqlx::query_as::<_, PatientIdentifier>(sql).bind(patient.id))
 		.await
 		.map_err(Into::into)
 }

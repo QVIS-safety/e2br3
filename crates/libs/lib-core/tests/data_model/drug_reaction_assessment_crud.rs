@@ -45,14 +45,6 @@ async fn test_drug_reaction_assessment_crud() -> Result<()> {
 	let assessment_c = DrugReactionAssessmentForCreate {
 		drug_id,
 		reaction_id,
-	};
-	let assessment_id =
-		DrugReactionAssessmentBmc::create(&ctx, &mm, assessment_c).await?;
-	let assessment =
-		DrugReactionAssessmentBmc::get(&ctx, &mm, assessment_id).await?;
-	assert_eq!(assessment.drug_id, drug_id);
-
-	let assessment_u = DrugReactionAssessmentForUpdate {
 		administration_start_interval_value: Some(Decimal::new(12, 0)),
 		administration_start_interval_unit: Some("805".to_string()),
 		last_dose_interval_value: Some(Decimal::new(3, 0)),
@@ -62,16 +54,38 @@ async fn test_drug_reaction_assessment_crud() -> Result<()> {
 		recurrence_meddra_code: Some("10012345".to_string()),
 		reaction_recurred: Some("1".to_string()),
 	};
-	DrugReactionAssessmentBmc::update(&ctx, &mm, assessment_id, assessment_u)
-		.await?;
+	let assessment_id =
+		DrugReactionAssessmentBmc::create(&ctx, &mm, assessment_c).await?;
 	let assessment =
 		DrugReactionAssessmentBmc::get(&ctx, &mm, assessment_id).await?;
+	assert_eq!(assessment.drug_id, drug_id);
 	assert_eq!(
 		assessment.administration_start_interval_unit.as_deref(),
 		Some("805")
 	);
 	assert_eq!(assessment.last_dose_interval_unit.as_deref(), Some("804"));
 	assert_eq!(assessment.reaction_recurred.as_deref(), Some("1"));
+
+	let assessment_u = DrugReactionAssessmentForUpdate {
+		administration_start_interval_value: Some(Decimal::new(24, 0)),
+		administration_start_interval_unit: Some("803".to_string()),
+		last_dose_interval_value: Some(Decimal::new(6, 0)),
+		last_dose_interval_unit: Some("802".to_string()),
+		recurrence_action: Some("2".to_string()),
+		recurrence_meddra_version: Some("26.0".to_string()),
+		recurrence_meddra_code: Some("20054321".to_string()),
+		reaction_recurred: Some("2".to_string()),
+	};
+	DrugReactionAssessmentBmc::update(&ctx, &mm, assessment_id, assessment_u)
+		.await?;
+	let assessment =
+		DrugReactionAssessmentBmc::get(&ctx, &mm, assessment_id).await?;
+	assert_eq!(
+		assessment.administration_start_interval_unit.as_deref(),
+		Some("803")
+	);
+	assert_eq!(assessment.last_dose_interval_unit.as_deref(), Some("802"));
+	assert_eq!(assessment.reaction_recurred.as_deref(), Some("2"));
 
 	let by_drug =
 		DrugReactionAssessmentBmc::list_by_drug(&ctx, &mm, drug_id).await?;

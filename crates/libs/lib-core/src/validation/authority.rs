@@ -51,7 +51,7 @@ impl RegulatoryAuthority {
 		match self {
 			Self::Fda => "CDER",
 			Self::Ich => "ICHTEST",
-			Self::Mfds => "MFDS",
+			Self::Mfds => MFDS_MSG_RECEIVER_DOMESTIC,
 		}
 	}
 
@@ -71,7 +71,59 @@ pub const FDA_MSG_RECEIVER_CBER: &str = "CBER";
 pub const FDA_MSG_RECEIVER_CDER_IND: &str = "CDER_IND";
 pub const FDA_MSG_RECEIVER_CBER_IND: &str = "CBER_IND";
 pub const FDA_MSG_RECEIVER_CDER_IND_EXEMPT_BA_BE: &str = "CDER_IND_EXEMPT_BA_BE";
+/// Marker string present in all MFDS N.1.4 batch receiver identifiers.
 pub const MFDS_RECEIVER_IDENTIFIER: &str = "MFDS";
+/// MFDS N.1.4 batch receiver identifiers (used for profile inference).
+pub const MFDS_BATCH_RECEIVER_POSTMARKET_DOMESTIC: &str = "MFDS";
+pub const MFDS_BATCH_RECEIVER_POSTMARKET_FOREIGN: &str = "MFDS_FR";
+pub const MFDS_BATCH_RECEIVER_CLINICAL_TRIAL: &str = "MFDS_CT";
+pub const MFDS_BATCH_RECEIVER_COMPASSIONATE_USE: &str = "MFDS_CU";
+
+/// MFDS N.1.5 message receiver sub-type codes (used for validation branching).
+pub const MFDS_MSG_RECEIVER_DOMESTIC: &str = "KR";
+pub const MFDS_MSG_RECEIVER_FOREIGN: &str = "FR";
+pub const MFDS_MSG_RECEIVER_CLINICAL_TRIAL: &str = "CT";
+pub const MFDS_MSG_RECEIVER_COMPASSIONATE_USE: &str = "CU";
+
+/// Known valid MFDS N.1.4 batch receiver codes.
+pub const MFDS_KNOWN_BATCH_RECEIVERS: &[&str] = &[
+	MFDS_BATCH_RECEIVER_POSTMARKET_DOMESTIC,
+	MFDS_BATCH_RECEIVER_POSTMARKET_FOREIGN,
+	MFDS_BATCH_RECEIVER_CLINICAL_TRIAL,
+	MFDS_BATCH_RECEIVER_COMPASSIONATE_USE,
+];
+
+/// Returns true if the N.1.5 message receiver identifies MFDS domestic (KR) reporting.
+pub fn is_mfds_domestic_receiver(value: Option<&str>) -> bool {
+	value
+		.map(str::trim)
+		.map(|v| v.eq_ignore_ascii_case(MFDS_MSG_RECEIVER_DOMESTIC))
+		.unwrap_or(false)
+}
+
+/// Returns true if the N.1.5 message receiver identifies MFDS foreign postmarket (FR) reporting.
+pub fn is_mfds_foreign_postmarket_receiver(value: Option<&str>) -> bool {
+	value
+		.map(str::trim)
+		.map(|v| v.eq_ignore_ascii_case(MFDS_MSG_RECEIVER_FOREIGN))
+		.unwrap_or(false)
+}
+
+/// Returns true if the N.1.5 message receiver identifies MFDS clinical trial (CT) reporting.
+pub fn is_mfds_clinical_trial_receiver(value: Option<&str>) -> bool {
+	value
+		.map(str::trim)
+		.map(|v| v.eq_ignore_ascii_case(MFDS_MSG_RECEIVER_CLINICAL_TRIAL))
+		.unwrap_or(false)
+}
+
+/// Returns true if the N.1.5 message receiver identifies MFDS compassionate use (CU) reporting.
+pub fn is_mfds_compassionate_use_receiver(value: Option<&str>) -> bool {
+	value
+		.map(str::trim)
+		.map(|v| v.eq_ignore_ascii_case(MFDS_MSG_RECEIVER_COMPASSIONATE_USE))
+		.unwrap_or(false)
+}
 
 pub fn is_fda_batch_receiver(value: Option<&str>) -> bool {
 	matches!(
@@ -146,5 +198,5 @@ pub fn infer_regulatory_authority_from_receivers(
 	{
 		return RegulatoryAuthority::Fda;
 	}
-	RegulatoryAuthority::Fda
+	RegulatoryAuthority::Ich
 }

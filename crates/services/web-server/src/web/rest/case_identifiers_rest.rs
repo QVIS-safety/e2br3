@@ -58,6 +58,7 @@ pub async fn list_other_case_identifiers(
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<OtherCaseIdentifier>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_IDENTIFIER_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest list_other_case_identifiers case_id={}",
 		"HANDLER",
@@ -85,10 +86,11 @@ pub async fn list_other_case_identifiers(
 pub async fn get_other_case_identifier(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, id)): Path<(Uuid, Uuid)>,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<OtherCaseIdentifier>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_IDENTIFIER_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest get_other_case_identifier id={}",
 		"HANDLER",
@@ -179,6 +181,7 @@ pub async fn list_linked_report_numbers(
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<LinkedReportNumber>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_IDENTIFIER_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest list_linked_report_numbers case_id={}",
 		"HANDLER",
@@ -206,10 +209,11 @@ pub async fn list_linked_report_numbers(
 pub async fn get_linked_report_number(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, id)): Path<(Uuid, Uuid)>,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<LinkedReportNumber>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_IDENTIFIER_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	tracing::debug!(
 		"{:<12} - rest get_linked_report_number id={}",
 		"HANDLER",

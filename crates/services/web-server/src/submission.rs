@@ -14,9 +14,10 @@ use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::FromRow;
+use std::collections::HashMap;
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
-use time::OffsetDateTime;
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 use tokio::runtime::Handle;
 use tokio::task;
 use tokio::time::sleep;
@@ -117,7 +118,9 @@ pub struct SubmissionHistoryRecord {
 	pub xml_bytes: usize,
 	pub submitted_by: Uuid,
 	pub submitted_by_email: Option<String>,
-	pub submitted_at: OffsetDateTime,
+	pub submitted_at: String,
+	pub latest_ack_received_at: Option<String>,
+	pub latest_event_type: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1123,6 +1126,12 @@ pub async fn list_submission_history(
 	_ctx: &Ctx,
 	mm: &ModelManager,
 ) -> Result<Vec<SubmissionHistoryRecord>> {
+	let latest_ack_received_at = list_latest_ack_received_at(mm).await?;
+	let latest_event_type = if submission_events_table_exists(mm).await? {
+		list_latest_submission_event_types(mm).await?
+	} else {
+		HashMap::new()
+	};
 	let rows = mm
 		.dbx()
 		.fetch_all(sqlx::query_as::<_, SubmissionHistoryRow>(
@@ -1157,10 +1166,54 @@ pub async fn list_submission_history(
 				xml_bytes: row.xml_bytes as usize,
 				submitted_by: row.submitted_by,
 				submitted_by_email: row.submitted_by_email,
-				submitted_at: row.submitted_at,
+				submitted_at: format_history_timestamp(row.submitted_at)?,
+				latest_ack_received_at: latest_ack_received_at
+					.get(&row.submission_id)
+					.copied()
+					.map(format_history_timestamp)
+					.transpose()?,
+				latest_event_type: latest_event_type
+					.get(&row.submission_id)
+					.cloned(),
 			})
 		})
 		.collect()
+}
+
+fn format_history_timestamp(value: OffsetDateTime) -> Result<String> {
+	value.format(&Rfc3339).map_err(|err| Error::BadRequest {
+		message: format!("failed to format submission history timestamp: {err}"),
+	})
+}
+
+async fn list_latest_ack_received_at(
+	mm: &ModelManager,
+) -> Result<HashMap<Uuid, OffsetDateTime>> {
+	let rows = mm
+		.dbx()
+		.fetch_all(sqlx::query_as::<_, (Uuid, OffsetDateTime)>(
+			"SELECT submission_id, MAX(received_at) AS received_at
+				 FROM submission_acks
+				 GROUP BY submission_id",
+		))
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(rows.into_iter().collect())
+}
+
+async fn list_latest_submission_event_types(
+	mm: &ModelManager,
+) -> Result<HashMap<Uuid, String>> {
+	let rows = mm
+		.dbx()
+		.fetch_all(sqlx::query_as::<_, (Uuid, String)>(
+			"SELECT DISTINCT ON (submission_id) submission_id, event_type
+				 FROM submission_events
+				 ORDER BY submission_id, created_at DESC, id DESC",
+		))
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(rows.into_iter().collect())
 }
 
 async fn list_ack_rows(

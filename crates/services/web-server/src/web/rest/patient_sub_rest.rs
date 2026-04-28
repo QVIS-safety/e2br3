@@ -45,6 +45,7 @@ async fn patient_id_for_case(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Uuid> {
+	lib_rest_core::require_case_read_allowed(ctx, mm, case_id).await?;
 	let patient = PatientInformationBmc::get_by_case(ctx, mm, case_id).await?;
 	Ok(patient.id)
 }
@@ -139,10 +140,11 @@ pub async fn list_patient_identifiers(
 pub async fn get_patient_identifier(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path((_case_id, id)): Path<(Uuid, Uuid)>,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<(StatusCode, Json<DataRestResult<PatientIdentifier>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_IDENTIFIER_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))

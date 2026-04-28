@@ -1,6 +1,8 @@
 use crate::model::drug::DrugDeviceCharacteristic;
 use crate::model::{ModelManager, Result};
 use crate::validation::{
+	is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
+	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
 	has_text, list_drug_characteristics, push_issue_by_code,
 	push_issue_if_conditioned_value_invalid, FdaValidationContext,
 	MfdsValidationContext, RuleFacts, ValidationContext, ValidationIssue,
@@ -115,7 +117,7 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		}
 		"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED"
 		| "MFDS.G.k.2.1.KR.1b.REQUIRED"
-		| "MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED" => Some("drugs.0.mpid"),
+		| "MFDS.KR.FOREIGN.WHOMPID.REQUIRED" => Some("drugs.0.mpid"),
 		"MFDS.G.k.2.1.KR.1a.REQUIRED" => Some("drugs.0.mpidVersion"),
 		"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED"
 		| "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED" => {
@@ -476,14 +478,14 @@ pub(crate) fn collect_mfds_issues(
 		.as_ref()
 		.and_then(|r| r.report_type.as_deref())
 		== Some("2");
-	let receiver_code = validation_ctx
+	let msg_receiver = validation_ctx
 		.message_header
 		.as_ref()
-		.map(|h| h.message_receiver_identifier.trim().to_ascii_uppercase())
-		.unwrap_or_default();
-	let receiver_is_ct_or_cu = receiver_code == "CT" || receiver_code == "CU";
-	let receiver_is_kr = receiver_code == "KR";
-	let receiver_is_fr = receiver_code == "FR";
+		.map(|h| h.message_receiver_identifier.as_str());
+	let receiver_is_kr = is_mfds_domestic_receiver(msg_receiver);
+	let receiver_is_fr = is_mfds_foreign_postmarket_receiver(msg_receiver);
+	let receiver_is_ct_or_cu = is_mfds_clinical_trial_receiver(msg_receiver)
+		|| is_mfds_compassionate_use_receiver(msg_receiver);
 
 	let mut domestic_drug_ids = std::collections::HashSet::new();
 	let mut drug_index_by_id = std::collections::HashMap::new();
@@ -554,9 +556,9 @@ pub(crate) fn collect_mfds_issues(
 				Some(other) if !other.is_empty() => {
 					let _ = push_issue_if_conditioned_value_invalid(
 						issues,
-						"MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
-						"MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
-						"MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
+						"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
+						"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
+						"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
 						format!("drugs.{idx}.mpid"),
 						drug.mpid.as_deref(),
 						None,

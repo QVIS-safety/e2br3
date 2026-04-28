@@ -1,9 +1,14 @@
 use super::common::{date, finish, setup_case};
 use crate::test_common::Result;
+use lib_core::model::case::{CaseBmc, CaseForCreate, CaseForUpdate};
 use lib_core::model::case_identifiers::{
 	LinkedReportNumberBmc, LinkedReportNumberForCreate, LinkedReportNumberForUpdate,
 	OtherCaseIdentifierBmc, OtherCaseIdentifierForCreate,
 	OtherCaseIdentifierForUpdate,
+};
+use lib_core::model::receiver::{
+	ReceiverInformationBmc, ReceiverInformationForCreate,
+	ReceiverInformationForUpdate,
 };
 use lib_core::model::safety_report::{
 	DocumentsHeldBySenderBmc, DocumentsHeldBySenderForCreate,
@@ -18,6 +23,97 @@ use lib_core::model::safety_report::{
 };
 use serial_test::serial;
 use time::Month;
+use uuid::Uuid;
+
+fn case_seed_id() -> String {
+	format!("SAVE-C-{}", Uuid::new_v4().simple())
+}
+
+#[tokio::test]
+#[serial]
+async fn save_c_case_create_non_e2b_fields() -> Result<()> {
+	let (mm, ctx, case_id) = setup_case().await?;
+	let row = CaseBmc::get(&ctx, &mm, case_id).await?;
+	let org_id = row.organization_id;
+	let new_case_id = CaseBmc::create(
+		&ctx,
+		&mm,
+		CaseForCreate {
+			organization_id: org_id,
+			safety_report_id: case_seed_id(),
+			dg_prd_key: None,
+			status: Some("draft".to_string()),
+			validation_profile: Some("mfds".to_string()),
+			appendices_json: None,
+			review_receivers_json: None,
+			workflow_routes_json: None,
+			mfds_report_type: Some("Spontaneous".to_string()),
+			report_year: Some("2026".to_string()),
+			source_document_name: Some("source.txt".to_string()),
+			source_document_base64: Some("U09VUkNF".to_string()),
+			source_document_media_type: Some("text/plain".to_string()),
+			version: Some(1),
+		},
+	)
+	.await?;
+	let saved = CaseBmc::get(&ctx, &mm, new_case_id).await?;
+	assert_eq!(saved.mfds_report_type.as_deref(), Some("Spontaneous"));
+	assert_eq!(saved.report_year.as_deref(), Some("2026"));
+	assert_eq!(saved.source_document_name.as_deref(), Some("source.txt"));
+	assert_eq!(saved.source_document_base64.as_deref(), Some("U09VUkNF"));
+	assert_eq!(
+		saved.source_document_media_type.as_deref(),
+		Some("text/plain")
+	);
+	finish(&mm).await
+}
+
+#[tokio::test]
+#[serial]
+async fn save_c_case_update_non_e2b_fields() -> Result<()> {
+	let (mm, ctx, case_id) = setup_case().await?;
+	let updated_safety_report_id = case_seed_id();
+	CaseBmc::update(
+		&ctx,
+		&mm,
+		case_id,
+		CaseForUpdate {
+			safety_report_id: Some(updated_safety_report_id.clone()),
+			dg_prd_key: None,
+			status: None,
+			validation_profile: None,
+			appendices_json: None,
+			review_receivers_json: None,
+			workflow_routes_json: None,
+			mfds_report_type: Some("Spontaneous".to_string()),
+			report_year: Some("2026".to_string()),
+			source_document_name: Some("source.txt".to_string()),
+			source_document_base64: Some("U09VUkNF".to_string()),
+			source_document_media_type: Some("text/plain".to_string()),
+			submitted_by: None,
+			submitted_at: None,
+			raw_xml: None,
+			dirty_c: None,
+			dirty_d: None,
+			dirty_e: None,
+			dirty_f: None,
+			dirty_g: None,
+			dirty_h: None,
+		},
+	)
+	.await?;
+	let saved = CaseBmc::get(&ctx, &mm, case_id).await?;
+	assert_eq!(saved.safety_report_id, updated_safety_report_id);
+	assert_eq!(saved.mfds_report_type.as_deref(), Some("Spontaneous"));
+	assert_eq!(saved.report_year.as_deref(), Some("2026"));
+	assert_eq!(saved.source_document_name.as_deref(), Some("source.txt"));
+	assert_eq!(saved.source_document_base64.as_deref(), Some("U09VUkNF"));
+	assert_eq!(
+		saved.source_document_media_type.as_deref(),
+		Some("text/plain")
+	);
+	finish(&mm).await
+}
 
 #[tokio::test]
 #[serial]
@@ -123,7 +219,7 @@ async fn save_c_1_update() -> Result<()> {
 			local_criteria_report_type: Some("LOCAL".to_string()),
 			combination_product_report_indicator: Some("1".to_string()),
 			worldwide_unique_id: Some("WID".to_string()),
-			first_sender_type: Some("3".to_string()),
+			first_sender_type: Some("2".to_string()),
 			additional_documents_available: Some(false),
 			other_case_identifiers_exist: None,
 			nullification_code: None,
@@ -154,7 +250,7 @@ async fn save_c_1_update() -> Result<()> {
 		Some("1")
 	);
 	assert_eq!(row.worldwide_unique_id.as_deref(), Some("WID"));
-	assert_eq!(row.first_sender_type.as_deref(), Some("3"));
+	assert_eq!(row.first_sender_type.as_deref(), Some("2"));
 	assert_eq!(row.additional_documents_available, Some(false));
 	assert_eq!(row.nullification_code, None);
 	assert_eq!(row.nullification_reason, None);
@@ -173,6 +269,19 @@ async fn save_c_2_create() -> Result<()> {
 			case_id,
 			sender_type: Some("1".to_string()),
 			organization_name: Some("Org".to_string()),
+			department: Some("Dept".to_string()),
+			street_address: Some("123 St".to_string()),
+			city: Some("Seoul".to_string()),
+			state: Some("11".to_string()),
+			postcode: Some("12345".to_string()),
+			country_code: Some("KR".to_string()),
+			person_title: Some("Dr".to_string()),
+			person_given_name: Some("Given".to_string()),
+			person_middle_name: Some("Mid".to_string()),
+			person_family_name: Some("Family".to_string()),
+			telephone: Some("010".to_string()),
+			fax: Some("020".to_string()),
+			email: Some("sender@example.com".to_string()),
 		},
 	)
 	.await?;
@@ -180,19 +289,19 @@ async fn save_c_2_create() -> Result<()> {
 	assert_eq!(row.case_id, case_id);
 	assert_eq!(row.sender_type.as_deref(), Some("1"));
 	assert_eq!(row.organization_name.as_deref(), Some("Org"));
-	assert_eq!(row.department, None);
-	assert_eq!(row.street_address, None);
-	assert_eq!(row.city, None);
-	assert_eq!(row.state, None);
-	assert_eq!(row.postcode, None);
-	assert_eq!(row.country_code, None);
-	assert_eq!(row.person_title, None);
-	assert_eq!(row.person_given_name, None);
-	assert_eq!(row.person_middle_name, None);
-	assert_eq!(row.person_family_name, None);
-	assert_eq!(row.telephone, None);
-	assert_eq!(row.fax, None);
-	assert_eq!(row.email, None);
+	assert_eq!(row.department.as_deref(), Some("Dept"));
+	assert_eq!(row.street_address.as_deref(), Some("123 St"));
+	assert_eq!(row.city.as_deref(), Some("Seoul"));
+	assert_eq!(row.state.as_deref(), Some("11"));
+	assert_eq!(row.postcode.as_deref(), Some("12345"));
+	assert_eq!(row.country_code.as_deref(), Some("KR"));
+	assert_eq!(row.person_title.as_deref(), Some("Dr"));
+	assert_eq!(row.person_given_name.as_deref(), Some("Given"));
+	assert_eq!(row.person_middle_name.as_deref(), Some("Mid"));
+	assert_eq!(row.person_family_name.as_deref(), Some("Family"));
+	assert_eq!(row.telephone.as_deref(), Some("010"));
+	assert_eq!(row.fax.as_deref(), Some("020"));
+	assert_eq!(row.email.as_deref(), Some("sender@example.com"));
 	finish(&mm).await
 }
 
@@ -207,6 +316,19 @@ async fn save_c_2_update() -> Result<()> {
 			case_id,
 			sender_type: Some("1".to_string()),
 			organization_name: Some("Org".to_string()),
+			department: None,
+			street_address: None,
+			city: None,
+			state: None,
+			postcode: None,
+			country_code: None,
+			person_title: None,
+			person_given_name: None,
+			person_middle_name: None,
+			person_family_name: None,
+			telephone: None,
+			fax: None,
+			email: None,
 		},
 	)
 	.await?;
@@ -250,6 +372,103 @@ async fn save_c_2_update() -> Result<()> {
 	assert_eq!(row.telephone.as_deref(), Some("010"));
 	assert_eq!(row.fax.as_deref(), Some("020"));
 	assert_eq!(row.email.as_deref(), Some("sender@example.com"));
+	finish(&mm).await
+}
+
+#[tokio::test]
+#[serial]
+async fn save_c_3_receiver_create() -> Result<()> {
+	let (mm, ctx, case_id) = setup_case().await?;
+	ReceiverInformationBmc::create(
+		&ctx,
+		&mm,
+		ReceiverInformationForCreate {
+			case_id,
+			receiver_type: Some("3".to_string()),
+			organization_name: Some("Receiver".to_string()),
+			department: Some("PV".to_string()),
+			street_address: Some("Street".to_string()),
+			city: Some("Seoul".to_string()),
+			state_province: Some("11".to_string()),
+			postcode: Some("12345".to_string()),
+			country_code: Some("KR".to_string()),
+			telephone: Some("010".to_string()),
+			fax: Some("020".to_string()),
+			email: Some("recv@example.com".to_string()),
+		},
+	)
+	.await?;
+	let row = ReceiverInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	assert_eq!(row.case_id, case_id);
+	assert_eq!(row.receiver_type.as_deref(), Some("3"));
+	assert_eq!(row.organization_name.as_deref(), Some("Receiver"));
+	assert_eq!(row.department.as_deref(), Some("PV"));
+	assert_eq!(row.street_address.as_deref(), Some("Street"));
+	assert_eq!(row.city.as_deref(), Some("Seoul"));
+	assert_eq!(row.state_province.as_deref(), Some("11"));
+	assert_eq!(row.postcode.as_deref(), Some("12345"));
+	assert_eq!(row.country_code.as_deref(), Some("KR"));
+	assert_eq!(row.telephone.as_deref(), Some("010"));
+	assert_eq!(row.fax.as_deref(), Some("020"));
+	assert_eq!(row.email.as_deref(), Some("recv@example.com"));
+	finish(&mm).await
+}
+
+#[tokio::test]
+#[serial]
+async fn save_c_3_receiver_update() -> Result<()> {
+	let (mm, ctx, case_id) = setup_case().await?;
+	ReceiverInformationBmc::create(
+		&ctx,
+		&mm,
+		ReceiverInformationForCreate {
+			case_id,
+			receiver_type: Some("2".to_string()),
+			organization_name: Some("Receiver 1".to_string()),
+			department: None,
+			street_address: None,
+			city: None,
+			state_province: None,
+			postcode: None,
+			country_code: None,
+			telephone: None,
+			fax: None,
+			email: None,
+		},
+	)
+	.await?;
+	ReceiverInformationBmc::update_by_case(
+		&ctx,
+		&mm,
+		case_id,
+		ReceiverInformationForUpdate {
+			receiver_type: Some("3".to_string()),
+			organization_name: Some("Receiver 2".to_string()),
+			department: Some("PV".to_string()),
+			street_address: Some("Street".to_string()),
+			city: Some("Seoul".to_string()),
+			state_province: Some("11".to_string()),
+			postcode: Some("12345".to_string()),
+			country_code: Some("KR".to_string()),
+			telephone: Some("010".to_string()),
+			fax: Some("020".to_string()),
+			email: Some("recv@example.com".to_string()),
+		},
+	)
+	.await?;
+	let row = ReceiverInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	assert_eq!(row.case_id, case_id);
+	assert_eq!(row.receiver_type.as_deref(), Some("3"));
+	assert_eq!(row.organization_name.as_deref(), Some("Receiver 2"));
+	assert_eq!(row.department.as_deref(), Some("PV"));
+	assert_eq!(row.street_address.as_deref(), Some("Street"));
+	assert_eq!(row.city.as_deref(), Some("Seoul"));
+	assert_eq!(row.state_province.as_deref(), Some("11"));
+	assert_eq!(row.postcode.as_deref(), Some("12345"));
+	assert_eq!(row.country_code.as_deref(), Some("KR"));
+	assert_eq!(row.telephone.as_deref(), Some("010"));
+	assert_eq!(row.fax.as_deref(), Some("020"));
+	assert_eq!(row.email.as_deref(), Some("recv@example.com"));
 	finish(&mm).await
 }
 

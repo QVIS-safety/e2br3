@@ -54,6 +54,65 @@ async fn save_d_1_2_create() -> Result<()> {
 
 #[tokio::test]
 #[serial]
+async fn save_d_1_2_create_full_surface() -> Result<()> {
+	let (mm, ctx, case_id) = setup_case().await?;
+	let id = PatientInformationBmc::create(
+		&ctx,
+		&mm,
+		lib_core::model::patient::PatientInformationForCreate {
+			case_id,
+			patient_initials: Some("AB".to_string()),
+			patient_given_name: Some("Alice".to_string()),
+			patient_family_name: Some("Brown".to_string()),
+			patient_initials_null_flavor: None,
+			birth_date: Some(date(2020, Month::January, 1)),
+			birth_date_null_flavor: None,
+			age_at_time_of_onset: Some(dec(33, 0)),
+			age_at_time_of_onset_null_flavor: None,
+			age_unit: Some("801".to_string()),
+			gestation_period: Some(dec(10, 0)),
+			gestation_period_unit: Some("804".to_string()),
+			age_group: Some("1".to_string()),
+			weight_kg: Some(dec(7000, 2)),
+			height_cm: Some(dec(17500, 2)),
+			sex: Some("2".to_string()),
+			sex_null_flavor: None,
+			race_code: Some("R1".to_string()),
+			ethnicity_code: Some("E1".to_string()),
+			last_menstrual_period_date: Some(date(2023, Month::December, 1)),
+			last_menstrual_period_date_null_flavor: None,
+			medical_history_text: Some("History".to_string()),
+			concomitant_therapy: Some(true),
+		},
+	)
+	.await?;
+	let row = PatientInformationBmc::get(&ctx, &mm, id).await?;
+	assert_eq!(row.case_id, case_id);
+	assert_eq!(row.patient_initials.as_deref(), Some("AB"));
+	assert_eq!(row.patient_given_name.as_deref(), Some("Alice"));
+	assert_eq!(row.patient_family_name.as_deref(), Some("Brown"));
+	assert_eq!(row.birth_date, Some(date(2020, Month::January, 1)));
+	assert_eq!(row.age_at_time_of_onset, Some(dec(33, 0)));
+	assert_eq!(row.age_unit.as_deref(), Some("801"));
+	assert_eq!(row.gestation_period, Some(dec(10, 0)));
+	assert_eq!(row.gestation_period_unit.as_deref(), Some("804"));
+	assert_eq!(row.age_group.as_deref(), Some("1"));
+	assert_eq!(row.weight_kg, Some(dec(7000, 2)));
+	assert_eq!(row.height_cm, Some(dec(17500, 2)));
+	assert_eq!(row.sex.as_deref(), Some("2"));
+	assert_eq!(row.race_code.as_deref(), Some("R1"));
+	assert_eq!(row.ethnicity_code.as_deref(), Some("E1"));
+	assert_eq!(
+		row.last_menstrual_period_date,
+		Some(date(2023, Month::December, 1))
+	);
+	assert_eq!(row.medical_history_text.as_deref(), Some("History"));
+	assert_eq!(row.concomitant_therapy, Some(true));
+	finish(&mm).await
+}
+
+#[tokio::test]
+#[serial]
 async fn save_d_1_2_update() -> Result<()> {
 	let (mm, ctx, case_id) = setup_case().await?;
 	create_patient(&ctx, &mm, case_id).await?;
@@ -455,7 +514,9 @@ async fn save_d_9_1_r_create() -> Result<()> {
 		ReportedCauseOfDeathForCreate {
 			death_info_id: death_id,
 			sequence_number: 1,
+			meddra_version: None,
 			meddra_code: Some("500".to_string()),
+			comments: None,
 		},
 	)
 	.await?;
@@ -465,6 +526,43 @@ async fn save_d_9_1_r_create() -> Result<()> {
 	assert_eq!(row.meddra_version, None);
 	assert_eq!(row.meddra_code.as_deref(), Some("500"));
 	assert_eq!(row.comments, None);
+	finish(&mm).await
+}
+
+#[tokio::test]
+#[serial]
+async fn save_d_9_1_r_create_full_surface() -> Result<()> {
+	let (mm, ctx, case_id) = setup_case().await?;
+	let patient_id = create_patient(&ctx, &mm, case_id).await?;
+	let death_id = PatientDeathInformationBmc::create(
+		&ctx,
+		&mm,
+		PatientDeathInformationForCreate {
+			patient_id,
+			date_of_death: None,
+			date_of_death_null_flavor: None,
+			autopsy_performed: Some(false),
+		},
+	)
+	.await?;
+	let id = ReportedCauseOfDeathBmc::create(
+		&ctx,
+		&mm,
+		ReportedCauseOfDeathForCreate {
+			death_info_id: death_id,
+			sequence_number: 1,
+			meddra_version: Some("27.0".to_string()),
+			meddra_code: Some("501".to_string()),
+			comments: Some("Comment".to_string()),
+		},
+	)
+	.await?;
+	let row = ReportedCauseOfDeathBmc::get(&ctx, &mm, id).await?;
+	assert_eq!(row.death_info_id, death_id);
+	assert_eq!(row.sequence_number, 1);
+	assert_eq!(row.meddra_version.as_deref(), Some("27.0"));
+	assert_eq!(row.meddra_code.as_deref(), Some("501"));
+	assert_eq!(row.comments.as_deref(), Some("Comment"));
 	finish(&mm).await
 }
 
@@ -490,7 +588,9 @@ async fn save_d_9_1_r_update() -> Result<()> {
 		ReportedCauseOfDeathForCreate {
 			death_info_id: death_id,
 			sequence_number: 1,
+			meddra_version: None,
 			meddra_code: None,
+			comments: None,
 		},
 	)
 	.await?;
@@ -536,7 +636,9 @@ async fn save_d_9_2_r_create() -> Result<()> {
 		AutopsyCauseOfDeathForCreate {
 			death_info_id: death_id,
 			sequence_number: 1,
+			meddra_version: None,
 			meddra_code: Some("600".to_string()),
+			comments: None,
 		},
 	)
 	.await?;
@@ -546,6 +648,43 @@ async fn save_d_9_2_r_create() -> Result<()> {
 	assert_eq!(row.meddra_version, None);
 	assert_eq!(row.meddra_code.as_deref(), Some("600"));
 	assert_eq!(row.comments, None);
+	finish(&mm).await
+}
+
+#[tokio::test]
+#[serial]
+async fn save_d_9_2_r_create_full_surface() -> Result<()> {
+	let (mm, ctx, case_id) = setup_case().await?;
+	let patient_id = create_patient(&ctx, &mm, case_id).await?;
+	let death_id = PatientDeathInformationBmc::create(
+		&ctx,
+		&mm,
+		PatientDeathInformationForCreate {
+			patient_id,
+			date_of_death: None,
+			date_of_death_null_flavor: None,
+			autopsy_performed: Some(false),
+		},
+	)
+	.await?;
+	let id = AutopsyCauseOfDeathBmc::create(
+		&ctx,
+		&mm,
+		AutopsyCauseOfDeathForCreate {
+			death_info_id: death_id,
+			sequence_number: 1,
+			meddra_version: Some("27.0".to_string()),
+			meddra_code: Some("601".to_string()),
+			comments: Some("Comment".to_string()),
+		},
+	)
+	.await?;
+	let row = AutopsyCauseOfDeathBmc::get(&ctx, &mm, id).await?;
+	assert_eq!(row.death_info_id, death_id);
+	assert_eq!(row.sequence_number, 1);
+	assert_eq!(row.meddra_version.as_deref(), Some("27.0"));
+	assert_eq!(row.meddra_code.as_deref(), Some("601"));
+	assert_eq!(row.comments.as_deref(), Some("Comment"));
 	finish(&mm).await
 }
 
@@ -571,7 +710,9 @@ async fn save_d_9_2_r_update() -> Result<()> {
 		AutopsyCauseOfDeathForCreate {
 			death_info_id: death_id,
 			sequence_number: 1,
+			meddra_version: None,
 			meddra_code: None,
+			comments: None,
 		},
 	)
 	.await?;
@@ -605,6 +746,16 @@ async fn save_d_10_create() -> Result<()> {
 		&mm,
 		ParentInformationForCreate {
 			patient_id,
+			parent_identification: Some("PARENT-1".to_string()),
+			parent_birth_date: Some(date(1980, Month::January, 1)),
+			parent_birth_date_null_flavor: None,
+			parent_age: Some(dec(44, 0)),
+			parent_age_null_flavor: None,
+			parent_age_unit: Some("801".to_string()),
+			last_menstrual_period_date: Some(date(2023, Month::December, 1)),
+			last_menstrual_period_date_null_flavor: None,
+			weight_kg: Some(dec(6500, 2)),
+			height_cm: Some(dec(16500, 2)),
 			sex: Some("2".to_string()),
 			medical_history_text: Some("History".to_string()),
 		},
@@ -612,16 +763,19 @@ async fn save_d_10_create() -> Result<()> {
 	.await?;
 	let row = ParentInformationBmc::get(&ctx, &mm, id).await?;
 	assert_eq!(row.patient_id, patient_id);
-	assert_eq!(row.parent_identification, None);
-	assert_eq!(row.parent_birth_date, None);
+	assert_eq!(row.parent_identification.as_deref(), Some("PARENT-1"));
+	assert_eq!(row.parent_birth_date, Some(date(1980, Month::January, 1)));
 	assert_eq!(row.parent_birth_date_null_flavor, None);
-	assert_eq!(row.parent_age, None);
+	assert_eq!(row.parent_age, Some(dec(44, 0)));
 	assert_eq!(row.parent_age_null_flavor, None);
-	assert_eq!(row.parent_age_unit, None);
-	assert_eq!(row.last_menstrual_period_date, None);
+	assert_eq!(row.parent_age_unit.as_deref(), Some("801"));
+	assert_eq!(
+		row.last_menstrual_period_date,
+		Some(date(2023, Month::December, 1))
+	);
 	assert_eq!(row.last_menstrual_period_date_null_flavor, None);
-	assert_eq!(row.weight_kg, None);
-	assert_eq!(row.height_cm, None);
+	assert_eq!(row.weight_kg, Some(dec(6500, 2)));
+	assert_eq!(row.height_cm, Some(dec(16500, 2)));
 	assert_eq!(row.sex.as_deref(), Some("2"));
 	assert_eq!(row.medical_history_text.as_deref(), Some("History"));
 	finish(&mm).await
@@ -637,6 +791,16 @@ async fn save_d_10_update() -> Result<()> {
 		&mm,
 		ParentInformationForCreate {
 			patient_id,
+			parent_identification: None,
+			parent_birth_date: None,
+			parent_birth_date_null_flavor: None,
+			parent_age: None,
+			parent_age_null_flavor: None,
+			parent_age_unit: None,
+			last_menstrual_period_date: None,
+			last_menstrual_period_date_null_flavor: None,
+			weight_kg: None,
+			height_cm: None,
 			sex: None,
 			medical_history_text: None,
 		},
@@ -692,6 +856,16 @@ async fn save_d_10_6_r_create() -> Result<()> {
 		&mm,
 		ParentInformationForCreate {
 			patient_id,
+			parent_identification: None,
+			parent_birth_date: None,
+			parent_birth_date_null_flavor: None,
+			parent_age: None,
+			parent_age_null_flavor: None,
+			parent_age_unit: None,
+			last_menstrual_period_date: None,
+			last_menstrual_period_date_null_flavor: None,
+			weight_kg: None,
+			height_cm: None,
 			sex: None,
 			medical_history_text: None,
 		},
@@ -733,6 +907,16 @@ async fn save_d_10_6_r_update() -> Result<()> {
 		&mm,
 		ParentInformationForCreate {
 			patient_id,
+			parent_identification: None,
+			parent_birth_date: None,
+			parent_birth_date_null_flavor: None,
+			parent_age: None,
+			parent_age_null_flavor: None,
+			parent_age_unit: None,
+			last_menstrual_period_date: None,
+			last_menstrual_period_date_null_flavor: None,
+			weight_kg: None,
+			height_cm: None,
 			sex: None,
 			medical_history_text: None,
 		},
@@ -790,6 +974,16 @@ async fn save_d_10_7_r_create() -> Result<()> {
 		&mm,
 		ParentInformationForCreate {
 			patient_id,
+			parent_identification: None,
+			parent_birth_date: None,
+			parent_birth_date_null_flavor: None,
+			parent_age: None,
+			parent_age_null_flavor: None,
+			parent_age_unit: None,
+			last_menstrual_period_date: None,
+			last_menstrual_period_date_null_flavor: None,
+			weight_kg: None,
+			height_cm: None,
 			sex: None,
 			medical_history_text: None,
 		},
@@ -838,6 +1032,16 @@ async fn save_d_10_7_r_update() -> Result<()> {
 		&mm,
 		ParentInformationForCreate {
 			patient_id,
+			parent_identification: None,
+			parent_birth_date: None,
+			parent_birth_date_null_flavor: None,
+			parent_age: None,
+			parent_age_null_flavor: None,
+			parent_age_unit: None,
+			last_menstrual_period_date: None,
+			last_menstrual_period_date_null_flavor: None,
+			weight_kg: None,
+			height_cm: None,
 			sex: None,
 			medical_history_text: None,
 		},

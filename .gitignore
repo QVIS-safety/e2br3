@@ -75,12 +75,14 @@ out/
 node_modules/
 !.mocharc.yaml
 report.*.json
+new_result.txt
 playwright-report/
 test-results/
 blob-report/
 .playwright/
 .playwright-cli/ 
 .cache/ms-playwright/
+output/playwright/home/
 
 # -- Python
 __pycache__/

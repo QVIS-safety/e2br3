@@ -1,6 +1,9 @@
 // Declare handler modules
+pub mod case_export_rest;
+pub mod case_intake_rest;
 pub mod case_rest;
 pub mod case_validation_rest;
+pub mod case_workflow_rest;
 pub mod compliance;
 pub mod organization_rest;
 pub mod patient_rest;
@@ -50,11 +53,11 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 	)
 	.route(
 		"/cases/intake-check",
-		axum::routing::post(case_rest::check_case_intake_duplicate),
+		axum::routing::post(case_intake_rest::check_case_intake_duplicate),
 	)
 	.route(
 		"/cases/from-intake",
-		axum::routing::post(case_rest::create_case_from_intake),
+		axum::routing::post(case_intake_rest::create_case_from_intake),
 	)
 	.route(
 		"/cases/{id}/validator/mark-validated",
@@ -459,11 +462,35 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		"/cases/{case_id}/validation/all",
 		get(case_validation_rest::validate_case_all),
 	)
-	.route("/exports/history", get(case_rest::list_xml_export_history))
+	.route(
+		"/cases/{id}/exports/history",
+		get(case_export_rest::list_case_xml_export_history),
+	)
+	.route("/exports/history", get(case_export_rest::list_xml_export_history))
+	.route(
+		"/exports/history/{id}/error.txt",
+		get(case_export_rest::download_xml_export_history_error),
+	)
+	.route(
+		"/cases/workflow/config",
+		get(case_workflow_rest::get_workflow_config_runtime),
+	)
 	.route("/cases/link-options", get(case_rest::list_case_link_options))
-	.route("/cases/export/xml", axum::routing::post(case_rest::export_cases_zip))
-	.route("/cases/{id}/export/xml", get(case_rest::export_case))
+	.route("/cases/export/xml", axum::routing::post(case_export_rest::export_cases_zip))
+	.route("/cases/{id}/export/xml", get(case_export_rest::export_case))
 	.route("/cases/{id}/lifecycle", get(case_rest::get_case_lifecycle))
+	.route(
+		"/cases/{id}/workflow/events",
+		get(case_workflow_rest::list_case_workflow_events),
+	)
+	.route(
+		"/cases/{id}/workflow/transition",
+		axum::routing::post(case_workflow_rest::transition_case_workflow),
+	)
+	.route(
+		"/cases/{id}/workflow/assign",
+		axum::routing::post(case_workflow_rest::assign_case_workflow),
+	)
 	.route(
 		"/cases/{id}/submissions/fda",
 		axum::routing::post(submission_rest::submit_case_to_fda),
@@ -499,6 +526,15 @@ pub fn routes_users(mm: ModelManager) -> Router {
 		// GET /api/users/me - must be before /users/{id} to avoid matching
 		.route("/users/me", get(user_rest::get_current_user))
 		.route(
+			"/users/me/profile",
+			get(user_rest::get_current_user_profile),
+		)
+		.route(
+			"/users/me/routing",
+			get(user_rest::get_current_user_routing)
+				.put(user_rest::update_current_user_routing),
+		)
+		.route(
 			"/users/me/password",
 			axum::routing::post(user_rest::set_my_password),
 		)
@@ -525,7 +561,8 @@ pub fn routes_users(mm: ModelManager) -> Router {
 		)
 		.route(
 			"/admin/roles/{role_name}",
-			axum::routing::delete(admin_role_rest::delete_admin_role)
+			get(admin_role_rest::get_admin_role)
+				.delete(admin_role_rest::delete_admin_role)
 				.put(admin_role_rest::update_admin_role),
 		)
 		.with_state(mm)
@@ -603,6 +640,10 @@ pub fn routes_terminology(mm: ModelManager) -> Router {
 pub fn routes_import(mm: ModelManager) -> Router {
 	Router::new()
 		.route("/import/xml/history", get(import_rest::list_import_history))
+		.route(
+			"/import/xml/history/{id}/error.txt",
+			get(import_rest::download_import_history_error),
+		)
 		.route(
 			"/import/xml/validate",
 			axum::routing::post(import_rest::validate_xml),

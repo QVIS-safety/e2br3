@@ -3,349 +3,386 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SafetyDB Terminology Admin</title>
+  <title>SafetyDB Role and Routing Console</title>
   <style>
     :root {
-      --bg: #f2f4f7;
-      --card: #ffffff;
-      --ink: #111827;
-      --muted: #6b7280;
-      --line: #d1d5db;
-      --brand: #004e92;
-      --brand-dark: #003867;
-      --ok: #166534;
-      --warn: #92400e;
-      --bad: #991b1b;
+      --bg: #f4efe7;
+      --panel: #fffaf2;
+      --ink: #17211a;
+      --muted: #677166;
+      --line: #d8cbbb;
+      --brand: #0f5b4f;
+      --brand-2: #b05a2c;
+      --ok: #146c43;
+      --bad: #9f1239;
+      --shadow: 0 16px 42px rgba(48, 35, 20, 0.13);
     }
 
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+      font-family: "Aptos", "IBM Plex Sans", "Segoe UI", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(1000px 300px at 20% 0%, #c7dff6 0%, transparent 70%),
-        radial-gradient(700px 250px at 80% 0%, #d7efe6 0%, transparent 70%),
-        var(--bg);
+        radial-gradient(720px 320px at 15% 0%, rgba(176, 90, 44, 0.2), transparent 65%),
+        radial-gradient(900px 360px at 85% 8%, rgba(15, 91, 79, 0.22), transparent 70%),
+        linear-gradient(135deg, #f4efe7 0%, #e9ded0 100%);
+      min-height: 100vh;
     }
 
-    .wrap {
-      max-width: 980px;
-      margin: 24px auto;
-      padding: 0 16px 32px;
-    }
-
+    .shell { width: min(1220px, calc(100% - 32px)); margin: 24px auto 44px; }
     .hero {
-      background: linear-gradient(110deg, #003867, #005aa8);
-      color: #fff;
-      border-radius: 16px;
-      padding: 20px 22px;
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
-      margin-bottom: 18px;
-    }
-
-    .hero h1 {
-      margin: 0 0 8px;
-      font-size: 1.35rem;
-      letter-spacing: 0.01em;
-    }
-
-    .hero p {
-      margin: 0;
-      opacity: 0.92;
-      font-size: 0.95rem;
-    }
-
-    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 16px;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 20px;
+      background: linear-gradient(120deg, #123f38, #0f5b4f 58%, #b05a2c);
+      color: white;
+      border-radius: 28px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
     }
+    .hero:after {
+      content: "";
+      position: absolute;
+      inset: auto -80px -150px auto;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.12);
+    }
+    h1 { margin: 0 0 10px; font-size: clamp(2rem, 4vw, 4rem); line-height: 0.95; letter-spacing: -0.05em; }
+    .hero p { max-width: 720px; margin: 0; color: rgba(255,255,255,0.86); font-size: 1rem; line-height: 1.55; }
+    .status-card {
+      position: relative;
+      z-index: 1;
+      background: rgba(255,255,255,0.13);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 22px;
+      padding: 18px;
+      backdrop-filter: blur(12px);
+    }
+    .status-card strong { display: block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em; opacity: 0.72; }
+    .status-card span { display: block; margin-top: 10px; font-size: 1.1rem; font-weight: 700; }
 
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
     .card {
-      background: var(--card);
+      background: rgba(255,250,242,0.92);
       border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 16px;
-      box-shadow: 0 4px 10px rgba(17, 24, 39, 0.04);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 10px 28px rgba(48, 35, 20, 0.08);
     }
-
-    .card h2 {
-      margin: 0 0 10px;
-      font-size: 1.1rem;
-    }
-
-    .field {
-      margin-bottom: 10px;
-    }
-
-    label {
-      display: block;
-      font-size: 0.84rem;
-      color: var(--muted);
-      margin-bottom: 5px;
-    }
-
-    input[type="text"],
-    input[type="file"],
-    select {
+    .wide { grid-column: 1 / -1; }
+    h2 { margin: 0 0 12px; font-size: 1.1rem; letter-spacing: -0.02em; }
+    label { display: block; margin: 12px 0 5px; color: var(--muted); font-size: 0.82rem; font-weight: 700; }
+    input, select, textarea {
       width: 100%;
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 9px 10px;
-      font-size: 0.95rem;
-      background: #fff;
+      background: white;
       color: var(--ink);
+      border-radius: 12px;
+      padding: 10px 11px;
+      font: inherit;
     }
-
-    .row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
+    textarea { min-height: 92px; resize: vertical; }
     button {
-      border: none;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-weight: 600;
-      cursor: pointer;
-      color: #fff;
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 15px;
       background: var(--brand);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
     }
-
-    button.secondary {
-      background: #475569;
-    }
-
-    button:hover { background: var(--brand-dark); }
-    button.secondary:hover { background: #334155; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    .status {
-      margin-top: 12px;
-      font-size: 0.9rem;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      background: #f9fafb;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .status.ok { color: var(--ok); border-color: #bbf7d0; background: #f0fdf4; }
-    .status.warn { color: var(--warn); border-color: #fed7aa; background: #fffbeb; }
-    .status.bad { color: var(--bad); border-color: #fecaca; background: #fef2f2; }
-
-    .hint {
-      margin-top: 14px;
+    button.secondary { background: #53645f; }
+    button.warn { background: var(--brand-2); }
+    .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #efe3d4;
+      color: #3c342c;
       font-size: 0.82rem;
-      color: var(--muted);
-      line-height: 1.35;
+      font-weight: 700;
     }
+    .chip.fixed { background: #d7eadf; color: #184b37; }
+    .chip.danger { background: #ffe4e6; color: var(--bad); }
+    .list { display: grid; gap: 10px; margin-top: 10px; max-height: 440px; overflow: auto; }
+    .item {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .item h3 { margin: 0 0 6px; font-size: 0.98rem; }
+    .item p { margin: 0; color: var(--muted); font-size: 0.86rem; line-height: 1.4; }
+    .message { white-space: pre-wrap; margin-top: 12px; color: var(--muted); font-size: 0.9rem; }
+    .message.ok { color: var(--ok); }
+    .message.bad { color: var(--bad); }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 820px) { .hero, .grid, .split { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <div class="wrap">
+  <main class="shell">
     <section class="hero">
-      <h1>SafetyDB Terminology Admin Console</h1>
-      <p>Upload licensed MedDRA and WHODrug packages. Activation runs server-side with RBAC and release tracking.</p>
+      <div>
+        <h1>Role and Routing Console</h1>
+        <p>Manage the client-shaped RBAC hierarchy, scoped users, and sender routing using backend-authoritative APIs. Built-in sponsor administrator roles are fixed; custom roles and user scopes are editable.</p>
+      </div>
+      <aside class="status-card">
+        <strong>Current profile</strong>
+        <span id="profile-title">Loading session...</span>
+        <div id="profile-chips" class="chips"></div>
+      </aside>
     </section>
 
     <section class="grid">
       <article class="card">
-        <h2>MedDRA Import</h2>
-        <div class="field">
-          <label for="meddra-file">Package file (zip with <code>llt.asc</code> and <code>mdhier.asc</code>)</label>
-          <input id="meddra-file" type="file" accept=".zip,application/zip">
-        </div>
-        <div class="row">
-          <div class="field">
-            <label for="meddra-version">Version</label>
-            <input id="meddra-version" type="text" placeholder="27.1">
-          </div>
-          <div class="field">
-            <label for="meddra-lang">Language</label>
-            <input id="meddra-lang" type="text" value="en">
-          </div>
-        </div>
+        <h2>Routing</h2>
+        <p id="routing-summary" class="message">Loading sender options...</p>
+        <label for="sender-select">Active sender</label>
+        <select id="sender-select"></select>
         <div class="actions">
-          <button id="meddra-dry">Dry Run</button>
-          <button id="meddra-load" class="secondary">Stage Import</button>
+          <button id="save-routing">Set Sender</button>
+          <button id="clear-routing" class="secondary">Clear</button>
+          <button id="refresh-profile" class="warn">Refresh</button>
         </div>
-        <div class="actions">
-          <button id="meddra-approve">Approve</button>
-          <button id="meddra-activate" class="secondary">Activate</button>
-          <button id="meddra-rollback" class="secondary">Rollback</button>
-        </div>
-        <div id="meddra-status" class="status">No run yet.</div>
+        <div id="routing-message" class="message"></div>
       </article>
 
       <article class="card">
-        <h2>WHODrug Import</h2>
-        <div class="field">
-          <label for="whodrug-file">Package file (csv/tsv/txt or zip)</label>
-          <input id="whodrug-file" type="file" accept=".zip,.csv,.tsv,.txt,text/plain,application/zip,text/csv">
-        </div>
-        <div class="row">
-          <div class="field">
-            <label for="whodrug-version">Version</label>
-            <input id="whodrug-version" type="text" placeholder="2025.09">
-          </div>
-          <div class="field">
-            <label for="whodrug-lang">Language</label>
-            <input id="whodrug-lang" type="text" value="en">
-          </div>
+        <h2>Create Custom Role</h2>
+        <label for="role-name">Role ID</label>
+        <input id="role-name" placeholder="pvs_reviewer">
+        <label for="role-display">Display name</label>
+        <input id="role-display" placeholder="PVS Reviewer">
+        <label for="role-menu">Menu key</label>
+        <input id="role-menu" value="case">
+        <div class="split">
+          <label><input id="perm-read" type="checkbox" checked> Read</label>
+          <label><input id="perm-edit" type="checkbox"> Edit</label>
+          <label><input id="perm-review" type="checkbox"> QC / Review</label>
+          <label><input id="perm-lock" type="checkbox"> Lock</label>
         </div>
         <div class="actions">
-          <button id="whodrug-dry">Dry Run</button>
-          <button id="whodrug-load" class="secondary">Stage Import</button>
+          <button id="create-role">Create Role</button>
+          <button id="reload-roles" class="secondary">Reload Roles</button>
         </div>
+        <div id="role-message" class="message"></div>
+      </article>
+
+      <article class="card">
+        <h2>Roles</h2>
+        <div id="roles-list" class="list"></div>
+      </article>
+
+      <article class="card">
+        <h2>User Scope Assignment</h2>
+        <label for="user-select">User</label>
+        <select id="user-select"></select>
+        <label for="scope-role">Role ID</label>
+        <input id="scope-role" placeholder="custom role or sponsor_admin_company">
+        <label for="scope-senders">Sender scope (comma separated)</label>
+        <input id="scope-senders" placeholder="SEND-A,SEND-B">
+        <label for="scope-products">Product scope (comma separated)</label>
+        <input id="scope-products" placeholder="PROD-1">
+        <label for="scope-studies">Study scope (comma separated)</label>
+        <input id="scope-studies" placeholder="STUDY-1">
+        <label><input id="scope-blind" type="checkbox"> Allow blinded data</label>
         <div class="actions">
-          <button id="whodrug-approve">Approve</button>
-          <button id="whodrug-activate" class="secondary">Activate</button>
-          <button id="whodrug-rollback" class="secondary">Rollback</button>
+          <button id="save-user-scope">Save Scope</button>
+          <button id="reload-users" class="secondary">Reload Users</button>
         </div>
-        <div id="whodrug-status" class="status">No run yet.</div>
+        <div id="user-message" class="message"></div>
       </article>
     </section>
-
-    <p class="hint">
-      Requires authenticated session cookie and <code>Terminology.Import</code> permission (admin/manager).
-      API endpoints: <code>/api/terminology/import/*</code> and <code>/api/terminology/releases/*</code>.
-    </p>
-  </div>
+  </main>
 
   <script>
-    async function runImport(kind, dryRun) {
-      const fileInput = document.getElementById(kind + "-file");
-      const versionInput = document.getElementById(kind + "-version");
-      const languageInput = document.getElementById(kind + "-lang");
-      const statusEl = document.getElementById(kind + "-status");
-      const dryBtn = document.getElementById(kind + "-dry");
-      const loadBtn = document.getElementById(kind + "-load");
-      const approveBtn = document.getElementById(kind + "-approve");
-      const activateBtn = document.getElementById(kind + "-activate");
-      const rollbackBtn = document.getElementById(kind + "-rollback");
+    const $ = (id) => document.getElementById(id);
+    const state = { users: [], roles: [], profile: null };
 
-      const file = fileInput.files && fileInput.files[0];
-      const version = versionInput.value.trim();
-      const language = languageInput.value.trim() || "en";
-
-      if (!file) {
-        statusEl.className = "status bad";
-        statusEl.textContent = "Please choose a file first.";
-        return;
-      }
-      if (!version) {
-        statusEl.className = "status bad";
-        statusEl.textContent = "Please enter a version.";
-        return;
-      }
-
-      const params = new URLSearchParams({
-        version: version,
-        language: language,
-        dry_run: String(dryRun)
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        credentials: "include",
+        headers: { "content-type": "application/json", ...(options.headers || {}) },
+        ...options
       });
-      const url = "/api/terminology/import/" + kind + "?" + params.toString();
-      const form = new FormData();
-      form.append("file", file);
+      const text = await response.text();
+      let body = null;
+      try { body = text ? JSON.parse(text) : null; } catch (_) { body = { raw: text }; }
+      if (!response.ok) {
+        throw new Error((body && JSON.stringify(body.error || body)) || response.statusText);
+      }
+      return body;
+    }
 
-      statusEl.className = "status warn";
-      statusEl.textContent = "Uploading and processing...";
-      dryBtn.disabled = true;
-      loadBtn.disabled = true;
-      approveBtn.disabled = true;
-      activateBtn.disabled = true;
-      rollbackBtn.disabled = true;
+    function csv(value) {
+      return value.split(",").map((item) => item.trim()).filter(Boolean);
+    }
 
+    function setMessage(id, text, ok = true) {
+      const el = $(id);
+      el.textContent = text;
+      el.className = "message " + (ok ? "ok" : "bad");
+    }
+
+    async function loadProfile() {
+      const body = await api("/api/users/me/profile");
+      state.profile = body.data;
+      $("profile-title").textContent = `${body.data.user.email} · ${body.data.user.roleMeta.displayName}`;
+      $("profile-chips").innerHTML = "";
+      [
+        body.data.user.roleMeta.isBuiltin ? "fixed/built-in" : "custom",
+        body.data.user.roleMeta.isOperational ? "operational" : "non-operational",
+        body.data.routing.senderSelectionRequired ? "sender required" : "sender optional"
+      ].forEach((text) => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = text;
+        $("profile-chips").appendChild(chip);
+      });
+      renderRouting(body.data.routing);
+    }
+
+    function renderRouting(routing) {
+      const select = $("sender-select");
+      select.innerHTML = `<option value="">No active sender filter</option>`;
+      routing.availableSenders.forEach((sender) => {
+        const opt = document.createElement("option");
+        opt.value = sender.senderIdentifier;
+        opt.textContent = `${sender.senderIdentifier} (${sender.caseCount} cases)`;
+        opt.selected = sender.senderIdentifier === routing.activeSenderIdentifier;
+        select.appendChild(opt);
+      });
+      $("routing-summary").textContent = routing.operational
+        ? `${routing.availableSenders.length} sender option(s). Active: ${routing.activeSenderIdentifier || "none"}.`
+        : "System administrator is non-operational for case routing.";
+    }
+
+    async function saveRouting(value) {
+      const body = await api("/api/users/me/routing", {
+        method: "PUT",
+        body: JSON.stringify({ data: { active_sender_identifier: value || null } })
+      });
+      renderRouting(body.data);
+      setMessage("routing-message", "Routing selection saved.");
+    }
+
+    async function loadRoles() {
+      const body = await api("/api/admin/roles");
+      state.roles = body;
+      $("roles-list").innerHTML = "";
+      body.forEach((role) => {
+        const item = document.createElement("div");
+        item.className = "item";
+        const fixed = role.isBuiltin || role.built_in;
+        item.innerHTML = `
+          <h3>${role.display_name}</h3>
+          <p><code>${role.canonical_role_id || role.role_name}</code></p>
+          <div class="chips">
+            <span class="chip ${fixed ? "fixed" : ""}">${fixed ? "fixed" : "custom editable"}</span>
+            <span class="chip">${role.isSponsorAdmin || role.sponsor_admin_capable ? "sponsor admin" : "scoped role"}</span>
+            <span class="chip">${role.isOperational === false ? "non-operational" : "operational"}</span>
+          </div>`;
+        $("roles-list").appendChild(item);
+      });
+    }
+
+    async function createRole() {
+      const roleName = $("role-name").value.trim();
+      const displayName = $("role-display").value.trim();
+      const menuKey = $("role-menu").value.trim();
+      if (!roleName || !displayName || !menuKey) throw new Error("role id, display name, and menu key are required");
+      await api("/api/admin/roles", {
+        method: "POST",
+        body: JSON.stringify({
+          data: {
+            role_name: roleName,
+            display_name: displayName,
+            privileges: [{
+              menu_key: menuKey,
+              can_read: $("perm-read").checked,
+              can_edit: $("perm-edit").checked,
+              can_review: $("perm-review").checked,
+              can_lock: $("perm-lock").checked
+            }],
+            active: true
+          }
+        })
+      });
+      setMessage("role-message", "Custom role created.");
+      await loadRoles();
+    }
+
+    async function loadUsers() {
+      const body = await api("/api/users");
+      state.users = body.data;
+      const select = $("user-select");
+      select.innerHTML = "";
+      body.data.forEach((user) => {
+        const opt = document.createElement("option");
+        opt.value = user.id;
+        opt.textContent = `${user.email} · ${user.roleMeta.displayName}`;
+        select.appendChild(opt);
+      });
+      fillSelectedUser();
+    }
+
+    function fillSelectedUser() {
+      const user = state.users.find((item) => item.id === $("user-select").value);
+      if (!user) return;
+      $("scope-role").value = user.role;
+      $("scope-senders").value = user.scope.assignedSenderIds.join(",");
+      $("scope-products").value = user.scope.assignedProductIds.join(",");
+      $("scope-studies").value = user.scope.assignedStudyIds.join(",");
+      $("scope-blind").checked = user.scope.accessBlindAllowed;
+    }
+
+    async function saveUserScope() {
+      const userId = $("user-select").value;
+      if (!userId) throw new Error("select a user first");
+      await api(`/api/users/${userId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          data: {
+            role: $("scope-role").value.trim(),
+            access_sender_ids: csv($("scope-senders").value),
+            access_product_ids: csv($("scope-products").value),
+            access_study_ids: csv($("scope-studies").value),
+            access_blind_allowed: $("scope-blind").checked
+          }
+        })
+      });
+      setMessage("user-message", "User scope saved.");
+      await loadUsers();
+    }
+
+    async function boot() {
       try {
-        const res = await fetch(url, {
-          method: "POST",
-          body: form,
-          credentials: "include"
-        });
-
-        const text = await res.text();
-        let payload;
-        try { payload = JSON.parse(text); } catch (_) { payload = text; }
-
-        if (!res.ok) {
-          statusEl.className = "status bad";
-          statusEl.textContent =
-            "Failed (" + res.status + "):\n" +
-            (typeof payload === "string" ? payload : JSON.stringify(payload, null, 2));
-          return;
-        }
-
-        statusEl.className = "status ok";
-        statusEl.textContent = "Success:\n" + JSON.stringify(payload, null, 2);
+        await loadProfile();
+        await Promise.allSettled([loadRoles(), loadUsers()]);
       } catch (err) {
-        statusEl.className = "status bad";
-        statusEl.textContent = "Request error:\n" + (err && err.message ? err.message : String(err));
-      } finally {
-        dryBtn.disabled = false;
-        loadBtn.disabled = false;
-        approveBtn.disabled = false;
-        activateBtn.disabled = false;
-        rollbackBtn.disabled = false;
+        setMessage("routing-message", err.message, false);
       }
     }
 
-    async function runReleaseAction(kind, action) {
-      const versionInput = document.getElementById(kind + "-version");
-      const languageInput = document.getElementById(kind + "-lang");
-      const statusEl = document.getElementById(kind + "-status");
-      const version = versionInput.value.trim();
-      const language = languageInput.value.trim() || "en";
-      if (!version) {
-        statusEl.className = "status bad";
-        statusEl.textContent = "Please enter a version.";
-        return;
-      }
-
-      const url = "/api/terminology/releases/" + kind + "/" + encodeURIComponent(version) +
-        "/" + action + "?language=" + encodeURIComponent(language);
-      statusEl.className = "status warn";
-      statusEl.textContent = "Running " + action + "...";
-
-      try {
-        const res = await fetch(url, { method: "POST", credentials: "include" });
-        const text = await res.text();
-        let payload;
-        try { payload = JSON.parse(text); } catch (_) { payload = text; }
-        if (!res.ok) {
-          statusEl.className = "status bad";
-          statusEl.textContent =
-            "Failed (" + res.status + "):\n" +
-            (typeof payload === "string" ? payload : JSON.stringify(payload, null, 2));
-          return;
-        }
-        statusEl.className = "status ok";
-        statusEl.textContent = "Success:\n" + JSON.stringify(payload, null, 2);
-      } catch (err) {
-        statusEl.className = "status bad";
-        statusEl.textContent = "Request error:\n" + (err && err.message ? err.message : String(err));
-      }
-    }
-
-    document.getElementById("meddra-dry").addEventListener("click", () => runImport("meddra", true));
-    document.getElementById("meddra-load").addEventListener("click", () => runImport("meddra", false));
-    document.getElementById("meddra-approve").addEventListener("click", () => runReleaseAction("meddra", "approve"));
-    document.getElementById("meddra-activate").addEventListener("click", () => runReleaseAction("meddra", "activate"));
-    document.getElementById("meddra-rollback").addEventListener("click", () => runReleaseAction("meddra", "rollback"));
-    document.getElementById("whodrug-dry").addEventListener("click", () => runImport("whodrug", true));
-    document.getElementById("whodrug-load").addEventListener("click", () => runImport("whodrug", false));
-    document.getElementById("whodrug-approve").addEventListener("click", () => runReleaseAction("whodrug", "approve"));
-    document.getElementById("whodrug-activate").addEventListener("click", () => runReleaseAction("whodrug", "activate"));
-    document.getElementById("whodrug-rollback").addEventListener("click", () => runReleaseAction("whodrug", "rollback"));
+    $("refresh-profile").addEventListener("click", () => loadProfile().catch((err) => setMessage("routing-message", err.message, false)));
+    $("save-routing").addEventListener("click", () => saveRouting($("sender-select").value).catch((err) => setMessage("routing-message", err.message, false)));
+    $("clear-routing").addEventListener("click", () => saveRouting(null).catch((err) => setMessage("routing-message", err.message, false)));
+    $("reload-roles").addEventListener("click", () => loadRoles().catch((err) => setMessage("role-message", err.message, false)));
+    $("create-role").addEventListener("click", () => createRole().catch((err) => setMessage("role-message", err.message, false)));
+    $("reload-users").addEventListener("click", () => loadUsers().catch((err) => setMessage("user-message", err.message, false)));
+    $("save-user-scope").addEventListener("click", () => saveUserScope().catch((err) => setMessage("user-message", err.message, false)));
+    $("user-select").addEventListener("change", fillSelectedUser);
+    boot();
   </script>
 </body>
 </html>

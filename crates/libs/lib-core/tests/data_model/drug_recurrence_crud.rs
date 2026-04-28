@@ -33,25 +33,34 @@ async fn test_drug_recurrence_crud() -> Result<()> {
 	let recurrence_c = DrugRecurrenceInformationForCreate {
 		drug_id,
 		sequence_number: 1,
+		rechallenge_action: Some("1".to_string()),
+		reaction_meddra_version: Some("27.0".to_string()),
+		reaction_meddra_code: Some("12345678".to_string()),
+		reaction_recurred: Some("2".to_string()),
 	};
 	let recurrence_id =
 		DrugRecurrenceInformationBmc::create(&ctx, &mm, recurrence_c).await?;
 	let recurrence =
 		DrugRecurrenceInformationBmc::get(&ctx, &mm, recurrence_id).await?;
 	assert_eq!(recurrence.sequence_number, 1);
+	assert_eq!(recurrence.rechallenge_action.as_deref(), Some("1"));
+	assert_eq!(recurrence.reaction_meddra_version.as_deref(), Some("27.0"));
+	assert_eq!(recurrence.reaction_meddra_code.as_deref(), Some("12345678"));
+	assert_eq!(recurrence.reaction_recurred.as_deref(), Some("2"));
 
 	let recurrence_u = DrugRecurrenceInformationForUpdate {
-		rechallenge_action: Some("1".to_string()),
+		rechallenge_action: Some("2".to_string()),
 		reaction_meddra_version: None,
-		reaction_meddra_code: Some("12345678".to_string()),
-		reaction_recurred: Some("2".to_string()),
+		reaction_meddra_code: Some("87654321".to_string()),
+		reaction_recurred: Some("1".to_string()),
 	};
 	DrugRecurrenceInformationBmc::update(&ctx, &mm, recurrence_id, recurrence_u)
 		.await?;
 	let recurrence =
 		DrugRecurrenceInformationBmc::get(&ctx, &mm, recurrence_id).await?;
-	assert_eq!(recurrence.rechallenge_action.as_deref(), Some("1"));
-	assert_eq!(recurrence.reaction_recurred.as_deref(), Some("2"));
+	assert_eq!(recurrence.rechallenge_action.as_deref(), Some("2"));
+	assert_eq!(recurrence.reaction_meddra_code.as_deref(), Some("87654321"));
+	assert_eq!(recurrence.reaction_recurred.as_deref(), Some("1"));
 
 	let recurrences =
 		DrugRecurrenceInformationBmc::list(&ctx, &mm, None, None).await?;

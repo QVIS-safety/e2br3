@@ -1393,7 +1393,7 @@ mod tests {
 	fn emits_study_type_issue_when_report_type_is_study_and_study_type_missing() {
 		let mut ctx = fully_populated_context();
 		let report = ctx.safety_report.as_mut().unwrap();
-		report.report_type = "2".to_string();
+		report.report_type = Some("2".to_string());
 		ctx.studies[0].study_type_reaction = None;
 
 		let issues = apply_ich_rules(&ctx);
@@ -1911,6 +1911,7 @@ mod tests {
 			indications: Vec::new(),
 			dosages: Vec::new(),
 			drug_reaction_assessments: Vec::new(),
+			patient_identifiers: Vec::new(),
 		}
 	}
 
@@ -1943,6 +1944,7 @@ mod tests {
 			indications: Vec::new(),
 			dosages: Vec::new(),
 			drug_reaction_assessments: Vec::new(),
+			patient_identifiers: Vec::new(),
 		}
 	}
 
@@ -1959,6 +1961,12 @@ mod tests {
 			appendices_json: None,
 			review_receivers_json: None,
 			workflow_routes_json: None,
+			workflow_status: "Saved".to_string(),
+			workflow_assigned_role: None,
+			workflow_assigned_user_id: None,
+			workflow_due_at: None,
+			workflow_description: None,
+			workflow_updated_at: now,
 			mfds_report_type: None,
 			report_year: None,
 			source_document_name: None,
@@ -1987,12 +1995,12 @@ mod tests {
 			case_id: Uuid::nil(),
 			transmission_date: Some(sample_date()),
 			transmission_date_null_flavor: None,
-			report_type: "1".to_string(),
+			report_type: Some("1".to_string()),
 			date_first_received_from_source: Some(sample_date()),
 			date_first_received_from_source_null_flavor: None,
 			date_of_most_recent_information: Some(sample_date()),
 			date_of_most_recent_information_null_flavor: None,
-			fulfil_expedited_criteria: true,
+			fulfil_expedited_criteria: Some(true),
 			local_criteria_report_type: None,
 			combination_product_report_indicator: None,
 			worldwide_unique_id: None,
@@ -2000,6 +2008,7 @@ mod tests {
 			additional_documents_available: None,
 			nullification_code: None,
 			nullification_reason: None,
+			other_case_identifiers_exist: None,
 			receiver_organization: None,
 			created_at: now,
 			updated_at: now,
@@ -2046,8 +2055,8 @@ mod tests {
 		SenderInformation {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
-			sender_type: "1".to_string(),
-			organization_name: "Org".to_string(),
+			sender_type: Some("1".to_string()),
+			organization_name: Some("Org".to_string()),
 			department: None,
 			street_address: None,
 			city: None,
@@ -2505,17 +2514,21 @@ mod tests {
 			frequency_value: None,
 			frequency_unit: None,
 			first_administration_date: None,
+			first_administration_date_null_flavor: None,
 			first_administration_time: None,
 			last_administration_date: None,
+			last_administration_date_null_flavor: None,
 			last_administration_time: None,
 			duration_value: None,
 			duration_unit: None,
+			continuing: None,
 			batch_lot_number: None,
 			dosage_text: None,
 			dose_form: None,
 			dose_form_termid: None,
 			dose_form_termid_version: None,
 			route_of_administration: None,
+			route_termid: None,
 			route_termid_version: None,
 			parent_route: None,
 			parent_route_termid: None,

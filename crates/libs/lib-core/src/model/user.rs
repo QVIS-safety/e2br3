@@ -1,4 +1,4 @@
-use crate::ctx::{Ctx, ROLE_USER};
+use crate::ctx::{canonical_role, Ctx, ROLE_USER};
 use crate::model::base::base_uuid;
 use crate::model::base::{prep_fields_for_update, DbBmc};
 use crate::model::store::set_full_context_dbx_or_rollback;
@@ -14,6 +14,7 @@ use sqlx::postgres::PgRow;
 use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
 use sqlx::{query, FromRow};
+use tokio::time::{sleep, Duration};
 
 // -- Types
 
@@ -42,6 +43,8 @@ pub struct User {
 	pub access_sender_ids: Option<String>,
 	pub access_product_ids: Option<String>,
 	pub access_study_ids: Option<String>,
+	pub access_blind_allowed: Option<bool>,
+	pub active_sender_identifier: Option<String>,
 	pub active: bool,
 	pub must_change_password: bool,
 	pub last_login_at: Option<OffsetDateTime>,
@@ -53,7 +56,10 @@ pub struct User {
 	pub updated_by: Option<Uuid>,
 }
 
-#[derive(Deserialize)]
+const USER_WRITE_MAX_ATTEMPTS: u32 = 3;
+const USER_WRITE_BASE_BACKOFF_MS: u64 = 50;
+
+#[derive(Clone, Deserialize)]
 pub struct UserForCreate {
 	pub organization_id: Uuid,
 	pub email: String,
@@ -69,9 +75,11 @@ pub struct UserForCreate {
 	pub access_sender_ids: Option<Vec<String>>,
 	pub access_product_ids: Option<Vec<String>>,
 	pub access_study_ids: Option<Vec<String>>,
+	pub access_blind_allowed: Option<bool>,
+	pub active_sender_identifier: Option<String>,
 }
 
-#[derive(Fields)]
+#[derive(Clone, Fields)]
 pub struct UserForInsert {
 	pub organization_id: Uuid,
 	pub email: String,
@@ -86,6 +94,8 @@ pub struct UserForInsert {
 	pub access_sender_ids: Option<String>,
 	pub access_product_ids: Option<String>,
 	pub access_study_ids: Option<String>,
+	pub access_blind_allowed: Option<bool>,
+	pub active_sender_identifier: Option<String>,
 }
 
 #[derive(Clone, FromRow, Fields, Debug)]
@@ -115,7 +125,7 @@ pub struct UserForAuth {
 	pub token_salt: Uuid,
 }
 
-#[derive(Fields, Deserialize)]
+#[derive(Clone, Fields, Deserialize)]
 pub struct UserForUpdate {
 	pub email: Option<String>,
 	pub username: Option<String>,
@@ -129,6 +139,8 @@ pub struct UserForUpdate {
 	pub access_sender_ids: Option<String>,
 	pub access_product_ids: Option<String>,
 	pub access_study_ids: Option<String>,
+	pub access_blind_allowed: Option<bool>,
+	pub active_sender_identifier: Option<String>,
 	pub active: Option<bool>,
 	pub last_login_at: Option<OffsetDateTime>,
 }
@@ -184,90 +196,148 @@ impl UserBmc {
 		})
 	}
 
+	fn normalize_optional_text(value: Option<String>) -> Option<String> {
+		value.and_then(|value| {
+			let trimmed = value.trim().to_string();
+			if trimmed.is_empty() {
+				None
+			} else {
+				Some(trimmed)
+			}
+		})
+	}
+
+	fn is_retryable_write_error(err: &Error) -> bool {
+		if let Some(db_error) = err.as_database_error() {
+			if matches!(db_error.code().as_deref(), Some("40P01" | "40001")) {
+				return true;
+			}
+		}
+		let lower = err.to_string().to_ascii_lowercase();
+		lower.contains("deadlock detected")
+			|| lower.contains("could not serialize access")
+			|| lower.contains("serialization failure")
+	}
+
+	async fn backoff_after_retryable_error(attempt: u32) {
+		sleep(Duration::from_millis(
+			USER_WRITE_BASE_BACKOFF_MS.saturating_mul(attempt as u64),
+		))
+		.await;
+	}
+
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
 		user_c: UserForCreate,
 	) -> Result<Uuid> {
-		let UserForCreate {
-			organization_id,
-			email,
-			username,
-			pwd_clear,
-			role,
-			first_name,
-			last_name,
-			comments,
-			other_information,
-			access_start_at,
-			access_end_at,
-			access_sender_ids,
-			access_product_ids,
-			access_study_ids,
-		} = user_c;
-		let email = Self::normalize_email(&email);
-		let username = username
-			.map(|value| value.trim().to_string())
-			.filter(|value| !value.is_empty())
-			.unwrap_or_else(|| email.clone());
-		let access_sender_ids = Self::serialize_id_scope(access_sender_ids);
-		let access_product_ids = Self::serialize_id_scope(access_product_ids);
-		let access_study_ids = Self::serialize_id_scope(access_study_ids);
-		let role = role
-			.map(|role| role.trim().to_ascii_lowercase())
-			.unwrap_or_else(|| ROLE_USER.to_string());
+		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			let UserForCreate {
+				organization_id,
+				email,
+				username,
+				pwd_clear,
+				role,
+				first_name,
+				last_name,
+				comments,
+				other_information,
+				access_start_at,
+				access_end_at,
+				access_sender_ids,
+				access_product_ids,
+				access_study_ids,
+				access_blind_allowed,
+				active_sender_identifier,
+			} = user_c.clone();
+			let email = Self::normalize_email(&email);
+			let username = username
+				.map(|value| value.trim().to_string())
+				.filter(|value| !value.is_empty())
+				.unwrap_or_else(|| email.clone());
+			let access_sender_ids = Self::serialize_id_scope(access_sender_ids);
+			let access_product_ids = Self::serialize_id_scope(access_product_ids);
+			let access_study_ids = Self::serialize_id_scope(access_study_ids);
+			let active_sender_identifier =
+				Self::normalize_optional_text(active_sender_identifier);
+			let role = role
+				.map(|role| canonical_role(&role))
+				.unwrap_or_else(|| ROLE_USER.to_string());
 
-		// -- Create the user row
-		let user_fi = UserForInsert {
-			organization_id,
-			email: email.clone(),
-			username,
-			role: Some(role),
-			first_name,
-			last_name,
-			comments,
-			other_information,
-			access_start_at,
-			access_end_at,
-			access_sender_ids,
-			access_product_ids,
-			access_study_ids,
-		};
+			let user_fi = UserForInsert {
+				organization_id,
+				email: email.clone(),
+				username,
+				role: Some(role),
+				first_name,
+				last_name,
+				comments,
+				other_information,
+				access_start_at,
+				access_end_at,
+				access_sender_ids,
+				access_product_ids,
+				access_study_ids,
+				access_blind_allowed,
+				active_sender_identifier,
+			};
 
-		// Start (or reuse) the transaction on the current dbx so request context is preserved.
-		mm.dbx().begin_txn().await?;
+			mm.dbx().begin_txn().await?;
 
-		let user_id = match base_uuid::create::<Self, _>(ctx, mm, user_fi)
-			.await
-			.map_err(|model_error| {
-				Error::resolve_unique_violation(
-					model_error,
-					Some(|table: &str, constraint: &str| {
-						if table == "users" && constraint.contains("email") {
-							Some(Error::UserAlreadyExists { email })
-						} else {
-							None
-						}
-					}),
-				)
-			}) {
-			Ok(user_id) => user_id,
-			Err(err) => {
-				mm.dbx().rollback_txn().await?;
+			let user_id = match base_uuid::create::<Self, _>(ctx, mm, user_fi)
+				.await
+				.map_err(|model_error| {
+					Error::resolve_unique_violation(
+						model_error,
+						Some(|table: &str, constraint: &str| {
+							if table == "users" && constraint.contains("email") {
+								Some(Error::UserAlreadyExists { email })
+							} else {
+								None
+							}
+						}),
+					)
+				}) {
+				Ok(user_id) => user_id,
+				Err(err) => {
+					let _ = mm.dbx().rollback_txn().await;
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS
+					{
+						Self::backoff_after_retryable_error(attempt).await;
+						continue;
+					}
+					return Err(err);
+				}
+			};
+
+			if let Err(err) = Self::update_pwd(ctx, mm, user_id, &pwd_clear).await {
+				let _ = mm.dbx().rollback_txn().await;
+				if Self::is_retryable_write_error(&err)
+					&& attempt < USER_WRITE_MAX_ATTEMPTS
+				{
+					Self::backoff_after_retryable_error(attempt).await;
+					continue;
+				}
 				return Err(err);
 			}
-		};
 
-		// -- Update the password
-		if let Err(err) = Self::update_pwd(ctx, mm, user_id, &pwd_clear).await {
-			mm.dbx().rollback_txn().await?;
-			return Err(err);
+			match mm.dbx().commit_txn().await {
+				Ok(()) => return Ok(user_id),
+				Err(err) => {
+					let err = Error::Dbx(err);
+					let _ = mm.dbx().rollback_txn().await;
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS
+					{
+						Self::backoff_after_retryable_error(attempt).await;
+						continue;
+					}
+					return Err(err);
+				}
+			}
 		}
-
-		// Commit the transaction
-		mm.dbx().commit_txn().await?;
-
-		Ok(user_id)
+		unreachable!("user create retry loop exhausted without returning")
 	}
 
 	pub async fn get<E>(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<E>
@@ -290,19 +360,50 @@ impl UserBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		mut user_u: UserForUpdate,
+		user_u: UserForUpdate,
 	) -> Result<()> {
-		if let Some(email) = user_u.email.take() {
-			user_u.email = Some(Self::normalize_email(&email));
+		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			let mut user_u = user_u.clone();
+			if let Some(email) = user_u.email.take() {
+				user_u.email = Some(Self::normalize_email(&email));
+			}
+			if let Some(role) = user_u.role.take() {
+				user_u.role = Some(canonical_role(&role));
+			}
+			if let Some(active_sender_identifier) =
+				user_u.active_sender_identifier.take()
+			{
+				user_u.active_sender_identifier =
+					Self::normalize_optional_text(Some(active_sender_identifier));
+			}
+			match base_uuid::update::<Self, _>(ctx, mm, id, user_u).await {
+				Ok(()) => return Ok(()),
+				Err(err)
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS =>
+				{
+					Self::backoff_after_retryable_error(attempt).await;
+				}
+				Err(err) => return Err(err),
+			}
 		}
-		if let Some(role) = user_u.role.take() {
-			user_u.role = Some(role.trim().to_ascii_lowercase());
-		}
-		base_uuid::update::<Self, _>(ctx, mm, id, user_u).await
+		unreachable!("user update retry loop exhausted without returning")
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			match base_uuid::delete::<Self>(ctx, mm, id).await {
+				Ok(()) => return Ok(()),
+				Err(err)
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS =>
+				{
+					Self::backoff_after_retryable_error(attempt).await;
+				}
+				Err(err) => return Err(err),
+			}
+		}
+		unreachable!("user delete retry loop exhausted without returning")
 	}
 
 	pub async fn first_by_email<E>(
@@ -335,61 +436,96 @@ impl UserBmc {
 		id: Uuid,
 		pwd_clear: &str,
 	) -> Result<()> {
-		let dbx = mm.dbx();
-		dbx.begin_txn().await.map_err(Error::Dbx)?;
-		if let Err(err) = set_full_context_dbx_or_rollback(
-			dbx,
-			ctx.user_id(),
-			ctx.organization_id(),
-			ctx.role(),
-		)
-		.await
-		{
-			dbx.rollback_txn().await.map_err(Error::Dbx)?;
-			return Err(err);
-		}
-
-		// -- Prep password
-		let user: UserForLogin = Self::get(ctx, mm, id).await?;
-		let pwd = pwd::hash_pwd(ContentToHash {
-			content: pwd_clear.to_string(),
-			salt: user.pwd_salt,
-		})
-		.await?;
-
-		// -- Prep the data
-		let mut fields = SeaFields::new(vec![SeaField::new(UserIden::Pwd, pwd)]);
-		prep_fields_for_update::<Self>(&mut fields, ctx.user_id());
-
-		// -- Build query
-		let fields = fields.for_sea_update();
-		let mut query = Query::update();
-		query
-			.table(Self::table_ref())
-			.values(fields)
-			.and_where(Expr::col(UserIden::Id).eq(id));
-
-		// -- Exec query
-		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
-		let sqlx_query = sqlx::query_with(&sql, values);
-		let count = match dbx.execute(sqlx_query).await {
-			Ok(count) => count,
-			Err(err) => {
-				dbx.rollback_txn().await.map_err(Error::Dbx)?;
-				return Err(err.into());
+		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			let dbx = mm.dbx();
+			dbx.begin_txn().await.map_err(Error::Dbx)?;
+			if let Err(err) = set_full_context_dbx_or_rollback(
+				dbx,
+				ctx.user_id(),
+				ctx.organization_id(),
+				ctx.role(),
+			)
+			.await
+			{
+				let _ = dbx.rollback_txn().await;
+				if Self::is_retryable_write_error(&err)
+					&& attempt < USER_WRITE_MAX_ATTEMPTS
+				{
+					Self::backoff_after_retryable_error(attempt).await;
+					continue;
+				}
+				return Err(err);
 			}
-		};
-		if count == 0 {
-			dbx.rollback_txn().await.map_err(Error::Dbx)?;
-			return Err(Error::EntityUuidNotFound {
-				entity: Self::TABLE,
-				id,
-			});
+
+			let user: UserForLogin = match Self::get(ctx, mm, id).await {
+				Ok(user) => user,
+				Err(err) => {
+					let _ = dbx.rollback_txn().await;
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS
+					{
+						Self::backoff_after_retryable_error(attempt).await;
+						continue;
+					}
+					return Err(err);
+				}
+			};
+			let pwd = pwd::hash_pwd(ContentToHash {
+				content: pwd_clear.to_string(),
+				salt: user.pwd_salt,
+			})
+			.await?;
+
+			let mut fields = SeaFields::new(vec![SeaField::new(UserIden::Pwd, pwd)]);
+			prep_fields_for_update::<Self>(&mut fields, ctx.user_id());
+
+			let fields = fields.for_sea_update();
+			let mut query = Query::update();
+			query
+				.table(Self::table_ref())
+				.values(fields)
+				.and_where(Expr::col(UserIden::Id).eq(id));
+
+			let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+			let sqlx_query = sqlx::query_with(&sql, values);
+			let count = match dbx.execute(sqlx_query).await {
+				Ok(count) => count,
+				Err(err) => {
+					let err: Error = err.into();
+					let _ = dbx.rollback_txn().await;
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS
+					{
+						Self::backoff_after_retryable_error(attempt).await;
+						continue;
+					}
+					return Err(err);
+				}
+			};
+			if count == 0 {
+				let _ = dbx.rollback_txn().await;
+				return Err(Error::EntityUuidNotFound {
+					entity: Self::TABLE,
+					id,
+				});
+			}
+
+			match dbx.commit_txn().await {
+				Ok(()) => return Ok(()),
+				Err(err) => {
+					let err = Error::Dbx(err);
+					let _ = dbx.rollback_txn().await;
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS
+					{
+						Self::backoff_after_retryable_error(attempt).await;
+						continue;
+					}
+					return Err(err);
+				}
+			}
 		}
-
-		dbx.commit_txn().await.map_err(Error::Dbx)?;
-
-		Ok(())
+		unreachable!("user password update retry loop exhausted without returning")
 	}
 
 	pub async fn update_pwd_and_clear_must_change(
@@ -398,59 +534,99 @@ impl UserBmc {
 		id: Uuid,
 		pwd_clear: &str,
 	) -> Result<()> {
-		let dbx = mm.dbx();
-		dbx.begin_txn().await.map_err(Error::Dbx)?;
-		if let Err(err) = set_full_context_dbx_or_rollback(
-			dbx,
-			ctx.user_id(),
-			ctx.organization_id(),
-			ctx.role(),
-		)
-		.await
-		{
-			dbx.rollback_txn().await.map_err(Error::Dbx)?;
-			return Err(err);
-		}
-
-		let user: UserForLogin = Self::get(ctx, mm, id).await?;
-		let pwd = pwd::hash_pwd(ContentToHash {
-			content: pwd_clear.to_string(),
-			salt: user.pwd_salt,
-		})
-		.await?;
-
-		let mut fields = SeaFields::new(vec![
-			SeaField::new(UserIden::Pwd, pwd),
-			SeaField::new(UserIden::MustChangePassword, false),
-		]);
-		prep_fields_for_update::<Self>(&mut fields, ctx.user_id());
-
-		let fields = fields.for_sea_update();
-		let mut query = Query::update();
-		query
-			.table(Self::table_ref())
-			.values(fields)
-			.and_where(Expr::col(UserIden::Id).eq(id));
-
-		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
-		let sqlx_query = sqlx::query_with(&sql, values);
-		let count = match dbx.execute(sqlx_query).await {
-			Ok(count) => count,
-			Err(err) => {
-				dbx.rollback_txn().await.map_err(Error::Dbx)?;
-				return Err(err.into());
+		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			let dbx = mm.dbx();
+			dbx.begin_txn().await.map_err(Error::Dbx)?;
+			if let Err(err) = set_full_context_dbx_or_rollback(
+				dbx,
+				ctx.user_id(),
+				ctx.organization_id(),
+				ctx.role(),
+			)
+			.await
+			{
+				let _ = dbx.rollback_txn().await;
+				if Self::is_retryable_write_error(&err)
+					&& attempt < USER_WRITE_MAX_ATTEMPTS
+				{
+					Self::backoff_after_retryable_error(attempt).await;
+					continue;
+				}
+				return Err(err);
 			}
-		};
-		if count == 0 {
-			dbx.rollback_txn().await.map_err(Error::Dbx)?;
-			return Err(Error::EntityUuidNotFound {
-				entity: Self::TABLE,
-				id,
-			});
-		}
 
-		dbx.commit_txn().await.map_err(Error::Dbx)?;
-		Ok(())
+			let user: UserForLogin = match Self::get(ctx, mm, id).await {
+				Ok(user) => user,
+				Err(err) => {
+					let _ = dbx.rollback_txn().await;
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS
+					{
+						Self::backoff_after_retryable_error(attempt).await;
+						continue;
+					}
+					return Err(err);
+				}
+			};
+			let pwd = pwd::hash_pwd(ContentToHash {
+				content: pwd_clear.to_string(),
+				salt: user.pwd_salt,
+			})
+			.await?;
+
+			let mut fields = SeaFields::new(vec![
+				SeaField::new(UserIden::Pwd, pwd),
+				SeaField::new(UserIden::MustChangePassword, false),
+			]);
+			prep_fields_for_update::<Self>(&mut fields, ctx.user_id());
+
+			let fields = fields.for_sea_update();
+			let mut query = Query::update();
+			query
+				.table(Self::table_ref())
+				.values(fields)
+				.and_where(Expr::col(UserIden::Id).eq(id));
+
+			let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+			let sqlx_query = sqlx::query_with(&sql, values);
+			let count = match dbx.execute(sqlx_query).await {
+				Ok(count) => count,
+				Err(err) => {
+					let err: Error = err.into();
+					let _ = dbx.rollback_txn().await;
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS
+					{
+						Self::backoff_after_retryable_error(attempt).await;
+						continue;
+					}
+					return Err(err);
+				}
+			};
+			if count == 0 {
+				let _ = dbx.rollback_txn().await;
+				return Err(Error::EntityUuidNotFound {
+					entity: Self::TABLE,
+					id,
+				});
+			}
+
+			match dbx.commit_txn().await {
+				Ok(()) => return Ok(()),
+				Err(err) => {
+					let err = Error::Dbx(err);
+					let _ = dbx.rollback_txn().await;
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS
+					{
+						Self::backoff_after_retryable_error(attempt).await;
+						continue;
+					}
+					return Err(err);
+				}
+			}
+		}
+		unreachable!("user password reset retry loop exhausted without returning")
 	}
 
 	pub async fn set_must_change_password(
@@ -463,10 +639,24 @@ impl UserBmc {
 		struct UserPasswordPolicyForUpdate {
 			must_change_password: Option<bool>,
 		}
-		let user_u = UserPasswordPolicyForUpdate {
-			must_change_password: Some(must_change_password),
-		};
-		base_uuid::update::<Self, _>(ctx, mm, id, user_u).await
+		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
+			let user_u = UserPasswordPolicyForUpdate {
+				must_change_password: Some(must_change_password),
+			};
+			match base_uuid::update::<Self, _>(ctx, mm, id, user_u).await {
+				Ok(()) => return Ok(()),
+				Err(err)
+					if Self::is_retryable_write_error(&err)
+						&& attempt < USER_WRITE_MAX_ATTEMPTS =>
+				{
+					Self::backoff_after_retryable_error(attempt).await;
+				}
+				Err(err) => return Err(err),
+			}
+		}
+		unreachable!(
+			"user must-change-password retry loop exhausted without returning"
+		)
 	}
 
 	pub async fn auth_by_email(

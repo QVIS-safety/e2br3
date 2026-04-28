@@ -11,21 +11,11 @@ use lib_core::model::patient::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_case_write_allowed, require_permission, Result};
+use lib_rest_core::{
+	is_unique_violation, require_case_write_allowed, require_permission, Result,
+};
 use lib_web::middleware::mw_auth::CtxW;
-use std::borrow::Cow;
 use uuid::Uuid;
-
-fn is_unique_violation(err: &lib_core::model::Error) -> bool {
-	matches!(err, lib_core::model::Error::UniqueViolation { .. })
-		|| matches!(
-			err.as_database_error().and_then(|db| db.code()),
-			Some(Cow::Borrowed("23505"))
-		) || {
-		let text = format!("{err:?}").to_ascii_lowercase();
-		text.contains("duplicate") || text.contains("unique")
-	}
-}
 
 pub async fn create_patient(
 	State(mm): State<ModelManager>,
@@ -73,6 +63,7 @@ pub async fn get_patient(
 ) -> Result<(StatusCode, Json<DataRestResult<PatientInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PATIENT_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let entity = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }

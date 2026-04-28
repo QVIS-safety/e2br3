@@ -23,7 +23,7 @@ pub use c_safety_report_policy::{
 	should_require_fda_local_criteria_report_type,
 	should_warn_fda_combination_product_indicator_missing,
 };
-pub use case::validate_case_for_profile;
+pub use case::{validate_case_for_profile, validate_case_for_profiles};
 pub use catalog::*;
 pub use context::{load_base_validation_context, ValidationContext};
 pub use d_patient_policy::{

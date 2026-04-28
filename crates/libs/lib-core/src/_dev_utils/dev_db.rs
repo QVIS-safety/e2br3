@@ -1,4 +1,4 @@
-use crate::ctx::{ROLE_ADMIN, SYSTEM_ORG_ID, SYSTEM_USER_ID};
+use crate::ctx::{ROLE_SYSTEM_ADMIN, SYSTEM_ORG_ID, SYSTEM_USER_ID};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
 use std::fs;
@@ -87,7 +87,7 @@ async fn apply_compatibility_alters(
 		.await?;
 	sqlx::query("SELECT set_org_context($1, $2)")
 		.bind(system_org_id)
-		.bind(ROLE_ADMIN)
+		.bind(ROLE_SYSTEM_ADMIN)
 		.execute(&mut *tx)
 		.await?;
 
@@ -130,6 +130,12 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS report_year VARCHAR(4)",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS review_receivers_json TEXT",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS workflow_routes_json TEXT",
+		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS workflow_status TEXT NOT NULL DEFAULT 'Saved'",
+		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS workflow_assigned_role TEXT",
+		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS workflow_assigned_user_id UUID REFERENCES users(id) ON DELETE SET NULL",
+		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS workflow_due_at TIMESTAMPTZ",
+		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS workflow_description TEXT",
+		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS workflow_updated_at TIMESTAMPTZ NOT NULL DEFAULT now()",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS source_document_name TEXT",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS source_document_base64 TEXT",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS source_document_media_type TEXT",
@@ -191,10 +197,53 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE dosage_information ADD COLUMN IF NOT EXISTS route_termid_version VARCHAR(10)",
 		"ALTER TABLE users ENABLE ROW LEVEL SECURITY",
 		"ALTER TABLE users FORCE ROW LEVEL SECURITY",
+		"ALTER TABLE users ADD COLUMN IF NOT EXISTS access_blind_allowed BOOLEAN",
+		"ALTER TABLE users ADD COLUMN IF NOT EXISTS active_sender_identifier TEXT",
+		"ALTER TABLE app_roles ADD COLUMN IF NOT EXISTS description TEXT",
+		"ALTER TABLE app_roles ADD COLUMN IF NOT EXISTS privileges_json JSONB NOT NULL DEFAULT '[]'::jsonb",
+		"ALTER TABLE app_roles ADD COLUMN IF NOT EXISTS built_in BOOLEAN NOT NULL DEFAULT false",
+		"ALTER TABLE app_roles ADD COLUMN IF NOT EXISTS editable BOOLEAN NOT NULL DEFAULT true",
+		"ALTER TABLE app_roles ADD COLUMN IF NOT EXISTS sponsor_admin_capable BOOLEAN NOT NULL DEFAULT false",
 		"DROP POLICY IF EXISTS users_org_isolation_select ON users",
 	] {
 		sqlx::query(sql).execute(&mut *tx).await?;
 	}
+	sqlx::query(
+		"CREATE TABLE IF NOT EXISTS case_workflow_events (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+			from_status TEXT NOT NULL,
+			to_status TEXT NOT NULL,
+			target_role TEXT,
+			target_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+			comment TEXT,
+			due_at TIMESTAMPTZ,
+			acted_by UUID NOT NULL REFERENCES users(id),
+			actor_role_id TEXT NOT NULL DEFAULT 'unknown',
+			used_admin_override BOOLEAN NOT NULL DEFAULT false,
+			override_reason TEXT,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+		)",
+	)
+	.execute(&mut *tx)
+	.await?;
+	for sql in [
+		"ALTER TABLE case_workflow_events ADD COLUMN IF NOT EXISTS actor_role_id TEXT NOT NULL DEFAULT 'unknown'",
+		"ALTER TABLE case_workflow_events ADD COLUMN IF NOT EXISTS used_admin_override BOOLEAN NOT NULL DEFAULT false",
+		"ALTER TABLE case_workflow_events ADD COLUMN IF NOT EXISTS override_reason TEXT",
+	] {
+		sqlx::query(sql).execute(&mut *tx).await?;
+	}
+	sqlx::query(
+		"CREATE INDEX IF NOT EXISTS idx_cases_workflow_status ON cases(workflow_status)",
+	)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"CREATE INDEX IF NOT EXISTS idx_case_workflow_events_case ON case_workflow_events(case_id, created_at DESC)",
+	)
+	.execute(&mut *tx)
+	.await?;
 	execute_ignoring_duplicate_policy(
 		&mut tx,
 		"CREATE POLICY users_org_isolation_select ON users
@@ -217,6 +266,46 @@ async fn apply_compatibility_alters(
 		 TO e2br3_app_role
 		 USING (is_current_user_admin())
 		 WITH CHECK (is_current_user_admin())",
+	)
+	.await?;
+	sqlx::query(
+		"CREATE OR REPLACE FUNCTION is_current_user_admin() RETURNS BOOLEAN AS $$
+		BEGIN
+		    RETURN COALESCE(current_setting('app.current_user_role', true), '') IN (
+		        'system_admin',
+		        'sponsor_admin_cro',
+		        'sponsor_admin_company',
+		        'admin'
+		    );
+		EXCEPTION
+		    WHEN OTHERS THEN
+		        RETURN false;
+		END;
+		$$ LANGUAGE plpgsql STABLE",
+	)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"DROP POLICY IF EXISTS audit_logs_read_for_admin_manager ON audit_logs",
+	)
+	.execute(&mut *tx)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY audit_logs_read_for_admin_manager ON audit_logs
+		 FOR SELECT
+		 TO e2br3_app_role
+		 USING (
+		 	COALESCE(current_setting('app.current_user_role', true), '') IN (
+		 		'system_admin',
+		 		'sponsor_admin_cro',
+		 		'sponsor_admin_company',
+		 		'admin',
+		 		'manager',
+		 		'pvm',
+		 		'head_pv'
+		 	)
+		 )",
 	)
 	.await?;
 	for sql in dirty_trigger_compatibility_sql() {

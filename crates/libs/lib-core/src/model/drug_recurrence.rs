@@ -45,6 +45,10 @@ pub struct DrugRecurrenceInformation {
 pub struct DrugRecurrenceInformationForCreate {
 	pub drug_id: Uuid,
 	pub sequence_number: i32,
+	pub rechallenge_action: Option<String>,
+	pub reaction_meddra_version: Option<String>,
+	pub reaction_meddra_code: Option<String>,
+	pub reaction_recurred: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -102,6 +106,24 @@ impl DrugRecurrenceInformationBmc {
 		data: DrugRecurrenceInformationForUpdate,
 	) -> Result<()> {
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn list_by_drug(
+		_ctx: &Ctx,
+		mm: &ModelManager,
+		drug_id: Uuid,
+	) -> Result<Vec<DrugRecurrenceInformation>> {
+		let sql = format!(
+			"SELECT * FROM {} WHERE drug_id = $1 ORDER BY sequence_number ASC",
+			Self::TABLE
+		);
+		let entities = mm
+			.dbx()
+			.fetch_all(
+				sqlx::query_as::<_, DrugRecurrenceInformation>(&sql).bind(drug_id),
+			)
+			.await?;
+		Ok(entities)
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {

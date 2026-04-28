@@ -3,7 +3,7 @@ use crate::utils::token;
 use axum::extract::State;
 use axum::Json;
 use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
-use lib_core::ctx::{Ctx, ROLE_ADMIN};
+use lib_core::ctx::{Ctx, ROLE_SYSTEM_ADMIN};
 use lib_core::model::user::{UserBmc, UserForAuth, UserForLogin};
 use lib_core::model::ModelManager;
 use serde::Deserialize;
@@ -55,7 +55,7 @@ pub async fn api_login_handler(
 		// Upgrade legacy hashes as a privileged internal operation, while
 		// keeping audit attribution to the authenticating user.
 		let upgrade_ctx =
-			Ctx::new(user.id, user.organization_id, ROLE_ADMIN.to_string())
+			Ctx::new(user.id, user.organization_id, ROLE_SYSTEM_ADMIN.to_string())
 				.map_err(|_| Error::LoginFailUserCtxCreate { user_id })?;
 		UserBmc::update_pwd(&upgrade_ctx, &mm, user.id, &pwd_clear).await?;
 	}

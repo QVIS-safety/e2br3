@@ -181,6 +181,13 @@ pub async fn mw_response_map(
 				// We keep this lightweight: status and client_error come from existing
 				// patterns; detail is populated for BadRequest/Xml similarly.
 				match rest_err {
+					lib_rest_core::Error::AccessDenied { required_role } => (
+						StatusCode::FORBIDDEN,
+						ClientError::ACCESS_DENIED {
+							required_role: required_role.clone(),
+						},
+						None,
+					),
 					lib_rest_core::Error::PermissionDenied {
 						required_permission,
 					} => (
@@ -235,6 +242,12 @@ pub async fn mw_response_map(
 			debug_detail = Some(serde_json::Value::String(format!("{err:?}")));
 		}
 		let (status_code, client_error) = match err {
+			lib_rest_core::Error::AccessDenied { required_role } => (
+				StatusCode::FORBIDDEN,
+				ClientError::ACCESS_DENIED {
+					required_role: required_role.clone(),
+				},
+			),
 			lib_rest_core::Error::PermissionDenied {
 				required_permission,
 			} => (

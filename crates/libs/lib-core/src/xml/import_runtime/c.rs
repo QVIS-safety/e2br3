@@ -177,6 +177,19 @@ async fn import_c_2_sender_information(
 				case_id,
 				sender_type: Some(sender.sender_type.clone()),
 				organization_name: Some(sender.organization_name.clone()),
+				department: sender.department.clone(),
+				street_address: sender.street_address.clone(),
+				city: sender.city.clone(),
+				state: sender.state.clone(),
+				postcode: sender.postcode.clone(),
+				country_code: sender.country_code.clone(),
+				person_title: sender.person_title.clone(),
+				person_given_name: sender.person_given_name.clone(),
+				person_middle_name: sender.person_middle_name.clone(),
+				person_family_name: sender.person_family_name.clone(),
+				telephone: sender.telephone.clone(),
+				fax: sender.fax.clone(),
+				email: sender.email.clone(),
 			},
 		)
 		.await?
@@ -620,6 +633,17 @@ async fn import_c_6_receiver_information(
 	let Some(receiver) = c_helpers::parse_receiver_information(xml)? else {
 		return Ok(());
 	};
+	let receiver_type = receiver.receiver_type;
+	let organization_name = receiver.organization_name;
+	let department = receiver.department;
+	let street_address = receiver.street_address;
+	let city = receiver.city;
+	let state_province = receiver.state_province;
+	let postcode = receiver.postcode;
+	let country_code = receiver.country_code;
+	let telephone = receiver.telephone;
+	let fax = receiver.fax;
+	let email = receiver.email;
 
 	if ReceiverInformationBmc::get_by_case_optional(ctx, mm, case_id)
 		.await?
@@ -630,17 +654,17 @@ async fn import_c_6_receiver_information(
 			mm,
 			case_id,
 			ReceiverInformationForUpdate {
-				receiver_type: receiver.receiver_type,
-				organization_name: receiver.organization_name,
-				department: receiver.department,
-				street_address: receiver.street_address,
-				city: receiver.city,
-				state_province: receiver.state_province,
-				postcode: receiver.postcode,
-				country_code: receiver.country_code,
-				telephone: receiver.telephone,
-				fax: receiver.fax,
-				email: receiver.email,
+				receiver_type,
+				organization_name,
+				department,
+				street_address,
+				city,
+				state_province,
+				postcode,
+				country_code,
+				telephone,
+				fax,
+				email,
 			},
 		)
 		.await;
@@ -650,30 +674,20 @@ async fn import_c_6_receiver_information(
 			mm,
 			ReceiverInformationForCreate {
 				case_id,
-				receiver_type: receiver.receiver_type,
-				organization_name: receiver.organization_name,
+				receiver_type,
+				organization_name,
+				department,
+				street_address,
+				city,
+				state_province,
+				postcode,
+				country_code,
+				telephone,
+				fax,
+				email,
 			},
 		)
 		.await?;
-		let _ = ReceiverInformationBmc::update_by_case(
-			ctx,
-			mm,
-			case_id,
-			ReceiverInformationForUpdate {
-				receiver_type: None,
-				organization_name: None,
-				department: receiver.department,
-				street_address: receiver.street_address,
-				city: receiver.city,
-				state_province: receiver.state_province,
-				postcode: receiver.postcode,
-				country_code: receiver.country_code,
-				telephone: receiver.telephone,
-				fax: receiver.fax,
-				email: receiver.email,
-			},
-		)
-		.await;
 	}
 
 	Ok(())

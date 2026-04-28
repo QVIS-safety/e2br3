@@ -36,6 +36,8 @@ pub fn router() -> Router {
 		set_my_password,
 		list_cases,
 		create_case,
+		check_case_intake_duplicate,
+		create_case_from_intake,
 		get_case,
 		update_case,
 		delete_case,
@@ -64,7 +66,9 @@ pub fn router() -> Router {
 		list_case_versions,
 		validate_case,
 		validate_case_all,
+		list_case_xml_export_history,
 		list_xml_export_history,
+		download_xml_export_history_error,
 		list_case_link_options,
 		export_case_xml,
 		get_case_lifecycle,
@@ -89,6 +93,7 @@ pub fn router() -> Router {
 		get_code_list,
 		list_ucum_units,
 		list_import_history,
+		download_import_history_error,
 		validate_import_xml,
 		import_xml,
 		list_audit_logs,
@@ -137,6 +142,15 @@ pub fn router() -> Router {
 			CaseListResponse,
 			CreateCaseRequest,
 			UpdateCaseRequest,
+			CaseIntakeCheckInputDoc,
+			CaseIntakeDuplicateMatchDoc,
+			CaseIntakeCheckResultDoc,
+			CaseIntakeCheckResponse,
+			CreateCaseIntakeCheckRequest,
+			CaseFromIntakeInputDoc,
+			CaseFromIntakeResultDoc,
+			CaseFromIntakeResponse,
+			CreateCaseFromIntakeRequest,
 			PatientInformationDoc,
 			PatientInformationForCreateDoc,
 			PatientInformationForUpdateDoc,
@@ -371,6 +385,16 @@ struct UpdateCaseRequest {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CreateCaseIntakeCheckRequest {
+	data: CaseIntakeCheckInputDoc,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CreateCaseFromIntakeRequest {
+	data: CaseFromIntakeInputDoc,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct CaseResponse {
 	data: CaseDoc,
 }
@@ -378,6 +402,16 @@ struct CaseResponse {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct CaseListResponse {
 	data: Vec<CaseDoc>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CaseIntakeCheckResponse {
+	data: CaseIntakeCheckResultDoc,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CaseFromIntakeResponse {
+	data: CaseFromIntakeResultDoc,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -605,6 +639,10 @@ struct UserDoc {
 	organization_id: String,
 	email: String,
 	username: String,
+	/// Canonical role ID. Built-in values include `system_admin`,
+	/// `sponsor_admin_cro`, and `sponsor_admin_company`; other values are
+	/// custom scoped roles.
+	#[schema(example = "sponsor_admin_cro")]
 	role: String,
 	first_name: Option<String>,
 	last_name: Option<String>,
@@ -615,6 +653,7 @@ struct UserDoc {
 	access_sender_ids: Option<String>,
 	access_product_ids: Option<String>,
 	access_study_ids: Option<String>,
+	access_blind_allowed: Option<bool>,
 	active: bool,
 	must_change_password: bool,
 	last_login_at: Option<String>,
@@ -629,6 +668,9 @@ struct UserForCreateAdminPayloadDoc {
 	organization_id: String,
 	email: String,
 	username: Option<String>,
+	/// Canonical role ID to assign. Use built-in sponsor admin IDs for fixed
+	/// admin roles, or a custom role name for scoped users.
+	#[schema(example = "pvs")]
 	role: Option<String>,
 	first_name: Option<String>,
 	last_name: Option<String>,
@@ -639,12 +681,16 @@ struct UserForCreateAdminPayloadDoc {
 	access_sender_ids: Option<Vec<String>>,
 	access_product_ids: Option<Vec<String>>,
 	access_study_ids: Option<Vec<String>>,
+	access_blind_allowed: Option<bool>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct UserForUpdateDoc {
 	email: Option<String>,
 	username: Option<String>,
+	/// Canonical role ID. Legacy values are normalized by the backend to the
+	/// new client-aligned role system.
+	#[schema(example = "sponsor_admin_company")]
 	role: Option<String>,
 	first_name: Option<String>,
 	last_name: Option<String>,
@@ -655,6 +701,7 @@ struct UserForUpdateDoc {
 	access_sender_ids: Option<String>,
 	access_product_ids: Option<String>,
 	access_study_ids: Option<String>,
+	access_blind_allowed: Option<bool>,
 	active: Option<bool>,
 	last_login_at: Option<String>,
 }
@@ -675,6 +722,18 @@ struct CaseDoc {
 	status: String,
 	validation_profile: Option<String>,
 	appendices_json: Option<String>,
+	review_receivers_json: Option<String>,
+	workflow_routes_json: Option<String>,
+	workflow_status: String,
+	workflow_assigned_role: Option<String>,
+	workflow_assigned_user_id: Option<String>,
+	workflow_due_at: Option<String>,
+	workflow_description: Option<String>,
+	workflow_updated_at: String,
+	qc_state: String,
+	is_locked: bool,
+	can_act_on_workflow: bool,
+	workflow_block_reason: Option<String>,
 	mfds_report_type: Option<String>,
 	report_year: Option<String>,
 	source_document_name: Option<String>,
@@ -697,18 +756,24 @@ struct CaseDoc {
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct CaseForCreateDoc {
-	organization_id: String,
 	safety_report_id: String,
 	dg_prd_key: Option<String>,
 	status: Option<String>,
 	validation_profile: Option<String>,
 	appendices_json: Option<String>,
+	review_receivers_json: Option<String>,
+	workflow_routes_json: Option<String>,
+	workflow_status: String,
+	workflow_assigned_role: Option<String>,
+	workflow_assigned_user_id: Option<String>,
+	workflow_due_at: Option<String>,
+	workflow_description: Option<String>,
+	workflow_updated_at: String,
 	mfds_report_type: Option<String>,
 	report_year: Option<String>,
 	source_document_name: Option<String>,
 	source_document_base64: Option<String>,
 	source_document_media_type: Option<String>,
-	version: Option<i32>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -718,20 +783,108 @@ struct CaseForUpdateDoc {
 	status: Option<String>,
 	validation_profile: Option<String>,
 	appendices_json: Option<String>,
+	review_receivers_json: Option<String>,
+	workflow_routes_json: Option<String>,
 	mfds_report_type: Option<String>,
 	report_year: Option<String>,
 	source_document_name: Option<String>,
 	source_document_base64: Option<String>,
 	source_document_media_type: Option<String>,
-	submitted_by: Option<String>,
-	submitted_at: Option<String>,
-	raw_xml: Option<String>,
-	dirty_c: Option<bool>,
-	dirty_d: Option<bool>,
-	dirty_e: Option<bool>,
-	dirty_f: Option<bool>,
-	dirty_g: Option<bool>,
-	dirty_h: Option<bool>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CaseIntakeCheckInputDoc {
+	safety_report_id: String,
+	#[schema(value_type = Vec<i32>)]
+	date_of_most_recent_information: Option<Vec<i32>>,
+	report_type: Option<String>,
+	reporter_organization: Option<String>,
+	sponsor_study_number: Option<String>,
+	patient_initials: Option<String>,
+	investigation_number: Option<String>,
+	age_d2_2a: Option<String>,
+	sex_d5: Option<String>,
+	dg_prd_key: Option<String>,
+	reaction_meddra_version: Option<String>,
+	reaction_meddra_code: Option<String>,
+	#[schema(value_type = Vec<i32>)]
+	ae_start_date: Option<Vec<i32>>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CaseIntakeDuplicateMatchDoc {
+	case_id: String,
+	safety_report_id: String,
+	version: i32,
+	status: String,
+	created_at: String,
+	report_type: Option<String>,
+	#[schema(value_type = Vec<i32>)]
+	date_of_most_recent_information: Option<Vec<i32>>,
+	reporter_organization: Option<String>,
+	sponsor_study_number: Option<String>,
+	patient_initials: Option<String>,
+	investigation_number: Option<String>,
+	age_d2_2a: Option<String>,
+	sex_d5: Option<String>,
+	dg_prd_key: Option<String>,
+	reaction_meddra_version: Option<String>,
+	reaction_meddra_code: Option<String>,
+	#[schema(value_type = Vec<i32>)]
+	ae_start_date: Option<Vec<i32>>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CaseIntakeCheckResultDoc {
+	duplicate: bool,
+	/// True when enough duplicate-basis input exists to trust the check.
+	/// This is independent of whether warnings are present.
+	basis_complete: bool,
+	/// Informational messages for duplicate review. This can include
+	/// incomplete-basis warnings as well as non-blocking missing-field notes.
+	warnings: Vec<String>,
+	matches: Vec<CaseIntakeDuplicateMatchDoc>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CaseFromIntakeInputDoc {
+	safety_report_id: String,
+	#[schema(value_type = Vec<i32>)]
+	transmission_date: Option<Vec<i32>>,
+	#[schema(value_type = Vec<i32>)]
+	date_first_received_from_source: Option<Vec<i32>>,
+	#[schema(value_type = Vec<i32>)]
+	date_of_most_recent_information: Vec<i32>,
+	report_type: String,
+	validation_profile: Option<String>,
+	appendices_json: Option<String>,
+	status: Option<String>,
+	/// Honored only when duplicate matches are empty and the duplicate basis
+	/// is incomplete. Duplicate hits are always hard-blocked.
+	allow_duplicate_override: Option<bool>,
+	mfds_report_type: Option<String>,
+	report_year: Option<String>,
+	source_document_name: Option<String>,
+	source_document_base64: Option<String>,
+	source_document_media_type: Option<String>,
+	reporter_organization: Option<String>,
+	sponsor_study_number: Option<String>,
+	patient_initials: Option<String>,
+	investigation_number: Option<String>,
+	age_d2_2a: Option<String>,
+	sex_d5: Option<String>,
+	dg_prd_key: Option<String>,
+	reaction_meddra_version: Option<String>,
+	reaction_meddra_code: Option<String>,
+	#[schema(value_type = Vec<i32>)]
+	ae_start_date: Option<Vec<i32>>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CaseFromIntakeResultDoc {
+	case_id: String,
+	safety_report_id: String,
+	version: i32,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -1082,6 +1235,15 @@ struct ReceiverInformationForCreateDoc {
 	case_id: String,
 	receiver_type: Option<String>,
 	organization_name: Option<String>,
+	department: Option<String>,
+	street_address: Option<String>,
+	city: Option<String>,
+	state_province: Option<String>,
+	postcode: Option<String>,
+	country_code: Option<String>,
+	telephone: Option<String>,
+	fax: Option<String>,
+	email: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -1236,6 +1398,8 @@ struct SubmissionHistoryRecordDoc {
 	submitted_by: String,
 	submitted_by_email: Option<String>,
 	submitted_at: String,
+	latest_ack_received_at: Option<String>,
+	latest_event_type: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -1608,6 +1772,36 @@ fn list_cases() {}
 	)
 )]
 fn create_case() {}
+
+#[utoipa::path(
+	post,
+	path = "/api/cases/intake-check",
+	tag = "cases",
+	security(
+		("auth_token" = [])
+	),
+	request_body = CreateCaseIntakeCheckRequest,
+	responses(
+		(status = 200, description = "Duplicate-check result with basis completeness and warnings", body = CaseIntakeCheckResponse),
+		(status = 400, description = "Invalid intake-check payload", body = ErrorResponse)
+	)
+)]
+fn check_case_intake_duplicate() {}
+
+#[utoipa::path(
+	post,
+	path = "/api/cases/from-intake",
+	tag = "cases",
+	security(
+		("auth_token" = [])
+	),
+	request_body = CreateCaseFromIntakeRequest,
+	responses(
+		(status = 201, description = "Case created from intake", body = CaseFromIntakeResponse),
+		(status = 400, description = "Duplicate hit hard-blocked, or incomplete basis requires explicit override", body = ErrorResponse)
+	)
+)]
+fn create_case_from_intake() {}
 
 #[utoipa::path(
 	get,
@@ -2002,6 +2196,18 @@ fn validate_case_all() {}
 
 #[utoipa::path(
 	get,
+	path = "/api/cases/{id}/exports/history",
+	tag = "case-subresources",
+	security(
+		("auth_token" = [])
+	),
+	params(("id" = String, Path, description = "Case ID")),
+	responses((status = 200, description = "Case XML export history", body = GenericDataResponse))
+)]
+fn list_case_xml_export_history() {}
+
+#[utoipa::path(
+	get,
 	path = "/api/exports/history",
 	tag = "case-subresources",
 	security(
@@ -2010,6 +2216,18 @@ fn validate_case_all() {}
 	responses((status = 200, description = "XML export history", body = GenericDataResponse))
 )]
 fn list_xml_export_history() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/exports/history/{id}/error.txt",
+	tag = "case-subresources",
+	security(
+		("auth_token" = [])
+	),
+	params(("id" = String, Path, description = "Export history record id")),
+	responses((status = 200, description = "Export error details text file"))
+)]
+fn download_xml_export_history_error() {}
 
 #[utoipa::path(
 	get,
@@ -2304,6 +2522,18 @@ fn list_ucum_units() {}
 	responses((status = 200, description = "XML import history", body = GenericDataResponse))
 )]
 fn list_import_history() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/import/xml/history/{id}/error.txt",
+	tag = "import",
+	security(
+		("auth_token" = [])
+	),
+	params(("id" = String, Path, description = "Import history record id")),
+	responses((status = 200, description = "Import error details text file"))
+)]
+fn download_import_history_error() {}
 
 #[utoipa::path(
 	post,

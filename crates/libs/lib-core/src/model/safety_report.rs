@@ -223,6 +223,19 @@ pub struct SenderInformationForCreate {
 	pub case_id: Uuid,
 	pub sender_type: Option<String>,
 	pub organization_name: Option<String>,
+	pub department: Option<String>,
+	pub street_address: Option<String>,
+	pub city: Option<String>,
+	pub state: Option<String>,
+	pub postcode: Option<String>,
+	pub country_code: Option<String>,
+	pub person_title: Option<String>,
+	pub person_given_name: Option<String>,
+	pub person_middle_name: Option<String>,
+	pub person_family_name: Option<String>,
+	pub telephone: Option<String>,
+	pub fax: Option<String>,
+	pub email: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]

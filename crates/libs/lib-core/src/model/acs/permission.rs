@@ -3,9 +3,11 @@
 //! Defines resources, actions, and the permission matrix for RBAC.
 
 use crate::ctx::{
-	ROLE_ADMIN, ROLE_HEAD_PV, ROLE_MANAGER, ROLE_PVM, ROLE_PVS, ROLE_SPONSOR,
+	canonical_role, ROLE_HEAD_PV, ROLE_MANAGER, ROLE_PVM, ROLE_PVS, ROLE_SPONSOR,
+	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
 	ROLE_USER, ROLE_VIEWER,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{OnceLock, RwLock};
 
@@ -1196,6 +1198,156 @@ fn dynamic_roles() -> &'static RwLock<HashMap<String, Vec<Permission>>> {
 	DYNAMIC_ROLES.get_or_init(|| RwLock::new(HashMap::new()))
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AdminMenuPrivilege {
+	pub menu_key: String,
+	pub can_read: bool,
+	pub can_edit: bool,
+	pub can_review: bool,
+	pub can_lock: bool,
+}
+
+fn push_unique(target: &mut Vec<Permission>, source: &[Permission]) {
+	for permission in source {
+		if !target.contains(permission) {
+			target.push(*permission);
+		}
+	}
+}
+
+fn permissions_for_menu_key(
+	menu_key: &str,
+	can_read: bool,
+	can_edit: bool,
+	can_review: bool,
+	can_lock: bool,
+) -> Vec<Permission> {
+	let mut permissions = Vec::new();
+	match menu_key {
+		"case" => {
+			if can_read {
+				push_unique(&mut permissions, viewer_permissions());
+			}
+			if can_edit {
+				push_unique(&mut permissions, user_permissions());
+			}
+			if can_review || can_lock {
+				push_unique(&mut permissions, &[CASE_APPROVE, CASE_UPDATE]);
+			}
+		}
+		"info" => {
+			if can_read {
+				push_unique(
+					&mut permissions,
+					&[
+						PRESAVE_TEMPLATE_READ,
+						PRESAVE_TEMPLATE_LIST,
+						SENDER_INFORMATION_READ,
+						SENDER_INFORMATION_LIST,
+						RECEIVER_READ,
+						RECEIVER_LIST,
+						STUDY_INFORMATION_READ,
+						STUDY_INFORMATION_LIST,
+						NARRATIVE_READ,
+						NARRATIVE_LIST,
+					],
+				);
+			}
+			if can_edit {
+				push_unique(
+					&mut permissions,
+					&[
+						PRESAVE_TEMPLATE_CREATE,
+						PRESAVE_TEMPLATE_UPDATE,
+						PRESAVE_TEMPLATE_DELETE,
+						SENDER_INFORMATION_CREATE,
+						SENDER_INFORMATION_UPDATE,
+						SENDER_INFORMATION_DELETE,
+						RECEIVER_CREATE,
+						RECEIVER_UPDATE,
+						RECEIVER_DELETE,
+						STUDY_INFORMATION_CREATE,
+						STUDY_INFORMATION_UPDATE,
+						STUDY_INFORMATION_DELETE,
+						NARRATIVE_CREATE,
+						NARRATIVE_UPDATE,
+						NARRATIVE_DELETE,
+					],
+				);
+			}
+		}
+		"import" => {
+			if can_read || can_edit {
+				push_unique(&mut permissions, &[XML_IMPORT]);
+			}
+		}
+		"export_submission" | "submission" | "export" => {
+			if can_read || can_edit {
+				push_unique(&mut permissions, &[XML_EXPORT]);
+			}
+		}
+		"user" | "users" => {
+			if can_read {
+				push_unique(&mut permissions, &[USER_READ, USER_LIST]);
+			}
+			if can_edit || can_review || can_lock {
+				push_unique(
+					&mut permissions,
+					&[USER_CREATE, USER_UPDATE, USER_DELETE],
+				);
+			}
+		}
+		"organization" | "organizations" => {
+			if can_read {
+				push_unique(&mut permissions, &[ORG_READ, ORG_LIST]);
+			}
+			if can_edit {
+				push_unique(&mut permissions, &[ORG_CREATE, ORG_UPDATE, ORG_DELETE]);
+			}
+		}
+		"audit" => {
+			if can_read || can_review {
+				push_unique(&mut permissions, &[AUDIT_READ, AUDIT_LIST]);
+			}
+		}
+		"data" | "terminology" => {
+			if can_read {
+				push_unique(&mut permissions, &[TERMINOLOGY_READ]);
+			}
+			if can_edit || can_review {
+				push_unique(
+					&mut permissions,
+					&[TERMINOLOGY_IMPORT, TERMINOLOGY_APPROVE],
+				);
+			}
+		}
+		"admin" | "settings" | "roles" => {
+			if can_read || can_edit || can_review || can_lock {
+				push_unique(&mut permissions, admin_permissions());
+			}
+		}
+		_ => {}
+	}
+	permissions
+}
+
+pub fn permissions_for_menu_privileges(
+	privileges: &[AdminMenuPrivilege],
+) -> Vec<Permission> {
+	let mut permissions = Vec::new();
+	for privilege in privileges {
+		let menu_permissions = permissions_for_menu_key(
+			privilege.menu_key.trim(),
+			privilege.can_read,
+			privilege.can_edit,
+			privilege.can_review,
+			privilege.can_lock,
+		);
+		push_unique(&mut permissions, &menu_permissions);
+	}
+	permissions
+}
+
 pub fn replace_dynamic_roles(map: HashMap<String, Vec<Permission>>) {
 	if let Ok(mut guard) = dynamic_roles().write() {
 		*guard = map;
@@ -1236,8 +1388,11 @@ pub fn permissions_for_privileges(
 
 /// Returns the permissions for a given role
 pub fn role_permissions(role: &str) -> &'static [Permission] {
-	match role {
-		ROLE_ADMIN => admin_permissions(),
+	let normalized = canonical_role(role);
+	match normalized.as_str() {
+		ROLE_SYSTEM_ADMIN => admin_permissions(),
+		ROLE_SPONSOR_ADMIN_CRO => admin_permissions(),
+		ROLE_SPONSOR_ADMIN_COMPANY => admin_permissions(),
 		ROLE_MANAGER => manager_permissions(),
 		ROLE_PVM => manager_permissions(),
 		ROLE_HEAD_PV => manager_permissions(),
@@ -1251,33 +1406,36 @@ pub fn role_permissions(role: &str) -> &'static [Permission] {
 
 /// Checks if a role has a specific permission
 pub fn has_permission(role: &str, permission: Permission) -> bool {
+	let normalized = canonical_role(role);
 	if let Ok(guard) = dynamic_roles().read() {
-		if let Some(perms) = guard.get(&role.trim().to_ascii_lowercase()) {
+		if let Some(perms) = guard.get(&normalized) {
 			return perms.contains(&permission);
 		}
 	}
-	role_permissions(role).contains(&permission)
+	role_permissions(&normalized).contains(&permission)
 }
 
 /// Checks if a role has any of the given permissions
 pub fn has_any_permission(role: &str, permissions: &[Permission]) -> bool {
+	let normalized = canonical_role(role);
 	if let Ok(guard) = dynamic_roles().read() {
-		if let Some(role_perms) = guard.get(&role.trim().to_ascii_lowercase()) {
+		if let Some(role_perms) = guard.get(&normalized) {
 			return permissions.iter().any(|p| role_perms.contains(p));
 		}
 	}
-	let role_perms = role_permissions(role);
+	let role_perms = role_permissions(&normalized);
 	permissions.iter().any(|p| role_perms.contains(p))
 }
 
 /// Checks if a role has all of the given permissions
 pub fn has_all_permissions(role: &str, permissions: &[Permission]) -> bool {
+	let normalized = canonical_role(role);
 	if let Ok(guard) = dynamic_roles().read() {
-		if let Some(role_perms) = guard.get(&role.trim().to_ascii_lowercase()) {
+		if let Some(role_perms) = guard.get(&normalized) {
 			return permissions.iter().all(|p| role_perms.contains(p));
 		}
 	}
-	let role_perms = role_permissions(role);
+	let role_perms = role_permissions(&normalized);
 	permissions.iter().all(|p| role_perms.contains(p))
 }
 
@@ -1288,6 +1446,7 @@ pub fn has_all_permissions(role: &str, permissions: &[Permission]) -> bool {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::ctx::ROLE_ADMIN;
 
 	#[test]
 	fn test_admin_has_all_permissions() {
@@ -1297,6 +1456,13 @@ mod tests {
 		assert!(has_permission(ROLE_ADMIN, USER_DELETE));
 		assert!(has_permission(ROLE_ADMIN, ORG_CREATE));
 		assert!(has_permission(ROLE_ADMIN, AUDIT_LIST));
+	}
+
+	#[test]
+	fn test_sponsor_admin_has_admin_permissions() {
+		assert!(has_permission(ROLE_SPONSOR_ADMIN_CRO, USER_CREATE));
+		assert!(has_permission(ROLE_SPONSOR_ADMIN_COMPANY, USER_DELETE));
+		assert!(has_permission(ROLE_SPONSOR_ADMIN_CRO, ORG_LIST));
 	}
 
 	#[test]
@@ -1358,6 +1524,41 @@ mod tests {
 	fn test_has_all_permissions() {
 		assert!(has_all_permissions(ROLE_ADMIN, &[CASE_CREATE, CASE_DELETE]));
 		assert!(!has_all_permissions(ROLE_VIEWER, &[CASE_READ, CASE_CREATE]));
+	}
+
+	#[test]
+	fn test_menu_privileges_expand_to_expected_permissions() {
+		let permissions = permissions_for_menu_privileges(&[
+			AdminMenuPrivilege {
+				menu_key: "case".to_string(),
+				can_read: true,
+				can_edit: true,
+				can_review: true,
+				can_lock: true,
+			},
+			AdminMenuPrivilege {
+				menu_key: "users".to_string(),
+				can_read: true,
+				can_edit: true,
+				can_review: false,
+				can_lock: false,
+			},
+			AdminMenuPrivilege {
+				menu_key: "import".to_string(),
+				can_read: true,
+				can_edit: false,
+				can_review: false,
+				can_lock: false,
+			},
+		]);
+
+		assert!(permissions.contains(&CASE_READ));
+		assert!(permissions.contains(&CASE_UPDATE));
+		assert!(permissions.contains(&CASE_APPROVE));
+		assert!(permissions.contains(&USER_LIST));
+		assert!(permissions.contains(&USER_CREATE));
+		assert!(permissions.contains(&USER_UPDATE));
+		assert!(permissions.contains(&XML_IMPORT));
 	}
 }
 

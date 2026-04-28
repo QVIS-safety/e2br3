@@ -1,0 +1,387 @@
+﻿No.,"상위분류(왼쪽 상위 메뉴명 혹은 E2B 메뉴(CI, RP 등)",하위분류(하위 메뉴명/기능 혹은 E2B Elements),PV Comments,Updated date of PV Comments,개발자 Comments,Updated date of 개발자 Comments,Updated?
+1,General/Common,-,"1. Title: 현재 E2BR3 Safety DB로 되어 있으나 E2B(R3) 준수는 Default이므로 삭제하고 추후 정해지는 Naming(예, QVIS Safety, QVIS NovaSafe, Qaris 등등) 반영 필요
+2. Routing page: Organization 정보는 INFO의 Sender Organization 정보와 연동되도록 설정 요망, 크게 QVIS, Client로 구분 후 Client 하위에 등록된 Sender 목록이 생성되도록 구현 요망
+3. Manual, Release history 등 User의 Database 관리 문서 확인을 위한 페이지 필요
+(또한 UAT 과정에서도 각 페이지/각 기능에 대한 설명/동작 logic 등을 명시한 기본 문서가 있어야 기능에 대한 Test 가능)
+4. 하위 탭 제목(CI, RP 등) 및 항목별(C.1.1, C.1.2 등) 가독성 높여주기 바람
+5. 로그인 유지 시간 설정 및 시간별로 팝업창, 로그인 시간 연장 기능 필요
+6. Review에 대한 용어들이 Validated 등 여러가지 용어로 표시되어 있으며, QC로 통일 필요 (필드명은 QC, QC 체크 후 필드값은 QCed로 표시)
+7. 항목 별 예시 입력 내용 삭제 (적절하지 않은 예시로 혼선을 줄 우려가 있기 때문)
+8. Notation 기능 추가 시 Auto-translation 기능 탑재 요청 (Preferrred)
+9. DG_PRD_KEY 용어 Product ID로 수정 요청",2026-02-25,"완료: Routing page를 QVIS/Client 기준으로 재구성했고, INFO Sender와 연동되도록 정리했습니다. Manual/Release History/UAT Notes 성격의 페이지도 추가했고, 세션 idle warning과 연장 기능도 넣었습니다. 예시 placeholder와 Product ID 용어 정리도 반영했습니다.
+미완료: 앱 이름을 configurable 하게 바꾸는 작업과 notation auto-translation은 아직 미구현입니다.
+
+",,
+1,General/Common,-,"PV Comments about 2026-02-25
+1. Title 부분 E2BR3 삭제된 부분 확인되었으며, 추후 결정되는 Naming 반영 필요
+2. Routing page 구분 된 것은 확인하였으나, 아래 문의/요청 사항 확인 필요. 
+(1) ""권한"" 시트 의 내용 바탕으로 현재 권한 정리 필요
+(2) 현재 Client 에서 구분된 Organization 정보를 관리하는 권한(Admin)의 이름?, Sender 정보에 설정된 것 기준 현재 작동하지 않음 (본 문서에서는 ""권한"" 시트 내용을 기반으로 작성)
+(3) Routing page의 system 및 Organization client 정보는 어디의 정보 인지?
+(4) user에게 부여된 권한별로 접속 시 해당되는 Organization이 Routing page가 다르게 설정되어야 함. (현재 admin 권한이 아닌 경우 접속이 안되는 것으로 페이지에 출력되어 확인 불가)
+3. DATA 메뉴로 추가된 것인지? 위치 조정(예를들어 메뉴 아래 user 정보 및 로그아웃 버튼 위치 등) 필요할 것으로 고려됨.
+4. 프론트엔드 부분으로 고려되어, 추가 수정 필요한 부분이 있으면 추후 UAT 과정에서 팀 의견 수렴하여 전달 예정
+5. ADMIN의 세팅에서 Idle Session Limit (minutes), Warning Lead Time (minutes)으로 구현된 것이 맞은지? 그렇다면 System 기준으로 관리되게 수정 필요
+6. 미반영으로 반영 필요
+7. 반영되지 않아 반영 필요
+8. 미구현된 부분으로 답변 확인, 추후 반영 필요
+9. 현재 확인되는 부분까지는 반영 확인됨",2026-04-02,,,
+2,HOME/Dashboard,-,"1. Home 화면에 표시되는 정보 및 섹션 구분을 전체적으로 재구성해 주기 바람
+1) 현재 통계 수치 기준 및 집계 범위(아래)가 불명확하며, 표시되는 정보가 대체로 불필요함.
+Total case/Pending reveiw/Critical case/Submitted  등의 집계 기준, severity distribution 분류 및 정의, Critical cases의 정의 등
+2) 실무적으로 (1)Notice 섹션, (2) 전체 Entry 된 사례 수 및 품목 별 사례 수, (3) (WF를 개발한다면) User 별 To Do list 및 접근 링크
+2. Appendix(ICH E2B(R3), MFDS, FDA 등) 선택 기능을 추가: 하나의 case에 대해 2가지 이상의 appendix를 동시에 적용할 수 있도록 개발 요청. cubeSAFETY와 달리 설정된 appendix에 해당하는 regional elements들이 case 페이지에서 모두 나타나도록 설정되도록 반영 요청(Preferred) 예, 필요에 따라 MFDS, FDA 한 가지만 선택하거나 MFDS+FDA를 동시에 선택할 수 있도록, 후자의 경우 각 국가별 항목이 case 페이지에서 동시에 보여지도록 설정) ",2026-02-25,"완료: Dashboard를 실제 운영형 홈으로 전면 개편했고, Notice/실제 case 수/appendix별 수/To Do/Quick Actions/Recent Cases를 반영했습니다. 또한 하나의 case에 복수 appendix를 적용하고, regional fields를 동시에 노출하며, validation/export/submission까지 복수 appendix 흐름으로 처리되도록 구현했습니다.
+미완료: 없음.",,
+2,HOME/Dashboard,-,"PV Comments about 2026-02-25
+1. User 별 To Do list 기재해주셨는데, WF 기능 개발 예정인지? 개발 예정이라면 Safety Database Administrator 이 WF에 대해 지정할 공간이 필요하며 ""WF"" 시트 참조,
+나머지 항목은 프론트엔드에서 처리 가능한 부분으로 WF 다른 항목과도 연관되어 UAT 시 추가 의견 전달 예정
+2. Case 별 페이지 화면 상단에서 설정사항 확인됨. 다만 아래 내용 수정 필요.
+(1) Main 화면 혹은 Case 화면에서 기본적으로 적용할 appendix 선택 부분 상단에 생성 필요
+(2) 현재 선택과 drop down 모두 되도록 설정되어 있음. drop down 삭제 필요
+(3) [Case(No 3) 관련 의견] Appendix 선택에 따라서 Case의 상세 페이지의 항목들 수정 필요하나 반영되지 않음. FDA 설정 시 추가되는 것은 확인하였으나 MFDS 항목이 선택에 상관 없이 보임.
+3. 답변 중 validation/export/submission까지 복수 appendix라는 의미가 출력되는 한개의  XML 출력으로 각 Appendix 처리 하도록 한다는 의미일지?(receiver 태그 여러개 생성 하는 의미?) No 23 부분 의견 참고 필요",2026-04-02,,,
+3,CASE,General/Common,"1. 상단의 회색 문구를 SDB에 맞게 수정 (예, Manage and track adverse event cases -> ICSRs)
+2. 한 페이지 당 행 갯수 설정하는 기능 추가
+3. 가장 최근 생성된 사례가 최상단에 제시되어야 함. 
+4. table headings 필요한 항목으로 업데이트 (patient, age/gender, severity 정보 불필요, Date of creation, Date of Most Recent Information for This Report, WW unique no, Type of report, Product ID, Sender, Event(MedDRA), Submission, Status, Deleted 항목 등 필요한 정보로 재구성), Numbering 필요 
+5. Case 삭제 시 데이터가 사라지지 않고 취소선 형식으로 남아 있도록 설정 
+6. Actions>Edit, Delete 기능은 case 상세 페이지에 반영하고 Case 목록에서는 제외, Case 목록에서 해당 행을 클릭하면 조회/편집 가능하도록 설정
+7. Status>checked 표시는 어떤 의미인지? Rewiew 완료의 의미라면 QCed로 표시하는 등 시스템 전체적으로 일관된 용어 사용
+8. Case List 추출 기능 필요함.
+9. Audit trail을 위해 Save, Delete 시 사유를 선택하고 comments 기재할 수 있는 기능 추가 
+10. Source document 업로드 항목, Expectedness, Did reaction abate after stopping drug?, Product ID, Report year(혹은 Report Number, Sequence Number 등) 등 E2B 항목이 아닌 항목들 추가 필요",2026-02-25,"완료: CASE 문구를 ICSRs로 수정했고, page size, 최신순 정렬, row click 상세 진입, soft delete, CSV export, 상세 화면 More 메뉴의 delete dialog, Reviewed 용어 정리를 반영했습니다. 목록 컬럼도 Date of Creation, Date of Most Recent Information, WW Unique No, Type of Report, Product ID, Sender, Event, Submission, Status, Deleted, Report Year, Source Document까지 확장했습니다.
+미완료: Save 시점 전반에 reason/comments를 강제하는 범용 compliance UI, Expectedness, Did reaction abate after stopping drug? 같은 추가 비E2B 필드는 아직 미구현입니다.",,
+3,CASE,General/Common,"PV Comments about 2026-02-25
+1. 의도와 다르게 수정되어 있음(해당 문구 ICSRs 로 수정). 프론트엔드 부분으로 고려되어 추후 반영 여부 재확인 
+2. 반영 확인
+3. 반영 확인
+4. 반영 확인
+5. 확인 불가 (현재 삭제되지 않음), 해당 오류 수정 및 확인 필요
+6. 반영 확인
+7. 미반영 및 의도 재확인 필요. 해당 부분이 WF 기능에 대한 것이면, WF 에 따른 Status 출력 필요.
+8. Case list 출력 시 Export Hx 에서로 출력 내역 확인 가능할 수 있도록 수정 필요
+(출력 내역 항목 Export file type, File(재다운로드용), Status, error(Status erorr 시), export time, User)
+9. Save 반영 필요, Delete 부분 확인 불가, 다만 Delete 적용 시 PW 입력하는 부분 삭제
+10. Validation 진행 전 반영 필요",2026-04-02,,,
+4,CASE,필터,Table Heading 항목 별로 필터 기능을 활용할 수 있도록 수정,2026-02-25,"완료: CASE 목록 필터를 case no/status뿐 아니라 WW unique no, report type, product ID, sender, event, submission state, deleted state, report year, source document 기준으로 사용할 수 있게 확장했습니다.
+미완료: 없음.",,
+4,CASE,필터,"PV Comments about 2026-02-25
+Heading 항목에서 입력하도록 수정 필요. ",2026-04-02,,,
+5,CASE,Status(Review 및 Lock),"1. Review 체크 후에도 데이터 수정이 가능함. Review 체크된 상태에서 수정 불가하도록 설정 요망
+2. Lock 버튼이 정상 작동하지 않음",2026-02-25,"완료: review 상태를 reviewed로 재정의했고, UI에는 Reviewed로 통일했습니다. reviewed와 locked 모두 frontend/backend에서 read-only로 동작하도록 반영했습니다.
+미완료: 없음.",,
+5,CASE,Status(Review 및 Lock),"PV Comments about 2026-02-25
+1. (1) 직접 Entry 한 사례 Review 체크 불가하여 확인되지 않음. 다만 용어는 앞서 말한것과 같이 QC 및 체크 시 Qced 로 수정
+(2) Import 한 사례 Review 체크시 오류 창이 뜨나 실제 Reviewed 처리됨. (이후 Review 해체 및 Lcok 불가)
+2. Lock 버튼도 Review와 동일한 상태",2026-04-02,,,
+6,CASE,Case 생성>General,"1. 달력: 
+- 시스템 전체가 영어를 기반으로 개발되어 있으므로 달력 또한 같은 언어를 기반으로 설정되어야 함 (Duplication check 페이지에는 한글로 표시됨)
+- UK을 허용하는 요소에 UK 기능이 설정되지 않았음 (예, AE Start date), E2B(R3) business rule 적용 요망
+2. Validation profile (ICH/FDA/MFDS): duplication check에서 필요한 항목 아니므로 삭제 (해당 항목 설정에 관한 의견은 Home/Dashboard에 대한 검토 의견에서 확인 요망) 
+3. 전체적으로 Null flavor 선택 기능이 누락되었음. 
+4. 필수 항목(또는 optional mandatory elements) 누락 시 warning message 표시되도록 개발 요망
+5. 각 페이지 상단에 뜨는 메시지(예, Validation rules: cached copy)가 user에게 필요한 것인지? 그렇지 않다면 숨김 처리
+6. 상단 메시지(Red dot means this section has validation issues (blocking or non-blocking). Submission requires zero blocking issues and Validated status.)
+- validation error 있어도 red dot 표시되지 않아 Validation 작동 여부 확인 필요
+- blocking, non-blocking이 어떤 의미인지? User가 이해할 수 있는 용어로 표현 
+7. 입력 창 우측의 ... 표시 동작하지 않음. 기능 구현 필요
+8. Notation 기능 필요함 (2개의 언어로 입력해야 하는 경우)
+9. 반복 입력 가능한 항목(r, i, k)은 행 형식(cubeSAFETY와 같이 표 형식)으로 제시되도록 변경 요청. (행에는 기본 정보만 제시하고 상세 정보는 행 클릭 시 확인, 수정할 수 있도록) 그렇지 않으면 페이지가 길어져서 각 항목별 입력 정보를 종합적으로 파악하기 어려움 
+10. 페이지 우상단의 프린터, 사진, lock, ... 버튼 동작하지 않음. 아이콘 이름 및 기능 재정비 요망, 버튼 클릭 시 즉시 동작하지 않고 재확인하는 팝업창을 뜨도록 설정 요망  
+- 프린터: CIOMS, XML 추출 기능 구현되어야 함. (XML 추출 시 Appendix 설정 기능 필요)
+- 카메라: screenshot 기능 불필요함. 해당 case의 status(saved, reviewed, locked, deleted 등) 
+- 체크 박스: Validate case -> QC로 수정 
+- Follow-up 생성, Submission 기능 필요 (cubeSAFETY의 경우 ... 표시에서 선택 가능) 
+12. MedDRA 버전은 목록에서 선택되도록 설정해야 함. 현재 검색 기능 사용 불가 (이하 MedDRA 항목 전체)
+13. 항목 작성란 옆의 ""..."" 에서 Audit Trail, Notation(해당하는 항목에서), 삭제 기능 추가 필요
+14. Save 누르지 않은 채 다른 페이지로 이동하는 경우 저장/취소 선택할 수 있도록 경고창 필요 
+15. 국가 정보 입력하는 부분은 전체 동일하게 적용(ISO 3166-1 alpha-2, EU에서 목록을 선택)
+16. D.7.1.r.1b 항목 을 포함하여 MedDRA 용어 활용시 MedDRA LLT Term으로 검색하고, 출력은 MedDRA LLT Term과 MedDRA code no가 함께 출력되도록 수정 필요",2026-02-25,"완료: case form 전반의 date/calendar UX, unsaved-change warning, MedDRA 표시, ... field action, null flavor 저장/복원, 여러 section의 날짜/필드 보완을 마감했습니다.
+미완료: 없음.
+
+",,
+6,CASE,Case 생성>General,"PV Comments about 2026-02-25
+[저장은 페이지 단위에서 저장 필요하나, 현재 import 한 사례에 대해서만 페이지단위 저장 버튼 활성화되며 정상 저장되지 않음. 또한 User에게 불필요한 Batch 부분의 오류메세지가 뜸([Date of Creation] [N.1.5] 등)
+현재 Case 직접 입력 시 페이지 단위 저장 버튼 활성화 안되지 않음]
+
+1. (1) 첫번째 의견은 반영 완료, (2) 두번째 Null flavor 부분 전반적으로 재확인 필요. 예를들어 (C.1.2), (C.1.4), (C.1.5) 등 날짜 필수값에 Null flavor가 있음. (추가로 입력 항목에 달력 아이콘 작동하지 않으며, 날짜 미래 날짜 입력 불가능하게 수정 필요). 또한 Business rule 적용 적절하게 되어있는지 확인 필요(지역 항목(KR 및 FDA 항목) 등이 섞여있거나(INFO 메뉴 Reporter 서식에서 Reporter's Email (C.2.r.2.8) 등), 존재하지 않는 경우 (SD에서 Health Professional Type (C.3.1.KR.1), SI에서 Other Studies Type (C.5.4.KR.1) 등)가 있음, 확인한 모든 항목은 기재한 것은 아니니 전반적으로 재확인 필요.
+2. 본 항목 반영 필요
+3. 1번의 2번째와 동일한 의견으로 항목 전반적으로 Null flavor 재확인 필요
+4. 저장이 되지않아 작동 여부 확인 불가하며, 현재 확인되는 정보로 볼 때 전체 Warning message 재확인 필요하며 아래 내용 참조
+(1) 세부 메뉴(CI, RP, SD 등) 항목별로 필수값 혹은 조건부 필수값이 있는 경우 세부 메뉴에 표시되어야 하나, 현재 표시가 되는 부분이 있고 안되는 부분이 있음.
+(2) DG 같은 경우 해당 페이지 들어가면 오류 상태가 표기되나, 세부 메뉴(DG)에 표기되지 않음
+5. 해당 메세지 보이지 않으나 아직 저장 불가
+6. 메세지 수정되었으나, 4번 의견에 따른 Warning 메세지가 정상 작동하지 않음
+7. `...` 기능 수정 필요. 아래 내용 참조.
+(1) FU 기능이 Create Follow-up Draft으로 생성된 것으로 보이나, 클릭하면 처음 사례를 생성하는 것과 동일한 화면(Duplication Check 화면)으로 이동됨. 동일한 보고자 관리번호 기준으로 ""Sender's (case) Safety Report Unique Identifier(C.1.1)"" 으로 FU 보고서가 생성되어야 하며, 최초 생성 시 Date of Creation (C.1.2)는 생성 시점, Date of Most Recent Information for This Report (C.1.5)는 빈칸, 나머지는 모두 FU 보고서를 생성한 원 보고서의 값을 Default 값으로 가져야 함.
+(2) Open Export / Submission 클릭 시 해당 메뉴로 이동만 수행됨. 해당 페이지에서 해당 보고서 보고를 위한 정보가 자동 입력되도록 수정 필요.
+8. 앞서 의견에 따라 Notation 기능 아직 추가 안된점 확인. 반영 필요.
+9. 반영되지 않음. ""표 형식"" 시트 참조.
+10. 현재 각 아이콘 및 Function 항목만 구현되었고, 아직 Function 별 세부적인 기능은 아직 개발 안된 것인지 확인 필요. 아이콘 별 아래 문의 사항 확인 요청. (ICH drop down, ICH, FDA, MFDS 항목 제외)
+(1) Unsaved/Saved: 어떤 기준 출력값인지 확인 필요. WF 개발한다면 WF 에 따른 상태 표시 필요함.
+(2) 프린트 아이콘: 앞서 Appendix 의견 고려 필요하여 Appendix에 따른 XML 출력 필요하며 추가로 며 CIOMS 양식의 PDF 출력 필요
+(3) `☑️`, `🔒`, `...` 부분은 정상 작동하지 않는데, 앞 부분의 항목 의견 반영 필요.
+[11번은 이전 Comment에서 번호 누락]
+12. MedDRA Version 및 term 현재 작동하지 않아 확인 불가
+13. 항목별 작성란 옆의 `...` 에 대해 아래와 같이 수정 필요.
+(1) Audit Trail: ① 해당 항목의 수정/생성 일자, User, 수정 항목명, 수정된 해당 항목의 값 및 Notation(해당 시), Null Flavor(해당 시), 수정 사유 항목 표시
+② 누적하여 Table 형태로 표시, 최신 정보가 가장 위
+③ 최초 등록한 정보는 해당 Trail에 생성 일자, 생성한 User, 항목명, 해당 항목의 값, 수정 사유는 ""Initial"" 기재하여 출력
+(2) Notation은 필요한 항목에 대해서만 생성, 해당 항목에 대한 별도 논의가 필요한 경우 재논의 요청
+(3) 삭제: 현재 해당 항목에 기재된 정보 삭제하는 기능 요청한 것이었으며, 수정 필요
+14. 창이 뜨는 것은 확인하였으나, 저장이 되지 않아 작동하는지 확인 불가
+15. 선택 창이 뜨는 것은 확인하였으나, 데이터가 확인되지 않음. 아직 국가 데이터가 포함되지 않은 것인지?
+16. MedDRA code 칸이 아직 보이지 않으며, MedDRA Version 및 term 현재 작동하지 않아 확인 불가",2026-04-02,,,
+7,CASE,Case 생성>Duplication check ,"1. Type of report 별로 입력 필요한 필수값이 달라지는 부분 반영 필요
+2. 중복 case 판정 기준이 무엇인지 확인 필요
+- 중복 확인을 위한 필수 항목이 입력되지 않으면 duplication check pass되지 않아야 함.
+- C.1.1, C.1.3, C.1.5, DG_PRD_KEY 정보가 다르더라도 환자 정보 및 AE term/시작일이 동일하다면 duplication 의심사례로 검증되어야 함 
+3. duplication check에서 vaildation profile은 중복 case 판정 기준 아님
+4. DG_PRD_KEY 항목(Product ID로 항목명 수정 요망)은 case info에서 등록한 Pre-approval IP Name 또는 Brand Name 정보를 선택하도록 설정해야 함. 
+5. Duplication Check 에서 중복 의심사례더라도 경고창과 함께 case 생성 가능하도록 설정 필요",2026-02-25,"완료: 중복 판정 기준을 case number 중심이 아니라 환자 signature + reaction/event + AE start date 중심으로 재구성했고, study report type에 필요한 필수 입력도 보완했습니다. 중복 경고 후 Create anyway도 가능하게 했습니다.
+미완료: 없음.",,
+7,CASE,Case 생성>Duplication check ,"PV Comments about 2026-02-25
+1. 일부 필수값 달라지는 건 확인하였으나 모두 적용되지는 않음(예를들어 Patient Name or Initials (D.1)이 계속 필수값 인 상태로 유지됨), Type of Report (C.1.3) 값에 따라 이하 항목에서 항목별로 활성화/비활성화 필요. 값 별로 아래 내용 참고. (추가로 앞서 No, 6. 의견에 따른 Null flavor 부분 동일하게 반영 필요)
+- 1: Spontaneous report: D.1, D.2.2a, D.5, Product ID, E.i.2.1a, E.i.2.1b, E.i.4
+- 2: Report from study: C.2.r.2.1, C.5.3, D.1.1.4, Product ID, E.i.2.1a, E.i.2.1b, E.i.4
+- 3: Other: D.1, D.2.2a, D.5, Product ID, E.i.2.1a, E.i.2.1b, E.i.4
+- 4: Not available to sender (unknown): D.1, D.2.2a, D.5, Product ID, E.i.2.1a, E.i.2.1b, E.i.4
+2. (1) 1번에 따라 활성화된 항목을 기준, 모두 입력되면 통과 하는 점 확인하였으나, 일부 항목 미입력 시에도 생성 가능하도록 Duplication Check 안되는 점 경고창으로 확인 하고 Case 생성 여부 확인하는 창으로 수정 필요 
+(2) 중복 검사 항목 중 모두 갖진 않더라도, Product ID, E.i.2.1a, E.i.2.1b, E.i.4 값이 같은 경우 중복여부에 대한 재확인 및 생성 진행할지 확인하는 과정 필요.
+3. 반영 확인
+4. Product 정보 불러오는 것은 확인하였으나, 불러오는 정보가 Product ID 이어야 함
+5. 반영되지 않음. 중복 사례 생성되지 않음",2026-04-02,,,
+8,CASE,Case 생성>CI ,"1. 각 항목명 우측의 물음표 원문자의 기능은?
+2. f/u case 선택 드롭다운 박스 (좌측 상단): 현재 연-월-일만 표시됩니다만, 같은 날짜에 생성된 케이스가 여러 개 있을 수 있으므로 C.1.2 기재사항 전체(시/분/초) 표시되도록 설정 요망
+3. MFDS Report Type 항목 추가 필요, Non E2B(R3) element로서 Report year 항목 추가
+4. C.1.6.1.r.2: 첨부 기능 구현되지 않은 듯
+5. Non E2B(R3) element로서 Source document 업로드 항목 추가 필요",2026-02-25,"완료: linked/follow-up case 선택, MFDS Report Type, Report Year, Source Document upload를 추가했고 tooltip/help 동작도 유지했습니다.
+미완료: 없음.
+
+",,
+8,CASE,Case 생성>CI ,"PV Comments about 2026-02-25
+1. 반영 확인
+2. 반영되지 않음
+3. (1) MFDS Report Type은 선택 항목으로 수정 (1. 임상시험계획의 승인을 받은 자, 2. 임상시험용의약품의 치료목적 사용승인을 받은 자, 3. 시판 후 이상사례 국내보고, 4. 시판 후 이상사례 국외보고, 5. 임상시험계획의 승인을 받은 자 (국외), 6. 의료기기 이상사례 보고)
+(2) Report year 현재 4자리 인데, 길게 수정 필요. Non-E2B 마크는 삭제(모두 동일하게 적용)
+4. 반영 확인
+5. Source document 업로드 항목은 확인하였으나, 파일의 정보 확인할 수 있는 칸이 없음, 다음과 같이 수정
+(1) 반복 생성가능하도록 수정
+(2) Source Document 업로드 칸과 파일 첨부칸을 구분",2026-04-02,,,
+9,CASE,Case 생성>RP,"1. Import template: 저장된 정보를 가져 오는 기능임을 직관적으로 알 수 있도록 표현 수정 (예, Import Reporter)
+2. Primary Source for Regulatory Purposes(C.2.r.5) 허용되는 값과 상이함. 본 항목을 포함하여 ICH 항목 혹은 Regional 항목들 부합하는지 확인 필요",2026-02-25,"완료: Import Reporter Template 문구 정리와 함께 C.2.r.5를 Yes/No 값셋으로 정비했고, reporter template/case form/backend/XML import를 함께 맞췄습니다.
+미완료: 없음.",,
+9,CASE,Case 생성>RP,"PV Comments about 2026-02-25
+1. 확인 완료
+2. C.2.r.5 T/F 확인 완료하였으나, Other Health professional Type (C.2.r.4.KR.1) 항목 확인되지 않음. 
+[참고: INFO의 Reporter 에서 Reporter's Email (C.2.r.2.8) 는 FDA 항목. ICH 및 지역 기준 반영 여부 재확인 필요]",2026-04-02,,,
+10,CASE,Case 생성>SD,"1. Import template: RP 시트와 같은 의견
+2. Receiver 정보는 SD에 해당하지 않으므로 삭제, Submission 시 필요한 정보이므로 Submissoin 페이지에서 Receiver 정보 선택하도록 설정해야 함. ",2026-02-25,"완료: SD는 sender-only로 정리했고, receiver 입력은 제거했습니다. receiver routing은 Export / Submission에서 처리하도록 분리했습니다.
+미완료: 없음.
+
+",,
+10,CASE,Case 생성>SD,"PV Comments about 2026-02-25
+1. 확인 완료
+2. 미반영. Message Header 및 Receiver Information 아직 본 페이지에 존재함.
+[참고: No 9 항목의견과 동일하게 ICH 및 지역 기준 반영 여부 재확인 필요. Health Professional Type (C.3.1.KR.1) 항목 확인되지 않음.]",2026-04-02,,,
+11,CASE,Case 생성>LR,C.4.r.2 항목 누락되었음. ,2026-02-25,"완료: C.4.r.2 Included Documents 업로드를 추가했고, attachment-only literature 저장도 되도록 보완했습니다.
+미완료: 없음.",,
+11,CASE,Case 생성>LR,"PV Comments about 2026-02-25
+반영확인
+[참고: No 6 의견 참조하여 C.4.r.1의 Null flavor 항목 재확인]",2026-04-02,,,
+12,CASE,Case 생성>AE ,"1. E.i.3.2는 false/true 선택 항목이 아님. True 선택하거나 Null Flavor에서 NI를 선택해야 함. 
+2. Non-serious event인 경우 일괄 NI 선택할 수 있는 기능 추가, Business Rule 적용 여부 확인 필요함.",2026-02-25,"완료: seriousness criteria를 Yes/NI 구조로 바꾸고, Non-serious 처리와 seriousness derive 로직을 정리했습니다.
+미완료: 없음.",,
+12,CASE,Case 생성>AE ,"PV Comments about 2026-02-25
+1. NI는 다른 Null Flavor와 동일한 방식 적용 필요
+2. 일괄 선택 확인하였으며, Business rule은 재확인 필요
+[참고: No 6 의견 참조하여 항목 전반적으로 재확인. Term Highlighted by the Reporter(E.i.3.1) 이 Business rule과 다름, Date of Start of Reaction / Event(E.i.4) 항목 Null Flavor 값이 다름]",2026-04-02,,,
+13,CASE,Case 생성>LB ,"F.r.3.1, F.r.3.3은 검증룰에 따라 정해진 목록을 선택하도록 설정해야 함. ",2026-02-25,"완료: F.r.3.1은 코드 선택형으로 유지했고, F.r.3.3은 backend ucum_units 기반으로 사용하도록 바꿨습니다.
+미완료: 없음.
+",,
+13,CASE,Case 생성>LB ,"PV Comments about 2026-02-25
+F.r.3.3 ucum 기반 자료 값 모두 포함한 것 맞는지 확인 필요.",2026-04-02,,,
+14,CASE,Case 생성>DG,"1. G.k.1에 4번(drug not administered) 누락되었음. 
+2. 전반적으로 항목 번호 순서대로 배치 요망 
+3. G.k.2.2는 보고된 용어를 입력하는 항목인데, WHODrug에서 검색하도록 설정되어 있어 수정 필요
+4. Duplication check 페이지에서 입력했던 PRD_DG_KEY 정보(Product ID로 항목명 변경)가 DG 페이지에서 확인되도록 설정 요망 
+5. MFDS report type에서 '시판 후 이상사례 국외보고'를 선택한 경우에는 G.k.2.1.KR.1에서 WHO-Drug 입력 필요하며 WHO-DD 버전 및 검색 기능 필요
+6. G.k.2.4 항목을 포함하여 다수 항목이 항목 번호와 항목명이 일치하지 않음. 전체적으로 ICH/FDA/MFDS 요건에 맞게 항목명/번호 기재되어 있는지 점검 필요함.
+7. G.k.4.r.1b(dose), G.k.4.r.3(interval unit), G.k.4.r.6b 등은 UCUM code로 설정되어야 함. 전체적으로 UCUM code 대상 항목 리스트 확인 요망
+8. 현재 Related Reaction (G.k.9.i.0)로 되어 있는 항목명은 Reaction(s) / Event(s) Assessed (G.k.9.i.1)로 수정되어야 하며, Reaction / Event (E.i.2.1b)에 저장된 AE term 중에서 선택 가능하도록 해야 함. 또한, 선택된 AE term 별로 탭(시트)을 추가하여 source 별로 입력할 수 있도록 설정 필요
+9. G.k.4.r - Structured Dosage Information에서 여러 투여량이 있는 경우, 탭(시트)을 추가하여 각 탭별로 입력하는 방법으로 수정",2026-02-25,"완료: Drug Not Administered, G.k.2.2 자유입력, Product ID 노출, MFDS WHO-Drug 흐름, DG 번호/순서 정리, dosage tabs, unit control, G.k.4.r 위치 조정 등 핵심 문제를 반영했습니다.
+미완료: 없",,
+14,CASE,Case 생성>DG,"PV Comments about 2026-02-25
+1. 반영 확인
+2. (G.k.2.2) 항목 등 순서 안맞는곳 재확인 필요.
+3. 반영 확인
+4. 미반영. Product ID 수정된 것은 확인하였으나 기능 작동하지 않음
+5. No 8 의견 확인 및 선택된 항목의 Business Rule에 따라 입력필요 항목 구분 적용 필요.
+(예 MFDS report type에서 '시판 후 이상사례 국외보고'를 선택한 경우에는 Medicinal Product ID (G.k.2.1.KR.1b) 혹은 Substance ID (G.k.2.3.r.1.KR.1b) 필수). WHO-DD 버전 및 검색 기능 적용되지 않음.
+[참고: Business Rule에 따른 Strength (unit)(G.k.2.3.r.3b) 의 모든 항목 포함되었는지 재확인]
+6. G.k.3.4 항목 존재하는 것이 맞는지 확인 필요. 항목명 및 번호 일부 수정된 것 확인하였으나 G.k.7, G.k.8, Supplemental Drug Details 구분 항목 등 맞지 않으며 Business rule에 따른 항목 전반적으로 재확인 필요
+7. UCUM 모든 정보 반영된 것 맞는지 재확인 필요
+8. 항목명 수정 및 선택하는 것은 확인하였으나, 반복가능 항목(Source of Assessment (G.k.9.i.2.r.1), Method of Assessment (G.k.9.i.2.r.2) Result of Assessment (G.k.9.i.2.r.3), KR Method of Assessment (G.k.9.i.2.r.2.KR.1), WHO-UMC Result of Assessment (G.k.9.i.2.r.3.KR.1), KRCT Result of Assessment (G.k.9.i.2.r.3.KR.2)) 해당 항목 내에서 반복하도록 수정, 현재는 항목(G.k.9.i - Drug-Reaction/Event Assessment) 전체가 반복됨.
+9. 반영 확인",2026-04-02,,,
+15,CASE,"Case 생성>Review, WF","1. RE 페이지가 Review 기능을 의도한 것인지 확인 필요함. cubeSAFETY에는 보고별 Timeline을 관리, 제출 결과(배치번호, 보고날짜등) 확인하는 페이지로 구성되어 있음. 해당 기능을 구현해 주기 바람. 
+2. WF 기능에 대해서 구현 예정인지 확인 필요.",2026-02-25,"완료: RE를 receiver별 Report Due / Reported Date와 Distribution History 화면으로 교체했고, WF를 Current Status / Next Status / Role / User / Comments / route history 구조로 교체했습니다.
+미완료: backend workflow engine 수준의 강한 상태 전이 enforcement는 아직 없습니다. 현재는 화면과 저장 구조 중심입니다.",,
+15,CASE,"Case 생성>Review, WF","PV Comments about 2026-02-25
+1. INFO의 Receiver 불러오는 기능 작동하지 않음.
+2. WF는 ""WF"" 시트 참고하여 수정.",2026-04-02,,,
+16,CASE,Case XML Export,"1. 1개의 사례 Export 되는것은 확인하였으며, DB 검증 후 맞게 출력되는 것일지 재확인 필요
+2. 여러 사례 동시 출력 가능하도록 수정 필요",2026-02-25,"완료: 단일 case export는 validation 후 다운로드되도록 유지했고, 다건 선택 export용 bulk XML ZIP endpoint도 추가했습니다.
+미완료: 없음.",,
+16,CASE,Case XML Export,"PV Comments about 2026-02-25
+Export 기능 작동하는 것이 맞는지 재확인",2026-04-02,,,
+17,INFO,General/Common,"1. 상단의 회색 문구 수정 요망 (Manage reusable templates for sender, receiver, product, reporter, study, and narrative data. Import templates directly into case forms. -> Manage information for sender, receiver, product, reporter, study, and narrative template.) 
+2. Add template와 Create your first template 기능에 무슨 차이가 있는지? 차이가 없다면 create~ 는 삭제
+3. 필수항목 표시는 Case 생성 탭과 일관되게 반영 (항목평 좌측에 빨간색 * 표시) 
+4. 제목의 Pre-saved templates 표현도 삭제 또는 맥락에 맞게 수정
+5. Notation란은 해당 항목의 하위 항목임을 명확히 인지할 수 있도록 배치 조정 
+6. 전체적으로 Template name, Description 삭제 
+7. 등록된 정보는 numbering하여 행 형식(Line-listing 형식)으로 보여지도록 설정 
+8. Table Header 설정하여 화면에서 보이도록 설정 및 항목별 필터 설정 가능하게 수정 필요
+9. Delete 체크 박스를 버튼 형식으로 수정",2026-02-25,"완료: INFO wording을 Record 중심으로 정리했고, shared dialog header를 Record Name + Comments로 축소했습니다. 목록도 No./Name/Linked Summary/Comments/Updated/Default/Actions 테이블로 정리했고, search 외에 Updated date와 Sender default filter도 추가했습니다. button-style delete도 유지했습니다.
+미완료: 모든 INFO entity form의 required marker/notation 배치를 case form과 완전히 동일한 패턴으로 100% 통일하지는 못했습니다.",,
+17,INFO,General/Common,"PV Comments about 2026-02-25
+1. 반영 확인
+2. 삭제되고 Record로 추가한 것 확인
+3. 반영 확인 
+4. 반영 확인
+5. 반영 확인
+6. 반영 확인
+7. 반영 확인
+8. Table Header 에서 항목별 필터 설정 가능하게 수정 필요
+9. Delete 체크 박스를 버튼 확인하였으나, 삭제 시 표시 없이 삭제됨. (취소선으로 삭제 정보 표시 필요)
+[요청사항: 1) No3의 6번과 동일하게 행 클릭으로 해당 정보 조회 및 편집 가능하도록 수정,
+2) No6의 13번 Audit trail과 동일하게 항목별로 Audit trail 확인 가능하도록 수정]",2026-04-02,,,
+18,INFO,Sender,"Add Template -> Add Sender로 수정(해당 페이지 내 모든 항목), 등록된 Sender 정보가 organization(client) 정보와 연동되어야 함. 즉, user 접근 권한 부여, case processing, submission 등 전체적인 업무가 Sender 별로 진행되어야 함. (상위 분류 General 항목의 2번 참조)",2026-02-25,"완료: Add Sender Record 중심 wording으로 정리했고, sender master에 Linked Client / Organization Name, Organization Category(QVIS/Client)를 추가했습니다. select-organization, ADMIN 사용자 organization 결정, submission sender 흐름도 sender linkage를 우선 사용하도록 연결했습니다.
+미완료: sender를 기준으로 한 전체 업무 권한 모델을 backend 수준에서 새로 재설계한 것은 아닙니다. 현재는 sender를 운영상 source of truth로 재사용하는 수준입니다.",,
+18,INFO,Sender,"PV Comments about 2026-02-25
+No 1 정보 및 ""권한"" 시트의 내용 기준 재확인 필요
+
+[참고: Dafualt 항목이 어떤 부분일지?]",2026-04-02,,,
+19,INFO,Study,"1. Product는 등록된 정보에서 가져오도록 설정
+2. MFDS, FDA regional element 반영
+- MFDS: study number -> study  no, protocol no 선택 하도록, Other Studies Type (C.5.4.KR.1) 추가 
+- FDA: IND Number where AE Occurred (FDA.C.5.5a), Pre-ANDA Number where AE Occurred (FDA.C.5.5b), FDA.C.5.6.r - IND number of cross reported IND 등 추가 
+3. EDC sync 기능이 가용하지 않으므로 삭제",2026-02-25,"완료: Product master에 MFDS Study No./Protocol No./Other Studies Type, FDA C.5.5a/C.5.5b/C.5.6.r를 추가했고, Product record를 DG import source로 활용하도록 유지했습니다. Study 화면에서는 deleted checkbox와 EDC Sync를 제거했습니다.
+미완료: Product master의 regional fields를 CASE 전역의 관련 study/drug field에 자동 매핑하는 범위는 아직 제한적입니다.",,
+19,INFO,Study,"PV Comments about 2026-02-25
+1. 미반영으로 반영 필요하며, 복수 선택 가능하도록 반영
+2. 미반영. MFDS: Sponsor Study Number (C.5.3) 항목에서 study  no, protocol no 선택하여 입력하도록 수정. Other Studies Type (C.5.4.KR.1) 추가 
+FDA: IND Number where AE Occurred (FDA.C.5.5a), Pre-ANDA Number where AE Occurred (FDA.C.5.5b), FDA.C.5.6.r - IND number of cross reported IND 등 추가 
+3. 반영 확인
+
+[참고: 반복 가능 항목 Study Registration (repeat as necessary) (C.5.1.r) 반영 필요 ]",2026-04-02,,,
+20,INFO,Narrative,"Narrative template 활용 가능하도록 개발된 것이 맞는지? 참고로, cubeSAFETY에서는 다음과 같이 Element ID를 이용하여 Narrative template를 입력하도록 되어 있음.",2026-02-25,"완료: Narrative INFO를 free-text만 저장하던 구조에서 Case Narrative, Case Summary, Sender Comments, Reporter Comments, Sender Diagnoses(H.3.r)까지 저장하는 구조로 확장했고, Section H import도 이 structured fields를 반영합니다.
+미완료: cubeSAFETY 수준의 전체 element-ID composer를 완전히 재현한 것은 아닙니다.",,
+20,INFO,Narrative,"PV Comments about 2026-02-25
+Additional Narrative Fields 이하 부분은 삭제, element 기준 NR Auto 작성하는 것은 추후 구현 예정인 것으로 확인",2026-04-02,,,
+21,DATA,General/Common,"1. This section will include MedDRA terminology search, WHODrug lookups, country code lists, and E2B(R3) code list management. 
+-> 일반 User에게는 불필요한 기능임. System Admin만 확인할 수 있도록 접근권한 설정할 것
+2. Admin 권한도 System 관리자로서의 Admin 과 User의 Admin 역할 구분이 필요하며 User의 Admin 권한은 메뉴의 ADMIN 페이지에서 관리할 수 있도록 수정 필요",2026-02-25,"완료: DATA 메뉴와 /dashboard/data를 adb_admin 전용으로 제한했고, 일반 admin/user는 redirect되도록 했습니다. terminology release/import/approve/activate/rollback backend endpoint도 adb_admin 전용으로 제한했습니다. ADMIN 메뉴는 user-admin과 system-admin이 구분되도록 유지했습니다.
+미완료: case form에서 사용하는 MedDRA/WHODrug/country lookup read endpoint는 일반 업무에 필요해서 system-admin 전용으로 막지는 않았습니다.",,
+21,DATA,General/Common,"PV Comments about 2026-02-25
+No 1 의견 및 ""권한"" 시트의 의견 반영 필요",2026-04-02,,,
+22,IMPORT,"XML Import 기능
+","1. Import E2BR3 XML files -> E2B(R3)로 수정
+2. Supports E2BR3 (ICH) XML format -> ICH E2B(R3)로 수정
+3. ICH 기준이 아닌 MFDS, FDA 항목이 포함된 XML도 import 가능해야 하며, regional elements가 적절히 저장되어야 하므로, Import 시점에 XML format을 선택하는 기능 필요함.
+4. Import history 확인할 수 있도록 탭 추가 (no, case no, file name, status, error(에러 시 사유 확인), import date/time, user 등)
+5. XML의 경우 파일 첨부, batch report 가능하므로 최대 용량을 10MB로 설정할 경우 import 불가한 상황이 발생할 수 있으므로, 최대 용량 상향 조정 요망 
+6. zip 파일로도 import 가능해야 함.",2026-02-25,"완료: E2B(R3) wording 정리, profile 선택, .zip import, import history 탭, 10MB 상향, regional XML import 흐름까지 반영했습니다.
+미완료: 없음.",,
+22,IMPORT,XML Import 기능,"PV Comments about 2026-02-25
+1. 반영 확인
+2. 반영 확인
+3. xml 파일에서 자동 확인하여 regional xml에 따라 Import 하는 것 확인.
+4. history 추가된 것 확인하였으며, Error는 텍스트 파일로 받아서 확인하는 것으로 수정
+[참고: Import Date/Time은 해당 파일을 Import한 시점이 표시되어야 하는데, 현재 Invalid date라고 기재되어 있음, 어떤 데이터가 표시되는 것인지 확인 필요]
+5. NA
+6. zip 파일 첨부 가능 확인",2026-04-02,,,
+23,SUB,General/Common,"1. Sub -> Export/Submission으로 수정 (해당 기능을 직관적으로 알 수 있도록) 혹은 Export와 submission 시 선택 항목과 그 결과로 확인해야 하는 정보가 상이하므로 메뉴에서 각 기능을 분리해 주기를 요망 (예를 들면 submission의 경우 batch 결과와 message 결과가 각각 제시되어야 함)
+2. Table heading에서 patient, severity 정보 불필요함. Date of creation, WW unique ID, product, Event 등의 정보를 포함할 것
+3. Export, Submission history 페이지 추가
+- Export;  no, case no, file name, status, error(에러 시 사유 확인),  export date/time, user 등
+- Submission: batch 결과와 Message 결과가 각각 확인되어야 함.
+ *batch 결과: no, receiver, batch no, batch status, ACK 다운로드, ICSR 건수, Submission date, Acknowledged date, Data file, Error, User 등
+ *message 결과: no, no, receiver, batch no, case no, date of creation, batch status, message status, Submission date, Acknowledged date 등",2026-02-25,"완료: SUB를 Export / Submission으로 정리했고, Export / Submit / Export History / Submission History 구조를 만들었습니다. Queue에는 Date of Creation, Product ID, Report Year, Source Document, Profile/Appendices를 추가했고, Submission History는 Batch Results / Message Results view로 나눠서 볼 수 있게 했습니다.
+미완료: ACK download, acknowledged date, ICSR count, data file, event 컬럼, 완전히 분리된 message persistence는 아직 없습니다.",,
+23,SUB,General/Common,"PV Comments about 2026-02-25
+1. 메뉴 수정된 것은 확인하였으나, 아래 사항 확인 혹은 반영 필요.
+(1) Selected Cases: ① 각 세부 항목의 목적은 무엇인지? (Export Scope, Submission Scope)
+② 직접 Import 한 사례 중 Export XML 기능이 되는게 있고 안되는게 있음. 작동 여부 재확인 필요. (Sender에서 Receiver Information 혹은 Message Header 때문인것 같은데 확인 필요. 저장된 case 정보를 제출 출처에 맞게 MFDS, FDA로 양식으로 출력 필요함)
+③ INFO 메뉴에서 Receiver와 본 항목에서의 Receiver는 구분 필요. 
+INFO의 Receiver에서 Message Receiver Identifier (N.1.5) 및 Batch Receiver Identifier (N.1.4)는 삭제하고, 본 항목에서 참조할 국가별 Receiver 정보는 별도로 생성하여 참조
+(2) Ready for Export / Submission 아래 내용 반영 필요.
+① 해당되는 사례 검색 후 사례들 표시되는 것으로 수정 필요.
+② 필터 기능 외 검색 기능 추가: 페이지(CI, RP DM 등) 별로 선택 및 하위 필드(
+Sender's (case) Safety Report Unique Identifier(C.1.1) 등) 선택, 조건(일치, 불일치, 범위 등) 선택, 값 선택 하여 검색되도록 수정 
+2. Table head를 Date of creation, WW unique ID, product, Event 로 수정 (Event (E.i.2.1b) 값이 여러개인 경우, 각 값 및 /로 구분하여 표시) 로 수정
+3. (1) Export Error 시 에러 창 및 진행되지 않고 Export history에 표시되지 않음. Error 시 No 22번의 4번과 동일하게 Text 파일로 다운로드 필요함.
+(2) Submission history 상세 사항은 아직 확인 불가",2026-04-02,,,
+24,SUB,Export,"1. Export XML -> XML format, Receiver 선택 기능 필요함.
+2. Excel LL 추출 기능 개발 필요함. 
+3. export, submission하고자 하는 case 필터링 기능 필요함. (예 Sender, Case no, Lock 여부, Ack Accept 여부, Workflow status, QC status 등) ",2026-02-25,"완료: XML Format / Authority 선택과 Sender/Receiver presave selector를 두었고, export 직전에 그 값을 case sender/receiver/message header에 반영하도록 연결했습니다. Queue filter도 case no/status/profile/appendix/export eligibility 외에 Product ID, Report Year, Source Document까지 확장했습니다.
+미완료: Sender/ACK accept/lock 여부 등 전체 요청 filter 세트와 Excel LL export는 아직 미구현입니다.",,
+24,SUB,Export,"PV Comments about 2026-02-25
+1. 추가된 것 확인하였으며, No 23 번의 1번 부분 재확인 필요
+2. 아직 구현되지 않은점 확인하였으며, 추가 필요.
+3. 필터링은 간단한 필터 기능(예 Sender, Case no, QC Status(Review, Lock 여부)만으로 수정, Ack Accept 여부, Workflow status). 세부 Case는 No 23 번 의견에 따라 검색하여 선별",2026-04-02,,,
+25,SUB,Submission ,"1. Sender, Receiver 정보 선택 기능 필요함. 
+2. Receiver의 경우 국가별 Batch receiver identifier (N.1.4), Message receiver identifier(N.2.r.3)가 사전에 설정되어 있어야 하고, Report type에 따라 해당 identifier를 선택하여 보고하도록 설정해야 함. ",2026-02-25,"완료: Submission 화면에서 Sender/Receiver presave template 선택이 가능하고, export/direct submission 전에 sender/receiver 정보와 message header(batch/message sender/receiver identifier)를 case에 적용합니다. Receiver template에는 authority+report type별 routing rule(N.1.4, N.2.r.3)을 저장하고, case의 report type에 맞는 identifier를 선택하도록 구현했습니다.
+미완료: 잘못된 receiver-rule 조합을 사전에 막는 더 강한 validation/policy layer는 아직 없습니다.",,
+25,SUB,Submission ,"PV Comments about 2026-02-25
+1. Sender는 반영 확인
+2. 23번 1번 의견 참고하여 확인",2026-04-02,,,
+26,ADMIN,Management>General,"1. Safety Database 내 Role 생성 기능 및 Role 별로 항목에 따른 Veiw, Review, Lock 설정 권한 부여 가능하도록 페이지 추가 필요 (Role setting, Role & Privilege 항목 필요(cubeSAFETY 참고)
+- 다음 Role 생성 요청: PVM, PVS, Head of PV, Sponsor, ADB admin 
+- Roles & Privilege 내 접근권한 종류 목록은 각 페이지/기능 확정 후 작성 필요함
+2. Settings 페이지 추가 필요 (cubeSAFETY 참고)
+- Time Zone, MedDRA language, Appendix, Case Identification Number Setting, (구현될 경우) Workflow configuration",2026-02-25,"완료: Roles & Privileges, Settings, custom role, 실제 assign 가능한 role, runtime permission 반영까지 구현했습니다.
+미완료: 없음.",,
+26,ADMIN,Management>General,"PV Comments about 2026-02-25
+1. 각각 적용된 사항 재확인 필요.
+(1) Create Custom Role 에서 role_name과 Display_name이 있는데 의미 확인 필요. 특이 사항이 없다면 role_name랑 표시된 이름 동일하게 하고, Display name 대신 Description 추가
+(2) Role Setting과, Role & Privilege의 차이가 무엇인지? 추가된 Role 이 Role & Privilege에서만 확인됨. 
+(3) Create Custom Role 에서 Veiw, Edit, Review 체크, Lock 체크 권한을 주는 것이 아니며, Role & Privilege 항목(혹은 수정되는 다른 메뉴)에서 새롭게 추가된 Role에 대한 메뉴별(CASE 페이지, INFO 페이지 등)에 따라 각각 해당되는 권한(Read, Edit, Review 체크, Lock 체크 권한) 설정 필요)
+(4) 추가된 Role에 대한 수정 기능 필요
+2. ""WF"" 시트 참고하여 수정 필요
+[요청사항: 1) No3의 6번과 동일하게 행 클릭으로 해당 정보 조회 및 편집 가능하도록 수정,
+2) No6의 13번 Audit trail과 동일하게 항목별로 Audit trail 확인 가능하도록 수정]",2026-04-02,,,
+27,ADMIN,Management>Create User,"1. User name 항목이 별도로 필요하지 않다면 삭제 (Email 정보로 User ID를 대신할 수 있음)
+2. Organization은 QVIS 및 Client로 나누고 Client는 Sender 목록에서 선택하도록 설정 
+3. Comments 혹은 Other information란 추가, Start/End date 추가 (해당 날짜에 따라 접근권한 부여, 차단되어야 함), 접근 대상 sender, product, study 정보 선택 기능 추가 
+4. 현재 시점 Create user 클릭 시 에러 발생하여 저장되지 않음. ",2026-02-25,"완료: username 제거, QVIS/Client organization 분리, sender/product/study scope, access start/end, comments/other information, create user 저장 오류 수정까지 반영했습니다.
+미완료: 없음.",,
+27,ADMIN,Management>Create User,"PV Comments about 2026-02-25
+1. 반영 확인
+2. 권한 구조와 관련하여 재확인 필요 (CRO, Client 및 이하 권한 부여 구조)
+3. 반영된 것 확인하였으며, 아래 참고하여 수정 필요
+(1) Other information 삭제 (Comments 만 유지)
+(2) Start/End date 입력시 현재 계정 생성되지 않음. 오류 수정 필요
+4. Uesr 생성 및 수정과 관련하여 전반적인 오류 점검
+(1) 현재 등록 후 수정 시 권한 재설정 및 유저 삭제 불가
+(2) 수정 항목에서 sender, product, study 정보 수정 불가
+(3) blind 해당 여부 추가 필요
+(4) Admin 권한은 한명만 설정되게 수정 필요
+[요청사항: Sender, Product, Study가 많아지는 경우 가독성이 떨어질 것으로 예상되어, Drop down/별도 팝업창에서 체크 하는 방식 등 다른 방식 고려 필요]",2026-04-02,,,
+28,ADMIN,Management>User ,"1. 위에 언급한 항목을 포함하여 table headings 수정 (Organization 정보 필수)
+2. INFO 페이지의 각 하위 페이지에 요청한 것과 같은 방식으로 User 목록 확인하도록 수정
+3. User 추가는 INFO 페이지에서 입력하는 방식과 동일한 방식으로 수정 필요",2026-02-25,"완료: User table heading을 확장했고, INFO 스타일의 Add User/list 흐름으로 정리했습니다.
+미완료: 없음.",,
+28,ADMIN,Management>User ,"PV Comments about 2026-02-25
+1. 반영 확인
+[문의: Access Window은 어떤 항목인지?]
+2. 다른 부분의 필터 기능 의견과 동일하게 Table Header에서 필터 가능하게 수정
+3. No 27 번 의견 참조",2026-04-02,,,
+29,ADMIN,Management>Organizations,Sender 탭에 입력한 정보로 관리하면 되므로 별도의 organization 등록 기능 불필요함. ,2026-02-25,"완료: 별도 Organizations CRUD를 제거하고 sender 기준 organization 관리로 정리했습니다.
+미완료: 없음.",,
+29,ADMIN,Management>Organizations,"PV Comments about 2026-02-25
+Sender 기준 Organization 정리된 것은 확인하였으나, 현재 항목이 유지되어 있음. 삭제 필요",2026-04-02,,,
+30,ADMIN,Audit Logs,Audit trail 페이지를 별도로 두기 보다는 각 항목에서 audit trail을 직접 확인할 수 있도록 설정 요망(cubeSAFETY 참고),2026-02-25,"완료: 별도 Audit Logs 탭을 없애고 각 관리 화면에서 직접 audit trail을 보도록 바꿨습니다.
+미완료: 없음.",,
+30,ADMIN,Audit Logs,"PV Comments about 2026-02-25
+해당 의견은 Case 내에서 `…` 항목으로 Audit trail 표시한 것 처럼 수정하는 것을 의미하였으며 cubeSAFETY 방식 참고",2026-04-02,,,

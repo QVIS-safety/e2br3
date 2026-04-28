@@ -1,7 +1,11 @@
-use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
+use crate::common::{
+	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
+	seed_org_with_users, system_user_id, Result,
+};
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
+use lib_core::ctx::ROLE_USER;
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
@@ -558,6 +562,95 @@ async fn get_case(
 	Ok((status, value))
 }
 
+async fn update_admin_settings(
+	app: &axum::Router,
+	cookie: &str,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("PUT")
+		.uri("/api/admin/settings")
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = serde_json::from_slice::<Value>(&body)?;
+	Ok((status, value))
+}
+
+async fn get_workflow_config(
+	app: &axum::Router,
+	cookie: &str,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("GET")
+		.uri("/api/cases/workflow/config")
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = serde_json::from_slice::<Value>(&body)?;
+	Ok((status, value))
+}
+
+async fn transition_case_workflow(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!("/api/cases/{case_id}/workflow/transition"))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = serde_json::from_slice::<Value>(&body)?;
+	Ok((status, value))
+}
+
+async fn assign_case_workflow(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!("/api/cases/{case_id}/workflow/assign"))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = serde_json::from_slice::<Value>(&body)?;
+	Ok((status, value))
+}
+
+async fn get_workflow_events(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/cases/{case_id}/workflow/events"))
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = serde_json::from_slice::<Value>(&body)?;
+	Ok((status, value))
+}
+
 async fn validator_mark_validated(
 	app: &axum::Router,
 	cookie: &str,
@@ -1093,5 +1186,668 @@ async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()>
 			.unwrap_or(false),
 		"expected MFDS issue from inferred profile, body={body}"
 	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_workflow_config_runtime_endpoint_returns_default_statuses(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = get_workflow_config(&app, &cookie).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert!(body["data"]["workflowEnabled"].is_boolean(), "{body:?}");
+	assert_eq!(body["data"]["statuses"][0]["name"].as_str(), Some("Saved"));
+	assert_eq!(
+		body["data"]["statuses"][0]["editable"].as_bool(),
+		Some(true)
+	);
+	if let Some(role) = body["data"]["statuses"][0]["allowedRoles"][0].as_str() {
+		assert_eq!(role, role.to_ascii_lowercase(), "{body:?}");
+	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_workflow_settings_reject_unknown_role() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"allowed_roles": ["not_a_real_role"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body.to_string().contains("unknown role 'not_a_real_role'"),
+		"{body:?}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_workflow_settings_reject_system_admin_role() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"allowed_roles": ["system_admin"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body.to_string().contains("unknown role 'system_admin'"),
+		"{body:?}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_workflow_transition_updates_case_and_persists_event() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"description": "Default authoring state",
+							"allowed_roles": ["PVS", "PVM"]
+						},
+						{
+							"name": "To be reviewed",
+							"editable": false,
+							"description": "Pending internal review",
+							"allowed_roles": ["PVM"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let (status, body) = transition_case_workflow(
+		&app,
+		&cookie,
+		case_id,
+		json!({
+			"data": {
+				"to_status": "To be reviewed",
+				"target_role": "PVM",
+				"comment": "Ready for review",
+				"due_at": "2026-04-20T09:00:00Z"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(
+		body["data"]["workflow_status"].as_str(),
+		Some("To be reviewed")
+	);
+	assert_eq!(body["data"]["workflow_assigned_role"].as_str(), Some("pvm"));
+
+	let (status, events) = get_workflow_events(&app, &cookie, case_id).await?;
+	assert_eq!(status, StatusCode::OK, "{events:?}");
+	assert_eq!(events["data"].as_array().map(|rows| rows.len()), Some(1));
+	assert_eq!(events["data"][0]["fromStatus"].as_str(), Some("Saved"));
+	assert_eq!(
+		events["data"][0]["toStatus"].as_str(),
+		Some("To be reviewed")
+	);
+	assert_eq!(events["data"][0]["targetRole"].as_str(), Some("pvm"));
+	assert_eq!(
+		events["data"][0]["comment"].as_str(),
+		Some("Ready for review")
+	);
+	assert_eq!(
+		events["data"][0]["usedAdminOverride"].as_bool(),
+		Some(true)
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_workflow_assignment_updates_owner_without_changing_status(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_all_roles(&mm).await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&admin_cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"description": "Initial state",
+							"allowed_roles": ["user"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let case_id = create_case(&app, &admin_cookie, seed.org_id).await?;
+	let (status, body) = assign_case_workflow(
+		&app,
+		&admin_cookie,
+		case_id,
+		json!({
+			"data": {
+				"target_role": "user",
+				"target_user_id": seed.user.id,
+				"comment": "Assign authoring owner",
+				"due_at": "2026-04-21T09:00:00Z"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["workflow_status"].as_str(), Some("Saved"));
+	assert_eq!(
+		body["data"]["workflow_assigned_role"].as_str(),
+		Some("user")
+	);
+	assert_eq!(body["data"]["can_act_on_workflow"].as_bool(), Some(true));
+	assert_eq!(
+		body["data"]["workflow_block_reason"].as_str(),
+		Some("workflow_admin_override_allowed")
+	);
+	let assigned_user_id = seed.user.id.to_string();
+	assert_eq!(
+		body["data"]["workflow_assigned_user_id"].as_str(),
+		Some(assigned_user_id.as_str())
+	);
+
+	let (status, events) = get_workflow_events(&app, &admin_cookie, case_id).await?;
+	assert_eq!(status, StatusCode::OK, "{events:?}");
+	assert_eq!(events["data"].as_array().map(|rows| rows.len()), Some(1));
+	assert_eq!(events["data"][0]["fromStatus"].as_str(), Some("Saved"));
+	assert_eq!(events["data"][0]["toStatus"].as_str(), Some("Saved"));
+	assert_eq!(
+		events["data"][0]["comment"].as_str(),
+		Some("Assign authoring owner")
+	);
+	assert_eq!(
+		events["data"][0]["usedAdminOverride"].as_bool(),
+		Some(true)
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_non_editable_workflow_status_blocks_subresource_write() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"description": "Default authoring state",
+							"allowed_roles": ["PVS"]
+						},
+						{
+							"name": "To be reviewed",
+							"editable": false,
+							"description": "Pending internal review",
+							"allowed_roles": ["PVM"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let (status, body) = transition_case_workflow(
+		&app,
+		&cookie,
+		case_id,
+		json!({
+			"data": {
+				"to_status": "To be reviewed",
+				"target_role": "PVM",
+				"comment": "Hand off"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, body) = update_safety_report(
+		&app,
+		&cookie,
+		case_id,
+		json!({
+			"data": {
+				"report_type": "2"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body.to_string()
+			.contains("workflow status 'To be reviewed' is read-only"),
+		"{body:?}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_workflow_transition_rejects_user_outside_current_step_role(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_all_roles(&mm).await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let user_token = generate_web_token(&seed.user.email, seed.user.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let user_cookie = cookie_header(&user_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&admin_cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"description": "Owned by PVS only",
+							"allowed_roles": ["PVS"]
+						},
+						{
+							"name": "To be reviewed",
+							"editable": false,
+							"description": "Pending internal review",
+							"allowed_roles": ["PVM"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let case_id = create_case(&app, &admin_cookie, seed.org_id).await?;
+	let (status, body) = transition_case_workflow(
+		&app,
+		&user_cookie,
+		case_id,
+		json!({
+			"data": {
+				"to_status": "To be reviewed",
+				"target_role": "PVM",
+				"comment": "User should not own Saved"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body.to_string()
+			.contains("workflow status 'Saved' is assigned to a different role"),
+		"{body:?}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_workflow_transition_rejects_user_outside_current_assignee(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_all_roles(&mm).await?;
+	let other_user =
+		insert_user(&mm, seed.org_id, ROLE_USER, system_user_id(), None).await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let other_user_token =
+		generate_web_token(&other_user.email, other_user.token_salt)?;
+	let user_token = generate_web_token(&seed.user.email, seed.user.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let other_user_cookie = cookie_header(&other_user_token.to_string());
+	let user_cookie = cookie_header(&user_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&admin_cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"description": "Initial state",
+							"allowed_roles": ["user"]
+						},
+						{
+							"name": "Assigned",
+							"editable": true,
+							"description": "Owned by one assigned user",
+							"allowed_roles": ["user"]
+						},
+						{
+							"name": "To be reviewed",
+							"editable": false,
+							"description": "Pending internal review",
+							"allowed_roles": ["manager"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let case_id = create_case(&app, &admin_cookie, seed.org_id).await?;
+	let (status, body) = transition_case_workflow(
+		&app,
+		&admin_cookie,
+		case_id,
+		json!({
+			"data": {
+				"to_status": "Assigned",
+				"target_role": "user",
+				"target_user_id": seed.user.id,
+				"comment": "Assign to specific user"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, body) = transition_case_workflow(
+		&app,
+		&other_user_cookie,
+		case_id,
+		json!({
+			"data": {
+				"to_status": "To be reviewed",
+				"target_role": "manager",
+				"comment": "Wrong user should be blocked"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body.to_string()
+			.contains("workflow status 'Assigned' is assigned to a different user"),
+		"{body:?}"
+	);
+
+	let (status, body) = transition_case_workflow(
+		&app,
+		&user_cookie,
+		case_id,
+		json!({
+			"data": {
+				"to_status": "To be reviewed",
+				"target_role": "manager",
+				"comment": "Assigned user can transition"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_workflow_admin_override_is_allowed_and_audited() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_all_roles(&mm).await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&admin_cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"description": "Owned by user role",
+							"allowed_roles": ["user"]
+						},
+						{
+							"name": "To be reviewed",
+							"editable": false,
+							"description": "Pending manager review",
+							"allowed_roles": ["manager"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let case_id = create_case(&app, &admin_cookie, seed.org_id).await?;
+	let (status, body) = transition_case_workflow(
+		&app,
+		&admin_cookie,
+		case_id,
+		json!({
+			"data": {
+				"to_status": "To be reviewed",
+				"target_role": "manager",
+				"comment": "Admin override handoff"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["can_act_on_workflow"].as_bool(), Some(true));
+	assert_eq!(
+		body["data"]["workflow_block_reason"].as_str(),
+		Some("workflow_admin_override_allowed")
+	);
+
+	let (status, events) = get_workflow_events(&app, &admin_cookie, case_id).await?;
+	assert_eq!(status, StatusCode::OK, "{events:?}");
+	assert_eq!(
+		events["data"][0]["usedAdminOverride"].as_bool(),
+		Some(true)
+	);
+	assert_eq!(
+		events["data"][0]["actorRoleId"].as_str(),
+		Some("sponsor_admin_cro")
+	);
+	assert!(
+		events["data"][0]["overrideReason"]
+			.as_str()
+			.unwrap_or_default()
+			.contains("audited admin policy"),
+		"{events:?}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_locked_case_blocks_workflow_transition_even_for_admin_override(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_all_roles(&mm).await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&admin_cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"allowed_roles": ["user"]
+						},
+						{
+							"name": "To be reviewed",
+							"editable": false,
+							"allowed_roles": ["manager"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let case_id = create_case(&app, &admin_cookie, seed.org_id).await?;
+	let (status, body) = update_case_status(&app, &admin_cookie, case_id, "locked").await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, body) = transition_case_workflow(
+		&app,
+		&admin_cookie,
+		case_id,
+		json!({
+			"data": {
+				"to_status": "To be reviewed",
+				"target_role": "manager"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(body.to_string().contains("locked cases are read-only"), "{body:?}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_read_returns_separate_qc_and_lock_axes() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let (status, body) = get_case(&app, &cookie, case_id).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["qc_state"].as_str(), Some("Pending"));
+	assert_eq!(body["data"]["is_locked"].as_bool(), Some(false));
+
+	let (status, body) = update_case_status(&app, &cookie, case_id, "reviewed").await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let (status, body) = get_case(&app, &cookie, case_id).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["qc_state"].as_str(), Some("QCed"));
+	assert_eq!(body["data"]["is_locked"].as_bool(), Some(false));
+
+	let (status, body) = update_case_status(&app, &cookie, case_id, "locked").await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let (status, body) = get_case(&app, &cookie, case_id).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["is_locked"].as_bool(), Some(true));
 	Ok(())
 }

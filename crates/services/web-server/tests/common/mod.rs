@@ -3,7 +3,8 @@
 use lib_auth::pwd::{self, ContentToHash};
 use lib_core::_dev_utils;
 use lib_core::ctx::{
-	ROLE_ADMIN, ROLE_MANAGER, ROLE_USER, ROLE_VIEWER, SYSTEM_ORG_ID, SYSTEM_USER_ID,
+	ROLE_MANAGER, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN, ROLE_USER, ROLE_VIEWER,
+	SYSTEM_ORG_ID, SYSTEM_USER_ID,
 };
 use lib_core::model::store::{
 	set_full_context_dbx, set_org_context, set_user_context,
@@ -110,12 +111,18 @@ pub async fn seed_org_with_users(
 	viewer_pwd: &str,
 ) -> Result<SeedOrgUsers> {
 	let dbx = mm.dbx();
-	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_ADMIN).await?;
+	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_SYSTEM_ADMIN)
+		.await?;
 
 	let org_id = insert_org(mm, system_user_id()).await?;
-	let admin =
-		insert_user(mm, org_id, ROLE_ADMIN, system_user_id(), Some(admin_pwd))
-			.await?;
+	let admin = insert_user(
+		mm,
+		org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+		system_user_id(),
+		Some(admin_pwd),
+	)
+	.await?;
 	let viewer =
 		insert_user(mm, org_id, ROLE_VIEWER, system_user_id(), Some(viewer_pwd))
 			.await?;
@@ -133,12 +140,18 @@ pub async fn seed_org_with_admin_and_viewer(
 	viewer_pwd: &str,
 ) -> Result<SeedOrgUsers> {
 	let dbx = mm.dbx();
-	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_ADMIN).await?;
+	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_SYSTEM_ADMIN)
+		.await?;
 
 	let org_id = insert_org(mm, system_user_id()).await?;
-	let admin =
-		insert_user(mm, org_id, ROLE_ADMIN, system_user_id(), Some(admin_pwd))
-			.await?;
+	let admin = insert_user(
+		mm,
+		org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+		system_user_id(),
+		Some(admin_pwd),
+	)
+	.await?;
 	let viewer =
 		insert_user(mm, org_id, ROLE_VIEWER, system_user_id(), Some(viewer_pwd))
 			.await?;
@@ -152,10 +165,13 @@ pub async fn seed_org_with_admin_and_viewer(
 
 pub async fn seed_org_with_all_roles(mm: &ModelManager) -> Result<SeedOrgAllRoles> {
 	let dbx = mm.dbx();
-	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_ADMIN).await?;
+	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_SYSTEM_ADMIN)
+		.await?;
 
 	let org_id = insert_org(mm, system_user_id()).await?;
-	let admin = insert_user(mm, org_id, ROLE_ADMIN, system_user_id(), None).await?;
+	let admin =
+		insert_user(mm, org_id, ROLE_SPONSOR_ADMIN_CRO, system_user_id(), None)
+			.await?;
 	let manager =
 		insert_user(mm, org_id, ROLE_MANAGER, system_user_id(), None).await?;
 	let user = insert_user(mm, org_id, ROLE_USER, system_user_id(), None).await?;
@@ -175,7 +191,8 @@ pub async fn seed_two_orgs_users_cases(
 	mm: &ModelManager,
 ) -> Result<SeedOrgsUsersCases> {
 	let dbx = mm.dbx();
-	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_ADMIN).await?;
+	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_SYSTEM_ADMIN)
+		.await?;
 
 	let org1_id = insert_org(mm, system_user_id()).await?;
 	let org2_id = insert_org(mm, system_user_id()).await?;
@@ -200,7 +217,8 @@ pub async fn seed_two_orgs_manager_cases(
 	mm: &ModelManager,
 ) -> Result<SeedOrgsManagerCases> {
 	let dbx = mm.dbx();
-	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_ADMIN).await?;
+	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_SYSTEM_ADMIN)
+		.await?;
 
 	let org1_id = insert_org(mm, system_user_id()).await?;
 	let org2_id = insert_org(mm, system_user_id()).await?;
@@ -250,7 +268,7 @@ async fn insert_org(mm: &ModelManager, created_by: Uuid) -> Result<Uuid> {
 	let org_id = Uuid::new_v4();
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, created_by).await?;
-	set_org_context(&mut tx, system_org_id(), ROLE_ADMIN).await?;
+	set_org_context(&mut tx, system_org_id(), ROLE_SYSTEM_ADMIN).await?;
 	sqlx::query(
 		"INSERT INTO organizations (id, name, org_type, address, contact_email, created_by, updated_by)
 		 VALUES ($1, $2, $3, $4, $5, $6, $6)",
@@ -267,7 +285,7 @@ async fn insert_org(mm: &ModelManager, created_by: Uuid) -> Result<Uuid> {
 	Ok(org_id)
 }
 
-async fn insert_user(
+pub async fn insert_user(
 	mm: &ModelManager,
 	org_id: Uuid,
 	role: &str,
@@ -292,7 +310,7 @@ async fn insert_user(
 
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, created_by).await?;
-	set_org_context(&mut tx, system_org_id(), ROLE_ADMIN).await?;
+	set_org_context(&mut tx, system_org_id(), ROLE_SYSTEM_ADMIN).await?;
 	sqlx::query(
 		"INSERT INTO users (id, organization_id, email, username, pwd, pwd_salt, token_salt, role, active, created_by, updated_by)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $9)",
@@ -325,7 +343,7 @@ async fn insert_case(
 	let case_id = Uuid::new_v4();
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, created_by).await?;
-	set_org_context(&mut tx, org_id, ROLE_ADMIN).await?;
+	set_org_context(&mut tx, org_id, ROLE_SYSTEM_ADMIN).await?;
 	sqlx::query(
 		"INSERT INTO cases (id, organization_id, safety_report_id, created_by, updated_by)
 		 VALUES ($1, $2, $3, $4, $4)",

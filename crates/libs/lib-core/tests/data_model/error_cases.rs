@@ -247,6 +247,7 @@ async fn test_user_update_not_found() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 		active: None,
 		last_login_at: None,
 	};
@@ -464,6 +465,7 @@ async fn test_user_duplicate_username() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 	let user_c_2 = UserForCreate {
 		organization_id: demo_org_id(),
@@ -480,6 +482,7 @@ async fn test_user_duplicate_username() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 
 	begin_test_ctx(&mm, &ctx).await?;
@@ -546,6 +549,7 @@ async fn test_user_create_invalid_organization() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 
 	let result = UserBmc::create(&ctx, &mm, user_c).await;

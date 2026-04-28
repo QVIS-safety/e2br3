@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS users (
     access_sender_ids TEXT,
     access_product_ids TEXT,
     access_study_ids TEXT,
+    access_blind_allowed BOOLEAN,
+    active_sender_identifier TEXT,
     active BOOLEAN DEFAULT true,
     must_change_password BOOLEAN NOT NULL DEFAULT false,
     last_login_at TIMESTAMP WITH TIME ZONE,
@@ -69,10 +71,15 @@ CREATE TABLE IF NOT EXISTS app_settings (
 CREATE TABLE IF NOT EXISTS app_roles (
     role_name text PRIMARY KEY,
     display_name text NOT NULL,
+    description text,
     can_view boolean NOT NULL DEFAULT true,
     can_review boolean NOT NULL DEFAULT false,
     can_lock boolean NOT NULL DEFAULT false,
     can_admin boolean NOT NULL DEFAULT false,
+    privileges_json jsonb NOT NULL DEFAULT '[]'::jsonb,
+    built_in boolean NOT NULL DEFAULT false,
+    editable boolean NOT NULL DEFAULT true,
+    sponsor_admin_capable boolean NOT NULL DEFAULT false,
     active boolean NOT NULL DEFAULT true,
     updated_at timestamptz NOT NULL DEFAULT now()
 );
@@ -138,6 +145,12 @@ CREATE TABLE if NOT EXISTS cases (
     appendices_json TEXT,
     review_receivers_json TEXT,
     workflow_routes_json TEXT,
+    workflow_status TEXT NOT NULL DEFAULT 'Saved',
+    workflow_assigned_role TEXT,
+    workflow_assigned_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    workflow_due_at TIMESTAMPTZ,
+    workflow_description TEXT,
+    workflow_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     mfds_report_type TEXT,
     report_year VARCHAR(10),
     source_document_name TEXT,
@@ -174,6 +187,7 @@ CREATE TABLE if NOT EXISTS cases (
 CREATE INDEX idx_cases_organization ON cases(organization_id);
 CREATE INDEX idx_cases_safety_report_id ON cases(safety_report_id);
 CREATE INDEX idx_cases_status ON cases(status);
+CREATE INDEX idx_cases_workflow_status ON cases(workflow_status);
 CREATE INDEX idx_cases_created_by ON cases(created_by);
 CREATE INDEX idx_cases_validation_profile ON cases(validation_profile);
 
@@ -193,6 +207,25 @@ CREATE TABLE if NOT EXISTS case_versions (
 );
 
 CREATE INDEX idx_case_versions_case ON case_versions(case_id);
+
+CREATE TABLE if NOT EXISTS case_workflow_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    from_status TEXT NOT NULL,
+    to_status TEXT NOT NULL,
+    target_role TEXT,
+    target_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    comment TEXT,
+    due_at TIMESTAMPTZ,
+    acted_by UUID NOT NULL REFERENCES users(id),
+    actor_role_id TEXT NOT NULL,
+    used_admin_override BOOLEAN NOT NULL DEFAULT false,
+    override_reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_case_workflow_events_case ON case_workflow_events(case_id, created_at DESC);
+GRANT SELECT, INSERT, UPDATE, DELETE ON case_workflow_events TO e2br3_app_role;
 
     -- ============================================================================
     -- 4.1 Case Submissions (durable submission lifecycle)
@@ -423,7 +456,7 @@ INSERT INTO users (
     '00000000-0000-0000-0000-000000000000'::UUID,  -- Temporary, will be updated
     'system@e2br3.local',
     'system',
-    'admin',
+    'system_admin',
     'System',
     'User',
     true,
@@ -730,14 +763,22 @@ CREATE POLICY audit_logs_read_for_auditors ON audit_logs
     TO e2br3_auditor_role
     USING (true);
 
--- Policy 4: Allow SELECT for app role only when current user is admin/manager
+-- Policy 4: Allow SELECT for app role only when current user has elevated audit access
 -- App connections run with SET ROLE e2br3_app_role and carry logical role in
 -- app.current_user_role via set_org_context().
 CREATE POLICY audit_logs_read_for_admin_manager ON audit_logs
     FOR SELECT
     TO e2br3_app_role
     USING (
-        COALESCE(current_setting('app.current_user_role', true), '') IN ('admin', 'manager')
+        COALESCE(current_setting('app.current_user_role', true), '') IN (
+            'system_admin',
+            'sponsor_admin_cro',
+            'sponsor_admin_company',
+            'admin',
+            'manager',
+            'pvm',
+            'head_pv'
+        )
     );
 
 -- Grant necessary permissions
@@ -770,10 +811,15 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- Function to check if current user is admin
+-- Function to check if current user has safety-database admin bypass.
 CREATE OR REPLACE FUNCTION is_current_user_admin() RETURNS BOOLEAN AS $$
 BEGIN
-    RETURN COALESCE(current_setting('app.current_user_role', true), '') = 'admin';
+    RETURN COALESCE(current_setting('app.current_user_role', true), '') IN (
+        'system_admin',
+        'sponsor_admin_cro',
+        'sponsor_admin_company',
+        'admin'
+    );
 EXCEPTION
     WHEN OTHERS THEN
         RETURN false;
@@ -839,7 +885,30 @@ CREATE POLICY case_versions_via_case ON case_versions
     );
 
 -- ============================================================================
--- 9.3 Case Submissions Table RLS
+-- 9.3 Case Workflow Events Table RLS
+-- ============================================================================
+ALTER TABLE case_workflow_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE case_workflow_events FORCE ROW LEVEL SECURITY;
+CREATE POLICY case_workflow_events_via_case ON case_workflow_events
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = case_workflow_events.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = case_workflow_events.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+-- ============================================================================
+-- 9.4 Case Submissions Table RLS
 -- ============================================================================
 ALTER TABLE case_submissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE case_submissions FORCE ROW LEVEL SECURITY;

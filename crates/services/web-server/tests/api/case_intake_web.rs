@@ -87,6 +87,8 @@ fn intake_basis(
 		"date_of_most_recent_information": [2024, day_of_year],
 		"report_type": report_type,
 		"patient_initials": intake_patient_initials(safety_report_id),
+		"dg_prd_key": format!("DG-{}", intake_patient_initials(safety_report_id)),
+		"reaction_meddra_version": "27.0",
 		"reaction_meddra_code": "10019211",
 		"ae_start_date": [2024, day_of_year]
 	})
@@ -152,6 +154,7 @@ async fn test_case_intake_duplicate_check_and_create() -> Result<()> {
 		post_json(&app, &cookie, "/api/cases/intake-check", dup_check).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["duplicate"], true);
+	assert_eq!(body["data"]["basis_complete"], true);
 	assert!(body["data"]["matches"].as_array().is_some());
 	assert!(!body["data"]["matches"]
 		.as_array()
@@ -234,7 +237,7 @@ async fn test_case_from_intake_persists_distinct_c_1_dates() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_case_from_intake_blocks_duplicates_without_override() -> Result<()> {
+async fn test_case_from_intake_blocks_duplicates_even_with_override() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -268,16 +271,19 @@ async fn test_case_from_intake_blocks_duplicates_without_override() -> Result<()
 	});
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/from-intake", override_body).await?;
-	assert_eq!(status, StatusCode::CREATED, "{body:?}");
-	assert_eq!(body["data"]["version"].as_i64(), Some(2), "{body:?}");
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(body["error"]["data"]["detail"]
+		.as_str()
+		.unwrap_or_default()
+		.contains("duplicate case detected"));
 
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_case_intake_duplicate_check_respects_dg_prd_key_filter() -> Result<()>
-{
+async fn test_case_intake_duplicate_check_uses_patient_signature_over_product_mismatch(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -288,7 +294,8 @@ async fn test_case_intake_duplicate_check_respects_dg_prd_key_filter() -> Result
 	let create_body = json!({
 		"data": intake_data(&safety_report_id, 122, "1", json!({
 			"validation_profile": "fda",
-			"dg_prd_key": "DG-A"
+			"dg_prd_key": "DG-A",
+			"allow_duplicate_override": true
 		}))
 	});
 	let (status, body) =
@@ -318,7 +325,119 @@ async fn test_case_intake_duplicate_check_respects_dg_prd_key_filter() -> Result
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["duplicate"], true, "{body:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_intake_duplicate_check_surfaces_incomplete_basis_as_warning(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
+	let check_body = json!({
+		"data": intake_data(&safety_report_id, 140, "1", json!({
+			"reaction_meddra_version": null
+		}))
+	});
+	let (status, body) =
+		post_json(&app, &cookie, "/api/cases/intake-check", check_body).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["duplicate"], false, "{body:?}");
+	assert_eq!(body["data"]["basis_complete"], true, "{body:?}");
+	assert!(!body["data"]["warnings"]
+		.as_array()
+		.ok_or("warnings should be array")?
+		.is_empty());
+	assert!(body["data"]["warnings"]
+		.as_array()
+		.map(|warnings| warnings.iter().any(|value| value
+			.as_str()
+			.unwrap_or_default()
+			.contains("Reaction MedDRA version is missing")))
+		.unwrap_or(false));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_from_intake_requires_override_when_duplicate_basis_is_incomplete(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
+	let intake_body = json!({
+		"data": intake_data(&safety_report_id, 141, "1", json!({
+			"validation_profile": "ich",
+			"patient_initials": null,
+			"reaction_meddra_version": null,
+			"dg_prd_key": null
+		}))
+	});
+	let (status, body) =
+		post_json(&app, &cookie, "/api/cases/from-intake", intake_body.clone())
+			.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(body["error"]["data"]["detail"]
+		.as_str()
+		.unwrap_or_default()
+		.contains("duplicate check basis is incomplete"));
+
+	let override_body = json!({
+		"data": intake_data(&safety_report_id, 141, "1", json!({
+			"validation_profile": "ich",
+			"patient_initials": null,
+			"reaction_meddra_version": null,
+			"dg_prd_key": null,
+			"allow_duplicate_override": true
+		}))
+	});
+	let (status, body) =
+		post_json(&app, &cookie, "/api/cases/from-intake", override_body).await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_intake_duplicate_check_treats_null_flavor_codes_as_missing(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
+	let check_body = json!({
+		"data": intake_data(&safety_report_id, 142, "1", json!({
+			"patient_initials": "UNK",
+			"reaction_meddra_version": "UNK"
+		}))
+	});
+	let (status, body) =
+		post_json(&app, &cookie, "/api/cases/intake-check", check_body).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["basis_complete"], false, "{body:?}");
+	assert!(body["data"]["warnings"]
+		.as_array()
+		.map(|warnings| warnings.iter().any(|value| value
+			.as_str()
+			.unwrap_or_default()
+			.contains("Reaction MedDRA version is missing")))
+		.unwrap_or(false));
 
 	Ok(())
 }
@@ -336,7 +455,8 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let create_body = json!({
 		"data": intake_data(&safety_report_id, 123, "1", json!({
-			"validation_profile": "ich"
+			"validation_profile": "ich",
+			"allow_duplicate_override": true
 		}))
 	});
 	let (status, body) =
@@ -374,7 +494,9 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 
 	let d1_match = json!({
 		"data": intake_data(&safety_report_id, 123, "1", json!({
-			"patient_initials": expected_initials
+			"patient_initials": expected_initials,
+			"dg_prd_key": null,
+			"reaction_meddra_version": null
 		}))
 	});
 	let (status, body) =
@@ -384,7 +506,9 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 
 	let d1_mismatch = json!({
 		"data": intake_data(&safety_report_id, 123, "1", json!({
-			"patient_initials": "ZZ"
+			"patient_initials": "ZZ",
+			"dg_prd_key": null,
+			"reaction_meddra_version": null
 		}))
 	});
 	let (status, body) =
@@ -395,6 +519,8 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	let d5_match = json!({
 		"data": intake_data(&safety_report_id, 123, "1", json!({
 			"patient_initials": null,
+			"dg_prd_key": null,
+			"reaction_meddra_version": null,
 			"age_d2_2a": "0.0",
 			"sex_d5": "1"
 		}))
@@ -407,6 +533,8 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	let d5_mismatch = json!({
 		"data": intake_data(&safety_report_id, 123, "1", json!({
 			"patient_initials": null,
+			"dg_prd_key": null,
+			"reaction_meddra_version": null,
 			"age_d2_2a": "0.0",
 			"sex_d5": "2"
 		}))

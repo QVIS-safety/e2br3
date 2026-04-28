@@ -116,6 +116,160 @@ Response
 { "data": { "id": "case-uuid", "status": "validated" } }
 ```
 
+### POST `/api/cases/intake-check`
+Use this before create-from-intake. The backend now returns a duplicate result even when the duplicate basis is incomplete, and surfaces that state through `basis_complete` plus `warnings`.
+
+```json
+{
+  "data": {
+    "safety_report_id": "INTAKE-123",
+    "date_of_most_recent_information": [2024, 120],
+    "report_type": "1",
+    "patient_initials": "PT123",
+    "dg_prd_key": "PRODUCT-001",
+    "reaction_meddra_version": "27.0",
+    "reaction_meddra_code": "10019211",
+    "ae_start_date": [2024, 120]
+  }
+}
+```
+Response when basis is complete and duplicates were found:
+```json
+{
+  "data": {
+    "duplicate": true,
+    "basis_complete": true,
+    "warnings": [],
+    "matches": [
+      {
+        "case_id": "case-uuid",
+        "safety_report_id": "INTAKE-123",
+        "version": 1,
+        "status": "draft",
+        "created_at": "2026-04-14 10:15:00 +00:00:00",
+        "report_type": "1",
+        "date_of_most_recent_information": [2024, 120],
+        "reporter_organization": null,
+        "sponsor_study_number": null,
+        "patient_initials": "PT123",
+        "investigation_number": null,
+        "age_d2_2a": null,
+        "sex_d5": null,
+        "dg_prd_key": "PRODUCT-001",
+        "reaction_meddra_version": "27.0",
+        "reaction_meddra_code": "10019211",
+        "ae_start_date": [2024, 120]
+      }
+    ]
+  }
+}
+```
+Response when basis is complete but warnings are still present:
+```json
+{
+  "data": {
+    "duplicate": false,
+    "basis_complete": true,
+    "warnings": [
+      "Reaction MedDRA version is missing from duplicate check input"
+    ],
+    "matches": []
+  }
+}
+```
+Response when basis is incomplete but the UI should still let the user review and continue:
+```json
+{
+  "data": {
+    "duplicate": false,
+    "basis_complete": false,
+    "warnings": [
+      "duplicate check basis is incomplete; resubmit with allow_duplicate_override=true after review",
+      "Product ID is missing from duplicate check input",
+      "Reaction MedDRA version is missing from duplicate check input"
+    ],
+    "matches": []
+  }
+}
+```
+
+Frontend behavior:
+- if `duplicate === true`, show matching cases and block create
+- if `basis_complete === false`, show the warnings and require explicit confirmation before create
+- do not treat `warnings.length > 0` as equivalent to `basis_complete === false`
+- interpret `basis_complete` as “enough duplicate-basis input exists to trust the check”
+- interpret `warnings` as a mixed informational list: some warnings indicate incomplete basis, while others are non-blocking missing-field notes
+- treat null-flavor placeholders such as `NI`, `UNK`, `ASKU`, `NASK`, `MSK` as missing values in the intake UI as well
+
+### POST `/api/cases/from-intake`
+```json
+{
+  "data": {
+    "safety_report_id": "INTAKE-123",
+    "date_of_most_recent_information": [2024, 120],
+    "report_type": "1",
+    "validation_profile": "fda",
+    "patient_initials": "PT123",
+    "dg_prd_key": "PRODUCT-001",
+    "reaction_meddra_version": "27.0",
+    "reaction_meddra_code": "10019211",
+    "ae_start_date": [2024, 120]
+  }
+}
+```
+Response
+```json
+{
+  "data": {
+    "case_id": "case-uuid",
+    "safety_report_id": "INTAKE-123",
+    "version": 1
+  }
+}
+```
+
+When the duplicate basis is incomplete, the frontend may resubmit with `allow_duplicate_override: true` after the user confirms:
+```json
+{
+  "data": {
+    "safety_report_id": "INTAKE-123",
+    "date_of_most_recent_information": [2024, 120],
+    "report_type": "1",
+    "validation_profile": "fda",
+    "patient_initials": "PT123",
+    "allow_duplicate_override": true
+  }
+}
+```
+
+When duplicate matches exist, `allow_duplicate_override` does not change the result. Duplicate hits are always blocked at create-from-intake time.
+
+Example error for duplicate hit:
+```json
+{
+  "error": {
+    "message": "SERVICE_ERROR",
+    "data": {
+      "detail": "duplicate case detected; create is blocked when intake check finds duplicates",
+      "req_uuid": "uuid"
+    }
+  }
+}
+```
+
+Example error for incomplete duplicate basis:
+```json
+{
+  "error": {
+    "message": "SERVICE_ERROR",
+    "data": {
+      "detail": "duplicate check basis is incomplete; resubmit with allow_duplicate_override=true after review",
+      "req_uuid": "uuid"
+    }
+  }
+}
+```
+
 ### GET `/api/cases/{case_id}/validation?profile=mfds`
 Query:
 - `profile` optional: `fda` or `mfds`

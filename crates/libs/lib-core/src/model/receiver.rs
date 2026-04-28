@@ -64,6 +64,15 @@ pub struct ReceiverInformationForCreate {
 	pub case_id: Uuid,
 	pub receiver_type: Option<String>,
 	pub organization_name: Option<String>,
+	pub department: Option<String>,
+	pub street_address: Option<String>,
+	pub city: Option<String>,
+	pub state_province: Option<String>,
+	pub postcode: Option<String>,
+	pub country_code: Option<String>,
+	pub telephone: Option<String>,
+	pub fax: Option<String>,
+	pub email: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -104,8 +113,24 @@ impl ReceiverInformationBmc {
 		.await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, receiver_type, organization_name, created_at, updated_at, created_by)
-			 VALUES ($1, $2, $3, now(), now(), $4)
+			"INSERT INTO {} (
+				case_id,
+				receiver_type,
+				organization_name,
+				department,
+				street_address,
+				city,
+				state_province,
+				postcode,
+				country_code,
+				telephone,
+				fax,
+				email,
+				created_at,
+				updated_at,
+				created_by
+			)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now(), now(), $13)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -116,6 +141,15 @@ impl ReceiverInformationBmc {
 					.bind(data.case_id)
 					.bind(data.receiver_type)
 					.bind(data.organization_name)
+					.bind(data.department)
+					.bind(data.street_address)
+					.bind(data.city)
+					.bind(data.state_province)
+					.bind(data.postcode)
+					.bind(data.country_code)
+					.bind(data.telephone)
+					.bind(data.fax)
+					.bind(data.email)
 					.bind(ctx.user_id()),
 			)
 			.await?;

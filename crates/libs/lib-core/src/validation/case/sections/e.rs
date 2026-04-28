@@ -98,6 +98,42 @@ pub(crate) fn collect_ich_issues(
 					RuleFacts::default(),
 				);
 			}
+
+			// E.i.3.2 seriousness criteria rules
+			if reaction.serious == Some(true) {
+				let any_criteria_true = reaction.criteria_death
+					|| reaction.criteria_life_threatening
+					|| reaction.criteria_hospitalization
+					|| reaction.criteria_disabling
+					|| reaction.criteria_congenital_anomaly
+					|| reaction.criteria_other_medically_important;
+				if !any_criteria_true {
+					push_issue_by_code(
+						issues,
+						"ICH.E.i.3.2.CRITERIA.REQUIRED",
+						format!("reactions.{idx}.seriousnessCriteria"),
+					);
+				}
+			}
+
+			let criteria_null_flavors = [
+				reaction.criteria_death_null_flavor.as_deref(),
+				reaction.criteria_life_threatening_null_flavor.as_deref(),
+				reaction.criteria_hospitalization_null_flavor.as_deref(),
+				reaction.criteria_disabling_null_flavor.as_deref(),
+				reaction.criteria_congenital_anomaly_null_flavor.as_deref(),
+				reaction.criteria_other_medically_important_null_flavor.as_deref(),
+			];
+			let has_non_ni_null_flavor = criteria_null_flavors
+				.iter()
+				.any(|nf| nf.map(str::trim).is_some_and(|v| !v.eq_ignore_ascii_case("NI")));
+			if has_non_ni_null_flavor {
+				push_issue_by_code(
+					issues,
+					"ICH.E.i.3.2.NI.ONLY",
+					format!("reactions.{idx}.seriousnessCriteria"),
+				);
+			}
 		});
 }
 
@@ -133,6 +169,9 @@ pub(crate) fn collect_fda_issues(
 
 pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 	match code {
+		"ICH.E.i.3.2.CRITERIA.REQUIRED" | "ICH.E.i.3.2.NI.ONLY" => {
+			Some("reactions.0.seriousnessCriteria")
+		}
 		"ICH.E.i.1.1a.REQUIRED" => Some("reactions.0.primarySourceReaction"),
 		"ICH.E.i.1.1b.REQUIRED" => Some("reactions.0.reactionLanguage"),
 		"ICH.E.i.2.1a.REQUIRED" => Some("reactions.0.reactionMeddraVersionLLT"),

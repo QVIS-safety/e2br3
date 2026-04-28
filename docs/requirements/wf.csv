@@ -1,0 +1,32 @@
+﻿1. WF 기본 규칙,,
+1) 모든 Case에 대해 Status 필드 필요,,
+"2) WF Status는 Safety Database Administrator가 추가할 수 있으며, 기본값으로 ""Saved"" 존재 ",,
+"3) 따로 정의한 혹은 WF 사용하지 않는다면 모든 Case의 Status는 ""Saved"" 값이 default",,
+4) WF Status 는 1개의 값만 가짐,,
+"5) 해당 기능은 현재 요청한 QC(QCed), Lock*과는 별도의 Case Status의 class",,
+"참고: Admin 메뉴 내에서 설정, 필요에 따라 사용하도록 On/Off 필요(Default는 off)",,
+,,
+2. WF 상세 설정 항목,,
+항목,필수 항목 여부,항목 설명
+Status,Y,"수정된 부분이 없다면 모든 Case의 Status는 ""Saved"" 값이 defualt. 본 Status에서만 Case 수정 가능"
+Role,N,"Status 값에 따라서 해당 사례의 Role(Safety Database Administrator 기 설정한 Role) 설정
+해당 Status에서는 설정된 Role의 User 만 조작 가능"
+Due date,N,Role 의 기한이 있는 경우 표시
+Description,N,상세 참고 내용 기술
+,,
+3. WF 에 따른 업무 순서 예시,,
+1) Safety Database Administrator가 아래와 같이 Status 및 Status 별 Routing 대상(Role)을 설정,,
+Status,Role,
+Saved,"PVS, 
+PVM, 
+Safety Database Administrator",
+To be reviewed,"PVS, 
+Safety Database Administrator",
+Internal review completed,"PVS, 
+PVM, 
+Safety Database Administrator",
+Finalized,Safety Database Administrator,
+"2) PVS가 정보 입력 완료 후 Status를 ""To be reviewed"" 로 수정, Role 및 User를 ""PVM"" 및 해당 User 선택하고, Comments 기재하여 전달(3번 진행).",,
+"3) PVM 이 검토 후 Status를 ""Internal review completed"" 로 수정(필요 시 ""Saved""로 수정하여 2번 부터 다시 진행), Role 및 User를 ""PVS"" 및 해당 User 선택하고, Comments 기재하여 전달(4번 진행).",,
+"4) PVS가 Status를 ""Finalized"" 로 수정, Role 및 User를 ""Safety Database Administrator"" 및 해당 User 선택하고, Comments 기재하여 전달.",,
+"5) 필요시 Safety Database Administrator가 Status를 ""Saved""로 변경하여 수정",,

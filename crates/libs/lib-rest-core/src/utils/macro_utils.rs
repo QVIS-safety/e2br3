@@ -325,6 +325,7 @@ macro_rules! generate_case_rest_fns {
             ) -> Result<(axum::http::StatusCode, Json<DataRestResult<$entity>>)> {
                 let ctx = ctx_w.0;
                 $crate::require_permission(&ctx, $perm_read)?;
+                $crate::require_case_read_allowed(&ctx, &mm, case_id).await?;
                 tracing::debug!(
                     "{:<12} - rest get {} case_id={} id={}",
                     "HANDLER",
@@ -343,6 +344,7 @@ macro_rules! generate_case_rest_fns {
             ) -> Result<(axum::http::StatusCode, Json<DataRestResult<Vec<$entity>>>)> {
                 let ctx = ctx_w.0;
                 $crate::require_permission(&ctx, $perm_list)?;
+                $crate::require_case_read_allowed(&ctx, &mm, case_id).await?;
                 tracing::debug!(
                     "{:<12} - rest list {}s case_id={}",
                     "HANDLER",
@@ -442,6 +444,7 @@ macro_rules! generate_case_single_rest_fns {
             ) -> Result<(axum::http::StatusCode, Json<DataRestResult<$entity>>)> {
                 let ctx = ctx_w.0;
                 $crate::require_permission(&ctx, $perm_read)?;
+                $crate::require_case_read_allowed(&ctx, &mm, case_id).await?;
                 tracing::debug!(
                     "{:<12} - rest get {} case_id={}",
                     "HANDLER",

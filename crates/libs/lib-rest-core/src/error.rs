@@ -20,6 +20,9 @@ pub enum Error {
 	Xml(lib_core::xml::Error),
 
 	// -- Authorization
+	AccessDenied {
+		required_role: String,
+	},
 	PermissionDenied {
 		required_permission: String,
 	},

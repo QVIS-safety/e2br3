@@ -1,0 +1,70 @@
+﻿1. 각 담당자 별 권한 (정확한 명칭은 미정),,,,,,,,,,,,,,,
+담당자,권한,,,,,,,,,,,,,,
+"System Administrator
+(system-admin)","Sponsor Administrator 에게 Safety Database에 접근 권한 부여/삭제 권한(1,2)
+[추가 설명]
+부여한 Safety Database 내의 접근 권한 없음",,,,,,,,,,,,,,
+Sponsor Administrator(CRO),"부여받은 Safety Database 내 Admin 권한을 포함한 모든 메뉴에 대한 Read/Edit 권한(1) 
+[추가 설명]
+1) 시스템 내 모든 항목에 대한 읽기/쓰기 권한 부여
+2) Sponsor Administrator의 Role 명칭 및 권한은 고정값
+3) Admin 권한을 이용하여 Role 생성 가능
+4) 생성한 Role별 권한(메뉴별 Read/Edit 권한) 생성/수정 가능(오른쪽 ROLE & PRIVILEGE 캡쳐 참고)
+5) User 에게 Role 부여
+6) User 에게 해당되는 업무(Sender(Sender's Organisation (C.3.2)), Product(Brand Name), Study(Sponsor Study Number (C.5.3)) 및 Blind 대상)에 따른 권한 설정 (ROLE 캡쳐 참고)
+7) Sponsor Administrator와 동일한 권한이 있는 Role 생성 가능 (오른쪽 ROLE & PRIVILEGE 캡쳐 참고)",,,,,,,,,,,,,,
+Sponsor Administrator (Pharmaceutical Company),"부여받은 Safety Database 내 Admin 권한을 포함한 모든 메뉴에 대한 Read/Edit 권한(2) 
+[추가 설명]
+1) 시스템 내 모든 항목에 대한 읽기/쓰기 권한 부여
+2) Sponsor Administrator의 Role 명칭 및 권한은 고정값
+3) Admin 권한을 이용하여 Role 생성 가능
+4) 생성한 Role별 권한(메뉴별 Read/Edit 권한) 생성/수정 가능
+5) User 에게 Role 부여
+6) User 에게 해당되는 업무(Product(Brand Name), Study(Sponsor Study Number (C.5.3)) 및 Blind 대상)에 따른 권한 설정
+7) Sponsor Administrator와 동일한 권한이 있는 Role 생성 가능",,,,,,,,,,,,,,
+User,부여받은 Role 및 업무에 따른 Read/Edit 권한,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+2.권한 Hierarchy,,,,,,,회사별 권한 부여 예시(회사별 Practice에 따라 다르게 적용),,,,,,,,
+System Administrator,,,,,,,System Administrator,,,,,,,,
+,,,,,,,,,,,,,,,
+,권한(1) 부여,Sponsor Administrator(CRO),,,,,,권한(1) 부여,Sponsor Administrator(CRO),,,,,,
+,,,,,,,,,,,,,,,
+,,,,,,,,,,권한 부여,,,,,
+,,,권한 부여,User1,,,,,Safety Database Administrator,,,,,,
+,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+,,,권한 부여,User2,,,,,,권한 부여,PVS,,,,
+,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+,권한(2) 부여,Sponsor Administrator (Pharmaceutical Company),,,,,,,,권한 부여,PVM,,,,
+,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+,,,,,,,,권한(2) 부여,Sponsor Administrator (Pharmaceutical Company),,,,,,
+,,,권한 부여,User1,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+,,,,,,,,,,권한 부여,PVS,,,,
+,,,권한 부여,User2,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+,,,,,,,,,,권한 부여,PVM,,,,
+,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+3. 사용자 UI 화면,,,,,,,,,,,,,,,
+담당자,UI 화면 표시,,,,,,,,,,,,,,
+"Sponsor Administrator(CRO, Pharmaceutical Company)","Routing page
+모든 Sender(Sender's Organisation (C.3.2)) 표시
+Routing 이후 
+세부 페이지에서도 해당 모든 정보 표시",,,,,,,,,,,,,,
+User,"Routing page
+Safety Database Administrator한테서 권한을 부여 받은 Sender(Sender's Organisation (C.3.2))만 표시
+Routing 이후
+CASE 페이지 Routing page에서 선택한 Sender(Sender's Organisation (C.3.2))에서 권한을 부여 받은 Product(Brand Name), Study(Sponsor Study Number (C.5.3)만 표시
+INFO 페이지 권한을 부여 받은 Sender(Sender's Organisation (C.3.2)), Product(Brand Name), Study(Sponsor Study Number (C.5.3)만 표시 
+IMPORT, EXPORT/SUBMISSION 페이지 권한을 부여받은 Product(Brand Name)에 대한 Hx 만 표시",,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+4. CRO의 권한 부여 예시,,,,,,,,,,,,,,,
+1. System Administrator: 시스템 내 Sponsor Administrator 등록 및 권한 부여,,,,,,,,,,,,,,,
+"2. Sponsor Administrator: Safety Database Administrator role 생성하고 모든 메뉴별 권한(읽기, 수정) 부여",,,,,,,,,,,,,,,
+3. Safety Database Administrator: ,,,,,,,,,,,,,,,
+"1) PVS, PVM 등 필요한 Role 생성하고, Role 별로 메뉴별 권한(읽기,수정) 부여",,,,,,,,,,,,,,,
+2) User에 따라서 해당되는 Role 을 부여,,,,,,,,,,,,,,,
+"3) User 별로 해당 업무에 따라 Sender(Sender's Organisation (C.3.2)), Product(Brand Name), Study(Sponsor Study Number (C.5.3)) 및 Blind 대상 여부 권한 부여",,,,,,,,,,,,,,,

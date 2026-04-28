@@ -52,27 +52,17 @@ pub(crate) async fn import_section_h(
 				existing.id
 			}
 			Err(crate::model::Error::EntityUuidNotFound { .. }) => {
-				let narrative_id = NarrativeInformationBmc::create(
+				NarrativeInformationBmc::create(
 					ctx,
 					mm,
 					NarrativeInformationForCreate {
 						case_id,
 						case_narrative: narrative.case_narrative.clone(),
+						reporter_comments: narrative.reporter_comments.clone(),
+						sender_comments: narrative.sender_comments.clone(),
 					},
 				)
-				.await?;
-				NarrativeInformationBmc::update_by_case(
-					ctx,
-					mm,
-					case_id,
-					NarrativeInformationForUpdate {
-						case_narrative: Some(narrative.case_narrative),
-						reporter_comments: narrative.reporter_comments,
-						sender_comments: narrative.sender_comments,
-					},
-				)
-				.await?;
-				narrative_id
+				.await?
 			}
 			Err(err) => return Err(err.into()),
 		};

@@ -1,4 +1,6 @@
 use crate::validation::{
+	is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
+	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
 	has_text, push_issue_by_code, push_issue_if_condition_violated,
 	push_issue_if_conditioned_value_invalid, MfdsValidationContext, RuleFacts,
 	ValidationContext, ValidationIssue,
@@ -62,7 +64,7 @@ pub(crate) fn collect_c_issues(
 				format!("senderInformation.{idx}.senderType"),
 				RuleFacts {
 					mfds_sender_type_disallowed: Some(
-						sender.sender_type.trim() == "3",
+						sender.sender_type.as_deref().map(str::trim) == Some("3"),
 					),
 					..RuleFacts::default()
 				},
@@ -114,13 +116,12 @@ pub(crate) fn collect_d_issues(
 	mfds_ctx: &MfdsValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let receiver_code = validation_ctx
+	let msg_receiver = validation_ctx
 		.message_header
 		.as_ref()
-		.map(|h| h.message_receiver_identifier.trim().to_ascii_uppercase())
-		.unwrap_or_default();
-	let receiver_is_kr = receiver_code == "KR";
-	let receiver_is_fr = receiver_code == "FR";
+		.map(|h| h.message_receiver_identifier.as_str());
+	let receiver_is_kr = is_mfds_domestic_receiver(msg_receiver);
+	let receiver_is_fr = is_mfds_foreign_postmarket_receiver(msg_receiver);
 
 	mfds_ctx
 		.past_drugs
@@ -208,16 +209,16 @@ pub(crate) fn collect_g_issues(
 	let report_type_is_study = validation_ctx
 		.safety_report
 		.as_ref()
-		.map(|r| r.report_type.as_str())
-		== Some("2");
-	let receiver_code = validation_ctx
+		.map(|r| r.report_type.as_deref().map(str::trim) == Some("2"))
+		.unwrap_or(false);
+	let msg_receiver = validation_ctx
 		.message_header
 		.as_ref()
-		.map(|h| h.message_receiver_identifier.trim().to_ascii_uppercase())
-		.unwrap_or_default();
-	let receiver_is_ct_or_cu = receiver_code == "CT" || receiver_code == "CU";
-	let receiver_is_kr = receiver_code == "KR";
-	let receiver_is_fr = receiver_code == "FR";
+		.map(|h| h.message_receiver_identifier.as_str());
+	let receiver_is_kr = is_mfds_domestic_receiver(msg_receiver);
+	let receiver_is_fr = is_mfds_foreign_postmarket_receiver(msg_receiver);
+	let receiver_is_ct_or_cu = is_mfds_clinical_trial_receiver(msg_receiver)
+		|| is_mfds_compassionate_use_receiver(msg_receiver);
 
 	let mut domestic_drug_ids = std::collections::HashSet::new();
 	let mut drug_index_by_id = std::collections::HashMap::new();
@@ -276,7 +277,7 @@ pub(crate) fn collect_g_issues(
 				Some(other) if !other.is_empty() => {
 					push_mfds_required_issue(
 						issues,
-						"MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
+						"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
 						format!("drugs.{idx}.mpid"),
 						drug.mpid.as_deref(),
 						RuleFacts {

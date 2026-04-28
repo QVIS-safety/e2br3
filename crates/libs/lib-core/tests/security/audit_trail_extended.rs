@@ -387,6 +387,7 @@ async fn test_audit_trail_users() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 	let user_id = UserBmc::create(&ctx, &mm, user_c).await?;
 	assert_eq!(audit_log_count(&mm, "users", user_id, "CREATE").await?, 1);
@@ -412,6 +413,7 @@ async fn test_audit_trail_users() -> Result<()> {
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 		active: None,
 		last_login_at: None,
 	};

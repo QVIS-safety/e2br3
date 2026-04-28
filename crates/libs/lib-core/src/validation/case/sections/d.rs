@@ -1,4 +1,5 @@
 use crate::validation::{
+	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
 	has_patient_initials, has_text, push_issue_by_code,
 	push_issue_if_conditioned_value_invalid, should_require_patient_initials,
 	FdaValidationContext, MfdsValidationContext, RuleFacts, ValidationContext,
@@ -27,6 +28,7 @@ pub(crate) fn collect(
 pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 	match code {
 		"ICH.D.1.REQUIRED" => Some("patientInformation.patientInitials"),
+		"ICH.D.1.1.4.REQUIRED" => Some("patientInformation.patientStudyNumber"),
 		"ICH.D.2.2a.REQUIRED" => Some("patientInformation.patientAge.value"),
 		"ICH.D.2.2b.REQUIRED" => Some("patientInformation.patientAge.unit"),
 		"ICH.D.2.2.1a.REQUIRED" => Some("patientInformation.gestationPeriod.value"),
@@ -101,23 +103,48 @@ pub(crate) fn collect_ich_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	if validation_ctx.patient.is_none() {
-		push_issue_by_code(
-			issues,
-			"ICH.D.1.REQUIRED",
-			"patientInformation.patientInitials",
-		);
-	}
+	let report_type_is_study = validation_ctx
+		.safety_report
+		.as_ref()
+		.map(|r| r.report_type.as_deref().map(str::trim) == Some("2"))
+		.unwrap_or(false);
 
-	if let Some(patient) = validation_ctx.patient.as_ref() {
-		if should_require_patient_initials(patient) && !has_patient_initials(patient)
-		{
+	if !report_type_is_study {
+		if validation_ctx.patient.is_none() {
 			push_issue_by_code(
 				issues,
 				"ICH.D.1.REQUIRED",
 				"patientInformation.patientInitials",
 			);
 		}
+
+		if let Some(patient) = validation_ctx.patient.as_ref() {
+			if should_require_patient_initials(patient) && !has_patient_initials(patient)
+			{
+				push_issue_by_code(
+					issues,
+					"ICH.D.1.REQUIRED",
+					"patientInformation.patientInitials",
+				);
+			}
+		}
+	}
+
+	if report_type_is_study {
+		let has_study_number = validation_ctx.patient_identifiers.iter().any(|id| {
+			id.identifier_type_code.trim() == "4"
+				&& !id.identifier_value.trim().is_empty()
+		});
+		if !has_study_number {
+			push_issue_by_code(
+				issues,
+				"ICH.D.1.1.4.REQUIRED",
+				"patientInformation.patientStudyNumber",
+			);
+		}
+	}
+
+	if let Some(patient) = validation_ctx.patient.as_ref() {
 		let age_value_present = patient.age_at_time_of_onset.is_some();
 		let age_unit_present = has_text(patient.age_unit.as_deref());
 		if age_unit_present && !age_value_present {
@@ -515,13 +542,12 @@ pub(crate) fn collect_mfds_issues(
 	mfds_ctx: &MfdsValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	let receiver_code = validation_ctx
+	let msg_receiver = validation_ctx
 		.message_header
 		.as_ref()
-		.map(|h| h.message_receiver_identifier.trim().to_ascii_uppercase())
-		.unwrap_or_default();
-	let receiver_is_kr = receiver_code == "KR";
-	let receiver_is_fr = receiver_code == "FR";
+		.map(|h| h.message_receiver_identifier.as_str());
+	let receiver_is_kr = is_mfds_domestic_receiver(msg_receiver);
+	let receiver_is_fr = is_mfds_foreign_postmarket_receiver(msg_receiver);
 
 	mfds_ctx
 		.past_drugs

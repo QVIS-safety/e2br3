@@ -9,9 +9,9 @@ use tokio::sync::OnceCell;
 
 pub type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 
-/// Default demo role for testing (admin has full access)
+/// Default demo role for testing (sponsor admin CRO has in-database full access)
 #[allow(dead_code)]
-pub const DEMO_ROLE: &str = "admin";
+pub const DEMO_ROLE: &str = "sponsor_admin_cro";
 
 fn system_user_id() -> Uuid {
 	uuid::uuid!("00000000-0000-0000-0000-000000000001")

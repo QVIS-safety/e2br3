@@ -8,7 +8,7 @@ use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::ModelManager;
 use lib_core::validation::{
 	infer_regulatory_authority_from_receivers, validate_case_for_profile,
-	CaseValidationReport, ValidationProfile,
+	validate_case_for_profiles, CaseValidationReport, ValidationProfile,
 };
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -132,6 +132,7 @@ pub async fn validate_case(
 ) -> Result<(StatusCode, Json<DataRestResult<CaseValidationReport>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let profile =
 		resolve_profile(&ctx, &mm, case_id, query.profile.as_deref()).await?;
@@ -150,22 +151,19 @@ pub async fn validate_case_all(
 ) -> Result<(StatusCode, Json<DataRestResult<CaseValidationBundle>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let profiles = resolve_profiles(&ctx, &mm, case_id).await?;
-	let mut reports = Vec::with_capacity(profiles.len());
-	let mut blocking_count = 0usize;
-	let mut non_blocking_count = 0usize;
-	let mut ok = true;
-	for profile in profiles {
-		let report = validate_case_for_profile(&ctx, &mm, case_id, profile).await?;
-		blocking_count += report.blocking_count;
-		non_blocking_count += report.non_blocking_count;
-		ok &= report.ok;
-		reports.push(report);
-	}
+	let reports =
+		validate_case_for_profiles(&ctx, &mm, case_id, &profiles).await?;
+	let blocking_count: usize =
+		reports.iter().map(|r| r.blocking_count).sum();
+	let non_blocking_count: usize =
+		reports.iter().map(|r| r.non_blocking_count).sum();
+	let ok = reports.iter().all(|r| r.ok);
 	let profiles = reports
 		.iter()
-		.map(|report| report.profile.clone())
+		.map(|r| r.profile.clone())
 		.collect::<Vec<_>>();
 
 	Ok((

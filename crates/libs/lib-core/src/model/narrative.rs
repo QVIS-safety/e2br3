@@ -40,6 +40,8 @@ pub struct NarrativeInformation {
 pub struct NarrativeInformationForCreate {
 	pub case_id: Uuid,
 	pub case_narrative: String,
+	pub reporter_comments: Option<String>,
+	pub sender_comments: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -156,8 +158,16 @@ impl NarrativeInformationBmc {
 		.await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, case_narrative, created_at, updated_at, created_by)
-			 VALUES ($1, $2, now(), now(), $3)
+			"INSERT INTO {} (
+				case_id,
+				case_narrative,
+				reporter_comments,
+				sender_comments,
+				created_at,
+				updated_at,
+				created_by
+			)
+			 VALUES ($1, $2, $3, $4, now(), now(), $5)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -167,6 +177,8 @@ impl NarrativeInformationBmc {
 				sqlx::query_as::<_, (Uuid,)>(&sql)
 					.bind(data.case_id)
 					.bind(data.case_narrative)
+					.bind(data.reporter_comments)
+					.bind(data.sender_comments)
 					.bind(ctx.user_id()),
 			)
 			.await?;

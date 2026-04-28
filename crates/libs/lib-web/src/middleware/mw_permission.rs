@@ -147,10 +147,16 @@ pub trait RoleCheck: Send + Sync + 'static {
 pub struct AdminRole;
 impl RoleCheck for AdminRole {
 	fn check(role: &str) -> bool {
-		role == lib_core::ctx::ROLE_ADMIN
+		let normalized = lib_core::ctx::canonical_role(role);
+		matches!(
+			normalized.as_str(),
+			lib_core::ctx::ROLE_SYSTEM_ADMIN
+				| lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO
+				| lib_core::ctx::ROLE_SPONSOR_ADMIN_COMPANY
+		)
 	}
 	fn role_name() -> &'static str {
-		"admin"
+		"safety_db_admin"
 	}
 }
 
@@ -158,10 +164,17 @@ impl RoleCheck for AdminRole {
 pub struct ManagerOrAboveRole;
 impl RoleCheck for ManagerOrAboveRole {
 	fn check(role: &str) -> bool {
-		role == lib_core::ctx::ROLE_ADMIN || role == lib_core::ctx::ROLE_MANAGER
+		let normalized = lib_core::ctx::canonical_role(role);
+		matches!(
+			normalized.as_str(),
+			lib_core::ctx::ROLE_SYSTEM_ADMIN
+				| lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO
+				| lib_core::ctx::ROLE_SPONSOR_ADMIN_COMPANY
+				| lib_core::ctx::ROLE_MANAGER
+		)
 	}
 	fn role_name() -> &'static str {
-		"manager or admin"
+		"manager or safety_db_admin"
 	}
 }
 
@@ -169,7 +182,7 @@ impl RoleCheck for ManagerOrAboveRole {
 pub struct CanModifyRole;
 impl RoleCheck for CanModifyRole {
 	fn check(role: &str) -> bool {
-		role != lib_core::ctx::ROLE_VIEWER
+		lib_core::ctx::canonical_role(role) != lib_core::ctx::ROLE_VIEWER
 	}
 	fn role_name() -> &'static str {
 		"user, manager, or admin"
@@ -376,7 +389,9 @@ mod tests {
 	use super::*;
 	use crate::middleware::mw_auth::{CtxExtError, CtxW};
 	use axum::http::Request;
-	use lib_core::ctx::{ROLE_ADMIN, ROLE_MANAGER, ROLE_USER, ROLE_VIEWER};
+	use lib_core::ctx::{
+		ROLE_ADMIN, ROLE_MANAGER, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER, ROLE_VIEWER,
+	};
 	use uuid::Uuid;
 
 	fn parts_with_ctx(role: &str) -> Parts {
@@ -413,6 +428,14 @@ mod tests {
 		let res =
 			RequireRole::<AdminRole>::from_request_parts(&mut parts, &()).await;
 		assert!(matches!(res, Err(Error::AccessDenied { .. })));
+	}
+
+	#[tokio::test]
+	async fn require_role_accepts_sponsor_admin() {
+		let mut parts = parts_with_ctx(ROLE_SPONSOR_ADMIN_CRO);
+		let res =
+			RequireRole::<AdminRole>::from_request_parts(&mut parts, &()).await;
+		assert!(res.is_ok());
 	}
 
 	#[tokio::test]

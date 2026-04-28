@@ -60,6 +60,7 @@ async fn ensure_study_case(
 	case_id: Uuid,
 	study_id: Uuid,
 ) -> Result<()> {
+	lib_rest_core::require_case_read_allowed(ctx, mm, case_id).await?;
 	let study = StudyInformationBmc::get(ctx, mm, study_id).await?;
 	ensure_case_scope(case_id, study.case_id, study_id, "study_information")
 }
@@ -235,6 +236,7 @@ pub async fn list_sender_information(
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<SenderInformation>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SENDER_INFORMATION_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let filter = SenderInformationFilter {
 		case_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
 			case_id.to_string()
@@ -258,6 +260,7 @@ pub async fn get_sender_information(
 ) -> Result<(StatusCode, Json<DataRestResult<SenderInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SENDER_INFORMATION_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let entity = SenderInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "sender_information")?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
@@ -619,6 +622,7 @@ pub async fn list_study_information(
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<StudyInformation>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, STUDY_INFORMATION_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let filter = StudyInformationFilter {
 		case_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
 			case_id.to_string()
@@ -642,6 +646,7 @@ pub async fn get_study_information(
 ) -> Result<(StatusCode, Json<DataRestResult<StudyInformation>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, STUDY_INFORMATION_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 	let entity = StudyInformationBmc::get(&ctx, &mm, id).await?;
 	ensure_case_scope(case_id, entity.case_id, id, "study_information")?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))

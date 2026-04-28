@@ -1,5 +1,5 @@
 use crate::Result;
-use lib_core::ctx::{Ctx, ROLE_ADMIN};
+use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_CRO};
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::user::{UserBmc, UserForCreate, UserForUpdate};
 use lib_core::model::ModelManager;
@@ -89,16 +89,18 @@ pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 			let user_u = UserForUpdate {
 				email: Some(DEMO_EMAIL.to_string()),
 				username: Some(DEMO_USERNAME.to_string()),
-				role: Some(ROLE_ADMIN.to_string()),
+				role: Some(ROLE_SPONSOR_ADMIN_CRO.to_string()),
 				first_name: None,
 				last_name: None,
 				comments: None,
 				other_information: None,
 				access_start_at: None,
 				access_end_at: None,
+				active_sender_identifier: None,
 				access_sender_ids: None,
 				access_product_ids: None,
 				access_study_ids: None,
+				access_blind_allowed: None,
 				active: Some(true),
 				last_login_at: None,
 			};
@@ -111,16 +113,18 @@ pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 				email: DEMO_EMAIL.to_string(),
 				username: Some(DEMO_USERNAME.to_string()),
 				pwd_clear: DEMO_PASSWORD.to_string(),
-				role: Some(ROLE_ADMIN.to_string()),
+				role: Some(ROLE_SPONSOR_ADMIN_CRO.to_string()),
 				first_name: None,
 				last_name: None,
 				comments: Some("Bootstrap demo admin user".to_string()),
 				other_information: None,
 				access_start_at: None,
 				access_end_at: None,
+				active_sender_identifier: None,
 				access_sender_ids: None,
 				access_product_ids: None,
 				access_study_ids: None,
+				access_blind_allowed: None,
 			};
 			let user_id = UserBmc::create(&root_ctx, mm, create).await?;
 			info!(

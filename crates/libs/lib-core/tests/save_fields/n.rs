@@ -34,6 +34,15 @@ async fn save_n_create() -> Result<()> {
 			case_id,
 			receiver_type: Some("2".to_string()),
 			organization_name: Some("Receiver".to_string()),
+			department: None,
+			street_address: None,
+			city: None,
+			state_province: None,
+			postcode: None,
+			country_code: None,
+			telephone: None,
+			fax: None,
+			email: None,
 		},
 	)
 	.await?;
@@ -92,6 +101,15 @@ async fn save_n_update() -> Result<()> {
 			case_id,
 			receiver_type: None,
 			organization_name: None,
+			department: None,
+			street_address: None,
+			city: None,
+			state_province: None,
+			postcode: None,
+			country_code: None,
+			telephone: None,
+			fax: None,
+			email: None,
 		},
 	)
 	.await?;

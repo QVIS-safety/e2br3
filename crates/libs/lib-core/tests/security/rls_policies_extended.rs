@@ -95,6 +95,7 @@ async fn create_user(
 		access_sender_ids: None,
 		access_product_ids: None,
 		access_study_ids: None,
+		access_blind_allowed: None,
 	};
 	Ok(UserBmc::create(ctx, mm, user_c).await?)
 }
@@ -591,6 +592,10 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 		DrugRecurrenceInformationForCreate {
 			drug_id: drug1,
 			sequence_number: 1,
+			rechallenge_action: None,
+			reaction_meddra_version: None,
+			reaction_meddra_code: None,
+			reaction_recurred: None,
 		},
 	)
 	.await?;
@@ -600,6 +605,10 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 		DrugRecurrenceInformationForCreate {
 			drug_id: drug2,
 			sequence_number: 1,
+			rechallenge_action: None,
+			reaction_meddra_version: None,
+			reaction_meddra_code: None,
+			reaction_recurred: None,
 		},
 	)
 	.await?;

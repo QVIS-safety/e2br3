@@ -28,6 +28,7 @@ async fn narrative_id_for_case(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Uuid> {
+	lib_rest_core::require_case_read_allowed(ctx, mm, case_id).await?;
 	let narrative = NarrativeInformationBmc::get_by_case(ctx, mm, case_id).await?;
 	Ok(narrative.id)
 }

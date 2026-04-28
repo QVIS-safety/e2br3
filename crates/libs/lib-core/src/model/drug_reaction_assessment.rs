@@ -55,6 +55,14 @@ pub struct DrugReactionAssessment {
 pub struct DrugReactionAssessmentForCreate {
 	pub drug_id: Uuid,
 	pub reaction_id: Uuid,
+	pub administration_start_interval_value: Option<Decimal>,
+	pub administration_start_interval_unit: Option<String>,
+	pub last_dose_interval_value: Option<Decimal>,
+	pub last_dose_interval_unit: Option<String>,
+	pub recurrence_action: Option<String>,
+	pub recurrence_meddra_version: Option<String>,
+	pub recurrence_meddra_code: Option<String>,
+	pub reaction_recurred: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -152,10 +160,25 @@ impl DrugReactionAssessmentBmc {
 		.await?;
 
 		let sql = format!(
-			"INSERT INTO {} (drug_id, reaction_id, created_at, updated_at, created_by)
-			 VALUES ($1, $2, now(), now(), $3)
+			"INSERT INTO {} (
+			 drug_id, reaction_id, administration_start_interval_value,
+			 administration_start_interval_unit, last_dose_interval_value,
+			 last_dose_interval_unit, recurrence_action, recurrence_meddra_version,
+			 recurrence_meddra_code, reaction_recurred, created_at, updated_at, created_by
+			)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now(), now(), $11)
 			 ON CONFLICT (drug_id, reaction_id)
-			 DO UPDATE SET updated_at = now(), updated_by = EXCLUDED.created_by
+			 DO UPDATE SET
+			  administration_start_interval_value = COALESCE(EXCLUDED.administration_start_interval_value, drug_reaction_assessments.administration_start_interval_value),
+			  administration_start_interval_unit = COALESCE(EXCLUDED.administration_start_interval_unit, drug_reaction_assessments.administration_start_interval_unit),
+			  last_dose_interval_value = COALESCE(EXCLUDED.last_dose_interval_value, drug_reaction_assessments.last_dose_interval_value),
+			  last_dose_interval_unit = COALESCE(EXCLUDED.last_dose_interval_unit, drug_reaction_assessments.last_dose_interval_unit),
+			  recurrence_action = COALESCE(EXCLUDED.recurrence_action, drug_reaction_assessments.recurrence_action),
+			  recurrence_meddra_version = COALESCE(EXCLUDED.recurrence_meddra_version, drug_reaction_assessments.recurrence_meddra_version),
+			  recurrence_meddra_code = COALESCE(EXCLUDED.recurrence_meddra_code, drug_reaction_assessments.recurrence_meddra_code),
+			  reaction_recurred = COALESCE(EXCLUDED.reaction_recurred, drug_reaction_assessments.reaction_recurred),
+			  updated_at = now(),
+			  updated_by = EXCLUDED.created_by
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -165,6 +188,14 @@ impl DrugReactionAssessmentBmc {
 				sqlx::query_as::<_, (Uuid,)>(&sql)
 					.bind(data.drug_id)
 					.bind(data.reaction_id)
+					.bind(data.administration_start_interval_value)
+					.bind(data.administration_start_interval_unit)
+					.bind(data.last_dose_interval_value)
+					.bind(data.last_dose_interval_unit)
+					.bind(data.recurrence_action)
+					.bind(data.recurrence_meddra_version)
+					.bind(data.recurrence_meddra_code)
+					.bind(data.reaction_recurred)
 					.bind(ctx.user_id()),
 			)
 			.await?;

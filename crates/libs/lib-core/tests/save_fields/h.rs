@@ -3,8 +3,8 @@ use crate::test_common::Result;
 use lib_core::model::narrative::{
 	CaseSummaryInformationBmc, CaseSummaryInformationForCreate,
 	CaseSummaryInformationForUpdate, NarrativeInformationBmc,
-	NarrativeInformationForUpdate, SenderDiagnosisBmc, SenderDiagnosisForCreate,
-	SenderDiagnosisForUpdate,
+	NarrativeInformationForCreate, NarrativeInformationForUpdate,
+	SenderDiagnosisBmc, SenderDiagnosisForCreate, SenderDiagnosisForUpdate,
 };
 use serial_test::serial;
 
@@ -18,6 +18,29 @@ async fn save_h_1_2_4_create() -> Result<()> {
 	assert_eq!(row.case_narrative, "Narrative");
 	assert_eq!(row.reporter_comments, None);
 	assert_eq!(row.sender_comments, None);
+	finish(&mm).await
+}
+
+#[tokio::test]
+#[serial]
+async fn save_h_1_2_4_create_full_surface() -> Result<()> {
+	let (mm, ctx, case_id) = setup_case().await?;
+	NarrativeInformationBmc::create(
+		&ctx,
+		&mm,
+		NarrativeInformationForCreate {
+			case_id,
+			case_narrative: "Narrative 2".to_string(),
+			reporter_comments: Some("Reporter".to_string()),
+			sender_comments: Some("Sender".to_string()),
+		},
+	)
+	.await?;
+	let row = NarrativeInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	assert_eq!(row.case_id, case_id);
+	assert_eq!(row.case_narrative, "Narrative 2");
+	assert_eq!(row.reporter_comments.as_deref(), Some("Reporter"));
+	assert_eq!(row.sender_comments.as_deref(), Some("Sender"));
 	finish(&mm).await
 }
 

@@ -83,6 +83,42 @@ pub struct ReactionForCreate {
 	pub case_id: Uuid,
 	pub sequence_number: i32,
 	pub primary_source_reaction: String,
+	pub primary_source_reaction_translation: Option<String>,
+	pub reaction_language: Option<String>,
+	pub reaction_meddra_code: Option<String>,
+	pub reaction_meddra_version: Option<String>,
+	pub term_highlighted: Option<bool>,
+	pub serious: Option<bool>,
+	pub criteria_death: Option<bool>,
+	pub criteria_death_null_flavor: Option<String>,
+	pub criteria_life_threatening: Option<bool>,
+	pub criteria_life_threatening_null_flavor: Option<String>,
+	pub criteria_hospitalization: Option<bool>,
+	pub criteria_hospitalization_null_flavor: Option<String>,
+	pub criteria_disabling: Option<bool>,
+	pub criteria_disabling_null_flavor: Option<String>,
+	pub criteria_congenital_anomaly: Option<bool>,
+	pub criteria_congenital_anomaly_null_flavor: Option<String>,
+	pub criteria_other_medically_important: Option<bool>,
+	pub criteria_other_medically_important_null_flavor: Option<String>,
+	pub required_intervention: Option<String>,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub start_date: Option<Date>,
+	pub start_date_null_flavor: Option<String>,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub end_date: Option<Date>,
+	pub end_date_null_flavor: Option<String>,
+	pub duration_value: Option<Decimal>,
+	pub duration_unit: Option<String>,
+	pub outcome: Option<String>,
+	pub medical_confirmation: Option<bool>,
+	pub country_code: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -156,8 +192,30 @@ impl ReactionBmc {
 		.await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, sequence_number, primary_source_reaction, criteria_death, criteria_life_threatening, criteria_hospitalization, criteria_disabling, criteria_congenital_anomaly, criteria_other_medically_important, created_at, updated_at, created_by)
-			 VALUES ($1, $2, $3, false, false, false, false, false, false, now(), now(), $4)
+			"INSERT INTO {} (
+			 case_id, sequence_number, primary_source_reaction, primary_source_reaction_translation,
+			 reaction_language, reaction_meddra_code, reaction_meddra_version, term_highlighted,
+			 serious, criteria_death, criteria_death_null_flavor, criteria_life_threatening,
+			 criteria_life_threatening_null_flavor, criteria_hospitalization,
+			 criteria_hospitalization_null_flavor, criteria_disabling,
+			 criteria_disabling_null_flavor, criteria_congenital_anomaly,
+			 criteria_congenital_anomaly_null_flavor, criteria_other_medically_important,
+			 criteria_other_medically_important_null_flavor, required_intervention, start_date,
+			 start_date_null_flavor, end_date, end_date_null_flavor, duration_value, duration_unit,
+			 outcome, medical_confirmation, country_code, created_at, updated_at, created_by
+			)
+			 VALUES (
+			 $1, $2, $3, $4,
+			 $5, $6, $7, $8,
+			 $9, COALESCE($10, false), $11, COALESCE($12, false),
+			 $13, COALESCE($14, false),
+			 $15, COALESCE($16, false),
+			 $17, COALESCE($18, false),
+			 $19, COALESCE($20, false),
+			 $21, $22, $23,
+			 $24, $25, $26, $27, $28,
+			 $29, $30, $31, now(), now(), $32
+			)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -168,6 +226,34 @@ impl ReactionBmc {
 					.bind(reaction_c.case_id)
 					.bind(reaction_c.sequence_number)
 					.bind(reaction_c.primary_source_reaction)
+					.bind(reaction_c.primary_source_reaction_translation)
+					.bind(reaction_c.reaction_language)
+					.bind(reaction_c.reaction_meddra_code)
+					.bind(reaction_c.reaction_meddra_version)
+					.bind(reaction_c.term_highlighted)
+					.bind(reaction_c.serious)
+					.bind(reaction_c.criteria_death)
+					.bind(reaction_c.criteria_death_null_flavor)
+					.bind(reaction_c.criteria_life_threatening)
+					.bind(reaction_c.criteria_life_threatening_null_flavor)
+					.bind(reaction_c.criteria_hospitalization)
+					.bind(reaction_c.criteria_hospitalization_null_flavor)
+					.bind(reaction_c.criteria_disabling)
+					.bind(reaction_c.criteria_disabling_null_flavor)
+					.bind(reaction_c.criteria_congenital_anomaly)
+					.bind(reaction_c.criteria_congenital_anomaly_null_flavor)
+					.bind(reaction_c.criteria_other_medically_important)
+					.bind(reaction_c.criteria_other_medically_important_null_flavor)
+					.bind(reaction_c.required_intervention)
+					.bind(reaction_c.start_date)
+					.bind(reaction_c.start_date_null_flavor)
+					.bind(reaction_c.end_date)
+					.bind(reaction_c.end_date_null_flavor)
+					.bind(reaction_c.duration_value)
+					.bind(reaction_c.duration_unit)
+					.bind(reaction_c.outcome)
+					.bind(reaction_c.medical_confirmation)
+					.bind(reaction_c.country_code)
 					.bind(ctx.user_id()),
 			)
 			.await?;

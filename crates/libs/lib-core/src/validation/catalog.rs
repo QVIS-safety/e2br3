@@ -431,6 +431,22 @@ pub const VALIDATION_RULES: &[
 			"[C.5.4] Study type where reaction(s) / event(s) were observed is required when [C.1.3] is report from study (2).",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.C.2.r.2.1.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reporter",
+		blocking: true,
+		message:
+			"[C.2.r.2.1] Reporter organization is required when report type is study (C.1.3=2).",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.5.3.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "study",
+		blocking: true,
+		message:
+			"[C.5.3] Sponsor study number is required when report type is study (C.1.3=2).",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.C.5.TITLE.NULLFLAVOR.FORBIDDEN",
 		profile: ValidationProfile::Ich,
 		section: "study",
@@ -451,6 +467,14 @@ pub const VALIDATION_RULES: &[
 		section: "patient",
 		blocking: true,
 		message: "[D.1] This Element is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.1.1.4.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.1.1.4] Patient study number is required when report type is study (C.1.3=2).",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.2.2a.REQUIRED",
@@ -791,6 +815,22 @@ pub const VALIDATION_RULES: &[
 		blocking: true,
 		message:
 			"relatedInvestigation/code missing code; nullFlavor is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.3.2.CRITERIA.REQUIRED",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"[E.i.3.2] At least one seriousness criterion must be true when [E.i.3.1] is serious.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.3.2.NI.ONLY",
+		profile: ValidationProfile::Ich,
+		section: "reactions",
+		blocking: true,
+		message:
+			"[E.i.3.2] Seriousness criteria null flavor must be NI; other null flavor values are not permitted.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.1.1a.REQUIRED",
@@ -1744,12 +1784,12 @@ pub const VALIDATION_RULES: &[
 		message: "MFDS domestic cases require KR product coding for the drug.",
 	},
 	ValidationRuleMetadata {
-		code: "MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
+		code: "MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
 		profile: ValidationProfile::Mfds,
 		section: "drugs",
-		blocking: false,
+		blocking: true,
 		message:
-			"MFDS foreign-use products should provide WHO MPID/KR product coding.",
+			"MFDS foreign-use products must provide WHO MPID/KR product coding.",
 	},
 ];
 
@@ -2067,6 +2107,18 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 		condition: RuleCondition::IchReportTypeIsStudy,
 	},
 	ConditionBinding {
+		code: "ICH.C.2.r.2.1.REQUIRED",
+		condition: RuleCondition::IchReportTypeIsStudy,
+	},
+	ConditionBinding {
+		code: "ICH.C.5.3.REQUIRED",
+		condition: RuleCondition::IchReportTypeIsStudy,
+	},
+	ConditionBinding {
+		code: "ICH.D.1.1.4.REQUIRED",
+		condition: RuleCondition::IchReportTypeIsStudy,
+	},
+	ConditionBinding {
 		code: "ICH.D.7.2.CONDITIONAL",
 		condition: RuleCondition::IchMedicalHistoryMissingD72Text,
 	},
@@ -2143,7 +2195,7 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 		condition: RuleCondition::MfdsDrugDomesticKr,
 	},
 	ConditionBinding {
-		code: "MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
+		code: "MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
 		condition: RuleCondition::MfdsDrugForeignNonKr,
 	},
 ];
@@ -2260,7 +2312,19 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
+		code: "ICH.C.2.r.2.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.5.3.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
 		code: "ICH.D.1.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.1.1.4.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
@@ -2612,7 +2676,7 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
-		code: "MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
+		code: "MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 ];
@@ -3437,7 +3501,7 @@ mod tests {
 			}
 		));
 		assert!(is_rule_condition_satisfied(
-			"MFDS.KR.FOREIGN.WHOMPID.RECOMMENDED",
+			"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
 			RuleFacts {
 				mfds_drug_foreign_non_kr: Some(true),
 				..RuleFacts::default()

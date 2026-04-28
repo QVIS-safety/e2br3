@@ -42,6 +42,62 @@ async fn create_narrative(ctx: &PersistTestCtx, case_id: Uuid) -> Result<Uuid> {
 	extract_id(&value)
 }
 
+#[tokio::test]
+#[serial]
+async fn save_h_1_2_4_reporter_comments_on_first_create_persists() -> Result<()> {
+	let ctx = setup().await?;
+	let case_id = create_case(&ctx).await?;
+
+	post_created(
+		&ctx,
+		narrative_field("H.1.2.4.reporter_comments.create"),
+		format!("/api/cases/{case_id}/narrative"),
+		json!({"data": {
+			"case_id": case_id,
+			"case_narrative": "Seed narrative",
+			"reporter_comments": "Reporter"
+		}}),
+	)
+	.await?;
+
+	let value = get_ok(
+		&ctx,
+		narrative_field("H.1.2.4.reporter_comments.create"),
+		format!("/api/cases/{case_id}/narrative"),
+	)
+	.await?;
+	assert_str(&value, "reporter_comments", "Reporter");
+	Ok(())
+}
+
+#[tokio::test]
+#[serial]
+async fn save_h_1_2_4_sender_comments_on_first_create_persists() -> Result<()> {
+	let ctx = setup().await?;
+	let case_id = create_case(&ctx).await?;
+
+	post_created(
+		&ctx,
+		narrative_field("H.1.2.4.sender_comments.create"),
+		format!("/api/cases/{case_id}/narrative"),
+		json!({"data": {
+			"case_id": case_id,
+			"case_narrative": "Seed narrative",
+			"sender_comments": "Sender"
+		}}),
+	)
+	.await?;
+
+	let value = get_ok(
+		&ctx,
+		narrative_field("H.1.2.4.sender_comments.create"),
+		format!("/api/cases/{case_id}/narrative"),
+	)
+	.await?;
+	assert_str(&value, "sender_comments", "Sender");
+	Ok(())
+}
+
 async fn create_sender_diagnosis(
 	ctx: &PersistTestCtx,
 	case_id: Uuid,

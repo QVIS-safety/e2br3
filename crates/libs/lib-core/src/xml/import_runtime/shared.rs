@@ -4,7 +4,7 @@ use crate::xml::Result;
 use libxml::parser::Parser;
 use libxml::tree::Node;
 use libxml::xpath::Context;
-use sqlx::types::time::{Date, Time};
+use sqlx::types::time::Date;
 use sqlx::types::Uuid;
 use std::collections::HashMap;
 use time::Month;
@@ -217,62 +217,6 @@ pub(crate) fn normalize_sex_code(value: Option<String>) -> Option<String> {
 	}
 }
 
-#[allow(dead_code)]
-pub(crate) fn build_initials(
-	given: Option<&str>,
-	family: Option<&str>,
-) -> Option<String> {
-	let mut out = String::new();
-	if let Some(g) = given.and_then(|v| v.chars().find(|c| c.is_ascii_alphabetic()))
-	{
-		out.push(g.to_ascii_uppercase());
-	}
-	if let Some(f) = family.and_then(|v| v.chars().find(|c| c.is_ascii_alphabetic()))
-	{
-		out.push(f.to_ascii_uppercase());
-	}
-	if out.is_empty() {
-		None
-	} else {
-		Some(out)
-	}
-}
-
-#[allow(dead_code)]
-pub(crate) fn initials_from_name_text(name: &str) -> Option<String> {
-	let mut out = String::new();
-	let trimmed = name.trim();
-
-	// Some reports encode initials as a compact token (e.g., "JD") with no spaces.
-	if !trimmed.contains(char::is_whitespace) {
-		let mut letters = trimmed.chars().filter(|c| c.is_ascii_alphabetic());
-		if let Some(first) = letters.next() {
-			out.push(first.to_ascii_uppercase());
-			if let Some(last) = trimmed
-				.chars()
-				.rev()
-				.find(|c| c.is_ascii_alphabetic() && !c.eq_ignore_ascii_case(&first))
-			{
-				out.push(last.to_ascii_uppercase());
-			}
-		}
-	}
-
-	for token in trimmed.split_whitespace() {
-		if let Some(ch) = token.chars().find(|c| c.is_ascii_alphabetic()) {
-			out.push(ch.to_ascii_uppercase());
-			if out.len() >= 2 {
-				break;
-			}
-		}
-	}
-	if out.is_empty() {
-		None
-	} else {
-		Some(out)
-	}
-}
-
 pub(crate) fn telecom_first(xpath: &mut Context, prefix: &str) -> Option<String> {
 	let values = xpath.findvalues("//hl7:telecom/@value", None).ok()?;
 	for value in values {
@@ -311,17 +255,6 @@ pub(crate) fn parse_date(value: String) -> Option<Date> {
 	Date::from_calendar_date(y, month, d).ok()
 }
 
-#[allow(dead_code)]
-pub(crate) fn parse_time(value: String) -> Option<Time> {
-	let digits: String = value.chars().filter(|c| c.is_ascii_digit()).collect();
-	if digits.len() < 14 {
-		return None;
-	}
-	let hour: u8 = digits[8..10].parse().ok()?;
-	let minute: u8 = digits[10..12].parse().ok()?;
-	let second: u8 = digits[12..14].parse().ok()?;
-	Time::from_hms(hour, minute, second).ok()
-}
 
 pub(crate) fn infer_validation_profile(
 	header: Option<&MessageHeaderExtract>,

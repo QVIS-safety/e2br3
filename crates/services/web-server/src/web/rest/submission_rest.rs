@@ -4,6 +4,7 @@ use axum::http::StatusCode;
 use axum::http::{HeaderMap, HeaderValue};
 use axum::Json;
 use lib_core::model::acs::{CASE_READ, CASE_UPDATE};
+use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -146,6 +147,7 @@ pub async fn list_case_submissions(
 ) -> Result<(StatusCode, Json<DataRestResult<CaseSubmissionList>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &_mm, case_id).await?;
 	let rows = list_by_case(&ctx, &_mm, case_id).await?;
 	Ok((
 		StatusCode::OK,
@@ -168,6 +170,7 @@ pub async fn get_case_submission(
 			message: format!("submission not found: {submission_id}"),
 		},
 	)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &_mm, record.case_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: record })))
 }
 
@@ -179,6 +182,12 @@ pub async fn list_submission_event_history(
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionEventList>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
+	let record = get_submission(&ctx, &mm, submission_id).await?.ok_or(
+		Error::BadRequest {
+			message: format!("submission not found: {submission_id}"),
+		},
+	)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, record.case_id).await?;
 	let rows = list_submission_events(&ctx, &mm, submission_id).await?;
 	Ok((
 		StatusCode::OK,
@@ -195,7 +204,16 @@ pub async fn list_all_submission_history(
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionHistoryList>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
-	let rows = list_submission_history(&ctx, &mm).await?;
+	set_full_context_dbx(mm.dbx(), ctx.user_id(), ctx.organization_id(), ctx.role())
+		.await
+		.map_err(Error::from)?;
+	let history = list_submission_history(&ctx, &mm).await?;
+	let mut rows = Vec::with_capacity(history.len());
+	for row in history {
+		if lib_rest_core::case_matches_user_scope(&ctx, &mm, row.case_id).await? {
+			rows.push(row);
+		}
+	}
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
@@ -215,6 +233,12 @@ pub async fn get_submission_dispatch_state_view(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
+	let record = get_submission(&ctx, &mm, submission_id).await?.ok_or(
+		Error::BadRequest {
+			message: format!("submission not found: {submission_id}"),
+		},
+	)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, record.case_id).await?;
 	let state = get_submission_dispatch_state(&ctx, &mm, submission_id)
 		.await?
 		.ok_or(Error::BadRequest {

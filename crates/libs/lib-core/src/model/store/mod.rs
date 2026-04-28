@@ -1,9 +1,9 @@
 // region:    --- Modules
 
-pub(in crate::model) mod dbx;
+pub mod dbx;
 
 use crate::core_config;
-use crate::ctx::Ctx;
+use crate::ctx::{canonical_role, Ctx};
 use crate::model::Error;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres, Transaction};
@@ -71,7 +71,6 @@ pub async fn set_user_context_dbx(
 /// This enables the database to enforce organization isolation.
 ///
 /// Call this at the start of each request to set up RLS context.
-#[allow(dead_code)]
 pub async fn set_org_context(
 	tx: &mut Transaction<'_, Postgres>,
 	organization_id: Uuid,
@@ -80,7 +79,7 @@ pub async fn set_org_context(
 	let db_role = canonical_db_role(role);
 	sqlx::query("SELECT set_org_context($1, $2)")
 		.bind(organization_id)
-		.bind(db_role)
+		.bind(&db_role)
 		.execute(&mut **tx)
 		.await
 		.map_err(|e| Error::Store(format!("Failed to set org context: {e}")))?;
@@ -89,7 +88,6 @@ pub async fn set_org_context(
 }
 
 /// Sets the organization context using Dbx (for non-transactional queries).
-#[allow(dead_code)]
 pub async fn set_org_context_dbx(
 	dbx: &dbx::Dbx,
 	organization_id: Uuid,
@@ -98,7 +96,7 @@ pub async fn set_org_context_dbx(
 	let db_role = canonical_db_role(role);
 	let query = sqlx::query("SELECT set_org_context($1, $2)")
 		.bind(organization_id)
-		.bind(db_role);
+		.bind(&db_role);
 	dbx.execute(query)
 		.await
 		.map_err(|e| Error::Store(format!("Failed to set org context: {e}")))?;
@@ -106,8 +104,8 @@ pub async fn set_org_context_dbx(
 	Ok(())
 }
 
-fn canonical_db_role(role: &str) -> &str {
-	role
+fn canonical_db_role(role: &str) -> String {
+	canonical_role(role)
 }
 
 /// Sets optional compliance context for audit enrichment.
@@ -134,7 +132,6 @@ pub async fn set_compliance_context_dbx(
 
 /// Sets both user context (for audit trail) and organization context (for RLS).
 /// This is the recommended function to call at the start of each request.
-#[allow(dead_code)]
 pub async fn set_full_context_dbx(
 	dbx: &dbx::Dbx,
 	user_id: Uuid,
@@ -176,20 +173,6 @@ pub async fn set_full_context_dbx_or_rollback(
 }
 
 // endregion: --- Organization Context for RLS
-
-/// Gets the current user context from PostgreSQL session.
-/// Used for verification and debugging purposes.
-#[allow(dead_code)]
-pub async fn get_user_context(
-	tx: &mut Transaction<'_, Postgres>,
-) -> Result<Uuid, Error> {
-	let row: (Uuid,) = sqlx::query_as("SELECT get_current_user_context()")
-		.fetch_one(&mut **tx)
-		.await
-		.map_err(|e| Error::Store(format!("Failed to get user context: {e}")))?;
-
-	Ok(row.0)
-}
 
 // endregion: --- User Context Helpers
 
