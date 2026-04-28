@@ -57,11 +57,11 @@ Use this file as the working checklist for implementation. It is organized by pr
 
 ## P0 Case Workflow and Save Model
 
-- [ ] Fix page-level save so it works for both directly entered cases and imported cases.
-- [ ] Remove irrelevant batch/header error messages shown during normal case save.
-- [ ] Require save/delete reason and comments for compliance-sensitive actions.
-- [ ] Remove password re-entry from delete if the client still wants delete confirmation without PW input.
-- [ ] Keep deleted cases visible as soft-deleted rows with clear visual marking and history retention.
+- [-] Fix page-level save so it works for both directly entered cases and imported cases. Backend case-level save parity is covered for manual and imported-case-shaped records; full page-level UI UAT remains open.
+- [-] Remove irrelevant batch/header error messages shown during normal case save. Backend case save contract now guards against import/batch/header noise in normal case update responses; broader UI UAT remains open.
+- [-] Require save/delete reason and comments for compliance-sensitive actions. Delete now requires `reason_for_change` and records it in audit logs; save comments/reasons outside status transitions remain open.
+- [-] Remove password re-entry from delete if the client still wants delete confirmation without PW input. `DELETE /api/cases/{id}` now requires reason only and does not require e-signature password re-entry; final client confirmation copy remains open.
+- [x] Keep deleted cases visible as soft-deleted rows with clear visual marking and history retention.
 - [ ] Make case list export history visible from the case area with file, status, error, time, and user.
 - [ ] Ensure QC/lock actions behave consistently for manual cases and imported cases.
 - [-] Replace ad hoc review state wording with explicit workflow-aware status where the client expects workflow status instead of a generic checked state. Backend workflow status is now distinct from legacy `cases.status`, and the case workflow panel uses the workflow status. Remaining cleanup: broader QC/review wording outside the workflow panel.
