@@ -436,8 +436,14 @@ async fn c_ich_c_5_3_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report_with(&ctx.app, &ctx.cookie, ctx.case_id, "2", false)
 		.await?;
-	create_study_information(&ctx.app, &ctx.cookie, ctx.case_id, Some("Study"), None)
-		.await?;
+	create_study_information(
+		&ctx.app,
+		&ctx.cookie,
+		ctx.case_id,
+		Some("Study"),
+		None,
+	)
+	.await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.C.5.3.REQUIRED");
 	Ok(())
