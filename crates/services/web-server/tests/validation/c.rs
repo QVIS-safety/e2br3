@@ -405,3 +405,34 @@ async fn c_mfds_c_3_1_kr_1_required_returns_banner_issue() -> Result<()> {
 	assert_banner_issue(&report, "MFDS.C.3.1.KR.1.REQUIRED");
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn c_validation_issues_include_stable_subsection_metadata() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE safety_report_identification SET transmission_date = NULL, transmission_date_null_flavor = NULL WHERE case_id = '{}'",
+			ctx.case_id
+		),
+	)
+	.await?;
+
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	let issue = report["data"]["issues"]
+		.as_array()
+		.expect("issues array")
+		.iter()
+		.find(|issue| issue["code"] == "ICH.C.1.2.REQUIRED")
+		.expect("ICH.C.1.2.REQUIRED issue");
+
+	assert_eq!(issue["section"].as_str(), Some("case-identification"));
+	assert_eq!(issue["subsection"].as_str(), Some("C.1"));
+	assert_eq!(
+		issue["field_path"].as_str(),
+		Some("safetyReportIdentification.transmissionDate")
+	);
+	Ok(())
+}

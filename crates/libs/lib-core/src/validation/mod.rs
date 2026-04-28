@@ -89,6 +89,7 @@ pub struct ValidationIssue {
 	pub path: String,
 	pub field_path: Option<String>,
 	pub section: String,
+	pub subsection: String,
 	pub blocking: bool,
 }
 
@@ -115,27 +116,31 @@ pub fn push_issue_by_code(
 	if let Some(rule) =
 		find_canonical_rule_for_phase(code, ValidationPhase::CaseValidate)
 	{
+		let field_path =
+			case::sections::resolve_validation_field_path(code, Some(&path));
+		let subsection =
+			case::sections::resolve_validation_subsection(code, Some(&path));
 		issues.push(ValidationIssue {
 			code: rule.code.to_string(),
 			message: rule.message.to_string(),
-			field_path: case::sections::resolve_validation_field_path(
-				code,
-				Some(&path),
-			),
+			field_path,
 			path,
 			section: rule.section.to_string(),
+			subsection,
 			blocking: rule.blocking,
 		});
 	} else {
+		let field_path =
+			case::sections::resolve_validation_field_path(code, Some(&path));
+		let subsection =
+			case::sections::resolve_validation_subsection(code, Some(&path));
 		issues.push(ValidationIssue {
 			code: code.to_string(),
 			message: code.to_string(),
-			field_path: case::sections::resolve_validation_field_path(
-				code,
-				Some(&path),
-			),
+			field_path,
 			path,
 			section: "unknown".to_string(),
+			subsection,
 			blocking: false,
 		});
 	}
