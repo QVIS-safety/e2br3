@@ -68,7 +68,9 @@ pub fn normalize_appendices_json(value: &str) -> Result<String> {
 /// Resolves the ordered list of validation profiles for a case.
 /// Prefers `appendices_json` (multi-profile), falls back to
 /// `validation_profile` (single), then defaults to FDA.
-fn resolve_appendix_profiles(case: &lib_core::model::case::Case) -> Vec<ValidationProfile> {
+fn resolve_appendix_profiles(
+	case: &lib_core::model::case::Case,
+) -> Vec<ValidationProfile> {
 	if let Some(json) = case.appendices_json.as_deref() {
 		if let Ok(items) = serde_json::from_str::<Vec<serde_json::Value>>(json) {
 			let profiles: Vec<ValidationProfile> = items
@@ -194,7 +196,10 @@ fn to_internal_case_for_update(data: PublicCaseForUpdate) -> InternalCaseForUpda
 }
 
 fn case_status_update(status: String) -> InternalCaseForUpdate {
-	InternalCaseForUpdate { status: Some(status), ..Default::default() }
+	InternalCaseForUpdate {
+		status: Some(status),
+		..Default::default()
+	}
 }
 
 fn required_reason_for_change(
@@ -204,7 +209,11 @@ fn required_reason_for_change(
 	reason_for_change
 		.and_then(|v| {
 			let trimmed = v.trim().to_string();
-			if trimmed.is_empty() { None } else { Some(trimmed) }
+			if trimmed.is_empty() {
+				None
+			} else {
+				Some(trimmed)
+			}
 		})
 		.ok_or_else(|| Error::BadRequest {
 			message: format!("reason_for_change is required for {action}"),
@@ -358,7 +367,10 @@ pub async fn create_case_guarded(
 
 	let id = CaseBmc::create(&ctx, &mm, data).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
-	Ok((axum::http::StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::CREATED,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// GET /api/cases/{id}
@@ -372,7 +384,10 @@ pub async fn get_case(
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 	let entity = case_to_read_result(&ctx, &mm, entity).await?;
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// GET /api/cases
@@ -380,7 +395,10 @@ pub async fn list_cases(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<Vec<CaseReadResult>>>)> {
+) -> Result<(
+	axum::http::StatusCode,
+	Json<DataRestResult<Vec<CaseReadResult>>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_LIST)?;
 	let params = ParamsList::<CaseFilter>::from_raw_query(raw_query.as_deref())
@@ -393,7 +411,10 @@ pub async fn list_cases(
 			scoped.push(case_to_read_result(&ctx, &mm, entity).await?);
 		}
 	}
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: scoped })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: scoped }),
+	))
 }
 
 /// PUT /api/cases/{id}
@@ -480,7 +501,10 @@ pub async fn update_case_guarded(
 	CaseBmc::update(&ctx_for_update, &mm, id, data).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// DELETE /api/cases/{id}
@@ -515,7 +539,10 @@ pub async fn delete_case(
 	)
 	.await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// POST /api/cases/{id}/validator/mark-validated
@@ -572,7 +599,10 @@ pub async fn mark_case_validated_by_validator(
 	)
 	.await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// GET /api/cases/{id}/lifecycle
@@ -580,7 +610,10 @@ pub async fn get_case_lifecycle(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseLifecycleResult>>)> {
+) -> Result<(
+	axum::http::StatusCode,
+	Json<DataRestResult<CaseLifecycleResult>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
@@ -634,7 +667,10 @@ pub async fn get_case_lifecycle(
 pub async fn list_case_link_options(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseLinkOptionList>>)> {
+) -> Result<(
+	axum::http::StatusCode,
+	Json<DataRestResult<CaseLinkOptionList>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_LIST)?;
 

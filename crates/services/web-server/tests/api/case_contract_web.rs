@@ -129,12 +129,12 @@ async fn test_public_case_update_ignores_system_managed_fields() -> Result<()> {
 		&app,
 		&cookie,
 		"/api/cases",
-			json!({
-				"data": {
-					"safety_report_id": report_id,
-					"status": "draft"
-				}
-			}),
+		json!({
+			"data": {
+				"safety_report_id": report_id,
+				"status": "draft"
+			}
+		}),
 	)
 	.await?;
 	assert_eq!(create_status, StatusCode::CREATED, "{create_body:?}");
@@ -219,7 +219,8 @@ async fn test_public_case_update_ignores_system_managed_fields() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_manual_case_save_updates_public_fields_without_import_noise() -> Result<()> {
+async fn test_manual_case_save_updates_public_fields_without_import_noise(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -279,7 +280,8 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise() -> R
 
 #[serial]
 #[tokio::test]
-async fn test_imported_case_save_updates_public_fields_without_import_noise() -> Result<()> {
+async fn test_imported_case_save_updates_public_fields_without_import_noise(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -471,13 +473,14 @@ async fn test_delete_case_soft_deletes_and_keeps_case_visible() -> Result<()> {
 	);
 
 	let (lifecycle_status, lifecycle_body) =
-		get_json(&app, &cookie, &format!("/api/cases/{case_id}/lifecycle"))
-			.await?;
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}/lifecycle")).await?;
 	assert_eq!(lifecycle_status, StatusCode::OK, "{lifecycle_body:?}");
 	assert!(
-		lifecycle_body["data"]["items"].as_array().is_some_and(|items| items
-			.iter()
-			.any(|item| item["status"].as_str() == Some("deleted"))),
+		lifecycle_body["data"]["items"]
+			.as_array()
+			.is_some_and(|items| items
+				.iter()
+				.any(|item| item["status"].as_str() == Some("deleted"))),
 		"{lifecycle_body:?}"
 	);
 
