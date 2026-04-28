@@ -436,3 +436,46 @@ async fn c_validation_issues_include_stable_subsection_metadata() -> Result<()> 
 	);
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn c_validation_report_summarizes_section_and_subsection_counts() -> Result<()>
+{
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZICH")).await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE message_headers SET batch_number = 'BATCH-001', batch_sender_identifier = 'SENDER01', batch_receiver_identifier = 'ZZICH', batch_transmission_date = now() WHERE case_id = '{}'",
+			ctx.case_id
+		),
+	)
+	.await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE safety_report_identification SET transmission_date = NULL, transmission_date_null_flavor = NULL WHERE case_id = '{}'",
+			ctx.case_id
+		),
+	)
+	.await?;
+
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	let section = report["data"]["section_summaries"]
+		.as_array()
+		.expect("section_summaries array")
+		.iter()
+		.find(|entry| entry["section"] == "case-identification")
+		.expect("case-identification summary");
+	assert_eq!(section["blocking_count"].as_u64(), Some(1));
+
+	let subsection = report["data"]["subsection_summaries"]
+		.as_array()
+		.expect("subsection_summaries array")
+		.iter()
+		.find(|entry| entry["subsection"] == "C.1")
+		.expect("C.1 summary");
+	assert_eq!(subsection["blocking_count"].as_u64(), Some(1));
+	Ok(())
+}

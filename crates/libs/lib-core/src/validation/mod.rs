@@ -54,6 +54,7 @@ pub use mfds_context::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -94,12 +95,29 @@ pub struct ValidationIssue {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidationSectionSummary {
+	pub section: String,
+	pub blocking_count: usize,
+	pub non_blocking_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidationSubsectionSummary {
+	pub section: String,
+	pub subsection: String,
+	pub blocking_count: usize,
+	pub non_blocking_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaseValidationReport {
 	pub profile: String,
 	pub case_id: Uuid,
 	pub ok: bool,
 	pub blocking_count: usize,
 	pub non_blocking_count: usize,
+	pub section_summaries: Vec<ValidationSectionSummary>,
+	pub subsection_summaries: Vec<ValidationSubsectionSummary>,
 	pub issues: Vec<ValidationIssue>,
 }
 
@@ -207,12 +225,53 @@ pub fn build_report(
 ) -> CaseValidationReport {
 	let blocking_count = issues.iter().filter(|issue| issue.blocking).count();
 	let non_blocking_count = issues.len().saturating_sub(blocking_count);
+	let mut by_section: BTreeMap<String, (usize, usize)> = BTreeMap::new();
+	let mut by_subsection: BTreeMap<(String, String), (usize, usize)> =
+		BTreeMap::new();
+	for issue in &issues {
+		let section_counts = by_section.entry(issue.section.clone()).or_default();
+		let subsection_counts = by_subsection
+			.entry((issue.section.clone(), issue.subsection.clone()))
+			.or_default();
+		if issue.blocking {
+			section_counts.0 += 1;
+			subsection_counts.0 += 1;
+		} else {
+			section_counts.1 += 1;
+			subsection_counts.1 += 1;
+		}
+	}
+	let section_summaries = by_section
+		.into_iter()
+		.map(|(section, (blocking_count, non_blocking_count))| {
+			ValidationSectionSummary {
+				section,
+				blocking_count,
+				non_blocking_count,
+			}
+		})
+		.collect();
+	let subsection_summaries = by_subsection
+		.into_iter()
+		.map(
+			|((section, subsection), (blocking_count, non_blocking_count))| {
+				ValidationSubsectionSummary {
+					section,
+					subsection,
+					blocking_count,
+					non_blocking_count,
+				}
+			},
+		)
+		.collect();
 	CaseValidationReport {
 		profile: profile.as_str().to_string(),
 		case_id,
 		ok: blocking_count == 0,
 		blocking_count,
 		non_blocking_count,
+		section_summaries,
+		subsection_summaries,
 		issues,
 	}
 }
