@@ -100,6 +100,7 @@ pub(crate) fn resolve_validation_subsection(
 	if code.starts_with("ICH.G.")
 		|| code.starts_with("FDA.G.")
 		|| code.starts_with("MFDS.G.")
+		|| code.starts_with("MFDS.KR.")
 	{
 		return "G.k".to_string();
 	}
@@ -237,6 +238,27 @@ mod tests {
 		);
 		assert_eq!(
 			resolve_validation_subsection("FDA.G.K.12.REQUIRED", None),
+			"G.k"
+		);
+		assert_eq!(
+			resolve_validation_subsection(
+				"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
+				None
+			),
+			"G.k"
+		);
+		assert_eq!(
+			resolve_validation_subsection(
+				"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
+				None
+			),
+			"G.k"
+		);
+		assert_eq!(
+			resolve_validation_subsection(
+				"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
+				None
+			),
 			"G.k"
 		);
 		assert_eq!(
