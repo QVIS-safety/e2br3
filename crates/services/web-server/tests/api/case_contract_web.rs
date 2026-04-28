@@ -97,6 +97,38 @@ async fn test_public_case_create_derives_org_and_version() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_public_case_create_derives_profile_from_appendices() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"status": "draft",
+				"appendices_json": "[\"mfds\",\"fda\"]"
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	assert_eq!(body["data"]["validation_profile"], "mfds", "{body:?}");
+	assert_eq!(
+		body["data"]["appendices_json"], "[\"mfds\",\"fda\"]",
+		"{body:?}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_public_case_update_ignores_system_managed_fields() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

@@ -1410,6 +1410,16 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "profile",
+            "in": "query",
+            "description": "Authority-specific appendix export profile: ich, fda, or mfds. Must be selected on the case.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            }
           }
         ],
         "responses": {

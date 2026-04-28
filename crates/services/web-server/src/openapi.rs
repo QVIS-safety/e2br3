@@ -2247,7 +2247,10 @@ fn list_case_link_options() {}
 	security(
 		("auth_token" = [])
 	),
-	params(("id" = String, Path, description = "Case ID")),
+	params(
+		("id" = String, Path, description = "Case ID"),
+		("profile" = Option<String>, Query, description = "Authority-specific appendix export profile: ich, fda, or mfds. Must be selected on the case.")
+	),
 	responses((status = 200, description = "Case XML export"))
 )]
 fn export_case_xml() {}

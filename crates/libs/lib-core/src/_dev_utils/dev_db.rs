@@ -110,7 +110,7 @@ async fn apply_compatibility_alters(
 		&mut tx,
 		"ALTER TABLE cases
 		 ADD CONSTRAINT case_status_valid
-		 CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'archived', 'nullified'))",
+		 CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'deleted', 'archived', 'nullified'))",
 	)
 	.await?;
 	sqlx::query(

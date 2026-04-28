@@ -88,6 +88,29 @@ async fn get_template(
 	.await
 }
 
+async fn update_user_scope(
+	app: &Router,
+	admin_cookie: &str,
+	user_id: Uuid,
+	body: Value,
+) -> Result<()> {
+	let (status, value) = request_json(
+		app,
+		admin_cookie,
+		Method::PUT,
+		format!("/api/users/{user_id}"),
+		Some(json!({ "data": body })),
+	)
+	.await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update user scope failed: status={status} body={value}"
+		)
+		.into());
+	}
+	Ok(())
+}
+
 fn sample_presave_payload(entity_type: &str) -> Value {
 	match entity_type {
 		"sender" => json!({
@@ -151,6 +174,217 @@ fn sample_presave_payload(entity_type: &str) -> Value {
 		}),
 		other => panic!("unexpected entity_type {other}"),
 	}
+}
+
+#[serial]
+#[tokio::test]
+async fn test_presave_product_list_follows_assigned_product_scope() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	let (visible_id, _) = create_template(
+		&app,
+		&admin_cookie,
+		"product",
+		"visible-product-template",
+		json!({
+			"medicinalProduct": "VISIBLE-PRODUCT",
+			"drugGenericName": "Visible Generic"
+		}),
+	)
+	.await?;
+	let (hidden_id, _) = create_template(
+		&app,
+		&admin_cookie,
+		"product",
+		"hidden-product-template",
+		json!({
+			"medicinalProduct": "HIDDEN-PRODUCT",
+			"drugGenericName": "Hidden Generic"
+		}),
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({ "access_product_ids": ["VISIBLE-PRODUCT"] }),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		&viewer_cookie,
+		Method::GET,
+		"/api/presave-templates?entityType=product".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let rows = value["data"]
+		.as_array()
+		.ok_or("presave template list data is not an array")?;
+	assert!(
+		rows.iter()
+			.any(|row| row["id"].as_str() == Some(&visible_id.to_string())),
+		"{value:?}"
+	);
+	assert!(
+		!rows
+			.iter()
+			.any(|row| row["id"].as_str() == Some(&hidden_id.to_string())),
+		"{value:?}"
+	);
+	let (status, value) = get_template(&app, &viewer_cookie, visible_id).await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let (status, value) = get_template(&app, &viewer_cookie, hidden_id).await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_presave_sender_list_follows_assigned_sender_scope() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	let (visible_id, _) = create_template(
+		&app,
+		&admin_cookie,
+		"sender",
+		"visible-sender-template",
+		json!({
+			"senderIdentifier": "SENDER-VISIBLE",
+			"senderOrganization": "Visible Sender"
+		}),
+	)
+	.await?;
+	let (hidden_id, _) = create_template(
+		&app,
+		&admin_cookie,
+		"sender",
+		"hidden-sender-template",
+		json!({
+			"senderIdentifier": "SENDER-HIDDEN",
+			"senderOrganization": "Hidden Sender"
+		}),
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({ "access_sender_ids": ["SENDER-VISIBLE"] }),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		&viewer_cookie,
+		Method::GET,
+		"/api/presave-templates?entityType=sender".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let rows = value["data"]
+		.as_array()
+		.ok_or("presave template list data is not an array")?;
+	assert!(
+		rows.iter()
+			.any(|row| row["id"].as_str() == Some(&visible_id.to_string())),
+		"{value:?}"
+	);
+	assert!(
+		!rows
+			.iter()
+			.any(|row| row["id"].as_str() == Some(&hidden_id.to_string())),
+		"{value:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_presave_study_list_follows_assigned_study_scope() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	let (visible_id, _) = create_template(
+		&app,
+		&admin_cookie,
+		"study",
+		"visible-study-template",
+		json!({
+			"studyName": "Visible Study",
+			"sponsorStudyNumber": "STUDY-VISIBLE"
+		}),
+	)
+	.await?;
+	let (hidden_id, _) = create_template(
+		&app,
+		&admin_cookie,
+		"study",
+		"hidden-study-template",
+		json!({
+			"studyName": "Hidden Study",
+			"sponsorStudyNumber": "STUDY-HIDDEN"
+		}),
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({ "access_study_ids": ["STUDY-VISIBLE"] }),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		&viewer_cookie,
+		Method::GET,
+		"/api/presave-templates?entityType=study".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let rows = value["data"]
+		.as_array()
+		.ok_or("presave template list data is not an array")?;
+	assert!(
+		rows.iter()
+			.any(|row| row["id"].as_str() == Some(&visible_id.to_string())),
+		"{value:?}"
+	);
+	assert!(
+		!rows
+			.iter()
+			.any(|row| row["id"].as_str() == Some(&hidden_id.to_string())),
+		"{value:?}"
+	);
+
+	Ok(())
 }
 
 #[serial]

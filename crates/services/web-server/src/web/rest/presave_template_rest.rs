@@ -10,17 +10,148 @@ use lib_core::model::presave_template::{
 	PresaveTemplateAuditBmc, PresaveTemplateBmc, PresaveTemplateForCreate,
 	PresaveTemplateForUpdate,
 };
+use lib_core::model::user::UserBmc;
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_permission, Result};
+use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
+use serde_json::Value;
+use std::collections::HashSet;
 use uuid::Uuid;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct PresaveTemplateListQuery {
 	#[serde(rename = "entityType")]
 	pub entity_type: Option<PresaveEntityType>,
+}
+
+fn normalized_set(values: Vec<String>) -> HashSet<String> {
+	values
+		.into_iter()
+		.map(|value| value.trim().to_ascii_lowercase())
+		.filter(|value| !value.is_empty())
+		.collect()
+}
+
+fn collect_json_strings_for_keys(
+	value: &Value,
+	keys: &[&str],
+	out: &mut Vec<String>,
+) {
+	match value {
+		Value::Object(map) => {
+			for (key, value) in map {
+				if keys
+					.iter()
+					.any(|candidate| key.eq_ignore_ascii_case(candidate))
+				{
+					if let Some(text) = value.as_str() {
+						let text = text.trim();
+						if !text.is_empty() {
+							out.push(text.to_ascii_lowercase());
+						}
+					}
+				}
+				collect_json_strings_for_keys(value, keys, out);
+			}
+		}
+		Value::Array(items) => {
+			for item in items {
+				collect_json_strings_for_keys(item, keys, out);
+			}
+		}
+		_ => {}
+	}
+}
+
+fn template_scope_identifiers(template: &PresaveTemplate) -> Vec<String> {
+	let keys = match template.entity_type {
+		PresaveEntityType::Sender => &[
+			"senderIdentifier",
+			"messageSenderIdentifier",
+			"batchSenderIdentifier",
+			"senderOrganization",
+		][..],
+		PresaveEntityType::Product => &[
+			"productId",
+			"productIdentifier",
+			"medicinalProduct",
+			"drugGenericName",
+			"drugBrandName",
+			"drugAuthorizationNumber",
+			"mpid",
+			"phpid",
+		][..],
+		PresaveEntityType::Study => &[
+			"studyId",
+			"sponsorStudyNumber",
+			"studyName",
+			"studyRegistrationNumber",
+		][..],
+		_ => &[][..],
+	};
+	let mut values = Vec::new();
+	collect_json_strings_for_keys(&template.data, keys, &mut values);
+	values
+}
+
+async fn allowed_scope_for_entity(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	entity_type: PresaveEntityType,
+) -> Result<Option<HashSet<String>>> {
+	if ctx.is_system_admin() || ctx.role() == lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO {
+		return Ok(None);
+	}
+	let user: lib_core::model::user::User =
+		UserBmc::get(ctx, mm, ctx.user_id()).await?;
+	let values = match entity_type {
+		PresaveEntityType::Sender => {
+			lib_rest_core::scope_values_from_raw(user.access_sender_ids.as_deref())
+		}
+		PresaveEntityType::Product => {
+			lib_rest_core::scope_values_from_raw(user.access_product_ids.as_deref())
+		}
+		PresaveEntityType::Study => {
+			lib_rest_core::scope_values_from_raw(user.access_study_ids.as_deref())
+		}
+		_ => return Ok(None),
+	};
+	Ok(Some(normalized_set(values)))
+}
+
+async fn presave_template_allowed_for_scope(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	template: &PresaveTemplate,
+) -> Result<bool> {
+	let Some(allowed) =
+		allowed_scope_for_entity(ctx, mm, template.entity_type).await?
+	else {
+		return Ok(true);
+	};
+	if allowed.is_empty() {
+		return Ok(false);
+	}
+	let identifiers = template_scope_identifiers(template);
+	Ok(identifiers
+		.iter()
+		.any(|identifier| allowed.contains(identifier)))
+}
+
+async fn filter_presave_templates_for_scope(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	templates: Vec<PresaveTemplate>,
+) -> Result<Vec<PresaveTemplate>> {
+	let mut filtered = Vec::with_capacity(templates.len());
+	for template in templates {
+		if presave_template_allowed_for_scope(ctx, mm, &template).await? {
+			filtered.push(template);
+		}
+	}
+	Ok(filtered)
 }
 
 /// POST /api/presave-templates
@@ -46,6 +177,11 @@ pub async fn get_presave_template(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let entity = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
+	if !presave_template_allowed_for_scope(&ctx, &mm, &entity).await? {
+		return Err(Error::PermissionDenied {
+			required_permission: "PresaveTemplate.Scope".to_string(),
+		});
+	}
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
@@ -62,6 +198,7 @@ pub async fn list_presave_templates(
 	} else {
 		PresaveTemplateBmc::list(&ctx, &mm).await?
 	};
+	let entities = filter_presave_templates_for_scope(&ctx, &mm, entities).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
 

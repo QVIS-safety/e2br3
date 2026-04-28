@@ -48,7 +48,7 @@ Use this file as the working checklist for implementation. It is organized by pr
 - [x] Company sponsor administrators follow the stricter sender rule: no unrestricted sender visibility unless sender scope is explicitly assigned
 - [x] normal users see only assigned senders on routing
 - [x] CASE shows only allowed product/study values within the routed sender scope
-- [-] INFO shows only assigned sender/product/study data. Shared case-linked read gates were added, but INFO list coverage still needs endpoint-by-endpoint UAT.
+- [-] INFO shows only assigned sender/product/study data. Shared case-linked read gates are in place, and presave INFO templates now filter sender/product/study list and read endpoints by assigned scope. Remaining work is any non-presave INFO screen UAT.
 - [-] IMPORT and EXPORT/SUBMISSION show history only for the user’s allowed product scope. Import-history case-linked error download is gated; remaining history/detail surfaces still need full UAT coverage.
 - [ ] Move idle session settings to system-level configuration and confirm whether `Idle Session Limit` and `Warning Lead Time` are the intended admin controls.
 - [ ] Standardize system terminology to `QC` / `QCed` instead of mixed review/validated wording.
@@ -160,10 +160,10 @@ Implemented notes:
 
 ## P0 Appendix and Regional Behavior
 
-- [ ] Move appendix selection to a clear top-level location on the main or case screen.
-- [ ] Remove duplicated appendix selection controls when both a direct selector and a dropdown are shown.
-- [ ] Ensure MFDS/FDA regional fields render strictly according to the selected appendix combination.
-- [ ] Clarify expected XML behavior for multi-appendix cases and document whether output is one XML, multiple XMLs, or authority-specific export paths.
+- [-] Move appendix selection to a clear top-level location on the main or case screen. Backend now treats `appendices_json` as the authoritative top-level case selection and derives the legacy `validation_profile` from it; remaining work is the final client UI placement/UAT.
+- [-] Remove duplicated appendix selection controls when both a direct selector and a dropdown are shown. Duplication-check API guidance now removes `validation_profile` from the intake/duplicate-check UI contract; remaining work is checking the actual client screen for duplicate controls.
+- [-] Ensure MFDS/FDA regional fields render strictly according to the selected appendix combination. Frontend contract is now explicit: base ICH fields always, FDA-only fields only with `fda`, and MFDS/KR fields only with `mfds`; remaining work is endpoint-by-endpoint UI verification.
+- [x] Clarify expected XML behavior for multi-appendix cases and document whether output is one XML, multiple XMLs, or authority-specific export paths. Multi-appendix cases export as separate authority-specific XML outputs; bulk ZIP emits one XML per selected appendix.
 
 ## P0 Submission and Export
 

@@ -60,7 +60,7 @@
 | GET | `/api/cases/{id}` | `Case.Read` | none | `DataRestResult<Case>` |
 | PUT | `/api/cases/{id}` | `Case.Update` | `ParamsForUpdate<CaseForUpdate>` | `DataRestResult<Case>` |
 | DELETE | `/api/cases/{id}` | `Case.Delete` | none | `204` |
-| GET | `/api/cases/{case_id}/export/xml` | `XmlExport.Export` | none | `application/xml` body |
+| GET | `/api/cases/{case_id}/export/xml` | `XmlExport.Export` | optional query `profile=ich|fda|mfds` | `application/xml` body |
 | GET | `/api/cases/{case_id}/versions` | `AuditLog.List` | none | `DataRestResult<Vec<CaseVersion>>` |
 | GET | `/api/cases/{case_id}/validation` | `Case.Read` | optional query `profile=fda|mfds` | `DataRestResult<CaseValidationReport>` |
 

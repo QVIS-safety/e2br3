@@ -1,10 +1,12 @@
 use axum::extract::State;
 use axum::Json;
 use lib_core::model::acs::CASE_CREATE;
-use lib_core::model::case::{CaseBmc, CaseFilter, CaseForCreate as InternalCaseForCreate};
+use lib_core::model::case::{
+	CaseBmc, CaseFilter, CaseForCreate as InternalCaseForCreate,
+};
 use lib_core::model::case_duplicate::{
-	assess_duplicate_basis, CaseDuplicateBmc, CaseDuplicateKey, CaseIntakeDuplicateMatch,
-	DuplicateBasisAssessment,
+	assess_duplicate_basis, CaseDuplicateBmc, CaseDuplicateKey,
+	CaseIntakeDuplicateMatch, DuplicateBasisAssessment,
 };
 use lib_core::model::message_header::{MessageHeaderBmc, MessageHeaderForCreate};
 use lib_core::model::patient::{
@@ -16,7 +18,7 @@ use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SafetyReportIdentificationForCreate,
 };
 use lib_core::model::ModelManager;
-use lib_core::validation::{RegulatoryAuthority, ValidationProfile};
+use lib_core::validation::RegulatoryAuthority;
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
@@ -32,8 +34,8 @@ use crate::web::rest::case_export_rest::{
 	message_receiver_identifier, message_sender_identifier,
 };
 use crate::web::rest::case_rest::{
-	normalize_appendices_json, parse_validation_profile_or_bad_request,
-	validate_case_create_payload,
+	first_appendix_profile_from_json, normalize_appendices_json,
+	parse_validation_profile_or_bad_request, validate_case_create_payload,
 };
 
 // -- Types
@@ -165,7 +167,9 @@ fn normalize_intake_check_input(data: CaseIntakeCheckInput) -> CaseIntakeCheckIn
 		age_d2_2a: normalize_optional_text(data.age_d2_2a),
 		sex_d5: normalize_optional_text(data.sex_d5),
 		dg_prd_key: normalize_optional_text(data.dg_prd_key),
-		reaction_meddra_version: normalize_optional_text(data.reaction_meddra_version),
+		reaction_meddra_version: normalize_optional_text(
+			data.reaction_meddra_version,
+		),
 		reaction_meddra_code: normalize_optional_text(data.reaction_meddra_code),
 		ae_start_date: data.ae_start_date,
 	}
@@ -314,7 +318,8 @@ pub async fn create_case_from_intake(
 					.to_string(),
 		});
 	}
-	if !duplicate_basis.basis_complete && !data.allow_duplicate_override.unwrap_or(false)
+	if !duplicate_basis.basis_complete
+		&& !data.allow_duplicate_override.unwrap_or(false)
 	{
 		let message = duplicate_basis
 			.warnings
@@ -326,18 +331,18 @@ pub async fn create_case_from_intake(
 		return Err(Error::BadRequest { message });
 	}
 
-	let profile = match data.validation_profile.as_deref() {
-		Some(value) => parse_validation_profile_or_bad_request(value)?
-			.as_str()
-			.to_string(),
-		None => RegulatoryAuthority::Fda.as_str().to_string(),
+	let normalized_appendices = match data.appendices_json.as_deref() {
+		Some(value) => Some(normalize_appendices_json(value)?),
+		None => None,
 	};
-	let profile_enum =
-		ValidationProfile::parse(&profile).ok_or_else(|| Error::BadRequest {
-			message: format!(
-				"invalid validation profile '{profile}' (expected: ich, fda or mfds)"
-			),
-		})?;
+	let profile_enum = match normalized_appendices.as_deref() {
+		Some(value) => first_appendix_profile_from_json(value)?,
+		None => match data.validation_profile.as_deref() {
+			Some(value) => parse_validation_profile_or_bad_request(value)?,
+			None => RegulatoryAuthority::Fda.to_validation_profile(),
+		},
+	};
+	let profile = profile_enum.as_str().to_string();
 
 	let next_version = next_case_version(&ctx, &mm, safety_report_id).await?;
 	let case_create = InternalCaseForCreate {
@@ -346,10 +351,10 @@ pub async fn create_case_from_intake(
 		dg_prd_key: data.dg_prd_key.clone(),
 		status: Some(data.status.unwrap_or_else(|| "draft".to_string())),
 		validation_profile: Some(profile),
-		appendices_json: Some(match data.appendices_json.as_deref() {
-			Some(value) => normalize_appendices_json(value)?,
-			None => json!([profile_enum.as_str()]).to_string(),
-		}),
+		appendices_json: Some(
+			normalized_appendices
+				.unwrap_or_else(|| json!([profile_enum.as_str()]).to_string()),
+		),
 		review_receivers_json: None,
 		workflow_routes_json: None,
 		mfds_report_type: data.mfds_report_type.clone(),
@@ -377,9 +382,10 @@ pub async fn create_case_from_intake(
 			message_number: format!("MSG-{case_id}"),
 			message_sender_identifier: message_sender_identifier(),
 			message_receiver_identifier: message_receiver_identifier(profile_enum),
-			message_date: crate::web::rest::case_export_rest::format_message_timestamp_utc_pub(
-				now,
-			),
+			message_date:
+				crate::web::rest::case_export_rest::format_message_timestamp_utc_pub(
+					now,
+				),
 		},
 	)
 	.await?;
@@ -394,7 +400,9 @@ pub async fn create_case_from_intake(
 			report_type: Some(data.report_type),
 			date_first_received_from_source: Some(date_first_received_from_source),
 			date_first_received_from_source_null_flavor: None,
-			date_of_most_recent_information: Some(data.date_of_most_recent_information),
+			date_of_most_recent_information: Some(
+				data.date_of_most_recent_information,
+			),
 			date_of_most_recent_information_null_flavor: None,
 			fulfil_expedited_criteria: Some(false),
 			local_criteria_report_type: None,
@@ -502,11 +510,15 @@ pub async fn create_case_from_intake(
 			ReactionForCreate {
 				case_id,
 				sequence_number: 1,
-				primary_source_reaction: non_empty(data.reaction_meddra_code.as_deref())
-					.unwrap_or_else(|| "Intake reaction".to_string()),
+				primary_source_reaction: non_empty(
+					data.reaction_meddra_code.as_deref(),
+				)
+				.unwrap_or_else(|| "Intake reaction".to_string()),
 				primary_source_reaction_translation: None,
 				reaction_language: None,
-				reaction_meddra_code: non_empty(data.reaction_meddra_code.as_deref()),
+				reaction_meddra_code: non_empty(
+					data.reaction_meddra_code.as_deref(),
+				),
 				reaction_meddra_version: non_empty(
 					data.reaction_meddra_version.as_deref(),
 				),

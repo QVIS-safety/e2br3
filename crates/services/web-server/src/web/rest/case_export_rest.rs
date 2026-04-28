@@ -1,4 +1,4 @@
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::header;
 use axum::response::Response;
 use axum::Json;
@@ -29,6 +29,11 @@ use zip::{CompressionMethod, ZipWriter};
 #[derive(Debug, Deserialize)]
 pub struct BulkXmlExportInput {
 	pub case_ids: Vec<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ExportCaseQuery {
+	pub profile: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -112,6 +117,81 @@ fn should_validate_export_xml(profile: ValidationProfile) -> bool {
 	}
 }
 
+fn parse_appendix_profiles(value: &str) -> Vec<ValidationProfile> {
+	let Ok(items) = serde_json::from_str::<Vec<serde_json::Value>>(value) else {
+		return Vec::new();
+	};
+	items
+		.iter()
+		.filter_map(|item| item.as_str())
+		.filter_map(ValidationProfile::parse)
+		.fold(Vec::new(), |mut acc, profile| {
+			if !acc.contains(&profile) {
+				acc.push(profile);
+			}
+			acc
+		})
+}
+
+fn selected_export_profiles(
+	case: &lib_core::model::case::Case,
+) -> Vec<ValidationProfile> {
+	if let Some(value) = case.appendices_json.as_deref() {
+		let profiles = parse_appendix_profiles(value);
+		if !profiles.is_empty() {
+			return profiles;
+		}
+	}
+	case.validation_profile
+		.as_deref()
+		.and_then(ValidationProfile::parse)
+		.map(|profile| vec![profile])
+		.unwrap_or_else(|| vec![ValidationProfile::Fda])
+}
+
+fn resolve_requested_export_profile(
+	case: &lib_core::model::case::Case,
+	requested_profile: Option<&str>,
+) -> Result<ValidationProfile> {
+	let selected = selected_export_profiles(case);
+	let Some(raw_profile) = requested_profile else {
+		return Ok(selected[0]);
+	};
+	let profile =
+		ValidationProfile::parse(raw_profile).ok_or_else(|| Error::BadRequest {
+			message: format!(
+				"invalid validation profile '{raw_profile}' (expected: ich, fda or mfds)"
+			),
+		})?;
+	if !selected.contains(&profile) {
+		return Err(Error::BadRequest {
+			message: format!(
+				"profile '{}' is not selected on this case",
+				profile.as_str()
+			),
+		});
+	}
+	Ok(profile)
+}
+
+fn export_file_name(
+	case: &lib_core::model::case::Case,
+	case_id: Uuid,
+	profile: ValidationProfile,
+	include_profile_suffix: bool,
+) -> String {
+	if include_profile_suffix {
+		format!(
+			"{}-{}-{}.xml",
+			case.safety_report_id.as_str(),
+			case_id,
+			profile.as_str()
+		)
+	} else {
+		format!("{}-{}.xml", case.safety_report_id.as_str(), case_id)
+	}
+}
+
 pub async fn generate_validated_case_xml(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
@@ -119,11 +199,17 @@ pub async fn generate_validated_case_xml(
 ) -> Result<(lib_core::model::case::Case, String)> {
 	lib_rest_core::require_case_read_allowed(ctx, mm, id).await?;
 	let case = CaseBmc::get(ctx, mm, id).await?;
-	let profile = case
-		.validation_profile
-		.as_deref()
-		.and_then(ValidationProfile::parse)
-		.unwrap_or(ValidationProfile::Fda);
+	let profile = resolve_requested_export_profile(&case, None)?;
+	generate_validated_case_xml_for_profile(ctx, mm, id, case, profile).await
+}
+
+pub async fn generate_validated_case_xml_for_profile(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &lib_core::model::ModelManager,
+	id: Uuid,
+	case: lib_core::model::case::Case,
+	profile: ValidationProfile,
+) -> Result<(lib_core::model::case::Case, String)> {
 	let ctx_clone = ctx.clone();
 	let mm_clone = mm.clone();
 	let xml = task::spawn_blocking(move || {
@@ -222,18 +308,25 @@ pub async fn export_case(
 	State(mm): State<lib_core::model::ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
+	Query(query): Query<ExportCaseQuery>,
 ) -> Result<Response> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, XML_EXPORT)?;
-	let (case, xml) = generate_validated_case_xml(&ctx, &mm, id).await?;
-	let file_name = format!("{}-{}.xml", case.safety_report_id.as_str(), id);
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
+	let case = CaseBmc::get(&ctx, &mm, id).await?;
+	let profile = resolve_requested_export_profile(&case, query.profile.as_deref())?;
+	let include_profile_suffix = query.profile.is_some();
+	let (case, xml) =
+		generate_validated_case_xml_for_profile(&ctx, &mm, id, case, profile)
+			.await?;
+	let file_name = export_file_name(&case, id, profile, include_profile_suffix);
 	if let Err(err) = record_xml_export(
 		&ctx,
 		&mm,
 		id,
 		Some(case.safety_report_id.as_str()),
 		&file_name,
-		case.validation_profile.as_deref(),
+		Some(profile.as_str()),
 		"success",
 		None,
 	)
@@ -288,32 +381,47 @@ pub async fn export_cases_zip(
 		let mut zip = ZipWriter::new(&mut cursor);
 		for case_id in unique_case_ids {
 			lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-			let (case, xml) =
-				generate_validated_case_xml(&ctx, &mm, case_id).await?;
-			let file_name =
-				format!("{}-{}.xml", case.safety_report_id.as_str(), case_id);
-			zip.start_file(file_name.clone(), options).map_err(|err| {
-				Error::BadRequest {
-					message: format!("failed to start zip entry: {err}"),
-				}
-			})?;
-			zip.write_all(xml.as_bytes())
-				.map_err(|err| Error::BadRequest {
-					message: format!("failed to write zip entry: {err}"),
+			let case = CaseBmc::get(&ctx, &mm, case_id).await?;
+			let profiles = selected_export_profiles(&case);
+			let include_profile_suffix = profiles.len() > 1;
+			for profile in profiles {
+				let (case, xml) = generate_validated_case_xml_for_profile(
+					&ctx,
+					&mm,
+					case_id,
+					case.clone(),
+					profile,
+				)
+				.await?;
+				let file_name = export_file_name(
+					&case,
+					case_id,
+					profile,
+					include_profile_suffix,
+				);
+				zip.start_file(file_name.clone(), options).map_err(|err| {
+					Error::BadRequest {
+						message: format!("failed to start zip entry: {err}"),
+					}
 				})?;
-			if let Err(err) = record_xml_export(
-				&ctx,
-				&mm,
-				case_id,
-				Some(case.safety_report_id.as_str()),
-				&file_name,
-				case.validation_profile.as_deref(),
-				"success",
-				None,
-			)
-			.await
-			{
-				tracing::warn!("failed to record xml export history: {err}");
+				zip.write_all(xml.as_bytes())
+					.map_err(|err| Error::BadRequest {
+						message: format!("failed to write zip entry: {err}"),
+					})?;
+				if let Err(err) = record_xml_export(
+					&ctx,
+					&mm,
+					case_id,
+					Some(case.safety_report_id.as_str()),
+					&file_name,
+					Some(profile.as_str()),
+					"success",
+					None,
+				)
+				.await
+				{
+					tracing::warn!("failed to record xml export history: {err}");
+				}
 			}
 		}
 		zip.finish().map_err(|err| Error::BadRequest {
@@ -326,8 +434,7 @@ pub async fn export_cases_zip(
 		"e2br3-bulk-export-{}.zip",
 		OffsetDateTime::now_utc().unix_timestamp()
 	);
-	let mut response =
-		(axum::http::StatusCode::OK, bytes).into_response();
+	let mut response = (axum::http::StatusCode::OK, bytes).into_response();
 	response.headers_mut().insert(
 		header::CONTENT_TYPE,
 		header::HeaderValue::from_static("application/zip"),
@@ -348,7 +455,10 @@ pub async fn export_cases_zip(
 pub async fn list_xml_export_history(
 	State(mm): State<lib_core::model::ModelManager>,
 	ctx_w: CtxW,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<XmlExportHistoryList>>)> {
+) -> Result<(
+	axum::http::StatusCode,
+	Json<DataRestResult<XmlExportHistoryList>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, XML_EXPORT)?;
 
@@ -381,7 +491,10 @@ pub async fn list_case_xml_export_history(
 	State(mm): State<lib_core::model::ModelManager>,
 	ctx_w: CtxW,
 	Path(case_id): Path<Uuid>,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<XmlExportHistoryList>>)> {
+) -> Result<(
+	axum::http::StatusCode,
+	Json<DataRestResult<XmlExportHistoryList>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
@@ -443,8 +556,7 @@ pub async fn download_xml_export_history_error(
 		.collect::<String>();
 	let download_name = format!("export-error-{id}-{safe_file_name}.txt");
 
-	let mut response =
-		(axum::http::StatusCode::OK, text).into_response();
+	let mut response = (axum::http::StatusCode::OK, text).into_response();
 	response.headers_mut().insert(
 		header::CONTENT_TYPE,
 		header::HeaderValue::from_static("text/plain; charset=utf-8"),

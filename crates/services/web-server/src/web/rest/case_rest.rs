@@ -65,10 +65,26 @@ pub fn normalize_appendices_json(value: &str) -> Result<String> {
 	Ok(json!(normalized).to_string())
 }
 
+pub fn first_appendix_profile_from_json(value: &str) -> Result<ValidationProfile> {
+	let normalized = normalize_appendices_json(value)?;
+	let parsed: Vec<String> =
+		serde_json::from_str(&normalized).map_err(|_| Error::BadRequest {
+			message: "appendices_json must be a JSON array".to_string(),
+		})?;
+	parsed
+		.first()
+		.and_then(|item| ValidationProfile::parse(item))
+		.ok_or_else(|| Error::BadRequest {
+			message: "appendices_json cannot be empty".to_string(),
+		})
+}
+
 /// Resolves the ordered list of validation profiles for a case.
 /// Prefers `appendices_json` (multi-profile), falls back to
 /// `validation_profile` (single), then defaults to FDA.
-fn resolve_appendix_profiles(case: &lib_core::model::case::Case) -> Vec<ValidationProfile> {
+fn resolve_appendix_profiles(
+	case: &lib_core::model::case::Case,
+) -> Vec<ValidationProfile> {
 	if let Some(json) = case.appendices_json.as_deref() {
 		if let Ok(items) = serde_json::from_str::<Vec<serde_json::Value>>(json) {
 			let profiles: Vec<ValidationProfile> = items
@@ -194,7 +210,10 @@ fn to_internal_case_for_update(data: PublicCaseForUpdate) -> InternalCaseForUpda
 }
 
 fn case_status_update(status: String) -> InternalCaseForUpdate {
-	InternalCaseForUpdate { status: Some(status), ..Default::default() }
+	InternalCaseForUpdate {
+		status: Some(status),
+		..Default::default()
+	}
 }
 
 async fn next_case_version(
@@ -268,7 +287,6 @@ pub struct PublicCaseUpdateRequest {
 	pub e_signature: Option<ESignatureInput>,
 }
 
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CaseLinkOptionList {
@@ -332,7 +350,10 @@ pub async fn create_case_guarded(
 	let ParamsForCreate { data } = params;
 	let mut data = data;
 	if let Some(appendices_json) = data.appendices_json.as_deref() {
-		data.appendices_json = Some(normalize_appendices_json(appendices_json)?);
+		let normalized = normalize_appendices_json(appendices_json)?;
+		let profile = first_appendix_profile_from_json(&normalized)?;
+		data.validation_profile = Some(profile.as_str().to_string());
+		data.appendices_json = Some(normalized);
 	}
 	let next_version = next_case_version(&ctx, &mm, &data.safety_report_id).await?;
 	let data = to_internal_case_for_create(&ctx, data, next_version);
@@ -340,7 +361,10 @@ pub async fn create_case_guarded(
 
 	let id = CaseBmc::create(&ctx, &mm, data).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
-	Ok((axum::http::StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::CREATED,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// GET /api/cases/{id}
@@ -354,7 +378,10 @@ pub async fn get_case(
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 	let entity = case_to_read_result(&ctx, &mm, entity).await?;
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// GET /api/cases
@@ -362,7 +389,10 @@ pub async fn list_cases(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<Vec<CaseReadResult>>>)> {
+) -> Result<(
+	axum::http::StatusCode,
+	Json<DataRestResult<Vec<CaseReadResult>>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_LIST)?;
 	let params = ParamsList::<CaseFilter>::from_raw_query(raw_query.as_deref())
@@ -375,7 +405,10 @@ pub async fn list_cases(
 			scoped.push(case_to_read_result(&ctx, &mm, entity).await?);
 		}
 	}
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: scoped })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: scoped }),
+	))
 }
 
 /// PUT /api/cases/{id}
@@ -393,7 +426,10 @@ pub async fn update_case_guarded(
 		e_signature,
 	} = params;
 	if let Some(appendices_json) = data.appendices_json.as_deref() {
-		data.appendices_json = Some(normalize_appendices_json(appendices_json)?);
+		let normalized = normalize_appendices_json(appendices_json)?;
+		let profile = first_appendix_profile_from_json(&normalized)?;
+		data.validation_profile = Some(profile.as_str().to_string());
+		data.appendices_json = Some(normalized);
 	}
 	let data = to_internal_case_for_update(data);
 	validate_case_update_payload(&data)?;
@@ -468,7 +504,10 @@ pub async fn update_case_guarded(
 	CaseBmc::update(&ctx_for_update, &mm, id, data).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// DELETE /api/cases/{id}
@@ -538,7 +577,10 @@ pub async fn mark_case_validated_by_validator(
 	)
 	.await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// GET /api/cases/{id}/lifecycle
@@ -546,7 +588,10 @@ pub async fn get_case_lifecycle(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseLifecycleResult>>)> {
+) -> Result<(
+	axum::http::StatusCode,
+	Json<DataRestResult<CaseLifecycleResult>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
@@ -588,7 +633,10 @@ pub async fn get_case_lifecycle(
 pub async fn list_case_link_options(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseLinkOptionList>>)> {
+) -> Result<(
+	axum::http::StatusCode,
+	Json<DataRestResult<CaseLinkOptionList>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_LIST)?;
 

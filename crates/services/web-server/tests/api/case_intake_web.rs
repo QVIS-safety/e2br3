@@ -194,6 +194,53 @@ async fn test_case_intake_duplicate_check_and_create() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_case_from_intake_derives_profile_from_appendices() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
+	let intake_body = json!({
+		"data": intake_data(&safety_report_id, 124, "1", json!({
+			"appendices_json": "[\"mfds\",\"fda\"]"
+		}))
+	});
+	let (status, body) =
+		post_json(&app, &cookie, "/api/cases/from-intake", intake_body).await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let case_id = extract_case_id(&body)?;
+
+	let (status, case_body) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}")).await?;
+	assert_eq!(status, StatusCode::OK, "{case_body:?}");
+	assert_eq!(
+		case_body["data"]["validation_profile"], "mfds",
+		"{case_body:?}"
+	);
+	assert_eq!(
+		case_body["data"]["appendices_json"], "[\"mfds\",\"fda\"]",
+		"{case_body:?}"
+	);
+
+	let (status, header_body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/message-header"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{header_body:?}");
+	assert_eq!(
+		header_body["data"]["message_receiver_identifier"], "KR",
+		"{header_body:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_from_intake_persists_distinct_c_1_dates() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
