@@ -57,22 +57,35 @@ pub(crate) fn resolve_validation_subsection(
 	code: &str,
 	path: Option<&str>,
 ) -> String {
-	if code.starts_with("ICH.C.1.") || code.starts_with("FDA.C.1.") {
+	if code == "ICH.C.1"
+		|| code.starts_with("ICH.C.1.")
+		|| code == "FDA.C.1"
+		|| code.starts_with("FDA.C.1.")
+	{
 		return "C.1".to_string();
 	}
-	if code.starts_with("ICH.C.2.") || code.starts_with("FDA.C.2.") {
+	if code.starts_with("ICH.C.2.")
+		|| code.starts_with("FDA.C.2.")
+		|| code.starts_with("MFDS.C.2.")
+	{
 		return "C.2".to_string();
 	}
 	if code.starts_with("ICH.C.3.") || code.starts_with("MFDS.C.3.") {
 		return "C.3".to_string();
 	}
-	if code.starts_with("ICH.C.5.") || code.starts_with("FDA.C.5.") {
+	if code.starts_with("ICH.C.5.")
+		|| code.starts_with("FDA.C.5.")
+		|| code.starts_with("MFDS.C.5.")
+	{
 		return "C.5".to_string();
 	}
-	if code.starts_with("ICH.D.10.") {
+	if code.starts_with("ICH.D.10.") || code.starts_with("MFDS.D.10.") {
 		return "D.10".to_string();
 	}
-	if code.starts_with("ICH.D.") || code.starts_with("FDA.D.") {
+	if code.starts_with("ICH.D.")
+		|| code.starts_with("FDA.D.")
+		|| code.starts_with("MFDS.D.")
+	{
 		return "D".to_string();
 	}
 	if code.starts_with("ICH.E.") || code.starts_with("FDA.E.") {
@@ -196,12 +209,24 @@ mod tests {
 	#[test]
 	fn resolves_validation_subsection_from_rule_code() {
 		assert_eq!(
+			resolve_validation_subsection("ICH.C.1.REQUIRED", None),
+			"C.1"
+		);
+		assert_eq!(
 			resolve_validation_subsection("ICH.C.1.2.REQUIRED", None),
 			"C.1"
 		);
 		assert_eq!(
+			resolve_validation_subsection("MFDS.C.2.r.1.REQUIRED", None),
+			"C.2"
+		);
+		assert_eq!(
 			resolve_validation_subsection("FDA.C.5.5a.REQUIRED", None),
 			"C.5"
+		);
+		assert_eq!(
+			resolve_validation_subsection("MFDS.D.10.7.1.r.1.REQUIRED", None),
+			"D.10"
 		);
 		assert_eq!(
 			resolve_validation_subsection(
