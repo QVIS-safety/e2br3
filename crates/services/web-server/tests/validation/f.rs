@@ -68,6 +68,29 @@ async fn f_ich_test_date_null_flavor_satisfies_required_date() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn f_ich_test_date_null_flavor_does_not_activate_name_code_rules() -> Result<()>
+{
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let test_id =
+		create_test_result(&ctx.app, &ctx.cookie, ctx.case_id, 1, "LFT").await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE test_results SET test_name = '', test_date = NULL, test_date_null_flavor = 'UNK', test_result_value = NULL, test_result_unit = NULL, normal_low_value = NULL, normal_high_value = NULL, result_unstructured = NULL WHERE id = '{test_id}'"
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_lacks_code(&report, "ICH.F.r.1.REQUIRED");
+	assert_lacks_code(&report, "ICH.F.r.2.1.REQUIRED");
+	assert_lacks_code(&report, "ICH.F.r.2.2b.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn f_ich_f_r_2_required_returns_banner_issue() -> Result<()> {
 	let ctx = setup_case().await?;
 	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
