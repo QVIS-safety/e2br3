@@ -310,7 +310,7 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise() ->
 	)
 	.bind(case_id)
 	.bind(seed.org_id)
-	.bind(format!("SR-IMPORTED-{case_id}"))
+	.bind(format!("SR-SHAPED-SAVE-{case_id}"))
 	.bind(1_i32)
 	.bind("draft")
 	.bind("fda")
@@ -327,7 +327,7 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise() ->
 		json!({
 			"data": {
 				"report_year": "2026",
-				"source_document_name": "imported-followup.pdf"
+				"source_document_name": "source-followup.pdf"
 			}
 		}),
 	)
@@ -341,12 +341,13 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise() ->
 	);
 	assert_eq!(
 		update_body["data"]["source_document_name"].as_str(),
-		Some("imported-followup.pdf"),
+		Some("source-followup.pdf"),
 		"{update_body:?}"
 	);
-	let response_text = update_body.to_string().to_ascii_lowercase();
-	assert!(!response_text.contains("batch"), "{response_text}");
-	assert!(!response_text.contains("header"), "{response_text}");
+	let rendered = update_body.to_string().to_ascii_lowercase();
+	assert!(!rendered.contains("batch"), "{update_body:?}");
+	assert!(!rendered.contains("header"), "{update_body:?}");
+	assert!(!rendered.contains("import"), "{update_body:?}");
 
 	Ok(())
 }
