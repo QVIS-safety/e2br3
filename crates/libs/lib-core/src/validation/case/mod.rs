@@ -15,9 +15,11 @@ pub async fn validate_case_for_profile(
 	case_id: Uuid,
 	profile: ValidationProfile,
 ) -> Result<CaseValidationReport> {
-	let reports =
-		validate_case_for_profiles(ctx, mm, case_id, &[profile]).await?;
-	Ok(reports.into_iter().next().expect("single profile returns one report"))
+	let reports = validate_case_for_profiles(ctx, mm, case_id, &[profile]).await?;
+	Ok(reports
+		.into_iter()
+		.next()
+		.expect("single profile returns one report"))
 }
 
 /// Validate a case against multiple profiles simultaneously, sharing the
@@ -36,12 +38,12 @@ pub async fn validate_case_for_profiles(
 
 	let validation_ctx = load_base_validation_context(ctx, mm, case_id).await?;
 
-	let needs_fda = profiles
-		.iter()
-		.any(|p| RegulatoryAuthority::from_validation_profile(*p).requires_fda_context());
-	let needs_mfds = profiles
-		.iter()
-		.any(|p| RegulatoryAuthority::from_validation_profile(*p).requires_mfds_context());
+	let needs_fda = profiles.iter().any(|p| {
+		RegulatoryAuthority::from_validation_profile(*p).requires_fda_context()
+	});
+	let needs_mfds = profiles.iter().any(|p| {
+		RegulatoryAuthority::from_validation_profile(*p).requires_mfds_context()
+	});
 
 	let fda_ctx: Option<FdaValidationContext> = if needs_fda {
 		Some(load_fda_validation_context(mm, case_id).await?)

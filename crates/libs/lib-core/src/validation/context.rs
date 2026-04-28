@@ -12,7 +12,8 @@ use crate::model::narrative::{
 use crate::model::parent_history::{ParentMedicalHistory, ParentPastDrugHistory};
 use crate::model::patient::{
 	AutopsyCauseOfDeath, MedicalHistoryEpisode, ParentInformation, PastDrugHistory,
-	PatientDeathInformation, PatientIdentifier, PatientInformation, ReportedCauseOfDeath,
+	PatientDeathInformation, PatientIdentifier, PatientInformation,
+	ReportedCauseOfDeath,
 };
 use crate::model::reaction::Reaction;
 use crate::model::safety_report::{

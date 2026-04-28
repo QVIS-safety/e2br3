@@ -248,10 +248,7 @@ mod tests {
 			"G.k"
 		);
 		assert_eq!(
-			resolve_validation_subsection(
-				"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
-				None
-			),
+			resolve_validation_subsection("MFDS.KR.FOREIGN.WHOMPID.REQUIRED", None),
 			"G.k"
 		);
 		assert_eq!(
@@ -261,9 +258,6 @@ mod tests {
 			),
 			"G.k"
 		);
-		assert_eq!(
-			resolve_validation_subsection("ICH.N.REQUIRED", None),
-			"N"
-		);
+		assert_eq!(resolve_validation_subsection("ICH.N.REQUIRED", None), "N");
 	}
 }

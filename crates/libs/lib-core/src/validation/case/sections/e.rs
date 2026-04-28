@@ -122,11 +122,14 @@ pub(crate) fn collect_ich_issues(
 				reaction.criteria_hospitalization_null_flavor.as_deref(),
 				reaction.criteria_disabling_null_flavor.as_deref(),
 				reaction.criteria_congenital_anomaly_null_flavor.as_deref(),
-				reaction.criteria_other_medically_important_null_flavor.as_deref(),
+				reaction
+					.criteria_other_medically_important_null_flavor
+					.as_deref(),
 			];
-			let has_non_ni_null_flavor = criteria_null_flavors
-				.iter()
-				.any(|nf| nf.map(str::trim).is_some_and(|v| !v.eq_ignore_ascii_case("NI")));
+			let has_non_ni_null_flavor = criteria_null_flavors.iter().any(|nf| {
+				nf.map(str::trim)
+					.is_some_and(|v| !v.eq_ignore_ascii_case("NI"))
+			});
 			if has_non_ni_null_flavor {
 				push_issue_by_code(
 					issues,

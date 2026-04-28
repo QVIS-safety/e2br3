@@ -1,9 +1,9 @@
 use crate::model::drug::DrugDeviceCharacteristic;
 use crate::model::{ModelManager, Result};
 use crate::validation::{
-	is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
+	has_text, is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
 	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
-	has_text, list_drug_characteristics, push_issue_by_code,
+	list_drug_characteristics, push_issue_by_code,
 	push_issue_if_conditioned_value_invalid, FdaValidationContext,
 	MfdsValidationContext, RuleFacts, ValidationContext, ValidationIssue,
 	ValidationProfile,

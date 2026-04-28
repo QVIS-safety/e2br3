@@ -236,7 +236,13 @@ pub(crate) fn collect_ich_issues(
 					},
 					RuleFacts::default(),
 				);
-				if study.sponsor_study_number.as_deref().map(str::trim).unwrap_or("").is_empty() {
+				if study
+					.sponsor_study_number
+					.as_deref()
+					.map(str::trim)
+					.unwrap_or("")
+					.is_empty()
+				{
 					push_issue_by_code(
 						issues,
 						"ICH.C.5.3.REQUIRED",
@@ -246,7 +252,11 @@ pub(crate) fn collect_ich_issues(
 			});
 
 		let has_reporter_org = validation_ctx.primary_sources.iter().any(|s| {
-			!s.organization.as_deref().map(str::trim).unwrap_or("").is_empty()
+			!s.organization
+				.as_deref()
+				.map(str::trim)
+				.unwrap_or("")
+				.is_empty()
 		});
 		if !has_reporter_org {
 			push_issue_by_code(

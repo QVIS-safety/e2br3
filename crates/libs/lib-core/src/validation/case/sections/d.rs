@@ -1,6 +1,6 @@
 use crate::validation::{
-	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
-	has_patient_initials, has_text, push_issue_by_code,
+	has_patient_initials, has_text, is_mfds_domestic_receiver,
+	is_mfds_foreign_postmarket_receiver, push_issue_by_code,
 	push_issue_if_conditioned_value_invalid, should_require_patient_initials,
 	FdaValidationContext, MfdsValidationContext, RuleFacts, ValidationContext,
 	ValidationIssue, ValidationProfile,
@@ -119,7 +119,8 @@ pub(crate) fn collect_ich_issues(
 		}
 
 		if let Some(patient) = validation_ctx.patient.as_ref() {
-			if should_require_patient_initials(patient) && !has_patient_initials(patient)
+			if should_require_patient_initials(patient)
+				&& !has_patient_initials(patient)
 			{
 				push_issue_by_code(
 					issues,
