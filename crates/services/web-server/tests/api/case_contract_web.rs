@@ -410,7 +410,7 @@ async fn test_delete_case_soft_deletes_and_keeps_case_visible() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let report_id = format!("SR-{}", Uuid::new_v4());
 	let (create_status, create_body) = post_json(
@@ -479,6 +479,34 @@ async fn test_delete_case_soft_deletes_and_keeps_case_visible() -> Result<()> {
 			.iter()
 			.any(|item| item["status"].as_str() == Some("deleted"))),
 		"{lifecycle_body:?}"
+	);
+
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
+		.await?;
+	let reason = dbx
+		.fetch_optional(
+			sqlx::query_as::<_, (Option<String>,)>(
+				r#"
+				SELECT reason_for_change
+				FROM audit_logs
+				WHERE table_name = 'cases'
+				  AND record_id = $1
+				  AND action = 'UPDATE'
+				  AND changed_fields ? 'status'
+				  AND changed_fields->'status'->>'new' = 'deleted'
+				ORDER BY id DESC
+				LIMIT 1
+				"#,
+			)
+			.bind(Uuid::parse_str(&case_id)?),
+		)
+		.await?;
+	dbx.rollback_txn().await?;
+	assert_eq!(
+		reason.and_then(|(v,)| v).as_deref(),
+		Some("client requested soft delete")
 	);
 
 	Ok(())
