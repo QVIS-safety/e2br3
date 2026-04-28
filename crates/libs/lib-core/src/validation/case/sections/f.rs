@@ -128,7 +128,9 @@ pub(crate) fn collect_ich_issues(
 
 pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 	match code {
-		"ICH.F.r.1.FUTURE_DATE.FORBIDDEN" => Some("testResults.0.testDate"),
+		"ICH.F.r.1.REQUIRED" | "ICH.F.r.1.FUTURE_DATE.FORBIDDEN" => {
+			Some("testResults.0.testDate")
+		}
 		"ICH.F.r.2.REQUIRED" | "ICH.F.r.2.1.REQUIRED" => {
 			Some("testResults.0.testName")
 		}

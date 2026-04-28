@@ -82,6 +82,18 @@ pub(crate) fn resolve_validation_subsection(
 	if code.starts_with("ICH.D.10.") || code.starts_with("MFDS.D.10.") {
 		return "D.10".to_string();
 	}
+	if code.starts_with("ICH.D.1.") || code == "ICH.D.1.REQUIRED" {
+		return "D.1".to_string();
+	}
+	if code.starts_with("ICH.D.2.") {
+		return "D.2".to_string();
+	}
+	if code.starts_with("ICH.D.7.1.r.") {
+		return "D.7.1.r".to_string();
+	}
+	if code.starts_with("ICH.D.8.") || code.starts_with("MFDS.D.8.") {
+		return "D.8.r".to_string();
+	}
 	if code.starts_with("ICH.D.")
 		|| code.starts_with("FDA.D.")
 		|| code.starts_with("MFDS.D.")
@@ -228,6 +240,14 @@ mod tests {
 		assert_eq!(
 			resolve_validation_subsection("MFDS.D.10.7.1.r.1.REQUIRED", None),
 			"D.10"
+		);
+		assert_eq!(
+			resolve_validation_subsection("ICH.D.2.1.FUTURE_DATE.FORBIDDEN", None),
+			"D.2"
+		);
+		assert_eq!(
+			resolve_validation_subsection("ICH.D.7.1.r.FUTURE_DATE.FORBIDDEN", None),
+			"D.7.1.r"
 		);
 		assert_eq!(
 			resolve_validation_subsection(
