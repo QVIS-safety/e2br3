@@ -1,9 +1,9 @@
 use crate::model::drug::DrugDeviceCharacteristic;
 use crate::model::{ModelManager, Result};
 use crate::validation::{
-	is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
+	has_text, is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
 	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
-	has_text, list_drug_characteristics, push_issue_by_code,
+	list_drug_characteristics, push_issue_by_code,
 	push_issue_if_conditioned_value_invalid, FdaValidationContext,
 	MfdsValidationContext, RuleFacts, ValidationContext, ValidationIssue,
 	ValidationProfile,
@@ -43,6 +43,14 @@ fn is_code_one_characteristic(ch: &DrugDeviceCharacteristic) -> bool {
 	let code = ch.value_code.as_deref().map(str::trim).unwrap_or("");
 	let value = ch.value_value.as_deref().map(str::trim).unwrap_or("");
 	code == "1" || value == "1"
+}
+
+fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
+	let Some(value) = value else {
+		return false;
+	};
+	let today = sqlx::types::time::OffsetDateTime::now_utc().date();
+	value > today
 }
 
 pub(crate) async fn collect(
@@ -87,6 +95,9 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		"ICH.G.k.4.r.1b.REQUIRED" => Some("drugs.0.dosageInformation.0.doseUnit"),
 		"ICH.G.k.4.r.3.REQUIRED" => {
 			Some("drugs.0.dosageInformation.0.frequencyUnit")
+		}
+		"ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN" => {
+			Some("drugs.0.dosageInformation.0.dateRange")
 		}
 		"ICH.G.k.4.r.6a.REQUIRED" => {
 			Some("drugs.0.dosageInformation.0.durationValue")
@@ -328,6 +339,15 @@ pub(crate) fn collect_ich_issues(
 					issues,
 					"ICH.G.k.4.r.11.2a.REQUIRED",
 					format!("drugs.0.dosages.{idx}.parentRouteTermIdVersion"),
+				);
+			}
+			if is_future_date(dosage.first_administration_date)
+				|| is_future_date(dosage.last_administration_date)
+			{
+				push_issue_by_code(
+					issues,
+					"ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
+					format!("drugs.0.dosageInformation.{idx}.dateRange"),
 				);
 			}
 		});

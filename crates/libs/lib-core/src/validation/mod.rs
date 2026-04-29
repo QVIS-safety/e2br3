@@ -54,6 +54,7 @@ pub use mfds_context::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -89,7 +90,23 @@ pub struct ValidationIssue {
 	pub path: String,
 	pub field_path: Option<String>,
 	pub section: String,
+	pub subsection: String,
 	pub blocking: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidationSectionSummary {
+	pub section: String,
+	pub blocking_count: usize,
+	pub non_blocking_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidationSubsectionSummary {
+	pub section: String,
+	pub subsection: String,
+	pub blocking_count: usize,
+	pub non_blocking_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -99,6 +116,8 @@ pub struct CaseValidationReport {
 	pub ok: bool,
 	pub blocking_count: usize,
 	pub non_blocking_count: usize,
+	pub section_summaries: Vec<ValidationSectionSummary>,
+	pub subsection_summaries: Vec<ValidationSubsectionSummary>,
 	pub issues: Vec<ValidationIssue>,
 }
 
@@ -115,27 +134,31 @@ pub fn push_issue_by_code(
 	if let Some(rule) =
 		find_canonical_rule_for_phase(code, ValidationPhase::CaseValidate)
 	{
+		let field_path =
+			case::sections::resolve_validation_field_path(code, Some(&path));
+		let subsection =
+			case::sections::resolve_validation_subsection(code, Some(&path));
 		issues.push(ValidationIssue {
 			code: rule.code.to_string(),
 			message: rule.message.to_string(),
-			field_path: case::sections::resolve_validation_field_path(
-				code,
-				Some(&path),
-			),
+			field_path,
 			path,
 			section: rule.section.to_string(),
+			subsection,
 			blocking: rule.blocking,
 		});
 	} else {
+		let field_path =
+			case::sections::resolve_validation_field_path(code, Some(&path));
+		let subsection =
+			case::sections::resolve_validation_subsection(code, Some(&path));
 		issues.push(ValidationIssue {
 			code: code.to_string(),
 			message: code.to_string(),
-			field_path: case::sections::resolve_validation_field_path(
-				code,
-				Some(&path),
-			),
+			field_path,
 			path,
 			section: "unknown".to_string(),
+			subsection,
 			blocking: false,
 		});
 	}
@@ -202,12 +225,53 @@ pub fn build_report(
 ) -> CaseValidationReport {
 	let blocking_count = issues.iter().filter(|issue| issue.blocking).count();
 	let non_blocking_count = issues.len().saturating_sub(blocking_count);
+	let mut by_section: BTreeMap<String, (usize, usize)> = BTreeMap::new();
+	let mut by_subsection: BTreeMap<(String, String), (usize, usize)> =
+		BTreeMap::new();
+	for issue in &issues {
+		let section_counts = by_section.entry(issue.section.clone()).or_default();
+		let subsection_counts = by_subsection
+			.entry((issue.section.clone(), issue.subsection.clone()))
+			.or_default();
+		if issue.blocking {
+			section_counts.0 += 1;
+			subsection_counts.0 += 1;
+		} else {
+			section_counts.1 += 1;
+			subsection_counts.1 += 1;
+		}
+	}
+	let section_summaries = by_section
+		.into_iter()
+		.map(|(section, (blocking_count, non_blocking_count))| {
+			ValidationSectionSummary {
+				section,
+				blocking_count,
+				non_blocking_count,
+			}
+		})
+		.collect();
+	let subsection_summaries = by_subsection
+		.into_iter()
+		.map(
+			|((section, subsection), (blocking_count, non_blocking_count))| {
+				ValidationSubsectionSummary {
+					section,
+					subsection,
+					blocking_count,
+					non_blocking_count,
+				}
+			},
+		)
+		.collect();
 	CaseValidationReport {
 		profile: profile.as_str().to_string(),
 		case_id,
 		ok: blocking_count == 0,
 		blocking_count,
 		non_blocking_count,
+		section_summaries,
+		subsection_summaries,
 		issues,
 	}
 }

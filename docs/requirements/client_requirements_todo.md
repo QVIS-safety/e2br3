@@ -136,13 +136,13 @@ Implemented notes:
 
 ## P0 Case Validation, Business Rules, and Form UX
 
-- [ ] Re-audit null flavor support across the entire case form, especially required date fields and conditionally mandatory elements.
+- [-] Re-audit null flavor support across the entire case form, especially required date fields and conditionally mandatory elements. Required-date null-flavor regressions are now covered for sampled C/D/E/F/G date fields, including F.r.1; full-form null-flavor coverage remains open.
 - [ ] Re-audit regional element correctness so KR/FDA fields only appear where valid and nonexistent regional fields are removed.
 - [ ] Recheck E2B business rules across all case tabs, not just the fields already called out in the CSV.
-- [ ] Make validation warnings reliable at both section and subsection level so red dots and required indicators match real errors.
+- [-] Make validation warnings reliable at both section and subsection level so red dots and required indicators match real errors. Backend validation now exposes stable section, subsection, field_path, and section/subsection issue counts; frontend red-dot rendering still needs UAT against the client screens.
 - [ ] Replace blocking/non-blocking wording with user-facing terminology the client can understand.
 - [ ] Remove `Validation profile` from duplication check and handle appendix selection at the top-level case/home flow instead.
-- [ ] Ensure date pickers are consistently English, support partial/UK-style requirements where applicable, and block future dates where required.
+- [-] Ensure date pickers are consistently English, support partial/UK-style requirements where applicable, and block future dates where required. Backend case validation blocks future dates for covered C/D/E/F/G fields; date-picker locale and partial-date UI behavior remain frontend work.
 - [ ] Recheck date/null-flavor behavior for required dates called out in `03.csv`, including `C.1.2`, `C.1.4`, `C.1.5`, `E.i.4`, and AE start-date null flavors.
 - [ ] Make repeatable structures (`r`, `i`, `k`) use line-list/table-style editing instead of long stacked forms.
 - [ ] Implement the line-list UI requirements from `list UI.csv` for repeatable sections not already converted.

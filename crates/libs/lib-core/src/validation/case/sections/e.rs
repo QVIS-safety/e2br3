@@ -5,6 +5,14 @@ use crate::validation::{
 	ValidationProfile,
 };
 
+fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
+	let Some(value) = value else {
+		return false;
+	};
+	let today = sqlx::types::time::OffsetDateTime::now_utc().date();
+	value > today
+}
+
 pub(crate) fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	profile: ValidationProfile,
@@ -98,6 +106,15 @@ pub(crate) fn collect_ich_issues(
 					RuleFacts::default(),
 				);
 			}
+			if is_future_date(reaction.start_date)
+				|| is_future_date(reaction.end_date)
+			{
+				push_issue_by_code(
+					issues,
+					"ICH.E.i.4-5.FUTURE_DATE.FORBIDDEN",
+					format!("reactions.{idx}.reactionDateRange"),
+				);
+			}
 
 			// E.i.3.2 seriousness criteria rules
 			if reaction.serious == Some(true) {
@@ -122,11 +139,14 @@ pub(crate) fn collect_ich_issues(
 				reaction.criteria_hospitalization_null_flavor.as_deref(),
 				reaction.criteria_disabling_null_flavor.as_deref(),
 				reaction.criteria_congenital_anomaly_null_flavor.as_deref(),
-				reaction.criteria_other_medically_important_null_flavor.as_deref(),
+				reaction
+					.criteria_other_medically_important_null_flavor
+					.as_deref(),
 			];
-			let has_non_ni_null_flavor = criteria_null_flavors
-				.iter()
-				.any(|nf| nf.map(str::trim).is_some_and(|v| !v.eq_ignore_ascii_case("NI")));
+			let has_non_ni_null_flavor = criteria_null_flavors.iter().any(|nf| {
+				nf.map(str::trim)
+					.is_some_and(|v| !v.eq_ignore_ascii_case("NI"))
+			});
 			if has_non_ni_null_flavor {
 				push_issue_by_code(
 					issues,
@@ -176,6 +196,7 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		"ICH.E.i.1.1b.REQUIRED" => Some("reactions.0.reactionLanguage"),
 		"ICH.E.i.2.1a.REQUIRED" => Some("reactions.0.reactionMeddraVersionLLT"),
 		"ICH.E.i.2.1b.REQUIRED" => Some("reactions.0.reactionMeddraCodeLLT"),
+		"ICH.E.i.4-5.FUTURE_DATE.FORBIDDEN" => Some("reactions.0.reactionDateRange"),
 		"ICH.E.i.6a.REQUIRED" => Some("reactions.0.reactionDuration.value"),
 		"ICH.E.i.6b.REQUIRED" => Some("reactions.0.reactionDuration.unit"),
 		"ICH.E.i.7.REQUIRED" => Some("reactions.0.reactionOutcome"),

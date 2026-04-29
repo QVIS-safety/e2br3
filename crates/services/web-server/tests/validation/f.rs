@@ -1,7 +1,7 @@
 use super::validation_common::{
-	assert_banner_issue, assert_section_rule_coverage, create_message_header,
-	create_safety_report, create_test_result, db_exec_case_sql, put_json,
-	setup_case, validate_case,
+	assert_banner_issue, assert_lacks_code, assert_section_rule_coverage,
+	create_message_header, create_safety_report, create_test_result,
+	db_exec_case_sql, put_json, setup_case, validate_case,
 };
 use crate::common::Result;
 use axum::http::StatusCode;
@@ -10,6 +10,8 @@ use serial_test::serial;
 
 pub(crate) fn tested_rule_codes() -> &'static [&'static str] {
 	&[
+		"ICH.F.r.1.REQUIRED",
+		"ICH.F.r.1.FUTURE_DATE.FORBIDDEN",
 		"ICH.F.r.2.REQUIRED",
 		"ICH.F.r.2.1.REQUIRED",
 		"ICH.F.r.2.2a.REQUIRED",
@@ -24,6 +26,87 @@ pub(crate) fn tested_rule_codes() -> &'static [&'static str] {
 #[test]
 fn f_rule_coverage_matches_backend_banner_contract() {
 	assert_section_rule_coverage('F', tested_rule_codes());
+}
+
+#[serial]
+#[tokio::test]
+async fn f_ich_f_r_1_required_returns_banner_issue() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let test_id =
+		create_test_result(&ctx.app, &ctx.cookie, ctx.case_id, 1, "LFT").await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!("UPDATE test_results SET test_date = NULL WHERE id = '{test_id}'"),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.F.r.1.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn f_ich_f_r_1_future_date_returns_banner_issue() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let test_id =
+		create_test_result(&ctx.app, &ctx.cookie, ctx.case_id, 1, "LFT").await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!("UPDATE test_results SET test_date = '2999-01-01' WHERE id = '{test_id}'"),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_banner_issue(&report, "ICH.F.r.1.FUTURE_DATE.FORBIDDEN");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn f_ich_test_date_null_flavor_satisfies_required_date() -> Result<()> {
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let test_id =
+		create_test_result(&ctx.app, &ctx.cookie, ctx.case_id, 1, "LFT").await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE test_results SET test_date = NULL, test_date_null_flavor = 'UNK' WHERE id = '{test_id}'"
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_lacks_code(&report, "ICH.F.r.1.REQUIRED");
+	assert_lacks_code(&report, "ICH.F.r.1.FUTURE_DATE.FORBIDDEN");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn f_ich_test_date_null_flavor_does_not_activate_name_code_rules() -> Result<()>
+{
+	let ctx = setup_case().await?;
+	create_safety_report(&ctx.app, &ctx.cookie, ctx.case_id, false).await?;
+	create_message_header(&ctx.app, &ctx.cookie, ctx.case_id, Some("ZZFDA")).await?;
+	let test_id =
+		create_test_result(&ctx.app, &ctx.cookie, ctx.case_id, 1, "LFT").await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE test_results SET test_name = '', test_date = NULL, test_date_null_flavor = 'UNK', test_result_value = NULL, test_result_unit = NULL, normal_low_value = NULL, normal_high_value = NULL, result_unstructured = NULL WHERE id = '{test_id}'"
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_lacks_code(&report, "ICH.F.r.1.REQUIRED");
+	assert_lacks_code(&report, "ICH.F.r.2.REQUIRED");
+	assert_lacks_code(&report, "ICH.F.r.2.1.REQUIRED");
+	assert_lacks_code(&report, "ICH.F.r.2.2b.REQUIRED");
+	Ok(())
 }
 
 #[serial]

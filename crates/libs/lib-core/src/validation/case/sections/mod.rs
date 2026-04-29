@@ -53,6 +53,81 @@ pub(crate) fn resolve_validation_field_path(
 		.or_else(|| path.map(normalize_validation_field_path))
 }
 
+pub(crate) fn resolve_validation_subsection(
+	code: &str,
+	path: Option<&str>,
+) -> String {
+	if code == "ICH.C.1"
+		|| code.starts_with("ICH.C.1.")
+		|| code == "FDA.C.1"
+		|| code.starts_with("FDA.C.1.")
+	{
+		return "C.1".to_string();
+	}
+	if code.starts_with("ICH.C.2.")
+		|| code.starts_with("FDA.C.2.")
+		|| code.starts_with("MFDS.C.2.")
+	{
+		return "C.2".to_string();
+	}
+	if code.starts_with("ICH.C.3.") || code.starts_with("MFDS.C.3.") {
+		return "C.3".to_string();
+	}
+	if code.starts_with("ICH.C.5.")
+		|| code.starts_with("FDA.C.5.")
+		|| code.starts_with("MFDS.C.5.")
+	{
+		return "C.5".to_string();
+	}
+	if code.starts_with("ICH.D.10.") || code.starts_with("MFDS.D.10.") {
+		return "D.10".to_string();
+	}
+	if code.starts_with("ICH.D.1.") || code == "ICH.D.1.REQUIRED" {
+		return "D.1".to_string();
+	}
+	if code.starts_with("ICH.D.2.") {
+		return "D.2".to_string();
+	}
+	if code.starts_with("ICH.D.7.1.r.") {
+		return "D.7.1.r".to_string();
+	}
+	if code.starts_with("ICH.D.8.") || code.starts_with("MFDS.D.8.") {
+		return "D.8.r".to_string();
+	}
+	if code.starts_with("ICH.D.")
+		|| code.starts_with("FDA.D.")
+		|| code.starts_with("MFDS.D.")
+	{
+		return "D".to_string();
+	}
+	if code.starts_with("ICH.E.") || code.starts_with("FDA.E.") {
+		return "E.i".to_string();
+	}
+	if code.starts_with("ICH.F.") {
+		return "F.r".to_string();
+	}
+	if code.starts_with("ICH.G.k.4.") {
+		return "G.k.4.r".to_string();
+	}
+	if code.starts_with("ICH.G.")
+		|| code.starts_with("FDA.G.")
+		|| code.starts_with("MFDS.G.")
+		|| code.starts_with("MFDS.KR.")
+	{
+		return "G.k".to_string();
+	}
+	if code.starts_with("ICH.H.") {
+		return "H".to_string();
+	}
+	if code.starts_with("ICH.N.") || code.starts_with("FDA.N.") {
+		return "N".to_string();
+	}
+
+	path.and_then(|value| value.split('.').next())
+		.unwrap_or("unknown")
+		.to_string()
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -142,5 +217,67 @@ mod tests {
 			),
 			Some("safetyReportIdentification.senderOrganization".to_string())
 		);
+	}
+
+	#[test]
+	fn resolves_validation_subsection_from_rule_code() {
+		assert_eq!(
+			resolve_validation_subsection("ICH.C.1.REQUIRED", None),
+			"C.1"
+		);
+		assert_eq!(
+			resolve_validation_subsection("ICH.C.1.2.REQUIRED", None),
+			"C.1"
+		);
+		assert_eq!(
+			resolve_validation_subsection("MFDS.C.2.r.1.REQUIRED", None),
+			"C.2"
+		);
+		assert_eq!(
+			resolve_validation_subsection("FDA.C.5.5a.REQUIRED", None),
+			"C.5"
+		);
+		assert_eq!(
+			resolve_validation_subsection("MFDS.D.10.7.1.r.1.REQUIRED", None),
+			"D.10"
+		);
+		assert_eq!(
+			resolve_validation_subsection("ICH.D.2.1.FUTURE_DATE.FORBIDDEN", None),
+			"D.2"
+		);
+		assert_eq!(
+			resolve_validation_subsection("ICH.D.7.1.r.FUTURE_DATE.FORBIDDEN", None),
+			"D.7.1.r"
+		);
+		assert_eq!(
+			resolve_validation_subsection(
+				"ICH.G.k.4.r.10.NULLFLAVOR.REQUIRED",
+				None
+			),
+			"G.k.4.r"
+		);
+		assert_eq!(
+			resolve_validation_subsection("FDA.G.K.12.REQUIRED", None),
+			"G.k"
+		);
+		assert_eq!(
+			resolve_validation_subsection(
+				"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
+				None
+			),
+			"G.k"
+		);
+		assert_eq!(
+			resolve_validation_subsection("MFDS.KR.FOREIGN.WHOMPID.REQUIRED", None),
+			"G.k"
+		);
+		assert_eq!(
+			resolve_validation_subsection(
+				"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
+				None
+			),
+			"G.k"
+		);
+		assert_eq!(resolve_validation_subsection("ICH.N.REQUIRED", None), "N");
 	}
 }

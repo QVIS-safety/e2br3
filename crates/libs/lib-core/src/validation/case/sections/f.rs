@@ -4,6 +4,14 @@ use crate::validation::{
 	ValidationIssue, ValidationProfile,
 };
 
+fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
+	let Some(value) = value else {
+		return false;
+	};
+	let today = sqlx::types::time::OffsetDateTime::now_utc().date();
+	value > today
+}
+
 pub(crate) fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	profile: ValidationProfile,
@@ -37,6 +45,8 @@ pub(crate) fn collect_ich_issues(
 				},
 				RuleFacts::default(),
 			);
+			let test_date_present_for_required = test.test_date.is_some()
+				|| has_text(test.test_date_null_flavor.as_deref());
 			let test_date_present = test.test_date.is_some();
 			let free_text_present = has_text(Some(test.test_name.as_str()));
 			let meddra_version_present =
@@ -50,10 +60,17 @@ pub(crate) fn collect_ich_issues(
 				has_text(test.test_result_code.as_deref());
 			let result_unstructured_present =
 				has_text(test.result_unstructured.as_deref());
-			if free_text_present && !test_date_present {
+			if free_text_present && !test_date_present_for_required {
 				push_issue_by_code(
 					issues,
 					"ICH.F.r.1.REQUIRED",
+					format!("testResults.{idx}.testDate"),
+				);
+			}
+			if is_future_date(test.test_date) {
+				push_issue_by_code(
+					issues,
+					"ICH.F.r.1.FUTURE_DATE.FORBIDDEN",
 					format!("testResults.{idx}.testDate"),
 				);
 			}
@@ -111,6 +128,9 @@ pub(crate) fn collect_ich_issues(
 
 pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 	match code {
+		"ICH.F.r.1.REQUIRED" | "ICH.F.r.1.FUTURE_DATE.FORBIDDEN" => {
+			Some("testResults.0.testDate")
+		}
 		"ICH.F.r.2.REQUIRED" | "ICH.F.r.2.1.REQUIRED" => {
 			Some("testResults.0.testName")
 		}
