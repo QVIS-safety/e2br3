@@ -1387,12 +1387,16 @@ struct NarrativeInformationDoc {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 struct NarrativeInformationForCreateDoc {
 	case_id: String,
 	case_narrative: String,
+	reporter_comments: Option<String>,
+	sender_comments: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
 struct NarrativeInformationForUpdateDoc {
 	case_narrative: Option<String>,
 	reporter_comments: Option<String>,

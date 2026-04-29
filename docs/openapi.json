@@ -1410,16 +1410,6 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "name": "profile",
-            "in": "query",
-            "description": "Authority-specific appendix export profile: ich, fda, or mfds. Must be selected on the case.",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            }
           }
         ],
         "responses": {
@@ -1530,9 +1520,36 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteCaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "204": {
-            "description": "Case deleted"
+          "200": {
+            "description": "Case soft-deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RawCaseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid delete payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "404": {
             "description": "Case not found",
@@ -1564,6 +1581,15 @@
             "in": "path",
             "description": "Case ID",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "profile",
+            "in": "query",
+            "description": "Authority-specific appendix export profile: ich, fda, or mfds. Must be selected on the case.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -4543,6 +4569,17 @@
           }
         }
       },
+      "DeleteCaseRequest": {
+        "type": "object",
+        "required": [
+          "reason_for_change"
+        ],
+        "properties": {
+          "reason_for_change": {
+            "type": "string"
+          }
+        }
+      },
       "DrugInformationDoc": {
         "type": "object",
         "required": [
@@ -5400,8 +5437,21 @@
           },
           "case_narrative": {
             "type": "string"
+          },
+          "reporter_comments": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sender_comments": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "NarrativeInformationForUpdateDoc": {
         "type": "object",
@@ -5424,7 +5474,8 @@
               "null"
             ]
           }
-        }
+        },
+        "additionalProperties": false
       },
       "NarrativeInformationResponse": {
         "type": "object",
@@ -5980,6 +6031,197 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/PatientInformationDoc"
+          }
+        }
+      },
+      "RawCaseDoc": {
+        "type": "object",
+        "required": [
+          "id",
+          "organization_id",
+          "safety_report_id",
+          "version",
+          "status",
+          "workflow_status",
+          "workflow_updated_at",
+          "created_by",
+          "dirty_c",
+          "dirty_d",
+          "dirty_e",
+          "dirty_f",
+          "dirty_g",
+          "dirty_h",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "appendices_json": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "created_by": {
+            "type": "string"
+          },
+          "dg_prd_key": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dirty_c": {
+            "type": "boolean"
+          },
+          "dirty_d": {
+            "type": "boolean"
+          },
+          "dirty_e": {
+            "type": "boolean"
+          },
+          "dirty_f": {
+            "type": "boolean"
+          },
+          "dirty_g": {
+            "type": "boolean"
+          },
+          "dirty_h": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "mfds_report_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "organization_id": {
+            "type": "string"
+          },
+          "raw_xml": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "report_year": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "review_receivers_json": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "safety_report_id": {
+            "type": "string"
+          },
+          "source_document_base64": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_media_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_document_name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "submitted_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submitted_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "updated_by": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "validation_profile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "workflow_assigned_role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_assigned_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_due_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_routes_json": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "workflow_status": {
+            "type": "string"
+          },
+          "workflow_updated_at": {
+            "type": "string"
+          }
+        }
+      },
+      "RawCaseResponse": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RawCaseDoc"
           }
         }
       },

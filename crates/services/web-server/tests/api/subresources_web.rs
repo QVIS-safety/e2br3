@@ -177,6 +177,38 @@ async fn create_safety_report(
 
 #[serial]
 #[tokio::test]
+async fn test_narrative_rejects_legacy_additional_fields() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let body = json!({"data": {
+		"case_id": case_id,
+		"case_narrative": "test narrative",
+		"case_summary": "legacy additional narrative field"
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/narrative"),
+		body,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::UNPROCESSABLE_ENTITY,
+		"status={status} body={}",
+		String::from_utf8_lossy(&body)
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_singleton_post_endpoints_are_idempotent() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

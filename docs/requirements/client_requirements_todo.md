@@ -30,6 +30,38 @@ Use this file as the working checklist for implementation. It is organized by pr
 - `[-]` partially implemented and needs recheck
 - `[x]` implemented and mainly needs verification only
 
+## Recent Implementation Updates
+
+- [x] Re-read `03.csv` and reconciled the remaining open/partial items into this tracker.
+- [x] Case delete is now a compliance-preserving soft delete: deleted cases stay visible, retain history, and are returned by case read/list/lifecycle flows.
+- [x] Delete no longer requires password re-entry; it requires `reason_for_change` and records that reason in the audit/compliance context.
+- [x] Deleted cases are read-only for content changes so users cannot keep editing a soft-deleted case.
+- [-] Manual and imported-case-shaped case saves now share the same backend save contract without import batch/header noise; page-level UI UAT remains open.
+- [-] Save/delete compliance is partially complete: delete reason capture is implemented, while broader save comments/reasons outside protected status transitions still need final policy and UI coverage.
+
+## Latest `03.csv` Reconciliation
+
+These are the remaining implementation gaps found by rereading `03.csv`. Items that are already represented below remain in their original sections; this summary is a quick implementation index.
+
+- [ ] Configurable final product/app naming.
+- [ ] Notation auto-translation decision and implementation if in scope.
+- [ ] QVIS / Client / Organization / Sender source-of-truth cleanup.
+- [ ] System-level idle-session settings and confirmation of `Idle Session Limit` / `Warning Lead Time` behavior.
+- [ ] Global `QC` / `QCed` terminology cleanup outside already converted workflow areas.
+- [ ] Menu placement cleanup for `DATA`, user info, and logout.
+- [ ] Case page appendix selector UI placement, duplicate appendix selector removal, and MFDS/FDA regional render UAT.
+- [ ] Case save/QC/lock parity for manual and imported cases, including save reason/comments policy.
+- [ ] Follow-up draft creation from an existing case.
+- [ ] Case-to-export/submission deep link with the source case preselected.
+- [ ] Full null-flavor, business-rule, date-picker, validation-marker, and field-action re-audit across CASE.
+- [ ] MedDRA / WHO-Drug / UCUM UX and dataset completeness recheck.
+- [ ] INFO list behavior: header filters, deleted-row visibility, row-click edit, required markers, notation placement, and field audit trail.
+- [ ] Sender default semantics and sender-based authorization/source-of-truth finalization.
+- [ ] Study/Product master-data semantics, multi-select behavior, MFDS/FDA regional fields, and automatic mapping to CASE if required.
+- [ ] Export/submission receiver separation, receiver routing enforcement, graceful export error history, submission history details, search/filtering, and Excel line-list export.
+- [ ] Import history timestamp bug where `Import Date/Time` can show `Invalid date`.
+- [ ] Admin/User UAT: `Role Setting` vs `Role & Privilege`, workflow UX, user deletion, one-admin rule if required, large-list scope picker, user table filters, `Access Window`, and organization screen removal.
+
 ## P0 Platform, Access, and Naming
 
 - [ ] Make the product/app name configurable and replace the temporary title with the final approved naming.
@@ -111,6 +143,7 @@ Implemented notes:
 - [ ] Replace blocking/non-blocking wording with user-facing terminology the client can understand.
 - [ ] Remove `Validation profile` from duplication check and handle appendix selection at the top-level case/home flow instead.
 - [ ] Ensure date pickers are consistently English, support partial/UK-style requirements where applicable, and block future dates where required.
+- [ ] Recheck date/null-flavor behavior for required dates called out in `03.csv`, including `C.1.2`, `C.1.4`, `C.1.5`, `E.i.4`, and AE start-date null flavors.
 - [ ] Make repeatable structures (`r`, `i`, `k`) use line-list/table-style editing instead of long stacked forms.
 - [ ] Implement the line-list UI requirements from `list UI.csv` for repeatable sections not already converted.
 - [ ] Make field-level `...` actions support:
@@ -125,7 +158,7 @@ Implemented notes:
 - [ ] LLT-based search
 - [ ] code display with term
 - [ ] consistent behavior across all sections
-- [ ] Finish WHO-Drug and UCUM data coverage and verify all expected values are present.
+- [ ] Finish WHO-Drug and UCUM data coverage and verify all expected values are present, including the LB `F.r.3.3` UCUM list and MFDS DG WHO-DD version/search behavior.
 
 ## P0 Repeatable Line-List UI From `list UI.csv`
 
@@ -153,6 +186,7 @@ Implemented notes:
 ## P0 Duplication Check
 
 - [ ] Recheck type-of-report-specific required fields so the matrix is fully applied for spontaneous, study, other, and unknown report types.
+- [ ] Apply the `03.csv` duplication-check required-field matrix by `C.1.3` report type, including spontaneous, study, other, and unknown report scenarios.
 - [x] Lock duplicate-create policy: duplicate hits are hard-blocked at create-from-intake, while incomplete basis without a duplicate hit remains explicit-override only.
 - [ ] Confirm duplicate detection logic when only part of the duplicate signature matches.
 - [ ] Ensure `Product ID` is the loaded value, not a different product label.
@@ -171,6 +205,7 @@ Implemented notes:
 - [ ] INFO receiver master data
 - [ ] export/submission routing receiver configuration
 - [ ] Remove receiver identifiers from the wrong INFO location if the client expects them to live only in submission routing configuration.
+- [ ] Remove or relocate Message Header / Receiver Information from the SD page if they are still present there.
 - [ ] Make export fail gracefully and always record errors in export history with downloadable text details.
 - [ ] Finish submission history details:
 - [ ] batch result data
@@ -195,6 +230,7 @@ Implemented notes:
 - [ ] Implement Excel line listing export.
 - [ ] Recheck imported-case export behavior when sender/receiver/header values are incomplete or mismatched.
 - [ ] Confirm authority/report-type-based receiver identifier selection is enforced strongly enough before submission.
+- [ ] Recheck receiver templates/routing rules for `N.1.4` and `N.2.r.3` by country/authority and report type.
 
 ## P0 Workflow and Receiver Timeline
 
@@ -218,26 +254,27 @@ Implemented notes:
 - [-] Continue refactoring sender as the operational source of truth for organization/client linkage.
 - [ ] Confirm how `Default` should work for sender records.
 - [ ] Rework sender-based authorization if the client expects backend-enforced sender ownership across case processing and submission.
+- [ ] Verify sender organization/client linkage against `roles.csv`, including which admin role manages client organization data.
 
 ### Study
 
 - [ ] Make product selection come from registered master data with the exact product semantics the client expects.
-- [ ] Support the requested MFDS and FDA study regional elements completely.
-- [ ] Allow the multi-select behavior the client requested where applicable.
+- [ ] Support the requested MFDS and FDA study regional elements completely, including `C.5.3` study no/protocol no choice, `C.5.4.KR.1`, `FDA.C.5.5a`, `FDA.C.5.5b`, and `FDA.C.5.6.r`.
+- [ ] Allow the multi-select behavior the client requested where applicable, especially product selection from registered master data.
 - [x] Add `Study Registration (C.5.1.r)` repeatable support.
 - [ ] Extend automatic mapping from study/product master data into relevant CASE fields if the client expects this to be automatic.
 
 ### Narrative
 
-- [-] Keep the structured narrative fields already added, but remove unwanted `Additional Narrative Fields` content if still present.
+- [x] Keep the structured narrative fields already added, but remove unwanted `Additional Narrative Fields` content if still present. Top-level narrative payloads now reject stale extra fields such as `case_summary`, and frontend payload docs point summaries to the structured repeatable `/narrative/summaries` endpoint.
 - [ ] Decide whether full element-ID-based narrative composition is in scope now or explicitly deferred.
 
 ## P0 Admin and User Management
 
 ### Roles and Privileges
 
-- [-] Simplify custom role creation so `role_name` and visible name behave the way the client expects. Backend now accepts normalized privilege-based role creation and the frontend admin console exposes a menu-level role editor; final wording/UX still needs UAT.
-- [-] Replace `Display name` with `Description` if that matches the requested admin UX. The admin console now uses `Description` in the custom-role flow, but final client label choice still needs confirmation.
+- [x] Simplify custom role creation so `role_name` and visible name behave the way the client expects. Custom-role create now accepts `role_name` plus `description` without a separate visible-name input, and defaults backend `display_name` to the normalized role ID for compatibility.
+- [x] Replace `Display name` with `Description` if that matches the requested admin UX. The admin console no longer shows or requires a `Display name` field, and a static UI contract guards the wording/payload.
 - [ ] Clarify and possibly merge `Role Setting` vs `Role & Privilege` if the distinction is confusing to the client.
 - [x] Support per-menu permissions for read, edit, QC/review, and lock instead of only coarse role creation.
 - [x] Add edit capability for custom roles after creation.
@@ -272,6 +309,7 @@ Implemented notes:
 - [ ] Add table-header filtering to the user list.
 - [ ] Clarify the meaning of `Access Window`.
 - [ ] Remove any remaining standalone Organization management screen if sender-based organization management is now the intended model.
+- [ ] Recheck user create/edit/delete end-to-end after role reassignment, sender/product/study scope changes, blind flag changes, and start/end date entry.
 
 ## P1 Case List and Dashboard Polish
 
@@ -279,15 +317,18 @@ Implemented notes:
 - [x] Dashboard home has already been substantially rebuilt around notices, case counts, quick actions, and appendix-aware behavior.
 - [ ] Recheck dashboard appendix behavior in UAT because the client reported MFDS visibility issues when appendix selection changes.
 - [ ] Confirm how user To Do lists should relate to workflow once WF is finalized.
+- [ ] Recheck case-list table-header filtering in the heading cells, not only global filter controls.
 
 ## P1 Case Section-Specific Recheck
 
-- [ ] Recheck CI follow-up-case selector display and attachment behavior.
-- [ ] Recheck RP and SD import-template wording and behavior.
+- [ ] Recheck CI follow-up-case selector display uses full `C.1.2` timestamp, not date-only, and that source-document uploads show file metadata.
+- [ ] Recheck RP and SD import-template wording and regional field behavior.
+- [ ] Recheck RP `C.2.r.4.KR.1` and reporter FDA email field regional visibility.
+- [ ] Recheck SD `C.3.1.KR.1` and remove SD receiver/message-header fields if still visible.
 - [ ] Recheck LR missing fields and numbering.
-- [ ] Recheck AE business rules and boolean/null-flavor handling.
-- [ ] Recheck LB controlled vocabulary constraints.
-- [ ] Recheck DG numbering, repeat scopes, WHO-DD behavior, and product/business-rule alignment.
+- [ ] Recheck AE business rules and boolean/null-flavor handling, including `E.i.3.1`, `E.i.3.2`, and `E.i.4`.
+- [ ] Recheck LB controlled vocabulary constraints, especially UCUM coverage for `F.r.3.3`.
+- [ ] Recheck DG numbering, repeat scopes, WHO-DD behavior, Product ID loading, MFDS conditional requirements, and product/business-rule alignment.
 
 ## P1 Import
 

@@ -37,6 +37,7 @@ pub struct NarrativeInformation {
 }
 
 #[derive(Fields, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct NarrativeInformationForCreate {
 	pub case_id: Uuid,
 	pub case_narrative: String,
@@ -45,6 +46,7 @@ pub struct NarrativeInformationForCreate {
 }
 
 #[derive(Fields, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct NarrativeInformationForUpdate {
 	pub case_narrative: Option<String>,
 	pub reporter_comments: Option<String>,

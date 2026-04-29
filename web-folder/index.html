@@ -161,8 +161,8 @@
         <h2>Create Custom Role</h2>
         <label for="role-name">Role ID</label>
         <input id="role-name" placeholder="pvs_reviewer">
-        <label for="role-display">Display name</label>
-        <input id="role-display" placeholder="PVS Reviewer">
+        <label for="role-description">Description</label>
+        <input id="role-description" placeholder="PVS reviewer for case QC">
         <label for="role-menu">Menu key</label>
         <input id="role-menu" value="case">
         <div class="split">
@@ -298,15 +298,16 @@
 
     async function createRole() {
       const roleName = $("role-name").value.trim();
-      const displayName = $("role-display").value.trim();
+      const description = $("role-description").value.trim();
       const menuKey = $("role-menu").value.trim();
-      if (!roleName || !displayName || !menuKey) throw new Error("role id, display name, and menu key are required");
+      if (!roleName || !menuKey) throw new Error("role id and menu key are required");
       await api("/api/admin/roles", {
         method: "POST",
         body: JSON.stringify({
           data: {
             role_name: roleName,
-            display_name: displayName,
+            display_name: roleName,
+            description: description || null,
             privileges: [{
               menu_key: menuKey,
               can_read: $("perm-read").checked,

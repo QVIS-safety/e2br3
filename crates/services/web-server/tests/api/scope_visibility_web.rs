@@ -573,6 +573,47 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_role_admin_api_defaults_visible_name_to_role_id() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let role_name = format!("qa_desc_{}", Uuid::new_v4().simple());
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/roles".to_string(),
+		Some(json!({
+			"data": {
+				"role_name": role_name,
+				"description": "Role created with description only",
+				"privileges": [
+					{
+						"menu_key": "case",
+						"can_read": true,
+						"can_edit": false,
+						"can_review": false,
+						"can_lock": false
+					}
+				]
+			}
+		})),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(value["canonical_role_id"], role_name);
+	assert_eq!(value["display_name"], role_name);
+	assert_eq!(value["description"], "Role created with description only");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

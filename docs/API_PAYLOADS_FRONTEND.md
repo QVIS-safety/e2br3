@@ -384,12 +384,17 @@ Response
 
 ### POST `/api/cases/{case_id}/narrative`
 ```json
-{ "data": { "case_id": "case-uuid", "case_summary": "Patient experienced..." } }
+{ "data": { "case_id": "case-uuid", "case_narrative": "Patient experienced...", "reporter_comments": "Reporter comment", "sender_comments": "Sender comment" } }
 ```
 Response
 ```json
 { "data": { "id": "narrative-uuid", "case_id": "case-uuid" } }
 ```
+
+Case summaries are structured repeatable records under
+`POST /api/cases/{case_id}/narrative/summaries`; do not send
+`case_summary` or other additional narrative fields to the top-level
+narrative endpoint.
 
 ---
 

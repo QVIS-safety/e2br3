@@ -4,10 +4,10 @@ use axum::Json;
 use lib_core::ctx::{
 	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
 };
+use lib_core::model::acs::AdminMenuPrivilege;
 use lib_core::model::admin_role::{
 	AdminRoleBmc, AdminRoleCreateData, AdminRoleUpdateData, DbAdminRoleRow,
 };
-use lib_core::model::acs::AdminMenuPrivilege;
 use lib_core::model::ModelManager;
 use lib_rest_core::{require_admin_role, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
@@ -37,7 +37,7 @@ pub struct AdminRoleRow {
 #[derive(Debug, Deserialize)]
 pub struct AdminRoleCreateBody {
 	pub role_name: String,
-	pub display_name: String,
+	pub display_name: Option<String>,
 	pub description: Option<String>,
 	pub privileges: Option<Vec<AdminMenuPrivilege>>,
 	pub can_view: Option<bool>,
@@ -368,10 +368,14 @@ pub async fn create_admin_role(
 			message: "cannot use a built-in role name".to_string(),
 		});
 	}
-	let display_name = data.display_name.trim().to_string();
-	if role_name.is_empty() || display_name.is_empty() {
+	let display_name = data
+		.display_name
+		.map(|value| value.trim().to_string())
+		.filter(|value| !value.is_empty())
+		.unwrap_or_else(|| role_name.clone());
+	if role_name.is_empty() {
 		return Err(Error::BadRequest {
-			message: "role_name and display_name are required".to_string(),
+			message: "role_name is required".to_string(),
 		});
 	}
 	let description = data.description.map(|value| value.trim().to_string());
