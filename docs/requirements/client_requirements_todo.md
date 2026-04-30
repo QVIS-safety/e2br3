@@ -207,11 +207,11 @@ Implemented notes:
 - [ ] Remove receiver identifiers from the wrong INFO location if the client expects them to live only in submission routing configuration.
 - [ ] Remove or relocate Message Header / Receiver Information from the SD page if they are still present there.
 - [ ] Make export fail gracefully and always record errors in export history with downloadable text details.
-- [ ] Finish submission history details:
+- [-] Finish submission history details. Backend ACK text download is implemented at `GET /api/submissions/{id}/acks/{level}/download`, documented in OpenAPI, and covered by `test_submission_ack_can_be_downloaded_as_text`; remaining details below still need implementation/UAT.
 - [ ] batch result data
 - [ ] message result data
 - [ ] acknowledged date
-- [ ] ACK download
+- [x] ACK download
 - [ ] ICSR count
 - [ ] data file link
 - [ ] Add the event column and other requested queue/history columns where still missing.
@@ -306,7 +306,7 @@ Implemented notes:
 
 ### User List and Organization
 
-- [ ] Add table-header filtering to the user list.
+- [x] Add table-header filtering to the user list. Frontend admin Users table now includes User, Role, and Organization header-cell filters wired to the existing users API filter state, covered by `admin-users.header-filters`.
 - [ ] Clarify the meaning of `Access Window`.
 - [ ] Remove any remaining standalone Organization management screen if sender-based organization management is now the intended model.
 - [ ] Recheck user create/edit/delete end-to-end after role reassignment, sender/product/study scope changes, blind flag changes, and start/end date entry.

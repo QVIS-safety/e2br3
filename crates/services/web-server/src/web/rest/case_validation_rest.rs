@@ -154,10 +154,8 @@ pub async fn validate_case_all(
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let profiles = resolve_profiles(&ctx, &mm, case_id).await?;
-	let reports =
-		validate_case_for_profiles(&ctx, &mm, case_id, &profiles).await?;
-	let blocking_count: usize =
-		reports.iter().map(|r| r.blocking_count).sum();
+	let reports = validate_case_for_profiles(&ctx, &mm, case_id, &profiles).await?;
+	let blocking_count: usize = reports.iter().map(|r| r.blocking_count).sum();
 	let non_blocking_count: usize =
 		reports.iter().map(|r| r.non_blocking_count).sum();
 	let ok = reports.iter().all(|r| r.ok);

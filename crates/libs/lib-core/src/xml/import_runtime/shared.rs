@@ -255,7 +255,6 @@ pub(crate) fn parse_date(value: String) -> Option<Date> {
 	Date::from_calendar_date(y, month, d).ok()
 }
 
-
 pub(crate) fn infer_validation_profile(
 	header: Option<&MessageHeaderExtract>,
 ) -> String {

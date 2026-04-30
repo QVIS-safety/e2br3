@@ -138,30 +138,24 @@ pub fn is_allowed_case_status_transition(from: &str, to: &str) -> bool {
 			to.as_str(),
 			"reviewed"
 				| "validated"
-				| "locked"
-				| "submitted"
-				| "deleted"
-				| "archived"
+				| "locked" | "submitted"
+				| "deleted" | "archived"
 				| "nullified"
 		),
 		"reviewed" => matches!(
 			to.as_str(),
 			"draft"
 				| "validated"
-				| "locked"
-				| "submitted"
-				| "deleted"
-				| "archived"
+				| "locked" | "submitted"
+				| "deleted" | "archived"
 				| "nullified"
 		),
 		"validated" => matches!(
 			to.as_str(),
 			"draft"
-				| "reviewed"
-				| "locked"
+				| "reviewed" | "locked"
 				| "submitted"
-				| "deleted"
-				| "archived"
+				| "deleted" | "archived"
 				| "nullified"
 		),
 		"locked" => matches!(

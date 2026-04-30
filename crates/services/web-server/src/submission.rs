@@ -92,6 +92,18 @@ pub struct SubmissionAck {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubmissionAckDownload {
+	pub submission_id: Uuid,
+	pub case_id: Uuid,
+	pub level: u8,
+	pub success: bool,
+	pub code: Option<String>,
+	pub message: Option<String>,
+	pub received_at: OffsetDateTime,
+	pub raw_payload: Option<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubmissionRecord {
 	pub id: Uuid,
 	pub case_id: Uuid,
@@ -258,6 +270,18 @@ struct SubmissionAckRow {
 	ack_code: Option<String>,
 	ack_message: Option<String>,
 	received_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct SubmissionAckDownloadRow {
+	submission_id: Uuid,
+	case_id: Uuid,
+	ack_level: i16,
+	success: bool,
+	ack_code: Option<String>,
+	ack_message: Option<String>,
+	received_at: OffsetDateTime,
+	raw_payload: Option<Value>,
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -2104,6 +2128,54 @@ pub async fn list_submission_events(
 			created_at: row.created_at,
 		})
 		.collect())
+}
+
+pub async fn get_ack_download(
+	_ctx: &Ctx,
+	mm: &ModelManager,
+	submission_id: Uuid,
+	level: u8,
+) -> Result<Option<SubmissionAckDownload>> {
+	let row = mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, SubmissionAckDownloadRow>(
+				"SELECT a.submission_id,
+				        cs.case_id,
+				        a.ack_level,
+				        a.success,
+				        a.ack_code,
+				        a.ack_message,
+				        a.received_at,
+				        a.raw_payload
+				   FROM submission_acks a
+				   JOIN case_submissions cs ON cs.id = a.submission_id
+				  WHERE a.submission_id = $1
+				    AND a.ack_level = $2
+				  ORDER BY a.received_at DESC, a.id DESC
+				  LIMIT 1",
+			)
+			.bind(submission_id)
+			.bind(level as i16),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+
+	row.map(|row| {
+		Ok(SubmissionAckDownload {
+			submission_id: row.submission_id,
+			case_id: row.case_id,
+			level: u8::try_from(row.ack_level).map_err(|_| Error::BadRequest {
+				message: format!("invalid ACK level stored: {}", row.ack_level),
+			})?,
+			success: row.success,
+			code: row.ack_code,
+			message: row.ack_message,
+			received_at: row.received_at,
+			raw_payload: row.raw_payload,
+		})
+	})
+	.transpose()
 }
 
 pub async fn get_submission_dispatch_state(

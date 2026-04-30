@@ -596,7 +596,9 @@ async fn test_deleted_case_rejects_content_updates() -> Result<()> {
 	.await?;
 	assert_eq!(update_status, StatusCode::BAD_REQUEST, "{update_body:?}");
 	assert!(
-		update_body.to_string().contains("deleted cases are read-only"),
+		update_body
+			.to_string()
+			.contains("deleted cases are read-only"),
 		"{update_body:?}"
 	);
 

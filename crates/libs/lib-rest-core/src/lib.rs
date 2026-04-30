@@ -16,15 +16,13 @@ use lib_core::model::store::set_full_context_dbx;
 /// Handles `begin_txn → set_full_context_dbx → f(dbx) → commit_txn`, rolling
 /// back on any failure. Replaces the repeated 10-line boilerplate across
 /// read-only endpoints that need RLS.
-pub async fn with_rls_read<T, F>(
-	mm: &ModelManager,
-	ctx: &Ctx,
-	f: F,
-) -> Result<T>
+pub async fn with_rls_read<T, F>(mm: &ModelManager, ctx: &Ctx, f: F) -> Result<T>
 where
 	F: for<'a> FnOnce(
 		&'a lib_core::model::store::dbx::Dbx,
-	) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + 'a>>,
+	) -> std::pin::Pin<
+		Box<dyn std::future::Future<Output = Result<T>> + Send + 'a>,
+	>,
 {
 	let dbx = mm.dbx();
 	dbx.begin_txn()
@@ -50,8 +48,8 @@ where
 
 use lib_core::ctx::{
 	canonical_role, Ctx, ROLE_HEAD_PV, ROLE_MANAGER, ROLE_PVM, ROLE_PVS,
-	ROLE_SPONSOR, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
-	ROLE_USER, ROLE_VIEWER,
+	ROLE_SPONSOR, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER,
+	ROLE_VIEWER,
 };
 use lib_core::model::acs::{has_permission, Permission};
 use lib_core::model::case::{Case, CaseBmc};

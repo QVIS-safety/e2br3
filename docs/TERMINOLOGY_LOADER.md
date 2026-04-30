@@ -39,6 +39,8 @@ cargo run -p terminology-loader -- \
 Input supports:
 - A delimited file (`.csv`, `.tsv`, `.txt`) with a header row
 - A folder or zip containing such a file
+- Official WHODrug B3 zip files containing `DD.csv` and optional `DDA.csv`
+- Official WHODrug C3 zip files containing `MP.csv` and optional `ATC.csv`
 
 Required columns (header aliases accepted):
 - code: `code`, `drug_code`, `record_id`, `drugid`, `drecno`, `mpid`
@@ -79,3 +81,5 @@ cargo run -p terminology-loader -- \
 
 - DB reachable through existing `DB_URL` config (same as web server).
 - Schema includes terminology tables and `terminology_releases`.
+- MedDRA and WHODrug source files are licensed local data. Keep them outside
+  version control; the repo-root `data/` directory is ignored for this purpose.

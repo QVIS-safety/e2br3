@@ -110,7 +110,10 @@ pub fn matches_optional_text(expected: Option<&str>, actual: Option<&str>) -> bo
 }
 
 /// Returns true when `expected` is absent/nil, or when it numerically equals `actual`.
-pub fn matches_optional_decimal(expected: Option<&str>, actual: Option<&str>) -> bool {
+pub fn matches_optional_decimal(
+	expected: Option<&str>,
+	actual: Option<&str>,
+) -> bool {
 	let Some(expected) = expected.filter(|v| has_meaningful_text(Some(*v))) else {
 		return true;
 	};
@@ -224,11 +227,13 @@ pub fn assess_duplicate_basis(key: &CaseDuplicateKey) -> DuplicateBasisAssessmen
 	};
 
 	if !has_meaningful_text(key.dg_prd_key.as_deref()) {
-		warnings.push("Product ID is missing from duplicate check input".to_string());
+		warnings
+			.push("Product ID is missing from duplicate check input".to_string());
 	}
 	if !has_meaningful_text(key.reaction_meddra_version.as_deref()) {
 		warnings.push(
-			"Reaction MedDRA version is missing from duplicate check input".to_string(),
+			"Reaction MedDRA version is missing from duplicate check input"
+				.to_string(),
 		);
 	}
 	if !has_meaningful_text(key.reaction_meddra_code.as_deref()) {
@@ -237,12 +242,14 @@ pub fn assess_duplicate_basis(key: &CaseDuplicateKey) -> DuplicateBasisAssessmen
 		);
 	}
 	if key.ae_start_date.is_none() {
-		warnings.push(
-			"AE start date is missing from duplicate check input".to_string(),
-		);
+		warnings
+			.push("AE start date is missing from duplicate check input".to_string());
 	}
 
-	DuplicateBasisAssessment { basis_complete, warnings }
+	DuplicateBasisAssessment {
+		basis_complete,
+		warnings,
+	}
 }
 
 // -- CaseDuplicateBmc
@@ -263,8 +270,9 @@ impl CaseDuplicateBmc {
 		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
 			.await?;
 		let rows = dbx
-			.fetch_all(sqlx::query_as::<_, DuplicateScanRow>(
-				r#"
+			.fetch_all(
+				sqlx::query_as::<_, DuplicateScanRow>(
+					r#"
 				SELECT
 				    c.id                                  AS case_id,
 				    c.safety_report_id,
@@ -333,8 +341,9 @@ impl CaseDuplicateBmc {
 				ORDER BY c.created_at DESC
 				LIMIT 500
 				"#,
+				)
+				.bind(ctx.organization_id()),
 			)
-			.bind(ctx.organization_id()))
 			.await?;
 		dbx.commit_txn().await?;
 

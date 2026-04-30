@@ -1357,10 +1357,7 @@ async fn test_workflow_transition_updates_case_and_persists_event() -> Result<()
 		events["data"][0]["comment"].as_str(),
 		Some("Ready for review")
 	);
-	assert_eq!(
-		events["data"][0]["usedAdminOverride"].as_bool(),
-		Some(true)
-	);
+	assert_eq!(events["data"][0]["usedAdminOverride"].as_bool(), Some(true));
 	Ok(())
 }
 
@@ -1437,10 +1434,7 @@ async fn test_workflow_assignment_updates_owner_without_changing_status(
 		events["data"][0]["comment"].as_str(),
 		Some("Assign authoring owner")
 	);
-	assert_eq!(
-		events["data"][0]["usedAdminOverride"].as_bool(),
-		Some(true)
-	);
+	assert_eq!(events["data"][0]["usedAdminOverride"].as_bool(), Some(true));
 	Ok(())
 }
 
@@ -1747,10 +1741,7 @@ async fn test_workflow_admin_override_is_allowed_and_audited() -> Result<()> {
 
 	let (status, events) = get_workflow_events(&app, &admin_cookie, case_id).await?;
 	assert_eq!(status, StatusCode::OK, "{events:?}");
-	assert_eq!(
-		events["data"][0]["usedAdminOverride"].as_bool(),
-		Some(true)
-	);
+	assert_eq!(events["data"][0]["usedAdminOverride"].as_bool(), Some(true));
 	assert_eq!(
 		events["data"][0]["actorRoleId"].as_str(),
 		Some("sponsor_admin_cro")
@@ -1802,7 +1793,8 @@ async fn test_locked_case_blocks_workflow_transition_even_for_admin_override(
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 
 	let case_id = create_case(&app, &admin_cookie, seed.org_id).await?;
-	let (status, body) = update_case_status(&app, &admin_cookie, case_id, "locked").await?;
+	let (status, body) =
+		update_case_status(&app, &admin_cookie, case_id, "locked").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 
 	let (status, body) = transition_case_workflow(
@@ -1818,7 +1810,10 @@ async fn test_locked_case_blocks_workflow_transition_even_for_admin_override(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(body.to_string().contains("locked cases are read-only"), "{body:?}");
+	assert!(
+		body.to_string().contains("locked cases are read-only"),
+		"{body:?}"
+	);
 	Ok(())
 }
 
@@ -1837,14 +1832,16 @@ async fn test_case_read_returns_separate_qc_and_lock_axes() -> Result<()> {
 	assert_eq!(body["data"]["qc_state"].as_str(), Some("Pending"));
 	assert_eq!(body["data"]["is_locked"].as_bool(), Some(false));
 
-	let (status, body) = update_case_status(&app, &cookie, case_id, "reviewed").await?;
+	let (status, body) =
+		update_case_status(&app, &cookie, case_id, "reviewed").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	let (status, body) = get_case(&app, &cookie, case_id).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["qc_state"].as_str(), Some("QCed"));
 	assert_eq!(body["data"]["is_locked"].as_bool(), Some(false));
 
-	let (status, body) = update_case_status(&app, &cookie, case_id, "locked").await?;
+	let (status, body) =
+		update_case_status(&app, &cookie, case_id, "locked").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	let (status, body) = get_case(&app, &cookie, case_id).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");

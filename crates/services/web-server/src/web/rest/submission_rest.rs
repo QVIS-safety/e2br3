@@ -1,7 +1,9 @@
 use crate::web::rest::compliance::{capture_e_signature, ComplianceActionInput};
 use axum::extract::{Path, State};
+use axum::http::header;
 use axum::http::StatusCode;
 use axum::http::{HeaderMap, HeaderValue};
+use axum::response::{IntoResponse, Response};
 use axum::Json;
 use lib_core::model::acs::{CASE_READ, CASE_UPDATE};
 use lib_core::model::store::set_full_context_dbx;
@@ -14,12 +16,12 @@ use uuid::Uuid;
 
 use crate::submission::{
 	apply_gateway_ack_by_remote, apply_mock_ack, create_submission_idempotent,
-	get_reconcile_runtime_status, get_submission, get_submission_dispatch_state,
-	list_by_case, list_submission_events, list_submission_history,
-	reconcile_due_submissions_with_runtime_status, GatewayAckCallbackInput,
-	MockAckInput, SubmissionAuthority, SubmissionDispatchStateRecord,
-	SubmissionEventRecord, SubmissionHistoryRecord, SubmissionReconcileResult,
-	SubmissionReconcileRuntimeStatus, SubmissionRecord,
+	get_ack_download, get_reconcile_runtime_status, get_submission,
+	get_submission_dispatch_state, list_by_case, list_submission_events,
+	list_submission_history, reconcile_due_submissions_with_runtime_status,
+	GatewayAckCallbackInput, MockAckInput, SubmissionAuthority,
+	SubmissionDispatchStateRecord, SubmissionEventRecord, SubmissionHistoryRecord,
+	SubmissionReconcileResult, SubmissionReconcileRuntimeStatus, SubmissionRecord,
 };
 
 #[derive(Debug, Serialize)]
@@ -195,6 +197,57 @@ pub async fn list_submission_event_history(
 			data: SubmissionEventList { items: rows },
 		}),
 	))
+}
+
+/// GET /api/submissions/{id}/acks/{level}/download
+pub async fn download_submission_ack_text(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((submission_id, level)): Path<(Uuid, u8)>,
+) -> Result<Response> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	let ack = get_ack_download(&ctx, &mm, submission_id, level)
+		.await?
+		.ok_or(Error::BadRequest {
+			message: format!(
+				"submission ACK level {level} not found for submission {submission_id}"
+			),
+		})?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, ack.case_id).await?;
+
+	let mut text = format!(
+		"Submission ID: {}\nCase ID: {}\nACK Level: {}\nSuccess: {}\nReceived At: {}\n",
+		ack.submission_id, ack.case_id, ack.level, ack.success, ack.received_at
+	);
+	if let Some(code) = ack.code.as_deref() {
+		text.push_str(&format!("ACK Code: {code}\n"));
+	}
+	if let Some(message) = ack.message.as_deref() {
+		text.push_str(&format!("ACK Message: {message}\n"));
+	}
+	if let Some(raw_payload) = ack.raw_payload.as_ref() {
+		let pretty = serde_json::to_string_pretty(raw_payload)
+			.unwrap_or_else(|_| raw_payload.to_string());
+		text.push_str("\nRaw Payload:\n");
+		text.push_str(&pretty);
+		text.push('\n');
+	}
+
+	let file_name = format!("submission-{submission_id}-ack{level}.txt");
+	let mut response = (StatusCode::OK, text).into_response();
+	response.headers_mut().insert(
+		header::CONTENT_TYPE,
+		HeaderValue::from_static("text/plain; charset=utf-8"),
+	);
+	response.headers_mut().insert(
+		header::CONTENT_DISPOSITION,
+		HeaderValue::from_str(&format!("attachment; filename=\"{file_name}\""))
+			.map_err(|err| Error::BadRequest {
+				message: format!("invalid ACK download filename header: {err}"),
+			})?,
+	);
+	Ok(response)
 }
 
 /// GET /api/submissions/history

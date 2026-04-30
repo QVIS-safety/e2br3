@@ -202,7 +202,9 @@ async fn normalize_workflow_config(
 		}
 	}
 
-	Ok(WorkflowConfigPayload { statuses: Some(statuses) })
+	Ok(WorkflowConfigPayload {
+		statuses: Some(statuses),
+	})
 }
 
 async fn payload_to_value(

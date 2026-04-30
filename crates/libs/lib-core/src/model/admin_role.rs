@@ -6,7 +6,7 @@
 
 use crate::model::acs::{
 	permissions_for_menu_privileges, permissions_for_privileges,
-	replace_dynamic_roles, remove_dynamic_role, AdminMenuPrivilege,
+	remove_dynamic_role, replace_dynamic_roles, AdminMenuPrivilege,
 };
 use crate::model::ModelManager;
 use crate::model::Result;
@@ -68,7 +68,9 @@ impl AdminRoleBmc {
 			.map_err(|e| crate::model::Error::Store(e.to_string()))
 	}
 
-	pub async fn list_active_custom(mm: &ModelManager) -> Result<Vec<DbAdminRoleRow>> {
+	pub async fn list_active_custom(
+		mm: &ModelManager,
+	) -> Result<Vec<DbAdminRoleRow>> {
 		let sql = format!(
 			"{ROLE_SELECT} WHERE active = true AND built_in = false ORDER BY display_name ASC"
 		);

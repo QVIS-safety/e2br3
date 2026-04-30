@@ -240,7 +240,10 @@ pub async fn transition_case_workflow(
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 	let entity =
 		crate::web::rest::case_rest::case_to_read_result(&ctx, &mm, entity).await?;
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// POST /api/cases/{id}/workflow/assign
@@ -346,7 +349,10 @@ pub async fn assign_case_workflow(
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 	let entity =
 		crate::web::rest::case_rest::case_to_read_result(&ctx, &mm, entity).await?;
-	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult { data: entity }),
+	))
 }
 
 /// GET /api/cases/{id}/workflow/events
@@ -398,8 +404,5 @@ pub async fn get_workflow_config_runtime(
 			.collect(),
 	};
 
-	Ok((
-		axum::http::StatusCode::OK,
-		Json(DataRestResult { data }),
-	))
+	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data })))
 }

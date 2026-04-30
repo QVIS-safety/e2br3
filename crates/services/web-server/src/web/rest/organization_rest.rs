@@ -51,7 +51,8 @@ pub async fn list_organizations(
 		ParamsList::<OrganizationFilter>::from_raw_query(raw_query.as_deref())
 			.map_err(|message| Error::BadRequest { message })?;
 	let entities =
-		OrganizationBmc::list(&ctx, &mm, params.filters, params.list_options).await?;
+		OrganizationBmc::list(&ctx, &mm, params.filters, params.list_options)
+			.await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
 

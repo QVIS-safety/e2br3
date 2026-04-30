@@ -15,7 +15,8 @@ use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{
-	is_unique_violation, require_case_write_allowed, require_permission, Error, Result,
+	is_unique_violation, require_case_write_allowed, require_permission, Error,
+	Result,
 };
 use lib_web::middleware::mw_auth::CtxW;
 use serde::Deserialize;

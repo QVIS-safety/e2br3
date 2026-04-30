@@ -7,7 +7,9 @@ use lib_core::ctx::{
 	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
 	ROLE_SYSTEM_ADMIN,
 };
-use lib_core::model::acs::{USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE};
+use lib_core::model::acs::{
+	USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE,
+};
 use lib_core::model::user::{
 	User, UserBmc, UserFilter, UserForCreate, UserForUpdate,
 };
@@ -296,7 +298,12 @@ pub async fn create_user(
 	let id = UserBmc::create(&ctx, &mm, create).await?;
 	UserBmc::set_must_change_password(&ctx, &mm, id, true).await?;
 	let entity: User = UserBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: user_view(entity) })))
+	Ok((
+		StatusCode::CREATED,
+		Json(DataRestResult {
+			data: user_view(entity),
+		}),
+	))
 }
 
 /// GET /api/users/:id
@@ -311,7 +318,12 @@ pub async fn get_user(
 	require_admin_role(&ctx)?;
 	require_permission(&ctx, USER_READ)?;
 	let entity: User = UserBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: user_view(entity) })))
+	Ok((
+		StatusCode::OK,
+		Json(DataRestResult {
+			data: user_view(entity),
+		}),
+	))
 }
 
 #[derive(Debug, Deserialize)]
@@ -365,7 +377,8 @@ pub async fn list_users(
 	require_permission(&ctx, USER_LIST)?;
 	let params = ParamsList::<UserFilter>::from_raw_query(raw_query.as_deref())
 		.map_err(|message| Error::BadRequest { message })?;
-	let entities = UserBmc::list(&ctx, &mm, params.filters, params.list_options).await?;
+	let entities =
+		UserBmc::list(&ctx, &mm, params.filters, params.list_options).await?;
 	let entities = entities.into_iter().map(user_view).collect::<Vec<_>>();
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
@@ -403,7 +416,12 @@ pub async fn update_user(
 	};
 	UserBmc::update(&ctx, &mm, id, update).await?;
 	let entity: User = UserBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: user_view(entity) })))
+	Ok((
+		StatusCode::OK,
+		Json(DataRestResult {
+			data: user_view(entity),
+		}),
+	))
 }
 
 /// DELETE /api/users/:id
@@ -435,7 +453,12 @@ pub async fn get_current_user(
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
 	let entity: User = UserBmc::get(&ctx, &mm, ctx.user_id()).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: user_view(entity) })))
+	Ok((
+		StatusCode::OK,
+		Json(DataRestResult {
+			data: user_view(entity),
+		}),
+	))
 }
 
 pub async fn get_current_user_profile(
@@ -448,7 +471,10 @@ pub async fn get_current_user_profile(
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
-			data: CurrentUserProfileView { user: user_view(entity), routing },
+			data: CurrentUserProfileView {
+				user: user_view(entity),
+				routing,
+			},
 		}),
 	))
 }
@@ -456,7 +482,10 @@ pub async fn get_current_user_profile(
 pub async fn get_current_user_routing(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-) -> Result<(StatusCode, Json<DataRestResult<lib_rest_core::RoutingProfile>>)> {
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<lib_rest_core::RoutingProfile>>,
+)> {
 	let ctx = ctx_w.0;
 	let routing = routing_profile_for_user(&ctx, &mm).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: routing })))
@@ -466,7 +495,10 @@ pub async fn update_current_user_routing(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Json(params): Json<ParamsForUpdate<RoutingSelectionBody>>,
-) -> Result<(StatusCode, Json<DataRestResult<lib_rest_core::RoutingProfile>>)> {
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<lib_rest_core::RoutingProfile>>,
+)> {
 	let ctx = ctx_w.0;
 	let next_sender = validate_active_sender_selection(
 		&ctx,

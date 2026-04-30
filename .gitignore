@@ -47,6 +47,7 @@ out/
 *.page
 
 # Data Files
+data/
 *.db3
 *.parquet
 *.map
@@ -82,7 +83,7 @@ blob-report/
 .playwright/
 .playwright-cli/ 
 .cache/ms-playwright/
-output/playwright/home/
+output/playwright/
 
 # -- Python
 __pycache__/

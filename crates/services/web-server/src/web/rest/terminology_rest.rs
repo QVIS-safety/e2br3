@@ -11,9 +11,7 @@ use lib_core::model::terminology::{
 	E2bCodeList, E2bCodeListBmc, IsoCountry, IsoCountryBmc, MeddraTerm,
 	MeddraTermBmc, UcumUnit, UcumUnitBmc, WhodrugProduct, WhodrugProductBmc,
 };
-use lib_core::model::terminology_import::{
-	self, TerminologyReleaseRow,
-};
+use lib_core::model::terminology_import::{self, TerminologyReleaseRow};
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -95,7 +93,9 @@ fn require_system_admin(ctx: &Ctx) -> Result<()> {
 
 fn map_import_err(err: terminology_import::ImportError) -> Error {
 	match err {
-		terminology_import::ImportError::BadInput(msg) => Error::BadRequest { message: msg },
+		terminology_import::ImportError::BadInput(msg) => {
+			Error::BadRequest { message: msg }
+		}
 		terminology_import::ImportError::Store(msg) => {
 			Error::Model(lib_core::model::Error::Store(msg))
 		}
@@ -224,7 +224,8 @@ pub async fn import_meddra(
 	let language = params.language.unwrap_or_else(|| "en".to_string());
 
 	let bytes = read_upload_bytes(multipart).await?;
-	let rows = terminology_import::parse_meddra_upload(&bytes).map_err(map_import_err)?;
+	let rows =
+		terminology_import::parse_meddra_upload(&bytes).map_err(map_import_err)?;
 
 	if !params.dry_run {
 		let checksum = terminology_import::sha256_hex(&bytes);
@@ -274,7 +275,8 @@ pub async fn import_whodrug(
 	let language = params.language.unwrap_or_else(|| "en".to_string());
 
 	let bytes = read_upload_bytes(multipart).await?;
-	let rows = terminology_import::parse_whodrug_upload(&bytes).map_err(map_import_err)?;
+	let rows =
+		terminology_import::parse_whodrug_upload(&bytes).map_err(map_import_err)?;
 
 	if !params.dry_run {
 		let checksum = terminology_import::sha256_hex(&bytes);
@@ -343,7 +345,8 @@ pub async fn approve_release(
 	require_permission(&ctx, TERMINOLOGY_APPROVE)?;
 	require_system_admin(&ctx)?;
 	let language = params.language.unwrap_or_else(|| "en".to_string());
-	terminology_import::validate_dictionary(&path.dictionary).map_err(map_import_err)?;
+	terminology_import::validate_dictionary(&path.dictionary)
+		.map_err(map_import_err)?;
 
 	let data = terminology_import::approve_release(
 		&mm,

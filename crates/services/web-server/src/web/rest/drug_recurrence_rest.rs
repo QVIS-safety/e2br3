@@ -64,7 +64,8 @@ pub async fn list_drug_recurrences(
 		drug_id
 	);
 
-	let entities = DrugRecurrenceInformationBmc::list_by_drug(&ctx, &mm, drug_id).await?;
+	let entities =
+		DrugRecurrenceInformationBmc::list_by_drug(&ctx, &mm, drug_id).await?;
 
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }

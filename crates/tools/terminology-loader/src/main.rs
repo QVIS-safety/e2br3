@@ -1,4 +1,5 @@
 use clap::{Args, Parser, Subcommand};
+use lib_core::model::terminology_import::parse_whodrug_upload;
 use lib_core::model::ModelManager;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, QueryBuilder};
@@ -384,26 +385,18 @@ fn parse_whodrug(
 	if input.is_file()
 		&& input.extension().map(|e| e.eq_ignore_ascii_case("zip")) == Some(true)
 	{
-		let f = fs::File::open(input)?;
-		let mut zip = ZipArchive::new(f)?;
-		for idx in 0..zip.len() {
-			let mut entry = zip.by_index(idx)?;
-			if !entry.is_file() {
-				continue;
-			}
-			let name = entry.name().to_ascii_lowercase();
-			if !is_delimited_name(&name) {
-				continue;
-			}
-			let mut bytes = Vec::new();
-			entry.read_to_end(&mut bytes)?;
-			if let Ok(rows) = parse_whodrug_delimited(&bytes) {
-				if !rows.is_empty() {
-					return Ok(rows);
-				}
-			}
-		}
-		return Err("No parseable delimited WHODrug file found in zip".into());
+		let bytes = fs::read(input)?;
+		return parse_whodrug_upload(&bytes)
+			.map(|rows| {
+				rows.into_iter()
+					.map(|row| WhodrugRow {
+						code: row.code,
+						drug_name: row.drug_name,
+						atc_code: row.atc_code,
+					})
+					.collect()
+			})
+			.map_err(|err| err.into());
 	}
 
 	if input.is_dir() {
@@ -607,4 +600,88 @@ fn sha256_if_file(path: &Path) -> Option<String> {
 	let mut hasher = Sha256::new();
 	hasher.update(bytes);
 	Some(hex::encode(hasher.finalize()))
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use std::io::Write;
+	use std::sync::atomic::{AtomicU64, Ordering};
+	use zip::write::SimpleFileOptions;
+	use zip::{CompressionMethod, ZipWriter};
+
+	static ZIP_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+	#[test]
+	fn parse_whodrug_zip_supports_official_b3_rows() {
+		let zip_path = write_zip(&[
+			("DD.csv", "000001,01,001,6,N,,001,,01,,854,METHYLDOPA\n"),
+			("DDA.csv", "000001,01,001,6,C02AB,111,*\n"),
+		]);
+
+		let rows = parse_whodrug(&zip_path).expect("official B3 zip should parse");
+
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0].code, "000001-01-001");
+		assert_eq!(rows[0].drug_name, "METHYLDOPA");
+		assert_eq!(rows[0].atc_code.as_deref(), Some("C02AB"));
+		let _ = fs::remove_file(zip_path);
+	}
+
+	#[test]
+	fn parse_whodrug_zip_supports_official_c3_rows_without_atc_mapping() {
+		let zip_path = write_zip(&[
+			(
+				"MP.csv",
+				"1,,000001,01,001,0000000001,0000000001,Y,Methyldopa,,,,,N/A,,0,001,N/A,,001,19851231,20170907\n",
+			),
+			("ATC.csv", "C02AB,ANTIHYPERTENSIVES\n"),
+		]);
+
+		let rows = parse_whodrug(&zip_path).expect("official C3 zip should parse");
+
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0].code, "000001-01-001");
+		assert_eq!(rows[0].drug_name, "Methyldopa");
+		assert_eq!(rows[0].atc_code, None);
+		let _ = fs::remove_file(zip_path);
+	}
+
+	#[test]
+	fn parse_whodrug_zip_with_docs_dd_uses_generic_product_csv() {
+		let zip_path = write_zip(&[
+			("docs/DD.csv", "code,drug_name\nDOC,Documentation\n"),
+			(
+				"products.csv",
+				"drug_code,drug_name,atc_code\n000001-01-001,Methyldopa,C02AB\n",
+			),
+		]);
+
+		let rows =
+			parse_whodrug(&zip_path).expect("generic product CSV should parse");
+
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0].code, "000001-01-001");
+		assert_eq!(rows[0].drug_name, "Methyldopa");
+		assert_eq!(rows[0].atc_code.as_deref(), Some("C02AB"));
+		let _ = fs::remove_file(zip_path);
+	}
+
+	fn write_zip(entries: &[(&str, &str)]) -> PathBuf {
+		let path = std::env::temp_dir().join(format!(
+			"terminology-loader-test-{}-{}.zip",
+			std::process::id(),
+			ZIP_COUNTER.fetch_add(1, Ordering::Relaxed)
+		));
+		let file = fs::File::create(&path).unwrap();
+		let mut zip = ZipWriter::new(file);
+		let options = SimpleFileOptions::default()
+			.compression_method(CompressionMethod::Deflated);
+		for (name, content) in entries {
+			zip.start_file(name, options).unwrap();
+			zip.write_all(content.as_bytes()).unwrap();
+		}
+		zip.finish().unwrap();
+		path
+	}
 }

@@ -2539,6 +2539,49 @@
         ]
       }
     },
+    "/api/submissions/{id}/acks/{level}/download": {
+      "get": {
+        "tags": [
+          "submissions"
+        ],
+        "operationId": "download_submission_ack_text",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Submission ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "level",
+            "in": "path",
+            "description": "ACK level, 1 through 4",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Submission ACK text download",
+            "content": {
+              "text/plain": {}
+            }
+          }
+        },
+        "security": [
+          {
+            "auth_token": []
+          }
+        ]
+      }
+    },
     "/api/submissions/{id}/dispatch-state": {
       "get": {
         "tags": [

@@ -1,8 +1,8 @@
 use crate::xml::error::Error;
 use crate::xml::import_runtime::shared::{
-	clamp_str, first_attr, first_text, first_value,
-	first_value_root, normalize_code, normalize_code3,
-	normalize_sex_code, parse_bool_attr, parse_bool_value, parse_date,
+	clamp_str, first_attr, first_text, first_value, first_value_root,
+	normalize_code, normalize_code3, normalize_sex_code, parse_bool_attr,
+	parse_bool_value, parse_date,
 };
 use crate::xml::Result;
 use libxml::parser::Parser;
@@ -735,4 +735,3 @@ pub(crate) fn parse_parent_information(xml: &[u8]) -> Result<Option<ParentImport
 		past_drugs,
 	}))
 }
-

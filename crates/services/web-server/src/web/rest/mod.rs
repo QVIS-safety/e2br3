@@ -693,6 +693,10 @@ pub fn routes_submissions(mm: ModelManager) -> Router {
 			get(submission_rest::list_submission_event_history),
 		)
 		.route(
+			"/submissions/{id}/acks/{level}/download",
+			get(submission_rest::download_submission_ack_text),
+		)
+		.route(
 			"/submissions/{id}/dispatch-state",
 			get(submission_rest::get_submission_dispatch_state_view),
 		)

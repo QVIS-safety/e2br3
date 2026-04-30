@@ -59,6 +59,51 @@ pub struct WhodrugRow {
 	pub atc_code: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy)]
+struct WhodrugPositionalFormat {
+	source_name: &'static str,
+	basename: &'static str,
+	min_columns: usize,
+	code_1_idx: usize,
+	code_2_idx: usize,
+	code_3_idx: usize,
+	name_idx: Option<usize>,
+	atc_idx: Option<usize>,
+}
+
+const WHODRUG_B3_DD: WhodrugPositionalFormat = WhodrugPositionalFormat {
+	source_name: "B3 DD.csv",
+	basename: "dd.csv",
+	min_columns: 12,
+	code_1_idx: 0,
+	code_2_idx: 1,
+	code_3_idx: 2,
+	name_idx: Some(11),
+	atc_idx: None,
+};
+
+const WHODRUG_B3_DDA: WhodrugPositionalFormat = WhodrugPositionalFormat {
+	source_name: "B3 DDA.csv",
+	basename: "dda.csv",
+	min_columns: 5,
+	code_1_idx: 0,
+	code_2_idx: 1,
+	code_3_idx: 2,
+	name_idx: None,
+	atc_idx: Some(4),
+};
+
+const WHODRUG_C3_MP: WhodrugPositionalFormat = WhodrugPositionalFormat {
+	source_name: "C3 MP.csv",
+	basename: "mp.csv",
+	min_columns: 22,
+	code_1_idx: 2,
+	code_2_idx: 3,
+	code_3_idx: 4,
+	name_idx: Some(8),
+	atc_idx: None,
+};
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct TerminologyReleaseRow {
 	pub id: i64,
@@ -95,8 +140,8 @@ pub fn validate_dictionary(dictionary: &str) -> Result<()> {
 }
 
 pub fn parse_meddra_upload(bytes: &[u8]) -> Result<Vec<MeddraRow>> {
-	let mut zip =
-		ZipArchive::new(Cursor::new(bytes)).map_err(|e| bad_input(format!("invalid MedDRA zip: {e}")))?;
+	let mut zip = ZipArchive::new(Cursor::new(bytes))
+		.map_err(|e| bad_input(format!("invalid MedDRA zip: {e}")))?;
 
 	let llt = read_zip_file_case_insensitive(&mut zip, "llt.asc")?;
 	let mdhier = read_zip_file_case_insensitive(&mut zip, "mdhier.asc")?;
@@ -143,27 +188,183 @@ pub fn parse_meddra_upload(bytes: &[u8]) -> Result<Vec<MeddraRow>> {
 
 pub fn parse_whodrug_upload(bytes: &[u8]) -> Result<Vec<WhodrugRow>> {
 	if let Ok(mut zip) = ZipArchive::new(Cursor::new(bytes)) {
+		let mut entries = Vec::new();
 		for idx in 0..zip.len() {
-			let mut entry = zip.by_index(idx).map_err(|e| bad_input(format!("whodrug zip read error: {e}")))?;
+			let mut entry = zip
+				.by_index(idx)
+				.map_err(|e| bad_input(format!("whodrug zip read error: {e}")))?;
 			if !entry.is_file() {
 				continue;
 			}
-			let name = entry.name().to_ascii_lowercase();
-			if !is_delimited_name(&name) {
+			let name = entry.name().to_string();
+			if !is_delimited_name(&name.to_ascii_lowercase()) {
 				continue;
 			}
 			let mut entry_bytes = Vec::new();
-			entry.read_to_end(&mut entry_bytes).map_err(|e| bad_input(format!("whodrug zip file read error: {e}")))?;
-			if let Ok(rows) = parse_whodrug_delimited(&entry_bytes) {
+			entry.read_to_end(&mut entry_bytes).map_err(|e| {
+				bad_input(format!("whodrug zip file read error: {e}"))
+			})?;
+			entries.push((name, entry_bytes));
+		}
+
+		if has_official_signature(&entries, WHODRUG_B3_DD)? {
+			return parse_whodrug_b3_zip_entries(&entries);
+		}
+		if has_official_signature(&entries, WHODRUG_C3_MP)? {
+			return parse_whodrug_c3_zip_entries(&entries);
+		}
+
+		for (name, entry_bytes) in &entries {
+			if is_whodrug_zip_metadata_or_doc(name) {
+				continue;
+			}
+			if let Ok(rows) = parse_whodrug_delimited(entry_bytes) {
 				if !rows.is_empty() {
 					return Ok(rows);
 				}
 			}
 		}
-		return Err(bad_input("No parseable WHODrug delimited file in uploaded zip"));
+		return Err(bad_input(
+			"No supported WHODrug file found in uploaded zip; expected official B3 DD.csv, official C3 MP.csv, or a headered product CSV",
+		));
 	}
 
 	parse_whodrug_delimited(bytes)
+}
+
+fn parse_whodrug_b3_zip_entries(
+	entries: &[(String, Vec<u8>)],
+) -> Result<Vec<WhodrugRow>> {
+	let dd = official_zip_entry_by_basename(entries, WHODRUG_B3_DD.basename)
+		.ok_or_else(|| bad_input("Missing official WHODrug B3 DD.csv"))?;
+	let atc_by_code =
+		official_zip_entry_by_basename(entries, WHODRUG_B3_DDA.basename)
+			.map(|bytes| parse_whodrug_positional_atc(bytes, WHODRUG_B3_DDA))
+			.transpose()?
+			.unwrap_or_default();
+
+	parse_whodrug_positional_products(dd, WHODRUG_B3_DD, &atc_by_code)
+}
+
+fn parse_whodrug_c3_zip_entries(
+	entries: &[(String, Vec<u8>)],
+) -> Result<Vec<WhodrugRow>> {
+	let mp = official_zip_entry_by_basename(entries, WHODRUG_C3_MP.basename)
+		.ok_or_else(|| bad_input("Missing official WHODrug C3 MP.csv"))?;
+	let atc_by_code = BTreeMap::new();
+
+	parse_whodrug_positional_products(mp, WHODRUG_C3_MP, &atc_by_code)
+}
+
+fn parse_whodrug_positional_products(
+	bytes: &[u8],
+	format: WhodrugPositionalFormat,
+	atc_by_code: &BTreeMap<String, String>,
+) -> Result<Vec<WhodrugRow>> {
+	let name_idx = format.name_idx.ok_or_else(|| {
+		bad_input(format!("{} has no product name column", format.source_name))
+	})?;
+	let mut rdr = ReaderBuilder::new()
+		.has_headers(false)
+		.flexible(true)
+		.from_reader(Cursor::new(bytes));
+	let mut rows = Vec::new();
+	let mut seen = HashSet::new();
+
+	for (idx, rec) in rdr.records().enumerate() {
+		let rec = rec.map_err(|e| {
+			bad_input(format!(
+				"whodrug {} row parse error: {e}",
+				format.source_name
+			))
+		})?;
+		let row_number = idx + 1;
+		if is_blank_record(&rec) {
+			continue;
+		}
+		validate_positional_row(&rec, format, row_number)?;
+		let code = whodrug_joined_code(
+			&rec,
+			format.code_1_idx,
+			format.code_2_idx,
+			format.code_3_idx,
+		)
+		.ok_or_else(|| {
+			bad_input(format!(
+				"{} row {row_number} is missing WHODrug code segments",
+				format.source_name
+			))
+		})?;
+		let drug_name = rec.get(name_idx).unwrap_or("").trim();
+		if drug_name.is_empty() {
+			return Err(bad_input(format!(
+				"{} row {row_number} is missing drug name",
+				format.source_name
+			)));
+		}
+		if seen.insert(code.clone()) {
+			rows.push(WhodrugRow {
+				atc_code: atc_by_code.get(&code).cloned(),
+				code,
+				drug_name: drug_name.to_string(),
+			});
+		}
+	}
+
+	if rows.is_empty() {
+		return Err(bad_input(format!(
+			"No WHODrug rows parsed from {}",
+			format.source_name
+		)));
+	}
+
+	Ok(rows)
+}
+
+fn parse_whodrug_positional_atc(
+	bytes: &[u8],
+	format: WhodrugPositionalFormat,
+) -> Result<BTreeMap<String, String>> {
+	let atc_idx = format.atc_idx.ok_or_else(|| {
+		bad_input(format!("{} has no ATC column", format.source_name))
+	})?;
+	let mut rdr = ReaderBuilder::new()
+		.has_headers(false)
+		.flexible(true)
+		.from_reader(Cursor::new(bytes));
+	let mut by_code = BTreeMap::new();
+
+	for (idx, rec) in rdr.records().enumerate() {
+		let rec = rec.map_err(|e| {
+			bad_input(format!(
+				"whodrug {} row parse error: {e}",
+				format.source_name
+			))
+		})?;
+		let row_number = idx + 1;
+		if is_blank_record(&rec) {
+			continue;
+		}
+		validate_positional_row(&rec, format, row_number)?;
+		let code = whodrug_joined_code(
+			&rec,
+			format.code_1_idx,
+			format.code_2_idx,
+			format.code_3_idx,
+		)
+		.ok_or_else(|| {
+			bad_input(format!(
+				"{} row {row_number} is missing WHODrug code segments",
+				format.source_name
+			))
+		})?;
+		let atc = rec.get(atc_idx).unwrap_or("").trim();
+		if !atc.is_empty() {
+			by_code.entry(code).or_insert_with(|| atc.to_string());
+		}
+	}
+
+	Ok(by_code)
 }
 
 fn parse_whodrug_delimited(bytes: &[u8]) -> Result<Vec<WhodrugRow>> {
@@ -204,7 +405,8 @@ fn parse_whodrug_delimited(bytes: &[u8]) -> Result<Vec<WhodrugRow>> {
 	let mut seen = HashSet::new();
 
 	for rec in rdr.records() {
-		let rec = rec.map_err(|e| bad_input(format!("whodrug row parse error: {e}")))?;
+		let rec =
+			rec.map_err(|e| bad_input(format!("whodrug row parse error: {e}")))?;
 		let code = rec.get(code_idx).unwrap_or("").trim();
 		let drug_name = rec.get(name_idx).unwrap_or("").trim();
 		if code.is_empty() || drug_name.is_empty() {
@@ -249,14 +451,32 @@ pub async fn stage_meddra_rows(
 	let run_result = async {
 		set_full_context(dbx, uploader_id, organization_id, role).await?;
 		upsert_release_header(
-			mm, "meddra", version, language, "loading", "upload",
-			Some(checksum), rows.len() as i64, Some(uploader_id), None, None,
+			mm,
+			"meddra",
+			version,
+			language,
+			"loading",
+			"upload",
+			Some(checksum),
+			rows.len() as i64,
+			Some(uploader_id),
+			None,
+			None,
 		)
 		.await?;
 		upsert_meddra_rows(mm, rows, version, language, false).await?;
 		upsert_release_header(
-			mm, "meddra", version, language, "validated", "upload",
-			Some(checksum), rows.len() as i64, Some(uploader_id), None, None,
+			mm,
+			"meddra",
+			version,
+			language,
+			"validated",
+			"upload",
+			Some(checksum),
+			rows.len() as i64,
+			Some(uploader_id),
+			None,
+			None,
 		)
 		.await?;
 		Ok::<(), ImportError>(())
@@ -281,14 +501,32 @@ pub async fn stage_whodrug_rows(
 	let run_result = async {
 		set_full_context(dbx, uploader_id, organization_id, role).await?;
 		upsert_release_header(
-			mm, "whodrug", version, language, "loading", "upload",
-			Some(checksum), rows.len() as i64, Some(uploader_id), None, None,
+			mm,
+			"whodrug",
+			version,
+			language,
+			"loading",
+			"upload",
+			Some(checksum),
+			rows.len() as i64,
+			Some(uploader_id),
+			None,
+			None,
 		)
 		.await?;
 		upsert_whodrug_rows(mm, rows, version, language, false).await?;
 		upsert_release_header(
-			mm, "whodrug", version, language, "validated", "upload",
-			Some(checksum), rows.len() as i64, Some(uploader_id), None, None,
+			mm,
+			"whodrug",
+			version,
+			language,
+			"validated",
+			"upload",
+			Some(checksum),
+			rows.len() as i64,
+			Some(uploader_id),
+			None,
+			None,
 		)
 		.await?;
 		Ok::<(), ImportError>(())
@@ -670,7 +908,9 @@ fn read_zip_file_case_insensitive(
 ) -> Result<String> {
 	let target_name = target_name.to_ascii_lowercase();
 	for i in 0..zip.len() {
-		let mut file = zip.by_index(i).map_err(|e| bad_input(format!("zip read error: {e}")))?;
+		let mut file = zip
+			.by_index(i)
+			.map_err(|e| bad_input(format!("zip read error: {e}")))?;
 		if !file.is_file() {
 			continue;
 		}
@@ -682,7 +922,9 @@ fn read_zip_file_case_insensitive(
 			return Ok(String::from_utf8_lossy(&bytes).into_owned());
 		}
 	}
-	Err(bad_input(format!("missing required file in zip: {target_name}")))
+	Err(bad_input(format!(
+		"missing required file in zip: {target_name}"
+	)))
 }
 
 fn insert_term(
@@ -736,4 +978,322 @@ fn normalize_header(value: &str) -> String {
 
 fn is_delimited_name(name: &str) -> bool {
 	name.ends_with(".csv") || name.ends_with(".tsv") || name.ends_with(".txt")
+}
+
+fn has_official_signature(
+	entries: &[(String, Vec<u8>)],
+	format: WhodrugPositionalFormat,
+) -> Result<bool> {
+	let Some(bytes) = official_zip_entry_by_basename(entries, format.basename)
+	else {
+		return Ok(false);
+	};
+	let Some((row_number, rec)) = first_non_blank_record(bytes, format.source_name)?
+	else {
+		return Ok(false);
+	};
+	if rec.len() < format.min_columns {
+		return Ok(false);
+	}
+	Ok(looks_like_positional_whodrug_row(&rec, format, row_number).is_ok())
+}
+
+fn official_zip_entry_by_basename<'a>(
+	entries: &'a [(String, Vec<u8>)],
+	basename: &str,
+) -> Option<&'a [u8]> {
+	entries
+		.iter()
+		.find(|(name, _)| {
+			!is_whodrug_zip_metadata_or_doc(name)
+				&& zip_basename(name).eq_ignore_ascii_case(basename)
+		})
+		.map(|(_, bytes)| bytes.as_slice())
+}
+
+fn zip_basename(name: &str) -> &str {
+	name.rsplit('/').next().unwrap_or(name)
+}
+
+fn is_whodrug_zip_metadata_or_doc(name: &str) -> bool {
+	let lower_name = name.to_ascii_lowercase();
+	let basename = zip_basename(&lower_name);
+	matches!(
+		basename,
+		"version.csv" | "readme.csv" | "readme.txt" | "license.csv" | "license.txt"
+	) || lower_name.split('/').any(|part| {
+		matches!(
+			part,
+			"doc" | "docs" | "documentation" | "manual" | "manuals"
+		)
+	})
+}
+
+fn whodrug_joined_code(
+	rec: &csv::StringRecord,
+	code_1_idx: usize,
+	code_2_idx: usize,
+	code_3_idx: usize,
+) -> Option<String> {
+	let code_1 = rec.get(code_1_idx)?.trim();
+	let code_2 = rec.get(code_2_idx)?.trim();
+	let code_3 = rec.get(code_3_idx)?.trim();
+	if code_1.is_empty() || code_2.is_empty() || code_3.is_empty() {
+		return None;
+	}
+	Some(format!("{code_1}-{code_2}-{code_3}"))
+}
+
+fn first_non_blank_record(
+	bytes: &[u8],
+	source_name: &str,
+) -> Result<Option<(usize, csv::StringRecord)>> {
+	let mut rdr = ReaderBuilder::new()
+		.has_headers(false)
+		.flexible(true)
+		.from_reader(Cursor::new(bytes));
+	for (idx, rec) in rdr.records().enumerate() {
+		let rec = rec.map_err(|e| {
+			bad_input(format!("whodrug {source_name} row parse error: {e}"))
+		})?;
+		if !is_blank_record(&rec) {
+			return Ok(Some((idx + 1, rec)));
+		}
+	}
+	Ok(None)
+}
+
+fn validate_positional_row(
+	rec: &csv::StringRecord,
+	format: WhodrugPositionalFormat,
+	row_number: usize,
+) -> Result<()> {
+	if rec.len() < format.min_columns {
+		return Err(bad_input(format!(
+			"{} row {row_number} has {} columns; expected at least {}",
+			format.source_name,
+			rec.len(),
+			format.min_columns
+		)));
+	}
+	looks_like_positional_whodrug_row(rec, format, row_number)
+}
+
+fn looks_like_positional_whodrug_row(
+	rec: &csv::StringRecord,
+	format: WhodrugPositionalFormat,
+	row_number: usize,
+) -> Result<()> {
+	let code_1 = rec.get(format.code_1_idx).unwrap_or("").trim();
+	let code_2 = rec.get(format.code_2_idx).unwrap_or("").trim();
+	let code_3 = rec.get(format.code_3_idx).unwrap_or("").trim();
+	if !is_digits(code_1) || !is_digits(code_2) || !is_digits(code_3) {
+		return Err(bad_input(format!(
+			"{} row {row_number} does not look like a positional WHODrug row",
+			format.source_name
+		)));
+	}
+	Ok(())
+}
+
+fn is_blank_record(rec: &csv::StringRecord) -> bool {
+	rec.iter().all(|field| field.trim().is_empty())
+}
+
+fn is_digits(value: &str) -> bool {
+	!value.is_empty() && value.bytes().all(|b| b.is_ascii_digit())
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use std::io::Write;
+	use zip::write::SimpleFileOptions;
+	use zip::{CompressionMethod, ZipWriter};
+
+	#[test]
+	fn parse_whodrug_official_b3_zip_uses_dd_and_dda_rows() {
+		let zip = make_zip(&[
+			("b3/DD.csv", "000001,01,001,6,N,,001,,01,,854,METHYLDOPA\n"),
+			("b3/DDA.csv", "000001,01,001,6,C02AB,111,*\n"),
+		]);
+
+		let rows =
+			parse_whodrug_upload(&zip).expect("official B3 rows should parse");
+
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0].code, "000001-01-001");
+		assert_eq!(rows[0].drug_name, "METHYLDOPA");
+		assert_eq!(rows[0].atc_code.as_deref(), Some("C02AB"));
+	}
+
+	#[test]
+	fn parse_whodrug_official_c3_zip_uses_mp_rows_without_unproven_atc_mapping() {
+		let zip = make_zip(&[
+			(
+				"c3/MP.csv",
+				"1,,000001,01,001,0000000001,0000000001,Y,Methyldopa,,,,,N/A,,0,001,N/A,,001,19851231,20170907\n",
+			),
+			("c3/ATC.csv", "C02AB,ANTIHYPERTENSIVES\n"),
+		]);
+
+		let rows =
+			parse_whodrug_upload(&zip).expect("official C3 rows should parse");
+
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0].code, "000001-01-001");
+		assert_eq!(rows[0].drug_name, "Methyldopa");
+		assert_eq!(rows[0].atc_code, None);
+	}
+
+	#[test]
+	fn parse_whodrug_generic_headered_csv_still_parses() {
+		let rows = parse_whodrug_upload(
+			b"drug_code,drug_name,atc_code\n000001-01-001,Methyldopa,C02AB\n",
+		)
+		.expect("generic headered WHODrug csv should parse");
+
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0].code, "000001-01-001");
+		assert_eq!(rows[0].drug_name, "Methyldopa");
+		assert_eq!(rows[0].atc_code.as_deref(), Some("C02AB"));
+	}
+
+	#[test]
+	fn parse_whodrug_zip_with_docs_dd_uses_generic_product_csv() {
+		let zip = make_zip(&[
+			("docs/DD.csv", "code,drug_name\nDOC,Documentation\n"),
+			(
+				"products.csv",
+				"drug_code,drug_name,atc_code\n000001-01-001,Methyldopa,C02AB\n",
+			),
+		]);
+
+		let rows =
+			parse_whodrug_upload(&zip).expect("generic product CSV should parse");
+
+		assert_eq!(rows.len(), 1);
+		assert_eq!(rows[0].code, "000001-01-001");
+		assert_eq!(rows[0].drug_name, "Methyldopa");
+		assert_eq!(rows[0].atc_code.as_deref(), Some("C02AB"));
+	}
+
+	#[test]
+	fn parse_whodrug_official_b3_zip_rejects_truncated_dd_rows() {
+		let zip = make_zip(&[(
+			"DD.csv",
+			"000001,01,001,6,N,,001,,01,,854,METHYLDOPA\n000002,01,001\n",
+		)]);
+
+		let err =
+			parse_whodrug_upload(&zip).expect_err("truncated B3 DD row should fail");
+
+		assert_bad_input_contains(err, "B3 DD.csv row 2");
+	}
+
+	#[test]
+	fn parse_whodrug_root_malformed_dd_fails_before_generic_fallback() {
+		let zip = make_zip(&[
+			("DD.csv", "000001,01,001\n"),
+			(
+				"products.csv",
+				"drug_code,drug_name,atc_code\n000001-01-001,Methyldopa,C02AB\n",
+			),
+		]);
+
+		let err = parse_whodrug_upload(&zip)
+			.expect_err("malformed root DD.csv should fail as official B3");
+
+		assert_bad_input_contains(err, "B3 DD.csv row 1");
+	}
+
+	#[test]
+	fn parse_whodrug_official_b3_zip_rejects_truncated_dda_rows() {
+		let zip = make_zip(&[
+			("DD.csv", "000001,01,001,6,N,,001,,01,,854,METHYLDOPA\n"),
+			("DDA.csv", "000001,01,001,6,C02AB,111,*\n000001,01\n"),
+		]);
+
+		let err = parse_whodrug_upload(&zip)
+			.expect_err("truncated B3 DDA row should fail");
+
+		assert_bad_input_contains(err, "B3 DDA.csv row 2");
+	}
+
+	#[test]
+	fn parse_whodrug_official_c3_zip_rejects_truncated_mp_rows() {
+		let zip = make_zip(&[(
+			"MP.csv",
+			"1,,000001,01,001,0000000001,0000000001,Y,Methyldopa,,,,,N/A,,0,001,N/A,,001,19851231,20170907\n1,,000002\n",
+		)]);
+
+		let err =
+			parse_whodrug_upload(&zip).expect_err("truncated C3 MP row should fail");
+
+		assert_bad_input_contains(err, "C3 MP.csv row 2");
+	}
+
+	#[test]
+	fn parse_whodrug_root_malformed_mp_fails_before_generic_fallback() {
+		let zip = make_zip(&[
+			("MP.csv", "1,,000001\n"),
+			(
+				"products.csv",
+				"drug_code,drug_name,atc_code\n000001-01-001,Methyldopa,C02AB\n",
+			),
+		]);
+
+		let err = parse_whodrug_upload(&zip)
+			.expect_err("malformed root MP.csv should fail as official C3");
+
+		assert_bad_input_contains(err, "C3 MP.csv row 1");
+	}
+
+	#[test]
+	fn parse_whodrug_unsupported_zip_ignores_metadata_and_fails_clearly() {
+		let zip = make_zip(&[
+			("Version.csv", "code,drug_name\n2025.09,Not a product row\n"),
+			("docs/readme.csv", "code,drug_name\nDOC,Documentation\n"),
+		]);
+
+		let err =
+			parse_whodrug_upload(&zip).expect_err("metadata-only zip should fail");
+
+		match err {
+			ImportError::BadInput(msg) => {
+				assert!(
+					msg.contains("supported WHODrug"),
+					"unexpected error message: {msg}"
+				);
+			}
+			other => panic!("unexpected error: {other}"),
+		}
+	}
+
+	fn make_zip(entries: &[(&str, &str)]) -> Vec<u8> {
+		let mut cursor = Cursor::new(Vec::<u8>::new());
+		{
+			let mut zip = ZipWriter::new(&mut cursor);
+			let options = SimpleFileOptions::default()
+				.compression_method(CompressionMethod::Deflated);
+			for (name, content) in entries {
+				zip.start_file(name, options).unwrap();
+				zip.write_all(content.as_bytes()).unwrap();
+			}
+			zip.finish().unwrap();
+		}
+		cursor.into_inner()
+	}
+
+	fn assert_bad_input_contains(err: ImportError, expected: &str) {
+		match err {
+			ImportError::BadInput(msg) => {
+				assert!(
+					msg.contains(expected),
+					"expected error to contain {expected:?}, got {msg:?}"
+				);
+			}
+			other => panic!("unexpected error: {other}"),
+		}
+	}
 }

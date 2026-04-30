@@ -103,6 +103,7 @@ pub fn router() -> Router {
 		list_all_submission_history,
 		get_case_submission,
 		list_submission_event_history,
+		download_submission_ack_text,
 		get_submission_dispatch_state_view,
 		post_mock_ack,
 		post_gateway_ack_callback,
@@ -2704,6 +2705,21 @@ fn get_case_submission() {}
 	responses((status = 200, description = "Submission event history", body = SubmissionEventListResponse))
 )]
 fn list_submission_event_history() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/submissions/{id}/acks/{level}/download",
+	tag = "submissions",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("id" = String, Path, description = "Submission ID"),
+		("level" = u8, Path, description = "ACK level, 1 through 4")
+	),
+	responses((status = 200, description = "Submission ACK text download", content_type = "text/plain"))
+)]
+fn download_submission_ack_text() {}
 
 #[utoipa::path(
 	get,
