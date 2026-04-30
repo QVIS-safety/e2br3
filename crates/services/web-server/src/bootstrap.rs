@@ -153,3 +153,33 @@ async fn org_exists(mm: &ModelManager, org_id: Uuid) -> ModelResult<bool> {
 fn dbx_into_web<E: core::fmt::Display>(err: E) -> crate::Error {
 	crate::Error::Config(err.to_string())
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use lib_core::_dev_utils;
+	use serial_test::serial;
+
+	async fn init_bootstrap_test_mm() -> ModelManager {
+		std::env::set_var(
+			"SERVICE_DB_URL",
+			"postgres://app_user:dev_only_pwd@localhost/app_db",
+		);
+		std::env::set_var("SERVICE_WEB_FOLDER", "web-folder");
+		std::env::set_var("SERVICE_PWD_KEY", "ZmFrZV9rZXk");
+		std::env::set_var("SERVICE_TOKEN_KEY", "ZmFrZV9rZXk");
+		std::env::set_var("SERVICE_TOKEN_DURATION_SEC", "3600");
+		_dev_utils::init_dev().await;
+		ModelManager::new().await.expect("test model manager")
+	}
+
+	#[tokio::test]
+	#[serial]
+	async fn bootstrap_admin_user_is_idempotent_when_demo_user_exists() {
+		let mm = init_bootstrap_test_mm().await;
+
+		bootstrap_admin_user(&mm)
+			.await
+			.expect("bootstrap should sync an existing demo user");
+	}
+}
