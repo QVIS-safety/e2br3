@@ -984,18 +984,7 @@ fn has_official_signature(
 	entries: &[(String, Vec<u8>)],
 	format: WhodrugPositionalFormat,
 ) -> Result<bool> {
-	let Some(bytes) = official_zip_entry_by_basename(entries, format.basename)
-	else {
-		return Ok(false);
-	};
-	let Some((row_number, rec)) = first_non_blank_record(bytes, format.source_name)?
-	else {
-		return Ok(false);
-	};
-	if rec.len() < format.min_columns {
-		return Ok(false);
-	}
-	Ok(looks_like_positional_whodrug_row(&rec, format, row_number).is_ok())
+	Ok(official_zip_entry_by_basename(entries, format.basename).is_some())
 }
 
 fn official_zip_entry_by_basename<'a>(
@@ -1044,25 +1033,6 @@ fn whodrug_joined_code(
 	Some(format!("{code_1}-{code_2}-{code_3}"))
 }
 
-fn first_non_blank_record(
-	bytes: &[u8],
-	source_name: &str,
-) -> Result<Option<(usize, csv::StringRecord)>> {
-	let mut rdr = ReaderBuilder::new()
-		.has_headers(false)
-		.flexible(true)
-		.from_reader(Cursor::new(bytes));
-	for (idx, rec) in rdr.records().enumerate() {
-		let rec = rec.map_err(|e| {
-			bad_input(format!("whodrug {source_name} row parse error: {e}"))
-		})?;
-		if !is_blank_record(&rec) {
-			return Ok(Some((idx + 1, rec)));
-		}
-	}
-	Ok(None)
-}
-
 fn validate_positional_row(
 	rec: &csv::StringRecord,
 	format: WhodrugPositionalFormat,
@@ -1087,7 +1057,7 @@ fn looks_like_positional_whodrug_row(
 	let code_1 = rec.get(format.code_1_idx).unwrap_or("").trim();
 	let code_2 = rec.get(format.code_2_idx).unwrap_or("").trim();
 	let code_3 = rec.get(format.code_3_idx).unwrap_or("").trim();
-	if !is_digits(code_1) || !is_digits(code_2) || !is_digits(code_3) {
+	if !is_digits(code_1) || !is_code_segment(code_2) || !is_code_segment(code_3) {
 		return Err(bad_input(format!(
 			"{} row {row_number} does not look like a positional WHODrug row",
 			format.source_name
@@ -1102,6 +1072,10 @@ fn is_blank_record(rec: &csv::StringRecord) -> bool {
 
 fn is_digits(value: &str) -> bool {
 	!value.is_empty() && value.bytes().all(|b| b.is_ascii_digit())
+}
+
+fn is_code_segment(value: &str) -> bool {
+	!value.is_empty() && value.bytes().all(|b| b.is_ascii_alphanumeric())
 }
 
 #[cfg(test)]
@@ -1125,6 +1099,31 @@ mod tests {
 		assert_eq!(rows[0].code, "000001-01-001");
 		assert_eq!(rows[0].drug_name, "METHYLDOPA");
 		assert_eq!(rows[0].atc_code.as_deref(), Some("C02AB"));
+	}
+
+	#[test]
+	fn parse_whodrug_official_b3_zip_accepts_alphanumeric_sequence_codes() {
+		let zip = make_zip(&[
+			(
+				"DD.csv",
+				"152686,A0,001,6,N,,001,,01,,854,EXAMPLE PRODUCT\n000027,01,A00,6,T,25,371,,01,,143,HJERTEMAGNYL [ACETYLSALICYLIC ACID]\n",
+			),
+			("DDA.csv", "152686,A0,001,6,J07BN,231,*\n"),
+		]);
+
+		let rows =
+			parse_whodrug_upload(&zip).expect("official B3 alphanumeric sequence should parse");
+
+		assert_eq!(rows.len(), 2);
+		assert_eq!(rows[0].code, "152686-A0-001");
+		assert_eq!(rows[0].drug_name, "EXAMPLE PRODUCT");
+		assert_eq!(rows[0].atc_code.as_deref(), Some("J07BN"));
+		assert_eq!(rows[1].code, "000027-01-A00");
+		assert_eq!(
+			rows[1].drug_name,
+			"HJERTEMAGNYL [ACETYLSALICYLIC ACID]"
+		);
+		assert_eq!(rows[1].atc_code, None);
 	}
 
 	#[test]
