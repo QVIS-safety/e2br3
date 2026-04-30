@@ -59,7 +59,7 @@ These are the remaining implementation gaps found by rereading `03.csv`. Items t
 - [ ] Sender default semantics and sender-based authorization/source-of-truth finalization.
 - [ ] Study/Product master-data semantics, multi-select behavior, MFDS/FDA regional fields, and automatic mapping to CASE if required.
 - [ ] Export/submission receiver separation, receiver routing enforcement, graceful export error history, submission history details, search/filtering, and Excel line-list export.
-- [ ] Import history timestamp bug where `Import Date/Time` can show `Invalid date`.
+- [x] Import history timestamp bug where `Import Date/Time` can show `Invalid date`. Backend import history emits readable/RFC3339 `uploadedAt` values, and the frontend import history table now falls back to `—` for malformed timestamps, covered by `test_import_history_uploaded_at_is_rfc3339` and `import-history.date-format`.
 - [ ] Admin/User UAT: `Role Setting` vs `Role & Privilege`, workflow UX, user deletion, one-admin rule if required, large-list scope picker, user table filters, `Access Window`, and organization screen removal.
 
 ## P0 Platform, Access, and Naming
