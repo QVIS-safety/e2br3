@@ -307,7 +307,7 @@ Implemented notes:
 ### User List and Organization
 
 - [x] Add table-header filtering to the user list. Frontend admin Users table now includes User, Role, and Organization header-cell filters wired to the existing users API filter state, covered by `admin-users.header-filters`.
-- [ ] Clarify the meaning of `Access Window`.
+- [x] Clarify the meaning of `Access Window`. Frontend admin Users table now labels it as active start/end dates, covered by `admin-users.header-filters`.
 - [ ] Remove any remaining standalone Organization management screen if sender-based organization management is now the intended model.
 - [ ] Recheck user create/edit/delete end-to-end after role reassignment, sender/product/study scope changes, blind flag changes, and start/end date entry.
 
