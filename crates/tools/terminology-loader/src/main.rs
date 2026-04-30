@@ -173,10 +173,7 @@ async fn load_whodrug(
 	let checksum = sha256_if_file(&args.input);
 	let source_path = args.input.to_string_lossy().to_string();
 
-	mm.dbx().begin_txn().await?;
-	let run_result = async {
-		set_loader_context(mm).await?;
-
+	with_loader_txn(mm, || async {
 		upsert_release_header(
 			mm,
 			"whodrug",
@@ -187,8 +184,19 @@ async fn load_whodrug(
 			checksum.as_deref(),
 			rows.len() as i64,
 		)
-		.await?;
+		.await
+	})
+	.await?;
 
+	for chunk in rows.chunks(1000) {
+		with_loader_txn(mm, || async {
+			upsert_whodrug_rows(mm, chunk, &args.version, &args.language, false)
+				.await
+		})
+		.await?;
+	}
+
+	with_loader_txn(mm, || async {
 		mm.dbx()
 			.execute(
 				sqlx::query(
@@ -198,7 +206,15 @@ async fn load_whodrug(
 			)
 			.await?;
 
-		upsert_whodrug_rows(mm, &rows, &args.version, &args.language).await?;
+		mm.dbx()
+			.execute(
+				sqlx::query(
+					"UPDATE whodrug_products SET active = true WHERE version = $1 AND language = $2",
+				)
+				.bind(&args.version)
+				.bind(&args.language),
+			)
+			.await?;
 
 		upsert_release_header(
 			mm,
@@ -225,6 +241,25 @@ async fn load_whodrug(
 			.await?;
 
 		Ok::<(), Box<dyn std::error::Error>>(())
+	})
+	.await?;
+
+	println!("Whodrug load committed successfully.");
+	Ok(())
+}
+
+async fn with_loader_txn<F, Fut>(
+	mm: &ModelManager,
+	run: F,
+) -> Result<(), Box<dyn std::error::Error>>
+where
+	F: FnOnce() -> Fut,
+	Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
+{
+	mm.dbx().begin_txn().await?;
+	let run_result = async {
+		set_loader_context(mm).await?;
+		run().await
 	}
 	.await;
 
@@ -327,6 +362,7 @@ async fn upsert_whodrug_rows(
 	rows: &[WhodrugRow],
 	version: &str,
 	language: &str,
+	active: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
 	const BATCH: usize = 1000;
 	for chunk in rows.chunks(BATCH) {
@@ -339,7 +375,7 @@ async fn upsert_whodrug_rows(
 				.push_bind(&row.atc_code)
 				.push_bind(version)
 				.push_bind(language)
-				.push_bind(true);
+				.push_bind(active);
 		});
 		qb.push(
 			" ON CONFLICT (code, version, language)
@@ -359,7 +395,7 @@ fn parse_meddra(input: &Path) -> Result<Vec<MeddraRow>, Box<dyn std::error::Erro
 	let mdhier = read_named_file(input, "mdhier.asc")?
 		.ok_or_else(|| "Could not find mdhier.asc in input path".to_string())?;
 
-	let mut dedup: BTreeMap<(String, String), String> = BTreeMap::new();
+	let mut dedup: BTreeMap<String, MeddraRow> = BTreeMap::new();
 
 	for line in llt.lines() {
 		let cols: Vec<&str> = line.split('$').collect();
@@ -371,9 +407,7 @@ fn parse_meddra(input: &Path) -> Result<Vec<MeddraRow>, Box<dyn std::error::Erro
 		if code.is_empty() || term.is_empty() {
 			continue;
 		}
-		dedup
-			.entry((code.to_string(), "LLT".to_string()))
-			.or_insert_with(|| term.to_string());
+		insert_term(&mut dedup, code, term, "LLT");
 	}
 
 	for line in mdhier.lines() {
@@ -387,10 +421,7 @@ fn parse_meddra(input: &Path) -> Result<Vec<MeddraRow>, Box<dyn std::error::Erro
 		insert_term(&mut dedup, cols[3], cols[7], "SOC");
 	}
 
-	let rows = dedup
-		.into_iter()
-		.map(|((code, level), term)| MeddraRow { code, term, level })
-		.collect::<Vec<_>>();
+	let rows = dedup.into_iter().map(|(_, row)| row).collect::<Vec<_>>();
 
 	if rows.is_empty() {
 		return Err("No MedDRA rows parsed from llt.asc/mdhier.asc".into());
@@ -518,7 +549,7 @@ fn parse_whodrug_delimited(
 }
 
 fn insert_term(
-	dedup: &mut BTreeMap<(String, String), String>,
+	dedup: &mut BTreeMap<String, MeddraRow>,
 	code: &str,
 	term: &str,
 	level: &str,
@@ -528,9 +559,29 @@ fn insert_term(
 	if code.is_empty() || term.is_empty() {
 		return;
 	}
-	dedup
-		.entry((code.to_string(), level.to_string()))
-		.or_insert_with(|| term.to_string());
+	let next = MeddraRow {
+		code: code.to_string(),
+		term: term.to_string(),
+		level: level.to_string(),
+	};
+	match dedup.get(code) {
+		Some(existing)
+			if meddra_level_rank(&existing.level) <= meddra_level_rank(level) => {}
+		_ => {
+			dedup.insert(code.to_string(), next);
+		}
+	}
+}
+
+fn meddra_level_rank(level: &str) -> u8 {
+	match level {
+		"LLT" => 0,
+		"PT" => 1,
+		"HLT" => 2,
+		"HLGT" => 3,
+		"SOC" => 4,
+		_ => u8::MAX,
+	}
 }
 
 fn read_named_file(
@@ -631,6 +682,38 @@ mod tests {
 	use zip::{CompressionMethod, ZipWriter};
 
 	static ZIP_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+	#[test]
+	fn parse_meddra_directory_keeps_one_row_per_code_for_database_key() {
+		let dir = std::env::temp_dir().join(format!(
+			"terminology-loader-meddra-test-{}-{}",
+			std::process::id(),
+			ZIP_COUNTER.fetch_add(1, Ordering::Relaxed)
+		));
+		fs::create_dir_all(&dir).unwrap();
+		fs::write(
+			dir.join("llt.asc"),
+			"10000001$LLT preferred duplicate$$$$$$$$$$$$$$$$$$$$\n",
+		)
+		.unwrap();
+		fs::write(
+			dir.join("mdhier.asc"),
+			"10000001$20000001$30000001$40000001$PT duplicate$HLT term$HLGT term$SOC term$$$$\n",
+		)
+		.unwrap();
+
+		let rows = parse_meddra(&dir).expect("MedDRA directory should parse");
+
+		assert_eq!(rows.len(), 4);
+		let duplicate_code_rows = rows
+			.iter()
+			.filter(|row| row.code == "10000001")
+			.collect::<Vec<_>>();
+		assert_eq!(duplicate_code_rows.len(), 1);
+		assert_eq!(duplicate_code_rows[0].term, "LLT preferred duplicate");
+		assert_eq!(duplicate_code_rows[0].level, "LLT");
+		let _ = fs::remove_dir_all(dir);
+	}
 
 	#[test]
 	fn parse_whodrug_zip_supports_official_b3_rows() {

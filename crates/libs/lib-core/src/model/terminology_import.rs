@@ -146,7 +146,7 @@ pub fn parse_meddra_upload(bytes: &[u8]) -> Result<Vec<MeddraRow>> {
 	let llt = read_zip_file_case_insensitive(&mut zip, "llt.asc")?;
 	let mdhier = read_zip_file_case_insensitive(&mut zip, "mdhier.asc")?;
 
-	let mut dedup: BTreeMap<(String, String), String> = BTreeMap::new();
+	let mut dedup: BTreeMap<String, MeddraRow> = BTreeMap::new();
 
 	for line in llt.lines() {
 		let cols: Vec<&str> = line.split('$').collect();
@@ -158,9 +158,7 @@ pub fn parse_meddra_upload(bytes: &[u8]) -> Result<Vec<MeddraRow>> {
 		if code.is_empty() || term.is_empty() {
 			continue;
 		}
-		dedup
-			.entry((code.to_string(), "LLT".to_string()))
-			.or_insert_with(|| term.to_string());
+		insert_term(&mut dedup, code, term, "LLT");
 	}
 
 	for line in mdhier.lines() {
@@ -174,10 +172,7 @@ pub fn parse_meddra_upload(bytes: &[u8]) -> Result<Vec<MeddraRow>> {
 		insert_term(&mut dedup, cols[3], cols[7], "SOC");
 	}
 
-	let rows = dedup
-		.into_iter()
-		.map(|((code, level), term)| MeddraRow { code, term, level })
-		.collect::<Vec<_>>();
+	let rows = dedup.into_iter().map(|(_, row)| row).collect::<Vec<_>>();
 
 	if rows.is_empty() {
 		return Err(bad_input("No MedDRA rows parsed from llt.asc/mdhier.asc"));
@@ -514,7 +509,25 @@ pub async fn stage_whodrug_rows(
 			None,
 		)
 		.await?;
-		upsert_whodrug_rows(mm, rows, version, language, false).await?;
+		Ok::<(), ImportError>(())
+	}
+	.await;
+	finish_txn(dbx, run_result).await?;
+
+	for chunk in rows.chunks(1000) {
+		dbx.begin_txn().await.map_err(store_err)?;
+		let run_result = async {
+			set_full_context(dbx, uploader_id, organization_id, role).await?;
+			upsert_whodrug_rows(mm, chunk, version, language, false).await?;
+			Ok::<(), ImportError>(())
+		}
+		.await;
+		finish_txn(dbx, run_result).await?;
+	}
+
+	dbx.begin_txn().await.map_err(store_err)?;
+	let run_result = async {
+		set_full_context(dbx, uploader_id, organization_id, role).await?;
 		upsert_release_header(
 			mm,
 			"whodrug",
@@ -928,7 +941,7 @@ fn read_zip_file_case_insensitive(
 }
 
 fn insert_term(
-	dedup: &mut BTreeMap<(String, String), String>,
+	dedup: &mut BTreeMap<String, MeddraRow>,
 	code: &str,
 	term: &str,
 	level: &str,
@@ -938,9 +951,29 @@ fn insert_term(
 	if code.is_empty() || term.is_empty() {
 		return;
 	}
-	dedup
-		.entry((code.to_string(), level.to_string()))
-		.or_insert_with(|| term.to_string());
+	let next = MeddraRow {
+		code: code.to_string(),
+		term: term.to_string(),
+		level: level.to_string(),
+	};
+	match dedup.get(code) {
+		Some(existing)
+			if meddra_level_rank(&existing.level) <= meddra_level_rank(level) => {}
+		_ => {
+			dedup.insert(code.to_string(), next);
+		}
+	}
+}
+
+fn meddra_level_rank(level: &str) -> u8 {
+	match level {
+		"LLT" => 0,
+		"PT" => 1,
+		"HLT" => 2,
+		"HLGT" => 3,
+		"SOC" => 4,
+		_ => u8::MAX,
+	}
 }
 
 fn detect_delimiter(bytes: &[u8]) -> u8 {
@@ -1086,6 +1119,28 @@ mod tests {
 	use zip::{CompressionMethod, ZipWriter};
 
 	#[test]
+	fn parse_meddra_zip_keeps_one_row_per_code_for_database_key() {
+		let zip = make_zip(&[
+			("llt.asc", "10000001$LLT preferred duplicate$$$$$$$$$$$$$$$$$$$$\n"),
+			(
+				"mdhier.asc",
+				"10000001$20000001$30000001$40000001$PT duplicate$HLT term$HLGT term$SOC term$$$$\n",
+			),
+		]);
+
+		let rows = parse_meddra_upload(&zip).expect("MedDRA zip should parse");
+
+		assert_eq!(rows.len(), 4);
+		let duplicate_code_rows = rows
+			.iter()
+			.filter(|row| row.code == "10000001")
+			.collect::<Vec<_>>();
+		assert_eq!(duplicate_code_rows.len(), 1);
+		assert_eq!(duplicate_code_rows[0].term, "LLT preferred duplicate");
+		assert_eq!(duplicate_code_rows[0].level, "LLT");
+	}
+
+	#[test]
 	fn parse_whodrug_official_b3_zip_uses_dd_and_dda_rows() {
 		let zip = make_zip(&[
 			("b3/DD.csv", "000001,01,001,6,N,,001,,01,,854,METHYLDOPA\n"),
@@ -1111,18 +1166,15 @@ mod tests {
 			("DDA.csv", "152686,A0,001,6,J07BN,231,*\n"),
 		]);
 
-		let rows =
-			parse_whodrug_upload(&zip).expect("official B3 alphanumeric sequence should parse");
+		let rows = parse_whodrug_upload(&zip)
+			.expect("official B3 alphanumeric sequence should parse");
 
 		assert_eq!(rows.len(), 2);
 		assert_eq!(rows[0].code, "152686-A0-001");
 		assert_eq!(rows[0].drug_name, "EXAMPLE PRODUCT");
 		assert_eq!(rows[0].atc_code.as_deref(), Some("J07BN"));
 		assert_eq!(rows[1].code, "000027-01-A00");
-		assert_eq!(
-			rows[1].drug_name,
-			"HJERTEMAGNYL [ACETYLSALICYLIC ACID]"
-		);
+		assert_eq!(rows[1].drug_name, "HJERTEMAGNYL [ACETYLSALICYLIC ACID]");
 		assert_eq!(rows[1].atc_code, None);
 	}
 
