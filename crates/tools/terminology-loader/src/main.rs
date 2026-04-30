@@ -1,4 +1,6 @@
 use clap::{Args, Parser, Subcommand};
+use lib_core::ctx::Ctx;
+use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::terminology_import::parse_whodrug_upload;
 use lib_core::model::ModelManager;
 use sha2::{Digest, Sha256};
@@ -85,6 +87,8 @@ async fn load_meddra(
 
 	mm.dbx().begin_txn().await?;
 	let run_result = async {
+		set_loader_context(mm).await?;
+
 		upsert_release_header(
 			mm,
 			"meddra",
@@ -171,6 +175,8 @@ async fn load_whodrug(
 
 	mm.dbx().begin_txn().await?;
 	let run_result = async {
+		set_loader_context(mm).await?;
+
 		upsert_release_header(
 			mm,
 			"whodrug",
@@ -233,6 +239,20 @@ async fn load_whodrug(
 			Err(err)
 		}
 	}
+}
+
+async fn set_loader_context(
+	mm: &ModelManager,
+) -> Result<(), Box<dyn std::error::Error>> {
+	let root_ctx = Ctx::root_ctx();
+	set_full_context_dbx(
+		mm.dbx(),
+		root_ctx.user_id(),
+		root_ctx.organization_id(),
+		root_ctx.role(),
+	)
+	.await?;
+	Ok(())
 }
 
 async fn upsert_release_header(
