@@ -1,4 +1,5 @@
 // Declare handler modules
+pub mod app_branding_rest;
 pub mod case_export_rest;
 pub mod case_intake_rest;
 pub mod case_rest;
@@ -40,6 +41,11 @@ use axum::routing::get;
 use axum::Router;
 use lib_core::model::ModelManager;
 use lib_web::handlers::handlers_rest::rest_collection_item_routes;
+
+/// Routes for /api/app
+pub fn routes_app() -> Router {
+	Router::new().route("/app/branding", get(app_branding_rest::get_app_branding))
+}
 
 /// Routes for /api/cases and nested subresources
 pub fn routes_cases(mm: ModelManager) -> Router {

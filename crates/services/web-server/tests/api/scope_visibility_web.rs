@@ -104,6 +104,42 @@ async fn create_message_header(
 	Ok(())
 }
 
+async fn create_sender_presave_template(
+	app: &Router,
+	cookie: &str,
+	name: &str,
+	sender_identifier: &str,
+) -> Result<Uuid> {
+	let (status, value) = request_json(
+		app,
+		"POST",
+		cookie,
+		"/api/presave-templates".to_string(),
+		Some(json!({
+			"data": {
+				"entity_type": "sender",
+				"name": name,
+				"description": "Routing source-of-truth test sender",
+				"data": {
+					"senderType": "2",
+					"senderIdentifier": sender_identifier,
+					"senderOrganization": name,
+					"linkedOrganizationName": name,
+					"linkedOrganizationType": "client"
+				}
+			}
+		})),
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create sender presave template failed: status={status} body={value}"
+		)
+		.into());
+	}
+	extract_id(&value)
+}
+
 async fn create_study(
 	app: &Router,
 	cookie: &str,
@@ -250,6 +286,59 @@ async fn test_case_list_is_filtered_by_sender_scope() -> Result<()> {
 	let cases = value["data"].as_array().ok_or("missing cases array")?;
 	assert!(cases.iter().any(|row| row["id"] == case_a.to_string()));
 	assert!(!cases.iter().any(|row| row["id"] == case_b.to_string()));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_update_requires_matching_sender_scope() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	let case_a = create_case(
+		&app,
+		&admin_cookie,
+		&format!("SR-UPD-A-{}", Uuid::new_v4()),
+		None,
+	)
+	.await?;
+	let case_b = create_case(
+		&app,
+		&admin_cookie,
+		&format!("SR-UPD-B-{}", Uuid::new_v4()),
+		None,
+	)
+	.await?;
+	create_message_header(&app, &admin_cookie, case_a, "SEND-A").await?;
+	create_message_header(&app, &admin_cookie, case_b, "SEND-B").await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({ "access_sender_ids": ["SEND-A"] }),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&viewer_cookie,
+		format!("/api/cases/{case_b}"),
+		Some(json!({
+			"data": {
+				"dg_prd_key": "UNAUTHORIZED-PRODUCT-EDIT"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
 	Ok(())
 }
 
@@ -410,6 +499,105 @@ async fn test_case_get_blocks_blinded_case_without_blind_scope() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_routing_profile_sender_options_include_info_sender_masters(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	create_sender_presave_template(
+		&app,
+		&admin_cookie,
+		"Client A Sender Master",
+		"SEND-MASTER-A",
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({ "access_sender_ids": ["SEND-MASTER-A"] }),
+	)
+	.await?;
+
+	let (status, admin_profile) = request_json(
+		&app,
+		"GET",
+		&admin_cookie,
+		"/api/users/me/routing".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{admin_profile:?}");
+	let admin_senders = admin_profile["data"]["availableSenders"]
+		.as_array()
+		.ok_or("missing admin senders")?;
+	let admin_master = admin_senders
+		.iter()
+		.find(|row| row["senderIdentifier"] == "SEND-MASTER-A")
+		.ok_or("INFO sender master missing from admin routing options")?;
+	assert_eq!(admin_master["caseCount"], 0);
+
+	let (status, viewer_profile) = request_json(
+		&app,
+		"GET",
+		&viewer_cookie,
+		"/api/users/me/routing".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{viewer_profile:?}");
+	let viewer_senders = viewer_profile["data"]["availableSenders"]
+		.as_array()
+		.ok_or("missing viewer senders")?;
+	assert_eq!(viewer_senders.len(), 1);
+	assert_eq!(viewer_senders[0]["senderIdentifier"], "SEND-MASTER-A");
+	assert_eq!(viewer_senders[0]["caseCount"], 0);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_company_sponsor_admin_cannot_assign_sender_scope() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let company_admin = insert_user(
+		&mm,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_COMPANY,
+		system_user_id(),
+		Some("companypwd"),
+	)
+	.await?;
+	let company_token =
+		generate_web_token(&company_admin.email, company_admin.token_salt)?;
+	let company_cookie = cookie_header(&company_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&company_cookie,
+		format!("/api/users/{}", seed.viewer.id),
+		Some(json!({
+			"data": {
+				"access_sender_ids": ["SEND-A"]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
 	Ok(())
 }
 

@@ -17,6 +17,8 @@ The main review CSV does not have `requirements / role / wf / list description` 
 
 Use this file as the working checklist for implementation. It is organized by priority and implementation area so requirements can be delivered one by one without rereading the raw review log.
 
+Execution run plan: [client_requirements_runs.md](/Users/hyundonghoon/projects/rust/e2br3/e2br3/docs/requirements/client_requirements_runs.md)
+
 ## Source Summary
 
 - `03.csv`: main review backlog by menu/feature with PV comments and follow-up notes
@@ -43,12 +45,12 @@ Use this file as the working checklist for implementation. It is organized by pr
 
 These are the remaining implementation gaps found by rereading `03.csv`. Items that are already represented below remain in their original sections; this summary is a quick implementation index.
 
-- [ ] Configurable final product/app naming.
+- [x] Configurable final product/app naming. Runtime branding now defaults to `QVIS Safety` and can be overridden with backend `E2BR3_APP_NAME` / `E2BR3_APP_SHORT_NAME` and frontend `NEXT_PUBLIC_APP_NAME` / `NEXT_PUBLIC_APP_SHORT_NAME`; backend `/api/app/branding`, the static role console, Next metadata/login/sidebar/dashboard labels, OpenAPI title, and env defaults were updated and covered by `test_app_branding_uses_default_name_without_e2br3`, `test_app_branding_uses_configured_name`, and `app-branding`.
 - [ ] Notation auto-translation decision and implementation if in scope.
-- [ ] QVIS / Client / Organization / Sender source-of-truth cleanup.
-- [ ] System-level idle-session settings and confirmation of `Idle Session Limit` / `Warning Lead Time` behavior.
-- [-] Global `QC` / `QCed` terminology cleanup outside already converted workflow areas. Case header, case list, and submission queue lifecycle filters now use `QC`/`QCed`; remaining scope is broader copy cleanup outside the reviewed workflow surfaces.
-- [ ] Menu placement cleanup for `DATA`, user info, and logout.
+- [x] QVIS / Client / Organization / Sender source-of-truth cleanup. Sender routing options now merge INFO sender masters from `presave_templates` with existing case message-header senders, and admin user scope assignment stores the same sender identifier used by backend routing/scope checks instead of the template UUID; covered by `test_routing_profile_sender_options_include_info_sender_masters`, `test_routing_profile_sender_options_follow_role_scope`, and `sender-template-access`.
+- [x] System-level idle-session settings and confirmation of `Idle Session Limit` / `Warning Lead Time` behavior. Admin settings now validate `idle_session_minutes >= 5`, `session_warning_minutes >= 1`, and warning lead time less than the idle limit; the authenticated frontend loads those system settings for all users, computes warning/expiry timers from last real activity, and keeps background token refresh from resetting idle activity. Covered by `test_idle_session_settings_are_system_level_and_validated`, `session-timing`, and `admin-users.header-filters`.
+- [x] Global `QC` / `QCed` terminology cleanup outside already converted workflow areas. Case header, case list, dashboard notices/cards/actions, submission queue eligibility messages, lifecycle filter labels, admin role/privilege copy, and default workflow descriptions now use `QC`/`QCed` for user-facing lifecycle wording while preserving backend legacy status codes and explicit Review/RE timeline terminology; covered by `case-status-labels`, `submission-filters`, `npx tsc --noEmit`, and backend settings checks.
+- [x] Menu placement cleanup for `DATA`, user info, and logout. The global sidebar keeps `DATA` as a top-level system-admin-only menu item, and the footer now consistently shows the signed-in user's resolved display name/email/role with a `Log out` action; covered by `sidebar.menu-placement` and `npx tsc --noEmit`.
 - [ ] Case page appendix selector UI placement, duplicate appendix selector removal, and MFDS/FDA regional render UAT.
 - [ ] Case save/QC/lock parity for manual and imported cases, including save reason/comments policy.
 - [ ] Follow-up draft creation from an existing case.
@@ -56,7 +58,7 @@ These are the remaining implementation gaps found by rereading `03.csv`. Items t
 - [ ] Full null-flavor, business-rule, date-picker, validation-marker, and field-action re-audit across CASE.
 - [ ] MedDRA / WHO-Drug / UCUM UX and dataset completeness recheck.
 - [ ] INFO list behavior: header filters, deleted-row visibility, row-click edit, required markers, notation placement, and field audit trail.
-- [ ] Sender default semantics and sender-based authorization/source-of-truth finalization.
+- [x] Sender default semantics and sender-based authorization/source-of-truth finalization. Sender `Default` is now an organization-level INFO sender master-data flag (`senderDefault`) normalized by the backend to one default sender per org and consumed by the INFO UI instead of localStorage; company sponsor admins are blocked from assigning sender scope per `roles.csv`, and case/sender ownership is covered by routing, CASE update, INFO scope, export/import/submission history scope tests.
 - [ ] Study/Product master-data semantics, multi-select behavior, MFDS/FDA regional fields, and automatic mapping to CASE if required.
 - [ ] Export/submission receiver separation, receiver routing enforcement, graceful export error history, submission history details, search/filtering, and Excel line-list export.
 - [x] Import history timestamp bug where `Import Date/Time` can show `Invalid date`. Backend import history emits readable/RFC3339 `uploadedAt` values, and the frontend import history table now falls back to `—` for malformed timestamps, covered by `test_import_history_uploaded_at_is_rfc3339` and `import-history.date-format`.
@@ -64,8 +66,8 @@ These are the remaining implementation gaps found by rereading `03.csv`. Items t
 
 ## P0 Platform, Access, and Naming
 
-- [ ] Make the product/app name configurable and replace the temporary title with the final approved naming.
-- [-] Normalize the permission model using `roles.csv` and align it across routing, admin, sender access, QC, lock, and workflow. Role/routing/scope/admin alignment is implemented, including menu-level custom-role privileges and workflow role validation; remaining work is final policy cleanup across QC/lock wording and admin bypass semantics.
+- [x] Make the product/app name configurable and replace the temporary title with the final approved naming. Runtime branding now defaults to `QVIS Safety` and can be overridden with backend `E2BR3_APP_NAME` / `E2BR3_APP_SHORT_NAME` and frontend `NEXT_PUBLIC_APP_NAME` / `NEXT_PUBLIC_APP_SHORT_NAME`; backend `/api/app/branding`, the static role console, Next metadata/login/sidebar/dashboard labels, OpenAPI title, and env defaults were updated and covered by `test_app_branding_uses_default_name_without_e2br3`, `test_app_branding_uses_configured_name`, and `app-branding`.
+- [x] Normalize the permission model using `roles.csv` and align it across routing, admin, sender access, QC, lock, and workflow. Role/routing/scope/admin alignment is implemented, including menu-level custom-role privileges, workflow role/user validation, company-admin sender-scope blocking, QC/lock wording cleanup, and audited sponsor-admin workflow override policy.
 - [x] Implement the top-level role hierarchy from `roles.csv`:
 - [x] `System Administrator (system-admin)`: can grant/revoke Safety Database access to sponsor administrators but has no in-database working authority
 - [x] `Sponsor Administrator (CRO)`: fixed admin role with full read/edit access, role creation, privilege editing, user-role assignment, and sender/product/study/blind scope assignment
@@ -74,7 +76,7 @@ These are the remaining implementation gaps found by rereading `03.csv`. Items t
 - [x] Preserve sponsor administrator role names/authority as fixed built-in roles if the client expects them to be non-editable defaults.
 - [x] Allow sponsor administrators to create additional roles that can match sponsor-admin-level permissions if the client wants equivalent custom roles.
 - [x] Make routing page visibility depend on the signed-in user’s role and allowed organization/sender scope.
-- [ ] Clarify and fix how QVIS, Client, Organization, and Sender relate so the routing page and admin settings use the same source of truth.
+- [x] Clarify and fix how QVIS, Client, Organization, and Sender relate so the routing page and admin settings use the same source of truth. INFO sender masters are now exposed to routing before cases exist, while the admin client-user sender picker/checkboxes persist sender identifiers (`senderIdentifier`, message/batch fallback, sender organization fallback) that match backend access scope filtering.
 - [-] Apply the UI visibility rules from `roles.csv`:
 - [x] CRO sponsor administrators see all senders on the routing page and all related data after routing
 - [x] Company sponsor administrators follow the stricter sender rule: no unrestricted sender visibility unless sender scope is explicitly assigned
@@ -82,9 +84,9 @@ These are the remaining implementation gaps found by rereading `03.csv`. Items t
 - [x] CASE shows only allowed product/study values within the routed sender scope
 - [-] INFO shows only assigned sender/product/study data. Shared case-linked read gates are in place, and presave INFO templates now filter sender/product/study list and read endpoints by assigned scope. Remaining work is any non-presave INFO screen UAT.
 - [-] IMPORT and EXPORT/SUBMISSION show history only for the user’s allowed product scope. Import-history case-linked error download is gated; remaining history/detail surfaces still need full UAT coverage.
-- [ ] Move idle session settings to system-level configuration and confirm whether `Idle Session Limit` and `Warning Lead Time` are the intended admin controls.
-- [ ] Standardize system terminology to `QC` / `QCed` instead of mixed review/validated wording.
-- [ ] Revisit global menu placement, including where `DATA`, user info, and logout should appear.
+- [x] Move idle session settings to system-level configuration and confirm whether `Idle Session Limit` and `Warning Lead Time` are the intended admin controls. The controls are persisted in `/api/admin/settings` as system-level settings, readable by authenticated users for session timers, editable only by safety DB admins, and backend-validated so warning lead time cannot equal/exceed the idle limit.
+- [x] Standardize system terminology to `QC` / `QCed` instead of mixed review/validated wording. User-facing dashboard/submission/admin lifecycle copy now displays `QC` or `QCed` rather than `Reviewed`/`Validated`; internal enum values such as `reviewed` and `validated` remain as compatibility status codes.
+- [x] Revisit global menu placement, including where `DATA`, user info, and logout should appear. `DATA` remains in the global navigation with system-admin-only visibility, while user identity and `Log out` are anchored together in the global sidebar footer for desktop/mobile sidebar use.
 - [ ] Decide whether notation auto-translation is required for the first release or should stay in a later phase.
 
 ## P0 Case Workflow and Save Model
@@ -96,7 +98,7 @@ These are the remaining implementation gaps found by rereading `03.csv`. Items t
 - [x] Keep deleted cases visible as soft-deleted rows with clear visual marking and history retention.
 - [ ] Make case list export history visible from the case area with file, status, error, time, and user.
 - [x] Ensure QC/lock actions behave consistently for manual cases and imported cases. Backend blocks content edits for QCed and locked cases even when workflow is enabled; frontend allows QCed cases to proceed to Lock while keeping content read-only.
-- [-] Replace ad hoc review state wording with explicit workflow-aware status where the client expects workflow status instead of a generic checked state. Backend workflow status remains separate from QC and Lock; case list and submission filters no longer collapse QC, lock, and workflow into one visible status. Remaining cleanup is non-blocking copy outside the reviewed workflow surfaces.
+- [x] Replace ad hoc review state wording with explicit workflow-aware status where the client expects workflow status instead of a generic checked state. Backend workflow status remains separate from QC and Lock; case list, dashboard, admin copy, and submission filters no longer collapse QC, lock, and workflow into one visible status or use generic reviewed/validated wording for QCed cases.
 - [ ] Implement correct follow-up draft creation from an existing case:
 - [ ] Reuse the original case as the source.
 - [ ] Set `C.1.1` correctly for the follow-up report.
@@ -206,7 +208,7 @@ Implemented notes:
 - [ ] export/submission routing receiver configuration
 - [ ] Remove receiver identifiers from the wrong INFO location if the client expects them to live only in submission routing configuration.
 - [ ] Remove or relocate Message Header / Receiver Information from the SD page if they are still present there.
-- [ ] Make export fail gracefully and always record errors in export history with downloadable text details.
+- [x] Make export fail gracefully and always record errors in export history with downloadable text details. Failed single-case and bulk XML export attempts now write `error` rows in `xml_export_history` before returning the original validation/export error; error text download remains available through `GET /api/exports/history/{id}/error.txt`, covered by `test_failed_single_export_records_error_history` and `test_export_history_error_details_download_as_text`.
 - [-] Finish submission history details. Backend ACK text download is implemented at `GET /api/submissions/{id}/acks/{level}/download`, documented in OpenAPI, and covered by `test_submission_ack_can_be_downloaded_as_text`; remaining details below still need implementation/UAT.
 - [ ] batch result data
 - [ ] message result data
@@ -236,7 +238,7 @@ Implemented notes:
 
 - [ ] Make the receiver data load correctly in the Review/RE timeline area.
 - [x] Rebuild WF behavior using the client’s separate workflow sheet rather than only the current screen-level status storage.
-- [-] Add stronger backend workflow state-transition enforcement if workflow is meant to control edit/QC/lock permissions. Implemented workflow editability, role ownership, assignee ownership, destination validation, assignment-only events, no-op transition rejection, and history persistence. Remaining cleanup: final policy decision on safety-db-admin bypass and deeper QC/lock refactor.
+- [x] Add stronger backend workflow state-transition enforcement if workflow is meant to control edit/QC/lock permissions. Workflow editability, role ownership, assignee ownership, destination validation, assignment-only events, no-op transition rejection, history persistence, locked-case blocking, QCed edit blocking, and audited sponsor-admin override policy are implemented and covered by workflow permission tests.
 
 ## P0 INFO Master Data
 
@@ -251,10 +253,10 @@ Implemented notes:
 
 ### Sender
 
-- [-] Continue refactoring sender as the operational source of truth for organization/client linkage.
-- [ ] Confirm how `Default` should work for sender records.
-- [ ] Rework sender-based authorization if the client expects backend-enforced sender ownership across case processing and submission.
-- [ ] Verify sender organization/client linkage against `roles.csv`, including which admin role manages client organization data.
+- [x] Continue refactoring sender as the operational source of truth for organization/client linkage. Routing now reads sender masters from INFO `presave_templates`, admin client-user organization resolution continues from linked sender organization metadata, and sender access values are normalized to backend-visible sender identifiers rather than template IDs.
+- [x] Confirm how `Default` should work for sender records. `Default` is implemented as one persisted org-level INFO sender master flag (`senderDefault`), not a browser-local setting; creating/updating a sender as default clears the flag from other sender masters in the same organization and is covered by `test_presave_sender_default_is_org_level_singleton`.
+- [x] Rework sender-based authorization if the client expects backend-enforced sender ownership across case processing and submission. Backend scope enforcement already filters routing, CASE reads/lists, INFO sender/product/study lists, import history, export history, submission history, and case export/download flows through `case_matches_user_scope`; Run 03 added `test_case_update_requires_matching_sender_scope` to lock CASE update ownership as well.
+- [x] Verify sender organization/client linkage against `roles.csv`, including which admin role manages client organization data. `roles.csv` assigns Sender/Product/Study/Blind scope management to CRO/Safety Database Admin, while Pharmaceutical Company sponsor admin manages Product/Study/Blind scope only; backend user create/update now rejects company-admin sender scope assignment and the admin UI disables client/sender-scope assignment for that role, covered by `test_company_sponsor_admin_cannot_assign_sender_scope`.
 
 ### Study
 

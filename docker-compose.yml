@@ -49,6 +49,8 @@ services:
       SERVICE_TOKEN_DURATION_SEC: "1800"
       SERVICE_WEB_FOLDER: "/app/web-folder/"
       RUST_LOG: "web_server=debug,lib_core=debug,lib_web=debug"
+      E2BR3_APP_NAME: "${E2BR3_APP_NAME:-QVIS Safety}"
+      E2BR3_APP_SHORT_NAME: "${E2BR3_APP_SHORT_NAME:-QVIS Safety}"
       E2BR3_VALIDATOR_TOKEN: "validator-secret"
       # XML validation/export config
       E2BR3_SKIP_XML_VALIDATE: "1"

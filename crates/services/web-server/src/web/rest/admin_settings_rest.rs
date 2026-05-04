@@ -96,7 +96,7 @@ fn default_workflow_config() -> WorkflowConfigPayload {
 			WorkflowStatusConfigPayload {
 				name: "Internal review completed".to_string(),
 				editable: false,
-				description: Some("Reviewed and routed onward".to_string()),
+				description: Some("QCed and routed onward".to_string()),
 				allowed_roles: Some(vec![
 					ROLE_PVS.to_string(),
 					ROLE_PVM.to_string(),
@@ -212,6 +212,25 @@ async fn payload_to_value(
 	payload: &AdminSettingsUpdateBody,
 ) -> Result<serde_json::Value> {
 	let workflow = normalize_workflow_config(mm, payload.workflow.clone()).await?;
+	let idle_session_minutes = payload.idle_session_minutes.unwrap_or(60);
+	let session_warning_minutes = payload.session_warning_minutes.unwrap_or(5);
+	if idle_session_minutes < 5 {
+		return Err(Error::BadRequest {
+			message: "idle_session_minutes must be at least 5".to_string(),
+		});
+	}
+	if session_warning_minutes < 1 {
+		return Err(Error::BadRequest {
+			message: "session_warning_minutes must be at least 1".to_string(),
+		});
+	}
+	if session_warning_minutes >= idle_session_minutes {
+		return Err(Error::BadRequest {
+			message:
+				"session_warning_minutes must be less than idle_session_minutes"
+					.to_string(),
+		});
+	}
 	Ok(json!({
 		"timezone": payload.timezone.clone().unwrap_or_else(|| "Asia/Seoul".to_string()),
 		"meddra_language": payload.meddra_language.clone().unwrap_or_else(|| "en".to_string()),
@@ -220,8 +239,8 @@ async fn payload_to_value(
 		"case_number_padding": payload.case_number_padding.unwrap_or(6),
 		"workflow_enabled": payload.workflow_enabled.unwrap_or(false),
 		"workflow": workflow,
-		"idle_session_minutes": payload.idle_session_minutes.unwrap_or(60),
-		"session_warning_minutes": payload.session_warning_minutes.unwrap_or(5),
+		"idle_session_minutes": idle_session_minutes,
+		"session_warning_minutes": session_warning_minutes,
 	}))
 }
 

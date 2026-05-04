@@ -442,6 +442,80 @@ async fn test_presave_contract_supports_all_six_entity_types() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_presave_sender_default_is_org_level_singleton() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (first_id, _) = create_template(
+		&app,
+		&cookie,
+		"sender",
+		"default-sender-one",
+		json!({
+			"senderType": "1",
+			"senderIdentifier": "DEFAULT-SENDER-ONE",
+			"senderOrganization": "Default Sender One",
+			"senderDefault": true
+		}),
+	)
+	.await?;
+	let (second_id, _) = create_template(
+		&app,
+		&cookie,
+		"sender",
+		"default-sender-two",
+		json!({
+			"senderType": "1",
+			"senderIdentifier": "DEFAULT-SENDER-TWO",
+			"senderOrganization": "Default Sender Two",
+			"senderDefault": true
+		}),
+	)
+	.await?;
+
+	let (status, first) = get_template(&app, &cookie, first_id).await?;
+	assert_eq!(status, StatusCode::OK, "{first:?}");
+	assert_eq!(first["data"]["data"]["senderDefault"], false);
+
+	let (status, second) = get_template(&app, &cookie, second_id).await?;
+	assert_eq!(status, StatusCode::OK, "{second:?}");
+	assert_eq!(second["data"]["data"]["senderDefault"], true);
+
+	let (status, value) = request_json(
+		&app,
+		&cookie,
+		Method::PATCH,
+		format!("/api/presave-templates/{first_id}"),
+		Some(json!({
+			"data": {
+				"data": {
+					"senderType": "1",
+					"senderIdentifier": "DEFAULT-SENDER-ONE",
+					"senderOrganization": "Default Sender One",
+					"senderDefault": true
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	let (status, first) = get_template(&app, &cookie, first_id).await?;
+	assert_eq!(status, StatusCode::OK, "{first:?}");
+	assert_eq!(first["data"]["data"]["senderDefault"], true);
+
+	let (status, second) = get_template(&app, &cookie, second_id).await?;
+	assert_eq!(status, StatusCode::OK, "{second:?}");
+	assert_eq!(second["data"]["data"]["senderDefault"], false);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_presave_contract_update_delete_and_audit() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

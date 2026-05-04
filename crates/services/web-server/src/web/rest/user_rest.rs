@@ -236,6 +236,23 @@ fn update_has_scope_assignment(data: &UserForUpdateAdminPayload) -> bool {
 		|| data.access_blind_allowed.is_some()
 }
 
+fn has_sender_scope_assignment(
+	active_sender_identifier: &Option<String>,
+	access_sender_ids: &Option<ScopeListInput>,
+) -> bool {
+	active_sender_identifier.is_some() || access_sender_ids.is_some()
+}
+
+fn company_admin_sender_scope_forbidden(ctx: &Ctx) -> bool {
+	canonical_role(ctx.role()) == ROLE_SPONSOR_ADMIN_COMPANY
+}
+
+fn sender_scope_assignment_forbidden() -> Error {
+	Error::AccessDenied {
+		required_role: "sender_scope_assignment_cro_admin".to_string(),
+	}
+}
+
 fn user_view(user: User) -> UserView {
 	let access_sender_ids = user.access_sender_ids.clone();
 	let access_product_ids = user.access_product_ids.clone();
@@ -337,6 +354,13 @@ pub async fn create_user(
 	}
 	require_safety_db_admin_role(&ctx, &mm).await?;
 	require_permission(&ctx, USER_CREATE)?;
+	if company_admin_sender_scope_forbidden(&ctx)
+		&& has_sender_scope_assignment(
+			&data.active_sender_identifier,
+			&data.access_sender_ids,
+		) {
+		return Err(sender_scope_assignment_forbidden());
+	}
 	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
 	let mut organization_id = data.organization_id;
 	if organization_id.is_nil() {
@@ -532,6 +556,13 @@ pub async fn update_user(
 	}
 	require_safety_db_admin_role(&ctx, &mm).await?;
 	require_permission(&ctx, USER_UPDATE)?;
+	if company_admin_sender_scope_forbidden(&ctx)
+		&& has_sender_scope_assignment(
+			&data.active_sender_identifier,
+			&data.access_sender_ids,
+		) {
+		return Err(sender_scope_assignment_forbidden());
+	}
 	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
 	let update = UserForUpdate {
 		email: data.email,

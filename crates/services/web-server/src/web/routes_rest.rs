@@ -7,6 +7,8 @@ use super::rest;
 /// All REST resource routes are composed here
 pub fn routes(mm: ModelManager) -> Router {
 	Router::new()
+		// Application runtime branding/configuration
+		.merge(rest::routes_app())
 		// Core E2B(R3) entities with nested subresources
 		.merge(rest::routes_cases(mm.clone()))
 		// Reference data

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SafetyDB Role and Routing Console</title>
+  <title>QVIS Safety Role and Routing Console</title>
   <style>
     :root {
       --bg: #f4efe7;
@@ -133,7 +133,7 @@
   <main class="shell">
     <section class="hero">
       <div>
-        <h1>Role and Routing Console</h1>
+        <h1><span data-app-name>QVIS Safety</span> Role and Routing Console</h1>
         <p>Manage the client-shaped RBAC hierarchy, scoped users, and sender routing using backend-authoritative APIs. Built-in sponsor administrator roles are fixed; custom roles and user scopes are editable.</p>
       </div>
       <aside class="status-card">
@@ -206,6 +206,7 @@
   </main>
 
   <script>
+    const DEFAULT_APP_NAME = "QVIS Safety";
     const $ = (id) => document.getElementById(id);
     const state = { users: [], roles: [], profile: null };
 
@@ -232,6 +233,19 @@
       const el = $(id);
       el.textContent = text;
       el.className = "message " + (ok ? "ok" : "bad");
+    }
+
+    async function loadBranding() {
+      try {
+        const body = await api("/api/app/branding");
+        const appName = body.data.appName || DEFAULT_APP_NAME;
+        document.title = `${appName} Role and Routing Console`;
+        document.querySelectorAll("[data-app-name]").forEach((el) => {
+          el.textContent = appName;
+        });
+      } catch (_) {
+        document.title = `${DEFAULT_APP_NAME} Role and Routing Console`;
+      }
     }
 
     async function loadProfile() {
@@ -368,6 +382,7 @@
 
     async function boot() {
       try {
+        await loadBranding();
         await loadProfile();
         await Promise.allSettled([loadRoles(), loadUsers()]);
       } catch (err) {

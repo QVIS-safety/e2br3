@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "E2BR3 Backend API",
+    "title": "QVIS Safety Backend API",
     "description": "OpenAPI documentation for the Axum-based E2BR3 backend. Authenticated API routes use the HTTP-only `auth-token` cookie. Internal machine-to-machine routes use the `x-callback-token` header.",
     "license": {
       "name": ""

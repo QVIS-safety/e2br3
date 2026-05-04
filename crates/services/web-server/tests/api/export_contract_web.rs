@@ -263,6 +263,79 @@ async fn test_export_history_error_details_download_as_text() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_failed_single_export_records_error_history() -> Result<()> {
+	std::env::set_var("E2BR3_EXPORT_VALIDATE_FDA", "1");
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let safety_report_id = format!("SR-EXPORT-FAIL-{}", Uuid::new_v4());
+	let case_id = insert_validated_raw_case(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		&safety_report_id,
+		r#"["fda"]"#,
+	)
+	.await?;
+
+	let response = get_response(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/xml?profile=fda"),
+	)
+	.await?;
+	assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+	let response_body = to_bytes(response.into_body(), usize::MAX).await?;
+	let response_text = std::str::from_utf8(&response_body)?;
+	assert!(
+		response_text.contains("exported XML failed"),
+		"{response_text}"
+	);
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, seed.admin.id).await?;
+	set_org_context(&mut tx, seed.org_id, ROLE_SYSTEM_ADMIN).await?;
+	let raw_history_count: i64 = sqlx::query_scalar(
+		"SELECT COUNT(*) FROM xml_export_history WHERE case_id = $1",
+	)
+	.bind(case_id)
+	.fetch_one(&mut *tx)
+	.await?;
+	tx.commit().await?;
+	assert_eq!(raw_history_count, 1, "failed export was not recorded");
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/exports/history"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let item = body["data"]["items"]
+		.as_array()
+		.and_then(|items| items.first())
+		.cloned()
+		.ok_or_else(|| format!("missing failed export history item: {body}"))?;
+	assert_eq!(item["status"].as_str(), Some("error"), "{item:?}");
+	assert_eq!(item["validationProfile"].as_str(), Some("fda"), "{item:?}");
+	assert_eq!(
+		item["fileName"].as_str(),
+		Some(format!("{safety_report_id}-{case_id}-fda.xml").as_str()),
+		"{item:?}"
+	);
+	assert!(
+		item["errorMessage"]
+			.as_str()
+			.is_some_and(|message| message.contains("exported XML failed")),
+		"{item:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_scoped_export_history_only_returns_case_rows() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

@@ -10,6 +10,7 @@ use lib_core::model::presave_template::{
 	PresaveTemplateAuditBmc, PresaveTemplateBmc, PresaveTemplateForCreate,
 	PresaveTemplateForUpdate,
 };
+use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::user::UserBmc;
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
@@ -96,6 +97,83 @@ fn template_scope_identifiers(template: &PresaveTemplate) -> Vec<String> {
 	values
 }
 
+fn sender_default_requested(data: &Value) -> bool {
+	["senderDefault", "isDefaultSender", "defaultSender"]
+		.iter()
+		.any(|key| data.get(*key).and_then(Value::as_bool) == Some(true))
+}
+
+async fn enforce_single_default_sender(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	template_id: Uuid,
+) -> Result<()> {
+	let dbx = mm.dbx();
+	dbx.begin_txn()
+		.await
+		.map_err(lib_core::model::Error::from)?;
+	if let Err(err) =
+		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
+			.await
+	{
+		dbx.rollback_txn()
+			.await
+			.map_err(lib_core::model::Error::from)?;
+		return Err(err.into());
+	}
+
+	let reset_result = dbx
+		.execute(
+			sqlx::query(
+				r#"
+				UPDATE presave_templates
+				SET data = jsonb_set(data, '{senderDefault}', 'false'::jsonb, true),
+				    updated_at = NOW()
+				WHERE organization_id = $1
+				  AND entity_type = 'sender'
+				  AND id <> $2
+				"#,
+			)
+			.bind(ctx.organization_id())
+			.bind(template_id),
+		)
+		.await;
+	if let Err(err) = reset_result {
+		dbx.rollback_txn()
+			.await
+			.map_err(lib_core::model::Error::from)?;
+		return Err(lib_core::model::Error::from(err).into());
+	}
+
+	let set_result = dbx
+		.execute(
+			sqlx::query(
+				r#"
+				UPDATE presave_templates
+				SET data = jsonb_set(data, '{senderDefault}', 'true'::jsonb, true),
+				    updated_at = NOW()
+				WHERE organization_id = $1
+				  AND entity_type = 'sender'
+				  AND id = $2
+				"#,
+			)
+			.bind(ctx.organization_id())
+			.bind(template_id),
+		)
+		.await;
+	if let Err(err) = set_result {
+		dbx.rollback_txn()
+			.await
+			.map_err(lib_core::model::Error::from)?;
+		return Err(lib_core::model::Error::from(err).into());
+	}
+
+	dbx.commit_txn()
+		.await
+		.map_err(lib_core::model::Error::from)?;
+	Ok(())
+}
+
 async fn allowed_scope_for_entity(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -163,7 +241,12 @@ pub async fn create_presave_template(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
 	let ParamsForCreate { data } = params;
+	let should_be_default = data.entity_type == PresaveEntityType::Sender
+		&& sender_default_requested(&data.data);
 	let id = PresaveTemplateBmc::create(&ctx, &mm, data).await?;
+	if should_be_default {
+		enforce_single_default_sender(&ctx, &mm, id).await?;
+	}
 	let entity = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
 }
@@ -212,7 +295,13 @@ pub async fn update_presave_template(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
 	let ParamsForUpdate { data } = params;
+	let should_be_default = data.data.as_ref().is_some_and(sender_default_requested)
+		&& data.entity_type.unwrap_or(PresaveEntityType::Sender)
+			== PresaveEntityType::Sender;
 	PresaveTemplateBmc::update(&ctx, &mm, id, data).await?;
+	if should_be_default {
+		enforce_single_default_sender(&ctx, &mm, id).await?;
+	}
 	let entity = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }

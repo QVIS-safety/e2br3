@@ -4,6 +4,10 @@ mod common;
 #[path = "validation/validation_common.rs"]
 mod validation_common;
 
+#[path = "api/admin_settings_web.rs"]
+mod admin_settings_web;
+#[path = "api/app_branding_web.rs"]
+mod app_branding_web;
 #[path = "api/audit_web.rs"]
 mod audit_web;
 #[path = "api/case_contract_web.rs"]

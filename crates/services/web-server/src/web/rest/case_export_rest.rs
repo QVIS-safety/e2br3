@@ -283,18 +283,44 @@ pub async fn record_xml_export(
 	status: &str,
 	error_message: Option<&str>,
 ) -> Result<()> {
-	XmlExportHistoryBmc::record(
-		mm,
-		ctx,
-		case_id,
-		case_number,
-		file_name,
-		validation_profile,
-		status,
-		error_message,
+	let mut tx = mm.dbx().db().begin().await.map_err(|err| {
+		Error::Model(lib_core::model::Error::Store(err.to_string()))
+	})?;
+	lib_core::model::store::set_user_context(&mut tx, ctx.user_id())
+		.await
+		.map_err(Error::Model)?;
+	lib_core::model::store::set_org_context(
+		&mut tx,
+		ctx.organization_id(),
+		ctx.role(),
 	)
 	.await
-	.map_err(Error::Model)
+	.map_err(Error::Model)?;
+	sqlx::query(
+		"INSERT INTO xml_export_history (
+			case_id,
+			case_number,
+			file_name,
+			status,
+			error_message,
+			validation_profile,
+			exported_by
+		) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+	)
+	.bind(case_id)
+	.bind(case_number)
+	.bind(file_name)
+	.bind(status)
+	.bind(error_message)
+	.bind(validation_profile)
+	.bind(ctx.user_id())
+	.execute(&mut *tx)
+	.await
+	.map_err(|err| Error::Model(lib_core::model::Error::Store(err.to_string())))?;
+	tx.commit().await.map_err(|err| {
+		Error::Model(lib_core::model::Error::Store(err.to_string()))
+	})?;
+	Ok(())
 }
 
 // -- Handlers
@@ -312,10 +338,38 @@ pub async fn export_case(
 	let case = CaseBmc::get(&ctx, &mm, id).await?;
 	let profile = resolve_requested_export_profile(&case, query.profile.as_deref())?;
 	let include_profile_suffix = query.profile.is_some();
-	let (case, xml) =
-		generate_validated_case_xml_for_profile(&ctx, &mm, id, case, profile)
-			.await?;
 	let file_name = export_file_name(&case, id, profile, include_profile_suffix);
+	let (case, xml) = match generate_validated_case_xml_for_profile(
+		&ctx,
+		&mm,
+		id,
+		case.clone(),
+		profile,
+	)
+	.await
+	{
+		Ok(result) => result,
+		Err(err) => {
+			let error_message = err.to_string();
+			if let Err(record_err) = record_xml_export(
+				&ctx,
+				&mm,
+				id,
+				Some(case.safety_report_id.as_str()),
+				&file_name,
+				Some(profile.as_str()),
+				"error",
+				Some(error_message.as_str()),
+			)
+			.await
+			{
+				tracing::warn!(
+					"failed to record xml export error history: {record_err}"
+				);
+			}
+			return Err(err);
+		}
+	};
 	if let Err(err) = record_xml_export(
 		&ctx,
 		&mm,
@@ -381,20 +435,43 @@ pub async fn export_cases_zip(
 			let profiles = selected_export_profiles(&case);
 			let include_profile_suffix = profiles.len() > 1;
 			for profile in profiles {
-				let (case, xml) = generate_validated_case_xml_for_profile(
-					&ctx,
-					&mm,
-					case_id,
-					case.clone(),
-					profile,
-				)
-				.await?;
 				let file_name = export_file_name(
 					&case,
 					case_id,
 					profile,
 					include_profile_suffix,
 				);
+				let (case, xml) = match generate_validated_case_xml_for_profile(
+					&ctx,
+					&mm,
+					case_id,
+					case.clone(),
+					profile,
+				)
+				.await
+				{
+					Ok(result) => result,
+					Err(err) => {
+						let error_message = err.to_string();
+						if let Err(record_err) = record_xml_export(
+							&ctx,
+							&mm,
+							case_id,
+							Some(case.safety_report_id.as_str()),
+							&file_name,
+							Some(profile.as_str()),
+							"error",
+							Some(error_message.as_str()),
+						)
+						.await
+						{
+							tracing::warn!(
+								"failed to record xml export error history: {record_err}"
+							);
+						}
+						return Err(err);
+					}
+				};
 				zip.start_file(file_name.clone(), options).map_err(|err| {
 					Error::BadRequest {
 						message: format!("failed to start zip entry: {err}"),

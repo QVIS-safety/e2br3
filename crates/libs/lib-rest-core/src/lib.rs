@@ -530,19 +530,46 @@ async fn load_sender_options_for_org(
 		.fetch_all(
 			sqlx::query_as::<_, SenderOptionRow>(
 				r#"
-			SELECT sender_identifier, COUNT(DISTINCT case_id) AS case_count
+			WITH sender_master_options AS (
+				SELECT DISTINCT
+				       NULLIF(
+				           BTRIM(COALESCE(
+				               data->>'senderIdentifier',
+				               data->>'messageSenderIdentifier',
+				               data->>'batchSenderIdentifier',
+				               data->>'senderOrganization'
+				           )),
+				           ''
+				       ) AS sender_identifier,
+				       0::bigint AS case_count
+				FROM presave_templates
+				WHERE organization_id = $1
+				  AND entity_type = 'sender'
+				  AND LOWER(COALESCE(data->>'senderDeleted', 'false')) NOT IN ('true', '1', 'yes')
+			),
+			case_sender_options AS (
+				SELECT sender_identifier, COUNT(DISTINCT case_id) AS case_count
+				FROM (
+					SELECT mh.case_id,
+					       NULLIF(BTRIM(mh.message_sender_identifier), '') AS sender_identifier
+					FROM message_headers mh
+					UNION ALL
+					SELECT mh.case_id,
+					       NULLIF(BTRIM(mh.batch_sender_identifier), '') AS sender_identifier
+					FROM message_headers mh
+				) senders
+				JOIN cases c ON c.id = senders.case_id
+				WHERE c.organization_id = $1
+				  AND sender_identifier IS NOT NULL
+				GROUP BY sender_identifier
+			)
+			SELECT sender_identifier, SUM(case_count)::bigint AS case_count
 			FROM (
-				SELECT mh.case_id,
-				       NULLIF(BTRIM(mh.message_sender_identifier), '') AS sender_identifier
-				FROM message_headers mh
+				SELECT sender_identifier, case_count FROM sender_master_options
 				UNION ALL
-				SELECT mh.case_id,
-				       NULLIF(BTRIM(mh.batch_sender_identifier), '') AS sender_identifier
-				FROM message_headers mh
-			) senders
-			JOIN cases c ON c.id = senders.case_id
-			WHERE c.organization_id = $1
-			  AND sender_identifier IS NOT NULL
+				SELECT sender_identifier, case_count FROM case_sender_options
+			) sender_options
+			WHERE sender_identifier IS NOT NULL
 			GROUP BY sender_identifier
 			ORDER BY sender_identifier ASC
 			"#,

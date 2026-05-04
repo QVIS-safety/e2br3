@@ -13,7 +13,7 @@ pub fn router() -> Router {
 #[derive(OpenApi)]
 #[openapi(
 	info(
-		title = "E2BR3 Backend API",
+		title = "QVIS Safety Backend API",
 		version = "0.1.0",
 		description = "OpenAPI documentation for the Axum-based E2BR3 backend. Authenticated API routes use the HTTP-only `auth-token` cookie. Internal machine-to-machine routes use the `x-callback-token` header."
 	),
