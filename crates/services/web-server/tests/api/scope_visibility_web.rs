@@ -302,6 +302,71 @@ async fn test_case_get_requires_matching_product_and_study_scope() -> Result<()>
 
 #[serial]
 #[tokio::test]
+async fn test_case_get_blocks_empty_product_or_study_scope_when_case_has_values(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(
+		&app,
+		&admin_cookie,
+		&format!("SR-STRICT-SCOPE-{}", Uuid::new_v4()),
+		Some("PROD-STRICT"),
+	)
+	.await?;
+	create_message_header(&app, &admin_cookie, case_id, "SEND-STRICT").await?;
+	create_study(&app, &admin_cookie, case_id, "STUDY-STRICT").await?;
+
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({ "access_sender_ids": ["SEND-STRICT"] }),
+	)
+	.await?;
+
+	let (status, _value) = request_json(
+		&app,
+		"GET",
+		&viewer_cookie,
+		format!("/api/cases/{case_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN);
+
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({
+			"access_sender_ids": ["SEND-STRICT"],
+			"access_product_ids": ["PROD-STRICT"],
+			"access_study_ids": ["STUDY-STRICT"]
+		}),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		"GET",
+		&viewer_cookie,
+		format!("/api/cases/{case_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_get_blocks_blinded_case_without_blind_scope() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -423,13 +488,15 @@ async fn test_routing_profile_sender_options_follow_role_scope() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{company_profile:?}");
-	assert_eq!(
-		company_profile["data"]["availableSenders"]
-			.as_array()
-			.ok_or("missing company senders")?
-			.len(),
-		0
-	);
+	let company_senders = company_profile["data"]["availableSenders"]
+		.as_array()
+		.ok_or("missing company senders")?;
+	assert!(company_senders
+		.iter()
+		.any(|row| row["senderIdentifier"] == "SEND-A"));
+	assert!(company_senders
+		.iter()
+		.any(|row| row["senderIdentifier"] == "SEND-B"));
 
 	let (status, viewer_profile) = request_json(
 		&app,
@@ -695,5 +762,95 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 		value["privilege_map"]["case"]["can_lock"].as_bool(),
 		Some(true)
 	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_custom_admin_capable_role_can_administer_users_and_roles() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let role_name = format!("custom_admin_{}", Uuid::new_v4().simple());
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/roles".to_string(),
+		Some(json!({
+			"data": {
+				"role_name": role_name,
+				"description": "Custom sponsor-admin equivalent",
+				"privileges": [
+					{
+						"menu_key": "admin",
+						"can_read": true,
+						"can_edit": true,
+						"can_review": true,
+						"can_lock": true
+					}
+				]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(value["sponsor_admin_capable"].as_bool(), Some(true));
+
+	let custom_admin = insert_user(
+		&mm,
+		seed.org_id,
+		&role_name,
+		system_user_id(),
+		Some("custompwd"),
+	)
+	.await?;
+	let custom_token =
+		generate_web_token(&custom_admin.email, custom_admin.token_salt)?;
+	let custom_cookie = cookie_header(&custom_token.to_string());
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/users".to_string(),
+		Some(json!({
+			"data": {
+				"organization_id": seed.org_id,
+				"email": format!("custom-admin-created-{}@example.com", Uuid::new_v4()),
+				"role": "viewer"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+
+	let next_role = format!("custom_admin_child_{}", Uuid::new_v4().simple());
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/admin/roles".to_string(),
+		Some(json!({
+			"data": {
+				"role_name": next_role,
+				"privileges": [
+					{
+						"menu_key": "case",
+						"can_read": true,
+						"can_edit": false,
+						"can_review": false,
+						"can_lock": false
+					}
+				]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	Ok(())
 }

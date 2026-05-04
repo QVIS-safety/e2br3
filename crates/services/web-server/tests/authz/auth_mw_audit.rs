@@ -5,7 +5,7 @@ use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use hmac::{Hmac, Mac};
 use lib_auth::token::generate_web_token;
-use lib_core::ctx::{Ctx, ROLE_ADMIN};
+use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_CRO};
 use lib_core::model::store::set_full_context_dbx;
 use lib_utils::b64::{b64u_decode, b64u_encode};
 use serde_json::{json, Value};
@@ -175,7 +175,7 @@ async fn test_auth_login_user_with_nil_org_fails() -> Result<()> {
 		dbx,
 		root_ctx.user_id(),
 		root_ctx.organization_id(),
-		ROLE_ADMIN,
+		ROLE_SPONSOR_ADMIN_CRO,
 	)
 	.await?;
 	dbx.execute(
@@ -320,7 +320,7 @@ async fn test_auth_login_upgrades_legacy_hash_for_non_admin_user() -> Result<()>
 		dbx,
 		root_ctx.user_id(),
 		root_ctx.organization_id(),
-		ROLE_ADMIN,
+		ROLE_SPONSOR_ADMIN_CRO,
 	)
 	.await?;
 	dbx.execute(

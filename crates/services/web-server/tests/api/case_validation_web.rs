@@ -762,16 +762,16 @@ async fn test_create_case_rejects_invalid_profile() -> Result<()> {
 	let app = web_server::app(mm);
 
 	let body = json!({
-		"data": {
+	"data": {
 			"organization_id": seed.org_id,
 			"safety_report_id": format!("SR-{}", Uuid::new_v4()),
 			"status": "draft",
-			"validation_profile": "nope"
+			"appendices_json": "[\"nope\"]"
 		}
 	});
 	let (status, body) = create_case_with_payload(&app, &cookie, body).await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(body.to_string().contains("invalid validation profile"));
+	assert!(body.to_string().contains("invalid appendix profile"));
 	Ok(())
 }
 
@@ -1510,6 +1510,124 @@ async fn test_non_editable_workflow_status_blocks_subresource_write() -> Result<
 			.contains("workflow status 'To be reviewed' is read-only"),
 		"{body:?}"
 	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_qced_case_blocks_content_updates_even_when_workflow_saved_is_editable(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"description": "Default authoring state",
+							"allowed_roles": ["PVS", "PVM"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let (status, body) =
+		update_case_status(&app, &cookie, case_id, "reviewed").await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, body) = update_safety_report(
+		&app,
+		&cookie,
+		case_id,
+		json!({
+			"data": {
+				"report_type": "2"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body.to_string().contains("QCed cases are read-only"),
+		"{body:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_validated_case_blocks_content_updates_even_when_workflow_saved_is_editable(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"description": "Default authoring state",
+							"allowed_roles": ["PVS", "PVM"]
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let (status, body) =
+		update_case_status(&app, &cookie, case_id, "validated").await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, body) = update_safety_report(
+		&app,
+		&cookie,
+		case_id,
+		json!({
+			"data": {
+				"report_type": "2"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body.to_string().contains("QCed cases are read-only"),
+		"{body:?}"
+	);
+
 	Ok(())
 }
 

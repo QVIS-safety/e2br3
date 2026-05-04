@@ -272,10 +272,8 @@ async fn apply_compatibility_alters(
 		"CREATE OR REPLACE FUNCTION is_current_user_admin() RETURNS BOOLEAN AS $$
 		BEGIN
 		    RETURN COALESCE(current_setting('app.current_user_role', true), '') IN (
-		        'system_admin',
 		        'sponsor_admin_cro',
-		        'sponsor_admin_company',
-		        'admin'
+		        'sponsor_admin_company'
 		    );
 		EXCEPTION
 		    WHEN OTHERS THEN

@@ -189,7 +189,6 @@ async fn test_case_update_not_found() -> Result<()> {
 		safety_report_id: None,
 		dg_prd_key: None,
 		status: Some("validated".to_string()),
-		validation_profile: None,
 		appendices_json: None,
 		review_receivers_json: None,
 		workflow_routes_json: None,

@@ -101,7 +101,7 @@ async fn allowed_scope_for_entity(
 	mm: &ModelManager,
 	entity_type: PresaveEntityType,
 ) -> Result<Option<HashSet<String>>> {
-	if ctx.is_system_admin() || ctx.role() == lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO {
+	if lib_rest_core::is_safety_db_admin(ctx, mm).await? {
 		return Ok(None);
 	}
 	let user: lib_core::model::user::User =

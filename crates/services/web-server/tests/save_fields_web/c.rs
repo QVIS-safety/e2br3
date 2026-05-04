@@ -734,7 +734,7 @@ macro_rules! case_create_single_field_test {
 				"organization_id": ctx.org_id,
 				"safety_report_id": format!("SAVE-C-{}", Uuid::new_v4().simple()),
 				"status": "draft",
-				"validation_profile": "mfds"
+				"appendices_json": "[\"mfds\"]"
 			});
 			if let Some(data_obj) = data.as_object_mut() {
 				if let Some(extra_obj) = json!($payload).as_object() {

@@ -103,19 +103,22 @@ pub(crate) fn collect_ich_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	if validation_ctx.safety_report.is_none() {
+	let _ = push_issue_if_rule_invalid(
+		issues,
+		"ICH.C.1.1.REQUIRED",
+		"safetyReportIdentification.safetyReportId",
+		Some(validation_ctx.case.safety_report_id.as_str()),
+		None,
+		RuleFacts::default(),
+	);
+
+	if validation_ctx.safety_report.is_none()
+		&& !has_text(Some(validation_ctx.case.safety_report_id.as_str()))
+	{
 		push_issue_by_code(issues, "ICH.C.1.REQUIRED", "safetyReportIdentification");
 	}
 
 	if let Some(report) = validation_ctx.safety_report.as_ref() {
-		let _ = push_issue_if_rule_invalid(
-			issues,
-			"ICH.C.1.1.REQUIRED",
-			"safetyReportIdentification.safetyReportId",
-			Some(validation_ctx.case.safety_report_id.as_str()),
-			None,
-			RuleFacts::default(),
-		);
 		let transmission_date =
 			report.transmission_date.map(|value| value.to_string());
 		let _ = push_issue_if_rule_invalid(
@@ -209,6 +212,8 @@ pub(crate) fn collect_ich_issues(
 				"studyInformation.0.studyTypeReaction",
 			);
 		}
+	} else {
+		push_missing_safety_report_field_issues(issues);
 	}
 
 	validation_ctx
@@ -360,6 +365,40 @@ pub(crate) fn collect_ich_issues(
 				RuleFacts::default(),
 			);
 		});
+}
+
+fn push_missing_safety_report_field_issues(issues: &mut Vec<ValidationIssue>) {
+	for (code, path) in [
+		(
+			"ICH.C.1.2.REQUIRED",
+			"safetyReportIdentification.transmissionDate",
+		),
+		(
+			"ICH.C.1.3.REQUIRED",
+			"safetyReportIdentification.reportType",
+		),
+		(
+			"ICH.C.1.4.REQUIRED",
+			"safetyReportIdentification.dateFirstReceivedFromSource",
+		),
+		(
+			"ICH.C.1.5.REQUIRED",
+			"safetyReportIdentification.dateOfMostRecentInformation",
+		),
+		(
+			"ICH.C.1.7.REQUIRED",
+			"safetyReportIdentification.fulfilExpeditedCriteria",
+		),
+	] {
+		let _ = push_issue_if_rule_invalid(
+			issues,
+			code,
+			path,
+			None,
+			None,
+			RuleFacts::default(),
+		);
+	}
 }
 
 pub(crate) async fn collect_fda_issues(

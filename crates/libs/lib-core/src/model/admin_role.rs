@@ -39,6 +39,7 @@ pub struct AdminRoleCreateData {
 	pub description: Option<String>,
 	pub privileges: SqlxJson<Vec<AdminMenuPrivilege>>,
 	pub active: bool,
+	pub sponsor_admin_capable: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,6 +48,7 @@ pub struct AdminRoleUpdateData {
 	pub description: Option<String>,
 	pub privileges: SqlxJson<Vec<AdminMenuPrivilege>>,
 	pub active: bool,
+	pub sponsor_admin_capable: bool,
 }
 
 const ROLE_SELECT: &str = r#"
@@ -97,14 +99,15 @@ impl AdminRoleBmc {
 						(role_name, display_name, description, privileges_json, active,
 						 built_in, editable, sponsor_admin_capable,
 						 can_view, can_review, can_lock, can_admin)
-					VALUES ($1, $2, $3, $4, $5, false, true, false, false, false, false, false)
+						VALUES ($1, $2, $3, $4, $5, false, true, $6, false, false, false, false)
 					"#,
 				)
 				.bind(&data.role_name)
 				.bind(&data.display_name)
 				.bind(&data.description)
 				.bind(&data.privileges)
-				.bind(data.active),
+				.bind(data.active)
+				.bind(data.sponsor_admin_capable),
 			)
 			.await
 			.map(|_| ())
@@ -123,9 +126,10 @@ impl AdminRoleBmc {
 					UPDATE app_roles
 					SET display_name = $2,
 					    description = $3,
-					    privileges_json = $4,
-					    active = $5,
-					    updated_at = now(),
+						    privileges_json = $4,
+						    active = $5,
+						    sponsor_admin_capable = $6,
+						    updated_at = now(),
 					    can_view = false,
 					    can_review = false,
 					    can_lock = false,
@@ -137,7 +141,8 @@ impl AdminRoleBmc {
 				.bind(&data.display_name)
 				.bind(&data.description)
 				.bind(&data.privileges)
-				.bind(data.active),
+				.bind(data.active)
+				.bind(data.sponsor_admin_capable),
 			)
 			.await
 			.map(|_| ())

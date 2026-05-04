@@ -18,7 +18,7 @@ use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SafetyReportIdentificationForCreate,
 };
 use lib_core::model::ModelManager;
-use lib_core::validation::RegulatoryAuthority;
+use lib_core::validation::ValidationProfile;
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
@@ -35,7 +35,7 @@ use crate::web::rest::case_export_rest::{
 };
 use crate::web::rest::case_rest::{
 	first_appendix_profile_from_json, normalize_appendices_json,
-	parse_validation_profile_or_bad_request, validate_case_create_payload,
+	validate_case_create_payload,
 };
 
 // -- Types
@@ -89,7 +89,6 @@ pub struct CaseFromIntakeInput {
 	#[serde(deserialize_with = "lib_core::serde::flex_date::deserialize_date")]
 	pub date_of_most_recent_information: Date,
 	pub report_type: String,
-	pub validation_profile: Option<String>,
 	pub appendices_json: Option<String>,
 	pub status: Option<String>,
 	pub allow_duplicate_override: Option<bool>,
@@ -335,14 +334,11 @@ pub async fn create_case_from_intake(
 		Some(value) => Some(normalize_appendices_json(value)?),
 		None => None,
 	};
-	let profile_enum = match normalized_appendices.as_deref() {
-		Some(value) => first_appendix_profile_from_json(value)?,
-		None => match data.validation_profile.as_deref() {
-			Some(value) => parse_validation_profile_or_bad_request(value)?,
-			None => RegulatoryAuthority::Fda.to_validation_profile(),
-		},
-	};
-	let profile = profile_enum.as_str().to_string();
+	let profile_enum = normalized_appendices
+		.as_deref()
+		.map(first_appendix_profile_from_json)
+		.transpose()?
+		.unwrap_or(ValidationProfile::Fda);
 
 	let next_version = next_case_version(&ctx, &mm, safety_report_id).await?;
 	let case_create = InternalCaseForCreate {
@@ -350,7 +346,6 @@ pub async fn create_case_from_intake(
 		safety_report_id: safety_report_id.to_string(),
 		dg_prd_key: data.dg_prd_key.clone(),
 		status: Some(data.status.unwrap_or_else(|| "draft".to_string())),
-		validation_profile: Some(profile),
 		appendices_json: Some(
 			normalized_appendices
 				.unwrap_or_else(|| json!([profile_enum.as_str()]).to_string()),

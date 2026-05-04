@@ -7,7 +7,7 @@ use lib_core::ctx::{
 };
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::ModelManager;
-use lib_rest_core::{require_admin_role, Error, Result};
+use lib_rest_core::{require_safety_db_admin_role, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -251,7 +251,7 @@ pub async fn update_admin_settings(
 	>,
 ) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
 	let ctx = ctx_w.0;
-	require_admin_role(&ctx)?;
+	require_safety_db_admin_role(&ctx, &mm).await?;
 	let value = payload_to_value(&mm, &payload.data).await?;
 	let updated_by: Option<Uuid> = Some(ctx.user_id());
 	AdminSettingsBmc::upsert(&mm, SETTINGS_KEY, &value, updated_by)

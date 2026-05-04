@@ -1,5 +1,22 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- Create database roles before any table grants/policies reference them.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'e2br3_app_role') THEN
+        CREATE ROLE e2br3_app_role;
+    END IF;
+END $$;
+
+GRANT e2br3_app_role TO app_user;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'e2br3_auditor_role') THEN
+        CREATE ROLE e2br3_auditor_role;
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS organizations (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       name VARCHAR(500) NOT NULL,
@@ -141,7 +158,6 @@ CREATE TABLE if NOT EXISTS cases (
     version INTEGER NOT NULL DEFAULT 1,      -- C.1.1.r.1
     dg_prd_key TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'draft',
-    validation_profile VARCHAR(10),
     appendices_json TEXT,
     review_receivers_json TEXT,
     workflow_routes_json TEXT,
@@ -180,8 +196,7 @@ CREATE TABLE if NOT EXISTS cases (
 
     -- Unique constraint: one active version per safety_report_id
     CONSTRAINT unique_safety_report_version UNIQUE (safety_report_id, version),
-    CONSTRAINT case_status_valid CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'deleted', 'archived', 'nullified')),
-    CONSTRAINT case_validation_profile_valid CHECK (validation_profile IS NULL OR validation_profile IN ('ich', 'fda', 'mfds'))
+    CONSTRAINT case_status_valid CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'deleted', 'archived', 'nullified'))
 );
 
 CREATE INDEX idx_cases_organization ON cases(organization_id);
@@ -189,7 +204,6 @@ CREATE INDEX idx_cases_safety_report_id ON cases(safety_report_id);
 CREATE INDEX idx_cases_status ON cases(status);
 CREATE INDEX idx_cases_workflow_status ON cases(workflow_status);
 CREATE INDEX idx_cases_created_by ON cases(created_by);
-CREATE INDEX idx_cases_validation_profile ON cases(validation_profile);
 
     -- ============================================================================
     -- 4. Case Versions (for history tracking)
@@ -725,24 +739,6 @@ $$;
 -- Enable Row-Level Security on audit_logs
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs FORCE ROW LEVEL SECURITY;
--- Create application role (used by API connections)
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'e2br3_app_role') THEN
-        CREATE ROLE e2br3_app_role;
-    END IF;
-END $$;
-
-GRANT e2br3_app_role TO app_user;
-
--- Create auditor role (read-only access to audit logs)
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'e2br3_auditor_role') THEN
-        CREATE ROLE e2br3_auditor_role;
-    END IF;
-END $$;
-
 GRANT e2br3_auditor_role TO app_user;
 
 -- Policy 1: Allow INSERT only for application role (append-only)
@@ -815,10 +811,8 @@ $$ LANGUAGE plpgsql STABLE;
 CREATE OR REPLACE FUNCTION is_current_user_admin() RETURNS BOOLEAN AS $$
 BEGIN
     RETURN COALESCE(current_setting('app.current_user_role', true), '') IN (
-        'system_admin',
         'sponsor_admin_cro',
-        'sponsor_admin_company',
-        'admin'
+        'sponsor_admin_company'
     );
 EXCEPTION
     WHEN OTHERS THEN

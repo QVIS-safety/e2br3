@@ -3,7 +3,7 @@ use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use axum::Router;
 use lib_auth::token::generate_web_token;
-use lib_core::ctx::ROLE_ADMIN;
+use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
 use serde_json::{json, Value};
@@ -109,7 +109,7 @@ pub async fn create_case(ctx: &PersistTestCtx) -> Result<Uuid> {
 			"organization_id": ctx.org_id,
 			"safety_report_id": format!("PERSIST-{}", Uuid::new_v4()),
 			"status": "draft",
-			"validation_profile": "fda"
+			"appendices_json": "[\"fda\"]"
 		}
 	});
 	let mut last_status = StatusCode::INTERNAL_SERVER_ERROR;
@@ -192,7 +192,13 @@ pub async fn force_case_validated_for_export(
 	case_id: Uuid,
 ) -> Result<()> {
 	ctx.mm.dbx().begin_txn().await?;
-	set_full_context_dbx(ctx.mm.dbx(), ctx.admin_id, ctx.org_id, ROLE_ADMIN).await?;
+	set_full_context_dbx(
+		ctx.mm.dbx(),
+		ctx.admin_id,
+		ctx.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
 	ctx.mm
 		.dbx()
 		.execute(
@@ -944,7 +950,13 @@ pub async fn db_fetch_json_by_case(
 	case_id: Uuid,
 ) -> Result<Value> {
 	ctx.mm.dbx().begin_txn().await?;
-	set_full_context_dbx(ctx.mm.dbx(), ctx.admin_id, ctx.org_id, ROLE_ADMIN).await?;
+	set_full_context_dbx(
+		ctx.mm.dbx(),
+		ctx.admin_id,
+		ctx.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
 	let (value,) = ctx
 		.mm
 		.dbx()
@@ -1020,7 +1032,13 @@ pub async fn db_count_by_case(
 	case_id: Uuid,
 ) -> Result<i64> {
 	ctx.mm.dbx().begin_txn().await?;
-	set_full_context_dbx(ctx.mm.dbx(), ctx.admin_id, ctx.org_id, ROLE_ADMIN).await?;
+	set_full_context_dbx(
+		ctx.mm.dbx(),
+		ctx.admin_id,
+		ctx.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
 	let sql = format!("SELECT COUNT(*)::bigint FROM {table} WHERE case_id = $1");
 	let (count,) = ctx
 		.mm

@@ -60,7 +60,6 @@ async fn insert_validated_raw_case(
 	org_id: Uuid,
 	user_id: Uuid,
 	safety_report_id: &str,
-	validation_profile: &str,
 	appendices_json: &str,
 ) -> Result<Uuid> {
 	let case_id = Uuid::new_v4();
@@ -71,19 +70,17 @@ async fn insert_validated_raw_case(
 		"INSERT INTO cases (
 			id,
 			organization_id,
-			safety_report_id,
-			status,
-			validation_profile,
-			appendices_json,
-			raw_xml,
-			created_by,
-			updated_by
-		) VALUES ($1, $2, $3, 'validated', $4, $5, $6, $7, $7)",
+				safety_report_id,
+				status,
+				appendices_json,
+				raw_xml,
+				created_by,
+				updated_by
+			) VALUES ($1, $2, $3, 'validated', $4, $5, $6, $6)",
 	)
 	.bind(case_id)
 	.bind(org_id)
 	.bind(safety_report_id)
-	.bind(validation_profile)
 	.bind(appendices_json)
 	.bind(br#"<?xml version="1.0" encoding="UTF-8"?><test/>"#.as_slice())
 	.bind(user_id)
@@ -108,7 +105,6 @@ async fn test_single_export_rejects_unselected_appendix_profile() -> Result<()> 
 		seed.org_id,
 		seed.admin.id,
 		&safety_report_id,
-		"fda",
 		r#"["fda"]"#,
 	)
 	.await?;
@@ -145,7 +141,6 @@ async fn test_bulk_export_writes_one_xml_per_selected_appendix() -> Result<()> {
 		seed.org_id,
 		seed.admin.id,
 		&safety_report_id,
-		"fda",
 		r#"["fda","mfds"]"#,
 	)
 	.await?;

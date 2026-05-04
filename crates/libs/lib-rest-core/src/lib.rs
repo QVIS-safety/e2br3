@@ -87,6 +87,78 @@ pub fn require_admin_role(ctx: &Ctx) -> Result<()> {
 	Ok(())
 }
 
+pub async fn is_safety_db_admin(ctx: &Ctx, mm: &ModelManager) -> Result<bool> {
+	if ctx.is_sponsor_admin() {
+		return Ok(true);
+	}
+	if ctx.is_system_admin() {
+		return Ok(false);
+	}
+	let role = canonical_role(ctx.role());
+	if role.is_empty() {
+		return Ok(false);
+	}
+	let row = mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, (bool,)>(
+				r#"
+				SELECT sponsor_admin_capable
+				FROM app_roles
+				WHERE role_name = $1
+				  AND active = true
+				"#,
+			)
+			.bind(&role),
+		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(matches!(row, Some((true,))))
+}
+
+pub async fn require_safety_db_admin_role(
+	ctx: &Ctx,
+	mm: &ModelManager,
+) -> Result<()> {
+	if !is_safety_db_admin(ctx, mm).await? {
+		return Err(Error::AccessDenied {
+			required_role: "safety_db_admin".to_string(),
+		});
+	}
+	Ok(())
+}
+
+pub async fn safety_db_admin_db_ctx(ctx: &Ctx, mm: &ModelManager) -> Result<Ctx> {
+	require_safety_db_admin_role(ctx, mm).await?;
+	if ctx.is_sponsor_admin() {
+		return Ok(ctx.clone());
+	}
+	let elevated = Ctx::new(
+		ctx.user_id(),
+		ctx.organization_id(),
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)
+	.map_err(|_| Error::AccessDenied {
+		required_role: "safety_db_admin".to_string(),
+	})?
+	.with_compliance(
+		ctx.change_reason().map(ToString::to_string),
+		ctx.e_signature_id(),
+	);
+	Ok(elevated)
+}
+
+pub fn sponsor_admin_provisioning_db_ctx(ctx: &Ctx) -> Result<Ctx> {
+	Ctx::new(
+		ctx.user_id(),
+		ctx.organization_id(),
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)
+	.map_err(|_| Error::AccessDenied {
+		required_role: "sponsor_admin_provisioning".to_string(),
+	})
+}
+
 pub fn require_permission(ctx: &Ctx, permission: Permission) -> Result<()> {
 	if !has_permission(ctx.role(), permission) {
 		return Err(Error::PermissionDenied {
@@ -248,22 +320,7 @@ async fn workflow_admin_override_allowed(
 	if role.is_empty() {
 		return Ok(false);
 	}
-	let row = mm
-		.dbx()
-		.fetch_optional(
-			sqlx::query_as::<_, (bool,)>(
-				r#"
-				SELECT can_admin
-				FROM app_roles
-				WHERE role_name = $1
-				  AND active = true
-				"#,
-			)
-			.bind(&role),
-		)
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	Ok(matches!(row, Some((true,))))
+	is_safety_db_admin(ctx, mm).await
 }
 
 pub async fn workflow_ownership_for_case(
@@ -433,12 +490,20 @@ fn normalize_values(values: &[String]) -> HashSet<String> {
 		.collect()
 }
 
-fn scope_matches(assigned: &HashSet<String>, available: &[String]) -> bool {
+fn optional_scope_matches(assigned: &HashSet<String>, available: &[String]) -> bool {
 	if assigned.is_empty() {
 		return true;
 	}
 	let available = normalize_values(available);
 	!available.is_empty() && available.iter().any(|value| assigned.contains(value))
+}
+
+fn required_scope_matches(assigned: &HashSet<String>, available: &[String]) -> bool {
+	let available = normalize_values(available);
+	if available.is_empty() {
+		return true;
+	}
+	!assigned.is_empty() && available.iter().any(|value| assigned.contains(value))
 }
 
 fn selected_sender_matches(
@@ -521,7 +586,7 @@ pub async fn routing_profile_for_user(
 		load_sender_options_for_org(mm, ctx.organization_id()).await?
 	};
 
-	let available_senders = if ctx.role() == lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO {
+	let available_senders = if ctx.is_sponsor_admin() {
 		all_senders
 	} else {
 		all_senders
@@ -659,7 +724,7 @@ pub async fn case_matches_user_scope(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<bool> {
-	if ctx.is_system_admin() || ctx.role() == lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO {
+	if is_safety_db_admin(ctx, mm).await? {
 		return Ok(true);
 	}
 
@@ -680,7 +745,7 @@ pub async fn case_matches_user_scope(
 	let scope = load_case_scope(mm, case_id).await?;
 	let assigned_sender_ids = parse_scope_values(user.access_sender_ids.as_deref());
 	if assigned_sender_ids.is_empty()
-		|| !scope_matches(&assigned_sender_ids, &scope.sender_identifiers)
+		|| !optional_scope_matches(&assigned_sender_ids, &scope.sender_identifiers)
 	{
 		return Ok(false);
 	}
@@ -690,13 +755,13 @@ pub async fn case_matches_user_scope(
 	) {
 		return Ok(false);
 	}
-	if !scope_matches(
+	if !required_scope_matches(
 		&parse_scope_values(user.access_product_ids.as_deref()),
 		&scope.product_identifiers,
 	) {
 		return Ok(false);
 	}
-	if !scope_matches(
+	if !required_scope_matches(
 		&parse_scope_values(user.access_study_ids.as_deref()),
 		&scope.study_identifiers,
 	) {
@@ -740,6 +805,14 @@ pub async fn case_write_block_reason_for_case(
 			message: "locked cases are read-only".to_string(),
 		}));
 	}
+	if legacy_status.eq_ignore_ascii_case("reviewed")
+		|| legacy_status.eq_ignore_ascii_case("validated")
+	{
+		return Ok(Some(WorkflowBlockReason {
+			code: "case_qced",
+			message: "QCed cases are read-only".to_string(),
+		}));
+	}
 
 	let workflow = load_workflow_runtime_settings(mm).await?;
 	if workflow.enabled {
@@ -778,13 +851,6 @@ pub async fn case_write_block_reason_for_case(
 			}));
 		}
 		return Ok(None);
-	}
-
-	if legacy_status.eq_ignore_ascii_case("reviewed") {
-		return Ok(Some(WorkflowBlockReason {
-			code: "workflow_status_read_only",
-			message: "QCed cases are read-only".to_string(),
-		}));
 	}
 
 	Ok(None)

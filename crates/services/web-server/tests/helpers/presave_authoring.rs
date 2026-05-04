@@ -42,7 +42,7 @@ pub async fn create_case(app: &Router, cookie: &str, org_id: Uuid) -> Result<Uui
 			"organization_id": org_id,
 			"safety_report_id": format!("PS-{}", Uuid::new_v4()),
 			"status": "draft",
-			"validation_profile": "fda"
+			"appendices_json": "[\"fda\"]"
 		}
 	});
 	let (status, value) = request_json(

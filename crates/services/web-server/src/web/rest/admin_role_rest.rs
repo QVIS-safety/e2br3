@@ -9,7 +9,7 @@ use lib_core::model::admin_role::{
 	AdminRoleBmc, AdminRoleCreateData, AdminRoleUpdateData, DbAdminRoleRow,
 };
 use lib_core::model::ModelManager;
-use lib_rest_core::{require_admin_role, Error, Result};
+use lib_rest_core::{require_safety_db_admin_role, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
@@ -112,6 +112,7 @@ fn build_role_row(
 	let is_system = role_name == ROLE_SYSTEM_ADMIN;
 	let (can_view, can_review, can_lock, can_admin) =
 		role_summary_booleans(&privileges);
+	let sponsor_admin_capable = sponsor_admin_capable || can_admin;
 	AdminRoleRow {
 		canonical_role_id: role_name.clone(),
 		role_name,
@@ -325,7 +326,7 @@ pub async fn list_admin_roles(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 ) -> Result<(StatusCode, Json<Vec<AdminRoleRow>>)> {
-	require_admin_role(&ctx_w.0)?;
+	require_safety_db_admin_role(&ctx_w.0, &mm).await?;
 	let mut rows = built_in_roles();
 	let custom_rows = AdminRoleBmc::list(&mm).await.map_err(Error::Model)?;
 	rows.extend(custom_rows.into_iter().map(row_to_api));
@@ -338,7 +339,7 @@ pub async fn get_admin_role(
 	ctx_w: CtxW,
 	Path(role_name): Path<String>,
 ) -> Result<(StatusCode, Json<AdminRoleRow>)> {
-	require_admin_role(&ctx_w.0)?;
+	require_safety_db_admin_role(&ctx_w.0, &mm).await?;
 	let normalized_role = normalize_role_name(&role_name);
 	if let Some(row) = built_in_roles()
 		.into_iter()
@@ -360,7 +361,7 @@ pub async fn create_admin_role(
 		lib_rest_core::rest_params::ParamsForCreate<AdminRoleCreateBody>,
 	>,
 ) -> Result<(StatusCode, Json<AdminRoleRow>)> {
-	require_admin_role(&ctx_w.0)?;
+	require_safety_db_admin_role(&ctx_w.0, &mm).await?;
 	let data = params.data;
 	let role_name = normalize_role_name(&data.role_name);
 	if is_built_in_role_name(&role_name) {
@@ -387,6 +388,7 @@ pub async fn create_admin_role(
 		data.can_lock,
 		data.can_admin,
 	)?;
+	let (_, _, _, sponsor_admin_capable) = role_summary_booleans(&privileges);
 
 	AdminRoleBmc::create(
 		&mm,
@@ -396,6 +398,7 @@ pub async fn create_admin_role(
 			description,
 			privileges: SqlxJson(privileges),
 			active,
+			sponsor_admin_capable,
 		},
 	)
 	.await
@@ -420,7 +423,7 @@ pub async fn update_admin_role(
 		lib_rest_core::rest_params::ParamsForUpdate<AdminRoleUpdateBody>,
 	>,
 ) -> Result<(StatusCode, Json<AdminRoleRow>)> {
-	require_admin_role(&ctx_w.0)?;
+	require_safety_db_admin_role(&ctx_w.0, &mm).await?;
 	let normalized_role = normalize_role_name(&role_name);
 	if is_built_in_role_name(&normalized_role) {
 		return Err(Error::BadRequest {
@@ -455,6 +458,7 @@ pub async fn update_admin_role(
 		row_to_api(current.clone()).privileges
 	};
 	let next_active = data.active.unwrap_or(current.active);
+	let (_, _, _, sponsor_admin_capable) = role_summary_booleans(&next_privileges);
 
 	AdminRoleBmc::update(
 		&mm,
@@ -464,6 +468,7 @@ pub async fn update_admin_role(
 			description: next_description,
 			privileges: SqlxJson(next_privileges),
 			active: next_active,
+			sponsor_admin_capable,
 		},
 	)
 	.await
@@ -485,7 +490,7 @@ pub async fn delete_admin_role(
 	ctx_w: CtxW,
 	Path(role_name): Path<String>,
 ) -> Result<StatusCode> {
-	require_admin_role(&ctx_w.0)?;
+	require_safety_db_admin_role(&ctx_w.0, &mm).await?;
 	let normalized_role = normalize_role_name(&role_name);
 	if is_built_in_role_name(&normalized_role) {
 		return Err(Error::BadRequest {

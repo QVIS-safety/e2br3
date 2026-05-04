@@ -156,7 +156,7 @@ impl Ctx {
 	}
 
 	pub fn can_admin_safety_db(&self) -> bool {
-		self.is_system_admin() || self.is_sponsor_admin()
+		self.is_sponsor_admin()
 	}
 
 	pub fn is_manager(&self) -> bool {
@@ -242,7 +242,7 @@ mod tests {
 			ROLE_SYSTEM_ADMIN.to_string(),
 		)
 		.expect("ctx");
-		assert!(system_admin.can_admin_safety_db());
+		assert!(!system_admin.can_admin_safety_db());
 		assert!(system_admin.is_system_admin());
 	}
 }

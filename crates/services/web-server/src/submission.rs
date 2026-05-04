@@ -64,9 +64,8 @@ impl TryFrom<RegulatoryAuthority> for SubmissionAuthority {
 			RegulatoryAuthority::Fda => Ok(Self::Fda),
 			RegulatoryAuthority::Mfds => Ok(Self::Mfds),
 			RegulatoryAuthority::Ich => Err(Error::BadRequest {
-				message:
-					"case validation_profile must be fda or mfds for submission"
-						.to_string(),
+				message: "case appendices must include fda or mfds for submission"
+					.to_string(),
 			}),
 		}
 	}
@@ -399,12 +398,34 @@ fn parse_timeout_secs(name: &str, default_secs: u64) -> u64 {
 		.unwrap_or(default_secs)
 }
 
-fn authority_from_case_profile(
-	case_profile: Option<&str>,
-) -> Result<SubmissionAuthority> {
-	let authority = RegulatoryAuthority::from_case_profile(case_profile)
-		.unwrap_or(RegulatoryAuthority::Fda);
-	SubmissionAuthority::try_from(authority)
+fn selected_submission_authorities(
+	appendices_json: Option<&str>,
+) -> Result<Vec<SubmissionAuthority>> {
+	if let Some(value) = appendices_json {
+		let parsed: Vec<Value> =
+			serde_json::from_str(value).map_err(|_| Error::BadRequest {
+				message: "appendices_json must be a JSON array".to_string(),
+			})?;
+		let mut authorities = Vec::new();
+		for item in parsed {
+			let Some(raw) = item.as_str() else {
+				continue;
+			};
+			let Some(authority) = SubmissionAuthority::parse(raw) else {
+				continue;
+			};
+			if !authorities.contains(&authority) {
+				authorities.push(authority);
+			}
+		}
+		if !authorities.is_empty() {
+			return Ok(authorities);
+		}
+	}
+	Err(Error::BadRequest {
+		message: "case appendices must include fda or mfds for submission"
+			.to_string(),
+	})
 }
 
 fn status_to_db(status: &SubmissionStatus) -> &'static str {
@@ -1727,16 +1748,16 @@ pub async fn assert_case_ready_for_submission(
 	authority: SubmissionAuthority,
 ) -> Result<()> {
 	let case = CaseBmc::get(ctx, mm, case_id).await?;
-	let case_authority =
-		authority_from_case_profile(case.validation_profile.as_deref())?;
-	if case_authority != authority {
+	let selected_authorities =
+		selected_submission_authorities(case.appendices_json.as_deref())?;
+	if !selected_authorities.contains(&authority) {
 		let expected = match authority {
 			SubmissionAuthority::Fda => "fda",
 			SubmissionAuthority::Mfds => "mfds",
 		};
 		return Err(Error::BadRequest {
 			message: format!(
-				"case validation_profile must be {expected} for {} submission",
+				"case appendices must include {expected} for {} submission",
 				authority.as_str().to_ascii_uppercase()
 			),
 		});
@@ -2353,7 +2374,14 @@ async fn reconcile_one_submission(
 				Err(e) => return Err(Error::from(e)),
 			};
 			let authority =
-				authority_from_case_profile(case.validation_profile.as_deref())?;
+				selected_submission_authorities(case.appendices_json.as_deref())?
+					.into_iter()
+					.next()
+					.ok_or_else(|| Error::BadRequest {
+						message:
+							"case appendices must include fda or mfds for submission"
+								.to_string(),
+					})?;
 
 			let ctx_clone = system_ctx.with_compliance(
 				Some(SYSTEM_REASON_RECONCILE_EXPORT.to_string()),
@@ -2566,7 +2594,10 @@ pub async fn reconcile_due_submissions_with_runtime_status(
 
 #[cfg(test)]
 mod tests {
-	use super::{merge_submission_status, status_from_ack, SubmissionStatus};
+	use super::{
+		merge_submission_status, selected_submission_authorities, status_from_ack,
+		SubmissionAuthority, SubmissionStatus,
+	};
 
 	#[test]
 	fn ack_status_mapping_success() {
@@ -2622,6 +2653,28 @@ mod tests {
 				&SubmissionStatus::Ack4Received
 			),
 			SubmissionStatus::Rejected
+		);
+	}
+
+	#[test]
+	fn selected_submission_authorities_prefer_appendices_json() {
+		let authorities =
+			selected_submission_authorities(Some(r#"["fda","mfds"]"#)).unwrap();
+
+		assert_eq!(
+			authorities,
+			vec![SubmissionAuthority::Fda, SubmissionAuthority::Mfds]
+		);
+	}
+
+	#[test]
+	fn selected_submission_authorities_reject_missing_appendices() {
+		let err = selected_submission_authorities(None).unwrap_err();
+
+		assert!(
+			err.to_string()
+				.contains("case appendices must include fda or mfds for submission"),
+			"{err:?}"
 		);
 	}
 }

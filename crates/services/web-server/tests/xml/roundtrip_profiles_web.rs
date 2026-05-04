@@ -473,7 +473,7 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			Some("application/json"),
 			Body::from(
 				serde_json::json!({
-					"data": { "validation_profile": fixture.profile }
+					"data": { "appendices_json": serde_json::json!([fixture.profile]).to_string() }
 				})
 				.to_string(),
 			),
@@ -481,7 +481,7 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 		.await?;
 		if update_status != StatusCode::OK {
 			failures.push(format!(
-				"{}: failed to set validation_profile {} body={}",
+				"{}: failed to set appendices_json {} body={}",
 				fixture.filename, update_status, update_body
 			));
 			continue;

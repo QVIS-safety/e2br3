@@ -1957,7 +1957,6 @@ mod tests {
 			version: 1,
 			dg_prd_key: None,
 			status: "draft".to_string(),
-			validation_profile: Some("ich".to_string()),
 			appendices_json: None,
 			review_receivers_json: None,
 			workflow_routes_json: None,

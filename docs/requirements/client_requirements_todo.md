@@ -47,7 +47,7 @@ These are the remaining implementation gaps found by rereading `03.csv`. Items t
 - [ ] Notation auto-translation decision and implementation if in scope.
 - [ ] QVIS / Client / Organization / Sender source-of-truth cleanup.
 - [ ] System-level idle-session settings and confirmation of `Idle Session Limit` / `Warning Lead Time` behavior.
-- [ ] Global `QC` / `QCed` terminology cleanup outside already converted workflow areas.
+- [-] Global `QC` / `QCed` terminology cleanup outside already converted workflow areas. Case header, case list, and submission queue lifecycle filters now use `QC`/`QCed`; remaining scope is broader copy cleanup outside the reviewed workflow surfaces.
 - [ ] Menu placement cleanup for `DATA`, user info, and logout.
 - [ ] Case page appendix selector UI placement, duplicate appendix selector removal, and MFDS/FDA regional render UAT.
 - [ ] Case save/QC/lock parity for manual and imported cases, including save reason/comments policy.
@@ -95,8 +95,8 @@ These are the remaining implementation gaps found by rereading `03.csv`. Items t
 - [-] Remove password re-entry from delete if the client still wants delete confirmation without PW input. `DELETE /api/cases/{id}` now requires reason only and does not require e-signature password re-entry; final client confirmation copy remains open.
 - [x] Keep deleted cases visible as soft-deleted rows with clear visual marking and history retention.
 - [ ] Make case list export history visible from the case area with file, status, error, time, and user.
-- [ ] Ensure QC/lock actions behave consistently for manual cases and imported cases.
-- [-] Replace ad hoc review state wording with explicit workflow-aware status where the client expects workflow status instead of a generic checked state. Backend workflow status is now distinct from legacy `cases.status`, and the case workflow panel uses the workflow status. Remaining cleanup: broader QC/review wording outside the workflow panel.
+- [x] Ensure QC/lock actions behave consistently for manual cases and imported cases. Backend blocks content edits for QCed and locked cases even when workflow is enabled; frontend allows QCed cases to proceed to Lock while keeping content read-only.
+- [-] Replace ad hoc review state wording with explicit workflow-aware status where the client expects workflow status instead of a generic checked state. Backend workflow status remains separate from QC and Lock; case list and submission filters no longer collapse QC, lock, and workflow into one visible status. Remaining cleanup is non-blocking copy outside the reviewed workflow surfaces.
 - [ ] Implement correct follow-up draft creation from an existing case:
 - [ ] Reuse the original case as the source.
 - [ ] Set `C.1.1` correctly for the follow-up report.
@@ -223,9 +223,9 @@ Implemented notes:
 - [ ] Finish the simpler filter set the client explicitly asked for:
 - [ ] sender
 - [ ] case no
-- [ ] QC status
-- [ ] lock status
-- [ ] workflow status
+- [x] QC status
+- [x] lock status
+- [x] workflow status
 - [ ] ack accept status if still required
 - [ ] Implement Excel line listing export.
 - [ ] Recheck imported-case export behavior when sender/receiver/header values are incomplete or mismatched.

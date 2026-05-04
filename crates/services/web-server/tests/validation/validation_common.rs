@@ -744,7 +744,7 @@ pub async fn create_drug_device_characteristic(
 		ctx.mm.dbx(),
 		SqlxUuid::parse_str(&ctx.admin_id.to_string())?,
 		SqlxUuid::parse_str(&ctx.org_id.to_string())?,
-		lib_core::ctx::ROLE_ADMIN,
+		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO,
 	)
 	.await?;
 	let sql = "INSERT INTO drug_device_characteristics \
@@ -1108,7 +1108,7 @@ pub async fn db_exec_case_sql(ctx: &ValidationCtx, sql: &str) -> Result<()> {
 			ctx.mm.dbx(),
 			admin_id,
 			org_id,
-			lib_core::ctx::ROLE_ADMIN,
+			lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO,
 		)
 		.await?;
 		match ctx.mm.dbx().execute(sqlx::query(sql)).await {

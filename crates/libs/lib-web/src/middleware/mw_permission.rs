@@ -150,8 +150,7 @@ impl RoleCheck for AdminRole {
 		let normalized = lib_core::ctx::canonical_role(role);
 		matches!(
 			normalized.as_str(),
-			lib_core::ctx::ROLE_SYSTEM_ADMIN
-				| lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO
+			lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO
 				| lib_core::ctx::ROLE_SPONSOR_ADMIN_COMPANY
 		)
 	}
@@ -167,8 +166,7 @@ impl RoleCheck for ManagerOrAboveRole {
 		let normalized = lib_core::ctx::canonical_role(role);
 		matches!(
 			normalized.as_str(),
-			lib_core::ctx::ROLE_SYSTEM_ADMIN
-				| lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO
+			lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO
 				| lib_core::ctx::ROLE_SPONSOR_ADMIN_COMPANY
 				| lib_core::ctx::ROLE_MANAGER
 		)
@@ -390,7 +388,7 @@ mod tests {
 	use crate::middleware::mw_auth::{CtxExtError, CtxW};
 	use axum::http::Request;
 	use lib_core::ctx::{
-		ROLE_ADMIN, ROLE_MANAGER, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER, ROLE_VIEWER,
+		ROLE_MANAGER, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER, ROLE_VIEWER,
 	};
 	use uuid::Uuid;
 
@@ -405,8 +403,8 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn require_permission_allows_admin() {
-		let mut parts = parts_with_ctx(ROLE_ADMIN);
+	async fn require_permission_allows_sponsor_admin() {
+		let mut parts = parts_with_ctx(ROLE_SPONSOR_ADMIN_CRO);
 		let res =
 			RequirePermission::<CaseCreate>::from_request_parts(&mut parts, &())
 				.await;
@@ -456,9 +454,13 @@ mod tests {
 	}
 
 	#[test]
-	fn check_organization_access_allows_admin() {
-		let ctx = Ctx::new(Uuid::new_v4(), Uuid::new_v4(), ROLE_ADMIN.to_string())
-			.expect("ctx");
+	fn check_organization_access_allows_sponsor_admin() {
+		let ctx = Ctx::new(
+			Uuid::new_v4(),
+			Uuid::new_v4(),
+			ROLE_SPONSOR_ADMIN_CRO.to_string(),
+		)
+		.expect("ctx");
 		let res = check_organization_access(&ctx, Uuid::new_v4());
 		assert!(res.is_ok());
 	}

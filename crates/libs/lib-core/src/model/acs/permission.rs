@@ -1390,7 +1390,7 @@ pub fn permissions_for_privileges(
 pub fn role_permissions(role: &str) -> &'static [Permission] {
 	let normalized = canonical_role(role);
 	match normalized.as_str() {
-		ROLE_SYSTEM_ADMIN => admin_permissions(),
+		ROLE_SYSTEM_ADMIN => &[],
 		ROLE_SPONSOR_ADMIN_CRO => admin_permissions(),
 		ROLE_SPONSOR_ADMIN_COMPANY => admin_permissions(),
 		ROLE_MANAGER => manager_permissions(),
@@ -1449,13 +1449,13 @@ mod tests {
 	use crate::ctx::ROLE_ADMIN;
 
 	#[test]
-	fn test_admin_has_all_permissions() {
-		assert!(has_permission(ROLE_ADMIN, CASE_CREATE));
-		assert!(has_permission(ROLE_ADMIN, CASE_DELETE));
-		assert!(has_permission(ROLE_ADMIN, USER_CREATE));
-		assert!(has_permission(ROLE_ADMIN, USER_DELETE));
-		assert!(has_permission(ROLE_ADMIN, ORG_CREATE));
-		assert!(has_permission(ROLE_ADMIN, AUDIT_LIST));
+	fn test_system_admin_has_no_safety_db_permissions() {
+		assert!(!has_permission(ROLE_ADMIN, CASE_CREATE));
+		assert!(!has_permission(ROLE_ADMIN, CASE_DELETE));
+		assert!(!has_permission(ROLE_ADMIN, USER_CREATE));
+		assert!(!has_permission(ROLE_ADMIN, USER_DELETE));
+		assert!(!has_permission(ROLE_ADMIN, ORG_CREATE));
+		assert!(!has_permission(ROLE_ADMIN, AUDIT_LIST));
 	}
 
 	#[test]
@@ -1522,7 +1522,10 @@ mod tests {
 
 	#[test]
 	fn test_has_all_permissions() {
-		assert!(has_all_permissions(ROLE_ADMIN, &[CASE_CREATE, CASE_DELETE]));
+		assert!(has_all_permissions(
+			ROLE_SPONSOR_ADMIN_CRO,
+			&[CASE_CREATE, CASE_DELETE]
+		));
 		assert!(!has_all_permissions(ROLE_VIEWER, &[CASE_READ, CASE_CREATE]));
 	}
 

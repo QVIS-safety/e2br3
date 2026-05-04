@@ -51,6 +51,7 @@ pub async fn import_e2b_xml(
 		req.validation_profile.clone().unwrap_or_else(|| {
 			shared::infer_validation_profile(header_extract.as_ref())
 		});
+	let appendices_json = json!([inferred_validation_profile]).to_string();
 
 	let next_version = {
 		let dbx = mm.dbx();
@@ -83,8 +84,7 @@ pub async fn import_e2b_xml(
 			safety_report_id: safety_report_id.clone(),
 			dg_prd_key: None,
 			status: Some("draft".to_string()),
-			validation_profile: Some(inferred_validation_profile),
-			appendices_json: None,
+			appendices_json: Some(appendices_json),
 			review_receivers_json: None,
 			workflow_routes_json: None,
 			mfds_report_type: None,
@@ -207,7 +207,6 @@ pub async fn import_e2b_xml(
 			safety_report_id: None,
 			dg_prd_key: None,
 			status: None,
-			validation_profile: None,
 			appendices_json: None,
 			review_receivers_json: None,
 			workflow_routes_json: None,

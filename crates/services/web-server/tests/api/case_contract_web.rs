@@ -139,7 +139,7 @@ async fn test_public_case_create_derives_profile_from_appendices() -> Result<()>
 	.await?;
 
 	assert_eq!(status, StatusCode::CREATED, "{body:?}");
-	assert_eq!(body["data"]["validation_profile"], "mfds", "{body:?}");
+	assert!(body["data"].get("validation_profile").is_none(), "{body:?}");
 	assert_eq!(
 		body["data"]["appendices_json"], "[\"mfds\",\"fda\"]",
 		"{body:?}"
@@ -267,7 +267,7 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise(
 			"data": {
 				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
 				"status": "draft",
-				"validation_profile": "fda"
+				"appendices_json": "[\"fda\"]"
 			}
 		}),
 	)
@@ -331,7 +331,7 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 			safety_report_id,
 			version,
 			status,
-			validation_profile,
+			appendices_json,
 			raw_xml,
 			dirty_c,
 			dirty_d,
@@ -348,7 +348,7 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 	.bind(format!("SR-SHAPED-SAVE-{case_id}"))
 	.bind(1_i32)
 	.bind("draft")
-	.bind("fda")
+	.bind("[\"fda\"]")
 	.bind(b"<ichicsr/>".to_vec())
 	.bind(seed.admin.id)
 	.execute(&mut *tx)

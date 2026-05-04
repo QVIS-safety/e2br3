@@ -70,24 +70,15 @@ async fn resolve_profile(
 		});
 	}
 
-	if let Ok(case) = CaseBmc::get(ctx, mm, case_id).await {
-		if let Some(value) = case.validation_profile.as_deref() {
-			if let Some(parsed) = ValidationProfile::parse(value) {
-				return Ok(parsed);
-			}
+	let header = match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(header) => Some(header),
+		Err(lib_core::model::Error::EntityUuidNotFound { entity, id })
+			if entity == "message_headers" && id == case_id =>
+		{
+			None
 		}
-	}
-
-	let header =
-		match MessageHeaderBmc::get_by_case(&Ctx::root_ctx(), mm, case_id).await {
-			Ok(header) => Some(header),
-			Err(lib_core::model::Error::EntityUuidNotFound { entity, id })
-				if entity == "message_headers" && id == case_id =>
-			{
-				None
-			}
-			Err(err) => return Err(err.into()),
-		};
+		Err(err) => return Err(err.into()),
+	};
 
 	let authority = infer_regulatory_authority_from_receivers(
 		header
@@ -110,11 +101,6 @@ async fn resolve_profiles(
 		if let Some(value) = case.appendices_json.as_deref() {
 			if let Some(parsed) = parse_profiles_from_appendices_json(value) {
 				return Ok(parsed);
-			}
-		}
-		if let Some(value) = case.validation_profile.as_deref() {
-			if let Some(parsed) = ValidationProfile::parse(value) {
-				return Ok(vec![parsed]);
 			}
 		}
 	}

@@ -23,7 +23,6 @@ pub struct Case {
 	pub version: i32,
 	pub dg_prd_key: Option<String>,
 	pub status: String,
-	pub validation_profile: Option<String>,
 	pub appendices_json: Option<String>,
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
@@ -65,7 +64,6 @@ pub struct CaseForCreate {
 	pub safety_report_id: String,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
-	pub validation_profile: Option<String>,
 	pub appendices_json: Option<String>,
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
@@ -82,7 +80,6 @@ pub struct CaseForUpdate {
 	pub safety_report_id: Option<String>,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
-	pub validation_profile: Option<String>,
 	pub appendices_json: Option<String>,
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
@@ -174,7 +171,6 @@ pub fn is_allowed_case_status_transition(from: &str, to: &str) -> bool {
 pub fn update_touches_non_status_fields(case_u: &CaseForUpdate) -> bool {
 	case_u.safety_report_id.is_some()
 		|| case_u.dg_prd_key.is_some()
-		|| case_u.validation_profile.is_some()
 		|| case_u.appendices_json.is_some()
 		|| case_u.review_receivers_json.is_some()
 		|| case_u.workflow_routes_json.is_some()

@@ -43,7 +43,6 @@ async fn create_validated_raw_xml_case(
 			safety_report_id: None,
 			dg_prd_key: None,
 			status: Some("validated".to_string()),
-			validation_profile: None,
 			appendices_json: None,
 			review_receivers_json: None,
 			workflow_routes_json: None,

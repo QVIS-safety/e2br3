@@ -1020,7 +1020,7 @@ async fn test_fda_export_always_validates_even_when_env_unset() -> Result<()> {
 			"organization_id": seed.org_id,
 			"safety_report_id": format!("SR-{}", Uuid::new_v4()),
 			"status": "draft",
-			"validation_profile": "fda"
+			"appendices_json": "[\"fda\"]"
 		}
 	});
 	let req = Request::builder()

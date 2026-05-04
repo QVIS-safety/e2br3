@@ -142,11 +142,7 @@ fn selected_export_profiles(
 			return profiles;
 		}
 	}
-	case.validation_profile
-		.as_deref()
-		.and_then(ValidationProfile::parse)
-		.map(|profile| vec![profile])
-		.unwrap_or_else(|| vec![ValidationProfile::Fda])
+	vec![ValidationProfile::Fda]
 }
 
 fn resolve_requested_export_profile(

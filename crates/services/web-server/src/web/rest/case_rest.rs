@@ -34,12 +34,12 @@ const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
 
 // -- Public helpers (used by sibling modules)
 
-pub fn parse_validation_profile_or_bad_request(
+pub fn parse_appendix_profile_or_bad_request(
 	value: &str,
 ) -> Result<ValidationProfile> {
 	ValidationProfile::parse(value).ok_or_else(|| Error::BadRequest {
 		message: format!(
-			"invalid validation profile '{value}' (expected: ich, fda or mfds)"
+			"invalid appendix profile '{value}' (expected: ich, fda or mfds)"
 		),
 	})
 }
@@ -51,7 +51,7 @@ pub fn normalize_appendices_json(value: &str) -> Result<String> {
 		})?;
 	let mut normalized = Vec::new();
 	for item in parsed {
-		let profile = parse_validation_profile_or_bad_request(&item)?;
+		let profile = parse_appendix_profile_or_bad_request(&item)?;
 		let as_str = profile.as_str().to_string();
 		if !normalized.contains(&as_str) {
 			normalized.push(as_str);
@@ -80,8 +80,7 @@ pub fn first_appendix_profile_from_json(value: &str) -> Result<ValidationProfile
 }
 
 /// Resolves the ordered list of validation profiles for a case.
-/// Prefers `appendices_json` (multi-profile), falls back to
-/// `validation_profile` (single), then defaults to FDA.
+/// Prefers `appendices_json` (multi-profile), then defaults to FDA.
 fn resolve_appendix_profiles(
 	case: &lib_core::model::case::Case,
 ) -> Vec<ValidationProfile> {
@@ -102,11 +101,7 @@ fn resolve_appendix_profiles(
 			}
 		}
 	}
-	case.validation_profile
-		.as_deref()
-		.and_then(ValidationProfile::parse)
-		.map(|p| vec![p])
-		.unwrap_or_else(|| vec![ValidationProfile::Fda])
+	vec![ValidationProfile::Fda]
 }
 
 pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> {
@@ -129,9 +124,6 @@ pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> 
 		}
 	}
 
-	if let Some(profile) = data.validation_profile.as_deref() {
-		let _ = parse_validation_profile_or_bad_request(profile)?;
-	}
 	if let Some(appendices_json) = data.appendices_json.as_deref() {
 		let _ = normalize_appendices_json(appendices_json)?;
 	}
@@ -158,9 +150,6 @@ fn validate_case_update_payload(data: &InternalCaseForUpdate) -> Result<()> {
 		}
 	}
 
-	if let Some(profile) = data.validation_profile.as_deref() {
-		let _ = parse_validation_profile_or_bad_request(profile)?;
-	}
 	if let Some(appendices_json) = data.appendices_json.as_deref() {
 		let _ = normalize_appendices_json(appendices_json)?;
 	}
@@ -178,7 +167,6 @@ fn to_internal_case_for_create(
 		safety_report_id: data.safety_report_id,
 		dg_prd_key: data.dg_prd_key,
 		status: data.status,
-		validation_profile: data.validation_profile,
 		appendices_json: data.appendices_json,
 		review_receivers_json: data.review_receivers_json,
 		workflow_routes_json: data.workflow_routes_json,
@@ -196,7 +184,6 @@ fn to_internal_case_for_update(data: PublicCaseForUpdate) -> InternalCaseForUpda
 		safety_report_id: data.safety_report_id,
 		dg_prd_key: data.dg_prd_key,
 		status: data.status,
-		validation_profile: data.validation_profile,
 		appendices_json: data.appendices_json,
 		review_receivers_json: data.review_receivers_json,
 		workflow_routes_json: data.workflow_routes_json,
@@ -271,7 +258,6 @@ pub struct PublicCaseForCreate {
 	pub safety_report_id: String,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
-	pub validation_profile: Option<String>,
 	pub appendices_json: Option<String>,
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
@@ -287,7 +273,6 @@ pub struct PublicCaseForUpdate {
 	pub safety_report_id: Option<String>,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
-	pub validation_profile: Option<String>,
 	pub appendices_json: Option<String>,
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
@@ -350,6 +335,15 @@ pub async fn case_to_read_result(
 	mm: &ModelManager,
 	case: Case,
 ) -> Result<CaseReadResult> {
+	let mut case = case;
+	let profiles = resolve_appendix_profiles(&case);
+	case.appendices_json = Some(
+		json!(profiles
+			.iter()
+			.map(|profile| profile.as_str())
+			.collect::<Vec<_>>())
+		.to_string(),
+	);
 	let actionability = workflow_actionability_for_case(ctx, mm, &case).await?;
 	Ok(CaseReadResult {
 		qc_state: qc_state_for_case_status(&case.status),
@@ -374,8 +368,6 @@ pub async fn create_case_guarded(
 	let mut data = data;
 	if let Some(appendices_json) = data.appendices_json.as_deref() {
 		let normalized = normalize_appendices_json(appendices_json)?;
-		let profile = first_appendix_profile_from_json(&normalized)?;
-		data.validation_profile = Some(profile.as_str().to_string());
 		data.appendices_json = Some(normalized);
 	}
 	let next_version = next_case_version(&ctx, &mm, &data.safety_report_id).await?;
@@ -450,8 +442,6 @@ pub async fn update_case_guarded(
 	} = params;
 	if let Some(appendices_json) = data.appendices_json.as_deref() {
 		let normalized = normalize_appendices_json(appendices_json)?;
-		let profile = first_appendix_profile_from_json(&normalized)?;
-		data.validation_profile = Some(profile.as_str().to_string());
 		data.appendices_json = Some(normalized);
 	}
 	let data = to_internal_case_for_update(data);
@@ -573,7 +563,6 @@ pub async fn mark_case_validated_by_validator(
 	headers: axum::http::HeaderMap,
 ) -> Result<(axum::http::StatusCode, Json<DataRestResult<Case>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_UPDATE)?;
 	if !ctx.is_system_admin() {
 		return Err(Error::BadRequest {
 			message:

@@ -5,7 +5,7 @@ use axum::http::{Method, Request, StatusCode};
 use axum::routing::post;
 use axum::{Json, Router};
 use lib_auth::token::generate_web_token;
-use lib_core::ctx::ROLE_ADMIN;
+use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
 use lib_core::model::store::set_full_context_dbx;
 use serde_json::{json, Value};
 use serial_test::serial;
@@ -227,14 +227,15 @@ async fn create_case_with_profile(
 	app: &axum::Router,
 	cookie: &str,
 	org_id: Uuid,
-	validation_profile: &str,
+	appendix: &str,
 ) -> Result<Uuid> {
+	let appendices_json = serde_json::json!([appendix]).to_string();
 	let body = json!({
 		"data": {
 			"organization_id": org_id,
 			"safety_report_id": format!("SUB-{}", Uuid::new_v4()),
 			"status": "draft",
-			"validation_profile": validation_profile
+			"appendices_json": appendices_json
 		}
 	});
 	let (status, value) = post_json(app, cookie, "/api/cases", body).await?;
@@ -894,7 +895,13 @@ async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let submission_id = Uuid::new_v4();
 	mm.dbx().begin_txn().await?;
-	set_full_context_dbx(mm.dbx(), seed.admin.id, seed.org_id, ROLE_ADMIN).await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
 	mm.dbx()
 		.execute(
 			sqlx::query(
@@ -991,7 +998,13 @@ async fn test_submission_ack_can_be_downloaded_as_text() -> Result<()> {
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let submission_id = Uuid::new_v4();
 	mm.dbx().begin_txn().await?;
-	set_full_context_dbx(mm.dbx(), seed.admin.id, seed.org_id, ROLE_ADMIN).await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
 	mm.dbx()
 		.execute(
 			sqlx::query(
@@ -1315,7 +1328,8 @@ async fn test_submission_rejects_mfds_route_for_fda_profile() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
 	assert!(
-		body.to_string().contains("validation_profile must be mfds"),
+		body.to_string()
+			.contains("appendices must include fda or mfds"),
 		"{body:?}"
 	);
 
@@ -1759,7 +1773,13 @@ async fn test_internal_reconcile_retries_failed_submission_to_success() -> Resul
 		.to_string();
 	let submission_uuid = Uuid::parse_str(&submission_id)?;
 	mm.dbx().begin_txn().await?;
-	set_full_context_dbx(mm.dbx(), seed.admin.id, seed.org_id, ROLE_ADMIN).await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
 	mm.dbx()
 		.execute(
 			sqlx::query(
@@ -1881,7 +1901,13 @@ async fn test_internal_reconcile_retries_failed_submission_and_keeps_rejected_on
 		.to_string();
 	let submission_uuid = Uuid::parse_str(&submission_id)?;
 	mm.dbx().begin_txn().await?;
-	set_full_context_dbx(mm.dbx(), seed.admin.id, seed.org_id, ROLE_ADMIN).await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
 	mm.dbx()
 		.execute(
 			sqlx::query(

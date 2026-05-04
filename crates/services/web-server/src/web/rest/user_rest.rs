@@ -17,7 +17,8 @@ use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate, ParamsList};
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{
-	require_admin_role, require_permission, routing_profile_for_user,
+	require_permission, require_safety_db_admin_role, routing_profile_for_user,
+	safety_db_admin_db_ctx, sponsor_admin_provisioning_db_ctx,
 	validate_active_sender_selection, Error, Result,
 };
 use lib_web::middleware::mw_auth::CtxW;
@@ -206,6 +207,35 @@ fn role_metadata(role: &str) -> UserRoleMetadata {
 	}
 }
 
+fn is_sponsor_admin_role(role: &str) -> bool {
+	matches!(
+		canonical_role(role).as_str(),
+		ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
+	)
+}
+
+fn system_admin_forbidden() -> Error {
+	Error::AccessDenied {
+		required_role: "sponsor_admin_provisioning".to_string(),
+	}
+}
+
+fn create_has_scope_assignment(data: &UserForCreateAdminPayload) -> bool {
+	data.active_sender_identifier.is_some()
+		|| data.access_sender_ids.is_some()
+		|| data.access_product_ids.is_some()
+		|| data.access_study_ids.is_some()
+		|| data.access_blind_allowed.is_some()
+}
+
+fn update_has_scope_assignment(data: &UserForUpdateAdminPayload) -> bool {
+	data.active_sender_identifier.is_some()
+		|| data.access_sender_ids.is_some()
+		|| data.access_product_ids.is_some()
+		|| data.access_study_ids.is_some()
+		|| data.access_blind_allowed.is_some()
+}
+
 fn user_view(user: User) -> UserView {
 	let access_sender_ids = user.access_sender_ids.clone();
 	let access_product_ids = user.access_product_ids.clone();
@@ -264,9 +294,50 @@ pub async fn create_user(
 	Json(params): Json<ParamsForCreate<UserForCreateAdminPayload>>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	require_admin_role(&ctx)?;
-	require_permission(&ctx, USER_CREATE)?;
 	let ParamsForCreate { data } = params;
+	if ctx.is_system_admin() {
+		if data.organization_id.is_nil()
+			|| !data
+				.role
+				.as_deref()
+				.map(is_sponsor_admin_role)
+				.unwrap_or(false)
+			|| create_has_scope_assignment(&data)
+		{
+			return Err(system_admin_forbidden());
+		}
+		let db_ctx = sponsor_admin_provisioning_db_ctx(&ctx)?;
+		let create = UserForCreate {
+			organization_id: data.organization_id,
+			email: data.email,
+			username: data.username,
+			pwd_clear: "welcome".to_string(),
+			role: data.role,
+			first_name: data.first_name,
+			last_name: data.last_name,
+			comments: data.comments,
+			other_information: data.other_information,
+			access_start_at: data.access_start_at,
+			access_end_at: data.access_end_at,
+			active_sender_identifier: None,
+			access_sender_ids: None,
+			access_product_ids: None,
+			access_study_ids: None,
+			access_blind_allowed: None,
+		};
+		let id = UserBmc::create(&db_ctx, &mm, create).await?;
+		UserBmc::set_must_change_password(&db_ctx, &mm, id, true).await?;
+		let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
+		return Ok((
+			StatusCode::CREATED,
+			Json(DataRestResult {
+				data: user_view(entity),
+			}),
+		));
+	}
+	require_safety_db_admin_role(&ctx, &mm).await?;
+	require_permission(&ctx, USER_CREATE)?;
+	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
 	let mut organization_id = data.organization_id;
 	if organization_id.is_nil() {
 		if ctx.organization_id().is_nil() {
@@ -295,9 +366,9 @@ pub async fn create_user(
 		access_study_ids: parse_scope_input(data.access_study_ids),
 		access_blind_allowed: data.access_blind_allowed,
 	};
-	let id = UserBmc::create(&ctx, &mm, create).await?;
-	UserBmc::set_must_change_password(&ctx, &mm, id, true).await?;
-	let entity: User = UserBmc::get(&ctx, &mm, id).await?;
+	let id = UserBmc::create(&db_ctx, &mm, create).await?;
+	UserBmc::set_must_change_password(&db_ctx, &mm, id, true).await?;
+	let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
 	Ok((
 		StatusCode::CREATED,
 		Json(DataRestResult {
@@ -315,9 +386,23 @@ pub async fn get_user(
 	Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	require_admin_role(&ctx)?;
+	if ctx.is_system_admin() {
+		let db_ctx = sponsor_admin_provisioning_db_ctx(&ctx)?;
+		let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
+		if !is_sponsor_admin_role(&entity.role) {
+			return Err(system_admin_forbidden());
+		}
+		return Ok((
+			StatusCode::OK,
+			Json(DataRestResult {
+				data: user_view(entity),
+			}),
+		));
+	}
+	require_safety_db_admin_role(&ctx, &mm).await?;
 	require_permission(&ctx, USER_READ)?;
-	let entity: User = UserBmc::get(&ctx, &mm, id).await?;
+	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
+	let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
@@ -349,7 +434,7 @@ pub async fn set_my_password(
 	let privileged_ctx = Ctx::new(
 		ctx.user_id(),
 		ctx.organization_id(),
-		ROLE_SYSTEM_ADMIN.to_string(),
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
 	)
 	.map_err(|_| Error::BadRequest {
 		message: "valid user context required".to_string(),
@@ -373,12 +458,24 @@ pub async fn list_users(
 	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<UserView>>>)> {
 	let ctx = ctx_w.0;
-	require_admin_role(&ctx)?;
-	require_permission(&ctx, USER_LIST)?;
 	let params = ParamsList::<UserFilter>::from_raw_query(raw_query.as_deref())
 		.map_err(|message| Error::BadRequest { message })?;
+	if ctx.is_system_admin() {
+		let db_ctx = sponsor_admin_provisioning_db_ctx(&ctx)?;
+		let entities =
+			UserBmc::list(&db_ctx, &mm, params.filters, params.list_options).await?;
+		let entities = entities
+			.into_iter()
+			.filter(|user| is_sponsor_admin_role(&user.role))
+			.map(user_view)
+			.collect::<Vec<_>>();
+		return Ok((StatusCode::OK, Json(DataRestResult { data: entities })));
+	}
+	require_safety_db_admin_role(&ctx, &mm).await?;
+	require_permission(&ctx, USER_LIST)?;
+	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
 	let entities =
-		UserBmc::list(&ctx, &mm, params.filters, params.list_options).await?;
+		UserBmc::list(&db_ctx, &mm, params.filters, params.list_options).await?;
 	let entities = entities.into_iter().map(user_view).collect::<Vec<_>>();
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
@@ -393,9 +490,49 @@ pub async fn update_user(
 	Json(params): Json<ParamsForUpdate<UserForUpdateAdminPayload>>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	require_admin_role(&ctx)?;
-	require_permission(&ctx, USER_UPDATE)?;
 	let ParamsForUpdate { data } = params;
+	if ctx.is_system_admin() {
+		let db_ctx = sponsor_admin_provisioning_db_ctx(&ctx)?;
+		let current: User = UserBmc::get(&db_ctx, &mm, id).await?;
+		if !is_sponsor_admin_role(&current.role)
+			|| data
+				.role
+				.as_deref()
+				.is_some_and(|role| !is_sponsor_admin_role(role))
+			|| update_has_scope_assignment(&data)
+		{
+			return Err(system_admin_forbidden());
+		}
+		let update = UserForUpdate {
+			email: data.email,
+			username: data.username,
+			role: data.role,
+			first_name: data.first_name,
+			last_name: data.last_name,
+			comments: data.comments,
+			other_information: data.other_information,
+			access_start_at: data.access_start_at,
+			access_end_at: data.access_end_at,
+			access_sender_ids: None,
+			access_product_ids: None,
+			access_study_ids: None,
+			access_blind_allowed: None,
+			active_sender_identifier: None,
+			active: data.active,
+			last_login_at: data.last_login_at,
+		};
+		UserBmc::update(&db_ctx, &mm, id, update).await?;
+		let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
+		return Ok((
+			StatusCode::OK,
+			Json(DataRestResult {
+				data: user_view(entity),
+			}),
+		));
+	}
+	require_safety_db_admin_role(&ctx, &mm).await?;
+	require_permission(&ctx, USER_UPDATE)?;
+	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
 	let update = UserForUpdate {
 		email: data.email,
 		username: data.username,
@@ -414,8 +551,8 @@ pub async fn update_user(
 		active: data.active,
 		last_login_at: data.last_login_at,
 	};
-	UserBmc::update(&ctx, &mm, id, update).await?;
-	let entity: User = UserBmc::get(&ctx, &mm, id).await?;
+	UserBmc::update(&db_ctx, &mm, id, update).await?;
+	let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
@@ -433,14 +570,18 @@ pub async fn delete_user(
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
-	require_admin_role(&ctx)?;
+	if ctx.is_system_admin() {
+		return Err(system_admin_forbidden());
+	}
+	require_safety_db_admin_role(&ctx, &mm).await?;
 	require_permission(&ctx, USER_DELETE)?;
 	if id == ctx.user_id() {
 		return Err(Error::BadRequest {
 			message: "cannot delete yourself".to_string(),
 		});
 	}
-	UserBmc::delete(&ctx, &mm, id).await?;
+	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
+	UserBmc::delete(&db_ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 

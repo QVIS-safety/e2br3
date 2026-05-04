@@ -5,7 +5,7 @@ use crate::common::{
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
-use lib_core::ctx::ROLE_ADMIN;
+use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
 use lib_core::model::store::set_full_context_dbx;
 use lib_web::Error as WebError;
 use serde_json::Value;
@@ -106,7 +106,13 @@ async fn test_rls_case_versions_filters_org() -> Result<()> {
 
 	let dbx = mm.dbx();
 	dbx.begin_txn().await?;
-	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_ADMIN).await?;
+	set_full_context_dbx(
+		dbx,
+		system_user_id(),
+		system_org_id(),
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
 	insert_case_version(&mm, seed.case_org1, 1, seed.manager.id).await?;
 	insert_case_version(&mm, seed.case_org2, 1, seed.user2.id).await?;
 	dbx.commit_txn().await?;

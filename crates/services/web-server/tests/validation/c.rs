@@ -45,10 +45,36 @@ fn c_rule_coverage_matches_backend_banner_contract() {
 
 #[serial]
 #[tokio::test]
-async fn c_ich_c_1_required_returns_banner_issue() -> Result<()> {
+async fn c_ich_missing_safety_report_row_preserves_c_1_1_and_reports_field_issues(
+) -> Result<()> {
 	let ctx = setup_case().await?;
 	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
+	assert_lacks_code(&report, "ICH.C.1.REQUIRED");
+	assert_lacks_code(&report, "ICH.C.1.1.REQUIRED");
+	assert_banner_issue(&report, "ICH.C.1.2.REQUIRED");
+	assert_banner_issue(&report, "ICH.C.1.3.REQUIRED");
+	assert_banner_issue(&report, "ICH.C.1.4.REQUIRED");
+	assert_banner_issue(&report, "ICH.C.1.5.REQUIRED");
+	assert_banner_issue(&report, "ICH.C.1.7.REQUIRED");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn c_ich_c_1_required_returns_banner_issue_when_case_identifier_missing(
+) -> Result<()> {
+	let ctx = setup_case().await?;
+	db_exec_case_sql(
+		&ctx,
+		&format!(
+			"UPDATE cases SET safety_report_id = '', version = (1000000000 + FLOOR(random() * 1000000000))::int WHERE id = '{}'",
+			ctx.case_id
+		),
+	)
+	.await?;
+	let report = validate_case(&ctx.app, &ctx.cookie, ctx.case_id, "ich").await?;
 	assert_banner_issue(&report, "ICH.C.1.REQUIRED");
+	assert_banner_issue(&report, "ICH.C.1.1.REQUIRED");
 	Ok(())
 }
 

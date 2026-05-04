@@ -139,7 +139,7 @@ async fn test_case_intake_duplicate_check_and_create() -> Result<()> {
 
 	let intake_body = json!({
 		"data": intake_data(&safety_report_id, 120, "1", json!({
-			"validation_profile": "fda"
+			"appendices_json": "[\"fda\"]"
 		}))
 	});
 	let (status, body) =
@@ -215,8 +215,8 @@ async fn test_case_from_intake_derives_profile_from_appendices() -> Result<()> {
 	let (status, case_body) =
 		get_json(&app, &cookie, &format!("/api/cases/{case_id}")).await?;
 	assert_eq!(status, StatusCode::OK, "{case_body:?}");
-	assert_eq!(
-		case_body["data"]["validation_profile"], "mfds",
+	assert!(
+		case_body["data"].get("validation_profile").is_none(),
 		"{case_body:?}"
 	);
 	assert_eq!(
@@ -254,7 +254,7 @@ async fn test_case_from_intake_persists_distinct_c_1_dates() -> Result<()> {
 			"transmission_date": [2024, 121],
 			"date_first_received_from_source": [2024, 122],
 			"date_of_most_recent_information": [2024, 123],
-			"validation_profile": "ich"
+			"appendices_json": "[\"ich\"]"
 		}))
 	});
 	let (status, body) =
@@ -294,7 +294,7 @@ async fn test_case_from_intake_blocks_duplicates_even_with_override() -> Result<
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let intake_body = json!({
 		"data": intake_data(&safety_report_id, 121, "1", json!({
-			"validation_profile": "ich"
+			"appendices_json": "[\"ich\"]"
 		}))
 	});
 	let (status, _) =
@@ -312,7 +312,7 @@ async fn test_case_from_intake_blocks_duplicates_even_with_override() -> Result<
 
 	let override_body = json!({
 		"data": intake_data(&safety_report_id, 121, "1", json!({
-			"validation_profile": "ich",
+			"appendices_json": "[\"ich\"]",
 			"allow_duplicate_override": true
 		}))
 	});
@@ -340,7 +340,7 @@ async fn test_case_intake_duplicate_check_uses_patient_signature_over_product_mi
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let create_body = json!({
 		"data": intake_data(&safety_report_id, 122, "1", json!({
-			"validation_profile": "fda",
+			"appendices_json": "[\"fda\"]",
 			"dg_prd_key": "DG-A",
 			"allow_duplicate_override": true
 		}))
@@ -426,7 +426,7 @@ async fn test_case_from_intake_requires_override_when_duplicate_basis_is_incompl
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let intake_body = json!({
 		"data": intake_data(&safety_report_id, 141, "1", json!({
-			"validation_profile": "ich",
+			"appendices_json": "[\"ich\"]",
 			"patient_initials": null,
 			"reaction_meddra_version": null,
 			"dg_prd_key": null
@@ -443,7 +443,7 @@ async fn test_case_from_intake_requires_override_when_duplicate_basis_is_incompl
 
 	let override_body = json!({
 		"data": intake_data(&safety_report_id, 141, "1", json!({
-			"validation_profile": "ich",
+			"appendices_json": "[\"ich\"]",
 			"patient_initials": null,
 			"reaction_meddra_version": null,
 			"dg_prd_key": null,
@@ -502,7 +502,7 @@ async fn test_case_intake_duplicate_check_respects_patient_and_reaction_fields(
 	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
 	let create_body = json!({
 		"data": intake_data(&safety_report_id, 123, "1", json!({
-			"validation_profile": "ich",
+			"appendices_json": "[\"ich\"]",
 			"allow_duplicate_override": true
 		}))
 	});

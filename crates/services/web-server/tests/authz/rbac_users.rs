@@ -1,11 +1,12 @@
 use crate::common::{
-	cookie_header, init_test_mm, seed_org_with_all_roles, seed_org_with_users,
-	Result,
+	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
+	seed_org_with_users, system_user_id, Result,
 };
 use axum::body::Body;
 use axum::http::header;
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
+use lib_core::ctx::{ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SYSTEM_ADMIN};
 use serde_json::json;
 use serial_test::serial;
 use tower::ServiceExt;
@@ -248,6 +249,81 @@ async fn test_viewer_cannot_create_user() -> Result<()> {
 	json["error"]["data"]["detail"]
 		.as_str()
 		.ok_or("expected string detail for PERMISSION_DENIED")?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_system_admin_can_only_provision_sponsor_admin_users() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let system_admin = insert_user(
+		&mm,
+		seed.org_id,
+		ROLE_SYSTEM_ADMIN,
+		system_user_id(),
+		Some("systempwd"),
+	)
+	.await?;
+	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let regular_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": format!("system-admin-regular-{}@example.com", Uuid::new_v4()),
+			"role": "user"
+		}
+	});
+	let regular_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(regular_body.to_string()))?;
+	let regular_res = app.clone().oneshot(regular_req).await?;
+	assert_eq!(regular_res.status(), StatusCode::FORBIDDEN);
+
+	let sponsor_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": format!("system-admin-sponsor-{}@example.com", Uuid::new_v4()),
+			"role": ROLE_SPONSOR_ADMIN_COMPANY
+		}
+	});
+	let sponsor_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(sponsor_body.to_string()))?;
+	let sponsor_res = app.clone().oneshot(sponsor_req).await?;
+	assert_eq!(sponsor_res.status(), StatusCode::CREATED);
+
+	let role_req = Request::builder()
+		.method("POST")
+		.uri("/api/admin/roles")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({
+				"data": {
+					"role_name": format!("blocked_by_system_{}", Uuid::new_v4().simple()),
+					"privileges": [
+						{
+							"menu_key": "case",
+							"can_read": true,
+							"can_edit": false,
+							"can_review": false,
+							"can_lock": false
+						}
+					]
+				}
+			})
+			.to_string(),
+		))?;
+	let role_res = app.oneshot(role_req).await?;
+	assert_eq!(role_res.status(), StatusCode::FORBIDDEN);
 	Ok(())
 }
 
