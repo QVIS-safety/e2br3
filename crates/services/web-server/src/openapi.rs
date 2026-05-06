@@ -1445,12 +1445,18 @@ struct SubmissionHistoryRecordDoc {
 	gateway: String,
 	remote_submission_id: String,
 	status: String,
+	batch_result: String,
+	message_result: Option<String>,
 	xml_bytes: usize,
 	submitted_by: String,
 	submitted_by_email: Option<String>,
 	submitted_at: String,
 	latest_ack_received_at: Option<String>,
+	acknowledged_date: Option<String>,
 	latest_event_type: Option<String>,
+	icsr_count: i32,
+	data_file_name: String,
+	data_file_download_url: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]

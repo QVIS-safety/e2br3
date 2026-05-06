@@ -183,32 +183,31 @@ pub fn assess_duplicate_basis(key: &CaseDuplicateKey) -> DuplicateBasisAssessmen
 		.as_deref()
 		.map(str::trim)
 		.unwrap_or_default();
-	let patient_signature_complete =
-		has_meaningful_text(key.patient_initials.as_deref())
-			|| has_meaningful_text(key.investigation_number.as_deref())
-			|| (has_meaningful_text(key.age_d2_2a.as_deref())
-				&& has_meaningful_text(key.sex_d5.as_deref()));
-	let event_signature_complete =
-		has_meaningful_text(key.reaction_meddra_code.as_deref())
-			&& key.ae_start_date.is_some();
-	let product_signature_complete = product_signature_present(
-		key.dg_prd_key.as_deref(),
-		key.reaction_meddra_version.as_deref(),
-		key.reaction_meddra_code.as_deref(),
-		key.ae_start_date,
-	);
+	let reporter_present = has_meaningful_text(key.reporter_organization.as_deref());
+	let sponsor_study_present =
+		has_meaningful_text(key.sponsor_study_number.as_deref());
+	let patient_initials_present =
+		has_meaningful_text(key.patient_initials.as_deref());
+	let investigation_present =
+		has_meaningful_text(key.investigation_number.as_deref());
+	let age_present = has_meaningful_text(key.age_d2_2a.as_deref());
+	let sex_present = has_meaningful_text(key.sex_d5.as_deref());
+	let product_present = has_meaningful_text(key.dg_prd_key.as_deref());
+	let reaction_version_present =
+		has_meaningful_text(key.reaction_meddra_version.as_deref());
+	let reaction_code_present =
+		has_meaningful_text(key.reaction_meddra_code.as_deref());
+	let ae_start_present = key.ae_start_date.is_some();
 
 	let mut warnings = Vec::new();
 	let basis_complete = if report_type == "2" {
-		let reporter_present =
-			has_meaningful_text(key.reporter_organization.as_deref());
-		let study_present = has_meaningful_text(key.sponsor_study_number.as_deref());
-		let investigation_present =
-			has_meaningful_text(key.investigation_number.as_deref());
 		let complete = reporter_present
-			&& (study_present || investigation_present)
-			&& ((event_signature_complete && investigation_present)
-				|| product_signature_complete);
+			&& sponsor_study_present
+			&& investigation_present
+			&& product_present
+			&& reaction_version_present
+			&& reaction_code_present
+			&& ae_start_present;
 		if !complete {
 			warnings.push(
 				"study intake duplicate check is incomplete; resubmit with allow_duplicate_override=true after review".to_string(),
@@ -216,8 +215,13 @@ pub fn assess_duplicate_basis(key: &CaseDuplicateKey) -> DuplicateBasisAssessmen
 		}
 		complete
 	} else {
-		let complete = (patient_signature_complete && event_signature_complete)
-			|| product_signature_complete;
+		let complete = patient_initials_present
+			&& age_present
+			&& sex_present
+			&& product_present
+			&& reaction_version_present
+			&& reaction_code_present
+			&& ae_start_present;
 		if !complete {
 			warnings.push(
 				"duplicate check basis is incomplete; resubmit with allow_duplicate_override=true after review".to_string(),
@@ -226,22 +230,52 @@ pub fn assess_duplicate_basis(key: &CaseDuplicateKey) -> DuplicateBasisAssessmen
 		complete
 	};
 
-	if !has_meaningful_text(key.dg_prd_key.as_deref()) {
+	if report_type == "2" && !reporter_present {
+		warnings.push(
+			"Reporter organization is missing from duplicate check input"
+				.to_string(),
+		);
+	}
+	if report_type == "2" && !sponsor_study_present {
+		warnings.push(
+			"Sponsor Study Number is missing from duplicate check input".to_string(),
+		);
+	}
+	if report_type == "2" && !investigation_present {
+		warnings.push(
+			"Investigation Number is missing from duplicate check input".to_string(),
+		);
+	}
+	if report_type != "2" && !patient_initials_present {
+		warnings.push(
+			"Patient Name or Initials is missing from duplicate check input"
+				.to_string(),
+		);
+	}
+	if report_type != "2" && !age_present {
+		warnings
+			.push("Patient age is missing from duplicate check input".to_string());
+	}
+	if report_type != "2" && !sex_present {
+		warnings
+			.push("Patient sex is missing from duplicate check input".to_string());
+	}
+	if !product_present {
 		warnings
 			.push("Product ID is missing from duplicate check input".to_string());
 	}
-	if !has_meaningful_text(key.reaction_meddra_version.as_deref()) {
+	if !reaction_version_present {
 		warnings.push(
 			"Reaction MedDRA version is missing from duplicate check input"
 				.to_string(),
 		);
 	}
-	if !has_meaningful_text(key.reaction_meddra_code.as_deref()) {
+	if !reaction_code_present {
 		warnings.push(
 			"Reaction MedDRA code is missing from duplicate check input".to_string(),
 		);
 	}
-	if key.ae_start_date.is_none() {
+	if !ae_start_present {
 		warnings
 			.push("AE start date is missing from duplicate check input".to_string());
 	}

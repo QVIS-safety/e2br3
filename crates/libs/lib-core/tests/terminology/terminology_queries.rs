@@ -1,7 +1,7 @@
 use crate::common::{demo_ctx, demo_user_id, init_test_mm, unique_suffix, Result};
 use lib_core::model::store::set_full_context_dbx_or_rollback;
 use lib_core::model::terminology::{
-	E2bCodeListBmc, IsoCountryBmc, MeddraTermBmc, WhodrugProductBmc,
+	E2bCodeListBmc, IsoCountryBmc, MeddraTermBmc, UcumUnitBmc, WhodrugProductBmc,
 };
 use serial_test::serial;
 
@@ -103,6 +103,11 @@ async fn test_terminology_queries() -> Result<()> {
 	let report_types =
 		E2bCodeListBmc::get_by_list_name(&ctx, &mm, "report_type").await?;
 	assert!(!report_types.is_empty());
+
+	let ucum_units = UcumUnitBmc::list_all(&ctx, &mm).await?;
+	assert!(ucum_units.iter().any(|u| u.code == "mg/dL"));
+	assert!(ucum_units.iter().any(|u| u.code == "U/L"));
+	assert!(ucum_units.iter().any(|u| u.code == "mmol/L"));
 
 	dbx.rollback_txn().await?;
 

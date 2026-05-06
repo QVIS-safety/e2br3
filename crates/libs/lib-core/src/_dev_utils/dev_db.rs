@@ -309,6 +309,25 @@ async fn apply_compatibility_alters(
 	for sql in dirty_trigger_compatibility_sql() {
 		sqlx::query(sql).execute(&mut *tx).await?;
 	}
+	for (code, display_name, unit_type) in [
+		("mg/dL", "milligram per deciliter", "concentration"),
+		("U/L", "unit per liter", "activity concentration"),
+		("mmol/L", "millimole per liter", "concentration"),
+	] {
+		sqlx::query(
+			"INSERT INTO ucum_units (code, display_name, unit_type, active)
+			 VALUES ($1, $2, $3, true)
+			 ON CONFLICT (code) DO UPDATE SET
+			 	display_name = EXCLUDED.display_name,
+			 	unit_type = EXCLUDED.unit_type,
+			 	active = true",
+		)
+		.bind(code)
+		.bind(display_name)
+		.bind(unit_type)
+		.execute(&mut *tx)
+		.await?;
+	}
 	tx.commit().await?;
 	Ok(())
 }

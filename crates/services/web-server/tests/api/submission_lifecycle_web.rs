@@ -913,7 +913,7 @@ async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<
 			)
 			.bind(submission_id)
 			.bind(case_id)
-			.bind("fda")
+			.bind("fda-esg-nextgen-api")
 			.bind("BATCH-HISTORY-1")
 			.bind("ack2_received")
 			.bind(2048_i32)
@@ -970,16 +970,35 @@ async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<
 	let item = items
 		.iter()
 		.find(|item| {
-			item["submission_id"].as_str() == Some(submission_id_str.as_str())
+			item["submissionId"].as_str() == Some(submission_id_str.as_str())
 		})
 		.ok_or("missing submission history row for created submission")?;
 	assert_eq!(item["status"].as_str(), Some("ack2_received"));
-	assert_eq!(item["latest_event_type"].as_str(), Some("ack_recorded"));
+	assert_eq!(item["batchResult"].as_str(), Some("ack2_received"));
+	assert_eq!(item["messageResult"].as_str(), Some("ACK2"));
+	assert_eq!(item["latestEventType"].as_str(), Some("ack_recorded"));
 	assert!(
-		item["latest_ack_received_at"]
+		item["latestAckReceivedAt"]
 			.as_str()
 			.is_some_and(|value| !value.trim().is_empty()),
 		"{item:?}"
+	);
+	assert_eq!(item["acknowledgedDate"], item["latestAckReceivedAt"]);
+	assert_eq!(item["icsrCount"].as_i64(), Some(1));
+	assert_eq!(
+		item["dataFileName"].as_str(),
+		Some(
+			format!(
+				"{}-{}-fda.xml",
+				item["caseNumber"].as_str().unwrap(),
+				case_id
+			)
+			.as_str()
+		)
+	);
+	assert_eq!(
+		item["dataFileDownloadUrl"].as_str(),
+		Some(format!("/api/cases/{case_id}/export/xml?profile=fda").as_str())
 	);
 
 	Ok(())

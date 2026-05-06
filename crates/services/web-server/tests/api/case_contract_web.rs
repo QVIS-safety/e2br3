@@ -389,6 +389,128 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 
 #[serial]
 #[tokio::test]
+async fn test_case_identity_update_requires_reason_for_change() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (create_status, create_body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(create_status, StatusCode::CREATED, "{create_body:?}");
+	let case_id = create_body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?
+		.to_string();
+
+	let (update_status, update_body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {
+				"safety_report_id": format!("SR-RENAMED-{}", Uuid::new_v4())
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(update_status, StatusCode::BAD_REQUEST, "{update_body:?}");
+	assert!(
+		update_body.to_string().contains(
+			"reason_for_change is required for case identity/scope updates"
+		),
+		"{update_body:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_identity_update_records_reason_for_change() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let (create_status, create_body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(create_status, StatusCode::CREATED, "{create_body:?}");
+	let case_id = Uuid::parse_str(
+		create_body["data"]["id"]
+			.as_str()
+			.ok_or("missing created case id")?,
+	)?;
+	let next_safety_report_id = format!("SR-RENAMED-{}", Uuid::new_v4());
+
+	let (update_status, update_body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {
+				"safety_report_id": next_safety_report_id
+			},
+			"reason_for_change": "correct case identifier after source reconciliation"
+		}),
+	)
+	.await?;
+	assert_eq!(update_status, StatusCode::OK, "{update_body:?}");
+
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
+		.await?;
+	let reason = dbx
+		.fetch_optional(
+			sqlx::query_as::<_, (Option<String>,)>(
+				r#"
+				SELECT reason_for_change
+				FROM audit_logs
+				WHERE table_name = 'cases'
+				  AND record_id = $1
+				  AND action = 'UPDATE'
+				  AND changed_fields ? 'safety_report_id'
+				ORDER BY id DESC
+				LIMIT 1
+				"#,
+			)
+			.bind(case_id),
+		)
+		.await?;
+	dbx.rollback_txn().await?;
+	assert_eq!(
+		reason.and_then(|(v,)| v).as_deref(),
+		Some("correct case identifier after source reconciliation")
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_delete_case_requires_reason_for_change() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

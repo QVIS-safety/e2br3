@@ -257,10 +257,30 @@ pub async fn list_all_submission_history(
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionHistoryList>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
-	set_full_context_dbx(mm.dbx(), ctx.user_id(), ctx.organization_id(), ctx.role())
+	let dbx = mm.dbx();
+	dbx.begin_txn()
 		.await
-		.map_err(Error::from)?;
-	let history = list_submission_history(&ctx, &mm).await?;
+		.map_err(lib_core::model::Error::from)?;
+	if let Err(err) =
+		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
+			.await
+			.map_err(Error::from)
+	{
+		let _ = dbx.rollback_txn().await;
+		return Err(err);
+	}
+	let history = match list_submission_history(&ctx, &mm).await {
+		Ok(history) => {
+			dbx.commit_txn()
+				.await
+				.map_err(lib_core::model::Error::from)?;
+			history
+		}
+		Err(err) => {
+			let _ = dbx.rollback_txn().await;
+			return Err(err);
+		}
+	};
 	let mut rows = Vec::with_capacity(history.len());
 	for row in history {
 		if lib_rest_core::case_matches_user_scope(&ctx, &mm, row.case_id).await? {

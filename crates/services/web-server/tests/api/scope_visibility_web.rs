@@ -7,8 +7,11 @@ use axum::http::{Request, StatusCode};
 use axum::Router;
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::{
-	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
+	ROLE_MANAGER, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
+	ROLE_SYSTEM_ADMIN,
 };
+use lib_core::model::store::set_full_context_dbx;
+use lib_core::model::ModelManager;
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
@@ -237,6 +240,72 @@ async fn update_user_scope(
 		)
 		.into());
 	}
+	Ok(())
+}
+
+async fn insert_history_rows_for_case(
+	mm: &ModelManager,
+	case_id: Uuid,
+	case_number: &str,
+	user_id: Uuid,
+	org_id: Uuid,
+	suffix: &str,
+) -> Result<()> {
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	set_full_context_dbx(dbx, user_id, org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	dbx.execute(
+		sqlx::query(
+			"INSERT INTO xml_import_history (
+					uploaded_file_name,
+					source_file_name,
+					case_id,
+					case_number,
+					status,
+					uploaded_by
+				) VALUES ($1, $2, $3, $4, 'success', $5)",
+		)
+		.bind(format!("import-{suffix}.zip"))
+		.bind(format!("source-{suffix}.xml"))
+		.bind(case_id)
+		.bind(case_number)
+		.bind(user_id),
+	)
+	.await?;
+	dbx.execute(
+		sqlx::query(
+			"INSERT INTO xml_export_history (
+					case_id,
+					case_number,
+					file_name,
+					status,
+					validation_profile,
+					exported_by
+				) VALUES ($1, $2, $3, 'success', 'fda', $4)",
+		)
+		.bind(case_id)
+		.bind(case_number)
+		.bind(format!("export-{suffix}.xml"))
+		.bind(user_id),
+	)
+	.await?;
+	dbx.execute(
+		sqlx::query(
+			"INSERT INTO case_submissions (
+					case_id,
+					gateway,
+					remote_submission_id,
+					status,
+					xml_bytes,
+					submitted_by
+				) VALUES ($1, 'fda', $2, 'ack1_received', 128, $3)",
+		)
+		.bind(case_id)
+		.bind(format!("REMOTE-{suffix}"))
+		.bind(user_id),
+	)
+	.await?;
+	dbx.commit_txn().await?;
 	Ok(())
 }
 
@@ -499,6 +568,132 @@ async fn test_case_get_blocks_blinded_case_without_blind_scope() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_import_export_submission_histories_follow_product_scope() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let scoped_manager = insert_user(
+		&mm,
+		seed.org_id,
+		ROLE_MANAGER,
+		system_user_id(),
+		Some("managerpwd"),
+	)
+	.await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let manager_token =
+		generate_web_token(&scoped_manager.email, scoped_manager.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let manager_cookie = cookie_header(&manager_token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let case_allowed_number = format!("SR-HIST-A-{}", Uuid::new_v4());
+	let case_hidden_number = format!("SR-HIST-B-{}", Uuid::new_v4());
+	let case_allowed =
+		create_case(&app, &admin_cookie, &case_allowed_number, Some("PROD-A"))
+			.await?;
+	let case_hidden =
+		create_case(&app, &admin_cookie, &case_hidden_number, Some("PROD-B"))
+			.await?;
+	create_message_header(&app, &admin_cookie, case_allowed, "SEND-HIST").await?;
+	create_message_header(&app, &admin_cookie, case_hidden, "SEND-HIST").await?;
+	insert_history_rows_for_case(
+		&mm,
+		case_allowed,
+		&case_allowed_number,
+		seed.admin.id,
+		seed.org_id,
+		"allowed",
+	)
+	.await?;
+	insert_history_rows_for_case(
+		&mm,
+		case_hidden,
+		&case_hidden_number,
+		seed.admin.id,
+		seed.org_id,
+		"hidden",
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		scoped_manager.id,
+		json!({
+			"access_sender_ids": ["SEND-HIST"],
+			"access_product_ids": ["PROD-A"]
+		}),
+	)
+	.await?;
+
+	let (status, import_history) = request_json(
+		&app,
+		"GET",
+		&manager_cookie,
+		"/api/import/xml/history".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{import_history:?}");
+	let import_items = import_history["data"]["items"]
+		.as_array()
+		.ok_or("missing import history items")?;
+	assert!(import_items
+		.iter()
+		.any(|row| row["caseId"] == case_allowed.to_string()));
+	assert!(!import_items
+		.iter()
+		.any(|row| row["caseId"] == case_hidden.to_string()));
+
+	let (status, export_history) = request_json(
+		&app,
+		"GET",
+		&manager_cookie,
+		"/api/exports/history".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{export_history:?}");
+	let export_items = export_history["data"]["items"]
+		.as_array()
+		.ok_or("missing export history items")?;
+	assert!(export_items
+		.iter()
+		.any(|row| row["caseId"] == case_allowed.to_string()));
+	assert!(!export_items
+		.iter()
+		.any(|row| row["caseId"] == case_hidden.to_string()));
+
+	let (status, submission_history) = request_json(
+		&app,
+		"GET",
+		&manager_cookie,
+		"/api/submissions/history".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{submission_history:?}");
+	let submission_items = submission_history["data"]["items"]
+		.as_array()
+		.ok_or("missing submission history items")?;
+	assert!(
+		submission_items
+			.iter()
+			.any(|row| row["caseId"] == case_allowed.to_string()),
+		"{submission_history:?}"
+	);
+	assert!(
+		!submission_items
+			.iter()
+			.any(|row| row["caseId"] == case_hidden.to_string()),
+		"{submission_history:?}"
+	);
+
 	Ok(())
 }
 

@@ -119,6 +119,7 @@ pub struct SubmissionRecord {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SubmissionHistoryRecord {
 	pub submission_id: Uuid,
 	pub case_id: Uuid,
@@ -126,12 +127,18 @@ pub struct SubmissionHistoryRecord {
 	pub gateway: String,
 	pub remote_submission_id: String,
 	pub status: SubmissionStatus,
+	pub batch_result: String,
+	pub message_result: Option<String>,
 	pub xml_bytes: usize,
 	pub submitted_by: Uuid,
 	pub submitted_by_email: Option<String>,
 	pub submitted_at: String,
 	pub latest_ack_received_at: Option<String>,
+	pub acknowledged_date: Option<String>,
 	pub latest_event_type: Option<String>,
+	pub icsr_count: i32,
+	pub data_file_name: String,
+	pub data_file_download_url: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -272,6 +279,16 @@ struct SubmissionAckRow {
 }
 
 #[derive(Debug, Clone, FromRow)]
+struct LatestSubmissionAckRow {
+	submission_id: Uuid,
+	ack_level: i16,
+	success: bool,
+	ack_code: Option<String>,
+	ack_message: Option<String>,
+	received_at: OffsetDateTime,
+}
+
+#[derive(Debug, Clone, FromRow)]
 struct SubmissionAckDownloadRow {
 	submission_id: Uuid,
 	case_id: Uuid,
@@ -309,6 +326,7 @@ struct SubmissionHistoryRow {
 	submission_id: Uuid,
 	case_id: Uuid,
 	case_number: String,
+	appendices_json: Option<String>,
 	gateway: String,
 	remote_submission_id: String,
 	status: String,
@@ -426,6 +444,24 @@ fn selected_submission_authorities(
 		message: "case appendices must include fda or mfds for submission"
 			.to_string(),
 	})
+}
+
+fn submission_history_export_profile(
+	gateway: &str,
+	appendices_json: Option<&str>,
+) -> &'static str {
+	let gateway = gateway.to_ascii_lowercase();
+	if gateway.contains("mfds") {
+		return SubmissionAuthority::Mfds.as_str();
+	}
+	if gateway.contains("fda") || gateway.contains("esg") {
+		return SubmissionAuthority::Fda.as_str();
+	}
+	selected_submission_authorities(appendices_json)
+		.ok()
+		.and_then(|authorities| authorities.first().copied())
+		.unwrap_or(SubmissionAuthority::Fda)
+		.as_str()
 }
 
 fn status_to_db(status: &SubmissionStatus) -> &'static str {
@@ -1171,7 +1207,7 @@ pub async fn list_submission_history(
 	_ctx: &Ctx,
 	mm: &ModelManager,
 ) -> Result<Vec<SubmissionHistoryRecord>> {
-	let latest_ack_received_at = list_latest_ack_received_at(mm).await?;
+	let latest_ack_summaries = list_latest_ack_summaries(mm).await?;
 	let latest_event_type = if submission_events_table_exists(mm).await? {
 		list_latest_submission_event_types(mm).await?
 	} else {
@@ -1183,6 +1219,7 @@ pub async fn list_submission_history(
 			"SELECT cs.id AS submission_id,
 				        cs.case_id,
 				        c.safety_report_id AS case_number,
+				        c.appendices_json,
 				        cs.gateway,
 				        cs.remote_submission_id,
 				        cs.status,
@@ -1201,25 +1238,44 @@ pub async fn list_submission_history(
 
 	rows.into_iter()
 		.map(|row| {
+			let latest_ack = latest_ack_summaries.get(&row.submission_id);
+			let latest_ack_received_at = latest_ack
+				.map(|ack| format_history_timestamp(ack.received_at))
+				.transpose()?;
+			let gateway = row.gateway;
+			let export_profile = submission_history_export_profile(
+				&gateway,
+				row.appendices_json.as_deref(),
+			);
+			let data_file_name = format!(
+				"{}-{}-{}.xml",
+				row.case_number, row.case_id, export_profile
+			);
+			let data_file_download_url = format!(
+				"/api/cases/{}/export/xml?profile={}",
+				row.case_id, export_profile
+			);
 			Ok(SubmissionHistoryRecord {
 				submission_id: row.submission_id,
 				case_id: row.case_id,
 				case_number: row.case_number,
-				gateway: row.gateway,
+				gateway,
 				remote_submission_id: row.remote_submission_id,
 				status: status_from_db(&row.status)?,
+				batch_result: row.status,
+				message_result: latest_ack.and_then(format_latest_ack_result),
 				xml_bytes: row.xml_bytes as usize,
 				submitted_by: row.submitted_by,
 				submitted_by_email: row.submitted_by_email,
 				submitted_at: format_history_timestamp(row.submitted_at)?,
-				latest_ack_received_at: latest_ack_received_at
-					.get(&row.submission_id)
-					.copied()
-					.map(format_history_timestamp)
-					.transpose()?,
+				latest_ack_received_at: latest_ack_received_at.clone(),
+				acknowledged_date: latest_ack_received_at,
 				latest_event_type: latest_event_type
 					.get(&row.submission_id)
 					.cloned(),
+				icsr_count: 1,
+				data_file_name,
+				data_file_download_url,
 			})
 		})
 		.collect()
@@ -1231,19 +1287,48 @@ fn format_history_timestamp(value: OffsetDateTime) -> Result<String> {
 	})
 }
 
-async fn list_latest_ack_received_at(
+async fn list_latest_ack_summaries(
 	mm: &ModelManager,
-) -> Result<HashMap<Uuid, OffsetDateTime>> {
+) -> Result<HashMap<Uuid, LatestSubmissionAckRow>> {
 	let rows = mm
 		.dbx()
-		.fetch_all(sqlx::query_as::<_, (Uuid, OffsetDateTime)>(
-			"SELECT submission_id, MAX(received_at) AS received_at
+		.fetch_all(sqlx::query_as::<_, LatestSubmissionAckRow>(
+			"SELECT DISTINCT ON (submission_id)
+				        submission_id,
+				        ack_level,
+				        success,
+				        ack_code,
+				        ack_message,
+				        received_at
 				 FROM submission_acks
-				 GROUP BY submission_id",
+				 ORDER BY submission_id, received_at DESC, ack_level DESC",
 		))
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	Ok(rows.into_iter().collect())
+	Ok(rows
+		.into_iter()
+		.map(|row| (row.submission_id, row))
+		.collect())
+}
+
+fn format_latest_ack_result(ack: &LatestSubmissionAckRow) -> Option<String> {
+	let code = ack
+		.ack_code
+		.as_deref()
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+		.map(str::to_string)
+		.unwrap_or_else(|| format!("ACK{}", ack.ack_level));
+	let message = ack
+		.ack_message
+		.as_deref()
+		.map(str::trim)
+		.filter(|value| !value.is_empty());
+	match (ack.success, message) {
+		(_, Some(message)) => Some(format!("{code}: {message}")),
+		(true, None) => Some(code),
+		(false, None) => Some(format!("{code}: Rejected")),
+	}
 }
 
 async fn list_latest_submission_event_types(

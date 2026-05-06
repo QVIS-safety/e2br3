@@ -87,6 +87,8 @@ fn intake_basis(
 		"date_of_most_recent_information": [2024, day_of_year],
 		"report_type": report_type,
 		"patient_initials": intake_patient_initials(safety_report_id),
+		"age_d2_2a": "41",
+		"sex_d5": "2",
 		"dg_prd_key": format!("DG-{}", intake_patient_initials(safety_report_id)),
 		"reaction_meddra_version": "27.0",
 		"reaction_meddra_code": "10019211",
@@ -397,7 +399,7 @@ async fn test_case_intake_duplicate_check_surfaces_incomplete_basis_as_warning(
 		post_json(&app, &cookie, "/api/cases/intake-check", check_body).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["duplicate"], false, "{body:?}");
-	assert_eq!(body["data"]["basis_complete"], true, "{body:?}");
+	assert_eq!(body["data"]["basis_complete"], false, "{body:?}");
 	assert!(!body["data"]["warnings"]
 		.as_array()
 		.ok_or("warnings should be array")?
@@ -485,6 +487,83 @@ async fn test_case_intake_duplicate_check_treats_null_flavor_codes_as_missing(
 			.unwrap_or_default()
 			.contains("Reaction MedDRA version is missing")))
 		.unwrap_or(false));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_intake_duplicate_check_applies_report_type_required_matrix(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let spontaneous_id = format!("INTAKE-{}", Uuid::new_v4());
+	let spontaneous_missing_patient = json!({
+		"data": intake_data(&spontaneous_id, 143, "1", json!({
+			"patient_initials": null,
+			"age_d2_2a": null,
+			"sex_d5": null
+		}))
+	});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases/intake-check",
+		spontaneous_missing_patient,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["basis_complete"], false, "{body:?}");
+	assert!(body["data"]["warnings"]
+		.as_array()
+		.map(|warnings| warnings.iter().any(|value| value
+			.as_str()
+			.unwrap_or_default()
+			.contains("Patient Name or Initials")))
+		.unwrap_or(false));
+
+	let study_id = format!("INTAKE-{}", Uuid::new_v4());
+	let study_missing_investigation = json!({
+		"data": intake_data(&study_id, 144, "2", json!({
+			"reporter_organization": "Seoul Hospital",
+			"sponsor_study_number": "STUDY-123",
+			"investigation_number": null
+		}))
+	});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases/intake-check",
+		study_missing_investigation,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["basis_complete"], false, "{body:?}");
+	assert!(body["data"]["warnings"]
+		.as_array()
+		.map(|warnings| warnings.iter().any(|value| value
+			.as_str()
+			.unwrap_or_default()
+			.contains("Investigation Number")))
+		.unwrap_or(false));
+
+	let unknown_id = format!("INTAKE-{}", Uuid::new_v4());
+	let unknown_complete = json!({
+		"data": intake_data(&unknown_id, 145, "4", json!({
+			"patient_initials": intake_patient_initials(&unknown_id),
+			"age_d2_2a": "41",
+			"sex_d5": "2"
+		}))
+	});
+	let (status, body) =
+		post_json(&app, &cookie, "/api/cases/intake-check", unknown_complete)
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["basis_complete"], true, "{body:?}");
 
 	Ok(())
 }

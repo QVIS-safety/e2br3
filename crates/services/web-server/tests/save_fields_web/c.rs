@@ -810,7 +810,7 @@ safety_report_single_field_test!(
 );
 safety_report_single_field_test!(
 	save_c_1_transmission_date_null_flavor_only,
-	"C.1.2.null_flavor",
+	"C.1.transmission_date_null_flavor",
 	json!({"transmission_date_null_flavor": "UNK"}),
 	|value| {
 		assert_str(value, "transmission_date_null_flavor", "UNK");
@@ -834,7 +834,7 @@ safety_report_single_field_test!(
 );
 safety_report_single_field_test!(
 	save_c_1_date_first_received_from_source_null_flavor_only,
-	"C.1.4.null_flavor",
+	"C.1.date_first_received_from_source_null_flavor",
 	json!({"date_first_received_from_source_null_flavor": "NI"}),
 	|value| {
 		assert_str(value, "date_first_received_from_source_null_flavor", "NI");
@@ -850,7 +850,7 @@ safety_report_single_field_test!(
 );
 safety_report_single_field_test!(
 	save_c_1_date_of_most_recent_information_null_flavor_only,
-	"C.1.5.null_flavor",
+	"C.1.date_of_most_recent_information_null_flavor",
 	json!({"date_of_most_recent_information_null_flavor": "ASKU"}),
 	|value| {
 		assert_str(value, "date_of_most_recent_information_null_flavor", "ASKU");

@@ -221,6 +221,31 @@ fn required_reason_for_change(
 		})
 }
 
+fn optional_text_changed(next: &Option<String>, current: Option<&str>) -> bool {
+	let Some(next) = next.as_deref() else {
+		return false;
+	};
+	next.trim() != current.unwrap_or_default().trim()
+}
+
+fn case_identity_or_scope_update_requires_reason(
+	current: &Case,
+	data: &InternalCaseForUpdate,
+) -> bool {
+	optional_text_changed(&data.safety_report_id, Some(&current.safety_report_id))
+		|| optional_text_changed(&data.dg_prd_key, current.dg_prd_key.as_deref())
+		|| optional_text_changed(
+			&data.appendices_json,
+			current.appendices_json.as_deref(),
+		) || optional_text_changed(
+		&data.review_receivers_json,
+		current.review_receivers_json.as_deref(),
+	) || optional_text_changed(
+		&data.workflow_routes_json,
+		current.workflow_routes_json.as_deref(),
+	)
+}
+
 async fn next_case_version(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -480,6 +505,8 @@ pub async fn update_case_guarded(
 				&& matches!(next.as_str(), "submitted" | "nullified" | "deleted")
 		})
 		.unwrap_or(false);
+	let requires_reason_for_identity_or_scope =
+		case_identity_or_scope_update_requires_reason(&current, &data);
 
 	let ctx_for_update = if requires_compliance {
 		let reason = required_reason_for_change(
@@ -504,6 +531,12 @@ pub async fn update_case_guarded(
 		)
 		.await?;
 		ctx.with_compliance(Some(reason), Some(signature_id))
+	} else if requires_reason_for_identity_or_scope {
+		let reason = required_reason_for_change(
+			reason_for_change,
+			"case identity/scope updates",
+		)?;
+		ctx.with_compliance(Some(reason), None)
 	} else {
 		ctx.clone()
 	};

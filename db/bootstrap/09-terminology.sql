@@ -329,9 +329,12 @@ INSERT INTO ucum_units (code, display_name, unit_type) VALUES
 ('mm', 'millimeter', 'length'),
 -- Concentration units
 ('mg/mL', 'milligram per milliliter', 'concentration'),
+('mg/dL', 'milligram per deciliter', 'concentration'),
 ('mg/L', 'milligram per liter', 'concentration'),
 ('ug/mL', 'microgram per milliliter', 'concentration'),
 ('g/L', 'gram per liter', 'concentration'),
+('mmol/L', 'millimole per liter', 'concentration'),
+('U/L', 'unit per liter', 'activity concentration'),
 -- Dose units
 ('mg/kg', 'milligram per kilogram', 'dose'),
 ('mg/m2', 'milligram per square meter', 'dose'),

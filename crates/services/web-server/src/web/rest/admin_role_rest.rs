@@ -31,6 +31,9 @@ pub struct AdminRoleRow {
 	pub built_in: bool,
 	pub editable: bool,
 	pub sponsor_admin_capable: bool,
+	pub is_builtin: bool,
+	pub is_editable: bool,
+	pub is_sponsor_admin: bool,
 	pub is_operational: bool,
 }
 
@@ -128,6 +131,9 @@ fn build_role_row(
 		built_in,
 		editable,
 		sponsor_admin_capable,
+		is_builtin: built_in,
+		is_editable: editable,
+		is_sponsor_admin: sponsor_admin_capable,
 		is_operational: !is_system,
 	}
 }
@@ -426,8 +432,8 @@ pub async fn update_admin_role(
 	require_safety_db_admin_role(&ctx_w.0, &mm).await?;
 	let normalized_role = normalize_role_name(&role_name);
 	if is_built_in_role_name(&normalized_role) {
-		return Err(Error::BadRequest {
-			message: "built-in roles are read-only".to_string(),
+		return Err(Error::AccessDenied {
+			required_role: "editable_custom_role".to_string(),
 		});
 	}
 	let current = AdminRoleBmc::get(&mm, &normalized_role)
