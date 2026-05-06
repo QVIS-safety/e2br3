@@ -209,6 +209,31 @@ fn normalize_admin_privileges(
 	Ok(normalized)
 }
 
+const ADMIN_ROLE_MENU_KEYS: &[&str] = &[
+	"case",
+	"info",
+	"import",
+	"export_submission",
+	"users",
+	"roles",
+	"settings",
+	"audit",
+	"data",
+];
+
+fn full_menu_privileges() -> Vec<AdminMenuPrivilege> {
+	ADMIN_ROLE_MENU_KEYS
+		.iter()
+		.map(|menu_key| AdminMenuPrivilege {
+			menu_key: (*menu_key).to_string(),
+			can_read: true,
+			can_edit: true,
+			can_review: *menu_key == "case",
+			can_lock: *menu_key == "case",
+		})
+		.collect()
+}
+
 fn built_in_roles() -> Vec<AdminRoleRow> {
 	vec![
 		build_role_row(
@@ -230,13 +255,7 @@ fn built_in_roles() -> Vec<AdminRoleRow> {
 			Some(
 				"Fixed in-database sponsor admin role for CRO operations.".to_string(),
 			),
-			vec![AdminMenuPrivilege {
-				menu_key: "admin".to_string(),
-				can_read: true,
-				can_edit: true,
-				can_review: true,
-				can_lock: true,
-			}],
+			full_menu_privileges(),
 			true,
 			true,
 			false,
@@ -249,13 +268,7 @@ fn built_in_roles() -> Vec<AdminRoleRow> {
 				"Fixed in-database sponsor admin role for sponsor-company operations."
 					.to_string(),
 			),
-			vec![AdminMenuPrivilege {
-				menu_key: "admin".to_string(),
-				can_read: true,
-				can_edit: true,
-				can_review: true,
-				can_lock: true,
-			}],
+			full_menu_privileges(),
 			true,
 			true,
 			false,

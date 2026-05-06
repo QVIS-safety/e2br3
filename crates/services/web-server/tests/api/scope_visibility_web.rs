@@ -997,6 +997,36 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 		.ok_or("missing sponsor admin role")?;
 	assert_eq!(sponsor["is_builtin"].as_bool(), Some(true));
 	assert_eq!(sponsor["is_sponsor_admin"].as_bool(), Some(true));
+	assert_eq!(sponsor["is_editable"].as_bool(), Some(false));
+	let sponsor_privileges = sponsor["privileges"]
+		.as_array()
+		.ok_or("sponsor privileges should be an array")?;
+	for menu_key in [
+		"case",
+		"info",
+		"import",
+		"export_submission",
+		"users",
+		"roles",
+		"settings",
+		"audit",
+		"data",
+	] {
+		let privilege = sponsor_privileges
+			.iter()
+			.find(|row| row["menu_key"] == menu_key)
+			.ok_or_else(|| format!("missing sponsor privilege for {menu_key}"))?;
+		assert_eq!(privilege["can_read"].as_bool(), Some(true), "{menu_key}");
+		assert_eq!(privilege["can_edit"].as_bool(), Some(true), "{menu_key}");
+	}
+
+	let system_privileges = system["privileges"]
+		.as_array()
+		.ok_or("system privileges should be an array")?;
+	assert!(
+		system_privileges.is_empty(),
+		"system admin should not receive Safety DB working menu privileges"
+	);
 
 	let (status, value) = request_json(
 		&app,

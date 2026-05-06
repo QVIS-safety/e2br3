@@ -53,7 +53,7 @@ The local reference pack is intentionally ignored by git because it contains man
   - Split SafetyDB Admin into the four reference tabs: User, Role, Role & Privilege, and Settings.
   - Added dense User tab utilities for full-text search, clear filters, row count selection, and access-window status visibility.
   - Changed Role to an inline role/description grid while preserving real custom-role create, update, activate/deactivate, delete, and privilege selection paths.
-  - Added a Role & Privilege matrix with Menu, Type, Privilege rows and role columns; built-in role cells are disabled/unavailable because SafetyDB does not expose per-menu built-in privilege data, while custom role cells use persisted privileges and the existing update API.
+  - Added a Role & Privilege matrix with Menu, Type, Privilege rows and role columns; built-in role cells are read-only and now display backend-provided fixed sponsor-admin menu privileges, while custom role cells use persisted privileges and the existing update API.
   - Preserved the existing Settings workflow/configuration form and audit panels.
 - Files changed:
   - `frontend/E2BR3-frontend/app/dashboard/admin/page.tsx`
@@ -67,5 +67,5 @@ The local reference pack is intentionally ignored by git because it contains man
   - `npx tsc --noEmit`
   - `npm run build`
 - Remaining gaps:
-  - SafetyDB supports persisted custom role privilege editing through the existing role API. Full CubeSafety-style built-in/legacy role privilege parity remains a backend feature gap: `/api/admin/roles` does not expose authoritative per-menu privilege records for every built-in/legacy role, so the UI keeps those static roles visible once and marks their matrix cells unavailable instead of synthesizing unsupported permissions.
-  - A future backend feature should provide a unified role privilege catalog that returns each role once with editability metadata and authoritative menu-level privileges.
+  - SafetyDB now exposes authoritative per-menu built-in sponsor-admin privileges through `/api/admin/roles`, and the matrix renders those checked/read-only cells from the backend. Sponsor-admin privilege editing remains intentionally unavailable because `docs/requirements/roles.csv` defines those role names and authorities as fixed.
+  - Legacy static roles without persisted backend rows remain visible as read-only fallback columns until sponsor administrators create matching persisted roles and assign menu-level privileges.
