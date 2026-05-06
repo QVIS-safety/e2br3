@@ -481,6 +481,7 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		"/cases/workflow/config",
 		get(case_workflow_rest::get_workflow_config_runtime),
 	)
+	.route("/cases/list-view", get(case_rest::list_case_view_rows))
 	.route("/cases/link-options", get(case_rest::list_case_link_options))
 	.route("/cases/export/xml", axum::routing::post(case_export_rest::export_cases_zip))
 	.route("/cases/{id}/export/xml", get(case_export_rest::export_case))

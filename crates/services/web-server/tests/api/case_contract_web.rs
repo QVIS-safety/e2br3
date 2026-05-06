@@ -27,6 +27,24 @@ async fn post_json(
 	Ok((status, serde_json::from_slice::<Value>(&body)?))
 }
 
+async fn post_raw(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+	body: Value,
+) -> Result<(StatusCode, Vec<u8>)> {
+	let req = Request::builder()
+		.method("POST")
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, body.to_vec()))
+}
+
 async fn put_json(
 	app: &axum::Router,
 	cookie: &str,
@@ -77,6 +95,237 @@ async fn get_json(
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	Ok((status, serde_json::from_slice::<Value>(&body)?))
+}
+
+async fn get_raw(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+) -> Result<(StatusCode, Vec<u8>)> {
+	let req = Request::builder()
+		.method("GET")
+		.uri(uri)
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, body.to_vec()))
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let suffix = Uuid::new_v4().simple().to_string();
+	let case_no = format!("CASE-LIST-{suffix}");
+	let worldwide_unique_no = format!("WWUID-{suffix}");
+	let sender = format!("Sender Org {suffix}");
+	let receiver = format!("Receiver Org {suffix}");
+	let ae_term = format!("Headache {suffix}");
+	let study_no = format!("STUDY-{suffix}");
+	let manufacturer = format!("Manufacturer {suffix}");
+
+	let (status, raw_body) = post_raw(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": case_no,
+				"dg_prd_key": "DG-12345",
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let case_id = body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?
+		.to_string();
+
+	let (status, raw_body) = post_raw(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/safety-report"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"transmission_date": "2026-05-01",
+				"report_type": "2",
+				"date_first_received_from_source": "2026-04-30",
+				"date_of_most_recent_information": "2026-05-01",
+				"worldwide_unique_id": worldwide_unique_no
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+
+	let (status, raw_body) = post_raw(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/safety-report/senders"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"organization_name": sender,
+				"sender_type": "2"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+
+	let (status, raw_body) = post_raw(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/receiver"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"organization_name": receiver,
+				"receiver_type": "2"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+
+	let (status, raw_body) = post_raw(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/reactions"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sequence_number": 1,
+				"primary_source_reaction": ae_term,
+				"reaction_meddra_code": "10019211",
+				"reaction_meddra_version": "27.1",
+				"serious": true
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+
+	let (status, raw_body) = post_raw(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/safety-report/studies"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"study_name": "Pivotal Migraine Study",
+				"sponsor_study_number": study_no,
+				"study_type_reaction": "1"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+
+	let (status, raw_body) = post_raw(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/drugs"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sequence_number": 1,
+				"drug_characterization": "1",
+				"medicinal_product": "Example Product",
+				"manufacturer_name": manufacturer
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+
+	let (status, raw_body) = get_raw(&app, &cookie, "/api/cases/list-view").await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let items = body["data"]["items"]
+		.as_array()
+		.ok_or("missing list-view items")?;
+	let row = items
+		.iter()
+		.find(|item| item["caseNo"].as_str() == Some(case_no.as_str()))
+		.ok_or("missing projected case row")?;
+
+	assert_eq!(
+		row["worldwideUniqueNo"].as_str(),
+		Some(worldwide_unique_no.as_str()),
+		"{row:?}"
+	);
+	assert_eq!(row["sender"].as_str(), Some(sender.as_str()), "{row:?}");
+	assert_eq!(row["aeTerm"].as_str(), Some(ae_term.as_str()), "{row:?}");
+	assert_eq!(row["studyNo"].as_str(), Some(study_no.as_str()), "{row:?}");
+	assert_eq!(
+		row["dateOfCreation"].as_str(),
+		Some("2026-05-01"),
+		"{row:?}"
+	);
+	assert_eq!(
+		row["manufacturer"].as_str(),
+		Some(manufacturer.as_str()),
+		"{row:?}"
+	);
+	assert_eq!(row["receiver"].as_str(), Some(receiver.as_str()), "{row:?}");
+	assert_eq!(
+		row["typeOfReport"].as_str(),
+		Some("Report from study"),
+		"{row:?}"
+	);
+	Ok(())
 }
 
 #[serial]

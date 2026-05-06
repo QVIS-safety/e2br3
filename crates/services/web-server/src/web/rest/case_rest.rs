@@ -11,7 +11,7 @@ use lib_core::model::case::{
 	is_allowed_case_status_transition, is_valid_case_status,
 	update_touches_non_status_fields, Case, CaseBmc, CaseFilter,
 	CaseForCreate as InternalCaseForCreate, CaseForUpdate as InternalCaseForUpdate,
-	CaseLinkOption,
+	CaseLinkOption, CaseListViewRow,
 };
 use lib_core::model::ModelManager;
 use lib_core::validation::{validate_case_for_profiles, ValidationProfile};
@@ -327,6 +327,12 @@ pub struct CaseLinkOptionList {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseListViewResult {
+	pub items: Vec<CaseListViewRow>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct CaseLifecycleItem {
 	pub case_id: Uuid,
 	pub version: i32,
@@ -448,6 +454,42 @@ pub async fn list_cases(
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(DataRestResult { data: scoped }),
+	))
+}
+
+/// GET /api/cases/list-view
+pub async fn list_case_view_rows(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<DataRestResult<CaseListViewResult>>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_LIST)?;
+
+	let items = lib_rest_core::with_rls_read(&mm, &ctx, |dbx| {
+		Box::pin(
+			async move { CaseBmc::list_view_rows(dbx).await.map_err(Error::from) },
+		)
+	})
+	.await?;
+
+	let mut scoped = Vec::with_capacity(items.len());
+	for item in items {
+		if lib_rest_core::case_matches_user_scope(&ctx, &mm, item.case_id).await? {
+			scoped.push(item);
+			if scoped.len() >= 500 {
+				break;
+			}
+		}
+	}
+
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult {
+			data: CaseListViewResult { items: scoped },
+		}),
 	))
 }
 
