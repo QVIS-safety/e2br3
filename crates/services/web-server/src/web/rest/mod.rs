@@ -49,22 +49,29 @@ pub fn routes_app() -> Router {
 
 /// Routes for /api/cases and nested subresources
 pub fn routes_cases(mm: ModelManager) -> Router {
-	rest_collection_item_routes(
-		"/cases",
-		"/cases/{id}",
-		get(case_rest::list_cases).post(case_rest::create_case_guarded),
-		get(case_rest::get_case)
-			.put(case_rest::update_case_guarded)
-			.delete(case_rest::delete_case),
-	)
-	.route(
-		"/cases/intake-check",
-		axum::routing::post(case_intake_rest::check_case_intake_duplicate),
-	)
-	.route(
-		"/cases/from-intake",
-		axum::routing::post(case_intake_rest::create_case_from_intake),
-	)
+	Router::new()
+		.route("/cases/list-view", get(case_rest::list_case_view_rows))
+		.route("/cases/link-options", get(case_rest::list_case_link_options))
+		.route(
+			"/cases/export/xml",
+			axum::routing::post(case_export_rest::export_cases_zip),
+		)
+		.route(
+			"/cases/intake-check",
+			axum::routing::post(case_intake_rest::check_case_intake_duplicate),
+		)
+		.route(
+			"/cases/from-intake",
+			axum::routing::post(case_intake_rest::create_case_from_intake),
+		)
+		.merge(rest_collection_item_routes(
+			"/cases",
+			"/cases/{id}",
+			get(case_rest::list_cases).post(case_rest::create_case_guarded),
+			get(case_rest::get_case)
+				.put(case_rest::update_case_guarded)
+				.delete(case_rest::delete_case),
+		))
 	.route(
 		"/cases/{id}/validator/mark-validated",
 		axum::routing::post(case_rest::mark_case_validated_by_validator),
@@ -481,9 +488,6 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		"/cases/workflow/config",
 		get(case_workflow_rest::get_workflow_config_runtime),
 	)
-	.route("/cases/list-view", get(case_rest::list_case_view_rows))
-	.route("/cases/link-options", get(case_rest::list_case_link_options))
-	.route("/cases/export/xml", axum::routing::post(case_export_rest::export_cases_zip))
 	.route("/cases/{id}/export/xml", get(case_export_rest::export_case))
 	.route("/cases/{id}/lifecycle", get(case_rest::get_case_lifecycle))
 	.route(
