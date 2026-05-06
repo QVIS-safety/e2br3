@@ -1191,6 +1191,53 @@ async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()>
 
 #[serial]
 #[tokio::test]
+async fn test_validation_all_uses_appendices_profiles() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case_with_payload(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"organization_id": seed.org_id,
+				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"status": "draft",
+				"appendices_json": "[\"fda\", \"mfds\", \"fda\"]"
+			}
+		}),
+	)
+	.await?
+	.1["data"]["id"]
+		.as_str()
+		.map(Uuid::parse_str)
+		.ok_or("missing data.id")??;
+
+	create_safety_report(&app, &cookie, case_id).await?;
+	create_sender(&app, &cookie, case_id, "3").await?;
+
+	let (status, body) = get_validation(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation/all"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["profiles"], json!(["fda", "mfds"]));
+	assert_eq!(
+		body["data"]["reports"].as_array().map(Vec::len),
+		Some(2),
+		"{body:?}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_workflow_config_runtime_endpoint_returns_default_statuses(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
