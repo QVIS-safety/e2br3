@@ -1,3 +1,4 @@
+use axum::extract::multipart::Field;
 use axum::extract::{Multipart, Path, State};
 use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
@@ -21,6 +22,10 @@ use time::format_description::well_known::Rfc3339;
 use tracing::warn;
 use uuid::Uuid;
 use zip::ZipArchive;
+
+const MAX_XML_UPLOAD_BYTES: usize = 50 * 1024 * 1024;
+const MAX_XML_ZIP_ENTRY_BYTES: usize = 25 * 1024 * 1024;
+const MAX_IMPORT_FORM_FIELD_BYTES: usize = 1024;
 
 struct UploadedImportPayload {
 	bytes: Vec<u8>,
@@ -100,18 +105,26 @@ async fn read_xml_multipart(
 		let name = field.name().map(|v| v.to_string());
 		if name.as_deref() == Some("file") || name.as_deref() == Some("xml") {
 			filename = field.file_name().map(|value| value.to_string());
-			let bytes = field.bytes().await.map_err(|err| Error::BadRequest {
-				message: format!("multipart read error: {err}"),
-			})?;
-			file_bytes = Some(bytes.to_vec());
+			file_bytes = Some(
+				read_field_limited(field, MAX_XML_UPLOAD_BYTES, "xml upload")
+					.await?,
+			);
 			continue;
 		}
 
 		if name.as_deref() == Some("format")
 			|| name.as_deref() == Some("validation_profile")
 		{
-			let value = field.text().await.map_err(|err| Error::BadRequest {
-				message: format!("multipart read error: {err}"),
+			let value = String::from_utf8(
+				read_field_limited(
+					field,
+					MAX_IMPORT_FORM_FIELD_BYTES,
+					"validation profile field",
+				)
+				.await?,
+			)
+			.map_err(|err| Error::BadRequest {
+				message: format!("validation profile is not UTF-8: {err}"),
 			})?;
 			let normalized = normalize_validation_profile(&value)?;
 			if !normalized.is_empty() {
@@ -129,6 +142,25 @@ async fn read_xml_multipart(
 		filename,
 		validation_profile,
 	})
+}
+
+async fn read_field_limited(
+	mut field: Field<'_>,
+	max_bytes: usize,
+	label: &str,
+) -> Result<Vec<u8>> {
+	let mut bytes = Vec::new();
+	while let Some(chunk) = field.chunk().await.map_err(|err| Error::BadRequest {
+		message: format!("multipart read error: {err}"),
+	})? {
+		if bytes.len().saturating_add(chunk.len()) > max_bytes {
+			return Err(Error::BadRequest {
+				message: format!("{label} exceeds {max_bytes} bytes"),
+			});
+		}
+		bytes.extend_from_slice(&chunk);
+	}
+	Ok(bytes)
 }
 
 fn extract_xml_entries(
@@ -172,12 +204,11 @@ fn extract_xml_entries_from_zip(
 			continue;
 		}
 
-		let mut entry_bytes = Vec::new();
-		entry
-			.read_to_end(&mut entry_bytes)
-			.map_err(|err| Error::BadRequest {
-				message: format!("zip entry read error: {err}"),
-			})?;
+		let entry_bytes = read_zip_entry_limited(
+			&mut entry,
+			MAX_XML_ZIP_ENTRY_BYTES,
+			"xml zip entry",
+		)?;
 		entries.push((entry_name, entry_bytes));
 	}
 
@@ -188,6 +219,30 @@ fn extract_xml_entries_from_zip(
 	}
 
 	Ok(entries)
+}
+
+fn read_zip_entry_limited<R: Read>(
+	reader: &mut R,
+	max_bytes: usize,
+	label: &str,
+) -> Result<Vec<u8>> {
+	let mut bytes = Vec::new();
+	let mut buffer = [0_u8; 64 * 1024];
+	loop {
+		let read = reader.read(&mut buffer).map_err(|err| Error::BadRequest {
+			message: format!("{label} read error: {err}"),
+		})?;
+		if read == 0 {
+			break;
+		}
+		if bytes.len().saturating_add(read) > max_bytes {
+			return Err(Error::BadRequest {
+				message: format!("{label} exceeds {max_bytes} bytes"),
+			});
+		}
+		bytes.extend_from_slice(&buffer[..read]);
+	}
+	Ok(bytes)
 }
 
 async fn record_import_history(

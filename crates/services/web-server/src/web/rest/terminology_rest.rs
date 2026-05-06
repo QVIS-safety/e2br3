@@ -1,5 +1,6 @@
 // Terminology REST endpoints for MedDRA, WHODrug, ISO Countries, E2B Code Lists
 
+use axum::extract::multipart::Field;
 use axum::extract::{Multipart, Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
@@ -18,6 +19,8 @@ use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 
 // -- Params
+
+const MAX_TERMINOLOGY_UPLOAD_BYTES: usize = 250 * 1024 * 1024;
 
 #[derive(Deserialize)]
 pub struct TerminologySearchParams {
@@ -99,19 +102,34 @@ async fn read_upload_bytes(mut multipart: Multipart) -> Result<Vec<u8>> {
 			.await
 			.map_err(|err| Error::BadRequest {
 				message: format!("multipart error: {err}"),
-			})? {
+		})? {
 		let name = field.name().map(|v| v.to_string());
 		if name.as_deref() == Some("file") {
-			let bytes = field.bytes().await.map_err(|err| Error::BadRequest {
-				message: format!("multipart read error: {err}"),
-			})?;
-			return Ok(bytes.to_vec());
+			return read_field_limited(field, MAX_TERMINOLOGY_UPLOAD_BYTES).await;
 		}
 	}
 
 	Err(Error::BadRequest {
 		message: "missing terminology file field".to_string(),
 	})
+}
+
+async fn read_field_limited(
+	mut field: Field<'_>,
+	max_bytes: usize,
+) -> Result<Vec<u8>> {
+	let mut bytes = Vec::new();
+	while let Some(chunk) = field.chunk().await.map_err(|err| Error::BadRequest {
+		message: format!("multipart read error: {err}"),
+	})? {
+		if bytes.len().saturating_add(chunk.len()) > max_bytes {
+			return Err(Error::BadRequest {
+				message: format!("terminology upload exceeds {} bytes", max_bytes),
+			});
+		}
+		bytes.extend_from_slice(&chunk);
+	}
+	Ok(bytes)
 }
 
 // -- Handlers
