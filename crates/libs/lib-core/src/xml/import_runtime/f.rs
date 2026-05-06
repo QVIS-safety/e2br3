@@ -36,24 +36,28 @@ pub(crate) async fn import_section_f(
 			.map_err(model::Error::from)?
 			.map(|row| row.0);
 
-		let update = TestResultForUpdate {
-			test_name: Some(entry.test_name.clone()),
-			test_date: entry.test_date,
-			test_date_null_flavor: entry.test_date_null_flavor,
-			test_meddra_version: entry.test_meddra_version,
-			test_meddra_code: entry.test_meddra_code,
-			test_result_code: entry.test_result_code,
-			test_result_value: entry.test_result_value,
-			test_result_unit: entry.test_result_unit,
-			result_unstructured: entry.result_unstructured,
-			normal_low_value: entry.normal_low_value,
-			normal_high_value: entry.normal_high_value,
-			comments: entry.comments,
-			more_info_available: entry.more_info_available,
-		};
-
 		if let Some(id) = existing {
-			TestResultBmc::update(ctx, mm, id, update).await?;
+			TestResultBmc::update(
+				ctx,
+				mm,
+				id,
+				TestResultForUpdate {
+					test_name: Some(entry.test_name),
+					test_date: entry.test_date,
+					test_date_null_flavor: entry.test_date_null_flavor,
+					test_meddra_version: entry.test_meddra_version,
+					test_meddra_code: entry.test_meddra_code,
+					test_result_code: entry.test_result_code,
+					test_result_value: entry.test_result_value,
+					test_result_unit: entry.test_result_unit,
+					result_unstructured: entry.result_unstructured,
+					normal_low_value: entry.normal_low_value,
+					normal_high_value: entry.normal_high_value,
+					comments: entry.comments,
+					more_info_available: entry.more_info_available,
+				},
+			)
+			.await?;
 		} else {
 			TestResultBmc::create(
 				ctx,
@@ -61,19 +65,19 @@ pub(crate) async fn import_section_f(
 				TestResultForCreate {
 					case_id,
 					sequence_number,
+					test_date: entry.test_date,
+					test_date_null_flavor: entry.test_date_null_flavor,
 					test_name: entry.test_name,
-					test_date: update.test_date,
-					test_date_null_flavor: update.test_date_null_flavor.clone(),
-					test_meddra_version: update.test_meddra_version.clone(),
-					test_meddra_code: update.test_meddra_code.clone(),
-					test_result_code: update.test_result_code.clone(),
-					test_result_value: update.test_result_value.clone(),
-					test_result_unit: update.test_result_unit.clone(),
-					result_unstructured: update.result_unstructured.clone(),
-					normal_low_value: update.normal_low_value.clone(),
-					normal_high_value: update.normal_high_value.clone(),
-					comments: update.comments.clone(),
-					more_info_available: update.more_info_available,
+					test_meddra_version: entry.test_meddra_version,
+					test_meddra_code: entry.test_meddra_code,
+					test_result_code: entry.test_result_code,
+					test_result_value: entry.test_result_value,
+					test_result_unit: entry.test_result_unit,
+					result_unstructured: entry.result_unstructured,
+					normal_low_value: entry.normal_low_value,
+					normal_high_value: entry.normal_high_value,
+					comments: entry.comments,
+					more_info_available: entry.more_info_available,
 				},
 			)
 			.await?;

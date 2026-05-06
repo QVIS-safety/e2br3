@@ -1193,7 +1193,19 @@ struct TestResultDoc {
 struct TestResultForCreateDoc {
 	case_id: String,
 	sequence_number: i32,
+	test_date: Option<String>,
+	test_date_null_flavor: Option<String>,
 	test_name: String,
+	test_meddra_version: Option<String>,
+	test_meddra_code: Option<String>,
+	test_result_code: Option<String>,
+	test_result_value: Option<String>,
+	test_result_unit: Option<String>,
+	result_unstructured: Option<String>,
+	normal_low_value: Option<String>,
+	normal_high_value: Option<String>,
+	comments: Option<String>,
+	more_info_available: Option<bool>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]

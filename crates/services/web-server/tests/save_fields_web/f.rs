@@ -1,6 +1,6 @@
 use super::save_fields_common::{
-	assert_bool, assert_date_tuple, assert_str, extract_id, get_ok, post_created,
-	FieldCase,
+	assert_bool, assert_date_tuple, assert_null, assert_str, extract_id, get_ok,
+	post_created, FieldCase,
 };
 use crate::common::Result;
 use crate::persist_workflow::{create_case, setup, PersistTestCtx};
@@ -41,6 +41,58 @@ async fn create_test_result_with_payload(
 	)
 	.await?;
 	extract_id(&value)
+}
+
+#[tokio::test]
+#[serial]
+async fn create_f_r_full_payload_persists_exposed_fields() -> Result<()> {
+	let ctx = setup().await?;
+	let case_id = create_case(&ctx).await?;
+	let value = post_created(
+		&ctx,
+		test_result_field("F.r"),
+		format!("/api/cases/{case_id}/test-results"),
+		json!({"data": {
+			"case_id": case_id,
+			"sequence_number": 1,
+			"test_date": [2024, 1, 1],
+			"test_date_null_flavor": "UNK",
+			"test_name": "ALT",
+			"test_meddra_version": "27.0",
+			"test_meddra_code": "10001552",
+			"test_result_code": "N",
+			"test_result_value": "25",
+			"test_result_unit": "U/L",
+			"result_unstructured": "Normal",
+			"normal_low_value": "0",
+			"normal_high_value": "40",
+			"comments": "All normal",
+			"more_info_available": true
+		}}),
+	)
+	.await?;
+	let test_result_id = extract_id(&value)?;
+
+	let value = get_ok(
+		&ctx,
+		test_result_field("F.r"),
+		format!("/api/cases/{case_id}/test-results/{test_result_id}"),
+	)
+	.await?;
+	assert_date_tuple(&value, "test_date", &[2024, 1]);
+	assert_null(&value, "test_date_null_flavor");
+	assert_str(&value, "test_name", "ALT");
+	assert_str(&value, "test_meddra_version", "27.0");
+	assert_str(&value, "test_meddra_code", "10001552");
+	assert_str(&value, "test_result_code", "N");
+	assert_str(&value, "test_result_value", "25");
+	assert_str(&value, "test_result_unit", "U/L");
+	assert_str(&value, "result_unstructured", "Normal");
+	assert_str(&value, "normal_low_value", "0");
+	assert_str(&value, "normal_high_value", "40");
+	assert_str(&value, "comments", "All normal");
+	assert_bool(&value, "more_info_available", true);
+	Ok(())
 }
 
 macro_rules! test_result_single_field_test {

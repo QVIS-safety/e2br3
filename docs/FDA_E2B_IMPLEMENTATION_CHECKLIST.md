@@ -17,7 +17,7 @@ Goal: Close FDA-required gaps identified in `docs/FDA_E2B_MAPPING.md` and make e
       `duration_value`, `duration_unit`, `medical_confirmation`, `country_code`.
 
 ### Tests (F)
-- [ ] Expose `test_results.test_meddra_code`, `test_meddra_version`,
+- [x] Expose `test_results.test_meddra_code`, `test_meddra_version`,
       `test_result_code`, `result_unstructured`, `normal_low_value`,
       `more_info_available`.
 
