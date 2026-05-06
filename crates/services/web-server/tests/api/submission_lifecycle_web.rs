@@ -1545,16 +1545,6 @@ async fn test_submission_idempotency_key_reuses_submission_when_enabled(
 		&[("x-idempotency-key", idem_key)],
 	)
 	.await?;
-	if status1 == StatusCode::BAD_REQUEST {
-		assert!(
-			body1
-				.to_string()
-				.contains("submission idempotency is not available"),
-			"{body1:?}"
-		);
-		clear_esg_env();
-		return Ok(());
-	}
 	assert_eq!(status1, StatusCode::CREATED, "{body1:?}");
 	let id1 = body1["data"]["id"]
 		.as_str()
