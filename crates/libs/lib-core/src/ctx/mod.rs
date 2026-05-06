@@ -186,7 +186,6 @@ impl Ctx {
 
 pub fn canonical_role(role: &str) -> String {
 	match role.trim().to_ascii_lowercase().as_str() {
-		"admin" => ROLE_SPONSOR_ADMIN_CRO.to_string(),
 		"system-admin" => ROLE_SYSTEM_ADMIN.to_string(),
 		"system_admin" => ROLE_SYSTEM_ADMIN.to_string(),
 		"sponsor administrator(cro)" => ROLE_SPONSOR_ADMIN_CRO.to_string(),
@@ -221,8 +220,16 @@ mod tests {
 	}
 
 	#[test]
-	fn legacy_admin_string_maps_to_sponsor_admin_cro() {
-		assert_eq!(canonical_role("admin"), ROLE_SPONSOR_ADMIN_CRO);
+	fn removed_admin_string_is_not_promoted_to_sponsor_admin() {
+		assert_eq!(canonical_role("admin"), "admin");
+		let ctx = Ctx::new(
+			uuid::Uuid::new_v4(),
+			uuid::Uuid::new_v4(),
+			"admin".to_string(),
+		)
+		.expect("ctx");
+		assert!(!ctx.can_admin_safety_db());
+		assert!(!ctx.is_system_admin());
 	}
 
 	#[test]

@@ -770,7 +770,6 @@ CREATE POLICY audit_logs_read_for_admin_manager ON audit_logs
             'system_admin',
             'sponsor_admin_cro',
             'sponsor_admin_company',
-            'admin',
             'manager',
             'pvm',
             'head_pv'
