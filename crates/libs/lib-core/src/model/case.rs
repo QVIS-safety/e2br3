@@ -5,7 +5,9 @@ use crate::model::store::dbx::Dbx;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
-use modql::filter::{FilterNodes, ListOptions, OpValsString, OpValsValue};
+use modql::filter::{
+	FilterNodes, ListOptions, OpValsString, OpValsValue, OrderBy, OrderBys,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::{Date, OffsetDateTime};
 use sqlx::types::Uuid;
@@ -104,6 +106,38 @@ pub struct CaseFilter {
 	pub organization_id: Option<OpValsValue>,
 	pub safety_report_id: Option<OpValsString>,
 	pub status: Option<OpValsString>,
+}
+
+fn list_view_order_clause(order_bys: Option<&OrderBys>) -> &'static str {
+	let Some(order_by) = order_bys.and_then(|values| values.into_iter().next())
+	else {
+		return "c.created_at DESC, c.id DESC";
+	};
+
+	match order_by {
+		OrderBy::Asc(field) => match field.as_str() {
+			"created_at" => "c.created_at ASC, c.id ASC",
+			"case_no" | "caseNo" | "safety_report_id" => {
+				"c.safety_report_id ASC, c.id ASC"
+			}
+			"date_of_creation" | "dateOfCreation" => {
+				"COALESCE(s.transmission_date, c.created_at::date) ASC, c.id ASC"
+			}
+			"dg_prd_key" | "dgPrdKey" => "c.dg_prd_key ASC NULLS LAST, c.id ASC",
+			_ => "c.created_at DESC, c.id DESC",
+		},
+		OrderBy::Desc(field) => match field.as_str() {
+			"created_at" => "c.created_at DESC, c.id DESC",
+			"case_no" | "caseNo" | "safety_report_id" => {
+				"c.safety_report_id DESC, c.id DESC"
+			}
+			"date_of_creation" | "dateOfCreation" => {
+				"COALESCE(s.transmission_date, c.created_at::date) DESC, c.id DESC"
+			}
+			"dg_prd_key" | "dgPrdKey" => "c.dg_prd_key DESC NULLS LAST, c.id DESC",
+			_ => "c.created_at DESC, c.id DESC",
+		},
+	}
 }
 
 // -- Case domain helpers
@@ -295,10 +329,16 @@ impl CaseBmc {
 
 	/// List cases using the reference QVIS grid projection.
 	/// Must be called from inside an RLS-scoped read context.
-	pub async fn list_view_rows(dbx: &Dbx) -> Result<Vec<CaseListViewRow>> {
-		dbx.fetch_all(sqlx::query_as::<_, CaseListViewRow>(
+	pub async fn list_view_rows(
+		dbx: &Dbx,
+		list_options: Option<&ListOptions>,
+	) -> Result<Vec<CaseListViewRow>> {
+		let order_clause = list_view_order_clause(
+			list_options.and_then(|options| options.order_bys.as_ref()),
+		);
+		let sql = format!(
 			r#"
-			SELECT row_number() OVER (ORDER BY c.created_at DESC)::bigint AS no,
+			SELECT row_number() OVER (ORDER BY {order_clause})::bigint AS no,
 			       c.id AS case_id,
 			       c.safety_report_id AS case_no,
 			       GREATEST(c.version - 1, 0) AS fu,
@@ -392,11 +432,13 @@ impl CaseBmc {
 			       c.status = 'deleted' AS deleted
 			  FROM cases c
 			  LEFT JOIN safety_report_identification s ON s.case_id = c.id
-			 ORDER BY c.created_at DESC
-			"#,
-		))
-		.await
-		.map_err(crate::model::Error::from)
+			 ORDER BY {order_clause}
+			"#
+		);
+
+		dbx.fetch_all(sqlx::query_as::<_, CaseListViewRow>(&sql))
+			.await
+			.map_err(crate::model::Error::from)
 	}
 }
 

@@ -330,6 +330,80 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_case_list_view_honors_limit_and_offset() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let suffix = Uuid::new_v4().simple().to_string();
+	for index in 1..=2 {
+		let (status, raw_body) = post_raw(
+			&app,
+			&cookie,
+			"/api/cases",
+			json!({
+				"data": {
+					"safety_report_id": format!("CASE-LIST-PAGED-{suffix}-{index}"),
+					"status": "draft"
+				}
+			}),
+		)
+		.await?;
+		assert_eq!(
+			status,
+			StatusCode::CREATED,
+			"{}",
+			String::from_utf8_lossy(&raw_body)
+		);
+	}
+
+	let (status, raw_body) = get_raw(
+		&app,
+		&cookie,
+		"/api/cases/list-view?list_options%5Blimit%5D=1&list_options%5Boffset%5D=0&list_options%5Border_bys%5D=%21created_at",
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let first_body: Value = serde_json::from_slice(&raw_body)?;
+	let first_items = first_body["data"]["items"]
+		.as_array()
+		.ok_or("missing first list-view items")?;
+	assert_eq!(first_items.len(), 1, "{first_body:?}");
+
+	let (status, raw_body) = get_raw(
+		&app,
+		&cookie,
+		"/api/cases/list-view?list_options%5Blimit%5D=1&list_options%5Boffset%5D=1&list_options%5Border_bys%5D=%21created_at",
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let second_body: Value = serde_json::from_slice(&raw_body)?;
+	let second_items = second_body["data"]["items"]
+		.as_array()
+		.ok_or("missing second list-view items")?;
+	assert_eq!(second_items.len(), 1, "{second_body:?}");
+	assert_ne!(
+		second_items[0]["caseId"], first_items[0]["caseId"],
+		"offset should move to the next ordered row"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_public_case_create_derives_org_and_version() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

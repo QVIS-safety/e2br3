@@ -461,25 +461,55 @@ pub async fn list_cases(
 pub async fn list_case_view_rows(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
 ) -> Result<(
 	axum::http::StatusCode,
 	Json<DataRestResult<CaseListViewResult>>,
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_LIST)?;
+	let params = ParamsList::<CaseFilter>::from_raw_query(raw_query.as_deref())
+		.map_err(|message| Error::BadRequest { message })?;
+	let list_options = params.list_options;
+	let offset = list_options
+		.as_ref()
+		.and_then(|options| options.offset)
+		.unwrap_or(0)
+		.max(0) as usize;
+	let limit = list_options
+		.as_ref()
+		.and_then(|options| options.limit)
+		.unwrap_or(500)
+		.clamp(0, 500) as usize;
+	if limit == 0 {
+		return Ok((
+			axum::http::StatusCode::OK,
+			Json(DataRestResult {
+				data: CaseListViewResult { items: Vec::new() },
+			}),
+		));
+	}
 
 	let items = lib_rest_core::with_rls_read(&mm, &ctx, |dbx| {
-		Box::pin(
-			async move { CaseBmc::list_view_rows(dbx).await.map_err(Error::from) },
-		)
+		let list_options = list_options.clone();
+		Box::pin(async move {
+			CaseBmc::list_view_rows(dbx, list_options.as_ref())
+				.await
+				.map_err(Error::from)
+		})
 	})
 	.await?;
 
-	let mut scoped = Vec::with_capacity(items.len());
+	let mut scoped = Vec::with_capacity(limit.min(items.len()));
+	let mut scoped_offset = 0usize;
 	for item in items {
 		if lib_rest_core::case_matches_user_scope(&ctx, &mm, item.case_id).await? {
+			if scoped_offset < offset {
+				scoped_offset += 1;
+				continue;
+			}
 			scoped.push(item);
-			if scoped.len() >= 500 {
+			if scoped.len() >= limit {
 				break;
 			}
 		}
