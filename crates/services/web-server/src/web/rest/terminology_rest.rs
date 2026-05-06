@@ -102,7 +102,7 @@ async fn read_upload_bytes(mut multipart: Multipart) -> Result<Vec<u8>> {
 			.await
 			.map_err(|err| Error::BadRequest {
 				message: format!("multipart error: {err}"),
-		})? {
+			})? {
 		let name = field.name().map(|v| v.to_string());
 		if name.as_deref() == Some("file") {
 			return read_field_limited(field, MAX_TERMINOLOGY_UPLOAD_BYTES).await;

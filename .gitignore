@@ -49,6 +49,7 @@ docs/workflows/cubesafety-admin/
 
 # Data Files
 data/
+/data/
 *.db3
 *.parquet
 *.map
