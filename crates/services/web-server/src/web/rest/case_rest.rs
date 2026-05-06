@@ -1,3 +1,4 @@
+use crate::web::rest::case_validation_rest;
 use crate::web::rest::compliance::{
 	capture_e_signature, ComplianceActionInput, ESignatureInput,
 };
@@ -502,12 +503,19 @@ pub async fn list_case_view_rows(
 
 	let mut scoped = Vec::with_capacity(limit.min(items.len()));
 	let mut scoped_offset = 0usize;
-	for item in items {
+	for mut item in items {
 		if lib_rest_core::case_matches_user_scope(&ctx, &mm, item.case_id).await? {
 			if scoped_offset < offset {
 				scoped_offset += 1;
 				continue;
 			}
+			let validation = case_validation_rest::validation_summary_for_case(
+				&ctx,
+				&mm,
+				item.case_id,
+			)
+			.await?;
+			item.warn = validation.total_count().to_string();
 			scoped.push(item);
 			if scoped.len() >= limit {
 				break;

@@ -33,6 +33,22 @@ pub struct CaseValidationBundle {
 	pub reports: Vec<CaseValidationReport>,
 }
 
+#[derive(Debug)]
+pub(crate) struct CaseValidationSummary {
+	pub case_id: Uuid,
+	pub profiles: Vec<String>,
+	pub ok: bool,
+	pub blocking_count: usize,
+	pub non_blocking_count: usize,
+	pub reports: Vec<CaseValidationReport>,
+}
+
+impl CaseValidationSummary {
+	pub(crate) fn total_count(&self) -> usize {
+		self.blocking_count + self.non_blocking_count
+	}
+}
+
 fn parse_profiles_from_appendices_json(
 	value: &str,
 ) -> Option<Vec<ValidationProfile>> {
@@ -108,6 +124,32 @@ async fn resolve_profiles(
 	Ok(vec![resolve_profile(ctx, mm, case_id, None).await?])
 }
 
+pub(crate) async fn validation_summary_for_case(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<CaseValidationSummary> {
+	let profiles = resolve_profiles(ctx, mm, case_id).await?;
+	let reports = validate_case_for_profiles(ctx, mm, case_id, &profiles).await?;
+	let blocking_count: usize = reports.iter().map(|r| r.blocking_count).sum();
+	let non_blocking_count: usize =
+		reports.iter().map(|r| r.non_blocking_count).sum();
+	let ok = reports.iter().all(|r| r.ok);
+	let profiles = reports
+		.iter()
+		.map(|r| r.profile.clone())
+		.collect::<Vec<_>>();
+
+	Ok(CaseValidationSummary {
+		case_id,
+		profiles,
+		ok,
+		blocking_count,
+		non_blocking_count,
+		reports,
+	})
+}
+
 /// GET /api/cases/{case_id}/validation
 /// Returns case validation issues split as blocking/non-blocking for the wizard.
 pub async fn validate_case(
@@ -139,27 +181,18 @@ pub async fn validate_case_all(
 	require_permission(&ctx, CASE_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let profiles = resolve_profiles(&ctx, &mm, case_id).await?;
-	let reports = validate_case_for_profiles(&ctx, &mm, case_id, &profiles).await?;
-	let blocking_count: usize = reports.iter().map(|r| r.blocking_count).sum();
-	let non_blocking_count: usize =
-		reports.iter().map(|r| r.non_blocking_count).sum();
-	let ok = reports.iter().all(|r| r.ok);
-	let profiles = reports
-		.iter()
-		.map(|r| r.profile.clone())
-		.collect::<Vec<_>>();
+	let summary = validation_summary_for_case(&ctx, &mm, case_id).await?;
 
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
 			data: CaseValidationBundle {
-				case_id,
-				profiles,
-				ok,
-				blocking_count,
-				non_blocking_count,
-				reports,
+				case_id: summary.case_id,
+				profiles: summary.profiles,
+				ok: summary.ok,
+				blocking_count: summary.blocking_count,
+				non_blocking_count: summary.non_blocking_count,
+				reports: summary.reports,
 			},
 		}),
 	))

@@ -330,6 +330,92 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let suffix = Uuid::new_v4().simple().to_string();
+	let case_no = format!("CASE-LIST-WARN-{suffix}");
+
+	let (status, raw_body) = post_raw(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": case_no,
+				"status": "draft",
+				"appendices_json": "[\"ich\"]"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let case_id = body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?
+		.to_string();
+
+	let (status, validation_body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation/all"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{validation_body:?}");
+	let blocking_count = validation_body["data"]["blocking_count"]
+		.as_u64()
+		.ok_or("missing blocking_count")?;
+	let non_blocking_count = validation_body["data"]["non_blocking_count"]
+		.as_u64()
+		.ok_or("missing non_blocking_count")?;
+	let expected_warn = (blocking_count + non_blocking_count).to_string();
+	assert_ne!(
+		expected_warn, "0",
+		"test fixture must have at least one validation failure: {validation_body:?}"
+	);
+
+	let (status, raw_body) = get_raw(
+		&app,
+		&cookie,
+		"/api/cases/list-view?list_options%5Blimit%5D=25&list_options%5Border_bys%5D=%21created_at",
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let items = body["data"]["items"]
+		.as_array()
+		.ok_or("missing list-view items")?;
+	let row = items
+		.iter()
+		.find(|item| item["caseNo"].as_str() == Some(case_no.as_str()))
+		.ok_or("missing projected warning case row")?;
+
+	assert_eq!(
+		row["warn"].as_str(),
+		Some(expected_warn.as_str()),
+		"list-view warn should equal blocking + non-blocking validation failures; row={row:?}, validation={validation_body:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_list_view_honors_limit_and_offset() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

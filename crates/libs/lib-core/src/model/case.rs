@@ -344,7 +344,7 @@ impl CaseBmc {
 			       GREATEST(c.version - 1, 0) AS fu,
 			       COALESCE(s.transmission_date::text, c.created_at::date::text) AS date_of_creation,
 			       COALESCE(NULLIF(c.dg_prd_key, ''), 'N/A') AS dg_prd_key,
-			       'No' AS warn,
+			       '0' AS warn,
 			       COALESCE(NULLIF(c.workflow_status, ''), c.status) AS wf_status,
 			       COALESCE((
 			       	SELECT cs.status
