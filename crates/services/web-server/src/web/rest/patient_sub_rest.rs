@@ -147,6 +147,15 @@ pub async fn get_patient_identifier(
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
+	ensure_patient_scope(
+		&ctx,
+		&mm,
+		case_id,
+		entity.patient_id,
+		id,
+		"patient_identifiers",
+	)
+	.await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
@@ -162,6 +171,16 @@ pub async fn update_patient_identifier(
 	require_case_write_allowed(&ctx, &mm, case_id).await?;
 
 	let ParamsForUpdate { data } = params;
+	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
+	ensure_patient_scope(
+		&ctx,
+		&mm,
+		case_id,
+		entity.patient_id,
+		id,
+		"patient_identifiers",
+	)
+	.await?;
 	PatientIdentifierBmc::update(&ctx, &mm, id, data).await?;
 	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
@@ -178,6 +197,15 @@ pub async fn delete_patient_identifier(
 	require_case_write_allowed(&ctx, &mm, case_id).await?;
 
 	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
+	ensure_patient_scope(
+		&ctx,
+		&mm,
+		case_id,
+		entity.patient_id,
+		id,
+		"patient_identifiers",
+	)
+	.await?;
 	PatientIdentifierBmc::delete(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }

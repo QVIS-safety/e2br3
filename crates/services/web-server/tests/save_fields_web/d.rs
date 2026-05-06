@@ -3,7 +3,8 @@ use super::save_fields_common::{
 	get_ok, post_created, put_ok, FieldCase,
 };
 use crate::common::Result;
-use crate::persist_workflow::{create_case, setup, PersistTestCtx};
+use crate::persist_workflow::{create_case, request_json, setup, PersistTestCtx};
+use axum::http::StatusCode;
 use serde_json::json;
 use serial_test::serial;
 use uuid::Uuid;
@@ -878,6 +879,48 @@ patient_identifier_single_field_test!(
 		assert_str(value, "identifier_value", "456");
 	}
 );
+
+#[tokio::test]
+#[serial]
+async fn patient_identifier_single_item_routes_are_case_scoped() -> Result<()> {
+	let ctx = setup().await?;
+	let case_id = create_case(&ctx).await?;
+	let patient_id = create_patient(&ctx, case_id).await?;
+	let identifier_id = create_patient_identifier(&ctx, case_id, patient_id).await?;
+	let other_case_id = create_case(&ctx).await?;
+	create_patient(&ctx, other_case_id).await?;
+
+	for (method, body) in [
+		("GET", None),
+		("PUT", Some(json!({"data": {"identifier_value": "WRONG"}}))),
+		("DELETE", None),
+	] {
+		let (status, value) = request_json(
+			&ctx.app,
+			&ctx.cookie,
+			method,
+			format!(
+				"/api/cases/{other_case_id}/patient/identifiers/{identifier_id}"
+			),
+			body,
+		)
+		.await?;
+		assert_eq!(
+			status,
+			StatusCode::NOT_FOUND,
+			"{method} should not access an identifier through another case: {value}"
+		);
+	}
+
+	let value = get_ok(
+		&ctx,
+		patient_identifier_field("D.2.1.r.identifier_value"),
+		format!("/api/cases/{case_id}/patient/identifiers/{identifier_id}"),
+	)
+	.await?;
+	assert_str(&value, "identifier_value", "123");
+	Ok(())
+}
 
 medical_history_single_field_test!(
 	save_d_7_meddra_version_only,

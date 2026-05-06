@@ -29,7 +29,8 @@ Goal: Close FDA-required gaps identified in `docs/FDA_E2B_MAPPING.md` and make e
       `parent_route_termid` + version (update struct).
 
 ### Patient (D)
-- [ ] Add REST for patient identifiers (`patient_identifiers`).
+- [x] Add REST for patient identifiers (`patient_identifiers`) with case-scoped
+      single-item read/update/delete behavior.
 
 ## 3) Exporter gaps (fields stored but not emitted)
 ### Reaction (E)
