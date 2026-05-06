@@ -23,3 +23,49 @@ The local reference pack is intentionally ignored by git because it contains man
   - `quick_validate.py /Users/hyundonghoon/.codex/skills/safetydb-ui-alignment`
 - Remaining gaps:
   - Run `safetydb-ui-alignment` against specific SafetyDB Admin and Case Edit screens, implement UI changes, verify, then append completed alignment entries here.
+
+## 2026-05-07 - Case List
+
+- Reference: Flow 5, screenshot 05.
+- Aligned:
+  - Expanded the SafetyDB case list to a full-bleed dashboard workspace so the dense table uses the available screen ratio instead of sitting inside the dashboard padding.
+  - Removed the placeholder Warning and E-mail Log tabs from the case list header until those surfaces are implemented.
+  - Kept the compact table-first case browsing model, row selection, filters, refresh, CSV export, and pagination controls.
+  - Removed redundant `list_options` query parameters from the case-list load call so the page uses the backend's stable default list projection.
+  - Moved fixed case utility routes ahead of `/cases/{id}` so `/cases/list-view` is not parsed as a case UUID.
+- Files changed:
+  - `frontend/E2BR3-frontend/app/dashboard/cases/page.tsx`
+  - `crates/services/web-server/src/web/rest/mod.rs`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - `npx tsc --noEmit`
+  - `npm run build`
+  - `cargo test -p web-server --test api list_view -- --nocapture`
+  - `npm run lint` could not complete because the existing `next lint` script prompts for ESLint setup under Next.js 15.
+  - Dev server restarted on `http://localhost:3003`; Playwright visual inspection was blocked by an existing locked Playwright MCP browser profile.
+- Remaining gaps:
+  - Warning and E-mail Log can be restored when backed by implemented views.
+
+## 2026-05-07 - Admin Four Tabs
+
+- Reference: Flows 1-4, screenshots 01-04.
+- Aligned:
+  - Split SafetyDB Admin into the four reference tabs: User, Role, Role & Privilege, and Settings.
+  - Added dense User tab utilities for full-text search, clear filters, row count selection, and access-window status visibility.
+  - Changed Role to an inline role/description grid while preserving real custom-role create, update, activate/deactivate, delete, and privilege selection paths.
+  - Added a Role & Privilege matrix with Menu, Type, Privilege rows and role columns; built-in role cells are disabled/unavailable because SafetyDB does not expose per-menu built-in privilege data, while custom role cells use persisted privileges and the existing update API.
+  - Preserved the existing Settings workflow/configuration form and audit panels.
+- Files changed:
+  - `frontend/E2BR3-frontend/app/dashboard/admin/page.tsx`
+  - `frontend/E2BR3-frontend/__tests__/admin-users.header-filters.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED/GREEN through `npx jest __tests__/admin-users.header-filters.test.ts --runInBand` in isolated worktree.
+  - Spec compliance review subagent approved after review-loop fixes.
+  - Code quality review subagent approved after preventing unsupported built-in privilege synthesis and persisted empty-privilege defaulting.
+  - `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - SafetyDB supports persisted custom role privilege editing through the existing role API. Full CubeSafety-style built-in/legacy role privilege parity remains a backend feature gap: `/api/admin/roles` does not expose authoritative per-menu privilege records for every built-in/legacy role, so the UI keeps those static roles visible once and marks their matrix cells unavailable instead of synthesizing unsupported permissions.
+  - A future backend feature should provide a unified role privilege catalog that returns each role once with editability metadata and authoritative menu-level privileges.
