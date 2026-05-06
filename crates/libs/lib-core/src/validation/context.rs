@@ -61,42 +61,61 @@ pub async fn load_base_validation_context(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<ValidationContext> {
-	let case: Case = CaseBmc::get(ctx, mm, case_id).await?;
-	let safety_report = get_safety_report_optional(mm, case_id).await?;
-	let message_header = get_message_header_optional(mm, case_id).await?;
-	let sender = get_sender_optional(mm, case_id).await?;
-	let patient = get_patient_optional(mm, case_id).await?;
-	let narrative = get_narrative_optional(mm, case_id).await?;
-	let sender_diagnoses = list_sender_diagnoses(mm, narrative.as_ref()).await?;
-	let case_summaries = list_case_summaries(mm, narrative.as_ref()).await?;
-	let medical_history = list_medical_history(mm, patient.as_ref()).await?;
-	let past_drugs = list_past_drugs(mm, patient.as_ref()).await?;
-	let death_info = get_death_info_optional(mm, patient.as_ref()).await?;
-	let reported_causes_of_death =
-		list_reported_causes_of_death(mm, death_info.as_ref()).await?;
-	let autopsy_causes_of_death =
-		list_autopsy_causes_of_death(mm, death_info.as_ref()).await?;
-	let parents = list_parents(mm, patient.as_ref()).await?;
-	let parent_medical_history = list_parent_medical_history(mm, &parents).await?;
-	let parent_past_drugs = list_parent_past_drugs(mm, &parents).await?;
-	let primary_sources = list_primary_sources(mm, case_id).await?;
-	let documents_held_by_sender =
-		list_documents_held_by_sender(mm, case_id).await?;
-	let other_case_identifiers = list_other_case_identifiers(mm, case_id).await?;
-	let studies = list_studies(mm, case_id).await?;
-	let reactions: Vec<Reaction> =
-		crate::model::reaction::ReactionBmc::list_by_case(ctx, mm, case_id).await?;
-	let tests: Vec<TestResult> =
-		crate::model::test_result::TestResultBmc::list_by_case(ctx, mm, case_id)
-			.await?;
-	let drugs: Vec<DrugInformation> =
-		crate::model::drug::DrugInformationBmc::list_by_case(ctx, mm, case_id)
-			.await?;
-	let active_substances = list_active_substances(mm, &drugs).await?;
-	let indications = list_indications(mm, &drugs).await?;
-	let dosages = list_dosages(mm, &drugs).await?;
-	let drug_reaction_assessments =
-		list_drug_reaction_assessments(mm, &drugs).await?;
+	let (case, safety_report, message_header, sender, patient, narrative) = tokio::try_join!(
+		CaseBmc::get(ctx, mm, case_id),
+		get_safety_report_optional(mm, case_id),
+		get_message_header_optional(mm, case_id),
+		get_sender_optional(mm, case_id),
+		get_patient_optional(mm, case_id),
+		get_narrative_optional(mm, case_id),
+	)?;
+
+	let (sender_diagnoses, case_summaries) = tokio::try_join!(
+		list_sender_diagnoses(mm, narrative.as_ref()),
+		list_case_summaries(mm, narrative.as_ref()),
+	)?;
+
+	let (medical_history, past_drugs, death_info, parents) = tokio::try_join!(
+		list_medical_history(mm, patient.as_ref()),
+		list_past_drugs(mm, patient.as_ref()),
+		get_death_info_optional(mm, patient.as_ref()),
+		list_parents(mm, patient.as_ref()),
+	)?;
+
+	let (reported_causes_of_death, autopsy_causes_of_death) = tokio::try_join!(
+		list_reported_causes_of_death(mm, death_info.as_ref()),
+		list_autopsy_causes_of_death(mm, death_info.as_ref()),
+	)?;
+
+	let (parent_medical_history, parent_past_drugs) = tokio::try_join!(
+		list_parent_medical_history(mm, &parents),
+		list_parent_past_drugs(mm, &parents),
+	)?;
+
+	let (
+		primary_sources,
+		documents_held_by_sender,
+		other_case_identifiers,
+		studies,
+		reactions,
+		tests,
+		drugs,
+	) = tokio::try_join!(
+		list_primary_sources(mm, case_id),
+		list_documents_held_by_sender(mm, case_id),
+		list_other_case_identifiers(mm, case_id),
+		list_studies(mm, case_id),
+		crate::model::reaction::ReactionBmc::list_by_case(ctx, mm, case_id),
+		crate::model::test_result::TestResultBmc::list_by_case(ctx, mm, case_id),
+		crate::model::drug::DrugInformationBmc::list_by_case(ctx, mm, case_id),
+	)?;
+
+	let (active_substances, indications, dosages, drug_reaction_assessments) = tokio::try_join!(
+		list_active_substances(mm, &drugs),
+		list_indications(mm, &drugs),
+		list_dosages(mm, &drugs),
+		list_drug_reaction_assessments(mm, &drugs),
+	)?;
 	let patient_identifiers = list_patient_identifiers(mm, patient.as_ref()).await?;
 
 	Ok(ValidationContext {
