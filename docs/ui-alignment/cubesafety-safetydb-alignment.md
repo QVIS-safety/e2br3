@@ -69,3 +69,25 @@ The local reference pack is intentionally ignored by git because it contains man
 - Remaining gaps:
   - SafetyDB now exposes authoritative per-menu built-in sponsor-admin privileges through `/api/admin/roles`, and the matrix renders those checked/read-only cells from the backend. Sponsor-admin privilege editing remains intentionally unavailable because `docs/requirements/roles.csv` defines those role names and authorities as fixed.
   - Legacy static roles without persisted backend rows remain visible as read-only fallback columns until sponsor administrators create matching persisted roles and assign menu-level privileges.
+
+## 2026-05-07 - Admin User Table
+
+- Reference: Flow 1, screenshot 01.
+- Aligned:
+  - Reworked the SafetyDB Admin User tab back to a dense table-first account list.
+  - Removed the standalone user searchbar and kept compact top utilities for Full Text, Clear Filters, and Rows.
+  - Changed the primary user columns to `No.`, `Name`, `ID(E-mail)`, `Role`, `Phone`, `Start Date`, `End Date`, and `Status`, with header filter icons instead of always-visible controls.
+  - Implemented actual per-column filter popovers from the header icons: text filters for Name, ID(E-mail), Phone, Start Date, and End Date; checkbox filters for Role and Status; and Cancel/Delete/Done actions matching the reference workflow.
+  - Changed access-window status text to Active/Inactive for the primary list.
+  - Kept role values as dense table text during normal viewing, with the role select only appearing while a user row is being edited.
+- Files changed:
+  - `frontend/E2BR3-frontend/app/dashboard/admin/page.tsx`
+  - `frontend/E2BR3-frontend/__tests__/admin-users.header-filters.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+  - Playwright visual check on `http://localhost:3004/dashboard/admin` confirmed the Role checkbox popover and absence of the standalone searchbar.
+- Remaining gaps:
+  - Name, Phone, Start Date, End Date, and Status filters are applied client-side over the currently loaded user page because the current users API filter contract only supports backend filtering for email, username, role, and organization fields.
