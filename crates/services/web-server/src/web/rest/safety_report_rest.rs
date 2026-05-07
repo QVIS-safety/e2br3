@@ -169,12 +169,13 @@ async fn requires_nullification_compliance(
 	case_id: Uuid,
 	data: &SafetyReportIdentificationForUpdate,
 ) -> Result<bool> {
-	let incoming_code = data
+	let marks_nullified = data
 		.nullification_code
 		.as_deref()
 		.map(str::trim)
-		.filter(|value| !value.is_empty());
-	if incoming_code.is_none() {
+		.map(|value| value == "1")
+		.unwrap_or(false);
+	if !marks_nullified {
 		return Ok(false);
 	}
 	let case = CaseBmc::get(ctx, mm, case_id).await?;

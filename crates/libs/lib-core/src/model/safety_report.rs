@@ -606,7 +606,7 @@ impl SafetyReportIdentificationBmc {
 			.nullification_code
 			.as_deref()
 			.map(str::trim)
-			.map(|v| !v.is_empty())
+			.map(|v| v == "1")
 			.unwrap_or(false);
 
 		if should_mark_nullified {
