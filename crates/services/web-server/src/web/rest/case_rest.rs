@@ -206,9 +206,11 @@ fn case_status_update(status: String) -> InternalCaseForUpdate {
 
 fn required_reason_for_change(
 	reason_for_change: Option<String>,
+	fallback_reason_for_change: Option<&str>,
 	action: &str,
 ) -> Result<String> {
 	reason_for_change
+		.or_else(|| fallback_reason_for_change.map(ToString::to_string))
 		.and_then(|v| {
 			let trimmed = v.trim().to_string();
 			if trimmed.is_empty() {
@@ -591,6 +593,7 @@ pub async fn update_case_guarded(
 	let ctx_for_update = if requires_compliance {
 		let reason = required_reason_for_change(
 			reason_for_change,
+			ctx.change_reason(),
 			"submitted/nullified/deleted status transitions",
 		)?;
 		let e_signature = e_signature.ok_or(Error::BadRequest {
@@ -614,6 +617,7 @@ pub async fn update_case_guarded(
 	} else if requires_reason_for_identity_or_scope {
 		let reason = required_reason_for_change(
 			reason_for_change,
+			ctx.change_reason(),
 			"case identity/scope updates",
 		)?;
 		ctx.with_compliance(Some(reason), None)
@@ -651,6 +655,7 @@ pub async fn delete_case(
 	}
 	let reason = required_reason_for_change(
 		payload.and_then(|Json(params)| params.reason_for_change),
+		ctx.change_reason(),
 		"delete",
 	)?;
 	let ctx_for_update = ctx.with_compliance(Some(reason), None);

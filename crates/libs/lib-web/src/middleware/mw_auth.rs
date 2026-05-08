@@ -39,7 +39,31 @@ pub async fn mw_ctx_resolver(
 ) -> Response {
 	debug!("{:<12} - mw_ctx_resolve", "MIDDLEWARE");
 
-	let ctx_ext_result = ctx_resolve(mm, &cookies).await;
+	let audit_reason = req
+		.headers()
+		.get("x-e2br3-reason-for-change")
+		.and_then(|value| value.to_str().ok())
+		.and_then(decode_audit_reason_header)
+		.and_then(|value| {
+			let trimmed = value.trim().to_string();
+			if trimmed.is_empty() {
+				None
+			} else {
+				Some(trimmed)
+			}
+		});
+
+	let ctx_ext_result = match ctx_resolve(mm, &cookies).await {
+		Ok(CtxW(ctx)) => {
+			let ctx = if let Some(reason) = audit_reason {
+				ctx.with_compliance(Some(reason), ctx.e_signature_id())
+			} else {
+				ctx
+			};
+			Ok(CtxW(ctx))
+		}
+		Err(err) => Err(err),
+	};
 
 	if ctx_ext_result.is_err()
 		&& !matches!(ctx_ext_result, Err(CtxExtError::TokenNotInCookie))
@@ -52,6 +76,33 @@ pub async fn mw_ctx_resolver(
 	req.extensions_mut().insert(ctx_ext_result);
 
 	next.run(req).await
+}
+
+fn decode_audit_reason_header(value: &str) -> Option<String> {
+	let bytes = value.as_bytes();
+	let mut decoded = Vec::with_capacity(bytes.len());
+	let mut index = 0;
+	while index < bytes.len() {
+		if bytes[index] == b'%' && index + 2 < bytes.len() {
+			let hi = hex_value(bytes[index + 1])?;
+			let lo = hex_value(bytes[index + 2])?;
+			decoded.push((hi << 4) | lo);
+			index += 3;
+		} else {
+			decoded.push(bytes[index]);
+			index += 1;
+		}
+	}
+	String::from_utf8(decoded).ok()
+}
+
+fn hex_value(value: u8) -> Option<u8> {
+	match value {
+		b'0'..=b'9' => Some(value - b'0'),
+		b'a'..=b'f' => Some(value - b'a' + 10),
+		b'A'..=b'F' => Some(value - b'A' + 10),
+		_ => None,
+	}
 }
 
 async fn ctx_resolve(mm: ModelManager, cookies: &Cookies) -> CtxExtResult {

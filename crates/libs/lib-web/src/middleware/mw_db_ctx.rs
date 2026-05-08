@@ -5,7 +5,7 @@ use axum::extract::State;
 use axum::http::Request;
 use axum::middleware::Next;
 use axum::response::Response;
-use lib_core::model::store::set_full_context_dbx;
+use lib_core::model::store::set_full_context_from_ctx_dbx;
 use lib_core::model::{self, ModelManager};
 use lib_rest_core as rest;
 use std::sync::Arc;
@@ -24,14 +24,7 @@ pub async fn mw_ctx_require_and_set_dbx(
 		.map_err(model::Error::from)
 		.map_err(Error::from)?;
 
-	if let Err(err) = set_full_context_dbx(
-		dbx,
-		ctx.0.user_id(),
-		ctx.0.organization_id(),
-		ctx.0.role(),
-	)
-	.await
-	{
+	if let Err(err) = set_full_context_from_ctx_dbx(dbx, &ctx.0).await {
 		let _ = dbx.rollback_txn().await;
 		return Err(Error::from(err));
 	}

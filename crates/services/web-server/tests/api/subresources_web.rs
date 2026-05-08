@@ -36,6 +36,26 @@ async fn post_json(
 	Ok((status, body))
 }
 
+async fn put_json_with_audit_reason(
+	app: &Router,
+	cookie: &str,
+	uri: String,
+	body: Value,
+	reason: &str,
+) -> Result<(StatusCode, Vec<u8>)> {
+	let req = Request::builder()
+		.method("PUT")
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.header("x-e2br3-reason-for-change", reason)
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?.to_vec();
+	Ok((status, body))
+}
+
 async fn get_json(
 	app: &Router,
 	cookie: &str,
@@ -423,6 +443,71 @@ async fn create_reaction_assessment(
 		.into());
 	}
 	extract_id(&body)
+}
+
+#[serial]
+#[tokio::test]
+async fn test_audit_reason_header_records_normal_patient_update_reason() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let patient_id = create_patient(&app, &cookie, case_id).await?;
+
+	let reason = "Edited Data: Corrected patient initials";
+	let body = json!({"data": {
+		"case_id": case_id,
+		"patient_initials": "CD",
+		"sex": "2"
+	}});
+	let (status, body) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/patient"),
+		body,
+		reason,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"update patient status {} body {}",
+		status,
+		String::from_utf8_lossy(&body)
+	);
+
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
+		.await?;
+	let recorded_reason = dbx
+		.fetch_optional(
+			sqlx::query_as::<_, (Option<String>,)>(
+				r#"
+				SELECT reason_for_change
+				FROM audit_logs
+				WHERE table_name = 'patient_information'
+				  AND record_id = $1
+				  AND action = 'UPDATE'
+				  AND changed_fields ? 'patient_initials'
+				ORDER BY id DESC
+				LIMIT 1
+				"#,
+			)
+			.bind(patient_id),
+		)
+		.await?;
+	dbx.rollback_txn().await?;
+
+	assert_eq!(
+		recorded_reason.and_then(|(value,)| value),
+		Some(reason.to_string())
+	);
+
+	Ok(())
 }
 
 #[serial]
