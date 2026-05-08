@@ -91,3 +91,26 @@ The local reference pack is intentionally ignored by git because it contains man
   - Playwright visual check on `http://localhost:3004/dashboard/admin` confirmed the Role checkbox popover and absence of the standalone searchbar.
 - Remaining gaps:
   - Name, Phone, Start Date, End Date, and Status filters are applied client-side over the currently loaded user page because the current users API filter contract only supports backend filtering for email, username, role, and organization fields.
+
+## 2026-05-08 - Admin Role Table
+
+- Reference: Flow 2, screenshot 02.
+- Aligned:
+  - Reworked the SafetyDB Admin Role tab into a dense editable role catalog with `No.`, required `Role`, `Description`, and a compact audit-trail icon column.
+  - Removed the extra `Required` and `Active` columns from the primary Role grid.
+  - Rendered built-in and custom role names/descriptions as inline table inputs so the page matches the reference table-first editing model.
+  - Kept built-in role fields protected and moved persisted custom-role description saves to inline blur behavior.
+  - Removed the embedded new-role privilege matrix from the Role tab so privilege editing remains isolated to Role & Privilege.
+  - Moved new-role creation out of the table into a top-right Add Role modal so the catalog contains only persisted rows.
+  - Replaced the visible Actions column with the reference-style audit-trail icon column.
+- Files changed:
+  - `frontend/E2BR3-frontend/app/dashboard/admin/page.tsx`
+  - `frontend/E2BR3-frontend/__tests__/admin-users.header-filters.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+  - Playwright visual check on `http://localhost:3004/dashboard/admin` confirmed the Role tab renders the inline role table, no embedded privilege matrix, top-right Add Role modal entry, and audit icon column.
+- Remaining gaps:
+  - Role names for persisted custom roles remain read-only because the backend update contract uses role name as the stable identifier; descriptions remain inline editable.
