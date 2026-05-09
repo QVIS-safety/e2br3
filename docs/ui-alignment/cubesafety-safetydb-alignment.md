@@ -114,3 +114,25 @@ The local reference pack is intentionally ignored by git because it contains man
   - Playwright visual check on `http://localhost:3004/dashboard/admin` confirmed the Role tab renders the inline role table, no embedded privilege matrix, top-right Add Role modal entry, and audit icon column.
 - Remaining gaps:
   - Role names for persisted custom roles remain read-only because the backend update contract uses role name as the stable identifier; descriptions remain inline editable.
+
+## 2026-05-09 - Admin Role & Privilege Matrix
+
+- Reference: Flow 3, screenshot 03.
+- Aligned:
+  - Reworked Role & Privilege into a wide permission matrix directly under the admin tab bar.
+  - Changed the privilege catalog from generated menu/action combinations to explicit CubeSafety-style rows for HOME, CASE, CASE INFO., DATA, MONITORING, SUBMISSION, SYNC, ADMIN, and E-mail permissions.
+  - Added role-level header checkboxes for bulk toggling editable role columns.
+  - Kept built-in role privilege cells disabled/muted and custom role cells editable through the existing role update API.
+  - Added sticky orientation columns for Menu, Type, and Privilege with horizontal and vertical scrolling for wide role sets.
+- Files changed:
+  - `frontend/E2BR3-frontend/app/dashboard/admin/page.tsx`
+  - `frontend/E2BR3-frontend/__tests__/admin-users.header-filters.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED/GREEN with focused Role & Privilege matrix tests.
+  - `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+  - Frontend dev server started on `http://localhost:3004`; live admin inspection was blocked because `target/debug/web-server` could not connect to Postgres (`password authentication failed for user "postgres"`).
+- Remaining gaps:
+  - The backend privilege payload is still menu-key based, so the UI maps several display rows onto stable menu keys and fields instead of a first-class backend permission tuple model.
