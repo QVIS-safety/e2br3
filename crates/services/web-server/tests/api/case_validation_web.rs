@@ -596,6 +596,22 @@ async fn get_workflow_config(
 	Ok((status, value))
 }
 
+async fn get_admin_settings(
+	app: &axum::Router,
+	cookie: &str,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("GET")
+		.uri("/api/admin/settings")
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = serde_json::from_slice::<Value>(&body)?;
+	Ok((status, value))
+}
+
 async fn transition_case_workflow(
 	app: &axum::Router,
 	cookie: &str,
@@ -1290,6 +1306,123 @@ async fn test_workflow_config_runtime_endpoint_returns_default_statuses(
 	if let Some(role) = body["data"]["statuses"][0]["allowedRoles"][0].as_str() {
 		assert_eq!(role, role.to_ascii_lowercase(), "{body:?}");
 	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_admin_settings_round_trips_alignment_fields() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"timezone": "Asia/Seoul",
+				"meddra_language": "English",
+				"meddra_version": "28.0",
+				"idf_version": "3.0",
+				"company_logo": "qvis.png",
+				"orientation": "Landscape",
+				"data_ordering": "Primary data will appear first",
+				"upload_excel_template_without_element_label": true,
+				"notation": false,
+				"apply_comments_on_exported_xml": true,
+				"apply_sender_info_to_imported_cases": true,
+				"apply_default_values_to_imported_r2_cases": false,
+				"import_date_update": {
+					"date_of_creation": true,
+					"most_recent_info_date": true,
+					"report_first_received_date": false
+				},
+				"appendices": ["ICH", "FDA", "MFDS"],
+				"case_number_setting": "AE Row No.",
+				"case_number_identifier": "SAFETY",
+				"case_number_padding": 7,
+				"case_number_sequence_condition": "Per sender",
+				"case_number_format_fields": ["AE Row No.", "Country Code"],
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"allowed_roles": ["pvs"],
+							"due_days": 0,
+							"description": "Default state"
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let data = &body;
+	assert_eq!(data["meddra_version"].as_str(), Some("28.0"));
+	assert_eq!(data["idf_version"].as_str(), Some("3.0"));
+	assert_eq!(data["orientation"].as_str(), Some("Landscape"));
+	assert_eq!(data["apply_comments_on_exported_xml"].as_bool(), Some(true));
+	assert_eq!(
+		data["import_date_update"]["most_recent_info_date"].as_bool(),
+		Some(true)
+	);
+	assert_eq!(
+		data["case_number_format_fields"][1].as_str(),
+		Some("Country Code")
+	);
+	assert_eq!(
+		data["workflow"]["statuses"][0]["due_days"].as_i64(),
+		Some(0)
+	);
+
+	let (status, body) = get_admin_settings(&app, &cookie).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let data = &body;
+	assert_eq!(data["company_logo"].as_str(), Some("qvis.png"));
+	assert_eq!(
+		data["case_number_sequence_condition"].as_str(),
+		Some("Per sender")
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_workflow_settings_reject_negative_due_days() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"allowed_roles": ["pvs"],
+							"due_days": -1
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(body.to_string().contains("due_days"), "{body:?}");
 	Ok(())
 }
 

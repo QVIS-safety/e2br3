@@ -136,3 +136,29 @@ The local reference pack is intentionally ignored by git because it contains man
   - Frontend dev server started on `http://localhost:3004`; live admin inspection was blocked because `target/debug/web-server` could not connect to Postgres (`password authentication failed for user "postgres"`).
 - Remaining gaps:
   - The backend privilege payload is still menu-key based, so the UI maps several display rows onto stable menu keys and fields instead of a first-class backend permission tuple model.
+
+## 2026-05-10 - Admin Settings
+
+- Reference: Flow 4, screenshot 04.
+- Aligned:
+  - Reworked the Settings tab into a dense operational configuration form with left-aligned labels, compact inputs, toggles, appendix switches, case identification number composition, and workflow status rows.
+  - Added backend-backed settings fields for MedDRA version, IDF version, company logo, orientation, data ordering, import/export toggles, import date update toggles, appendix switches, case-number format fields, and workflow due days.
+  - Preserved workflow role validation while adding due-day validation for workflow rows.
+- Files changed:
+  - `frontend/E2BR3-frontend/app/dashboard/admin/page.tsx`
+  - `frontend/E2BR3-frontend/lib/types/api.ts`
+  - `frontend/E2BR3-frontend/__tests__/admin-users.header-filters.test.ts`
+  - `crates/services/web-server/src/web/rest/admin_settings_rest.rs`
+  - `crates/services/web-server/tests/api/case_validation_web.rs`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED/GREEN with focused frontend Settings test and backend settings contract tests.
+  - `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+  - `cargo fmt --all --check`
+  - `cargo check -p web-server --tests`
+  - `cargo test -p web-server --test api admin_settings -- --nocapture --test-threads=1`
+  - `cargo test -p web-server --test api test_workflow_settings_reject_negative_due_days -- --nocapture --test-threads=1`
+- Remaining gaps:
+  - The case-number format composer stores selected field names as configuration data; case-number generation can consume this contract in a later workflow if needed.
