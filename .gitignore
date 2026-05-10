@@ -92,10 +92,12 @@ output/playwright/
 __pycache__/
 
 
-# -- others
-# Allows .env (make sure only dev info) 
-!.env
+# -- Environment
+.env
+.env.*
+!.env.example
 
+# -- others
 # Allow vscode
 # !.vscode # Commented by default
 .output/
