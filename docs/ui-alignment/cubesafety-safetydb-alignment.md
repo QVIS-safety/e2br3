@@ -212,3 +212,28 @@ The local reference pack is intentionally ignored by git because it contains man
   - `npm run build`
 - Remaining gaps:
   - CI, RP, and SD field rows still use the existing `E2BFormField` internals; deeper row-level styling and RP edit-form column ordering remain for the next section-specific pass.
+
+## 2026-05-10 - Case Edit LR and SI
+
+- Reference: Flows 10 and 11; screenshots 11, 12, and 13.
+- Aligned:
+  - Marked LR and SI pages with explicit dense section shells so they follow the case-edit alignment structure after CI, RP, and SD.
+  - Reworked LR from a generic inline editable table into the reference-style pattern: compact literature summary table first, selected `No.n` detail editor below.
+  - Removed LR helper copy and changed the section title to `C.4.r - Literature References`.
+  - Kept LR attachment upload/base64 metadata behavior while moving the file control into the selected-record detail panel.
+  - Tightened SI header spacing and removed the explanatory `Clinical study information (if applicable)` helper text.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/pages/LR/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/pages/SI/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED/GREEN with focused LR/SI case-edit alignment test.
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "LR and SI"`
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/field-error-banners/study.test.ts __tests__/section-tabs-red-dot/literature.test.ts __tests__/section-tabs-red-dot/study.test.ts __tests__/case-save/literature.coordinator.test.ts __tests__/case-save/study.coordinator.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - SI still uses the existing repeatable registration table and field layout; deeper CubeSafety-style field row alignment remains for the next pass if the reference page requires it.
