@@ -372,3 +372,22 @@ The local reference pack is intentionally ignored by git because it contains man
   - `npm run build`
 - Remaining gaps:
   - Deeper DG field-row balancing and subsection-specific layout refinement remain outside this orientation pass.
+
+## 2026-05-10 - AE Summary Table Cleanup
+
+- Reference: Flow 14; screenshots 16, 17, 18, and 19.
+- Aligned:
+  - Removed the AE summary table `Country` column so the scan table ends at `Outcome`.
+  - Preserved the selected-row `reactionCountry` detail field and existing seriousness summary derivation.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED confirmed the focused AE alignment test failed while `Country` remained in the AE summary header.
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "AE"`
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/field-error-banners/reactions.test.ts __tests__/section-tabs-red-dot/reactions.test.ts __tests__/case-save/reactions.coordinator.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - Deeper AE selected-row field layout refinement remains outside this summary-table cleanup pass.
