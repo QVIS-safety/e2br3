@@ -9,6 +9,25 @@ Local reference pack:
 
 The local reference pack is intentionally ignored by git because it contains manually captured screenshots.
 
+## 2026-05-10 - Case Edit Review, Workflow, and Attachments Tabs
+
+- Reference: Case edit operational tabs following the dense case-entry shell established across Flows 7-17.
+- Aligned:
+  - Marked Review, Workflow, and Attachments tab bodies with explicit dense section shells for regression coverage.
+  - Tightened Review and Workflow shell spacing while preserving receiver rows, submission/export history, workflow assignment/transition actions, and audit-log loading/empty states.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/CaseFormWizardNew.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - RED: `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "Review, Workflow, and Attachments"`
+  - GREEN: `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "Review, Workflow, and Attachments"`
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/section-tabs-red-dot/review.test.ts __tests__/section-tabs-red-dot/workflow.test.ts __tests__/section-tabs-red-dot/attachments.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - The Attachments tab currently renders SafetyDB's existing audit trail surface; a first-class attachment file-management panel remains outside this shell alignment pass.
+
 ## 2026-05-10 - DM Long-Form Orientation
 
 - Reference: Flow 12; screenshots 14 and 15.
