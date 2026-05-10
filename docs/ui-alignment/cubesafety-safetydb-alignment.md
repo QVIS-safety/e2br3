@@ -9,6 +9,25 @@ Local reference pack:
 
 The local reference pack is intentionally ignored by git because it contains manually captured screenshots.
 
+## 2026-05-10 - DM Long-Form Orientation
+
+- Reference: Flow 12; screenshots 14 and 15.
+- Aligned:
+  - Added an explicit DM long-form marker to the Section D direct form wrapper.
+  - Tightened compact long-form subsection anchors for D.7, D.9, and D.10 while keeping all DM fields visible in one direct form without tabs or accordions.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - RED: `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "DM"`
+  - GREEN: `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "DM"`
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/field-error-banners/patient.test.ts __tests__/section-tabs-red-dot/patient.test.ts __tests__/case-save/patientHistory.coordinator.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - DM still uses the existing SafetyDB field-row internals; sticky in-page navigation or further row balancing can be handled in a later DM refinement if needed.
+
 ## 2026-05-10 - CI/RP/SD/SI Row-Level Refinement
 
 - Reference: Flows 7, 8, 9, and 11; screenshots 07, 08, 09, 10, 12, and 13.
