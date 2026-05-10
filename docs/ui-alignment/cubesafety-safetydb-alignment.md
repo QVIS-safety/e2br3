@@ -265,3 +265,30 @@ The local reference pack is intentionally ignored by git because it contains man
 - Remaining gaps:
   - DM remains a long direct form with existing field-row internals; deeper two-column balancing and sticky long-form orientation can be handled in a dedicated DM refinement pass.
   - AE still includes SafetyDB's existing country summary/detail field even though the reference summary table focuses on outcome as the last visible column.
+
+## 2026-05-10 - Case Edit LB, DG, NR
+
+- Reference: Flows 15, 16, and 17; screenshots 20, 21, 22, 23, 24, and 25.
+- Aligned:
+  - Marked LB, DG, and NR pages with explicit dense section shells.
+  - Tightened the LB header, removed helper copy, trimmed the summary table to the reference scan columns, and added the selected-row detail title beside the row badge.
+  - Tightened the DG header, removed helper copy, and changed the drug summary table to the reference columns: select, No., Drug Role, DG_PRD_KEY, and Product Name.
+  - Surfaced the case-level `dgPrdKey` in the DG summary row so the product key is visible before entering the long drug edit form.
+  - Updated NR wording to `H - Narrative Case Summary and Other Information` and removed helper copy from the narrative header and repeatable subsection headers.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/pages/LB/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/pages/DG/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/pages/NR/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionH.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED/GREEN with focused LB/DG/NR case-edit alignment test.
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "LB, DG, and NR"`
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/field-error-banners/tests.test.ts __tests__/field-error-banners/drugs.test.ts __tests__/field-error-banners/narrative.test.ts __tests__/section-tabs-red-dot/tests.test.ts __tests__/section-tabs-red-dot/drugs.test.ts __tests__/section-tabs-red-dot/narrative.test.ts __tests__/case-save/tests.coordinator.test.ts __tests__/case-save/drugs.coordinator.test.ts __tests__/case-save/narrative.coordinator.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - DG remains a very long selected-row editor; sticky subsection anchors and deeper dosage/causality row balancing can be handled in a dedicated DG refinement pass.
