@@ -9,6 +9,29 @@ Local reference pack:
 
 The local reference pack is intentionally ignored by git because it contains manually captured screenshots.
 
+## 2026-05-10 - CI/RP/SD/SI Row-Level Refinement
+
+- Reference: Flows 7, 8, 9, and 11; screenshots 07, 08, 09, 10, 12, and 13.
+- Aligned:
+  - Tightened CI direct rows and repeatable identifier tables with dense row-level shell styling while preserving validation bands directly under the relevant fields.
+  - Refined RP summary-table-first behavior by compacting summary rows and changing selected reporter detail orientation to the reference-style `No.n` row label.
+  - Reduced SD section divider spacing and aligned sender, message header, and receiver fields as direct dense rows without card-like padding.
+  - Kept SI study registration rows compact and removed remaining registration helper copy.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "CI, RP, SD"`
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/field-error-banners/case-identification.test.ts __tests__/field-error-banners/reporter.test.ts __tests__/field-error-banners/sender.test.ts __tests__/field-error-banners/study.test.ts __tests__/section-tabs-red-dot/case-identification.test.ts __tests__/section-tabs-red-dot/reporter.test.ts __tests__/section-tabs-red-dot/sender.test.ts __tests__/section-tabs-red-dot/study.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - CI/RP/SD/SI still use shared SafetyDB field controls and country autocomplete internals; deeper per-control rendering parity can be handled in a dedicated field-control pass if required.
+
 ## 2026-05-10 - Case List Screen Alignment
 
 - Reference: Flow 5, screenshot 05.
