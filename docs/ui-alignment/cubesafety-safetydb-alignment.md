@@ -183,3 +183,32 @@ The local reference pack is intentionally ignored by git because it contains man
   - Frontend dev server started on `http://localhost:3004`; Playwright screenshot of `/dashboard/cases/new` was blocked at the app loading screen because the local backend/auth path was not available for that route.
 - Remaining gaps:
   - The `WARNING` and `E-MAIL LOG` tabs are present as disabled context tabs because SafetyDB does not yet expose separate new-case warning or e-mail log panels before case creation.
+
+## 2026-05-10 - Case Edit Shell, CI, RP, SD
+
+- Reference: Flows 7, 8, and 9; screenshots 07, 08, 09, and 10.
+- Aligned:
+  - Expanded the shared case-edit content area from a centered narrow column to a full-width operational workspace.
+  - Tightened the case section tab bar by removing explanatory helper text and reducing tab height/icon sizing while preserving red-dot error indicators.
+  - Marked CI, RP, and SD pages with explicit dense section shells for continued section-by-section alignment.
+  - Reduced CI, RP, and SD header vertical spacing and removed descriptive helper copy that made the sections feel card-like.
+  - Updated RP summary table headers toward the reference wording with `Reporter's Given Name` and `Reporter's Organisation`.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/CaseFormLayout.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/SectionTabs.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/pages/CI/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/pages/RP/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/pages/SD/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED/GREEN with focused case-edit shell and CI/RP/SD alignment test.
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand`
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/field-error-banners/case-identification.test.ts __tests__/field-error-banners/reporter.test.ts __tests__/field-error-banners/sender.test.ts __tests__/section-tabs-red-dot/case-identification.test.ts __tests__/section-tabs-red-dot/reporter.test.ts __tests__/section-tabs-red-dot/sender.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - CI, RP, and SD field rows still use the existing `E2BFormField` internals; deeper row-level styling and RP edit-form column ordering remain for the next section-specific pass.
