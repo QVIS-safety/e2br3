@@ -9,6 +9,27 @@ Local reference pack:
 
 The local reference pack is intentionally ignored by git because it contains manually captured screenshots.
 
+## 2026-05-10 - Final Browser QA and Alignment Log
+
+- Reference: Final QA pass across the completed SafetyDB case-list and case-entry alignment work.
+- Aligned:
+  - Recorded final static verification results for the aligned case-list and case-edit shell regression coverage.
+  - Attempted local browser/route inspection for the authenticated/data-backed case screens on the active frontend dev server.
+  - Confirmed the remaining intentional differences: Attachments currently uses SafetyDB's existing audit trail surface, and a first-class attachment file-management panel remains future work if needed.
+- Files changed:
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/dashboard/case-list-header-filters.test.ts --runInBand` passed: 2 suites, 12 tests.
+  - `npx tsc --noEmit` passed.
+  - `npm run build` passed; Next.js reported existing workspace-root and stale browser-data warnings.
+  - `curl -i -L --max-time 15 http://localhost:3004/dashboard/cases` returned HTTP 200 after restarting the stale local Next dev server; the server-rendered HTML remained the app loading shell.
+  - `curl -i -L --max-time 15 http://localhost:3004/dashboard/cases/new` returned HTTP 200 after restarting the stale local Next dev server; the server-rendered HTML remained the app loading shell.
+  - `curl -sS --max-time 5 http://127.0.0.1:8080/health` failed with connection refused, confirming no local API listener on the configured proxy target.
+  - Playwright browser tooling was attempted but blocked by a locked shared MCP browser profile; the CLI wrapper also failed in this environment because `playwright-cli` was unavailable from the resolved package.
+- Remaining gaps:
+  - Full visual QA of `/dashboard/cases` and `/dashboard/cases/new` remains blocked until local backend/auth is available at `http://127.0.0.1:8080`.
+  - The Attachments tab currently renders SafetyDB's existing audit trail surface; a first-class attachment file-management panel remains future work if needed.
+
 ## 2026-05-10 - Case Edit Review, Workflow, and Attachments Tabs
 
 - Reference: Case edit operational tabs following the dense case-entry shell established across Flows 7-17.
