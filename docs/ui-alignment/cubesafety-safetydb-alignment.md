@@ -9,6 +9,25 @@ Local reference pack:
 
 The local reference pack is intentionally ignored by git because it contains manually captured screenshots.
 
+## 2026-05-10 - Case List Screen Alignment
+
+- Reference: Flow 5, screenshot 05.
+- Aligned:
+  - Confirmed the case list remains a dense full-width table with row navigation, selection, status, date, DG_PRD_KEY, submission/review/lock/delete metadata, and pagination.
+  - Removed reliance on any duplicate global searchbar by covering the absence of a search placeholder in the case-list regression test.
+  - Added a compact `Clear Filters` action and visible filter icon controls in filterable column headers while preserving the existing inline column filter values.
+  - Made `Date of Creation` filterable from its column header.
+- Files changed:
+  - `frontend/E2BR3-frontend/app/dashboard/cases/page.tsx`
+  - `frontend/E2BR3-frontend/__tests__/dashboard/case-list-header-filters.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - `npx jest --runTestsByPath __tests__/dashboard/case-list-header-filters.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - No additional case-list gaps identified in this pass.
+
 ## 2026-05-06 - Alignment Workflow Setup
 
 - Reference: local CubeSafety workflow reference captured through Flow 17, screenshots 01-25.
