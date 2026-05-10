@@ -162,3 +162,24 @@ The local reference pack is intentionally ignored by git because it contains man
   - `cargo test -p web-server --test api test_workflow_settings_reject_negative_due_days -- --nocapture --test-threads=1`
 - Remaining gaps:
   - The case-number format composer stores selected field names as configuration data; case-number generation can consume this contract in a later workflow if needed.
+
+## 2026-05-10 - Case Duplication Check
+
+- Reference: Flow 6, screenshot 06.
+- Aligned:
+  - Reworked the SafetyDB new-case duplication gate into a dense top-loaded check form with `CASE LIST`, `WARNING`, and `E-MAIL LOG` context tabs.
+  - Replaced the card-style intake layout with compact left-label rows, E2B field codes, required markers, NF controls, calendar affordances for date fields, and muted unavailable-match styling for optional source fields.
+  - Moved the primary duplicate-check command to a compact floating bottom-right `Check` action while keeping the existing duplicate-check and create-anyway behavior.
+  - Preserved appendix selection, intake duplicate API calls, product-template DG key loading, date normalization, future-date blocking, and duplicate warning review states.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/CaseDuplicationCheckPage.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/CaseDuplicationCheckPage.appendices.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED/GREEN with focused duplication-check layout regression.
+  - `npx jest --runTestsByPath __tests__/case-form/CaseDuplicationCheckPage.appendices.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+  - Frontend dev server started on `http://localhost:3004`; Playwright screenshot of `/dashboard/cases/new` was blocked at the app loading screen because the local backend/auth path was not available for that route.
+- Remaining gaps:
+  - The `WARNING` and `E-MAIL LOG` tabs are present as disabled context tabs because SafetyDB does not yet expose separate new-case warning or e-mail log panels before case creation.
