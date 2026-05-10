@@ -353,3 +353,22 @@ The local reference pack is intentionally ignored by git because it contains man
   - `npm run build`
 - Remaining gaps:
   - DG remains a very long selected-row editor; sticky subsection anchors and deeper dosage/causality row balancing can be handled in a dedicated DG refinement pass.
+
+## 2026-05-10 - DG Long-Form Orientation
+
+- Reference: Flow 16; screenshots 22, 23, and 24.
+- Aligned:
+  - Marked the selected DG drug edit panel with `data-case-long-form="dg"`.
+  - Added a compact near-top DG orientation link row for dosage, indication, and drug-reaction/event assessment subsections.
+  - Preserved the DG summary table scan columns: select, No., Drug Role, DG_PRD_KEY, and Product Name.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "DG"`
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/field-error-banners/drugs.test.ts __tests__/section-tabs-red-dot/drugs.test.ts __tests__/case-save/drugs.coordinator.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - Deeper DG field-row balancing and subsection-specific layout refinement remain outside this orientation pass.
