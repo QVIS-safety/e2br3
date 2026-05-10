@@ -237,3 +237,31 @@ The local reference pack is intentionally ignored by git because it contains man
   - `npm run build`
 - Remaining gaps:
   - SI still uses the existing repeatable registration table and field layout; deeper CubeSafety-style field row alignment remains for the next pass if the reference page requires it.
+
+## 2026-05-10 - Case Edit DM, DH, AE
+
+- Reference: Flows 12, 13, and 14; screenshots 14, 15, 16, 17, 18, and 19.
+- Aligned:
+  - Marked DM, DH, and AE pages with explicit dense section shells for continued case-edit alignment.
+  - Tightened the DM header and removed explanatory helper copy so the long patient form starts directly with E2B content.
+  - Changed DH top heading to `D.8.r - Relevant Past Drug History` and removed helper copy from the toolbar/detail header.
+  - Trimmed the DH summary table to the reference scan columns: select, No., drug name, MPID, start date, end date, and indication.
+  - Changed AE top heading to `E.i - Reaction(s)/Event(s)` and removed the helper copy while preserving the summary table and selected-row detail form.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/pages/DM/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/pages/DH/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/pages/AE/Page.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED/GREEN with focused DM/DH/AE case-edit alignment test.
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "DM, DH, and AE"`
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/field-error-banners/patient.test.ts __tests__/field-error-banners/drug-history.test.ts __tests__/field-error-banners/reactions.test.ts __tests__/section-tabs-red-dot/patient.test.ts __tests__/section-tabs-red-dot/drug-history.test.ts __tests__/section-tabs-red-dot/reactions.test.ts __tests__/case-save/patientHistory.coordinator.test.ts __tests__/case-save/reactions.coordinator.test.ts --runInBand`
+  - `npx tsc --noEmit`
+  - `npm run build`
+- Remaining gaps:
+  - DM remains a long direct form with existing field-row internals; deeper two-column balancing and sticky long-form orientation can be handled in a dedicated DM refinement pass.
+  - AE still includes SafetyDB's existing country summary/detail field even though the reference summary table focuses on outcome as the last visible column.
