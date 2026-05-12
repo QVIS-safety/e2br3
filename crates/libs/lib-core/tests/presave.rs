@@ -1,6 +1,8 @@
 mod common;
 
-use crate::common::{demo_ctx, demo_org_id, demo_user_id, init_test_mm, Result};
+use crate::common::{
+	demo_ctx, demo_org_id, demo_user_id, init_test_mm, Result, DEMO_ROLE,
+};
 use lib_core::ctx::Ctx;
 use lib_core::model::presave_template::{
 	PresaveEntityType, PresaveTemplateAuditBmc, PresaveTemplateBmc,
@@ -21,7 +23,7 @@ async fn seed_alt_org_user(
 	let mut tx = mm.dbx().db().begin().await?;
 
 	set_user_context(&mut tx, demo_user_id()).await?;
-	set_org_context(&mut tx, demo_org_id(), "admin").await?;
+	set_org_context(&mut tx, demo_org_id(), DEMO_ROLE).await?;
 
 	sqlx::query(
 		"INSERT INTO organizations (
@@ -71,7 +73,7 @@ async fn seed_user_in_org(
 	let mut tx = mm.dbx().db().begin().await?;
 
 	set_user_context(&mut tx, demo_user_id()).await?;
-	set_org_context(&mut tx, demo_org_id(), "admin").await?;
+	set_org_context(&mut tx, demo_org_id(), DEMO_ROLE).await?;
 
 	sqlx::query(
 		"INSERT INTO users (
@@ -180,7 +182,7 @@ async fn presave_crud_and_audit_cover_all_entity_types() -> Result<()> {
 		)
 		.await?;
 
-		set_full_context_dbx(mm.dbx(), demo_user_id(), demo_org_id(), "admin")
+		set_full_context_dbx(mm.dbx(), demo_user_id(), demo_org_id(), DEMO_ROLE)
 			.await?;
 
 		let saved = PresaveTemplateBmc::get(&ctx, &mm, template_id).await?;
@@ -208,7 +210,7 @@ async fn presave_crud_and_audit_cover_all_entity_types() -> Result<()> {
 		)
 		.await?;
 
-		set_full_context_dbx(mm.dbx(), demo_user_id(), demo_org_id(), "admin")
+		set_full_context_dbx(mm.dbx(), demo_user_id(), demo_org_id(), DEMO_ROLE)
 			.await?;
 		let updated = PresaveTemplateBmc::get(&ctx, &mm, template_id).await?;
 		assert_eq!(updated.name, format!("{name}-updated"));
