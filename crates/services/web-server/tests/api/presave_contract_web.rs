@@ -516,6 +516,83 @@ async fn test_presave_sender_default_is_org_level_singleton() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_presave_non_sender_sender_default_flag_does_not_clear_default_sender(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (first_id, _) = create_template(
+		&app,
+		&cookie,
+		"sender",
+		"default-sender-one",
+		json!({
+			"senderType": "1",
+			"senderIdentifier": "DEFAULT-SENDER-ONE",
+			"senderOrganization": "Default Sender One",
+			"senderDefault": true
+		}),
+	)
+	.await?;
+	let (second_id, _) = create_template(
+		&app,
+		&cookie,
+		"sender",
+		"default-sender-two",
+		json!({
+			"senderType": "1",
+			"senderIdentifier": "DEFAULT-SENDER-TWO",
+			"senderOrganization": "Default Sender Two",
+			"senderDefault": true
+		}),
+	)
+	.await?;
+	let (product_id, _) = create_template(
+		&app,
+		&cookie,
+		"product",
+		"product-with-legacy-default-key",
+		json!({
+			"drugCharacterization": "1",
+			"medicinalProduct": "Product With Legacy Key"
+		}),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		&cookie,
+		Method::PATCH,
+		format!("/api/presave-templates/{product_id}"),
+		Some(json!({
+			"data": {
+				"data": {
+					"drugCharacterization": "1",
+					"medicinalProduct": "Product With Legacy Key",
+					"senderDefault": true
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	let (status, first) = get_template(&app, &cookie, first_id).await?;
+	assert_eq!(status, StatusCode::OK, "{first:?}");
+	assert_eq!(first["data"]["data"]["senderDefault"], false);
+
+	let (status, second) = get_template(&app, &cookie, second_id).await?;
+	assert_eq!(status, StatusCode::OK, "{second:?}");
+	assert_eq!(second["data"]["data"]["senderDefault"], true);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_presave_contract_update_delete_and_audit() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -602,6 +679,50 @@ async fn test_presave_contract_update_delete_and_audit() -> Result<()> {
 	assert!(actions.contains(&"CREATE"), "{audit:?}");
 	assert!(actions.contains(&"UPDATE"), "{audit:?}");
 	assert!(actions.contains(&"DELETE"), "{audit:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_presave_audit_respects_assigned_scope() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	let (hidden_id, _) = create_template(
+		&app,
+		&admin_cookie,
+		"product",
+		"hidden-product-template",
+		json!({
+			"medicinalProduct": "HIDDEN-PRODUCT",
+			"drugGenericName": "Hidden Generic"
+		}),
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({ "access_product_ids": ["VISIBLE-PRODUCT"] }),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		&viewer_cookie,
+		Method::GET,
+		format!("/api/presave-templates/{hidden_id}/audit"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 
 	Ok(())
 }

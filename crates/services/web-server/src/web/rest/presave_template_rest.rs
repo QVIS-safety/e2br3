@@ -218,6 +218,49 @@ async fn presave_template_allowed_for_scope(
 		.any(|identifier| allowed.contains(identifier)))
 }
 
+async fn presave_audits_allowed_for_scope(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	audits: &[PresaveTemplateAudit],
+) -> Result<bool> {
+	if lib_rest_core::is_safety_db_admin(ctx, mm).await? {
+		return Ok(true);
+	}
+	let Some((entity_type, data)) = audits.iter().find_map(|audit| {
+		let values = audit.new_values.as_ref().or(audit.old_values.as_ref())?;
+		let entity_type = values
+			.get("entity_type")
+			.and_then(Value::as_str)
+			.and_then(|value| value.parse::<PresaveEntityType>().ok())?;
+		let data = values.get("data")?.clone();
+		Some((entity_type, data))
+	}) else {
+		return Ok(false);
+	};
+	let Some(allowed) = allowed_scope_for_entity(ctx, mm, entity_type).await? else {
+		return Ok(true);
+	};
+	if allowed.is_empty() {
+		return Ok(false);
+	}
+	let template = PresaveTemplate {
+		id: Uuid::nil(),
+		organization_id: ctx.organization_id(),
+		entity_type,
+		name: String::new(),
+		description: None,
+		data,
+		created_at: sqlx::types::time::OffsetDateTime::UNIX_EPOCH,
+		updated_at: sqlx::types::time::OffsetDateTime::UNIX_EPOCH,
+		created_by: ctx.user_id(),
+		updated_by: None,
+	};
+	let identifiers = template_scope_identifiers(&template);
+	Ok(identifiers
+		.iter()
+		.any(|identifier| allowed.contains(identifier)))
+}
+
 async fn filter_presave_templates_for_scope(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -295,8 +338,9 @@ pub async fn update_presave_template(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
 	let ParamsForUpdate { data } = params;
+	let current = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
 	let should_be_default = data.data.as_ref().is_some_and(sender_default_requested)
-		&& data.entity_type.unwrap_or(PresaveEntityType::Sender)
+		&& data.entity_type.unwrap_or(current.entity_type)
 			== PresaveEntityType::Sender;
 	PresaveTemplateBmc::update(&ctx, &mm, id, data).await?;
 	if should_be_default {
@@ -328,5 +372,10 @@ pub async fn list_presave_template_audits(
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let entities =
 		PresaveTemplateAuditBmc::list_by_template(&ctx, &mm, template_id).await?;
+	if !presave_audits_allowed_for_scope(&ctx, &mm, &entities).await? {
+		return Err(Error::PermissionDenied {
+			required_permission: "PresaveTemplate.Scope".to_string(),
+		});
+	}
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
