@@ -10,6 +10,10 @@ use lib_core::ctx::{
 	ROLE_MANAGER, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
 	ROLE_SYSTEM_ADMIN,
 };
+use lib_core::model::acs::{
+	has_permission, CASE_APPROVE, CASE_UPDATE, TERMINOLOGY_APPROVE,
+	TERMINOLOGY_IMPORT, XML_EXPORT,
+};
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
 use serde_json::{json, Value};
@@ -46,6 +50,95 @@ async fn request_json(
 	let value = serde_json::from_slice(&bytes)
 		.unwrap_or_else(|_| json!({ "raw": String::from_utf8_lossy(&bytes) }));
 	Ok((status, value))
+}
+
+async fn create_empty_custom_role(
+	app: &Router,
+	admin_cookie: &str,
+	role_name: &str,
+) -> Result<()> {
+	let (status, value) = request_json(
+		app,
+		"POST",
+		admin_cookie,
+		"/api/admin/roles".to_string(),
+		Some(json!({
+			"data": {
+				"role_name": role_name,
+				"display_name": role_name,
+				"description": format!("Effective permission test role {role_name}"),
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	Ok(())
+}
+
+async fn update_role_privileges(
+	app: &Router,
+	admin_cookie: &str,
+	role_name: &str,
+	privileges: Value,
+) -> Result<Value> {
+	let (status, value) = request_json(
+		app,
+		"PUT",
+		admin_cookie,
+		format!("/api/admin/roles/{role_name}"),
+		Some(json!({ "data": { "privileges": privileges } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	Ok(value)
+}
+
+async fn custom_role_user(
+	mm: &ModelManager,
+	org_id: Uuid,
+	role_name: &str,
+) -> Result<(Uuid, String)> {
+	let user =
+		insert_user(mm, org_id, role_name, system_user_id(), Some("custompwd"))
+			.await?;
+	let token = generate_web_token(&user.email, user.token_salt)?;
+	Ok((user.id, cookie_header(&token.to_string())))
+}
+
+async fn assert_get_status(
+	app: &Router,
+	cookie: &str,
+	uri: &str,
+	expected: StatusCode,
+) -> Result<Value> {
+	let (status, value) =
+		request_json(app, "GET", cookie, uri.to_string(), None).await?;
+	assert_eq!(status, expected, "{uri} body={value:?}");
+	Ok(value)
+}
+
+async fn assert_workflow_assign_status(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	target_role: &str,
+	expected: StatusCode,
+) -> Result<Value> {
+	let (status, value) = request_json(
+		app,
+		"POST",
+		cookie,
+		format!("/api/cases/{case_id}/workflow/assign"),
+		Some(json!({
+			"data": {
+				"target_role": target_role
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, expected, "{value:?}");
+	Ok(value)
 }
 
 async fn create_case(
@@ -1154,43 +1247,96 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 
+	let matrix_privileges = json!([
+		{
+			"menu_key": "home_notice",
+			"can_read": true,
+			"can_edit": true,
+			"can_review": false,
+			"can_lock": false
+		},
+		{
+			"menu_key": "home_workflow",
+			"can_read": true,
+			"can_edit": false,
+			"can_review": true,
+			"can_lock": false
+		},
+		{
+			"menu_key": "monitoring",
+			"can_read": true,
+			"can_edit": false,
+			"can_review": false,
+			"can_lock": true
+		},
+		{
+			"menu_key": "sync",
+			"can_read": true,
+			"can_edit": true,
+			"can_review": true,
+			"can_lock": false
+		},
+		{
+			"menu_key": "sync_mapping",
+			"can_read": true,
+			"can_edit": false,
+			"can_review": true,
+			"can_lock": true
+		},
+		{
+			"menu_key": "report_due_mail",
+			"can_read": true,
+			"can_edit": true,
+			"can_review": false,
+			"can_lock": false
+		}
+	]);
+
 	let (status, value) = request_json(
 		&app,
 		"PUT",
 		&admin_cookie,
 		format!("/api/admin/roles/{role_name}"),
-		Some(json!({
-			"data": {
-				"privileges": [
-					{
-						"menu_key": "home_notice",
-						"can_read": true,
-						"can_edit": true,
-						"can_review": false,
-						"can_lock": false
-					},
-					{
-						"menu_key": "report_due_mail",
-						"can_read": true,
-						"can_edit": true,
-						"can_review": false,
-						"can_lock": false
-					}
-				]
-			}
-		})),
+		Some(json!({ "data": { "privileges": matrix_privileges } })),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(
-		value["privilege_map"]["home_notice"]["can_edit"].as_bool(),
-		Some(true)
-	);
-	assert_eq!(
-		value["privilege_map"]["report_due_mail"]["can_read"].as_bool(),
-		Some(true)
-	);
+
+	let (status, value) = request_json(
+		&app,
+		"GET",
+		&admin_cookie,
+		"/api/admin/roles".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let roles = value.as_array().ok_or("roles response should be array")?;
+	let persisted_role = roles
+		.iter()
+		.find(|role| role["canonical_role_id"] == role_name)
+		.ok_or("missing persisted matrix role")?;
+	let privileges = persisted_role["privileges"]
+		.as_array()
+		.ok_or("persisted role privileges should be an array")?;
+	for (menu_key, can_read, can_edit, can_review, can_lock) in [
+		("home_notice", true, true, false, false),
+		("home_workflow", true, false, true, false),
+		("monitoring", true, false, false, true),
+		("sync", true, true, true, false),
+		("sync_mapping", true, false, true, true),
+		("report_due_mail", true, true, false, false),
+	] {
+		let row = privileges
+			.iter()
+			.find(|row| row["menu_key"] == menu_key)
+			.ok_or_else(|| format!("missing persisted privilege for {menu_key}"))?;
+		assert_eq!(row["can_read"].as_bool(), Some(can_read), "{menu_key}");
+		assert_eq!(row["can_edit"].as_bool(), Some(can_edit), "{menu_key}");
+		assert_eq!(row["can_review"].as_bool(), Some(can_review), "{menu_key}");
+		assert_eq!(row["can_lock"].as_bool(), Some(can_lock), "{menu_key}");
+	}
 
 	Ok(())
 }
@@ -1266,6 +1412,750 @@ async fn test_role_privilege_matrix_update_grants_effective_case_access(
 		request_json(&app, "GET", &custom_cookie, "/api/cases".to_string(), None)
 			.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let read_role_name = format!("qacmr_{}", Uuid::new_v4().simple());
+	let edit_role_name = format!("qacme_{}", Uuid::new_v4().simple());
+	let review_role_name = format!("qacmv_{}", Uuid::new_v4().simple());
+	let lock_role_name = format!("qacml_{}", Uuid::new_v4().simple());
+
+	create_empty_custom_role(&app, &admin_cookie, &read_role_name).await?;
+	create_empty_custom_role(&app, &admin_cookie, &edit_role_name).await?;
+	create_empty_custom_role(&app, &admin_cookie, &review_role_name).await?;
+	create_empty_custom_role(&app, &admin_cookie, &lock_role_name).await?;
+	let (read_user_id, read_cookie) =
+		custom_role_user(&mm, seed.org_id, &read_role_name).await?;
+	let (edit_user_id, edit_cookie) =
+		custom_role_user(&mm, seed.org_id, &edit_role_name).await?;
+	let (review_user_id, review_cookie) =
+		custom_role_user(&mm, seed.org_id, &review_role_name).await?;
+	let (lock_user_id, lock_cookie) =
+		custom_role_user(&mm, seed.org_id, &lock_role_name).await?;
+	let case_id = create_case(
+		&app,
+		&admin_cookie,
+		&format!("CASE-MATRIX-SEED-{}", Uuid::new_v4().simple()),
+		None,
+	)
+	.await?;
+	create_message_header(&app, &admin_cookie, case_id, "CASE-MATRIX-SENDER")
+		.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		read_user_id,
+		json!({ "access_sender_ids": ["CASE-MATRIX-SENDER"] }),
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		edit_user_id,
+		json!({ "access_sender_ids": ["CASE-MATRIX-SENDER"] }),
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		review_user_id,
+		json!({ "access_sender_ids": ["CASE-MATRIX-SENDER"] }),
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		lock_user_id,
+		json!({ "access_sender_ids": ["CASE-MATRIX-SENDER"] }),
+	)
+	.await?;
+
+	assert_get_status(&app, &read_cookie, "/api/cases", StatusCode::FORBIDDEN)
+		.await?;
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&read_role_name,
+		json!([
+			{
+				"menu_key": "case",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert_get_status(&app, &read_cookie, "/api/cases", StatusCode::OK).await?;
+	assert_get_status(
+		&app,
+		&read_cookie,
+		&format!("/api/cases/{case_id}"),
+		StatusCode::OK,
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&read_cookie,
+		"/api/cases".to_string(),
+		Some(json!({
+			"data": {
+				"safety_report_id": format!("CASE-MATRIX-{}", Uuid::new_v4().simple()),
+				"status": "draft"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&edit_role_name,
+		json!([
+			{
+				"menu_key": "case",
+				"can_read": true,
+				"can_edit": true,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert!(
+		has_permission(&edit_role_name, CASE_UPDATE),
+		"edit role should grant CASE_UPDATE"
+	);
+	assert!(
+		!has_permission(&edit_role_name, CASE_APPROVE),
+		"edit role should not grant CASE_APPROVE"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&edit_cookie,
+		"/api/cases".to_string(),
+		Some(json!({
+			"data": {
+				"safety_report_id": format!("CASE-MATRIX-{}", Uuid::new_v4().simple()),
+				"status": "draft"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&admin_cookie,
+		"/api/admin/settings".to_string(),
+		Some(json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"description": "Default authoring state",
+							"due_days": 0,
+							"allowed_roles": [review_role_name, lock_role_name]
+						}
+					]
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&review_role_name,
+		json!([
+			{
+				"menu_key": "case",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert_workflow_assign_status(
+		&app,
+		&review_cookie,
+		case_id,
+		&review_role_name,
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&review_role_name,
+		json!([
+			{
+				"menu_key": "case",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": true,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert!(
+		has_permission(&review_role_name, CASE_UPDATE),
+		"review role should grant CASE_UPDATE"
+	);
+	assert!(
+		has_permission(&review_role_name, CASE_APPROVE),
+		"review role should grant CASE_APPROVE"
+	);
+	assert_workflow_assign_status(
+		&app,
+		&review_cookie,
+		case_id,
+		&review_role_name,
+		StatusCode::OK,
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&review_cookie,
+		"/api/cases".to_string(),
+		Some(json!({
+			"data": {
+				"safety_report_id": format!("CASE-MATRIX-{}", Uuid::new_v4().simple()),
+				"status": "draft"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::FORBIDDEN,
+		"review alone should not grant case create: {value:?}"
+	);
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&lock_role_name,
+		json!([
+			{
+				"menu_key": "case",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert_workflow_assign_status(
+		&app,
+		&lock_cookie,
+		case_id,
+		&lock_role_name,
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&lock_role_name,
+		json!([
+			{
+				"menu_key": "case",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": true
+			}
+		]),
+	)
+	.await?;
+	assert!(
+		has_permission(&lock_role_name, CASE_UPDATE),
+		"lock role should grant CASE_UPDATE"
+	);
+	assert!(
+		has_permission(&lock_role_name, CASE_APPROVE),
+		"lock role should grant CASE_APPROVE"
+	);
+	assert_workflow_assign_status(
+		&app,
+		&lock_cookie,
+		case_id,
+		&lock_role_name,
+		StatusCode::OK,
+	)
+	.await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_info_matrix_privileges_grant_effective_presave_permissions(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let role_name = format!("qa_info_matrix_{}", Uuid::new_v4().simple());
+
+	create_empty_custom_role(&app, &admin_cookie, &role_name).await?;
+	let (custom_user_id, custom_cookie) =
+		custom_role_user(&mm, seed.org_id, &role_name).await?;
+	let template_id = create_sender_presave_template(
+		&app,
+		&admin_cookie,
+		&format!("Info Matrix Seed {}", Uuid::new_v4().simple()),
+		"INFO-MATRIX-SEED",
+	)
+	.await?;
+	let editable_template_id = create_sender_presave_template(
+		&app,
+		&admin_cookie,
+		&format!("Info Matrix Editable {}", Uuid::new_v4().simple()),
+		"INFO-MATRIX-EDITABLE",
+	)
+	.await?;
+	let deletable_template_id = create_sender_presave_template(
+		&app,
+		&admin_cookie,
+		&format!("Info Matrix Deletable {}", Uuid::new_v4().simple()),
+		"INFO-MATRIX-DELETABLE",
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		custom_user_id,
+		json!({
+			"access_sender_ids": [
+				"INFO-MATRIX-SEED",
+				"INFO-MATRIX-EDITABLE",
+				"INFO-MATRIX-DELETABLE",
+				"INFO-MATRIX-EDIT"
+			]
+		}),
+	)
+	.await?;
+
+	assert_get_status(
+		&app,
+		&custom_cookie,
+		"/api/presave-templates",
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&role_name,
+		json!([
+			{
+				"menu_key": "info",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert_get_status(
+		&app,
+		&custom_cookie,
+		"/api/presave-templates",
+		StatusCode::OK,
+	)
+	.await?;
+	assert_get_status(
+		&app,
+		&custom_cookie,
+		&format!("/api/presave-templates/{template_id}"),
+		StatusCode::OK,
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/presave-templates".to_string(),
+		Some(json!({
+			"data": {
+				"entity_type": "sender",
+				"name": "Info Matrix Sender",
+				"description": "Should require info edit",
+				"data": {
+					"senderType": "2",
+					"senderIdentifier": "INFO-MATRIX",
+					"senderOrganization": "Info Matrix Sender",
+					"linkedOrganizationName": "Info Matrix Sender",
+					"linkedOrganizationType": "client"
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		"PATCH",
+		&custom_cookie,
+		format!("/api/presave-templates/{editable_template_id}"),
+		Some(json!({
+			"data": {
+				"name": "Info Matrix Readonly Patch",
+				"description": "Read-only info should not update templates"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		"DELETE",
+		&custom_cookie,
+		format!("/api/presave-templates/{deletable_template_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&role_name,
+		json!([
+			{
+				"menu_key": "info",
+				"can_read": true,
+				"can_edit": true,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/presave-templates".to_string(),
+		Some(json!({
+			"data": {
+				"entity_type": "sender",
+				"name": format!("Info Matrix Sender {}", Uuid::new_v4().simple()),
+				"description": "Info edit should allow creation",
+				"data": {
+					"senderType": "2",
+					"senderIdentifier": "INFO-MATRIX-EDIT",
+					"senderOrganization": "Info Matrix Sender Edit",
+					"linkedOrganizationName": "Info Matrix Sender Edit",
+					"linkedOrganizationType": "client"
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let created_template_id = extract_id(&value)?;
+
+	let (status, value) = request_json(
+		&app,
+		"PATCH",
+		&custom_cookie,
+		format!("/api/presave-templates/{editable_template_id}"),
+		Some(json!({
+			"data": {
+				"name": "Info Matrix Editable Updated",
+				"description": "Info edit should allow updates",
+				"data": {
+					"senderType": "2",
+					"senderIdentifier": "INFO-MATRIX-EDITABLE",
+					"senderOrganization": "Info Matrix Editable Updated",
+					"linkedOrganizationName": "Info Matrix Editable Updated",
+					"linkedOrganizationType": "client"
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["data"]["name"].as_str(),
+		Some("Info Matrix Editable Updated"),
+		"{value:?}"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		"DELETE",
+		&custom_cookie,
+		format!("/api/presave-templates/{deletable_template_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+	assert_get_status(
+		&app,
+		&custom_cookie,
+		&format!("/api/presave-templates/{created_template_id}"),
+		StatusCode::OK,
+	)
+	.await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let role_name = format!("qa_data_matrix_{}", Uuid::new_v4().simple());
+
+	create_empty_custom_role(&app, &admin_cookie, &role_name).await?;
+	let (_custom_user_id, custom_cookie) =
+		custom_role_user(&mm, seed.org_id, &role_name).await?;
+
+	assert_get_status(
+		&app,
+		&custom_cookie,
+		"/api/terminology/countries",
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&role_name,
+		json!([
+			{
+				"menu_key": "data",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert_get_status(
+		&app,
+		&custom_cookie,
+		"/api/terminology/countries",
+		StatusCode::OK,
+	)
+	.await?;
+	assert!(
+		!has_permission(&role_name, TERMINOLOGY_IMPORT),
+		"read-only DATA must not grant terminology import permission"
+	);
+	assert!(
+		!has_permission(&role_name, TERMINOLOGY_APPROVE),
+		"read-only DATA must not grant terminology approve permission"
+	);
+
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/terminology/import/meddra?version=27.1&language=en")
+		.header("cookie", custom_cookie.clone())
+		.header("content-type", "multipart/form-data; boundary=----boundary")
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_eq!(
+		res.status(),
+		StatusCode::FORBIDDEN,
+		"read-only DATA must not import terminology"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/terminology/releases/meddra/TEST/approve".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::FORBIDDEN,
+		"read-only DATA must not approve terminology releases: {value:?}"
+	);
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&role_name,
+		json!([
+			{
+				"menu_key": "data",
+				"can_read": true,
+				"can_edit": true,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert!(
+		has_permission(&role_name, TERMINOLOGY_IMPORT),
+		"editable DATA must grant terminology import permission"
+	);
+	assert!(
+		has_permission(&role_name, TERMINOLOGY_APPROVE),
+		"editable DATA must grant terminology approve permission"
+	);
+
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/terminology/import/meddra?version=27.1&language=en")
+		.header("cookie", custom_cookie.clone())
+		.header("content-type", "multipart/form-data; boundary=----boundary")
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_ne!(
+		res.status(),
+		StatusCode::FORBIDDEN,
+		"editable DATA should pass terminology import permission check"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/terminology/releases/meddra/TEST/approve".to_string(),
+		None,
+	)
+	.await?;
+	assert_ne!(
+		status,
+		StatusCode::FORBIDDEN,
+		"editable DATA should pass terminology approve permission check: {value:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_export_submission_matrix_privileges_grant_effective_xml_export_permission(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let no_export_role_name = format!("qa_export_none_{}", Uuid::new_v4().simple());
+	let read_role_name = format!("qa_export_read_{}", Uuid::new_v4().simple());
+	let edit_role_name = format!("qa_export_edit_{}", Uuid::new_v4().simple());
+
+	create_empty_custom_role(&app, &admin_cookie, &no_export_role_name).await?;
+	create_empty_custom_role(&app, &admin_cookie, &read_role_name).await?;
+	create_empty_custom_role(&app, &admin_cookie, &edit_role_name).await?;
+	let (_no_export_user_id, no_export_cookie) =
+		custom_role_user(&mm, seed.org_id, &no_export_role_name).await?;
+	let (_read_user_id, read_cookie) =
+		custom_role_user(&mm, seed.org_id, &read_role_name).await?;
+	let (_edit_user_id, edit_cookie) =
+		custom_role_user(&mm, seed.org_id, &edit_role_name).await?;
+
+	assert!(
+		!has_permission(&no_export_role_name, XML_EXPORT),
+		"empty custom role must not grant XML_EXPORT"
+	);
+	assert_get_status(
+		&app,
+		&no_export_cookie,
+		"/api/exports/history",
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&read_role_name,
+		json!([
+			{
+				"menu_key": "export_submission",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert!(
+		has_permission(&read_role_name, XML_EXPORT),
+		"export_submission.can_read must grant XML_EXPORT"
+	);
+	assert_get_status(&app, &read_cookie, "/api/exports/history", StatusCode::OK)
+		.await?;
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&edit_role_name,
+		json!([
+			{
+				"menu_key": "export_submission",
+				"can_read": false,
+				"can_edit": true,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert!(
+		has_permission(&edit_role_name, XML_EXPORT),
+		"export_submission.can_edit must independently grant XML_EXPORT"
+	);
+	assert_get_status(&app, &edit_cookie, "/api/exports/history", StatusCode::OK)
+		.await?;
 
 	Ok(())
 }
@@ -1443,5 +2333,134 @@ async fn test_custom_admin_capable_role_can_administer_users_and_roles() -> Resu
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_settings_admin_matrix_grants_effective_users_route_access(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let role_name = format!("qa_settings_admin_{}", Uuid::new_v4().simple());
+
+	create_empty_custom_role(&app, &admin_cookie, &role_name).await?;
+	let (_custom_user_id, custom_cookie) =
+		custom_role_user(&mm, seed.org_id, &role_name).await?;
+
+	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
+		.await?;
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/users".to_string(),
+		Some(json!({
+			"data": {
+				"organization_id": seed.org_id,
+				"email": format!("settings-admin-empty-{}@example.com", Uuid::new_v4()),
+				"role": "viewer"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::FORBIDDEN,
+		"empty settings role must not create users: {value:?}"
+	);
+
+	let value = update_role_privileges(
+		&app,
+		&admin_cookie,
+		&role_name,
+		json!([
+			{
+				"menu_key": "settings",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert_eq!(
+		value["sponsor_admin_capable"].as_bool(),
+		Some(false),
+		"settings.can_read alone must not make the role Safety DB admin capable: {value:?}"
+	);
+	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
+		.await?;
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/users".to_string(),
+		Some(json!({
+			"data": {
+				"organization_id": seed.org_id,
+				"email": format!("settings-admin-read-{}@example.com", Uuid::new_v4()),
+				"role": "viewer"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::FORBIDDEN,
+		"settings.can_read alone must not create users: {value:?}"
+	);
+
+	let value = update_role_privileges(
+		&app,
+		&admin_cookie,
+		&role_name,
+		json!([
+			{
+				"menu_key": "settings",
+				"can_read": true,
+				"can_edit": true,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert_eq!(
+		value["sponsor_admin_capable"].as_bool(),
+		Some(true),
+		"settings.can_edit should make the role Safety DB admin capable: {value:?}"
+	);
+	let value =
+		assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK)
+			.await?;
+	assert!(
+		value["data"].as_array().is_some(),
+		"admin users route should return a user list: {value:?}"
+	);
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/users".to_string(),
+		Some(json!({
+			"data": {
+				"organization_id": seed.org_id,
+				"email": format!("settings-admin-edit-{}@example.com", Uuid::new_v4()),
+				"role": "viewer"
+			}
+		})),
+	)
+	.await?;
+	assert_ne!(
+		status,
+		StatusCode::FORBIDDEN,
+		"settings.can_edit should pass POST /api/users admin authorization gate: {value:?}"
+	);
+
 	Ok(())
 }
