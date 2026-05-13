@@ -1129,6 +1129,149 @@ async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> 
 
 #[serial]
 #[tokio::test]
+async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let role_name = format!("qa_matrix_{}", Uuid::new_v4().simple());
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/roles".to_string(),
+		Some(json!({
+			"data": {
+				"role_name": role_name,
+				"display_name": "QA matrix role",
+				"description": "Created before privilege matrix toggles",
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&admin_cookie,
+		format!("/api/admin/roles/{role_name}"),
+		Some(json!({
+			"data": {
+				"privileges": [
+					{
+						"menu_key": "home_notice",
+						"can_read": true,
+						"can_edit": true,
+						"can_review": false,
+						"can_lock": false
+					},
+					{
+						"menu_key": "report_due_mail",
+						"can_read": true,
+						"can_edit": true,
+						"can_review": false,
+						"can_lock": false
+					}
+				]
+			}
+		})),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["privilege_map"]["home_notice"]["can_edit"].as_bool(),
+		Some(true)
+	);
+	assert_eq!(
+		value["privilege_map"]["report_due_mail"]["can_read"].as_bool(),
+		Some(true)
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_role_privilege_matrix_update_grants_effective_case_access(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let role_name = format!("qa_effective_{}", Uuid::new_v4().simple());
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/roles".to_string(),
+		Some(json!({
+			"data": {
+				"role_name": role_name,
+				"display_name": "QA effective role",
+				"description": "Starts without effective case permissions",
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+
+	let custom_user = insert_user(
+		&mm,
+		seed.org_id,
+		&role_name,
+		system_user_id(),
+		Some("custompwd"),
+	)
+	.await?;
+	let custom_token =
+		generate_web_token(&custom_user.email, custom_user.token_salt)?;
+	let custom_cookie = cookie_header(&custom_token.to_string());
+
+	let (status, _value) =
+		request_json(&app, "GET", &custom_cookie, "/api/cases".to_string(), None)
+			.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN);
+
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&admin_cookie,
+		format!("/api/admin/roles/{role_name}"),
+		Some(json!({
+			"data": {
+				"privileges": [
+					{
+						"menu_key": "case",
+						"can_read": true,
+						"can_edit": false,
+						"can_review": false,
+						"can_lock": false
+					}
+				]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	let (status, value) =
+		request_json(&app, "GET", &custom_cookie, "/api/cases".to_string(), None)
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

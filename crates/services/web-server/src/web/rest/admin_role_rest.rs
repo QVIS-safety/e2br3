@@ -172,17 +172,20 @@ fn normalize_admin_privileges(
 		}
 		if !matches!(
 			menu_key.as_str(),
-			"case"
-				| "info" | "import"
-				| "export_submission"
+			"home_notice"
+				| "home_workflow"
+				| "case" | "info"
+				| "import" | "export_submission"
 				| "submission"
 				| "export" | "user"
 				| "users" | "organization"
 				| "organizations"
 				| "audit" | "data"
 				| "terminology"
+				| "monitoring"
+				| "sync" | "sync_mapping"
 				| "admin" | "settings"
-				| "roles"
+				| "roles" | "report_due_mail"
 		) {
 			return Err(Error::BadRequest {
 				message: format!("unknown role privilege menu '{menu_key}'"),
