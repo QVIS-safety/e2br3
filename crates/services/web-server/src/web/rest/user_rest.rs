@@ -22,8 +22,9 @@ use lib_rest_core::{
 	validate_active_sender_selection, Error, Result,
 };
 use lib_web::middleware::mw_auth::CtxW;
-use serde::{Deserialize, Serialize};
+use serde::{de, Deserialize, Deserializer, Serialize};
 use sqlx::types::time::OffsetDateTime;
+use time::{format_description, PrimitiveDateTime};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -52,7 +53,9 @@ pub struct UserScopeView {
 	pub assigned_study_ids: Vec<String>,
 	pub access_blind_allowed: bool,
 	pub active_sender_identifier: Option<String>,
+	#[serde(default, with = "time::serde::rfc3339::option")]
 	pub access_start_at: Option<OffsetDateTime>,
+	#[serde(default, with = "time::serde::rfc3339::option")]
 	pub access_end_at: Option<OffsetDateTime>,
 }
 
@@ -86,8 +89,11 @@ pub struct UserView {
 	pub must_change_password: bool,
 	#[serde(rename = "must_change_password")]
 	pub must_change_password_legacy: bool,
+	#[serde(default, with = "time::serde::rfc3339::option")]
 	pub last_login_at: Option<OffsetDateTime>,
+	#[serde(with = "time::serde::rfc3339")]
 	pub created_at: OffsetDateTime,
+	#[serde(with = "time::serde::rfc3339")]
 	pub updated_at: OffsetDateTime,
 	pub created_by: Option<Uuid>,
 	pub updated_by: Option<Uuid>,
@@ -105,12 +111,15 @@ pub struct UserForCreateAdminPayload {
 	pub organization_id: Uuid,
 	pub email: String,
 	pub username: Option<String>,
+	pub pwd_clear: Option<String>,
 	pub role: Option<String>,
 	pub first_name: Option<String>,
 	pub last_name: Option<String>,
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_access_datetime_option")]
 	pub access_start_at: Option<OffsetDateTime>,
+	#[serde(default, deserialize_with = "deserialize_access_datetime_option")]
 	pub access_end_at: Option<OffsetDateTime>,
 	pub active_sender_identifier: Option<String>,
 	pub access_sender_ids: Option<ScopeListInput>,
@@ -128,7 +137,9 @@ pub struct UserForUpdateAdminPayload {
 	pub last_name: Option<String>,
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_access_datetime_option")]
 	pub access_start_at: Option<OffsetDateTime>,
+	#[serde(default, deserialize_with = "deserialize_access_datetime_option")]
 	pub access_end_at: Option<OffsetDateTime>,
 	pub active_sender_identifier: Option<String>,
 	pub access_sender_ids: Option<ScopeListInput>,
@@ -136,6 +147,7 @@ pub struct UserForUpdateAdminPayload {
 	pub access_study_ids: Option<ScopeListInput>,
 	pub access_blind_allowed: Option<bool>,
 	pub active: Option<bool>,
+	#[serde(default, with = "time::serde::rfc3339::option")]
 	pub last_login_at: Option<OffsetDateTime>,
 }
 
@@ -228,6 +240,66 @@ fn create_has_scope_assignment(data: &UserForCreateAdminPayload) -> bool {
 		|| data.access_blind_allowed.is_some()
 }
 
+fn initial_password(pwd_clear: Option<String>) -> String {
+	pwd_clear
+		.map(|value| value.trim().to_string())
+		.filter(|value| !value.is_empty())
+		.unwrap_or_else(|| "welcome".to_string())
+}
+
+fn deserialize_access_datetime_option<'de, D>(
+	deserializer: D,
+) -> std::result::Result<Option<OffsetDateTime>, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let value = Option::<String>::deserialize(deserializer)?;
+	value
+		.as_deref()
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+		.map(parse_access_datetime)
+		.transpose()
+		.map_err(de::Error::custom)
+}
+
+fn parse_access_datetime(
+	value: &str,
+) -> std::result::Result<OffsetDateTime, String> {
+	if let Ok(datetime) =
+		OffsetDateTime::parse(value, &time::format_description::well_known::Rfc3339)
+	{
+		return Ok(datetime);
+	}
+
+	for format in [
+		"[year]-[month]-[day]T[hour]:[minute]",
+		"[year]-[month]-[day]T[hour]:[minute]:[second]",
+	] {
+		let description = format_description::parse(format)
+			.map_err(|err| format!("invalid datetime parser format: {err}"))?;
+		if let Ok(datetime) = PrimitiveDateTime::parse(value, &description) {
+			return Ok(datetime.assume_utc());
+		}
+	}
+
+	Err("expected RFC3339 or datetime-local format".to_string())
+}
+
+fn user_is_effectively_active(user: &User) -> bool {
+	if !user.active {
+		return false;
+	}
+	let now = OffsetDateTime::now_utc();
+	if user.access_start_at.is_some_and(|start_at| start_at > now) {
+		return false;
+	}
+	if user.access_end_at.is_some_and(|end_at| end_at < now) {
+		return false;
+	}
+	true
+}
+
 fn update_has_scope_assignment(data: &UserForUpdateAdminPayload) -> bool {
 	data.active_sender_identifier.is_some()
 		|| data.access_sender_ids.is_some()
@@ -254,6 +326,7 @@ fn sender_scope_assignment_forbidden() -> Error {
 }
 
 fn user_view(user: User) -> UserView {
+	let active = user_is_effectively_active(&user);
 	let access_sender_ids = user.access_sender_ids.clone();
 	let access_product_ids = user.access_product_ids.clone();
 	let access_study_ids = user.access_study_ids.clone();
@@ -291,7 +364,7 @@ fn user_view(user: User) -> UserView {
 		access_study_ids_legacy: access_study_ids,
 		access_blind_allowed_legacy: access_blind_allowed,
 		active_sender_identifier_legacy: active_sender_identifier,
-		active: user.active,
+		active,
 		must_change_password: user.must_change_password,
 		must_change_password_legacy: user.must_change_password,
 		last_login_at: user.last_login_at,
@@ -328,7 +401,7 @@ pub async fn create_user(
 			organization_id: data.organization_id,
 			email: data.email,
 			username: data.username,
-			pwd_clear: "welcome".to_string(),
+			pwd_clear: initial_password(data.pwd_clear),
 			role: data.role,
 			first_name: data.first_name,
 			last_name: data.last_name,
@@ -376,7 +449,7 @@ pub async fn create_user(
 		organization_id,
 		email: data.email,
 		username: data.username,
-		pwd_clear: "welcome".to_string(),
+		pwd_clear: initial_password(data.pwd_clear),
 		role: data.role,
 		first_name: data.first_name,
 		last_name: data.last_name,

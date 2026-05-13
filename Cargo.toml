@@ -36,6 +36,6 @@ axum = {version = "0.8", features = ["macros"]}
 tower-http = { version = "0.6", features = ["fs"] }
 tower-cookies = "0.11"
 # -- Others
-time = {version = "0.3", features = ["formatting", "parsing", "serde"]}
+time = {version = "0.3", features = ["formatting", "parsing", "serde", "serde-well-known"]}
 derive_more = {version = "1.0.0-beta", features = ["from", "display"] }
 rust_decimal = { version = "1", features = ["db-postgres"] }

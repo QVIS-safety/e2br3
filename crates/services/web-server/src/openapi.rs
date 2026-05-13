@@ -682,6 +682,9 @@ struct UserForCreateAdminPayloadDoc {
 	organization_id: String,
 	email: String,
 	username: Option<String>,
+	/// Optional initial password. Defaults to "welcome" when omitted.
+	#[schema(format = Password)]
+	pwd_clear: Option<String>,
 	/// Canonical role ID to assign. Use built-in sponsor admin IDs for fixed
 	/// admin roles, or a custom role name for scoped users.
 	#[schema(example = "pvs")]

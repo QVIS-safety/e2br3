@@ -220,6 +220,157 @@ async fn test_new_user_temp_password_and_first_login_reset_flow() -> Result<()> 
 
 #[serial]
 #[tokio::test]
+async fn test_user_after_access_end_is_inactive_and_cannot_login() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let suffix = Uuid::new_v4();
+	let email = format!("expired-user-{suffix}@example.com");
+	let username = format!("expired_user_{suffix}");
+	let create_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": email,
+			"username": username,
+			"role": "user",
+			"access_end_at": "2000-01-01T00:00:00Z"
+		}
+	});
+	let create_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&admin_token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_res = app.clone().oneshot(create_req).await?;
+	let create_status = create_res.status();
+	let create_bytes =
+		axum::body::to_bytes(create_res.into_body(), usize::MAX).await?;
+	assert_eq!(
+		create_status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&create_bytes)
+	);
+	let created: serde_json::Value = serde_json::from_slice(&create_bytes)?;
+	assert_eq!(
+		created["data"]["active"].as_bool(),
+		Some(false),
+		"{created:?}"
+	);
+
+	let login_body = json!({
+		"email": email,
+		"pwd": "welcome"
+	});
+	let login_req = Request::builder()
+		.method("POST")
+		.uri("/auth/v1/login")
+		.header("content-type", "application/json")
+		.body(Body::from(login_body.to_string()))?;
+	let login_res = app.oneshot(login_req).await?;
+	assert_eq!(login_res.status(), StatusCode::FORBIDDEN);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_create_user_persists_access_start_and_end_dates() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let suffix = Uuid::new_v4();
+	let email = format!("access-window-{suffix}@example.com");
+	let username = format!("access_window_{suffix}");
+	let create_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": email,
+			"username": username,
+			"role": "user",
+			"access_start_at": "2026-01-01T00:00:00.000Z",
+			"access_end_at": "2026-12-31T23:59:00.000Z"
+		}
+	});
+	let create_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&admin_token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_res = app.oneshot(create_req).await?;
+	let create_status = create_res.status();
+	let create_bytes =
+		axum::body::to_bytes(create_res.into_body(), usize::MAX).await?;
+	assert_eq!(
+		create_status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&create_bytes)
+	);
+	let created: serde_json::Value = serde_json::from_slice(&create_bytes)?;
+	assert_eq!(
+		created["data"]["scope"]["accessStartAt"].as_str(),
+		Some("2026-01-01T00:00:00Z"),
+		"{created:?}"
+	);
+	assert_eq!(
+		created["data"]["scope"]["accessEndAt"].as_str(),
+		Some("2026-12-31T23:59:00Z"),
+		"{created:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_create_user_accepts_datetime_local_access_dates() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let suffix = Uuid::new_v4();
+	let email = format!("datetime-local-window-{suffix}@example.com");
+	let username = format!("datetime_local_window_{suffix}");
+	let create_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": email,
+			"username": username,
+			"role": "user",
+			"access_start_at": "2026-01-01T00:00",
+			"access_end_at": "2026-12-31T23:59"
+		}
+	});
+	let create_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&admin_token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_res = app.oneshot(create_req).await?;
+	let create_status = create_res.status();
+	let create_bytes =
+		axum::body::to_bytes(create_res.into_body(), usize::MAX).await?;
+	assert_eq!(
+		create_status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&create_bytes)
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_viewer_cannot_create_user() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
