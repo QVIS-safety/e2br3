@@ -200,13 +200,7 @@ fn normalize_admin_privileges(
 		entry.can_review = entry.can_review || privilege.can_review;
 		entry.can_lock = entry.can_lock || privilege.can_lock;
 	}
-	let normalized = out.into_values().collect::<Vec<_>>();
-	if normalized.is_empty() {
-		return Err(Error::BadRequest {
-			message: "role must define at least one privilege".to_string(),
-		});
-	}
-	Ok(normalized)
+	Ok(out.into_values().collect::<Vec<_>>())
 }
 
 const ADMIN_ROLE_MENU_KEYS: &[&str] = &[

@@ -1094,6 +1094,41 @@ async fn test_role_admin_api_defaults_visible_name_to_role_id() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let role_name = format!("qa_empty_{}", Uuid::new_v4().simple());
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/roles".to_string(),
+		Some(json!({
+			"data": {
+				"role_name": role_name,
+				"display_name": "QA empty privilege role",
+				"description": "Created before privileges are assigned",
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(value["canonical_role_id"], role_name);
+	assert_eq!(value["privileges"].as_array().map(Vec::len), Some(0));
+	assert_eq!(value["can_view"].as_bool(), Some(false));
+	assert_eq!(value["can_admin"].as_bool(), Some(false));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
