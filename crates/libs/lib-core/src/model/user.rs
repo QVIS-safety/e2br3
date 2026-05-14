@@ -272,7 +272,7 @@ impl UserBmc {
 			let username = username
 				.map(|value| value.trim().to_string())
 				.filter(|value| !value.is_empty())
-				.unwrap_or_else(|| email.clone());
+				.ok_or_else(|| Error::Store("username is required".to_string()))?;
 			let access_sender_ids = Self::serialize_id_scope(access_sender_ids);
 			let access_product_ids = Self::serialize_id_scope(access_product_ids);
 			let access_study_ids = Self::serialize_id_scope(access_study_ids);

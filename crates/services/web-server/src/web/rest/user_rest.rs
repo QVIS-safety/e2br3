@@ -398,10 +398,17 @@ pub async fn create_user(
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let (role, permission_profile_id) =
 		normalize_user_role_and_profile(data.role, data.permission_profile_id);
+	let username = data
+		.username
+		.map(|value| value.trim().to_string())
+		.filter(|value| !value.is_empty())
+		.ok_or_else(|| Error::BadRequest {
+			message: "name is required".to_string(),
+		})?;
 	let create = UserForCreate {
 		organization_id,
 		email: data.email,
-		username: data.username,
+		username: Some(username),
 		pwd_clear: initial_password(data.pwd_clear),
 		role,
 		permission_profile_id,
