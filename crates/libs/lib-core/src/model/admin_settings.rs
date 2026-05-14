@@ -65,6 +65,12 @@ impl AdminSettingsBmc {
 			ROLE_SPONSOR_ADMIN_CRO,
 			ROLE_SPONSOR_ADMIN_COMPANY,
 			ROLE_USER,
+			"manager",
+			"pvm",
+			"head_pv",
+			"pvs",
+			"viewer",
+			"sponsor",
 		]
 		.into_iter()
 		.map(str::to_string)

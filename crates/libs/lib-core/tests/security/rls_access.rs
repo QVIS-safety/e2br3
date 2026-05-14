@@ -3,7 +3,8 @@ use crate::common::{
 	set_current_user, unique_suffix, Result,
 };
 use lib_core::ctx::{
-	Ctx, ROLE_SYSTEM_ADMIN, ROLE_USER, SYSTEM_ORG_ID, SYSTEM_USER_ID,
+	Ctx, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN, ROLE_USER, SYSTEM_ORG_ID,
+	SYSTEM_USER_ID,
 };
 use lib_core::model::case::CaseBmc;
 use lib_core::model::organization::{OrganizationBmc, OrganizationForCreate};
@@ -63,6 +64,7 @@ async fn create_user(
 		access_product_ids: None,
 		access_study_ids: None,
 		access_blind_allowed: None,
+		active_sender_identifier: None,
 	};
 	let user_id = UserBmc::create(ctx, mm, user_c).await?;
 	Ok(user_id)
@@ -141,6 +143,46 @@ async fn test_rls_user_org_isolation() -> Result<()> {
 	let err = UserBmc::get::<lib_core::model::user::User>(&user_ctx, &mm, user2_id)
 		.await
 		.unwrap_err();
+	assert!(matches!(err, ModelError::EntityUuidNotFound { .. }));
+	dbx.rollback_txn().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_rls_sponsor_admin_cannot_bypass_org_isolation() -> Result<()> {
+	let mm = init_test_mm().await;
+	let admin_ctx = Ctx::new(
+		system_user_id(),
+		system_org_id(),
+		ROLE_SYSTEM_ADMIN.to_string(),
+	)?;
+
+	let org1_id = create_org(&mm, &admin_ctx).await?;
+	let sponsor_admin_id =
+		create_user(&mm, &admin_ctx, org1_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+
+	let org2_id = create_org(&mm, &admin_ctx).await?;
+	let user2_id = create_user(&mm, &admin_ctx, org2_id, ROLE_USER).await?;
+
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	enable_rls(&mm).await?;
+	set_full_context_dbx(dbx, sponsor_admin_id, org1_id, ROLE_SPONSOR_ADMIN_CRO)
+		.await?;
+	let sponsor_ctx = Ctx::new(
+		sponsor_admin_id,
+		org1_id,
+		ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+
+	let users = UserBmc::list(&sponsor_ctx, &mm, None, None).await?;
+	assert!(!users.iter().any(|u| u.id == user2_id));
+
+	let err =
+		UserBmc::get::<lib_core::model::user::User>(&sponsor_ctx, &mm, user2_id)
+			.await
+			.unwrap_err();
 	assert!(matches!(err, ModelError::EntityUuidNotFound { .. }));
 	dbx.rollback_txn().await?;
 	Ok(())

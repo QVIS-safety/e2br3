@@ -40,6 +40,7 @@ pub struct CaseVersionForCreate {
 #[derive(Debug, Clone, FromRow, Serialize)]
 pub struct AuditLog {
 	pub id: i64,
+	pub organization_id: Uuid,
 	pub table_name: String,
 	pub record_id: Uuid,
 	pub action: String, // CREATE, UPDATE, DELETE, SUBMIT, NULLIFY
@@ -101,6 +102,7 @@ const LIST_LIMIT_MAX: i64 = 5000;
 #[derive(Iden)]
 enum AuditLogIden {
 	Id,
+	OrganizationId,
 	TableName,
 	RecordId,
 	Action,
@@ -227,8 +229,16 @@ impl AuditLogBmc {
 		mm: &ModelManager,
 		audit_c: AuditLogForCreate,
 	) -> Result<i64> {
+		set_full_context_dbx(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
 		let user_id = ctx.user_id();
-		let sql = "INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, changed_fields, old_values, new_values, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id";
+		let organization_id = ctx.organization_id();
+		let sql = "INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, changed_fields, old_values, new_values, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id";
 
 		let (id,) = mm
 			.dbx()
@@ -236,6 +246,7 @@ impl AuditLogBmc {
 				sqlx::query_as::<_, (i64,)>(sql)
 					.bind(audit_c.table_name)
 					.bind(audit_c.record_id)
+					.bind(organization_id)
 					.bind(audit_c.action)
 					.bind(user_id)
 					.bind(audit_c.reason_for_change)
@@ -262,6 +273,7 @@ impl AuditLogBmc {
 			.from(Self::table_ref())
 			.columns([
 				AuditLogIden::Id,
+				AuditLogIden::OrganizationId,
 				AuditLogIden::TableName,
 				AuditLogIden::RecordId,
 				AuditLogIden::Action,

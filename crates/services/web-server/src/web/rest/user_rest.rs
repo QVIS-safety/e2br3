@@ -106,7 +106,8 @@ pub struct CurrentUserProfileView {
 
 #[derive(Debug, Deserialize)]
 pub struct UserForCreateAdminPayload {
-	pub organization_id: Uuid,
+	#[serde(default)]
+	pub organization_id: Option<Uuid>,
 	pub email: String,
 	pub username: Option<String>,
 	pub pwd_clear: Option<String>,
@@ -386,14 +387,11 @@ pub async fn create_user(
 		return Err(sender_scope_assignment_forbidden());
 	}
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
-	let mut organization_id = data.organization_id;
+	let organization_id = ctx.organization_id();
 	if organization_id.is_nil() {
-		if ctx.organization_id().is_nil() {
-			return Err(Error::BadRequest {
-				message: "organization_id is required".to_string(),
-			});
-		}
-		organization_id = ctx.organization_id();
+		return Err(Error::BadRequest {
+			message: "organization context is required".to_string(),
+		});
 	}
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let (role, permission_profile_id) =

@@ -1,7 +1,11 @@
-use crate::common::{cookie_header, init_test_mm, seed_org_with_all_roles, Result};
-use axum::body::Body;
+use crate::common::{
+	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
+	system_user_id, Result,
+};
+use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
+use lib_core::ctx::ROLE_SYSTEM_ADMIN;
 use serde_json::json;
 use serial_test::serial;
 use tower::ServiceExt;
@@ -37,6 +41,125 @@ async fn test_non_admin_cannot_list_organizations() -> Result<()> {
 			"{role} should be forbidden from listing organizations"
 		);
 	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_sponsor_admin_cannot_access_organization_admin_endpoints() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_all_roles(&mm).await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let create_body = json!({
+		"data": {
+			"name": format!("Sponsor Admin Blocked {}", Uuid::new_v4()),
+			"org_type": "internal",
+			"contact_email": format!("blocked-{}@example.com", Uuid::new_v4())
+		}
+	});
+	let update_body = json!({
+		"data": {
+			"name": format!("Sponsor Admin Updated {}", Uuid::new_v4())
+		}
+	});
+
+	let requests = [
+		Request::builder()
+			.method("GET")
+			.uri("/api/organizations")
+			.header("cookie", cookie_header(&token.to_string()))
+			.body(Body::empty())?,
+		Request::builder()
+			.method("GET")
+			.uri(format!("/api/organizations/{}", seed.org_id))
+			.header("cookie", cookie_header(&token.to_string()))
+			.body(Body::empty())?,
+		Request::builder()
+			.method("POST")
+			.uri("/api/organizations")
+			.header("cookie", cookie_header(&token.to_string()))
+			.header("content-type", "application/json")
+			.body(Body::from(create_body.to_string()))?,
+		Request::builder()
+			.method("PUT")
+			.uri(format!("/api/organizations/{}", seed.org_id))
+			.header("cookie", cookie_header(&token.to_string()))
+			.header("content-type", "application/json")
+			.body(Body::from(update_body.to_string()))?,
+		Request::builder()
+			.method("DELETE")
+			.uri(format!("/api/organizations/{}", seed.org_id))
+			.header("cookie", cookie_header(&token.to_string()))
+			.body(Body::empty())?,
+	];
+
+	for req in requests {
+		let res = app.clone().oneshot(req).await?;
+		assert_eq!(res.status(), StatusCode::FORBIDDEN);
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_system_admin_can_create_and_list_organizations() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_all_roles(&mm).await?;
+	let system_admin = insert_user(
+		&mm,
+		seed.org_id,
+		ROLE_SYSTEM_ADMIN,
+		system_user_id(),
+		Some("systempwd"),
+	)
+	.await?;
+	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let suffix = Uuid::new_v4();
+	let create_body = json!({
+		"data": {
+			"name": format!("System Admin Org {suffix}"),
+			"org_type": "internal",
+			"contact_email": format!("system-admin-org-{suffix}@example.com")
+		}
+	});
+	let create_req = Request::builder()
+		.method("POST")
+		.uri("/api/organizations")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_res = app.clone().oneshot(create_req).await?;
+	assert_eq!(create_res.status(), StatusCode::CREATED);
+
+	let body = to_bytes(create_res.into_body(), usize::MAX).await?;
+	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	let created_id = payload["data"]["id"]
+		.as_str()
+		.ok_or("expected created organization id")?;
+
+	let list_req = Request::builder()
+		.method("GET")
+		.uri("/api/organizations")
+		.header("cookie", cookie_header(&token.to_string()))
+		.body(Body::empty())?;
+	let list_res = app.oneshot(list_req).await?;
+	assert_eq!(list_res.status(), StatusCode::OK);
+	let body = to_bytes(list_res.into_body(), usize::MAX).await?;
+	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	let orgs = payload["data"]
+		.as_array()
+		.ok_or("expected organization array")?;
+	assert!(
+		orgs.iter().any(|org| org["id"] == created_id),
+		"system admin should see created organization in the list"
+	);
 
 	Ok(())
 }

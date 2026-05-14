@@ -427,6 +427,7 @@ CREATE INDEX idx_e_signatures_action ON e_signatures(action, signed_at DESC);
     -- ============================================================================
 CREATE TABLE if NOT EXISTS audit_logs (
     id BIGSERIAL PRIMARY KEY,
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
     table_name VARCHAR(100) NOT NULL,
     record_id UUID NOT NULL,
     action VARCHAR(50) NOT NULL,
@@ -448,6 +449,9 @@ CREATE TABLE if NOT EXISTS audit_logs (
 CREATE INDEX idx_audit_logs_table_record ON audit_logs(table_name, record_id);
 CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
 CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX idx_audit_logs_org_created_at ON audit_logs(organization_id, created_at DESC);
+CREATE INDEX idx_audit_logs_org_table_record_created_at ON audit_logs(organization_id, table_name, record_id, created_at DESC);
+CREATE INDEX idx_audit_logs_org_user_created_at ON audit_logs(organization_id, user_id, created_at DESC);
 CREATE INDEX idx_audit_logs_esignature ON audit_logs(e_signature_id);
 CREATE INDEX idx_audit_logs_changed_fields ON audit_logs USING GIN (changed_fields);
 CREATE INDEX idx_audit_logs_prev_hash ON audit_logs(prev_hash);
@@ -745,11 +749,35 @@ ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs FORCE ROW LEVEL SECURITY;
 GRANT e2br3_auditor_role TO app_user;
 
+-- Function to get current organization from session. Defined here as well so
+-- audit RLS policies can reference it before the general tenant RLS section.
+CREATE OR REPLACE FUNCTION current_organization_id() RETURNS UUID AS $$
+BEGIN
+    RETURN NULLIF(current_setting('app.current_organization_id', true), '')::UUID;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN NULL;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- Function to check if current user has safety-database admin bypass.
+CREATE OR REPLACE FUNCTION is_current_user_admin() RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN COALESCE(current_setting('app.current_user_role', true), '') = 'system_admin';
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN false;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
 -- Policy 1: Allow INSERT only for application role (append-only)
 CREATE POLICY audit_logs_append_only ON audit_logs
     FOR INSERT
     TO e2br3_app_role
-    WITH CHECK (true);
+    WITH CHECK (
+        organization_id = current_organization_id()
+        OR is_current_user_admin()
+    );
 
 -- Policy 2: Deny UPDATE and DELETE for application role
 CREATE POLICY audit_logs_no_modify ON audit_logs
@@ -777,6 +805,10 @@ CREATE POLICY audit_logs_read_for_admin_manager ON audit_logs
             'manager',
             'pvm',
             'head_pv'
+        )
+        AND (
+            organization_id = current_organization_id()
+            OR is_current_user_admin()
         )
     );
 
@@ -813,11 +845,7 @@ $$ LANGUAGE plpgsql STABLE;
 -- Function to check if current user has safety-database admin bypass.
 CREATE OR REPLACE FUNCTION is_current_user_admin() RETURNS BOOLEAN AS $$
 BEGIN
-    RETURN COALESCE(current_setting('app.current_user_role', true), '') IN (
-        'system_admin',
-        'sponsor_admin_cro',
-        'sponsor_admin_company'
-    );
+    RETURN COALESCE(current_setting('app.current_user_role', true), '') = 'system_admin';
 EXCEPTION
     WHEN OTHERS THEN
         RETURN false;
@@ -1154,8 +1182,14 @@ CREATE POLICY users_org_isolation_select ON users
 CREATE POLICY users_org_isolation_modify ON users
     FOR ALL
     TO e2br3_app_role
-    USING (is_current_user_admin())
-    WITH CHECK (is_current_user_admin());
+    USING (
+        organization_id = current_organization_id()
+        OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id()
+        OR is_current_user_admin()
+    );
 
 -- ============================================================================
 -- 9.13 Organizations Table RLS

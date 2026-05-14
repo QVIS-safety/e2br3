@@ -200,6 +200,38 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS access_blind_allowed BOOLEAN",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS active_sender_identifier TEXT",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS permission_profile_id TEXT",
+		"ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS organization_id UUID",
+		"UPDATE audit_logs
+		 SET organization_id = COALESCE(
+		 	NULLIF(new_values->>'organization_id', '')::UUID,
+		 	NULLIF(old_values->>'organization_id', '')::UUID
+		 )
+		 WHERE organization_id IS NULL
+		   AND COALESCE(new_values->>'organization_id', old_values->>'organization_id') IS NOT NULL",
+		"UPDATE audit_logs l
+		 SET organization_id = l.record_id
+		 WHERE l.organization_id IS NULL
+		   AND l.table_name = 'organizations'
+		   AND EXISTS (SELECT 1 FROM organizations o WHERE o.id = l.record_id)",
+		"UPDATE audit_logs l
+		 SET organization_id = c.organization_id
+		 FROM cases c
+		 WHERE l.organization_id IS NULL
+		   AND (
+		   	(l.table_name = 'cases' AND l.record_id = c.id)
+		   	OR NULLIF(COALESCE(l.new_values->>'case_id', l.old_values->>'case_id'), '')::UUID = c.id
+		   )",
+		"UPDATE audit_logs l
+		 SET organization_id = c.organization_id
+		 FROM case_submissions cs
+		 JOIN cases c ON c.id = cs.case_id
+		 WHERE l.organization_id IS NULL
+		   AND NULLIF(COALESCE(l.new_values->>'submission_id', l.old_values->>'submission_id'), '')::UUID = cs.id",
+		"UPDATE audit_logs
+		 SET organization_id = '00000000-0000-0000-0000-000000000000'::UUID
+		 WHERE organization_id IS NULL",
+		"ALTER TABLE audit_logs ALTER COLUMN organization_id SET NOT NULL",
+		"ALTER TABLE audit_logs ALTER COLUMN organization_id SET DEFAULT COALESCE(current_organization_id(), '00000000-0000-0000-0000-000000000000'::UUID)",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS description TEXT",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS privileges_json JSONB NOT NULL DEFAULT '[]'::jsonb",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS built_in BOOLEAN NOT NULL DEFAULT false",
@@ -270,18 +302,20 @@ async fn apply_compatibility_alters(
 		"CREATE POLICY users_org_isolation_modify ON users
 		 FOR ALL
 		 TO e2br3_app_role
-		 USING (is_current_user_admin())
-		 WITH CHECK (is_current_user_admin())",
+		 USING (
+		 	organization_id = current_organization_id()
+		 	OR is_current_user_admin()
+		 )
+		 WITH CHECK (
+		 	organization_id = current_organization_id()
+		 	OR is_current_user_admin()
+		 )",
 	)
 	.await?;
 	sqlx::query(
 		"CREATE OR REPLACE FUNCTION is_current_user_admin() RETURNS BOOLEAN AS $$
 		BEGIN
-			    RETURN COALESCE(current_setting('app.current_user_role', true), '') IN (
-			        'system_admin',
-			        'sponsor_admin_cro',
-			        'sponsor_admin_company'
-			    );
+			    RETURN COALESCE(current_setting('app.current_user_role', true), '') = 'system_admin';
 		EXCEPTION
 		    WHEN OTHERS THEN
 		        RETURN false;
@@ -289,6 +323,35 @@ async fn apply_compatibility_alters(
 		$$ LANGUAGE plpgsql STABLE",
 	)
 	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"CREATE INDEX IF NOT EXISTS idx_audit_logs_org_created_at ON audit_logs(organization_id, created_at DESC)",
+	)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"CREATE INDEX IF NOT EXISTS idx_audit_logs_org_table_record_created_at ON audit_logs(organization_id, table_name, record_id, created_at DESC)",
+	)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"CREATE INDEX IF NOT EXISTS idx_audit_logs_org_user_created_at ON audit_logs(organization_id, user_id, created_at DESC)",
+	)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query("DROP POLICY IF EXISTS audit_logs_append_only ON audit_logs")
+		.execute(&mut *tx)
+		.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY audit_logs_append_only ON audit_logs
+		 FOR INSERT
+		 TO e2br3_app_role
+		 WITH CHECK (
+		 	organization_id = current_organization_id()
+		 	OR is_current_user_admin()
+		 )",
+	)
 	.await?;
 	sqlx::query(
 		"DROP POLICY IF EXISTS audit_logs_read_for_admin_manager ON audit_logs",
@@ -304,7 +367,14 @@ async fn apply_compatibility_alters(
 		 		COALESCE(current_setting('app.current_user_role', true), '') IN (
 		 			'system_admin',
 		 			'sponsor_admin_cro',
-		 			'sponsor_admin_company'
+		 			'sponsor_admin_company',
+		 			'manager',
+		 			'pvm',
+		 			'head_pv'
+		 		)
+		 		AND (
+		 			organization_id = current_organization_id()
+		 			OR is_current_user_admin()
 		 		)
 		 	)",
 	)

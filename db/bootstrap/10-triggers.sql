@@ -114,6 +114,65 @@ CREATE TRIGGER trg_audit_logs_hash_chain_before_insert
     BEFORE INSERT ON audit_logs
     FOR EACH ROW EXECUTE FUNCTION audit_logs_hash_chain_before_insert();
 
+-- Resolve the tenant owner for each audit log row. Tables with their own
+-- organization_id use that value; organization rows own their own audit
+-- entries; child case/submission rows resolve through the parent case.
+CREATE OR REPLACE FUNCTION audit_log_organization_id(
+    p_table_name TEXT,
+    p_record_id UUID,
+    p_old_values JSONB,
+    p_new_values JSONB
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_values JSONB;
+    v_org_id UUID;
+    v_case_id UUID;
+    v_submission_id UUID;
+BEGIN
+    IF p_table_name = 'organizations' THEN
+        RETURN p_record_id;
+    END IF;
+
+    v_values := COALESCE(p_new_values, p_old_values, '{}'::JSONB);
+    v_org_id := NULLIF(v_values->>'organization_id', '')::UUID;
+    IF v_org_id IS NOT NULL THEN
+        RETURN v_org_id;
+    END IF;
+
+    v_case_id := NULLIF(v_values->>'case_id', '')::UUID;
+    IF v_case_id IS NOT NULL THEN
+        SELECT c.organization_id INTO v_org_id
+        FROM cases c
+        WHERE c.id = v_case_id;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
+    v_submission_id := NULLIF(v_values->>'submission_id', '')::UUID;
+    IF v_submission_id IS NOT NULL THEN
+        SELECT c.organization_id INTO v_org_id
+        FROM case_submissions cs
+        JOIN cases c ON c.id = cs.case_id
+        WHERE cs.id = v_submission_id;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
+    RETURN COALESCE(
+        current_organization_id(),
+        '00000000-0000-0000-0000-000000000000'::UUID
+    );
+END;
+$$;
+
 -- Improved audit trigger function using helper function
 CREATE OR REPLACE FUNCTION audit_trigger_function()
 RETURNS TRIGGER
@@ -131,10 +190,11 @@ BEGIN
 
     IF TG_OP = 'INSERT' THEN
         v_changed_fields := compute_audit_changed_fields(NULL, to_jsonb(NEW));
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.id,
+            audit_log_organization_id(TG_TABLE_NAME, NEW.id, NULL, to_jsonb(NEW)),
             'CREATE',
             v_user_id,
             get_current_change_reason(),
@@ -156,10 +216,11 @@ BEGIN
         END IF;
 
         v_changed_fields := compute_audit_changed_fields(v_old_business, v_new_business);
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.id,
+            audit_log_organization_id(TG_TABLE_NAME, NEW.id, to_jsonb(OLD), to_jsonb(NEW)),
             'UPDATE',
             v_user_id,
             get_current_change_reason(),
@@ -172,10 +233,11 @@ BEGIN
 
     ELSIF TG_OP = 'DELETE' THEN
         v_changed_fields := compute_audit_changed_fields(to_jsonb(OLD), NULL);
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             OLD.id,
+            audit_log_organization_id(TG_TABLE_NAME, OLD.id, to_jsonb(OLD), NULL),
             'DELETE',
             v_user_id,
             get_current_change_reason(),
@@ -210,10 +272,11 @@ BEGIN
 
     IF TG_OP = 'INSERT' THEN
         v_changed_fields := compute_audit_changed_fields(NULL, to_jsonb(NEW));
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.audit_id,
+            audit_log_organization_id(TG_TABLE_NAME, NEW.audit_id, NULL, to_jsonb(NEW)),
             'CREATE',
             v_user_id,
             get_current_change_reason(),
@@ -234,10 +297,11 @@ BEGIN
         END IF;
 
         v_changed_fields := compute_audit_changed_fields(v_old_business, v_new_business);
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.audit_id,
+            audit_log_organization_id(TG_TABLE_NAME, NEW.audit_id, to_jsonb(OLD), to_jsonb(NEW)),
             'UPDATE',
             v_user_id,
             get_current_change_reason(),
@@ -250,10 +314,11 @@ BEGIN
 
     ELSIF TG_OP = 'DELETE' THEN
         v_changed_fields := compute_audit_changed_fields(to_jsonb(OLD), NULL);
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             OLD.audit_id,
+            audit_log_organization_id(TG_TABLE_NAME, OLD.audit_id, to_jsonb(OLD), NULL),
             'DELETE',
             v_user_id,
             get_current_change_reason(),
@@ -288,10 +353,11 @@ BEGIN
 
     IF TG_OP = 'INSERT' THEN
         v_changed_fields := compute_audit_changed_fields(NULL, to_jsonb(NEW));
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.submission_id,
+            audit_log_organization_id(TG_TABLE_NAME, NEW.submission_id, NULL, to_jsonb(NEW)),
             'CREATE',
             v_user_id,
             get_current_change_reason(),
@@ -310,10 +376,11 @@ BEGIN
         END IF;
 
         v_changed_fields := compute_audit_changed_fields(v_old_business, v_new_business);
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.submission_id,
+            audit_log_organization_id(TG_TABLE_NAME, NEW.submission_id, to_jsonb(OLD), to_jsonb(NEW)),
             'UPDATE',
             v_user_id,
             get_current_change_reason(),
@@ -326,10 +393,11 @@ BEGIN
 
     ELSIF TG_OP = 'DELETE' THEN
         v_changed_fields := compute_audit_changed_fields(to_jsonb(OLD), NULL);
-        INSERT INTO audit_logs (table_name, record_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             OLD.submission_id,
+            audit_log_organization_id(TG_TABLE_NAME, OLD.submission_id, to_jsonb(OLD), NULL),
             'DELETE',
             v_user_id,
             get_current_change_reason(),

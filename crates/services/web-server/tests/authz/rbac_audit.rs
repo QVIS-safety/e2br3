@@ -1,11 +1,11 @@
 use crate::common::{
 	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
-	seed_org_with_users, system_user_id, Result,
+	seed_org_with_users, seed_two_orgs_manager_cases, system_user_id, Result,
 };
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
-use lib_core::ctx::ROLE_SYSTEM_ADMIN;
+use lib_core::ctx::{ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN};
 use serde_json::json;
 use serial_test::serial;
 use tower::ServiceExt;
@@ -62,6 +62,90 @@ async fn test_manager_can_list_audit_logs() -> Result<()> {
 		.body(Body::empty())?;
 	let res = app.oneshot(req).await?;
 	assert_eq!(res.status(), StatusCode::OK);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_admin_audit_log_list_is_limited_to_own_org() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_two_orgs_manager_cases(&mm).await?;
+	let admin = insert_user(
+		&mm,
+		seed.org1_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+		system_user_id(),
+		Some("adminpwd"),
+	)
+	.await?;
+	let app = web_server::app(mm);
+
+	let admin_token = generate_web_token(&admin.email, admin.token_salt)?;
+	let req = Request::builder()
+		.method("GET")
+		.uri("/api/audit-logs")
+		.header("cookie", cookie_header(&admin_token.to_string()))
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	let logs = payload["data"]
+		.as_array()
+		.ok_or("expected audit log array")?;
+	assert!(
+		!logs.is_empty(),
+		"expected admin to see own-organization audit logs"
+	);
+	assert!(
+		logs.iter().all(|log| {
+			log["organization_id"] == seed.org1_id.to_string()
+				&& log["record_id"] != seed.org2_id.to_string()
+				&& log["record_id"] != seed.user2.id.to_string()
+				&& log["record_id"] != seed.case_org2.to_string()
+		}),
+		"admin should not see audit logs from another organization: {logs:#?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_system_admin_audit_log_list_can_cross_orgs() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_two_orgs_manager_cases(&mm).await?;
+	let system_admin = insert_user(
+		&mm,
+		seed.org1_id,
+		ROLE_SYSTEM_ADMIN,
+		system_user_id(),
+		Some("systempwd"),
+	)
+	.await?;
+	let app = web_server::app(mm);
+
+	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let req = Request::builder()
+		.method("GET")
+		.uri("/api/audit-logs")
+		.header("cookie", cookie_header(&token.to_string()))
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	let logs = payload["data"]
+		.as_array()
+		.ok_or("expected audit log array")?;
+	assert!(
+		logs.iter()
+			.any(|log| log["organization_id"] == seed.org2_id.to_string()),
+		"system admin should be able to see another organization's audit logs"
+	);
 
 	Ok(())
 }
