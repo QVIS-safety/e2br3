@@ -464,6 +464,7 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 			json!({
 				"data": {
 					"name": "Blocked By System",
+					"description": "Created without client-provided profile id",
 					"privileges": [
 						{
 							"menu_key": "case",
@@ -486,6 +487,10 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 		.ok_or("expected generated profile_id")?;
 	Uuid::parse_str(profile_id)?;
 	assert_eq!(role_json["name"], "Blocked By System");
+	assert_eq!(
+		role_json["description"],
+		"Created without client-provided profile id"
+	);
 	Ok(())
 }
 
