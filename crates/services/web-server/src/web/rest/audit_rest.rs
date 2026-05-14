@@ -1,6 +1,6 @@
 // Audit Log REST endpoints
 
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::model::acs::{has_permission, AUDIT_LIST};
@@ -13,15 +13,38 @@ use lib_rest_core::rest_params::ParamsList;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_web::middleware::mw_auth::CtxW;
 use lib_web::{Error as WebError, Result};
+use serde::Deserialize;
+use serde_json::Value as JsonValue;
 use uuid::Uuid;
 
 fn require_audit_permission(ctx: &lib_core::ctx::Ctx) -> Result<()> {
-	if !has_permission(ctx.role(), AUDIT_LIST) {
+	if !ctx.is_system_admin() && !has_permission(ctx.role(), AUDIT_LIST) {
 		return Err(WebError::PermissionDenied {
 			required_permission: "AuditLog.List".to_string(),
 		});
 	}
 	Ok(())
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AuditRecordQuery {
+	pub field: Option<String>,
+}
+
+fn json_object_has_key(value: &Option<JsonValue>, field: &str) -> bool {
+	value
+		.as_ref()
+		.and_then(JsonValue::as_object)
+		.is_some_and(|object| object.contains_key(field))
+}
+
+fn audit_log_touches_field(log: &AuditLog, field: &str) -> bool {
+	if log.action == "UPDATE" {
+		return json_object_has_key(&log.changed_fields, field);
+	}
+	json_object_has_key(&log.changed_fields, field)
+		|| json_object_has_key(&log.old_values, field)
+		|| json_object_has_key(&log.new_values, field)
 }
 
 /// GET /api/audit-logs
@@ -57,6 +80,7 @@ pub async fn list_audit_logs_by_record(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path((table_name, record_id)): Path<(String, Uuid)>,
+	Query(query): Query<AuditRecordQuery>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<AuditLog>>>)> {
 	let ctx = ctx_w.0;
 	tracing::debug!(
@@ -69,9 +93,17 @@ pub async fn list_audit_logs_by_record(
 	// Verify audit permission
 	require_audit_permission(&ctx)?;
 
-	let logs = AuditLogBmc::list_by_record(&ctx, &mm, &table_name, record_id)
+	let mut logs = AuditLogBmc::list_by_record(&ctx, &mm, &table_name, record_id)
 		.await
 		.map_err(WebError::Model)?;
+	if let Some(field) = query
+		.field
+		.as_deref()
+		.map(str::trim)
+		.filter(|field| !field.is_empty())
+	{
+		logs.retain(|log| audit_log_touches_field(log, field));
+	}
 
 	Ok((StatusCode::OK, Json(DataRestResult { data: logs })))
 }

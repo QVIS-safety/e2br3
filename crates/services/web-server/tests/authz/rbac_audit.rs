@@ -1,10 +1,12 @@
 use crate::common::{
-	cookie_header, init_test_mm, seed_org_with_all_roles, seed_org_with_users,
-	Result,
+	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
+	seed_org_with_users, system_user_id, Result,
 };
-use axum::body::Body;
+use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
+use lib_core::ctx::ROLE_SYSTEM_ADMIN;
+use serde_json::json;
 use serial_test::serial;
 use tower::ServiceExt;
 
@@ -117,6 +119,36 @@ async fn test_manager_can_list_audit_logs_by_record() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_system_admin_can_list_audit_logs_by_record() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let system_admin = insert_user(
+		&mm,
+		seed.org_id,
+		ROLE_SYSTEM_ADMIN,
+		system_user_id(),
+		Some("systempwd"),
+	)
+	.await?;
+	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!(
+			"/api/audit-logs/by-record/users/{}",
+			seed.viewer.id
+		))
+		.header("cookie", cookie_header(&token.to_string()))
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_user_and_viewer_cannot_list_audit_logs_by_record() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;
@@ -142,6 +174,80 @@ async fn test_user_and_viewer_cannot_list_audit_logs_by_record() -> Result<()> {
 			"{role} should be forbidden from reading audit logs by record"
 		);
 	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_admin_can_filter_user_audit_logs_by_field() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let email_update = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.viewer.id))
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({
+				"data": {
+					"email": format!("field-filter-{}@example.com", seed.viewer.id)
+				}
+			})
+			.to_string(),
+		))?;
+	let email_res = app.clone().oneshot(email_update).await?;
+	assert_eq!(email_res.status(), StatusCode::OK);
+
+	let username = format!("Username Only Audit Change {}", seed.viewer.id);
+	let username_update = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.viewer.id))
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({
+				"data": {
+					"username": username
+				}
+			})
+			.to_string(),
+		))?;
+	let username_res = app.clone().oneshot(username_update).await?;
+	assert_eq!(username_res.status(), StatusCode::OK);
+
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!(
+			"/api/audit-logs/by-record/users/{}?field=email",
+			seed.viewer.id
+		))
+		.header("cookie", cookie_header(&token.to_string()))
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	let logs = payload["data"]
+		.as_array()
+		.ok_or("expected audit log array")?;
+	assert!(!logs.is_empty(), "expected at least one email audit log");
+	assert!(
+		logs.iter().all(|log| {
+			let has_email = log["changed_fields"].get("email").is_some()
+				|| log["old_values"].get("email").is_some()
+				|| log["new_values"].get("email").is_some();
+			let username_only = log["action"] == "UPDATE"
+				&& log["changed_fields"].get("username").is_some()
+				&& log["changed_fields"].get("email").is_none();
+			has_email && !username_only
+		}),
+		"field=email should only return logs touching email"
+	);
 
 	Ok(())
 }
