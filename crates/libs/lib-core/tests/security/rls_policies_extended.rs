@@ -2,7 +2,9 @@ use crate::common::{
 	begin_test_ctx, commit_test_ctx, create_case_fixture, init_test_mm,
 	rollback_test_ctx, set_current_user, unique_suffix, Result,
 };
-use lib_core::ctx::{Ctx, ROLE_ADMIN, ROLE_USER, SYSTEM_ORG_ID, SYSTEM_USER_ID};
+use lib_core::ctx::{
+	Ctx, ROLE_SYSTEM_ADMIN, ROLE_USER, SYSTEM_ORG_ID, SYSTEM_USER_ID,
+};
 use lib_core::model::case::CaseBmc;
 use lib_core::model::drug::{
 	DosageInformationBmc, DosageInformationForCreate, DrugActiveSubstanceBmc,
@@ -86,8 +88,7 @@ async fn create_user(
 		username: Some(format!("rls_user_{suffix}")),
 		pwd_clear: "pwd123".to_string(),
 		role: Some(ROLE_USER.to_string()),
-		first_name: None,
-		last_name: None,
+		permission_profile_id: None,
 		comments: None,
 		other_information: None,
 		access_start_at: None,
@@ -218,8 +219,11 @@ fn assert_denied<T>(res: core::result::Result<T, ModelError>) {
 #[tokio::test]
 async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 	let mm = init_test_mm().await;
-	let admin_ctx =
-		Ctx::new(system_user_id(), system_org_id(), ROLE_ADMIN.to_string())?;
+	let admin_ctx = Ctx::new(
+		system_user_id(),
+		system_org_id(),
+		ROLE_SYSTEM_ADMIN.to_string(),
+	)?;
 
 	let org1_id = create_org(&mm, &admin_ctx).await?;
 	let user1_id = create_user(&mm, &admin_ctx, org1_id).await?;
@@ -767,8 +771,11 @@ async fn test_rls_case_related_tables_org_isolation() -> Result<()> {
 #[tokio::test]
 async fn test_rls_terminology_admin_only() -> Result<()> {
 	let mm = init_test_mm().await;
-	let admin_ctx =
-		Ctx::new(system_user_id(), system_org_id(), ROLE_ADMIN.to_string())?;
+	let admin_ctx = Ctx::new(
+		system_user_id(),
+		system_org_id(),
+		ROLE_SYSTEM_ADMIN.to_string(),
+	)?;
 	let org1_id = create_org(&mm, &admin_ctx).await?;
 	let _user1_id = create_user(&mm, &admin_ctx, org1_id).await?;
 
@@ -782,7 +789,7 @@ async fn test_rls_terminology_admin_only() -> Result<()> {
 		.await?;
 	assert_eq!(count_user, 0);
 
-	set_org_context_dbx(dbx, org1_id, ROLE_ADMIN).await?;
+	set_org_context_dbx(dbx, org1_id, ROLE_SYSTEM_ADMIN).await?;
 	let _: (i64,) = dbx
 		.fetch_one(query_as::<_, (i64,)>("SELECT COUNT(*) FROM meddra_terms"))
 		.await?;

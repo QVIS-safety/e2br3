@@ -31,8 +31,7 @@ async fn test_user_create_ok() -> Result<()> {
 		username: Some(fx_username.to_string()),
 		pwd_clear: fx_pwd_clear.to_string(),
 		role: Some("user".to_string()),
-		first_name: Some("Test".to_string()),
-		last_name: Some("User".to_string()),
+		permission_profile_id: None,
 		comments: None,
 		other_information: None,
 		access_start_at: None,
@@ -76,8 +75,7 @@ async fn test_user_create_duplicate_email() -> Result<()> {
 		username: Some(fx_username_1.to_string()),
 		pwd_clear: "test_create_dup_email pwd 01".to_string(),
 		role: Some("user".to_string()),
-		first_name: Some("Test".to_string()),
-		last_name: Some("User".to_string()),
+		permission_profile_id: None,
 		comments: None,
 		other_information: None,
 		access_start_at: None,
@@ -93,8 +91,7 @@ async fn test_user_create_duplicate_email() -> Result<()> {
 		username: Some(fx_username_2.to_string()),
 		pwd_clear: "test_create_dup_email pwd 02".to_string(),
 		role: Some("user".to_string()),
-		first_name: Some("Test".to_string()),
-		last_name: Some("User".to_string()),
+		permission_profile_id: None,
 		comments: None,
 		other_information: None,
 		access_start_at: None,
@@ -140,8 +137,7 @@ async fn test_user_update_pwd_ok() -> Result<()> {
 		username: Some(fx_username.to_string()),
 		pwd_clear: fx_pwd_clear_1.to_string(),
 		role: Some("user".to_string()),
-		first_name: Some("Test".to_string()),
-		last_name: Some("User".to_string()),
+		permission_profile_id: None,
 		comments: None,
 		other_information: None,
 		access_start_at: None,
@@ -205,8 +201,7 @@ async fn test_user_update_ok() -> Result<()> {
 		username: Some(fx_username.to_string()),
 		pwd_clear: "test_update pwd 01".to_string(),
 		role: Some("user".to_string()),
-		first_name: Some("Test".to_string()),
-		last_name: Some("User".to_string()),
+		permission_profile_id: None,
 		comments: None,
 		other_information: None,
 		access_start_at: None,
@@ -220,10 +215,9 @@ async fn test_user_update_ok() -> Result<()> {
 	let user_id = UserBmc::create(&ctx, &mm, user_c).await?;
 	let user_u = UserForUpdate {
 		email: None,
-		username: None,
+		username: Some("Updated User".to_string()),
 		role: Some("admin".to_string()),
-		first_name: Some("Updated".to_string()),
-		last_name: None,
+		permission_profile_id: None,
 		comments: None,
 		other_information: None,
 		access_start_at: None,
@@ -240,7 +234,7 @@ async fn test_user_update_ok() -> Result<()> {
 	let user: User = UserBmc::get(&ctx, &mm, user_id).await?;
 
 	assert_eq!(user.role, "sponsor_admin_cro");
-	assert_eq!(user.first_name.as_deref(), Some("Updated"));
+	assert_eq!(user.username, "Updated User");
 	assert!(!user.active);
 
 	UserBmc::delete(&ctx, &mm, user_id).await?;

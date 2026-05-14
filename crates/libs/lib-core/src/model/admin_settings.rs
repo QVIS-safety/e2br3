@@ -4,8 +4,7 @@
 // stays in the REST layer. This BMC owns only the raw database operations.
 
 use crate::ctx::{
-	canonical_role, ROLE_HEAD_PV, ROLE_MANAGER, ROLE_PVM, ROLE_PVS, ROLE_SPONSOR,
-	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER, ROLE_VIEWER,
+	canonical_role, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER,
 };
 use crate::model::ModelManager;
 use crate::model::Result;
@@ -65,13 +64,7 @@ impl AdminSettingsBmc {
 		let mut roles = [
 			ROLE_SPONSOR_ADMIN_CRO,
 			ROLE_SPONSOR_ADMIN_COMPANY,
-			ROLE_MANAGER,
-			ROLE_PVM,
-			ROLE_HEAD_PV,
 			ROLE_USER,
-			ROLE_PVS,
-			ROLE_VIEWER,
-			ROLE_SPONSOR,
 		]
 		.into_iter()
 		.map(str::to_string)
@@ -80,7 +73,7 @@ impl AdminSettingsBmc {
 		let rows = mm
 			.dbx()
 			.fetch_all(sqlx::query_as::<_, (String,)>(
-				"SELECT role_name FROM app_roles WHERE active = true",
+				"SELECT role_name FROM permission_profiles WHERE active = true",
 			))
 			.await
 			.map_err(|e| crate::model::Error::Store(e.to_string()))?;

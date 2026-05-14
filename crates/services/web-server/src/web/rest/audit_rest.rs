@@ -26,7 +26,7 @@ fn require_audit_permission(ctx: &lib_core::ctx::Ctx) -> Result<()> {
 
 /// GET /api/audit-logs
 /// List all audit logs with optional filtering
-/// **Requires AuditLog.List permission (admin or manager)**
+/// **Requires AuditLog.List permission**
 pub async fn list_audit_logs(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -52,7 +52,7 @@ pub async fn list_audit_logs(
 
 /// GET /api/audit-logs/by-record/{table_name}/{record_id}
 /// List audit logs for a specific record
-/// **Requires AuditLog.List permission (admin or manager)**
+/// **Requires AuditLog.List permission**
 pub async fn list_audit_logs_by_record(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -78,7 +78,7 @@ pub async fn list_audit_logs_by_record(
 
 /// GET /api/cases/{case_id}/versions
 /// List all versions for a specific case
-/// **Requires AuditLog.Read permission (admin or manager)**
+/// **Requires AuditLog.Read permission**
 pub async fn list_case_versions(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -103,7 +103,7 @@ pub async fn list_case_versions(
 
 /// GET /api/audit-logs/verify-integrity
 /// Verifies the append-only audit hash chain integrity.
-/// **Requires AuditLog.List permission (admin or manager)**
+/// **Requires AuditLog.List permission**
 pub async fn verify_audit_log_integrity(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,

@@ -1,12 +1,12 @@
-// Admin Role BMC — manages the `app_roles` table.
+// Permission Profile BMC — manages the `permission_profiles` table.
 //
 // Business logic (privilege normalization, built-in role definitions, response
 // shape) stays in the REST layer. This BMC owns only the raw database operations
 // and the dynamic-role permission cache refresh.
 
 use crate::model::acs::{
-	permissions_for_menu_privileges, permissions_for_privileges,
-	remove_dynamic_role, replace_dynamic_roles, AdminMenuPrivilege,
+	permissions_for_menu_privileges, remove_dynamic_role, replace_dynamic_roles,
+	AdminMenuPrivilege,
 };
 use crate::model::ModelManager;
 use crate::model::Result;
@@ -17,7 +17,7 @@ use sqlx::FromRow;
 // -- Types
 
 #[derive(Debug, Clone, FromRow)]
-pub struct DbAdminRoleRow {
+pub struct DbPermissionProfileRow {
 	pub role_name: String,
 	pub display_name: String,
 	pub description: Option<String>,
@@ -33,7 +33,7 @@ pub struct DbAdminRoleRow {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AdminRoleCreateData {
+pub struct PermissionProfileCreateData {
 	pub role_name: String,
 	pub display_name: String,
 	pub description: Option<String>,
@@ -43,7 +43,7 @@ pub struct AdminRoleCreateData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AdminRoleUpdateData {
+pub struct PermissionProfileUpdateData {
 	pub display_name: String,
 	pub description: Option<String>,
 	pub privileges: SqlxJson<Vec<AdminMenuPrivilege>>,
@@ -51,51 +51,60 @@ pub struct AdminRoleUpdateData {
 	pub sponsor_admin_capable: bool,
 }
 
-const ROLE_SELECT: &str = r#"
+const PROFILE_SELECT: &str = r#"
 	SELECT role_name, display_name, description, can_view, can_review, can_lock, can_admin,
 	       privileges_json, active, built_in, editable, sponsor_admin_capable
-	FROM app_roles
+	FROM permission_profiles
 "#;
 
-// -- AdminRoleBmc
+// -- PermissionProfileBmc
 
-pub struct AdminRoleBmc;
+pub struct PermissionProfileBmc;
 
-impl AdminRoleBmc {
-	pub async fn list(mm: &ModelManager) -> Result<Vec<DbAdminRoleRow>> {
-		let sql = format!("{ROLE_SELECT} ORDER BY built_in DESC, display_name ASC");
+impl PermissionProfileBmc {
+	pub async fn list(mm: &ModelManager) -> Result<Vec<DbPermissionProfileRow>> {
+		let sql =
+			format!("{PROFILE_SELECT} ORDER BY built_in DESC, display_name ASC");
 		mm.dbx()
-			.fetch_all(sqlx::query_as::<_, DbAdminRoleRow>(&sql))
+			.fetch_all(sqlx::query_as::<_, DbPermissionProfileRow>(&sql))
 			.await
 			.map_err(|e| crate::model::Error::Store(e.to_string()))
 	}
 
 	pub async fn list_active_custom(
 		mm: &ModelManager,
-	) -> Result<Vec<DbAdminRoleRow>> {
+	) -> Result<Vec<DbPermissionProfileRow>> {
 		let sql = format!(
-			"{ROLE_SELECT} WHERE active = true AND built_in = false ORDER BY display_name ASC"
+			"{PROFILE_SELECT} WHERE active = true AND built_in = false ORDER BY display_name ASC"
 		);
 		mm.dbx()
-			.fetch_all(sqlx::query_as::<_, DbAdminRoleRow>(&sql))
+			.fetch_all(sqlx::query_as::<_, DbPermissionProfileRow>(&sql))
 			.await
 			.map_err(|e| crate::model::Error::Store(e.to_string()))
 	}
 
-	pub async fn get(mm: &ModelManager, role_name: &str) -> Result<DbAdminRoleRow> {
-		let sql = format!("{ROLE_SELECT} WHERE role_name = $1");
+	pub async fn get(
+		mm: &ModelManager,
+		role_name: &str,
+	) -> Result<DbPermissionProfileRow> {
+		let sql = format!("{PROFILE_SELECT} WHERE role_name = $1");
 		mm.dbx()
-			.fetch_one(sqlx::query_as::<_, DbAdminRoleRow>(&sql).bind(role_name))
+			.fetch_one(
+				sqlx::query_as::<_, DbPermissionProfileRow>(&sql).bind(role_name),
+			)
 			.await
 			.map_err(|e| crate::model::Error::Store(e.to_string()))
 	}
 
-	pub async fn create(mm: &ModelManager, data: AdminRoleCreateData) -> Result<()> {
+	pub async fn create(
+		mm: &ModelManager,
+		data: PermissionProfileCreateData,
+	) -> Result<()> {
 		mm.dbx()
 			.execute(
 				sqlx::query(
 					r#"
-					INSERT INTO app_roles
+					INSERT INTO permission_profiles
 						(role_name, display_name, description, privileges_json, active,
 						 built_in, editable, sponsor_admin_capable,
 						 can_view, can_review, can_lock, can_admin)
@@ -117,13 +126,13 @@ impl AdminRoleBmc {
 	pub async fn update(
 		mm: &ModelManager,
 		role_name: &str,
-		data: AdminRoleUpdateData,
+		data: PermissionProfileUpdateData,
 	) -> Result<()> {
 		mm.dbx()
 			.execute(
 				sqlx::query(
 					r#"
-					UPDATE app_roles
+					UPDATE permission_profiles
 					SET display_name = $2,
 					    description = $3,
 						    privileges_json = $4,
@@ -152,7 +161,7 @@ impl AdminRoleBmc {
 	pub async fn delete(mm: &ModelManager, role_name: &str) -> Result<()> {
 		mm.dbx()
 			.execute(
-				sqlx::query("DELETE FROM app_roles WHERE role_name = $1")
+				sqlx::query("DELETE FROM permission_profiles WHERE role_name = $1")
 					.bind(role_name),
 			)
 			.await
@@ -160,23 +169,15 @@ impl AdminRoleBmc {
 			.map_err(|e| crate::model::Error::Store(e.to_string()))
 	}
 
-	/// Reload the in-memory permission cache from all active custom roles.
-	/// Must be called after any create/update/delete that changes role permissions.
+	/// Reload the in-memory permission cache from all active permission profiles.
+	/// Must be called after any create/update/delete that changes profile permissions.
 	pub async fn refresh_dynamic_roles(mm: &ModelManager) -> Result<()> {
 		let rows = Self::list_active_custom(mm).await?;
 		let mapped = rows
 			.into_iter()
 			.map(|row| {
-				let permissions = if row.privileges_json.0.is_empty() {
-					permissions_for_privileges(
-						row.can_view,
-						row.can_review,
-						row.can_lock,
-						row.can_admin,
-					)
-				} else {
-					permissions_for_menu_privileges(&row.privileges_json.0)
-				};
+				let permissions =
+					permissions_for_menu_privileges(&row.privileges_json.0);
 				(row.role_name, permissions)
 			})
 			.collect();

@@ -405,7 +405,7 @@ async fn test_viewer_cannot_create_user() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_system_admin_can_only_provision_sponsor_admin_users() -> Result<()> {
+async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let system_admin = insert_user(
@@ -433,7 +433,7 @@ async fn test_system_admin_can_only_provision_sponsor_admin_users() -> Result<()
 		.header("content-type", "application/json")
 		.body(Body::from(regular_body.to_string()))?;
 	let regular_res = app.clone().oneshot(regular_req).await?;
-	assert_eq!(regular_res.status(), StatusCode::FORBIDDEN);
+	assert_eq!(regular_res.status(), StatusCode::CREATED);
 
 	let sponsor_body = json!({
 		"data": {
@@ -453,7 +453,7 @@ async fn test_system_admin_can_only_provision_sponsor_admin_users() -> Result<()
 
 	let role_req = Request::builder()
 		.method("POST")
-		.uri("/api/admin/roles")
+		.uri("/api/admin/permission-profiles")
 		.header("cookie", cookie_header(&token.to_string()))
 		.header("content-type", "application/json")
 		.body(Body::from(
@@ -474,7 +474,7 @@ async fn test_system_admin_can_only_provision_sponsor_admin_users() -> Result<()
 			.to_string(),
 		))?;
 	let role_res = app.oneshot(role_req).await?;
-	assert_eq!(role_res.status(), StatusCode::FORBIDDEN);
+	assert_eq!(role_res.status(), StatusCode::CREATED);
 	Ok(())
 }
 
@@ -691,6 +691,24 @@ async fn test_admin_can_delete_user() -> Result<()> {
 		.body(Body::empty())?;
 	let res = app.oneshot(req).await?;
 	assert_eq!(res.status(), StatusCode::NO_CONTENT);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_admin_cannot_delete_self() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+
+	let app = web_server::app(mm);
+	let req = Request::builder()
+		.method("DELETE")
+		.uri(format!("/api/users/{}", seed.admin.id))
+		.header("cookie", cookie_header(&token.to_string()))
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 	Ok(())
 }
 

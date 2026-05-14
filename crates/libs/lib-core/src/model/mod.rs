@@ -78,8 +78,8 @@ pub mod e_signature; // Electronic signatures for Part 11 critical actions
 pub mod presave_template; // Reusable pre-case templates and template audit history
 
 // Admin
-pub mod admin_role; // Dynamic admin roles and permission cache
-pub mod admin_settings; // System settings (app_settings table)
+pub mod admin_settings;
+pub mod permission_profile; // Dynamic permission profiles and permission cache // System settings (app_settings table)
 
 // Export Audit
 pub mod xml_export_history; // XML export audit trail

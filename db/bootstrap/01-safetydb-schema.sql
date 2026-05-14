@@ -53,8 +53,7 @@ CREATE TABLE IF NOT EXISTS users (
     token_salt UUID NOT NULL DEFAULT gen_random_uuid(),
 
     role VARCHAR(50) NOT NULL DEFAULT 'user',
-    first_name VARCHAR(100),
-    last_name VARCHAR(100),
+    permission_profile_id TEXT,
     comments TEXT,
     other_information TEXT,
     access_start_at TIMESTAMPTZ,
@@ -75,7 +74,7 @@ CREATE TABLE IF NOT EXISTS users (
     updated_by UUID,
 
     CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
-    CONSTRAINT user_role_valid CHECK (char_length(trim(role)) > 0)
+    CONSTRAINT user_role_valid CHECK (role IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user'))
 );
 
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -85,7 +84,15 @@ CREATE TABLE IF NOT EXISTS app_settings (
     updated_by uuid NULL REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS app_roles (
+DO $$
+BEGIN
+    IF to_regclass('public.permission_profiles') IS NULL
+       AND to_regclass('public.app_roles') IS NOT NULL THEN
+        ALTER TABLE app_roles RENAME TO permission_profiles;
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS permission_profiles (
     role_name text PRIMARY KEY,
     display_name text NOT NULL,
     description text,
@@ -145,6 +152,15 @@ CREATE INDEX idx_presave_template_audits_org
 -- Backward-compatible guard for already-created dev DBs.
 ALTER TABLE users
     ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS permission_profile_id TEXT;
+
+UPDATE users
+SET permission_profile_id = role,
+    role = 'user'
+WHERE role NOT IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user')
+  AND permission_profile_id IS NULL;
 
     -- ============================================================================
     -- 3. Safety Cases
@@ -460,8 +476,6 @@ INSERT INTO users (
     email,
     username,
     role,
-    first_name,
-    last_name,
     active,
     created_at,
     updated_at
@@ -471,8 +485,6 @@ INSERT INTO users (
     'system@e2br3.local',
     'system',
     'system_admin',
-    'System',
-    'User',
     true,
     NOW(),
     NOW()

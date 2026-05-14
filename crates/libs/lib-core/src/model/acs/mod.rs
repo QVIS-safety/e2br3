@@ -5,7 +5,7 @@
 //! - **Resources**: Entities that can be accessed (Case, User, Drug, etc.)
 //! - **Actions**: Operations on resources (Create, Read, Update, Delete, etc.)
 //! - **Permissions**: Resource + Action combinations
-//! - **Roles**: Collections of permissions (admin, manager, user, viewer)
+//! - **Roles**: Built-in role permissions plus dynamic custom role privileges
 //!
 //! # Usage
 //!
@@ -13,7 +13,7 @@
 //! use lib_core::model::acs::{has_permission, Permission, Resource, Action, CASE_CREATE};
 //!
 //! // Check if a role has a specific permission
-//! if has_permission("manager", CASE_CREATE) {
+//! if has_permission("user", CASE_CREATE) {
 //!     // Allow the operation
 //! }
 //!
@@ -26,12 +26,12 @@
 //!
 //! # Role Hierarchy
 //!
-//! | Role    | Description                                    |
-//! |---------|------------------------------------------------|
-//! | admin   | Full access to all resources                   |
-//! | manager | Case management + user viewing + audit access  |
-//! | user    | Case CRUD (no delete), no user management      |
-//! | viewer  | Read-only access to cases and users            |
+//! | Role                  | Description                                      |
+//! |-----------------------|--------------------------------------------------|
+//! | system_admin          | Platform admin; no built-in operational access   |
+//! | sponsor_admin_cro     | Sponsor admin with sender-scope assignment       |
+//! | sponsor_admin_company | Sponsor admin without sender-scope assignment    |
+//! | user                  | Default operational user permissions             |
 
 mod permission;
 

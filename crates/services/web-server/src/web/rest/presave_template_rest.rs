@@ -179,7 +179,7 @@ async fn allowed_scope_for_entity(
 	mm: &ModelManager,
 	entity_type: PresaveEntityType,
 ) -> Result<Option<HashSet<String>>> {
-	if lib_rest_core::is_safety_db_admin(ctx, mm).await? {
+	if lib_rest_core::is_admin(ctx, mm).await? {
 		return Ok(None);
 	}
 	let user: lib_core::model::user::User =
@@ -223,7 +223,7 @@ async fn presave_audits_allowed_for_scope(
 	mm: &ModelManager,
 	audits: &[PresaveTemplateAudit],
 ) -> Result<bool> {
-	if lib_rest_core::is_safety_db_admin(ctx, mm).await? {
+	if lib_rest_core::is_admin(ctx, mm).await? {
 		return Ok(true);
 	}
 	let Some((entity_type, data)) = audits.iter().find_map(|audit| {

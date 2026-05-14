@@ -658,8 +658,6 @@ struct UserDoc {
 	/// custom scoped roles.
 	#[schema(example = "sponsor_admin_cro")]
 	role: String,
-	first_name: Option<String>,
-	last_name: Option<String>,
 	comments: Option<String>,
 	other_information: Option<String>,
 	access_start_at: Option<String>,
@@ -687,10 +685,8 @@ struct UserForCreateAdminPayloadDoc {
 	pwd_clear: Option<String>,
 	/// Canonical role ID to assign. Use built-in sponsor admin IDs for fixed
 	/// admin roles, or a custom role name for scoped users.
-	#[schema(example = "pvs")]
+	#[schema(example = "user")]
 	role: Option<String>,
-	first_name: Option<String>,
-	last_name: Option<String>,
 	comments: Option<String>,
 	other_information: Option<String>,
 	access_start_at: Option<String>,
@@ -709,8 +705,6 @@ struct UserForUpdateDoc {
 	/// new client-aligned role system.
 	#[schema(example = "sponsor_admin_company")]
 	role: Option<String>,
-	first_name: Option<String>,
-	last_name: Option<String>,
 	comments: Option<String>,
 	other_information: Option<String>,
 	access_start_at: Option<String>,

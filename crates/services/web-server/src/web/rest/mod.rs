@@ -18,7 +18,6 @@ pub mod safety_report_rest;
 pub mod test_result_rest;
 
 // Newly enabled modules
-pub mod admin_role_rest;
 pub mod admin_settings_rest;
 pub mod audit_rest;
 pub mod case_identifiers_rest;
@@ -29,6 +28,7 @@ pub mod import_rest;
 pub mod narrative_sub_rest;
 pub mod parent_history_rest;
 pub mod patient_sub_rest;
+pub mod permission_profile_rest;
 pub mod presave_template_rest;
 pub mod receiver_rest;
 pub mod relatedness_assessment_rest;
@@ -566,15 +566,15 @@ pub fn routes_users(mm: ModelManager) -> Router {
 				.put(admin_settings_rest::update_admin_settings),
 		)
 		.route(
-			"/admin/roles",
-			get(admin_role_rest::list_admin_roles)
-				.post(admin_role_rest::create_admin_role),
+			"/admin/permission-profiles",
+			get(permission_profile_rest::list_permission_profiles)
+				.post(permission_profile_rest::create_permission_profile),
 		)
 		.route(
-			"/admin/roles/{role_name}",
-			get(admin_role_rest::get_admin_role)
-				.delete(admin_role_rest::delete_admin_role)
-				.put(admin_role_rest::update_admin_role),
+			"/admin/permission-profiles/{role_name}",
+			get(permission_profile_rest::get_permission_profile)
+				.delete(permission_profile_rest::delete_permission_profile)
+				.put(permission_profile_rest::update_permission_profile),
 		)
 		.with_state(mm)
 }

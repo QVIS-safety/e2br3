@@ -2,7 +2,9 @@ use crate::common::{
 	begin_test_ctx, commit_test_ctx, create_case_fixture, init_test_mm,
 	set_current_user, unique_suffix, Result,
 };
-use lib_core::ctx::{Ctx, ROLE_ADMIN, ROLE_USER, SYSTEM_ORG_ID, SYSTEM_USER_ID};
+use lib_core::ctx::{
+	Ctx, ROLE_SYSTEM_ADMIN, ROLE_USER, SYSTEM_ORG_ID, SYSTEM_USER_ID,
+};
 use lib_core::model::case::CaseBmc;
 use lib_core::model::organization::{OrganizationBmc, OrganizationForCreate};
 use lib_core::model::store::{set_full_context_dbx, set_org_context_dbx};
@@ -52,8 +54,7 @@ async fn create_user(
 		username: Some(format!("rls_user_{suffix}")),
 		pwd_clear: "pwd123".to_string(),
 		role: Some(role.to_string()),
-		first_name: None,
-		last_name: None,
+		permission_profile_id: None,
 		comments: None,
 		other_information: None,
 		access_start_at: None,
@@ -71,8 +72,11 @@ async fn create_user(
 #[tokio::test]
 async fn test_rls_case_org_isolation() -> Result<()> {
 	let mm = init_test_mm().await;
-	let admin_ctx =
-		Ctx::new(system_user_id(), system_org_id(), ROLE_ADMIN.to_string())?;
+	let admin_ctx = Ctx::new(
+		system_user_id(),
+		system_org_id(),
+		ROLE_SYSTEM_ADMIN.to_string(),
+	)?;
 
 	let org1_id = create_org(&mm, &admin_ctx).await?;
 	let user1_id = create_user(&mm, &admin_ctx, org1_id, ROLE_USER).await?;
@@ -112,8 +116,11 @@ async fn test_rls_case_org_isolation() -> Result<()> {
 #[tokio::test]
 async fn test_rls_user_org_isolation() -> Result<()> {
 	let mm = init_test_mm().await;
-	let admin_ctx =
-		Ctx::new(system_user_id(), system_org_id(), ROLE_ADMIN.to_string())?;
+	let admin_ctx = Ctx::new(
+		system_user_id(),
+		system_org_id(),
+		ROLE_SYSTEM_ADMIN.to_string(),
+	)?;
 
 	let org1_id = create_org(&mm, &admin_ctx).await?;
 	let user1_id = create_user(&mm, &admin_ctx, org1_id, ROLE_USER).await?;

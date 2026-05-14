@@ -10,8 +10,7 @@ use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate, ParamsList};
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{
-	require_permission, require_safety_db_admin_role, safety_db_admin_db_ctx, Error,
-	Result,
+	admin_db_ctx, require_admin, require_permission, Error, Result,
 };
 use lib_web::middleware::mw_auth::CtxW;
 use uuid::Uuid;
@@ -22,9 +21,11 @@ pub async fn create_organization(
 	Json(params): Json<ParamsForCreate<OrganizationForCreate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<Organization>>)> {
 	let ctx = ctx_w.0;
-	require_safety_db_admin_role(&ctx, &mm).await?;
-	require_permission(&ctx, ORG_CREATE)?;
-	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
+	require_admin(&ctx, &mm).await?;
+	if !ctx.is_system_admin() {
+		require_permission(&ctx, ORG_CREATE)?;
+	}
+	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let ParamsForCreate { data } = params;
 	let id = OrganizationBmc::create(&db_ctx, &mm, data).await?;
 	let entity = OrganizationBmc::get(&db_ctx, &mm, id).await?;
@@ -37,9 +38,11 @@ pub async fn get_organization(
 	Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<Organization>>)> {
 	let ctx = ctx_w.0;
-	require_safety_db_admin_role(&ctx, &mm).await?;
-	require_permission(&ctx, ORG_READ)?;
-	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
+	require_admin(&ctx, &mm).await?;
+	if !ctx.is_system_admin() {
+		require_permission(&ctx, ORG_READ)?;
+	}
+	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let entity = OrganizationBmc::get(&db_ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
@@ -50,9 +53,11 @@ pub async fn list_organizations(
 	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<Organization>>>)> {
 	let ctx = ctx_w.0;
-	require_safety_db_admin_role(&ctx, &mm).await?;
-	require_permission(&ctx, ORG_LIST)?;
-	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
+	require_admin(&ctx, &mm).await?;
+	if !ctx.is_system_admin() {
+		require_permission(&ctx, ORG_LIST)?;
+	}
+	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let params =
 		ParamsList::<OrganizationFilter>::from_raw_query(raw_query.as_deref())
 			.map_err(|message| Error::BadRequest { message })?;
@@ -69,9 +74,11 @@ pub async fn update_organization(
 	Json(params): Json<ParamsForUpdate<OrganizationForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<Organization>>)> {
 	let ctx = ctx_w.0;
-	require_safety_db_admin_role(&ctx, &mm).await?;
-	require_permission(&ctx, ORG_UPDATE)?;
-	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
+	require_admin(&ctx, &mm).await?;
+	if !ctx.is_system_admin() {
+		require_permission(&ctx, ORG_UPDATE)?;
+	}
+	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let ParamsForUpdate { data } = params;
 	OrganizationBmc::update(&db_ctx, &mm, id, data).await?;
 	let entity = OrganizationBmc::get(&db_ctx, &mm, id).await?;
@@ -84,9 +91,11 @@ pub async fn delete_organization(
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
-	require_safety_db_admin_role(&ctx, &mm).await?;
-	require_permission(&ctx, ORG_DELETE)?;
-	let db_ctx = safety_db_admin_db_ctx(&ctx, &mm).await?;
+	require_admin(&ctx, &mm).await?;
+	if !ctx.is_system_admin() {
+		require_permission(&ctx, ORG_DELETE)?;
+	}
+	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	OrganizationBmc::delete(&db_ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }

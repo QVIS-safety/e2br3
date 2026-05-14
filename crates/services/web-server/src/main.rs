@@ -16,7 +16,7 @@ use tokio::time::{interval, Duration};
 use tracing::info;
 use tracing::warn;
 use tracing_subscriber::EnvFilter;
-use web::rest::admin_role_rest;
+use web::rest::permission_profile_rest;
 
 // endregion: --- Modules
 
@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
 
 	let mm = ModelManager::new().await?;
 	bootstrap::bootstrap_admin_user(&mm).await?;
-	admin_role_rest::refresh_dynamic_roles(&mm)
+	permission_profile_rest::refresh_dynamic_roles(&mm)
 		.await
 		.map_err(|err| Error::Config(err.to_string()))?;
 	start_reconcile_worker(mm.clone());

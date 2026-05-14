@@ -130,6 +130,7 @@ async fn ctx_resolve(mm: ModelManager, cookies: &Cookies) -> CtxExtResult {
 
 	// -- Create CtxExtResult with user_id, organization_id, and role
 	Ctx::new(user.id, user.organization_id, user.role)
+		.map(|ctx| ctx.with_permission_profile(user.permission_profile_id))
 		.map(CtxW)
 		.map_err(|ex| CtxExtError::CtxCreateFail(ex.to_string()))
 }

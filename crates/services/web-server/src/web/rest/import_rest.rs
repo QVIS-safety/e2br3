@@ -367,7 +367,7 @@ pub async fn list_import_history(
 			Some(case_id) => {
 				lib_rest_core::case_matches_user_scope(&ctx, &mm, case_id).await?
 			}
-			None => lib_rest_core::is_safety_db_admin(&ctx, &mm).await?,
+			None => lib_rest_core::is_admin(&ctx, &mm).await?,
 		};
 		if !allowed {
 			continue;
@@ -417,7 +417,7 @@ pub async fn download_import_history_error(
 		Some(case_id) => {
 			lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 		}
-		None if lib_rest_core::is_safety_db_admin(&ctx, &mm).await? => {}
+		None if lib_rest_core::is_admin(&ctx, &mm).await? => {}
 		None => {
 			return Err(Error::PermissionDenied {
 				required_permission: XML_IMPORT.to_string(),

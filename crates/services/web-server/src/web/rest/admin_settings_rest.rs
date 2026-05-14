@@ -2,12 +2,11 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::ctx::{
-	canonical_role, ROLE_PVM, ROLE_PVS, ROLE_SPONSOR_ADMIN_COMPANY,
-	ROLE_SPONSOR_ADMIN_CRO,
+	canonical_role, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER,
 };
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::ModelManager;
-use lib_rest_core::{require_safety_db_admin_role, Error, Result};
+use lib_rest_core::{require_admin, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -138,35 +137,21 @@ fn default_workflow_config() -> WorkflowConfigPayload {
 				editable: true,
 				description: Some("Default authoring state".to_string()),
 				due_days: Some(0),
-				allowed_roles: Some(vec![
-					ROLE_PVS.to_string(),
-					ROLE_PVM.to_string(),
-					ROLE_SPONSOR_ADMIN_CRO.to_string(),
-					ROLE_SPONSOR_ADMIN_COMPANY.to_string(),
-				]),
+				allowed_roles: Some(vec![ROLE_USER.to_string()]),
 			},
 			WorkflowStatusConfigPayload {
 				name: "To be reviewed".to_string(),
 				editable: false,
 				description: Some("Pending internal review".to_string()),
 				due_days: Some(0),
-				allowed_roles: Some(vec![
-					ROLE_PVS.to_string(),
-					ROLE_SPONSOR_ADMIN_CRO.to_string(),
-					ROLE_SPONSOR_ADMIN_COMPANY.to_string(),
-				]),
+				allowed_roles: Some(vec![ROLE_USER.to_string()]),
 			},
 			WorkflowStatusConfigPayload {
 				name: "Internal review completed".to_string(),
 				editable: false,
 				description: Some("QCed and routed onward".to_string()),
 				due_days: Some(0),
-				allowed_roles: Some(vec![
-					ROLE_PVS.to_string(),
-					ROLE_PVM.to_string(),
-					ROLE_SPONSOR_ADMIN_CRO.to_string(),
-					ROLE_SPONSOR_ADMIN_COMPANY.to_string(),
-				]),
+				allowed_roles: Some(vec![ROLE_USER.to_string()]),
 			},
 			WorkflowStatusConfigPayload {
 				name: "Finalized".to_string(),
@@ -246,12 +231,7 @@ async fn normalize_workflow_config(
 				editable: true,
 				description: Some("Default authoring state".to_string()),
 				due_days: Some(0),
-				allowed_roles: Some(vec![
-					ROLE_PVS.to_string(),
-					ROLE_PVM.to_string(),
-					ROLE_SPONSOR_ADMIN_CRO.to_string(),
-					ROLE_SPONSOR_ADMIN_COMPANY.to_string(),
-				]),
+				allowed_roles: Some(vec![ROLE_USER.to_string()]),
 			},
 		);
 	}
@@ -370,7 +350,7 @@ pub async fn update_admin_settings(
 	>,
 ) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
 	let ctx = ctx_w.0;
-	require_safety_db_admin_role(&ctx, &mm).await?;
+	require_admin(&ctx, &mm).await?;
 	let value = payload_to_value(&mm, &payload.data).await?;
 	let updated_by: Option<Uuid> = Some(ctx.user_id());
 	AdminSettingsBmc::upsert(&mm, SETTINGS_KEY, &value, updated_by)

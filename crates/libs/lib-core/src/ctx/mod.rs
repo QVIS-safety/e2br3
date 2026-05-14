@@ -16,22 +16,8 @@ pub const ROLE_SYSTEM_ADMIN: &str = "system_admin";
 pub const ROLE_SPONSOR_ADMIN_CRO: &str = "sponsor_admin_cro";
 /// Fixed in-database sponsor admin role for pharmaceutical-company deployments.
 pub const ROLE_SPONSOR_ADMIN_COMPANY: &str = "sponsor_admin_company";
-/// Legacy alias kept for backward compatibility with older seeds/tests.
-pub const ROLE_ADMIN: &str = ROLE_SYSTEM_ADMIN;
-/// Legacy management-level access role.
-pub const ROLE_MANAGER: &str = "manager";
-/// Role for pharmacovigilance manager access
-pub const ROLE_PVM: &str = "pvm";
-/// Role for head of PV access
-pub const ROLE_HEAD_PV: &str = "head_pv";
 /// Role for regular user access (case CRUD)
 pub const ROLE_USER: &str = "user";
-/// Role for pharmacovigilance specialist access
-pub const ROLE_PVS: &str = "pvs";
-/// Role for read-only access
-pub const ROLE_VIEWER: &str = "viewer";
-/// Role for sponsor read-oriented access
-pub const ROLE_SPONSOR: &str = "sponsor";
 
 // System UUIDs
 pub const SYSTEM_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
@@ -46,6 +32,7 @@ pub struct Ctx {
 	user_id: uuid::Uuid,
 	organization_id: uuid::Uuid,
 	role: String,
+	permission_profile_id: Option<String>,
 	change_reason: Option<String>,
 	e_signature_id: Option<uuid::Uuid>,
 }
@@ -61,6 +48,7 @@ impl Ctx {
 			organization_id: uuid::Uuid::parse_str(SYSTEM_ORG_ID)
 				.expect("Invalid system org UUID"),
 			role: ROLE_SYSTEM_ADMIN.to_string(),
+			permission_profile_id: None,
 			change_reason: None,
 			e_signature_id: None,
 		}
@@ -88,23 +76,20 @@ impl Ctx {
 			user_id,
 			organization_id,
 			role,
+			permission_profile_id: None,
 			change_reason: None,
 			e_signature_id: None,
 		})
 	}
 
-	/// Creates a new context with just user_id (legacy support).
-	/// Uses system organization and user role as defaults.
-	#[deprecated(
-		since = "0.3.0",
-		note = "Use `Ctx::new(user_id, org_id, role)` instead"
-	)]
-	pub fn new_with_user_id_only(user_id: uuid::Uuid) -> Result<Self> {
-		if user_id.is_nil() {
-			return Err(Error::CtxCannotNewNilUuid);
-		}
-
-		Err(Error::CtxCannotNewNilOrgId)
+	pub fn with_permission_profile(
+		mut self,
+		permission_profile_id: Option<String>,
+	) -> Self {
+		self.permission_profile_id = permission_profile_id
+			.map(|value| canonical_role(&value))
+			.filter(|value| !value.is_empty());
+		self
 	}
 }
 
@@ -120,6 +105,18 @@ impl Ctx {
 
 	pub fn role(&self) -> &str {
 		&self.role
+	}
+
+	pub fn permission_profile_id(&self) -> Option<&str> {
+		self.permission_profile_id.as_deref()
+	}
+
+	pub fn permission_subject(&self) -> &str {
+		if self.role == ROLE_USER {
+			self.permission_profile_id.as_deref().unwrap_or(&self.role)
+		} else {
+			&self.role
+		}
 	}
 
 	pub fn change_reason(&self) -> Option<&str> {
@@ -143,7 +140,7 @@ impl Ctx {
 
 	// Role check helpers
 	pub fn is_admin(&self) -> bool {
-		self.is_system_admin()
+		self.is_system_admin() || self.is_sponsor_admin()
 	}
 
 	pub fn is_system_admin(&self) -> bool {
@@ -155,32 +152,25 @@ impl Ctx {
 			|| self.role == ROLE_SPONSOR_ADMIN_COMPANY
 	}
 
-	pub fn can_admin_safety_db(&self) -> bool {
+	pub fn is_cro_sponsor_admin(&self) -> bool {
+		self.role == ROLE_SPONSOR_ADMIN_CRO
+	}
+
+	pub fn is_company_sponsor_admin(&self) -> bool {
+		self.role == ROLE_SPONSOR_ADMIN_COMPANY
+	}
+
+	pub fn is_operational_admin(&self) -> bool {
 		self.is_sponsor_admin()
 	}
 
-	pub fn is_manager(&self) -> bool {
-		self.role == ROLE_MANAGER
-			|| self.role == ROLE_PVM
-			|| self.role == ROLE_HEAD_PV
-	}
-
 	pub fn is_user(&self) -> bool {
-		self.role == ROLE_USER || self.role == ROLE_PVS
+		self.role == ROLE_USER
 	}
 
-	pub fn is_viewer(&self) -> bool {
-		self.role == ROLE_VIEWER || self.role == ROLE_SPONSOR
-	}
-
-	/// Returns true if the user has at least manager-level access (admin or manager)
-	pub fn is_manager_or_above(&self) -> bool {
-		self.can_admin_safety_db() || self.is_manager()
-	}
-
-	/// Returns true if the user can modify data (not a viewer)
+	/// Returns true if the user can modify operational case data.
 	pub fn can_modify(&self) -> bool {
-		self.can_admin_safety_db() || self.is_manager() || self.is_user()
+		self.is_operational_admin() || self.is_user()
 	}
 }
 
@@ -228,19 +218,19 @@ mod tests {
 			"admin".to_string(),
 		)
 		.expect("ctx");
-		assert!(!ctx.can_admin_safety_db());
+		assert!(!ctx.is_operational_admin());
 		assert!(!ctx.is_system_admin());
 	}
 
 	#[test]
-	fn safety_db_admin_roles_are_distinct_from_system_admin() {
+	fn operational_admin_roles_are_distinct_from_system_admin() {
 		let sponsor_admin = Ctx::new(
 			uuid::Uuid::new_v4(),
 			uuid::Uuid::new_v4(),
 			ROLE_SPONSOR_ADMIN_CRO.to_string(),
 		)
 		.expect("ctx");
-		assert!(sponsor_admin.can_admin_safety_db());
+		assert!(sponsor_admin.is_operational_admin());
 		assert!(!sponsor_admin.is_system_admin());
 
 		let system_admin = Ctx::new(
@@ -249,7 +239,40 @@ mod tests {
 			ROLE_SYSTEM_ADMIN.to_string(),
 		)
 		.expect("ctx");
-		assert!(!system_admin.can_admin_safety_db());
+		assert!(!system_admin.is_operational_admin());
 		assert!(system_admin.is_system_admin());
+	}
+
+	#[test]
+	fn is_admin_includes_system_and_sponsor_admins_only() {
+		let system_admin = Ctx::new(
+			uuid::Uuid::new_v4(),
+			uuid::Uuid::nil(),
+			ROLE_SYSTEM_ADMIN.to_string(),
+		)
+		.expect("system ctx");
+		let cro_admin = Ctx::new(
+			uuid::Uuid::new_v4(),
+			uuid::Uuid::new_v4(),
+			ROLE_SPONSOR_ADMIN_CRO.to_string(),
+		)
+		.expect("cro ctx");
+		let company_admin = Ctx::new(
+			uuid::Uuid::new_v4(),
+			uuid::Uuid::new_v4(),
+			ROLE_SPONSOR_ADMIN_COMPANY.to_string(),
+		)
+		.expect("company ctx");
+		let user = Ctx::new(
+			uuid::Uuid::new_v4(),
+			uuid::Uuid::new_v4(),
+			ROLE_USER.to_string(),
+		)
+		.expect("user ctx");
+
+		assert!(system_admin.is_admin());
+		assert!(cro_admin.is_admin());
+		assert!(company_admin.is_admin());
+		assert!(!user.is_admin());
 	}
 }

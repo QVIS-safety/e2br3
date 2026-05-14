@@ -34,8 +34,7 @@ pub struct User {
 	pub token_salt: Uuid,
 
 	pub role: String,
-	pub first_name: Option<String>,
-	pub last_name: Option<String>,
+	pub permission_profile_id: Option<String>,
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
 	pub access_start_at: Option<OffsetDateTime>,
@@ -66,8 +65,7 @@ pub struct UserForCreate {
 	pub username: Option<String>,
 	pub pwd_clear: String,
 	pub role: Option<String>,
-	pub first_name: Option<String>,
-	pub last_name: Option<String>,
+	pub permission_profile_id: Option<String>,
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
 	pub access_start_at: Option<OffsetDateTime>,
@@ -85,8 +83,7 @@ pub struct UserForInsert {
 	pub email: String,
 	pub username: String,
 	pub role: Option<String>,
-	pub first_name: Option<String>,
-	pub last_name: Option<String>,
+	pub permission_profile_id: Option<String>,
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
 	pub access_start_at: Option<OffsetDateTime>,
@@ -105,6 +102,7 @@ pub struct UserForLogin {
 	pub email: String,
 	pub username: String,
 	pub role: String,
+	pub permission_profile_id: Option<String>,
 	pub must_change_password: bool,
 
 	// -- pwd and token info
@@ -120,6 +118,7 @@ pub struct UserForAuth {
 	pub email: String,
 	pub username: String,
 	pub role: String,
+	pub permission_profile_id: Option<String>,
 
 	// -- token info
 	pub token_salt: Uuid,
@@ -130,8 +129,7 @@ pub struct UserForUpdate {
 	pub email: Option<String>,
 	pub username: Option<String>,
 	pub role: Option<String>,
-	pub first_name: Option<String>,
-	pub last_name: Option<String>,
+	pub permission_profile_id: Option<String>,
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
 	pub access_start_at: Option<OffsetDateTime>,
@@ -151,6 +149,7 @@ pub struct UserFilter {
 	pub email: Option<OpValsString>,
 	pub username: Option<OpValsString>,
 	pub role: Option<OpValsString>,
+	pub permission_profile_id: Option<OpValsString>,
 }
 
 /// Marker trait for different User representations
@@ -207,6 +206,26 @@ impl UserBmc {
 		})
 	}
 
+	fn normalize_role_and_profile(
+		role: Option<String>,
+		permission_profile_id: Option<String>,
+	) -> (String, Option<String>) {
+		let role = role
+			.map(|role| canonical_role(&role))
+			.filter(|role| !role.is_empty())
+			.unwrap_or_else(|| ROLE_USER.to_string());
+		let permission_profile_id =
+			Self::normalize_optional_text(permission_profile_id)
+				.map(|value| canonical_role(&value));
+		match role.as_str() {
+			"system_admin" | "sponsor_admin_cro" | "sponsor_admin_company" => {
+				(role, None)
+			}
+			ROLE_USER => (role, permission_profile_id),
+			_ => (ROLE_USER.to_string(), Some(role)),
+		}
+	}
+
 	fn is_retryable_write_error(err: &Error) -> bool {
 		if let Some(db_error) = err.as_database_error() {
 			if matches!(db_error.code().as_deref(), Some("40P01" | "40001")) {
@@ -238,8 +257,7 @@ impl UserBmc {
 				username,
 				pwd_clear,
 				role,
-				first_name,
-				last_name,
+				permission_profile_id,
 				comments,
 				other_information,
 				access_start_at,
@@ -260,17 +278,15 @@ impl UserBmc {
 			let access_study_ids = Self::serialize_id_scope(access_study_ids);
 			let active_sender_identifier =
 				Self::normalize_optional_text(active_sender_identifier);
-			let role = role
-				.map(|role| canonical_role(&role))
-				.unwrap_or_else(|| ROLE_USER.to_string());
+			let (role, permission_profile_id) =
+				Self::normalize_role_and_profile(role, permission_profile_id);
 
 			let user_fi = UserForInsert {
 				organization_id,
 				email: email.clone(),
 				username,
 				role: Some(role),
-				first_name,
-				last_name,
+				permission_profile_id,
 				comments,
 				other_information,
 				access_start_at,
@@ -364,11 +380,35 @@ impl UserBmc {
 	) -> Result<()> {
 		for attempt in 1..=USER_WRITE_MAX_ATTEMPTS {
 			let mut user_u = user_u.clone();
+			let mut clear_permission_profile = false;
 			if let Some(email) = user_u.email.take() {
 				user_u.email = Some(Self::normalize_email(&email));
 			}
+			if let Some(username) = user_u.username.take() {
+				user_u.username = Self::normalize_optional_text(Some(username));
+			}
 			if let Some(role) = user_u.role.take() {
-				user_u.role = Some(canonical_role(&role));
+				let role = canonical_role(&role);
+				if matches!(
+					role.as_str(),
+					"system_admin" | "sponsor_admin_cro" | "sponsor_admin_company"
+				) {
+					clear_permission_profile = true;
+					user_u.role = Some(role);
+				} else if role == ROLE_USER {
+					clear_permission_profile =
+						user_u.permission_profile_id.is_none();
+					user_u.role = Some(role);
+				} else {
+					user_u.role = Some(ROLE_USER.to_string());
+					user_u.permission_profile_id = Some(role);
+				}
+			}
+			if let Some(permission_profile_id) = user_u.permission_profile_id.take()
+			{
+				user_u.permission_profile_id =
+					Self::normalize_optional_text(Some(permission_profile_id))
+						.map(|value| canonical_role(&value));
 			}
 			if let Some(active_sender_identifier) =
 				user_u.active_sender_identifier.take()
@@ -377,7 +417,19 @@ impl UserBmc {
 					Self::normalize_optional_text(Some(active_sender_identifier));
 			}
 			match base_uuid::update::<Self, _>(ctx, mm, id, user_u).await {
-				Ok(()) => return Ok(()),
+				Ok(()) => {
+					if clear_permission_profile {
+						mm.dbx()
+							.execute(
+								sqlx::query(
+									"UPDATE users SET permission_profile_id = NULL WHERE id = $1",
+								)
+								.bind(id),
+							)
+							.await?;
+					}
+					return Ok(());
+				}
 				Err(err)
 					if Self::is_retryable_write_error(&err)
 						&& attempt < USER_WRITE_MAX_ATTEMPTS =>
@@ -743,6 +795,7 @@ impl UserBmc {
 				email,
 				username,
 				lower(trim(role)) AS role,
+				permission_profile_id,
 				token_salt
 			FROM users
 			WHERE email = $1
@@ -787,11 +840,12 @@ impl UserBmc {
 				organization_id,
 				email,
 				username,
-					lower(trim(role)) AS role,
-					must_change_password,
-					pwd,
-					pwd_salt,
-					token_salt
+				lower(trim(role)) AS role,
+				permission_profile_id,
+				must_change_password,
+				pwd,
+				pwd_salt,
+				token_salt
 			FROM users
 			WHERE email = $1
 			  AND active = true

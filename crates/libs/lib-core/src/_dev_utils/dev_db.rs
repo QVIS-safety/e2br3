@@ -199,11 +199,24 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE users FORCE ROW LEVEL SECURITY",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS access_blind_allowed BOOLEAN",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS active_sender_identifier TEXT",
-		"ALTER TABLE app_roles ADD COLUMN IF NOT EXISTS description TEXT",
-		"ALTER TABLE app_roles ADD COLUMN IF NOT EXISTS privileges_json JSONB NOT NULL DEFAULT '[]'::jsonb",
-		"ALTER TABLE app_roles ADD COLUMN IF NOT EXISTS built_in BOOLEAN NOT NULL DEFAULT false",
-		"ALTER TABLE app_roles ADD COLUMN IF NOT EXISTS editable BOOLEAN NOT NULL DEFAULT true",
-		"ALTER TABLE app_roles ADD COLUMN IF NOT EXISTS sponsor_admin_capable BOOLEAN NOT NULL DEFAULT false",
+		"ALTER TABLE users ADD COLUMN IF NOT EXISTS permission_profile_id TEXT",
+		"DO $$
+		 BEGIN
+		     IF to_regclass('public.permission_profiles') IS NULL
+		        AND to_regclass('public.app_roles') IS NOT NULL THEN
+		         ALTER TABLE app_roles RENAME TO permission_profiles;
+		     END IF;
+		 END $$",
+		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS description TEXT",
+		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS privileges_json JSONB NOT NULL DEFAULT '[]'::jsonb",
+		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS built_in BOOLEAN NOT NULL DEFAULT false",
+		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS editable BOOLEAN NOT NULL DEFAULT true",
+		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS sponsor_admin_capable BOOLEAN NOT NULL DEFAULT false",
+		"UPDATE users
+		 SET permission_profile_id = role,
+		     role = 'user'
+		 WHERE role NOT IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user')
+		   AND permission_profile_id IS NULL",
 		"DROP POLICY IF EXISTS users_org_isolation_select ON users",
 	] {
 		sqlx::query(sql).execute(&mut *tx).await?;
@@ -294,14 +307,11 @@ async fn apply_compatibility_alters(
 		"CREATE POLICY audit_logs_read_for_admin_manager ON audit_logs
 		 FOR SELECT
 		 TO e2br3_app_role
-		 USING (
+		 	USING (
 		 		COALESCE(current_setting('app.current_user_role', true), '') IN (
 		 			'system_admin',
 		 			'sponsor_admin_cro',
-		 			'sponsor_admin_company',
-		 			'manager',
-		 			'pvm',
-		 			'head_pv'
+		 			'sponsor_admin_company'
 		 		)
 		 	)",
 	)

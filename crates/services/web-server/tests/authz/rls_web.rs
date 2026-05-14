@@ -14,7 +14,7 @@ use tower::ServiceExt;
 
 #[serial]
 #[tokio::test]
-async fn test_users_endpoints_require_admin_role() -> Result<()> {
+async fn test_users_endpoints_require_admin_guard() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_two_orgs_users_cases(&mm).await?;
 	let token = generate_web_token(&seed.user1.email, seed.user1.token_salt)?;

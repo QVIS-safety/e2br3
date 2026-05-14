@@ -3,8 +3,7 @@
 use lib_auth::pwd::{self, ContentToHash};
 use lib_core::_dev_utils;
 use lib_core::ctx::{
-	ROLE_MANAGER, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER, ROLE_VIEWER, SYSTEM_ORG_ID,
-	SYSTEM_USER_ID,
+	ROLE_SPONSOR_ADMIN_CRO, ROLE_USER, SYSTEM_ORG_ID, SYSTEM_USER_ID,
 };
 use lib_core::model::store::{
 	set_full_context_dbx, set_org_context, set_user_context,
@@ -15,6 +14,9 @@ use uuid::Uuid;
 
 pub type Result<T> =
 	core::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+
+pub const TEST_CUSTOM_MANAGER_ROLE: &str = "manager";
+pub const TEST_CUSTOM_VIEWER_ROLE: &str = "viewer";
 
 pub struct SeedUser {
 	pub id: Uuid,
@@ -128,9 +130,14 @@ pub async fn seed_org_with_users(
 		Some(admin_pwd),
 	)
 	.await?;
-	let viewer =
-		insert_user(mm, org_id, ROLE_VIEWER, system_user_id(), Some(viewer_pwd))
-			.await?;
+	let viewer = insert_user(
+		mm,
+		org_id,
+		TEST_CUSTOM_VIEWER_ROLE,
+		system_user_id(),
+		Some(viewer_pwd),
+	)
+	.await?;
 
 	Ok(SeedOrgUsers {
 		org_id,
@@ -162,9 +169,14 @@ pub async fn seed_org_with_admin_and_viewer(
 		Some(admin_pwd),
 	)
 	.await?;
-	let viewer =
-		insert_user(mm, org_id, ROLE_VIEWER, system_user_id(), Some(viewer_pwd))
-			.await?;
+	let viewer = insert_user(
+		mm,
+		org_id,
+		TEST_CUSTOM_VIEWER_ROLE,
+		system_user_id(),
+		Some(viewer_pwd),
+	)
+	.await?;
 
 	Ok(SeedOrgUsers {
 		org_id,
@@ -188,10 +200,12 @@ pub async fn seed_org_with_all_roles(mm: &ModelManager) -> Result<SeedOrgAllRole
 		insert_user(mm, org_id, ROLE_SPONSOR_ADMIN_CRO, system_user_id(), None)
 			.await?;
 	let manager =
-		insert_user(mm, org_id, ROLE_MANAGER, system_user_id(), None).await?;
+		insert_user(mm, org_id, TEST_CUSTOM_MANAGER_ROLE, system_user_id(), None)
+			.await?;
 	let user = insert_user(mm, org_id, ROLE_USER, system_user_id(), None).await?;
 	let viewer =
-		insert_user(mm, org_id, ROLE_VIEWER, system_user_id(), None).await?;
+		insert_user(mm, org_id, TEST_CUSTOM_VIEWER_ROLE, system_user_id(), None)
+			.await?;
 
 	Ok(SeedOrgAllRoles {
 		org_id,
@@ -217,9 +231,11 @@ pub async fn seed_two_orgs_users_cases(
 	let org1_id = insert_org(mm, system_user_id()).await?;
 	let org2_id = insert_org(mm, system_user_id()).await?;
 	let user1 =
-		insert_user(mm, org1_id, ROLE_VIEWER, system_user_id(), None).await?;
+		insert_user(mm, org1_id, TEST_CUSTOM_VIEWER_ROLE, system_user_id(), None)
+			.await?;
 	let user2 =
-		insert_user(mm, org2_id, ROLE_VIEWER, system_user_id(), None).await?;
+		insert_user(mm, org2_id, TEST_CUSTOM_VIEWER_ROLE, system_user_id(), None)
+			.await?;
 	let case_org1 = insert_case(mm, org1_id, system_user_id()).await?;
 	let case_org2 = insert_case(mm, org2_id, system_user_id()).await?;
 
@@ -247,10 +263,17 @@ pub async fn seed_two_orgs_manager_cases(
 
 	let org1_id = insert_org(mm, system_user_id()).await?;
 	let org2_id = insert_org(mm, system_user_id()).await?;
-	let manager =
-		insert_user(mm, org1_id, "manager", system_user_id(), None).await?;
+	let manager = insert_user(
+		mm,
+		org1_id,
+		TEST_CUSTOM_MANAGER_ROLE,
+		system_user_id(),
+		None,
+	)
+	.await?;
 	let user2 =
-		insert_user(mm, org2_id, ROLE_VIEWER, system_user_id(), None).await?;
+		insert_user(mm, org2_id, TEST_CUSTOM_VIEWER_ROLE, system_user_id(), None)
+			.await?;
 	let case_org1 = insert_case(mm, org1_id, system_user_id()).await?;
 	let case_org2 = insert_case(mm, org2_id, system_user_id()).await?;
 
@@ -336,9 +359,21 @@ pub async fn insert_user(
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, created_by).await?;
 	set_org_context(&mut tx, system_org_id(), ROLE_SPONSOR_ADMIN_CRO).await?;
+	let normalized_role = match role {
+		"system_admin" | "sponsor_admin_cro" | "sponsor_admin_company" | "user" => {
+			role
+		}
+		_ => ROLE_USER,
+	};
+	let permission_profile_id = if normalized_role == ROLE_USER && role != ROLE_USER
+	{
+		Some(role)
+	} else {
+		None
+	};
 	sqlx::query(
-		"INSERT INTO users (id, organization_id, email, username, pwd, pwd_salt, token_salt, role, active, created_by, updated_by)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $9)",
+		"INSERT INTO users (id, organization_id, email, username, pwd, pwd_salt, token_salt, role, permission_profile_id, active, created_by, updated_by)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, $10)",
 	)
 	.bind(user_id)
 	.bind(org_id)
@@ -347,7 +382,8 @@ pub async fn insert_user(
 	.bind(pwd)
 	.bind(pwd_salt)
 	.bind(token_salt)
-	.bind(role)
+	.bind(normalized_role)
+	.bind(permission_profile_id)
 	.bind(created_by)
 	.execute(&mut *tx)
 	.await?;
