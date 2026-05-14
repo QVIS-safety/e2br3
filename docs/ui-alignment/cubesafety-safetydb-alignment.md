@@ -505,7 +505,7 @@ The local reference pack is intentionally ignored by git because it contains man
 - Reference: Client role and privilege row naming requirements.
 - Aligned:
   - Kept HOME `Notice` as separate Read/Edit privilege rows.
-  - Renamed HOME workflow visibility to `My To Do` with a Read privilege and mapped it to case read/list permissions.
+  - Kept HOME workflow visibility as `Workflow` with a Read privilege and mapped it to case read/list permissions.
   - Renamed INFO privilege rows to `Case Info` for Read/Edit while keeping the menu label as `INFO`.
 - Files changed:
   - `frontend/E2BR3-frontend/lib/admin/roleConfig.ts`
