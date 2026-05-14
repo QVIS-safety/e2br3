@@ -4,7 +4,7 @@ use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use lib_core::ctx::Ctx;
-use lib_core::model::acs::XML_IMPORT;
+use lib_core::model::acs::{XML_IMPORT, XML_IMPORT_READ};
 use lib_core::model::xml_import_history::XmlImportHistoryBmc;
 use lib_core::model::ModelManager;
 use lib_core::validation::xml::{
@@ -356,7 +356,7 @@ pub async fn list_import_history(
 	ctx_w: CtxW,
 ) -> Result<(StatusCode, Json<DataRestResult<XmlImportHistoryList>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, XML_IMPORT)?;
+	require_permission(&ctx, XML_IMPORT_READ)?;
 
 	let rows = XmlImportHistoryBmc::list_all(&mm, &ctx)
 		.await
@@ -404,7 +404,7 @@ pub async fn download_import_history_error(
 	Path(id): Path<Uuid>,
 ) -> Result<Response> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, XML_IMPORT)?;
+	require_permission(&ctx, XML_IMPORT_READ)?;
 
 	let row = XmlImportHistoryBmc::get_error_row(&mm, &ctx, id)
 		.await
@@ -420,7 +420,7 @@ pub async fn download_import_history_error(
 		None if lib_rest_core::is_admin(&ctx, &mm).await? => {}
 		None => {
 			return Err(Error::PermissionDenied {
-				required_permission: XML_IMPORT.to_string(),
+				required_permission: XML_IMPORT_READ.to_string(),
 			});
 		}
 	}

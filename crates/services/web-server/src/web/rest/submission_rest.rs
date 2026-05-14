@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 use axum::http::{HeaderMap, HeaderValue};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
-use lib_core::model::acs::{CASE_READ, CASE_UPDATE};
+use lib_core::model::acs::{XML_EXPORT, XML_EXPORT_READ};
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_result::DataRestResult;
@@ -68,7 +68,7 @@ pub async fn submit_case_to_fda(
 	payload: Option<Json<ComplianceActionInput>>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_UPDATE)?;
+	require_permission(&ctx, XML_EXPORT)?;
 	let payload = payload.ok_or(Error::BadRequest {
 		message: "reason_for_change and e_signature are required for submission"
 			.to_string(),
@@ -109,7 +109,7 @@ pub async fn submit_case_to_mfds(
 	payload: Option<Json<ComplianceActionInput>>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_UPDATE)?;
+	require_permission(&ctx, XML_EXPORT)?;
 	let payload = payload.ok_or(Error::BadRequest {
 		message: "reason_for_change and e_signature are required for submission"
 			.to_string(),
@@ -148,7 +148,7 @@ pub async fn list_case_submissions(
 	Path(case_id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<CaseSubmissionList>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, XML_EXPORT_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &_mm, case_id).await?;
 	let rows = list_by_case(&ctx, &_mm, case_id).await?;
 	Ok((
@@ -166,7 +166,7 @@ pub async fn get_case_submission(
 	Path(submission_id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, XML_EXPORT_READ)?;
 	let record = get_submission(&ctx, &_mm, submission_id).await?.ok_or(
 		Error::BadRequest {
 			message: format!("submission not found: {submission_id}"),
@@ -183,7 +183,7 @@ pub async fn list_submission_event_history(
 	Path(submission_id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionEventList>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, XML_EXPORT_READ)?;
 	let record = get_submission(&ctx, &mm, submission_id).await?.ok_or(
 		Error::BadRequest {
 			message: format!("submission not found: {submission_id}"),
@@ -206,7 +206,7 @@ pub async fn download_submission_ack_text(
 	Path((submission_id, level)): Path<(Uuid, u8)>,
 ) -> Result<Response> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, XML_EXPORT_READ)?;
 	let ack = get_ack_download(&ctx, &mm, submission_id, level)
 		.await?
 		.ok_or(Error::BadRequest {
@@ -256,7 +256,7 @@ pub async fn list_all_submission_history(
 	ctx_w: CtxW,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionHistoryList>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, XML_EXPORT_READ)?;
 	let dbx = mm.dbx();
 	dbx.begin_txn()
 		.await
@@ -305,7 +305,7 @@ pub async fn get_submission_dispatch_state_view(
 	Json<DataRestResult<SubmissionDispatchStateData>>,
 )> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, XML_EXPORT_READ)?;
 	let record = get_submission(&ctx, &mm, submission_id).await?.ok_or(
 		Error::BadRequest {
 			message: format!("submission not found: {submission_id}"),
@@ -333,7 +333,7 @@ pub async fn post_mock_ack(
 	Json(input): Json<MockAckInput>,
 ) -> Result<(StatusCode, Json<DataRestResult<SubmissionRecord>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_UPDATE)?;
+	require_permission(&ctx, XML_EXPORT)?;
 	let record = apply_mock_ack(&ctx, &_mm, submission_id, input).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: record })))
 }

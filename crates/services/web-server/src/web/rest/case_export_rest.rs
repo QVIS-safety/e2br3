@@ -2,7 +2,7 @@ use axum::extract::{Path, Query, State};
 use axum::http::header;
 use axum::response::Response;
 use axum::Json;
-use lib_core::model::acs::{CASE_READ, XML_EXPORT};
+use lib_core::model::acs::{XML_EXPORT, XML_EXPORT_READ};
 use lib_core::model::case::CaseBmc;
 use lib_core::model::xml_export_history::{
 	XmlExportHistoryBmc, XmlExportHistoryRecord,
@@ -533,7 +533,7 @@ pub async fn list_xml_export_history(
 	Json<DataRestResult<XmlExportHistoryList>>,
 )> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, XML_EXPORT)?;
+	require_permission(&ctx, XML_EXPORT_READ)?;
 
 	let items = lib_rest_core::with_rls_read(&mm, &ctx, |dbx| {
 		Box::pin(async move {
@@ -569,7 +569,7 @@ pub async fn list_case_xml_export_history(
 	Json<DataRestResult<XmlExportHistoryList>>,
 )> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, XML_EXPORT_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let items = lib_rest_core::with_rls_read(&mm, &ctx, |dbx| {
@@ -596,7 +596,7 @@ pub async fn download_xml_export_history_error(
 	Path(id): Path<Uuid>,
 ) -> Result<Response> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, XML_EXPORT)?;
+	require_permission(&ctx, XML_EXPORT_READ)?;
 
 	let row = lib_rest_core::with_rls_read(&mm, &ctx, |dbx| {
 		Box::pin(async move {
@@ -612,7 +612,7 @@ pub async fn download_xml_export_history_error(
 	})?;
 	if !lib_rest_core::case_matches_user_scope(&ctx, &mm, row.case_id).await? {
 		return Err(Error::PermissionDenied {
-			required_permission: XML_EXPORT.to_string(),
+			required_permission: XML_EXPORT_READ.to_string(),
 		});
 	}
 	let text = row.error_message.ok_or_else(|| Error::BadRequest {

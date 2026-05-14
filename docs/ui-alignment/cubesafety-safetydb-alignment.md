@@ -9,6 +9,53 @@ Local reference pack:
 
 The local reference pack is intentionally ignored by git because it contains manually captured screenshots.
 
+## 2026-05-14 - Admin Import and Export Privilege Rows
+
+- Reference: Client follow-up requirement for Role & Privilege row naming and behavior.
+- Aligned:
+  - Renamed DATA matrix rows to IMPORT with `Import Files / Edit` and `Import History / Read`.
+  - Renamed SUBMISSION matrix rows to EXPORT/SUBMISSION with `Export/Submit / Edit` and `Export/Submit History / Read`.
+  - Split backend XML import/export read permissions from action permissions so history read rows no longer grant import/export actions, and edit rows no longer grant history access by themselves.
+  - Aligned submission action endpoints to the export/submission edit permission.
+- Files changed:
+  - `frontend/E2BR3-frontend/lib/admin/roleConfig.ts`
+  - `frontend/E2BR3-frontend/__tests__/admin-users.header-filters.test.ts`
+  - `crates/libs/lib-core/src/model/acs/permission.rs`
+  - `crates/services/web-server/src/web/rest/import_rest.rs`
+  - `crates/services/web-server/src/web/rest/case_export_rest.rs`
+  - `crates/services/web-server/src/web/rest/submission_rest.rs`
+  - `crates/services/web-server/tests/api/scope_visibility_web.rs`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - RED: backend role privilege tests failed before `XML_IMPORT_READ` and `XML_EXPORT_READ` existed.
+  - `cargo test -p web-server test_export_submission_matrix_privileges_grant_effective_xml_export_permission --test api -- --nocapture --test-threads=1` passed.
+  - `cargo test -p web-server test_import_matrix_privileges_split_files_edit_from_history_read --test api -- --nocapture --test-threads=1` passed.
+  - `cargo test -p lib-core --lib test_menu_privileges_expand_to_expected_permissions -- --nocapture` passed, with existing dead-code warnings.
+  - `cargo check -p web-server --lib` passed.
+  - `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand` passed: 1 suite, 24 tests.
+  - `npx tsc --noEmit` passed.
+  - `npm run build` passed; Next.js reported existing browser data freshness warnings.
+- Remaining gaps:
+  - Browser visual QA of the protected admin page still requires a local authenticated admin session.
+
+## 2026-05-14 - Admin Role & Privilege Custom-Only Columns
+
+- Reference: Flow 3, screenshot 03.
+- Aligned:
+  - Removed the four static built-in role columns from the Role & Privilege matrix so the permission grid starts at persisted custom roles.
+  - Preserved built-in roles in the Role catalog and user assignment surfaces while limiting privilege editing columns to non-built-in roles.
+- Files changed:
+  - `frontend/E2BR3-frontend/app/(protected)/admin/AdminWorkspace.tsx`
+  - `frontend/E2BR3-frontend/__tests__/admin-users.header-filters.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - RED: `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand -t "four-tab|does not duplicate"` failed while the static built-in columns were still present.
+  - GREEN: `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand -t "four-tab|does not duplicate"` passed.
+  - `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand` passed: 1 suite, 24 tests.
+  - `npx tsc --noEmit` passed.
+- Remaining gaps:
+  - Browser visual QA of the protected admin page still requires a local authenticated admin session.
+
 ## 2026-05-14 - Admin Role & Privilege Matrix Stability
 
 - Reference: Flow 3, screenshot 03.
@@ -452,3 +499,16 @@ The local reference pack is intentionally ignored by git because it contains man
   - `npm run build`
 - Remaining gaps:
   - Deeper AE selected-row field layout refinement remains outside this summary-table cleanup pass.
+
+## 2026-05-14 - Admin HOME and INFO Privilege Rows
+
+- Reference: Client role and privilege row naming requirements.
+- Aligned:
+  - Kept HOME `Notice` as separate Read/Edit privilege rows.
+  - Renamed HOME workflow visibility to `My To Do` with a Read privilege and mapped it to case read/list permissions.
+  - Renamed INFO privilege rows to `Case Info` for Read/Edit while keeping the menu label as `INFO`.
+- Files changed:
+  - `frontend/E2BR3-frontend/lib/admin/roleConfig.ts`
+  - `frontend/E2BR3-frontend/__tests__/admin-users.header-filters.test.ts`
+  - `crates/libs/lib-core/src/model/acs/permission.rs`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`

@@ -518,8 +518,12 @@ pub const TERMINOLOGY_APPROVE: Permission =
 	Permission::new(Resource::Terminology, Action::Approve);
 
 // XML permissions
+pub const XML_EXPORT_READ: Permission =
+	Permission::new(Resource::XmlExport, Action::Read);
 pub const XML_EXPORT: Permission =
 	Permission::new(Resource::XmlExport, Action::Export);
+pub const XML_IMPORT_READ: Permission =
+	Permission::new(Resource::XmlImport, Action::Read);
 pub const XML_IMPORT: Permission =
 	Permission::new(Resource::XmlImport, Action::Import);
 
@@ -730,7 +734,9 @@ fn admin_permissions() -> &'static [Permission] {
 		TERMINOLOGY_IMPORT,
 		TERMINOLOGY_APPROVE,
 		// XML
+		XML_EXPORT_READ,
 		XML_EXPORT,
+		XML_IMPORT_READ,
 		XML_IMPORT,
 	]
 }
@@ -1003,6 +1009,11 @@ fn permissions_for_menu_key(
 ) -> Vec<Permission> {
 	let mut permissions = Vec::new();
 	match menu_key {
+		"home_workflow" => {
+			if can_read {
+				push_unique(&mut permissions, &[CASE_READ, CASE_LIST]);
+			}
+		}
 		"case" => {
 			if can_read {
 				push_unique(&mut permissions, viewer_permissions());
@@ -1056,12 +1067,18 @@ fn permissions_for_menu_key(
 			}
 		}
 		"import" => {
-			if can_read || can_edit {
+			if can_read {
+				push_unique(&mut permissions, &[XML_IMPORT_READ]);
+			}
+			if can_edit {
 				push_unique(&mut permissions, &[XML_IMPORT]);
 			}
 		}
 		"export_submission" | "submission" | "export" => {
-			if can_read || can_edit {
+			if can_read {
+				push_unique(&mut permissions, &[XML_EXPORT_READ]);
+			}
+			if can_edit {
 				push_unique(&mut permissions, &[XML_EXPORT]);
 			}
 		}
@@ -1300,7 +1317,23 @@ mod tests {
 		assert!(permissions.contains(&USER_LIST));
 		assert!(permissions.contains(&USER_CREATE));
 		assert!(permissions.contains(&USER_UPDATE));
-		assert!(permissions.contains(&XML_IMPORT));
+		assert!(permissions.contains(&XML_IMPORT_READ));
+		assert!(!permissions.contains(&XML_IMPORT));
+	}
+
+	#[test]
+	fn test_home_workflow_read_expands_to_case_view_permissions() {
+		let permissions = permissions_for_menu_privileges(&[AdminMenuPrivilege {
+			menu_key: "home_workflow".to_string(),
+			can_read: true,
+			can_edit: false,
+			can_review: false,
+			can_lock: false,
+		}]);
+
+		assert!(permissions.contains(&CASE_READ));
+		assert!(permissions.contains(&CASE_LIST));
+		assert!(!permissions.contains(&CASE_UPDATE));
 	}
 
 	#[test]
