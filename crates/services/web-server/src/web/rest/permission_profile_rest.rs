@@ -15,6 +15,7 @@ use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
 use std::collections::BTreeMap;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PermissionProfileRow {
@@ -39,8 +40,7 @@ pub struct PermissionProfileRow {
 
 #[derive(Debug, Deserialize)]
 pub struct PermissionProfileCreateBody {
-	pub profile_id: String,
-	pub name: Option<String>,
+	pub name: String,
 	pub description: Option<String>,
 	pub privileges: Option<Vec<AdminMenuPrivilege>>,
 	pub active: Option<bool>,
@@ -313,23 +313,23 @@ pub async fn create_permission_profile(
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	require_admin(&ctx_w.0, &mm).await?;
 	let data = params.data;
-	let profile_id = normalize_profile_id(&data.profile_id);
+	let name = data.name.trim().to_string();
+	if name.is_empty() {
+		return Err(Error::BadRequest {
+			message: "name is required".to_string(),
+		});
+	}
+	let profile_id = Uuid::new_v4().to_string();
 	if is_built_in_profile_id(&profile_id) {
 		return Err(Error::BadRequest {
 			message: "cannot use a built-in profile id".to_string(),
 		});
 	}
-	let name = data
-		.name
+	let description = data
+		.description
 		.map(|value| value.trim().to_string())
 		.filter(|value| !value.is_empty())
-		.unwrap_or_else(|| profile_id.clone());
-	if profile_id.is_empty() {
-		return Err(Error::BadRequest {
-			message: "profile_id is required".to_string(),
-		});
-	}
-	let description = data.description.map(|value| value.trim().to_string());
+		.filter(|value| value != &name);
 	let active = data.active.unwrap_or(true);
 	let privileges = normalize_admin_privileges(data.privileges)?;
 	let (_, _, _, sponsor_admin_capable) = role_summary_booleans(&privileges);

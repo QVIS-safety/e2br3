@@ -2,7 +2,7 @@ use crate::common::{
 	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
 	seed_org_with_users, system_user_id, Result,
 };
-use axum::body::Body;
+use axum::body::{to_bytes, Body};
 use axum::http::header;
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
@@ -418,11 +418,14 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 	.await?;
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
 	let app = web_server::app(mm);
+	let regular_suffix = Uuid::new_v4();
+	let sponsor_suffix = Uuid::new_v4();
 
 	let regular_body = json!({
 		"data": {
 			"organization_id": seed.org_id,
-			"email": format!("system-admin-regular-{}@example.com", Uuid::new_v4()),
+			"email": format!("system-admin-regular-{regular_suffix}@example.com"),
+			"username": format!("System Admin Regular {regular_suffix}"),
 			"role": "user"
 		}
 	});
@@ -438,7 +441,8 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 	let sponsor_body = json!({
 		"data": {
 			"organization_id": seed.org_id,
-			"email": format!("system-admin-sponsor-{}@example.com", Uuid::new_v4()),
+			"email": format!("system-admin-sponsor-{sponsor_suffix}@example.com"),
+			"username": format!("System Admin Sponsor {sponsor_suffix}"),
 			"role": ROLE_SPONSOR_ADMIN_COMPANY
 		}
 	});
@@ -459,7 +463,7 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 		.body(Body::from(
 			json!({
 				"data": {
-					"profile_id": format!("blocked_by_system_{}", Uuid::new_v4().simple()),
+					"name": "Blocked By System",
 					"privileges": [
 						{
 							"menu_key": "case",
@@ -475,6 +479,13 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 		))?;
 	let role_res = app.oneshot(role_req).await?;
 	assert_eq!(role_res.status(), StatusCode::CREATED);
+	let role_body = to_bytes(role_res.into_body(), usize::MAX).await?;
+	let role_json: serde_json::Value = serde_json::from_slice(&role_body)?;
+	let profile_id = role_json["profile_id"]
+		.as_str()
+		.ok_or("expected generated profile_id")?;
+	Uuid::parse_str(profile_id)?;
+	assert_eq!(role_json["name"], "Blocked By System");
 	Ok(())
 }
 
