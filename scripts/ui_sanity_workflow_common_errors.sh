@@ -112,7 +112,7 @@ pw click "$ORG_REF"
 ########################################
 CASE_SR_ID="$(now_id)"
 echo "UI sanity: create case from scratch (C.1.1=$CASE_SR_ID)..."
-pw open "$FRONTEND_URL/dashboard/cases/new"
+pw open "$FRONTEND_URL/cases/new"
 
 # Wait for the duplication check page to load.
 for _ in $(seq 1 30); do
@@ -146,7 +146,7 @@ done
 # Export XML (Submission page)
 ########################################
 echo "UI sanity: export XML..."
-pw open "$FRONTEND_URL/dashboard/submission"
+pw open "$FRONTEND_URL/submission"
 for _ in $(seq 1 60); do
   SNAP="$(snapshot)"
   if grep -q 'heading "Ready for Submission"' "$SNAP"; then
@@ -174,7 +174,7 @@ pw click "$EXPORT_REF"
 # Import XML (Import page)
 ########################################
 echo "UI sanity: import XML..."
-pw open "$FRONTEND_URL/dashboard/import"
+pw open "$FRONTEND_URL/import"
 for _ in $(seq 1 60); do
   SNAP="$(snapshot)"
   if grep -q 'heading "Import"' "$SNAP" || grep -q 'text: Import XML' "$SNAP"; then
@@ -193,7 +193,7 @@ pw upload "$EXAMPLE_XML"
 # Syntax gating check: clear required C.1.1 => Save disabled (no backend request)
 ########################################
 echo "UI sanity: verify Save disables when required C.1.1 is cleared..."
-pw open "$FRONTEND_URL/dashboard/cases"
+pw open "$FRONTEND_URL/cases"
 for _ in $(seq 1 60); do
   SNAP="$(snapshot)"
   if grep -q 'button "Edit case"' "$SNAP"; then
