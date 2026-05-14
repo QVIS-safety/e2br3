@@ -571,7 +571,7 @@ pub fn routes_users(mm: ModelManager) -> Router {
 				.post(permission_profile_rest::create_permission_profile),
 		)
 		.route(
-			"/admin/permission-profiles/{role_name}",
+			"/admin/permission-profiles/{profile_id}",
 			get(permission_profile_rest::get_permission_profile)
 				.delete(permission_profile_rest::delete_permission_profile)
 				.put(permission_profile_rest::update_permission_profile),

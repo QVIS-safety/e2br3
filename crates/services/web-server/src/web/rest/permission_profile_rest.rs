@@ -18,9 +18,8 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PermissionProfileRow {
-	pub canonical_role_id: String,
-	pub role_name: String,
-	pub display_name: String,
+	pub profile_id: String,
+	pub name: String,
 	pub description: Option<String>,
 	pub privileges: Vec<AdminMenuPrivilege>,
 	pub privilege_map: BTreeMap<String, AdminMenuPrivilege>,
@@ -40,8 +39,8 @@ pub struct PermissionProfileRow {
 
 #[derive(Debug, Deserialize)]
 pub struct PermissionProfileCreateBody {
-	pub role_name: String,
-	pub display_name: Option<String>,
+	pub profile_id: String,
+	pub name: Option<String>,
 	pub description: Option<String>,
 	pub privileges: Option<Vec<AdminMenuPrivilege>>,
 	pub active: Option<bool>,
@@ -49,13 +48,13 @@ pub struct PermissionProfileCreateBody {
 
 #[derive(Debug, Deserialize)]
 pub struct PermissionProfileUpdateBody {
-	pub display_name: Option<String>,
+	pub name: Option<String>,
 	pub description: Option<String>,
 	pub privileges: Option<Vec<AdminMenuPrivilege>>,
 	pub active: Option<bool>,
 }
 
-fn normalize_role_name(value: &str) -> String {
+fn normalize_profile_id(value: &str) -> String {
 	value.trim().to_ascii_lowercase().replace(' ', "_")
 }
 
@@ -96,8 +95,8 @@ fn role_summary_booleans(
 }
 
 fn build_role_row(
-	role_name: String,
-	display_name: String,
+	profile_id: String,
+	name: String,
 	description: Option<String>,
 	privileges: Vec<AdminMenuPrivilege>,
 	active: bool,
@@ -105,14 +104,13 @@ fn build_role_row(
 	editable: bool,
 	sponsor_admin_capable: bool,
 ) -> PermissionProfileRow {
-	let is_system = role_name == ROLE_SYSTEM_ADMIN;
+	let is_system = profile_id == ROLE_SYSTEM_ADMIN;
 	let (can_view, can_review, can_lock, can_admin) =
 		role_summary_booleans(&privileges);
 	let sponsor_admin_capable = sponsor_admin_capable || can_admin;
 	PermissionProfileRow {
-		canonical_role_id: role_name.clone(),
-		role_name,
-		display_name,
+		profile_id,
+		name,
 		description,
 		privilege_map: privilege_map(&privileges),
 		privileges,
@@ -247,8 +245,8 @@ fn built_in_roles() -> Vec<PermissionProfileRow> {
 
 fn row_to_api(row: DbPermissionProfileRow) -> PermissionProfileRow {
 	build_role_row(
-		row.role_name,
-		row.display_name,
+		row.profile_id,
+		row.name,
 		row.description,
 		row.privileges_json.0,
 		row.active,
@@ -258,9 +256,9 @@ fn row_to_api(row: DbPermissionProfileRow) -> PermissionProfileRow {
 	)
 }
 
-fn is_built_in_role_name(role_name: &str) -> bool {
+fn is_built_in_profile_id(profile_id: &str) -> bool {
 	matches!(
-		role_name,
+		profile_id,
 		ROLE_SYSTEM_ADMIN | ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
 	)
 }
@@ -285,17 +283,17 @@ pub async fn list_permission_profiles(
 	Ok((StatusCode::OK, Json(rows)))
 }
 
-/// GET /api/admin/permission-profiles/{role_name}
+/// GET /api/admin/permission-profiles/{profile_id}
 pub async fn get_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path(role_name): Path<String>,
+	Path(profile_id): Path<String>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	require_admin(&ctx_w.0, &mm).await?;
-	let normalized_role = normalize_role_name(&role_name);
+	let normalized_role = normalize_profile_id(&profile_id);
 	if let Some(row) = built_in_roles()
 		.into_iter()
-		.find(|row| row.role_name == normalized_role)
+		.find(|row| row.profile_id == normalized_role)
 	{
 		return Ok((StatusCode::OK, Json(row)));
 	}
@@ -315,20 +313,20 @@ pub async fn create_permission_profile(
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	require_admin(&ctx_w.0, &mm).await?;
 	let data = params.data;
-	let role_name = normalize_role_name(&data.role_name);
-	if is_built_in_role_name(&role_name) {
+	let profile_id = normalize_profile_id(&data.profile_id);
+	if is_built_in_profile_id(&profile_id) {
 		return Err(Error::BadRequest {
-			message: "cannot use a built-in role name".to_string(),
+			message: "cannot use a built-in profile id".to_string(),
 		});
 	}
-	let display_name = data
-		.display_name
+	let name = data
+		.name
 		.map(|value| value.trim().to_string())
 		.filter(|value| !value.is_empty())
-		.unwrap_or_else(|| role_name.clone());
-	if role_name.is_empty() {
+		.unwrap_or_else(|| profile_id.clone());
+	if profile_id.is_empty() {
 		return Err(Error::BadRequest {
-			message: "role_name is required".to_string(),
+			message: "profile_id is required".to_string(),
 		});
 	}
 	let description = data.description.map(|value| value.trim().to_string());
@@ -339,8 +337,8 @@ pub async fn create_permission_profile(
 	PermissionProfileBmc::create(
 		&mm,
 		PermissionProfileCreateData {
-			role_name: role_name.clone(),
-			display_name,
+			profile_id: profile_id.clone(),
+			name,
 			description,
 			privileges: SqlxJson(privileges),
 			active,
@@ -350,7 +348,7 @@ pub async fn create_permission_profile(
 	.await
 	.map_err(Error::Model)?;
 
-	let row = PermissionProfileBmc::get(&mm, &role_name)
+	let row = PermissionProfileBmc::get(&mm, &profile_id)
 		.await
 		.map_err(Error::Model)?;
 
@@ -360,18 +358,18 @@ pub async fn create_permission_profile(
 	Ok((StatusCode::CREATED, Json(row_to_api(row))))
 }
 
-/// PUT /api/admin/permission-profiles/{role_name}
+/// PUT /api/admin/permission-profiles/{profile_id}
 pub async fn update_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path(role_name): Path<String>,
+	Path(profile_id): Path<String>,
 	Json(params): Json<
 		lib_rest_core::rest_params::ParamsForUpdate<PermissionProfileUpdateBody>,
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	require_admin(&ctx_w.0, &mm).await?;
-	let normalized_role = normalize_role_name(&role_name);
-	if is_built_in_role_name(&normalized_role) {
+	let normalized_role = normalize_profile_id(&profile_id);
+	if is_built_in_profile_id(&normalized_role) {
 		return Err(Error::AccessDenied {
 			required_role: "editable_custom_role".to_string(),
 		});
@@ -381,9 +379,9 @@ pub async fn update_permission_profile(
 		.map_err(Error::Model)?;
 
 	let data = params.data;
-	let next_display_name = data
-		.display_name
-		.unwrap_or_else(|| current.display_name.clone())
+	let next_name = data
+		.name
+		.unwrap_or_else(|| current.name.clone())
 		.trim()
 		.to_string();
 	let next_description = data.description.or_else(|| current.description.clone());
@@ -399,7 +397,7 @@ pub async fn update_permission_profile(
 		&mm,
 		&normalized_role,
 		PermissionProfileUpdateData {
-			display_name: next_display_name,
+			name: next_name,
 			description: next_description,
 			privileges: SqlxJson(next_privileges),
 			active: next_active,
@@ -419,17 +417,17 @@ pub async fn update_permission_profile(
 	Ok((StatusCode::OK, Json(row_to_api(row))))
 }
 
-/// DELETE /api/admin/permission-profiles/{role_name}
+/// DELETE /api/admin/permission-profiles/{profile_id}
 pub async fn delete_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Path(role_name): Path<String>,
+	Path(profile_id): Path<String>,
 ) -> Result<StatusCode> {
 	require_admin(&ctx_w.0, &mm).await?;
-	let normalized_role = normalize_role_name(&role_name);
-	if is_built_in_role_name(&normalized_role) {
+	let normalized_role = normalize_profile_id(&profile_id);
+	if is_built_in_profile_id(&normalized_role) {
 		return Err(Error::BadRequest {
-			message: "built-in roles cannot be deleted".to_string(),
+			message: "built-in permission profiles cannot be deleted".to_string(),
 		});
 	}
 	PermissionProfileBmc::evict_dynamic_role(&normalized_role);

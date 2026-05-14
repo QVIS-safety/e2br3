@@ -18,8 +18,8 @@ use sqlx::FromRow;
 
 #[derive(Debug, Clone, FromRow)]
 pub struct DbPermissionProfileRow {
-	pub role_name: String,
-	pub display_name: String,
+	pub profile_id: String,
+	pub name: String,
 	pub description: Option<String>,
 	pub can_view: bool,
 	pub can_review: bool,
@@ -34,8 +34,8 @@ pub struct DbPermissionProfileRow {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PermissionProfileCreateData {
-	pub role_name: String,
-	pub display_name: String,
+	pub profile_id: String,
+	pub name: String,
 	pub description: Option<String>,
 	pub privileges: SqlxJson<Vec<AdminMenuPrivilege>>,
 	pub active: bool,
@@ -44,7 +44,7 @@ pub struct PermissionProfileCreateData {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PermissionProfileUpdateData {
-	pub display_name: String,
+	pub name: String,
 	pub description: Option<String>,
 	pub privileges: SqlxJson<Vec<AdminMenuPrivilege>>,
 	pub active: bool,
@@ -52,7 +52,7 @@ pub struct PermissionProfileUpdateData {
 }
 
 const PROFILE_SELECT: &str = r#"
-	SELECT role_name, display_name, description, can_view, can_review, can_lock, can_admin,
+	SELECT profile_id, name, description, can_view, can_review, can_lock, can_admin,
 	       privileges_json, active, built_in, editable, sponsor_admin_capable
 	FROM permission_profiles
 "#;
@@ -63,8 +63,7 @@ pub struct PermissionProfileBmc;
 
 impl PermissionProfileBmc {
 	pub async fn list(mm: &ModelManager) -> Result<Vec<DbPermissionProfileRow>> {
-		let sql =
-			format!("{PROFILE_SELECT} ORDER BY built_in DESC, display_name ASC");
+		let sql = format!("{PROFILE_SELECT} ORDER BY built_in DESC, name ASC");
 		mm.dbx()
 			.fetch_all(sqlx::query_as::<_, DbPermissionProfileRow>(&sql))
 			.await
@@ -75,7 +74,7 @@ impl PermissionProfileBmc {
 		mm: &ModelManager,
 	) -> Result<Vec<DbPermissionProfileRow>> {
 		let sql = format!(
-			"{PROFILE_SELECT} WHERE active = true AND built_in = false ORDER BY display_name ASC"
+			"{PROFILE_SELECT} WHERE active = true AND built_in = false ORDER BY name ASC"
 		);
 		mm.dbx()
 			.fetch_all(sqlx::query_as::<_, DbPermissionProfileRow>(&sql))
@@ -85,12 +84,12 @@ impl PermissionProfileBmc {
 
 	pub async fn get(
 		mm: &ModelManager,
-		role_name: &str,
+		profile_id: &str,
 	) -> Result<DbPermissionProfileRow> {
-		let sql = format!("{PROFILE_SELECT} WHERE role_name = $1");
+		let sql = format!("{PROFILE_SELECT} WHERE profile_id = $1");
 		mm.dbx()
 			.fetch_one(
-				sqlx::query_as::<_, DbPermissionProfileRow>(&sql).bind(role_name),
+				sqlx::query_as::<_, DbPermissionProfileRow>(&sql).bind(profile_id),
 			)
 			.await
 			.map_err(|e| crate::model::Error::Store(e.to_string()))
@@ -105,14 +104,14 @@ impl PermissionProfileBmc {
 				sqlx::query(
 					r#"
 					INSERT INTO permission_profiles
-						(role_name, display_name, description, privileges_json, active,
+						(profile_id, name, description, privileges_json, active,
 						 built_in, editable, sponsor_admin_capable,
 						 can_view, can_review, can_lock, can_admin)
 						VALUES ($1, $2, $3, $4, $5, false, true, $6, false, false, false, false)
 					"#,
 				)
-				.bind(&data.role_name)
-				.bind(&data.display_name)
+				.bind(&data.profile_id)
+				.bind(&data.name)
 				.bind(&data.description)
 				.bind(&data.privileges)
 				.bind(data.active)
@@ -125,7 +124,7 @@ impl PermissionProfileBmc {
 
 	pub async fn update(
 		mm: &ModelManager,
-		role_name: &str,
+		profile_id: &str,
 		data: PermissionProfileUpdateData,
 	) -> Result<()> {
 		mm.dbx()
@@ -133,7 +132,7 @@ impl PermissionProfileBmc {
 				sqlx::query(
 					r#"
 					UPDATE permission_profiles
-					SET display_name = $2,
+					SET name = $2,
 					    description = $3,
 						    privileges_json = $4,
 						    active = $5,
@@ -143,11 +142,11 @@ impl PermissionProfileBmc {
 					    can_review = false,
 					    can_lock = false,
 					    can_admin = false
-					WHERE role_name = $1
+					WHERE profile_id = $1
 					"#,
 				)
-				.bind(role_name)
-				.bind(&data.display_name)
+				.bind(profile_id)
+				.bind(&data.name)
 				.bind(&data.description)
 				.bind(&data.privileges)
 				.bind(data.active)
@@ -158,11 +157,11 @@ impl PermissionProfileBmc {
 			.map_err(|e| crate::model::Error::Store(e.to_string()))
 	}
 
-	pub async fn delete(mm: &ModelManager, role_name: &str) -> Result<()> {
+	pub async fn delete(mm: &ModelManager, profile_id: &str) -> Result<()> {
 		mm.dbx()
 			.execute(
-				sqlx::query("DELETE FROM permission_profiles WHERE role_name = $1")
-					.bind(role_name),
+				sqlx::query("DELETE FROM permission_profiles WHERE profile_id = $1")
+					.bind(profile_id),
 			)
 			.await
 			.map(|_| ())
@@ -178,7 +177,7 @@ impl PermissionProfileBmc {
 			.map(|row| {
 				let permissions =
 					permissions_for_menu_privileges(&row.privileges_json.0);
-				(row.role_name, permissions)
+				(row.profile_id, permissions)
 			})
 			.collect();
 		replace_dynamic_roles(mapped);
@@ -187,7 +186,7 @@ impl PermissionProfileBmc {
 
 	/// Remove a single role from the in-memory cache without a full reload.
 	/// Call before `refresh_dynamic_roles` on delete, or standalone for cache eviction.
-	pub fn evict_dynamic_role(role_name: &str) {
-		remove_dynamic_role(role_name);
+	pub fn evict_dynamic_role(profile_id: &str) {
+		remove_dynamic_role(profile_id);
 	}
 }

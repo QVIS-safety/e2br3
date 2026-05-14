@@ -242,7 +242,7 @@ pub async fn workflow_role_exists_and_is_active(
 				r#"
 				SELECT active
 				FROM permission_profiles
-				WHERE role_name = $1
+				WHERE profile_id = $1
 				"#,
 			)
 			.bind(&role),

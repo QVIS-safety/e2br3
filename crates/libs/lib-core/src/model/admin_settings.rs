@@ -73,12 +73,12 @@ impl AdminSettingsBmc {
 		let rows = mm
 			.dbx()
 			.fetch_all(sqlx::query_as::<_, (String,)>(
-				"SELECT role_name FROM permission_profiles WHERE active = true",
+				"SELECT profile_id FROM permission_profiles WHERE active = true",
 			))
 			.await
 			.map_err(|e| crate::model::Error::Store(e.to_string()))?;
-		for (role_name,) in rows {
-			let role = canonical_role(&role_name);
+		for (profile_id,) in rows {
+			let role = canonical_role(&profile_id);
 			if !role.is_empty() {
 				roles.insert(role);
 			}

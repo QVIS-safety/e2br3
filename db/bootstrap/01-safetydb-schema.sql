@@ -84,17 +84,9 @@ CREATE TABLE IF NOT EXISTS app_settings (
     updated_by uuid NULL REFERENCES users(id) ON DELETE SET NULL
 );
 
-DO $$
-BEGIN
-    IF to_regclass('public.permission_profiles') IS NULL
-       AND to_regclass('public.app_roles') IS NOT NULL THEN
-        ALTER TABLE app_roles RENAME TO permission_profiles;
-    END IF;
-END $$;
-
 CREATE TABLE IF NOT EXISTS permission_profiles (
-    role_name text PRIMARY KEY,
-    display_name text NOT NULL,
+    profile_id text PRIMARY KEY,
+    name text NOT NULL,
     description text,
     can_view boolean NOT NULL DEFAULT true,
     can_review boolean NOT NULL DEFAULT false,

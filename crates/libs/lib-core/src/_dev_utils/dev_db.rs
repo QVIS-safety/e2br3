@@ -200,13 +200,6 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS access_blind_allowed BOOLEAN",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS active_sender_identifier TEXT",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS permission_profile_id TEXT",
-		"DO $$
-		 BEGIN
-		     IF to_regclass('public.permission_profiles') IS NULL
-		        AND to_regclass('public.app_roles') IS NOT NULL THEN
-		         ALTER TABLE app_roles RENAME TO permission_profiles;
-		     END IF;
-		 END $$",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS description TEXT",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS privileges_json JSONB NOT NULL DEFAULT '[]'::jsonb",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS built_in BOOLEAN NOT NULL DEFAULT false",
@@ -319,7 +312,7 @@ async fn apply_compatibility_alters(
 	for sql in dirty_trigger_compatibility_sql() {
 		sqlx::query(sql).execute(&mut *tx).await?;
 	}
-	for (code, display_name, unit_type) in [
+	for (code, name, unit_type) in [
 		("mg/dL", "milligram per deciliter", "concentration"),
 		("U/L", "unit per liter", "activity concentration"),
 		("mmol/L", "millimole per liter", "concentration"),
@@ -333,7 +326,7 @@ async fn apply_compatibility_alters(
 			 	active = true",
 		)
 		.bind(code)
-		.bind(display_name)
+		.bind(name)
 		.bind(unit_type)
 		.execute(&mut *tx)
 		.await?;

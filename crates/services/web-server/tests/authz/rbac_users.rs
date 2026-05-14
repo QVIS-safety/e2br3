@@ -459,7 +459,7 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 		.body(Body::from(
 			json!({
 				"data": {
-					"role_name": format!("blocked_by_system_{}", Uuid::new_v4().simple()),
+					"profile_id": format!("blocked_by_system_{}", Uuid::new_v4().simple()),
 					"privileges": [
 						{
 							"menu_key": "case",

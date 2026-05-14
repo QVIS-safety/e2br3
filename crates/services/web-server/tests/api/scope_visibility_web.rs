@@ -54,7 +54,7 @@ async fn request_json(
 async fn create_empty_custom_role(
 	app: &Router,
 	admin_cookie: &str,
-	role_name: &str,
+	profile_id: &str,
 ) -> Result<()> {
 	let (status, value) = request_json(
 		app,
@@ -63,9 +63,9 @@ async fn create_empty_custom_role(
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"role_name": role_name,
-				"display_name": role_name,
-				"description": format!("Effective permission test role {role_name}"),
+				"profile_id": profile_id,
+				"name": profile_id,
+				"description": format!("Effective permission test role {profile_id}"),
 				"privileges": []
 			}
 		})),
@@ -78,14 +78,14 @@ async fn create_empty_custom_role(
 async fn update_role_privileges(
 	app: &Router,
 	admin_cookie: &str,
-	role_name: &str,
+	profile_id: &str,
 	privileges: Value,
 ) -> Result<Value> {
 	let (status, value) = request_json(
 		app,
 		"PUT",
 		admin_cookie,
-		format!("/api/admin/permission-profiles/{role_name}"),
+		format!("/api/admin/permission-profiles/{profile_id}"),
 		Some(json!({ "data": { "privileges": privileges } })),
 	)
 	.await?;
@@ -96,10 +96,10 @@ async fn update_role_privileges(
 async fn custom_role_user(
 	mm: &ModelManager,
 	org_id: Uuid,
-	role_name: &str,
+	profile_id: &str,
 ) -> Result<(Uuid, String)> {
 	let user =
-		insert_user(mm, org_id, role_name, system_user_id(), Some("custompwd"))
+		insert_user(mm, org_id, profile_id, system_user_id(), Some("custompwd"))
 			.await?;
 	let token = generate_web_token(&user.email, user.token_salt)?;
 	Ok((user.id, cookie_header(&token.to_string())))
@@ -1078,14 +1078,14 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 	let roles = value.as_array().ok_or("roles response should be array")?;
 	let system = roles
 		.iter()
-		.find(|role| role["canonical_role_id"] == ROLE_SYSTEM_ADMIN)
+		.find(|role| role["profile_id"] == ROLE_SYSTEM_ADMIN)
 		.ok_or("missing system permission profile")?;
 	assert_eq!(system["is_operational"].as_bool(), Some(false));
 	assert_eq!(system["is_editable"].as_bool(), Some(false));
 
 	let sponsor = roles
 		.iter()
-		.find(|role| role["canonical_role_id"] == ROLE_SPONSOR_ADMIN_CRO)
+		.find(|role| role["profile_id"] == ROLE_SPONSOR_ADMIN_CRO)
 		.ok_or("missing sponsor permission profile")?;
 	assert_eq!(sponsor["is_builtin"].as_bool(), Some(true));
 	assert_eq!(sponsor["is_sponsor_admin"].as_bool(), Some(true));
@@ -1129,14 +1129,14 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(value["canonical_role_id"], ROLE_SPONSOR_ADMIN_CRO);
+	assert_eq!(value["profile_id"], ROLE_SPONSOR_ADMIN_CRO);
 
 	let (status, _value) = request_json(
 		&app,
 		"PUT",
 		&admin_cookie,
 		format!("/api/admin/permission-profiles/{ROLE_SPONSOR_ADMIN_CRO}"),
-		Some(json!({ "data": { "display_name": "Should Not Change" } })),
+		Some(json!({ "data": { "name": "Should Not Change" } })),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN);
@@ -1151,7 +1151,7 @@ async fn test_role_admin_api_defaults_visible_name_to_role_id() -> Result<()> {
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let role_name = format!("qa_desc_{}", Uuid::new_v4().simple());
+	let profile_id = format!("qa_desc_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -1160,7 +1160,7 @@ async fn test_role_admin_api_defaults_visible_name_to_role_id() -> Result<()> {
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"role_name": role_name,
+				"profile_id": profile_id,
 				"description": "Role created with description only",
 				"privileges": [
 					{
@@ -1177,8 +1177,8 @@ async fn test_role_admin_api_defaults_visible_name_to_role_id() -> Result<()> {
 	.await?;
 
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(value["canonical_role_id"], role_name);
-	assert_eq!(value["display_name"], role_name);
+	assert_eq!(value["profile_id"], profile_id);
+	assert_eq!(value["name"], profile_id);
 	assert_eq!(value["description"], "Role created with description only");
 
 	Ok(())
@@ -1192,7 +1192,7 @@ async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> 
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let role_name = format!("qa_empty_{}", Uuid::new_v4().simple());
+	let profile_id = format!("qa_empty_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -1201,8 +1201,8 @@ async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> 
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"role_name": role_name,
-				"display_name": "QA empty privilege role",
+				"profile_id": profile_id,
+				"name": "QA empty privilege role",
 				"description": "Created before privileges are assigned",
 				"privileges": []
 			}
@@ -1211,7 +1211,7 @@ async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> 
 	.await?;
 
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(value["canonical_role_id"], role_name);
+	assert_eq!(value["profile_id"], profile_id);
 	assert_eq!(value["privileges"].as_array().map(Vec::len), Some(0));
 	assert_eq!(value["can_view"].as_bool(), Some(false));
 	assert_eq!(value["can_admin"].as_bool(), Some(false));
@@ -1227,22 +1227,22 @@ async fn test_role_admin_api_does_not_fallback_to_old_boolean_privileges(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let role_name = format!("qa_old_bool_{}", Uuid::new_v4().simple());
+	let profile_id = format!("qa_old_bool_{}", Uuid::new_v4().simple());
 
 	mm.dbx()
 		.execute(
 			sqlx::query(
 				r#"
 				INSERT INTO permission_profiles
-					(role_name, display_name, description, can_view, can_review,
+					(profile_id, name, description, can_view, can_review,
 					 can_lock, can_admin, privileges_json, active, built_in,
 					 editable, sponsor_admin_capable)
 				VALUES ($1, $2, 'old boolean row', true, true, true, true,
 				        '[]'::jsonb, true, false, true, true)
 				"#,
 			)
-			.bind(&role_name)
-			.bind(format!("Old Boolean {role_name}")),
+			.bind(&profile_id)
+			.bind(format!("Old Boolean {profile_id}")),
 		)
 		.await?;
 
@@ -1251,7 +1251,7 @@ async fn test_role_admin_api_does_not_fallback_to_old_boolean_privileges(
 		&app,
 		"GET",
 		&admin_cookie,
-		format!("/api/admin/permission-profiles/{role_name}"),
+		format!("/api/admin/permission-profiles/{profile_id}"),
 		None,
 	)
 	.await?;
@@ -1274,7 +1274,7 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let role_name = format!("qa_matrix_{}", Uuid::new_v4().simple());
+	let profile_id = format!("qa_matrix_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -1283,8 +1283,8 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"role_name": role_name,
-				"display_name": "QA matrix role",
+				"profile_id": profile_id,
+				"name": "QA matrix role",
 				"description": "Created before privilege matrix toggles",
 				"privileges": []
 			}
@@ -1342,7 +1342,7 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 		&app,
 		"PUT",
 		&admin_cookie,
-		format!("/api/admin/permission-profiles/{role_name}"),
+		format!("/api/admin/permission-profiles/{profile_id}"),
 		Some(json!({ "data": { "privileges": matrix_privileges } })),
 	)
 	.await?;
@@ -1361,7 +1361,7 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	let roles = value.as_array().ok_or("roles response should be array")?;
 	let persisted_role = roles
 		.iter()
-		.find(|role| role["canonical_role_id"] == role_name)
+		.find(|role| role["profile_id"] == profile_id)
 		.ok_or("missing persisted matrix role")?;
 	let privileges = persisted_role["privileges"]
 		.as_array()
@@ -1396,7 +1396,7 @@ async fn test_role_privilege_matrix_update_grants_effective_case_access(
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm.clone());
-	let role_name = format!("qa_effective_{}", Uuid::new_v4().simple());
+	let profile_id = format!("qa_effective_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -1405,8 +1405,8 @@ async fn test_role_privilege_matrix_update_grants_effective_case_access(
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"role_name": role_name,
-				"display_name": "QA effective role",
+				"profile_id": profile_id,
+				"name": "QA effective role",
 				"description": "Starts without effective case permissions",
 				"privileges": []
 			}
@@ -1418,7 +1418,7 @@ async fn test_role_privilege_matrix_update_grants_effective_case_access(
 	let custom_user = insert_user(
 		&mm,
 		seed.org_id,
-		&role_name,
+		&profile_id,
 		system_user_id(),
 		Some("custompwd"),
 	)
@@ -1436,7 +1436,7 @@ async fn test_role_privilege_matrix_update_grants_effective_case_access(
 		&app,
 		"PUT",
 		&admin_cookie,
-		format!("/api/admin/permission-profiles/{role_name}"),
+		format!("/api/admin/permission-profiles/{profile_id}"),
 		Some(json!({
 			"data": {
 				"privileges": [
@@ -1471,23 +1471,23 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm.clone());
-	let read_role_name = format!("qacmr_{}", Uuid::new_v4().simple());
-	let edit_role_name = format!("qacme_{}", Uuid::new_v4().simple());
-	let review_role_name = format!("qacmv_{}", Uuid::new_v4().simple());
-	let lock_role_name = format!("qacml_{}", Uuid::new_v4().simple());
+	let read_profile_id = format!("qacmr_{}", Uuid::new_v4().simple());
+	let edit_profile_id = format!("qacme_{}", Uuid::new_v4().simple());
+	let review_profile_id = format!("qacmv_{}", Uuid::new_v4().simple());
+	let lock_profile_id = format!("qacml_{}", Uuid::new_v4().simple());
 
-	create_empty_custom_role(&app, &admin_cookie, &read_role_name).await?;
-	create_empty_custom_role(&app, &admin_cookie, &edit_role_name).await?;
-	create_empty_custom_role(&app, &admin_cookie, &review_role_name).await?;
-	create_empty_custom_role(&app, &admin_cookie, &lock_role_name).await?;
+	create_empty_custom_role(&app, &admin_cookie, &read_profile_id).await?;
+	create_empty_custom_role(&app, &admin_cookie, &edit_profile_id).await?;
+	create_empty_custom_role(&app, &admin_cookie, &review_profile_id).await?;
+	create_empty_custom_role(&app, &admin_cookie, &lock_profile_id).await?;
 	let (read_user_id, read_cookie) =
-		custom_role_user(&mm, seed.org_id, &read_role_name).await?;
+		custom_role_user(&mm, seed.org_id, &read_profile_id).await?;
 	let (edit_user_id, edit_cookie) =
-		custom_role_user(&mm, seed.org_id, &edit_role_name).await?;
+		custom_role_user(&mm, seed.org_id, &edit_profile_id).await?;
 	let (review_user_id, review_cookie) =
-		custom_role_user(&mm, seed.org_id, &review_role_name).await?;
+		custom_role_user(&mm, seed.org_id, &review_profile_id).await?;
 	let (lock_user_id, lock_cookie) =
-		custom_role_user(&mm, seed.org_id, &lock_role_name).await?;
+		custom_role_user(&mm, seed.org_id, &lock_profile_id).await?;
 	let case_id = create_case(
 		&app,
 		&admin_cookie,
@@ -1532,7 +1532,7 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&read_role_name,
+		&read_profile_id,
 		json!([
 			{
 				"menu_key": "case",
@@ -1593,7 +1593,7 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&edit_role_name,
+		&edit_profile_id,
 		json!([
 			{
 				"menu_key": "case",
@@ -1606,11 +1606,11 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	)
 	.await?;
 	assert!(
-		has_permission(&edit_role_name, CASE_UPDATE),
+		has_permission(&edit_profile_id, CASE_UPDATE),
 		"edit role should grant CASE_UPDATE"
 	);
 	assert!(
-		!has_permission(&edit_role_name, CASE_APPROVE),
+		!has_permission(&edit_profile_id, CASE_APPROVE),
 		"edit role should not grant CASE_APPROVE"
 	);
 
@@ -1662,7 +1662,7 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 							"editable": true,
 							"description": "Default authoring state",
 							"due_days": 0,
-							"allowed_roles": [review_role_name, lock_role_name]
+							"allowed_roles": [review_profile_id, lock_profile_id]
 						}
 					]
 				}
@@ -1675,7 +1675,7 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&review_role_name,
+		&review_profile_id,
 		json!([
 			{
 				"menu_key": "case",
@@ -1691,7 +1691,7 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 		&app,
 		&review_cookie,
 		case_id,
-		&review_role_name,
+		&review_profile_id,
 		StatusCode::FORBIDDEN,
 	)
 	.await?;
@@ -1699,7 +1699,7 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&review_role_name,
+		&review_profile_id,
 		json!([
 			{
 				"menu_key": "case",
@@ -1712,20 +1712,20 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	)
 	.await?;
 	assert!(
-		has_permission(&review_role_name, CASE_UPDATE),
+		has_permission(&review_profile_id, CASE_UPDATE),
 		"review role should grant CASE_UPDATE"
 	);
 	// CASE_APPROVE has no current web route enforcement point; keep this as a
 	// mapping assertion until an approve-specific case endpoint exists.
 	assert!(
-		has_permission(&review_role_name, CASE_APPROVE),
+		has_permission(&review_profile_id, CASE_APPROVE),
 		"review role should grant CASE_APPROVE"
 	);
 	assert_workflow_assign_status(
 		&app,
 		&review_cookie,
 		case_id,
-		&review_role_name,
+		&review_profile_id,
 		StatusCode::OK,
 	)
 	.await?;
@@ -1752,7 +1752,7 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&lock_role_name,
+		&lock_profile_id,
 		json!([
 			{
 				"menu_key": "case",
@@ -1768,7 +1768,7 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 		&app,
 		&lock_cookie,
 		case_id,
-		&lock_role_name,
+		&lock_profile_id,
 		StatusCode::FORBIDDEN,
 	)
 	.await?;
@@ -1776,7 +1776,7 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&lock_role_name,
+		&lock_profile_id,
 		json!([
 			{
 				"menu_key": "case",
@@ -1789,20 +1789,20 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	)
 	.await?;
 	assert!(
-		has_permission(&lock_role_name, CASE_UPDATE),
+		has_permission(&lock_profile_id, CASE_UPDATE),
 		"lock role should grant CASE_UPDATE"
 	);
 	// CASE_APPROVE has no current web route enforcement point; keep this as a
 	// mapping assertion until an approve-specific case endpoint exists.
 	assert!(
-		has_permission(&lock_role_name, CASE_APPROVE),
+		has_permission(&lock_profile_id, CASE_APPROVE),
 		"lock role should grant CASE_APPROVE"
 	);
 	assert_workflow_assign_status(
 		&app,
 		&lock_cookie,
 		case_id,
-		&lock_role_name,
+		&lock_profile_id,
 		StatusCode::OK,
 	)
 	.await?;
@@ -1819,11 +1819,11 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm.clone());
-	let role_name = format!("qa_info_matrix_{}", Uuid::new_v4().simple());
+	let profile_id = format!("qa_info_matrix_{}", Uuid::new_v4().simple());
 
-	create_empty_custom_role(&app, &admin_cookie, &role_name).await?;
+	create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
 	let (custom_user_id, custom_cookie) =
-		custom_role_user(&mm, seed.org_id, &role_name).await?;
+		custom_role_user(&mm, seed.org_id, &profile_id).await?;
 	let template_id = create_sender_presave_template(
 		&app,
 		&admin_cookie,
@@ -1871,7 +1871,7 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&role_name,
+		&profile_id,
 		json!([
 			{
 				"menu_key": "info",
@@ -1949,7 +1949,7 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&role_name,
+		&profile_id,
 		json!([
 			{
 				"menu_key": "info",
@@ -2042,11 +2042,11 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm.clone());
-	let role_name = format!("qa_data_matrix_{}", Uuid::new_v4().simple());
+	let profile_id = format!("qa_data_matrix_{}", Uuid::new_v4().simple());
 
-	create_empty_custom_role(&app, &admin_cookie, &role_name).await?;
+	create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
 	let (_custom_user_id, custom_cookie) =
-		custom_role_user(&mm, seed.org_id, &role_name).await?;
+		custom_role_user(&mm, seed.org_id, &profile_id).await?;
 
 	assert_get_status(
 		&app,
@@ -2059,7 +2059,7 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&role_name,
+		&profile_id,
 		json!([
 			{
 				"menu_key": "data",
@@ -2079,11 +2079,11 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 	)
 	.await?;
 	assert!(
-		!has_permission(&role_name, TERMINOLOGY_IMPORT),
+		!has_permission(&profile_id, TERMINOLOGY_IMPORT),
 		"read-only DATA must not grant terminology import permission"
 	);
 	assert!(
-		!has_permission(&role_name, TERMINOLOGY_APPROVE),
+		!has_permission(&profile_id, TERMINOLOGY_APPROVE),
 		"read-only DATA must not grant terminology approve permission"
 	);
 
@@ -2117,7 +2117,7 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&role_name,
+		&profile_id,
 		json!([
 			{
 				"menu_key": "data",
@@ -2130,11 +2130,11 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 	)
 	.await?;
 	assert!(
-		has_permission(&role_name, TERMINOLOGY_IMPORT),
+		has_permission(&profile_id, TERMINOLOGY_IMPORT),
 		"editable DATA must grant terminology import permission"
 	);
 	assert!(
-		has_permission(&role_name, TERMINOLOGY_APPROVE),
+		has_permission(&profile_id, TERMINOLOGY_APPROVE),
 		"editable DATA must grant terminology approve permission"
 	);
 
@@ -2177,22 +2177,22 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm.clone());
-	let no_export_role_name = format!("qa_export_none_{}", Uuid::new_v4().simple());
-	let read_role_name = format!("qa_export_read_{}", Uuid::new_v4().simple());
-	let edit_role_name = format!("qa_export_edit_{}", Uuid::new_v4().simple());
+	let no_export_profile_id = format!("qa_export_none_{}", Uuid::new_v4().simple());
+	let read_profile_id = format!("qa_export_read_{}", Uuid::new_v4().simple());
+	let edit_profile_id = format!("qa_export_edit_{}", Uuid::new_v4().simple());
 
-	create_empty_custom_role(&app, &admin_cookie, &no_export_role_name).await?;
-	create_empty_custom_role(&app, &admin_cookie, &read_role_name).await?;
-	create_empty_custom_role(&app, &admin_cookie, &edit_role_name).await?;
+	create_empty_custom_role(&app, &admin_cookie, &no_export_profile_id).await?;
+	create_empty_custom_role(&app, &admin_cookie, &read_profile_id).await?;
+	create_empty_custom_role(&app, &admin_cookie, &edit_profile_id).await?;
 	let (_no_export_user_id, no_export_cookie) =
-		custom_role_user(&mm, seed.org_id, &no_export_role_name).await?;
+		custom_role_user(&mm, seed.org_id, &no_export_profile_id).await?;
 	let (_read_user_id, read_cookie) =
-		custom_role_user(&mm, seed.org_id, &read_role_name).await?;
+		custom_role_user(&mm, seed.org_id, &read_profile_id).await?;
 	let (_edit_user_id, edit_cookie) =
-		custom_role_user(&mm, seed.org_id, &edit_role_name).await?;
+		custom_role_user(&mm, seed.org_id, &edit_profile_id).await?;
 
 	assert!(
-		!has_permission(&no_export_role_name, XML_EXPORT),
+		!has_permission(&no_export_profile_id, XML_EXPORT),
 		"empty custom role must not grant XML_EXPORT"
 	);
 	assert_get_status(
@@ -2206,7 +2206,7 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&read_role_name,
+		&read_profile_id,
 		json!([
 			{
 				"menu_key": "export_submission",
@@ -2219,7 +2219,7 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 	)
 	.await?;
 	assert!(
-		has_permission(&read_role_name, XML_EXPORT),
+		has_permission(&read_profile_id, XML_EXPORT),
 		"export_submission.can_read must grant XML_EXPORT"
 	);
 	assert_get_status(&app, &read_cookie, "/api/exports/history", StatusCode::OK)
@@ -2228,7 +2228,7 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 	update_role_privileges(
 		&app,
 		&admin_cookie,
-		&edit_role_name,
+		&edit_profile_id,
 		json!([
 			{
 				"menu_key": "export_submission",
@@ -2241,7 +2241,7 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 	)
 	.await?;
 	assert!(
-		has_permission(&edit_role_name, XML_EXPORT),
+		has_permission(&edit_profile_id, XML_EXPORT),
 		"export_submission.can_edit must independently grant XML_EXPORT"
 	);
 	assert_get_status(&app, &edit_cookie, "/api/exports/history", StatusCode::OK)
@@ -2258,7 +2258,7 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let role_name = format!("qa_role_{}", Uuid::new_v4().simple());
+	let profile_id = format!("qa_role_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -2267,8 +2267,8 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"role_name": role_name,
-				"display_name": "QA Role",
+				"profile_id": profile_id,
+				"name": "QA Role",
 				"description": "Can edit cases and read audit",
 				"privileges": [
 					{
@@ -2291,7 +2291,7 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(value["canonical_role_id"], role_name);
+	assert_eq!(value["profile_id"], profile_id);
 	assert_eq!(value["description"], "Can edit cases and read audit");
 	assert_eq!(value["can_view"].as_bool(), Some(true));
 	assert_eq!(value["can_admin"].as_bool(), Some(false));
@@ -2308,7 +2308,7 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 		&app,
 		"PUT",
 		&admin_cookie,
-		format!("/api/admin/permission-profiles/{role_name}"),
+		format!("/api/admin/permission-profiles/{profile_id}"),
 		Some(json!({
 			"data": {
 				"description": "Can lock cases",
@@ -2345,7 +2345,7 @@ async fn test_permission_profile_admin_privilege_does_not_grant_permission_profi
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm.clone());
-	let role_name = format!("custom_admin_{}", Uuid::new_v4().simple());
+	let profile_id = format!("custom_admin_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -2354,7 +2354,7 @@ async fn test_permission_profile_admin_privilege_does_not_grant_permission_profi
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"role_name": role_name,
+				"profile_id": profile_id,
 				"description": "Custom sponsor-admin equivalent",
 				"privileges": [
 					{
@@ -2375,7 +2375,7 @@ async fn test_permission_profile_admin_privilege_does_not_grant_permission_profi
 	let custom_admin = insert_user(
 		&mm,
 		seed.org_id,
-		&role_name,
+		&profile_id,
 		system_user_id(),
 		Some("custompwd"),
 	)
@@ -2408,7 +2408,7 @@ async fn test_permission_profile_admin_privilege_does_not_grant_permission_profi
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"role_name": next_role,
+				"profile_id": next_role,
 				"privileges": [
 					{
 						"menu_key": "case",
@@ -2435,11 +2435,11 @@ async fn test_settings_admin_matrix_does_not_grant_admin_route_access() -> Resul
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm.clone());
-	let role_name = format!("qa_settings_admin_{}", Uuid::new_v4().simple());
+	let profile_id = format!("qa_settings_admin_{}", Uuid::new_v4().simple());
 
-	create_empty_custom_role(&app, &admin_cookie, &role_name).await?;
+	create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
 	let (_custom_user_id, custom_cookie) =
-		custom_role_user(&mm, seed.org_id, &role_name).await?;
+		custom_role_user(&mm, seed.org_id, &profile_id).await?;
 
 	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
 		.await?;
@@ -2466,7 +2466,7 @@ async fn test_settings_admin_matrix_does_not_grant_admin_route_access() -> Resul
 	let value = update_role_privileges(
 		&app,
 		&admin_cookie,
-		&role_name,
+		&profile_id,
 		json!([
 			{
 				"menu_key": "settings",
@@ -2484,11 +2484,11 @@ async fn test_settings_admin_matrix_does_not_grant_admin_route_access() -> Resul
 		"settings.can_read alone must not make the role Safety DB admin capable: {value:?}"
 	);
 	assert!(
-		!has_permission(&role_name, CASE_CREATE),
+		!has_permission(&profile_id, CASE_CREATE),
 		"settings.can_read alone must not grant raw CASE_CREATE permission"
 	);
 	assert!(
-		!has_permission(&role_name, USER_CREATE),
+		!has_permission(&profile_id, USER_CREATE),
 		"settings.can_read alone must not grant raw USER_CREATE permission"
 	);
 	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
@@ -2534,7 +2534,7 @@ async fn test_settings_admin_matrix_does_not_grant_admin_route_access() -> Resul
 	let value = update_role_privileges(
 		&app,
 		&admin_cookie,
-		&role_name,
+		&profile_id,
 		json!([
 			{
 				"menu_key": "settings",
