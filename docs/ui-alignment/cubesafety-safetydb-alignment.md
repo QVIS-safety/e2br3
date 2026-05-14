@@ -9,6 +9,27 @@ Local reference pack:
 
 The local reference pack is intentionally ignored by git because it contains manually captured screenshots.
 
+## 2026-05-14 - Admin Role & Privilege Matrix Stability
+
+- Reference: Flow 3, screenshot 03.
+- Aligned:
+  - Replaced the split row-label table plus checkbox table with one dense Role & Privilege matrix table so Menu, Type, Privilege, and role columns share the same row model.
+  - Kept the first three orientation columns sticky inside the wide scroll container and preserved role header bulk toggles plus editable custom-role cells.
+  - Added regression coverage that rejects the old secondary row-label table and resolves matrix checkboxes from the unified table structure.
+- Files changed:
+  - `frontend/E2BR3-frontend/app/(protected)/admin/AdminWorkspace.tsx`
+  - `frontend/E2BR3-frontend/__tests__/admin-users.header-filters.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - RED: `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand -t "four-tab"` failed while the old split `Role privilege row labels` table was still rendered.
+  - GREEN: `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand -t "four-tab"` passed.
+  - `npx jest --runTestsByPath __tests__/admin-users.header-filters.test.ts --runInBand` passed: 1 suite, 24 tests.
+  - `npx tsc --noEmit` passed.
+  - `npm run build` passed; Next.js reported existing browser data freshness warnings.
+  - Browser opened `http://localhost:3006/admin/role-privilege`, but protected-route visual inspection redirected to the login shell because no local backend/auth session was available.
+- Remaining gaps:
+  - Full protected-screen visual QA remains blocked until a local authenticated admin session is available.
+
 ## 2026-05-10 - Final Browser QA and Alignment Log
 
 - Reference: Final QA pass across the completed SafetyDB case-list and case-entry alignment work.
