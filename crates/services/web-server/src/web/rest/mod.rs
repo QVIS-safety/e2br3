@@ -566,6 +566,10 @@ pub fn routes_users(mm: ModelManager) -> Router {
 				.put(admin_settings_rest::update_admin_settings),
 		)
 		.route(
+			"/admin/notices",
+			axum::routing::put(admin_settings_rest::update_admin_notices),
+		)
+		.route(
 			"/admin/permission-profiles",
 			get(permission_profile_rest::list_permission_profiles)
 				.post(permission_profile_rest::create_permission_profile),

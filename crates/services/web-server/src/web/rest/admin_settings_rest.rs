@@ -14,6 +14,22 @@ use std::collections::HashSet;
 use uuid::Uuid;
 
 const SETTINGS_KEY: &str = "system";
+const NOTICES_KEY: &str = "dashboard_notices";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DashboardNoticePayload {
+	pub id: Option<String>,
+	pub title: String,
+	pub body: Option<String>,
+	pub effective_date: Option<String>,
+	pub expire_date: Option<String>,
+	pub writer: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AdminNoticesPayload {
+	pub notices: Vec<DashboardNoticePayload>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowStatusConfigPayload {
@@ -62,6 +78,12 @@ pub struct AdminSettingsPayload {
 	pub workflow: Option<WorkflowConfigPayload>,
 	pub idle_session_minutes: Option<i32>,
 	pub session_warning_minutes: Option<i32>,
+	pub notices: Option<Vec<DashboardNoticePayload>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AdminNoticesUpdateBody {
+	pub notices: Vec<DashboardNoticePayload>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -126,7 +148,77 @@ fn default_settings() -> AdminSettingsPayload {
 		workflow: Some(default_workflow_config()),
 		idle_session_minutes: Some(60),
 		session_warning_minutes: Some(5),
+		notices: Some(Vec::new()),
 	}
+}
+
+async fn load_notices(mm: &ModelManager) -> Result<Vec<DashboardNoticePayload>> {
+	let value = AdminSettingsBmc::get(mm, NOTICES_KEY)
+		.await
+		.map_err(Error::Model)?;
+	if let Some(value) = value {
+		let payload = serde_json::from_value::<AdminNoticesPayload>(value)
+			.unwrap_or(AdminNoticesPayload {
+				notices: Vec::new(),
+			});
+		return Ok(payload.notices);
+	}
+	Ok(Vec::new())
+}
+
+async fn current_user_email(mm: &ModelManager, user_id: Uuid) -> Result<String> {
+	let row = mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, (String,)>("SELECT email FROM users WHERE id = $1")
+				.bind(user_id),
+		)
+		.await
+		.map_err(|err| Error::BadRequest {
+			message: format!("failed to resolve current user email: {err}"),
+		})?;
+	Ok(row
+		.map(|(email,)| email)
+		.unwrap_or_else(|| user_id.to_string()))
+}
+
+fn normalize_notices(
+	notices: Vec<DashboardNoticePayload>,
+	writer: String,
+) -> Vec<DashboardNoticePayload> {
+	notices
+		.into_iter()
+		.enumerate()
+		.filter_map(|(index, notice)| {
+			let title = notice.title.trim().to_string();
+			let body = notice.body.unwrap_or_default().trim().to_string();
+			if title.is_empty() && body.is_empty() {
+				return None;
+			}
+			Some(DashboardNoticePayload {
+				id: notice.id.or_else(|| Some(format!("notice-{}", index + 1))),
+				title,
+				body: if body.is_empty() { None } else { Some(body) },
+				effective_date: notice.effective_date.and_then(|value| {
+					let trimmed = value.trim().to_string();
+					if trimmed.is_empty() {
+						None
+					} else {
+						Some(trimmed)
+					}
+				}),
+				expire_date: notice.expire_date.and_then(|value| {
+					let trimmed = value.trim().to_string();
+					if trimmed.is_empty() {
+						None
+					} else {
+						Some(trimmed)
+					}
+				}),
+				writer: Some(writer.clone()),
+			})
+		})
+		.collect()
 }
 
 fn default_workflow_config() -> WorkflowConfigPayload {
@@ -334,11 +426,14 @@ pub async fn get_admin_settings(
 		.await
 		.map_err(Error::Model)?;
 	if let Some(value) = value {
-		let payload = serde_json::from_value::<AdminSettingsPayload>(value)
+		let mut payload = serde_json::from_value::<AdminSettingsPayload>(value)
 			.unwrap_or_else(|_| default_settings());
+		payload.notices = Some(load_notices(&mm).await?);
 		return Ok((StatusCode::OK, Json(payload)));
 	}
-	Ok((StatusCode::OK, Json(default_settings())))
+	let mut payload = default_settings();
+	payload.notices = Some(load_notices(&mm).await?);
+	Ok((StatusCode::OK, Json(payload)))
 }
 
 /// PUT /api/admin/settings
@@ -359,4 +454,27 @@ pub async fn update_admin_settings(
 	let response = serde_json::from_value::<AdminSettingsPayload>(value)
 		.unwrap_or_else(|_| default_settings());
 	Ok((StatusCode::OK, Json(response)))
+}
+
+/// PUT /api/admin/notices
+pub async fn update_admin_notices(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Json(payload): Json<
+		lib_rest_core::rest_params::ParamsForUpdate<AdminNoticesUpdateBody>,
+	>,
+) -> Result<(StatusCode, Json<AdminNoticesPayload>)> {
+	let ctx = ctx_w.0;
+	if !ctx.is_system_admin() {
+		return Err(Error::AccessDenied {
+			required_role: "system_admin".to_string(),
+		});
+	}
+	let writer = current_user_email(&mm, ctx.user_id()).await?;
+	let notices = normalize_notices(payload.data.notices, writer);
+	let value = json!({ "notices": notices });
+	AdminSettingsBmc::upsert(&mm, NOTICES_KEY, &value, Some(ctx.user_id()))
+		.await
+		.map_err(Error::Model)?;
+	Ok((StatusCode::OK, Json(AdminNoticesPayload { notices })))
 }
