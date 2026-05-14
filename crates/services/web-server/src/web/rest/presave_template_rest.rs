@@ -92,7 +92,7 @@ fn template_scope_identifiers(template: &PresaveTemplate) -> Vec<String> {
 		][..],
 		_ => &[][..],
 	};
-	let mut values = Vec::new();
+	let mut values = vec![template.id.to_string().to_ascii_lowercase()];
 	collect_json_strings_for_keys(&template.data, keys, &mut values);
 	values
 }

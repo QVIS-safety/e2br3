@@ -1,4 +1,7 @@
-use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
+use crate::common::{
+	cookie_header, init_test_mm, insert_user, seed_org_with_users, system_user_id,
+	Result,
+};
 use axum::body::{to_bytes, Body};
 use axum::http::{Method, Request, StatusCode};
 use axum::Router;
@@ -111,6 +114,48 @@ async fn update_user_scope(
 	Ok(())
 }
 
+async fn create_info_reader(
+	app: &Router,
+	mm: &lib_core::model::ModelManager,
+	admin_cookie: &str,
+	org_id: Uuid,
+) -> Result<(Uuid, String)> {
+	let profile_id = format!("presave_reader_{}", Uuid::new_v4().simple());
+	let (status, value) = request_json(
+		app,
+		admin_cookie,
+		Method::POST,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"profile_id": profile_id,
+				"name": profile_id,
+				"description": "Presave scope reader",
+				"privileges": [
+					{
+						"menu_key": "info",
+						"can_read": true,
+						"can_edit": false,
+						"can_review": false,
+						"can_lock": false
+					}
+				]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let profile_id = value["profile_id"]
+		.as_str()
+		.ok_or("missing permission profile id")?
+		.to_string();
+	let user =
+		insert_user(mm, org_id, &profile_id, system_user_id(), Some("readerpwd"))
+			.await?;
+	let token = generate_web_token(&user.email, user.token_salt)?;
+	Ok((user.id, cookie_header(&token.to_string())))
+}
+
 fn sample_presave_payload(entity_type: &str) -> Value {
 	match entity_type {
 		"sender" => json!({
@@ -182,11 +227,10 @@ async fn test_presave_product_list_follows_assigned_product_scope() -> Result<()
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let viewer_token =
-		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
+	let (viewer_id, viewer_cookie) =
+		create_info_reader(&app, &mm, &admin_cookie, seed.org_id).await?;
 
 	let (visible_id, _) = create_template(
 		&app,
@@ -213,8 +257,8 @@ async fn test_presave_product_list_follows_assigned_product_scope() -> Result<()
 	update_user_scope(
 		&app,
 		&admin_cookie,
-		seed.viewer.id,
-		json!({ "access_product_ids": ["VISIBLE-PRODUCT"] }),
+		viewer_id,
+		json!({ "access_product_ids": [visible_id.to_string()] }),
 	)
 	.await?;
 
@@ -255,11 +299,10 @@ async fn test_presave_sender_list_follows_assigned_sender_scope() -> Result<()> 
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let viewer_token =
-		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
+	let (viewer_id, viewer_cookie) =
+		create_info_reader(&app, &mm, &admin_cookie, seed.org_id).await?;
 
 	let (visible_id, _) = create_template(
 		&app,
@@ -286,7 +329,7 @@ async fn test_presave_sender_list_follows_assigned_sender_scope() -> Result<()> 
 	update_user_scope(
 		&app,
 		&admin_cookie,
-		seed.viewer.id,
+		viewer_id,
 		json!({ "access_sender_ids": ["SENDER-VISIBLE"] }),
 	)
 	.await?;
@@ -324,11 +367,10 @@ async fn test_presave_study_list_follows_assigned_study_scope() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let viewer_token =
-		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
+	let (viewer_id, viewer_cookie) =
+		create_info_reader(&app, &mm, &admin_cookie, seed.org_id).await?;
 
 	let (visible_id, _) = create_template(
 		&app,
@@ -355,8 +397,8 @@ async fn test_presave_study_list_follows_assigned_study_scope() -> Result<()> {
 	update_user_scope(
 		&app,
 		&admin_cookie,
-		seed.viewer.id,
-		json!({ "access_study_ids": ["STUDY-VISIBLE"] }),
+		viewer_id,
+		json!({ "access_study_ids": [visible_id.to_string()] }),
 	)
 	.await?;
 
@@ -383,6 +425,10 @@ async fn test_presave_study_list_follows_assigned_study_scope() -> Result<()> {
 			.any(|row| row["id"].as_str() == Some(&hidden_id.to_string())),
 		"{value:?}"
 	);
+	let (status, value) = get_template(&app, &viewer_cookie, visible_id).await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let (status, value) = get_template(&app, &viewer_cookie, hidden_id).await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 
 	Ok(())
 }
@@ -689,11 +735,10 @@ async fn test_presave_audit_respects_assigned_scope() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let viewer_token =
-		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
-	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
+	let (viewer_id, viewer_cookie) =
+		create_info_reader(&app, &mm, &admin_cookie, seed.org_id).await?;
 
 	let (hidden_id, _) = create_template(
 		&app,
@@ -709,7 +754,7 @@ async fn test_presave_audit_respects_assigned_scope() -> Result<()> {
 	update_user_scope(
 		&app,
 		&admin_cookie,
-		seed.viewer.id,
+		viewer_id,
 		json!({ "access_product_ids": ["VISIBLE-PRODUCT"] }),
 	)
 	.await?;
