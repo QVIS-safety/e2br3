@@ -11,8 +11,8 @@ use lib_core::ctx::{
 	ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::{
-	has_permission, CASE_APPROVE, CASE_UPDATE, TERMINOLOGY_APPROVE,
-	TERMINOLOGY_IMPORT, XML_EXPORT,
+	has_permission, CASE_APPROVE, CASE_CREATE, CASE_UPDATE, TERMINOLOGY_APPROVE,
+	TERMINOLOGY_IMPORT, USER_CREATE, XML_EXPORT,
 };
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
@@ -1522,6 +1522,24 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&read_cookie,
+		format!("/api/cases/{case_id}"),
+		Some(json!({
+			"data": {
+				"report_year": "2026"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::FORBIDDEN,
+		"read-only case role should not update cases: {value:?}"
+	);
+
 	update_role_privileges(
 		&app,
 		&admin_cookie,
@@ -1560,6 +1578,24 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&edit_cookie,
+		format!("/api/cases/{case_id}"),
+		Some(json!({
+			"data": {
+				"report_year": "2026"
+			}
+		})),
+	)
+	.await?;
+	assert_ne!(
+		status,
+		StatusCode::FORBIDDEN,
+		"case.can_edit should pass PUT /api/cases/{{id}} CASE_UPDATE gate: {value:?}"
+	);
 
 	let (status, value) = request_json(
 		&app,
@@ -1629,6 +1665,8 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 		has_permission(&review_role_name, CASE_UPDATE),
 		"review role should grant CASE_UPDATE"
 	);
+	// CASE_APPROVE has no current web route enforcement point; keep this as a
+	// mapping assertion until an approve-specific case endpoint exists.
 	assert!(
 		has_permission(&review_role_name, CASE_APPROVE),
 		"review role should grant CASE_APPROVE"
@@ -1704,6 +1742,8 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 		has_permission(&lock_role_name, CASE_UPDATE),
 		"lock role should grant CASE_UPDATE"
 	);
+	// CASE_APPROVE has no current web route enforcement point; keep this as a
+	// mapping assertion until an approve-specific case endpoint exists.
 	assert!(
 		has_permission(&lock_role_name, CASE_APPROVE),
 		"lock role should grant CASE_APPROVE"
@@ -2393,8 +2433,34 @@ async fn test_settings_admin_matrix_grants_effective_users_route_access(
 		Some(false),
 		"settings.can_read alone must not make the role Safety DB admin capable: {value:?}"
 	);
+	assert!(
+		!has_permission(&role_name, CASE_CREATE),
+		"settings.can_read alone must not grant raw CASE_CREATE permission"
+	);
+	assert!(
+		!has_permission(&role_name, USER_CREATE),
+		"settings.can_read alone must not grant raw USER_CREATE permission"
+	);
 	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
 		.await?;
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/cases".to_string(),
+		Some(json!({
+			"data": {
+				"safety_report_id": format!("SETTINGS-READ-{}", Uuid::new_v4().simple()),
+				"status": "draft"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::FORBIDDEN,
+		"settings.can_read alone must not create cases via raw permissions: {value:?}"
+	);
 	let (status, value) = request_json(
 		&app,
 		"POST",
@@ -2456,11 +2522,12 @@ async fn test_settings_admin_matrix_grants_effective_users_route_access(
 		})),
 	)
 	.await?;
-	assert_ne!(
+	assert_eq!(
 		status,
-		StatusCode::FORBIDDEN,
-		"settings.can_edit should pass POST /api/users admin authorization gate: {value:?}"
+		StatusCode::CREATED,
+		"settings.can_edit should create users through POST /api/users: {value:?}"
 	);
+	assert_eq!(value["data"]["role"].as_str(), Some("viewer"), "{value:?}");
 
 	Ok(())
 }

@@ -1321,8 +1321,13 @@ fn permissions_for_menu_key(
 				);
 			}
 		}
-		"admin" | "settings" | "roles" => {
+		"admin" => {
 			if can_read || can_edit || can_review || can_lock {
+				push_unique(&mut permissions, admin_permissions());
+			}
+		}
+		"settings" | "roles" => {
+			if can_edit || can_review || can_lock {
 				push_unique(&mut permissions, admin_permissions());
 			}
 		}
@@ -1562,6 +1567,31 @@ mod tests {
 		assert!(permissions.contains(&USER_CREATE));
 		assert!(permissions.contains(&USER_UPDATE));
 		assert!(permissions.contains(&XML_IMPORT));
+	}
+
+	#[test]
+	fn test_settings_read_does_not_expand_to_admin_permissions() {
+		let read_permissions =
+			permissions_for_menu_privileges(&[AdminMenuPrivilege {
+				menu_key: "settings".to_string(),
+				can_read: true,
+				can_edit: false,
+				can_review: false,
+				can_lock: false,
+			}]);
+		assert!(!read_permissions.contains(&CASE_CREATE));
+		assert!(!read_permissions.contains(&USER_CREATE));
+
+		let edit_permissions =
+			permissions_for_menu_privileges(&[AdminMenuPrivilege {
+				menu_key: "settings".to_string(),
+				can_read: true,
+				can_edit: true,
+				can_review: false,
+				can_lock: false,
+			}]);
+		assert!(edit_permissions.contains(&CASE_CREATE));
+		assert!(edit_permissions.contains(&USER_CREATE));
 	}
 }
 
