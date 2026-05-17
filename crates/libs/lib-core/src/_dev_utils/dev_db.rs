@@ -232,7 +232,33 @@ async fn apply_compatibility_alters(
 		 WHERE organization_id IS NULL",
 		"ALTER TABLE audit_logs ALTER COLUMN organization_id SET NOT NULL",
 		"ALTER TABLE audit_logs ALTER COLUMN organization_id SET DEFAULT COALESCE(current_organization_id(), '00000000-0000-0000-0000-000000000000'::UUID)",
+		"ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS organization_id UUID",
+		"UPDATE app_settings
+		 SET organization_id = '00000000-0000-0000-0000-000000000000'::UUID
+		 WHERE organization_id IS NULL",
+		"ALTER TABLE app_settings ALTER COLUMN organization_id SET NOT NULL",
+		"DO $$
+		 BEGIN
+				 IF EXISTS (
+				     SELECT 1
+				     FROM pg_constraint
+				     WHERE conname = 'app_settings_pkey'
+				       AND conrelid = 'app_settings'::regclass
+				 ) THEN
+				     ALTER TABLE app_settings DROP CONSTRAINT app_settings_pkey;
+				 END IF;
+		 END $$",
+		"ALTER TABLE app_settings ADD CONSTRAINT app_settings_pkey PRIMARY KEY (organization_id, key)",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS description TEXT",
+		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS organization_id UUID",
+		"UPDATE permission_profiles
+		 SET organization_id = '00000000-0000-0000-0000-000000000000'::UUID
+		 WHERE organization_id IS NULL",
+		"ALTER TABLE permission_profiles ALTER COLUMN organization_id SET NOT NULL",
+		"UPDATE permission_profiles SET name = left(name, 128) WHERE length(name) > 128",
+		"UPDATE permission_profiles SET description = left(description, 512) WHERE description IS NOT NULL AND length(description) > 512",
+		"ALTER TABLE permission_profiles ALTER COLUMN name TYPE VARCHAR(128)",
+		"ALTER TABLE permission_profiles ALTER COLUMN description TYPE VARCHAR(512)",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS privileges_json JSONB NOT NULL DEFAULT '[]'::jsonb",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS built_in BOOLEAN NOT NULL DEFAULT false",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS editable BOOLEAN NOT NULL DEFAULT true",
@@ -288,8 +314,8 @@ async fn apply_compatibility_alters(
 		 FOR SELECT
 		 TO e2br3_app_role
 		 USING (
-		 	organization_id = current_organization_id()
-		 	OR is_current_user_admin()
+				 organization_id = current_organization_id()
+				 OR is_current_user_admin()
 		 	OR email = current_setting('app.auth_email', true)
 		 )",
 	)
@@ -303,12 +329,12 @@ async fn apply_compatibility_alters(
 		 FOR ALL
 		 TO e2br3_app_role
 		 USING (
-		 	organization_id = current_organization_id()
-		 	OR is_current_user_admin()
+				 organization_id = current_organization_id()
+				 OR is_current_user_admin()
 		 )
 		 WITH CHECK (
-		 	organization_id = current_organization_id()
-		 	OR is_current_user_admin()
+				 organization_id = current_organization_id()
+				 OR is_current_user_admin()
 		 )",
 	)
 	.await?;
@@ -339,6 +365,39 @@ async fn apply_compatibility_alters(
 	)
 	.execute(&mut *tx)
 	.await?;
+	sqlx::query(
+		"CREATE INDEX IF NOT EXISTS idx_app_settings_org_key ON app_settings(organization_id, key)",
+	)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"CREATE INDEX IF NOT EXISTS idx_permission_profiles_org ON permission_profiles(organization_id)",
+	)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"WITH duplicate_roles AS (
+			SELECT profile_id,
+				       row_number() OVER (
+				           PARTITION BY organization_id, lower(btrim(name))
+				           ORDER BY updated_at ASC, profile_id ASC
+				       ) AS duplicate_rank
+			FROM permission_profiles
+		)
+		UPDATE permission_profiles pp
+		SET name = pp.name || ' (' || pp.profile_id || ')'
+		FROM duplicate_roles dr
+		WHERE pp.profile_id = dr.profile_id
+		  AND dr.duplicate_rank > 1",
+	)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_permission_profiles_org_name_unique
+		 ON permission_profiles(organization_id, lower(btrim(name)))",
+	)
+	.execute(&mut *tx)
+	.await?;
 	sqlx::query("DROP POLICY IF EXISTS audit_logs_append_only ON audit_logs")
 		.execute(&mut *tx)
 		.await?;
@@ -348,8 +407,8 @@ async fn apply_compatibility_alters(
 		 FOR INSERT
 		 TO e2br3_app_role
 		 WITH CHECK (
-		 	organization_id = current_organization_id()
-		 	OR is_current_user_admin()
+			 organization_id = current_organization_id()
+			 OR is_current_user_admin()
 		 )",
 	)
 	.await?;
@@ -377,6 +436,54 @@ async fn apply_compatibility_alters(
 		 			OR is_current_user_admin()
 		 		)
 		 	)",
+	)
+	.await?;
+	sqlx::query("ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY")
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query("ALTER TABLE app_settings FORCE ROW LEVEL SECURITY")
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query("DROP POLICY IF EXISTS app_settings_org_isolation ON app_settings")
+		.execute(&mut *tx)
+		.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY app_settings_org_isolation ON app_settings
+		 FOR ALL
+		 TO e2br3_app_role
+		 USING (
+			 organization_id = current_organization_id()
+			 OR is_current_user_admin()
+		 )
+		 WITH CHECK (
+			 organization_id = current_organization_id()
+			 OR is_current_user_admin()
+		 )",
+	)
+	.await?;
+	sqlx::query("ALTER TABLE permission_profiles ENABLE ROW LEVEL SECURITY")
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query("ALTER TABLE permission_profiles FORCE ROW LEVEL SECURITY")
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query("DROP POLICY IF EXISTS permission_profiles_org_isolation ON permission_profiles")
+		.execute(&mut *tx)
+		.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY permission_profiles_org_isolation ON permission_profiles
+		 FOR ALL
+		 TO e2br3_app_role
+		 USING (
+			 organization_id = current_organization_id()
+			 OR is_current_user_admin()
+		 )
+		 WITH CHECK (
+				 organization_id = current_organization_id()
+				 OR is_current_user_admin()
+		 )",
 	)
 	.await?;
 	for sql in dirty_trigger_compatibility_sql() {

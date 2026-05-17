@@ -17,6 +17,9 @@ use sqlx::types::Json as SqlxJson;
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
+const ROLE_NAME_MAX_LEN: usize = 128;
+const ROLE_DESCRIPTION_MAX_LEN: usize = 512;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PermissionProfileRow {
 	pub profile_id: String,
@@ -40,6 +43,7 @@ pub struct PermissionProfileRow {
 
 #[derive(Debug, Deserialize)]
 pub struct PermissionProfileCreateBody {
+	pub profile_id: Option<String>,
 	pub name: String,
 	pub description: Option<String>,
 	pub privileges: Option<Vec<AdminMenuPrivilege>>,
@@ -56,6 +60,35 @@ pub struct PermissionProfileUpdateBody {
 
 fn normalize_profile_id(value: &str) -> String {
 	value.trim().to_ascii_lowercase().replace(' ', "_")
+}
+
+fn validate_role_name(name: &str) -> Result<()> {
+	if name.is_empty() {
+		return Err(Error::BadRequest {
+			message: "name is required".to_string(),
+		});
+	}
+	if name.chars().count() > ROLE_NAME_MAX_LEN {
+		return Err(Error::BadRequest {
+			message: "role name must be 128 characters or fewer".to_string(),
+		});
+	}
+	Ok(())
+}
+
+fn normalize_role_description(value: Option<String>) -> Result<Option<String>> {
+	let description = value
+		.map(|value| value.trim().to_string())
+		.filter(|value| !value.is_empty());
+	if description
+		.as_ref()
+		.is_some_and(|value| value.chars().count() > ROLE_DESCRIPTION_MAX_LEN)
+	{
+		return Err(Error::BadRequest {
+			message: "role description must be 512 characters or fewer".to_string(),
+		});
+	}
+	Ok(description)
 }
 
 fn privilege_map(
@@ -274,9 +307,10 @@ pub async fn list_permission_profiles(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 ) -> Result<(StatusCode, Json<Vec<PermissionProfileRow>>)> {
-	require_admin(&ctx_w.0, &mm).await?;
+	let ctx = ctx_w.0;
+	require_admin(&ctx, &mm).await?;
 	let mut rows = built_in_roles();
-	let custom_rows = PermissionProfileBmc::list(&mm)
+	let custom_rows = PermissionProfileBmc::list(&ctx, &mm)
 		.await
 		.map_err(Error::Model)?;
 	rows.extend(custom_rows.into_iter().map(row_to_api));
@@ -289,7 +323,8 @@ pub async fn get_permission_profile(
 	ctx_w: CtxW,
 	Path(profile_id): Path<String>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
-	require_admin(&ctx_w.0, &mm).await?;
+	let ctx = ctx_w.0;
+	require_admin(&ctx, &mm).await?;
 	let normalized_role = normalize_profile_id(&profile_id);
 	if let Some(row) = built_in_roles()
 		.into_iter()
@@ -297,7 +332,7 @@ pub async fn get_permission_profile(
 	{
 		return Ok((StatusCode::OK, Json(row)));
 	}
-	let row = PermissionProfileBmc::get(&mm, &normalized_role)
+	let row = PermissionProfileBmc::get(&ctx, &mm, &normalized_role)
 		.await
 		.map_err(Error::Model)?;
 	Ok((StatusCode::OK, Json(row_to_api(row))))
@@ -311,30 +346,37 @@ pub async fn create_permission_profile(
 		lib_rest_core::rest_params::ParamsForCreate<PermissionProfileCreateBody>,
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
-	require_admin(&ctx_w.0, &mm).await?;
+	let ctx = ctx_w.0;
+	require_admin(&ctx, &mm).await?;
 	let data = params.data;
 	let name = data.name.trim().to_string();
-	if name.is_empty() {
+	validate_role_name(&name)?;
+	if PermissionProfileBmc::name_exists_in_org(&ctx, &mm, &name, None)
+		.await
+		.map_err(Error::Model)?
+	{
 		return Err(Error::BadRequest {
-			message: "name is required".to_string(),
+			message: "role name already exists in this organization".to_string(),
 		});
 	}
-	let profile_id = Uuid::new_v4().to_string();
+	let profile_id = data
+		.profile_id
+		.as_deref()
+		.map(normalize_profile_id)
+		.filter(|value| !value.is_empty())
+		.unwrap_or_else(|| Uuid::new_v4().to_string());
 	if is_built_in_profile_id(&profile_id) {
 		return Err(Error::BadRequest {
 			message: "cannot use a built-in profile id".to_string(),
 		});
 	}
-	let description = data
-		.description
-		.map(|value| value.trim().to_string())
-		.filter(|value| !value.is_empty())
-		.filter(|value| value != &name);
+	let description = normalize_role_description(data.description)?;
 	let active = data.active.unwrap_or(true);
 	let privileges = normalize_admin_privileges(data.privileges)?;
 	let (_, _, _, sponsor_admin_capable) = role_summary_booleans(&privileges);
 
 	PermissionProfileBmc::create(
+		&ctx,
 		&mm,
 		PermissionProfileCreateData {
 			profile_id: profile_id.clone(),
@@ -348,7 +390,7 @@ pub async fn create_permission_profile(
 	.await
 	.map_err(Error::Model)?;
 
-	let row = PermissionProfileBmc::get(&mm, &profile_id)
+	let row = PermissionProfileBmc::get(&ctx, &mm, &profile_id)
 		.await
 		.map_err(Error::Model)?;
 
@@ -367,14 +409,15 @@ pub async fn update_permission_profile(
 		lib_rest_core::rest_params::ParamsForUpdate<PermissionProfileUpdateBody>,
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
-	require_admin(&ctx_w.0, &mm).await?;
+	let ctx = ctx_w.0;
+	require_admin(&ctx, &mm).await?;
 	let normalized_role = normalize_profile_id(&profile_id);
 	if is_built_in_profile_id(&normalized_role) {
 		return Err(Error::AccessDenied {
 			required_role: "editable_custom_role".to_string(),
 		});
 	}
-	let current = PermissionProfileBmc::get(&mm, &normalized_role)
+	let current = PermissionProfileBmc::get(&ctx, &mm, &normalized_role)
 		.await
 		.map_err(Error::Model)?;
 
@@ -384,7 +427,22 @@ pub async fn update_permission_profile(
 		.unwrap_or_else(|| current.name.clone())
 		.trim()
 		.to_string();
-	let next_description = data.description.or_else(|| current.description.clone());
+	validate_role_name(&next_name)?;
+	if PermissionProfileBmc::name_exists_in_org(
+		&ctx,
+		&mm,
+		&next_name,
+		Some(&normalized_role),
+	)
+	.await
+	.map_err(Error::Model)?
+	{
+		return Err(Error::BadRequest {
+			message: "role name already exists in this organization".to_string(),
+		});
+	}
+	let next_description = normalize_role_description(data.description)?
+		.or_else(|| current.description.clone());
 	let next_privileges = if data.privileges.is_some() {
 		normalize_admin_privileges(data.privileges)?
 	} else {
@@ -394,6 +452,7 @@ pub async fn update_permission_profile(
 	let (_, _, _, sponsor_admin_capable) = role_summary_booleans(&next_privileges);
 
 	PermissionProfileBmc::update(
+		&ctx,
 		&mm,
 		&normalized_role,
 		PermissionProfileUpdateData {
@@ -407,7 +466,7 @@ pub async fn update_permission_profile(
 	.await
 	.map_err(Error::Model)?;
 
-	let row = PermissionProfileBmc::get(&mm, &normalized_role)
+	let row = PermissionProfileBmc::get(&ctx, &mm, &normalized_role)
 		.await
 		.map_err(Error::Model)?;
 
@@ -423,7 +482,8 @@ pub async fn delete_permission_profile(
 	ctx_w: CtxW,
 	Path(profile_id): Path<String>,
 ) -> Result<StatusCode> {
-	require_admin(&ctx_w.0, &mm).await?;
+	let ctx = ctx_w.0;
+	require_admin(&ctx, &mm).await?;
 	let normalized_role = normalize_profile_id(&profile_id);
 	if is_built_in_profile_id(&normalized_role) {
 		return Err(Error::BadRequest {
@@ -431,7 +491,7 @@ pub async fn delete_permission_profile(
 		});
 	}
 	PermissionProfileBmc::evict_dynamic_role(&normalized_role);
-	PermissionProfileBmc::delete(&mm, &normalized_role)
+	PermissionProfileBmc::delete(&ctx, &mm, &normalized_role)
 		.await
 		.map_err(Error::Model)?;
 	PermissionProfileBmc::refresh_dynamic_roles(&mm)

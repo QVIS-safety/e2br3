@@ -77,11 +77,18 @@ where
 
 // region:    --- Get
 
-pub async fn get<MC, E>(_ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<E>
+pub async fn get<MC, E>(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<E>
 where
 	MC: DbBmc,
 	E: for<'r> FromRow<'r, PgRow> + Unpin + Send + HasSeaFields,
 {
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+		dbx.rollback_txn().await?;
+		return Err(err);
+	}
+
 	// -- Build the SQL query
 	let mut query = Query::select();
 	query
@@ -92,12 +99,21 @@ where
 	// -- Execute the query
 	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 	let sqlx_query = sqlx::query_as_with::<_, E, _>(&sql, values);
-	let entity = mm.dbx().fetch_optional(sqlx_query).await?.ok_or(
-		crate::model::Error::EntityUuidNotFound {
-			entity: MC::TABLE,
-			id,
-		},
-	)?;
+	let entity = match dbx.fetch_optional(sqlx_query).await {
+		Ok(Some(entity)) => entity,
+		Ok(None) => {
+			dbx.rollback_txn().await?;
+			return Err(crate::model::Error::EntityUuidNotFound {
+				entity: MC::TABLE,
+				id,
+			});
+		}
+		Err(err) => {
+			dbx.rollback_txn().await?;
+			return Err(err.into());
+		}
+	};
+	dbx.commit_txn().await?;
 
 	Ok(entity)
 }
@@ -237,7 +253,7 @@ where
 // region:    --- List
 
 pub async fn list<MC, E, F>(
-	_ctx: &Ctx,
+	ctx: &Ctx,
 	mm: &ModelManager,
 	filters: Option<F>,
 	list_options: Option<modql::filter::ListOptions>,
@@ -262,10 +278,24 @@ where
 	let list_options = compute_list_options(list_options)?;
 	list_options.apply_to_sea_query(&mut query);
 
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+		dbx.rollback_txn().await?;
+		return Err(err);
+	}
+
 	// -- Execute the query
 	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 	let sqlx_query = sqlx::query_as_with::<_, E, _>(&sql, values);
-	let entities = mm.dbx().fetch_all(sqlx_query).await?;
+	let entities = match dbx.fetch_all(sqlx_query).await {
+		Ok(entities) => entities,
+		Err(err) => {
+			dbx.rollback_txn().await?;
+			return Err(err.into());
+		}
+	};
+	dbx.commit_txn().await?;
 
 	Ok(entities)
 }

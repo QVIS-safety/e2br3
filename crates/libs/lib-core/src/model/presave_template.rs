@@ -212,16 +212,9 @@ impl PresaveTemplateBmc {
 			dbx.rollback_txn().await?;
 			return Err(err);
 		}
-		let sql = format!(
-			"SELECT * FROM {} WHERE id = $1 AND organization_id = $2",
-			Self::TABLE
-		);
+		let sql = format!("SELECT * FROM {} WHERE id = $1", Self::TABLE);
 		let entity = match dbx
-			.fetch_optional(
-				sqlx::query_as::<_, PresaveTemplateRow>(&sql)
-					.bind(id)
-					.bind(ctx.organization_id()),
-			)
+			.fetch_optional(sqlx::query_as::<_, PresaveTemplateRow>(&sql).bind(id))
 			.await
 		{
 			Ok(Some(entity)) => entity,
@@ -256,14 +249,11 @@ impl PresaveTemplateBmc {
 			return Err(err);
 		}
 		let sql = format!(
-			"SELECT * FROM {} WHERE organization_id = $1 ORDER BY updated_at DESC LIMIT 1000",
+			"SELECT * FROM {} ORDER BY updated_at DESC LIMIT 1000",
 			Self::TABLE
 		);
 		let rows = match dbx
-			.fetch_all(
-				sqlx::query_as::<_, PresaveTemplateRow>(&sql)
-					.bind(ctx.organization_id()),
-			)
+			.fetch_all(sqlx::query_as::<_, PresaveTemplateRow>(&sql))
 			.await
 		{
 			Ok(rows) => rows,
@@ -295,13 +285,12 @@ impl PresaveTemplateBmc {
 			return Err(err);
 		}
 		let sql = format!(
-			"SELECT * FROM {} WHERE organization_id = $1 AND entity_type = $2 ORDER BY updated_at DESC",
+			"SELECT * FROM {} WHERE entity_type = $1 ORDER BY updated_at DESC",
 			Self::TABLE
 		);
 		let rows = match dbx
 			.fetch_all(
 				sqlx::query_as::<_, PresaveTemplateRow>(&sql)
-					.bind(ctx.organization_id())
 					.bind(entity_type.as_str()),
 			)
 			.await
@@ -445,14 +434,12 @@ impl PresaveTemplateAuditBmc {
 			return Err(err);
 		}
 		let sql = format!(
-			"SELECT * FROM {} WHERE template_id = $1 AND organization_id = $2 ORDER BY created_at DESC",
+			"SELECT * FROM {} WHERE template_id = $1 ORDER BY created_at DESC",
 			Self::TABLE
 		);
 		let rows = match dbx
 			.fetch_all(
-				sqlx::query_as::<_, PresaveTemplateAudit>(&sql)
-					.bind(template_id)
-					.bind(ctx.organization_id()),
+				sqlx::query_as::<_, PresaveTemplateAudit>(&sql).bind(template_id),
 			)
 			.await
 		{

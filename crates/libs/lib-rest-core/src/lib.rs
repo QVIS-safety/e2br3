@@ -51,11 +51,11 @@ use lib_core::ctx::{
 	ROLE_USER,
 };
 use lib_core::model::acs::{has_permission, Permission};
+use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::case::{Case, CaseBmc};
 use lib_core::model::user::UserBmc;
 use lib_core::model::ModelManager;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use sqlx::types::time::OffsetDateTime;
 use sqlx::FromRow;
 use std::collections::HashSet;
@@ -91,7 +91,7 @@ pub async fn require_admin(ctx: &Ctx, mm: &ModelManager) -> Result<()> {
 
 pub async fn admin_db_ctx(ctx: &Ctx, mm: &ModelManager) -> Result<Ctx> {
 	require_admin(ctx, mm).await?;
-	if ctx.is_sponsor_admin() {
+	if ctx.is_system_admin() || ctx.is_sponsor_admin() {
 		return Ok(ctx.clone());
 	}
 	let elevated = Ctx::new(
@@ -225,6 +225,7 @@ fn is_built_in_workflow_role(role: &str) -> bool {
 }
 
 pub async fn workflow_role_exists_and_is_active(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	role: &str,
 ) -> Result<bool> {
@@ -235,21 +236,10 @@ pub async fn workflow_role_exists_and_is_active(
 	if is_built_in_workflow_role(&role) {
 		return Ok(true);
 	}
-	let row = mm
-		.dbx()
-		.fetch_optional(
-			sqlx::query_as::<_, (bool,)>(
-				r#"
-				SELECT active
-				FROM permission_profiles
-				WHERE profile_id = $1
-				"#,
-			)
-			.bind(&role),
-		)
+	let roles = AdminSettingsBmc::known_workflow_roles(ctx, mm)
 		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	Ok(matches!(row, Some((true,))))
+		.map_err(Error::Model)?;
+	Ok(roles.contains(&role))
 }
 
 async fn workflow_admin_override_allowed(
@@ -294,20 +284,14 @@ pub fn qc_state_for_case_status(status: &str) -> &'static str {
 }
 
 pub async fn load_workflow_runtime_settings(
+	ctx: &Ctx,
 	mm: &ModelManager,
 ) -> Result<WorkflowRuntimeSettings> {
-	let row = mm
-		.dbx()
-		.fetch_optional(
-			sqlx::query_as::<_, (Value,)>(
-				"SELECT value FROM app_settings WHERE key = $1",
-			)
-			.bind("system"),
-		)
+	let value = AdminSettingsBmc::get(ctx, mm, "system")
 		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+		.map_err(Error::Model)?;
 
-	let Some((value,)) = row else {
+	let Some(value) = value else {
 		return Ok(WorkflowRuntimeSettings::default_disabled());
 	};
 
@@ -618,11 +602,16 @@ pub async fn validate_active_sender_selection(
 	Ok(next)
 }
 
-async fn load_case_scope(mm: &ModelManager, case_id: Uuid) -> Result<CaseScopeRow> {
-	mm.dbx()
-		.fetch_one(
-			sqlx::query_as::<_, CaseScopeRow>(
-				r#"
+async fn load_case_scope(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<CaseScopeRow> {
+	with_rls_read(mm, ctx, |dbx| {
+		Box::pin(async move {
+			dbx.fetch_one(
+				sqlx::query_as::<_, CaseScopeRow>(
+					r#"
 			SELECT
 				COALESCE(
 					(
@@ -682,11 +671,14 @@ async fn load_case_scope(mm: &ModelManager, case_id: Uuid) -> Result<CaseScopeRo
 			FROM cases c
 			WHERE c.id = $1
 			"#,
+				)
+				.bind(case_id),
 			)
-			.bind(case_id),
-		)
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))
+			.await
+			.map_err(|e| Error::from(lib_core::model::Error::from(e)))
+		})
+	})
+	.await
 }
 
 pub async fn case_matches_user_scope(
@@ -712,10 +704,13 @@ pub async fn case_matches_user_scope(
 		}
 	}
 
-	let scope = load_case_scope(mm, case_id).await?;
+	let scope = load_case_scope(ctx, mm, case_id).await?;
 	let assigned_sender_ids = parse_scope_values(user.access_sender_ids.as_deref());
-	if assigned_sender_ids.is_empty()
-		|| !optional_scope_matches(&assigned_sender_ids, &scope.sender_identifiers)
+	if assigned_sender_ids.is_empty() && !scope.sender_identifiers.is_empty() {
+		return Ok(false);
+	}
+	if !assigned_sender_ids.is_empty()
+		&& !optional_scope_matches(&assigned_sender_ids, &scope.sender_identifiers)
 	{
 		return Ok(false);
 	}
@@ -784,7 +779,7 @@ pub async fn case_write_block_reason_for_case(
 		}));
 	}
 
-	let workflow = load_workflow_runtime_settings(mm).await?;
+	let workflow = load_workflow_runtime_settings(ctx, mm).await?;
 	if workflow.enabled {
 		let Some(rule) = workflow.find_status(&case.workflow_status) else {
 			return Ok(Some(WorkflowBlockReason {
@@ -839,7 +834,7 @@ pub async fn workflow_actionability_for_case(
 		});
 	}
 
-	let workflow = load_workflow_runtime_settings(mm).await?;
+	let workflow = load_workflow_runtime_settings(ctx, mm).await?;
 	if !workflow.enabled {
 		return Ok(WorkflowActionability {
 			can_act_on_workflow: false,

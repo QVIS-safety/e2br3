@@ -131,7 +131,7 @@ pub async fn transition_case_workflow(
 			message: "locked cases are read-only".to_string(),
 		});
 	}
-	let workflow = load_workflow_runtime_settings(&mm).await?;
+	let workflow = load_workflow_runtime_settings(&ctx, &mm).await?;
 	if !workflow.enabled {
 		return Err(Error::BadRequest {
 			message: "workflow is not enabled".to_string(),
@@ -181,7 +181,7 @@ pub async fn transition_case_workflow(
 		.filter(|value| !value.is_empty())
 		.map(canonical_role);
 	if let Some(role) = target_role.as_deref() {
-		if !workflow_role_exists_and_is_active(&mm, role).await? {
+		if !workflow_role_exists_and_is_active(&ctx, &mm, role).await? {
 			return Err(Error::BadRequest {
 				message: format!(
 					"target role '{role}' is not active or does not exist"
@@ -262,7 +262,7 @@ pub async fn assign_case_workflow(
 			message: "locked cases are read-only".to_string(),
 		});
 	}
-	let workflow = load_workflow_runtime_settings(&mm).await?;
+	let workflow = load_workflow_runtime_settings(&ctx, &mm).await?;
 	if !workflow.enabled {
 		return Err(Error::BadRequest {
 			message: "workflow is not enabled".to_string(),
@@ -292,7 +292,7 @@ pub async fn assign_case_workflow(
 			message: "workflow assignment requires target_role".to_string(),
 		});
 	}
-	if !workflow_role_exists_and_is_active(&mm, &target_role).await? {
+	if !workflow_role_exists_and_is_active(&ctx, &mm, &target_role).await? {
 		return Err(Error::BadRequest {
 			message: format!(
 				"target role '{target_role}' is not active or does not exist"
@@ -389,7 +389,7 @@ pub async fn get_workflow_config_runtime(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
 
-	let workflow = load_workflow_runtime_settings(&mm).await?;
+	let workflow = load_workflow_runtime_settings(&ctx, &mm).await?;
 	let data = WorkflowConfigRuntimeDoc {
 		workflow_enabled: workflow.enabled,
 		statuses: workflow

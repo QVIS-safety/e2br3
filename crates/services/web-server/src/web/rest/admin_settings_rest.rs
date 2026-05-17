@@ -2,7 +2,8 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::ctx::{
-	canonical_role, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER,
+	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
+	ROLE_USER,
 };
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::ModelManager;
@@ -153,7 +154,7 @@ fn default_settings() -> AdminSettingsPayload {
 }
 
 async fn load_notices(mm: &ModelManager) -> Result<Vec<DashboardNoticePayload>> {
-	let value = AdminSettingsBmc::get(mm, NOTICES_KEY)
+	let value = AdminSettingsBmc::get_system(mm, NOTICES_KEY)
 		.await
 		.map_err(Error::Model)?;
 	if let Some(value) = value {
@@ -166,20 +167,18 @@ async fn load_notices(mm: &ModelManager) -> Result<Vec<DashboardNoticePayload>> 
 	Ok(Vec::new())
 }
 
-async fn current_user_email(mm: &ModelManager, user_id: Uuid) -> Result<String> {
-	let row = mm
-		.dbx()
-		.fetch_optional(
-			sqlx::query_as::<_, (String,)>("SELECT email FROM users WHERE id = $1")
-				.bind(user_id),
-		)
-		.await
-		.map_err(|err| Error::BadRequest {
-			message: format!("failed to resolve current user email: {err}"),
-		})?;
-	Ok(row
-		.map(|(email,)| email)
-		.unwrap_or_else(|| user_id.to_string()))
+async fn current_user_email(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	user_id: Uuid,
+) -> Result<String> {
+	let user: lib_core::model::user::User =
+		lib_core::model::user::UserBmc::get(ctx, mm, user_id)
+			.await
+			.map_err(|err| Error::BadRequest {
+				message: format!("failed to resolve current user email: {err}"),
+			})?;
+	Ok(user.email)
 }
 
 fn normalize_notices(
@@ -260,10 +259,11 @@ fn default_workflow_config() -> WorkflowConfigPayload {
 }
 
 async fn normalize_workflow_config(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	workflow: Option<WorkflowConfigPayload>,
 ) -> Result<WorkflowConfigPayload> {
-	let known_roles = AdminSettingsBmc::known_workflow_roles(mm)
+	let known_roles = AdminSettingsBmc::known_workflow_roles(ctx, mm)
 		.await
 		.map_err(Error::Model)?;
 	let mut statuses = workflow
@@ -355,10 +355,12 @@ async fn normalize_workflow_config(
 }
 
 async fn payload_to_value(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	payload: &AdminSettingsUpdateBody,
 ) -> Result<serde_json::Value> {
-	let workflow = normalize_workflow_config(mm, payload.workflow.clone()).await?;
+	let workflow =
+		normalize_workflow_config(ctx, mm, payload.workflow.clone()).await?;
 	let idle_session_minutes = payload.idle_session_minutes.unwrap_or(60);
 	let session_warning_minutes = payload.session_warning_minutes.unwrap_or(5);
 	if idle_session_minutes < 5 {
@@ -421,8 +423,8 @@ pub async fn get_admin_settings(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 ) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
-	let _ctx = ctx_w.0;
-	let value = AdminSettingsBmc::get(&mm, SETTINGS_KEY)
+	let ctx = ctx_w.0;
+	let value = AdminSettingsBmc::get(&ctx, &mm, SETTINGS_KEY)
 		.await
 		.map_err(Error::Model)?;
 	if let Some(value) = value {
@@ -446,9 +448,9 @@ pub async fn update_admin_settings(
 ) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
 	let ctx = ctx_w.0;
 	require_admin(&ctx, &mm).await?;
-	let value = payload_to_value(&mm, &payload.data).await?;
+	let value = payload_to_value(&ctx, &mm, &payload.data).await?;
 	let updated_by: Option<Uuid> = Some(ctx.user_id());
-	AdminSettingsBmc::upsert(&mm, SETTINGS_KEY, &value, updated_by)
+	AdminSettingsBmc::upsert(&ctx, &mm, SETTINGS_KEY, &value, updated_by)
 		.await
 		.map_err(Error::Model)?;
 	let response = serde_json::from_value::<AdminSettingsPayload>(value)
@@ -470,11 +472,17 @@ pub async fn update_admin_notices(
 			required_role: "system_admin".to_string(),
 		});
 	}
-	let writer = current_user_email(&mm, ctx.user_id()).await?;
+	let writer = current_user_email(&ctx, &mm, ctx.user_id()).await?;
 	let notices = normalize_notices(payload.data.notices, writer);
 	let value = json!({ "notices": notices });
-	AdminSettingsBmc::upsert(&mm, NOTICES_KEY, &value, Some(ctx.user_id()))
-		.await
-		.map_err(Error::Model)?;
+	AdminSettingsBmc::upsert_system(
+		&ctx,
+		&mm,
+		NOTICES_KEY,
+		&value,
+		Some(ctx.user_id()),
+	)
+	.await
+	.map_err(Error::Model)?;
 	Ok((StatusCode::OK, Json(AdminNoticesPayload { notices })))
 }

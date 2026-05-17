@@ -1249,6 +1249,258 @@ async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> 
 
 #[serial]
 #[tokio::test]
+async fn test_role_admin_api_preserves_description_equal_to_name() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let profile_id = format!("qa_same_desc_{}", Uuid::new_v4().simple());
+	let role_name = "QA Same Description Role";
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"profile_id": profile_id,
+				"name": role_name,
+				"description": role_name,
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(value["profile_id"], profile_id);
+	assert_eq!(value["name"], role_name);
+	assert_eq!(value["description"], role_name);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_role_admin_api_rejects_duplicate_role_name_in_same_org() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let first_profile_id = format!("qa_dup_a_{}", Uuid::new_v4().simple());
+	let second_profile_id = format!("qa_dup_b_{}", Uuid::new_v4().simple());
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"profile_id": first_profile_id,
+				"name": "Duplicate Role",
+				"description": "First duplicate role",
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"profile_id": second_profile_id,
+				"name": " duplicate role ",
+				"description": "Second duplicate role",
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(value["error"]["message"], "SERVICE_ERROR");
+	assert_eq!(
+		value["error"]["data"]["detail"],
+		"role name already exists in this organization"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_role_admin_api_rejects_rename_to_duplicate_role_name_in_same_org(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let first_profile_id = format!("qa_dup_rename_a_{}", Uuid::new_v4().simple());
+	let second_profile_id = format!("qa_dup_rename_b_{}", Uuid::new_v4().simple());
+
+	for (profile_id, name) in [
+		(first_profile_id.as_str(), "Original Role"),
+		(second_profile_id.as_str(), "Other Role"),
+	] {
+		let (status, value) = request_json(
+			&app,
+			"POST",
+			&admin_cookie,
+			"/api/admin/permission-profiles".to_string(),
+			Some(json!({
+				"data": {
+					"profile_id": profile_id,
+					"name": name,
+					"privileges": []
+				}
+			})),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	}
+
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&admin_cookie,
+		format!("/api/admin/permission-profiles/{second_profile_id}"),
+		Some(json!({
+			"data": {
+				"name": " original role "
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(value["error"]["message"], "SERVICE_ERROR");
+	assert_eq!(
+		value["error"]["data"]["detail"],
+		"role name already exists in this organization"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_role_admin_api_rejects_overlong_name_and_description() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let overlong_name = "R".repeat(129);
+	let overlong_description = "D".repeat(513);
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"profile_id": format!("qa_long_name_{}", Uuid::new_v4().simple()),
+				"name": overlong_name,
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(
+		value["error"]["data"]["detail"],
+		"role name must be 128 characters or fewer"
+	);
+
+	let profile_id = format!("qa_long_desc_{}", Uuid::new_v4().simple());
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"profile_id": profile_id,
+				"name": "Description Limit Role",
+				"description": overlong_description,
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(
+		value["error"]["data"]["detail"],
+		"role description must be 512 characters or fewer"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_role_admin_api_rejects_overlong_name_and_description_on_update(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let profile_id = format!("qa_update_limits_{}", Uuid::new_v4().simple());
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"profile_id": profile_id,
+				"name": "Update Limit Role",
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+
+	for (payload, expected_detail) in [
+		(
+			json!({ "data": { "name": "R".repeat(129) } }),
+			"role name must be 128 characters or fewer",
+		),
+		(
+			json!({ "data": { "description": "D".repeat(513) } }),
+			"role description must be 512 characters or fewer",
+		),
+	] {
+		let (status, value) = request_json(
+			&app,
+			"PUT",
+			&admin_cookie,
+			format!("/api/admin/permission-profiles/{profile_id}"),
+			Some(payload),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+		assert_eq!(value["error"]["data"]["detail"], expected_detail);
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_role_admin_api_does_not_fallback_to_old_boolean_privileges(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
@@ -1262,13 +1514,14 @@ async fn test_role_admin_api_does_not_fallback_to_old_boolean_privileges(
 			sqlx::query(
 				r#"
 				INSERT INTO permission_profiles
-					(profile_id, name, description, can_view, can_review,
+					(organization_id, profile_id, name, description, can_view, can_review,
 					 can_lock, can_admin, privileges_json, active, built_in,
 					 editable, sponsor_admin_capable)
-				VALUES ($1, $2, 'old boolean row', true, true, true, true,
+				VALUES ($1, $2, $3, 'old boolean row', true, true, true, true,
 				        '[]'::jsonb, true, false, true, true)
 				"#,
 			)
+			.bind(seed.org_id)
 			.bind(&profile_id)
 			.bind(format!("Old Boolean {profile_id}")),
 		)

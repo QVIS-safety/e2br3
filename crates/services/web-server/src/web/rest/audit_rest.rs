@@ -18,7 +18,9 @@ use serde_json::Value as JsonValue;
 use uuid::Uuid;
 
 fn require_audit_permission(ctx: &lib_core::ctx::Ctx) -> Result<()> {
-	if !ctx.is_system_admin() && !has_permission(ctx.role(), AUDIT_LIST) {
+	if !ctx.is_system_admin()
+		&& !has_permission(ctx.permission_subject(), AUDIT_LIST)
+	{
 		return Err(WebError::PermissionDenied {
 			required_permission: "AuditLog.List".to_string(),
 		});

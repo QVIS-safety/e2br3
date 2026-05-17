@@ -175,7 +175,7 @@ async fn test_auth_login_user_with_nil_org_fails() -> Result<()> {
 		dbx,
 		root_ctx.user_id(),
 		root_ctx.organization_id(),
-		ROLE_SPONSOR_ADMIN_CRO,
+		lib_core::ctx::ROLE_SYSTEM_ADMIN,
 	)
 	.await?;
 	dbx.execute(

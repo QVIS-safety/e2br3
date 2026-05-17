@@ -6,10 +6,14 @@ use lib_core::ctx::{
 	ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN, ROLE_USER, SYSTEM_ORG_ID,
 	SYSTEM_USER_ID,
 };
+use lib_core::model::acs::{
+	permissions_for_menu_privileges, replace_dynamic_roles, AdminMenuPrivilege,
+};
 use lib_core::model::store::{
 	set_full_context_dbx, set_org_context, set_user_context,
 };
 use lib_core::model::ModelManager;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use uuid::Uuid;
 
@@ -89,11 +93,46 @@ pub async fn init_test_mm() -> Result<ModelManager> {
 	_dev_utils::ensure_dev_schema_compatibility()
 		.await
 		.map_err(|err| format!("{err}"))?;
+	reset_test_dynamic_roles();
 	let mm = ModelManager::new().await?;
 	mm.dbx()
 		.execute(sqlx::query("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
 		.await?;
 	Ok(mm)
+}
+
+fn reset_test_dynamic_roles() {
+	let mut roles = HashMap::new();
+	roles.insert(
+		TEST_CUSTOM_VIEWER_ROLE.to_string(),
+		permissions_for_menu_privileges(&[AdminMenuPrivilege {
+			menu_key: "case".to_string(),
+			can_read: true,
+			can_edit: false,
+			can_review: false,
+			can_lock: false,
+		}]),
+	);
+	roles.insert(
+		TEST_CUSTOM_MANAGER_ROLE.to_string(),
+		permissions_for_menu_privileges(&[
+			AdminMenuPrivilege {
+				menu_key: "case".to_string(),
+				can_read: true,
+				can_edit: false,
+				can_review: false,
+				can_lock: false,
+			},
+			AdminMenuPrivilege {
+				menu_key: "audit".to_string(),
+				can_read: true,
+				can_edit: false,
+				can_review: false,
+				can_lock: false,
+			},
+		]),
+	);
+	replace_dynamic_roles(roles);
 }
 
 pub fn system_user_id() -> Uuid {
@@ -293,18 +332,22 @@ pub async fn insert_case_version(
 		"id": case_id,
 		"version": version,
 	});
-	mm.dbx()
-		.execute(
-			sqlx::query(
-				"INSERT INTO case_versions (case_id, version, snapshot, changed_by)
-			 VALUES ($1, $2, $3, $4)",
-			)
-			.bind(case_id)
-			.bind(version)
-			.bind(snapshot)
-			.bind(changed_by),
-		)
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	set_full_context_dbx(dbx, system_user_id(), system_org_id(), ROLE_SYSTEM_ADMIN)
 		.await?;
+	dbx.execute(
+		sqlx::query(
+			"INSERT INTO case_versions (case_id, version, snapshot, changed_by)
+			 VALUES ($1, $2, $3, $4)",
+		)
+		.bind(case_id)
+		.bind(version)
+		.bind(snapshot)
+		.bind(changed_by),
+	)
+	.await?;
+	dbx.commit_txn().await?;
 	Ok(())
 }
 

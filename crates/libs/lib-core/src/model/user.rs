@@ -1,7 +1,9 @@
 use crate::ctx::{canonical_role, Ctx, ROLE_USER};
 use crate::model::base::base_uuid;
 use crate::model::base::{prep_fields_for_update, DbBmc};
-use crate::model::store::set_full_context_dbx_or_rollback;
+use crate::model::store::{
+	set_full_context_dbx_or_rollback, set_full_context_from_ctx_dbx,
+};
 use crate::model::{Error, ModelManager, Result};
 use lib_auth::pwd::{self, ContentToHash, SchemeStatus};
 use modql::field::{Fields, HasSeaFields, SeaField, SeaFields};
@@ -459,7 +461,7 @@ impl UserBmc {
 	}
 
 	pub async fn first_by_email<E>(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		email: &str,
 	) -> Result<Option<E>>
@@ -476,8 +478,21 @@ impl UserBmc {
 		// -- Execute query
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
 		let sqlx_query = sqlx::query_as_with::<_, E, _>(&sql, values);
-		let entity = mm.dbx().fetch_optional(sqlx_query).await?;
+		let entity = match dbx.fetch_optional(sqlx_query).await {
+			Ok(entity) => entity,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		dbx.commit_txn().await?;
 
 		Ok(entity)
 	}

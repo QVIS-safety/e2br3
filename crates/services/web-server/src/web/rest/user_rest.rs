@@ -26,6 +26,9 @@ use sqlx::types::time::OffsetDateTime;
 use time::{format_description, PrimitiveDateTime};
 use uuid::Uuid;
 
+const USERNAME_MAX_LEN: usize = 128;
+const EMAIL_MAX_LEN: usize = 255;
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum ScopeListInput {
@@ -151,6 +154,46 @@ pub struct UserForUpdateAdminPayload {
 #[derive(Debug, Deserialize)]
 pub struct RoutingSelectionBody {
 	pub active_sender_identifier: Option<String>,
+}
+
+fn validate_username(username: &str) -> Result<()> {
+	if username.chars().count() > USERNAME_MAX_LEN {
+		return Err(Error::BadRequest {
+			message: "username must be 128 characters or fewer".to_string(),
+		});
+	}
+	Ok(())
+}
+
+fn validate_email(email: &str) -> Result<()> {
+	if email.chars().count() > EMAIL_MAX_LEN {
+		return Err(Error::BadRequest {
+			message: "email must be 255 characters or fewer".to_string(),
+		});
+	}
+	Ok(())
+}
+
+fn normalize_email_input(email: String) -> Result<String> {
+	let email = email.trim().to_string();
+	validate_email(&email)?;
+	Ok(email)
+}
+
+fn normalize_optional_email_input(email: Option<String>) -> Result<Option<String>> {
+	email.map(normalize_email_input).transpose()
+}
+
+fn normalize_optional_username_input(
+	username: Option<String>,
+) -> Result<Option<String>> {
+	username
+		.map(|value| {
+			let username = value.trim().to_string();
+			validate_username(&username)?;
+			Ok(username)
+		})
+		.transpose()
 }
 
 fn parse_scope_input(value: Option<ScopeListInput>) -> Option<Vec<String>> {
@@ -396,16 +439,14 @@ pub async fn create_user(
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let (role, permission_profile_id) =
 		normalize_user_role_and_profile(data.role, data.permission_profile_id);
-	let username = data
-		.username
-		.map(|value| value.trim().to_string())
+	let email = normalize_email_input(data.email)?;
+	let username = normalize_optional_username_input(data.username)?
 		.filter(|value| !value.is_empty())
-		.ok_or_else(|| Error::BadRequest {
-			message: "name is required".to_string(),
-		})?;
+		.unwrap_or_else(|| email.split('@').next().unwrap_or("user").to_string());
+	validate_username(&username)?;
 	let create = UserForCreate {
 		organization_id,
-		email: data.email,
+		email,
 		username: Some(username),
 		pwd_clear: initial_password(data.pwd_clear),
 		role,
@@ -539,9 +580,11 @@ pub async fn update_user(
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let (role, permission_profile_id) =
 		normalize_user_role_and_profile(data.role, data.permission_profile_id);
+	let email = normalize_optional_email_input(data.email)?;
+	let username = normalize_optional_username_input(data.username)?;
 	let update = UserForUpdate {
-		email: data.email,
-		username: data.username,
+		email,
+		username,
 		role,
 		permission_profile_id,
 		comments: data.comments,

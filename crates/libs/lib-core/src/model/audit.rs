@@ -171,18 +171,38 @@ impl CaseVersionBmc {
 	}
 
 	pub async fn list_by_case(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<Vec<CaseVersion>> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_dbx(
+			dbx,
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err.into());
+		}
 		let sql = format!(
 			"SELECT * FROM {} WHERE case_id = $1 ORDER BY version DESC",
 			Self::TABLE
 		);
-		let versions = mm
-			.dbx()
+		let versions = match dbx
 			.fetch_all(sqlx::query_as::<_, CaseVersion>(&sql).bind(case_id))
-			.await?;
+			.await
+		{
+			Ok(versions) => versions,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		dbx.commit_txn().await?;
 		Ok(versions)
 	}
 }
@@ -263,7 +283,7 @@ impl AuditLogBmc {
 	}
 
 	pub async fn list(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		filters: Option<Vec<AuditLogFilter>>,
 		list_options: Option<ListOptions>,
@@ -304,10 +324,30 @@ impl AuditLogBmc {
 		list_options.apply_to_sea_query(&mut query);
 
 		let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
-		let logs = mm
-			.dbx()
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_dbx(
+			dbx,
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err.into());
+		}
+		let logs = match dbx
 			.fetch_all(sqlx::query_as_with::<_, AuditLog, _>(&sql, values))
-			.await?;
+			.await
+		{
+			Ok(logs) => logs,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		dbx.commit_txn().await?;
 		Ok(logs
 			.into_iter()
 			.filter(|log| !Self::is_metadata_only_update(log))
@@ -315,11 +355,24 @@ impl AuditLogBmc {
 	}
 
 	pub async fn list_by_record(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		table_name: &str,
 		record_id: Uuid,
 	) -> Result<Vec<AuditLog>> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_dbx(
+			dbx,
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err.into());
+		}
 		let logs = if table_name == "cases" {
 			let sql = format!(
 				"SELECT l.*, audit_user_display(l.user_id) AS user_display
@@ -329,14 +382,21 @@ impl AuditLogBmc {
 				 ORDER BY l.created_at DESC",
 				Self::TABLE
 			);
-			mm.dbx()
+			match dbx
 				.fetch_all(
 					sqlx::query_as::<_, AuditLog>(&sql)
 						.bind(table_name)
 						.bind(record_id)
 						.bind(record_id.to_string()),
 				)
-				.await?
+				.await
+			{
+				Ok(logs) => logs,
+				Err(err) => {
+					dbx.rollback_txn().await?;
+					return Err(err.into());
+				}
+			}
 		} else {
 			let sql = format!(
 				"SELECT l.*, audit_user_display(l.user_id) AS user_display
@@ -345,14 +405,22 @@ impl AuditLogBmc {
 				 ORDER BY l.created_at DESC",
 				Self::TABLE
 			);
-			mm.dbx()
+			match dbx
 				.fetch_all(
 					sqlx::query_as::<_, AuditLog>(&sql)
 						.bind(table_name)
 						.bind(record_id),
 				)
-				.await?
+				.await
+			{
+				Ok(logs) => logs,
+				Err(err) => {
+					dbx.rollback_txn().await?;
+					return Err(err.into());
+				}
+			}
 		};
+		dbx.commit_txn().await?;
 		Ok(logs
 			.into_iter()
 			.filter(|log| !Self::is_metadata_only_update(log))
@@ -360,14 +428,14 @@ impl AuditLogBmc {
 	}
 
 	pub async fn verify_hash_chain(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 	) -> Result<AuditChainVerificationReport> {
-		Self::verify_hash_chain_since(_ctx, mm, None).await
+		Self::verify_hash_chain_since(ctx, mm, None).await
 	}
 
 	pub async fn verify_hash_chain_since(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		since_id: Option<i64>,
 	) -> Result<AuditChainVerificationReport> {
@@ -418,10 +486,28 @@ impl AuditLogBmc {
 			ORDER BY id ASC
 		"#;
 
-		let rows: Vec<ChainRow> = mm
-			.dbx()
-			.fetch_all(sqlx::query_as(sql).bind(since_id))
-			.await?;
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_dbx(
+			dbx,
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err.into());
+		}
+		let rows: Vec<ChainRow> =
+			match dbx.fetch_all(sqlx::query_as(sql).bind(since_id)).await {
+				Ok(rows) => rows,
+				Err(err) => {
+					dbx.rollback_txn().await?;
+					return Err(err.into());
+				}
+			};
+		dbx.commit_txn().await?;
 		let mut broken_rows = 0_i64;
 		let mut first_broken_id = None;
 		let mut first_broken_reason = None;

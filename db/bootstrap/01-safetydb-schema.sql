@@ -78,16 +78,19 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS app_settings (
-    key text PRIMARY KEY,
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    key text NOT NULL,
     value jsonb NOT NULL DEFAULT '{}'::jsonb,
     updated_at timestamptz NOT NULL DEFAULT now(),
-    updated_by uuid NULL REFERENCES users(id) ON DELETE SET NULL
+    updated_by uuid NULL REFERENCES users(id) ON DELETE SET NULL,
+    PRIMARY KEY (organization_id, key)
 );
 
 CREATE TABLE IF NOT EXISTS permission_profiles (
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
     profile_id text PRIMARY KEY,
-    name text NOT NULL,
-    description text,
+    name VARCHAR(128) NOT NULL,
+    description VARCHAR(512),
     can_view boolean NOT NULL DEFAULT true,
     can_review boolean NOT NULL DEFAULT false,
     can_lock boolean NOT NULL DEFAULT false,
@@ -452,6 +455,10 @@ CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at);
 CREATE INDEX idx_audit_logs_org_created_at ON audit_logs(organization_id, created_at DESC);
 CREATE INDEX idx_audit_logs_org_table_record_created_at ON audit_logs(organization_id, table_name, record_id, created_at DESC);
 CREATE INDEX idx_audit_logs_org_user_created_at ON audit_logs(organization_id, user_id, created_at DESC);
+CREATE INDEX idx_app_settings_org_key ON app_settings(organization_id, key);
+CREATE INDEX idx_permission_profiles_org ON permission_profiles(organization_id);
+CREATE UNIQUE INDEX idx_permission_profiles_org_name_unique
+    ON permission_profiles(organization_id, lower(btrim(name)));
 CREATE INDEX idx_audit_logs_esignature ON audit_logs(e_signature_id);
 CREATE INDEX idx_audit_logs_changed_fields ON audit_logs USING GIN (changed_fields);
 CREATE INDEX idx_audit_logs_prev_hash ON audit_logs(prev_hash);
@@ -1139,7 +1146,34 @@ CREATE POLICY presave_template_audits_insert ON presave_template_audits
     );
 
 -- ============================================================================
--- 9.11 Electronic Signatures Table RLS
+-- 9.11 Permission Profiles and App Settings Table RLS
+-- ============================================================================
+ALTER TABLE permission_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE permission_profiles FORCE ROW LEVEL SECURITY;
+CREATE POLICY permission_profiles_org_isolation ON permission_profiles
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_settings FORCE ROW LEVEL SECURITY;
+CREATE POLICY app_settings_org_isolation ON app_settings
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+-- ============================================================================
+-- 9.12 Electronic Signatures Table RLS
 -- ============================================================================
 ALTER TABLE e_signatures ENABLE ROW LEVEL SECURITY;
 ALTER TABLE e_signatures FORCE ROW LEVEL SECURITY;
@@ -1164,7 +1198,7 @@ CREATE POLICY e_signatures_via_case ON e_signatures
     );
 
 -- ============================================================================
--- 9.12 Users Table RLS
+-- 9.13 Users Table RLS
 -- ============================================================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users FORCE ROW LEVEL SECURITY;
@@ -1192,7 +1226,7 @@ CREATE POLICY users_org_isolation_modify ON users
     );
 
 -- ============================================================================
--- 9.13 Organizations Table RLS
+-- 9.14 Organizations Table RLS
 -- ============================================================================
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations FORCE ROW LEVEL SECURITY;
