@@ -8,6 +8,7 @@ use lib_core::model::case_duplicate::{
 	assess_duplicate_basis, CaseDuplicateBmc, CaseDuplicateKey,
 	CaseIntakeDuplicateMatch, DuplicateBasisAssessment,
 };
+use lib_core::model::case_numbering::generate_case_number;
 use lib_core::model::message_header::{MessageHeaderBmc, MessageHeaderForCreate};
 use lib_core::model::patient::{
 	PatientIdentifierBmc, PatientIdentifierForCreate, PatientInformationBmc,
@@ -42,7 +43,7 @@ use crate::web::rest::case_rest::{
 
 #[derive(Debug, Deserialize)]
 pub struct CaseIntakeCheckInput {
-	pub safety_report_id: String,
+	pub safety_report_id: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "lib_core::serde::flex_date::deserialize_option_date"
@@ -75,7 +76,7 @@ pub struct CaseIntakeCheckResult {
 
 #[derive(Debug, Deserialize)]
 pub struct CaseFromIntakeInput {
-	pub safety_report_id: String,
+	pub safety_report_id: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "lib_core::serde::flex_date::deserialize_option_date"
@@ -156,7 +157,9 @@ fn to_duplicate_key(input: &CaseIntakeCheckInput) -> CaseDuplicateKey {
 
 fn normalize_intake_check_input(data: CaseIntakeCheckInput) -> CaseIntakeCheckInput {
 	CaseIntakeCheckInput {
-		safety_report_id: data.safety_report_id.trim().to_string(),
+		safety_report_id: data
+			.safety_report_id
+			.map(|value| value.trim().to_string()),
 		date_of_most_recent_information: data.date_of_most_recent_information,
 		report_type: normalize_optional_text(data.report_type),
 		reporter_organization: normalize_optional_text(data.reporter_organization),
@@ -257,13 +260,6 @@ pub async fn check_case_intake_duplicate(
 	require_permission(&ctx, CASE_CREATE)?;
 
 	let data = normalize_intake_check_input(params.data);
-	let safety_report_id = data.safety_report_id.trim();
-	if safety_report_id.is_empty() {
-		return Err(Error::BadRequest {
-			message: "safety_report_id is required".to_string(),
-		});
-	}
-
 	let key = to_duplicate_key(&data);
 	let (assessment, matches) = assess_intake_duplicates(&ctx, &mm, &key).await?;
 
@@ -295,12 +291,7 @@ pub async fn create_case_from_intake(
 	require_permission(&ctx, CASE_CREATE)?;
 
 	let data = params.data;
-	let safety_report_id = data.safety_report_id.trim();
-	if safety_report_id.is_empty() {
-		return Err(Error::BadRequest {
-			message: "safety_report_id is required".to_string(),
-		});
-	}
+	let mut safety_report_id = data.safety_report_id.clone().unwrap_or_default();
 	if data.report_type.trim().is_empty() {
 		return Err(Error::BadRequest {
 			message: "report_type is required".to_string(),
@@ -340,10 +331,20 @@ pub async fn create_case_from_intake(
 		.transpose()?
 		.unwrap_or(ValidationProfile::Fda);
 
-	let next_version = next_case_version(&ctx, &mm, safety_report_id).await?;
+	let generated_case_number = if safety_report_id.trim().is_empty() {
+		let generated = generate_case_number(&ctx, &mm)
+			.await
+			.map_err(Error::Model)?;
+		safety_report_id = generated.safety_report_id.clone();
+		Some(generated)
+	} else {
+		safety_report_id = safety_report_id.trim().to_string();
+		None
+	};
+	let next_version = next_case_version(&ctx, &mm, &safety_report_id).await?;
 	let case_create = InternalCaseForCreate {
 		organization_id: ctx.organization_id(),
-		safety_report_id: safety_report_id.to_string(),
+		safety_report_id: safety_report_id.clone(),
 		dg_prd_key: data.dg_prd_key.clone(),
 		status: Some(data.status.unwrap_or_else(|| "draft".to_string())),
 		appendices_json: Some(
@@ -405,7 +406,9 @@ pub async fn create_case_from_intake(
 			first_sender_type: None,
 			additional_documents_available: None,
 			other_case_identifiers_exist: None,
-			worldwide_unique_id: None,
+			worldwide_unique_id: generated_case_number
+				.as_ref()
+				.map(|generated| generated.worldwide_unique_id.clone()),
 			nullification_code: None,
 			nullification_reason: None,
 			receiver_organization: None,
@@ -551,7 +554,7 @@ pub async fn create_case_from_intake(
 		Json(DataRestResult {
 			data: CaseFromIntakeResult {
 				case_id,
-				safety_report_id: safety_report_id.to_string(),
+				safety_report_id,
 				version: next_version,
 			},
 		}),

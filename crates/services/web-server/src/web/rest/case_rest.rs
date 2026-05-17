@@ -14,6 +14,10 @@ use lib_core::model::case::{
 	CaseForCreate as InternalCaseForCreate, CaseForUpdate as InternalCaseForUpdate,
 	CaseLinkOption, CaseListViewRow,
 };
+use lib_core::model::case_numbering::generate_case_number;
+use lib_core::model::safety_report::{
+	SafetyReportIdentificationBmc, SafetyReportIdentificationForCreate,
+};
 use lib_core::model::ModelManager;
 use lib_core::validation::{validate_case_for_profiles, ValidationProfile};
 use lib_rest_core::prelude::*;
@@ -165,7 +169,7 @@ fn to_internal_case_for_create(
 ) -> InternalCaseForCreate {
 	InternalCaseForCreate {
 		organization_id: ctx.organization_id(),
-		safety_report_id: data.safety_report_id,
+		safety_report_id: data.safety_report_id.unwrap_or_default(),
 		dg_prd_key: data.dg_prd_key,
 		status: data.status,
 		appendices_json: data.appendices_json,
@@ -283,7 +287,7 @@ async fn next_case_version(
 
 #[derive(Debug, Deserialize)]
 pub struct PublicCaseForCreate {
-	pub safety_report_id: String,
+	pub safety_report_id: Option<String>,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
 	pub appendices_json: Option<String>,
@@ -404,11 +408,55 @@ pub async fn create_case_guarded(
 		let normalized = normalize_appendices_json(appendices_json)?;
 		data.appendices_json = Some(normalized);
 	}
-	let next_version = next_case_version(&ctx, &mm, &data.safety_report_id).await?;
+	let generated_case_number = if data
+		.safety_report_id
+		.as_deref()
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+		.is_none()
+	{
+		let generated = generate_case_number(&ctx, &mm)
+			.await
+			.map_err(Error::Model)?;
+		data.safety_report_id = Some(generated.safety_report_id.clone());
+		Some(generated)
+	} else {
+		None
+	};
+	let safety_report_id = data.safety_report_id.clone().unwrap_or_default();
+	let next_version = next_case_version(&ctx, &mm, &safety_report_id).await?;
 	let data = to_internal_case_for_create(&ctx, data, next_version);
 	validate_case_create_payload(&data)?;
 
 	let id = CaseBmc::create(&ctx, &mm, data).await?;
+	if let Some(generated) = generated_case_number {
+		SafetyReportIdentificationBmc::create(
+			&ctx,
+			&mm,
+			SafetyReportIdentificationForCreate {
+				case_id: id,
+				transmission_date: None,
+				transmission_date_null_flavor: None,
+				report_type: None,
+				date_first_received_from_source: None,
+				date_first_received_from_source_null_flavor: None,
+				date_of_most_recent_information: None,
+				date_of_most_recent_information_null_flavor: None,
+				fulfil_expedited_criteria: None,
+				local_criteria_report_type: None,
+				combination_product_report_indicator: None,
+				first_sender_type: None,
+				additional_documents_available: None,
+				other_case_identifiers_exist: None,
+				worldwide_unique_id: Some(generated.worldwide_unique_id),
+				nullification_code: None,
+				nullification_reason: None,
+				receiver_organization: None,
+			},
+		)
+		.await
+		.map_err(Error::Model)?;
+	}
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 	Ok((
 		axum::http::StatusCode::CREATED,

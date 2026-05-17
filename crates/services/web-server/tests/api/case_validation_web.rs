@@ -63,7 +63,8 @@ async fn create_case_with_payload(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value = serde_json::from_slice::<Value>(&body)?;
+	let value = serde_json::from_slice::<Value>(&body)
+		.unwrap_or_else(|_| json!({ "raw": String::from_utf8_lossy(&body) }));
 	Ok((status, value))
 }
 
@@ -1389,6 +1390,92 @@ async fn test_admin_settings_round_trips_alignment_fields() -> Result<()> {
 		data["case_number_sequence_condition"].as_str(),
 		Some("Per sender")
 	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_number_settings_generate_c11_and_c181() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let identifier = format!("SAFETY{}", Uuid::new_v4().simple());
+	let first_case_number = format!("{identifier}001");
+	let second_case_number = format!("{identifier}002");
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"case_number_identifier": identifier,
+				"case_number_padding": 3,
+				"case_number_format_fields": ["AE Row No."]
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, first) = create_case_with_payload(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{first:?}");
+	let first_id =
+		Uuid::parse_str(first["data"]["id"].as_str().ok_or("missing first id")?)?;
+	assert_eq!(
+		first["data"]["safety_report_id"].as_str(),
+		Some(first_case_number.as_str())
+	);
+	assert_eq!(first["data"]["version"].as_i64(), Some(1));
+
+	let (status, second) = create_case_with_payload(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{second:?}");
+	assert_eq!(
+		second["data"]["safety_report_id"].as_str(),
+		Some(second_case_number.as_str())
+	);
+	assert_eq!(second["data"]["version"].as_i64(), Some(1));
+
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/cases/{first_id}/safety-report"))
+		.header("cookie", &cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let safety_report: Value = serde_json::from_slice(&body)?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"safety report status {} body {}",
+		status,
+		String::from_utf8_lossy(&body)
+	);
+	assert_eq!(
+		safety_report["data"]["worldwide_unique_id"].as_str(),
+		Some(first_case_number.as_str())
+	);
+
 	Ok(())
 }
 

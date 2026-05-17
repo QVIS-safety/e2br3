@@ -27,6 +27,7 @@ pub mod store;
 
 // E2B(R3) SafetyDB Core Models
 pub mod case;
+pub mod case_numbering;
 pub mod organization;
 pub mod user; // E2B users table (UUID-based) // Organizations table // Core cases table
 
