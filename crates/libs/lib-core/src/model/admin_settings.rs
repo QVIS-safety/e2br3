@@ -10,11 +10,54 @@ use crate::ctx::{
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::ModelManager;
 use crate::model::Result;
-use serde_json::Value;
-use std::collections::HashSet;
+use serde_json::{Map, Value};
+use std::collections::{BTreeSet, HashSet};
 use uuid::Uuid;
 
 pub struct AdminSettingsBmc;
+
+fn changed_settings_fields(
+	old_value: Option<&Value>,
+	new_value: &Value,
+) -> Option<Value> {
+	let old_object = old_value.and_then(Value::as_object);
+	let new_object = new_value.as_object();
+	let mut keys = BTreeSet::new();
+
+	if let Some(object) = old_object {
+		keys.extend(object.keys().cloned());
+	}
+	if let Some(object) = new_object {
+		keys.extend(object.keys().cloned());
+	}
+
+	let mut changed = Map::new();
+	for key in keys {
+		let old_field = old_object
+			.and_then(|object| object.get(&key))
+			.cloned()
+			.unwrap_or(Value::Null);
+		let new_field = new_object
+			.and_then(|object| object.get(&key))
+			.cloned()
+			.unwrap_or(Value::Null);
+		if old_field != new_field {
+			changed.insert(
+				key,
+				serde_json::json!({
+					"old": old_field,
+					"new": new_field,
+				}),
+			);
+		}
+	}
+
+	if changed.is_empty() {
+		None
+	} else {
+		Some(Value::Object(changed))
+	}
+}
 
 impl AdminSettingsBmc {
 	/// Fetch the JSON value stored for `key`, or `None` if not set.
@@ -103,6 +146,23 @@ impl AdminSettingsBmc {
 			dbx.rollback_txn().await?;
 			return Err(err);
 		}
+		let old_value = match dbx
+			.fetch_optional(
+				sqlx::query_as::<_, (Value,)>(
+					"SELECT value FROM app_settings WHERE organization_id = $1 AND key = $2",
+				)
+				.bind(organization_id)
+				.bind(key),
+			)
+			.await
+		{
+			Ok(row) => row.map(|(value,)| value),
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(crate::model::Error::Store(err.to_string()));
+			}
+		};
+		let changed_fields = changed_settings_fields(old_value.as_ref(), value);
 		let count = match dbx
 			.execute(
 				sqlx::query(
@@ -130,6 +190,42 @@ impl AdminSettingsBmc {
 			}
 		};
 		let _ = count;
+		if let Some(changed_fields) = changed_fields {
+			let action = if old_value.is_some() {
+				"UPDATE"
+			} else {
+				"CREATE"
+			};
+			if let Err(err) = dbx
+				.execute(
+					sqlx::query(
+						r#"
+						INSERT INTO audit_logs (
+							table_name,
+							record_id,
+							organization_id,
+							action,
+							user_id,
+							changed_fields,
+							old_values,
+							new_values
+						)
+						VALUES ('app_settings', $1, $1, $2, $3, $4, $5, $6)
+						"#,
+					)
+					.bind(organization_id)
+					.bind(action)
+					.bind(updated_by.unwrap_or_else(|| ctx.user_id()))
+					.bind(changed_fields)
+					.bind(old_value)
+					.bind(value),
+				)
+				.await
+			{
+				dbx.rollback_txn().await?;
+				return Err(crate::model::Error::Store(err.to_string()));
+			}
+		}
 		dbx.commit_txn().await?;
 		Ok(())
 	}
