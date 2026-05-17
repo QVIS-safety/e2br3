@@ -460,12 +460,7 @@ async fn load_sender_options_for_org(
 			WITH sender_master_options AS (
 				SELECT DISTINCT
 				       NULLIF(
-				           BTRIM(COALESCE(
-				               data->>'senderIdentifier',
-				               data->>'messageSenderIdentifier',
-				               data->>'batchSenderIdentifier',
-				               data->>'senderOrganization'
-				           )),
+				           BTRIM(data->>'senderIdentifier'),
 				           ''
 				       ) AS sender_identifier,
 				       0::bigint AS case_count

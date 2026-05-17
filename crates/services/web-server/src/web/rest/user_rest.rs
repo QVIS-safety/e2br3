@@ -153,6 +153,7 @@ pub struct UserForUpdateAdminPayload {
 
 #[derive(Debug, Deserialize)]
 pub struct RoutingSelectionBody {
+	#[serde(default, alias = "sender_id")]
 	pub active_sender_identifier: Option<String>,
 }
 

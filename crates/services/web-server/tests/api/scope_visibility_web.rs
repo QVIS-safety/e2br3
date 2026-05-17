@@ -1060,7 +1060,7 @@ async fn test_active_sender_selection_filters_case_list() -> Result<()> {
 		"PUT",
 		&viewer_cookie,
 		"/api/users/me/routing".to_string(),
-		Some(json!({ "data": { "active_sender_identifier": "SEND-A" } })),
+		Some(json!({ "data": { "sender_id": "SEND-A" } })),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
