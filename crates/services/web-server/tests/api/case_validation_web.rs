@@ -1132,25 +1132,6 @@ async fn test_case_save_allows_validated_to_draft_transition() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-#[ignore = "requires DB migration/owner privileges to add 'reviewed' to case_status_valid constraint"]
-async fn test_case_can_be_marked_reviewed() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
-
-	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	let (status, body) =
-		update_case_status(&app, &cookie, case_id, "reviewed").await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["status"].as_str(), Some("reviewed"));
-
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
 async fn test_case_can_be_marked_locked() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -1474,6 +1455,63 @@ async fn test_case_number_settings_generate_c11_and_c181() -> Result<()> {
 	assert_eq!(
 		safety_report["data"]["worldwide_unique_id"].as_str(),
 		Some(first_case_number.as_str())
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_c1_date_ordering_business_rules() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let (status, body) = update_safety_report(
+		&app,
+		&cookie,
+		case_id,
+		json!({
+			"data": {
+				"transmission_date": [2024, 2],
+				"date_first_received_from_source": [2024, 4],
+				"date_of_most_recent_information": [2024, 3]
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let (status, body) = get_validation(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation?profile=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let codes = body["data"]["issues"]
+		.as_array()
+		.ok_or("missing issues")?
+		.iter()
+		.filter_map(|issue| issue["code"].as_str())
+		.collect::<Vec<_>>();
+	assert!(
+		codes.contains(&"ICH.C.1.4.AFTER_C.1.2.FORBIDDEN"),
+		"{codes:?}"
+	);
+	assert!(
+		codes.contains(&"ICH.C.1.4.AFTER_C.1.5.FORBIDDEN"),
+		"{codes:?}"
+	);
+	assert!(
+		codes.contains(&"ICH.C.1.5.AFTER_C.1.2.FORBIDDEN"),
+		"{codes:?}"
 	);
 
 	Ok(())

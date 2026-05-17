@@ -310,6 +310,20 @@ pub const VALIDATION_RULES: &[
 		message: "[C.1.4] must not be later than today.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.C.1.4.AFTER_C.1.2.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[C.1.4] cannot be later than [C.1.2].",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.4.AFTER_C.1.5.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[C.1.4] cannot be later than [C.1.5].",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.C.1.5.REQUIRED",
 		profile: ValidationProfile::Ich,
 		section: "case-identification",
@@ -322,6 +336,13 @@ pub const VALIDATION_RULES: &[
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.5] must not be later than today.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.5.AFTER_C.1.2.FORBIDDEN",
+		profile: ValidationProfile::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[C.1.5] cannot be later than [C.1.2].",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.6.1.r.1.REQUIRED",

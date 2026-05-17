@@ -17,9 +17,28 @@ use crate::model::safety_report::{
 };
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::{self, ModelManager};
+use crate::xml::import::CImportSettings;
 use crate::xml::import_runtime::{helpers::c as c_helpers, shared};
+use crate::xml::import_sections::c_safety_report::CSafetyReportImport;
 use crate::xml::{error::Error, Result};
+use sqlx::types::time::Date;
 use sqlx::types::Uuid;
+
+pub fn apply_c_safety_report_import_settings(
+	report: &mut CSafetyReportImport,
+	settings: &CImportSettings,
+	import_date: Date,
+) {
+	if settings.update_date_of_creation {
+		report.transmission_date = import_date;
+	}
+	if settings.update_most_recent_info_date {
+		report.date_of_most_recent_information = import_date;
+	}
+	if settings.update_report_first_received_date {
+		report.date_first_received_from_source = import_date;
+	}
+}
 
 pub(crate) async fn import_section_c(
 	ctx: &Ctx,
@@ -27,8 +46,9 @@ pub(crate) async fn import_section_c(
 	xml: &[u8],
 	case_id: Uuid,
 	header: Option<&shared::MessageHeaderExtract>,
+	settings: &CImportSettings,
 ) -> Result<()> {
-	import_c_1_safety_report(ctx, mm, xml, case_id, header).await?;
+	import_c_1_safety_report(ctx, mm, xml, case_id, header, settings).await?;
 	import_c_2_sender_information(ctx, mm, xml, case_id, header).await?;
 	import_c_3_primary_sources(ctx, mm, xml, case_id).await?;
 	import_c_4_case_identifiers(ctx, mm, xml, case_id).await?;
@@ -45,12 +65,18 @@ async fn import_c_1_safety_report(
 	xml: &[u8],
 	case_id: Uuid,
 	header: Option<&shared::MessageHeaderExtract>,
+	settings: &CImportSettings,
 ) -> Result<()> {
-	let Some(report) =
+	let Some(mut report) =
 		crate::xml::import_sections::c_safety_report::parse_c_safety_report(xml)?
 	else {
 		return Ok(());
 	};
+	apply_c_safety_report_import_settings(
+		&mut report,
+		settings,
+		time::OffsetDateTime::now_utc().date(),
+	);
 
 	mm.dbx().begin_txn().await.map_err(model::Error::from)?;
 	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {

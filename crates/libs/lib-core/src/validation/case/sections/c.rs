@@ -22,6 +22,13 @@ fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
 	value > today
 }
 
+fn is_later_than(
+	value: Option<sqlx::types::time::Date>,
+	other: Option<sqlx::types::time::Date>,
+) -> bool {
+	matches!((value, other), (Some(value), Some(other)) if value > other)
+}
+
 pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	profile: ValidationProfile,
@@ -63,10 +70,16 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		"ICH.C.1.4.FUTURE_DATE.FORBIDDEN" => {
 			Some("safetyReportIdentification.dateFirstReceivedFromSource")
 		}
+		"ICH.C.1.4.AFTER_C.1.2.FORBIDDEN" | "ICH.C.1.4.AFTER_C.1.5.FORBIDDEN" => {
+			Some("safetyReportIdentification.dateFirstReceivedFromSource")
+		}
 		"ICH.C.1.5.REQUIRED" => {
 			Some("safetyReportIdentification.dateOfMostRecentInformation")
 		}
 		"ICH.C.1.5.FUTURE_DATE.FORBIDDEN" => {
+			Some("safetyReportIdentification.dateOfMostRecentInformation")
+		}
+		"ICH.C.1.5.AFTER_C.1.2.FORBIDDEN" => {
 			Some("safetyReportIdentification.dateOfMostRecentInformation")
 		}
 		"ICH.C.1.7.REQUIRED" => {
@@ -181,6 +194,36 @@ pub(crate) fn collect_ich_issues(
 			push_issue_by_code(
 				issues,
 				"ICH.C.1.5.FUTURE_DATE.FORBIDDEN",
+				"safetyReportIdentification.dateOfMostRecentInformation",
+			);
+		}
+		if is_later_than(
+			report.date_first_received_from_source,
+			report.transmission_date,
+		) {
+			push_issue_by_code(
+				issues,
+				"ICH.C.1.4.AFTER_C.1.2.FORBIDDEN",
+				"safetyReportIdentification.dateFirstReceivedFromSource",
+			);
+		}
+		if is_later_than(
+			report.date_first_received_from_source,
+			report.date_of_most_recent_information,
+		) {
+			push_issue_by_code(
+				issues,
+				"ICH.C.1.4.AFTER_C.1.5.FORBIDDEN",
+				"safetyReportIdentification.dateFirstReceivedFromSource",
+			);
+		}
+		if is_later_than(
+			report.date_of_most_recent_information,
+			report.transmission_date,
+		) {
+			push_issue_by_code(
+				issues,
+				"ICH.C.1.5.AFTER_C.1.2.FORBIDDEN",
 				"safetyReportIdentification.dateOfMostRecentInformation",
 			);
 		}

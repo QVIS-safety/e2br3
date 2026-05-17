@@ -5,13 +5,15 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use lib_core::ctx::Ctx;
 use lib_core::model::acs::{XML_IMPORT, XML_IMPORT_READ};
+use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::xml_import_history::XmlImportHistoryBmc;
 use lib_core::model::ModelManager;
 use lib_core::validation::xml::{
 	should_skip_xml_validation, validate_e2b_xml_basic,
 };
 use lib_core::xml::{
-	import_e2b_xml, validate_e2b_xml, XmlImportRequest, XmlValidationReport,
+	import_e2b_xml, validate_e2b_xml, CImportSettings, XmlImportRequest,
+	XmlValidationReport,
 };
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -26,6 +28,7 @@ use zip::ZipArchive;
 const MAX_XML_UPLOAD_BYTES: usize = 50 * 1024 * 1024;
 const MAX_XML_ZIP_ENTRY_BYTES: usize = 25 * 1024 * 1024;
 const MAX_IMPORT_FORM_FIELD_BYTES: usize = 1024;
+const SETTINGS_KEY: &str = "system";
 
 struct UploadedImportPayload {
 	bytes: Vec<u8>,
@@ -278,6 +281,7 @@ async fn import_single_xml(
 	uploaded_file_name: &str,
 	filename: String,
 	validation_profile: Option<String>,
+	c_settings: CImportSettings,
 ) -> ImportedCaseSummary {
 	let import_result = import_e2b_xml(
 		ctx,
@@ -287,6 +291,7 @@ async fn import_single_xml(
 			filename: Some(filename.clone()),
 			validation_profile: validation_profile.clone(),
 			skip_validation: false,
+			c_settings,
 		},
 	)
 	.await;
@@ -349,6 +354,42 @@ async fn import_single_xml(
 			}
 		}
 	}
+}
+
+async fn load_import_settings(
+	ctx: &Ctx,
+	mm: &ModelManager,
+) -> Result<CImportSettings> {
+	let Some(value) = AdminSettingsBmc::get(ctx, mm, SETTINGS_KEY)
+		.await
+		.map_err(Error::Model)?
+	else {
+		return Ok(CImportSettings::default());
+	};
+	let import_date_update =
+		value.get("import_date_update").and_then(|v| v.as_object());
+	Ok(CImportSettings {
+		update_date_of_creation: import_date_update
+			.and_then(|v| v.get("date_of_creation"))
+			.and_then(|v| v.as_bool())
+			.unwrap_or(false),
+		update_most_recent_info_date: import_date_update
+			.and_then(|v| v.get("most_recent_info_date"))
+			.and_then(|v| v.as_bool())
+			.unwrap_or(false),
+		update_report_first_received_date: import_date_update
+			.and_then(|v| v.get("report_first_received_date"))
+			.and_then(|v| v.as_bool())
+			.unwrap_or(false),
+		apply_sender_info_to_imported_cases: value
+			.get("apply_sender_info_to_imported_cases")
+			.and_then(|v| v.as_bool())
+			.unwrap_or(false),
+		apply_default_values_to_imported_r2_cases: value
+			.get("apply_default_values_to_imported_r2_cases")
+			.and_then(|v| v.as_bool())
+			.unwrap_or(false),
+	})
 }
 
 pub async fn list_import_history(
@@ -489,6 +530,7 @@ pub async fn import_xml(
 	let payload = read_xml_multipart(multipart).await?;
 	let entries = extract_xml_entries(&payload.bytes, payload.filename.as_deref())?;
 	let mut imported_cases = Vec::with_capacity(entries.len());
+	let c_settings = load_import_settings(&ctx, &mm).await?;
 	let uploaded_file_name = payload
 		.filename
 		.clone()
@@ -503,6 +545,7 @@ pub async fn import_xml(
 				&uploaded_file_name,
 				entry_name,
 				payload.validation_profile.clone(),
+				c_settings,
 			)
 			.await,
 		);

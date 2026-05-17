@@ -21,7 +21,8 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 pub use crate::validation::xml::should_skip_xml_validation;
 pub use export::export_case_xml;
-pub use import::{import_e2b_xml, XmlImportRequest};
+pub use import::{import_e2b_xml, CImportSettings, XmlImportRequest};
+pub use import_runtime::c::apply_c_safety_report_import_settings;
 pub use parser::parse_e2b_xml;
 pub use types::ParsedE2b;
 pub use types::{XmlImportResult, XmlValidationError, XmlValidationReport};

@@ -13,12 +13,22 @@ use crate::xml::types::XmlImportResult;
 use crate::xml::{parse_e2b_xml, Result};
 use serde_json::json;
 
+#[derive(Debug, Clone, Copy, Default)]
+pub struct CImportSettings {
+	pub update_date_of_creation: bool,
+	pub update_most_recent_info_date: bool,
+	pub update_report_first_received_date: bool,
+	pub apply_sender_info_to_imported_cases: bool,
+	pub apply_default_values_to_imported_r2_cases: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct XmlImportRequest {
 	pub xml: Vec<u8>,
 	pub filename: Option<String>,
 	pub validation_profile: Option<String>,
 	pub skip_validation: bool,
+	pub c_settings: CImportSettings,
 }
 
 pub async fn import_e2b_xml(
@@ -168,8 +178,15 @@ pub async fn import_e2b_xml(
 		}
 	}
 
-	c::import_section_c(ctx, &mm, &req.xml, case_id, header_extract.as_ref())
-		.await?;
+	c::import_section_c(
+		ctx,
+		&mm,
+		&req.xml,
+		case_id,
+		header_extract.as_ref(),
+		&req.c_settings,
+	)
+	.await?;
 	d::import_section_d(ctx, &mm, &req.xml, case_id).await?;
 	h::import_section_h(ctx, &mm, &req.xml, case_id).await?;
 

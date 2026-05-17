@@ -4,8 +4,9 @@ use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
 use lib_core::model::store::{set_org_context, set_user_context};
-use serde_json::Value;
+use serde_json::{json, Value};
 use serial_test::serial;
+use sqlx::types::time::Date;
 use tower::ServiceExt;
 
 async fn get_json(
@@ -35,6 +36,52 @@ async fn get_response(
 		.header("cookie", cookie)
 		.body(Body::empty())?;
 	Ok(app.clone().oneshot(req).await?)
+}
+
+async fn put_json(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("PUT")
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, serde_json::from_slice::<Value>(&body)?))
+}
+
+async fn import_xml_fixture(
+	app: &axum::Router,
+	cookie: &str,
+	filename: &str,
+	xml: &[u8],
+) -> Result<(StatusCode, Value)> {
+	let boundary = "X-BOUNDARY-IMPORT-SETTINGS";
+	let mut multipart = format!(
+		"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{filename}\"\r\nContent-Type: application/xml\r\n\r\n"
+	)
+	.into_bytes();
+	multipart.extend_from_slice(xml);
+	multipart.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/import/xml")
+		.header("cookie", cookie)
+		.header(
+			"content-type",
+			format!("multipart/form-data; boundary={boundary}"),
+		)
+		.body(Body::from(multipart))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, serde_json::from_slice::<Value>(&body)?))
 }
 
 #[serial]
@@ -150,6 +197,73 @@ async fn test_import_history_error_details_download_as_text() -> Result<()> {
 		std::str::from_utf8(&body)?,
 		"schema validation failed on line 14"
 	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_import_settings_update_enabled_c1_dates() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		"/api/admin/settings",
+		json!({
+			"data": {
+				"import_date_update": {
+					"date_of_creation": true,
+					"most_recent_info_date": false,
+					"report_first_received_date": true
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+		.parent()
+		.and_then(|p| p.parent())
+		.and_then(|p| p.parent())
+		.expect("workspace root")
+		.to_path_buf();
+	let xml =
+		std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario6.xml"))?;
+	let xml = String::from_utf8(xml)?.replace(
+		"US-APHARMA-8744554B",
+		&format!("US-TEST-{}", uuid::Uuid::new_v4()),
+	);
+	let (status, body) =
+		import_xml_fixture(&app, &cookie, "FAERS2022Scenario6.xml", xml.as_bytes())
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let case_id = body["data"]["importedCases"][0]["caseId"]
+		.as_str()
+		.ok_or_else(|| format!("missing imported case id in body {body:?}"))?;
+	let case_id = uuid::Uuid::parse_str(case_id)?;
+
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, seed.admin.id).await?;
+	set_org_context(&mut tx, seed.org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	let row = sqlx::query_as::<_, (Date, Date, Date)>(
+		"SELECT transmission_date, date_first_received_from_source, date_of_most_recent_information
+		 FROM safety_report_identification WHERE case_id = $1",
+	)
+	.bind(case_id)
+	.fetch_one(&mut *tx)
+	.await?;
+	tx.commit().await?;
+
+	let import_date = time::OffsetDateTime::now_utc().date();
+	assert_eq!(row.0, import_date);
+	assert_eq!(row.1, import_date);
+	assert_ne!(row.2, import_date);
 
 	Ok(())
 }
