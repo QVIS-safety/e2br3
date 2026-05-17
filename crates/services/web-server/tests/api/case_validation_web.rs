@@ -1500,6 +1500,40 @@ async fn test_workflow_settings_reject_system_admin_role() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_workflow_settings_allow_empty_roles_as_unrestricted() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = update_admin_settings(
+		&app,
+		&cookie,
+		json!({
+			"data": {
+				"workflow_enabled": true,
+				"workflow": {
+					"statuses": [
+						{
+							"name": "Saved",
+							"editable": true,
+							"allowed_roles": [],
+							"due_days": 0
+						}
+					]
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["workflow"]["statuses"][0]["allowed_roles"], json!([]));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_workflow_transition_updates_case_and_persists_event() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
