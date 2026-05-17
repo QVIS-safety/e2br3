@@ -16,6 +16,7 @@ use uuid::Uuid;
 
 const SETTINGS_KEY: &str = "system";
 const NOTICES_KEY: &str = "dashboard_notices";
+const SUPPORTED_APPENDICES: [&str; 3] = ["ICH", "FDA", "MFDS"];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DashboardNoticePayload {
@@ -134,11 +135,7 @@ fn default_settings() -> AdminSettingsPayload {
 			most_recent_info_date: Some(false),
 			report_first_received_date: Some(false),
 		}),
-		appendices: Some(vec![
-			"ICH".to_string(),
-			"FDA".to_string(),
-			"MFDS".to_string(),
-		]),
+		appendices: Some(vec!["ICH".to_string()]),
 		case_number_prefix: Some("ICSR".to_string()),
 		case_number_setting: Some(String::new()),
 		case_number_identifier: Some(String::new()),
@@ -255,6 +252,24 @@ fn default_workflow_config() -> WorkflowConfigPayload {
 				]),
 			},
 		]),
+	}
+}
+
+fn normalize_appendices(appendices: Option<&[String]>) -> Vec<String> {
+	let selected = appendices
+		.unwrap_or(&[])
+		.iter()
+		.map(|appendix| appendix.trim().to_ascii_uppercase())
+		.collect::<HashSet<_>>();
+	let supported = SUPPORTED_APPENDICES
+		.iter()
+		.filter(|appendix| selected.contains(**appendix))
+		.map(|appendix| (*appendix).to_string())
+		.collect::<Vec<_>>();
+	if supported.is_empty() {
+		vec!["ICH".to_string()]
+	} else {
+		supported
 	}
 }
 
@@ -404,7 +419,7 @@ async fn payload_to_value(
 			most_recent_info_date: Some(false),
 			report_first_received_date: Some(false),
 		}),
-		"appendices": payload.appendices.clone().unwrap_or_else(|| vec!["ICH".to_string(), "FDA".to_string(), "MFDS".to_string()]),
+		"appendices": normalize_appendices(payload.appendices.as_deref()),
 		"case_number_prefix": payload.case_number_prefix.clone().unwrap_or_else(|| "ICSR".to_string()),
 		"case_number_setting": payload.case_number_setting.clone().unwrap_or_default(),
 		"case_number_identifier": payload.case_number_identifier.clone().unwrap_or_default(),
@@ -430,10 +445,13 @@ pub async fn get_admin_settings(
 	if let Some(value) = value {
 		let mut payload = serde_json::from_value::<AdminSettingsPayload>(value)
 			.unwrap_or_else(|_| default_settings());
+		payload.appendices =
+			Some(normalize_appendices(payload.appendices.as_deref()));
 		payload.notices = Some(load_notices(&mm).await?);
 		return Ok((StatusCode::OK, Json(payload)));
 	}
 	let mut payload = default_settings();
+	payload.appendices = Some(normalize_appendices(payload.appendices.as_deref()));
 	payload.notices = Some(load_notices(&mm).await?);
 	Ok((StatusCode::OK, Json(payload)))
 }

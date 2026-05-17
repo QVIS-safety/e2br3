@@ -128,6 +128,49 @@ async fn test_idle_session_settings_are_org_scoped_and_validated() -> Result<()>
 
 #[serial]
 #[tokio::test]
+async fn test_admin_settings_appendices_are_supported_and_never_empty() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PUT,
+		"/api/admin/settings",
+		Some(json!({
+			"data": {
+				"appendices": ["PMDA", "FDA", "EMA", "MFDS", "NMPA", "ICH"]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["appendices"], json!(["ICH", "FDA", "MFDS"]));
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PUT,
+		"/api/admin/settings",
+		Some(json!({
+			"data": {
+				"appendices": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["appendices"], json!(["ICH"]));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_dashboard_notices_are_system_admin_written_and_user_readable(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
