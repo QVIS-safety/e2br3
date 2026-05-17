@@ -732,6 +732,40 @@ async fn test_narrative_subresources_endpoints_ok() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_narrative_child_lists_return_empty_when_parent_narrative_missing() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/narrative/sender-diagnoses"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"].as_array().map(|rows| rows.len()), Some(0));
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/narrative/summaries"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"].as_array().map(|rows| rows.len()), Some(0));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_safety_report_subresources_endpoints_ok() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

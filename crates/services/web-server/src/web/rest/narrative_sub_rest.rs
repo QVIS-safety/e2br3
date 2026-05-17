@@ -83,11 +83,16 @@ pub async fn list_sender_diagnoses(
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<SenderDiagnosis>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SENDER_DIAGNOSIS_LIST)?;
-	let narrative_id = narrative_id_for_case(&ctx, &mm, case_id).await?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+	let Some(narrative) =
+		NarrativeInformationBmc::get_by_case_optional(&ctx, &mm, case_id).await?
+	else {
+		return Ok((StatusCode::OK, Json(DataRestResult { data: vec![] })));
+	};
 
 	let filter = SenderDiagnosisFilter {
 		narrative_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-			narrative_id.to_string()
+			narrative.id.to_string()
 		))])),
 		..Default::default()
 	};
@@ -205,11 +210,16 @@ pub async fn list_case_summary_information(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_SUMMARY_LIST)?;
-	let narrative_id = narrative_id_for_case(&ctx, &mm, case_id).await?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+	let Some(narrative) =
+		NarrativeInformationBmc::get_by_case_optional(&ctx, &mm, case_id).await?
+	else {
+		return Ok((StatusCode::OK, Json(DataRestResult { data: vec![] })));
+	};
 
 	let filter = CaseSummaryInformationFilter {
 		narrative_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-			narrative_id.to_string()
+			narrative.id.to_string()
 		))])),
 		..Default::default()
 	};
