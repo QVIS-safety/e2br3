@@ -56,6 +56,24 @@ async fn put_json(
 	Ok((status, serde_json::from_slice::<Value>(&body)?))
 }
 
+async fn post_json(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("POST")
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, serde_json::from_slice::<Value>(&body)?))
+}
+
 async fn import_xml_fixture(
 	app: &axum::Router,
 	cookie: &str,
@@ -264,6 +282,129 @@ async fn test_import_settings_update_enabled_c1_dates() -> Result<()> {
 	assert_eq!(row.0, import_date);
 	assert_eq!(row.1, import_date);
 	assert_ne!(row.2, import_date);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_import_settings_apply_default_sender_only_when_enabled() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/presave-templates",
+		json!({
+			"data": {
+				"entity_type": "sender",
+				"name": "Default import sender",
+				"description": "sender used for import defaults",
+				"data": {
+					"senderType": "2",
+					"senderOrganization": "Admin Default Sender",
+					"senderDepartment": "Import Ops",
+					"senderStreetAddress": "10 Default Road",
+					"senderCity": "Seoul",
+					"senderCountryCode": "KR",
+					"senderEmail": "default-sender@example.test",
+					"senderDefault": true
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+
+	let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+		.parent()
+		.and_then(|p| p.parent())
+		.and_then(|p| p.parent())
+		.expect("workspace root")
+		.to_path_buf();
+	let source_xml =
+		std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario6.xml"))?;
+
+	let disabled_xml = String::from_utf8(source_xml.clone())?.replace(
+		"US-APHARMA-8744554B",
+		&format!("US-SENDER-DISABLED-{}", uuid::Uuid::new_v4()),
+	);
+	let (status, body) = import_xml_fixture(
+		&app,
+		&cookie,
+		"FAERS2022Scenario6.xml",
+		disabled_xml.as_bytes(),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let disabled_case_id = body["data"]["importedCases"][0]["caseId"]
+		.as_str()
+		.ok_or_else(|| format!("missing imported case id in body {body:?}"))?;
+	let disabled_case_id = uuid::Uuid::parse_str(disabled_case_id)?;
+
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, seed.admin.id).await?;
+	set_org_context(&mut tx, seed.org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	let disabled_sender =
+		sqlx::query_as::<_, (Option<String>, Option<String>, Option<String>)>(
+			"SELECT sender_type, organization_name, email
+		 FROM sender_information WHERE case_id = $1 LIMIT 1",
+		)
+		.bind(disabled_case_id)
+		.fetch_one(&mut *tx)
+		.await?;
+	tx.commit().await?;
+	assert_eq!(disabled_sender.0.as_deref(), Some("1"));
+	assert_eq!(disabled_sender.1.as_deref(), Some("Reporting"));
+	assert_eq!(disabled_sender.2.as_deref(), Some("abc@gmail.com"));
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		"/api/admin/settings",
+		json!({
+			"data": {
+				"apply_sender_info_to_imported_cases": true
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let xml = String::from_utf8(source_xml)?.replace(
+		"US-APHARMA-8744554B",
+		&format!("US-SENDER-{}", uuid::Uuid::new_v4()),
+	);
+	let (status, body) =
+		import_xml_fixture(&app, &cookie, "FAERS2022Scenario6.xml", xml.as_bytes())
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let case_id = body["data"]["importedCases"][0]["caseId"]
+		.as_str()
+		.ok_or_else(|| format!("missing imported case id in body {body:?}"))?;
+	let case_id = uuid::Uuid::parse_str(case_id)?;
+
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, seed.admin.id).await?;
+	set_org_context(&mut tx, seed.org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	let sender =
+		sqlx::query_as::<_, (Option<String>, Option<String>, Option<String>)>(
+			"SELECT sender_type, organization_name, email
+		 FROM sender_information WHERE case_id = $1 LIMIT 1",
+		)
+		.bind(case_id)
+		.fetch_one(&mut *tx)
+		.await?;
+	tx.commit().await?;
+
+	assert_eq!(sender.0.as_deref(), Some("2"));
+	assert_eq!(sender.1.as_deref(), Some("Admin Default Sender"));
+	assert_eq!(sender.2.as_deref(), Some("default-sender@example.test"));
 
 	Ok(())
 }

@@ -4,6 +4,7 @@ use crate::model::case_identifiers::{
 	OtherCaseIdentifierBmc, OtherCaseIdentifierForCreate,
 	OtherCaseIdentifierForUpdate,
 };
+use crate::model::presave_template::{PresaveEntityType, PresaveTemplateBmc};
 use crate::model::receiver::{
 	ReceiverInformationBmc, ReceiverInformationForCreate,
 	ReceiverInformationForUpdate,
@@ -40,6 +41,21 @@ pub fn apply_c_safety_report_import_settings(
 	}
 }
 
+pub fn apply_default_values_to_imported_r2_case(
+	report: &mut CSafetyReportImport,
+	enabled: bool,
+) {
+	if !enabled {
+		return;
+	}
+	if report.additional_documents_available.is_none() {
+		report.additional_documents_available = Some(false);
+	}
+	if report.first_sender_type.is_none() {
+		report.first_sender_type = Some("1".to_string());
+	}
+}
+
 pub(crate) async fn import_section_c(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -49,7 +65,7 @@ pub(crate) async fn import_section_c(
 	settings: &CImportSettings,
 ) -> Result<()> {
 	import_c_1_safety_report(ctx, mm, xml, case_id, header, settings).await?;
-	import_c_2_sender_information(ctx, mm, xml, case_id, header).await?;
+	import_c_2_sender_information(ctx, mm, xml, case_id, header, settings).await?;
 	import_c_3_primary_sources(ctx, mm, xml, case_id).await?;
 	import_c_4_case_identifiers(ctx, mm, xml, case_id).await?;
 	import_c_4_documents_held_by_sender(ctx, mm, xml, case_id).await?;
@@ -76,6 +92,10 @@ async fn import_c_1_safety_report(
 		&mut report,
 		settings,
 		time::OffsetDateTime::now_utc().date(),
+	);
+	apply_default_values_to_imported_r2_case(
+		&mut report,
+		settings.apply_default_values_to_imported_r2_cases,
 	);
 
 	mm.dbx().begin_txn().await.map_err(model::Error::from)?;
@@ -178,8 +198,17 @@ async fn import_c_2_sender_information(
 	xml: &[u8],
 	case_id: Uuid,
 	header: Option<&shared::MessageHeaderExtract>,
+	settings: &CImportSettings,
 ) -> Result<()> {
-	let Some(sender) = c_helpers::parse_sender_information(xml, header)? else {
+	let sender = if settings.apply_sender_info_to_imported_cases {
+		match default_sender_from_presave(ctx, mm).await? {
+			Some(sender) => Some(sender),
+			None => c_helpers::parse_sender_information(xml, header)?,
+		}
+	} else {
+		c_helpers::parse_sender_information(xml, header)?
+	};
+	let Some(sender) = sender else {
 		return Ok(());
 	};
 
@@ -246,6 +275,58 @@ async fn import_c_2_sender_information(
 	.await;
 
 	Ok(())
+}
+
+fn json_string(value: &serde_json::Value, key: &str) -> Option<String> {
+	value
+		.get(key)
+		.and_then(|value| value.as_str())
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+		.map(ToOwned::to_owned)
+}
+
+async fn default_sender_from_presave(
+	ctx: &Ctx,
+	mm: &ModelManager,
+) -> Result<Option<c_helpers::SenderImport>> {
+	let templates =
+		PresaveTemplateBmc::list_by_entity_type(ctx, mm, PresaveEntityType::Sender)
+			.await
+			.map_err(Error::Model)?;
+	let Some(template) = templates.into_iter().find(|template| {
+		template
+			.data
+			.get("senderDefault")
+			.and_then(|value| value.as_bool())
+			.unwrap_or(false)
+	}) else {
+		return Ok(None);
+	};
+	let data = template.data;
+	let sender_type =
+		json_string(&data, "senderType").unwrap_or_else(|| "1".to_string());
+	let organization_name = json_string(&data, "senderOrganization")
+		.or_else(|| json_string(&data, "organizationName"))
+		.unwrap_or_else(|| template.name);
+
+	Ok(Some(c_helpers::SenderImport {
+		sender_type,
+		organization_name,
+		department: json_string(&data, "senderDepartment"),
+		street_address: json_string(&data, "senderStreetAddress"),
+		city: json_string(&data, "senderCity"),
+		state: json_string(&data, "senderState"),
+		postcode: json_string(&data, "senderPostcode"),
+		country_code: json_string(&data, "senderCountryCode"),
+		person_title: json_string(&data, "senderPersonTitle"),
+		person_given_name: json_string(&data, "senderPersonGivenName"),
+		person_middle_name: json_string(&data, "senderPersonMiddleName"),
+		person_family_name: json_string(&data, "senderPersonFamilyName"),
+		telephone: json_string(&data, "senderTelephone"),
+		fax: json_string(&data, "senderFax"),
+		email: json_string(&data, "senderEmail"),
+	}))
 }
 
 async fn import_c_3_primary_sources(

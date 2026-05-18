@@ -1,6 +1,10 @@
 use crate::common::{date, fixture};
 use lib_core::xml::import_sections::c_safety_report::parse_c_safety_report;
-use lib_core::xml::{apply_c_safety_report_import_settings, CImportSettings};
+use lib_core::xml::import_sections::c_safety_report::CSafetyReportImport;
+use lib_core::xml::{
+	apply_c_safety_report_import_settings, apply_default_values_to_imported_r2_case,
+	CImportSettings,
+};
 
 #[test]
 fn import_c_section_all_fields_from_scenario6() {
@@ -52,4 +56,30 @@ fn import_settings_update_only_enabled_c1_dates_to_import_date() {
 	assert_eq!(report.transmission_date, import_date);
 	assert_eq!(report.date_first_received_from_source, import_date);
 	assert_eq!(report.date_of_most_recent_information, date(2022, 6, 14));
+}
+
+#[test]
+fn import_settings_apply_r2_defaults_only_when_enabled() {
+	let mut report = CSafetyReportImport {
+		transmission_date: date(2026, 5, 17),
+		report_type: "1".to_string(),
+		date_first_received_from_source: date(2026, 5, 17),
+		date_of_most_recent_information: date(2026, 5, 17),
+		fulfil_expedited_criteria: false,
+		additional_documents_available: None,
+		local_criteria_report_type: None,
+		combination_product_report_indicator: None,
+		worldwide_unique_id: None,
+		first_sender_type: None,
+		nullification_code: None,
+		nullification_reason: None,
+	};
+
+	apply_default_values_to_imported_r2_case(&mut report, false);
+	assert_eq!(report.additional_documents_available, None);
+	assert_eq!(report.first_sender_type, None);
+
+	apply_default_values_to_imported_r2_case(&mut report, true);
+	assert_eq!(report.additional_documents_available, Some(false));
+	assert_eq!(report.first_sender_type.as_deref(), Some("1"));
 }
