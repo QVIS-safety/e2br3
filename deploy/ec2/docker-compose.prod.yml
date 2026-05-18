@@ -28,3 +28,18 @@ services:
       # If this is wrong/missing, you'll see:
       # "XSD parse error: Failed to locate the main schema resource at '/app/schemas/...'"
       - ${E2BR3_SCHEMAS_DIR:-./schemas}:/app/schemas:ro
+
+  terminology-loader:
+    image: ${IMAGE_REF:-ghcr.io/REPLACE_ME/e2br3-web-server:latest}
+    profiles:
+      - tools
+    restart: "no"
+    entrypoint: ["/app/terminology-loader"]
+    environment:
+      SERVICE_DB_URL: "${SERVICE_DB_URL}"
+      SERVICE_PWD_KEY: "${SERVICE_PWD_KEY}"
+      SERVICE_TOKEN_KEY: "${SERVICE_TOKEN_KEY}"
+      RUST_LOG: "${RUST_LOG:-terminology_loader=info,lib_core=info}"
+      SKIP_DEV_INIT: "1"
+    volumes:
+      - ${E2BR3_TERMINOLOGY_DIR:-/opt/e2br3/e2br3/terminology}:/terminology:ro

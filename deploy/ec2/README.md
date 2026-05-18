@@ -110,45 +110,64 @@ scp ./meddra_27_1.zip ec2-user@<ec2-host>:/opt/e2br3/terminology/incoming/
 scp ./whodrug_2025_09.zip ec2-user@<ec2-host>:/opt/e2br3/terminology/incoming/
 ```
 
-Run a dry run first. The script reads `/opt/e2br3/.env.prod` by default and uses `SERVICE_DB_URL`
-from that file:
+If the EC2 host has no public IP, upload the files to private S3 first, then pull them down from a
+Session Manager shell:
 
 ```sh
-cd /opt/e2br3
-./terminology-load.sh --dry-run meddra /opt/e2br3/terminology/incoming/meddra_27_1.zip 27.1 en
-./terminology-load.sh --dry-run whodrug /opt/e2br3/terminology/incoming/whodrug_2025_09.zip 2025.09 en
+cd /opt/e2br3/e2br3
+mkdir -p terminology/incoming
+chmod 700 terminology terminology/incoming
+
+aws s3 cp s3://qvis-safety-db/terminology/OneDrive_1_5-18-2026.zip \
+  terminology/incoming/meddra_28_1.zip \
+  --region ap-northeast-2
+
+aws s3 cp s3://qvis-safety-db/terminology/whodrug_global_b3_mar_1_2026.zip \
+  terminology/incoming/whodrug_global_b3_mar_1_2026.zip \
+  --region ap-northeast-2
+```
+
+Run a dry run first through the one-off Docker Compose service. This uses the same deployed image as
+the app, but runs `/app/terminology-loader` instead of starting the web server:
+
+```sh
+cd /opt/e2br3/e2br3
+
+docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
+  meddra \
+  --input /terminology/incoming/meddra_28_1.zip \
+  --version 28.1 \
+  --language en \
+  --dry-run
+
+docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
+  whodrug \
+  --input /terminology/incoming/whodrug_global_b3_mar_1_2026.zip \
+  --version 2026.03 \
+  --language en \
+  --dry-run
 ```
 
 If the dry run succeeds, load the releases:
 
 ```sh
-cd /opt/e2br3
-./terminology-load.sh --load meddra /opt/e2br3/terminology/incoming/meddra_27_1.zip 27.1 en
-./terminology-load.sh --load whodrug /opt/e2br3/terminology/incoming/whodrug_2025_09.zip 2025.09 en
+cd /opt/e2br3/e2br3
+
+docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
+  meddra \
+  --input /terminology/incoming/meddra_28_1.zip \
+  --version 28.1 \
+  --language en
+
+docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
+  whodrug \
+  --input /terminology/incoming/whodrug_global_b3_mar_1_2026.zip \
+  --version 2026.03 \
+  --language en
 ```
 
-By default, `terminology-load.sh` expects a repository checkout at `/opt/e2br3/e2br3` and runs:
-
-```sh
-cargo run --manifest-path /opt/e2br3/e2br3/Cargo.toml -p terminology-loader -- ...
-```
-
-If EC2 should not have the Rust toolchain, copy a prebuilt `terminology-loader` binary to the host
-and provide its path:
-
-```sh
-TERMINOLOGY_LOADER_BIN=/opt/e2br3/bin/terminology-loader \
-./terminology-load.sh --dry-run meddra /opt/e2br3/terminology/incoming/meddra_27_1.zip 27.1 en
-```
-
-Useful overrides:
-
-```sh
-APP_DIR=/opt/e2br3
-ENV_FILE=.env.prod
-PROJECT_DIR=/opt/e2br3/e2br3
-TERMINOLOGY_LOADER_BIN=/opt/e2br3/bin/terminology-loader
-```
+`E2BR3_TERMINOLOGY_DIR` can override the host directory mounted at `/terminology`. The default is
+`/opt/e2br3/e2br3/terminology`.
 
 Remove uploaded source files after the load has been verified according to your retention policy.
 

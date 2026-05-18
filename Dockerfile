@@ -19,8 +19,8 @@ COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
 COPY docs/refs/instances/ docs/refs/instances/
 
-# Build the application
-RUN cargo build --release --package web-server
+# Build the application and operational helper binaries.
+RUN cargo build --release --package web-server --package terminology-loader
 
 # ============================================
 # Stage 2: Create minimal runtime image
@@ -41,6 +41,7 @@ WORKDIR /app
 
 # Copy the binary from builder
 COPY --from=builder /app/target/release/web-server /app/web-server
+COPY --from=builder /app/target/release/terminology-loader /app/terminology-loader
 
 # Copy web-folder if it exists (static files)
 COPY --chown=appuser:appuser web-folder/ /app/web-folder/
