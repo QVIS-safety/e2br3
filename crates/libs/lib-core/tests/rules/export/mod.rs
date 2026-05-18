@@ -1,2 +1,0 @@
-mod fda;
-mod ich;

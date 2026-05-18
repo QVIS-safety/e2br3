@@ -1501,54 +1501,6 @@ async fn test_role_admin_api_rejects_overlong_name_and_description_on_update(
 
 #[serial]
 #[tokio::test]
-async fn test_role_admin_api_does_not_fallback_to_old_boolean_privileges(
-) -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let admin_cookie = cookie_header(&admin_token.to_string());
-	let profile_id = format!("qa_old_bool_{}", Uuid::new_v4().simple());
-
-	mm.dbx()
-		.execute(
-			sqlx::query(
-				r#"
-				INSERT INTO permission_profiles
-					(organization_id, profile_id, name, description, can_view, can_review,
-					 can_lock, can_admin, privileges_json, active, built_in,
-					 editable, sponsor_admin_capable)
-				VALUES ($1, $2, $3, 'old boolean row', true, true, true, true,
-				        '[]'::jsonb, true, false, true, true)
-				"#,
-			)
-			.bind(seed.org_id)
-			.bind(&profile_id)
-			.bind(format!("Old Boolean {profile_id}")),
-		)
-		.await?;
-
-	let app = web_server::app(mm);
-	let (status, value) = request_json(
-		&app,
-		"GET",
-		&admin_cookie,
-		format!("/api/admin/permission-profiles/{profile_id}"),
-		None,
-	)
-	.await?;
-
-	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(value["privileges"].as_array().map(Vec::len), Some(0));
-	assert_eq!(value["can_view"].as_bool(), Some(false));
-	assert_eq!(value["can_review"].as_bool(), Some(false));
-	assert_eq!(value["can_lock"].as_bool(), Some(false));
-	assert_eq!(value["can_admin"].as_bool(), Some(false));
-
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
 async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

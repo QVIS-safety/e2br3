@@ -66,8 +66,6 @@ pub struct UserScopeView {
 pub struct UserView {
 	pub id: Uuid,
 	pub organization_id: Uuid,
-	#[serde(rename = "organization_id")]
-	pub organization_id_legacy: Uuid,
 	pub email: String,
 	pub username: String,
 	pub role: String,
@@ -76,20 +74,8 @@ pub struct UserView {
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
 	pub scope: UserScopeView,
-	#[serde(rename = "access_sender_ids")]
-	pub access_sender_ids_legacy: Option<String>,
-	#[serde(rename = "access_product_ids")]
-	pub access_product_ids_legacy: Option<String>,
-	#[serde(rename = "access_study_ids")]
-	pub access_study_ids_legacy: Option<String>,
-	#[serde(rename = "access_blind_allowed")]
-	pub access_blind_allowed_legacy: Option<bool>,
-	#[serde(rename = "active_sender_identifier")]
-	pub active_sender_identifier_legacy: Option<String>,
 	pub active: bool,
 	pub must_change_password: bool,
-	#[serde(rename = "must_change_password")]
-	pub must_change_password_legacy: bool,
 	#[serde(default, with = "time::serde::rfc3339::option")]
 	pub last_login_at: Option<OffsetDateTime>,
 	#[serde(with = "time::serde::rfc3339")]
@@ -370,7 +356,6 @@ fn user_view(user: User) -> UserView {
 	UserView {
 		id: user.id,
 		organization_id: user.organization_id,
-		organization_id_legacy: user.organization_id,
 		email: user.email,
 		username: user.username,
 		role: user.role.clone(),
@@ -393,14 +378,8 @@ fn user_view(user: User) -> UserView {
 			access_start_at: user.access_start_at,
 			access_end_at: user.access_end_at,
 		},
-		access_sender_ids_legacy: access_sender_ids,
-		access_product_ids_legacy: access_product_ids,
-		access_study_ids_legacy: access_study_ids,
-		access_blind_allowed_legacy: access_blind_allowed,
-		active_sender_identifier_legacy: active_sender_identifier,
 		active,
 		must_change_password: user.must_change_password,
-		must_change_password_legacy: user.must_change_password,
 		last_login_at: user.last_login_at,
 		created_at: user.created_at,
 		updated_at: user.updated_at,

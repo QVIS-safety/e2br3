@@ -86,7 +86,7 @@ async fn test_sponsor_admin_can_set_and_persist_blind_scope() -> Result<()> {
 		.as_str()
 		.ok_or("missing created user id")?;
 	assert_eq!(
-		created["data"]["access_blind_allowed"].as_bool(),
+		created["data"]["scope"]["accessBlindAllowed"].as_bool(),
 		Some(true),
 		"{created:?}"
 	);
@@ -108,7 +108,7 @@ async fn test_sponsor_admin_can_set_and_persist_blind_scope() -> Result<()> {
 		axum::body::to_bytes(update_res.into_body(), usize::MAX).await?;
 	let updated: serde_json::Value = serde_json::from_slice(&update_bytes)?;
 	assert_eq!(
-		updated["data"]["access_blind_allowed"].as_bool(),
+		updated["data"]["scope"]["accessBlindAllowed"].as_bool(),
 		Some(false),
 		"{updated:?}"
 	);
@@ -178,10 +178,7 @@ async fn test_new_user_temp_password_and_first_login_reset_flow() -> Result<()> 
 	assert_eq!(me_res.status(), StatusCode::OK);
 	let me_bytes = axum::body::to_bytes(me_res.into_body(), usize::MAX).await?;
 	let me_json: serde_json::Value = serde_json::from_slice(&me_bytes)?;
-	assert_eq!(
-		me_json["data"]["must_change_password"].as_bool(),
-		Some(true)
-	);
+	assert_eq!(me_json["data"]["mustChangePassword"].as_bool(), Some(true));
 
 	let set_pwd_body = json!({ "data": { "new_password": "new_password_123" } });
 	let set_pwd_req = Request::builder()
@@ -448,7 +445,7 @@ async fn test_user_list_sets_rls_context_for_system_and_sponsor_admins() -> Resu
 	assert!(
 		system_users
 			.iter()
-			.any(|user| user["organization_id"] == seed.org2_id.to_string()),
+			.any(|user| user["organizationId"] == seed.org2_id.to_string()),
 		"system admin should see users in other organizations: {system_json:?}"
 	);
 
@@ -467,7 +464,7 @@ async fn test_user_list_sets_rls_context_for_system_and_sponsor_admins() -> Resu
 	assert!(
 		sponsor_users
 			.iter()
-			.all(|user| user["organization_id"] == seed.org1_id.to_string()),
+			.all(|user| user["organizationId"] == seed.org1_id.to_string()),
 		"sponsor admin should only see own-org users after system-admin read: {sponsor_json:?}"
 	);
 	assert!(
@@ -827,9 +824,9 @@ async fn test_admin_create_user_nil_org_id_uses_request_context_org() -> Result<
 
 	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
 	let json: serde_json::Value = serde_json::from_slice(&body)?;
-	let created_org = json["data"]["organization_id"]
+	let created_org = json["data"]["organizationId"]
 		.as_str()
-		.ok_or("missing created user organization_id")?;
+		.ok_or("missing created user organizationId")?;
 	assert_eq!(created_org, seed.org_id.to_string());
 	Ok(())
 }
@@ -865,9 +862,9 @@ async fn test_admin_create_user_ignores_payload_org_id() -> Result<()> {
 
 	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
 	let json: serde_json::Value = serde_json::from_slice(&body)?;
-	let created_org = json["data"]["organization_id"]
+	let created_org = json["data"]["organizationId"]
 		.as_str()
-		.ok_or("missing created user organization_id")?;
+		.ok_or("missing created user organizationId")?;
 	assert_eq!(created_org, seed.org_id.to_string());
 	assert_ne!(created_org, other_seed.org_id.to_string());
 	Ok(())

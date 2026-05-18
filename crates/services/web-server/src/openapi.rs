@@ -648,6 +648,30 @@ struct OrganizationForUpdateDoc {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct UserRoleMetadataDoc {
+	canonical_role_id: String,
+	display_name: String,
+	is_builtin: bool,
+	is_editable: bool,
+	is_sponsor_admin: bool,
+	is_operational: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct UserScopeDoc {
+	assigned_sender_ids: Vec<String>,
+	assigned_product_ids: Vec<String>,
+	assigned_study_ids: Vec<String>,
+	access_blind_allowed: bool,
+	active_sender_identifier: Option<String>,
+	access_start_at: Option<String>,
+	access_end_at: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 struct UserDoc {
 	id: String,
 	organization_id: String,
@@ -658,14 +682,11 @@ struct UserDoc {
 	/// custom scoped roles.
 	#[schema(example = "sponsor_admin_cro")]
 	role: String,
+	permission_profile_id: Option<String>,
+	role_meta: UserRoleMetadataDoc,
 	comments: Option<String>,
 	other_information: Option<String>,
-	access_start_at: Option<String>,
-	access_end_at: Option<String>,
-	access_sender_ids: Option<String>,
-	access_product_ids: Option<String>,
-	access_study_ids: Option<String>,
-	access_blind_allowed: Option<bool>,
+	scope: UserScopeDoc,
 	active: bool,
 	must_change_password: bool,
 	last_login_at: Option<String>,

@@ -341,32 +341,6 @@ impl FlowClient {
 		Ok(())
 	}
 
-	pub async fn upsert_message_header_legacy(
-		&self,
-		case_id: &str,
-		seed: MessageHeaderSeed<'_>,
-	) -> Result<()> {
-		self.post_json(
-			&format!("/api/cases/{case_id}/message-header"),
-			json!({
-				"data": {
-					"case_id": case_id,
-					"message_date": "20240101120000",
-					"message_date_format": "204",
-					"message_format_release": "2.0",
-					"message_format_version": "2.1",
-					"message_number": format!("MSG-{}", case_id),
-					"message_receiver_identifier": seed.receiver_identifier,
-					"message_sender_identifier": "DSJP",
-					"batch_receiver_identifier": seed.batch_receiver_identifier,
-					"message_type": "ichicsr"
-				}
-			}),
-		)
-		.await?;
-		Ok(())
-	}
-
 	pub async fn create_reaction(
 		&self,
 		case_id: &str,
@@ -487,17 +461,7 @@ impl FlowClient {
 	}
 
 	pub async fn mark_case_validated(&self, case_id: &str) -> Result<()> {
-		self.mark_case_reviewed(case_id).await?;
 		self.mark_case_validated_via_validator(case_id).await?;
-		Ok(())
-	}
-
-	pub async fn mark_case_reviewed(&self, case_id: &str) -> Result<()> {
-		self.put_json(
-			&format!("/api/cases/{case_id}"),
-			json!({ "data": { "status": "reviewed" } }),
-		)
-		.await?;
 		Ok(())
 	}
 
@@ -521,15 +485,6 @@ impl FlowClient {
 		let status = res.status();
 		let text = res.text().await?;
 		if status.is_success() {
-			return Ok(());
-		}
-		if status.as_u16() == 404 || status.as_u16() == 405 {
-			// Backward compatibility for older local servers that don't have validator endpoint.
-			self.put_json(
-				&format!("/api/cases/{case_id}"),
-				json!({ "data": { "status": "validated" } }),
-			)
-			.await?;
 			return Ok(());
 		}
 		Err(format!("POST {path} failed: {status} {text}").into())

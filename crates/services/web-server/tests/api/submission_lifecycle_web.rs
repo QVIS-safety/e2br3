@@ -1496,12 +1496,6 @@ async fn test_internal_ack_callback_updates_submission_by_remote_id() -> Result<
 	let items = events_body["data"]["items"]
 		.as_array()
 		.ok_or("missing events list")?;
-	if items.is_empty() {
-		// Backward compatibility: existing DBs without submission_events table
-		// return an empty list until schema is updated.
-		clear_esg_env();
-		return Ok(());
-	}
 	assert!(items.len() >= 3, "{events_body:?}");
 	let event_types: Vec<&str> = items
 		.iter()

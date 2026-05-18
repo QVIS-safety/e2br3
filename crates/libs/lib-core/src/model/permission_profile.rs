@@ -25,10 +25,6 @@ pub struct DbPermissionProfileRow {
 	pub profile_id: String,
 	pub name: String,
 	pub description: Option<String>,
-	pub can_view: bool,
-	pub can_review: bool,
-	pub can_lock: bool,
-	pub can_admin: bool,
 	pub privileges_json: SqlxJson<Vec<AdminMenuPrivilege>>,
 	pub active: bool,
 	pub built_in: bool,
@@ -56,8 +52,8 @@ pub struct PermissionProfileUpdateData {
 }
 
 const PROFILE_SELECT: &str = r#"
-	SELECT organization_id, profile_id, name, description, can_view, can_review, can_lock, can_admin,
-	       privileges_json, active, built_in, editable, sponsor_admin_capable
+	SELECT organization_id, profile_id, name, description, privileges_json,
+	       active, built_in, editable, sponsor_admin_capable
 	FROM permission_profiles
 "#;
 
@@ -180,9 +176,8 @@ impl PermissionProfileBmc {
 					r#"
 					INSERT INTO permission_profiles
 						(organization_id, profile_id, name, description, privileges_json, active,
-						 built_in, editable, sponsor_admin_capable,
-						 can_view, can_review, can_lock, can_admin)
-						VALUES ($1, $2, $3, $4, $5, $6, false, true, $7, false, false, false, false)
+						 built_in, editable, sponsor_admin_capable)
+						VALUES ($1, $2, $3, $4, $5, $6, false, true, $7)
 					"#,
 				)
 				.bind(ctx.organization_id())
@@ -228,11 +223,7 @@ impl PermissionProfileBmc {
 						    privileges_json = $4,
 						    active = $5,
 						    sponsor_admin_capable = $6,
-						    updated_at = now(),
-					    can_view = false,
-					    can_review = false,
-					    can_lock = false,
-					    can_admin = false
+						    updated_at = now()
 					WHERE profile_id = $1
 					"#,
 				)
