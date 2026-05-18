@@ -4,7 +4,7 @@ use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::ROLE_SYSTEM_ADMIN;
 use lib_core::model::store::{set_org_context, set_user_context};
-use serde_json::Value;
+use serde_json::{json, Value};
 use serial_test::serial;
 use std::io::Cursor;
 use tower::ServiceExt;
@@ -55,6 +55,24 @@ async fn post_json_response(
 	Ok(app.clone().oneshot(req).await?)
 }
 
+async fn put_json(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("PUT")
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, serde_json::from_slice::<Value>(&body)?))
+}
+
 async fn insert_validated_raw_case(
 	mm: &lib_core::model::ModelManager,
 	org_id: Uuid,
@@ -88,6 +106,181 @@ async fn insert_validated_raw_case(
 	.await?;
 	tx.commit().await?;
 	Ok(case_id)
+}
+
+async fn insert_validated_raw_case_with_xml(
+	mm: &lib_core::model::ModelManager,
+	org_id: Uuid,
+	user_id: Uuid,
+	safety_report_id: &str,
+	appendices_json: &str,
+	raw_xml: &[u8],
+) -> Result<Uuid> {
+	let case_id = Uuid::new_v4();
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, user_id).await?;
+	set_org_context(&mut tx, org_id, ROLE_SYSTEM_ADMIN).await?;
+	sqlx::query(
+		"INSERT INTO cases (
+			id,
+			organization_id,
+				safety_report_id,
+				status,
+				appendices_json,
+				raw_xml,
+				created_by,
+				updated_by
+			) VALUES ($1, $2, $3, 'validated', $4, $5, $6, $6)",
+	)
+	.bind(case_id)
+	.bind(org_id)
+	.bind(safety_report_id)
+	.bind(appendices_json)
+	.bind(raw_xml)
+	.bind(user_id)
+	.execute(&mut *tx)
+	.await?;
+	tx.commit().await?;
+	Ok(case_id)
+}
+
+#[serial]
+#[tokio::test]
+async fn test_cioms_pdf_export_returns_pdf() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let safety_report_id = format!("SR-CIOMS-{}", Uuid::new_v4());
+	let case_id = insert_validated_raw_case(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		&safety_report_id,
+		r#"["ich"]"#,
+	)
+	.await?;
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		"/api/admin/settings",
+		json!({
+			"data": {
+				"orientation": "Landscape",
+				"data_ordering": "Primary data will appear first"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let response = get_response(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/cioms.pdf"),
+	)
+	.await?;
+	assert_eq!(response.status(), StatusCode::OK);
+	assert_eq!(
+		response
+			.headers()
+			.get("content-type")
+			.and_then(|value| value.to_str().ok()),
+		Some("application/pdf")
+	);
+	let disposition = response
+		.headers()
+		.get("content-disposition")
+		.and_then(|value| value.to_str().ok())
+		.ok_or("missing content-disposition")?;
+	assert!(
+		disposition.contains("attachment; filename="),
+		"{disposition}"
+	);
+	assert!(disposition.contains("cioms"), "{disposition}");
+	let bytes = to_bytes(response.into_body(), usize::MAX).await?;
+	assert!(bytes.starts_with(b"%PDF-"), "{bytes:?}");
+	let pdf = String::from_utf8_lossy(&bytes);
+	assert!(pdf.contains("/MediaBox [0 0 842 595]"), "{pdf}");
+	assert!(pdf.contains("CIOMS"), "{pdf}");
+	assert!(pdf.contains(&safety_report_id), "{pdf}");
+	assert!(pdf.contains("Landscape"), "{pdf}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_xml_export_comments_setting_controls_comments() -> Result<()> {
+	std::env::set_var("E2BR3_EXPORT_VALIDATE", "0");
+	std::env::set_var("E2BR3_EXPORT_VALIDATE_FDA", "0");
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let safety_report_id = format!("SR-COMMENTS-{}", Uuid::new_v4());
+	let raw_xml = br#"<?xml version="1.0" encoding="UTF-8"?><root><!-- element label --><case>value</case></root>"#;
+	let case_id = insert_validated_raw_case_with_xml(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		&safety_report_id,
+		r#"["ich"]"#,
+		raw_xml,
+	)
+	.await?;
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		"/api/admin/settings",
+		json!({
+			"data": {
+				"apply_comments_on_exported_xml": false
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let response = get_response(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/xml?profile=ich"),
+	)
+	.await?;
+	assert_eq!(response.status(), StatusCode::OK);
+	let bytes = to_bytes(response.into_body(), usize::MAX).await?;
+	let xml = String::from_utf8(bytes.to_vec())?;
+	assert!(!xml.contains("<!-- element label -->"), "{xml}");
+	assert!(xml.contains("<case>value</case>"), "{xml}");
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		"/api/admin/settings",
+		json!({
+			"data": {
+				"apply_comments_on_exported_xml": true
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let response = get_response(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/xml?profile=ich"),
+	)
+	.await?;
+	assert_eq!(response.status(), StatusCode::OK);
+	let bytes = to_bytes(response.into_body(), usize::MAX).await?;
+	let xml = String::from_utf8(bytes.to_vec())?;
+	assert!(xml.contains("<!-- element label -->"), "{xml}");
+
+	Ok(())
 }
 
 #[serial]

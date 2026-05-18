@@ -5,6 +5,7 @@ pub mod case_intake_rest;
 pub mod case_rest;
 pub mod case_validation_rest;
 pub mod case_workflow_rest;
+pub mod cioms_export_rest;
 pub mod compliance;
 pub mod organization_rest;
 pub mod patient_rest;
@@ -489,6 +490,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(case_workflow_rest::get_workflow_config_runtime),
 	)
 	.route("/cases/{id}/export/xml", get(case_export_rest::export_case))
+	.route(
+		"/cases/{id}/export/cioms.pdf",
+		get(cioms_export_rest::export_case_cioms_pdf),
+	)
 	.route("/cases/{id}/lifecycle", get(case_rest::get_case_lifecycle))
 	.route(
 		"/cases/{id}/workflow/events",

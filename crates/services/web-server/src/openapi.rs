@@ -71,6 +71,7 @@ pub fn router() -> Router {
 		download_xml_export_history_error,
 		list_case_link_options,
 		export_case_xml,
+		export_case_cioms_pdf,
 		get_case_lifecycle,
 		submit_case_to_fda,
 		submit_case_to_mfds,
@@ -2343,6 +2344,18 @@ fn list_case_link_options() {}
 	responses((status = 200, description = "Case XML export"))
 )]
 fn export_case_xml() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{id}/export/cioms.pdf",
+	tag = "case-subresources",
+	security(
+		("auth_token" = [])
+	),
+	params(("id" = String, Path, description = "Case ID")),
+	responses((status = 200, description = "Case CIOMS PDF export"))
+)]
+fn export_case_cioms_pdf() {}
 
 #[utoipa::path(
 	get,

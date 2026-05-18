@@ -3,12 +3,16 @@ use axum::http::header;
 use axum::response::Response;
 use axum::Json;
 use lib_core::model::acs::{XML_EXPORT, XML_EXPORT_READ};
+use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::case::CaseBmc;
 use lib_core::model::xml_export_history::{
 	XmlExportHistoryBmc, XmlExportHistoryRecord,
 };
 use lib_core::validation::{RegulatoryAuthority, ValidationProfile};
-use lib_core::xml::{export_case_xml, validate_e2b_xml, validate_e2b_xml_business};
+use lib_core::xml::{
+	export_case_xml_with_options, validate_e2b_xml, validate_e2b_xml_business,
+	ExportXmlOptions,
+};
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::Error;
@@ -23,6 +27,8 @@ use tokio::task;
 use uuid::Uuid;
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
+
+const SETTINGS_KEY: &str = "system";
 
 // -- Types
 
@@ -170,6 +176,21 @@ fn resolve_requested_export_profile(
 	Ok(profile)
 }
 
+async fn export_xml_options(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &lib_core::model::ModelManager,
+) -> Result<ExportXmlOptions> {
+	let value = AdminSettingsBmc::get(ctx, mm, SETTINGS_KEY)
+		.await
+		.map_err(Error::Model)?;
+	let apply_comments = value
+		.as_ref()
+		.and_then(|value| value.get("apply_comments_on_exported_xml"))
+		.and_then(|value| value.as_bool())
+		.unwrap_or(false);
+	Ok(ExportXmlOptions { apply_comments })
+}
+
 fn export_file_name(
 	case: &lib_core::model::case::Case,
 	case_id: Uuid,
@@ -208,8 +229,11 @@ pub async fn generate_validated_case_xml_for_profile(
 ) -> Result<(lib_core::model::case::Case, String)> {
 	let ctx_clone = ctx.clone();
 	let mm_clone = mm.clone();
+	let options = export_xml_options(ctx, mm).await?;
 	let xml = task::spawn_blocking(move || {
-		Handle::current().block_on(export_case_xml(&ctx_clone, &mm_clone, id))
+		Handle::current().block_on(export_case_xml_with_options(
+			&ctx_clone, &mm_clone, id, options,
+		))
 	})
 	.await
 	.map_err(|err| Error::BadRequest {
