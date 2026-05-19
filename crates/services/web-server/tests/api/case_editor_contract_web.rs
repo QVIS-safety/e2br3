@@ -7,7 +7,7 @@ use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
 use lib_core::model::acs::{
 	upsert_dynamic_role_permissions, Permission, CASE_IDENTIFIER_LIST, CASE_LIST,
-	CASE_READ, DEATH_CAUSE_LIST, DRUG_INDICATION_LIST,
+	CASE_READ, CASE_SUMMARY_LIST, DEATH_CAUSE_LIST, DRUG_INDICATION_LIST,
 	DRUG_REACTION_ASSESSMENT_LIST, DRUG_READ, DRUG_RECURRENCE_LIST,
 	DRUG_SUBSTANCE_LIST, MEDICAL_HISTORY_LIST, MESSAGE_HEADER_READ, NARRATIVE_READ,
 	PARENT_INFORMATION_LIST, PARENT_MEDICAL_HISTORY_LIST, PARENT_PAST_DRUG_LIST,
@@ -173,12 +173,24 @@ async fn editor_ci_returns_ci_payload_only() -> Result<()> {
 	let safety_report = data
 		.get("safetyReportIdentification")
 		.ok_or("missing safetyReportIdentification")?;
-	assert!(data.get("otherCaseIdentifiers").is_none(), "{body}");
-	assert!(data.get("linkedReports").is_none(), "{body}");
-	assert!(data.get("documentsHeldBySender").is_none(), "{body}");
-	assert!(safety_report["otherCaseIdentifiers"].is_array(), "{body}");
-	assert!(safety_report["linkedReports"].is_array(), "{body}");
-	assert!(safety_report["documentsHeldBySender"].is_array(), "{body}");
+	assert!(
+		data["receiverInfo"].is_null() || data["receiverInfo"].is_object(),
+		"{body}"
+	);
+	assert!(data.get("receiverInformation").is_none(), "{body}");
+	assert!(data.get("receiver").is_none(), "{body}");
+	assert!(data["otherCaseIdentifiers"].is_array(), "{body}");
+	assert!(data["linkedReports"].is_array(), "{body}");
+	assert!(data["documentsHeldBySender"].is_array(), "{body}");
+	assert!(
+		safety_report.get("otherCaseIdentifiers").is_none(),
+		"{body}"
+	);
+	assert!(safety_report.get("linkedReports").is_none(), "{body}");
+	assert!(
+		safety_report.get("documentsHeldBySender").is_none(),
+		"{body}"
+	);
 	assert!(data.get("messageHeader").is_some(), "{body}");
 	assert_no_ae_lb_dg_payload(data);
 
@@ -238,35 +250,16 @@ async fn editor_dm_returns_patient_payload_without_dh_list_rows() -> Result<()> 
 		patient_information.get("pastDrugHistory").is_none(),
 		"{body}"
 	);
-	assert!(
-		patient_information["patientIdentifiers"].is_array(),
-		"{body}"
-	);
-	assert!(
-		patient_information["medicalHistoryEpisodes"].is_array(),
-		"{body}"
-	);
-	assert!(
-		patient_information["patientDeath"]["reportedCausesOfDeath"].is_array(),
-		"{body}"
-	);
-	assert!(
-		patient_information["patientDeath"]["autopsyCausesOfDeath"].is_array(),
-		"{body}"
-	);
-	assert!(patient_information["parents"].is_array(), "{body}");
-	assert!(
-		patient_information["parentInformation"]
-			.get("medicalHistory")
-			.is_some(),
-		"{body}"
-	);
-	assert!(
-		patient_information["parentInformation"]
-			.get("pastDrugHistory")
-			.is_some(),
-		"{body}"
-	);
+	assert!(patient_information.get("patientDeath").is_none(), "{body}");
+	assert!(data["patientIdentifiers"].is_array(), "{body}");
+	assert!(data["medicalHistoryEpisodes"].is_array(), "{body}");
+	assert!(data.get("deathInfo").is_some(), "{body}");
+	assert!(data["reportedCauses"].is_array(), "{body}");
+	assert!(data["autopsyCauses"].is_array(), "{body}");
+	assert!(data.get("parentInfo").is_some(), "{body}");
+	assert!(data["parentMedicalHistory"].is_array(), "{body}");
+	assert!(data["parentPastDrugs"].is_array(), "{body}");
+	assert!(data.get("pastDrugHistory").is_none(), "{body}");
 	assert_no_ae_lb_dg_payload(data);
 
 	Ok(())
@@ -288,9 +281,9 @@ async fn editor_nr_returns_narrative_payload_only() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["caseId"], case_id);
 	let data = body.get("data").ok_or("missing data")?;
-	assert!(data.get("senderDiagnoses").is_none(), "{body}");
 	let narrative = data.get("narrative").ok_or("missing narrative")?;
-	assert!(narrative["senderDiagnoses"].is_array(), "{body}");
+	assert!(narrative.get("senderDiagnoses").is_none(), "{body}");
+	assert!(data["senderDiagnoses"].is_array(), "{body}");
 	assert!(data["caseSummaryInformation"].is_array(), "{body}");
 	assert_no_ae_lb_dg_payload(data);
 
@@ -327,11 +320,13 @@ async fn editor_remaining_direct_sections_return_only_their_payloads() -> Result
 		assert!(data.get(expected_key).is_some(), "{section}: {body}");
 		if section == "SI" {
 			assert!(
-				data.get("studyRegistrationNumbers").is_none(),
+				data["studyRegistrationNumbers"].is_array(),
 				"{section}: {body}"
 			);
 			assert!(
-				data["studyInformation"]["studyRegistrationNumbers"].is_array(),
+				data["studyInformation"]
+					.get("studyRegistrationNumbers")
+					.is_none(),
 				"{section}: {body}"
 			);
 		}
@@ -375,9 +370,19 @@ async fn editor_direct_sections_reject_missing_child_permissions() -> Result<()>
 			],
 		),
 		(
+			"RP missing PRIMARY_SOURCE_LIST",
+			"RP",
+			vec![CASE_READ, CASE_LIST],
+		),
+		(
 			"SD missing SENDER_INFORMATION_LIST",
 			"SD",
 			vec![CASE_READ, CASE_LIST, SAFETY_REPORT_READ],
+		),
+		(
+			"LR missing LITERATURE_REFERENCE_LIST",
+			"LR",
+			vec![CASE_READ, CASE_LIST],
 		),
 		(
 			"SI missing STUDY_REGISTRATION_LIST",
@@ -393,6 +398,36 @@ async fn editor_direct_sections_reject_missing_child_permissions() -> Result<()>
 				PATIENT_READ,
 				MEDICAL_HISTORY_LIST,
 				PATIENT_DEATH_LIST,
+				DEATH_CAUSE_LIST,
+				PARENT_INFORMATION_LIST,
+				PARENT_MEDICAL_HISTORY_LIST,
+				PARENT_PAST_DRUG_LIST,
+			],
+		),
+		(
+			"DM missing MEDICAL_HISTORY_LIST",
+			"DM",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				PATIENT_READ,
+				PATIENT_IDENTIFIER_LIST,
+				PATIENT_DEATH_LIST,
+				DEATH_CAUSE_LIST,
+				PARENT_INFORMATION_LIST,
+				PARENT_MEDICAL_HISTORY_LIST,
+				PARENT_PAST_DRUG_LIST,
+			],
+		),
+		(
+			"DM missing PATIENT_DEATH_LIST",
+			"DM",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				PATIENT_READ,
+				PATIENT_IDENTIFIER_LIST,
+				MEDICAL_HISTORY_LIST,
 				DEATH_CAUSE_LIST,
 				PARENT_INFORMATION_LIST,
 				PARENT_MEDICAL_HISTORY_LIST,
@@ -428,6 +463,41 @@ async fn editor_direct_sections_reject_missing_child_permissions() -> Result<()>
 				PARENT_MEDICAL_HISTORY_LIST,
 				PARENT_PAST_DRUG_LIST,
 			],
+		),
+		(
+			"DM missing PARENT_MEDICAL_HISTORY_LIST",
+			"DM",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				PATIENT_READ,
+				PATIENT_IDENTIFIER_LIST,
+				MEDICAL_HISTORY_LIST,
+				PATIENT_DEATH_LIST,
+				DEATH_CAUSE_LIST,
+				PARENT_INFORMATION_LIST,
+				PARENT_PAST_DRUG_LIST,
+			],
+		),
+		(
+			"DM missing PARENT_PAST_DRUG_LIST",
+			"DM",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				PATIENT_READ,
+				PATIENT_IDENTIFIER_LIST,
+				MEDICAL_HISTORY_LIST,
+				PATIENT_DEATH_LIST,
+				DEATH_CAUSE_LIST,
+				PARENT_INFORMATION_LIST,
+				PARENT_MEDICAL_HISTORY_LIST,
+			],
+		),
+		(
+			"NR missing SENDER_DIAGNOSIS_LIST",
+			"NR",
+			vec![CASE_READ, CASE_LIST, NARRATIVE_READ, CASE_SUMMARY_LIST],
 		),
 		(
 			"NR missing CASE_SUMMARY_LIST",
