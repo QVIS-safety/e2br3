@@ -12,7 +12,8 @@ use lib_core::model::acs::{
 	DRUG_SUBSTANCE_LIST, MEDICAL_HISTORY_LIST, MESSAGE_HEADER_READ, NARRATIVE_READ,
 	PARENT_INFORMATION_LIST, PARENT_MEDICAL_HISTORY_LIST, PARENT_PAST_DRUG_LIST,
 	PATIENT_DEATH_LIST, PATIENT_IDENTIFIER_LIST, PATIENT_READ, RECEIVER_READ,
-	SAFETY_REPORT_READ, SENDER_DIAGNOSIS_LIST, STUDY_INFORMATION_LIST,
+	SAFETY_REPORT_READ, SENDER_DIAGNOSIS_LIST, SENDER_INFORMATION_LIST,
+	STUDY_INFORMATION_LIST, STUDY_REGISTRATION_LIST,
 };
 use lib_core::model::ModelManager;
 use serde_json::{json, Value};
@@ -348,6 +349,28 @@ async fn editor_direct_sections_reject_missing_child_permissions() -> Result<()>
 
 	let cases = [
 		(
+			"CI missing SAFETY_REPORT_READ",
+			"CI",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				MESSAGE_HEADER_READ,
+				RECEIVER_READ,
+				CASE_IDENTIFIER_LIST,
+			],
+		),
+		(
+			"CI missing MESSAGE_HEADER_READ",
+			"CI",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				SAFETY_REPORT_READ,
+				RECEIVER_READ,
+				CASE_IDENTIFIER_LIST,
+			],
+		),
+		(
 			"CI missing CASE_IDENTIFIER_LIST",
 			"CI",
 			vec![
@@ -375,6 +398,11 @@ async fn editor_direct_sections_reject_missing_child_permissions() -> Result<()>
 			vec![CASE_READ, CASE_LIST],
 		),
 		(
+			"SD missing SAFETY_REPORT_READ",
+			"SD",
+			vec![CASE_READ, CASE_LIST, SENDER_INFORMATION_LIST],
+		),
+		(
 			"SD missing SENDER_INFORMATION_LIST",
 			"SD",
 			vec![CASE_READ, CASE_LIST, SAFETY_REPORT_READ],
@@ -385,9 +413,29 @@ async fn editor_direct_sections_reject_missing_child_permissions() -> Result<()>
 			vec![CASE_READ, CASE_LIST],
 		),
 		(
+			"SI missing STUDY_INFORMATION_LIST",
+			"SI",
+			vec![CASE_READ, CASE_LIST, STUDY_REGISTRATION_LIST],
+		),
+		(
 			"SI missing STUDY_REGISTRATION_LIST",
 			"SI",
 			vec![CASE_READ, CASE_LIST, STUDY_INFORMATION_LIST],
+		),
+		(
+			"DM missing PATIENT_READ",
+			"DM",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				PATIENT_IDENTIFIER_LIST,
+				MEDICAL_HISTORY_LIST,
+				PATIENT_DEATH_LIST,
+				DEATH_CAUSE_LIST,
+				PARENT_INFORMATION_LIST,
+				PARENT_MEDICAL_HISTORY_LIST,
+				PARENT_PAST_DRUG_LIST,
+			],
 		),
 		(
 			"DM missing PATIENT_IDENTIFIER_LIST",
@@ -492,6 +540,16 @@ async fn editor_direct_sections_reject_missing_child_permissions() -> Result<()>
 				DEATH_CAUSE_LIST,
 				PARENT_INFORMATION_LIST,
 				PARENT_MEDICAL_HISTORY_LIST,
+			],
+		),
+		(
+			"NR missing NARRATIVE_READ",
+			"NR",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				SENDER_DIAGNOSIS_LIST,
+				CASE_SUMMARY_LIST,
 			],
 		),
 		(
