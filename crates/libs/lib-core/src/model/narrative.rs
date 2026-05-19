@@ -76,6 +76,7 @@ pub struct SenderDiagnosis {
 pub struct SenderDiagnosisForCreate {
 	pub narrative_id: Uuid,
 	pub sequence_number: i32,
+	pub diagnosis_meddra_version: Option<String>,
 	pub diagnosis_meddra_code: Option<String>,
 }
 
@@ -120,6 +121,8 @@ pub struct CaseSummaryInformation {
 pub struct CaseSummaryInformationForCreate {
 	pub narrative_id: Uuid,
 	pub sequence_number: i32,
+	pub summary_type: Option<String>,
+	pub language_code: Option<String>,
 	pub summary_text: Option<String>,
 }
 

@@ -108,6 +108,7 @@ async fn import_sender_diagnoses(
 				SenderDiagnosisForCreate {
 					narrative_id,
 					sequence_number: item.sequence_number,
+					diagnosis_meddra_version: item.diagnosis_meddra_version.clone(),
 					diagnosis_meddra_code: item.diagnosis_meddra_code.clone(),
 				},
 			)
@@ -164,6 +165,8 @@ async fn import_case_summaries(
 				CaseSummaryInformationForCreate {
 					narrative_id,
 					sequence_number: item.sequence_number,
+					summary_type: item.summary_type.clone(),
+					language_code: item.language_code.clone(),
 					summary_text: item.summary_text.clone(),
 				},
 			)

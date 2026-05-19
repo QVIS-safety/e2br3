@@ -707,8 +707,8 @@ async fn test_narrative_subresources_endpoints_ok() -> Result<()> {
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let narrative_id = create_narrative(&app, &cookie, case_id).await?;
 
-	let body = json!({"data": {"narrative_id": narrative_id, "sequence_number": 1, "diagnosis_meddra_code": "100"}});
-	let (status, _) = post_json(
+	let body = json!({"data": {"narrative_id": narrative_id, "sequence_number": 1, "diagnosis_meddra_version": "27.1", "diagnosis_meddra_code": "100"}});
+	let (status, body) = post_json(
 		&app,
 		&cookie,
 		format!("/api/cases/{case_id}/narrative/sender-diagnoses"),
@@ -716,9 +716,12 @@ async fn test_narrative_subresources_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["diagnosis_meddra_version"], "27.1");
+	assert_eq!(value["data"]["diagnosis_meddra_code"], "100");
 
-	let body = json!({"data": {"narrative_id": narrative_id, "sequence_number": 1, "summary_text": "summary"}});
-	let (status, _) = post_json(
+	let body = json!({"data": {"narrative_id": narrative_id, "sequence_number": 1, "summary_type": "01", "language_code": "en", "summary_text": "summary"}});
+	let (status, body) = post_json(
 		&app,
 		&cookie,
 		format!("/api/cases/{case_id}/narrative/summaries"),
@@ -726,13 +729,18 @@ async fn test_narrative_subresources_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["summary_type"], "01");
+	assert_eq!(value["data"]["language_code"], "en");
+	assert_eq!(value["data"]["summary_text"], "summary");
 
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_narrative_child_lists_return_empty_when_parent_narrative_missing() -> Result<()> {
+async fn test_narrative_child_lists_return_empty_when_parent_narrative_missing(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
