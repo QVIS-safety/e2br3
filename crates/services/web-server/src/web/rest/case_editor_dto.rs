@@ -57,3 +57,56 @@ impl From<CaseReadResult> for CaseEditorShellDto {
 		}
 	}
 }
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorListResponse<T> {
+	pub case_id: Uuid,
+	pub rows: Vec<T>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorAeListRowDto {
+	pub id: Uuid,
+	pub sequence_number: i32,
+	pub reaction_primary_source_native: String,
+	pub reaction_primary_source_translation: Option<String>,
+	pub meddra_version: Option<String>,
+	pub meddra_code: Option<String>,
+	pub seriousness: Option<bool>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorLbListRowDto {
+	pub id: Uuid,
+	pub sequence_number: i32,
+	pub test_name: String,
+	pub test_date: Option<String>,
+	pub result_value: Option<String>,
+	pub result_unit: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorDgListRowDto {
+	pub id: Uuid,
+	pub sequence_number: i32,
+	pub drug_role: String,
+	pub dg_prd_key: Option<String>,
+	pub medicinal_product: String,
+	pub action_taken: Option<String>,
+	pub warning_count: i32,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorDhListRowDto {
+	pub id: Uuid,
+	pub sequence_number: i32,
+	pub drug_name: Option<String>,
+	pub indication: Option<String>,
+	pub start_date: Option<String>,
+	pub end_date: Option<String>,
+}

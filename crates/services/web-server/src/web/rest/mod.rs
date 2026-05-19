@@ -68,6 +68,22 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			get(case_editor_rest::get_editor_shell),
 		)
 		.route(
+			"/cases/{case_id}/editor/AE/list",
+			get(case_editor_rest::list_editor_ae),
+		)
+		.route(
+			"/cases/{case_id}/editor/LB/list",
+			get(case_editor_rest::list_editor_lb),
+		)
+		.route(
+			"/cases/{case_id}/editor/DG/list",
+			get(case_editor_rest::list_editor_dg),
+		)
+		.route(
+			"/cases/{case_id}/editor/DH/list",
+			get(case_editor_rest::list_editor_dh),
+		)
+		.route(
 			"/cases/from-intake",
 			axum::routing::post(case_intake_rest::create_case_from_intake),
 		)
