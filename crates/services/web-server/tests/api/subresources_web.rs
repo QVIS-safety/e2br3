@@ -647,8 +647,16 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let drug_id = create_drug(&app, &cookie, case_id).await?;
 
-	let body = json!({"data": {"drug_id": drug_id, "sequence_number": 1, "substance_name": "Substance"}});
-	let (status, _) = post_json(
+	let body = json!({"data": {
+		"drug_id": drug_id,
+		"sequence_number": 1,
+		"substance_name": "Substance",
+		"substance_termid": "TERM-1",
+		"substance_termid_version": "2026-01",
+		"strength_value": 12.5,
+		"strength_unit": "mg"
+	}});
+	let (status, body) = post_json(
 		&app,
 		&cookie,
 		format!("/api/cases/{case_id}/drugs/{drug_id}/active-substances"),
@@ -656,19 +664,66 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["substance_name"], "Substance");
+	assert_eq!(value["data"]["substance_termid"], "TERM-1");
+	assert_eq!(value["data"]["substance_termid_version"], "2026-01");
+	assert_eq!(value["data"]["strength_unit"], "mg");
 
-	let body = json!({"data": {"drug_id": drug_id, "sequence_number": 1}});
-	let (status, _) = post_json(
+	let body = json!({"data": {
+		"drug_id": drug_id,
+		"sequence_number": 1,
+		"dose_value": 10,
+		"dose_unit": "mg",
+		"number_of_units": 2,
+		"frequency_value": 1,
+		"frequency_unit": "d",
+		"duration_value": 3,
+		"duration_unit": "800",
+		"batch_lot_number": "LOT-1",
+		"dosage_text": "10 mg daily",
+		"dose_form": "tablet",
+		"dose_form_termid": "DF-1",
+		"dose_form_termid_version": "2026-01",
+		"route_of_administration": "001",
+		"route_termid": "ROUTE-1",
+		"route_termid_version": "2026-02",
+		"parent_route": "parent oral",
+		"parent_route_termid": "PROUTE-1",
+		"parent_route_termid_version": "2026-03"
+	}});
+	let (status, body) = post_json(
 		&app,
 		&cookie,
 		format!("/api/cases/{case_id}/drugs/{drug_id}/dosages"),
 		body,
 	)
 	.await?;
-	assert_eq!(status, StatusCode::CREATED);
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["dose_unit"], "mg");
+	assert_eq!(value["data"]["frequency_unit"], "d");
+	assert_eq!(value["data"]["duration_unit"], "800");
+	assert_eq!(value["data"]["batch_lot_number"], "LOT-1");
+	assert_eq!(value["data"]["dosage_text"], "10 mg daily");
+	assert_eq!(value["data"]["dose_form_termid"], "DF-1");
+	assert_eq!(value["data"]["route_termid"], "ROUTE-1");
+	assert_eq!(value["data"]["route_of_administration"], "001");
+	assert_eq!(value["data"]["parent_route_termid"], "PROUTE-1");
 
-	let body = json!({"data": {"drug_id": drug_id, "sequence_number": 1, "indication_text": "test"}});
-	let (status, _) = post_json(
+	let body = json!({"data": {
+		"drug_id": drug_id,
+		"sequence_number": 1,
+		"indication_text": "test",
+		"indication_meddra_version": "27.1",
+		"indication_meddra_code": "10000001"
+	}});
+	let (status, body) = post_json(
 		&app,
 		&cookie,
 		format!("/api/cases/{case_id}/drugs/{drug_id}/indications"),
@@ -676,14 +731,23 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["indication_text"], "test");
+	assert_eq!(value["data"]["indication_meddra_version"], "27.1");
+	assert_eq!(value["data"]["indication_meddra_code"], "10000001");
 
 	let body = json!({"data": {
 		"drug_id": drug_id,
 		"sequence_number": 1,
 		"code": "FDA.G.k.12.r.3",
-		"value_code": "1"
+		"code_system": "2.16.840.1.113883.3.989.2.1.1.19",
+		"code_display_name": "Problem Code",
+		"value_type": "CE",
+		"value_code": "1",
+		"value_code_system": "FDA",
+		"value_display_name": "Problem"
 	}});
-	let (status, _) = post_json(
+	let (status, body) = post_json(
 		&app,
 		&cookie,
 		format!("/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"),
@@ -691,6 +755,15 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["code"], "FDA.G.k.12.r.3");
+	assert_eq!(
+		value["data"]["code_system"],
+		"2.16.840.1.113883.3.989.2.1.1.19"
+	);
+	assert_eq!(value["data"]["value_type"], "CE");
+	assert_eq!(value["data"]["value_code"], "1");
+	assert_eq!(value["data"]["value_code_system"], "FDA");
 
 	Ok(())
 }
@@ -897,8 +970,15 @@ async fn test_relatedness_assessment_endpoints_ok() -> Result<()> {
 		create_reaction_assessment(&app, &cookie, case_id, drug_id, reaction_id)
 			.await?;
 
-	let body = json!({"data": {"drug_reaction_assessment_id": assessment_id, "sequence_number": 1, "result_of_assessment": "1"}});
-	let (status, _) = post_json(
+	let body = json!({"data": {
+		"drug_reaction_assessment_id": assessment_id,
+		"sequence_number": 1,
+		"source_of_assessment": "Sponsor",
+		"method_of_assessment": "Algorithm",
+		"result_of_assessment": "1",
+		"result_of_assessment_kr2": "KR result"
+	}});
+	let (status, body) = post_json(
 		&app,
 		&cookie,
 		format!(
@@ -908,6 +988,15 @@ async fn test_relatedness_assessment_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(
+		value["data"]["drug_reaction_assessment_id"],
+		assessment_id.to_string()
+	);
+	assert_eq!(value["data"]["source_of_assessment"], "Sponsor");
+	assert_eq!(value["data"]["method_of_assessment"], "Algorithm");
+	assert_eq!(value["data"]["result_of_assessment"], "1");
+	assert_eq!(value["data"]["result_of_assessment_kr2"], "KR result");
 
 	Ok(())
 }
