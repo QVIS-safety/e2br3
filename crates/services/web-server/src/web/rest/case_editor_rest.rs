@@ -1,15 +1,23 @@
 use crate::web::rest::case_editor_dto::{
 	CaseEditorAeListRowDto, CaseEditorDgListRowDto, CaseEditorDhListRowDto,
-	CaseEditorLbListRowDto, CaseEditorListResponse, CaseEditorShellDto,
+	CaseEditorLbListRowDto, CaseEditorListResponse, CaseEditorRowDetailResponse,
+	CaseEditorShellDto,
 };
 use crate::web::rest::case_rest::case_to_read_result;
 use axum::extract::{Path, State};
 use axum::Json;
 use lib_core::model::acs::{
-	CASE_READ, DRUG_LIST, PAST_DRUG_LIST, REACTION_LIST, TEST_RESULT_LIST,
+	CASE_READ, DRUG_LIST, DRUG_READ, PAST_DRUG_LIST, PAST_DRUG_READ, REACTION_LIST,
+	REACTION_READ, TEST_RESULT_LIST, TEST_RESULT_READ,
 };
 use lib_core::model::case::CaseBmc;
-use lib_core::model::drug::DrugInformationBmc;
+use lib_core::model::drug::{
+	DosageInformationBmc, DosageInformationFilter, DrugActiveSubstanceBmc,
+	DrugActiveSubstanceFilter, DrugIndicationBmc, DrugIndicationFilter,
+	DrugInformationBmc,
+};
+use lib_core::model::drug_reaction_assessment::DrugReactionAssessmentBmc;
+use lib_core::model::drug_recurrence::DrugRecurrenceInformationBmc;
 use lib_core::model::patient::{
 	PastDrugHistoryBmc, PastDrugHistoryFilter, PatientInformationBmc,
 };
@@ -19,7 +27,7 @@ use lib_core::model::ModelManager;
 use lib_rest_core::prelude::*;
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValValue, OpValsValue};
-use serde_json::json;
+use serde_json::{json, Value};
 use uuid::Uuid;
 
 pub async fn get_editor_shell(
@@ -73,6 +81,28 @@ pub async fn list_editor_ae(
 	))
 }
 
+pub async fn get_editor_ae(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, reaction_id)): Path<(Uuid, Uuid)>,
+) -> Result<(axum::http::StatusCode, Json<CaseEditorRowDetailResponse>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, REACTION_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let reaction = ReactionBmc::get_in_case(&ctx, &mm, case_id, reaction_id).await?;
+
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(CaseEditorRowDetailResponse {
+			case_id,
+			row_id: reaction_id,
+			data: json!({ "reactions": [reaction] }),
+		}),
+	))
+}
+
 pub async fn list_editor_lb(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -102,6 +132,29 @@ pub async fn list_editor_lb(
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(CaseEditorListResponse { case_id, rows }),
+	))
+}
+
+pub async fn get_editor_lb(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, test_result_id)): Path<(Uuid, Uuid)>,
+) -> Result<(axum::http::StatusCode, Json<CaseEditorRowDetailResponse>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, TEST_RESULT_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let test_result =
+		TestResultBmc::get_in_case(&ctx, &mm, case_id, test_result_id).await?;
+
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(CaseEditorRowDetailResponse {
+			case_id,
+			row_id: test_result_id,
+			data: json!({ "testResults": [test_result] }),
+		}),
 	))
 }
 
@@ -135,6 +188,110 @@ pub async fn list_editor_dg(
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(CaseEditorListResponse { case_id, rows }),
+	))
+}
+
+fn drug_id_filter<T>(drug_id: Uuid) -> Option<Vec<T>>
+where
+	T: Default,
+	T: FromDrugIdFilter,
+{
+	Some(vec![T::from_drug_id(drug_id)])
+}
+
+trait FromDrugIdFilter {
+	fn from_drug_id(drug_id: Uuid) -> Self;
+}
+
+impl FromDrugIdFilter for DrugActiveSubstanceFilter {
+	fn from_drug_id(drug_id: Uuid) -> Self {
+		Self {
+			drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+				drug_id.to_string()
+			))])),
+			..Default::default()
+		}
+	}
+}
+
+impl FromDrugIdFilter for DosageInformationFilter {
+	fn from_drug_id(drug_id: Uuid) -> Self {
+		Self {
+			drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+				drug_id.to_string()
+			))])),
+			..Default::default()
+		}
+	}
+}
+
+impl FromDrugIdFilter for DrugIndicationFilter {
+	fn from_drug_id(drug_id: Uuid) -> Self {
+		Self {
+			drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+				drug_id.to_string()
+			))])),
+			..Default::default()
+		}
+	}
+}
+
+pub async fn get_editor_dg(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
+) -> Result<(axum::http::StatusCode, Json<CaseEditorRowDetailResponse>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, DRUG_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let drug = DrugInformationBmc::get_in_case(&ctx, &mm, case_id, drug_id).await?;
+	let active_substances = DrugActiveSubstanceBmc::list(
+		&ctx,
+		&mm,
+		drug_id_filter::<DrugActiveSubstanceFilter>(drug_id),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	let dosage_information = DosageInformationBmc::list(
+		&ctx,
+		&mm,
+		drug_id_filter::<DosageInformationFilter>(drug_id),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	let indications = DrugIndicationBmc::list(
+		&ctx,
+		&mm,
+		drug_id_filter::<DrugIndicationFilter>(drug_id),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	let drug_reaction_assessments =
+		DrugReactionAssessmentBmc::list_by_drug(&ctx, &mm, drug_id).await?;
+	let drug_recurrences =
+		DrugRecurrenceInformationBmc::list_by_drug(&ctx, &mm, drug_id).await?;
+
+	let mut drug = json!(drug);
+	if let Value::Object(ref mut map) = drug {
+		map.insert("activeSubstances".to_string(), json!(active_substances));
+		map.insert("dosageInformation".to_string(), json!(dosage_information));
+		map.insert("indications".to_string(), json!(indications));
+		map.insert(
+			"drugReactionAssessments".to_string(),
+			json!(drug_reaction_assessments),
+		);
+		map.insert("drugRecurrences".to_string(), json!(drug_recurrences));
+	}
+
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(CaseEditorRowDetailResponse {
+			case_id,
+			row_id: drug_id,
+			data: json!({ "drugs": [drug] }),
+		}),
 	))
 }
 
@@ -195,5 +352,39 @@ pub async fn list_editor_dh(
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(CaseEditorListResponse { case_id, rows }),
+	))
+}
+
+pub async fn get_editor_dh(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, past_drug_id)): Path<(Uuid, Uuid)>,
+) -> Result<(axum::http::StatusCode, Json<CaseEditorRowDetailResponse>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, PAST_DRUG_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let patient = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	let history = PastDrugHistoryBmc::get(&ctx, &mm, past_drug_id).await?;
+	if history.patient_id != patient.id {
+		return Err(lib_core::model::Error::EntityUuidNotFound {
+			entity: "past_drug_history",
+			id: past_drug_id,
+		}
+		.into());
+	}
+
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(CaseEditorRowDetailResponse {
+			case_id,
+			row_id: past_drug_id,
+			data: json!({
+				"patientInformation": {
+					"pastDrugHistory": [history]
+				}
+			}),
+		}),
 	))
 }

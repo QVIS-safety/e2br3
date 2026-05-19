@@ -1,5 +1,6 @@
 use crate::web::rest::case_rest::CaseReadResult;
 use serde::Serialize;
+use serde_json::Value;
 use sqlx::types::time::OffsetDateTime;
 use uuid::Uuid;
 
@@ -63,6 +64,14 @@ impl From<CaseReadResult> for CaseEditorShellDto {
 pub struct CaseEditorListResponse<T> {
 	pub case_id: Uuid,
 	pub rows: Vec<T>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorRowDetailResponse {
+	pub case_id: Uuid,
+	pub row_id: Uuid,
+	pub data: Value,
 }
 
 #[derive(Debug, Serialize)]
