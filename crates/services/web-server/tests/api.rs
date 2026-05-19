@@ -12,6 +12,8 @@ mod app_branding_web;
 mod audit_web;
 #[path = "api/case_contract_web.rs"]
 mod case_contract_web;
+#[path = "api/case_editor_contract_web.rs"]
+mod case_editor_contract_web;
 #[path = "api/case_intake_web.rs"]
 mod case_intake_web;
 #[path = "api/case_validation_web.rs"]

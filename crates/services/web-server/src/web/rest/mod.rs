@@ -1,5 +1,7 @@
 // Declare handler modules
 pub mod app_branding_rest;
+pub mod case_editor_dto;
+pub mod case_editor_rest;
 pub mod case_export_rest;
 pub mod case_intake_rest;
 pub mod case_rest;
@@ -60,6 +62,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		.route(
 			"/cases/intake-check",
 			axum::routing::post(case_intake_rest::check_case_intake_duplicate),
+		)
+		.route(
+			"/cases/{case_id}/editor/shell",
+			get(case_editor_rest::get_editor_shell),
 		)
 		.route(
 			"/cases/from-intake",
