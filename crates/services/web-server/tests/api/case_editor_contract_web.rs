@@ -6,10 +6,15 @@ use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
 use lib_core::model::acs::{
-	upsert_dynamic_role_permissions, CASE_LIST, CASE_READ, DRUG_INDICATION_LIST,
+	upsert_dynamic_role_permissions, Permission, CASE_IDENTIFIER_LIST, CASE_LIST,
+	CASE_READ, DEATH_CAUSE_LIST, DRUG_INDICATION_LIST,
 	DRUG_REACTION_ASSESSMENT_LIST, DRUG_READ, DRUG_RECURRENCE_LIST,
-	DRUG_SUBSTANCE_LIST,
+	DRUG_SUBSTANCE_LIST, MEDICAL_HISTORY_LIST, MESSAGE_HEADER_READ, NARRATIVE_READ,
+	PARENT_INFORMATION_LIST, PARENT_MEDICAL_HISTORY_LIST, PARENT_PAST_DRUG_LIST,
+	PATIENT_DEATH_LIST, PATIENT_IDENTIFIER_LIST, PATIENT_READ, RECEIVER_READ,
+	SAFETY_REPORT_READ, SENDER_DIAGNOSIS_LIST, STUDY_INFORMATION_LIST,
 };
+use lib_core::model::ModelManager;
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
@@ -81,6 +86,25 @@ fn assert_no_ae_lb_dg_payload(data: &Value) {
 	assert!(data.get("drugs").is_none(), "{data}");
 }
 
+async fn limited_cookie(
+	mm: &ModelManager,
+	org_id: Uuid,
+	permissions: Vec<Permission>,
+) -> Result<String> {
+	let limited_role = format!("editor_direct_limited_{}", Uuid::new_v4());
+	upsert_dynamic_role_permissions(&limited_role, permissions);
+	let limited_user = insert_user(
+		mm,
+		org_id,
+		&limited_role,
+		system_user_id(),
+		Some("limitedpwd"),
+	)
+	.await?;
+	let token = generate_web_token(&limited_user.email, limited_user.token_salt)?;
+	Ok(cookie_header(&token.to_string()))
+}
+
 #[serial]
 #[tokio::test]
 async fn editor_shell_returns_only_case_header_workflow_and_permissions(
@@ -146,11 +170,16 @@ async fn editor_ci_returns_ci_payload_only() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["caseId"], case_id);
 	let data = body.get("data").ok_or("missing data")?;
-	assert!(
-		data.get("safetyReportIdentification").is_some()
-			|| data.get("messageHeader").is_some(),
-		"{body}"
-	);
+	let safety_report = data
+		.get("safetyReportIdentification")
+		.ok_or("missing safetyReportIdentification")?;
+	assert!(data.get("otherCaseIdentifiers").is_none(), "{body}");
+	assert!(data.get("linkedReports").is_none(), "{body}");
+	assert!(data.get("documentsHeldBySender").is_none(), "{body}");
+	assert!(safety_report["otherCaseIdentifiers"].is_array(), "{body}");
+	assert!(safety_report["linkedReports"].is_array(), "{body}");
+	assert!(safety_report["documentsHeldBySender"].is_array(), "{body}");
+	assert!(data.get("messageHeader").is_some(), "{body}");
 	assert_no_ae_lb_dg_payload(data);
 
 	Ok(())
@@ -209,6 +238,35 @@ async fn editor_dm_returns_patient_payload_without_dh_list_rows() -> Result<()> 
 		patient_information.get("pastDrugHistory").is_none(),
 		"{body}"
 	);
+	assert!(
+		patient_information["patientIdentifiers"].is_array(),
+		"{body}"
+	);
+	assert!(
+		patient_information["medicalHistoryEpisodes"].is_array(),
+		"{body}"
+	);
+	assert!(
+		patient_information["patientDeath"]["reportedCausesOfDeath"].is_array(),
+		"{body}"
+	);
+	assert!(
+		patient_information["patientDeath"]["autopsyCausesOfDeath"].is_array(),
+		"{body}"
+	);
+	assert!(patient_information["parents"].is_array(), "{body}");
+	assert!(
+		patient_information["parentInformation"]
+			.get("medicalHistory")
+			.is_some(),
+		"{body}"
+	);
+	assert!(
+		patient_information["parentInformation"]
+			.get("pastDrugHistory")
+			.is_some(),
+		"{body}"
+	);
 	assert_no_ae_lb_dg_payload(data);
 
 	Ok(())
@@ -230,12 +288,10 @@ async fn editor_nr_returns_narrative_payload_only() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["caseId"], case_id);
 	let data = body.get("data").ok_or("missing data")?;
-	assert!(data.get("narrative").is_some(), "{body}");
-	assert!(
-		data.get("caseSummaryInformation").is_some()
-			|| data.get("senderDiagnoses").is_some(),
-		"{body}"
-	);
+	assert!(data.get("senderDiagnoses").is_none(), "{body}");
+	let narrative = data.get("narrative").ok_or("missing narrative")?;
+	assert!(narrative["senderDiagnoses"].is_array(), "{body}");
+	assert!(data["caseSummaryInformation"].is_array(), "{body}");
 	assert_no_ae_lb_dg_payload(data);
 
 	Ok(())
@@ -269,7 +325,126 @@ async fn editor_remaining_direct_sections_return_only_their_payloads() -> Result
 		assert_eq!(body["caseId"], case_id);
 		let data = body.get("data").ok_or("missing data")?;
 		assert!(data.get(expected_key).is_some(), "{section}: {body}");
+		if section == "SI" {
+			assert!(
+				data.get("studyRegistrationNumbers").is_none(),
+				"{section}: {body}"
+			);
+			assert!(
+				data["studyInformation"]["studyRegistrationNumbers"].is_array(),
+				"{section}: {body}"
+			);
+		}
 		assert_no_ae_lb_dg_payload(data);
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_direct_sections_reject_missing_child_permissions() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let case_id = create_case(&app, &admin_cookie, "EDITOR-DIRECT-ACL").await?;
+
+	let cases = [
+		(
+			"CI missing CASE_IDENTIFIER_LIST",
+			"CI",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				SAFETY_REPORT_READ,
+				MESSAGE_HEADER_READ,
+				RECEIVER_READ,
+			],
+		),
+		(
+			"CI missing RECEIVER_READ",
+			"CI",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				SAFETY_REPORT_READ,
+				MESSAGE_HEADER_READ,
+				CASE_IDENTIFIER_LIST,
+			],
+		),
+		(
+			"SD missing SENDER_INFORMATION_LIST",
+			"SD",
+			vec![CASE_READ, CASE_LIST, SAFETY_REPORT_READ],
+		),
+		(
+			"SI missing STUDY_REGISTRATION_LIST",
+			"SI",
+			vec![CASE_READ, CASE_LIST, STUDY_INFORMATION_LIST],
+		),
+		(
+			"DM missing PATIENT_IDENTIFIER_LIST",
+			"DM",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				PATIENT_READ,
+				MEDICAL_HISTORY_LIST,
+				PATIENT_DEATH_LIST,
+				DEATH_CAUSE_LIST,
+				PARENT_INFORMATION_LIST,
+				PARENT_MEDICAL_HISTORY_LIST,
+				PARENT_PAST_DRUG_LIST,
+			],
+		),
+		(
+			"DM missing DEATH_CAUSE_LIST",
+			"DM",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				PATIENT_READ,
+				PATIENT_IDENTIFIER_LIST,
+				MEDICAL_HISTORY_LIST,
+				PATIENT_DEATH_LIST,
+				PARENT_INFORMATION_LIST,
+				PARENT_MEDICAL_HISTORY_LIST,
+				PARENT_PAST_DRUG_LIST,
+			],
+		),
+		(
+			"DM missing PARENT_INFORMATION_LIST",
+			"DM",
+			vec![
+				CASE_READ,
+				CASE_LIST,
+				PATIENT_READ,
+				PATIENT_IDENTIFIER_LIST,
+				MEDICAL_HISTORY_LIST,
+				PATIENT_DEATH_LIST,
+				DEATH_CAUSE_LIST,
+				PARENT_MEDICAL_HISTORY_LIST,
+				PARENT_PAST_DRUG_LIST,
+			],
+		),
+		(
+			"NR missing CASE_SUMMARY_LIST",
+			"NR",
+			vec![CASE_READ, CASE_LIST, NARRATIVE_READ, SENDER_DIAGNOSIS_LIST],
+		),
+	];
+
+	for (label, section, permissions) in cases {
+		let limited_cookie = limited_cookie(&mm, seed.org_id, permissions).await?;
+		let (status, body) = get_json(
+			&app,
+			&limited_cookie,
+			&format!("/api/cases/{case_id}/editor/{section}"),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::FORBIDDEN, "{label}: {body}");
 	}
 
 	Ok(())

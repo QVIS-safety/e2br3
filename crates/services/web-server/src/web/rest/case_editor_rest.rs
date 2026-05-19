@@ -11,7 +11,8 @@ use lib_core::model::acs::{
 	DRUG_DOSAGE_LIST, DRUG_INDICATION_LIST, DRUG_LIST,
 	DRUG_REACTION_ASSESSMENT_LIST, DRUG_READ, DRUG_RECURRENCE_LIST,
 	DRUG_SUBSTANCE_LIST, LITERATURE_REFERENCE_LIST, MEDICAL_HISTORY_LIST,
-	MESSAGE_HEADER_READ, NARRATIVE_READ, PARENT_INFORMATION_LIST, PAST_DRUG_LIST,
+	MESSAGE_HEADER_READ, NARRATIVE_READ, PARENT_INFORMATION_LIST,
+	PARENT_MEDICAL_HISTORY_LIST, PARENT_PAST_DRUG_LIST, PAST_DRUG_LIST,
 	PAST_DRUG_READ, PATIENT_DEATH_LIST, PATIENT_IDENTIFIER_LIST, PATIENT_READ,
 	PRIMARY_SOURCE_LIST, REACTION_LIST, REACTION_READ, RECEIVER_READ,
 	SAFETY_REPORT_READ, SENDER_DIAGNOSIS_LIST, SENDER_INFORMATION_LIST,
@@ -34,6 +35,10 @@ use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::narrative::{
 	CaseSummaryInformationBmc, CaseSummaryInformationFilter,
 	NarrativeInformationBmc, SenderDiagnosisBmc, SenderDiagnosisFilter,
+};
+use lib_core::model::parent_history::{
+	ParentMedicalHistoryBmc, ParentMedicalHistoryFilter, ParentPastDrugHistoryBmc,
+	ParentPastDrugHistoryFilter,
 };
 use lib_core::model::patient::{
 	AutopsyCauseOfDeathBmc, AutopsyCauseOfDeathFilter, MedicalHistoryEpisodeBmc,
@@ -154,6 +159,20 @@ pub async fn get_editor_ci(
 		Some(ListOptions::default()),
 	)
 	.await?;
+	let mut safety_report_identification = safety_report_identification
+		.map(|entity| json!(entity))
+		.unwrap_or_else(|| json!({}));
+	if let Value::Object(ref mut map) = safety_report_identification {
+		map.insert(
+			"otherCaseIdentifiers".to_string(),
+			json!(other_case_identifiers),
+		);
+		map.insert("linkedReports".to_string(), json!(linked_reports));
+		map.insert(
+			"documentsHeldBySender".to_string(),
+			json!(documents_held_by_sender),
+		);
+	}
 
 	Ok(direct_section_response(
 		case_id,
@@ -163,9 +182,6 @@ pub async fn get_editor_ci(
 			"messageHeader": message_header,
 			"receiverInformation": receiver_information,
 			"receiver": receiver_information,
-			"otherCaseIdentifiers": other_case_identifiers,
-			"linkedReports": linked_reports,
-			"documentsHeldBySender": documents_held_by_sender,
 		}),
 	))
 }
@@ -310,13 +326,19 @@ pub async fn get_editor_si(
 	} else {
 		Vec::new()
 	};
+	let mut study_information = study_information
+		.map(|entity| json!(entity))
+		.unwrap_or_else(|| json!({}));
+	if let Value::Object(ref mut map) = study_information {
+		map.insert(
+			"studyRegistrationNumbers".to_string(),
+			json!(study_registration_numbers),
+		);
+	}
 
 	Ok(direct_section_response(
 		case_id,
-		json!({
-			"studyInformation": study_information,
-			"studyRegistrationNumbers": study_registration_numbers,
-		}),
+		json!({ "studyInformation": study_information }),
 	))
 }
 
@@ -336,6 +358,8 @@ pub async fn get_editor_dm(
 	require_permission(&ctx, PATIENT_DEATH_LIST)?;
 	require_permission(&ctx, DEATH_CAUSE_LIST)?;
 	require_permission(&ctx, PARENT_INFORMATION_LIST)?;
+	require_permission(&ctx, PARENT_MEDICAL_HISTORY_LIST)?;
+	require_permission(&ctx, PARENT_PAST_DRUG_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let Some(patient) =
@@ -351,8 +375,16 @@ pub async fn get_editor_dm(
 				"patientInformation": null,
 				"patientIdentifiers": [],
 				"medicalHistoryEpisodes": [],
-				"parentInformation": [],
-				"patientDeathInformation": [],
+				"patientDeath": {
+					"reportedCausesOfDeath": [],
+					"autopsyCausesOfDeath": [],
+				},
+				"parents": [],
+				"parentInformation": {
+					"medicalHistory": [],
+					"pastDrugHistory": [],
+					"pastDrugs": [],
+				},
 			}),
 		));
 	};
@@ -378,7 +410,7 @@ pub async fn get_editor_dm(
 		Some(ListOptions::default()),
 	)
 	.await?;
-	let parent_information = ParentInformationBmc::list(
+	let parent_information_rows = ParentInformationBmc::list(
 		&ctx,
 		&mm,
 		Some(vec![ParentInformationFilter {
@@ -387,6 +419,36 @@ pub async fn get_editor_dm(
 		Some(ListOptions::default()),
 	)
 	.await?;
+	let mut parents = Vec::new();
+	for parent in parent_information_rows {
+		let medical_history = ParentMedicalHistoryBmc::list(
+			&ctx,
+			&mm,
+			Some(vec![ParentMedicalHistoryFilter {
+				parent_id: Some(uuid_eq(parent.id)),
+				..Default::default()
+			}]),
+			Some(ListOptions::default()),
+		)
+		.await?;
+		let past_drug_history = ParentPastDrugHistoryBmc::list(
+			&ctx,
+			&mm,
+			Some(vec![ParentPastDrugHistoryFilter {
+				parent_id: Some(uuid_eq(parent.id)),
+				..Default::default()
+			}]),
+			Some(ListOptions::default()),
+		)
+		.await?;
+		let mut parent = json!(parent);
+		if let Value::Object(ref mut map) = parent {
+			map.insert("medicalHistory".to_string(), json!(medical_history));
+			map.insert("pastDrugHistory".to_string(), json!(past_drug_history));
+			map.insert("pastDrugs".to_string(), json!(past_drug_history));
+		}
+		parents.push(parent);
+	}
 	let death_information = PatientDeathInformationBmc::list(
 		&ctx,
 		&mm,
@@ -424,6 +486,22 @@ pub async fn get_editor_dm(
 			.await?,
 		);
 	}
+	let mut patient_death = death_information
+		.into_iter()
+		.next()
+		.map(|entity| json!(entity))
+		.unwrap_or_else(|| json!({}));
+	if let Value::Object(ref mut map) = patient_death {
+		map.insert("reportedCausesOfDeath".to_string(), json!(reported_causes));
+		map.insert("autopsyCausesOfDeath".to_string(), json!(autopsy_causes));
+	}
+	let parent_information = parents.first().cloned().unwrap_or_else(|| {
+		json!({
+			"medicalHistory": [],
+			"pastDrugHistory": [],
+			"pastDrugs": [],
+		})
+	});
 
 	let mut patient_information = json!(patient);
 	if let Value::Object(ref mut map) = patient_information {
@@ -433,12 +511,8 @@ pub async fn get_editor_dm(
 			json!(medical_history_episodes),
 		);
 		map.insert("parentInformation".to_string(), json!(parent_information));
-		map.insert(
-			"patientDeathInformation".to_string(),
-			json!(death_information),
-		);
-		map.insert("reportedCausesOfDeath".to_string(), json!(reported_causes));
-		map.insert("autopsyCausesOfDeath".to_string(), json!(autopsy_causes));
+		map.insert("parents".to_string(), json!(parents));
+		map.insert("patientDeath".to_string(), patient_death);
 	}
 
 	Ok(direct_section_response(
@@ -490,12 +564,17 @@ pub async fn get_editor_nr(
 		} else {
 			(Vec::new(), Vec::new())
 		};
+	let mut narrative = narrative
+		.map(|entity| json!(entity))
+		.unwrap_or_else(|| json!({}));
+	if let Value::Object(ref mut map) = narrative {
+		map.insert("senderDiagnoses".to_string(), json!(sender_diagnoses));
+	}
 
 	Ok(direct_section_response(
 		case_id,
 		json!({
 			"narrative": narrative,
-			"senderDiagnoses": sender_diagnoses,
 			"caseSummaryInformation": case_summary_information,
 		}),
 	))
