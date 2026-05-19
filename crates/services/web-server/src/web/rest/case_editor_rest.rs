@@ -7,7 +7,9 @@ use crate::web::rest::case_rest::case_to_read_result;
 use axum::extract::{Path, State};
 use axum::Json;
 use lib_core::model::acs::{
-	CASE_READ, DRUG_LIST, DRUG_READ, PAST_DRUG_LIST, PAST_DRUG_READ, REACTION_LIST,
+	CASE_READ, DRUG_DOSAGE_LIST, DRUG_INDICATION_LIST, DRUG_LIST,
+	DRUG_REACTION_ASSESSMENT_LIST, DRUG_READ, DRUG_RECURRENCE_LIST,
+	DRUG_SUBSTANCE_LIST, PAST_DRUG_LIST, PAST_DRUG_READ, REACTION_LIST,
 	REACTION_READ, TEST_RESULT_LIST, TEST_RESULT_READ,
 };
 use lib_core::model::case::CaseBmc;
@@ -244,6 +246,11 @@ pub async fn get_editor_dg(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
 	require_permission(&ctx, DRUG_READ)?;
+	require_permission(&ctx, DRUG_SUBSTANCE_LIST)?;
+	require_permission(&ctx, DRUG_DOSAGE_LIST)?;
+	require_permission(&ctx, DRUG_INDICATION_LIST)?;
+	require_permission(&ctx, DRUG_REACTION_ASSESSMENT_LIST)?;
+	require_permission(&ctx, DRUG_RECURRENCE_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let drug = DrugInformationBmc::get_in_case(&ctx, &mm, case_id, drug_id).await?;

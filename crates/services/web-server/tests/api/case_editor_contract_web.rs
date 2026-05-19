@@ -1,7 +1,15 @@
-use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
+use crate::common::{
+	cookie_header, init_test_mm, insert_user, seed_org_with_users, system_user_id,
+	Result,
+};
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
+use lib_core::model::acs::{
+	upsert_dynamic_role_permissions, CASE_LIST, CASE_READ, DRUG_INDICATION_LIST,
+	DRUG_REACTION_ASSESSMENT_LIST, DRUG_READ, DRUG_RECURRENCE_LIST,
+	DRUG_SUBSTANCE_LIST,
+};
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
@@ -480,6 +488,69 @@ async fn editor_dg_detail_returns_one_drug_with_nested_children() -> Result<()> 
 		.as_array()
 		.ok_or("missing drugReactionAssessments array")?
 		.is_empty());
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_dg_detail_requires_child_list_permissions() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let limited_role = format!("dg_detail_limited_{}", Uuid::new_v4());
+	upsert_dynamic_role_permissions(
+		&limited_role,
+		vec![
+			CASE_READ,
+			CASE_LIST,
+			DRUG_READ,
+			DRUG_SUBSTANCE_LIST,
+			DRUG_INDICATION_LIST,
+			DRUG_REACTION_ASSESSMENT_LIST,
+			DRUG_RECURRENCE_LIST,
+		],
+	);
+	let limited_user = insert_user(
+		&mm,
+		seed.org_id,
+		&limited_role,
+		system_user_id(),
+		Some("limitedpwd"),
+	)
+	.await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let limited_token =
+		generate_web_token(&limited_user.email, limited_user.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let limited_cookie = cookie_header(&limited_token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &admin_cookie, "EDITOR-DG-ACL").await?;
+
+	let (status, body) = post_json(
+		&app,
+		&admin_cookie,
+		&format!("/api/cases/{case_id}/drugs"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sequence_number": 1,
+				"drug_characterization": "1",
+				"medicinal_product": " "
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	let drug_id = body["data"]["id"].as_str().ok_or("missing drug id")?;
+
+	let (status, body) = get_json(
+		&app,
+		&limited_cookie,
+		&format!("/api/cases/{case_id}/editor/DG/{drug_id}"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::FORBIDDEN, "{body}");
 
 	Ok(())
 }
