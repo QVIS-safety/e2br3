@@ -76,6 +76,13 @@ pub struct CaseEditorRowDetailResponse {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct CaseEditorDirectSectionResponse {
+	pub case_id: Uuid,
+	pub data: Value,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CaseEditorAeListRowDto {
 	pub id: Uuid,
 	pub sequence_number: i32,

@@ -68,6 +68,34 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			get(case_editor_rest::get_editor_shell),
 		)
 		.route(
+			"/cases/{case_id}/editor/CI",
+			get(case_editor_rest::get_editor_ci),
+		)
+		.route(
+			"/cases/{case_id}/editor/RP",
+			get(case_editor_rest::get_editor_rp),
+		)
+		.route(
+			"/cases/{case_id}/editor/SD",
+			get(case_editor_rest::get_editor_sd),
+		)
+		.route(
+			"/cases/{case_id}/editor/LR",
+			get(case_editor_rest::get_editor_lr),
+		)
+		.route(
+			"/cases/{case_id}/editor/SI",
+			get(case_editor_rest::get_editor_si),
+		)
+		.route(
+			"/cases/{case_id}/editor/DM",
+			get(case_editor_rest::get_editor_dm),
+		)
+		.route(
+			"/cases/{case_id}/editor/NR",
+			get(case_editor_rest::get_editor_nr),
+		)
+		.route(
 			"/cases/{case_id}/editor/AE/list",
 			get(case_editor_rest::list_editor_ae),
 		)

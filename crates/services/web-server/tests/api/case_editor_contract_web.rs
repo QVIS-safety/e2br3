@@ -75,6 +75,12 @@ async fn create_case(
 		.to_string())
 }
 
+fn assert_no_ae_lb_dg_payload(data: &Value) {
+	assert!(data.get("reactions").is_none(), "{data}");
+	assert!(data.get("testResults").is_none(), "{data}");
+	assert!(data.get("drugs").is_none(), "{data}");
+}
+
 #[serial]
 #[tokio::test]
 async fn editor_shell_returns_only_case_header_workflow_and_permissions(
@@ -120,6 +126,151 @@ async fn editor_shell_returns_only_case_header_workflow_and_permissions(
 	assert!(body.get("patientInformation").is_none());
 	assert!(body.get("messageHeader").is_none());
 	assert!(body.get("safetyReportIdentification").is_none());
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_ci_returns_ci_payload_only() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-CI").await?;
+
+	let (status, body) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}/editor/CI")).await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["caseId"], case_id);
+	let data = body.get("data").ok_or("missing data")?;
+	assert!(
+		data.get("safetyReportIdentification").is_some()
+			|| data.get("messageHeader").is_some(),
+		"{body}"
+	);
+	assert_no_ae_lb_dg_payload(data);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_dm_returns_patient_payload_without_dh_list_rows() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-DM").await?;
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/patient"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"patient_initials": "ABC"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	let patient_id = body["data"]["id"].as_str().ok_or("missing patient id")?;
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/patient/past-drugs"),
+		json!({
+			"data": {
+				"patient_id": patient_id,
+				"sequence_number": 1,
+				"drug_name": "Prior Drug"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+
+	let (status, body) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}/editor/DM")).await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["caseId"], case_id);
+	let data = body.get("data").ok_or("missing data")?;
+	let patient_information = data
+		.get("patientInformation")
+		.ok_or("missing patientInformation")?;
+	assert!(
+		patient_information.get("pastDrugHistory").is_none(),
+		"{body}"
+	);
+	assert_no_ae_lb_dg_payload(data);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_nr_returns_narrative_payload_only() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-NR").await?;
+
+	let (status, body) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}/editor/NR")).await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["caseId"], case_id);
+	let data = body.get("data").ok_or("missing data")?;
+	assert!(data.get("narrative").is_some(), "{body}");
+	assert!(
+		data.get("caseSummaryInformation").is_some()
+			|| data.get("senderDiagnoses").is_some(),
+		"{body}"
+	);
+	assert_no_ae_lb_dg_payload(data);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_remaining_direct_sections_return_only_their_payloads() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-DIRECT-SECTIONS").await?;
+
+	for (section, expected_key) in [
+		("RP", "primarySources"),
+		("SD", "senderInformation"),
+		("LR", "literatureReferences"),
+		("SI", "studyInformation"),
+	] {
+		let (status, body) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/{section}"),
+		)
+		.await?;
+
+		assert_eq!(status, StatusCode::OK, "{section}: {body}");
+		assert_eq!(body["caseId"], case_id);
+		let data = body.get("data").ok_or("missing data")?;
+		assert!(data.get(expected_key).is_some(), "{section}: {body}");
+		assert_no_ae_lb_dg_payload(data);
+	}
 
 	Ok(())
 }

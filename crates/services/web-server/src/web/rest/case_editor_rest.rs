@@ -1,18 +1,28 @@
 use crate::web::rest::case_editor_dto::{
 	CaseEditorAeListRowDto, CaseEditorDgListRowDto, CaseEditorDhListRowDto,
-	CaseEditorLbListRowDto, CaseEditorListResponse, CaseEditorRowDetailResponse,
-	CaseEditorShellDto,
+	CaseEditorDirectSectionResponse, CaseEditorLbListRowDto, CaseEditorListResponse,
+	CaseEditorRowDetailResponse, CaseEditorShellDto,
 };
 use crate::web::rest::case_rest::case_to_read_result;
 use axum::extract::{Path, State};
 use axum::Json;
 use lib_core::model::acs::{
-	CASE_READ, DRUG_DOSAGE_LIST, DRUG_INDICATION_LIST, DRUG_LIST,
+	CASE_IDENTIFIER_LIST, CASE_READ, CASE_SUMMARY_LIST, DEATH_CAUSE_LIST,
+	DRUG_DOSAGE_LIST, DRUG_INDICATION_LIST, DRUG_LIST,
 	DRUG_REACTION_ASSESSMENT_LIST, DRUG_READ, DRUG_RECURRENCE_LIST,
-	DRUG_SUBSTANCE_LIST, PAST_DRUG_LIST, PAST_DRUG_READ, REACTION_LIST,
-	REACTION_READ, TEST_RESULT_LIST, TEST_RESULT_READ,
+	DRUG_SUBSTANCE_LIST, LITERATURE_REFERENCE_LIST, MEDICAL_HISTORY_LIST,
+	MESSAGE_HEADER_READ, NARRATIVE_READ, PARENT_INFORMATION_LIST, PAST_DRUG_LIST,
+	PAST_DRUG_READ, PATIENT_DEATH_LIST, PATIENT_IDENTIFIER_LIST, PATIENT_READ,
+	PRIMARY_SOURCE_LIST, REACTION_LIST, REACTION_READ, RECEIVER_READ,
+	SAFETY_REPORT_READ, SENDER_DIAGNOSIS_LIST, SENDER_INFORMATION_LIST,
+	STUDY_INFORMATION_LIST, STUDY_REGISTRATION_LIST, TEST_RESULT_LIST,
+	TEST_RESULT_READ,
 };
 use lib_core::model::case::CaseBmc;
+use lib_core::model::case_identifiers::{
+	LinkedReportNumberBmc, LinkedReportNumberFilter, OtherCaseIdentifierBmc,
+	OtherCaseIdentifierFilter,
+};
 use lib_core::model::drug::{
 	DosageInformationBmc, DosageInformationFilter, DrugActiveSubstanceBmc,
 	DrugActiveSubstanceFilter, DrugIndicationBmc, DrugIndicationFilter,
@@ -20,10 +30,27 @@ use lib_core::model::drug::{
 };
 use lib_core::model::drug_reaction_assessment::DrugReactionAssessmentBmc;
 use lib_core::model::drug_recurrence::DrugRecurrenceInformationBmc;
+use lib_core::model::message_header::MessageHeaderBmc;
+use lib_core::model::narrative::{
+	CaseSummaryInformationBmc, CaseSummaryInformationFilter,
+	NarrativeInformationBmc, SenderDiagnosisBmc, SenderDiagnosisFilter,
+};
 use lib_core::model::patient::{
-	PastDrugHistoryBmc, PastDrugHistoryFilter, PatientInformationBmc,
+	AutopsyCauseOfDeathBmc, AutopsyCauseOfDeathFilter, MedicalHistoryEpisodeBmc,
+	MedicalHistoryEpisodeFilter, ParentInformationBmc, ParentInformationFilter,
+	PastDrugHistoryBmc, PastDrugHistoryFilter, PatientDeathInformationBmc,
+	PatientDeathInformationFilter, PatientIdentifierBmc, PatientIdentifierFilter,
+	PatientInformationBmc, ReportedCauseOfDeathBmc, ReportedCauseOfDeathFilter,
 };
 use lib_core::model::reaction::ReactionBmc;
+use lib_core::model::receiver::ReceiverInformationBmc;
+use lib_core::model::safety_report::{
+	DocumentsHeldBySenderBmc, DocumentsHeldBySenderFilter, LiteratureReferenceBmc,
+	LiteratureReferenceFilter, PrimarySourceBmc, PrimarySourceFilter,
+	SafetyReportIdentificationBmc, SenderInformationBmc, SenderInformationFilter,
+	StudyInformationBmc, StudyInformationFilter, StudyRegistrationNumberBmc,
+	StudyRegistrationNumberFilter,
+};
 use lib_core::model::test_result::TestResultBmc;
 use lib_core::model::ModelManager;
 use lib_rest_core::prelude::*;
@@ -46,6 +73,431 @@ pub async fn get_editor_shell(
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(CaseEditorShellDto::from(case)),
+	))
+}
+
+fn uuid_eq(id: Uuid) -> OpValsValue {
+	OpValsValue::from(vec![OpValValue::Eq(json!(id.to_string()))])
+}
+
+fn direct_section_response(
+	case_id: Uuid,
+	data: Value,
+) -> (
+	axum::http::StatusCode,
+	Json<CaseEditorDirectSectionResponse>,
+) {
+	(
+		axum::http::StatusCode::OK,
+		Json(CaseEditorDirectSectionResponse { case_id, data }),
+	)
+}
+
+pub async fn get_editor_ci(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorDirectSectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, SAFETY_REPORT_READ)?;
+	require_permission(&ctx, MESSAGE_HEADER_READ)?;
+	require_permission(&ctx, RECEIVER_READ)?;
+	require_permission(&ctx, CASE_IDENTIFIER_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let case = CaseBmc::get(&ctx, &mm, case_id).await?;
+	let safety_report_identification =
+		match SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id).await {
+			Ok(entity) => Some(entity),
+			Err(lib_core::model::Error::EntityUuidNotFound { .. }) => None,
+			Err(err) => return Err(err.into()),
+		};
+	let message_header =
+		match MessageHeaderBmc::get_by_case(&ctx, &mm, case_id).await {
+			Ok(entity) => Some(entity),
+			Err(lib_core::model::Error::EntityUuidNotFound { .. }) => None,
+			Err(err) => return Err(err.into()),
+		};
+	let receiver_information =
+		ReceiverInformationBmc::get_by_case_optional(&ctx, &mm, case_id).await?;
+	let other_case_identifiers = OtherCaseIdentifierBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![OtherCaseIdentifierFilter {
+			case_id: Some(uuid_eq(case_id)),
+			..Default::default()
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	let linked_reports = LinkedReportNumberBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![LinkedReportNumberFilter {
+			case_id: Some(uuid_eq(case_id)),
+			..Default::default()
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	let documents_held_by_sender = DocumentsHeldBySenderBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![DocumentsHeldBySenderFilter {
+			case_id: Some(uuid_eq(case_id)),
+			..Default::default()
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+
+	Ok(direct_section_response(
+		case_id,
+		json!({
+			"case": case,
+			"safetyReportIdentification": safety_report_identification,
+			"messageHeader": message_header,
+			"receiverInformation": receiver_information,
+			"receiver": receiver_information,
+			"otherCaseIdentifiers": other_case_identifiers,
+			"linkedReports": linked_reports,
+			"documentsHeldBySender": documents_held_by_sender,
+		}),
+	))
+}
+
+pub async fn get_editor_rp(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorDirectSectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, PRIMARY_SOURCE_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let primary_sources = PrimarySourceBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![PrimarySourceFilter {
+			case_id: Some(uuid_eq(case_id)),
+			..Default::default()
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+
+	Ok(direct_section_response(
+		case_id,
+		json!({ "primarySources": primary_sources }),
+	))
+}
+
+pub async fn get_editor_sd(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorDirectSectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, SAFETY_REPORT_READ)?;
+	require_permission(&ctx, SENDER_INFORMATION_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let safety_report_identification =
+		match SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id).await {
+			Ok(entity) => Some(entity),
+			Err(lib_core::model::Error::EntityUuidNotFound { .. }) => None,
+			Err(err) => return Err(err.into()),
+		};
+	let sender_information = SenderInformationBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![SenderInformationFilter {
+			case_id: Some(uuid_eq(case_id)),
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	let sender = sender_information.first().cloned();
+
+	Ok(direct_section_response(
+		case_id,
+		json!({
+			"safetyReportIdentification": safety_report_identification,
+			"senderInformation": sender_information,
+			"sender": sender,
+		}),
+	))
+}
+
+pub async fn get_editor_lr(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorDirectSectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, LITERATURE_REFERENCE_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let literature_references = LiteratureReferenceBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![LiteratureReferenceFilter {
+			case_id: Some(uuid_eq(case_id)),
+			..Default::default()
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+
+	Ok(direct_section_response(
+		case_id,
+		json!({ "literatureReferences": literature_references }),
+	))
+}
+
+pub async fn get_editor_si(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorDirectSectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, STUDY_INFORMATION_LIST)?;
+	require_permission(&ctx, STUDY_REGISTRATION_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let mut studies = StudyInformationBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![StudyInformationFilter {
+			case_id: Some(uuid_eq(case_id)),
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	studies.sort_by_key(|study| study.created_at);
+	let study_information = studies.into_iter().next();
+	let study_registration_numbers = if let Some(ref study) = study_information {
+		StudyRegistrationNumberBmc::list(
+			&ctx,
+			&mm,
+			Some(vec![StudyRegistrationNumberFilter {
+				study_information_id: Some(uuid_eq(study.id)),
+				..Default::default()
+			}]),
+			Some(ListOptions::default()),
+		)
+		.await?
+	} else {
+		Vec::new()
+	};
+
+	Ok(direct_section_response(
+		case_id,
+		json!({
+			"studyInformation": study_information,
+			"studyRegistrationNumbers": study_registration_numbers,
+		}),
+	))
+}
+
+pub async fn get_editor_dm(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorDirectSectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, PATIENT_READ)?;
+	require_permission(&ctx, PATIENT_IDENTIFIER_LIST)?;
+	require_permission(&ctx, MEDICAL_HISTORY_LIST)?;
+	require_permission(&ctx, PATIENT_DEATH_LIST)?;
+	require_permission(&ctx, DEATH_CAUSE_LIST)?;
+	require_permission(&ctx, PARENT_INFORMATION_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let Some(patient) =
+		(match PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await {
+			Ok(entity) => Some(entity),
+			Err(lib_core::model::Error::EntityUuidNotFound { .. }) => None,
+			Err(err) => return Err(err.into()),
+		})
+	else {
+		return Ok(direct_section_response(
+			case_id,
+			json!({
+				"patientInformation": null,
+				"patientIdentifiers": [],
+				"medicalHistoryEpisodes": [],
+				"parentInformation": [],
+				"patientDeathInformation": [],
+			}),
+		));
+	};
+
+	let patient_id = patient.id;
+	let patient_identifiers = PatientIdentifierBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![PatientIdentifierFilter {
+			patient_id: Some(uuid_eq(patient_id)),
+			..Default::default()
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	let medical_history_episodes = MedicalHistoryEpisodeBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![MedicalHistoryEpisodeFilter {
+			patient_id: Some(uuid_eq(patient_id)),
+			..Default::default()
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	let parent_information = ParentInformationBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![ParentInformationFilter {
+			patient_id: Some(uuid_eq(patient_id)),
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	let death_information = PatientDeathInformationBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![PatientDeathInformationFilter {
+			patient_id: Some(uuid_eq(patient_id)),
+		}]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	let mut reported_causes = Vec::new();
+	let mut autopsy_causes = Vec::new();
+	for death_info in &death_information {
+		reported_causes.extend(
+			ReportedCauseOfDeathBmc::list(
+				&ctx,
+				&mm,
+				Some(vec![ReportedCauseOfDeathFilter {
+					death_info_id: Some(uuid_eq(death_info.id)),
+					..Default::default()
+				}]),
+				Some(ListOptions::default()),
+			)
+			.await?,
+		);
+		autopsy_causes.extend(
+			AutopsyCauseOfDeathBmc::list(
+				&ctx,
+				&mm,
+				Some(vec![AutopsyCauseOfDeathFilter {
+					death_info_id: Some(uuid_eq(death_info.id)),
+					..Default::default()
+				}]),
+				Some(ListOptions::default()),
+			)
+			.await?,
+		);
+	}
+
+	let mut patient_information = json!(patient);
+	if let Value::Object(ref mut map) = patient_information {
+		map.insert("patientIdentifiers".to_string(), json!(patient_identifiers));
+		map.insert(
+			"medicalHistoryEpisodes".to_string(),
+			json!(medical_history_episodes),
+		);
+		map.insert("parentInformation".to_string(), json!(parent_information));
+		map.insert(
+			"patientDeathInformation".to_string(),
+			json!(death_information),
+		);
+		map.insert("reportedCausesOfDeath".to_string(), json!(reported_causes));
+		map.insert("autopsyCausesOfDeath".to_string(), json!(autopsy_causes));
+	}
+
+	Ok(direct_section_response(
+		case_id,
+		json!({ "patientInformation": patient_information }),
+	))
+}
+
+pub async fn get_editor_nr(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorDirectSectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, NARRATIVE_READ)?;
+	require_permission(&ctx, SENDER_DIAGNOSIS_LIST)?;
+	require_permission(&ctx, CASE_SUMMARY_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let narrative =
+		NarrativeInformationBmc::get_by_case_optional(&ctx, &mm, case_id).await?;
+	let (sender_diagnoses, case_summary_information) =
+		if let Some(ref narrative) = narrative {
+			let sender_diagnoses = SenderDiagnosisBmc::list(
+				&ctx,
+				&mm,
+				Some(vec![SenderDiagnosisFilter {
+					narrative_id: Some(uuid_eq(narrative.id)),
+					..Default::default()
+				}]),
+				Some(ListOptions::default()),
+			)
+			.await?;
+			let case_summary_information = CaseSummaryInformationBmc::list(
+				&ctx,
+				&mm,
+				Some(vec![CaseSummaryInformationFilter {
+					narrative_id: Some(uuid_eq(narrative.id)),
+					..Default::default()
+				}]),
+				Some(ListOptions::default()),
+			)
+			.await?;
+			(sender_diagnoses, case_summary_information)
+		} else {
+			(Vec::new(), Vec::new())
+		};
+
+	Ok(direct_section_response(
+		case_id,
+		json!({
+			"narrative": narrative,
+			"senderDiagnoses": sender_diagnoses,
+			"caseSummaryInformation": case_summary_information,
+		}),
 	))
 }
 
