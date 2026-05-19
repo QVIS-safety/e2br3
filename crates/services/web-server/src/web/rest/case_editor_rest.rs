@@ -151,7 +151,23 @@ pub async fn list_editor_dh(
 	require_permission(&ctx, PAST_DRUG_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let patient = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	let patient = match PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await
+	{
+		Ok(patient) => patient,
+		Err(lib_core::model::Error::EntityUuidNotFound {
+			entity: "patient_information",
+			..
+		}) => {
+			return Ok((
+				axum::http::StatusCode::OK,
+				Json(CaseEditorListResponse {
+					case_id,
+					rows: Vec::new(),
+				}),
+			));
+		}
+		Err(err) => return Err(err.into()),
+	};
 	let filter = PastDrugHistoryFilter {
 		patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(patient
 			.id

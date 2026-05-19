@@ -334,3 +334,28 @@ async fn editor_dh_list_returns_past_drug_rows() -> Result<()> {
 
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn editor_dh_list_returns_empty_rows_when_patient_missing() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-DH-MISSING-PATIENT").await?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/DH/list"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["caseId"], case_id);
+	let rows = body["rows"].as_array().ok_or("missing rows array")?;
+	assert!(rows.is_empty(), "{body}");
+
+	Ok(())
+}
