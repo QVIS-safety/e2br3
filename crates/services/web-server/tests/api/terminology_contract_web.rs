@@ -4,6 +4,8 @@ use crate::common::{
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
+use lib_core::ctx::{ROLE_SYSTEM_ADMIN, SYSTEM_ORG_ID, SYSTEM_USER_ID};
+use lib_core::model::store::{set_org_context, set_user_context};
 use serial_test::serial;
 use std::io::Write;
 use tower::ServiceExt;
@@ -16,6 +18,37 @@ async fn seed_terminology_admin(
 	mm: &lib_core::model::ModelManager,
 ) -> Result<crate::common::SeedOrgUsers> {
 	seed_org_with_admin_and_viewer(mm, "adminpwd", "viewpwd").await
+}
+
+async fn seed_active_terminology_rows(
+	mm: &lib_core::model::ModelManager,
+) -> Result<()> {
+	let system_user_id = Uuid::parse_str(SYSTEM_USER_ID)?;
+	let system_org_id = Uuid::parse_str(SYSTEM_ORG_ID)?;
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, system_user_id).await?;
+	set_org_context(&mut tx, system_org_id, ROLE_SYSTEM_ADMIN).await?;
+
+	sqlx::query(
+		"INSERT INTO meddra_terms (code, term, level, version, language, active)
+		 VALUES ('90000001', 'Headache test term', 'LLT', '28.1', 'en', true)
+		 ON CONFLICT (code, version, language)
+		 DO UPDATE SET term = EXCLUDED.term, level = EXCLUDED.level, active = true",
+	)
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
+		"INSERT INTO whodrug_products (code, drug_name, atc_code, version, language, active)
+		 VALUES ('W90000001', 'Example Drug test term', 'A01AA01', '2026.03', 'en', true)
+		 ON CONFLICT (code, version, language)
+		 DO UPDATE SET drug_name = EXCLUDED.drug_name, atc_code = EXCLUDED.atc_code, active = true",
+	)
+	.execute(&mut *tx)
+	.await?;
+
+	tx.commit().await?;
+	Ok(())
 }
 
 #[serial]
@@ -49,6 +82,42 @@ async fn test_admin_can_access_terminology_endpoints() -> Result<()> {
 			.into());
 		}
 	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_sponsor_admin_can_search_active_meddra_and_whodrug_terms() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	seed_active_terminology_rows(&mm).await?;
+	let seed = seed_terminology_admin(&mm).await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let req = Request::builder()
+		.method("GET")
+		.uri("/api/terminology/meddra?q=Headache%20test&limit=5")
+		.header("cookie", cookie.clone())
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	assert_eq!(payload["data"][0]["term"], "Headache test term");
+
+	let req = Request::builder()
+		.method("GET")
+		.uri("/api/terminology/whodrug?q=Example%20Drug&limit=5")
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	assert_eq!(payload["data"][0]["drug_name"], "Example Drug test term");
 
 	Ok(())
 }

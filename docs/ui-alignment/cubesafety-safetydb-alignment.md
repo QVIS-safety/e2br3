@@ -512,3 +512,44 @@ The local reference pack is intentionally ignored by git because it contains man
   - `frontend/E2BR3-frontend/__tests__/admin-users.header-filters.test.ts`
   - `crates/libs/lib-core/src/model/acs/permission.rs`
   - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+
+## 2026-05-19 - DG List-First Row Editing
+
+- Reference: Flow 16; screenshot 22 for the DG list state and screenshots 23-24 for selected-row editing.
+- Aligned:
+  - Changed DG to open existing drug rows in the summary table first instead of immediately rendering the long selected-row editor.
+  - Kept row click behavior as the transition into the selected drug edit form.
+  - Kept Add/Import behavior opening the newly created drug row for entry.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED confirmed the focused DG alignment test failed while the long form rendered before row click.
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts --runInBand -t "LB, DG, and NR"`
+  - `npx jest --runTestsByPath __tests__/field-error-banners/drugs.test.ts --runInBand`
+  - `npx tsc --noEmit`
+- Remaining gaps:
+  - DG summary columns still stop at Product Name; Action(s) Taken with Drug and Warning can be aligned in a separate table-column pass.
+
+## 2026-05-19 - DH AE LB List-First Row Editing
+
+- Reference: Flows 12, 14, and 15; screenshots 16, 18, and 20 for list states and screenshots 17, 19, and 21 for selected-row editing.
+- Aligned:
+  - Changed DH, AE, and LB to open existing repeatable rows in their summary tables first instead of immediately rendering selected-row detail editors.
+  - Kept row click behavior as the transition into each selected row edit form.
+  - Kept Add behavior opening the newly created row for entry.
+  - Preserved backend field-error visibility by auto-opening the relevant row editor when DH, AE, or LB field errors are present.
+- Files changed:
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx`
+  - `frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx`
+  - `frontend/E2BR3-frontend/__tests__/case-form/case-edit-shell-alignment.test.ts`
+  - `frontend/E2BR3-frontend/__tests__/field-error-banners/drug-history.test.ts`
+  - `docs/ui-alignment/cubesafety-safetydb-alignment.md`
+- Verified:
+  - TDD RED confirmed the focused alignment tests failed while DH/LB detail editors rendered before row click.
+  - `npx jest --runTestsByPath __tests__/case-form/case-edit-shell-alignment.test.ts __tests__/field-error-banners/drug-history.test.ts __tests__/field-error-banners/reactions.test.ts __tests__/field-error-banners/tests.test.ts --runInBand`
+  - `npx tsc --noEmit`
+- Remaining gaps:
+  - DH, AE, and LB summary table column details can still be refined separately against the reference screenshots.

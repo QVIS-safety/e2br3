@@ -1429,12 +1429,15 @@ CREATE POLICY relatedness_assessments_via_case ON relatedness_assessments
         )
     );
 
--- Terminology Tables (admin-only read/write)
+-- Terminology Tables
+-- Active terminology is global reference data, not tenant-scoped case data.
+-- Reads are available to authenticated app roles with terminology permission;
+-- writes remain restricted to the system-admin RLS bypass.
 ALTER TABLE meddra_terms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meddra_terms FORCE ROW LEVEL SECURITY;
 CREATE POLICY meddra_terms_read ON meddra_terms
     FOR SELECT TO e2br3_app_role
-    USING (is_current_user_admin());
+    USING (active = true);
 CREATE POLICY meddra_terms_insert ON meddra_terms
     FOR INSERT TO e2br3_app_role
     WITH CHECK (is_current_user_admin());
@@ -1450,7 +1453,7 @@ ALTER TABLE whodrug_products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE whodrug_products FORCE ROW LEVEL SECURITY;
 CREATE POLICY whodrug_products_read ON whodrug_products
     FOR SELECT TO e2br3_app_role
-    USING (is_current_user_admin());
+    USING (active = true);
 CREATE POLICY whodrug_products_insert ON whodrug_products
     FOR INSERT TO e2br3_app_role
     WITH CHECK (is_current_user_admin());

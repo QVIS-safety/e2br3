@@ -266,7 +266,6 @@ where
 	match run_result {
 		Ok(_) => {
 			mm.dbx().commit_txn().await?;
-			println!("Whodrug load committed successfully.");
 			Ok(())
 		}
 		Err(err) => {

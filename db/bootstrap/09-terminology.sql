@@ -28,7 +28,7 @@ CREATE TABLE whodrug_products (
     id BIGSERIAL PRIMARY KEY,
     audit_id UUID NOT NULL DEFAULT gen_random_uuid(),
     code VARCHAR(20) NOT NULL,
-    drug_name VARCHAR(500) NOT NULL,
+    drug_name TEXT NOT NULL,
     atc_code VARCHAR(20),  -- Anatomical Therapeutic Chemical code
     version VARCHAR(10) NOT NULL,
     language VARCHAR(2) DEFAULT 'en',

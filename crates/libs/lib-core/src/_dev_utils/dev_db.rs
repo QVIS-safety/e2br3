@@ -486,6 +486,28 @@ async fn apply_compatibility_alters(
 		 )",
 	)
 	.await?;
+	sqlx::query("DROP POLICY IF EXISTS meddra_terms_read ON meddra_terms")
+		.execute(&mut *tx)
+		.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY meddra_terms_read ON meddra_terms
+		 FOR SELECT
+		 TO e2br3_app_role
+		 USING (active = true)",
+	)
+	.await?;
+	sqlx::query("DROP POLICY IF EXISTS whodrug_products_read ON whodrug_products")
+		.execute(&mut *tx)
+		.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY whodrug_products_read ON whodrug_products
+		 FOR SELECT
+		 TO e2br3_app_role
+		 USING (active = true)",
+	)
+	.await?;
 	for sql in dirty_trigger_compatibility_sql() {
 		sqlx::query(sql).execute(&mut *tx).await?;
 	}
