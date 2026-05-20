@@ -15,7 +15,6 @@ use std::collections::HashSet;
 use uuid::Uuid;
 
 const SETTINGS_KEY: &str = "system";
-const NOTICES_KEY: &str = "dashboard_notices";
 const SUPPORTED_APPENDICES: [&str; 3] = ["ICH", "FDA", "MFDS"];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -150,18 +149,17 @@ fn default_settings() -> AdminSettingsPayload {
 	}
 }
 
-async fn load_notices(mm: &ModelManager) -> Result<Vec<DashboardNoticePayload>> {
-	let value = AdminSettingsBmc::get_system(mm, NOTICES_KEY)
+async fn load_notices(
+	ctx: &Ctx,
+	mm: &ModelManager,
+) -> Result<Vec<DashboardNoticePayload>> {
+	let values = AdminSettingsBmc::list_dashboard_notices(ctx, mm)
 		.await
 		.map_err(Error::Model)?;
-	if let Some(value) = value {
-		let payload = serde_json::from_value::<AdminNoticesPayload>(value)
-			.unwrap_or(AdminNoticesPayload {
-				notices: Vec::new(),
-			});
-		return Ok(payload.notices);
-	}
-	Ok(Vec::new())
+	Ok(values
+		.into_iter()
+		.filter_map(|value| serde_json::from_value(value).ok())
+		.collect())
 }
 
 async fn current_user_email(
@@ -447,12 +445,12 @@ pub async fn get_admin_settings(
 			.unwrap_or_else(|_| default_settings());
 		payload.appendices =
 			Some(normalize_appendices(payload.appendices.as_deref()));
-		payload.notices = Some(load_notices(&mm).await?);
+		payload.notices = Some(load_notices(&ctx, &mm).await?);
 		return Ok((StatusCode::OK, Json(payload)));
 	}
 	let mut payload = default_settings();
 	payload.appendices = Some(normalize_appendices(payload.appendices.as_deref()));
-	payload.notices = Some(load_notices(&mm).await?);
+	payload.notices = Some(load_notices(&ctx, &mm).await?);
 	Ok((StatusCode::OK, Json(payload)))
 }
 
@@ -485,22 +483,18 @@ pub async fn update_admin_notices(
 	>,
 ) -> Result<(StatusCode, Json<AdminNoticesPayload>)> {
 	let ctx = ctx_w.0;
-	if !ctx.is_system_admin() {
-		return Err(Error::AccessDenied {
-			required_role: "system_admin".to_string(),
-		});
-	}
+	require_admin(&ctx, &mm).await?;
 	let writer = current_user_email(&ctx, &mm, ctx.user_id()).await?;
 	let notices = normalize_notices(payload.data.notices, writer);
-	let value = json!({ "notices": notices });
-	AdminSettingsBmc::upsert_system(
-		&ctx,
-		&mm,
-		NOTICES_KEY,
-		&value,
-		Some(ctx.user_id()),
-	)
-	.await
-	.map_err(Error::Model)?;
+	let values = notices
+		.iter()
+		.map(serde_json::to_value)
+		.collect::<std::result::Result<Vec<_>, _>>()
+		.map_err(|err| Error::BadRequest {
+			message: format!("failed to serialize notices: {err}"),
+		})?;
+	AdminSettingsBmc::replace_dashboard_notices(&ctx, &mm, &values, ctx.user_id())
+		.await
+		.map_err(Error::Model)?;
 	Ok((StatusCode::OK, Json(AdminNoticesPayload { notices })))
 }

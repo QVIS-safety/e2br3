@@ -249,6 +249,22 @@ async fn apply_compatibility_alters(
 				 END IF;
 		 END $$",
 		"ALTER TABLE app_settings ADD CONSTRAINT app_settings_pkey PRIMARY KEY (organization_id, key)",
+		"CREATE TABLE IF NOT EXISTS dashboard_notices (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+			notice_key text NOT NULL,
+			title text NOT NULL,
+			body text,
+			effective_date text,
+			expire_date text,
+			writer text,
+			sort_order integer NOT NULL DEFAULT 0,
+			created_at timestamptz NOT NULL DEFAULT now(),
+			updated_at timestamptz NOT NULL DEFAULT now(),
+			updated_by uuid NULL REFERENCES users(id) ON DELETE SET NULL,
+			UNIQUE (organization_id, notice_key)
+		)",
+		"GRANT SELECT, INSERT, UPDATE, DELETE ON dashboard_notices TO e2br3_app_role",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS description TEXT",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS organization_id UUID",
 		"UPDATE permission_profiles
@@ -371,6 +387,11 @@ async fn apply_compatibility_alters(
 	.execute(&mut *tx)
 	.await?;
 	sqlx::query(
+		"CREATE INDEX IF NOT EXISTS idx_dashboard_notices_org_order ON dashboard_notices(organization_id, sort_order, created_at)",
+	)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
 		"CREATE INDEX IF NOT EXISTS idx_permission_profiles_org ON permission_profiles(organization_id)",
 	)
 	.execute(&mut *tx)
@@ -450,6 +471,32 @@ async fn apply_compatibility_alters(
 	execute_ignoring_duplicate_policy(
 		&mut tx,
 		"CREATE POLICY app_settings_org_isolation ON app_settings
+		 FOR ALL
+		 TO e2br3_app_role
+		 USING (
+			 organization_id = current_organization_id()
+			 OR is_current_user_admin()
+		 )
+		 WITH CHECK (
+			 organization_id = current_organization_id()
+			 OR is_current_user_admin()
+		 )",
+	)
+	.await?;
+	sqlx::query("ALTER TABLE dashboard_notices ENABLE ROW LEVEL SECURITY")
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query("ALTER TABLE dashboard_notices FORCE ROW LEVEL SECURITY")
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query(
+		"DROP POLICY IF EXISTS dashboard_notices_org_isolation ON dashboard_notices",
+	)
+	.execute(&mut *tx)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY dashboard_notices_org_isolation ON dashboard_notices
 		 FOR ALL
 		 TO e2br3_app_role
 		 USING (

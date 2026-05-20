@@ -86,6 +86,22 @@ CREATE TABLE IF NOT EXISTS app_settings (
     PRIMARY KEY (organization_id, key)
 );
 
+CREATE TABLE IF NOT EXISTS dashboard_notices (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    notice_key text NOT NULL,
+    title text NOT NULL,
+    body text,
+    effective_date text,
+    expire_date text,
+    writer text,
+    sort_order integer NOT NULL DEFAULT 0,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    updated_by uuid NULL REFERENCES users(id) ON DELETE SET NULL,
+    UNIQUE (organization_id, notice_key)
+);
+
 CREATE TABLE IF NOT EXISTS permission_profiles (
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
     profile_id text PRIMARY KEY,
@@ -456,6 +472,7 @@ CREATE INDEX idx_audit_logs_org_created_at ON audit_logs(organization_id, create
 CREATE INDEX idx_audit_logs_org_table_record_created_at ON audit_logs(organization_id, table_name, record_id, created_at DESC);
 CREATE INDEX idx_audit_logs_org_user_created_at ON audit_logs(organization_id, user_id, created_at DESC);
 CREATE INDEX idx_app_settings_org_key ON app_settings(organization_id, key);
+CREATE INDEX idx_dashboard_notices_org_order ON dashboard_notices(organization_id, sort_order, created_at);
 CREATE INDEX idx_permission_profiles_org ON permission_profiles(organization_id);
 CREATE UNIQUE INDEX idx_permission_profiles_org_name_unique
     ON permission_profiles(organization_id, lower(btrim(name)));
@@ -1163,6 +1180,18 @@ CREATE POLICY permission_profiles_org_isolation ON permission_profiles
 ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE app_settings FORCE ROW LEVEL SECURITY;
 CREATE POLICY app_settings_org_isolation ON app_settings
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE dashboard_notices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE dashboard_notices FORCE ROW LEVEL SECURITY;
+CREATE POLICY dashboard_notices_org_isolation ON dashboard_notices
     FOR ALL
     TO e2br3_app_role
     USING (
