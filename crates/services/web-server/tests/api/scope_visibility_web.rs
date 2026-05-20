@@ -10,9 +10,11 @@ use lib_core::ctx::{
 	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::{
-	has_permission, CASE_APPROVE, CASE_CREATE, CASE_UPDATE, TERMINOLOGY_APPROVE,
-	TERMINOLOGY_IMPORT, USER_CREATE, USER_LIST, USER_READ, XML_EXPORT,
-	XML_EXPORT_READ, XML_IMPORT, XML_IMPORT_READ,
+	has_permission, CASE_APPROVE, CASE_CREATE, CASE_UPDATE, PRESAVE_TEMPLATE_CREATE,
+	PRESAVE_TEMPLATE_DELETE, PRESAVE_TEMPLATE_LIST, PRESAVE_TEMPLATE_READ,
+	PRESAVE_TEMPLATE_UPDATE, TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT, USER_CREATE,
+	USER_DELETE, USER_LIST, USER_READ, USER_UPDATE, XML_EXPORT, XML_EXPORT_READ,
+	XML_IMPORT, XML_IMPORT_READ,
 };
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
@@ -143,16 +145,6 @@ async fn assert_get_not_status(
 		request_json(app, "GET", cookie, uri.to_string(), None).await?;
 	assert_ne!(status, disallowed, "{uri} body={value:?}");
 	Ok(value)
-}
-
-async fn assert_profile_capability(
-	app: &Router,
-	cookie: &str,
-	module: &str,
-	action: &str,
-	expected: bool,
-) -> Result<Value> {
-	assert_profile_capabilities(app, cookie, &[(module, action, expected)]).await
 }
 
 async fn assert_profile_capabilities(
@@ -2320,6 +2312,11 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		],
 	)
 	.await?;
+	assert!(has_permission(&profile_id, PRESAVE_TEMPLATE_READ));
+	assert!(has_permission(&profile_id, PRESAVE_TEMPLATE_LIST));
+	assert!(!has_permission(&profile_id, PRESAVE_TEMPLATE_CREATE));
+	assert!(!has_permission(&profile_id, PRESAVE_TEMPLATE_UPDATE));
+	assert!(!has_permission(&profile_id, PRESAVE_TEMPLATE_DELETE));
 	assert_get_status(
 		&app,
 		&custom_cookie,
@@ -2409,6 +2406,9 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		],
 	)
 	.await?;
+	assert!(has_permission(&profile_id, PRESAVE_TEMPLATE_CREATE));
+	assert!(has_permission(&profile_id, PRESAVE_TEMPLATE_UPDATE));
+	assert!(has_permission(&profile_id, PRESAVE_TEMPLATE_DELETE));
 
 	let (status, value) = request_json(
 		&app,
@@ -2730,6 +2730,19 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 		StatusCode::FORBIDDEN,
 	)
 	.await?;
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&read_cookie,
+		"/api/cases/export/xml".to_string(),
+		Some(json!({ "case_ids": [] })),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::FORBIDDEN,
+		"export_submission.can_read must not execute XML export: {value:?}"
+	);
 
 	update_role_privileges(
 		&app,
@@ -2770,6 +2783,19 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 		StatusCode::FORBIDDEN,
 	)
 	.await?;
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&edit_cookie,
+		"/api/cases/export/xml".to_string(),
+		Some(json!({ "case_ids": [] })),
+	)
+	.await?;
+	assert_ne!(
+		status,
+		StatusCode::FORBIDDEN,
+		"export_submission.can_edit should pass XML export permission check: {value:?}"
+	);
 
 	Ok(())
 }
@@ -2833,6 +2859,18 @@ async fn test_import_matrix_privileges_split_files_edit_from_history_read(
 		StatusCode::OK,
 	)
 	.await?;
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/import/xml")
+		.header("cookie", read_cookie.clone())
+		.header("content-type", "multipart/form-data; boundary=----boundary")
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_eq!(
+		res.status(),
+		StatusCode::FORBIDDEN,
+		"import.can_read must not execute XML import"
+	);
 
 	update_role_privileges(
 		&app,
@@ -2864,6 +2902,18 @@ async fn test_import_matrix_privileges_split_files_edit_from_history_read(
 		StatusCode::FORBIDDEN,
 	)
 	.await?;
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/import/xml")
+		.header("cookie", edit_cookie.clone())
+		.header("content-type", "multipart/form-data; boundary=----boundary")
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_ne!(
+		res.status(),
+		StatusCode::FORBIDDEN,
+		"import.can_edit should pass XML import permission check"
+	);
 
 	Ok(())
 }
@@ -3138,6 +3188,221 @@ async fn test_permission_profile_admin_privilege_grants_admin_page_access(
 
 #[serial]
 #[tokio::test]
+async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permissions(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let profile_id = format!("qa_users_roles_matrix_{}", Uuid::new_v4().simple());
+
+	create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
+	let (_custom_user_id, custom_cookie) =
+		custom_role_user(&mm, seed.org_id, &profile_id).await?;
+
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("admin", "read", false),
+			("admin", "update", false),
+			("users", "read", false),
+			("users", "create", false),
+			("users", "update", false),
+			("users", "delete", false),
+			("roles", "read", false),
+			("roles", "create", false),
+			("roles", "update", false),
+			("roles", "delete", false),
+		],
+	)
+	.await?;
+	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
+		.await?;
+	assert_get_status(
+		&app,
+		&custom_cookie,
+		"/api/admin/permission-profiles",
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&profile_id,
+		json!([
+			{
+				"menu_key": "users",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert!(has_permission(&profile_id, USER_READ));
+	assert!(has_permission(&profile_id, USER_LIST));
+	assert!(!has_permission(&profile_id, USER_CREATE));
+	assert!(!has_permission(&profile_id, USER_UPDATE));
+	assert!(!has_permission(&profile_id, USER_DELETE));
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("admin", "read", false),
+			("admin", "update", false),
+			("users", "read", true),
+			("users", "create", false),
+			("users", "update", false),
+			("users", "delete", false),
+			("roles", "read", false),
+			("roles", "create", false),
+			("roles", "update", false),
+			("roles", "delete", false),
+		],
+	)
+	.await?;
+	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
+		.await?;
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&custom_cookie,
+		format!("/api/users/{}", seed.viewer.id),
+		Some(json!({
+			"data": {
+				"comments": "users read must not update"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::FORBIDDEN,
+		"users.can_read must not update users: {value:?}"
+	);
+
+	let roles_profile_id = format!("qa_roles_matrix_{}", Uuid::new_v4().simple());
+	create_empty_custom_role(&app, &admin_cookie, &roles_profile_id).await?;
+	let (_roles_user_id, roles_cookie) =
+		custom_role_user(&mm, seed.org_id, &roles_profile_id).await?;
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&roles_profile_id,
+		json!([
+			{
+				"menu_key": "roles",
+				"can_read": true,
+				"can_edit": true,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert!(has_permission(&roles_profile_id, USER_CREATE));
+	assert!(has_permission(&roles_profile_id, USER_UPDATE));
+	assert!(has_permission(&roles_profile_id, USER_DELETE));
+	assert_profile_capabilities(
+		&app,
+		&roles_cookie,
+		&[
+			("admin", "read", true),
+			("admin", "update", true),
+			("users", "create", true),
+			("users", "update", true),
+			("users", "delete", true),
+			("roles", "read", true),
+			("roles", "create", true),
+			("roles", "update", true),
+			("roles", "delete", true),
+		],
+	)
+	.await?;
+	let roles_child = format!("qa_roles_child_{}", Uuid::new_v4().simple());
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&roles_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"profile_id": roles_child,
+				"name": "Roles Matrix Child",
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"roles.can_edit should create permission profiles: {value:?}"
+	);
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&profile_id,
+		json!([
+			{
+				"menu_key": "users",
+				"can_read": true,
+				"can_edit": true,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+	assert!(has_permission(&profile_id, USER_CREATE));
+	assert!(has_permission(&profile_id, USER_UPDATE));
+	assert!(has_permission(&profile_id, USER_DELETE));
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("admin", "read", true),
+			("admin", "update", true),
+			("users", "read", true),
+			("users", "create", true),
+			("users", "update", true),
+			("users", "delete", true),
+			("roles", "read", true),
+			("roles", "create", true),
+			("roles", "update", true),
+			("roles", "delete", true),
+		],
+	)
+	.await?;
+	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK).await?;
+
+	let next_role = format!("qa_users_roles_child_{}", Uuid::new_v4().simple());
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"profile_id": next_role,
+				"name": "Users Roles Child",
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
@@ -3214,6 +3479,8 @@ async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 		!has_permission(&profile_id, USER_CREATE),
 		"settings.can_read alone must not grant raw USER_CREATE permission"
 	);
+	assert_get_status(&app, &custom_cookie, "/api/admin/settings", StatusCode::OK)
+		.await?;
 	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
 		.await?;
 	let (status, value) = request_json(
@@ -3291,7 +3558,23 @@ async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 		],
 	)
 	.await?;
+	assert!(has_permission(&profile_id, USER_CREATE));
+	assert!(has_permission(&profile_id, USER_UPDATE));
+	assert!(has_permission(&profile_id, USER_DELETE));
 	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK).await?;
+	let (status, value) = request_json(
+		&app,
+		"DELETE",
+		&custom_cookie,
+		format!("/api/admin/permission-profiles/{ROLE_SYSTEM_ADMIN}"),
+		None,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::BAD_REQUEST,
+		"settings.can_edit must not delete built-in roles: {value:?}"
+	);
 	let (status, value) = request_json(
 		&app,
 		"POST",
