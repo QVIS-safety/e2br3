@@ -44,7 +44,7 @@ pub async fn bootstrap_admin_user(mm: &ModelManager) -> Result<()> {
 		)
 		.bind(org_id)
 		.bind("Demo Organization")
-		.bind("internal")
+		.bind("cro")
 		.bind("123 Demo St")
 		.bind("Metropolis")
 		.bind("CA")

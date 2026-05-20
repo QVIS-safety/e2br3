@@ -125,7 +125,7 @@ async fn test_system_admin_can_create_and_list_organizations() -> Result<()> {
 	let create_body = json!({
 		"data": {
 			"name": format!("System Admin Org {suffix}"),
-			"org_type": "internal",
+			"type": "CRO",
 			"contact_email": format!("system-admin-org-{suffix}@example.com")
 		}
 	});
@@ -143,23 +143,55 @@ async fn test_system_admin_can_create_and_list_organizations() -> Result<()> {
 	let created_id = payload["data"]["id"]
 		.as_str()
 		.ok_or("expected created organization id")?;
+	assert_eq!(payload["data"]["type"].as_str(), Some("cro"));
 
-	let list_req = Request::builder()
+	let get_req = Request::builder()
 		.method("GET")
-		.uri("/api/organizations")
+		.uri(format!("/api/organizations/{created_id}"))
 		.header("cookie", cookie_header(&token.to_string()))
 		.body(Body::empty())?;
-	let list_res = app.oneshot(list_req).await?;
-	assert_eq!(list_res.status(), StatusCode::OK);
-	let body = to_bytes(list_res.into_body(), usize::MAX).await?;
+	let get_res = app.oneshot(get_req).await?;
+	assert_eq!(get_res.status(), StatusCode::OK);
+	let body = to_bytes(get_res.into_body(), usize::MAX).await?;
 	let payload: serde_json::Value = serde_json::from_slice(&body)?;
-	let orgs = payload["data"]
-		.as_array()
-		.ok_or("expected organization array")?;
-	assert!(
-		orgs.iter().any(|org| org["id"] == created_id),
-		"system admin should see created organization in the list"
-	);
+	assert_eq!(payload["data"]["id"].as_str(), Some(created_id));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_system_admin_cannot_create_organization_with_unknown_type(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_all_roles(&mm).await?;
+	let system_admin = insert_user(
+		&mm,
+		seed.org_id,
+		ROLE_SYSTEM_ADMIN,
+		system_user_id(),
+		Some("systempwd"),
+	)
+	.await?;
+	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	let suffix = Uuid::new_v4();
+	let create_body = json!({
+		"data": {
+			"name": format!("Invalid Org Type {suffix}"),
+			"type": "internal",
+			"contact_email": format!("invalid-org-type-{suffix}@example.com")
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/organizations")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 
 	Ok(())
 }

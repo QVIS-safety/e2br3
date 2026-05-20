@@ -565,10 +565,36 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 	let app = web_server::app(mm);
 	let regular_suffix = Uuid::new_v4();
 	let sponsor_suffix = Uuid::new_v4();
+	let org_suffix = Uuid::new_v4();
+
+	let org_body = json!({
+		"data": {
+			"name": format!("System Admin Pharma Org {org_suffix}"),
+			"type": "Pharmaceutical company",
+			"contact_email": format!("system-admin-pharma-org-{org_suffix}@example.com")
+		}
+	});
+	let org_req = Request::builder()
+		.method("POST")
+		.uri("/api/organizations")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(org_body.to_string()))?;
+	let org_res = app.clone().oneshot(org_req).await?;
+	assert_eq!(org_res.status(), StatusCode::CREATED);
+	let org_body = to_bytes(org_res.into_body(), usize::MAX).await?;
+	let org_json: serde_json::Value = serde_json::from_slice(&org_body)?;
+	let pharma_org_id = org_json["data"]["id"]
+		.as_str()
+		.ok_or("expected pharma org id")?;
+	assert_eq!(
+		org_json["data"]["type"].as_str(),
+		Some("pharmaceutical_company")
+	);
 
 	let regular_body = json!({
 		"data": {
-			"organization_id": seed.org_id,
+			"organization_id": pharma_org_id,
 			"email": format!("system-admin-regular-{regular_suffix}@example.com"),
 			"username": format!("System Admin Regular {regular_suffix}"),
 			"role": "user"
@@ -585,7 +611,7 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 
 	let sponsor_body = json!({
 		"data": {
-			"organization_id": seed.org_id,
+			"organization_id": pharma_org_id,
 			"email": format!("system-admin-sponsor-{sponsor_suffix}@example.com"),
 			"username": format!("System Admin Sponsor {sponsor_suffix}"),
 			"role": ROLE_SPONSOR_ADMIN_COMPANY
@@ -599,6 +625,30 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 		.body(Body::from(sponsor_body.to_string()))?;
 	let sponsor_res = app.clone().oneshot(sponsor_req).await?;
 	assert_eq!(sponsor_res.status(), StatusCode::CREATED);
+	let sponsor_body = to_bytes(sponsor_res.into_body(), usize::MAX).await?;
+	let sponsor_json: serde_json::Value = serde_json::from_slice(&sponsor_body)?;
+	assert_eq!(
+		sponsor_json["data"]["organizationId"].as_str(),
+		Some(pharma_org_id)
+	);
+
+	let wrong_sponsor_suffix = Uuid::new_v4();
+	let wrong_sponsor_body = json!({
+		"data": {
+			"organization_id": pharma_org_id,
+			"email": format!("system-admin-wrong-sponsor-{wrong_sponsor_suffix}@example.com"),
+			"username": format!("System Admin Wrong Sponsor {wrong_sponsor_suffix}"),
+			"role": ROLE_SPONSOR_ADMIN_CRO
+		}
+	});
+	let wrong_sponsor_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(wrong_sponsor_body.to_string()))?;
+	let wrong_sponsor_res = app.clone().oneshot(wrong_sponsor_req).await?;
+	assert_eq!(wrong_sponsor_res.status(), StatusCode::BAD_REQUEST);
 
 	let role_req = Request::builder()
 		.method("POST")
@@ -880,7 +930,7 @@ async fn test_admin_can_update_user() -> Result<()> {
 	let app = web_server::app(mm);
 	let body = json!({
 		"data": {
-			"role": "sponsor_admin_company",
+			"role": ROLE_SPONSOR_ADMIN_CRO,
 			"active": false
 		}
 	});
@@ -892,6 +942,31 @@ async fn test_admin_can_update_user() -> Result<()> {
 		.body(Body::from(body.to_string()))?;
 	let res = app.oneshot(req).await?;
 	assert_eq!(res.status(), StatusCode::OK);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_update_user_rejects_sponsor_admin_role_for_wrong_org_type(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+
+	let app = web_server::app(mm);
+	let body = json!({
+		"data": {
+			"role": ROLE_SPONSOR_ADMIN_COMPANY
+		}
+	});
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.viewer.id))
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 	Ok(())
 }
 

@@ -12,6 +12,9 @@ use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
 use sqlx::FromRow;
 
+pub const ORG_TYPE_CRO: &str = "cro";
+pub const ORG_TYPE_PHARMACEUTICAL_COMPANY: &str = "pharmaceutical_company";
+
 // -- Types
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -39,7 +42,7 @@ pub struct Organization {
 #[derive(Fields, Deserialize)]
 pub struct OrganizationForCreate {
 	pub name: String,
-	#[serde(rename = "type")]
+	#[serde(rename = "type", alias = "org_type")]
 	pub org_type: Option<String>,
 	pub address: Option<String>,
 	pub contact_email: Option<String>,
@@ -48,7 +51,7 @@ pub struct OrganizationForCreate {
 #[derive(Fields, Deserialize)]
 pub struct OrganizationForUpdate {
 	pub name: Option<String>,
-	#[serde(rename = "type")]
+	#[serde(rename = "type", alias = "org_type")]
 	pub org_type: Option<String>,
 	pub address: Option<String>,
 	pub city: Option<String>,
@@ -76,6 +79,20 @@ impl DbBmc for OrganizationBmc {
 }
 
 impl OrganizationBmc {
+	pub fn normalize_org_type(org_type: &str) -> Option<&'static str> {
+		let normalized = org_type
+			.trim()
+			.to_ascii_lowercase()
+			.replace(['-', ' '], "_");
+		match normalized.as_str() {
+			"cro" => Some(ORG_TYPE_CRO),
+			"pharmaceutical_company" | "pharmaceutical" | "company" => {
+				Some(ORG_TYPE_PHARMACEUTICAL_COMPANY)
+			}
+			_ => None,
+		}
+	}
+
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,

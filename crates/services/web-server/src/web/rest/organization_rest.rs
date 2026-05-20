@@ -21,6 +21,31 @@ fn require_system_admin(ctx: &lib_core::ctx::Ctx) -> Result<()> {
 	Ok(())
 }
 
+fn normalize_required_org_type(org_type: Option<String>) -> Result<String> {
+	let org_type = org_type
+		.as_deref()
+		.and_then(OrganizationBmc::normalize_org_type)
+		.ok_or_else(|| Error::BadRequest {
+			message: "organization type must be CRO or Pharmaceutical company"
+				.to_string(),
+		})?;
+	Ok(org_type.to_string())
+}
+
+fn normalize_optional_org_type(org_type: Option<String>) -> Result<Option<String>> {
+	org_type
+		.map(|value| {
+			OrganizationBmc::normalize_org_type(&value)
+				.map(str::to_string)
+				.ok_or_else(|| Error::BadRequest {
+					message:
+						"organization type must be CRO or Pharmaceutical company"
+							.to_string(),
+				})
+		})
+		.transpose()
+}
+
 pub async fn create_organization(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -28,7 +53,8 @@ pub async fn create_organization(
 ) -> Result<(StatusCode, Json<DataRestResult<Organization>>)> {
 	let ctx = ctx_w.0;
 	require_system_admin(&ctx)?;
-	let ParamsForCreate { data } = params;
+	let ParamsForCreate { mut data } = params;
+	data.org_type = Some(normalize_required_org_type(data.org_type)?);
 	let id = OrganizationBmc::create(&ctx, &mm, data).await?;
 	let entity = OrganizationBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
@@ -69,7 +95,8 @@ pub async fn update_organization(
 ) -> Result<(StatusCode, Json<DataRestResult<Organization>>)> {
 	let ctx = ctx_w.0;
 	require_system_admin(&ctx)?;
-	let ParamsForUpdate { data } = params;
+	let ParamsForUpdate { mut data } = params;
+	data.org_type = normalize_optional_org_type(data.org_type)?;
 	OrganizationBmc::update(&ctx, &mm, id, data).await?;
 	let entity = OrganizationBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))

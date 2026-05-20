@@ -769,7 +769,8 @@ struct OrganizationDoc {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct OrganizationForCreateDoc {
 	name: String,
-	#[serde(rename = "type")]
+	#[schema(example = "cro")]
+	#[serde(rename = "type", alias = "org_type")]
 	org_type: Option<String>,
 	address: Option<String>,
 	contact_email: Option<String>,
@@ -778,7 +779,8 @@ struct OrganizationForCreateDoc {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct OrganizationForUpdateDoc {
 	name: Option<String>,
-	#[serde(rename = "type")]
+	#[schema(example = "pharmaceutical_company")]
+	#[serde(rename = "type", alias = "org_type")]
 	org_type: Option<String>,
 	address: Option<String>,
 	city: Option<String>,

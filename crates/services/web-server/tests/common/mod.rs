@@ -362,7 +362,7 @@ async fn insert_org(mm: &ModelManager, created_by: Uuid) -> Result<Uuid> {
 	)
 	.bind(org_id)
 	.bind(format!("RLS Org {org_id}"))
-	.bind("internal")
+	.bind("cro")
 	.bind("123 RLS St")
 	.bind(format!("rls-org-{org_id}@example.com"))
 	.bind(created_by)

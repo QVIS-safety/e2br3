@@ -37,7 +37,7 @@ BEGIN
 
     -- Insert demo organization (created by system user)
     INSERT INTO organizations (id, name, org_type, address, city, state, postcode, country_code, contact_email, contact_phone, active, created_by, created_at, updated_at)
-    VALUES (v_org_id, 'Demo Organization', 'internal', '123 Demo St', 'Metropolis', 'CA', '12345', 'US', 'demo@example.com', '555-1234', true, '00000000-0000-0000-0000-000000000001'::UUID, NOW(), NOW())
+    VALUES (v_org_id, 'Demo Organization', 'cro', '123 Demo St', 'Metropolis', 'CA', '12345', 'US', 'demo@example.com', '555-1234', true, '00000000-0000-0000-0000-000000000001'::UUID, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
     -- Insert demo user identity without a password hash.
