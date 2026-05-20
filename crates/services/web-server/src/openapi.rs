@@ -33,6 +33,7 @@ pub fn router() -> Router {
 		update_user,
 		delete_user,
 		get_current_user,
+		get_current_user_profile,
 		set_my_password,
 		list_cases,
 		create_case,
@@ -149,6 +150,17 @@ pub fn router() -> Router {
 			UserForUpdateDoc,
 			UserResponse,
 			UserListResponse,
+			CurrentUserProfileResponse,
+			CurrentUserProfileDoc,
+			RoutingProfileDoc,
+			RoutingSenderOptionDoc,
+			EffectiveScopeSummaryDoc,
+			UserCapabilitiesDoc,
+			ModuleCrudCapabilitiesDoc,
+			CaseCapabilitiesDoc,
+			ExecuteCapabilitiesDoc,
+			DataCapabilitiesDoc,
+			AdminCapabilitiesDoc,
 			CreateUserRequest,
 			UpdateUserRequest,
 			SetMyPasswordBodyDoc,
@@ -400,6 +412,11 @@ struct UserResponse {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct UserListResponse {
 	data: Vec<UserDoc>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CurrentUserProfileResponse {
+	data: CurrentUserProfileDoc,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -840,6 +857,113 @@ struct UserDoc {
 	updated_at: String,
 	created_by: Option<String>,
 	updated_by: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct RoutingSenderOptionDoc {
+	sender_identifier: String,
+	case_count: i64,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct EffectiveScopeSummaryDoc {
+	assigned_sender_ids: Vec<String>,
+	assigned_product_ids: Vec<String>,
+	assigned_study_ids: Vec<String>,
+	access_blind_allowed: bool,
+	active_sender_identifier: Option<String>,
+	effective_sender_filter: Option<String>,
+	access_start_at: Option<String>,
+	access_end_at: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct RoutingProfileDoc {
+	built_in_role_id: String,
+	operational: bool,
+	sender_selection_required: bool,
+	active_sender_identifier: Option<String>,
+	available_senders: Vec<RoutingSenderOptionDoc>,
+	effective_scope: EffectiveScopeSummaryDoc,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct ModuleCrudCapabilitiesDoc {
+	/// Permission to view records in this module.
+	read: bool,
+	/// Permission to create records in this module.
+	create: bool,
+	/// Permission to update records in this module.
+	update: bool,
+	/// Permission to delete records in this module.
+	delete: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseCapabilitiesDoc {
+	read: bool,
+	create: bool,
+	update: bool,
+	delete: bool,
+	/// Permission to approve or review cases.
+	review: bool,
+	/// Permission to lock cases. Currently follows case approval permission.
+	lock: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct ExecuteCapabilitiesDoc {
+	/// Permission to view history or metadata for this operation.
+	read: bool,
+	/// Permission to run this operation.
+	execute: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct DataCapabilitiesDoc {
+	read: bool,
+	/// Permission to import terminology data.
+	import: bool,
+	/// Permission to approve terminology data.
+	approve: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct AdminCapabilitiesDoc {
+	/// Permission to open admin surfaces.
+	read: bool,
+	/// Permission to make admin-level changes.
+	update: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct UserCapabilitiesDoc {
+	case: CaseCapabilitiesDoc,
+	info: ModuleCrudCapabilitiesDoc,
+	import: ExecuteCapabilitiesDoc,
+	export_submission: ExecuteCapabilitiesDoc,
+	data: DataCapabilitiesDoc,
+	admin: AdminCapabilitiesDoc,
+	users: ModuleCrudCapabilitiesDoc,
+	roles: ModuleCrudCapabilitiesDoc,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CurrentUserProfileDoc {
+	user: UserDoc,
+	routing: RoutingProfileDoc,
+	/// Backend-derived permissions for the authenticated user's UI affordances.
+	capabilities: UserCapabilitiesDoc,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -1955,6 +2079,20 @@ fn delete_user() {}
 	)
 )]
 fn get_current_user() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/users/me/profile",
+	tag = "users",
+	security(
+		("auth_token" = [])
+	),
+	responses(
+		(status = 200, description = "Current user profile with routing and derived capabilities", body = CurrentUserProfileResponse),
+		(status = 401, description = "Authentication required", body = ErrorResponse)
+	)
+)]
+fn get_current_user_profile() {}
 
 #[utoipa::path(
 	post,

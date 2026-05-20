@@ -3016,6 +3016,82 @@ async fn test_permission_profile_admin_privilege_grants_admin_page_access(
 		value["data"]["user"]["roleMeta"]["canAdmin"].as_bool(),
 		Some(true)
 	);
+	assert_eq!(
+		value["data"]["capabilities"]["admin"]["read"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
+	assert_eq!(
+		value["data"]["capabilities"]["users"]["read"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
+	assert_eq!(
+		value["data"]["capabilities"]["users"]["create"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
+
+	let system_admin = insert_user(
+		&mm,
+		seed.org_id,
+		ROLE_SYSTEM_ADMIN,
+		system_user_id(),
+		Some("systempwd"),
+	)
+	.await?;
+	let system_token =
+		generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let system_cookie = cookie_header(&system_token.to_string());
+	let (status, value) = request_json(
+		&app,
+		"GET",
+		&system_cookie,
+		"/api/users/me/profile".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["data"]["capabilities"]["admin"]["update"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
+	assert_eq!(
+		value["data"]["capabilities"]["users"]["read"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
+	assert_eq!(
+		value["data"]["capabilities"]["users"]["create"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
+	assert_eq!(
+		value["data"]["capabilities"]["users"]["update"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
+	assert_eq!(
+		value["data"]["capabilities"]["users"]["delete"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
+	assert_eq!(
+		value["data"]["capabilities"]["roles"]["create"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
+	assert_eq!(
+		value["data"]["capabilities"]["roles"]["update"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
+	assert_eq!(
+		value["data"]["capabilities"]["roles"]["delete"].as_bool(),
+		Some(true),
+		"{value:?}"
+	);
 
 	let (status, value) = request_json(
 		&app,

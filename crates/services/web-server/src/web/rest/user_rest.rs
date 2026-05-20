@@ -8,7 +8,19 @@ use lib_core::ctx::{
 	ROLE_SYSTEM_ADMIN, ROLE_USER,
 };
 use lib_core::model::acs::{
-	has_permission, USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE,
+	has_permission, CASE_APPROVE, CASE_CREATE, CASE_DELETE, CASE_LIST, CASE_READ,
+	CASE_UPDATE, NARRATIVE_CREATE, NARRATIVE_DELETE, NARRATIVE_LIST, NARRATIVE_READ,
+	NARRATIVE_UPDATE, PRESAVE_TEMPLATE_CREATE, PRESAVE_TEMPLATE_DELETE,
+	PRESAVE_TEMPLATE_LIST, PRESAVE_TEMPLATE_READ, PRESAVE_TEMPLATE_UPDATE,
+	RECEIVER_CREATE, RECEIVER_DELETE, RECEIVER_LIST, RECEIVER_READ, RECEIVER_UPDATE,
+	SENDER_INFORMATION_CREATE, SENDER_INFORMATION_DELETE, SENDER_INFORMATION_LIST,
+	SENDER_INFORMATION_READ, SENDER_INFORMATION_UPDATE, STUDY_INFORMATION_CREATE,
+	STUDY_INFORMATION_DELETE, STUDY_INFORMATION_LIST, STUDY_INFORMATION_READ,
+	STUDY_INFORMATION_UPDATE, STUDY_REGISTRATION_CREATE, STUDY_REGISTRATION_DELETE,
+	STUDY_REGISTRATION_LIST, STUDY_REGISTRATION_READ, STUDY_REGISTRATION_UPDATE,
+	TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT, TERMINOLOGY_READ, USER_CREATE,
+	USER_DELETE, USER_LIST, USER_READ, USER_UPDATE, XML_EXPORT, XML_EXPORT_READ,
+	XML_IMPORT, XML_IMPORT_READ,
 };
 use lib_core::model::organization::{
 	Organization, OrganizationBmc, ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY,
@@ -95,6 +107,62 @@ pub struct UserView {
 pub struct CurrentUserProfileView {
 	pub user: UserView,
 	pub routing: lib_rest_core::RoutingProfile,
+	pub capabilities: UserCapabilities,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModuleCrudCapabilities {
+	pub read: bool,
+	pub create: bool,
+	pub update: bool,
+	pub delete: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseCapabilities {
+	pub read: bool,
+	pub create: bool,
+	pub update: bool,
+	pub delete: bool,
+	pub review: bool,
+	pub lock: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecuteCapabilities {
+	pub read: bool,
+	pub execute: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataCapabilities {
+	pub read: bool,
+	pub import: bool,
+	pub approve: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AdminCapabilities {
+	pub read: bool,
+	pub update: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserCapabilities {
+	pub case: CaseCapabilities,
+	pub info: ModuleCrudCapabilities,
+	pub import: ExecuteCapabilities,
+	pub export_submission: ExecuteCapabilities,
+	pub data: DataCapabilities,
+	pub admin: AdminCapabilities,
+	pub users: ModuleCrudCapabilities,
+	pub roles: ModuleCrudCapabilities,
 }
 
 #[derive(Debug, Deserialize)]
@@ -256,6 +324,118 @@ fn role_metadata(
 		is_sponsor_admin,
 		is_operational: canonical_role_id != ROLE_SYSTEM_ADMIN,
 		can_admin: is_builtin || has_permission(permission_subject, USER_CREATE),
+	}
+}
+
+fn has_any_permission(
+	subject: &str,
+	permissions: impl IntoIterator<Item = lib_core::model::acs::Permission>,
+) -> bool {
+	permissions
+		.into_iter()
+		.any(|permission| has_permission(subject, permission))
+}
+
+fn info_capabilities_for_subject(subject: &str) -> ModuleCrudCapabilities {
+	ModuleCrudCapabilities {
+		read: has_any_permission(
+			subject,
+			[
+				PRESAVE_TEMPLATE_READ,
+				PRESAVE_TEMPLATE_LIST,
+				SENDER_INFORMATION_READ,
+				SENDER_INFORMATION_LIST,
+				RECEIVER_READ,
+				RECEIVER_LIST,
+				STUDY_INFORMATION_READ,
+				STUDY_INFORMATION_LIST,
+				STUDY_REGISTRATION_READ,
+				STUDY_REGISTRATION_LIST,
+				NARRATIVE_READ,
+				NARRATIVE_LIST,
+			],
+		),
+		create: has_any_permission(
+			subject,
+			[
+				PRESAVE_TEMPLATE_CREATE,
+				SENDER_INFORMATION_CREATE,
+				RECEIVER_CREATE,
+				STUDY_INFORMATION_CREATE,
+				STUDY_REGISTRATION_CREATE,
+				NARRATIVE_CREATE,
+			],
+		),
+		update: has_any_permission(
+			subject,
+			[
+				PRESAVE_TEMPLATE_UPDATE,
+				SENDER_INFORMATION_UPDATE,
+				RECEIVER_UPDATE,
+				STUDY_INFORMATION_UPDATE,
+				STUDY_REGISTRATION_UPDATE,
+				NARRATIVE_UPDATE,
+			],
+		),
+		delete: has_any_permission(
+			subject,
+			[
+				PRESAVE_TEMPLATE_DELETE,
+				SENDER_INFORMATION_DELETE,
+				RECEIVER_DELETE,
+				STUDY_INFORMATION_DELETE,
+				STUDY_REGISTRATION_DELETE,
+				NARRATIVE_DELETE,
+			],
+		),
+	}
+}
+
+fn capabilities_for_subject(
+	subject: &str,
+	is_admin_capable: bool,
+	is_system_admin: bool,
+) -> UserCapabilities {
+	UserCapabilities {
+		case: CaseCapabilities {
+			read: has_any_permission(subject, [CASE_READ, CASE_LIST]),
+			create: has_permission(subject, CASE_CREATE),
+			update: has_permission(subject, CASE_UPDATE),
+			delete: has_permission(subject, CASE_DELETE),
+			review: has_permission(subject, CASE_APPROVE),
+			lock: has_permission(subject, CASE_APPROVE),
+		},
+		info: info_capabilities_for_subject(subject),
+		import: ExecuteCapabilities {
+			read: has_permission(subject, XML_IMPORT_READ),
+			execute: has_permission(subject, XML_IMPORT),
+		},
+		export_submission: ExecuteCapabilities {
+			read: has_permission(subject, XML_EXPORT_READ),
+			execute: has_permission(subject, XML_EXPORT),
+		},
+		data: DataCapabilities {
+			read: has_permission(subject, TERMINOLOGY_READ),
+			import: has_permission(subject, TERMINOLOGY_IMPORT),
+			approve: has_permission(subject, TERMINOLOGY_APPROVE),
+		},
+		admin: AdminCapabilities {
+			read: is_admin_capable,
+			update: is_admin_capable,
+		},
+		users: ModuleCrudCapabilities {
+			read: is_system_admin
+				|| has_any_permission(subject, [USER_READ, USER_LIST]),
+			create: is_system_admin || has_permission(subject, USER_CREATE),
+			update: is_system_admin || has_permission(subject, USER_UPDATE),
+			delete: is_system_admin || has_permission(subject, USER_DELETE),
+		},
+		roles: ModuleCrudCapabilities {
+			read: is_admin_capable,
+			create: is_admin_capable,
+			update: is_admin_capable,
+			delete: is_admin_capable,
+		},
 	}
 }
 
@@ -715,12 +895,18 @@ pub async fn get_current_user_profile(
 	let ctx = ctx_w.0;
 	let entity: User = UserBmc::get(&ctx, &mm, ctx.user_id()).await?;
 	let routing = routing_profile_for_user(&ctx, &mm).await?;
+	let capabilities = capabilities_for_subject(
+		ctx.permission_subject(),
+		lib_rest_core::can_access_admin(&ctx),
+		ctx.is_system_admin(),
+	);
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
 			data: CurrentUserProfileView {
 				user: user_view(entity),
 				routing,
+				capabilities,
 			},
 		}),
 	))
