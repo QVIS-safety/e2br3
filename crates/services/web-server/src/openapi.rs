@@ -41,6 +41,22 @@ pub fn router() -> Router {
 		get_case,
 		update_case,
 		delete_case,
+		get_editor_shell,
+		get_editor_ci,
+		get_editor_rp,
+		get_editor_sd,
+		get_editor_lr,
+		get_editor_si,
+		get_editor_dm,
+		get_editor_nr,
+		list_editor_dh,
+		get_editor_dh,
+		list_editor_ae,
+		get_editor_ae,
+		list_editor_lb,
+		get_editor_lb,
+		list_editor_dg,
+		get_editor_dg,
 		get_case_patient,
 		create_case_patient,
 		update_case_patient,
@@ -147,6 +163,17 @@ pub fn router() -> Router {
 			CreateCaseRequest,
 			UpdateCaseRequest,
 			DeleteCaseRequest,
+			CaseEditorShellDoc,
+			CaseEditorDirectSectionResponseDoc,
+			CaseEditorRowDetailResponseDoc,
+			CaseEditorAeListRowDoc,
+			CaseEditorAeListResponseDoc,
+			CaseEditorLbListRowDoc,
+			CaseEditorLbListResponseDoc,
+			CaseEditorDgListRowDoc,
+			CaseEditorDgListResponseDoc,
+			CaseEditorDhListRowDoc,
+			CaseEditorDhListResponseDoc,
 			CaseIntakeCheckInputDoc,
 			CaseIntakeDuplicateMatchDoc,
 			CaseIntakeCheckResultDoc,
@@ -243,6 +270,7 @@ pub fn router() -> Router {
 		(name = "organizations", description = "Organization administration"),
 		(name = "users", description = "User administration and profile"),
 		(name = "cases", description = "Case CRUD operations"),
+		(name = "case-editor", description = "Explicit case editor read APIs"),
 		(name = "case-subresources", description = "Nested case resources and workflows"),
 		(name = "presave-templates", description = "Reusable presave templates"),
 		(name = "terminology", description = "Terminology search and release management"),
@@ -417,6 +445,120 @@ struct RawCaseResponse {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct CaseListResponse {
 	data: Vec<CaseDoc>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorShellDoc {
+	id: String,
+	status: String,
+	appendices: Vec<String>,
+	organization_id: String,
+	safety_report_id: String,
+	dg_prd_key: Option<String>,
+	created_at: String,
+	updated_at: String,
+	workflow_status: String,
+	workflow_assigned_role: Option<String>,
+	workflow_assigned_user_id: Option<String>,
+	workflow_due_at: Option<String>,
+	workflow_description: Option<String>,
+	workflow_updated_at: String,
+	qc_state: String,
+	is_locked: bool,
+	can_act_on_workflow: bool,
+	workflow_block_reason: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorDirectSectionResponseDoc {
+	case_id: String,
+	#[schema(value_type = Object)]
+	data: serde_json::Value,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorRowDetailResponseDoc {
+	case_id: String,
+	row_id: String,
+	#[schema(value_type = Object)]
+	data: serde_json::Value,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorAeListRowDoc {
+	id: String,
+	sequence_number: i32,
+	reaction_primary_source_native: String,
+	reaction_primary_source_translation: Option<String>,
+	meddra_version: Option<String>,
+	meddra_code: Option<String>,
+	seriousness: Option<bool>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorAeListResponseDoc {
+	case_id: String,
+	rows: Vec<CaseEditorAeListRowDoc>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorLbListRowDoc {
+	id: String,
+	sequence_number: i32,
+	test_name: String,
+	test_date: Option<String>,
+	result_value: Option<String>,
+	result_unit: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorLbListResponseDoc {
+	case_id: String,
+	rows: Vec<CaseEditorLbListRowDoc>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorDgListRowDoc {
+	id: String,
+	sequence_number: i32,
+	drug_role: String,
+	dg_prd_key: Option<String>,
+	medicinal_product: String,
+	action_taken: Option<String>,
+	warning_count: i32,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorDgListResponseDoc {
+	case_id: String,
+	rows: Vec<CaseEditorDgListRowDoc>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorDhListRowDoc {
+	id: String,
+	sequence_number: i32,
+	drug_name: Option<String>,
+	indication: Option<String>,
+	start_date: Option<String>,
+	end_date: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorDhListResponseDoc {
+	case_id: String,
+	rows: Vec<CaseEditorDhListRowDoc>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -1945,6 +2087,274 @@ fn update_case() {}
 	)
 )]
 fn delete_case() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/shell",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Case editor shell with case header, workflow, and permissions", body = CaseEditorShellDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_shell() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/CI",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Case identification editor payload", body = CaseEditorDirectSectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_ci() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/RP",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Reporter editor payload", body = CaseEditorDirectSectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_rp() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/SD",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Sender editor payload", body = CaseEditorDirectSectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_sd() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/LR",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Literature references editor payload", body = CaseEditorDirectSectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_lr() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/SI",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Study information editor payload", body = CaseEditorDirectSectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_si() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/DM",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Patient demographics editor payload", body = CaseEditorDirectSectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_dm() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/NR",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Narrative editor payload", body = CaseEditorDirectSectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_nr() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/DH/list",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Past drug history editor rows", body = CaseEditorDhListResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn list_editor_dh() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/DH/{past_drug_id}",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("past_drug_id" = String, Path, description = "Past drug history row ID")
+	),
+	responses(
+		(status = 200, description = "Past drug history editor row payload", body = CaseEditorRowDetailResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case or past drug history row not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_dh() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/AE/list",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Reaction editor rows", body = CaseEditorAeListResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn list_editor_ae() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/AE/{reaction_id}",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("reaction_id" = String, Path, description = "Reaction row ID")
+	),
+	responses(
+		(status = 200, description = "Reaction editor row payload", body = CaseEditorRowDetailResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case or reaction row not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_ae() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/LB/list",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Lab test editor rows", body = CaseEditorLbListResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn list_editor_lb() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/LB/{test_result_id}",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("test_result_id" = String, Path, description = "Test result row ID")
+	),
+	responses(
+		(status = 200, description = "Lab test editor row payload", body = CaseEditorRowDetailResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case or test result row not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_lb() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/DG/list",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	responses(
+		(status = 200, description = "Drug editor rows", body = CaseEditorDgListResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn list_editor_dg() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/DG/{drug_id}",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("drug_id" = String, Path, description = "Drug row ID")
+	),
+	responses(
+		(status = 200, description = "Drug editor row payload with nested drug children", body = CaseEditorRowDetailResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case or drug row not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_dg() {}
 
 #[utoipa::path(
 	get,
