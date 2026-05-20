@@ -148,7 +148,7 @@ async fn test_auth_login_user_with_nil_org_fails() -> Result<()> {
 			"email": email,
 			"username": format!("nil_org_login_{suffix}"),
 			"pwd_clear": "NilOrgPwd123!",
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let create_req = Request::builder()
@@ -213,7 +213,7 @@ async fn test_auth_login_created_user_email_case_insensitive() -> Result<()> {
 			"organization_id": seed.org_id,
 			"email": mixed_case_email,
 			"username": format!("case_mix_{suffix}"),
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let create_req = Request::builder()
@@ -254,7 +254,7 @@ async fn test_auth_login_created_user_uses_requested_initial_password() -> Resul
 			"email": email,
 			"username": format!("initial_password_{suffix}"),
 			"pwd_clear": password,
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let create_req = Request::builder()
@@ -279,7 +279,7 @@ async fn test_auth_login_created_user_uses_requested_initial_password() -> Resul
 
 #[serial]
 #[tokio::test]
-async fn test_auth_login_created_user_without_role_uses_default() -> Result<()> {
+async fn test_auth_login_created_user_without_role_is_rejected() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -301,16 +301,7 @@ async fn test_auth_login_created_user_without_role_uses_default() -> Result<()> 
 		.header("content-type", "application/json")
 		.body(Body::from(create_body.to_string()))?;
 	let create_res = app.clone().oneshot(create_req).await?;
-	assert_eq!(create_res.status(), StatusCode::CREATED);
-
-	let login_body = json!({ "email": email, "pwd": "welcome" });
-	let login_req = Request::builder()
-		.method("POST")
-		.uri("/auth/v1/login")
-		.header("content-type", "application/json")
-		.body(Body::from(login_body.to_string()))?;
-	let login_res = app.oneshot(login_req).await?;
-	assert_eq!(login_res.status(), StatusCode::OK);
+	assert_eq!(create_res.status(), StatusCode::BAD_REQUEST);
 	Ok(())
 }
 
@@ -331,7 +322,7 @@ async fn test_auth_login_upgrades_legacy_hash_for_non_admin_user() -> Result<()>
 			"email": email,
 			"username": format!("legacy_user_{suffix}"),
 			"pwd_clear": password,
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let create_req = Request::builder()
@@ -511,9 +502,15 @@ async fn test_audit_trail_case_crud() -> Result<()> {
 		.method("DELETE")
 		.uri(format!("/api/cases/{case_id}"))
 		.header("cookie", cookie_header(&token.to_string()))
-		.body(Body::empty())?;
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({
+				"reason_for_change": "audit test delete transition"
+			})
+			.to_string(),
+		))?;
 	let res = app.oneshot(req).await?;
-	assert_eq!(res.status(), StatusCode::NO_CONTENT);
+	assert_eq!(res.status(), StatusCode::OK);
 
 	let dbx = mm.dbx();
 	dbx.begin_txn().await?;

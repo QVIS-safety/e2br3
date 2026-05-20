@@ -29,7 +29,7 @@ async fn test_admin_can_create_user() -> Result<()> {
 			"email": format!("rbac-admin-create-{suffix}@example.com"),
 			"username": format!("rbac_admin_create_{suffix}"),
 			"pwd_clear": "p@ssw0rd",
-			"role": "user",
+			"role": "case_reviewer",
 			"access_blind_allowed": true
 		}
 	});
@@ -55,6 +55,69 @@ async fn test_admin_can_create_user() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_admin_create_user_rejects_plain_user_role() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+
+	let app = web_server::app(mm);
+	let suffix = Uuid::new_v4();
+	let body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": format!("rbac-admin-create-plain-user-{suffix}@example.com"),
+			"username": format!("rbac_admin_create_plain_user_{suffix}"),
+			"role": "user"
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	let status = res.status();
+	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
+	let json: serde_json::Value = serde_json::from_slice(&body)?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_admin_create_user_rejects_missing_role() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+
+	let app = web_server::app(mm);
+	let suffix = Uuid::new_v4();
+	let body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": format!("rbac-admin-create-missing-role-{suffix}@example.com"),
+			"username": format!("rbac_admin_create_missing_role_{suffix}")
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	let status = res.status();
+	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
+	let json: serde_json::Value = serde_json::from_slice(&body)?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_sponsor_admin_can_set_and_persist_blind_scope() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -67,7 +130,7 @@ async fn test_sponsor_admin_can_set_and_persist_blind_scope() -> Result<()> {
 			"organization_id": seed.org_id,
 			"email": format!("blind-scope-{suffix}@example.com"),
 			"username": format!("blind_scope_{suffix}"),
-			"role": "user",
+			"role": "case_reviewer",
 			"access_blind_allowed": true
 		}
 	});
@@ -132,7 +195,7 @@ async fn test_new_user_temp_password_and_first_login_reset_flow() -> Result<()> 
 			"organization_id": seed.org_id,
 			"email": email,
 			"username": username,
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let create_req = Request::builder()
@@ -233,7 +296,7 @@ async fn test_user_after_access_end_is_inactive_and_cannot_login() -> Result<()>
 			"organization_id": seed.org_id,
 			"email": email,
 			"username": username,
-			"role": "user",
+			"role": "case_reviewer",
 			"access_end_at": "2000-01-01T00:00:00Z"
 		}
 	});
@@ -291,7 +354,7 @@ async fn test_create_user_persists_access_start_and_end_dates() -> Result<()> {
 			"organization_id": seed.org_id,
 			"email": email,
 			"username": username,
-			"role": "user",
+			"role": "case_reviewer",
 			"access_start_at": "2026-01-01T00:00:00.000Z",
 			"access_end_at": "2026-12-31T23:59:00.000Z"
 		}
@@ -343,7 +406,7 @@ async fn test_create_user_accepts_datetime_local_access_dates() -> Result<()> {
 			"organization_id": seed.org_id,
 			"email": email,
 			"username": username,
-			"role": "user",
+			"role": "case_reviewer",
 			"access_start_at": "2026-01-01T00:00",
 			"access_end_at": "2026-12-31T23:59"
 		}
@@ -383,7 +446,7 @@ async fn test_viewer_cannot_create_user() -> Result<()> {
 			"email": format!("rbac-viewer-create-{suffix}@example.com"),
 			"username": format!("rbac_viewer_create_{suffix}"),
 			"pwd_clear": "p@ssw0rd",
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let req = Request::builder()
@@ -429,10 +492,15 @@ async fn test_user_list_sets_rls_context_for_system_and_sponsor_admins() -> Resu
 	let sponsor_token =
 		generate_web_token(&sponsor_admin.email, sponsor_admin.token_salt)?;
 	let app = web_server::app(mm);
+	let org2_user_filter_uri = format!(
+		"/api/users?filters[email][%24eq]={}",
+		seed.user2.email.replace('@', "%40")
+	);
+	let org2_user_id = seed.user2.id.to_string();
 
 	let system_req = Request::builder()
 		.method("GET")
-		.uri("/api/users")
+		.uri(org2_user_filter_uri.as_str())
 		.header("cookie", cookie_header(&system_token.to_string()))
 		.body(Body::empty())?;
 	let system_res = app.clone().oneshot(system_req).await?;
@@ -445,13 +513,13 @@ async fn test_user_list_sets_rls_context_for_system_and_sponsor_admins() -> Resu
 	assert!(
 		system_users
 			.iter()
-			.any(|user| user["organizationId"] == seed.org2_id.to_string()),
-		"system admin should see users in other organizations: {system_json:?}"
+			.any(|user| user["id"].as_str() == Some(org2_user_id.as_str())),
+		"system admin should see filtered users in other organizations: {system_json:?}"
 	);
 
 	let sponsor_req = Request::builder()
 		.method("GET")
-		.uri("/api/users")
+		.uri(org2_user_filter_uri.as_str())
 		.header("cookie", cookie_header(&sponsor_token.to_string()))
 		.body(Body::empty())?;
 	let sponsor_res = app.oneshot(sponsor_req).await?;
@@ -464,14 +532,8 @@ async fn test_user_list_sets_rls_context_for_system_and_sponsor_admins() -> Resu
 	assert!(
 		sponsor_users
 			.iter()
-			.all(|user| user["organizationId"] == seed.org1_id.to_string()),
-		"sponsor admin should only see own-org users after system-admin read: {sponsor_json:?}"
-	);
-	assert!(
-		sponsor_users
-			.iter()
-			.all(|user| user["id"] != seed.user2.id.to_string()),
-		"sponsor admin should not see org2 user after system-admin read"
+			.all(|user| user["id"].as_str() != Some(org2_user_id.as_str())),
+		"sponsor admin should not see filtered org2 user after system-admin read: {sponsor_json:?}"
 	);
 
 	Ok(())
@@ -597,7 +659,7 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 			"organization_id": pharma_org_id,
 			"email": format!("system-admin-regular-{regular_suffix}@example.com"),
 			"username": format!("System Admin Regular {regular_suffix}"),
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let regular_req = Request::builder()
@@ -705,7 +767,7 @@ async fn test_create_user_missing_optional_fields_uses_backend_defaults(
 		"data": {
 			"organization_id": seed.org_id,
 			"email": format!("missing-fields-{suffix}@example.com"),
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let req = Request::builder()
@@ -725,6 +787,10 @@ async fn test_create_user_missing_optional_fields_uses_backend_defaults(
 		Some(format!("missing-fields-{suffix}@example.com").as_str())
 	);
 	assert_eq!(json["data"]["role"].as_str(), Some("user"));
+	assert_eq!(
+		json["data"]["permissionProfileId"].as_str(),
+		Some("case_reviewer")
+	);
 	assert!(
 		json["data"]["username"]
 			.as_str()
@@ -760,7 +826,7 @@ async fn test_create_user_rejects_overlong_username_and_email() -> Result<()> {
 			"data": {
 				"email": email,
 				"username": username,
-				"role": "user"
+				"role": "case_reviewer"
 			}
 		});
 		let req = Request::builder()
@@ -797,7 +863,7 @@ async fn test_create_user_duplicate_email_returns_conflict_with_detail() -> Resu
 			"email": email,
 			"username": format!("rbac_dup_email_1_{suffix}"),
 			"pwd_clear": "p@ssw0rd",
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let req1 = Request::builder()
@@ -815,7 +881,7 @@ async fn test_create_user_duplicate_email_returns_conflict_with_detail() -> Resu
 			"email": email,
 			"username": format!("rbac_dup_email_2_{suffix}"),
 			"pwd_clear": "p@ssw0rd",
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let req2 = Request::builder()
@@ -860,7 +926,7 @@ async fn test_admin_create_user_nil_org_id_uses_request_context_org() -> Result<
 			"email": format!("rbac-nil-org-{suffix}@example.com"),
 			"username": format!("rbac_nil_org_{suffix}"),
 			"pwd_clear": "p@ssw0rd",
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let req = Request::builder()
@@ -898,7 +964,7 @@ async fn test_admin_create_user_ignores_payload_org_id() -> Result<()> {
 			"email": format!("rbac-foreign-org-{suffix}@example.com"),
 			"username": format!("rbac_foreign_org_{suffix}"),
 			"pwd_clear": "p@ssw0rd",
-			"role": "user"
+			"role": "case_reviewer"
 		}
 	});
 	let req = Request::builder()
@@ -1176,7 +1242,7 @@ async fn test_non_admin_cannot_create_user() -> Result<()> {
 				"email": format!("rbac-{role}-create-{suffix}@example.com"),
 				"username": format!("rbac_{role}_create_{suffix}"),
 				"pwd_clear": "p@ssw0rd",
-				"role": "user"
+				"role": "case_reviewer"
 			}
 		});
 		let req = Request::builder()

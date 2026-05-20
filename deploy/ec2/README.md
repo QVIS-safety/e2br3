@@ -31,8 +31,9 @@
 7. Keep `SERVICE_PWD_KEY` stable across deployments and bootstrap runs.
    Seeded user password hashes are derived from `SERVICE_PWD_KEY`, so changing the key later will make
    existing passwords fail with `403 LOGIN_FAIL`.
-8. The app now re-syncs the built-in demo admin user (`demo.user@example.com` / `welcome`)
-   through application code on startup, instead of relying on a hard-coded SQL password hash.
+8. The app now re-syncs the initial platform admin (`hdh4063@gmail.com` / `welcome`)
+   and demo tenant sponsor admins through application code on startup, instead of relying on
+   hard-coded SQL password hashes.
 
 ## One-time RDS bootstrap
 

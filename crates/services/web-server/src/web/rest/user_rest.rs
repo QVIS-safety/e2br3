@@ -288,6 +288,18 @@ fn sponsor_admin_role_error() -> Error {
 	}
 }
 
+fn validate_create_role_selection(
+	role: Option<&str>,
+	permission_profile_id: Option<&str>,
+) -> Result<()> {
+	match (role, permission_profile_id) {
+		(Some(ROLE_USER), None) | (None, _) => Err(Error::BadRequest {
+			message: "role selection is required".to_string(),
+		}),
+		_ => Ok(()),
+	}
+}
+
 async fn validate_sponsor_admin_role_for_org(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -465,6 +477,10 @@ pub async fn create_user(
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let (role, permission_profile_id) =
 		normalize_user_role_and_profile(data.role, data.permission_profile_id);
+	validate_create_role_selection(
+		role.as_deref(),
+		permission_profile_id.as_deref(),
+	)?;
 	validate_sponsor_admin_role_for_org(
 		&db_ctx,
 		&mm,

@@ -39,7 +39,7 @@ cargo run -p web-server --example import_export_ich_roundtrip
 ## Environment variables
 
 - `E2BR3_BASE_URL` default: `http://localhost:8080`
-- `E2BR3_EXAMPLE_EMAIL` default: `demo.user@example.com`
+- `E2BR3_EXAMPLE_EMAIL` default: `demo.cro.admin@example.com`
 - `E2BR3_EXAMPLE_PWD` default: `welcome`
 - `E2BR3_EXAMPLE_ORG_ID` default: `00000000-0000-0000-0000-000000000001`
 - `E2BR3_EXAMPLE_OUTPUT_DIR` default: `~/Documents`

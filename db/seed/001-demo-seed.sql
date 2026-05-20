@@ -2,7 +2,10 @@
 DO $$
 DECLARE
     v_org_id UUID := '00000000-0000-0000-0000-000000000001';
+    v_company_org_id UUID := '00000000-0000-0000-0000-000000000002';
+    v_system_admin_user_id UUID := '11111111-1111-1111-1111-111111111110';
     v_user_id UUID := '11111111-1111-1111-1111-111111111111';
+    v_company_admin_user_id UUID := '11111111-1111-1111-1111-111111111112';
     v_case_id UUID := '22222222-2222-2222-2222-222222222222';
     v_case_version_id UUID := '22222222-2222-2222-2222-222222222223';
     v_message_header_id UUID := '33333333-3333-3333-3333-333333333333';
@@ -35,13 +38,79 @@ BEGIN
     -- Required by RLS orgs_modify policy during bootstrap inserts.
     PERFORM set_config('app.current_user_role', 'system_admin', true);
 
-    -- Insert demo organization (created by system user)
+    -- Runtime bootstrap may have already created these accounts with generated
+    -- UUIDs. The seed uses fixed UUIDs so demo cases have stable actor IDs.
+    UPDATE users
+    SET email = CONCAT('replaced-seed-user+', id::text, '@example.invalid'),
+        username = CONCAT('replaced_seed_user_', REPLACE(id::text, '-', '_')),
+        active = false,
+        updated_at = NOW()
+    WHERE lower(email) IN (
+        'hdh4063@gmail.com',
+        'demo.cro.admin@example.com',
+        'demo.company.admin@example.com',
+        'demo.user@example.com'
+    )
+    AND id NOT IN (
+        v_system_admin_user_id,
+        v_user_id,
+        v_company_admin_user_id
+    );
+
+    -- Insert demo organizations (created by system user)
     INSERT INTO organizations (id, name, org_type, address, city, state, postcode, country_code, contact_email, contact_phone, active, created_by, created_at, updated_at)
-    VALUES (v_org_id, 'Demo Organization', 'cro', '123 Demo St', 'Metropolis', 'CA', '12345', 'US', 'demo@example.com', '555-1234', true, '00000000-0000-0000-0000-000000000001'::UUID, NOW(), NOW())
+    VALUES (v_org_id, 'Demo CRO Organization', 'cro', '123 Demo St', 'Metropolis', 'CA', '12345', 'US', 'demo-cro@example.com', '555-1234', true, '00000000-0000-0000-0000-000000000001'::UUID, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
-    -- Insert demo user identity without a password hash.
-    -- The runtime bootstrap step should set the password using the current SERVICE_PWD_KEY.
+    INSERT INTO organizations (id, name, org_type, address, city, state, postcode, country_code, contact_email, contact_phone, active, created_by, created_at, updated_at)
+    VALUES (v_company_org_id, 'Demo Pharmaceutical Company', 'pharmaceutical_company', '456 Company Ave', 'Seoul', NULL, '04524', 'KR', 'demo-company@example.com', '555-5678', true, '00000000-0000-0000-0000-000000000001'::UUID, NOW(), NOW())
+    ON CONFLICT (id) DO NOTHING;
+
+    -- Insert demo identities without password hashes.
+    -- The runtime bootstrap step should set passwords using the current SERVICE_PWD_KEY.
+    INSERT INTO users (
+        id,
+        organization_id,
+        email,
+        username,
+        pwd,
+        pwd_salt,
+        token_salt,
+        role,
+        active,
+        must_change_password,
+        created_by,
+        created_at,
+        updated_at
+    )
+    VALUES (
+        v_system_admin_user_id,
+        '00000000-0000-0000-0000-000000000000'::UUID,
+        'hdh4063@gmail.com',
+        'hdh4063',
+        NULL,
+        '07444261-2ba2-46be-ad20-82554d5a8010'::UUID,
+        '1b2091af-64ff-43ea-a47b-3cdf8f9995c0'::UUID,
+        'system_admin',
+        true,
+        false,
+        '00000000-0000-0000-0000-000000000001'::UUID,
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET
+        organization_id = EXCLUDED.organization_id,
+        email = EXCLUDED.email,
+        username = EXCLUDED.username,
+        pwd = EXCLUDED.pwd,
+        pwd_salt = EXCLUDED.pwd_salt,
+        token_salt = EXCLUDED.token_salt,
+        role = EXCLUDED.role,
+        active = EXCLUDED.active,
+        must_change_password = EXCLUDED.must_change_password,
+        updated_at = NOW();
+
     INSERT INTO users (
         id,
         organization_id,
@@ -60,12 +129,55 @@ BEGIN
     VALUES (
         v_user_id,
         v_org_id,
-        'demo.user@example.com',
-        'demo_user',
+        'demo.cro.admin@example.com',
+        'demo_cro_admin',
         NULL,
         '07444261-2ba2-46be-ad20-82554d5a8004'::UUID,
         '1b2091af-64ff-43ea-a47b-3cdf8f9995c5'::UUID,
         'sponsor_admin_cro',
+        true,
+        false,
+        '00000000-0000-0000-0000-000000000001'::UUID,
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (id) DO UPDATE
+    SET
+        organization_id = EXCLUDED.organization_id,
+        email = EXCLUDED.email,
+        username = EXCLUDED.username,
+        pwd = EXCLUDED.pwd,
+        pwd_salt = EXCLUDED.pwd_salt,
+        token_salt = EXCLUDED.token_salt,
+        role = EXCLUDED.role,
+        active = EXCLUDED.active,
+        must_change_password = EXCLUDED.must_change_password,
+        updated_at = NOW();
+
+    INSERT INTO users (
+        id,
+        organization_id,
+        email,
+        username,
+        pwd,
+        pwd_salt,
+        token_salt,
+        role,
+        active,
+        must_change_password,
+        created_by,
+        created_at,
+        updated_at
+    )
+    VALUES (
+        v_company_admin_user_id,
+        v_company_org_id,
+        'demo.company.admin@example.com',
+        'demo_company_admin',
+        NULL,
+        '07444261-2ba2-46be-ad20-82554d5a8005'::UUID,
+        '1b2091af-64ff-43ea-a47b-3cdf8f9995c6'::UUID,
+        'sponsor_admin_company',
         true,
         false,
         '00000000-0000-0000-0000-000000000001'::UUID,

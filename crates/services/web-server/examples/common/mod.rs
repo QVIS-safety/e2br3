@@ -48,7 +48,7 @@ impl FlowClient {
 		let base_url = std::env::var("E2BR3_BASE_URL")
 			.unwrap_or_else(|_| "http://localhost:8080".to_string());
 		let email = std::env::var("E2BR3_EXAMPLE_EMAIL")
-			.unwrap_or_else(|_| "demo.user@example.com".to_string());
+			.unwrap_or_else(|_| "demo.cro.admin@example.com".to_string());
 		let pwd = std::env::var("E2BR3_EXAMPLE_PWD")
 			.unwrap_or_else(|_| "welcome".to_string());
 

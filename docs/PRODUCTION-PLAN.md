@@ -284,7 +284,7 @@ All nested under `/api/cases/{case_id}/...`
 ### Auth
 ```json
 POST /auth/v1/login
-{ "email": "demo.user@example.com", "pwd": "welcome" }
+{ "email": "demo.cro.admin@example.com", "pwd": "welcome" }
 ```
 
 ### Create Case

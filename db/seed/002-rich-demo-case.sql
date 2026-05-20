@@ -53,7 +53,7 @@ BEGIN
     VALUES (
         v_case_id, v_org_id, 'DEMO-RICH-2026-0001', 1, 'PRD-DEMO-ALPHA', 'draft',
         '["ich","fda","mfds"]', '["qa.lead@example.com","pv.manager@example.com"]',
-        '[{"step":"draft","assignee":"demo.user@example.com"},{"step":"review","assignee":"qa.lead@example.com"}]',
+        '[{"step":"draft","assignee":"demo.cro.admin@example.com"},{"step":"review","assignee":"qa.lead@example.com"}]',
         '1', '2026', 'rich-demo-source.pdf', 'application/pdf',
         v_user_id, v_user_id, NULL, NULL,
         false, false, false, false, false, false, NOW(), NOW()

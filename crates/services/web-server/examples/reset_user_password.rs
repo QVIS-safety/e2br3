@@ -7,7 +7,7 @@ type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 #[tokio::main]
 async fn main() -> Result<()> {
 	let email = std::env::var("E2BR3_RESET_EMAIL")
-		.unwrap_or_else(|_| "demo.user@example.com".to_string());
+		.unwrap_or_else(|_| "hdh4063@gmail.com".to_string());
 	let password = std::env::var("E2BR3_RESET_PASSWORD")
 		.map_err(|_| "E2BR3_RESET_PASSWORD is required".to_string())?;
 

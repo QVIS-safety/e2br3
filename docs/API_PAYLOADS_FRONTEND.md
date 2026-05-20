@@ -13,7 +13,7 @@ Notes:
 
 ### POST `/auth/v1/login`
 ```json
-{ "email": "demo.user@example.com", "pwd": "welcome" }
+{ "email": "demo.cro.admin@example.com", "pwd": "welcome" }
 ```
 Response
 ```json

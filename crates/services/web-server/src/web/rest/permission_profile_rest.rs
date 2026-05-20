@@ -2,9 +2,12 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::ctx::{
-	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
+	Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::AdminMenuPrivilege;
+use lib_core::model::organization::{
+	Organization, OrganizationBmc, ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY,
+};
 use lib_core::model::permission_profile::{
 	DbPermissionProfileRow, PermissionProfileBmc, PermissionProfileCreateData,
 	PermissionProfileUpdateData,
@@ -276,6 +279,31 @@ fn built_in_roles() -> Vec<PermissionProfileRow> {
 	]
 }
 
+async fn visible_built_in_roles(
+	ctx: &Ctx,
+	mm: &ModelManager,
+) -> Result<Vec<PermissionProfileRow>> {
+	let mut rows = built_in_roles();
+	if ctx.is_system_admin() {
+		return Ok(rows);
+	}
+
+	let organization: Organization =
+		OrganizationBmc::get(ctx, mm, ctx.organization_id())
+			.await
+			.map_err(Error::Model)?;
+	rows.retain(|row| match row.profile_id.as_str() {
+		ROLE_SPONSOR_ADMIN_CRO => {
+			organization.org_type.as_deref() == Some(ORG_TYPE_CRO)
+		}
+		ROLE_SPONSOR_ADMIN_COMPANY => {
+			organization.org_type.as_deref() == Some(ORG_TYPE_PHARMACEUTICAL_COMPANY)
+		}
+		_ => true,
+	});
+	Ok(rows)
+}
+
 fn row_to_api(row: DbPermissionProfileRow) -> PermissionProfileRow {
 	build_role_row(
 		row.profile_id,
@@ -309,7 +337,7 @@ pub async fn list_permission_profiles(
 ) -> Result<(StatusCode, Json<Vec<PermissionProfileRow>>)> {
 	let ctx = ctx_w.0;
 	require_admin(&ctx, &mm).await?;
-	let mut rows = built_in_roles();
+	let mut rows = visible_built_in_roles(&ctx, &mm).await?;
 	let custom_rows = PermissionProfileBmc::list(&ctx, &mm)
 		.await
 		.map_err(Error::Model)?;
@@ -326,7 +354,8 @@ pub async fn get_permission_profile(
 	let ctx = ctx_w.0;
 	require_admin(&ctx, &mm).await?;
 	let normalized_role = normalize_profile_id(&profile_id);
-	if let Some(row) = built_in_roles()
+	if let Some(row) = visible_built_in_roles(&ctx, &mm)
+		.await?
 		.into_iter()
 		.find(|row| row.profile_id == normalized_role)
 	{

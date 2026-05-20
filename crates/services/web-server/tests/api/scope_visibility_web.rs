@@ -11,8 +11,8 @@ use lib_core::ctx::{
 };
 use lib_core::model::acs::{
 	has_permission, CASE_APPROVE, CASE_CREATE, CASE_UPDATE, TERMINOLOGY_APPROVE,
-	TERMINOLOGY_IMPORT, USER_CREATE, XML_EXPORT, XML_EXPORT_READ, XML_IMPORT,
-	XML_IMPORT_READ,
+	TERMINOLOGY_IMPORT, USER_CREATE, USER_LIST, USER_READ, XML_EXPORT,
+	XML_EXPORT_READ, XML_IMPORT, XML_IMPORT_READ,
 };
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
@@ -143,6 +143,40 @@ async fn assert_get_not_status(
 		request_json(app, "GET", cookie, uri.to_string(), None).await?;
 	assert_ne!(status, disallowed, "{uri} body={value:?}");
 	Ok(value)
+}
+
+async fn assert_profile_capability(
+	app: &Router,
+	cookie: &str,
+	module: &str,
+	action: &str,
+	expected: bool,
+) -> Result<Value> {
+	assert_profile_capabilities(app, cookie, &[(module, action, expected)]).await
+}
+
+async fn assert_profile_capabilities(
+	app: &Router,
+	cookie: &str,
+	expected: &[(&str, &str, bool)],
+) -> Result<Value> {
+	let (status, profile) = request_json(
+		app,
+		"GET",
+		cookie,
+		"/api/users/me/profile".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{profile:?}");
+	for (module, action, expected) in expected {
+		assert_eq!(
+			profile["data"]["capabilities"][*module][*action].as_bool(),
+			Some(*expected),
+			"{module}.{action} capability mismatch: {profile:?}"
+		);
+	}
+	Ok(profile)
 }
 
 async fn assert_workflow_assign_status(
@@ -1171,6 +1205,93 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 	Ok(())
 }
 
+async fn set_org_type(
+	mm: &ModelManager,
+	org_id: Uuid,
+	org_type: &str,
+) -> Result<()> {
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		system_user_id(),
+		crate::common::system_org_id(),
+		ROLE_SYSTEM_ADMIN,
+	)
+	.await?;
+	mm.dbx()
+		.execute(
+			sqlx::query("UPDATE organizations SET org_type = $1 WHERE id = $2")
+				.bind(org_type)
+				.bind(org_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_role_admin_api_filters_sponsor_built_ins_by_org_type() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let cro_seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let cro_token =
+		generate_web_token(&cro_seed.admin.email, cro_seed.admin.token_salt)?;
+	let cro_cookie = cookie_header(&cro_token.to_string());
+
+	let company_seed = seed_org_with_users(&mm, "companypwd", "companyview").await?;
+	set_org_type(&mm, company_seed.org_id, "pharmaceutical_company").await?;
+	let company_admin = insert_user(
+		&mm,
+		company_seed.org_id,
+		ROLE_SPONSOR_ADMIN_COMPANY,
+		system_user_id(),
+		Some("companypwd"),
+	)
+	.await?;
+	let company_token =
+		generate_web_token(&company_admin.email, company_admin.token_salt)?;
+	let company_cookie = cookie_header(&company_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, cro_value) = request_json(
+		&app,
+		"GET",
+		&cro_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{cro_value:?}");
+	let cro_roles = cro_value.as_array().ok_or("CRO roles should be array")?;
+	assert!(cro_roles
+		.iter()
+		.any(|role| role["profile_id"] == ROLE_SPONSOR_ADMIN_CRO));
+	assert!(!cro_roles
+		.iter()
+		.any(|role| role["profile_id"] == ROLE_SPONSOR_ADMIN_COMPANY));
+
+	let (status, company_value) = request_json(
+		&app,
+		"GET",
+		&company_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{company_value:?}");
+	let company_roles = company_value
+		.as_array()
+		.ok_or("company roles should be array")?;
+	assert!(company_roles
+		.iter()
+		.any(|role| role["profile_id"] == ROLE_SPONSOR_ADMIN_COMPANY));
+	assert!(!company_roles
+		.iter()
+		.any(|role| role["profile_id"] == ROLE_SPONSOR_ADMIN_CRO));
+
+	Ok(())
+}
+
 #[serial]
 #[tokio::test]
 async fn test_role_admin_api_defaults_visible_name_to_role_id() -> Result<()> {
@@ -1777,6 +1898,18 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 		]),
 	)
 	.await?;
+	assert_profile_capabilities(
+		&app,
+		&read_cookie,
+		&[
+			("case", "read", true),
+			("case", "create", false),
+			("case", "update", false),
+			("case", "review", false),
+			("case", "lock", false),
+		],
+	)
+	.await?;
 	assert_get_status(&app, &read_cookie, "/api/cases", StatusCode::OK).await?;
 	assert_get_status(
 		&app,
@@ -1836,6 +1969,18 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 				"can_lock": false
 			}
 		]),
+	)
+	.await?;
+	assert_profile_capabilities(
+		&app,
+		&edit_cookie,
+		&[
+			("case", "read", true),
+			("case", "create", true),
+			("case", "update", true),
+			("case", "review", false),
+			("case", "lock", false),
+		],
 	)
 	.await?;
 	assert!(
@@ -1920,6 +2065,18 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 		]),
 	)
 	.await?;
+	assert_profile_capabilities(
+		&app,
+		&review_cookie,
+		&[
+			("case", "read", true),
+			("case", "create", false),
+			("case", "update", false),
+			("case", "review", false),
+			("case", "lock", false),
+		],
+	)
+	.await?;
 	assert_workflow_assign_status(
 		&app,
 		&review_cookie,
@@ -1942,6 +2099,18 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 				"can_lock": false
 			}
 		]),
+	)
+	.await?;
+	assert_profile_capabilities(
+		&app,
+		&review_cookie,
+		&[
+			("case", "read", true),
+			("case", "create", false),
+			("case", "update", true),
+			("case", "review", true),
+			("case", "lock", true),
+		],
 	)
 	.await?;
 	assert!(
@@ -1997,6 +2166,18 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 		]),
 	)
 	.await?;
+	assert_profile_capabilities(
+		&app,
+		&lock_cookie,
+		&[
+			("case", "read", true),
+			("case", "create", false),
+			("case", "update", false),
+			("case", "review", false),
+			("case", "lock", false),
+		],
+	)
+	.await?;
 	assert_workflow_assign_status(
 		&app,
 		&lock_cookie,
@@ -2019,6 +2200,18 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 				"can_lock": true
 			}
 		]),
+	)
+	.await?;
+	assert_profile_capabilities(
+		&app,
+		&lock_cookie,
+		&[
+			("case", "read", true),
+			("case", "create", false),
+			("case", "update", true),
+			("case", "review", true),
+			("case", "lock", true),
+		],
 	)
 	.await?;
 	assert!(
@@ -2116,6 +2309,17 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		]),
 	)
 	.await?;
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("info", "read", true),
+			("info", "create", false),
+			("info", "update", false),
+			("info", "delete", false),
+		],
+	)
+	.await?;
 	assert_get_status(
 		&app,
 		&custom_cookie,
@@ -2192,6 +2396,17 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 				"can_lock": false
 			}
 		]),
+	)
+	.await?;
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("info", "read", true),
+			("info", "create", true),
+			("info", "update", true),
+			("info", "delete", true),
+		],
 	)
 	.await?;
 
@@ -2304,6 +2519,16 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 		]),
 	)
 	.await?;
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("data", "read", true),
+			("data", "import", false),
+			("data", "approve", false),
+		],
+	)
+	.await?;
 	assert_get_status(
 		&app,
 		&custom_cookie,
@@ -2360,6 +2585,16 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 				"can_lock": false
 			}
 		]),
+	)
+	.await?;
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("data", "read", true),
+			("data", "import", true),
+			("data", "approve", true),
+		],
 	)
 	.await?;
 	assert!(
@@ -2471,6 +2706,15 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 		]),
 	)
 	.await?;
+	assert_profile_capabilities(
+		&app,
+		&read_cookie,
+		&[
+			("exportSubmission", "read", true),
+			("exportSubmission", "execute", false),
+		],
+	)
+	.await?;
 	assert!(
 		has_permission(&read_profile_id, XML_EXPORT_READ),
 		"export_submission.can_read must grant XML_EXPORT_READ"
@@ -2500,6 +2744,15 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 				"can_lock": false
 			}
 		]),
+	)
+	.await?;
+	assert_profile_capabilities(
+		&app,
+		&edit_cookie,
+		&[
+			("exportSubmission", "read", false),
+			("exportSubmission", "execute", true),
+		],
 	)
 	.await?;
 	assert!(
@@ -2565,6 +2818,12 @@ async fn test_import_matrix_privileges_split_files_edit_from_history_read(
 		]),
 	)
 	.await?;
+	assert_profile_capabilities(
+		&app,
+		&read_cookie,
+		&[("import", "read", true), ("import", "execute", false)],
+	)
+	.await?;
 	assert!(has_permission(&read_profile_id, XML_IMPORT_READ));
 	assert!(!has_permission(&read_profile_id, XML_IMPORT));
 	assert_get_status(
@@ -2588,6 +2847,12 @@ async fn test_import_matrix_privileges_split_files_edit_from_history_read(
 				"can_lock": false
 			}
 		]),
+	)
+	.await?;
+	assert_profile_capabilities(
+		&app,
+		&edit_cookie,
+		&[("import", "read", false), ("import", "execute", true)],
 	)
 	.await?;
 	assert!(has_permission(&edit_profile_id, XML_IMPORT));
@@ -2852,6 +3117,19 @@ async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 		Some(false),
 		"settings.can_read alone must not make the role Safety DB admin capable: {value:?}"
 	);
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("admin", "read", false),
+			("admin", "update", false),
+			("users", "read", false),
+			("users", "create", false),
+			("roles", "read", false),
+			("roles", "create", false),
+		],
+	)
+	.await?;
 	assert!(
 		!has_permission(&profile_id, CASE_CREATE),
 		"settings.can_read alone must not grant raw CASE_CREATE permission"
@@ -2920,6 +3198,23 @@ async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 		Some(true),
 		"settings.can_edit should make the role admin-page capable: {value:?}"
 	);
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("admin", "read", true),
+			("admin", "update", true),
+			("users", "read", true),
+			("users", "create", true),
+			("users", "update", true),
+			("users", "delete", true),
+			("roles", "read", true),
+			("roles", "create", true),
+			("roles", "update", true),
+			("roles", "delete", true),
+		],
+	)
+	.await?;
 	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK).await?;
 	let (status, value) = request_json(
 		&app,
