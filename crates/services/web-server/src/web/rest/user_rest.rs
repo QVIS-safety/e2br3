@@ -8,7 +8,10 @@ use lib_core::ctx::{
 	ROLE_SYSTEM_ADMIN, ROLE_USER,
 };
 use lib_core::model::acs::{
-	USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE,
+	has_permission, USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE,
+};
+use lib_core::model::organization::{
+	Organization, OrganizationBmc, ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY,
 };
 use lib_core::model::user::{
 	User, UserBmc, UserFilter, UserForCreate, UserForUpdate,
@@ -45,6 +48,7 @@ pub struct UserRoleMetadata {
 	pub is_editable: bool,
 	pub is_sponsor_admin: bool,
 	pub is_operational: bool,
+	pub can_admin: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -226,8 +230,16 @@ fn role_display_name(role: &str) -> String {
 	}
 }
 
-fn role_metadata(role: &str) -> UserRoleMetadata {
+fn role_metadata(
+	role: &str,
+	permission_profile_id: Option<&str>,
+) -> UserRoleMetadata {
 	let canonical_role_id = canonical_role(role);
+	let permission_subject = if canonical_role_id == ROLE_USER {
+		permission_profile_id.unwrap_or(&canonical_role_id)
+	} else {
+		&canonical_role_id
+	};
 	let is_builtin = matches!(
 		canonical_role_id.as_str(),
 		ROLE_SYSTEM_ADMIN | ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
@@ -243,6 +255,7 @@ fn role_metadata(role: &str) -> UserRoleMetadata {
 		is_editable: !is_builtin,
 		is_sponsor_admin,
 		is_operational: canonical_role_id != ROLE_SYSTEM_ADMIN,
+		can_admin: is_builtin || has_permission(permission_subject, USER_CREATE),
 	}
 }
 
@@ -266,6 +279,33 @@ fn normalize_user_role_and_profile(
 			Some(custom_profile.to_string()),
 		),
 		None => (None, normalized_profile),
+	}
+}
+
+fn sponsor_admin_role_error() -> Error {
+	Error::BadRequest {
+		message: "sponsor_admin_cro can only be assigned in CRO organizations; sponsor_admin_company can only be assigned in Pharmaceutical company organizations".to_string(),
+	}
+}
+
+async fn validate_sponsor_admin_role_for_org(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	organization_id: Uuid,
+	role: Option<&str>,
+) -> Result<()> {
+	let Some(role) = role else {
+		return Ok(());
+	};
+	if !matches!(role, ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY) {
+		return Ok(());
+	}
+	let organization: Organization =
+		OrganizationBmc::get(ctx, mm, organization_id).await?;
+	match (role, organization.org_type.as_deref()) {
+		(ROLE_SPONSOR_ADMIN_CRO, Some(ORG_TYPE_CRO))
+		| (ROLE_SPONSOR_ADMIN_COMPANY, Some(ORG_TYPE_PHARMACEUTICAL_COMPANY)) => Ok(()),
+		_ => Err(sponsor_admin_role_error()),
 	}
 }
 
@@ -360,7 +400,7 @@ fn user_view(user: User) -> UserView {
 		username: user.username,
 		role: user.role.clone(),
 		permission_profile_id: user.permission_profile_id.clone(),
-		role_meta: role_metadata(&user.role),
+		role_meta: role_metadata(&user.role, user.permission_profile_id.as_deref()),
 		comments: user.comments,
 		other_information: user.other_information,
 		scope: UserScopeView {
@@ -410,7 +450,13 @@ pub async fn create_user(
 		return Err(sender_scope_assignment_forbidden());
 	}
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
-	let organization_id = ctx.organization_id();
+	let organization_id = if ctx.is_system_admin() {
+		data.organization_id.ok_or_else(|| Error::BadRequest {
+			message: "organization_id is required".to_string(),
+		})?
+	} else {
+		ctx.organization_id()
+	};
 	if organization_id.is_nil() {
 		return Err(Error::BadRequest {
 			message: "organization context is required".to_string(),
@@ -419,6 +465,13 @@ pub async fn create_user(
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let (role, permission_profile_id) =
 		normalize_user_role_and_profile(data.role, data.permission_profile_id);
+	validate_sponsor_admin_role_for_org(
+		&db_ctx,
+		&mm,
+		organization_id,
+		role.as_deref(),
+	)
+	.await?;
 	let email = normalize_email_input(data.email)?;
 	let username = normalize_optional_username_input(data.username)?
 		.filter(|value| !value.is_empty())
@@ -560,6 +613,16 @@ pub async fn update_user(
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let (role, permission_profile_id) =
 		normalize_user_role_and_profile(data.role, data.permission_profile_id);
+	if role.is_some() {
+		let existing: User = UserBmc::get(&db_ctx, &mm, id).await?;
+		validate_sponsor_admin_role_for_org(
+			&db_ctx,
+			&mm,
+			existing.organization_id,
+			role.as_deref(),
+		)
+		.await?;
+	}
 	let email = normalize_optional_email_input(data.email)?;
 	let username = normalize_optional_username_input(data.username)?;
 	let update = UserForUpdate {

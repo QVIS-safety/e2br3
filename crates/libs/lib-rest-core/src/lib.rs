@@ -50,7 +50,7 @@ use lib_core::ctx::{
 	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
 	ROLE_USER,
 };
-use lib_core::model::acs::{has_permission, Permission};
+use lib_core::model::acs::{has_permission, Permission, USER_CREATE};
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::case::{Case, CaseBmc};
 use lib_core::model::user::UserBmc;
@@ -80,8 +80,13 @@ pub async fn is_admin(ctx: &Ctx, mm: &ModelManager) -> Result<bool> {
 	Ok(ctx.is_admin())
 }
 
+pub fn can_access_admin(ctx: &Ctx) -> bool {
+	ctx.is_admin() || has_permission(ctx.permission_subject(), USER_CREATE)
+}
+
 pub async fn require_admin(ctx: &Ctx, mm: &ModelManager) -> Result<()> {
-	if !is_admin(ctx, mm).await? {
+	let _ = mm;
+	if !can_access_admin(ctx) {
 		return Err(Error::AccessDenied {
 			required_role: "admin".to_string(),
 		});

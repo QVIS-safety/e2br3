@@ -2691,7 +2691,7 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_permission_profile_admin_privilege_does_not_grant_permission_profile(
+async fn test_permission_profile_admin_privilege_grants_admin_page_access(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -2708,6 +2708,7 @@ async fn test_permission_profile_admin_privilege_does_not_grant_permission_profi
 		Some(json!({
 			"data": {
 				"profile_id": profile_id,
+				"name": "Custom Admin",
 				"description": "Custom sponsor-admin equivalent",
 				"privileges": [
 					{
@@ -2739,6 +2740,20 @@ async fn test_permission_profile_admin_privilege_does_not_grant_permission_profi
 
 	let (status, value) = request_json(
 		&app,
+		"GET",
+		&custom_cookie,
+		"/api/users/me/profile".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["data"]["user"]["roleMeta"]["canAdmin"].as_bool(),
+		Some(true)
+	);
+
+	let (status, value) = request_json(
+		&app,
 		"POST",
 		&custom_cookie,
 		"/api/users".to_string(),
@@ -2751,7 +2766,7 @@ async fn test_permission_profile_admin_privilege_does_not_grant_permission_profi
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 
 	let next_role = format!("custom_admin_child_{}", Uuid::new_v4().simple());
 	let (status, value) = request_json(
@@ -2762,6 +2777,7 @@ async fn test_permission_profile_admin_privilege_does_not_grant_permission_profi
 		Some(json!({
 			"data": {
 				"profile_id": next_role,
+				"name": "Custom Admin Child",
 				"privileges": [
 					{
 						"menu_key": "case",
@@ -2775,14 +2791,14 @@ async fn test_permission_profile_admin_privilege_does_not_grant_permission_profi
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_settings_admin_matrix_does_not_grant_admin_route_access() -> Result<()>
-{
+async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -2902,10 +2918,9 @@ async fn test_settings_admin_matrix_does_not_grant_admin_route_access() -> Resul
 	assert_eq!(
 		value["sponsor_admin_capable"].as_bool(),
 		Some(true),
-			"settings.can_edit may expose legacy metadata but must not grant permission profile access: {value:?}"
+		"settings.can_edit should make the role admin-page capable: {value:?}"
 	);
-	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
-		.await?;
+	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK).await?;
 	let (status, value) = request_json(
 		&app,
 		"POST",
@@ -2922,8 +2937,8 @@ async fn test_settings_admin_matrix_does_not_grant_admin_route_access() -> Resul
 	.await?;
 	assert_eq!(
 		status,
-		StatusCode::FORBIDDEN,
-		"permission profiles must not create users through POST /api/users: {value:?}"
+		StatusCode::CREATED,
+		"admin-capable permission profiles should create users through POST /api/users: {value:?}"
 	);
 
 	Ok(())

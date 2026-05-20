@@ -44,7 +44,7 @@ pub struct PermissionProfileRow {
 #[derive(Debug, Deserialize)]
 pub struct PermissionProfileCreateBody {
 	pub profile_id: Option<String>,
-	pub name: String,
+	pub name: Option<String>,
 	pub description: Option<String>,
 	pub privileges: Option<Vec<AdminMenuPrivilege>>,
 	pub active: Option<bool>,
@@ -349,16 +349,6 @@ pub async fn create_permission_profile(
 	let ctx = ctx_w.0;
 	require_admin(&ctx, &mm).await?;
 	let data = params.data;
-	let name = data.name.trim().to_string();
-	validate_role_name(&name)?;
-	if PermissionProfileBmc::name_exists_in_org(&ctx, &mm, &name, None)
-		.await
-		.map_err(Error::Model)?
-	{
-		return Err(Error::BadRequest {
-			message: "role name already exists in this organization".to_string(),
-		});
-	}
 	let profile_id = data
 		.profile_id
 		.as_deref()
@@ -368,6 +358,22 @@ pub async fn create_permission_profile(
 	if is_built_in_profile_id(&profile_id) {
 		return Err(Error::BadRequest {
 			message: "cannot use a built-in profile id".to_string(),
+		});
+	}
+	let name = data
+		.name
+		.as_deref()
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+		.unwrap_or(&profile_id)
+		.to_string();
+	validate_role_name(&name)?;
+	if PermissionProfileBmc::name_exists_in_org(&ctx, &mm, &name, None)
+		.await
+		.map_err(Error::Model)?
+	{
+		return Err(Error::BadRequest {
+			message: "role name already exists in this organization".to_string(),
 		});
 	}
 	let description = normalize_role_description(data.description)?;
