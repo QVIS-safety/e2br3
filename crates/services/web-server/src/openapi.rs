@@ -44,6 +44,14 @@ pub fn router() -> Router {
 		delete_case,
 		get_editor_shell,
 		get_editor_ci,
+		get_editor_ci_page,
+		patch_editor_ci_page,
+		get_editor_rp_page,
+		get_editor_sd_page,
+		get_editor_lr_page,
+		get_editor_si_page,
+		get_editor_dm_page,
+		get_editor_nr_page,
 		get_editor_rp,
 		get_editor_sd,
 		get_editor_lr,
@@ -177,6 +185,11 @@ pub fn router() -> Router {
 			DeleteCaseRequest,
 			CaseEditorShellDoc,
 			CaseEditorDirectSectionResponseDoc,
+			CaseEditorPageProjectionResponseDoc,
+			CaseEditorPagePatchRequestDoc,
+			CaseEditorFieldPatchDoc,
+			CaseEditorFieldEnvelopeDoc,
+			CaseEditorFieldIssueDoc,
 			CaseEditorRowDetailResponseDoc,
 			CaseEditorAeListRowDoc,
 			CaseEditorAeListResponseDoc,
@@ -493,6 +506,69 @@ struct CaseEditorDirectSectionResponseDoc {
 	case_id: String,
 	#[schema(value_type = Object)]
 	data: serde_json::Value,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorPageProjectionResponseDoc {
+	case_id: String,
+	page_id: String,
+	appendices: Vec<String>,
+	focused_appendix: Option<String>,
+	saved: bool,
+	required_count: usize,
+	#[schema(value_type = Object)]
+	fields: serde_json::Value,
+	#[schema(value_type = Object)]
+	rows: serde_json::Value,
+	section_summaries: Vec<serde_json::Value>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorPagePatchRequestDoc {
+	appendix: Option<String>,
+	#[schema(value_type = Object)]
+	changes: serde_json::Value,
+	#[schema(value_type = Object)]
+	rows: serde_json::Value,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorFieldPatchDoc {
+	#[schema(value_type = Object)]
+	value: serde_json::Value,
+	null_flavor: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorFieldEnvelopeDoc {
+	field_id: String,
+	path: String,
+	label: String,
+	#[schema(value_type = Object)]
+	value: serde_json::Value,
+	display: Option<String>,
+	null_flavor: Option<String>,
+	notation: Option<String>,
+	#[schema(value_type = Object)]
+	origin_value: serde_json::Value,
+	origin_null_flavor: Option<String>,
+	visible: bool,
+	editable: bool,
+	empty: bool,
+	required_empty: bool,
+	issues: Vec<CaseEditorFieldIssueDoc>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+struct CaseEditorFieldIssueDoc {
+	code: String,
+	message: String,
+	blocking: bool,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -1022,7 +1098,6 @@ struct CaseDoc {
 	version: i32,
 	dg_prd_key: Option<String>,
 	status: String,
-	appendices_json: Option<String>,
 	review_receivers_json: Option<String>,
 	workflow_routes_json: Option<String>,
 	workflow_status: String,
@@ -1063,7 +1138,6 @@ struct RawCaseDoc {
 	version: i32,
 	dg_prd_key: Option<String>,
 	status: String,
-	appendices_json: Option<String>,
 	review_receivers_json: Option<String>,
 	workflow_routes_json: Option<String>,
 	workflow_status: String,
@@ -1097,7 +1171,6 @@ struct CaseForCreateDoc {
 	safety_report_id: String,
 	dg_prd_key: Option<String>,
 	status: Option<String>,
-	appendices_json: Option<String>,
 	review_receivers_json: Option<String>,
 	workflow_routes_json: Option<String>,
 	workflow_status: String,
@@ -1118,7 +1191,6 @@ struct CaseForUpdateDoc {
 	safety_report_id: Option<String>,
 	dg_prd_key: Option<String>,
 	status: Option<String>,
-	appendices_json: Option<String>,
 	review_receivers_json: Option<String>,
 	workflow_routes_json: Option<String>,
 	mfds_report_type: Option<String>,
@@ -1192,7 +1264,6 @@ struct CaseFromIntakeInputDoc {
 	#[schema(value_type = Vec<i32>)]
 	date_of_most_recent_information: Vec<i32>,
 	report_type: String,
-	appendices_json: Option<String>,
 	status: Option<String>,
 	/// Honored only when duplicate matches are empty and the duplicate basis
 	/// is incomplete. Duplicate hits are always hard-blocked.
@@ -2260,6 +2331,152 @@ fn get_editor_shell() {}
 	)
 )]
 fn get_editor_ci() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/CI",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Case identification page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_ci_page() {}
+
+#[utoipa::path(
+	patch,
+	path = "/api/cases/{case_id}/editor/pages/CI",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	request_body = CaseEditorPagePatchRequestDoc,
+	responses(
+		(status = 200, description = "Updated case identification page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid patch or appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn patch_editor_ci_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/RP",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Reporter page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_rp_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/SD",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Sender page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_sd_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/LR",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Literature references page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_lr_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/SI",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Study information page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_si_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/DM",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Patient demographics page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_dm_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/NR",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Narrative page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_nr_page() {}
 
 #[utoipa::path(
 	get,

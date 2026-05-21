@@ -3,7 +3,7 @@ use axum::http::StatusCode;
 use axum::Json;
 use lib_core::ctx::Ctx;
 use lib_core::model::acs::CASE_READ;
-use lib_core::model::case::CaseBmc;
+use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::ModelManager;
 use lib_core::validation::{
@@ -15,12 +15,16 @@ use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_json::Value;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct ValidationQuery {
 	pub profile: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ValidationAllQuery {
+	pub profiles: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -49,26 +53,26 @@ impl CaseValidationSummary {
 	}
 }
 
-fn parse_profiles_from_appendices_json(
-	value: &str,
-) -> Option<Vec<ValidationProfile>> {
-	let parsed: Vec<Value> = serde_json::from_str(value).ok()?;
+fn parse_profiles_query(value: &str) -> Result<Vec<ValidationProfile>> {
 	let mut profiles = Vec::new();
-	for item in parsed {
-		let Some(raw) = item.as_str() else {
-			continue;
-		};
-		let Some(profile) = ValidationProfile::parse(raw) else {
-			continue;
-		};
+	for raw in value.split(',').map(str::trim).filter(|raw| !raw.is_empty()) {
+		let profile =
+			ValidationProfile::parse(raw).ok_or_else(|| Error::BadRequest {
+				message: format!(
+					"invalid validation profile '{raw}' (expected: ich, fda or mfds)"
+				),
+			})?;
 		if !profiles.contains(&profile) {
 			profiles.push(profile);
 		}
 	}
 	if profiles.is_empty() {
-		None
+		Err(Error::BadRequest {
+			message: "profiles is required and must include ich, fda or mfds"
+				.to_string(),
+		})
 	} else {
-		Some(profiles)
+		Ok(profiles)
 	}
 }
 
@@ -108,29 +112,13 @@ async fn resolve_profile(
 	Ok(authority.to_validation_profile())
 }
 
-async fn resolve_profiles(
-	ctx: &Ctx,
-	mm: &ModelManager,
-	case_id: Uuid,
-) -> Result<Vec<ValidationProfile>> {
-	if let Ok(case) = CaseBmc::get(ctx, mm, case_id).await {
-		if let Some(value) = case.appendices_json.as_deref() {
-			if let Some(parsed) = parse_profiles_from_appendices_json(value) {
-				return Ok(parsed);
-			}
-		}
-	}
-
-	Ok(vec![resolve_profile(ctx, mm, case_id, None).await?])
-}
-
 pub(crate) async fn validation_summary_for_case(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
+	profiles: &[ValidationProfile],
 ) -> Result<CaseValidationSummary> {
-	let profiles = resolve_profiles(ctx, mm, case_id).await?;
-	let reports = validate_case_for_profiles(ctx, mm, case_id, &profiles).await?;
+	let reports = validate_case_for_profiles(ctx, mm, case_id, profiles).await?;
 	let blocking_count: usize = reports.iter().map(|r| r.blocking_count).sum();
 	let non_blocking_count: usize =
 		reports.iter().map(|r| r.non_blocking_count).sum();
@@ -176,12 +164,27 @@ pub async fn validate_case_all(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(case_id): Path<Uuid>,
+	Query(query): Query<ValidationAllQuery>,
 ) -> Result<(StatusCode, Json<DataRestResult<CaseValidationBundle>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let summary = validation_summary_for_case(&ctx, &mm, case_id).await?;
+	let profiles = query
+		.profiles
+		.as_deref()
+		.ok_or_else(|| Error::BadRequest {
+			message: "profiles is required for validation/all".to_string(),
+		})
+		.and_then(parse_profiles_query)?;
+	let summary = validation_summary_for_case(&ctx, &mm, case_id, &profiles).await?;
+	CaseValidationSummaryBmc::upsert_for_reports(
+		&ctx,
+		&mm,
+		case_id,
+		&summary.reports,
+	)
+	.await?;
 
 	Ok((
 		StatusCode::OK,

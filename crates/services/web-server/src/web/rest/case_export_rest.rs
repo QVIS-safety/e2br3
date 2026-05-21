@@ -35,6 +35,7 @@ const SETTINGS_KEY: &str = "system";
 #[derive(Debug, Deserialize)]
 pub struct BulkXmlExportInput {
 	pub case_ids: Vec<Uuid>,
+	pub profile: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -123,57 +124,19 @@ fn should_validate_export_xml(profile: ValidationProfile) -> bool {
 	}
 }
 
-fn parse_appendix_profiles(value: &str) -> Vec<ValidationProfile> {
-	let Ok(items) = serde_json::from_str::<Vec<serde_json::Value>>(value) else {
-		return Vec::new();
-	};
-	items
-		.iter()
-		.filter_map(|item| item.as_str())
-		.filter_map(ValidationProfile::parse)
-		.fold(Vec::new(), |mut acc, profile| {
-			if !acc.contains(&profile) {
-				acc.push(profile);
-			}
-			acc
-		})
-}
-
-fn selected_export_profiles(
-	case: &lib_core::model::case::Case,
-) -> Vec<ValidationProfile> {
-	if let Some(value) = case.appendices_json.as_deref() {
-		let profiles = parse_appendix_profiles(value);
-		if !profiles.is_empty() {
-			return profiles;
-		}
-	}
-	vec![ValidationProfile::Fda]
-}
-
 fn resolve_requested_export_profile(
-	case: &lib_core::model::case::Case,
 	requested_profile: Option<&str>,
 ) -> Result<ValidationProfile> {
-	let selected = selected_export_profiles(case);
 	let Some(raw_profile) = requested_profile else {
-		return Ok(selected[0]);
-	};
-	let profile =
-		ValidationProfile::parse(raw_profile).ok_or_else(|| Error::BadRequest {
-			message: format!(
-				"invalid validation profile '{raw_profile}' (expected: ich, fda or mfds)"
-			),
-		})?;
-	if !selected.contains(&profile) {
 		return Err(Error::BadRequest {
-			message: format!(
-				"profile '{}' is not selected on this case",
-				profile.as_str()
-			),
+			message: "profile is required for XML export".to_string(),
 		});
-	}
-	Ok(profile)
+	};
+	ValidationProfile::parse(raw_profile).ok_or_else(|| Error::BadRequest {
+		message: format!(
+			"invalid validation profile '{raw_profile}' (expected: ich, fda or mfds)"
+		),
+	})
 }
 
 async fn export_xml_options(
@@ -216,7 +179,7 @@ pub async fn generate_validated_case_xml(
 ) -> Result<(lib_core::model::case::Case, String)> {
 	lib_rest_core::require_case_read_allowed(ctx, mm, id).await?;
 	let case = CaseBmc::get(ctx, mm, id).await?;
-	let profile = resolve_requested_export_profile(&case, None)?;
+	let profile = ValidationProfile::Fda;
 	generate_validated_case_xml_for_profile(ctx, mm, id, case, profile).await
 }
 
@@ -360,8 +323,8 @@ pub async fn export_case(
 	require_permission(&ctx, XML_EXPORT)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let case = CaseBmc::get(&ctx, &mm, id).await?;
-	let profile = resolve_requested_export_profile(&case, query.profile.as_deref())?;
-	let include_profile_suffix = query.profile.is_some();
+	let profile = resolve_requested_export_profile(query.profile.as_deref())?;
+	let include_profile_suffix = true;
 	let file_name = export_file_name(&case, id, profile, include_profile_suffix);
 	let (case, xml) = match generate_validated_case_xml_for_profile(
 		&ctx,
@@ -439,6 +402,7 @@ pub async fn export_cases_zip(
 			message: "case_ids is required".to_string(),
 		});
 	}
+	let profile = resolve_requested_export_profile(Some(input.profile.as_str()))?;
 
 	let mut unique_case_ids = Vec::new();
 	let mut seen = HashSet::new();
@@ -456,14 +420,12 @@ pub async fn export_cases_zip(
 		for case_id in unique_case_ids {
 			lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 			let case = CaseBmc::get(&ctx, &mm, case_id).await?;
-			let profiles = selected_export_profiles(&case);
-			let include_profile_suffix = profiles.len() > 1;
-			for profile in profiles {
+			{
 				let file_name = export_file_name(
 					&case,
 					case_id,
 					profile,
-					include_profile_suffix,
+					true,
 				);
 				let (case, xml) = match generate_validated_case_xml_for_profile(
 					&ctx,

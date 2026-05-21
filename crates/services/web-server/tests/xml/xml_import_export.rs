@@ -1019,8 +1019,7 @@ async fn test_fda_export_always_validates_even_when_env_unset() -> Result<()> {
 		"data": {
 			"organization_id": seed.org_id,
 			"safety_report_id": format!("SR-{}", Uuid::new_v4()),
-			"status": "draft",
-			"appendices_json": "[\"fda\"]"
+			"status": "draft"
 		}
 	});
 	let req = Request::builder()
@@ -1049,7 +1048,7 @@ async fn test_fda_export_always_validates_even_when_env_unset() -> Result<()> {
 
 	let req = Request::builder()
 		.method("GET")
-		.uri(format!("/api/cases/{case_id}/export/xml"))
+		.uri(format!("/api/cases/{case_id}/export/xml?profile=fda"))
 		.header("cookie", cookie)
 		.body(Body::empty())?;
 	let res = app.oneshot(req).await?;

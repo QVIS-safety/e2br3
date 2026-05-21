@@ -3,7 +3,9 @@ use axum::body::{to_bytes, Body};
 use axum::http::{Method, Request, StatusCode};
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
-use lib_core::model::store::{set_org_context, set_user_context};
+use lib_core::model::store::{
+	set_full_context_dbx, set_org_context, set_user_context,
+};
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
@@ -120,7 +122,7 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let suffix = Uuid::new_v4().simple().to_string();
 	let case_no = format!("CASE-LIST-{suffix}");
@@ -335,7 +337,7 @@ async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<(
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let suffix = Uuid::new_v4().simple().to_string();
 	let case_no = format!("CASE-LIST-WARN-{suffix}");
@@ -347,8 +349,7 @@ async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<(
 		json!({
 			"data": {
 				"safety_report_id": case_no,
-				"status": "draft",
-				"appendices_json": "[\"ich\"]"
+				"status": "draft"
 			}
 		}),
 	)
@@ -368,7 +369,7 @@ async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<(
 	let (status, validation_body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation/all"),
+		&format!("/api/cases/{case_id}/validation/all?profiles=ich"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{validation_body:?}");
@@ -410,6 +411,268 @@ async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<(
 		Some(expected_warn.as_str()),
 		"list-view warn should equal blocking + non-blocking validation failures; row={row:?}, validation={validation_body:?}"
 	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let suffix = Uuid::new_v4().simple().to_string();
+	let case_no = format!("CASE-LIST-CACHED-WARN-{suffix}");
+
+	let (status, raw_body) = post_raw(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": case_no,
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let case_id = body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?
+		.to_string();
+
+	let (status, raw_body) = get_raw(
+		&app,
+		&cookie,
+		"/api/cases/list-view?list_options%5Blimit%5D=25&list_options%5Border_bys%5D=%21created_at",
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let items = body["data"]["items"]
+		.as_array()
+		.ok_or("missing list-view items")?;
+	let row = items
+		.iter()
+		.find(|item| item["caseNo"].as_str() == Some(case_no.as_str()))
+		.ok_or("missing projected warning case row before validation")?;
+	assert_eq!(
+		row["warn"].as_str(),
+		Some("0"),
+		"list-view should not live-validate uncached rows; row={row:?}"
+	);
+
+	let (status, validation_body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation/all?profiles=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{validation_body:?}");
+	let blocking_count = validation_body["data"]["blocking_count"]
+		.as_u64()
+		.ok_or("missing blocking_count")?;
+	let non_blocking_count = validation_body["data"]["non_blocking_count"]
+		.as_u64()
+		.ok_or("missing non_blocking_count")?;
+	let expected_warn = (blocking_count + non_blocking_count).to_string();
+	assert_ne!(expected_warn, "0", "{validation_body:?}");
+	let case_uuid = Uuid::parse_str(&case_id)?;
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	let summary_rows = mm
+		.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, (String, String, i32, i32)>(
+				"SELECT appendix, page_id, blocking_count, non_blocking_count
+			   FROM case_validation_summaries
+			  WHERE case_id = $1
+			  ORDER BY appendix, page_id",
+			)
+			.bind(case_uuid),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	assert!(
+		summary_rows.iter().any(
+			|(appendix, page_id, blocking, non_blocking)| appendix == "ich"
+				&& page_id == "ALL"
+				&& *blocking as u64 == blocking_count
+				&& *non_blocking as u64 == non_blocking_count
+		),
+		"validation/all should cache an appendix aggregate row; rows={summary_rows:?}"
+	);
+	assert!(
+		summary_rows
+			.iter()
+			.any(|(appendix, page_id, _, _)| appendix == "ich" && page_id != "ALL"),
+		"validation/all should cache appendix page rows; rows={summary_rows:?}"
+	);
+
+	let (status, raw_body) = get_raw(
+		&app,
+		&cookie,
+		"/api/cases/list-view?list_options%5Blimit%5D=25&list_options%5Border_bys%5D=%21created_at",
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let items = body["data"]["items"]
+		.as_array()
+		.ok_or("missing list-view items")?;
+	let row = items
+		.iter()
+		.find(|item| item["caseNo"].as_str() == Some(case_no.as_str()))
+		.ok_or("missing projected warning case row after validation")?;
+	assert_eq!(
+		row["warn"].as_str(),
+		Some(expected_warn.as_str()),
+		"list-view should use cached validation summary after validation; row={row:?}"
+	);
+
+	let (status, update_body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {
+				"dg_prd_key": "DG-CACHE-STALE"
+			},
+			"reason_for_change": "verify validation cache invalidation"
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{update_body:?}");
+
+	let (status, raw_body) = get_raw(
+		&app,
+		&cookie,
+		"/api/cases/list-view?list_options%5Blimit%5D=25&list_options%5Border_bys%5D=%21created_at",
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let items = body["data"]["items"]
+		.as_array()
+		.ok_or("missing list-view items after cache invalidation")?;
+	let row = items
+		.iter()
+		.find(|item| item["caseNo"].as_str() == Some(case_no.as_str()))
+		.ok_or("missing projected warning case row after cache invalidation")?;
+	assert_eq!(
+		row["warn"].as_str(),
+		Some("0"),
+		"list-view should hide stale validation cache until validation/all refreshes it; row={row:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_validation_all_requires_explicit_profiles_and_caches_each_profile(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let case_no = format!("CASE-EXPLICIT-PROFILES-{}", Uuid::new_v4());
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": case_no,
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let case_id = body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?;
+
+	let (status, body) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}/validation/all"))
+			.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body.to_string().contains("profiles"),
+		"missing explicit profiles should identify profiles as required: {body:?}"
+	);
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation/all?profiles=fda,mfds"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["profiles"], json!(["fda", "mfds"]));
+
+	let case_uuid = Uuid::parse_str(case_id)?;
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	let cached_appendices = mm
+		.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, (String,)>(
+				"SELECT appendix
+				   FROM case_validation_summaries
+				  WHERE case_id = $1
+				    AND page_id = 'ALL'
+				  ORDER BY appendix",
+			)
+			.bind(case_uuid),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	let cached_appendices = cached_appendices
+		.into_iter()
+		.map(|(appendix,)| appendix)
+		.collect::<Vec<_>>();
+	assert_eq!(cached_appendices, vec!["fda", "mfds"]);
 
 	Ok(())
 }
@@ -521,38 +784,6 @@ async fn test_public_case_create_derives_org_and_version() -> Result<()> {
 		"{body:?}"
 	);
 	assert_eq!(body["data"]["version"].as_i64(), Some(1), "{body:?}");
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_public_case_create_derives_profile_from_appendices() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
-
-	let (status, body) = post_json(
-		&app,
-		&cookie,
-		"/api/cases",
-		json!({
-			"data": {
-				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
-				"status": "draft",
-				"appendices_json": "[\"mfds\",\"fda\"]"
-			}
-		}),
-	)
-	.await?;
-
-	assert_eq!(status, StatusCode::CREATED, "{body:?}");
-	assert!(body["data"].get("validation_profile").is_none(), "{body:?}");
-	assert_eq!(
-		body["data"]["appendices_json"], "[\"mfds\",\"fda\"]",
-		"{body:?}"
-	);
 	Ok(())
 }
 
@@ -675,8 +906,7 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise(
 		json!({
 			"data": {
 				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
-				"status": "draft",
-				"appendices_json": "[\"fda\"]"
+				"status": "draft"
 			}
 		}),
 	)
@@ -740,7 +970,6 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 			safety_report_id,
 			version,
 			status,
-			appendices_json,
 			raw_xml,
 			dirty_c,
 			dirty_d,
@@ -750,14 +979,13 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 			dirty_h,
 			created_by,
 			updated_by
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, false, false, false, false, false, false, $8, $8)",
+		) VALUES ($1, $2, $3, $4, $5, $6, false, false, false, false, false, false, $7, $7)",
 	)
 	.bind(case_id)
 	.bind(seed.org_id)
 	.bind(format!("SR-SHAPED-SAVE-{case_id}"))
 	.bind(1_i32)
 	.bind("draft")
-	.bind("[\"fda\"]")
 	.bind(b"<ichicsr/>".to_vec())
 	.bind(seed.admin.id)
 	.execute(&mut *tx)

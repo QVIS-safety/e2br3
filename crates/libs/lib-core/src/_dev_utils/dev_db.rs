@@ -289,6 +289,68 @@ async fn apply_compatibility_alters(
 		sqlx::query(sql).execute(&mut *tx).await?;
 	}
 	sqlx::query(
+		"CREATE TABLE IF NOT EXISTS case_validation_summaries (
+			case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+			appendix VARCHAR(16) NOT NULL,
+			page_id VARCHAR(16) NOT NULL,
+			blocking_count INTEGER NOT NULL DEFAULT 0,
+			non_blocking_count INTEGER NOT NULL DEFAULT 0,
+			required_count INTEGER NOT NULL DEFAULT 0,
+			stale BOOLEAN NOT NULL DEFAULT FALSE,
+			generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+			PRIMARY KEY (case_id, appendix, page_id),
+			CONSTRAINT case_validation_summary_appendix_valid
+				CHECK (appendix IN ('ich', 'fda', 'mfds')),
+			CONSTRAINT case_validation_summary_counts_non_negative
+				CHECK (
+					blocking_count >= 0
+					AND non_blocking_count >= 0
+					AND required_count >= 0
+				)
+		)",
+	)
+	.execute(&mut *tx)
+	.await?;
+	for sql in [
+		"CREATE INDEX IF NOT EXISTS idx_case_validation_summaries_case
+		 ON case_validation_summaries(case_id)",
+		"CREATE INDEX IF NOT EXISTS idx_case_validation_summaries_page
+		 ON case_validation_summaries(case_id, page_id, stale)",
+		"GRANT SELECT, INSERT, UPDATE, DELETE ON case_validation_summaries TO e2br3_app_role",
+		"ALTER TABLE case_validation_summaries ENABLE ROW LEVEL SECURITY",
+		"ALTER TABLE case_validation_summaries FORCE ROW LEVEL SECURITY",
+		"DROP POLICY IF EXISTS case_validation_summaries_via_case ON case_validation_summaries",
+	] {
+		sqlx::query(sql).execute(&mut *tx).await?;
+	}
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY case_validation_summaries_via_case ON case_validation_summaries
+		 FOR ALL
+		 TO e2br3_app_role
+		 USING (
+			 EXISTS (
+				 SELECT 1 FROM cases c
+				 WHERE c.id = case_validation_summaries.case_id
+				   AND (
+					   c.organization_id = current_organization_id()
+					   OR is_current_user_admin()
+				   )
+			 )
+		 )
+		 WITH CHECK (
+			 EXISTS (
+				 SELECT 1 FROM cases c
+				 WHERE c.id = case_validation_summaries.case_id
+				   AND (
+					   c.organization_id = current_organization_id()
+					   OR is_current_user_admin()
+				   )
+			 )
+		 )",
+	)
+	.await?;
+	sqlx::query(
 		"CREATE TABLE IF NOT EXISTS case_workflow_events (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,

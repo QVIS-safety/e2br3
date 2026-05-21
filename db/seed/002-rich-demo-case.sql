@@ -45,14 +45,14 @@ BEGIN
 
     INSERT INTO cases (
         id, organization_id, safety_report_id, version, dg_prd_key, status,
-        appendices_json, review_receivers_json, workflow_routes_json,
+        review_receivers_json, workflow_routes_json,
         mfds_report_type, report_year, source_document_name, source_document_media_type,
         created_by, updated_by, submitted_by, submitted_at,
         dirty_c, dirty_d, dirty_e, dirty_f, dirty_g, dirty_h, created_at, updated_at
     )
     VALUES (
         v_case_id, v_org_id, 'DEMO-RICH-2026-0001', 1, 'PRD-DEMO-ALPHA', 'draft',
-        '["ich","fda","mfds"]', '["qa.lead@example.com","pv.manager@example.com"]',
+        '["qa.lead@example.com","pv.manager@example.com"]',
         '[{"step":"draft","assignee":"demo.cro.admin@example.com"},{"step":"review","assignee":"qa.lead@example.com"}]',
         '1', '2026', 'rich-demo-source.pdf', 'application/pdf',
         v_user_id, v_user_id, NULL, NULL,
@@ -67,7 +67,6 @@ BEGIN
         1,
         jsonb_build_object(
             'safety_report_id', 'DEMO-RICH-2026-0001',
-            'appendices_json', '["ich","fda","mfds"]',
             'note', 'Rich demo case bootstrap snapshot'
         ),
         v_user_id,

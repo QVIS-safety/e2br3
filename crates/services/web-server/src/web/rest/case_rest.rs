@@ -1,4 +1,3 @@
-use crate::web::rest::case_validation_rest;
 use crate::web::rest::compliance::{
 	capture_e_signature, ComplianceActionInput, ESignatureInput,
 };
@@ -15,11 +14,12 @@ use lib_core::model::case::{
 	CaseLinkOption, CaseListViewRow,
 };
 use lib_core::model::case_numbering::generate_case_number;
+use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SafetyReportIdentificationForCreate,
 };
 use lib_core::model::ModelManager;
-use lib_core::validation::{validate_case_for_profiles, ValidationProfile};
+use lib_core::validation::{validate_case_for_profile, ValidationProfile};
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
@@ -31,7 +31,6 @@ use lib_rest_core::{
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValString, OpValsString};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use uuid::Uuid;
 
 const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
@@ -47,66 +46,6 @@ pub fn parse_appendix_profile_or_bad_request(
 			"invalid appendix profile '{value}' (expected: ich, fda or mfds)"
 		),
 	})
-}
-
-pub fn normalize_appendices_json(value: &str) -> Result<String> {
-	let parsed: Vec<String> =
-		serde_json::from_str(value).map_err(|_| Error::BadRequest {
-			message: "appendices_json must be a JSON array".to_string(),
-		})?;
-	let mut normalized = Vec::new();
-	for item in parsed {
-		let profile = parse_appendix_profile_or_bad_request(&item)?;
-		let as_str = profile.as_str().to_string();
-		if !normalized.contains(&as_str) {
-			normalized.push(as_str);
-		}
-	}
-	if normalized.is_empty() {
-		return Err(Error::BadRequest {
-			message: "appendices_json cannot be empty".to_string(),
-		});
-	}
-	Ok(json!(normalized).to_string())
-}
-
-pub fn first_appendix_profile_from_json(value: &str) -> Result<ValidationProfile> {
-	let normalized = normalize_appendices_json(value)?;
-	let parsed: Vec<String> =
-		serde_json::from_str(&normalized).map_err(|_| Error::BadRequest {
-			message: "appendices_json must be a JSON array".to_string(),
-		})?;
-	parsed
-		.first()
-		.and_then(|item| ValidationProfile::parse(item))
-		.ok_or_else(|| Error::BadRequest {
-			message: "appendices_json cannot be empty".to_string(),
-		})
-}
-
-/// Resolves the ordered list of validation profiles for a case.
-/// Prefers `appendices_json` (multi-profile), then defaults to FDA.
-fn resolve_appendix_profiles(
-	case: &lib_core::model::case::Case,
-) -> Vec<ValidationProfile> {
-	if let Some(json) = case.appendices_json.as_deref() {
-		if let Ok(items) = serde_json::from_str::<Vec<serde_json::Value>>(json) {
-			let profiles: Vec<ValidationProfile> = items
-				.iter()
-				.filter_map(|v| v.as_str())
-				.filter_map(ValidationProfile::parse)
-				.fold(Vec::new(), |mut acc, p| {
-					if !acc.contains(&p) {
-						acc.push(p);
-					}
-					acc
-				});
-			if !profiles.is_empty() {
-				return profiles;
-			}
-		}
-	}
-	vec![ValidationProfile::Fda]
 }
 
 pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> {
@@ -127,10 +66,6 @@ pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> 
 				message: "cannot set case to validated manually: status is managed by validator".to_string(),
 			});
 		}
-	}
-
-	if let Some(appendices_json) = data.appendices_json.as_deref() {
-		let _ = normalize_appendices_json(appendices_json)?;
 	}
 
 	Ok(())
@@ -155,10 +90,6 @@ fn validate_case_update_payload(data: &InternalCaseForUpdate) -> Result<()> {
 		}
 	}
 
-	if let Some(appendices_json) = data.appendices_json.as_deref() {
-		let _ = normalize_appendices_json(appendices_json)?;
-	}
-
 	Ok(())
 }
 
@@ -172,7 +103,6 @@ fn to_internal_case_for_create(
 		safety_report_id: data.safety_report_id.unwrap_or_default(),
 		dg_prd_key: data.dg_prd_key,
 		status: data.status,
-		appendices_json: data.appendices_json,
 		review_receivers_json: data.review_receivers_json,
 		workflow_routes_json: data.workflow_routes_json,
 		mfds_report_type: data.mfds_report_type,
@@ -189,7 +119,6 @@ fn to_internal_case_for_update(data: PublicCaseForUpdate) -> InternalCaseForUpda
 		safety_report_id: data.safety_report_id,
 		dg_prd_key: data.dg_prd_key,
 		status: data.status,
-		appendices_json: data.appendices_json,
 		review_receivers_json: data.review_receivers_json,
 		workflow_routes_json: data.workflow_routes_json,
 		mfds_report_type: data.mfds_report_type,
@@ -242,9 +171,6 @@ fn case_identity_or_scope_update_requires_reason(
 	optional_text_changed(&data.safety_report_id, Some(&current.safety_report_id))
 		|| optional_text_changed(&data.dg_prd_key, current.dg_prd_key.as_deref())
 		|| optional_text_changed(
-			&data.appendices_json,
-			current.appendices_json.as_deref(),
-		) || optional_text_changed(
 		&data.review_receivers_json,
 		current.review_receivers_json.as_deref(),
 	) || optional_text_changed(
@@ -290,7 +216,6 @@ pub struct PublicCaseForCreate {
 	pub safety_report_id: Option<String>,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
-	pub appendices_json: Option<String>,
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
 	pub mfds_report_type: Option<String>,
@@ -305,7 +230,6 @@ pub struct PublicCaseForUpdate {
 	pub safety_report_id: Option<String>,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
-	pub appendices_json: Option<String>,
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
 	pub mfds_report_type: Option<String>,
@@ -373,15 +297,6 @@ pub async fn case_to_read_result(
 	mm: &ModelManager,
 	case: Case,
 ) -> Result<CaseReadResult> {
-	let mut case = case;
-	let profiles = resolve_appendix_profiles(&case);
-	case.appendices_json = Some(
-		json!(profiles
-			.iter()
-			.map(|profile| profile.as_str())
-			.collect::<Vec<_>>())
-		.to_string(),
-	);
 	let actionability = workflow_actionability_for_case(ctx, mm, &case).await?;
 	Ok(CaseReadResult {
 		qc_state: qc_state_for_case_status(&case.status),
@@ -404,10 +319,6 @@ pub async fn create_case_guarded(
 	require_permission(&ctx, CASE_CREATE)?;
 	let ParamsForCreate { data } = params;
 	let mut data = data;
-	if let Some(appendices_json) = data.appendices_json.as_deref() {
-		let normalized = normalize_appendices_json(appendices_json)?;
-		data.appendices_json = Some(normalized);
-	}
 	let generated_case_number = if data
 		.safety_report_id
 		.as_deref()
@@ -553,24 +464,28 @@ pub async fn list_case_view_rows(
 
 	let mut scoped = Vec::with_capacity(limit.min(items.len()));
 	let mut scoped_offset = 0usize;
-	for mut item in items {
+	for item in items {
 		if lib_rest_core::case_matches_user_scope(&ctx, &mm, item.case_id).await? {
 			if scoped_offset < offset {
 				scoped_offset += 1;
 				continue;
 			}
-			let validation = case_validation_rest::validation_summary_for_case(
-				&ctx,
-				&mm,
-				item.case_id,
-			)
-			.await?;
-			item.warn = validation.total_count().to_string();
 			scoped.push(item);
 			if scoped.len() >= limit {
 				break;
 			}
 		}
+	}
+	let case_ids = scoped.iter().map(|item| item.case_id).collect::<Vec<_>>();
+	let cached_totals =
+		CaseValidationSummaryBmc::cached_totals_by_case(&ctx, &mm, &case_ids)
+			.await?;
+	for item in &mut scoped {
+		item.warn = cached_totals
+			.get(&item.case_id)
+			.copied()
+			.unwrap_or(0)
+			.to_string();
 	}
 
 	Ok((
@@ -591,14 +506,10 @@ pub async fn update_case_guarded(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_UPDATE)?;
 	let PublicCaseUpdateRequest {
-		mut data,
+		data,
 		reason_for_change,
 		e_signature,
 	} = params;
-	if let Some(appendices_json) = data.appendices_json.as_deref() {
-		let normalized = normalize_appendices_json(appendices_json)?;
-		data.appendices_json = Some(normalized);
-	}
 	let data = to_internal_case_for_update(data);
 	validate_case_update_payload(&data)?;
 	let current = CaseBmc::get(&ctx, &mm, id).await?;
@@ -674,6 +585,7 @@ pub async fn update_case_guarded(
 	};
 
 	CaseBmc::update(&ctx_for_update, &mm, id, data).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, id).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 
 	Ok((
@@ -714,6 +626,7 @@ pub async fn delete_case(
 		case_status_update("deleted".to_string()),
 	)
 	.await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, id).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 	Ok((
 		axum::http::StatusCode::OK,
@@ -751,10 +664,10 @@ pub async fn mark_case_validated_by_validator(
 		});
 	}
 
-	let case = CaseBmc::get(&ctx, &mm, id).await?;
-	let profiles = resolve_appendix_profiles(&case);
-	let reports = validate_case_for_profiles(&ctx, &mm, id, &profiles).await?;
-	let total_blocking: usize = reports.iter().map(|r| r.blocking_count).sum();
+	let report = validate_case_for_profile(&ctx, &mm, id, ValidationProfile::Fda).await?;
+	CaseValidationSummaryBmc::upsert_for_reports(&ctx, &mm, id, &[report.clone()])
+		.await?;
+	let total_blocking = report.blocking_count;
 	if total_blocking > 0 {
 		return Err(Error::BadRequest {
 			message: format!(

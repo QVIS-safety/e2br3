@@ -64,7 +64,7 @@ impl TryFrom<RegulatoryAuthority> for SubmissionAuthority {
 			RegulatoryAuthority::Fda => Ok(Self::Fda),
 			RegulatoryAuthority::Mfds => Ok(Self::Mfds),
 			RegulatoryAuthority::Ich => Err(Error::BadRequest {
-				message: "case appendices must include fda or mfds for submission"
+				message: "submission authority must be fda or mfds"
 					.to_string(),
 			}),
 		}
@@ -326,7 +326,6 @@ struct SubmissionHistoryRow {
 	submission_id: Uuid,
 	case_id: Uuid,
 	case_number: String,
-	appendices_json: Option<String>,
 	gateway: String,
 	remote_submission_id: String,
 	status: String,
@@ -416,40 +415,7 @@ fn parse_timeout_secs(name: &str, default_secs: u64) -> u64 {
 		.unwrap_or(default_secs)
 }
 
-fn selected_submission_authorities(
-	appendices_json: Option<&str>,
-) -> Result<Vec<SubmissionAuthority>> {
-	if let Some(value) = appendices_json {
-		let parsed: Vec<Value> =
-			serde_json::from_str(value).map_err(|_| Error::BadRequest {
-				message: "appendices_json must be a JSON array".to_string(),
-			})?;
-		let mut authorities = Vec::new();
-		for item in parsed {
-			let Some(raw) = item.as_str() else {
-				continue;
-			};
-			let Some(authority) = SubmissionAuthority::parse(raw) else {
-				continue;
-			};
-			if !authorities.contains(&authority) {
-				authorities.push(authority);
-			}
-		}
-		if !authorities.is_empty() {
-			return Ok(authorities);
-		}
-	}
-	Err(Error::BadRequest {
-		message: "case appendices must include fda or mfds for submission"
-			.to_string(),
-	})
-}
-
-fn submission_history_export_profile(
-	gateway: &str,
-	appendices_json: Option<&str>,
-) -> &'static str {
+fn submission_history_export_profile(gateway: &str) -> &'static str {
 	let gateway = gateway.to_ascii_lowercase();
 	if gateway.contains("mfds") {
 		return SubmissionAuthority::Mfds.as_str();
@@ -457,11 +423,7 @@ fn submission_history_export_profile(
 	if gateway.contains("fda") || gateway.contains("esg") {
 		return SubmissionAuthority::Fda.as_str();
 	}
-	selected_submission_authorities(appendices_json)
-		.ok()
-		.and_then(|authorities| authorities.first().copied())
-		.unwrap_or(SubmissionAuthority::Fda)
-		.as_str()
+	SubmissionAuthority::Fda.as_str()
 }
 
 fn status_to_db(status: &SubmissionStatus) -> &'static str {
@@ -1129,7 +1091,6 @@ pub async fn list_submission_history(
 			"SELECT cs.id AS submission_id,
 				        cs.case_id,
 				        c.safety_report_id AS case_number,
-				        c.appendices_json,
 				        cs.gateway,
 				        cs.remote_submission_id,
 				        cs.status,
@@ -1153,10 +1114,7 @@ pub async fn list_submission_history(
 				.map(|ack| format_history_timestamp(ack.received_at))
 				.transpose()?;
 			let gateway = row.gateway;
-			let export_profile = submission_history_export_profile(
-				&gateway,
-				row.appendices_json.as_deref(),
-			);
+			let export_profile = submission_history_export_profile(&gateway);
 			let data_file_name = format!(
 				"{}-{}-{}.xml",
 				row.case_number, row.case_id, export_profile
@@ -1718,20 +1676,6 @@ pub async fn assert_case_ready_for_submission(
 	authority: SubmissionAuthority,
 ) -> Result<()> {
 	let case = CaseBmc::get(ctx, mm, case_id).await?;
-	let selected_authorities =
-		selected_submission_authorities(case.appendices_json.as_deref())?;
-	if !selected_authorities.contains(&authority) {
-		let expected = match authority {
-			SubmissionAuthority::Fda => "fda",
-			SubmissionAuthority::Mfds => "mfds",
-		};
-		return Err(Error::BadRequest {
-			message: format!(
-				"case appendices must include {expected} for {} submission",
-				authority.as_str().to_ascii_uppercase()
-			),
-		});
-	}
 	if !case.status.eq_ignore_ascii_case("validated") {
 		return Err(Error::BadRequest {
 			message: format!(
@@ -2311,22 +2255,18 @@ async fn reconcile_one_submission(
 			if !row.status.eq_ignore_ascii_case("rejected") {
 				return Ok(ReconcileOutcome::Skipped);
 			}
-			let case = match CaseBmc::get(&system_ctx, mm, row.case_id).await {
+			let _case = match CaseBmc::get(&system_ctx, mm, row.case_id).await {
 				Ok(case) => case,
 				Err(ModelError::EntityUuidNotFound { .. }) => {
 					return Ok(ReconcileOutcome::Skipped);
 				}
 				Err(e) => return Err(Error::from(e)),
 			};
-			let authority =
-				selected_submission_authorities(case.appendices_json.as_deref())?
-					.into_iter()
-					.next()
-					.ok_or_else(|| Error::BadRequest {
-						message:
-							"case appendices must include fda or mfds for submission"
-								.to_string(),
-					})?;
+			let authority = if row.gateway.to_ascii_lowercase().contains("mfds") {
+				SubmissionAuthority::Mfds
+			} else {
+				SubmissionAuthority::Fda
+			};
 
 			let ctx_clone = system_ctx.with_compliance(
 				Some(SYSTEM_REASON_RECONCILE_EXPORT.to_string()),
@@ -2531,8 +2471,7 @@ pub async fn reconcile_due_submissions_with_runtime_status(
 #[cfg(test)]
 mod tests {
 	use super::{
-		merge_submission_status, selected_submission_authorities, status_from_ack,
-		SubmissionAuthority, SubmissionStatus,
+		merge_submission_status, status_from_ack, SubmissionStatus,
 	};
 
 	#[test]
@@ -2592,25 +2531,4 @@ mod tests {
 		);
 	}
 
-	#[test]
-	fn selected_submission_authorities_prefer_appendices_json() {
-		let authorities =
-			selected_submission_authorities(Some(r#"["fda","mfds"]"#)).unwrap();
-
-		assert_eq!(
-			authorities,
-			vec![SubmissionAuthority::Fda, SubmissionAuthority::Mfds]
-		);
-	}
-
-	#[test]
-	fn selected_submission_authorities_reject_missing_appendices() {
-		let err = selected_submission_authorities(None).unwrap_err();
-
-		assert!(
-			err.to_string()
-				.contains("case appendices must include fda or mfds for submission"),
-			"{err:?}"
-		);
-	}
 }

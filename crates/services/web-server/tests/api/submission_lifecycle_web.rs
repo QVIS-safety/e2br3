@@ -227,15 +227,13 @@ async fn create_case_with_profile(
 	app: &axum::Router,
 	cookie: &str,
 	org_id: Uuid,
-	appendix: &str,
+	_appendix: &str,
 ) -> Result<Uuid> {
-	let appendices_json = serde_json::json!([appendix]).to_string();
 	let body = json!({
 		"data": {
 			"organization_id": org_id,
 			"safety_report_id": format!("SUB-{}", Uuid::new_v4()),
-			"status": "draft",
-			"appendices_json": appendices_json
+			"status": "draft"
 		}
 	});
 	let (status, value) = post_json(app, cookie, "/api/cases", body).await?;
@@ -840,11 +838,25 @@ async fn test_submission_ack_out_of_order_does_not_regress_status() -> Result<()
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	mm.dbx()
+		.execute(
+			sqlx::query("UPDATE cases SET status = 'validated' WHERE id = $1")
+				.bind(case_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
 
 	let (status, submit_body) = post_json(
 		&app,
@@ -1104,11 +1116,23 @@ async fn test_submission_ack_terminal_status_does_not_change() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	mm.dbx()
+		.execute(
+			sqlx::query("UPDATE cases SET status = 'validated' WHERE id = $1")
+				.bind(case_id),
+		)
+		.await?;
 
 	let (status, submit_body) = post_json(
 		&app,
@@ -1323,7 +1347,7 @@ async fn test_submission_accepts_mfds_route_for_mfds_profile() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_submission_rejects_mfds_route_for_fda_profile() -> Result<()> {
+async fn test_submission_uses_request_authority_not_case_appendices() -> Result<()> {
 	clear_esg_env();
 	std::env::set_var("E2BR3_ALLOW_MOCK_SUBMISSION", "1");
 	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
@@ -1332,11 +1356,25 @@ async fn test_submission_rejects_mfds_route_for_fda_profile() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&app, &cookie, case_id).await?;
-	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	mm.dbx()
+		.execute(
+			sqlx::query("UPDATE cases SET status = 'validated' WHERE id = $1")
+				.bind(case_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
 
 	let (status, body) = post_json(
 		&app,
@@ -1345,12 +1383,11 @@ async fn test_submission_rejects_mfds_route_for_fda_profile() -> Result<()> {
 		valid_compliance_payload(),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(
-		body.to_string()
-			.contains("appendices must include fda or mfds"),
-		"{body:?}"
-	);
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	assert!(body["data"]["remote_submission_id"]
+		.as_str()
+		.unwrap_or_default()
+		.starts_with("MFDS-MOCK-"));
 
 	clear_esg_env();
 	Ok(())

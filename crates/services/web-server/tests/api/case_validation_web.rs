@@ -771,29 +771,6 @@ async fn test_validation_rejects_unknown_profile() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_create_case_rejects_invalid_profile() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
-
-	let body = json!({
-	"data": {
-			"organization_id": seed.org_id,
-			"safety_report_id": format!("SR-{}", Uuid::new_v4()),
-			"status": "draft",
-			"appendices_json": "[\"nope\"]"
-		}
-	});
-	let (status, body) = create_case_with_payload(&app, &cookie, body).await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(body.to_string().contains("invalid appendix profile"));
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
 async fn test_update_case_rejects_invalid_status() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -1222,7 +1199,7 @@ async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()>
 
 #[serial]
 #[tokio::test]
-async fn test_validation_all_uses_appendices_profiles() -> Result<()> {
+async fn test_validation_all_uses_explicit_profiles() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -1236,8 +1213,7 @@ async fn test_validation_all_uses_appendices_profiles() -> Result<()> {
 			"data": {
 				"organization_id": seed.org_id,
 				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
-				"status": "draft",
-				"appendices_json": "[\"fda\", \"mfds\", \"fda\"]"
+				"status": "draft"
 			}
 		}),
 	)
@@ -1253,7 +1229,7 @@ async fn test_validation_all_uses_appendices_profiles() -> Result<()> {
 	let (status, body) = get_validation(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation/all"),
+		&format!("/api/cases/{case_id}/validation/all?profiles=fda,mfds,fda"),
 	)
 	.await?;
 

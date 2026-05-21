@@ -78,7 +78,6 @@ async fn insert_validated_raw_case(
 	org_id: Uuid,
 	user_id: Uuid,
 	safety_report_id: &str,
-	appendices_json: &str,
 ) -> Result<Uuid> {
 	let case_id = Uuid::new_v4();
 	let mut tx = mm.dbx().db().begin().await?;
@@ -87,19 +86,17 @@ async fn insert_validated_raw_case(
 	sqlx::query(
 		"INSERT INTO cases (
 			id,
-			organization_id,
+				organization_id,
 				safety_report_id,
 				status,
-				appendices_json,
 				raw_xml,
 				created_by,
 				updated_by
-			) VALUES ($1, $2, $3, 'validated', $4, $5, $6, $6)",
+			) VALUES ($1, $2, $3, 'validated', $4, $5, $5)",
 	)
 	.bind(case_id)
 	.bind(org_id)
 	.bind(safety_report_id)
-	.bind(appendices_json)
 	.bind(br#"<?xml version="1.0" encoding="UTF-8"?><test/>"#.as_slice())
 	.bind(user_id)
 	.execute(&mut *tx)
@@ -113,7 +110,6 @@ async fn insert_validated_raw_case_with_xml(
 	org_id: Uuid,
 	user_id: Uuid,
 	safety_report_id: &str,
-	appendices_json: &str,
 	raw_xml: &[u8],
 ) -> Result<Uuid> {
 	let case_id = Uuid::new_v4();
@@ -123,19 +119,17 @@ async fn insert_validated_raw_case_with_xml(
 	sqlx::query(
 		"INSERT INTO cases (
 			id,
-			organization_id,
+				organization_id,
 				safety_report_id,
 				status,
-				appendices_json,
 				raw_xml,
 				created_by,
 				updated_by
-			) VALUES ($1, $2, $3, 'validated', $4, $5, $6, $6)",
+			) VALUES ($1, $2, $3, 'validated', $4, $5, $5)",
 	)
 	.bind(case_id)
 	.bind(org_id)
 	.bind(safety_report_id)
-	.bind(appendices_json)
 	.bind(raw_xml)
 	.bind(user_id)
 	.execute(&mut *tx)
@@ -158,7 +152,6 @@ async fn test_cioms_pdf_export_returns_pdf() -> Result<()> {
 		seed.org_id,
 		seed.admin.id,
 		&safety_report_id,
-		r#"["ich"]"#,
 	)
 	.await?;
 
@@ -228,7 +221,6 @@ async fn test_xml_export_comments_setting_controls_comments() -> Result<()> {
 		seed.org_id,
 		seed.admin.id,
 		&safety_report_id,
-		r#"["ich"]"#,
 		raw_xml,
 	)
 	.await?;
@@ -285,7 +277,7 @@ async fn test_xml_export_comments_setting_controls_comments() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_single_export_rejects_unselected_appendix_profile() -> Result<()> {
+async fn test_single_export_uses_explicit_profile() -> Result<()> {
 	std::env::set_var("E2BR3_EXPORT_VALIDATE_FDA", "0");
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -298,7 +290,6 @@ async fn test_single_export_rejects_unselected_appendix_profile() -> Result<()> 
 		seed.org_id,
 		seed.admin.id,
 		&safety_report_id,
-		r#"["fda"]"#,
 	)
 	.await?;
 
@@ -308,20 +299,14 @@ async fn test_single_export_rejects_unselected_appendix_profile() -> Result<()> 
 		&format!("/api/cases/{case_id}/export/xml?profile=mfds"),
 	)
 	.await?;
-	assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-	let body = to_bytes(response.into_body(), usize::MAX).await?;
-	let body = std::str::from_utf8(&body)?;
-	assert!(
-		body.contains("profile 'mfds' is not selected on this case"),
-		"{body}"
-	);
+	assert_eq!(response.status(), StatusCode::OK);
 
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_bulk_export_writes_one_xml_per_selected_appendix() -> Result<()> {
+async fn test_bulk_export_writes_one_xml_for_explicit_profile() -> Result<()> {
 	std::env::set_var("E2BR3_EXPORT_VALIDATE_FDA", "0");
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -334,7 +319,6 @@ async fn test_bulk_export_writes_one_xml_per_selected_appendix() -> Result<()> {
 		seed.org_id,
 		seed.admin.id,
 		&safety_report_id,
-		r#"["fda","mfds"]"#,
 	)
 	.await?;
 
@@ -342,7 +326,7 @@ async fn test_bulk_export_writes_one_xml_per_selected_appendix() -> Result<()> {
 		&app,
 		&cookie,
 		"/api/cases/export/xml",
-		serde_json::json!({ "case_ids": [case_id] }),
+		serde_json::json!({ "case_ids": [case_id], "profile": "mfds" }),
 	)
 	.await?;
 	assert_eq!(response.status(), StatusCode::OK);
@@ -356,10 +340,7 @@ async fn test_bulk_export_writes_one_xml_per_selected_appendix() -> Result<()> {
 
 	assert_eq!(
 		names,
-		vec![
-			format!("{safety_report_id}-{case_id}-fda.xml"),
-			format!("{safety_report_id}-{case_id}-mfds.xml"),
-		]
+		vec![format!("{safety_report_id}-{case_id}-mfds.xml")]
 	);
 
 	Ok(())
@@ -469,7 +450,6 @@ async fn test_failed_single_export_records_error_history() -> Result<()> {
 		seed.org_id,
 		seed.admin.id,
 		&safety_report_id,
-		r#"["fda"]"#,
 	)
 	.await?;
 

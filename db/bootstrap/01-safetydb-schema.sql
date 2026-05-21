@@ -185,7 +185,6 @@ CREATE TABLE if NOT EXISTS cases (
     version INTEGER NOT NULL DEFAULT 1,      -- C.1.1.r.1
     dg_prd_key TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'draft',
-    appendices_json TEXT,
     review_receivers_json TEXT,
     workflow_routes_json TEXT,
     workflow_status TEXT NOT NULL DEFAULT 'Saved',
@@ -231,6 +230,31 @@ CREATE INDEX idx_cases_safety_report_id ON cases(safety_report_id);
 CREATE INDEX idx_cases_status ON cases(status);
 CREATE INDEX idx_cases_workflow_status ON cases(workflow_status);
 CREATE INDEX idx_cases_created_by ON cases(created_by);
+
+CREATE TABLE IF NOT EXISTS case_validation_summaries (
+    case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    appendix VARCHAR(16) NOT NULL,
+    page_id VARCHAR(16) NOT NULL,
+    blocking_count INTEGER NOT NULL DEFAULT 0,
+    non_blocking_count INTEGER NOT NULL DEFAULT 0,
+    required_count INTEGER NOT NULL DEFAULT 0,
+    stale BOOLEAN NOT NULL DEFAULT FALSE,
+    generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (case_id, appendix, page_id),
+    CONSTRAINT case_validation_summary_appendix_valid
+        CHECK (appendix IN ('ich', 'fda', 'mfds')),
+    CONSTRAINT case_validation_summary_counts_non_negative
+        CHECK (
+            blocking_count >= 0
+            AND non_blocking_count >= 0
+            AND required_count >= 0
+        )
+);
+
+CREATE INDEX idx_case_validation_summaries_case
+    ON case_validation_summaries(case_id);
+CREATE INDEX idx_case_validation_summaries_page
+    ON case_validation_summaries(case_id, page_id, stale);
 
     -- ============================================================================
     -- 4. Case Versions (for history tracking)
@@ -909,6 +933,26 @@ CREATE POLICY cases_org_isolation ON cases
     WITH CHECK (
         organization_id = current_organization_id()
         OR is_current_user_admin()
+    );
+
+ALTER TABLE case_validation_summaries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE case_validation_summaries FORCE ROW LEVEL SECURITY;
+CREATE POLICY case_validation_summaries_via_case ON case_validation_summaries
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = case_validation_summaries.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM cases c
+            WHERE c.id = case_validation_summaries.case_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
     );
 
 -- ============================================================================

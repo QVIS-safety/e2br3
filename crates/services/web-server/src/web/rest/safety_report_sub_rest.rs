@@ -78,7 +78,6 @@ async fn mark_case_dirty_c(
 			safety_report_id: None,
 			dg_prd_key: None,
 			status: None,
-			appendices_json: None,
 			review_receivers_json: None,
 			workflow_routes_json: None,
 			mfds_report_type: None,

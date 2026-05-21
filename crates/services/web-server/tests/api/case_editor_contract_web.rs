@@ -104,7 +104,7 @@ async fn create_case_with_appendices(
 	app: &axum::Router,
 	cookie: &str,
 	safety_report_prefix: &str,
-	appendices: &[&str],
+	_appendices: &[&str],
 ) -> Result<String> {
 	let safety_report_id = format!("{safety_report_prefix}-{}", Uuid::new_v4());
 	let (status, body) = post_json(
@@ -114,8 +114,7 @@ async fn create_case_with_appendices(
 		json!({
 			"data": {
 				"safety_report_id": safety_report_id,
-				"status": "draft",
-				"appendices_json": serde_json::to_string(appendices)?
+				"status": "draft"
 			}
 		}),
 	)
@@ -239,7 +238,7 @@ async fn editor_shell_returns_only_case_header_workflow_and_permissions(
 	assert_eq!(status, StatusCode::OK);
 	assert_eq!(body["id"], case_id);
 	assert!(body.get("status").is_some());
-	assert!(body.get("appendices").is_some());
+	assert!(body.get("appendices").is_none());
 	assert!(body.get("canActOnWorkflow").is_some());
 	assert!(body.get("reactions").is_none());
 	assert!(body.get("testResults").is_none());
@@ -315,16 +314,26 @@ async fn editor_ci_page_projection_returns_appendix_aware_field_envelopes(
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/CI"),
+		&format!("/api/cases/{case_id}/editor/pages/CI?appendix=fda"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["caseId"], case_id);
 	assert_eq!(body["pageId"], "CI");
-	assert_eq!(body["appendices"], json!(["ich", "fda"]));
+	assert_eq!(body["focusedAppendix"], "fda");
+	assert!(body.get("appendices").is_none(), "{body}");
 	assert!(body["saved"].as_bool().is_some(), "{body}");
 	assert!(body["requiredCount"].as_u64().is_some(), "{body}");
+	assert!(
+		body["rows"]["safetyReportIdentification"].is_object(),
+		"{body}"
+	);
+	assert!(body["rows"]["messageHeader"].is_null(), "{body}");
+	assert!(body["rows"]["receiverInfo"].is_null(), "{body}");
+	assert!(body["rows"]["otherCaseIdentifiers"].is_array(), "{body}");
+	assert!(body["rows"]["linkedReports"].is_array(), "{body}");
+	assert!(body["rows"]["documentsHeldBySender"].is_array(), "{body}");
 
 	let report_type = &body["fields"]["reportType"];
 	assert_eq!(report_type["fieldId"], "CASE_RPT_TYPE");
@@ -453,6 +462,123 @@ async fn editor_ci_page_patch_can_clear_appendix_specific_field() -> Result<()> 
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["data"]["local_criteria_report_type"], Value::Null);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_ci_page_projection_uses_request_appendix_as_validation_context(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case_with_appendices(
+		&app,
+		&cookie,
+		"EDITOR-CI-REQUEST-APPENDIX",
+		&["fda"],
+	)
+	.await?;
+	create_safety_report(&app, &cookie, &case_id, "2", true).await?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI?appendix=ich"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["focusedAppendix"], "ich");
+	assert!(body.get("appendices").is_none(), "{body}");
+	assert_eq!(body["fields"]["localCriteriaReportType"]["visible"], false);
+	assert_eq!(
+		body["fields"]["localCriteriaReportType"]["requiredEmpty"],
+		false
+	);
+	assert!(
+		body["fields"]["localCriteriaReportType"]["issues"]
+			.as_array()
+			.ok_or("missing local criteria issues")?
+			.is_empty(),
+		"{body}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_page_projection_rejects_unknown_appendix_context() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-BAD-APPENDIX", &["ich"])
+			.await?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI?appendix=unknown"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_remaining_direct_pages_have_projection_routes() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-PAGES", &["ich"]).await?;
+
+	for (section, expected_key) in [
+		("RP", "primarySources"),
+		("SD", "senderInformation"),
+		("LR", "literatureReferences"),
+		("SI", "studyInformation"),
+		("DM", "patientInformation"),
+		("NR", "narrative"),
+	] {
+		let (status, body) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{section}?appendix=ich"),
+		)
+		.await?;
+
+		assert_eq!(status, StatusCode::OK, "{section}: {body}");
+		assert_eq!(body["caseId"], case_id);
+		assert_eq!(body["pageId"], section);
+		assert_eq!(body["focusedAppendix"], "ich");
+		assert!(body["saved"].as_bool().is_some(), "{section}: {body}");
+		assert!(
+			body["requiredCount"].as_u64().is_some(),
+			"{section}: {body}"
+		);
+		assert!(body["fields"].is_object(), "{section}: {body}");
+		assert!(body["rows"].is_object(), "{section}: {body}");
+		assert!(
+			body["rows"].get(expected_key).is_some(),
+			"{section}: {body}"
+		);
+		if matches!(section, "DM" | "NR" | "SI") {
+			assert_eq!(body["saved"], false, "{section}: {body}");
+		}
+	}
 
 	Ok(())
 }

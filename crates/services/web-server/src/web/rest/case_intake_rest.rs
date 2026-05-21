@@ -27,7 +27,6 @@ use lib_rest_core::Error;
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValString, OpValsString};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use time::Date;
 use uuid::Uuid;
 
@@ -35,7 +34,6 @@ use crate::web::rest::case_export_rest::{
 	message_receiver_identifier, message_sender_identifier,
 };
 use crate::web::rest::case_rest::{
-	first_appendix_profile_from_json, normalize_appendices_json,
 	validate_case_create_payload,
 };
 
@@ -90,7 +88,6 @@ pub struct CaseFromIntakeInput {
 	#[serde(deserialize_with = "lib_core::serde::flex_date::deserialize_date")]
 	pub date_of_most_recent_information: Date,
 	pub report_type: String,
-	pub appendices_json: Option<String>,
 	pub status: Option<String>,
 	pub allow_duplicate_override: Option<bool>,
 	pub mfds_report_type: Option<String>,
@@ -321,15 +318,7 @@ pub async fn create_case_from_intake(
 		return Err(Error::BadRequest { message });
 	}
 
-	let normalized_appendices = match data.appendices_json.as_deref() {
-		Some(value) => Some(normalize_appendices_json(value)?),
-		None => None,
-	};
-	let profile_enum = normalized_appendices
-		.as_deref()
-		.map(first_appendix_profile_from_json)
-		.transpose()?
-		.unwrap_or(ValidationProfile::Fda);
+	let profile_enum = ValidationProfile::Fda;
 
 	let generated_case_number = if safety_report_id.trim().is_empty() {
 		let generated = generate_case_number(&ctx, &mm)
@@ -347,10 +336,6 @@ pub async fn create_case_from_intake(
 		safety_report_id: safety_report_id.clone(),
 		dg_prd_key: data.dg_prd_key.clone(),
 		status: Some(data.status.unwrap_or_else(|| "draft".to_string())),
-		appendices_json: Some(
-			normalized_appendices
-				.unwrap_or_else(|| json!([profile_enum.as_str()]).to_string()),
-		),
 		review_receivers_json: None,
 		workflow_routes_json: None,
 		mfds_report_type: data.mfds_report_type.clone(),

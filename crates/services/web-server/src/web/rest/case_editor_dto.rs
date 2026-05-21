@@ -11,7 +11,6 @@ use uuid::Uuid;
 pub struct CaseEditorShellDto {
 	pub id: Uuid,
 	pub status: String,
-	pub appendices: Vec<String>,
 	pub organization_id: Uuid,
 	pub safety_report_id: String,
 	pub dg_prd_key: Option<String>,
@@ -31,17 +30,9 @@ pub struct CaseEditorShellDto {
 
 impl From<CaseReadResult> for CaseEditorShellDto {
 	fn from(value: CaseReadResult) -> Self {
-		let appendices = value
-			.case
-			.appendices_json
-			.as_deref()
-			.and_then(|value| serde_json::from_str::<Vec<String>>(value).ok())
-			.unwrap_or_default();
-
 		Self {
 			id: value.case.id,
 			status: value.case.status,
-			appendices,
 			organization_id: value.case.organization_id,
 			safety_report_id: value.case.safety_report_id,
 			dg_prd_key: value.case.dg_prd_key,
@@ -88,7 +79,6 @@ pub struct CaseEditorDirectSectionResponse {
 pub struct CaseEditorPageProjectionResponse {
 	pub case_id: Uuid,
 	pub page_id: &'static str,
-	pub appendices: Vec<String>,
 	pub focused_appendix: Option<String>,
 	pub saved: bool,
 	pub required_count: usize,

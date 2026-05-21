@@ -465,28 +465,6 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 				continue;
 			}
 		}
-		let (update_status, update_body) = request_json(
-			&app,
-			&cookie,
-			"PUT",
-			&format!("/api/cases/{case_id}"),
-			Some("application/json"),
-			Body::from(
-				serde_json::json!({
-					"data": { "appendices_json": serde_json::json!([fixture.profile]).to_string() }
-				})
-				.to_string(),
-			),
-		)
-		.await?;
-		if update_status != StatusCode::OK {
-			failures.push(format!(
-				"{}: failed to set appendices_json {} body={}",
-				fixture.filename, update_status, update_body
-			));
-			continue;
-		}
-
 		let (validation_status, validation_body) = request_json(
 			&app,
 			&cookie,
