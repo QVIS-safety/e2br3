@@ -1,7 +1,9 @@
 use crate::web::rest::case_rest::CaseReadResult;
-use serde::Serialize;
+use serde::de::Error as DeError;
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use sqlx::types::time::OffsetDateTime;
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 #[derive(Debug, Serialize)]
@@ -79,6 +81,82 @@ pub struct CaseEditorRowDetailResponse {
 pub struct CaseEditorDirectSectionResponse {
 	pub case_id: Uuid,
 	pub data: Value,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorPageProjectionResponse {
+	pub case_id: Uuid,
+	pub page_id: &'static str,
+	pub appendices: Vec<String>,
+	pub focused_appendix: Option<String>,
+	pub saved: bool,
+	pub required_count: usize,
+	pub fields: BTreeMap<String, CaseEditorFieldEnvelope>,
+	pub rows: BTreeMap<String, Value>,
+	pub section_summaries: Vec<Value>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorFieldEnvelope {
+	pub field_id: &'static str,
+	pub path: &'static str,
+	pub label: &'static str,
+	pub value: Value,
+	pub display: Option<String>,
+	pub null_flavor: Option<String>,
+	pub notation: Option<String>,
+	pub origin_value: Value,
+	pub origin_null_flavor: Option<String>,
+	pub visible: bool,
+	pub editable: bool,
+	pub empty: bool,
+	pub required_empty: bool,
+	pub issues: Vec<CaseEditorFieldIssue>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorFieldIssue {
+	pub code: String,
+	pub message: String,
+	pub blocking: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaseEditorPagePatchRequest {
+	pub appendix: Option<String>,
+	#[serde(default)]
+	pub changes: BTreeMap<String, CaseEditorFieldPatch>,
+	#[serde(default)]
+	pub rows: BTreeMap<String, Value>,
+}
+
+#[derive(Debug)]
+pub struct CaseEditorFieldPatch {
+	pub value: Option<Value>,
+	pub null_flavor: Option<Option<String>>,
+}
+
+impl<'de> Deserialize<'de> for CaseEditorFieldPatch {
+	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+	where
+		D: Deserializer<'de>,
+	{
+		let mut raw = serde_json::Map::<String, Value>::deserialize(deserializer)?;
+		let value = raw.remove("value");
+		let null_flavor = match raw.remove("nullFlavor") {
+			None => None,
+			Some(Value::Null) => Some(None),
+			Some(Value::String(value)) => Some(Some(value)),
+			Some(_) => {
+				return Err(D::Error::custom("nullFlavor must be a string or null"))
+			}
+		};
+		Ok(Self { value, null_flavor })
+	}
 }
 
 #[derive(Debug, Serialize)]

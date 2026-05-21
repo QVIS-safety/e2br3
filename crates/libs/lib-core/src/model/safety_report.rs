@@ -170,8 +170,10 @@ pub struct SafetyReportIdentificationForUpdate {
 	pub date_of_most_recent_information_null_flavor: Option<String>,
 	#[serde(default, deserialize_with = "deserialize_patch_value")]
 	pub fulfil_expedited_criteria: PatchValue<bool>,
-	pub local_criteria_report_type: Option<String>,
-	pub combination_product_report_indicator: Option<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_value")]
+	pub local_criteria_report_type: PatchValue<String>,
+	#[serde(default, deserialize_with = "deserialize_patch_value")]
+	pub combination_product_report_indicator: PatchValue<String>,
 	pub worldwide_unique_id: Option<String>,
 	pub first_sender_type: Option<String>,
 	pub additional_documents_available: Option<bool>,
@@ -602,6 +604,12 @@ impl SafetyReportIdentificationBmc {
 		let (report_type, clear_report_type) = data.report_type.into_parts();
 		let (fulfil_expedited_criteria, clear_fulfil_expedited_criteria) =
 			data.fulfil_expedited_criteria.into_parts();
+		let (local_criteria_report_type, clear_local_criteria_report_type) =
+			data.local_criteria_report_type.into_parts();
+		let (
+			combination_product_report_indicator,
+			clear_combination_product_report_indicator,
+		) = data.combination_product_report_indicator.into_parts();
 		let should_mark_nullified = data
 			.nullification_code
 			.as_deref()
@@ -655,17 +663,17 @@ impl SafetyReportIdentificationBmc {
 			     date_of_most_recent_information = CASE WHEN $9 IS NOT NULL THEN NULL ELSE COALESCE($8, date_of_most_recent_information) END,
 			     date_of_most_recent_information_null_flavor = CASE WHEN $8 IS NOT NULL THEN NULL ELSE COALESCE($9, date_of_most_recent_information_null_flavor) END,
 			     fulfil_expedited_criteria = CASE WHEN $10 THEN NULL ELSE COALESCE($11, fulfil_expedited_criteria) END,
-			     local_criteria_report_type = COALESCE($12, local_criteria_report_type),
-			     combination_product_report_indicator = COALESCE($13, combination_product_report_indicator),
-			     worldwide_unique_id = COALESCE($14, worldwide_unique_id),
-			     first_sender_type = COALESCE($15, first_sender_type),
-			     additional_documents_available = COALESCE($16, additional_documents_available),
-			     other_case_identifiers_exist = COALESCE($17, other_case_identifiers_exist),
-			     nullification_code = COALESCE($18, nullification_code),
-			     nullification_reason = COALESCE($19, nullification_reason),
-			     receiver_organization = COALESCE($20, receiver_organization),
+			     local_criteria_report_type = CASE WHEN $12 THEN NULL ELSE COALESCE($13, local_criteria_report_type) END,
+			     combination_product_report_indicator = CASE WHEN $14 THEN NULL ELSE COALESCE($15, combination_product_report_indicator) END,
+			     worldwide_unique_id = COALESCE($16, worldwide_unique_id),
+			     first_sender_type = COALESCE($17, first_sender_type),
+			     additional_documents_available = COALESCE($18, additional_documents_available),
+			     other_case_identifiers_exist = COALESCE($19, other_case_identifiers_exist),
+			     nullification_code = COALESCE($20, nullification_code),
+			     nullification_reason = COALESCE($21, nullification_reason),
+			     receiver_organization = COALESCE($22, receiver_organization),
 			     updated_at = now(),
-			     updated_by = $21
+			     updated_by = $23
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -684,8 +692,10 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.date_of_most_recent_information_null_flavor)
 					.bind(clear_fulfil_expedited_criteria)
 					.bind(fulfil_expedited_criteria)
-					.bind(data.local_criteria_report_type)
-					.bind(data.combination_product_report_indicator)
+					.bind(clear_local_criteria_report_type)
+					.bind(local_criteria_report_type)
+					.bind(clear_combination_product_report_indicator)
+					.bind(combination_product_report_indicator)
 					.bind(data.worldwide_unique_id)
 					.bind(data.first_sender_type)
 					.bind(data.additional_documents_available)

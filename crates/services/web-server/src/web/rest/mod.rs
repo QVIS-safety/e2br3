@@ -72,6 +72,11 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			get(case_editor_rest::get_editor_ci),
 		)
 		.route(
+			"/cases/{case_id}/editor/pages/CI",
+			get(case_editor_rest::get_editor_ci_page_projection)
+				.patch(case_editor_rest::patch_editor_ci_page_projection),
+		)
+		.route(
 			"/cases/{case_id}/editor/RP",
 			get(case_editor_rest::get_editor_rp),
 		)

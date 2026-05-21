@@ -39,6 +39,25 @@ async fn post_json(
 	Ok((status, serde_json::from_slice::<Value>(&body)?))
 }
 
+async fn patch_json(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("PATCH")
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let body = serde_json::from_slice::<Value>(&body).unwrap_or(Value::Null);
+	Ok((status, body))
+}
+
 async fn get_json(
 	app: &axum::Router,
 	cookie: &str,
@@ -79,6 +98,83 @@ async fn create_case(
 		.as_str()
 		.ok_or("missing created case id")?
 		.to_string())
+}
+
+async fn create_case_with_appendices(
+	app: &axum::Router,
+	cookie: &str,
+	safety_report_prefix: &str,
+	appendices: &[&str],
+) -> Result<String> {
+	let safety_report_id = format!("{safety_report_prefix}-{}", Uuid::new_v4());
+	let (status, body) = post_json(
+		app,
+		cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": safety_report_id,
+				"status": "draft",
+				"appendices_json": serde_json::to_string(appendices)?
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	Ok(body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?
+		.to_string())
+}
+
+async fn create_safety_report(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+	report_type: &str,
+	fulfil_expedited_criteria: bool,
+) -> Result<()> {
+	create_safety_report_with_local_criteria(
+		app,
+		cookie,
+		case_id,
+		report_type,
+		fulfil_expedited_criteria,
+		None,
+	)
+	.await
+}
+
+async fn create_safety_report_with_local_criteria(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+	report_type: &str,
+	fulfil_expedited_criteria: bool,
+	local_criteria_report_type: Option<&str>,
+) -> Result<()> {
+	let (status, body) = post_json(
+		app,
+		cookie,
+		&format!("/api/cases/{case_id}/safety-report"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"transmission_date": [2024, 1],
+				"report_type": report_type,
+				"date_first_received_from_source": [2024, 1],
+				"date_of_most_recent_information": [2024, 1],
+				"fulfil_expedited_criteria": fulfil_expedited_criteria,
+				"local_criteria_report_type": local_criteria_report_type
+			}
+		}),
+	)
+	.await?;
+	assert!(
+		status == StatusCode::CREATED || status == StatusCode::OK,
+		"{body}"
+	);
+	Ok(())
 }
 
 fn assert_no_ae_lb_dg_payload(data: &Value) {
@@ -194,6 +290,169 @@ async fn editor_ci_returns_ci_payload_only() -> Result<()> {
 	);
 	assert!(data.get("messageHeader").is_some(), "{body}");
 	assert_no_ae_lb_dg_payload(data);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_ci_page_projection_returns_appendix_aware_field_envelopes(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case_with_appendices(
+		&app,
+		&cookie,
+		"EDITOR-CI-PROJECTION",
+		&["ich", "fda"],
+	)
+	.await?;
+	create_safety_report(&app, &cookie, &case_id, "2", true).await?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["caseId"], case_id);
+	assert_eq!(body["pageId"], "CI");
+	assert_eq!(body["appendices"], json!(["ich", "fda"]));
+	assert!(body["saved"].as_bool().is_some(), "{body}");
+	assert!(body["requiredCount"].as_u64().is_some(), "{body}");
+
+	let report_type = &body["fields"]["reportType"];
+	assert_eq!(report_type["fieldId"], "CASE_RPT_TYPE");
+	assert_eq!(report_type["path"], "safetyReportIdentification.reportType");
+	assert_eq!(report_type["value"], "2");
+	assert_eq!(report_type["display"], "Report from study");
+	assert_eq!(report_type["visible"], true);
+	assert_eq!(report_type["editable"], true);
+	assert_eq!(report_type["empty"], false);
+	assert_eq!(report_type["requiredEmpty"], false);
+
+	let local_criteria = &body["fields"]["localCriteriaReportType"];
+	assert_eq!(local_criteria["fieldId"], "CASEU_LOC_REPORT_TYPE");
+	assert_eq!(
+		local_criteria["path"],
+		"safetyReportIdentification.localCriteriaReportType"
+	);
+	assert_eq!(local_criteria["visible"], true);
+	assert_eq!(local_criteria["requiredEmpty"], true);
+	assert!(
+		local_criteria["issues"]
+			.as_array()
+			.ok_or("missing localCriteriaReportType issues")?
+			.iter()
+			.any(|issue| issue["code"] == "FDA.C.1.7.1.REQUIRED"),
+		"{body}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_ci_page_patch_updates_only_report_type_and_returns_projection(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-CI-PATCH", &["ich"])
+			.await?;
+	create_safety_report(&app, &cookie, &case_id, "1", false).await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI"),
+		json!({
+			"changes": {
+				"reportType": { "value": "3" }
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["fields"]["reportType"]["value"], "3");
+	assert_eq!(body["fields"]["reportType"]["display"], "Other");
+	assert_eq!(body["fields"]["fulfilExpeditedCriteria"]["value"], false);
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/safety-report"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["report_type"], "3");
+	assert_eq!(body["data"]["fulfil_expedited_criteria"], false);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_ci_page_patch_can_clear_appendix_specific_field() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-CI-CLEAR", &["fda"])
+			.await?;
+	create_safety_report_with_local_criteria(
+		&app,
+		&cookie,
+		&case_id,
+		"2",
+		true,
+		Some("1"),
+	)
+	.await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI"),
+		json!({
+			"appendix": "fda",
+			"changes": {
+				"localCriteriaReportType": { "value": null }
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["focusedAppendix"], "fda");
+	assert_eq!(
+		body["fields"]["localCriteriaReportType"]["value"],
+		Value::Null
+	);
+	assert_eq!(
+		body["fields"]["localCriteriaReportType"]["requiredEmpty"],
+		true
+	);
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/safety-report"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["local_criteria_report_type"], Value::Null);
 
 	Ok(())
 }
