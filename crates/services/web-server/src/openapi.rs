@@ -47,11 +47,17 @@ pub fn router() -> Router {
 		get_editor_ci_page,
 		patch_editor_ci_page,
 		get_editor_rp_page,
+		patch_editor_rp_page,
 		get_editor_sd_page,
+		patch_editor_sd_page,
 		get_editor_lr_page,
+		patch_editor_lr_page,
 		get_editor_si_page,
+		patch_editor_si_page,
 		get_editor_dm_page,
+		patch_editor_dm_page,
 		get_editor_nr_page,
+		patch_editor_nr_page,
 		get_editor_rp,
 		get_editor_sd,
 		get_editor_lr,
@@ -513,7 +519,6 @@ struct CaseEditorDirectSectionResponseDoc {
 struct CaseEditorPageProjectionResponseDoc {
 	case_id: String,
 	page_id: String,
-	appendices: Vec<String>,
 	focused_appendix: Option<String>,
 	saved: bool,
 	required_count: usize,
@@ -2389,6 +2394,22 @@ fn patch_editor_ci_page() {}
 fn get_editor_rp_page() {}
 
 #[utoipa::path(
+	patch,
+	path = "/api/cases/{case_id}/editor/pages/RP",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(("case_id" = String, Path, description = "Case ID")),
+	request_body = CaseEditorPagePatchRequestDoc,
+	responses(
+		(status = 200, description = "Updated reporter page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid patch or appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn patch_editor_rp_page() {}
+
+#[utoipa::path(
 	get,
 	path = "/api/cases/{case_id}/editor/pages/SD",
 	tag = "case-editor",
@@ -2405,6 +2426,22 @@ fn get_editor_rp_page() {}
 	)
 )]
 fn get_editor_sd_page() {}
+
+#[utoipa::path(
+	patch,
+	path = "/api/cases/{case_id}/editor/pages/SD",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(("case_id" = String, Path, description = "Case ID")),
+	request_body = CaseEditorPagePatchRequestDoc,
+	responses(
+		(status = 200, description = "Updated sender page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid patch or appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn patch_editor_sd_page() {}
 
 #[utoipa::path(
 	get,
@@ -2425,6 +2462,22 @@ fn get_editor_sd_page() {}
 fn get_editor_lr_page() {}
 
 #[utoipa::path(
+	patch,
+	path = "/api/cases/{case_id}/editor/pages/LR",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(("case_id" = String, Path, description = "Case ID")),
+	request_body = CaseEditorPagePatchRequestDoc,
+	responses(
+		(status = 200, description = "Updated literature references page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid patch or appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn patch_editor_lr_page() {}
+
+#[utoipa::path(
 	get,
 	path = "/api/cases/{case_id}/editor/pages/SI",
 	tag = "case-editor",
@@ -2441,6 +2494,22 @@ fn get_editor_lr_page() {}
 	)
 )]
 fn get_editor_si_page() {}
+
+#[utoipa::path(
+	patch,
+	path = "/api/cases/{case_id}/editor/pages/SI",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(("case_id" = String, Path, description = "Case ID")),
+	request_body = CaseEditorPagePatchRequestDoc,
+	responses(
+		(status = 200, description = "Updated study information page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid patch or appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn patch_editor_si_page() {}
 
 #[utoipa::path(
 	get,
@@ -2461,6 +2530,22 @@ fn get_editor_si_page() {}
 fn get_editor_dm_page() {}
 
 #[utoipa::path(
+	patch,
+	path = "/api/cases/{case_id}/editor/pages/DM",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(("case_id" = String, Path, description = "Case ID")),
+	request_body = CaseEditorPagePatchRequestDoc,
+	responses(
+		(status = 200, description = "Updated patient demographics page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid patch or appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn patch_editor_dm_page() {}
+
+#[utoipa::path(
 	get,
 	path = "/api/cases/{case_id}/editor/pages/NR",
 	tag = "case-editor",
@@ -2477,6 +2562,22 @@ fn get_editor_dm_page() {}
 	)
 )]
 fn get_editor_nr_page() {}
+
+#[utoipa::path(
+	patch,
+	path = "/api/cases/{case_id}/editor/pages/NR",
+	tag = "case-editor",
+	security(("auth_token" = [])),
+	params(("case_id" = String, Path, description = "Case ID")),
+	request_body = CaseEditorPagePatchRequestDoc,
+	responses(
+		(status = 200, description = "Updated narrative page projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 400, description = "Invalid patch or appendix context", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn patch_editor_nr_page() {}
 
 #[utoipa::path(
 	get,
