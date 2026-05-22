@@ -145,7 +145,7 @@ async fn create_case(
 		.to_string())
 }
 
-async fn create_case_with_appendices(
+async fn create_case_for_editor(
 	app: &axum::Router,
 	cookie: &str,
 	safety_report_prefix: &str,
@@ -475,14 +475,14 @@ async fn editor_ci_returns_ci_payload_only() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn editor_ci_page_projection_returns_appendix_aware_field_envelopes(
+async fn editor_ci_page_projection_returns_profile_aware_field_envelopes(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
-	let case_id = create_case_with_appendices(
+	let case_id = create_case_for_editor(
 		&app,
 		&cookie,
 		"EDITOR-CI-PROJECTION",
@@ -494,14 +494,13 @@ async fn editor_ci_page_projection_returns_appendix_aware_field_envelopes(
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/CI?appendix=fda"),
+		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=fda"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["caseId"], case_id);
 	assert_eq!(body["pageId"], "CI");
-	assert_eq!(body["focusedAppendix"], "fda");
 	assert_eq!(body["profiles"], json!(["fda"]));
 	assert!(body.get("appendices").is_none(), "{body}");
 	assert!(body["saved"].as_bool().is_some(), "{body}");
@@ -568,7 +567,6 @@ async fn editor_ci_page_projection_accepts_multiple_profiles() -> Result<()> {
 	assert_eq!(body["caseId"], case_id);
 	assert_eq!(body["pageId"], "CI");
 	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
-	assert!(body.get("focusedAppendix").is_none(), "{body}");
 	assert!(body["fields"].is_object(), "{body}");
 
 	Ok(())
@@ -605,14 +603,13 @@ async fn editor_ci_page_projection_uses_all_profiles_for_visibility() -> Result<
 
 #[serial]
 #[tokio::test]
-async fn editor_ci_page_projection_preserves_legacy_null_focused_appendix(
-) -> Result<()> {
+async fn editor_ci_page_projection_omits_primary_profile_context() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
-	let case_id = create_case(&app, &cookie, "EDITOR-CI-LEGACY-FOCUS").await?;
+	let case_id = create_case(&app, &cookie, "EDITOR-CI-PROFILES-ONLY").await?;
 	create_safety_report(&app, &cookie, &case_id, "2", true).await?;
 
 	let (status, body) = get_json(
@@ -623,11 +620,7 @@ async fn editor_ci_page_projection_preserves_legacy_null_focused_appendix(
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert!(
-		body.get("focusedAppendix").is_some(),
-		"legacy focusedAppendix key should be present: {body}"
-	);
-	assert_eq!(body["focusedAppendix"], Value::Null, "{body}");
+	assert!(body.get("primaryProfile").is_none(), "{body}");
 	assert_eq!(body["profiles"], json!(["ich"]));
 
 	Ok(())
@@ -643,8 +636,7 @@ async fn editor_ci_page_patch_updates_only_report_type_and_returns_projection(
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-CI-PATCH", &["ich"])
-			.await?;
+		create_case_for_editor(&app, &cookie, "EDITOR-CI-PATCH", &["ich"]).await?;
 	create_safety_report(&app, &cookie, &case_id, "1", false).await?;
 
 	let (status, body) = patch_json(
@@ -701,8 +693,6 @@ async fn editor_ci_page_patch_accepts_profiles() -> Result<()> {
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
-	assert!(body.get("focusedAppendix").is_none(), "{body}");
-
 	Ok(())
 }
 
@@ -748,15 +738,14 @@ async fn editor_ci_page_patch_rejects_invalid_profiles_before_mutation() -> Resu
 
 #[serial]
 #[tokio::test]
-async fn editor_ci_page_patch_can_clear_appendix_specific_field() -> Result<()> {
+async fn editor_ci_page_patch_can_clear_profile_specific_field() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-CI-CLEAR", &["fda"])
-			.await?;
+		create_case_for_editor(&app, &cookie, "EDITOR-CI-CLEAR", &["fda"]).await?;
 	create_safety_report_with_local_criteria(
 		&app,
 		&cookie,
@@ -772,7 +761,7 @@ async fn editor_ci_page_patch_can_clear_appendix_specific_field() -> Result<()> 
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/CI"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"changes": {
 				"localCriteriaReportType": { "value": null }
 			}
@@ -781,7 +770,6 @@ async fn editor_ci_page_patch_can_clear_appendix_specific_field() -> Result<()> 
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["focusedAppendix"], "fda");
 	assert_eq!(
 		body["fields"]["localCriteriaReportType"]["value"],
 		Value::Null
@@ -805,14 +793,14 @@ async fn editor_ci_page_patch_can_clear_appendix_specific_field() -> Result<()> 
 
 #[serial]
 #[tokio::test]
-async fn editor_ci_page_projection_uses_request_appendix_as_validation_context(
+async fn editor_ci_page_projection_uses_request_profile_as_validation_context(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
-	let case_id = create_case_with_appendices(
+	let case_id = create_case_for_editor(
 		&app,
 		&cookie,
 		"EDITOR-CI-REQUEST-APPENDIX",
@@ -824,12 +812,11 @@ async fn editor_ci_page_projection_uses_request_appendix_as_validation_context(
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/CI?appendix=ich"),
+		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=ich"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["focusedAppendix"], "ich");
 	assert!(body.get("appendices").is_none(), "{body}");
 	assert_eq!(body["fields"]["localCriteriaReportType"]["visible"], false);
 	assert_eq!(
@@ -849,20 +836,20 @@ async fn editor_ci_page_projection_uses_request_appendix_as_validation_context(
 
 #[serial]
 #[tokio::test]
-async fn editor_page_projection_rejects_unknown_appendix_context() -> Result<()> {
+async fn editor_page_projection_rejects_unknown_profile_context() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-BAD-APPENDIX", &["ich"])
+		create_case_for_editor(&app, &cookie, "EDITOR-BAD-APPENDIX", &["ich"])
 			.await?;
 
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/CI?appendix=unknown"),
+		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=unknown"),
 	)
 	.await?;
 
@@ -880,7 +867,7 @@ async fn editor_remaining_direct_pages_have_projection_routes() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-PAGES", &["ich"]).await?;
+		create_case_for_editor(&app, &cookie, "EDITOR-PAGES", &["ich"]).await?;
 
 	for (section, expected_key) in [
 		("RP", "primarySources"),
@@ -893,14 +880,13 @@ async fn editor_remaining_direct_pages_have_projection_routes() -> Result<()> {
 		let (status, body) = get_json(
 			&app,
 			&cookie,
-			&format!("/api/cases/{case_id}/editor/pages/{section}?appendix=fda"),
+			&format!("/api/cases/{case_id}/editor/pages/{section}?profiles=fda"),
 		)
 		.await?;
 
 		assert_eq!(status, StatusCode::OK, "{section}: {body}");
 		assert_eq!(body["caseId"], case_id);
 		assert_eq!(body["pageId"], section);
-		assert_eq!(body["focusedAppendix"], "fda");
 		assert!(body.get("appendices").is_none(), "{section}: {body}");
 		assert!(body["saved"].as_bool().is_some(), "{section}: {body}");
 		assert!(
@@ -923,7 +909,7 @@ async fn editor_remaining_direct_pages_have_projection_routes() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn editor_remaining_direct_pages_accept_page_patch_with_appendix() -> Result<()>
+async fn editor_remaining_direct_pages_accept_page_patch_with_profiles() -> Result<()>
 {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -931,7 +917,7 @@ async fn editor_remaining_direct_pages_accept_page_patch_with_appendix() -> Resu
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-PAGES-PATCH", &["ich"])
+		create_case_for_editor(&app, &cookie, "EDITOR-PAGES-PATCH", &["ich"])
 			.await?;
 
 	for section in ["RP", "SD", "LR", "SI", "DM", "NR"] {
@@ -940,14 +926,13 @@ async fn editor_remaining_direct_pages_accept_page_patch_with_appendix() -> Resu
 			&cookie,
 			&format!("/api/cases/{case_id}/editor/pages/{section}"),
 			json!({
-				"appendix": "fda",
+				"profiles": ["fda"],
 				"changes": {}
 			}),
 		)
 		.await?;
 
 		assert_eq!(status, StatusCode::OK, "{section}: {body}");
-		assert_eq!(body["focusedAppendix"], "fda", "{section}");
 		assert!(body.get("appendices").is_none(), "{section}: {body}");
 	}
 
@@ -963,7 +948,7 @@ async fn editor_direct_page_patch_rejects_unknown_field() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-PATCH-UNKNOWN", &["ich"])
+		create_case_for_editor(&app, &cookie, "EDITOR-PATCH-UNKNOWN", &["ich"])
 			.await?;
 
 	let (status, body) = patch_json(
@@ -971,7 +956,7 @@ async fn editor_direct_page_patch_rejects_unknown_field() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/RP"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"changes": {
 				"notAReporterField": { "value": "x" }
 			}
@@ -985,26 +970,22 @@ async fn editor_direct_page_patch_rejects_unknown_field() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn editor_direct_page_patch_rejects_unknown_appendix() -> Result<()> {
+async fn editor_direct_page_patch_rejects_unknown_profile() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
-	let case_id = create_case_with_appendices(
-		&app,
-		&cookie,
-		"EDITOR-PATCH-BAD-APPENDIX",
-		&["ich"],
-	)
-	.await?;
+	let case_id =
+		create_case_for_editor(&app, &cookie, "EDITOR-PATCH-BAD-APPENDIX", &["ich"])
+			.await?;
 
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/NR"),
 		json!({
-			"appendix": "unknown",
+			"profiles": ["unknown"],
 			"changes": {}
 		}),
 	)
@@ -1023,15 +1004,14 @@ async fn editor_nr_page_patch_persists_narrative_row() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-NR-PATCH", &["ich"])
-			.await?;
+		create_case_for_editor(&app, &cookie, "EDITOR-NR-PATCH", &["ich"]).await?;
 
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/NR"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"narrative": {
 					"caseNarrative": "Narrative saved through page patch"
@@ -1042,7 +1022,6 @@ async fn editor_nr_page_patch_persists_narrative_row() -> Result<()> {
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["focusedAppendix"], "fda");
 	assert_eq!(
 		body["rows"]["narrative"]["case_narrative"],
 		"Narrative saved through page patch"
@@ -1060,15 +1039,14 @@ async fn editor_rp_page_patch_persists_primary_source_row() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-RP-PATCH", &["ich"])
-			.await?;
+		create_case_for_editor(&app, &cookie, "EDITOR-RP-PATCH", &["ich"]).await?;
 
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/RP"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"primarySources": [{
 					"sequenceNumber": 1,
@@ -1094,15 +1072,14 @@ async fn editor_sd_page_patch_persists_sender_information_row() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-SD-PATCH", &["ich"])
-			.await?;
+		create_case_for_editor(&app, &cookie, "EDITOR-SD-PATCH", &["ich"]).await?;
 
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/SD"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"senderInformation": {
 					"organizationName": "Sender Org"
@@ -1130,15 +1107,14 @@ async fn editor_lr_page_patch_persists_literature_reference_row() -> Result<()> 
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-LR-PATCH", &["ich"])
-			.await?;
+		create_case_for_editor(&app, &cookie, "EDITOR-LR-PATCH", &["ich"]).await?;
 
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/LR"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"literatureReferences": [{
 					"sequenceNumber": 1,
@@ -1167,15 +1143,14 @@ async fn editor_si_page_patch_persists_study_information_row() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-SI-PATCH", &["ich"])
-			.await?;
+		create_case_for_editor(&app, &cookie, "EDITOR-SI-PATCH", &["ich"]).await?;
 
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/SI"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"studyInformation": {
 					"studyName": "Study 001"
@@ -1200,15 +1175,14 @@ async fn editor_dm_page_patch_persists_patient_information_row() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id =
-		create_case_with_appendices(&app, &cookie, "EDITOR-DM-PATCH", &["ich"])
-			.await?;
+		create_case_for_editor(&app, &cookie, "EDITOR-DM-PATCH", &["ich"]).await?;
 
 	let (status, body) = patch_json(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/DM"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"patientInformation": {
 					"patientInitials": "ABC"
@@ -1680,14 +1654,13 @@ async fn editor_repeatable_pages_have_list_projection_routes() -> Result<()> {
 		let (status, body) = get_json(
 			&app,
 			&cookie,
-			&format!("/api/cases/{case_id}/editor/pages/{section}?appendix=fda"),
+			&format!("/api/cases/{case_id}/editor/pages/{section}?profiles=fda"),
 		)
 		.await?;
 
 		assert_eq!(status, StatusCode::OK, "{section}: {body}");
 		assert_eq!(body["caseId"], case_id);
 		assert_eq!(body["pageId"], section);
-		assert_eq!(body["focusedAppendix"], "fda");
 		assert!(body.get("appendices").is_none(), "{section}: {body}");
 		assert!(body["rows"][expected_key].is_array(), "{section}: {body}");
 	}
@@ -1742,7 +1715,7 @@ async fn editor_repeatable_page_rows_return_row_detail_by_uuid() -> Result<()> {
 		&app,
 		&cookie,
 		&format!(
-			"/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}?appendix=fda"
+			"/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}?profiles=fda"
 		),
 	)
 	.await?;
@@ -1772,7 +1745,7 @@ async fn editor_ae_page_row_patch_updates_one_reaction() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"reaction": {
 					"reactionPrimarySourceNative": "Updated reaction"
@@ -1809,7 +1782,7 @@ async fn editor_lb_page_row_patch_updates_one_test_result() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/LB/rows/{test_result_id}"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"testResult": {
 					"testName": "Updated lab"
@@ -1843,7 +1816,7 @@ async fn editor_dg_page_row_patch_updates_one_drug() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/DG/rows/{drug_id}"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"drug": {
 					"medicinalProduct": "Updated product"
@@ -1878,7 +1851,7 @@ async fn editor_dh_page_row_patch_updates_one_drug_history() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/DH/rows/{past_drug_id}"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"pastDrugHistory": {
 					"drugName": "Updated prior drug"
@@ -1916,7 +1889,7 @@ async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sectio
 		(
 			"AE",
 			json!({
-				"appendix": "fda",
+				"profiles": ["fda"],
 				"rows": {
 					"reaction": {
 						"reactionPrimarySourceNative": "Created reaction"
@@ -1928,7 +1901,7 @@ async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sectio
 		(
 			"LB",
 			json!({
-				"appendix": "fda",
+				"profiles": ["fda"],
 				"rows": {
 					"testResult": {
 						"testName": "Created lab"
@@ -1940,7 +1913,7 @@ async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sectio
 		(
 			"DG",
 			json!({
-				"appendix": "fda",
+				"profiles": ["fda"],
 				"rows": {
 					"drug": {
 						"medicinalProduct": "Created product"
@@ -1952,7 +1925,7 @@ async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sectio
 		(
 			"DH",
 			json!({
-				"appendix": "fda",
+				"profiles": ["fda"],
 				"rows": {
 					"pastDrugHistory": {
 						"drugName": "Created prior drug"
@@ -1973,7 +1946,6 @@ async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sectio
 		.await?;
 		assert_eq!(status, StatusCode::CREATED, "{section}: {body}");
 		assert_eq!(body["section"], section);
-		assert_eq!(body["focusedAppendix"], "fda");
 		assert!(body["data"][response_key].is_object(), "{section}: {body}");
 		let row_id = body["rowId"]
 			.as_str()
@@ -2020,7 +1992,7 @@ async fn editor_repeatable_page_row_create_and_delete_mark_validation_cache_stal
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/AE/rows"),
 		json!({
-			"appendix": "fda",
+			"profiles": ["fda"],
 			"rows": {
 				"reaction": {
 					"reactionPrimarySourceNative": "Created stale reaction"

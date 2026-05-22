@@ -3,7 +3,7 @@ use crate::web::rest::case_editor_dto::{
 	CaseEditorDirectSectionResponse, CaseEditorFieldEnvelope, CaseEditorFieldIssue,
 	CaseEditorFieldPatch, CaseEditorLbListRowDto, CaseEditorListResponse,
 	CaseEditorPagePatchRequest, CaseEditorPageProjectionResponse,
-	CaseEditorRowDetailResponse, CaseEditorShellDto, FocusedAppendixResponse,
+	CaseEditorRowDetailResponse, CaseEditorShellDto,
 };
 use crate::web::rest::case_rest::case_to_read_result;
 use axum::extract::{Path, Query, State};
@@ -121,21 +121,7 @@ fn direct_section_response(
 
 #[derive(Debug, Deserialize)]
 pub struct CaseEditorPageProjectionQuery {
-	appendix: Option<String>,
 	profiles: Option<String>,
-}
-
-fn normalize_appendix(value: Option<String>) -> Result<Option<String>> {
-	value
-		.map(|value| {
-			let normalized = value.trim().to_ascii_lowercase();
-			ValidationProfile::parse(&normalized)
-				.map(|_| normalized)
-				.ok_or_else(|| Error::BadRequest {
-					message: format!("unknown appendix '{value}'"),
-				})
-		})
-		.transpose()
 }
 
 fn parse_editor_profiles(value: Option<&str>) -> Result<Vec<ValidationProfile>> {
@@ -177,43 +163,25 @@ fn request_profiles_csv(profiles: Option<&[String]>) -> Option<String> {
 }
 
 fn validate_request_projection_context(
-	appendix: Option<String>,
 	profiles: Option<&[String]>,
 ) -> Result<Option<String>> {
 	let requested_profiles = request_profiles_csv(profiles);
-	editor_projection_context(appendix, requested_profiles.clone())?;
+	editor_projection_context(requested_profiles.clone())?;
 	Ok(requested_profiles)
 }
 
 fn editor_projection_context(
-	focused_appendix: Option<String>,
 	requested_profiles: Option<String>,
-) -> Result<(Vec<ValidationProfile>, FocusedAppendixResponse)> {
-	let explicit_profiles = requested_profiles.is_some();
-	let profiles = if explicit_profiles {
-		parse_editor_profiles(requested_profiles.as_deref())?
-	} else {
-		parse_editor_profiles(focused_appendix.as_deref())?
-	};
-	let focused_appendix = if explicit_profiles {
-		FocusedAppendixResponse::omitted()
-	} else {
-		FocusedAppendixResponse::legacy(normalize_appendix(focused_appendix)?)
-	};
-	Ok((profiles, focused_appendix))
+) -> Result<Vec<ValidationProfile>> {
+	parse_editor_profiles(requested_profiles.as_deref())
 }
 
 fn insert_editor_json_context(
 	map: &mut Map<String, Value>,
-	focused_appendix: Option<String>,
 	requested_profiles: Option<String>,
 ) -> Result<()> {
-	let (profiles, focused_appendix) =
-		editor_projection_context(focused_appendix, requested_profiles)?;
+	let profiles = editor_projection_context(requested_profiles)?;
 	map.insert("profiles".to_string(), json!(profile_strings(&profiles)));
-	if let FocusedAppendixResponse::Legacy(value) = focused_appendix {
-		map.insert("focusedAppendix".to_string(), json!(value));
-	}
 	Ok(())
 }
 
@@ -406,11 +374,9 @@ async fn build_ci_page_projection(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
-	focused_appendix: Option<String>,
 	requested_profiles: Option<String>,
 ) -> Result<CaseEditorPageProjectionResponse> {
-	let (profiles, focused_appendix) =
-		editor_projection_context(focused_appendix, requested_profiles)?;
+	let profiles = editor_projection_context(requested_profiles)?;
 	let has_fda = profiles.contains(&ValidationProfile::Fda);
 	let safety_report =
 		match SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await {
@@ -519,7 +485,6 @@ async fn build_ci_page_projection(
 		case_id,
 		page_id: "CI",
 		profiles: profile_strings(&profiles),
-		focused_appendix,
 		saved: safety_report.is_some(),
 		required_count,
 		fields,
@@ -544,8 +509,7 @@ pub async fn get_editor_ci_page_projection(
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let projection =
-		build_ci_page_projection(&ctx, &mm, case_id, query.appendix, query.profiles)
-			.await?;
+		build_ci_page_projection(&ctx, &mm, case_id, query.profiles).await?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
@@ -599,10 +563,8 @@ pub async fn patch_editor_ci_page_projection(
 	require_permission(&ctx, CASE_UPDATE)?;
 	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.appendix.clone(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_profiles =
+		validate_request_projection_context(request.profiles.as_deref())?;
 
 	let mut update = SafetyReportIdentificationForUpdate {
 		transmission_date: None,
@@ -659,14 +621,8 @@ pub async fn patch_editor_ci_page_projection(
 			.await?;
 		CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
 	}
-	let projection = build_ci_page_projection(
-		&ctx,
-		&mm,
-		case_id,
-		request.appendix,
-		requested_profiles,
-	)
-	.await?;
+	let projection =
+		build_ci_page_projection(&ctx, &mm, case_id, requested_profiles).await?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
@@ -756,10 +712,8 @@ async fn patch_direct_page_projection(
 	require_permission(&ctx, CASE_UPDATE)?;
 	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.appendix.clone(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_profiles =
+		validate_request_projection_context(request.profiles.as_deref())?;
 
 	if !request.changes.is_empty() {
 		return Err(Error::BadRequest {
@@ -791,7 +745,6 @@ async fn patch_direct_page_projection(
 		&mm,
 		case_id,
 		page_id,
-		request.appendix,
 		requested_profiles,
 		data,
 	)
@@ -1477,18 +1430,15 @@ async fn direct_page_projection_response(
 	_mm: &ModelManager,
 	case_id: Uuid,
 	page_id: &'static str,
-	focused_appendix: Option<String>,
 	requested_profiles: Option<String>,
 	data: Value,
 ) -> Result<CaseEditorPageProjectionResponse> {
-	let (profiles, focused_appendix) =
-		editor_projection_context(focused_appendix, requested_profiles)?;
+	let profiles = editor_projection_context(requested_profiles)?;
 	let saved = direct_page_saved(page_id, &data);
 	Ok(CaseEditorPageProjectionResponse {
 		case_id,
 		page_id,
 		profiles: profile_strings(&profiles),
-		focused_appendix,
 		saved,
 		required_count: 0,
 		fields: BTreeMap::new(),
@@ -1500,17 +1450,14 @@ async fn direct_page_projection_response(
 fn repeatable_page_projection_response(
 	case_id: Uuid,
 	page_id: &'static str,
-	focused_appendix: Option<String>,
 	requested_profiles: Option<String>,
 	rows: Value,
 ) -> Result<CaseEditorPageProjectionResponse> {
-	let (profiles, focused_appendix) =
-		editor_projection_context(focused_appendix, requested_profiles)?;
+	let profiles = editor_projection_context(requested_profiles)?;
 	Ok(CaseEditorPageProjectionResponse {
 		case_id,
 		page_id,
 		profiles: profile_strings(&profiles),
-		focused_appendix,
 		saved: rows
 			.get("rows")
 			.and_then(Value::as_array)
@@ -1580,7 +1527,6 @@ pub async fn get_editor_rp_page_projection(
 		&mm,
 		case_id,
 		"RP",
-		query.appendix,
 		query.profiles,
 		load_editor_rp_data(&ctx, &mm, case_id).await?,
 	)
@@ -1657,7 +1603,6 @@ pub async fn get_editor_sd_page_projection(
 		&mm,
 		case_id,
 		"SD",
-		query.appendix,
 		query.profiles,
 		load_editor_sd_data(&ctx, &mm, case_id).await?,
 	)
@@ -1722,7 +1667,6 @@ pub async fn get_editor_lr_page_projection(
 		&mm,
 		case_id,
 		"LR",
-		query.appendix,
 		query.profiles,
 		load_editor_lr_data(&ctx, &mm, case_id).await?,
 	)
@@ -1807,7 +1751,6 @@ pub async fn get_editor_si_page_projection(
 		&mm,
 		case_id,
 		"SI",
-		query.appendix,
 		query.profiles,
 		load_editor_si_data(&ctx, &mm, case_id).await?,
 	)
@@ -2010,7 +1953,6 @@ pub async fn get_editor_dm_page_projection(
 		&mm,
 		case_id,
 		"DM",
-		query.appendix,
 		query.profiles,
 		load_editor_dm_data(&ctx, &mm, case_id).await?,
 	)
@@ -2101,7 +2043,6 @@ pub async fn get_editor_nr_page_projection(
 		&mm,
 		case_id,
 		"NR",
-		query.appendix,
 		query.profiles,
 		load_editor_nr_data(&ctx, &mm, case_id).await?,
 	)
@@ -2169,7 +2110,6 @@ pub async fn get_editor_ae_page_projection(
 	let projection = repeatable_page_projection_response(
 		case_id,
 		"AE",
-		query.appendix,
 		query.profiles,
 		json!({ "rows": rows }),
 	)?;
@@ -2214,7 +2154,6 @@ pub async fn get_editor_ae_page_row(
 		&mm,
 		case_id,
 		row_id,
-		query.appendix,
 		query.profiles,
 	)
 	.await?;
@@ -2226,7 +2165,6 @@ async fn build_editor_ae_page_row_response(
 	mm: &ModelManager,
 	case_id: Uuid,
 	row_id: Uuid,
-	appendix: Option<String>,
 	profiles: Option<String>,
 ) -> Result<Value> {
 	let reaction = ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
@@ -2234,7 +2172,7 @@ async fn build_editor_ae_page_row_response(
 	response.insert("caseId".to_string(), json!(case_id));
 	response.insert("section".to_string(), json!("AE"));
 	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, appendix, profiles)?;
+	insert_editor_json_context(&mut response, profiles)?;
 	response.insert("data".to_string(), json!({ "reaction": reaction }));
 	Ok(Value::Object(response))
 }
@@ -2248,10 +2186,8 @@ pub async fn create_editor_ae_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, REACTION_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.appendix.clone(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_profiles =
+		validate_request_projection_context(request.profiles.as_deref())?;
 
 	let row = required_row_object("AE", &request.rows, "reaction")?;
 	let value = row_model_value(
@@ -2286,7 +2222,6 @@ pub async fn create_editor_ae_page_row(
 		&mm,
 		case_id,
 		row_id,
-		request.appendix,
 		requested_profiles,
 	)
 	.await?;
@@ -2302,10 +2237,8 @@ pub async fn patch_editor_ae_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, REACTION_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.appendix.clone(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_profiles =
+		validate_request_projection_context(request.profiles.as_deref())?;
 
 	ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let row = required_row_object("AE", &request.rows, "reaction")?;
@@ -2333,7 +2266,6 @@ pub async fn patch_editor_ae_page_row(
 		&mm,
 		case_id,
 		row_id,
-		request.appendix,
 		requested_profiles,
 	)
 	.await?;
@@ -2413,7 +2345,6 @@ pub async fn get_editor_lb_page_projection(
 	let projection = repeatable_page_projection_response(
 		case_id,
 		"LB",
-		query.appendix,
 		query.profiles,
 		json!({ "rows": rows }),
 	)?;
@@ -2459,7 +2390,6 @@ pub async fn get_editor_lb_page_row(
 		&mm,
 		case_id,
 		row_id,
-		query.appendix,
 		query.profiles,
 	)
 	.await?;
@@ -2471,7 +2401,6 @@ async fn build_editor_lb_page_row_response(
 	mm: &ModelManager,
 	case_id: Uuid,
 	row_id: Uuid,
-	appendix: Option<String>,
 	profiles: Option<String>,
 ) -> Result<Value> {
 	let test_result = TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
@@ -2479,7 +2408,7 @@ async fn build_editor_lb_page_row_response(
 	response.insert("caseId".to_string(), json!(case_id));
 	response.insert("section".to_string(), json!("LB"));
 	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, appendix, profiles)?;
+	insert_editor_json_context(&mut response, profiles)?;
 	response.insert("data".to_string(), json!({ "testResult": test_result }));
 	Ok(Value::Object(response))
 }
@@ -2493,10 +2422,8 @@ pub async fn create_editor_lb_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TEST_RESULT_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.appendix.clone(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_profiles =
+		validate_request_projection_context(request.profiles.as_deref())?;
 
 	let row = required_row_object("LB", &request.rows, "testResult")?;
 	let value = row_model_value(
@@ -2524,7 +2451,6 @@ pub async fn create_editor_lb_page_row(
 		&mm,
 		case_id,
 		row_id,
-		request.appendix,
 		requested_profiles,
 	)
 	.await?;
@@ -2540,10 +2466,8 @@ pub async fn patch_editor_lb_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TEST_RESULT_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.appendix.clone(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_profiles =
+		validate_request_projection_context(request.profiles.as_deref())?;
 
 	TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let row = required_row_object("LB", &request.rows, "testResult")?;
@@ -2564,7 +2488,6 @@ pub async fn patch_editor_lb_page_row(
 		&mm,
 		case_id,
 		row_id,
-		request.appendix,
 		requested_profiles,
 	)
 	.await?;
@@ -2645,7 +2568,6 @@ pub async fn get_editor_dg_page_projection(
 	let projection = repeatable_page_projection_response(
 		case_id,
 		"DG",
-		query.appendix,
 		query.profiles,
 		json!({ "rows": rows }),
 	)?;
@@ -2792,7 +2714,6 @@ pub async fn get_editor_dg_page_row(
 		&mm,
 		case_id,
 		row_id,
-		query.appendix,
 		query.profiles,
 	)
 	.await?;
@@ -2804,7 +2725,6 @@ async fn build_editor_dg_page_row_response(
 	mm: &ModelManager,
 	case_id: Uuid,
 	row_id: Uuid,
-	appendix: Option<String>,
 	profiles: Option<String>,
 ) -> Result<Value> {
 	let drug = load_editor_dg_row_detail(&ctx, &mm, case_id, row_id).await?;
@@ -2812,7 +2732,7 @@ async fn build_editor_dg_page_row_response(
 	response.insert("caseId".to_string(), json!(case_id));
 	response.insert("section".to_string(), json!("DG"));
 	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, appendix, profiles)?;
+	insert_editor_json_context(&mut response, profiles)?;
 	response.insert("data".to_string(), json!({ "drug": drug }));
 	Ok(Value::Object(response))
 }
@@ -2826,10 +2746,8 @@ pub async fn create_editor_dg_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.appendix.clone(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_profiles =
+		validate_request_projection_context(request.profiles.as_deref())?;
 
 	let row = required_row_object("DG", &request.rows, "drug")?;
 	let value = row_model_value(
@@ -2862,7 +2780,6 @@ pub async fn create_editor_dg_page_row(
 		&mm,
 		case_id,
 		row_id,
-		request.appendix,
 		requested_profiles,
 	)
 	.await?;
@@ -2878,10 +2795,8 @@ pub async fn patch_editor_dg_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.appendix.clone(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_profiles =
+		validate_request_projection_context(request.profiles.as_deref())?;
 
 	DrugInformationBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let row = required_row_object("DG", &request.rows, "drug")?;
@@ -2902,7 +2817,6 @@ pub async fn patch_editor_dg_page_row(
 		&mm,
 		case_id,
 		row_id,
-		request.appendix,
 		requested_profiles,
 	)
 	.await?;
@@ -3001,7 +2915,6 @@ pub async fn get_editor_dh_page_projection(
 	let projection = repeatable_page_projection_response(
 		case_id,
 		"DH",
-		query.appendix,
 		query.profiles,
 		json!({ "rows": rows }),
 	)?;
@@ -3058,7 +2971,6 @@ pub async fn get_editor_dh_page_row(
 		&mm,
 		case_id,
 		row_id,
-		query.appendix,
 		query.profiles,
 	)
 	.await?;
@@ -3088,7 +3000,6 @@ async fn build_editor_dh_page_row_response(
 	mm: &ModelManager,
 	case_id: Uuid,
 	row_id: Uuid,
-	appendix: Option<String>,
 	profiles: Option<String>,
 ) -> Result<Value> {
 	let history = load_editor_dh_row_detail(ctx, mm, case_id, row_id).await?;
@@ -3096,7 +3007,7 @@ async fn build_editor_dh_page_row_response(
 	response.insert("caseId".to_string(), json!(case_id));
 	response.insert("section".to_string(), json!("DH"));
 	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, appendix, profiles)?;
+	insert_editor_json_context(&mut response, profiles)?;
 	response.insert("data".to_string(), json!({ "pastDrugHistory": history }));
 	Ok(Value::Object(response))
 }
@@ -3110,10 +3021,8 @@ pub async fn create_editor_dh_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PAST_DRUG_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.appendix.clone(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_profiles =
+		validate_request_projection_context(request.profiles.as_deref())?;
 
 	let patient = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
 	let row = required_row_object("DH", &request.rows, "pastDrugHistory")?;
@@ -3142,7 +3051,6 @@ pub async fn create_editor_dh_page_row(
 		&mm,
 		case_id,
 		row_id,
-		request.appendix,
 		requested_profiles,
 	)
 	.await?;
@@ -3158,10 +3066,8 @@ pub async fn patch_editor_dh_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PAST_DRUG_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.appendix.clone(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_profiles =
+		validate_request_projection_context(request.profiles.as_deref())?;
 
 	load_editor_dh_row_detail(&ctx, &mm, case_id, row_id).await?;
 	let row = required_row_object("DH", &request.rows, "pastDrugHistory")?;
@@ -3182,7 +3088,6 @@ pub async fn patch_editor_dh_page_row(
 		&mm,
 		case_id,
 		row_id,
-		request.appendix,
 		requested_profiles,
 	)
 	.await?;
