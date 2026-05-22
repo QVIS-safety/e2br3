@@ -547,6 +547,34 @@ async fn editor_ci_page_projection_returns_appendix_aware_field_envelopes(
 
 #[serial]
 #[tokio::test]
+async fn editor_ci_page_projection_accepts_multiple_profiles() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-CI-MULTI-PROFILE").await?;
+	create_safety_report(&app, &cookie, &case_id, "2", true).await?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=fda,mfds"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["caseId"], case_id);
+	assert_eq!(body["pageId"], "CI");
+	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
+	assert!(body.get("focusedAppendix").is_none(), "{body}");
+	assert!(body["fields"].is_object(), "{body}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_ci_page_patch_updates_only_report_type_and_returns_projection(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;

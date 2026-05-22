@@ -79,6 +79,8 @@ pub struct CaseEditorDirectSectionResponse {
 pub struct CaseEditorPageProjectionResponse {
 	pub case_id: Uuid,
 	pub page_id: &'static str,
+	pub profiles: Vec<String>,
+	#[serde(skip_serializing_if = "Option::is_none")]
 	pub focused_appendix: Option<String>,
 	pub saved: bool,
 	pub required_count: usize,

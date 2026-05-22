@@ -122,6 +122,7 @@ fn direct_section_response(
 #[derive(Debug, Deserialize)]
 pub struct CaseEditorPageProjectionQuery {
 	appendix: Option<String>,
+	profiles: Option<String>,
 }
 
 fn normalize_appendix(value: Option<String>) -> Result<Option<String>> {
@@ -135,6 +136,40 @@ fn normalize_appendix(value: Option<String>) -> Result<Option<String>> {
 				})
 		})
 		.transpose()
+}
+
+fn parse_editor_profiles(value: Option<&str>) -> Result<Vec<ValidationProfile>> {
+	let Some(value) = value else {
+		return Ok(vec![ValidationProfile::Ich]);
+	};
+	let mut profiles = Vec::new();
+	for raw in value
+		.split(',')
+		.map(str::trim)
+		.filter(|raw| !raw.is_empty())
+	{
+		let profile =
+			ValidationProfile::parse(raw).ok_or_else(|| Error::BadRequest {
+				message: format!(
+				"invalid validation profile '{raw}' (expected: ich, fda or mfds)"
+			),
+			})?;
+		if !profiles.contains(&profile) {
+			profiles.push(profile);
+		}
+	}
+	if profiles.is_empty() {
+		Ok(vec![ValidationProfile::Ich])
+	} else {
+		Ok(profiles)
+	}
+}
+
+fn profile_strings(profiles: &[ValidationProfile]) -> Vec<String> {
+	profiles
+		.iter()
+		.map(|profile| profile.as_str().to_string())
+		.collect()
 }
 
 async fn load_editor_ci_data(
@@ -219,24 +254,6 @@ pub async fn get_editor_ci(
 		case_id,
 		load_editor_ci_data(&ctx, &mm, case_id).await?,
 	))
-}
-
-fn validation_profiles_for_appendices(
-	appendices: &[String],
-) -> Vec<ValidationProfile> {
-	let mut profiles = Vec::new();
-	for appendix in appendices {
-		if let Some(profile) = ValidationProfile::parse(appendix) {
-			if !profiles.contains(&profile) {
-				profiles.push(profile);
-			}
-		}
-	}
-	if profiles.is_empty() {
-		vec![ValidationProfile::Ich]
-	} else {
-		profiles
-	}
 }
 
 fn report_type_display(value: Option<&str>) -> Option<String> {
@@ -345,13 +362,19 @@ async fn build_ci_page_projection(
 	mm: &ModelManager,
 	case_id: Uuid,
 	focused_appendix: Option<String>,
+	requested_profiles: Option<String>,
 ) -> Result<CaseEditorPageProjectionResponse> {
-	let focused_appendix = normalize_appendix(focused_appendix)?;
-	let active_appendices = focused_appendix
-		.as_ref()
-		.map(|appendix| vec![appendix.clone()])
-		.unwrap_or_else(|| vec!["ich".to_string()]);
-	let profiles = validation_profiles_for_appendices(&active_appendices);
+	let explicit_profiles = requested_profiles.is_some();
+	let profiles = if explicit_profiles {
+		parse_editor_profiles(requested_profiles.as_deref())?
+	} else {
+		parse_editor_profiles(focused_appendix.as_deref())?
+	};
+	let focused_appendix = if explicit_profiles {
+		None
+	} else {
+		normalize_appendix(focused_appendix)?
+	};
 	let has_fda = profiles.contains(&ValidationProfile::Fda);
 	let safety_report =
 		match SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await {
@@ -459,6 +482,7 @@ async fn build_ci_page_projection(
 	Ok(CaseEditorPageProjectionResponse {
 		case_id,
 		page_id: "CI",
+		profiles: profile_strings(&profiles),
 		focused_appendix,
 		saved: safety_report.is_some(),
 		required_count,
@@ -484,7 +508,8 @@ pub async fn get_editor_ci_page_projection(
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let projection =
-		build_ci_page_projection(&ctx, &mm, case_id, query.appendix).await?;
+		build_ci_page_projection(&ctx, &mm, case_id, query.appendix, query.profiles)
+			.await?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
@@ -593,7 +618,7 @@ pub async fn patch_editor_ci_page_projection(
 		.await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
 	let projection =
-		build_ci_page_projection(&ctx, &mm, case_id, request.appendix).await?;
+		build_ci_page_projection(&ctx, &mm, case_id, request.appendix, None).await?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
@@ -715,6 +740,7 @@ async fn patch_direct_page_projection(
 		case_id,
 		page_id,
 		request.appendix,
+		None,
 		data,
 	)
 	.await?;
@@ -1400,13 +1426,26 @@ async fn direct_page_projection_response(
 	case_id: Uuid,
 	page_id: &'static str,
 	focused_appendix: Option<String>,
+	requested_profiles: Option<String>,
 	data: Value,
 ) -> Result<CaseEditorPageProjectionResponse> {
+	let explicit_profiles = requested_profiles.is_some();
+	let profiles = if explicit_profiles {
+		parse_editor_profiles(requested_profiles.as_deref())?
+	} else {
+		parse_editor_profiles(focused_appendix.as_deref())?
+	};
+	let focused_appendix = if explicit_profiles {
+		None
+	} else {
+		normalize_appendix(focused_appendix)?
+	};
 	let saved = direct_page_saved(page_id, &data);
 	Ok(CaseEditorPageProjectionResponse {
 		case_id,
 		page_id,
-		focused_appendix: normalize_appendix(focused_appendix)?,
+		profiles: profile_strings(&profiles),
+		focused_appendix,
 		saved,
 		required_count: 0,
 		fields: BTreeMap::new(),
@@ -1419,12 +1458,25 @@ fn repeatable_page_projection_response(
 	case_id: Uuid,
 	page_id: &'static str,
 	focused_appendix: Option<String>,
+	requested_profiles: Option<String>,
 	rows: Value,
 ) -> Result<CaseEditorPageProjectionResponse> {
+	let explicit_profiles = requested_profiles.is_some();
+	let profiles = if explicit_profiles {
+		parse_editor_profiles(requested_profiles.as_deref())?
+	} else {
+		parse_editor_profiles(focused_appendix.as_deref())?
+	};
+	let focused_appendix = if explicit_profiles {
+		None
+	} else {
+		normalize_appendix(focused_appendix)?
+	};
 	Ok(CaseEditorPageProjectionResponse {
 		case_id,
 		page_id,
-		focused_appendix: normalize_appendix(focused_appendix)?,
+		profiles: profile_strings(&profiles),
+		focused_appendix,
 		saved: rows
 			.get("rows")
 			.and_then(Value::as_array)
@@ -1495,6 +1547,7 @@ pub async fn get_editor_rp_page_projection(
 		case_id,
 		"RP",
 		query.appendix,
+		query.profiles,
 		load_editor_rp_data(&ctx, &mm, case_id).await?,
 	)
 	.await?;
@@ -1571,6 +1624,7 @@ pub async fn get_editor_sd_page_projection(
 		case_id,
 		"SD",
 		query.appendix,
+		query.profiles,
 		load_editor_sd_data(&ctx, &mm, case_id).await?,
 	)
 	.await?;
@@ -1635,6 +1689,7 @@ pub async fn get_editor_lr_page_projection(
 		case_id,
 		"LR",
 		query.appendix,
+		query.profiles,
 		load_editor_lr_data(&ctx, &mm, case_id).await?,
 	)
 	.await?;
@@ -1719,6 +1774,7 @@ pub async fn get_editor_si_page_projection(
 		case_id,
 		"SI",
 		query.appendix,
+		query.profiles,
 		load_editor_si_data(&ctx, &mm, case_id).await?,
 	)
 	.await?;
@@ -1921,6 +1977,7 @@ pub async fn get_editor_dm_page_projection(
 		case_id,
 		"DM",
 		query.appendix,
+		query.profiles,
 		load_editor_dm_data(&ctx, &mm, case_id).await?,
 	)
 	.await?;
@@ -2011,6 +2068,7 @@ pub async fn get_editor_nr_page_projection(
 		case_id,
 		"NR",
 		query.appendix,
+		query.profiles,
 		load_editor_nr_data(&ctx, &mm, case_id).await?,
 	)
 	.await?;
@@ -2078,6 +2136,7 @@ pub async fn get_editor_ae_page_projection(
 		case_id,
 		"AE",
 		query.appendix,
+		query.profiles,
 		json!({ "rows": rows }),
 	)?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
@@ -2309,6 +2368,7 @@ pub async fn get_editor_lb_page_projection(
 		case_id,
 		"LB",
 		query.appendix,
+		query.profiles,
 		json!({ "rows": rows }),
 	)?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
@@ -2528,6 +2588,7 @@ pub async fn get_editor_dg_page_projection(
 		case_id,
 		"DG",
 		query.appendix,
+		query.profiles,
 		json!({ "rows": rows }),
 	)?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
@@ -2871,6 +2932,7 @@ pub async fn get_editor_dh_page_projection(
 		case_id,
 		"DH",
 		query.appendix,
+		query.profiles,
 		json!({ "rows": rows }),
 	)?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
