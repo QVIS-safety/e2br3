@@ -708,6 +708,46 @@ async fn editor_ci_page_patch_accepts_profiles() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn editor_ci_page_patch_rejects_invalid_profiles_before_mutation() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-CI-BAD-PROFILES").await?;
+	create_safety_report(&app, &cookie, &case_id, "1", false).await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI"),
+		json!({
+			"profiles": ["unknown"],
+			"changes": {
+				"reportType": { "value": "3" }
+			},
+			"rows": {}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_ne!(body["fields"]["reportType"]["value"], "3", "{body}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_ci_page_patch_can_clear_appendix_specific_field() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

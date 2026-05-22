@@ -176,6 +176,15 @@ fn request_profiles_csv(profiles: Option<&[String]>) -> Option<String> {
 	profiles.map(|profiles| profiles.join(","))
 }
 
+fn validate_request_projection_context(
+	appendix: Option<String>,
+	profiles: Option<&[String]>,
+) -> Result<Option<String>> {
+	let requested_profiles = request_profiles_csv(profiles);
+	editor_projection_context(appendix, requested_profiles.clone())?;
+	Ok(requested_profiles)
+}
+
 fn editor_projection_context(
 	focused_appendix: Option<String>,
 	requested_profiles: Option<String>,
@@ -590,6 +599,10 @@ pub async fn patch_editor_ci_page_projection(
 	require_permission(&ctx, CASE_UPDATE)?;
 	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let requested_profiles = validate_request_projection_context(
+		request.appendix.clone(),
+		request.profiles.as_deref(),
+	)?;
 
 	let mut update = SafetyReportIdentificationForUpdate {
 		transmission_date: None,
@@ -646,7 +659,6 @@ pub async fn patch_editor_ci_page_projection(
 			.await?;
 		CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
 	}
-	let requested_profiles = request_profiles_csv(request.profiles.as_deref());
 	let projection = build_ci_page_projection(
 		&ctx,
 		&mm,
@@ -744,6 +756,10 @@ async fn patch_direct_page_projection(
 	require_permission(&ctx, CASE_UPDATE)?;
 	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let requested_profiles = validate_request_projection_context(
+		request.appendix.clone(),
+		request.profiles.as_deref(),
+	)?;
 
 	if !request.changes.is_empty() {
 		return Err(Error::BadRequest {
@@ -776,7 +792,7 @@ async fn patch_direct_page_projection(
 		case_id,
 		page_id,
 		request.appendix,
-		request_profiles_csv(request.profiles.as_deref()),
+		requested_profiles,
 		data,
 	)
 	.await?;
@@ -2232,6 +2248,10 @@ pub async fn create_editor_ae_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, REACTION_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let requested_profiles = validate_request_projection_context(
+		request.appendix.clone(),
+		request.profiles.as_deref(),
+	)?;
 
 	let row = required_row_object("AE", &request.rows, "reaction")?;
 	let value = row_model_value(
@@ -2267,7 +2287,7 @@ pub async fn create_editor_ae_page_row(
 		case_id,
 		row_id,
 		request.appendix,
-		request_profiles_csv(request.profiles.as_deref()),
+		requested_profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -2282,6 +2302,10 @@ pub async fn patch_editor_ae_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, REACTION_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let requested_profiles = validate_request_projection_context(
+		request.appendix.clone(),
+		request.profiles.as_deref(),
+	)?;
 
 	ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let row = required_row_object("AE", &request.rows, "reaction")?;
@@ -2310,7 +2334,7 @@ pub async fn patch_editor_ae_page_row(
 		case_id,
 		row_id,
 		request.appendix,
-		request_profiles_csv(request.profiles.as_deref()),
+		requested_profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2469,6 +2493,10 @@ pub async fn create_editor_lb_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TEST_RESULT_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let requested_profiles = validate_request_projection_context(
+		request.appendix.clone(),
+		request.profiles.as_deref(),
+	)?;
 
 	let row = required_row_object("LB", &request.rows, "testResult")?;
 	let value = row_model_value(
@@ -2497,7 +2525,7 @@ pub async fn create_editor_lb_page_row(
 		case_id,
 		row_id,
 		request.appendix,
-		request_profiles_csv(request.profiles.as_deref()),
+		requested_profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -2512,6 +2540,10 @@ pub async fn patch_editor_lb_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TEST_RESULT_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let requested_profiles = validate_request_projection_context(
+		request.appendix.clone(),
+		request.profiles.as_deref(),
+	)?;
 
 	TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let row = required_row_object("LB", &request.rows, "testResult")?;
@@ -2533,7 +2565,7 @@ pub async fn patch_editor_lb_page_row(
 		case_id,
 		row_id,
 		request.appendix,
-		request_profiles_csv(request.profiles.as_deref()),
+		requested_profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2794,6 +2826,10 @@ pub async fn create_editor_dg_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let requested_profiles = validate_request_projection_context(
+		request.appendix.clone(),
+		request.profiles.as_deref(),
+	)?;
 
 	let row = required_row_object("DG", &request.rows, "drug")?;
 	let value = row_model_value(
@@ -2827,7 +2863,7 @@ pub async fn create_editor_dg_page_row(
 		case_id,
 		row_id,
 		request.appendix,
-		request_profiles_csv(request.profiles.as_deref()),
+		requested_profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -2842,6 +2878,10 @@ pub async fn patch_editor_dg_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let requested_profiles = validate_request_projection_context(
+		request.appendix.clone(),
+		request.profiles.as_deref(),
+	)?;
 
 	DrugInformationBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let row = required_row_object("DG", &request.rows, "drug")?;
@@ -2863,7 +2903,7 @@ pub async fn patch_editor_dg_page_row(
 		case_id,
 		row_id,
 		request.appendix,
-		request_profiles_csv(request.profiles.as_deref()),
+		requested_profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -3070,6 +3110,10 @@ pub async fn create_editor_dh_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PAST_DRUG_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let requested_profiles = validate_request_projection_context(
+		request.appendix.clone(),
+		request.profiles.as_deref(),
+	)?;
 
 	let patient = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
 	let row = required_row_object("DH", &request.rows, "pastDrugHistory")?;
@@ -3099,7 +3143,7 @@ pub async fn create_editor_dh_page_row(
 		case_id,
 		row_id,
 		request.appendix,
-		request_profiles_csv(request.profiles.as_deref()),
+		requested_profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -3114,6 +3158,10 @@ pub async fn patch_editor_dh_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PAST_DRUG_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let requested_profiles = validate_request_projection_context(
+		request.appendix.clone(),
+		request.profiles.as_deref(),
+	)?;
 
 	load_editor_dh_row_detail(&ctx, &mm, case_id, row_id).await?;
 	let row = required_row_object("DH", &request.rows, "pastDrugHistory")?;
@@ -3135,7 +3183,7 @@ pub async fn patch_editor_dh_page_row(
 		case_id,
 		row_id,
 		request.appendix,
-		request_profiles_csv(request.profiles.as_deref()),
+		requested_profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))

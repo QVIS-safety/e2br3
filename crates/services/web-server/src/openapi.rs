@@ -499,7 +499,6 @@ struct CaseListResponse {
 struct CaseEditorShellDoc {
 	id: String,
 	status: String,
-	appendices: Vec<String>,
 	organization_id: String,
 	safety_report_id: String,
 	dg_prd_key: Option<String>,
@@ -4007,6 +4006,13 @@ mod tests {
 		assert!(
 			row_schema.get("profiles").is_some(),
 			"page row response schema must expose profiles field: {row_schema}"
+		);
+
+		let shell_schema =
+			&doc["components"]["schemas"]["CaseEditorShellDoc"]["properties"];
+		assert!(
+			shell_schema.get("appendices").is_none(),
+			"case editor shell schema must not expose case-level appendix metadata: {shell_schema}"
 		);
 	}
 }
