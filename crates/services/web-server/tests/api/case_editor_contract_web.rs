@@ -623,6 +623,66 @@ async fn editor_remaining_direct_pages_accept_page_patch_with_appendix(
 
 #[serial]
 #[tokio::test]
+async fn editor_direct_page_patch_rejects_unknown_field() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-PATCH-UNKNOWN", &["ich"])
+			.await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/RP"),
+		json!({
+			"appendix": "fda",
+			"changes": {
+				"notAReporterField": { "value": "x" }
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_direct_page_patch_rejects_unknown_appendix() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case_with_appendices(
+		&app,
+		&cookie,
+		"EDITOR-PATCH-BAD-APPENDIX",
+		&["ich"],
+	)
+	.await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/NR"),
+		json!({
+			"appendix": "unknown",
+			"changes": {}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_dm_returns_patient_payload_without_dh_list_rows() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
