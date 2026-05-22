@@ -502,6 +502,7 @@ async fn editor_ci_page_projection_returns_appendix_aware_field_envelopes(
 	assert_eq!(body["caseId"], case_id);
 	assert_eq!(body["pageId"], "CI");
 	assert_eq!(body["focusedAppendix"], "fda");
+	assert_eq!(body["profiles"], json!(["fda"]));
 	assert!(body.get("appendices").is_none(), "{body}");
 	assert!(body["saved"].as_bool().is_some(), "{body}");
 	assert!(body["requiredCount"].as_u64().is_some(), "{body}");

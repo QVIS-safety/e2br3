@@ -544,6 +544,9 @@ struct CaseEditorPageProjectionResponseDoc {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 struct CaseEditorPagePatchRequestDoc {
+	/// Validation/render profiles for page projection authority: ich,fda,mfds.
+	profiles: Option<Vec<String>>,
+	/// Legacy single appendix validation/render context accepted temporarily; maps to a single profile.
 	appendix: Option<String>,
 	#[schema(value_type = Object)]
 	changes: serde_json::Value,
@@ -594,6 +597,7 @@ struct CaseEditorRowDetailResponseDoc {
 	case_id: String,
 	section: Option<String>,
 	row_id: String,
+	profiles: Vec<String>,
 	focused_appendix: Option<String>,
 	#[schema(value_type = Object)]
 	data: serde_json::Value,
@@ -2360,8 +2364,8 @@ fn get_editor_ci() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Case identification page projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2397,8 +2401,8 @@ fn patch_editor_ci_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Reporter page projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2432,8 +2436,8 @@ fn patch_editor_rp_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Sender page projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2467,8 +2471,8 @@ fn patch_editor_sd_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Literature references page projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2502,8 +2506,8 @@ fn patch_editor_lr_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Study information page projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2537,8 +2541,8 @@ fn patch_editor_si_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Patient demographics page projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2572,8 +2576,8 @@ fn patch_editor_dm_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Narrative page projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2609,8 +2613,8 @@ fn patch_editor_nr_page() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Past drug history page row projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2629,8 +2633,8 @@ fn get_editor_dh_page() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Reaction page row projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2649,8 +2653,8 @@ fn get_editor_ae_page() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Lab test page row projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2669,8 +2673,8 @@ fn get_editor_lb_page() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Drug page row projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2690,8 +2694,8 @@ fn get_editor_dg_page() {}
 	params(
 		("case_id" = String, Path, description = "Case ID"),
 		("row_id" = String, Path, description = "Past drug history row ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Past drug history page row detail", body = CaseEditorRowDetailResponseDoc),
@@ -2712,8 +2716,8 @@ fn get_editor_dh_page_row() {}
 	params(
 		("case_id" = String, Path, description = "Case ID"),
 		("row_id" = String, Path, description = "Reaction row ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Reaction page row detail", body = CaseEditorRowDetailResponseDoc),
@@ -2734,8 +2738,8 @@ fn get_editor_ae_page_row() {}
 	params(
 		("case_id" = String, Path, description = "Case ID"),
 		("row_id" = String, Path, description = "Test result row ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Lab test page row detail", body = CaseEditorRowDetailResponseDoc),
@@ -2756,8 +2760,8 @@ fn get_editor_lb_page_row() {}
 	params(
 		("case_id" = String, Path, description = "Case ID"),
 		("row_id" = String, Path, description = "Drug row ID"),
-		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles: ich,fda,mfds")
+		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds"),
+		("appendix" = Option<String>, Query, description = "Legacy single appendix validation/render context accepted temporarily; maps to a single profile")
 	),
 	responses(
 		(status = 200, description = "Drug page row detail", body = CaseEditorRowDetailResponseDoc),
@@ -3969,6 +3973,40 @@ mod tests {
 		assert!(
 			ci_get_params.iter().any(|param| param["name"] == "profiles"),
 			"CI page projection GET must document profiles query parameter: {ci_get_params:?}"
+		);
+		assert!(
+			ci_get_params.iter().any(|param| param["name"] == "appendix"
+				&& param["description"]
+					.as_str()
+					.is_some_and(|description| description.contains("accepted temporarily")
+						&& description.contains("maps to a single profile"))),
+			"CI page projection GET must document legacy appendix compatibility: {ci_get_params:?}"
+		);
+		let profiles_index = ci_get_params
+			.iter()
+			.position(|param| param["name"] == "profiles")
+			.expect("profiles query parameter");
+		let appendix_index = ci_get_params
+			.iter()
+			.position(|param| param["name"] == "appendix")
+			.expect("appendix query parameter");
+		assert!(
+			profiles_index < appendix_index,
+			"CI page projection GET should lead with profiles before legacy appendix: {ci_get_params:?}"
+		);
+
+		let patch_schema = &doc["components"]["schemas"]
+			["CaseEditorPagePatchRequestDoc"]["properties"];
+		assert!(
+			patch_schema.get("profiles").is_some(),
+			"page patch request schema must expose profiles body field: {patch_schema}"
+		);
+
+		let row_schema = &doc["components"]["schemas"]
+			["CaseEditorRowDetailResponseDoc"]["properties"];
+		assert!(
+			row_schema.get("profiles").is_some(),
+			"page row response schema must expose profiles field: {row_schema}"
 		);
 	}
 }
