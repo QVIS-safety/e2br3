@@ -1326,6 +1326,40 @@ async fn editor_ae_list_returns_reaction_rows_without_detail_fanout() -> Result<
 
 #[serial]
 #[tokio::test]
+async fn editor_repeatable_pages_have_list_projection_routes() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-REPEATABLE-PAGES").await?;
+
+	for (section, expected_key) in [
+		("DH", "rows"),
+		("AE", "rows"),
+		("LB", "rows"),
+		("DG", "rows"),
+	] {
+		let (status, body) = get_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{section}?appendix=fda"),
+		)
+		.await?;
+
+		assert_eq!(status, StatusCode::OK, "{section}: {body}");
+		assert_eq!(body["caseId"], case_id);
+		assert_eq!(body["pageId"], section);
+		assert_eq!(body["focusedAppendix"], "fda");
+		assert!(body.get("appendices").is_none(), "{section}: {body}");
+		assert!(body["rows"][expected_key].is_array(), "{section}: {body}");
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_ae_detail_returns_one_reaction_by_uuid() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

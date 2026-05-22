@@ -1346,6 +1346,28 @@ async fn direct_page_projection_response(
 	})
 }
 
+fn repeatable_page_projection_response(
+	case_id: Uuid,
+	page_id: &'static str,
+	focused_appendix: Option<String>,
+	rows: Value,
+) -> Result<CaseEditorPageProjectionResponse> {
+	Ok(CaseEditorPageProjectionResponse {
+		case_id,
+		page_id,
+		focused_appendix: normalize_appendix(focused_appendix)?,
+		saved: rows
+			.get("rows")
+			.and_then(Value::as_array)
+			.map(|items| !items.is_empty())
+			.unwrap_or(false),
+		required_count: 0,
+		fields: BTreeMap::new(),
+		rows: rows_from_direct_section(rows),
+		section_summaries: Vec::new(),
+	})
+}
+
 async fn load_editor_rp_data(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -1926,6 +1948,27 @@ pub async fn get_editor_nr_page_projection(
 	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
+async fn load_editor_ae_list_rows(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<Vec<CaseEditorAeListRowDto>> {
+	Ok(ReactionBmc::list_by_case(ctx, mm, case_id)
+		.await?
+		.into_iter()
+		.map(|reaction| CaseEditorAeListRowDto {
+			id: reaction.id,
+			sequence_number: reaction.sequence_number,
+			reaction_primary_source_native: reaction.primary_source_reaction,
+			reaction_primary_source_translation: reaction
+				.primary_source_reaction_translation,
+			meddra_version: reaction.reaction_meddra_version,
+			meddra_code: reaction.reaction_meddra_code,
+			seriousness: reaction.serious,
+		})
+		.collect())
+}
+
 pub async fn list_editor_ae(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -1939,25 +1982,36 @@ pub async fn list_editor_ae(
 	require_permission(&ctx, REACTION_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let rows = ReactionBmc::list_by_case(&ctx, &mm, case_id)
-		.await?
-		.into_iter()
-		.map(|reaction| CaseEditorAeListRowDto {
-			id: reaction.id,
-			sequence_number: reaction.sequence_number,
-			reaction_primary_source_native: reaction.primary_source_reaction,
-			reaction_primary_source_translation: reaction
-				.primary_source_reaction_translation,
-			meddra_version: reaction.reaction_meddra_version,
-			meddra_code: reaction.reaction_meddra_code,
-			seriousness: reaction.serious,
-		})
-		.collect();
+	let rows = load_editor_ae_list_rows(&ctx, &mm, case_id).await?;
 
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(CaseEditorListResponse { case_id, rows }),
 	))
+}
+
+pub async fn get_editor_ae_page_projection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Query(query): Query<CaseEditorPageProjectionQuery>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, REACTION_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let rows = load_editor_ae_list_rows(&ctx, &mm, case_id).await?;
+	let projection = repeatable_page_projection_response(
+		case_id,
+		"AE",
+		query.appendix,
+		json!({ "rows": rows }),
+	)?;
+	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
 pub async fn get_editor_ae(
@@ -1982,6 +2036,25 @@ pub async fn get_editor_ae(
 	))
 }
 
+async fn load_editor_lb_list_rows(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<Vec<CaseEditorLbListRowDto>> {
+	Ok(TestResultBmc::list_by_case(ctx, mm, case_id)
+		.await?
+		.into_iter()
+		.map(|test| CaseEditorLbListRowDto {
+			id: test.id,
+			sequence_number: test.sequence_number,
+			test_name: test.test_name,
+			test_date: test.test_date.map(|date| date.to_string()),
+			result_value: test.test_result_value,
+			result_unit: test.test_result_unit,
+		})
+		.collect())
+}
+
 pub async fn list_editor_lb(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -1995,23 +2068,36 @@ pub async fn list_editor_lb(
 	require_permission(&ctx, TEST_RESULT_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let rows = TestResultBmc::list_by_case(&ctx, &mm, case_id)
-		.await?
-		.into_iter()
-		.map(|test| CaseEditorLbListRowDto {
-			id: test.id,
-			sequence_number: test.sequence_number,
-			test_name: test.test_name,
-			test_date: test.test_date.map(|date| date.to_string()),
-			result_value: test.test_result_value,
-			result_unit: test.test_result_unit,
-		})
-		.collect();
+	let rows = load_editor_lb_list_rows(&ctx, &mm, case_id).await?;
 
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(CaseEditorListResponse { case_id, rows }),
 	))
+}
+
+pub async fn get_editor_lb_page_projection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Query(query): Query<CaseEditorPageProjectionQuery>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, TEST_RESULT_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let rows = load_editor_lb_list_rows(&ctx, &mm, case_id).await?;
+	let projection = repeatable_page_projection_response(
+		case_id,
+		"LB",
+		query.appendix,
+		json!({ "rows": rows }),
+	)?;
+	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
 pub async fn get_editor_lb(
@@ -2037,6 +2123,26 @@ pub async fn get_editor_lb(
 	))
 }
 
+async fn load_editor_dg_list_rows(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<Vec<CaseEditorDgListRowDto>> {
+	Ok(DrugInformationBmc::list_by_case(ctx, mm, case_id)
+		.await?
+		.into_iter()
+		.map(|drug| CaseEditorDgListRowDto {
+			id: drug.id,
+			sequence_number: drug.sequence_number,
+			drug_role: drug.drug_characterization,
+			dg_prd_key: None,
+			medicinal_product: drug.medicinal_product,
+			action_taken: drug.action_taken,
+			warning_count: 0,
+		})
+		.collect())
+}
+
 pub async fn list_editor_dg(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -2050,24 +2156,36 @@ pub async fn list_editor_dg(
 	require_permission(&ctx, DRUG_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let rows = DrugInformationBmc::list_by_case(&ctx, &mm, case_id)
-		.await?
-		.into_iter()
-		.map(|drug| CaseEditorDgListRowDto {
-			id: drug.id,
-			sequence_number: drug.sequence_number,
-			drug_role: drug.drug_characterization,
-			dg_prd_key: None,
-			medicinal_product: drug.medicinal_product,
-			action_taken: drug.action_taken,
-			warning_count: 0,
-		})
-		.collect();
+	let rows = load_editor_dg_list_rows(&ctx, &mm, case_id).await?;
 
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(CaseEditorListResponse { case_id, rows }),
 	))
+}
+
+pub async fn get_editor_dg_page_projection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Query(query): Query<CaseEditorPageProjectionQuery>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, DRUG_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let rows = load_editor_dg_list_rows(&ctx, &mm, case_id).await?;
+	let projection = repeatable_page_projection_response(
+		case_id,
+		"DG",
+		query.appendix,
+		json!({ "rows": rows }),
+	)?;
+	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
 fn drug_id_filter<T>(drug_id: Uuid) -> Option<Vec<T>>
@@ -2179,34 +2297,17 @@ pub async fn get_editor_dg(
 	))
 }
 
-pub async fn list_editor_dh(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-) -> Result<(
-	axum::http::StatusCode,
-	Json<CaseEditorListResponse<CaseEditorDhListRowDto>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
-	require_permission(&ctx, PAST_DRUG_LIST)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-
-	let patient = match PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await
-	{
+async fn load_editor_dh_list_rows(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<Vec<CaseEditorDhListRowDto>> {
+	let patient = match PatientInformationBmc::get_by_case(ctx, mm, case_id).await {
 		Ok(patient) => patient,
 		Err(lib_core::model::Error::EntityUuidNotFound {
 			entity: "patient_information",
 			..
-		}) => {
-			return Ok((
-				axum::http::StatusCode::OK,
-				Json(CaseEditorListResponse {
-					case_id,
-					rows: Vec::new(),
-				}),
-			));
-		}
+		}) => return Ok(Vec::new()),
 		Err(err) => return Err(err.into()),
 	};
 	let filter = PastDrugHistoryFilter {
@@ -2215,9 +2316,9 @@ pub async fn list_editor_dh(
 			.to_string()))])),
 		..Default::default()
 	};
-	let rows = PastDrugHistoryBmc::list(
-		&ctx,
-		&mm,
+	Ok(PastDrugHistoryBmc::list(
+		ctx,
+		mm,
 		Some(vec![filter]),
 		Some(ListOptions::default()),
 	)
@@ -2231,12 +2332,52 @@ pub async fn list_editor_dh(
 		start_date: history.start_date.map(|date| date.to_string()),
 		end_date: history.end_date.map(|date| date.to_string()),
 	})
-	.collect();
+	.collect())
+}
+
+pub async fn list_editor_dh(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorListResponse<CaseEditorDhListRowDto>>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, PAST_DRUG_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let rows = load_editor_dh_list_rows(&ctx, &mm, case_id).await?;
 
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(CaseEditorListResponse { case_id, rows }),
 	))
+}
+
+pub async fn get_editor_dh_page_projection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Query(query): Query<CaseEditorPageProjectionQuery>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	require_permission(&ctx, PAST_DRUG_LIST)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let rows = load_editor_dh_list_rows(&ctx, &mm, case_id).await?;
+	let projection = repeatable_page_projection_response(
+		case_id,
+		"DH",
+		query.appendix,
+		json!({ "rows": rows }),
+	)?;
+	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
 pub async fn get_editor_dh(
