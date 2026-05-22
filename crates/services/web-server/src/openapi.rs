@@ -58,6 +58,17 @@ pub fn router() -> Router {
 		patch_editor_dm_page,
 		get_editor_nr_page,
 		patch_editor_nr_page,
+		get_editor_dh_page,
+		get_editor_ae_page,
+		get_editor_lb_page,
+		get_editor_dg_page,
+		get_editor_dh_page_row,
+		get_editor_ae_page_row,
+		get_editor_lb_page_row,
+		get_editor_dg_page_row,
+		create_editor_repeatable_page_row,
+		patch_editor_repeatable_page_row,
+		delete_editor_repeatable_page_row,
 		get_editor_rp,
 		get_editor_sd,
 		get_editor_lr,
@@ -580,7 +591,9 @@ struct CaseEditorFieldIssueDoc {
 #[serde(rename_all = "camelCase")]
 struct CaseEditorRowDetailResponseDoc {
 	case_id: String,
+	section: Option<String>,
 	row_id: String,
+	focused_appendix: Option<String>,
 	#[schema(value_type = Object)]
 	data: serde_json::Value,
 }
@@ -2578,6 +2591,230 @@ fn get_editor_nr_page() {}
 	)
 )]
 fn patch_editor_nr_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/DH",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Past drug history page row projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_dh_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/AE",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Reaction page row projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_ae_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/LB",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Lab test page row projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_lb_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/DG",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Drug page row projection", body = CaseEditorPageProjectionResponseDoc),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_dg_page() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/DH/rows/{row_id}",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("row_id" = String, Path, description = "Past drug history row ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Past drug history page row detail", body = CaseEditorRowDetailResponseDoc),
+		(status = 400, description = "Invalid row ID", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case or row not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_dh_page_row() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/AE/rows/{row_id}",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("row_id" = String, Path, description = "Reaction row ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Reaction page row detail", body = CaseEditorRowDetailResponseDoc),
+		(status = 400, description = "Invalid row ID", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case or row not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_ae_page_row() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/LB/rows/{row_id}",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("row_id" = String, Path, description = "Test result row ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Lab test page row detail", body = CaseEditorRowDetailResponseDoc),
+		(status = 400, description = "Invalid row ID", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case or row not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_lb_page_row() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/cases/{case_id}/editor/pages/DG/rows/{row_id}",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("row_id" = String, Path, description = "Drug row ID"),
+		("appendix" = Option<String>, Query, description = "Active appendix validation/render context")
+	),
+	responses(
+		(status = 200, description = "Drug page row detail", body = CaseEditorRowDetailResponseDoc),
+		(status = 400, description = "Invalid row ID", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case or row not found", body = ErrorResponse)
+	)
+)]
+fn get_editor_dg_page_row() {}
+
+#[utoipa::path(
+	post,
+	path = "/api/cases/{case_id}/editor/pages/{section}/rows",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("section" = String, Path, description = "Repeatable editor section: DH, AE, LB, or DG")
+	),
+	request_body = CaseEditorPagePatchRequestDoc,
+	responses(
+		(status = 201, description = "Created repeatable page row detail", body = CaseEditorRowDetailResponseDoc),
+		(status = 400, description = "Invalid row payload", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case not found", body = ErrorResponse)
+	)
+)]
+fn create_editor_repeatable_page_row() {}
+
+#[utoipa::path(
+	patch,
+	path = "/api/cases/{case_id}/editor/pages/{section}/rows/{row_id}",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("section" = String, Path, description = "Repeatable editor section: DH, AE, LB, or DG"),
+		("row_id" = String, Path, description = "Repeatable row ID")
+	),
+	request_body = CaseEditorPagePatchRequestDoc,
+	responses(
+		(status = 200, description = "Updated repeatable page row detail", body = CaseEditorRowDetailResponseDoc),
+		(status = 400, description = "Invalid row ID or payload", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case or row not found", body = ErrorResponse)
+	)
+)]
+fn patch_editor_repeatable_page_row() {}
+
+#[utoipa::path(
+	delete,
+	path = "/api/cases/{case_id}/editor/pages/{section}/rows/{row_id}",
+	tag = "case-editor",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("case_id" = String, Path, description = "Case ID"),
+		("section" = String, Path, description = "Repeatable editor section: DH, AE, LB, or DG"),
+		("row_id" = String, Path, description = "Repeatable row ID")
+	),
+	responses(
+		(status = 204, description = "Deleted repeatable page row"),
+		(status = 400, description = "Invalid row ID", body = ErrorResponse),
+		(status = 403, description = "Permission denied", body = ErrorResponse),
+		(status = 404, description = "Case or row not found", body = ErrorResponse)
+	)
+)]
+fn delete_editor_repeatable_page_row() {}
 
 #[utoipa::path(
 	get,
