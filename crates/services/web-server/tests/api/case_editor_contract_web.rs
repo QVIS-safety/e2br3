@@ -678,6 +678,35 @@ async fn editor_ci_page_patch_updates_only_report_type_and_returns_projection(
 
 #[serial]
 #[tokio::test]
+async fn editor_ci_page_patch_accepts_profiles() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-CI-PATCH-PROFILES").await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI"),
+		json!({
+			"profiles": ["fda", "mfds"],
+			"changes": {},
+			"rows": {}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
+	assert!(body.get("focusedAppendix").is_none(), "{body}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_ci_page_patch_can_clear_appendix_specific_field() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

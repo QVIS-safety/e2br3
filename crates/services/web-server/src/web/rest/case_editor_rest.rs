@@ -81,7 +81,7 @@ use lib_rest_core::Error;
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValValue, OpValsValue};
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use uuid::Uuid;
 
@@ -170,6 +170,42 @@ fn profile_strings(profiles: &[ValidationProfile]) -> Vec<String> {
 		.iter()
 		.map(|profile| profile.as_str().to_string())
 		.collect()
+}
+
+fn request_profiles_csv(profiles: Option<&[String]>) -> Option<String> {
+	profiles.map(|profiles| profiles.join(","))
+}
+
+fn editor_projection_context(
+	focused_appendix: Option<String>,
+	requested_profiles: Option<String>,
+) -> Result<(Vec<ValidationProfile>, FocusedAppendixResponse)> {
+	let explicit_profiles = requested_profiles.is_some();
+	let profiles = if explicit_profiles {
+		parse_editor_profiles(requested_profiles.as_deref())?
+	} else {
+		parse_editor_profiles(focused_appendix.as_deref())?
+	};
+	let focused_appendix = if explicit_profiles {
+		FocusedAppendixResponse::omitted()
+	} else {
+		FocusedAppendixResponse::legacy(normalize_appendix(focused_appendix)?)
+	};
+	Ok((profiles, focused_appendix))
+}
+
+fn insert_editor_json_context(
+	map: &mut Map<String, Value>,
+	focused_appendix: Option<String>,
+	requested_profiles: Option<String>,
+) -> Result<()> {
+	let (profiles, focused_appendix) =
+		editor_projection_context(focused_appendix, requested_profiles)?;
+	map.insert("profiles".to_string(), json!(profile_strings(&profiles)));
+	if let FocusedAppendixResponse::Legacy(value) = focused_appendix {
+		map.insert("focusedAppendix".to_string(), json!(value));
+	}
+	Ok(())
 }
 
 async fn load_editor_ci_data(
@@ -364,17 +400,8 @@ async fn build_ci_page_projection(
 	focused_appendix: Option<String>,
 	requested_profiles: Option<String>,
 ) -> Result<CaseEditorPageProjectionResponse> {
-	let explicit_profiles = requested_profiles.is_some();
-	let profiles = if explicit_profiles {
-		parse_editor_profiles(requested_profiles.as_deref())?
-	} else {
-		parse_editor_profiles(focused_appendix.as_deref())?
-	};
-	let focused_appendix = if explicit_profiles {
-		FocusedAppendixResponse::omitted()
-	} else {
-		FocusedAppendixResponse::legacy(normalize_appendix(focused_appendix)?)
-	};
+	let (profiles, focused_appendix) =
+		editor_projection_context(focused_appendix, requested_profiles)?;
 	let has_fda = profiles.contains(&ValidationProfile::Fda);
 	let safety_report =
 		match SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await {
@@ -614,11 +641,20 @@ pub async fn patch_editor_ci_page_projection(
 		});
 	}
 
-	SafetyReportIdentificationBmc::update_by_case(&ctx, &mm, case_id, update)
-		.await?;
-	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
-	let projection =
-		build_ci_page_projection(&ctx, &mm, case_id, request.appendix, None).await?;
+	if !request.changes.is_empty() {
+		SafetyReportIdentificationBmc::update_by_case(&ctx, &mm, case_id, update)
+			.await?;
+		CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	}
+	let requested_profiles = request_profiles_csv(request.profiles.as_deref());
+	let projection = build_ci_page_projection(
+		&ctx,
+		&mm,
+		case_id,
+		request.appendix,
+		requested_profiles,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
@@ -740,7 +776,7 @@ async fn patch_direct_page_projection(
 		case_id,
 		page_id,
 		request.appendix,
-		None,
+		request_profiles_csv(request.profiles.as_deref()),
 		data,
 	)
 	.await?;
@@ -1429,17 +1465,8 @@ async fn direct_page_projection_response(
 	requested_profiles: Option<String>,
 	data: Value,
 ) -> Result<CaseEditorPageProjectionResponse> {
-	let explicit_profiles = requested_profiles.is_some();
-	let profiles = if explicit_profiles {
-		parse_editor_profiles(requested_profiles.as_deref())?
-	} else {
-		parse_editor_profiles(focused_appendix.as_deref())?
-	};
-	let focused_appendix = if explicit_profiles {
-		FocusedAppendixResponse::omitted()
-	} else {
-		FocusedAppendixResponse::legacy(normalize_appendix(focused_appendix)?)
-	};
+	let (profiles, focused_appendix) =
+		editor_projection_context(focused_appendix, requested_profiles)?;
 	let saved = direct_page_saved(page_id, &data);
 	Ok(CaseEditorPageProjectionResponse {
 		case_id,
@@ -1461,17 +1488,8 @@ fn repeatable_page_projection_response(
 	requested_profiles: Option<String>,
 	rows: Value,
 ) -> Result<CaseEditorPageProjectionResponse> {
-	let explicit_profiles = requested_profiles.is_some();
-	let profiles = if explicit_profiles {
-		parse_editor_profiles(requested_profiles.as_deref())?
-	} else {
-		parse_editor_profiles(focused_appendix.as_deref())?
-	};
-	let focused_appendix = if explicit_profiles {
-		FocusedAppendixResponse::omitted()
-	} else {
-		FocusedAppendixResponse::legacy(normalize_appendix(focused_appendix)?)
-	};
+	let (profiles, focused_appendix) =
+		editor_projection_context(focused_appendix, requested_profiles)?;
 	Ok(CaseEditorPageProjectionResponse {
 		case_id,
 		page_id,
@@ -2181,6 +2199,7 @@ pub async fn get_editor_ae_page_row(
 		case_id,
 		row_id,
 		query.appendix,
+		query.profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2192,15 +2211,16 @@ async fn build_editor_ae_page_row_response(
 	case_id: Uuid,
 	row_id: Uuid,
 	appendix: Option<String>,
+	profiles: Option<String>,
 ) -> Result<Value> {
 	let reaction = ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	Ok(json!({
-		"caseId": case_id,
-		"section": "AE",
-		"rowId": row_id,
-		"focusedAppendix": normalize_appendix(appendix)?,
-		"data": { "reaction": reaction },
-	}))
+	let mut response = Map::new();
+	response.insert("caseId".to_string(), json!(case_id));
+	response.insert("section".to_string(), json!("AE"));
+	response.insert("rowId".to_string(), json!(row_id));
+	insert_editor_json_context(&mut response, appendix, profiles)?;
+	response.insert("data".to_string(), json!({ "reaction": reaction }));
+	Ok(Value::Object(response))
 }
 
 pub async fn create_editor_ae_page_row(
@@ -2247,6 +2267,7 @@ pub async fn create_editor_ae_page_row(
 		case_id,
 		row_id,
 		request.appendix,
+		request_profiles_csv(request.profiles.as_deref()),
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -2289,6 +2310,7 @@ pub async fn patch_editor_ae_page_row(
 		case_id,
 		row_id,
 		request.appendix,
+		request_profiles_csv(request.profiles.as_deref()),
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2414,6 +2436,7 @@ pub async fn get_editor_lb_page_row(
 		case_id,
 		row_id,
 		query.appendix,
+		query.profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2425,15 +2448,16 @@ async fn build_editor_lb_page_row_response(
 	case_id: Uuid,
 	row_id: Uuid,
 	appendix: Option<String>,
+	profiles: Option<String>,
 ) -> Result<Value> {
 	let test_result = TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	Ok(json!({
-		"caseId": case_id,
-		"section": "LB",
-		"rowId": row_id,
-		"focusedAppendix": normalize_appendix(appendix)?,
-		"data": { "testResult": test_result },
-	}))
+	let mut response = Map::new();
+	response.insert("caseId".to_string(), json!(case_id));
+	response.insert("section".to_string(), json!("LB"));
+	response.insert("rowId".to_string(), json!(row_id));
+	insert_editor_json_context(&mut response, appendix, profiles)?;
+	response.insert("data".to_string(), json!({ "testResult": test_result }));
+	Ok(Value::Object(response))
 }
 
 pub async fn create_editor_lb_page_row(
@@ -2473,6 +2497,7 @@ pub async fn create_editor_lb_page_row(
 		case_id,
 		row_id,
 		request.appendix,
+		request_profiles_csv(request.profiles.as_deref()),
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -2508,6 +2533,7 @@ pub async fn patch_editor_lb_page_row(
 		case_id,
 		row_id,
 		request.appendix,
+		request_profiles_csv(request.profiles.as_deref()),
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2735,6 +2761,7 @@ pub async fn get_editor_dg_page_row(
 		case_id,
 		row_id,
 		query.appendix,
+		query.profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2746,15 +2773,16 @@ async fn build_editor_dg_page_row_response(
 	case_id: Uuid,
 	row_id: Uuid,
 	appendix: Option<String>,
+	profiles: Option<String>,
 ) -> Result<Value> {
 	let drug = load_editor_dg_row_detail(&ctx, &mm, case_id, row_id).await?;
-	Ok(json!({
-		"caseId": case_id,
-		"section": "DG",
-		"rowId": row_id,
-		"focusedAppendix": normalize_appendix(appendix)?,
-		"data": { "drug": drug },
-	}))
+	let mut response = Map::new();
+	response.insert("caseId".to_string(), json!(case_id));
+	response.insert("section".to_string(), json!("DG"));
+	response.insert("rowId".to_string(), json!(row_id));
+	insert_editor_json_context(&mut response, appendix, profiles)?;
+	response.insert("data".to_string(), json!({ "drug": drug }));
+	Ok(Value::Object(response))
 }
 
 pub async fn create_editor_dg_page_row(
@@ -2799,6 +2827,7 @@ pub async fn create_editor_dg_page_row(
 		case_id,
 		row_id,
 		request.appendix,
+		request_profiles_csv(request.profiles.as_deref()),
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -2834,6 +2863,7 @@ pub async fn patch_editor_dg_page_row(
 		case_id,
 		row_id,
 		request.appendix,
+		request_profiles_csv(request.profiles.as_deref()),
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2989,6 +3019,7 @@ pub async fn get_editor_dh_page_row(
 		case_id,
 		row_id,
 		query.appendix,
+		query.profiles,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -3018,15 +3049,16 @@ async fn build_editor_dh_page_row_response(
 	case_id: Uuid,
 	row_id: Uuid,
 	appendix: Option<String>,
+	profiles: Option<String>,
 ) -> Result<Value> {
 	let history = load_editor_dh_row_detail(ctx, mm, case_id, row_id).await?;
-	Ok(json!({
-		"caseId": case_id,
-		"section": "DH",
-		"rowId": row_id,
-		"focusedAppendix": normalize_appendix(appendix)?,
-		"data": { "pastDrugHistory": history },
-	}))
+	let mut response = Map::new();
+	response.insert("caseId".to_string(), json!(case_id));
+	response.insert("section".to_string(), json!("DH"));
+	response.insert("rowId".to_string(), json!(row_id));
+	insert_editor_json_context(&mut response, appendix, profiles)?;
+	response.insert("data".to_string(), json!({ "pastDrugHistory": history }));
+	Ok(Value::Object(response))
 }
 
 pub async fn create_editor_dh_page_row(
@@ -3067,6 +3099,7 @@ pub async fn create_editor_dh_page_row(
 		case_id,
 		row_id,
 		request.appendix,
+		request_profiles_csv(request.profiles.as_deref()),
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -3102,6 +3135,7 @@ pub async fn patch_editor_dh_page_row(
 		case_id,
 		row_id,
 		request.appendix,
+		request_profiles_csv(request.profiles.as_deref()),
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))

@@ -156,6 +156,7 @@ pub struct CaseEditorFieldIssue {
 #[serde(rename_all = "camelCase")]
 pub struct CaseEditorPagePatchRequest {
 	pub appendix: Option<String>,
+	pub profiles: Option<Vec<String>>,
 	#[serde(default)]
 	pub changes: BTreeMap<String, CaseEditorFieldPatch>,
 	#[serde(default)]
