@@ -111,16 +111,32 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			get(case_editor_rest::get_editor_dh_page_projection),
 		)
 		.route(
+			"/cases/{case_id}/editor/pages/DH/rows/{row_id}",
+			get(case_editor_rest::get_editor_dh_page_row),
+		)
+		.route(
 			"/cases/{case_id}/editor/pages/AE",
 			get(case_editor_rest::get_editor_ae_page_projection),
+		)
+		.route(
+			"/cases/{case_id}/editor/pages/AE/rows/{row_id}",
+			get(case_editor_rest::get_editor_ae_page_row),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/LB",
 			get(case_editor_rest::get_editor_lb_page_projection),
 		)
 		.route(
+			"/cases/{case_id}/editor/pages/LB/rows/{row_id}",
+			get(case_editor_rest::get_editor_lb_page_row),
+		)
+		.route(
 			"/cases/{case_id}/editor/pages/DG",
 			get(case_editor_rest::get_editor_dg_page_projection),
+		)
+		.route(
+			"/cases/{case_id}/editor/pages/DG/rows/{row_id}",
+			get(case_editor_rest::get_editor_dg_page_row),
 		)
 		.route(
 			"/cases/{case_id}/editor/RP",

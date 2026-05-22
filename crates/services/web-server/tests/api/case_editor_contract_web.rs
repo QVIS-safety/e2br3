@@ -126,6 +126,36 @@ async fn create_case_with_appendices(
 		.to_string())
 }
 
+async fn create_reaction_fixture(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<String> {
+	let (status, body) = post_json(
+		app,
+		cookie,
+		&format!("/api/cases/{case_id}/reactions"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sequence_number": 1,
+				"primary_source_reaction": "Headache",
+				"primary_source_reaction_translation": "Head pain",
+				"reaction_meddra_version": "27.1",
+				"reaction_meddra_code": "10019211",
+				"serious": true,
+				"outcome": "1"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	Ok(body["data"]["id"]
+		.as_str()
+		.ok_or("missing reaction id")?
+		.to_string())
+}
+
 async fn create_safety_report(
 	app: &axum::Router,
 	cookie: &str,
@@ -1368,29 +1398,7 @@ async fn editor_ae_detail_returns_one_reaction_by_uuid() -> Result<()> {
 	let app = web_server::app(mm);
 	let case_id = create_case(&app, &cookie, "EDITOR-AE-DETAIL").await?;
 
-	let (status, body) = post_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/reactions"),
-		json!({
-			"data": {
-				"case_id": case_id,
-				"sequence_number": 1,
-				"primary_source_reaction": "Headache",
-				"primary_source_reaction_translation": "Head pain",
-				"reaction_meddra_version": "27.1",
-				"reaction_meddra_code": "10019211",
-				"serious": true,
-				"outcome": "1"
-			}
-		}),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{body}");
-	let reaction_id = body["data"]["id"]
-		.as_str()
-		.ok_or("missing reaction id")?
-		.to_string();
+	let reaction_id = create_reaction_fixture(&app, &cookie, &case_id).await?;
 
 	let (status, body) = get_json(
 		&app,
@@ -1408,6 +1416,33 @@ async fn editor_ae_detail_returns_one_reaction_by_uuid() -> Result<()> {
 	assert_eq!(reactions.len(), 1, "{body}");
 	assert_eq!(reactions[0]["id"], reaction_id);
 	assert!(reactions[0].get("primary_source_reaction").is_some());
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_repeatable_page_rows_return_row_detail_by_uuid() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-REPEATABLE-ROWS").await?;
+	let reaction_id = create_reaction_fixture(&app, &cookie, &case_id).await?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}?appendix=fda"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["caseId"], case_id);
+	assert_eq!(body["section"], "AE");
+	assert_eq!(body["rowId"], reaction_id);
+	assert!(body.get("appendices").is_none(), "{body}");
 
 	Ok(())
 }
