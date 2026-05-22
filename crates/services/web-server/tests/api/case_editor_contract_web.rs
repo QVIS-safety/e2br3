@@ -5,6 +5,7 @@ use crate::common::{
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
+use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
 use lib_core::model::acs::{
 	upsert_dynamic_role_permissions, Permission, CASE_IDENTIFIER_LIST, CASE_LIST,
 	CASE_READ, CASE_SUMMARY_LIST, DEATH_CAUSE_LIST, DRUG_INDICATION_LIST,
@@ -15,6 +16,7 @@ use lib_core::model::acs::{
 	SAFETY_REPORT_READ, SENDER_DIAGNOSIS_LIST, SENDER_INFORMATION_LIST,
 	STUDY_INFORMATION_LIST, STUDY_REGISTRATION_LIST,
 };
+use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
 use serde_json::{json, Value};
 use serial_test::serial;
@@ -58,6 +60,23 @@ async fn patch_json(
 	Ok((status, body))
 }
 
+async fn delete_json(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("DELETE")
+		.uri(uri)
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let body = serde_json::from_slice::<Value>(&body).unwrap_or(Value::Null);
+	Ok((status, body))
+}
+
 async fn get_json(
 	app: &axum::Router,
 	cookie: &str,
@@ -73,6 +92,32 @@ async fn get_json(
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	let body = serde_json::from_slice::<Value>(&body).unwrap_or(Value::Null);
 	Ok((status, body))
+}
+
+async fn stale_validation_summary_count(
+	mm: &ModelManager,
+	user_id: Uuid,
+	org_id: Uuid,
+	case_id: &str,
+) -> Result<i64> {
+	let case_uuid = Uuid::parse_str(case_id)?;
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(mm.dbx(), user_id, org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	let count = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (i64,)>(
+				"SELECT COUNT(*)::bigint
+				   FROM case_validation_summaries
+				  WHERE case_id = $1
+				    AND stale = true",
+			)
+			.bind(case_uuid),
+		)
+		.await?
+		.0;
+	mm.dbx().commit_txn().await?;
+	Ok(count)
 }
 
 async fn create_case(
@@ -1692,6 +1737,176 @@ async fn editor_dh_page_row_patch_updates_one_drug_history() -> Result<()> {
 	assert_eq!(
 		body["data"]["pastDrugHistory"]["drug_name"],
 		"Updated prior drug"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sections(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case(&app, &cookie, "EDITOR-REPEATABLE-ROW-CREATE-DELETE").await?;
+	create_patient_fixture(&app, &cookie, &case_id).await?;
+
+	let create_requests = [
+		(
+			"AE",
+			json!({
+				"appendix": "fda",
+				"rows": {
+					"reaction": {
+						"reactionPrimarySourceNative": "Created reaction"
+					}
+				}
+			}),
+			"reaction",
+		),
+		(
+			"LB",
+			json!({
+				"appendix": "fda",
+				"rows": {
+					"testResult": {
+						"testName": "Created lab"
+					}
+				}
+			}),
+			"testResult",
+		),
+		(
+			"DG",
+			json!({
+				"appendix": "fda",
+				"rows": {
+					"drug": {
+						"medicinalProduct": "Created product"
+					}
+				}
+			}),
+			"drug",
+		),
+		(
+			"DH",
+			json!({
+				"appendix": "fda",
+				"rows": {
+					"pastDrugHistory": {
+						"drugName": "Created prior drug"
+					}
+				}
+			}),
+			"pastDrugHistory",
+		),
+	];
+
+	for (section, request, response_key) in create_requests {
+		let (status, body) = post_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{section}/rows"),
+			request,
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CREATED, "{section}: {body}");
+		assert_eq!(body["section"], section);
+		assert_eq!(body["focusedAppendix"], "fda");
+		assert!(body["data"][response_key].is_object(), "{section}: {body}");
+		let row_id = body["rowId"]
+			.as_str()
+			.ok_or("missing created page row id")?;
+
+		let (status, body) = delete_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{section}/rows/{row_id}"),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::NO_CONTENT, "{section}: {body}");
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_repeatable_page_row_create_and_delete_mark_validation_cache_stale(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let case_id = create_case(&app, &cookie, "EDITOR-ROW-STALE").await?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation/all?profiles=fda"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		stale_validation_summary_count(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await?,
+		0
+	);
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE/rows"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"reaction": {
+					"reactionPrimarySourceNative": "Created stale reaction"
+				}
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	let reaction_id = body["rowId"]
+		.as_str()
+		.ok_or("missing created reaction row id")?
+		.to_string();
+	assert!(
+		stale_validation_summary_count(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await? > 0,
+		"row create should mark cached validation summaries stale"
+	);
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation/all?profiles=fda"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		stale_validation_summary_count(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await?,
+		0
+	);
+
+	let (status, body) = delete_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+	assert!(
+		stale_validation_summary_count(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await? > 0,
+		"row delete should mark cached validation summaries stale"
 	);
 
 	Ok(())
