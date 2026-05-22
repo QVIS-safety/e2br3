@@ -111,32 +111,56 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			get(case_editor_rest::get_editor_dh_page_projection),
 		)
 		.route(
+			"/cases/{case_id}/editor/pages/DH/rows",
+			axum::routing::post(case_editor_rest::create_editor_dh_page_row),
+		)
+		.route(
 			"/cases/{case_id}/editor/pages/DH/rows/{row_id}",
-			get(case_editor_rest::get_editor_dh_page_row),
+			get(case_editor_rest::get_editor_dh_page_row)
+				.patch(case_editor_rest::patch_editor_dh_page_row)
+				.delete(case_editor_rest::delete_editor_dh_page_row),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/AE",
 			get(case_editor_rest::get_editor_ae_page_projection),
 		)
 		.route(
+			"/cases/{case_id}/editor/pages/AE/rows",
+			axum::routing::post(case_editor_rest::create_editor_ae_page_row),
+		)
+		.route(
 			"/cases/{case_id}/editor/pages/AE/rows/{row_id}",
-			get(case_editor_rest::get_editor_ae_page_row),
+			get(case_editor_rest::get_editor_ae_page_row)
+				.patch(case_editor_rest::patch_editor_ae_page_row)
+				.delete(case_editor_rest::delete_editor_ae_page_row),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/LB",
 			get(case_editor_rest::get_editor_lb_page_projection),
 		)
 		.route(
+			"/cases/{case_id}/editor/pages/LB/rows",
+			axum::routing::post(case_editor_rest::create_editor_lb_page_row),
+		)
+		.route(
 			"/cases/{case_id}/editor/pages/LB/rows/{row_id}",
-			get(case_editor_rest::get_editor_lb_page_row),
+			get(case_editor_rest::get_editor_lb_page_row)
+				.patch(case_editor_rest::patch_editor_lb_page_row)
+				.delete(case_editor_rest::delete_editor_lb_page_row),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/DG",
 			get(case_editor_rest::get_editor_dg_page_projection),
 		)
 		.route(
+			"/cases/{case_id}/editor/pages/DG/rows",
+			axum::routing::post(case_editor_rest::create_editor_dg_page_row),
+		)
+		.route(
 			"/cases/{case_id}/editor/pages/DG/rows/{row_id}",
-			get(case_editor_rest::get_editor_dg_page_row),
+			get(case_editor_rest::get_editor_dg_page_row)
+				.patch(case_editor_rest::patch_editor_dg_page_row)
+				.delete(case_editor_rest::delete_editor_dg_page_row),
 		)
 		.route(
 			"/cases/{case_id}/editor/RP",

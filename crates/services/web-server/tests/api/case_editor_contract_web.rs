@@ -156,6 +156,111 @@ async fn create_reaction_fixture(
 		.to_string())
 }
 
+async fn create_test_result_fixture(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<String> {
+	let (status, body) = post_json(
+		app,
+		cookie,
+		&format!("/api/cases/{case_id}/test-results"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sequence_number": 1,
+				"test_name": "ALT",
+				"test_result_value": "42",
+				"test_result_unit": "U/L"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	Ok(body["data"]["id"]
+		.as_str()
+		.ok_or("missing test result id")?
+		.to_string())
+}
+
+async fn create_drug_fixture(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<String> {
+	let (status, body) = post_json(
+		app,
+		cookie,
+		&format!("/api/cases/{case_id}/drugs"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sequence_number": 1,
+				"drug_characterization": "1",
+				"medicinal_product": "Example Product",
+				"action_taken": "1"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	Ok(body["data"]["id"]
+		.as_str()
+		.ok_or("missing drug id")?
+		.to_string())
+}
+
+async fn create_patient_fixture(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<String> {
+	let (status, body) = post_json(
+		app,
+		cookie,
+		&format!("/api/cases/{case_id}/patient"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"patient_initials": "ABC"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	Ok(body["data"]["id"]
+		.as_str()
+		.ok_or("missing patient id")?
+		.to_string())
+}
+
+async fn create_past_drug_history_fixture(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: &str,
+) -> Result<String> {
+	let patient_id = create_patient_fixture(app, cookie, case_id).await?;
+	let (status, body) = post_json(
+		app,
+		cookie,
+		&format!("/api/cases/{case_id}/patient/past-drugs"),
+		json!({
+			"data": {
+				"patient_id": patient_id,
+				"sequence_number": 1,
+				"drug_name": "Prior Drug",
+				"indication_meddra_code": "10012345"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+	Ok(body["data"]["id"]
+		.as_str()
+		.ok_or("missing past drug id")?
+		.to_string())
+}
+
 async fn create_safety_report(
 	app: &axum::Router,
 	cookie: &str,
@@ -1443,6 +1548,149 @@ async fn editor_repeatable_page_rows_return_row_detail_by_uuid() -> Result<()> {
 	assert_eq!(body["section"], "AE");
 	assert_eq!(body["rowId"], reaction_id);
 	assert!(body.get("appendices").is_none(), "{body}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_ae_page_row_patch_updates_one_reaction() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-AE-ROW-PATCH").await?;
+	let reaction_id = create_reaction_fixture(&app, &cookie, &case_id).await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"reaction": {
+					"reactionPrimarySourceNative": "Updated reaction"
+				}
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["section"], "AE");
+	assert_eq!(body["rowId"], reaction_id);
+	assert_eq!(
+		body["data"]["reaction"]["primary_source_reaction"],
+		"Updated reaction"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_lb_page_row_patch_updates_one_test_result() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-LB-ROW-PATCH").await?;
+	let test_result_id = create_test_result_fixture(&app, &cookie, &case_id).await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/LB/rows/{test_result_id}"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"testResult": {
+					"testName": "Updated lab"
+				}
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["section"], "LB");
+	assert_eq!(body["rowId"], test_result_id);
+	assert_eq!(body["data"]["testResult"]["test_name"], "Updated lab");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_dg_page_row_patch_updates_one_drug() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-DG-ROW-PATCH").await?;
+	let drug_id = create_drug_fixture(&app, &cookie, &case_id).await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/DG/rows/{drug_id}"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"drug": {
+					"medicinalProduct": "Updated product"
+				}
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["section"], "DG");
+	assert_eq!(body["rowId"], drug_id);
+	assert_eq!(body["data"]["drug"]["medicinal_product"], "Updated product");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_dh_page_row_patch_updates_one_drug_history() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-DH-ROW-PATCH").await?;
+	let past_drug_id =
+		create_past_drug_history_fixture(&app, &cookie, &case_id).await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/DH/rows/{past_drug_id}"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"pastDrugHistory": {
+					"drugName": "Updated prior drug"
+				}
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["section"], "DH");
+	assert_eq!(body["rowId"], past_drug_id);
+	assert_eq!(
+		body["data"]["pastDrugHistory"]["drug_name"],
+		"Updated prior drug"
+	);
 
 	Ok(())
 }

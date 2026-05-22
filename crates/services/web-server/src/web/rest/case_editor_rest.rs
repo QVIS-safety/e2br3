@@ -10,16 +10,19 @@ use axum::extract::{Path, Query, State};
 use axum::Json;
 use lib_core::model::acs::{
 	CASE_IDENTIFIER_LIST, CASE_READ, CASE_SUMMARY_LIST, CASE_UPDATE,
-	DEATH_CAUSE_LIST, DRUG_DOSAGE_LIST, DRUG_INDICATION_LIST, DRUG_LIST,
-	DRUG_REACTION_ASSESSMENT_LIST, DRUG_READ, DRUG_RECURRENCE_LIST,
-	DRUG_SUBSTANCE_LIST, LITERATURE_REFERENCE_LIST, MEDICAL_HISTORY_LIST,
-	MESSAGE_HEADER_READ, NARRATIVE_READ, PARENT_INFORMATION_LIST,
-	PARENT_MEDICAL_HISTORY_LIST, PARENT_PAST_DRUG_LIST, PAST_DRUG_LIST,
-	PAST_DRUG_READ, PATIENT_DEATH_LIST, PATIENT_IDENTIFIER_LIST, PATIENT_READ,
-	PRIMARY_SOURCE_LIST, REACTION_LIST, REACTION_READ, RECEIVER_READ,
-	SAFETY_REPORT_READ, SAFETY_REPORT_UPDATE, SENDER_DIAGNOSIS_LIST,
-	SENDER_INFORMATION_LIST, STUDY_INFORMATION_LIST, STUDY_REGISTRATION_LIST,
-	TEST_RESULT_LIST, TEST_RESULT_READ,
+	DEATH_CAUSE_LIST, DRUG_CREATE, DRUG_DELETE, DRUG_DOSAGE_LIST,
+	DRUG_INDICATION_LIST, DRUG_LIST, DRUG_REACTION_ASSESSMENT_LIST, DRUG_READ,
+	DRUG_RECURRENCE_LIST, DRUG_SUBSTANCE_LIST, DRUG_UPDATE,
+	LITERATURE_REFERENCE_LIST, MEDICAL_HISTORY_LIST, MESSAGE_HEADER_READ,
+	NARRATIVE_READ, PARENT_INFORMATION_LIST, PARENT_MEDICAL_HISTORY_LIST,
+	PARENT_PAST_DRUG_LIST, PAST_DRUG_CREATE, PAST_DRUG_DELETE,
+	PAST_DRUG_LIST, PAST_DRUG_READ, PAST_DRUG_UPDATE, PATIENT_DEATH_LIST,
+	PATIENT_IDENTIFIER_LIST, PATIENT_READ, PRIMARY_SOURCE_LIST, REACTION_CREATE,
+	REACTION_DELETE, REACTION_LIST, REACTION_READ, REACTION_UPDATE,
+	RECEIVER_READ, SAFETY_REPORT_READ, SAFETY_REPORT_UPDATE,
+	SENDER_DIAGNOSIS_LIST, SENDER_INFORMATION_LIST, STUDY_INFORMATION_LIST,
+	STUDY_REGISTRATION_LIST, TEST_RESULT_CREATE, TEST_RESULT_DELETE,
+	TEST_RESULT_LIST, TEST_RESULT_READ, TEST_RESULT_UPDATE,
 };
 use lib_core::model::case::CaseBmc;
 use lib_core::model::case_identifiers::{
@@ -30,7 +33,7 @@ use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::drug::{
 	DosageInformationBmc, DosageInformationFilter, DrugActiveSubstanceBmc,
 	DrugActiveSubstanceFilter, DrugIndicationBmc, DrugIndicationFilter,
-	DrugInformationBmc,
+	DrugInformationBmc, DrugInformationForCreate, DrugInformationForUpdate,
 };
 use lib_core::model::drug_reaction_assessment::DrugReactionAssessmentBmc;
 use lib_core::model::drug_recurrence::DrugRecurrenceInformationBmc;
@@ -50,9 +53,10 @@ use lib_core::model::patient::{
 	PastDrugHistoryBmc, PastDrugHistoryFilter, PatientDeathInformationBmc,
 	PatientDeathInformationFilter, PatientIdentifierBmc, PatientIdentifierFilter,
 	PatientInformationBmc, PatientInformationForCreate, PatientInformationForUpdate,
-	ReportedCauseOfDeathBmc, ReportedCauseOfDeathFilter,
+	ReportedCauseOfDeathBmc, ReportedCauseOfDeathFilter, PastDrugHistoryForCreate,
+	PastDrugHistoryForUpdate,
 };
-use lib_core::model::reaction::ReactionBmc;
+use lib_core::model::reaction::{ReactionBmc, ReactionForCreate, ReactionForUpdate};
 use lib_core::model::receiver::ReceiverInformationBmc;
 use lib_core::model::safety_report::{
 	DocumentsHeldBySenderBmc, DocumentsHeldBySenderFilter, LiteratureReferenceBmc,
@@ -65,7 +69,9 @@ use lib_core::model::safety_report::{
 	StudyInformationForUpdate, StudyRegistrationNumberBmc,
 	StudyRegistrationNumberFilter,
 };
-use lib_core::model::test_result::TestResultBmc;
+use lib_core::model::test_result::{
+	TestResultBmc, TestResultForCreate, TestResultForUpdate,
+};
 use lib_core::model::ModelManager;
 use lib_core::validation::{
 	validate_case_for_profiles, ValidationIssue, ValidationProfile,
@@ -766,6 +772,16 @@ fn optional_row_object<'a>(
 		.transpose()
 }
 
+fn required_row_object<'a>(
+	page_id: &str,
+	rows: &'a BTreeMap<String, Value>,
+	key: &str,
+) -> Result<&'a serde_json::Map<String, Value>> {
+	optional_row_object(page_id, rows, key)?.ok_or_else(|| Error::BadRequest {
+		message: format!("{page_id}.{key} row payload is required"),
+	})
+}
+
 fn optional_first_row_object<'a>(
 	page_id: &str,
 	rows: &'a BTreeMap<String, Value>,
@@ -804,6 +820,59 @@ fn i32_field(map: &serde_json::Map<String, Value>, aliases: &[&str]) -> Option<i
 		}
 	}
 	None
+}
+
+fn bool_field(
+	map: &serde_json::Map<String, Value>,
+	aliases: &[&str],
+) -> Option<bool> {
+	for alias in aliases {
+		if let Some(value) = map.get(*alias) {
+			return value.as_bool();
+		}
+	}
+	None
+}
+
+fn insert_alias(
+	map: &mut serde_json::Map<String, Value>,
+	target: &str,
+	aliases: &[&str],
+) {
+	if map.contains_key(target) {
+		return;
+	}
+	for alias in aliases {
+		if let Some(value) = map.get(*alias) {
+			map.insert(target.to_string(), value.clone());
+			return;
+		}
+	}
+}
+
+fn row_model_value(
+	row: &serde_json::Map<String, Value>,
+	aliases: &[(&str, &[&str])],
+	extra: &[(&str, Value)],
+) -> Value {
+	let mut map = row.clone();
+	for (target, aliases) in aliases {
+		insert_alias(&mut map, target, aliases);
+	}
+	for (key, value) in extra {
+		map.insert((*key).to_string(), value.clone());
+	}
+	Value::Object(map)
+}
+
+fn parse_row_model<T: serde::de::DeserializeOwned>(
+	page_id: &str,
+	key: &str,
+	value: Value,
+) -> Result<T> {
+	serde_json::from_value(value).map_err(|err| Error::BadRequest {
+		message: format!("invalid {page_id}.{key} row payload: {err}"),
+	})
 }
 
 fn uuid_field(
@@ -2047,15 +2116,116 @@ pub async fn get_editor_ae_page_row(
 	require_permission(&ctx, REACTION_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
+	let response =
+		build_editor_ae_page_row_response(&ctx, &mm, case_id, row_id, query.appendix)
+			.await?;
+	Ok((axum::http::StatusCode::OK, Json(response)))
+}
+
+async fn build_editor_ae_page_row_response(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row_id: Uuid,
+	appendix: Option<String>,
+) -> Result<Value> {
 	let reaction = ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	let response = json!({
+	Ok(json!({
 		"caseId": case_id,
 		"section": "AE",
 		"rowId": row_id,
-		"focusedAppendix": normalize_appendix(query.appendix)?,
+		"focusedAppendix": normalize_appendix(appendix)?,
 		"data": { "reaction": reaction },
-	});
+	}))
+}
+
+pub async fn create_editor_ae_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, REACTION_CREATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	let row = required_row_object("AE", &request.rows, "reaction")?;
+	let value = row_model_value(
+		row,
+		&[
+			("primary_source_reaction", &["reactionPrimarySourceNative"][..]),
+			(
+				"primary_source_reaction_translation",
+				&["reactionPrimarySourceTranslation"][..],
+			),
+			("reaction_meddra_version", &["meddraVersion"][..]),
+			("reaction_meddra_code", &["meddraCode"][..]),
+			("sequence_number", &["sequenceNumber"][..]),
+		],
+		&[
+			("case_id", json!(case_id)),
+			(
+				"sequence_number",
+				json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+			),
+		],
+	);
+	let create = parse_row_model::<ReactionForCreate>("AE", "reaction", value)?;
+	let row_id = ReactionBmc::create(&ctx, &mm, create).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	let response =
+		build_editor_ae_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
+			.await?;
+	Ok((axum::http::StatusCode::CREATED, Json(response)))
+}
+
+pub async fn patch_editor_ae_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, REACTION_UPDATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
+	let row = required_row_object("AE", &request.rows, "reaction")?;
+	let value = row_model_value(
+		row,
+		&[
+			("primary_source_reaction", &["reactionPrimarySourceNative"][..]),
+			(
+				"primary_source_reaction_translation",
+				&["reactionPrimarySourceTranslation"][..],
+			),
+			("reaction_meddra_version", &["meddraVersion"][..]),
+			("reaction_meddra_code", &["meddraCode"][..]),
+		],
+		&[],
+	);
+	let update = parse_row_model::<ReactionForUpdate>("AE", "reaction", value)?;
+	ReactionBmc::update(&ctx, &mm, row_id, update).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	let response =
+		build_editor_ae_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
+			.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
+}
+
+pub async fn delete_editor_ae_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+) -> Result<axum::http::StatusCode> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, REACTION_DELETE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
+	ReactionBmc::delete(&ctx, &mm, row_id).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
 async fn load_editor_lb_list_rows(
@@ -2156,15 +2326,108 @@ pub async fn get_editor_lb_page_row(
 	require_permission(&ctx, TEST_RESULT_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
+	let response =
+		build_editor_lb_page_row_response(&ctx, &mm, case_id, row_id, query.appendix)
+			.await?;
+	Ok((axum::http::StatusCode::OK, Json(response)))
+}
+
+async fn build_editor_lb_page_row_response(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row_id: Uuid,
+	appendix: Option<String>,
+) -> Result<Value> {
 	let test_result = TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	let response = json!({
+	Ok(json!({
 		"caseId": case_id,
 		"section": "LB",
 		"rowId": row_id,
-		"focusedAppendix": normalize_appendix(query.appendix)?,
+		"focusedAppendix": normalize_appendix(appendix)?,
 		"data": { "testResult": test_result },
-	});
+	}))
+}
+
+pub async fn create_editor_lb_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, TEST_RESULT_CREATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	let row = required_row_object("LB", &request.rows, "testResult")?;
+	let value = row_model_value(
+		row,
+		&[
+			("test_name", &["testName"][..]),
+			("test_result_value", &["resultValue"][..]),
+			("test_result_unit", &["resultUnit"][..]),
+			("sequence_number", &["sequenceNumber"][..]),
+		],
+		&[
+			("case_id", json!(case_id)),
+			(
+				"sequence_number",
+				json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+			),
+		],
+	);
+	let create = parse_row_model::<TestResultForCreate>("LB", "testResult", value)?;
+	let row_id = TestResultBmc::create(&ctx, &mm, create).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	let response =
+		build_editor_lb_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
+			.await?;
+	Ok((axum::http::StatusCode::CREATED, Json(response)))
+}
+
+pub async fn patch_editor_lb_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, TEST_RESULT_UPDATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
+	let row = required_row_object("LB", &request.rows, "testResult")?;
+	let value = row_model_value(
+		row,
+		&[
+			("test_name", &["testName"][..]),
+			("test_result_value", &["resultValue"][..]),
+			("test_result_unit", &["resultUnit"][..]),
+		],
+		&[],
+	);
+	let update = parse_row_model::<TestResultForUpdate>("LB", "testResult", value)?;
+	TestResultBmc::update(&ctx, &mm, row_id, update).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	let response =
+		build_editor_lb_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
+			.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
+}
+
+pub async fn delete_editor_lb_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+) -> Result<axum::http::StatusCode> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, TEST_RESULT_DELETE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
+	TestResultBmc::delete(&ctx, &mm, row_id).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
 async fn load_editor_dg_list_rows(
@@ -2367,15 +2630,112 @@ pub async fn get_editor_dg_page_row(
 	require_permission(&ctx, DRUG_RECURRENCE_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
+	let response =
+		build_editor_dg_page_row_response(&ctx, &mm, case_id, row_id, query.appendix)
+			.await?;
+	Ok((axum::http::StatusCode::OK, Json(response)))
+}
+
+async fn build_editor_dg_page_row_response(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row_id: Uuid,
+	appendix: Option<String>,
+) -> Result<Value> {
 	let drug = load_editor_dg_row_detail(&ctx, &mm, case_id, row_id).await?;
-	let response = json!({
+	Ok(json!({
 		"caseId": case_id,
 		"section": "DG",
 		"rowId": row_id,
-		"focusedAppendix": normalize_appendix(query.appendix)?,
+		"focusedAppendix": normalize_appendix(appendix)?,
 		"data": { "drug": drug },
-	});
+	}))
+}
+
+pub async fn create_editor_dg_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DRUG_CREATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	let row = required_row_object("DG", &request.rows, "drug")?;
+	let value = row_model_value(
+		row,
+		&[
+			("medicinal_product", &["medicinalProduct"][..]),
+			("drug_characterization", &["drugRole"][..]),
+			("action_taken", &["actionTaken"][..]),
+			("sequence_number", &["sequenceNumber"][..]),
+		],
+		&[
+			("case_id", json!(case_id)),
+			(
+				"sequence_number",
+				json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+			),
+			(
+				"drug_characterization",
+				json!(string_field(row, &["drugRole", "drug_characterization"]).unwrap_or_else(|| "1".to_string())),
+			),
+		],
+	);
+	let create = parse_row_model::<DrugInformationForCreate>("DG", "drug", value)?;
+	let row_id = DrugInformationBmc::create(&ctx, &mm, create).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	let response =
+		build_editor_dg_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
+			.await?;
+	Ok((axum::http::StatusCode::CREATED, Json(response)))
+}
+
+pub async fn patch_editor_dg_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DRUG_UPDATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	DrugInformationBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
+	let row = required_row_object("DG", &request.rows, "drug")?;
+	let value = row_model_value(
+		row,
+		&[
+			("medicinal_product", &["medicinalProduct"][..]),
+			("drug_characterization", &["drugRole"][..]),
+			("action_taken", &["actionTaken"][..]),
+		],
+		&[],
+	);
+	let update = parse_row_model::<DrugInformationForUpdate>("DG", "drug", value)?;
+	DrugInformationBmc::update(&ctx, &mm, row_id, update).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	let response =
+		build_editor_dg_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
+			.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
+}
+
+pub async fn delete_editor_dg_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+) -> Result<axum::http::StatusCode> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DRUG_DELETE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	DrugInformationBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
+	DrugInformationBmc::delete(&ctx, &mm, row_id).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
 async fn load_editor_dh_list_rows(
@@ -2506,6 +2866,18 @@ pub async fn get_editor_dh_page_row(
 	require_permission(&ctx, PAST_DRUG_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
+	let response =
+		build_editor_dh_page_row_response(&ctx, &mm, case_id, row_id, query.appendix)
+			.await?;
+	Ok((axum::http::StatusCode::OK, Json(response)))
+}
+
+async fn load_editor_dh_row_detail(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row_id: Uuid,
+) -> Result<Value> {
 	let patient = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
 	let history = PastDrugHistoryBmc::get(&ctx, &mm, row_id).await?;
 	if history.patient_id != patient.id {
@@ -2515,12 +2887,110 @@ pub async fn get_editor_dh_page_row(
 		}
 		.into());
 	}
-	let response = json!({
+	Ok(json!(history))
+}
+
+async fn build_editor_dh_page_row_response(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row_id: Uuid,
+	appendix: Option<String>,
+) -> Result<Value> {
+	let history = load_editor_dh_row_detail(ctx, mm, case_id, row_id).await?;
+	Ok(json!({
 		"caseId": case_id,
 		"section": "DH",
 		"rowId": row_id,
-		"focusedAppendix": normalize_appendix(query.appendix)?,
+		"focusedAppendix": normalize_appendix(appendix)?,
 		"data": { "pastDrugHistory": history },
-	});
+	}))
+}
+
+pub async fn create_editor_dh_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PAST_DRUG_CREATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	let patient = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
+	let row = required_row_object("DH", &request.rows, "pastDrugHistory")?;
+	let value = row_model_value(
+		row,
+		&[
+			("drug_name", &["drugName"][..]),
+			("indication_meddra_code", &["indication"][..]),
+			("sequence_number", &["sequenceNumber"][..]),
+		],
+		&[
+			("patient_id", json!(patient.id)),
+			(
+				"sequence_number",
+				json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+			),
+		],
+	);
+	let create = parse_row_model::<PastDrugHistoryForCreate>(
+		"DH",
+		"pastDrugHistory",
+		value,
+	)?;
+	let row_id = PastDrugHistoryBmc::create(&ctx, &mm, create).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	let response =
+		build_editor_dh_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
+			.await?;
+	Ok((axum::http::StatusCode::CREATED, Json(response)))
+}
+
+pub async fn patch_editor_dh_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PAST_DRUG_UPDATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	load_editor_dh_row_detail(&ctx, &mm, case_id, row_id).await?;
+	let row = required_row_object("DH", &request.rows, "pastDrugHistory")?;
+	let value = row_model_value(
+		row,
+		&[
+			("drug_name", &["drugName"][..]),
+			("indication_meddra_code", &["indication"][..]),
+		],
+		&[],
+	);
+	let update = parse_row_model::<PastDrugHistoryForUpdate>(
+		"DH",
+		"pastDrugHistory",
+		value,
+	)?;
+	PastDrugHistoryBmc::update(&ctx, &mm, row_id, update).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	let response =
+		build_editor_dh_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
+			.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
+}
+
+pub async fn delete_editor_dh_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+) -> Result<axum::http::StatusCode> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PAST_DRUG_DELETE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	load_editor_dh_row_detail(&ctx, &mm, case_id, row_id).await?;
+	PastDrugHistoryBmc::delete(&ctx, &mm, row_id).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+	Ok(axum::http::StatusCode::NO_CONTENT)
 }
