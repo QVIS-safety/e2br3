@@ -37,7 +37,8 @@ use lib_core::model::drug_recurrence::DrugRecurrenceInformationBmc;
 use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::narrative::{
 	CaseSummaryInformationBmc, CaseSummaryInformationFilter,
-	NarrativeInformationBmc, SenderDiagnosisBmc, SenderDiagnosisFilter,
+	NarrativeInformationBmc, NarrativeInformationForCreate,
+	NarrativeInformationForUpdate, SenderDiagnosisBmc, SenderDiagnosisFilter,
 };
 use lib_core::model::parent_history::{
 	ParentMedicalHistoryBmc, ParentMedicalHistoryFilter, ParentPastDrugHistoryBmc,
@@ -48,16 +49,20 @@ use lib_core::model::patient::{
 	MedicalHistoryEpisodeFilter, ParentInformationBmc, ParentInformationFilter,
 	PastDrugHistoryBmc, PastDrugHistoryFilter, PatientDeathInformationBmc,
 	PatientDeathInformationFilter, PatientIdentifierBmc, PatientIdentifierFilter,
-	PatientInformationBmc, ReportedCauseOfDeathBmc, ReportedCauseOfDeathFilter,
+	PatientInformationBmc, PatientInformationForCreate, PatientInformationForUpdate,
+	ReportedCauseOfDeathBmc, ReportedCauseOfDeathFilter,
 };
 use lib_core::model::reaction::ReactionBmc;
 use lib_core::model::receiver::ReceiverInformationBmc;
 use lib_core::model::safety_report::{
 	DocumentsHeldBySenderBmc, DocumentsHeldBySenderFilter, LiteratureReferenceBmc,
-	LiteratureReferenceFilter, PatchValue, PrimarySourceBmc, PrimarySourceFilter,
-	SafetyReportIdentificationBmc, SafetyReportIdentificationForUpdate,
-	SenderInformationBmc, SenderInformationFilter, StudyInformationBmc,
-	StudyInformationFilter, StudyRegistrationNumberBmc,
+	LiteratureReferenceFilter, LiteratureReferenceForCreate,
+	LiteratureReferenceForUpdate, PatchValue, PrimarySourceBmc, PrimarySourceFilter,
+	PrimarySourceForCreate, PrimarySourceForUpdate, SafetyReportIdentificationBmc,
+	SafetyReportIdentificationForUpdate, SenderInformationBmc,
+	SenderInformationFilter, SenderInformationForCreate, SenderInformationForUpdate,
+	StudyInformationBmc, StudyInformationFilter, StudyInformationForCreate,
+	StudyInformationForUpdate, StudyRegistrationNumberBmc,
 	StudyRegistrationNumberFilter,
 };
 use lib_core::model::test_result::TestResultBmc;
@@ -673,10 +678,16 @@ async fn patch_direct_page_projection(
 	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
 
-	if !request.changes.is_empty() || !request.rows.is_empty() {
+	if !request.changes.is_empty() {
 		return Err(Error::BadRequest {
 			message: format!("{page_id} page patch fields are not implemented yet"),
 		});
+	}
+
+	if !request.rows.is_empty() {
+		apply_direct_page_rows_patch(&ctx, &mm, case_id, page_id, &request.rows)
+			.await?;
+		CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
 	}
 
 	let data = match page_id {
@@ -702,6 +713,573 @@ async fn patch_direct_page_projection(
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
+}
+
+fn reject_unknown_row_keys(
+	page_id: &str,
+	rows: &BTreeMap<String, Value>,
+	allowed: &[&str],
+) -> Result<()> {
+	for key in rows.keys() {
+		if !allowed.contains(&key.as_str()) {
+			return Err(Error::BadRequest {
+				message: format!("unknown {page_id} row '{key}'"),
+			});
+		}
+	}
+	Ok(())
+}
+
+fn as_object<'a>(
+	page_id: &str,
+	key: &str,
+	value: &'a Value,
+) -> Result<&'a serde_json::Map<String, Value>> {
+	value.as_object().ok_or_else(|| Error::BadRequest {
+		message: format!("{page_id}.{key} must be an object"),
+	})
+}
+
+fn first_array_object<'a>(
+	page_id: &str,
+	key: &str,
+	value: &'a Value,
+) -> Result<Option<&'a serde_json::Map<String, Value>>> {
+	let Some(items) = value.as_array() else {
+		return Err(Error::BadRequest {
+			message: format!("{page_id}.{key} must be an array"),
+		});
+	};
+	items
+		.first()
+		.map(|item| as_object(page_id, key, item))
+		.transpose()
+}
+
+fn optional_row_object<'a>(
+	page_id: &str,
+	rows: &'a BTreeMap<String, Value>,
+	key: &str,
+) -> Result<Option<&'a serde_json::Map<String, Value>>> {
+	rows.get(key)
+		.map(|value| as_object(page_id, key, value))
+		.transpose()
+}
+
+fn optional_first_row_object<'a>(
+	page_id: &str,
+	rows: &'a BTreeMap<String, Value>,
+	key: &str,
+) -> Result<Option<&'a serde_json::Map<String, Value>>> {
+	rows.get(key)
+		.map(|value| first_array_object(page_id, key, value))
+		.transpose()
+		.map(Option::flatten)
+}
+
+fn string_field(
+	map: &serde_json::Map<String, Value>,
+	aliases: &[&str],
+) -> Option<String> {
+	for alias in aliases {
+		if let Some(value) = map.get(*alias) {
+			if value.is_null() {
+				return None;
+			}
+			if let Some(value) = value.as_str() {
+				return Some(value.to_string());
+			}
+			return Some(value.to_string());
+		}
+	}
+	None
+}
+
+fn i32_field(map: &serde_json::Map<String, Value>, aliases: &[&str]) -> Option<i32> {
+	for alias in aliases {
+		if let Some(value) = map.get(*alias) {
+			if let Some(value) = value.as_i64() {
+				return i32::try_from(value).ok();
+			}
+		}
+	}
+	None
+}
+
+fn uuid_field(
+	map: &serde_json::Map<String, Value>,
+	aliases: &[&str],
+) -> Option<Uuid> {
+	string_field(map, aliases).and_then(|value| Uuid::parse_str(&value).ok())
+}
+
+async fn apply_direct_page_rows_patch(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	page_id: &'static str,
+	rows: &BTreeMap<String, Value>,
+) -> Result<()> {
+	match page_id {
+		"RP" => apply_rp_page_rows_patch(ctx, mm, case_id, page_id, rows).await,
+		"SD" => apply_sd_page_rows_patch(ctx, mm, case_id, page_id, rows).await,
+		"LR" => apply_lr_page_rows_patch(ctx, mm, case_id, page_id, rows).await,
+		"SI" => apply_si_page_rows_patch(ctx, mm, case_id, page_id, rows).await,
+		"DM" => apply_dm_page_rows_patch(ctx, mm, case_id, page_id, rows).await,
+		"NR" => apply_nr_page_rows_patch(ctx, mm, case_id, page_id, rows).await,
+		_ => Err(Error::BadRequest {
+			message: format!("unsupported direct page '{page_id}'"),
+		}),
+	}
+}
+
+async fn apply_rp_page_rows_patch(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	page_id: &'static str,
+	rows: &BTreeMap<String, Value>,
+) -> Result<()> {
+	reject_unknown_row_keys(page_id, rows, &["primarySources"])?;
+	let Some(source) = optional_first_row_object(page_id, rows, "primarySources")?
+	else {
+		return Ok(());
+	};
+	let update = PrimarySourceForUpdate {
+		reporter_title: string_field(source, &["reporterTitle", "reporter_title"]),
+		reporter_given_name: string_field(
+			source,
+			&["reporterGivenName", "reporter_given_name"],
+		),
+		reporter_middle_name: string_field(
+			source,
+			&["reporterMiddleName", "reporter_middle_name"],
+		),
+		reporter_family_name: string_field(
+			source,
+			&["reporterFamilyName", "reporter_family_name"],
+		),
+		organization: string_field(
+			source,
+			&["reporterOrganization", "organization"],
+		),
+		department: string_field(source, &["reporterDepartment", "department"]),
+		street: string_field(source, &["reporterStreet", "street"]),
+		city: string_field(source, &["reporterCity", "city"]),
+		state: string_field(source, &["reporterState", "state"]),
+		postcode: string_field(source, &["reporterPostcode", "postcode"]),
+		telephone: string_field(source, &["reporterTelephone", "telephone"]),
+		country_code: string_field(source, &["reporterCountry", "country_code"]),
+		email: string_field(source, &["reporterEmail", "email"]),
+		qualification: string_field(source, &["qualification"]),
+		qualification_kr1: string_field(
+			source,
+			&["qualificationKr1", "qualification_kr1"],
+		),
+		primary_source_regulatory: string_field(
+			source,
+			&[
+				"primarySourceForRegulatoryPurposes",
+				"primary_source_regulatory",
+			],
+		),
+	};
+	if let Some(id) = uuid_field(source, &["id"]) {
+		PrimarySourceBmc::update(ctx, mm, id, update).await?;
+	} else {
+		PrimarySourceBmc::create(
+			ctx,
+			mm,
+			PrimarySourceForCreate {
+				case_id,
+				sequence_number: i32_field(
+					source,
+					&["sequenceNumber", "sequence_number"],
+				)
+				.unwrap_or(1),
+				reporter_title: update.reporter_title,
+				reporter_given_name: update.reporter_given_name,
+				reporter_middle_name: update.reporter_middle_name,
+				reporter_family_name: update.reporter_family_name,
+				organization: update.organization,
+				department: update.department,
+				street: update.street,
+				city: update.city,
+				state: update.state,
+				postcode: update.postcode,
+				telephone: update.telephone,
+				country_code: update.country_code,
+				email: update.email,
+				qualification: update.qualification,
+				qualification_kr1: update.qualification_kr1,
+				primary_source_regulatory: update.primary_source_regulatory,
+			},
+		)
+		.await?;
+	}
+	Ok(())
+}
+
+async fn apply_sd_page_rows_patch(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	page_id: &'static str,
+	rows: &BTreeMap<String, Value>,
+) -> Result<()> {
+	reject_unknown_row_keys(
+		page_id,
+		rows,
+		&[
+			"safetyReportIdentification",
+			"messageHeader",
+			"senderInformation",
+			"receiverInformation",
+		],
+	)?;
+	let Some(sender) = optional_row_object(page_id, rows, "senderInformation")?
+	else {
+		return Ok(());
+	};
+	let update = SenderInformationForUpdate {
+		sender_type: string_field(sender, &["senderType", "sender_type"]),
+		organization_name: string_field(
+			sender,
+			&["organizationName", "organization_name"],
+		),
+		department: string_field(sender, &["department"]),
+		street_address: string_field(sender, &["streetAddress", "street_address"]),
+		city: string_field(sender, &["city"]),
+		state: string_field(sender, &["state"]),
+		postcode: string_field(sender, &["postcode"]),
+		country_code: string_field(sender, &["countryCode", "country_code"]),
+		person_title: string_field(sender, &["personTitle", "person_title"]),
+		person_given_name: string_field(
+			sender,
+			&["personGivenName", "person_given_name"],
+		),
+		person_middle_name: string_field(
+			sender,
+			&["personMiddleName", "person_middle_name"],
+		),
+		person_family_name: string_field(
+			sender,
+			&["personFamilyName", "person_family_name"],
+		),
+		telephone: string_field(sender, &["telephone"]),
+		fax: string_field(sender, &["fax"]),
+		email: string_field(sender, &["email"]),
+	};
+	if let Some(id) = uuid_field(sender, &["id"]) {
+		SenderInformationBmc::update(ctx, mm, id, update).await?;
+	} else {
+		SenderInformationBmc::create(
+			ctx,
+			mm,
+			SenderInformationForCreate {
+				case_id,
+				sender_type: update.sender_type,
+				organization_name: update.organization_name,
+				department: update.department,
+				street_address: update.street_address,
+				city: update.city,
+				state: update.state,
+				postcode: update.postcode,
+				country_code: update.country_code,
+				person_title: update.person_title,
+				person_given_name: update.person_given_name,
+				person_middle_name: update.person_middle_name,
+				person_family_name: update.person_family_name,
+				telephone: update.telephone,
+				fax: update.fax,
+				email: update.email,
+			},
+		)
+		.await?;
+	}
+	Ok(())
+}
+
+async fn apply_lr_page_rows_patch(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	page_id: &'static str,
+	rows: &BTreeMap<String, Value>,
+) -> Result<()> {
+	reject_unknown_row_keys(page_id, rows, &["literatureReferences"])?;
+	let Some(reference) =
+		optional_first_row_object(page_id, rows, "literatureReferences")?
+	else {
+		return Ok(());
+	};
+	let update = LiteratureReferenceForUpdate {
+		reference_text: string_field(
+			reference,
+			&["referenceText", "reference_text"],
+		),
+		sequence_number: i32_field(
+			reference,
+			&["sequenceNumber", "sequence_number"],
+		),
+		document_base64: string_field(
+			reference,
+			&["documentBase64", "document_base64"],
+		),
+		media_type: string_field(reference, &["mediaType", "media_type"]),
+		representation: string_field(reference, &["representation"]),
+		compression: string_field(reference, &["compression"]),
+	};
+	if let Some(id) = uuid_field(reference, &["id"]) {
+		LiteratureReferenceBmc::update(ctx, mm, id, update).await?;
+	} else if let Some(reference_text) = update.reference_text {
+		LiteratureReferenceBmc::create(
+			ctx,
+			mm,
+			LiteratureReferenceForCreate {
+				case_id,
+				reference_text,
+				sequence_number: update.sequence_number.unwrap_or(1),
+				document_base64: update.document_base64,
+				media_type: update.media_type,
+				representation: update.representation,
+				compression: update.compression,
+			},
+		)
+		.await?;
+	}
+	Ok(())
+}
+
+async fn apply_si_page_rows_patch(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	page_id: &'static str,
+	rows: &BTreeMap<String, Value>,
+) -> Result<()> {
+	reject_unknown_row_keys(
+		page_id,
+		rows,
+		&["studyInformation", "studyRegistrationNumbers"],
+	)?;
+	let Some(study) = optional_row_object(page_id, rows, "studyInformation")? else {
+		return Ok(());
+	};
+	let update = StudyInformationForUpdate {
+		study_name: string_field(study, &["studyName", "study_name"]),
+		sponsor_study_number: string_field(
+			study,
+			&["sponsorStudyNumber", "sponsor_study_number"],
+		),
+		study_type_reaction: string_field(
+			study,
+			&["studyTypeReaction", "study_type_reaction"],
+		),
+		study_type_reaction_kr1: string_field(
+			study,
+			&["studyTypeReactionKr1", "study_type_reaction_kr1"],
+		),
+	};
+	if let Some(id) = uuid_field(study, &["id"]) {
+		StudyInformationBmc::update(ctx, mm, id, update).await?;
+	} else {
+		StudyInformationBmc::create(
+			ctx,
+			mm,
+			StudyInformationForCreate {
+				case_id,
+				study_name: update.study_name,
+				sponsor_study_number: update.sponsor_study_number,
+				study_type_reaction: update.study_type_reaction,
+				study_type_reaction_kr1: update.study_type_reaction_kr1,
+			},
+		)
+		.await?;
+	}
+	Ok(())
+}
+
+async fn apply_dm_page_rows_patch(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	page_id: &'static str,
+	rows: &BTreeMap<String, Value>,
+) -> Result<()> {
+	reject_unknown_row_keys(
+		page_id,
+		rows,
+		&[
+			"patientInformation",
+			"patientIdentifiers",
+			"medicalHistoryEpisodes",
+			"deathInfo",
+			"reportedCauses",
+			"autopsyCauses",
+			"parentInfo",
+			"parentMedicalHistory",
+			"parentPastDrugs",
+		],
+	)?;
+	let Some(patient) = optional_row_object(page_id, rows, "patientInformation")?
+	else {
+		return Ok(());
+	};
+	let update = PatientInformationForUpdate {
+		patient_initials: string_field(
+			patient,
+			&["patientInitials", "patient_initials"],
+		),
+		patient_given_name: string_field(
+			patient,
+			&["patientGivenName", "patient_given_name"],
+		),
+		patient_family_name: string_field(
+			patient,
+			&["patientFamilyName", "patient_family_name"],
+		),
+		patient_initials_null_flavor: string_field(
+			patient,
+			&["patientInitialsNullFlavor", "patient_initials_null_flavor"],
+		),
+		birth_date: None,
+		birth_date_null_flavor: string_field(
+			patient,
+			&["birthDateNullFlavor", "birth_date_null_flavor"],
+		),
+		age_at_time_of_onset: None,
+		age_at_time_of_onset_null_flavor: string_field(
+			patient,
+			&[
+				"ageAtTimeOfOnsetNullFlavor",
+				"age_at_time_of_onset_null_flavor",
+			],
+		),
+		age_unit: string_field(patient, &["ageUnit", "age_unit"]),
+		gestation_period: None,
+		gestation_period_unit: string_field(
+			patient,
+			&["gestationPeriodUnit", "gestation_period_unit"],
+		),
+		age_group: string_field(patient, &["ageGroup", "age_group"]),
+		weight_kg: None,
+		height_cm: None,
+		sex: string_field(patient, &["sex"]),
+		sex_null_flavor: string_field(
+			patient,
+			&["sexNullFlavor", "sex_null_flavor"],
+		),
+		race_code: string_field(patient, &["raceCode", "race_code"]),
+		ethnicity_code: string_field(patient, &["ethnicityCode", "ethnicity_code"]),
+		last_menstrual_period_date: None,
+		last_menstrual_period_date_null_flavor: string_field(
+			patient,
+			&[
+				"lastMenstrualPeriodDateNullFlavor",
+				"last_menstrual_period_date_null_flavor",
+			],
+		),
+		medical_history_text: string_field(
+			patient,
+			&["medicalHistoryText", "medical_history_text"],
+		),
+		concomitant_therapy: None,
+	};
+	match PatientInformationBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(_) => {
+			PatientInformationBmc::update_by_case(ctx, mm, case_id, update).await?
+		}
+		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => {
+			PatientInformationBmc::create(
+				ctx,
+				mm,
+				PatientInformationForCreate {
+					case_id,
+					patient_initials: update.patient_initials,
+					patient_given_name: update.patient_given_name,
+					patient_family_name: update.patient_family_name,
+					patient_initials_null_flavor: update
+						.patient_initials_null_flavor,
+					birth_date: None,
+					birth_date_null_flavor: update.birth_date_null_flavor,
+					age_at_time_of_onset: None,
+					age_at_time_of_onset_null_flavor: update
+						.age_at_time_of_onset_null_flavor,
+					age_unit: update.age_unit,
+					gestation_period: None,
+					gestation_period_unit: update.gestation_period_unit,
+					age_group: update.age_group,
+					weight_kg: None,
+					height_cm: None,
+					sex: update.sex,
+					sex_null_flavor: update.sex_null_flavor,
+					race_code: update.race_code,
+					ethnicity_code: update.ethnicity_code,
+					last_menstrual_period_date: None,
+					last_menstrual_period_date_null_flavor: update
+						.last_menstrual_period_date_null_flavor,
+					medical_history_text: update.medical_history_text,
+					concomitant_therapy: None,
+				},
+			)
+			.await?;
+		}
+		Err(err) => return Err(err.into()),
+	}
+	Ok(())
+}
+
+async fn apply_nr_page_rows_patch(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	page_id: &'static str,
+	rows: &BTreeMap<String, Value>,
+) -> Result<()> {
+	reject_unknown_row_keys(
+		page_id,
+		rows,
+		&["narrative", "senderDiagnoses", "caseSummaryInformation"],
+	)?;
+	let Some(narrative) = optional_row_object(page_id, rows, "narrative")? else {
+		return Ok(());
+	};
+	let case_narrative =
+		string_field(narrative, &["caseNarrative", "case_narrative"]);
+	let update = NarrativeInformationForUpdate {
+		case_narrative: case_narrative.clone(),
+		reporter_comments: string_field(
+			narrative,
+			&["reporterComments", "reporter_comments"],
+		),
+		sender_comments: string_field(
+			narrative,
+			&["senderComments", "sender_comments"],
+		),
+	};
+	match NarrativeInformationBmc::get_by_case_optional(ctx, mm, case_id).await? {
+		Some(_) => {
+			NarrativeInformationBmc::update_by_case(ctx, mm, case_id, update).await?
+		}
+		None => {
+			let Some(case_narrative) = case_narrative else {
+				return Ok(());
+			};
+			NarrativeInformationBmc::create(
+				ctx,
+				mm,
+				NarrativeInformationForCreate {
+					case_id,
+					case_narrative,
+					reporter_comments: update.reporter_comments,
+					sender_comments: update.sender_comments,
+				},
+			)
+			.await?;
+		}
+	}
+	Ok(())
 }
 
 fn rows_from_direct_section(data: Value) -> BTreeMap<String, Value> {

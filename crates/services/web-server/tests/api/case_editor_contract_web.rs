@@ -586,20 +586,16 @@ async fn editor_remaining_direct_pages_have_projection_routes() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn editor_remaining_direct_pages_accept_page_patch_with_appendix(
-) -> Result<()> {
+async fn editor_remaining_direct_pages_accept_page_patch_with_appendix() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
-	let case_id = create_case_with_appendices(
-		&app,
-		&cookie,
-		"EDITOR-PAGES-PATCH",
-		&["ich"],
-	)
-	.await?;
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-PAGES-PATCH", &["ich"])
+			.await?;
 
 	for section in ["RP", "SD", "LR", "SI", "DM", "NR"] {
 		let (status, body) = patch_json(
@@ -678,6 +674,219 @@ async fn editor_direct_page_patch_rejects_unknown_appendix() -> Result<()> {
 	.await?;
 
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_nr_page_patch_persists_narrative_row() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-NR-PATCH", &["ich"])
+			.await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/NR"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"narrative": {
+					"caseNarrative": "Narrative saved through page patch"
+				}
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["focusedAppendix"], "fda");
+	assert_eq!(
+		body["rows"]["narrative"]["case_narrative"],
+		"Narrative saved through page patch"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_rp_page_patch_persists_primary_source_row() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-RP-PATCH", &["ich"])
+			.await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/RP"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"primarySources": [{
+					"sequenceNumber": 1,
+					"qualification": "1"
+				}]
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["rows"]["primarySources"][0]["qualification"], "1");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_sd_page_patch_persists_sender_information_row() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-SD-PATCH", &["ich"])
+			.await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/SD"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"senderInformation": {
+					"organizationName": "Sender Org"
+				}
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["rows"]["senderInformation"][0]["organization_name"],
+		"Sender Org"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_lr_page_patch_persists_literature_reference_row() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-LR-PATCH", &["ich"])
+			.await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/LR"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"literatureReferences": [{
+					"sequenceNumber": 1,
+					"referenceText": "Smith 2026"
+				}]
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["rows"]["literatureReferences"][0]["reference_text"],
+		"Smith 2026"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_si_page_patch_persists_study_information_row() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-SI-PATCH", &["ich"])
+			.await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/SI"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"studyInformation": {
+					"studyName": "Study 001"
+				}
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["rows"]["studyInformation"]["study_name"], "Study 001");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_dm_page_patch_persists_patient_information_row() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_with_appendices(&app, &cookie, "EDITOR-DM-PATCH", &["ich"])
+			.await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/DM"),
+		json!({
+			"appendix": "fda",
+			"rows": {
+				"patientInformation": {
+					"patientInitials": "ABC"
+				}
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["rows"]["patientInformation"]["patient_initials"],
+		"ABC"
+	);
+
 	Ok(())
 }
 
