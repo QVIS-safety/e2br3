@@ -55,7 +55,11 @@ impl CaseValidationSummary {
 
 fn parse_profiles_query(value: &str) -> Result<Vec<ValidationProfile>> {
 	let mut profiles = Vec::new();
-	for raw in value.split(',').map(str::trim).filter(|raw| !raw.is_empty()) {
+	for raw in value
+		.split(',')
+		.map(str::trim)
+		.filter(|raw| !raw.is_empty())
+	{
 		let profile =
 			ValidationProfile::parse(raw).ok_or_else(|| Error::BadRequest {
 				message: format!(
@@ -159,7 +163,7 @@ pub async fn validate_case(
 }
 
 /// GET /api/cases/{case_id}/validation/all
-/// Returns validation reports for all selected appendices on the case.
+/// Returns validation reports for the profiles explicitly requested by the caller.
 pub async fn validate_case_all(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,

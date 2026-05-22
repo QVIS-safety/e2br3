@@ -64,8 +64,7 @@ impl TryFrom<RegulatoryAuthority> for SubmissionAuthority {
 			RegulatoryAuthority::Fda => Ok(Self::Fda),
 			RegulatoryAuthority::Mfds => Ok(Self::Mfds),
 			RegulatoryAuthority::Ich => Err(Error::BadRequest {
-				message: "submission authority must be fda or mfds"
-					.to_string(),
+				message: "submission authority must be fda or mfds".to_string(),
 			}),
 		}
 	}
@@ -2470,9 +2469,7 @@ pub async fn reconcile_due_submissions_with_runtime_status(
 
 #[cfg(test)]
 mod tests {
-	use super::{
-		merge_submission_status, status_from_ack, SubmissionStatus,
-	};
+	use super::{merge_submission_status, status_from_ack, SubmissionStatus};
 
 	#[test]
 	fn ack_status_mapping_success() {
@@ -2530,5 +2527,4 @@ mod tests {
 			SubmissionStatus::Rejected
 		);
 	}
-
 }

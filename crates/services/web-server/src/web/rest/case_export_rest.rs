@@ -421,12 +421,7 @@ pub async fn export_cases_zip(
 			lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 			let case = CaseBmc::get(&ctx, &mm, case_id).await?;
 			{
-				let file_name = export_file_name(
-					&case,
-					case_id,
-					profile,
-					true,
-				);
+				let file_name = export_file_name(&case, case_id, profile, true);
 				let (case, xml) = match generate_validated_case_xml_for_profile(
 					&ctx,
 					&mm,

@@ -627,9 +627,12 @@ async fn test_validation_all_requires_explicit_profiles_and_caches_each_profile(
 		.as_str()
 		.ok_or("missing created case id")?;
 
-	let (status, body) =
-		get_json(&app, &cookie, &format!("/api/cases/{case_id}/validation/all"))
-			.await?;
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation/all"),
+	)
+	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
 	assert!(
 		body.to_string().contains("profiles"),

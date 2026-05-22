@@ -33,9 +33,7 @@ use uuid::Uuid;
 use crate::web::rest::case_export_rest::{
 	message_receiver_identifier, message_sender_identifier,
 };
-use crate::web::rest::case_rest::{
-	validate_case_create_payload,
-};
+use crate::web::rest::case_rest::validate_case_create_payload;
 
 // -- Types
 

@@ -171,9 +171,9 @@ fn case_identity_or_scope_update_requires_reason(
 	optional_text_changed(&data.safety_report_id, Some(&current.safety_report_id))
 		|| optional_text_changed(&data.dg_prd_key, current.dg_prd_key.as_deref())
 		|| optional_text_changed(
-		&data.review_receivers_json,
-		current.review_receivers_json.as_deref(),
-	) || optional_text_changed(
+			&data.review_receivers_json,
+			current.review_receivers_json.as_deref(),
+		) || optional_text_changed(
 		&data.workflow_routes_json,
 		current.workflow_routes_json.as_deref(),
 	)
@@ -664,7 +664,8 @@ pub async fn mark_case_validated_by_validator(
 		});
 	}
 
-	let report = validate_case_for_profile(&ctx, &mm, id, ValidationProfile::Fda).await?;
+	let report =
+		validate_case_for_profile(&ctx, &mm, id, ValidationProfile::Fda).await?;
 	CaseValidationSummaryBmc::upsert_for_reports(&ctx, &mm, id, &[report.clone()])
 		.await?;
 	let total_blocking = report.blocking_count;
