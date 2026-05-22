@@ -1539,7 +1539,9 @@ async fn editor_repeatable_page_rows_return_row_detail_by_uuid() -> Result<()> {
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}?appendix=fda"),
+		&format!(
+			"/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}?appendix=fda"
+		),
 	)
 	.await?;
 

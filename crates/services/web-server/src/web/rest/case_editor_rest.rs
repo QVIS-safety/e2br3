@@ -15,14 +15,14 @@ use lib_core::model::acs::{
 	DRUG_RECURRENCE_LIST, DRUG_SUBSTANCE_LIST, DRUG_UPDATE,
 	LITERATURE_REFERENCE_LIST, MEDICAL_HISTORY_LIST, MESSAGE_HEADER_READ,
 	NARRATIVE_READ, PARENT_INFORMATION_LIST, PARENT_MEDICAL_HISTORY_LIST,
-	PARENT_PAST_DRUG_LIST, PAST_DRUG_CREATE, PAST_DRUG_DELETE,
-	PAST_DRUG_LIST, PAST_DRUG_READ, PAST_DRUG_UPDATE, PATIENT_DEATH_LIST,
-	PATIENT_IDENTIFIER_LIST, PATIENT_READ, PRIMARY_SOURCE_LIST, REACTION_CREATE,
-	REACTION_DELETE, REACTION_LIST, REACTION_READ, REACTION_UPDATE,
-	RECEIVER_READ, SAFETY_REPORT_READ, SAFETY_REPORT_UPDATE,
-	SENDER_DIAGNOSIS_LIST, SENDER_INFORMATION_LIST, STUDY_INFORMATION_LIST,
-	STUDY_REGISTRATION_LIST, TEST_RESULT_CREATE, TEST_RESULT_DELETE,
-	TEST_RESULT_LIST, TEST_RESULT_READ, TEST_RESULT_UPDATE,
+	PARENT_PAST_DRUG_LIST, PAST_DRUG_CREATE, PAST_DRUG_DELETE, PAST_DRUG_LIST,
+	PAST_DRUG_READ, PAST_DRUG_UPDATE, PATIENT_DEATH_LIST, PATIENT_IDENTIFIER_LIST,
+	PATIENT_READ, PRIMARY_SOURCE_LIST, REACTION_CREATE, REACTION_DELETE,
+	REACTION_LIST, REACTION_READ, REACTION_UPDATE, RECEIVER_READ,
+	SAFETY_REPORT_READ, SAFETY_REPORT_UPDATE, SENDER_DIAGNOSIS_LIST,
+	SENDER_INFORMATION_LIST, STUDY_INFORMATION_LIST, STUDY_REGISTRATION_LIST,
+	TEST_RESULT_CREATE, TEST_RESULT_DELETE, TEST_RESULT_LIST, TEST_RESULT_READ,
+	TEST_RESULT_UPDATE,
 };
 use lib_core::model::case::CaseBmc;
 use lib_core::model::case_identifiers::{
@@ -50,11 +50,11 @@ use lib_core::model::parent_history::{
 use lib_core::model::patient::{
 	AutopsyCauseOfDeathBmc, AutopsyCauseOfDeathFilter, MedicalHistoryEpisodeBmc,
 	MedicalHistoryEpisodeFilter, ParentInformationBmc, ParentInformationFilter,
-	PastDrugHistoryBmc, PastDrugHistoryFilter, PatientDeathInformationBmc,
+	PastDrugHistoryBmc, PastDrugHistoryFilter, PastDrugHistoryForCreate,
+	PastDrugHistoryForUpdate, PatientDeathInformationBmc,
 	PatientDeathInformationFilter, PatientIdentifierBmc, PatientIdentifierFilter,
 	PatientInformationBmc, PatientInformationForCreate, PatientInformationForUpdate,
-	ReportedCauseOfDeathBmc, ReportedCauseOfDeathFilter, PastDrugHistoryForCreate,
-	PastDrugHistoryForUpdate,
+	ReportedCauseOfDeathBmc, ReportedCauseOfDeathFilter,
 };
 use lib_core::model::reaction::{ReactionBmc, ReactionForCreate, ReactionForUpdate};
 use lib_core::model::receiver::ReceiverInformationBmc;
@@ -2116,9 +2116,14 @@ pub async fn get_editor_ae_page_row(
 	require_permission(&ctx, REACTION_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let response =
-		build_editor_ae_page_row_response(&ctx, &mm, case_id, row_id, query.appendix)
-			.await?;
+	let response = build_editor_ae_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		query.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
 }
 
@@ -2153,7 +2158,10 @@ pub async fn create_editor_ae_page_row(
 	let value = row_model_value(
 		row,
 		&[
-			("primary_source_reaction", &["reactionPrimarySourceNative"][..]),
+			(
+				"primary_source_reaction",
+				&["reactionPrimarySourceNative"][..],
+			),
 			(
 				"primary_source_reaction_translation",
 				&["reactionPrimarySourceTranslation"][..],
@@ -2166,16 +2174,22 @@ pub async fn create_editor_ae_page_row(
 			("case_id", json!(case_id)),
 			(
 				"sequence_number",
-				json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+				json!(i32_field(row, &["sequenceNumber", "sequence_number"])
+					.unwrap_or(1)),
 			),
 		],
 	);
 	let create = parse_row_model::<ReactionForCreate>("AE", "reaction", value)?;
 	let row_id = ReactionBmc::create(&ctx, &mm, create).await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
-	let response =
-		build_editor_ae_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
-			.await?;
+	let response = build_editor_ae_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		request.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
 }
 
@@ -2194,7 +2208,10 @@ pub async fn patch_editor_ae_page_row(
 	let value = row_model_value(
 		row,
 		&[
-			("primary_source_reaction", &["reactionPrimarySourceNative"][..]),
+			(
+				"primary_source_reaction",
+				&["reactionPrimarySourceNative"][..],
+			),
 			(
 				"primary_source_reaction_translation",
 				&["reactionPrimarySourceTranslation"][..],
@@ -2207,9 +2224,14 @@ pub async fn patch_editor_ae_page_row(
 	let update = parse_row_model::<ReactionForUpdate>("AE", "reaction", value)?;
 	ReactionBmc::update(&ctx, &mm, row_id, update).await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
-	let response =
-		build_editor_ae_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
-			.await?;
+	let response = build_editor_ae_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		request.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
 }
 
@@ -2326,9 +2348,14 @@ pub async fn get_editor_lb_page_row(
 	require_permission(&ctx, TEST_RESULT_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let response =
-		build_editor_lb_page_row_response(&ctx, &mm, case_id, row_id, query.appendix)
-			.await?;
+	let response = build_editor_lb_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		query.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
 }
 
@@ -2372,16 +2399,22 @@ pub async fn create_editor_lb_page_row(
 			("case_id", json!(case_id)),
 			(
 				"sequence_number",
-				json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+				json!(i32_field(row, &["sequenceNumber", "sequence_number"])
+					.unwrap_or(1)),
 			),
 		],
 	);
 	let create = parse_row_model::<TestResultForCreate>("LB", "testResult", value)?;
 	let row_id = TestResultBmc::create(&ctx, &mm, create).await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
-	let response =
-		build_editor_lb_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
-			.await?;
+	let response = build_editor_lb_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		request.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
 }
 
@@ -2409,9 +2442,14 @@ pub async fn patch_editor_lb_page_row(
 	let update = parse_row_model::<TestResultForUpdate>("LB", "testResult", value)?;
 	TestResultBmc::update(&ctx, &mm, row_id, update).await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
-	let response =
-		build_editor_lb_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
-			.await?;
+	let response = build_editor_lb_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		request.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
 }
 
@@ -2630,9 +2668,14 @@ pub async fn get_editor_dg_page_row(
 	require_permission(&ctx, DRUG_RECURRENCE_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let response =
-		build_editor_dg_page_row_response(&ctx, &mm, case_id, row_id, query.appendix)
-			.await?;
+	let response = build_editor_dg_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		query.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
 }
 
@@ -2676,20 +2719,27 @@ pub async fn create_editor_dg_page_row(
 			("case_id", json!(case_id)),
 			(
 				"sequence_number",
-				json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+				json!(i32_field(row, &["sequenceNumber", "sequence_number"])
+					.unwrap_or(1)),
 			),
 			(
 				"drug_characterization",
-				json!(string_field(row, &["drugRole", "drug_characterization"]).unwrap_or_else(|| "1".to_string())),
+				json!(string_field(row, &["drugRole", "drug_characterization"])
+					.unwrap_or_else(|| "1".to_string())),
 			),
 		],
 	);
 	let create = parse_row_model::<DrugInformationForCreate>("DG", "drug", value)?;
 	let row_id = DrugInformationBmc::create(&ctx, &mm, create).await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
-	let response =
-		build_editor_dg_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
-			.await?;
+	let response = build_editor_dg_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		request.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
 }
 
@@ -2717,9 +2767,14 @@ pub async fn patch_editor_dg_page_row(
 	let update = parse_row_model::<DrugInformationForUpdate>("DG", "drug", value)?;
 	DrugInformationBmc::update(&ctx, &mm, row_id, update).await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
-	let response =
-		build_editor_dg_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
-			.await?;
+	let response = build_editor_dg_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		request.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
 }
 
@@ -2866,9 +2921,14 @@ pub async fn get_editor_dh_page_row(
 	require_permission(&ctx, PAST_DRUG_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let response =
-		build_editor_dh_page_row_response(&ctx, &mm, case_id, row_id, query.appendix)
-			.await?;
+	let response = build_editor_dh_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		query.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
 }
 
@@ -2930,20 +2990,23 @@ pub async fn create_editor_dh_page_row(
 			("patient_id", json!(patient.id)),
 			(
 				"sequence_number",
-				json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+				json!(i32_field(row, &["sequenceNumber", "sequence_number"])
+					.unwrap_or(1)),
 			),
 		],
 	);
-	let create = parse_row_model::<PastDrugHistoryForCreate>(
-		"DH",
-		"pastDrugHistory",
-		value,
-	)?;
+	let create =
+		parse_row_model::<PastDrugHistoryForCreate>("DH", "pastDrugHistory", value)?;
 	let row_id = PastDrugHistoryBmc::create(&ctx, &mm, create).await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
-	let response =
-		build_editor_dh_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
-			.await?;
+	let response = build_editor_dh_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		request.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
 }
 
@@ -2967,16 +3030,18 @@ pub async fn patch_editor_dh_page_row(
 		],
 		&[],
 	);
-	let update = parse_row_model::<PastDrugHistoryForUpdate>(
-		"DH",
-		"pastDrugHistory",
-		value,
-	)?;
+	let update =
+		parse_row_model::<PastDrugHistoryForUpdate>("DH", "pastDrugHistory", value)?;
 	PastDrugHistoryBmc::update(&ctx, &mm, row_id, update).await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
-	let response =
-		build_editor_dh_page_row_response(&ctx, &mm, case_id, row_id, request.appendix)
-			.await?;
+	let response = build_editor_dh_page_row_response(
+		&ctx,
+		&mm,
+		case_id,
+		row_id,
+		request.appendix,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
 }
 
