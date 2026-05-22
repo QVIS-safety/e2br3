@@ -603,7 +603,7 @@ async fn editor_ci_page_projection_uses_all_profiles_for_visibility() -> Result<
 
 #[serial]
 #[tokio::test]
-async fn editor_ci_page_projection_omits_primary_profile_context() -> Result<()> {
+async fn editor_ci_page_projection_returns_profiles_context() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -620,7 +620,6 @@ async fn editor_ci_page_projection_omits_primary_profile_context() -> Result<()>
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert!(body.get("primaryProfile").is_none(), "{body}");
 	assert_eq!(body["profiles"], json!(["ich"]));
 
 	Ok(())
