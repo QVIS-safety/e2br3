@@ -1,6 +1,6 @@
 use crate::web::rest::case_rest::CaseReadResult;
 use serde::de::Error as DeError;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use sqlx::types::time::OffsetDateTime;
 use std::collections::BTreeMap;
@@ -80,13 +80,49 @@ pub struct CaseEditorPageProjectionResponse {
 	pub case_id: Uuid,
 	pub page_id: &'static str,
 	pub profiles: Vec<String>,
-	#[serde(skip_serializing_if = "Option::is_none")]
-	pub focused_appendix: Option<String>,
+	#[serde(
+		serialize_with = "serialize_focused_appendix",
+		skip_serializing_if = "FocusedAppendixResponse::is_omitted"
+	)]
+	pub focused_appendix: FocusedAppendixResponse,
 	pub saved: bool,
 	pub required_count: usize,
 	pub fields: BTreeMap<String, CaseEditorFieldEnvelope>,
 	pub rows: BTreeMap<String, Value>,
 	pub section_summaries: Vec<Value>,
+}
+
+#[derive(Debug)]
+pub enum FocusedAppendixResponse {
+	Legacy(Option<String>),
+	Omitted,
+}
+
+impl FocusedAppendixResponse {
+	pub fn legacy(value: Option<String>) -> Self {
+		Self::Legacy(value)
+	}
+
+	pub fn omitted() -> Self {
+		Self::Omitted
+	}
+
+	fn is_omitted(&self) -> bool {
+		matches!(self, Self::Omitted)
+	}
+}
+
+fn serialize_focused_appendix<S>(
+	value: &FocusedAppendixResponse,
+	serializer: S,
+) -> std::result::Result<S::Ok, S::Error>
+where
+	S: Serializer,
+{
+	match value {
+		FocusedAppendixResponse::Legacy(value) => value.serialize(serializer),
+		FocusedAppendixResponse::Omitted => serializer.serialize_none(),
+	}
 }
 
 #[derive(Debug, Serialize)]

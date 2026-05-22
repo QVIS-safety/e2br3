@@ -3,7 +3,7 @@ use crate::web::rest::case_editor_dto::{
 	CaseEditorDirectSectionResponse, CaseEditorFieldEnvelope, CaseEditorFieldIssue,
 	CaseEditorFieldPatch, CaseEditorLbListRowDto, CaseEditorListResponse,
 	CaseEditorPagePatchRequest, CaseEditorPageProjectionResponse,
-	CaseEditorRowDetailResponse, CaseEditorShellDto,
+	CaseEditorRowDetailResponse, CaseEditorShellDto, FocusedAppendixResponse,
 };
 use crate::web::rest::case_rest::case_to_read_result;
 use axum::extract::{Path, Query, State};
@@ -371,9 +371,9 @@ async fn build_ci_page_projection(
 		parse_editor_profiles(focused_appendix.as_deref())?
 	};
 	let focused_appendix = if explicit_profiles {
-		None
+		FocusedAppendixResponse::omitted()
 	} else {
-		normalize_appendix(focused_appendix)?
+		FocusedAppendixResponse::legacy(normalize_appendix(focused_appendix)?)
 	};
 	let has_fda = profiles.contains(&ValidationProfile::Fda);
 	let safety_report =
@@ -1436,9 +1436,9 @@ async fn direct_page_projection_response(
 		parse_editor_profiles(focused_appendix.as_deref())?
 	};
 	let focused_appendix = if explicit_profiles {
-		None
+		FocusedAppendixResponse::omitted()
 	} else {
-		normalize_appendix(focused_appendix)?
+		FocusedAppendixResponse::legacy(normalize_appendix(focused_appendix)?)
 	};
 	let saved = direct_page_saved(page_id, &data);
 	Ok(CaseEditorPageProjectionResponse {
@@ -1468,9 +1468,9 @@ fn repeatable_page_projection_response(
 		parse_editor_profiles(focused_appendix.as_deref())?
 	};
 	let focused_appendix = if explicit_profiles {
-		None
+		FocusedAppendixResponse::omitted()
 	} else {
-		normalize_appendix(focused_appendix)?
+		FocusedAppendixResponse::legacy(normalize_appendix(focused_appendix)?)
 	};
 	Ok(CaseEditorPageProjectionResponse {
 		case_id,
