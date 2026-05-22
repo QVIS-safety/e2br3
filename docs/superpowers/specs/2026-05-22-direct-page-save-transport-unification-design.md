@@ -12,7 +12,7 @@ This change applies to direct sections only: `CI`, `RP`, `SD`, `LR`, `SI`, `DM`,
 
 ## Current State
 
-Appendix authority is now request-driven. Editor projections and validation no longer use `cases.appendices_json`.
+Profile context is request-driven. Editor projections and validation no longer use `cases.appendices_json` or legacy singular `validation_profile`.
 
 The remaining inconsistency is save transport:
 
@@ -27,7 +27,7 @@ Direct editor pages will use a single request shape:
 
 ```json
 {
-  "appendix": "fda",
+  "profiles": ["fda", "mfds"],
   "changes": {
     "fieldName": {
       "value": "new value",
@@ -45,19 +45,19 @@ The request body is section-scoped. The editor must not send the full case graph
 The backend endpoint will:
 
 1. Require case write permissions.
-2. Validate `appendix` when present and treat it as the focused validation/projection context.
+2. Validate `profiles` when present and treat them as the render/validation projection context.
 3. Reject unknown fields for the requested section.
 4. Apply only the requested direct-section data through existing persistence models.
 5. Return the refreshed `CaseEditorPageProjectionResponse`.
-6. Echo `focusedAppendix`.
-7. Never return case-level selected appendices.
+6. Echo `profiles`.
+7. Never return `focusedAppendix` or case-level selected appendices.
 
 The frontend will:
 
-1. Keep deriving active appendix from route/UI state.
+1. Keep deriving active profiles from route/UI state.
 2. Use `PATCH /editor/pages/{section}` for direct page saves.
 3. Continue using row/list save APIs for repeatable pages.
-4. Preserve the focused appendix in the save request and follow-up projection refresh.
+4. Preserve the same profile set in the save request and follow-up projection refresh.
 
 ## Direct Section Save Boundary
 
@@ -83,23 +83,23 @@ Each endpoint may internally call existing BMC/update functions. The contract ch
 
 This avoids forcing row creation, row deletion, row ordering, and nested child collections into a direct page patch contract before those semantics are designed.
 
-## Validation And Appendix Behavior
+## Validation And Profile Behavior
 
-Save requests must include the current focused `appendix` whenever the editor is in a direct section route. If omitted, the backend may use the compatibility default already used by projection routes, but frontend direct save code must always send the focused appendix.
+Save requests must include the current `profiles` whenever the editor is in a direct section route. If omitted, the backend may use the compatibility default already used by projection routes, but frontend direct save code must always send the explicit profile set.
 
 Validation remains explicit:
 
 - page save does not silently run all-profile validation
-- validation cache remains keyed by `case_id + appendix + page_id`
+- validation cache remains keyed by `case_id + profile + page_id`
 - list warning counts continue to read cached validation rows
-- uncached appendix/page combinations display `0` required/warning count until explicit validation populates the cache
+- uncached profile/page combinations display `0` required/warning count until explicit validation populates the cache
 
 ## Error Handling
 
 Backend behavior:
 
 - unknown section field: `400 Bad Request`
-- invalid appendix value: `400 Bad Request`
+- invalid profile value: `400 Bad Request`
 - missing permissions or locked case: existing authorization/lock errors
 - persistence failure: existing service error mapping
 
@@ -107,7 +107,7 @@ Frontend behavior:
 
 - failed page patch keeps the current dirty state visible
 - error toast/message uses the section save failure copy already used by the editor
-- successful page patch applies the returned projection/readback and keeps the focused appendix unchanged
+- successful page patch applies the returned projection/readback and keeps the same profile set
 
 ## Compatibility
 
@@ -119,18 +119,18 @@ The OpenAPI document must expose page patch endpoints for all direct sections. C
 
 Backend contract tests:
 
-- every direct section accepts `PATCH /editor/pages/{section}` with explicit `appendix`
-- every direct section response includes `focusedAppendix`
+- every direct section accepts `PATCH /editor/pages/{section}` with explicit `profiles`
+- every direct section response includes `profiles`
 - no direct section patch response returns case-level `appendices`
 - unknown section fields are rejected
-- invalid appendix is rejected
+- invalid profile is rejected
 - existing `CI` behavior remains compatible
 
 Frontend tests:
 
-- direct route save calls `patchEditorPageProjection` with the active page section and focused appendix
+- direct route save calls `patchEditorPageProjection` with the active page section and explicit profiles
 - direct route save no longer calls legacy direct-section save APIs for sections covered by page patch
-- save refresh uses the same focused appendix after a successful page patch
+- save refresh uses the same profile set after a successful page patch
 - repeatable sections keep the existing row/list save path
 
 ## Out Of Scope

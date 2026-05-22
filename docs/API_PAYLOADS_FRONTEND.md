@@ -200,7 +200,7 @@ Frontend behavior:
 - interpret `basis_complete` as “enough duplicate-basis input exists to trust the check”
 - interpret `warnings` as a mixed informational list: some warnings indicate incomplete basis, while others are non-blocking missing-field notes
 - treat null-flavor placeholders such as `NI`, `UNK`, `ASKU`, `NASK`, `MSK` as missing values in the intake UI as well
-- do not show `validation_profile` in duplication-check UI; use the top-level case `appendices_json` selection for appendix/regional behavior
+- do not show or submit legacy `validation_profile` in duplication-check UI; editor/regional behavior is driven by explicit `profiles`
 
 ### POST `/api/cases/from-intake`
 ```json
@@ -209,7 +209,7 @@ Frontend behavior:
     "safety_report_id": "INTAKE-123",
     "date_of_most_recent_information": [2024, 120],
     "report_type": "1",
-    "validation_profile": "fda",
+    "profiles": ["fda"],
     "patient_initials": "PT123",
     "dg_prd_key": "PRODUCT-001",
     "reaction_meddra_version": "27.0",
@@ -229,10 +229,10 @@ Response
 }
 ```
 
-Appendix behavior:
-- `appendices_json` is the authoritative case-level appendix selection. Use a JSON array string such as `"[\"mfds\",\"fda\"]"`.
-- The backend normalizes duplicate appendix values and derives legacy `validation_profile` from the first selected appendix for older endpoints.
-- Regional CASE/INFO fields should render from `appendices_json`: base ICH fields always, FDA-only fields only when `fda` is selected, and MFDS/KR fields only when `mfds` is selected.
+Profile behavior:
+- `profiles` is the explicit render/validation/export profile set. Use values from `ich`, `fda`, and `mfds`.
+- The editor should not derive a legacy singular `validation_profile`.
+- Regional CASE/INFO fields render from the requested profile set: base ICH fields always, FDA-only fields only when `fda` is selected, and MFDS/KR fields only when `mfds` is selected.
 
 When the duplicate basis is incomplete, the frontend may resubmit with `allow_duplicate_override: true` after the user confirms:
 ```json
@@ -241,7 +241,7 @@ When the duplicate basis is incomplete, the frontend may resubmit with `allow_du
     "safety_report_id": "INTAKE-123",
     "date_of_most_recent_information": [2024, 120],
     "report_type": "1",
-    "validation_profile": "fda",
+    "profiles": ["fda"],
     "patient_initials": "PT123",
     "allow_duplicate_override": true
   }
@@ -279,18 +279,18 @@ Example error for incomplete duplicate basis:
 ### GET `/api/cases/{case_id}/export/xml?profile=fda`
 Query:
 - `profile` optional: `ich`, `fda`, or `mfds`
-- If supplied, the profile must be selected in the case `appendices_json`
-- If omitted, the first selected appendix is exported for backward compatibility
+- If supplied, export uses that single profile.
+- If omitted, export uses the backend default profile.
 
-Multi-appendix XML behavior:
-- A multi-appendix case does not export one mixed XML.
-- Export and submission are authority-specific. For a case with `["fda","mfds"]`, request separate FDA and MFDS XML outputs.
-- Bulk ZIP export emits one XML entry per selected appendix, with the profile suffix in the filename when more than one appendix is selected.
+Multi-profile XML behavior:
+- A multi-profile case does not export one mixed XML.
+- Export and submission are profile-specific. For profiles `["fda","mfds"]`, request separate FDA and MFDS XML outputs.
+- Bulk ZIP export emits one XML entry per selected profile, with the profile suffix in the filename when more than one profile is selected.
 
 ### GET `/api/cases/{case_id}/validation?profile=mfds`
 Query:
 - `profile` optional: `ich`, `fda`, or `mfds`
-- Use `GET /api/cases/{case_id}/validation/all` to validate every profile selected in `appendices_json`.
+- Use `GET /api/cases/{case_id}/validation/all?profiles=fda,mfds` to validate an explicit profile set.
 
 Response
 ```json
