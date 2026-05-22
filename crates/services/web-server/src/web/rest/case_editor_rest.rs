@@ -586,6 +586,124 @@ pub async fn patch_editor_ci_page_projection(
 	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
+pub async fn patch_editor_rp_page_projection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	patch_direct_page_projection(mm, ctx_w, case_id, "RP", request).await
+}
+
+pub async fn patch_editor_sd_page_projection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	patch_direct_page_projection(mm, ctx_w, case_id, "SD", request).await
+}
+
+pub async fn patch_editor_lr_page_projection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	patch_direct_page_projection(mm, ctx_w, case_id, "LR", request).await
+}
+
+pub async fn patch_editor_si_page_projection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	patch_direct_page_projection(mm, ctx_w, case_id, "SI", request).await
+}
+
+pub async fn patch_editor_dm_page_projection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	patch_direct_page_projection(mm, ctx_w, case_id, "DM", request).await
+}
+
+pub async fn patch_editor_nr_page_projection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(request): Json<CaseEditorPagePatchRequest>,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	patch_direct_page_projection(mm, ctx_w, case_id, "NR", request).await
+}
+
+async fn patch_direct_page_projection(
+	mm: ModelManager,
+	ctx_w: CtxW,
+	case_id: Uuid,
+	page_id: &'static str,
+	request: CaseEditorPagePatchRequest,
+) -> Result<(
+	axum::http::StatusCode,
+	Json<CaseEditorPageProjectionResponse>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_UPDATE)?;
+	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	if !request.changes.is_empty() || !request.rows.is_empty() {
+		return Err(Error::BadRequest {
+			message: format!("{page_id} page patch fields are not implemented yet"),
+		});
+	}
+
+	let data = match page_id {
+		"RP" => load_editor_rp_data(&ctx, &mm, case_id).await?,
+		"SD" => load_editor_sd_data(&ctx, &mm, case_id).await?,
+		"LR" => load_editor_lr_data(&ctx, &mm, case_id).await?,
+		"SI" => load_editor_si_data(&ctx, &mm, case_id).await?,
+		"DM" => load_editor_dm_data(&ctx, &mm, case_id).await?,
+		"NR" => load_editor_nr_data(&ctx, &mm, case_id).await?,
+		_ => {
+			return Err(Error::BadRequest {
+				message: format!("unsupported direct page '{page_id}'"),
+			})
+		}
+	};
+	let projection = direct_page_projection_response(
+		&ctx,
+		&mm,
+		case_id,
+		page_id,
+		request.appendix,
+		data,
+	)
+	.await?;
+	Ok((axum::http::StatusCode::OK, Json(projection)))
+}
+
 fn rows_from_direct_section(data: Value) -> BTreeMap<String, Value> {
 	match data {
 		Value::Object(map) => map.into_iter().collect(),

@@ -556,14 +556,15 @@ async fn editor_remaining_direct_pages_have_projection_routes() -> Result<()> {
 		let (status, body) = get_json(
 			&app,
 			&cookie,
-			&format!("/api/cases/{case_id}/editor/pages/{section}?appendix=ich"),
+			&format!("/api/cases/{case_id}/editor/pages/{section}?appendix=fda"),
 		)
 		.await?;
 
 		assert_eq!(status, StatusCode::OK, "{section}: {body}");
 		assert_eq!(body["caseId"], case_id);
 		assert_eq!(body["pageId"], section);
-		assert_eq!(body["focusedAppendix"], "ich");
+		assert_eq!(body["focusedAppendix"], "fda");
+		assert!(body.get("appendices").is_none(), "{section}: {body}");
 		assert!(body["saved"].as_bool().is_some(), "{section}: {body}");
 		assert!(
 			body["requiredCount"].as_u64().is_some(),
@@ -578,6 +579,43 @@ async fn editor_remaining_direct_pages_have_projection_routes() -> Result<()> {
 		if matches!(section, "DM" | "NR" | "SI") {
 			assert_eq!(body["saved"], false, "{section}: {body}");
 		}
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_remaining_direct_pages_accept_page_patch_with_appendix(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case_with_appendices(
+		&app,
+		&cookie,
+		"EDITOR-PAGES-PATCH",
+		&["ich"],
+	)
+	.await?;
+
+	for section in ["RP", "SD", "LR", "SI", "DM", "NR"] {
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{section}"),
+			json!({
+				"appendix": "fda",
+				"changes": {}
+			}),
+		)
+		.await?;
+
+		assert_eq!(status, StatusCode::OK, "{section}: {body}");
+		assert_eq!(body["focusedAppendix"], "fda", "{section}");
+		assert!(body.get("appendices").is_none(), "{section}: {body}");
 	}
 
 	Ok(())

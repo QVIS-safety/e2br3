@@ -78,27 +78,33 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/RP",
-			get(case_editor_rest::get_editor_rp_page_projection),
+			get(case_editor_rest::get_editor_rp_page_projection)
+				.patch(case_editor_rest::patch_editor_rp_page_projection),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/SD",
-			get(case_editor_rest::get_editor_sd_page_projection),
+			get(case_editor_rest::get_editor_sd_page_projection)
+				.patch(case_editor_rest::patch_editor_sd_page_projection),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/LR",
-			get(case_editor_rest::get_editor_lr_page_projection),
+			get(case_editor_rest::get_editor_lr_page_projection)
+				.patch(case_editor_rest::patch_editor_lr_page_projection),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/SI",
-			get(case_editor_rest::get_editor_si_page_projection),
+			get(case_editor_rest::get_editor_si_page_projection)
+				.patch(case_editor_rest::patch_editor_si_page_projection),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/DM",
-			get(case_editor_rest::get_editor_dm_page_projection),
+			get(case_editor_rest::get_editor_dm_page_projection)
+				.patch(case_editor_rest::patch_editor_dm_page_projection),
 		)
 		.route(
 			"/cases/{case_id}/editor/pages/NR",
-			get(case_editor_rest::get_editor_nr_page_projection),
+			get(case_editor_rest::get_editor_nr_page_projection)
+				.patch(case_editor_rest::patch_editor_nr_page_projection),
 		)
 		.route(
 			"/cases/{case_id}/editor/RP",
