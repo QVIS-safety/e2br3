@@ -26,7 +26,6 @@ pub struct CImportSettings {
 pub struct XmlImportRequest {
 	pub xml: Vec<u8>,
 	pub filename: Option<String>,
-	pub validation_profile: Option<String>,
 	pub skip_validation: bool,
 	pub c_settings: CImportSettings,
 }
@@ -57,11 +56,6 @@ pub async fn import_e2b_xml(
 				column: None,
 			})?;
 	let header_extract = shared::extract_message_header(&req.xml).ok();
-	let _inferred_validation_profile =
-		req.validation_profile.clone().unwrap_or_else(|| {
-			shared::infer_validation_profile(header_extract.as_ref())
-		});
-
 	let next_version = {
 		let dbx = mm.dbx();
 		dbx.begin_txn().await.map_err(model::Error::from)?;

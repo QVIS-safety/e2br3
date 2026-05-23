@@ -27,13 +27,11 @@ use zip::ZipArchive;
 
 const MAX_XML_UPLOAD_BYTES: usize = 50 * 1024 * 1024;
 const MAX_XML_ZIP_ENTRY_BYTES: usize = 25 * 1024 * 1024;
-const MAX_IMPORT_FORM_FIELD_BYTES: usize = 1024;
 const SETTINGS_KEY: &str = "system";
 
 struct UploadedImportPayload {
 	bytes: Vec<u8>,
 	filename: Option<String>,
-	validation_profile: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -66,7 +64,6 @@ pub struct XmlImportHistoryRecord {
 	case_number: Option<String>,
 	status: String,
 	error_message: Option<String>,
-	validation_profile: Option<String>,
 	uploaded_by: Uuid,
 	uploader_email: Option<String>,
 	uploaded_at: String,
@@ -78,25 +75,11 @@ pub struct XmlImportHistoryList {
 	items: Vec<XmlImportHistoryRecord>,
 }
 
-fn normalize_validation_profile(value: &str) -> Result<String> {
-	let normalized = value.trim().to_ascii_lowercase();
-	match normalized.as_str() {
-		"" | "auto" => Ok(String::new()),
-		"ich" | "fda" | "mfds" => Ok(normalized),
-		_ => Err(Error::BadRequest {
-			message: format!(
-				"invalid validation profile '{value}' (expected: auto, ich, fda or mfds)"
-			),
-		}),
-	}
-}
-
 async fn read_xml_multipart(
 	mut multipart: Multipart,
 ) -> Result<UploadedImportPayload> {
 	let mut file_bytes: Option<Vec<u8>> = None;
 	let mut filename: Option<String> = None;
-	let mut validation_profile: Option<String> = None;
 
 	while let Some(field) =
 		multipart
@@ -114,37 +97,13 @@ async fn read_xml_multipart(
 			);
 			continue;
 		}
-
-		if name.as_deref() == Some("format")
-			|| name.as_deref() == Some("validation_profile")
-		{
-			let value = String::from_utf8(
-				read_field_limited(
-					field,
-					MAX_IMPORT_FORM_FIELD_BYTES,
-					"validation profile field",
-				)
-				.await?,
-			)
-			.map_err(|err| Error::BadRequest {
-				message: format!("validation profile is not UTF-8: {err}"),
-			})?;
-			let normalized = normalize_validation_profile(&value)?;
-			if !normalized.is_empty() {
-				validation_profile = Some(normalized);
-			}
-		}
 	}
 
 	let bytes = file_bytes.ok_or_else(|| Error::BadRequest {
 		message: "missing xml file field".to_string(),
 	})?;
 
-	Ok(UploadedImportPayload {
-		bytes,
-		filename,
-		validation_profile,
-	})
+	Ok(UploadedImportPayload { bytes, filename })
 }
 
 async fn read_field_limited(
@@ -257,7 +216,6 @@ async fn record_import_history(
 	case_number: Option<&str>,
 	status: &str,
 	error_message: Option<&str>,
-	validation_profile: Option<&str>,
 ) -> Result<()> {
 	XmlImportHistoryBmc::record(
 		mm,
@@ -268,7 +226,6 @@ async fn record_import_history(
 		case_number,
 		status,
 		error_message,
-		validation_profile,
 	)
 	.await
 	.map_err(Error::Model)
@@ -280,7 +237,6 @@ async fn import_single_xml(
 	xml: Vec<u8>,
 	uploaded_file_name: &str,
 	filename: String,
-	validation_profile: Option<String>,
 	c_settings: CImportSettings,
 ) -> ImportedCaseSummary {
 	let import_result = import_e2b_xml(
@@ -289,7 +245,6 @@ async fn import_single_xml(
 		XmlImportRequest {
 			xml,
 			filename: Some(filename.clone()),
-			validation_profile: validation_profile.clone(),
 			skip_validation: false,
 			c_settings,
 		},
@@ -314,7 +269,6 @@ async fn import_single_xml(
 				result.case_number.as_deref(),
 				"success",
 				None,
-				validation_profile.as_deref(),
 			)
 			.await
 			{
@@ -339,7 +293,6 @@ async fn import_single_xml(
 				None,
 				"error",
 				Some(&message),
-				validation_profile.as_deref(),
 			)
 			.await
 			{
@@ -421,7 +374,6 @@ pub async fn list_import_history(
 			case_number: row.case_number,
 			status: row.status,
 			error_message: row.error_message,
-			validation_profile: row.validation_profile,
 			uploaded_by: row.uploaded_by,
 			uploader_email: row.uploader_email,
 			uploaded_at: row
@@ -544,7 +496,6 @@ pub async fn import_xml(
 				xml,
 				&uploaded_file_name,
 				entry_name,
-				payload.validation_profile.clone(),
 				c_settings,
 			)
 			.await,

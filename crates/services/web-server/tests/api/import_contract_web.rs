@@ -120,15 +120,13 @@ async fn test_import_history_uploaded_at_is_string_timestamp() -> Result<()> {
 			source_file_name,
 			case_number,
 			status,
-			validation_profile,
 			uploaded_by
-		) VALUES ($1, $2, $3, $4, $5, $6)",
+		) VALUES ($1, $2, $3, $4, $5)",
 	)
 	.bind("batch.zip")
 	.bind("case.xml")
 	.bind("SR-IMPORT-1")
 	.bind("success")
-	.bind("fda")
 	.bind(seed.admin.id)
 	.execute(&mut *tx)
 	.await?;
@@ -138,6 +136,10 @@ async fn test_import_history_uploaded_at_is_string_timestamp() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 
 	let item = &body["data"]["items"][0];
+	assert!(
+		item.get("validationProfile").is_none(),
+		"import history must not expose legacy validationProfile: {item:?}"
+	);
 	let uploaded_at = item["uploadedAt"]
 		.as_str()
 		.ok_or("uploadedAt should be a string")?;
@@ -169,9 +171,8 @@ async fn test_import_history_error_details_download_as_text() -> Result<()> {
 			case_number,
 			status,
 			error_message,
-			validation_profile,
 			uploaded_by
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
+		) VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id",
 	)
 	.bind("batch.zip")
@@ -179,7 +180,6 @@ async fn test_import_history_error_details_download_as_text() -> Result<()> {
 	.bind("SR-IMPORT-ERR-1")
 	.bind("error")
 	.bind("schema validation failed on line 14")
-	.bind("fda")
 	.bind(seed.admin.id)
 	.fetch_one(&mut *tx)
 	.await?;

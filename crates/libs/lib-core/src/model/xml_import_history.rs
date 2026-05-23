@@ -24,7 +24,6 @@ pub struct XmlImportHistoryRow {
 	pub case_number: Option<String>,
 	pub status: String,
 	pub error_message: Option<String>,
-	pub validation_profile: Option<String>,
 	pub uploaded_by: Uuid,
 	pub uploader_email: Option<String>,
 	pub uploaded_at: OffsetDateTime,
@@ -53,7 +52,6 @@ impl XmlImportHistoryBmc {
 		case_number: Option<&str>,
 		status: &str,
 		error_message: Option<&str>,
-		validation_profile: Option<&str>,
 	) -> Result<()> {
 		let dbx = mm.dbx();
 		dbx.begin_txn().await?;
@@ -73,9 +71,8 @@ impl XmlImportHistoryBmc {
 					case_number,
 					status,
 					error_message,
-					validation_profile,
 					uploaded_by
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+				) VALUES ($1, $2, $3, $4, $5, $6, $7)",
 			)
 			.bind(uploaded_file_name)
 			.bind(source_file_name)
@@ -83,7 +80,6 @@ impl XmlImportHistoryBmc {
 			.bind(case_number)
 			.bind(status)
 			.bind(error_message)
-			.bind(validation_profile)
 			.bind(ctx.user_id()),
 		)
 		.await?;
@@ -110,7 +106,6 @@ impl XmlImportHistoryBmc {
 				        h.case_number,
 				        h.status,
 				        h.error_message,
-				        h.validation_profile,
 				        h.uploaded_by,
 				        u.email AS uploader_email,
 				        h.uploaded_at

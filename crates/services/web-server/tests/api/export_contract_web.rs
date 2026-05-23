@@ -376,9 +376,8 @@ async fn test_export_history_error_details_download_as_text() -> Result<()> {
 					file_name,
 					status,
 					error_message,
-					validation_profile,
 					exported_by
-				) VALUES ($1, $2, $3, $4, $5, $6, $7)
+				) VALUES ($1, $2, $3, $4, $5, $6)
 			RETURNING id",
 	)
 	.bind(case_id)
@@ -386,7 +385,6 @@ async fn test_export_history_error_details_download_as_text() -> Result<()> {
 	.bind("exported-case.xml")
 	.bind("error")
 	.bind("gateway rejected payload")
-	.bind("fda")
 	.bind(seed.admin.id)
 	.fetch_one(&mut *tx)
 	.await?;
@@ -399,6 +397,14 @@ async fn test_export_history_error_details_download_as_text() -> Result<()> {
 			.as_array()
 			.is_some_and(|items| !items.is_empty()),
 		"{body:?}"
+	);
+	let items = body["data"]["items"]
+		.as_array()
+		.ok_or("missing export history items")?;
+	assert!(
+		items[0].get("validationProfile").is_none(),
+		"export history must not expose legacy validationProfile: {:?}",
+		items[0]
 	);
 
 	let response = get_response(
@@ -491,7 +497,10 @@ async fn test_failed_single_export_records_error_history() -> Result<()> {
 		.cloned()
 		.ok_or_else(|| format!("missing failed export history item: {body}"))?;
 	assert_eq!(item["status"].as_str(), Some("error"), "{item:?}");
-	assert_eq!(item["validationProfile"].as_str(), Some("fda"), "{item:?}");
+	assert!(
+		item.get("validationProfile").is_none(),
+		"failed export history must not expose legacy validationProfile: {item:?}"
+	);
 	assert_eq!(
 		item["fileName"].as_str(),
 		Some(format!("{safety_report_id}-{case_id}-fda.xml").as_str()),
@@ -539,15 +548,13 @@ async fn test_case_scoped_export_history_only_returns_case_rows() -> Result<()> 
 			case_number,
 			file_name,
 			status,
-			validation_profile,
 			exported_by
-		) VALUES ($1, $2, $3, $4, $5, $6)",
+		) VALUES ($1, $2, $3, $4, $5)",
 	)
 	.bind(case_id)
 	.bind("SR-EXPORT-ONE")
 	.bind("one.xml")
 	.bind("success")
-	.bind("fda")
 	.bind(seed.admin.id)
 	.execute(&mut *tx)
 	.await?;
@@ -557,15 +564,13 @@ async fn test_case_scoped_export_history_only_returns_case_rows() -> Result<()> 
 			case_number,
 			file_name,
 			status,
-			validation_profile,
 			exported_by
-		) VALUES ($1, $2, $3, $4, $5, $6)",
+		) VALUES ($1, $2, $3, $4, $5)",
 	)
 	.bind(other_case_id)
 	.bind("SR-EXPORT-TWO")
 	.bind("two.xml")
 	.bind("success")
-	.bind("fda")
 	.bind(seed.admin.id)
 	.execute(&mut *tx)
 	.await?;
@@ -587,6 +592,11 @@ async fn test_case_scoped_export_history_only_returns_case_rows() -> Result<()> 
 		Some(case_id.to_string().as_str())
 	);
 	assert_eq!(items[0]["fileName"].as_str(), Some("one.xml"));
+	assert!(
+		items[0].get("validationProfile").is_none(),
+		"case export history must not expose legacy validationProfile: {:?}",
+		items[0]
+	);
 
 	Ok(())
 }

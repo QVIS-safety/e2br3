@@ -266,7 +266,6 @@ pub async fn record_xml_export(
 	case_id: Uuid,
 	case_number: Option<&str>,
 	file_name: &str,
-	validation_profile: Option<&str>,
 	status: &str,
 	error_message: Option<&str>,
 ) -> Result<()> {
@@ -290,16 +289,14 @@ pub async fn record_xml_export(
 			file_name,
 			status,
 			error_message,
-			validation_profile,
 			exported_by
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+		) VALUES ($1, $2, $3, $4, $5, $6)",
 	)
 	.bind(case_id)
 	.bind(case_number)
 	.bind(file_name)
 	.bind(status)
 	.bind(error_message)
-	.bind(validation_profile)
 	.bind(ctx.user_id())
 	.execute(&mut *tx)
 	.await
@@ -344,7 +341,6 @@ pub async fn export_case(
 				id,
 				Some(case.safety_report_id.as_str()),
 				&file_name,
-				Some(profile.as_str()),
 				"error",
 				Some(error_message.as_str()),
 			)
@@ -363,7 +359,6 @@ pub async fn export_case(
 		id,
 		Some(case.safety_report_id.as_str()),
 		&file_name,
-		Some(profile.as_str()),
 		"success",
 		None,
 	)
@@ -440,7 +435,6 @@ pub async fn export_cases_zip(
 							case_id,
 							Some(case.safety_report_id.as_str()),
 							&file_name,
-							Some(profile.as_str()),
 							"error",
 							Some(error_message.as_str()),
 						)
@@ -468,7 +462,6 @@ pub async fn export_cases_zip(
 					case_id,
 					Some(case.safety_report_id.as_str()),
 					&file_name,
-					Some(profile.as_str()),
 					"success",
 					None,
 				)

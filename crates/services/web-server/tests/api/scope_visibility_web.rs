@@ -421,13 +421,12 @@ async fn insert_history_rows_for_case(
 	dbx.execute(
 		sqlx::query(
 			"INSERT INTO xml_export_history (
-					case_id,
-					case_number,
-					file_name,
-					status,
-					validation_profile,
-					exported_by
-				) VALUES ($1, $2, $3, 'success', 'fda', $4)",
+						case_id,
+						case_number,
+						file_name,
+						status,
+						exported_by
+					) VALUES ($1, $2, $3, 'success', $4)",
 		)
 		.bind(case_id)
 		.bind(case_number)

@@ -24,7 +24,6 @@ pub struct XmlExportHistoryRecord {
 	pub file_name: String,
 	pub status: String,
 	pub error_message: Option<String>,
-	pub validation_profile: Option<String>,
 	pub exported_by: Uuid,
 	pub exporter_email: Option<String>,
 	pub exported_at: OffsetDateTime,
@@ -49,7 +48,6 @@ impl XmlExportHistoryBmc {
 		case_id: Uuid,
 		case_number: Option<&str>,
 		file_name: &str,
-		validation_profile: Option<&str>,
 		status: &str,
 		error_message: Option<&str>,
 	) -> Result<()> {
@@ -70,16 +68,14 @@ impl XmlExportHistoryBmc {
 					file_name,
 					status,
 					error_message,
-					validation_profile,
 					exported_by
-				) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+				) VALUES ($1, $2, $3, $4, $5, $6)",
 			)
 			.bind(case_id)
 			.bind(case_number)
 			.bind(file_name)
 			.bind(status)
 			.bind(error_message)
-			.bind(validation_profile)
 			.bind(ctx.user_id()),
 		)
 		.await?;
@@ -97,7 +93,6 @@ impl XmlExportHistoryBmc {
 			        h.file_name,
 			        h.status,
 			        h.error_message,
-			        h.validation_profile,
 			        h.exported_by,
 			        u.email AS exporter_email,
 			        h.exported_at
@@ -124,7 +119,6 @@ impl XmlExportHistoryBmc {
 				        h.file_name,
 				        h.status,
 				        h.error_message,
-				        h.validation_profile,
 				        h.exported_by,
 				        u.email AS exporter_email,
 				        h.exported_at

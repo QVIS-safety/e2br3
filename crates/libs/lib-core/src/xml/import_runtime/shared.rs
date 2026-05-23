@@ -1,4 +1,3 @@
-use crate::validation::infer_regulatory_authority_from_receivers;
 use crate::xml::error::Error;
 use crate::xml::Result;
 use libxml::parser::Parser;
@@ -253,17 +252,6 @@ pub(crate) fn parse_date(value: String) -> Option<Date> {
 	let d: u8 = digits[6..8].parse().ok()?;
 	let month = Month::try_from(m).ok()?;
 	Date::from_calendar_date(y, month, d).ok()
-}
-
-pub(crate) fn infer_validation_profile(
-	header: Option<&MessageHeaderExtract>,
-) -> String {
-	infer_regulatory_authority_from_receivers(
-		header.and_then(|h| h.batch_receiver.as_deref()),
-		header.and_then(|h| h.message_receiver.as_deref()),
-	)
-	.as_str()
-	.to_string()
 }
 
 pub(crate) fn normalize_message_date(value: String) -> Option<String> {
