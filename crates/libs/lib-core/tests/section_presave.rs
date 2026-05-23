@@ -5,11 +5,27 @@ use crate::common::{
 };
 use lib_core::_dev_utils;
 use lib_core::model::presave::{
-	NarrativePresaveBmc, NarrativePresaveForCreate, ProductPresaveBmc,
-	ProductPresaveForCreate, ReceiverPresaveBmc, ReceiverPresaveForCreate,
-	ReporterPresaveBmc, ReporterPresaveForCreate, SenderPresaveBmc,
-	SenderPresaveForCreate, SenderPresaveForUpdate, StudyPresaveBmc,
-	StudyPresaveForCreate,
+	NarrativePresaveBmc, NarrativePresaveCaseSummaryBmc,
+	NarrativePresaveCaseSummaryForCreate, NarrativePresaveCaseSummaryForUpdate,
+	NarrativePresaveForCreate, NarrativePresaveSenderDiagnosisBmc,
+	NarrativePresaveSenderDiagnosisForCreate,
+	NarrativePresaveSenderDiagnosisForUpdate, ProductPresaveBmc,
+	ProductPresaveFdaCrossReportedIndBmc,
+	ProductPresaveFdaCrossReportedIndForCreate,
+	ProductPresaveFdaCrossReportedIndForUpdate, ProductPresaveForCreate,
+	ProductPresaveMfdsRegionalItemBmc, ProductPresaveMfdsRegionalItemForCreate,
+	ProductPresaveMfdsRegionalItemForUpdate, ProductPresaveSubstanceBmc,
+	ProductPresaveSubstanceForCreate, ProductPresaveSubstanceForUpdate,
+	ReceiverPresaveBmc, ReceiverPresaveConsigneeBmc,
+	ReceiverPresaveConsigneeForCreate, ReceiverPresaveConsigneeForUpdate,
+	ReceiverPresaveForCreate, ReporterPresaveBmc, ReporterPresaveForCreate,
+	SenderPresaveBmc, SenderPresaveForCreate, SenderPresaveForUpdate,
+	SenderPresaveGatewayBmc, SenderPresaveGatewayForCreate,
+	SenderPresaveGatewayForUpdate, SenderPresaveResponsiblePersonBmc,
+	SenderPresaveResponsiblePersonForCreate,
+	SenderPresaveResponsiblePersonForUpdate, StudyPresaveBmc, StudyPresaveForCreate,
+	StudyPresaveRegistrationNumberBmc, StudyPresaveRegistrationNumberForCreate,
+	StudyPresaveRegistrationNumberForUpdate,
 };
 use lib_core::model::store::{set_org_context, set_user_context};
 use lib_core::model::ModelManager;
@@ -17,6 +33,7 @@ use lib_core::regulatory::RegulatoryAuthority;
 use serial_test::serial;
 use std::collections::HashSet;
 
+use rust_decimal::Decimal;
 use sqlx::types::Uuid;
 use sqlx::Error as SqlxError;
 
@@ -687,6 +704,478 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	NarrativePresaveBmc::delete(&ctx, &mm, narrative_id).await?;
 	StudyPresaveBmc::delete(&ctx, &mm, study_id).await?;
 	ReporterPresaveBmc::delete(&ctx, &mm, reporter_id).await?;
+	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
+	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
+	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveForCreate {
+			authority: RegulatoryAuthority::Ich,
+			name: format!("Child Sender Presave {suffix}"),
+			comments: None,
+			is_default: None,
+			sender_type: None,
+			organization_name: Some("Child Sender Org".into()),
+			department: None,
+			street_address: None,
+			city: None,
+			state: None,
+			postcode: None,
+			country_code: Some("KR".into()),
+			telephone: None,
+			fax: None,
+			email: None,
+		},
+	)
+	.await?;
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			authority: RegulatoryAuthority::Fda,
+			name: format!("Child Receiver Presave {suffix}"),
+			comments: None,
+			receiver_type: None,
+			organization_name: Some("Child Receiver Org".into()),
+			receiver_identifier: None,
+			day_count_rule: None,
+			nsae_solicited_day_count: None,
+			nsae_solicited_not_applicable: None,
+			nsae_non_solicited_day_count: None,
+			nsae_non_solicited_not_applicable: None,
+			sae_solicited_day_count: None,
+			sae_solicited_not_applicable: None,
+			sae_non_solicited_day_count: None,
+			sae_non_solicited_not_applicable: None,
+			description: None,
+		},
+	)
+	.await?;
+	let product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveForCreate {
+			authority: RegulatoryAuthority::Mfds,
+			name: format!("Child Product Presave {suffix}"),
+			comments: None,
+			sender_presave_id: Some(sender_id),
+			drug_characterization: None,
+			medicinal_product: Some("Child Product".into()),
+			medicinal_product_notation: None,
+			preapproval_ip_name: None,
+			brand_name: None,
+			drug_generic_name: None,
+			manufacturer_name: None,
+			product_description: None,
+			mpid: None,
+			mpid_version: None,
+			phpid: None,
+			phpid_version: None,
+			investigational_product_blinded: None,
+			obtain_drug_country: None,
+			drug_authorization_number: None,
+			drug_authorization_country: None,
+			drug_authorization_holder: None,
+			holder_applicant_name_notation: None,
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
+			mfds_domestic_product_code: None,
+			mfds_domestic_ingredient_code: None,
+			mfds_udl_product_code: None,
+			mfds_udl_ingredient_code: None,
+			mfds_udl_manufacturer_code: None,
+			mfds_udl_manufacturer_name: None,
+			mfds_foreign_ich_product_code: None,
+			mfds_foreign_ich_ingredient_code: None,
+			mfds_foreign_ich_holder_code: None,
+			mfds_foreign_ich_holder_name: None,
+			mfds_foreign_e2b_product_code: None,
+			mfds_foreign_e2b_ingredient_code: None,
+			mfds_foreign_e2b_holder_code: None,
+			mfds_foreign_e2b_holder_name: None,
+		},
+	)
+	.await?;
+	let study_id = StudyPresaveBmc::create(
+		&ctx,
+		&mm,
+		StudyPresaveForCreate {
+			authority: RegulatoryAuthority::Fda,
+			name: format!("Child Study Presave {suffix}"),
+			comments: None,
+			product_presave_id: Some(product_id),
+			study_name: Some("Child Study".into()),
+			sponsor_study_number: None,
+			study_type_reaction: None,
+			study_type_reaction_kr1: None,
+			edc_sync: None,
+		},
+	)
+	.await?;
+	let narrative_id = NarrativePresaveBmc::create(
+		&ctx,
+		&mm,
+		NarrativePresaveForCreate {
+			authority: RegulatoryAuthority::Mfds,
+			name: format!("Child Narrative Presave {suffix}"),
+			comments: None,
+			case_narrative: Some("Child narrative".into()),
+			reporter_comments: None,
+			sender_comments: None,
+		},
+	)
+	.await?;
+
+	let gateway_late_id = SenderPresaveGatewayBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveGatewayForCreate {
+			sender_presave_id: sender_id,
+			sequence_number: 20,
+			gateway_authority: "fda".into(),
+			sender_identifier: Some("gateway-late".into()),
+			routing_identifier: None,
+			cde_sender_identifier: None,
+			cdr_sender_identifier: None,
+			ema_sender_identifier: None,
+			is_default_for_authority: Some(false),
+		},
+	)
+	.await?;
+	let gateway_first_id = SenderPresaveGatewayBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveGatewayForCreate {
+			sender_presave_id: sender_id,
+			sequence_number: 10,
+			gateway_authority: "mfds".into(),
+			sender_identifier: Some("gateway-first".into()),
+			routing_identifier: Some("route-before".into()),
+			cde_sender_identifier: None,
+			cdr_sender_identifier: None,
+			ema_sender_identifier: None,
+			is_default_for_authority: Some(true),
+		},
+	)
+	.await?;
+	SenderPresaveGatewayBmc::update(
+		&ctx,
+		&mm,
+		gateway_first_id,
+		SenderPresaveGatewayForUpdate {
+			routing_identifier: Some("route-after".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let gateway_first =
+		SenderPresaveGatewayBmc::get(&ctx, &mm, gateway_first_id).await?;
+	assert_eq!(gateway_first.sender_presave_id, sender_id);
+	assert_eq!(gateway_first.sequence_number, 10);
+	assert_eq!(
+		gateway_first.routing_identifier.as_deref(),
+		Some("route-after")
+	);
+	let gateways =
+		SenderPresaveGatewayBmc::list_by_parent(&ctx, &mm, sender_id).await?;
+	assert_eq!(gateways[0].id, gateway_first_id);
+	assert_eq!(gateways[1].id, gateway_late_id);
+	SenderPresaveGatewayBmc::delete(&ctx, &mm, gateway_late_id).await?;
+	assert!(
+		SenderPresaveGatewayBmc::list_by_parent(&ctx, &mm, sender_id)
+			.await?
+			.iter()
+			.all(|gateway| gateway.id != gateway_late_id)
+	);
+
+	let responsible_id = SenderPresaveResponsiblePersonBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveResponsiblePersonForCreate {
+			sender_presave_id: sender_id,
+			sequence_number: 1,
+			department: Some("PV".into()),
+			person_title: Some("Dr".into()),
+			person_given_name: Some("Before".into()),
+			person_middle_name: None,
+			person_family_name: Some("Person".into()),
+			is_default: Some(false),
+		},
+	)
+	.await?;
+	SenderPresaveResponsiblePersonBmc::update(
+		&ctx,
+		&mm,
+		responsible_id,
+		SenderPresaveResponsiblePersonForUpdate {
+			person_given_name: Some("After".into()),
+			is_default: Some(true),
+			..Default::default()
+		},
+	)
+	.await?;
+	let responsible =
+		SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, responsible_id).await?;
+	assert_eq!(responsible.sender_presave_id, sender_id);
+	assert_eq!(responsible.person_given_name.as_deref(), Some("After"));
+	assert_eq!(
+		SenderPresaveResponsiblePersonBmc::list_by_parent(&ctx, &mm, sender_id)
+			.await?[0]
+			.id,
+		responsible_id
+	);
+
+	let consignee_id = ReceiverPresaveConsigneeBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveConsigneeForCreate {
+			receiver_presave_id: receiver_id,
+			sequence_number: 1,
+			name: Some("Consignee Before".into()),
+			phone: None,
+			email: Some("before@example.com".into()),
+		},
+	)
+	.await?;
+	ReceiverPresaveConsigneeBmc::update(
+		&ctx,
+		&mm,
+		consignee_id,
+		ReceiverPresaveConsigneeForUpdate {
+			name: Some("Consignee After".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let consignee =
+		ReceiverPresaveConsigneeBmc::get(&ctx, &mm, consignee_id).await?;
+	assert_eq!(consignee.receiver_presave_id, receiver_id);
+	assert_eq!(consignee.name.as_deref(), Some("Consignee After"));
+	assert_eq!(
+		ReceiverPresaveConsigneeBmc::list_by_parent(&ctx, &mm, receiver_id).await?
+			[0]
+		.id,
+		consignee_id
+	);
+
+	let substance_id = ProductPresaveSubstanceBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveSubstanceForCreate {
+			product_presave_id: product_id,
+			sequence_number: 1,
+			substance_name: Some("Substance Before".into()),
+			substance_termid_version: None,
+			substance_termid: Some("SUB-1".into()),
+			strength_value: Some(Decimal::new(125, 2)),
+			strength_unit: Some("mg".into()),
+		},
+	)
+	.await?;
+	ProductPresaveSubstanceBmc::update(
+		&ctx,
+		&mm,
+		substance_id,
+		ProductPresaveSubstanceForUpdate {
+			substance_name: Some("Substance After".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let substance = ProductPresaveSubstanceBmc::get(&ctx, &mm, substance_id).await?;
+	assert_eq!(substance.product_presave_id, product_id);
+	assert_eq!(substance.substance_name.as_deref(), Some("Substance After"));
+	assert_eq!(
+		ProductPresaveSubstanceBmc::list_by_parent(&ctx, &mm, product_id).await?[0]
+			.id,
+		substance_id
+	);
+
+	let ind_id = ProductPresaveFdaCrossReportedIndBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveFdaCrossReportedIndForCreate {
+			product_presave_id: product_id,
+			sequence_number: 2,
+			ind_number: Some("IND-before".into()),
+		},
+	)
+	.await?;
+	ProductPresaveFdaCrossReportedIndBmc::update(
+		&ctx,
+		&mm,
+		ind_id,
+		ProductPresaveFdaCrossReportedIndForUpdate {
+			ind_number: Some("IND-after".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let ind = ProductPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, ind_id).await?;
+	assert_eq!(ind.product_presave_id, product_id);
+	assert_eq!(ind.ind_number.as_deref(), Some("IND-after"));
+	assert!(ProductPresaveFdaCrossReportedIndBmc::list_by_parent(
+		&ctx, &mm, product_id
+	)
+	.await?
+	.iter()
+	.any(|item| item.id == ind_id));
+
+	let regional_id = ProductPresaveMfdsRegionalItemBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveMfdsRegionalItemForCreate {
+			product_presave_id: product_id,
+			sequence_number: 3,
+			item_type: Some("domestic".into()),
+			item_value: Some("before".into()),
+		},
+	)
+	.await?;
+	ProductPresaveMfdsRegionalItemBmc::update(
+		&ctx,
+		&mm,
+		regional_id,
+		ProductPresaveMfdsRegionalItemForUpdate {
+			item_value: Some("after".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let regional =
+		ProductPresaveMfdsRegionalItemBmc::get(&ctx, &mm, regional_id).await?;
+	assert_eq!(regional.product_presave_id, product_id);
+	assert_eq!(regional.item_value.as_deref(), Some("after"));
+	assert!(ProductPresaveMfdsRegionalItemBmc::list_by_parent(
+		&ctx, &mm, product_id
+	)
+	.await?
+	.iter()
+	.any(|item| item.id == regional_id));
+
+	let registration_id = StudyPresaveRegistrationNumberBmc::create(
+		&ctx,
+		&mm,
+		StudyPresaveRegistrationNumberForCreate {
+			study_presave_id: study_id,
+			sequence_number: 1,
+			registration_number: Some("REG-before".into()),
+			country_code: Some("KR".into()),
+		},
+	)
+	.await?;
+	StudyPresaveRegistrationNumberBmc::update(
+		&ctx,
+		&mm,
+		registration_id,
+		StudyPresaveRegistrationNumberForUpdate {
+			registration_number: Some("REG-after".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let registration =
+		StudyPresaveRegistrationNumberBmc::get(&ctx, &mm, registration_id).await?;
+	assert_eq!(registration.study_presave_id, study_id);
+	assert_eq!(
+		registration.registration_number.as_deref(),
+		Some("REG-after")
+	);
+	assert_eq!(
+		StudyPresaveRegistrationNumberBmc::list_by_parent(&ctx, &mm, study_id)
+			.await?[0]
+			.id,
+		registration_id
+	);
+
+	let diagnosis_id = NarrativePresaveSenderDiagnosisBmc::create(
+		&ctx,
+		&mm,
+		NarrativePresaveSenderDiagnosisForCreate {
+			narrative_presave_id: narrative_id,
+			sequence_number: 1,
+			diagnosis_meddra_version: Some("26.1".into()),
+			diagnosis_meddra_code: Some("10000001".into()),
+		},
+	)
+	.await?;
+	NarrativePresaveSenderDiagnosisBmc::update(
+		&ctx,
+		&mm,
+		diagnosis_id,
+		NarrativePresaveSenderDiagnosisForUpdate {
+			diagnosis_meddra_code: Some("10000002".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let diagnosis =
+		NarrativePresaveSenderDiagnosisBmc::get(&ctx, &mm, diagnosis_id).await?;
+	assert_eq!(diagnosis.narrative_presave_id, narrative_id);
+	assert_eq!(diagnosis.diagnosis_meddra_code.as_deref(), Some("10000002"));
+	assert_eq!(
+		NarrativePresaveSenderDiagnosisBmc::list_by_parent(&ctx, &mm, narrative_id)
+			.await?[0]
+			.id,
+		diagnosis_id
+	);
+
+	let summary_id = NarrativePresaveCaseSummaryBmc::create(
+		&ctx,
+		&mm,
+		NarrativePresaveCaseSummaryForCreate {
+			narrative_presave_id: narrative_id,
+			sequence_number: 2,
+			summary_type: Some("sender".into()),
+			language_code: Some("en".into()),
+			summary_text: Some("summary before".into()),
+		},
+	)
+	.await?;
+	NarrativePresaveCaseSummaryBmc::update(
+		&ctx,
+		&mm,
+		summary_id,
+		NarrativePresaveCaseSummaryForUpdate {
+			summary_text: Some("summary after".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let summary = NarrativePresaveCaseSummaryBmc::get(&ctx, &mm, summary_id).await?;
+	assert_eq!(summary.narrative_presave_id, narrative_id);
+	assert_eq!(summary.summary_text.as_deref(), Some("summary after"));
+	assert_eq!(
+		NarrativePresaveCaseSummaryBmc::list_by_parent(&ctx, &mm, narrative_id)
+			.await?[0]
+			.id,
+		summary_id
+	);
+
+	NarrativePresaveCaseSummaryBmc::delete(&ctx, &mm, summary_id).await?;
+	NarrativePresaveSenderDiagnosisBmc::delete(&ctx, &mm, diagnosis_id).await?;
+	StudyPresaveRegistrationNumberBmc::delete(&ctx, &mm, registration_id).await?;
+	ProductPresaveMfdsRegionalItemBmc::delete(&ctx, &mm, regional_id).await?;
+	ProductPresaveFdaCrossReportedIndBmc::delete(&ctx, &mm, ind_id).await?;
+	ProductPresaveSubstanceBmc::delete(&ctx, &mm, substance_id).await?;
+	ReceiverPresaveConsigneeBmc::delete(&ctx, &mm, consignee_id).await?;
+	SenderPresaveResponsiblePersonBmc::delete(&ctx, &mm, responsible_id).await?;
+	SenderPresaveGatewayBmc::delete(&ctx, &mm, gateway_first_id).await?;
+	NarrativePresaveBmc::delete(&ctx, &mm, narrative_id).await?;
+	StudyPresaveBmc::delete(&ctx, &mm, study_id).await?;
 	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
 	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
 	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;

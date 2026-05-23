@@ -6,6 +6,7 @@ use crate::model::Result;
 use crate::regulatory::RegulatoryAuthority;
 use modql::field::{Fields, HasSeaFields};
 use modql::filter::{FilterNodes, ListOptions, OpValsBool};
+use rust_decimal::Decimal;
 use sea_query::Value;
 use serde::{Deserialize, Serialize};
 use sqlx::decode::Decode;
@@ -110,6 +111,106 @@ macro_rules! impl_parent_bmc {
 				id: Uuid,
 			) -> Result<()> {
 				base_uuid::delete::<Self>(ctx, mm, id).await
+			}
+		}
+	};
+}
+
+macro_rules! impl_child_bmc {
+	(
+		$bmc:ident,
+		$model:ty,
+		$create:ty,
+		$update:ty,
+		$table:literal,
+		$parent_col:literal
+	) => {
+		pub struct $bmc;
+
+		impl DbBmc for $bmc {
+			const TABLE: &'static str = $table;
+		}
+
+		impl $bmc {
+			pub async fn create(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				data: $create,
+			) -> Result<Uuid> {
+				base_uuid::create::<Self, _>(ctx, mm, data).await
+			}
+
+			pub async fn get(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				id: Uuid,
+			) -> Result<$model> {
+				base_uuid::get::<Self, _>(ctx, mm, id).await
+			}
+
+			pub async fn list(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				list_options: Option<ListOptions>,
+			) -> Result<Vec<$model>> {
+				base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+					ctx,
+					mm,
+					None,
+					list_options,
+				)
+				.await
+			}
+
+			pub async fn update(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				id: Uuid,
+				data: $update,
+			) -> Result<()> {
+				base_uuid::update::<Self, _>(ctx, mm, id, data).await
+			}
+
+			pub async fn delete(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				id: Uuid,
+			) -> Result<()> {
+				base_uuid::delete::<Self>(ctx, mm, id).await
+			}
+
+			pub async fn list_by_parent(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				parent_id: Uuid,
+			) -> Result<Vec<$model>> {
+				let dbx = mm.dbx();
+				dbx.begin_txn().await?;
+				if let Err(err) =
+					crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx)
+						.await
+				{
+					dbx.rollback_txn().await?;
+					return Err(err);
+				}
+
+				let sql = format!(
+					"SELECT * FROM {} WHERE {} = $1 ORDER BY sequence_number ASC, id ASC",
+					Self::TABLE,
+					$parent_col
+				);
+				let rows = match dbx
+					.fetch_all(sqlx::query_as::<_, $model>(&sql).bind(parent_id))
+					.await
+				{
+					Ok(rows) => rows,
+					Err(err) => {
+						dbx.rollback_txn().await?;
+						return Err(err.into());
+					}
+				};
+				dbx.commit_txn().await?;
+				Ok(rows)
 			}
 		}
 	};
@@ -275,6 +376,107 @@ impl SenderPresaveBmc {
 }
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct SenderPresaveGateway {
+	pub id: Uuid,
+	pub sender_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub gateway_authority: String,
+	pub sender_identifier: Option<String>,
+	pub routing_identifier: Option<String>,
+	pub cde_sender_identifier: Option<String>,
+	pub cdr_sender_identifier: Option<String>,
+	pub ema_sender_identifier: Option<String>,
+	pub is_default_for_authority: bool,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct SenderPresaveGatewayForCreate {
+	pub sender_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub gateway_authority: String,
+	pub sender_identifier: Option<String>,
+	pub routing_identifier: Option<String>,
+	pub cde_sender_identifier: Option<String>,
+	pub cdr_sender_identifier: Option<String>,
+	pub ema_sender_identifier: Option<String>,
+	pub is_default_for_authority: Option<bool>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct SenderPresaveGatewayForUpdate {
+	pub sequence_number: Option<i32>,
+	pub gateway_authority: Option<String>,
+	pub sender_identifier: Option<String>,
+	pub routing_identifier: Option<String>,
+	pub cde_sender_identifier: Option<String>,
+	pub cdr_sender_identifier: Option<String>,
+	pub ema_sender_identifier: Option<String>,
+	pub is_default_for_authority: Option<bool>,
+}
+
+impl_child_bmc!(
+	SenderPresaveGatewayBmc,
+	SenderPresaveGateway,
+	SenderPresaveGatewayForCreate,
+	SenderPresaveGatewayForUpdate,
+	"sender_presave_gateways",
+	"sender_presave_id"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct SenderPresaveResponsiblePerson {
+	pub id: Uuid,
+	pub sender_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub department: Option<String>,
+	pub person_title: Option<String>,
+	pub person_given_name: Option<String>,
+	pub person_middle_name: Option<String>,
+	pub person_family_name: Option<String>,
+	pub is_default: bool,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct SenderPresaveResponsiblePersonForCreate {
+	pub sender_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub department: Option<String>,
+	pub person_title: Option<String>,
+	pub person_given_name: Option<String>,
+	pub person_middle_name: Option<String>,
+	pub person_family_name: Option<String>,
+	pub is_default: Option<bool>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct SenderPresaveResponsiblePersonForUpdate {
+	pub sequence_number: Option<i32>,
+	pub department: Option<String>,
+	pub person_title: Option<String>,
+	pub person_given_name: Option<String>,
+	pub person_middle_name: Option<String>,
+	pub person_family_name: Option<String>,
+	pub is_default: Option<bool>,
+}
+
+impl_child_bmc!(
+	SenderPresaveResponsiblePersonBmc,
+	SenderPresaveResponsiblePerson,
+	SenderPresaveResponsiblePersonForCreate,
+	SenderPresaveResponsiblePersonForUpdate,
+	"sender_presave_responsible_persons",
+	"sender_presave_id"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct ReceiverPresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,
@@ -395,6 +597,46 @@ impl_parent_bmc!(
 	ReceiverPresaveForCreate,
 	ReceiverPresaveForUpdate,
 	"receiver_presaves"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct ReceiverPresaveConsignee {
+	pub id: Uuid,
+	pub receiver_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub name: Option<String>,
+	pub phone: Option<String>,
+	pub email: Option<String>,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct ReceiverPresaveConsigneeForCreate {
+	pub receiver_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub name: Option<String>,
+	pub phone: Option<String>,
+	pub email: Option<String>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct ReceiverPresaveConsigneeForUpdate {
+	pub sequence_number: Option<i32>,
+	pub name: Option<String>,
+	pub phone: Option<String>,
+	pub email: Option<String>,
+}
+
+impl_child_bmc!(
+	ReceiverPresaveConsigneeBmc,
+	ReceiverPresaveConsignee,
+	ReceiverPresaveConsigneeForCreate,
+	ReceiverPresaveConsigneeForUpdate,
+	"receiver_presave_consignees",
+	"receiver_presave_id"
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -630,6 +872,123 @@ impl_parent_bmc!(
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct ProductPresaveSubstance {
+	pub id: Uuid,
+	pub product_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub substance_name: Option<String>,
+	pub substance_termid_version: Option<String>,
+	pub substance_termid: Option<String>,
+	pub strength_value: Option<Decimal>,
+	pub strength_unit: Option<String>,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct ProductPresaveSubstanceForCreate {
+	pub product_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub substance_name: Option<String>,
+	pub substance_termid_version: Option<String>,
+	pub substance_termid: Option<String>,
+	pub strength_value: Option<Decimal>,
+	pub strength_unit: Option<String>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct ProductPresaveSubstanceForUpdate {
+	pub sequence_number: Option<i32>,
+	pub substance_name: Option<String>,
+	pub substance_termid_version: Option<String>,
+	pub substance_termid: Option<String>,
+	pub strength_value: Option<Decimal>,
+	pub strength_unit: Option<String>,
+}
+
+impl_child_bmc!(
+	ProductPresaveSubstanceBmc,
+	ProductPresaveSubstance,
+	ProductPresaveSubstanceForCreate,
+	ProductPresaveSubstanceForUpdate,
+	"product_presave_substances",
+	"product_presave_id"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct ProductPresaveFdaCrossReportedInd {
+	pub id: Uuid,
+	pub product_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub ind_number: Option<String>,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct ProductPresaveFdaCrossReportedIndForCreate {
+	pub product_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub ind_number: Option<String>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct ProductPresaveFdaCrossReportedIndForUpdate {
+	pub sequence_number: Option<i32>,
+	pub ind_number: Option<String>,
+}
+
+impl_child_bmc!(
+	ProductPresaveFdaCrossReportedIndBmc,
+	ProductPresaveFdaCrossReportedInd,
+	ProductPresaveFdaCrossReportedIndForCreate,
+	ProductPresaveFdaCrossReportedIndForUpdate,
+	"product_presave_fda_cross_reported_inds",
+	"product_presave_id"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct ProductPresaveMfdsRegionalItem {
+	pub id: Uuid,
+	pub product_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub item_type: Option<String>,
+	pub item_value: Option<String>,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct ProductPresaveMfdsRegionalItemForCreate {
+	pub product_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub item_type: Option<String>,
+	pub item_value: Option<String>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct ProductPresaveMfdsRegionalItemForUpdate {
+	pub sequence_number: Option<i32>,
+	pub item_type: Option<String>,
+	pub item_value: Option<String>,
+}
+
+impl_child_bmc!(
+	ProductPresaveMfdsRegionalItemBmc,
+	ProductPresaveMfdsRegionalItem,
+	ProductPresaveMfdsRegionalItemForCreate,
+	ProductPresaveMfdsRegionalItemForUpdate,
+	"product_presave_mfds_regional_items",
+	"product_presave_id"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct ReporterPresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,
@@ -854,6 +1213,43 @@ impl_parent_bmc!(
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct StudyPresaveRegistrationNumber {
+	pub id: Uuid,
+	pub study_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub registration_number: Option<String>,
+	pub country_code: Option<String>,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct StudyPresaveRegistrationNumberForCreate {
+	pub study_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub registration_number: Option<String>,
+	pub country_code: Option<String>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct StudyPresaveRegistrationNumberForUpdate {
+	pub sequence_number: Option<i32>,
+	pub registration_number: Option<String>,
+	pub country_code: Option<String>,
+}
+
+impl_child_bmc!(
+	StudyPresaveRegistrationNumberBmc,
+	StudyPresaveRegistrationNumber,
+	StudyPresaveRegistrationNumberForCreate,
+	StudyPresaveRegistrationNumberForUpdate,
+	"study_presave_registration_numbers",
+	"study_presave_id"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct NarrativePresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,
@@ -923,4 +1319,81 @@ impl_parent_bmc!(
 	NarrativePresaveForCreate,
 	NarrativePresaveForUpdate,
 	"narrative_presaves"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct NarrativePresaveSenderDiagnosis {
+	pub id: Uuid,
+	pub narrative_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub diagnosis_meddra_version: Option<String>,
+	pub diagnosis_meddra_code: Option<String>,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct NarrativePresaveSenderDiagnosisForCreate {
+	pub narrative_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub diagnosis_meddra_version: Option<String>,
+	pub diagnosis_meddra_code: Option<String>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct NarrativePresaveSenderDiagnosisForUpdate {
+	pub sequence_number: Option<i32>,
+	pub diagnosis_meddra_version: Option<String>,
+	pub diagnosis_meddra_code: Option<String>,
+}
+
+impl_child_bmc!(
+	NarrativePresaveSenderDiagnosisBmc,
+	NarrativePresaveSenderDiagnosis,
+	NarrativePresaveSenderDiagnosisForCreate,
+	NarrativePresaveSenderDiagnosisForUpdate,
+	"narrative_presave_sender_diagnoses",
+	"narrative_presave_id"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct NarrativePresaveCaseSummary {
+	pub id: Uuid,
+	pub narrative_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub summary_type: Option<String>,
+	pub language_code: Option<String>,
+	pub summary_text: Option<String>,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct NarrativePresaveCaseSummaryForCreate {
+	pub narrative_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub summary_type: Option<String>,
+	pub language_code: Option<String>,
+	pub summary_text: Option<String>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct NarrativePresaveCaseSummaryForUpdate {
+	pub sequence_number: Option<i32>,
+	pub summary_type: Option<String>,
+	pub language_code: Option<String>,
+	pub summary_text: Option<String>,
+}
+
+impl_child_bmc!(
+	NarrativePresaveCaseSummaryBmc,
+	NarrativePresaveCaseSummary,
+	NarrativePresaveCaseSummaryForCreate,
+	NarrativePresaveCaseSummaryForUpdate,
+	"narrative_presave_case_summaries",
+	"narrative_presave_id"
 );
