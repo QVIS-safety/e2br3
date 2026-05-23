@@ -35,11 +35,13 @@ const SETTINGS_KEY: &str = "system";
 #[derive(Debug, Deserialize)]
 pub struct BulkXmlExportInput {
 	pub case_ids: Vec<Uuid>,
-	pub profile: String,
+	pub authority: Option<String>,
+	pub profile: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ExportCaseQuery {
+	pub authority: Option<String>,
 	pub profile: Option<String>,
 }
 
@@ -120,17 +122,35 @@ fn should_validate_export_xml(profile: RegulatoryAuthority) -> bool {
 	}
 }
 
-fn resolve_requested_export_profile(
-	requested_profile: Option<&str>,
+fn requested_export_authority<'a>(
+	authority: Option<&'a str>,
+	profile: Option<&'a str>,
+) -> Result<Option<&'a str>> {
+	match (authority, profile) {
+		(Some(authority), Some(profile)) if authority != profile => {
+			Err(Error::BadRequest {
+				message:
+					"conflicting authority parameters: use authority, not legacy profile"
+						.to_string(),
+			})
+		}
+		(Some(authority), _) => Ok(Some(authority)),
+		(None, Some(profile)) => Ok(Some(profile)),
+		(None, None) => Ok(None),
+	}
+}
+
+fn resolve_requested_export_authority(
+	requested_authority: Option<&str>,
 ) -> Result<RegulatoryAuthority> {
-	let Some(raw_profile) = requested_profile else {
+	let Some(raw_authority) = requested_authority else {
 		return Err(Error::BadRequest {
-			message: "profile is required for XML export".to_string(),
+			message: "authority is required for XML export".to_string(),
 		});
 	};
-	RegulatoryAuthority::parse(raw_profile).ok_or_else(|| Error::BadRequest {
+	RegulatoryAuthority::parse(raw_authority).ok_or_else(|| Error::BadRequest {
 		message: format!(
-			"invalid validation profile '{raw_profile}' (expected: ich, fda or mfds)"
+			"invalid export authority '{raw_authority}' (expected: ich, fda or mfds)"
 		),
 	})
 }
@@ -316,7 +336,10 @@ pub async fn export_case(
 	require_permission(&ctx, XML_EXPORT)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let case = CaseBmc::get(&ctx, &mm, id).await?;
-	let profile = resolve_requested_export_profile(query.profile.as_deref())?;
+	let profile = resolve_requested_export_authority(requested_export_authority(
+		query.authority.as_deref(),
+		query.profile.as_deref(),
+	)?)?;
 	let include_profile_suffix = true;
 	let file_name = export_file_name(&case, id, profile, include_profile_suffix);
 	let (case, xml) = match generate_validated_case_xml_for_profile(
@@ -393,7 +416,10 @@ pub async fn export_cases_zip(
 			message: "case_ids is required".to_string(),
 		});
 	}
-	let profile = resolve_requested_export_profile(Some(input.profile.as_str()))?;
+	let profile = resolve_requested_export_authority(requested_export_authority(
+		input.authority.as_deref(),
+		input.profile.as_deref(),
+	)?)?;
 
 	let mut unique_case_ids = Vec::new();
 	let mut seen = HashSet::new();

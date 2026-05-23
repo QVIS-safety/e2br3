@@ -306,6 +306,64 @@ async fn test_single_export_uses_explicit_profile() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_single_export_uses_explicit_authority() -> Result<()> {
+	std::env::set_var("E2BR3_EXPORT_VALIDATE_FDA", "0");
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let safety_report_id = format!("SR-APPENDIX-AUTHORITY-{}", Uuid::new_v4());
+	let case_id = insert_validated_raw_case(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		&safety_report_id,
+	)
+	.await?;
+
+	let response = get_response(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/xml?authority=mfds"),
+	)
+	.await?;
+	assert_eq!(response.status(), StatusCode::OK);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_single_export_rejects_conflicting_authority_profile() -> Result<()> {
+	std::env::set_var("E2BR3_EXPORT_VALIDATE_FDA", "0");
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let safety_report_id = format!("SR-APPENDIX-CONFLICT-{}", Uuid::new_v4());
+	let case_id = insert_validated_raw_case(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		&safety_report_id,
+	)
+	.await?;
+
+	let response = get_response(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/xml?authority=fda&profile=mfds"),
+	)
+	.await?;
+	assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_bulk_export_writes_one_xml_for_explicit_profile() -> Result<()> {
 	std::env::set_var("E2BR3_EXPORT_VALIDATE_FDA", "0");
 	let mm = init_test_mm().await?;

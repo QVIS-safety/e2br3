@@ -565,6 +565,31 @@ async fn editor_ci_page_projection_accepts_multiple_profiles() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn editor_ci_page_projection_accepts_multiple_authorities() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-CI-MULTI-AUTHORITY").await?;
+	create_safety_report(&app, &cookie, &case_id, "2", true).await?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI?authorities=fda,mfds"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["authorities"], json!(["fda", "mfds"]));
+	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_ci_page_projection_keeps_profile_context_without_field_visibility(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
@@ -697,6 +722,34 @@ async fn editor_ci_page_patch_accepts_profiles() -> Result<()> {
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_ci_page_patch_accepts_authorities() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-CI-PATCH-AUTHORITIES").await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI"),
+		json!({
+			"authorities": ["fda", "mfds"],
+			"changes": {},
+			"rows": {}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["authorities"], json!(["fda", "mfds"]));
 	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
 	Ok(())
 }
@@ -1729,16 +1782,20 @@ async fn editor_repeatable_pages_have_list_projection_routes() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn editor_page_projections_do_not_embed_full_validation_issues(
-) -> Result<()> {
+async fn editor_page_projections_do_not_embed_full_validation_issues() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
-	let case_id =
-		create_case_for_editor(&app, &cookie, "EDITOR-PROJECTION-CONTRACT", &["ich"])
-			.await?;
+	let case_id = create_case_for_editor(
+		&app,
+		&cookie,
+		"EDITOR-PROJECTION-CONTRACT",
+		&["ich"],
+	)
+	.await?;
 
 	create_safety_report(&app, &cookie, &case_id, "2", true).await?;
 	create_reaction_fixture(&app, &cookie, &case_id).await?;
@@ -1746,7 +1803,9 @@ async fn editor_page_projections_do_not_embed_full_validation_issues(
 	create_drug_fixture(&app, &cookie, &case_id).await?;
 	create_past_drug_history_fixture(&app, &cookie, &case_id).await?;
 
-	for page_id in ["CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH"] {
+	for page_id in [
+		"CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH",
+	] {
 		let (status, body) = get_json(
 			&app,
 			&cookie,

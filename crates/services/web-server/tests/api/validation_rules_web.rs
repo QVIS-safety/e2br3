@@ -123,6 +123,35 @@ async fn test_admin_can_list_validation_rules() -> Result<()> {
 		.any(|rule| rule.get("profile").and_then(Value::as_str) == Some("mfds"));
 	assert!(!contains_mfds, "profile=fda should not include mfds rules");
 
+	let req = Request::builder()
+		.method("GET")
+		.uri("/api/validation/rules?authority=fda")
+		.header("cookie", cookie_header(&token.to_string()))
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"validation rules authority fda status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let value: Value = serde_json::from_slice(&body)?;
+	let authority_rules = value
+		.get("data")
+		.and_then(Value::as_array)
+		.ok_or("missing data array for authority query")?;
+	assert!(
+		authority_rules.iter().any(|rule| {
+			rule.get("authority").and_then(Value::as_str) == Some("fda")
+				&& rule.get("profile").and_then(Value::as_str) == Some("fda")
+		}),
+		"authority=fda should expose authority and legacy profile fields"
+	);
+
 	let fda_contains_create_gate_codes = [
 		"ICH.C.1.1.REQUIRED",
 		"ICH.C.1.3.REQUIRED",

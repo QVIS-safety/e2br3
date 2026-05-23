@@ -42,7 +42,12 @@ impl CaseValidationReportCacheBmc {
 			}
 		};
 		mm.dbx().commit_txn().await?;
-		Ok(row.map(|(Json(report),)| report))
+		Ok(row.map(|(Json(mut report),)| {
+			if report.authority.is_empty() {
+				report.authority = report.profile.clone();
+			}
+			report
+		}))
 	}
 
 	pub async fn upsert(

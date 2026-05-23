@@ -15,12 +15,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub struct ValidationRulesQuery {
+	pub authority: Option<String>,
 	pub profile: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct ValidationRuleDto {
 	pub code: String,
+	pub authority: String,
 	pub profile: String,
 	pub section: String,
 	pub blocking: bool,
@@ -32,8 +34,23 @@ pub struct ValidationRuleDto {
 	pub export_directive: Option<String>,
 }
 
+fn requested_authority(query: &ValidationRulesQuery) -> Result<Option<&str>> {
+	match (query.authority.as_deref(), query.profile.as_deref()) {
+		(Some(authority), Some(profile)) if authority != profile => {
+			Err(Error::BadRequest {
+				message:
+					"conflicting authority parameters: use authority, not legacy profile"
+						.to_string(),
+			})
+		}
+		(Some(authority), _) => Ok(Some(authority)),
+		(None, Some(profile)) => Ok(Some(profile)),
+		(None, None) => Ok(None),
+	}
+}
+
 /// GET /api/validation/rules
-/// Optional query: ?profile=ich|fda|mfds
+/// Optional query: ?authority=ich|fda|mfds
 pub async fn list_validation_rules(
 	State(_mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -43,24 +60,24 @@ pub async fn list_validation_rules(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
 
-	let profile = if let Some(profile) = query.profile.as_deref() {
-		let profile = RegulatoryAuthority::parse(profile).ok_or_else(|| {
+	let authority = if let Some(authority) = requested_authority(&query)? {
+		let authority = RegulatoryAuthority::parse(authority).ok_or_else(|| {
 			Error::BadRequest {
 				message: format!(
-					"invalid validation profile '{profile}' (expected: ich, fda or mfds)"
+					"invalid validation authority '{authority}' (expected: ich, fda or mfds)"
 				),
 			}
 		})?;
-		Some(profile)
+		Some(authority)
 	} else {
 		None
 	};
-	let rules = if let Some(profile) = profile {
-		canonical_rules_for_profile(profile)
+	let rules = if let Some(authority) = authority {
+		canonical_rules_for_profile(authority)
 	} else {
 		canonical_rules_all()
 	};
-	let version = canonical_rules_version(profile);
+	let version = canonical_rules_version(authority);
 	let etag = format!("\"validation-rules-{version}\"");
 
 	let mut response_headers = HeaderMap::new();
@@ -90,6 +107,7 @@ pub async fn list_validation_rules(
 		.into_iter()
 		.map(|rule| ValidationRuleDto {
 			code: rule.code.to_string(),
+			authority: rule.profile.as_str().to_string(),
 			profile: rule.profile.as_str().to_string(),
 			section: rule.section.to_string(),
 			blocking: rule.blocking,

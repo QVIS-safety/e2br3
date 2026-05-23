@@ -528,6 +528,7 @@ struct CaseEditorDirectSectionResponseDoc {
 struct CaseEditorPageProjectionResponseDoc {
 	case_id: String,
 	page_id: String,
+	authorities: Vec<String>,
 	profiles: Vec<String>,
 	saved: bool,
 	required_count: usize,
@@ -541,7 +542,9 @@ struct CaseEditorPageProjectionResponseDoc {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 struct CaseEditorPagePatchRequestDoc {
-	/// Validation/render profiles for page projection authority: ich,fda,mfds.
+	/// Validation/render authorities for page projection: ich,fda,mfds.
+	authorities: Option<Vec<String>>,
+	/// Legacy alias for authorities.
 	profiles: Option<Vec<String>>,
 	#[schema(value_type = Object)]
 	changes: serde_json::Value,
@@ -592,6 +595,7 @@ struct CaseEditorRowDetailResponseDoc {
 	case_id: String,
 	section: Option<String>,
 	row_id: String,
+	authorities: Vec<String>,
 	profiles: Vec<String>,
 	#[schema(value_type = Object)]
 	data: serde_json::Value,
@@ -2358,11 +2362,12 @@ fn get_editor_ci() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Case identification page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2380,7 +2385,7 @@ fn get_editor_ci_page() {}
 	request_body = CaseEditorPagePatchRequestDoc,
 	responses(
 		(status = 200, description = "Updated case identification page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid patch or profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid patch or authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2394,11 +2399,12 @@ fn patch_editor_ci_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Reporter page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2414,7 +2420,7 @@ fn get_editor_rp_page() {}
 	request_body = CaseEditorPagePatchRequestDoc,
 	responses(
 		(status = 200, description = "Updated reporter page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid patch or profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid patch or authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2428,11 +2434,12 @@ fn patch_editor_rp_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Sender page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2448,7 +2455,7 @@ fn get_editor_sd_page() {}
 	request_body = CaseEditorPagePatchRequestDoc,
 	responses(
 		(status = 200, description = "Updated sender page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid patch or profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid patch or authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2462,11 +2469,12 @@ fn patch_editor_sd_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Literature references page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2482,7 +2490,7 @@ fn get_editor_lr_page() {}
 	request_body = CaseEditorPagePatchRequestDoc,
 	responses(
 		(status = 200, description = "Updated literature references page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid patch or profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid patch or authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2496,11 +2504,12 @@ fn patch_editor_lr_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Study information page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2516,7 +2525,7 @@ fn get_editor_si_page() {}
 	request_body = CaseEditorPagePatchRequestDoc,
 	responses(
 		(status = 200, description = "Updated study information page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid patch or profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid patch or authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2530,11 +2539,12 @@ fn patch_editor_si_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Patient demographics page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2550,7 +2560,7 @@ fn get_editor_dm_page() {}
 	request_body = CaseEditorPagePatchRequestDoc,
 	responses(
 		(status = 200, description = "Updated patient demographics page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid patch or profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid patch or authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2564,11 +2574,12 @@ fn patch_editor_dm_page() {}
 	security(("auth_token" = [])),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Narrative page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2584,7 +2595,7 @@ fn get_editor_nr_page() {}
 	request_body = CaseEditorPagePatchRequestDoc,
 	responses(
 		(status = 200, description = "Updated narrative page projection", body = CaseEditorPageProjectionResponseDoc),
-		(status = 400, description = "Invalid patch or profile context", body = ErrorResponse),
+		(status = 400, description = "Invalid patch or authority context", body = ErrorResponse),
 		(status = 403, description = "Permission denied", body = ErrorResponse),
 		(status = 404, description = "Case not found", body = ErrorResponse)
 	)
@@ -2600,7 +2611,8 @@ fn patch_editor_nr_page() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Past drug history page row projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2619,7 +2631,8 @@ fn get_editor_dh_page() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Reaction page row projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2638,7 +2651,8 @@ fn get_editor_ae_page() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Lab test page row projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2657,7 +2671,8 @@ fn get_editor_lb_page() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Drug page row projection", body = CaseEditorPageProjectionResponseDoc),
@@ -2677,7 +2692,8 @@ fn get_editor_dg_page() {}
 	params(
 		("case_id" = String, Path, description = "Case ID"),
 		("row_id" = String, Path, description = "Past drug history row ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Past drug history page row detail", body = CaseEditorRowDetailResponseDoc),
@@ -2698,7 +2714,8 @@ fn get_editor_dh_page_row() {}
 	params(
 		("case_id" = String, Path, description = "Case ID"),
 		("row_id" = String, Path, description = "Reaction row ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Reaction page row detail", body = CaseEditorRowDetailResponseDoc),
@@ -2719,7 +2736,8 @@ fn get_editor_ae_page_row() {}
 	params(
 		("case_id" = String, Path, description = "Case ID"),
 		("row_id" = String, Path, description = "Test result row ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Lab test page row detail", body = CaseEditorRowDetailResponseDoc),
@@ -2740,7 +2758,8 @@ fn get_editor_lb_page_row() {}
 	params(
 		("case_id" = String, Path, description = "Case ID"),
 		("row_id" = String, Path, description = "Drug row ID"),
-		("profiles" = Option<String>, Query, description = "Comma-separated validation/render profiles for page projection authority: ich,fda,mfds")
+		("authorities" = Option<String>, Query, description = "Comma-separated validation/render authorities: ich,fda,mfds"),
+		("profiles" = Option<String>, Query, description = "Legacy alias for authorities")
 	),
 	responses(
 		(status = 200, description = "Drug page row detail", body = CaseEditorRowDetailResponseDoc),
@@ -3371,7 +3390,8 @@ fn list_case_versions() {}
 	),
 	params(
 		("case_id" = String, Path, description = "Case ID"),
-		("profile" = Option<String>, Query, description = "Validation profile override")
+		("authority" = Option<String>, Query, description = "Validation authority override: ich, fda, or mfds"),
+		("profile" = Option<String>, Query, description = "Legacy alias for authority")
 	),
 	responses((status = 200, description = "Case validation report", body = GenericDataResponse))
 )]
@@ -3432,7 +3452,8 @@ fn list_case_link_options() {}
 	),
 	params(
 		("id" = String, Path, description = "Case ID"),
-		("profile" = Option<String>, Query, description = "Authority-specific export profile: ich, fda, or mfds. Must be selected on the case.")
+		("authority" = Option<String>, Query, description = "Export authority: ich, fda, or mfds. Must be selected on the case."),
+		("profile" = Option<String>, Query, description = "Legacy alias for authority")
 	),
 	responses((status = 200, description = "Case XML export"))
 )]
@@ -3507,7 +3528,11 @@ fn list_case_submissions() {}
 	security(
 		("auth_token" = [])
 	),
-	params(("activeOnly" = Option<bool>, Query, description = "Filter active templates only")),
+	params(
+		("entityType" = Option<String>, Query, description = "Presave entity type: sender,receiver,product,reporter,study,narrative"),
+		("authority" = Option<String>, Query, description = "Regulatory authority filter: ich,fda,mfds. When set, global templates are included by default."),
+		("includeGlobal" = Option<bool>, Query, description = "Include global templates when authority is set")
+	),
 	responses((status = 200, description = "Presave templates", body = GenericDataResponse))
 )]
 fn list_presave_templates() {}
@@ -3924,13 +3949,17 @@ mod tests {
 	use utoipa::OpenApi;
 
 	#[test]
-	fn case_editor_page_projection_documents_profiles_contract() {
+	fn case_editor_page_projection_documents_authorities_contract() {
 		let doc = serde_json::to_value(ApiDoc::openapi()).expect("openapi json");
 		let schema = &doc["components"]["schemas"]
 			["CaseEditorPageProjectionResponseDoc"]["properties"];
 		assert!(
+			schema.get("authorities").is_some(),
+			"page projection response schema must expose authorities: {schema}"
+		);
+		assert!(
 			schema.get("profiles").is_some(),
-			"page projection response schema must expose profiles: {schema}"
+			"page projection response schema must expose legacy profiles: {schema}"
 		);
 
 		let ci_get_params = doc["paths"]["/api/cases/{case_id}/editor/pages/CI"]
@@ -3938,8 +3967,12 @@ mod tests {
 			.as_array()
 			.expect("CI GET params");
 		assert!(
+			ci_get_params.iter().any(|param| param["name"] == "authorities"),
+			"CI page projection GET must document authorities query parameter: {ci_get_params:?}"
+		);
+		assert!(
 			ci_get_params.iter().any(|param| param["name"] == "profiles"),
-			"CI page projection GET must document profiles query parameter: {ci_get_params:?}"
+			"CI page projection GET must document legacy profiles query parameter: {ci_get_params:?}"
 		);
 		assert!(
 			ci_get_params
@@ -3951,8 +3984,12 @@ mod tests {
 		let patch_schema = &doc["components"]["schemas"]
 			["CaseEditorPagePatchRequestDoc"]["properties"];
 		assert!(
+			patch_schema.get("authorities").is_some(),
+			"page patch request schema must expose authorities body field: {patch_schema}"
+		);
+		assert!(
 			patch_schema.get("profiles").is_some(),
-			"page patch request schema must expose profiles body field: {patch_schema}"
+			"page patch request schema must expose legacy profiles body field: {patch_schema}"
 		);
 		assert!(
 			patch_schema.get(&["appen", "dix"].concat()).is_none(),
@@ -3962,8 +3999,12 @@ mod tests {
 		let row_schema = &doc["components"]["schemas"]
 			["CaseEditorRowDetailResponseDoc"]["properties"];
 		assert!(
+			row_schema.get("authorities").is_some(),
+			"page row response schema must expose authorities field: {row_schema}"
+		);
+		assert!(
 			row_schema.get("profiles").is_some(),
-			"page row response schema must expose profiles field: {row_schema}"
+			"page row response schema must expose legacy profiles field: {row_schema}"
 		);
 		assert!(
 			row_schema

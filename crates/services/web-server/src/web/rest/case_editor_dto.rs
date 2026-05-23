@@ -79,6 +79,7 @@ pub struct CaseEditorDirectSectionResponse {
 pub struct CaseEditorPageProjectionResponse {
 	pub case_id: Uuid,
 	pub page_id: &'static str,
+	pub authorities: Vec<String>,
 	pub profiles: Vec<String>,
 	pub saved: bool,
 	pub required_count: usize,
@@ -117,6 +118,7 @@ pub struct CaseEditorFieldIssue {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CaseEditorPagePatchRequest {
+	pub authorities: Option<Vec<String>>,
 	pub profiles: Option<Vec<String>>,
 	#[serde(default)]
 	pub changes: BTreeMap<String, CaseEditorFieldPatch>,

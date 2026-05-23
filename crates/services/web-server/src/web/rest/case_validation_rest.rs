@@ -19,19 +19,35 @@ use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct ValidationQuery {
+	pub authority: Option<String>,
 	pub profile: Option<String>,
 }
 
-async fn resolve_profile(
+fn requested_authority(query: &ValidationQuery) -> Result<Option<&str>> {
+	match (query.authority.as_deref(), query.profile.as_deref()) {
+		(Some(authority), Some(profile)) if authority != profile => {
+			Err(Error::BadRequest {
+				message:
+					"conflicting authority parameters: use authority, not legacy profile"
+						.to_string(),
+			})
+		}
+		(Some(authority), _) => Ok(Some(authority)),
+		(None, Some(profile)) => Ok(Some(profile)),
+		(None, None) => Ok(None),
+	}
+}
+
+async fn resolve_authority(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
-	profile: Option<&str>,
+	authority: Option<&str>,
 ) -> Result<RegulatoryAuthority> {
-	if let Some(value) = profile {
+	if let Some(value) = authority {
 		return RegulatoryAuthority::parse(value).ok_or_else(|| Error::BadRequest {
 			message: format!(
-				"invalid validation profile '{value}' (expected: ich, fda or mfds)"
+				"invalid validation profile or authority '{value}' (expected: ich, fda or mfds)"
 			),
 		});
 	}
@@ -70,17 +86,21 @@ pub async fn validate_case(
 	require_permission(&ctx, CASE_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let profile =
-		resolve_profile(&ctx, &mm, case_id, query.profile.as_deref()).await?;
+	let authority =
+		resolve_authority(&ctx, &mm, case_id, requested_authority(&query)?).await?;
 
-	if let Some(report) =
-		CaseValidationReportCacheBmc::get_fresh(&ctx, &mm, case_id, profile.as_str())
-			.await?
+	if let Some(report) = CaseValidationReportCacheBmc::get_fresh(
+		&ctx,
+		&mm,
+		case_id,
+		authority.as_str(),
+	)
+	.await?
 	{
 		return Ok((StatusCode::OK, Json(DataRestResult { data: report })));
 	}
 
-	let report = validate_case_for_profile(&ctx, &mm, case_id, profile).await?;
+	let report = validate_case_for_profile(&ctx, &mm, case_id, authority).await?;
 	CaseValidationSummaryBmc::upsert_for_reports(
 		&ctx,
 		&mm,

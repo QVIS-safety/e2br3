@@ -39,13 +39,9 @@ const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
 
 // -- Public helpers (used by sibling modules)
 
-pub fn parse_appendix_profile_or_bad_request(
-	value: &str,
-) -> Result<RegulatoryAuthority> {
+pub fn parse_authority_or_bad_request(value: &str) -> Result<RegulatoryAuthority> {
 	RegulatoryAuthority::parse(value).ok_or_else(|| Error::BadRequest {
-		message: format!(
-			"invalid appendix profile '{value}' (expected: ich, fda or mfds)"
-		),
+		message: format!("invalid authority '{value}' (expected: ich, fda or mfds)"),
 	})
 }
 

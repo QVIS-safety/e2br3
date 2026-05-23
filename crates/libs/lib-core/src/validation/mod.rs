@@ -83,6 +83,8 @@ pub struct ValidationSubsectionSummary {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaseValidationReport {
+	#[serde(default)]
+	pub authority: String,
 	pub profile: String,
 	pub case_id: Uuid,
 	pub ok: bool,
@@ -191,7 +193,7 @@ pub fn push_issue_if_condition_violated(
 }
 
 pub fn build_report(
-	profile: RegulatoryAuthority,
+	authority: RegulatoryAuthority,
 	case_id: Uuid,
 	issues: Vec<ValidationIssue>,
 ) -> CaseValidationReport {
@@ -236,8 +238,10 @@ pub fn build_report(
 			},
 		)
 		.collect();
+	let authority = authority.as_str().to_string();
 	CaseValidationReport {
-		profile: profile.as_str().to_string(),
+		authority: authority.clone(),
+		profile: authority,
 		case_id,
 		ok: blocking_count == 0,
 		blocking_count,

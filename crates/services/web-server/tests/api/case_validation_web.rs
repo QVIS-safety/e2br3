@@ -807,6 +807,58 @@ async fn test_validation_supports_mfds_profile() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_validation_supports_mfds_authority() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+	create_sender(&app, &cookie, case_id, "3").await?;
+
+	let (status, body) = get_validation(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation?authority=mfds"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK);
+	assert_eq!(body["data"]["authority"], "mfds");
+	assert_eq!(body["data"]["profile"], "mfds");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_validation_rejects_conflicting_authority_profile() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let (status, body) = get_validation(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation?authority=fda&profile=mfds"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST);
+	assert!(
+		body.to_string()
+			.contains("conflicting authority parameters"),
+		"unexpected body={body}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_validation_rejects_unknown_profile() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
