@@ -107,7 +107,6 @@ pub fn router() -> Router {
 		get_case_narrative,
 		list_case_versions,
 		validate_case,
-		validate_case_all,
 		list_case_xml_export_history,
 		list_xml_export_history,
 		download_xml_export_history_error,
@@ -3377,18 +3376,6 @@ fn list_case_versions() {}
 	responses((status = 200, description = "Case validation report", body = GenericDataResponse))
 )]
 fn validate_case() {}
-
-#[utoipa::path(
-	get,
-	path = "/api/cases/{case_id}/validation/all",
-	tag = "case-subresources",
-	security(
-		("auth_token" = [])
-	),
-	params(("case_id" = String, Path, description = "Case ID")),
-	responses((status = 200, description = "All profile validation report", body = GenericDataResponse))
-)]
-fn validate_case_all() {}
 
 #[utoipa::path(
 	get,

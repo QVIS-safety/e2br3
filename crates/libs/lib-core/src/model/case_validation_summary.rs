@@ -53,12 +53,19 @@ impl CaseValidationSummaryBmc {
 		case_id: Uuid,
 		reports: &[CaseValidationReport],
 	) -> Result<()> {
+		let appendices = reports
+			.iter()
+			.map(|report| report.profile.as_str())
+			.collect::<Vec<_>>();
 		mm.dbx()
 			.execute(
 				sqlx::query(
-					"DELETE FROM case_validation_summaries WHERE case_id = $1",
+					"DELETE FROM case_validation_summaries
+					  WHERE case_id = $1
+					    AND appendix = ANY($2)",
 				)
-				.bind(case_id),
+				.bind(case_id)
+				.bind(&appendices),
 			)
 			.await?;
 

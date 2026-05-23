@@ -1976,7 +1976,7 @@ async fn editor_repeatable_page_row_create_and_delete_mark_validation_cache_stal
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation/all?profiles=fda"),
+		&format!("/api/cases/{case_id}/validation?profile=fda"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
@@ -2014,7 +2014,7 @@ async fn editor_repeatable_page_row_create_and_delete_mark_validation_cache_stal
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation/all?profiles=fda"),
+		&format!("/api/cases/{case_id}/validation?profile=fda"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");

@@ -630,10 +630,6 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(case_validation_rest::validate_case),
 	)
 	.route(
-		"/cases/{case_id}/validation/all",
-		get(case_validation_rest::validate_case_all),
-	)
-	.route(
 		"/cases/{id}/exports/history",
 		get(case_export_rest::list_case_xml_export_history),
 	)

@@ -1199,7 +1199,7 @@ async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()>
 
 #[serial]
 #[tokio::test]
-async fn test_validation_all_uses_explicit_profiles() -> Result<()> {
+async fn test_single_profile_validation_caches_summary() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -1229,17 +1229,13 @@ async fn test_validation_all_uses_explicit_profiles() -> Result<()> {
 	let (status, body) = get_validation(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation/all?profiles=fda,mfds,fda"),
+		&format!("/api/cases/{case_id}/validation?profile=fda"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["profiles"], json!(["fda", "mfds"]));
-	assert_eq!(
-		body["data"]["reports"].as_array().map(Vec::len),
-		Some(2),
-		"{body:?}"
-	);
+	assert_eq!(body["data"]["profile"], json!("fda"));
+
 	Ok(())
 }
 
