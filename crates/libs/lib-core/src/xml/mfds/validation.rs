@@ -1,6 +1,7 @@
 use crate::ctx::Ctx;
 use crate::model::{ModelManager, Result};
-use crate::validation::{CaseValidationReport, ValidationProfile};
+use crate::regulatory::RegulatoryAuthority;
+use crate::validation::CaseValidationReport;
 use sqlx::types::Uuid;
 
 pub async fn validate_case(
@@ -12,7 +13,7 @@ pub async fn validate_case(
 		ctx,
 		mm,
 		case_id,
-		ValidationProfile::Mfds,
+		RegulatoryAuthority::Mfds,
 	)
 	.await
 }

@@ -2,8 +2,8 @@ use crate::validation::{
 	has_patient_initials, has_text, is_mfds_domestic_receiver,
 	is_mfds_foreign_postmarket_receiver, push_issue_by_code,
 	push_issue_if_conditioned_value_invalid, should_require_patient_initials,
-	FdaValidationContext, MfdsValidationContext, RuleFacts, ValidationContext,
-	ValidationIssue, ValidationProfile,
+	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority, RuleFacts,
+	ValidationContext, ValidationIssue,
 };
 
 fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
@@ -16,17 +16,17 @@ fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
 
 pub(crate) fn collect(
 	issues: &mut Vec<ValidationIssue>,
-	profile: ValidationProfile,
+	profile: RegulatoryAuthority,
 	validation_ctx: &ValidationContext,
 	fda_ctx: Option<&FdaValidationContext>,
 	mfds_ctx: Option<&MfdsValidationContext>,
 ) {
 	let _ = fda_ctx;
 	collect_ich_issues(validation_ctx, issues);
-	if profile == ValidationProfile::Fda {
+	if profile == RegulatoryAuthority::Fda {
 		collect_fda_issues(validation_ctx, issues);
 	}
-	if profile == ValidationProfile::Mfds {
+	if profile == RegulatoryAuthority::Mfds {
 		if let Some(mfds_ctx) = mfds_ctx {
 			collect_mfds_issues(validation_ctx, mfds_ctx, issues);
 		}

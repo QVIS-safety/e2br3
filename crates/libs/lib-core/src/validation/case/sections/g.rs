@@ -5,8 +5,8 @@ use crate::validation::{
 	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
 	list_drug_characteristics, push_issue_by_code,
 	push_issue_if_conditioned_value_invalid, FdaValidationContext,
-	MfdsValidationContext, RuleFacts, ValidationContext, ValidationIssue,
-	ValidationProfile,
+	MfdsValidationContext, RegulatoryAuthority, RuleFacts, ValidationContext,
+	ValidationIssue,
 };
 
 fn normalize_code(raw: Option<&str>) -> String {
@@ -55,7 +55,7 @@ fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
 
 pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
-	profile: ValidationProfile,
+	profile: RegulatoryAuthority,
 	mm: &ModelManager,
 	validation_ctx: &ValidationContext,
 	fda_ctx: Option<&FdaValidationContext>,
@@ -64,11 +64,11 @@ pub(crate) async fn collect(
 	let _ = fda_ctx;
 	collect_ich_issues(validation_ctx, issues);
 	match profile {
-		ValidationProfile::Ich => {}
-		ValidationProfile::Fda => {
+		RegulatoryAuthority::Ich => {}
+		RegulatoryAuthority::Fda => {
 			collect_fda_issues(mm, validation_ctx, issues).await?
 		}
-		ValidationProfile::Mfds => {
+		RegulatoryAuthority::Mfds => {
 			if let Some(mfds_ctx) = mfds_ctx {
 				collect_mfds_issues(validation_ctx, mfds_ctx, issues);
 			}

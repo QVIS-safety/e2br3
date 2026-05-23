@@ -1,4 +1,3 @@
-mod authority;
 mod c_reporter_policy;
 mod c_safety_report_policy;
 pub mod case;
@@ -15,7 +14,7 @@ pub mod xml;
 
 pub use self::xml::export_rules::*;
 pub use self::xml::shared_specs::*;
-pub use authority::*;
+pub use crate::regulatory::*;
 pub use c_reporter_policy::has_any_primary_source_content;
 pub use c_safety_report_policy::{
 	has_report_type, should_clear_combination_product_null_flavor_on_value,
@@ -55,33 +54,6 @@ pub use mfds_context::{
 use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
 use std::collections::BTreeMap;
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum ValidationProfile {
-	Ich,
-	Fda,
-	Mfds,
-}
-
-impl ValidationProfile {
-	pub fn as_str(self) -> &'static str {
-		match self {
-			Self::Ich => "ich",
-			Self::Fda => "fda",
-			Self::Mfds => "mfds",
-		}
-	}
-
-	pub fn parse(value: &str) -> Option<Self> {
-		match value.trim().to_ascii_lowercase().as_str() {
-			"ich" => Some(Self::Ich),
-			"fda" => Some(Self::Fda),
-			"mfds" => Some(Self::Mfds),
-			_ => None,
-		}
-	}
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ValidationIssue {
@@ -219,7 +191,7 @@ pub fn push_issue_if_condition_violated(
 }
 
 pub fn build_report(
-	profile: ValidationProfile,
+	profile: RegulatoryAuthority,
 	case_id: Uuid,
 	issues: Vec<ValidationIssue>,
 ) -> CaseValidationReport {

@@ -5,7 +5,7 @@ use crate::model::{ModelManager, Result};
 use crate::validation::{
 	build_report, load_base_validation_context, load_fda_validation_context,
 	load_mfds_validation_context, CaseValidationReport, FdaValidationContext,
-	MfdsValidationContext, RegulatoryAuthority, ValidationProfile,
+	MfdsValidationContext, RegulatoryAuthority,
 };
 use sqlx::types::Uuid;
 
@@ -13,7 +13,7 @@ pub async fn validate_case_for_profile(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
-	profile: ValidationProfile,
+	profile: RegulatoryAuthority,
 ) -> Result<CaseValidationReport> {
 	let reports = validate_case_for_profiles(ctx, mm, case_id, &[profile]).await?;
 	Ok(reports
@@ -30,7 +30,7 @@ pub async fn validate_case_for_profiles(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
-	profiles: &[ValidationProfile],
+	profiles: &[RegulatoryAuthority],
 ) -> Result<Vec<CaseValidationReport>> {
 	if profiles.is_empty() {
 		return Ok(Vec::new());
@@ -38,12 +38,8 @@ pub async fn validate_case_for_profiles(
 
 	let validation_ctx = load_base_validation_context(ctx, mm, case_id).await?;
 
-	let needs_fda = profiles.iter().any(|p| {
-		RegulatoryAuthority::from_validation_profile(*p).requires_fda_context()
-	});
-	let needs_mfds = profiles.iter().any(|p| {
-		RegulatoryAuthority::from_validation_profile(*p).requires_mfds_context()
-	});
+	let needs_fda = profiles.iter().any(|p| p.requires_fda_context());
+	let needs_mfds = profiles.iter().any(|p| p.requires_mfds_context());
 
 	let fda_ctx: Option<FdaValidationContext> = if needs_fda {
 		Some(load_fda_validation_context(mm, case_id).await?)

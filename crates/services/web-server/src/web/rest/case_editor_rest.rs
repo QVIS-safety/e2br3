@@ -73,7 +73,7 @@ use lib_core::model::test_result::{
 	TestResultBmc, TestResultForCreate, TestResultForUpdate,
 };
 use lib_core::model::ModelManager;
-use lib_core::validation::ValidationProfile;
+use lib_core::regulatory::RegulatoryAuthority;
 use lib_rest_core::prelude::*;
 use lib_rest_core::Error;
 use lib_web::middleware::mw_auth::CtxW;
@@ -122,9 +122,9 @@ pub struct CaseEditorPageProjectionQuery {
 	profiles: Option<String>,
 }
 
-fn parse_editor_profiles(value: Option<&str>) -> Result<Vec<ValidationProfile>> {
+fn parse_editor_profiles(value: Option<&str>) -> Result<Vec<RegulatoryAuthority>> {
 	let Some(value) = value else {
-		return Ok(vec![ValidationProfile::Ich]);
+		return Ok(vec![RegulatoryAuthority::Ich]);
 	};
 	let mut profiles = Vec::new();
 	for raw in value
@@ -133,7 +133,7 @@ fn parse_editor_profiles(value: Option<&str>) -> Result<Vec<ValidationProfile>> 
 		.filter(|raw| !raw.is_empty())
 	{
 		let profile =
-			ValidationProfile::parse(raw).ok_or_else(|| Error::BadRequest {
+			RegulatoryAuthority::parse(raw).ok_or_else(|| Error::BadRequest {
 				message: format!(
 				"invalid validation profile '{raw}' (expected: ich, fda or mfds)"
 			),
@@ -143,13 +143,13 @@ fn parse_editor_profiles(value: Option<&str>) -> Result<Vec<ValidationProfile>> 
 		}
 	}
 	if profiles.is_empty() {
-		Ok(vec![ValidationProfile::Ich])
+		Ok(vec![RegulatoryAuthority::Ich])
 	} else {
 		Ok(profiles)
 	}
 }
 
-fn profile_strings(profiles: &[ValidationProfile]) -> Vec<String> {
+fn profile_strings(profiles: &[RegulatoryAuthority]) -> Vec<String> {
 	profiles
 		.iter()
 		.map(|profile| profile.as_str().to_string())
@@ -170,7 +170,7 @@ fn validate_request_projection_context(
 
 fn editor_projection_context(
 	requested_profiles: Option<String>,
-) -> Result<Vec<ValidationProfile>> {
+) -> Result<Vec<RegulatoryAuthority>> {
 	parse_editor_profiles(requested_profiles.as_deref())
 }
 

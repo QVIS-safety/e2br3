@@ -8,12 +8,12 @@ pub(crate) mod n;
 
 use crate::model::{ModelManager, Result};
 use crate::validation::{
-	FdaValidationContext, MfdsValidationContext, ValidationContext, ValidationIssue,
-	ValidationProfile,
+	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority,
+	ValidationContext, ValidationIssue,
 };
 
 pub(crate) async fn collect_section_issues(
-	profile: ValidationProfile,
+	profile: RegulatoryAuthority,
 	mm: &ModelManager,
 	validation_ctx: &ValidationContext,
 	fda_ctx: Option<&FdaValidationContext>,

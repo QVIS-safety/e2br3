@@ -19,7 +19,7 @@ use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SafetyReportIdentificationForCreate,
 };
 use lib_core::model::ModelManager;
-use lib_core::validation::ValidationProfile;
+use lib_core::regulatory::RegulatoryAuthority;
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
@@ -316,7 +316,7 @@ pub async fn create_case_from_intake(
 		return Err(Error::BadRequest { message });
 	}
 
-	let profile_enum = ValidationProfile::Fda;
+	let profile_enum = RegulatoryAuthority::Fda;
 
 	let generated_case_number = if safety_report_id.trim().is_empty() {
 		let generated = generate_case_number(&ctx, &mm)

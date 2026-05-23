@@ -8,7 +8,7 @@ use lib_core::model::case::CaseBmc;
 use lib_core::model::xml_export_history::{
 	XmlExportHistoryBmc, XmlExportHistoryRecord,
 };
-use lib_core::validation::{RegulatoryAuthority, ValidationProfile};
+use lib_core::regulatory::RegulatoryAuthority;
 use lib_core::xml::{
 	export_case_xml_with_options, validate_e2b_xml, validate_e2b_xml_business,
 	ExportXmlOptions,
@@ -82,19 +82,18 @@ pub fn message_sender_identifier() -> String {
 		.unwrap_or_else(|_| "DSJP".to_string())
 }
 
-pub fn message_receiver_identifier(profile: ValidationProfile) -> String {
-	let authority = RegulatoryAuthority::from_validation_profile(profile);
-	let env_name = match authority {
+pub fn message_receiver_identifier(profile: RegulatoryAuthority) -> String {
+	let env_name = match profile {
 		RegulatoryAuthority::Fda => "E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA",
 		RegulatoryAuthority::Ich => "E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH",
 		RegulatoryAuthority::Mfds => "E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS",
 	};
 	std::env::var(env_name).unwrap_or_else(|_| {
-		authority.default_message_receiver_identifier().to_string()
+		profile.default_message_receiver_identifier().to_string()
 	})
 }
 
-fn should_validate_export_xml(profile: ValidationProfile) -> bool {
+fn should_validate_export_xml(profile: RegulatoryAuthority) -> bool {
 	if let Ok(value) = std::env::var("E2BR3_EXPORT_VALIDATE_FDA") {
 		if matches!(
 			value.trim().to_ascii_lowercase().as_str(),
@@ -109,10 +108,7 @@ fn should_validate_export_xml(profile: ValidationProfile) -> bool {
 			return true;
 		}
 	}
-	if matches!(
-		RegulatoryAuthority::from_validation_profile(profile),
-		RegulatoryAuthority::Fda
-	) {
+	if matches!(profile, RegulatoryAuthority::Fda) {
 		return true;
 	}
 	match std::env::var("E2BR3_EXPORT_VALIDATE") {
@@ -126,13 +122,13 @@ fn should_validate_export_xml(profile: ValidationProfile) -> bool {
 
 fn resolve_requested_export_profile(
 	requested_profile: Option<&str>,
-) -> Result<ValidationProfile> {
+) -> Result<RegulatoryAuthority> {
 	let Some(raw_profile) = requested_profile else {
 		return Err(Error::BadRequest {
 			message: "profile is required for XML export".to_string(),
 		});
 	};
-	ValidationProfile::parse(raw_profile).ok_or_else(|| Error::BadRequest {
+	RegulatoryAuthority::parse(raw_profile).ok_or_else(|| Error::BadRequest {
 		message: format!(
 			"invalid validation profile '{raw_profile}' (expected: ich, fda or mfds)"
 		),
@@ -157,7 +153,7 @@ async fn export_xml_options(
 fn export_file_name(
 	case: &lib_core::model::case::Case,
 	case_id: Uuid,
-	profile: ValidationProfile,
+	profile: RegulatoryAuthority,
 	include_profile_suffix: bool,
 ) -> String {
 	if include_profile_suffix {
@@ -179,7 +175,7 @@ pub async fn generate_validated_case_xml(
 ) -> Result<(lib_core::model::case::Case, String)> {
 	lib_rest_core::require_case_read_allowed(ctx, mm, id).await?;
 	let case = CaseBmc::get(ctx, mm, id).await?;
-	let profile = ValidationProfile::Fda;
+	let profile = RegulatoryAuthority::Fda;
 	generate_validated_case_xml_for_profile(ctx, mm, id, case, profile).await
 }
 
@@ -188,7 +184,7 @@ pub async fn generate_validated_case_xml_for_profile(
 	mm: &lib_core::model::ModelManager,
 	id: Uuid,
 	case: lib_core::model::case::Case,
-	profile: ValidationProfile,
+	profile: RegulatoryAuthority,
 ) -> Result<(lib_core::model::case::Case, String)> {
 	let ctx_clone = ctx.clone();
 	let mm_clone = mm.clone();

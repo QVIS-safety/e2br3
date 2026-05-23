@@ -6,7 +6,7 @@ use lib_core::model::acs::CASE_READ;
 use lib_core::model::ModelManager;
 use lib_core::validation::{
 	canonical_rules_all, canonical_rules_for_profile, canonical_rules_version,
-	ValidationProfile,
+	RegulatoryAuthority,
 };
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -44,12 +44,13 @@ pub async fn list_validation_rules(
 	require_permission(&ctx, CASE_READ)?;
 
 	let profile = if let Some(profile) = query.profile.as_deref() {
-		let profile =
-			ValidationProfile::parse(profile).ok_or_else(|| Error::BadRequest {
+		let profile = RegulatoryAuthority::parse(profile).ok_or_else(|| {
+			Error::BadRequest {
 				message: format!(
 					"invalid validation profile '{profile}' (expected: ich, fda or mfds)"
 				),
-			})?;
+			}
+		})?;
 		Some(profile)
 	} else {
 		None

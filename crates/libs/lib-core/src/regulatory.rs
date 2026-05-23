@@ -1,4 +1,3 @@
-use crate::validation::ValidationProfile;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -29,22 +28,6 @@ impl RegulatoryAuthority {
 
 	pub fn from_case_profile(value: Option<&str>) -> Option<Self> {
 		value.and_then(Self::parse)
-	}
-
-	pub fn from_validation_profile(profile: ValidationProfile) -> Self {
-		match profile {
-			ValidationProfile::Ich => Self::Ich,
-			ValidationProfile::Fda => Self::Fda,
-			ValidationProfile::Mfds => Self::Mfds,
-		}
-	}
-
-	pub fn to_validation_profile(self) -> ValidationProfile {
-		match self {
-			Self::Ich => ValidationProfile::Ich,
-			Self::Fda => ValidationProfile::Fda,
-			Self::Mfds => ValidationProfile::Mfds,
-		}
 	}
 
 	pub fn default_message_receiver_identifier(self) -> &'static str {

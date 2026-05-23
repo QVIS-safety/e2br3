@@ -1,6 +1,7 @@
 pub mod config;
 pub mod ctx;
 pub mod model;
+pub mod regulatory;
 pub mod serde;
 pub mod validation;
 pub mod xml;

@@ -19,7 +19,8 @@ use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SafetyReportIdentificationForCreate,
 };
 use lib_core::model::ModelManager;
-use lib_core::validation::{validate_case_for_profile, ValidationProfile};
+use lib_core::regulatory::RegulatoryAuthority;
+use lib_core::validation::validate_case_for_profile;
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
@@ -40,8 +41,8 @@ const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
 
 pub fn parse_appendix_profile_or_bad_request(
 	value: &str,
-) -> Result<ValidationProfile> {
-	ValidationProfile::parse(value).ok_or_else(|| Error::BadRequest {
+) -> Result<RegulatoryAuthority> {
+	RegulatoryAuthority::parse(value).ok_or_else(|| Error::BadRequest {
 		message: format!(
 			"invalid appendix profile '{value}' (expected: ich, fda or mfds)"
 		),
@@ -665,7 +666,7 @@ pub async fn mark_case_validated_by_validator(
 	}
 
 	let report =
-		validate_case_for_profile(&ctx, &mm, id, ValidationProfile::Fda).await?;
+		validate_case_for_profile(&ctx, &mm, id, RegulatoryAuthority::Fda).await?;
 	CaseValidationSummaryBmc::upsert_for_reports(&ctx, &mm, id, &[report.clone()])
 		.await?;
 	let total_blocking = report.blocking_count;

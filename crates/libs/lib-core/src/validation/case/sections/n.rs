@@ -1,11 +1,11 @@
 use crate::validation::{
-	push_issue_by_code, push_issue_if_rule_invalid, RuleFacts, ValidationContext,
-	ValidationIssue, ValidationProfile,
+	push_issue_by_code, push_issue_if_rule_invalid, RegulatoryAuthority, RuleFacts,
+	ValidationContext, ValidationIssue,
 };
 
 pub(crate) fn collect(
 	issues: &mut Vec<ValidationIssue>,
-	profile: ValidationProfile,
+	profile: RegulatoryAuthority,
 	validation_ctx: &ValidationContext,
 ) {
 	let _ = profile;

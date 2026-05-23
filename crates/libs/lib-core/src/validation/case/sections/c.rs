@@ -4,7 +4,7 @@ use crate::validation::{
 	is_fda_pre_anda_message_receiver, list_study_registrations, push_issue_by_code,
 	push_issue_if_condition_violated, push_issue_if_conditioned_value_invalid,
 	push_issue_if_rule_invalid, FdaValidationContext, MfdsValidationContext,
-	RuleFacts, ValidationContext, ValidationIssue, ValidationProfile,
+	RegulatoryAuthority, RuleFacts, ValidationContext, ValidationIssue,
 };
 
 fn is_six_digit_numeric(value: Option<&str>) -> bool {
@@ -31,7 +31,7 @@ fn is_later_than(
 
 pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
-	profile: ValidationProfile,
+	profile: RegulatoryAuthority,
 	mm: &ModelManager,
 	validation_ctx: &ValidationContext,
 	fda_ctx: Option<&FdaValidationContext>,
@@ -39,13 +39,13 @@ pub(crate) async fn collect(
 ) -> Result<()> {
 	collect_ich_issues(validation_ctx, issues);
 	match profile {
-		ValidationProfile::Ich => {}
-		ValidationProfile::Fda => {
+		RegulatoryAuthority::Ich => {}
+		RegulatoryAuthority::Fda => {
 			if let Some(fda_ctx) = fda_ctx {
 				collect_fda_issues(mm, validation_ctx, fda_ctx, issues).await?;
 			}
 		}
-		ValidationProfile::Mfds => {
+		RegulatoryAuthority::Mfds => {
 			if let Some(mfds_ctx) = mfds_ctx {
 				collect_mfds_issues(validation_ctx, mfds_ctx, issues);
 			}

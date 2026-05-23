@@ -9,7 +9,7 @@ use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::ModelManager;
 use lib_core::validation::{
 	infer_regulatory_authority_from_receivers, validate_case_for_profile,
-	CaseValidationReport, ValidationProfile,
+	CaseValidationReport, RegulatoryAuthority,
 };
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -27,9 +27,9 @@ async fn resolve_profile(
 	mm: &ModelManager,
 	case_id: Uuid,
 	profile: Option<&str>,
-) -> Result<ValidationProfile> {
+) -> Result<RegulatoryAuthority> {
 	if let Some(value) = profile {
-		return ValidationProfile::parse(value).ok_or_else(|| Error::BadRequest {
+		return RegulatoryAuthority::parse(value).ok_or_else(|| Error::BadRequest {
 			message: format!(
 				"invalid validation profile '{value}' (expected: ich, fda or mfds)"
 			),
@@ -55,7 +55,7 @@ async fn resolve_profile(
 			.map(|h| h.message_receiver_identifier.as_str()),
 	);
 
-	Ok(authority.to_validation_profile())
+	Ok(authority)
 }
 
 /// GET /api/cases/{case_id}/validation
