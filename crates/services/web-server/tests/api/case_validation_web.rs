@@ -497,6 +497,66 @@ async fn get_validation(
 	Ok((status, value))
 }
 
+async fn patch_json(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("PATCH")
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = serde_json::from_slice::<Value>(&body)
+		.unwrap_or_else(|_| json!({ "raw": String::from_utf8_lossy(&body) }));
+	Ok((status, value))
+}
+
+async fn full_validation_report_cache_stale(
+	mm: &lib_core::model::ModelManager,
+	user_id: Uuid,
+	org_id: Uuid,
+	case_id: Uuid,
+	profile: &str,
+) -> Result<Option<bool>> {
+	mm.dbx().begin_txn().await?;
+	if let Err(err) =
+		set_full_context_dbx(mm.dbx(), user_id, org_id, ROLE_SPONSOR_ADMIN_CRO).await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
+	let row = match mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, (bool,)>(
+				r#"
+				SELECT stale
+				  FROM case_validation_reports
+				 WHERE case_id = $1
+				   AND profile = $2
+				"#,
+			)
+			.bind(case_id)
+			.bind(profile),
+		)
+		.await
+	{
+		Ok(row) => row,
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			return Err(err.into());
+		}
+	};
+	mm.dbx().commit_txn().await?;
+	Ok(row.map(|(stale,)| stale))
+}
+
 async fn update_case_status(
 	app: &axum::Router,
 	cookie: &str,
@@ -1318,6 +1378,68 @@ async fn test_validation_reuses_fresh_full_report_cache() -> Result<()> {
 			})
 			.unwrap_or(false),
 		"expected validation response to include cached sentinel message, body={second_body}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_edit_marks_full_validation_report_cache_stale() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let (status, body) = get_validation(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation?profile=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["profile"], json!("ich"));
+	assert_eq!(
+		full_validation_report_cache_stale(
+			&mm,
+			seed.admin.id,
+			seed.org_id,
+			case_id,
+			"ich",
+		)
+		.await?,
+		Some(false),
+		"validation should populate a fresh full report cache row"
+	);
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI"),
+		json!({
+			"changes": {
+				"reportType": { "value": "3" }
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	assert_eq!(
+		full_validation_report_cache_stale(
+			&mm,
+			seed.admin.id,
+			seed.org_id,
+			case_id,
+			"ich",
+		)
+		.await?,
+		Some(true),
+		"case editor changes should mark full validation report cache stale"
 	);
 
 	Ok(())

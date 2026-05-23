@@ -215,6 +215,19 @@ impl CaseValidationSummaryBmc {
 			let _ = mm.dbx().rollback_txn().await;
 			return Err(err.into());
 		}
+		if let Err(err) = mm
+			.dbx()
+			.execute(
+				sqlx::query(
+					"UPDATE case_validation_reports SET stale = true WHERE case_id = $1",
+				)
+				.bind(case_id),
+			)
+			.await
+		{
+			let _ = mm.dbx().rollback_txn().await;
+			return Err(err.into());
+		}
 		mm.dbx().commit_txn().await?;
 		Ok(())
 	}
