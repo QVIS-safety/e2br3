@@ -55,7 +55,7 @@ impl CaseValidationSummaryBmc {
 	) -> Result<()> {
 		let appendices = reports
 			.iter()
-			.map(|report| report.profile.as_str())
+			.map(|report| report.authority.as_str())
 			.collect::<Vec<_>>();
 		mm.dbx()
 			.execute(
@@ -73,7 +73,7 @@ impl CaseValidationSummaryBmc {
 			Self::upsert_row(
 				mm,
 				case_id,
-				&report.profile,
+				&report.authority,
 				ALL_PAGE_ID,
 				report.blocking_count,
 				report.non_blocking_count,
@@ -85,7 +85,7 @@ impl CaseValidationSummaryBmc {
 				Self::upsert_row(
 					mm,
 					case_id,
-					&report.profile,
+					&report.authority,
 					page_id_for_validation_section(&section.section),
 					section.blocking_count,
 					section.non_blocking_count,

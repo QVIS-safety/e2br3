@@ -9,7 +9,7 @@ pub async fn validate_case(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<CaseValidationReport> {
-	crate::validation::case::validate_case_for_profile(
+	crate::validation::case::validate_case_for_authority(
 		ctx,
 		mm,
 		case_id,

@@ -522,7 +522,7 @@ async fn full_validation_report_cache_stale(
 	user_id: Uuid,
 	org_id: Uuid,
 	case_id: Uuid,
-	profile: &str,
+	authority: &str,
 ) -> Result<Option<bool>> {
 	mm.dbx().begin_txn().await?;
 	if let Err(err) =
@@ -539,11 +539,11 @@ async fn full_validation_report_cache_stale(
 				SELECT stale
 				  FROM case_validation_reports
 				 WHERE case_id = $1
-				   AND profile = $2
+				   AND authority = $2
 				"#,
 			)
 			.bind(case_id)
-			.bind(profile),
+			.bind(authority),
 		)
 		.await
 	{
@@ -765,7 +765,7 @@ async fn test_validation_defaults_to_fda_profile() -> Result<()> {
 			.await?;
 
 	assert_eq!(status, StatusCode::OK);
-	assert_eq!(body["data"]["profile"], "fda");
+	assert_eq!(body["data"]["authority"], "fda");
 	Ok(())
 }
 
@@ -785,12 +785,12 @@ async fn test_validation_supports_mfds_profile() -> Result<()> {
 	let (status, body) = get_validation(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=mfds"),
+		&format!("/api/cases/{case_id}/validation?authority=mfds"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK);
-	assert_eq!(body["data"]["profile"], "mfds");
+	assert_eq!(body["data"]["authority"], "mfds");
 	assert!(
 		body["data"]["issues"]
 			.as_array()
@@ -827,7 +827,7 @@ async fn test_validation_supports_mfds_authority() -> Result<()> {
 
 	assert_eq!(status, StatusCode::OK);
 	assert_eq!(body["data"]["authority"], "mfds");
-	assert_eq!(body["data"]["profile"], "mfds");
+	assert_eq!(body["data"]["authority"], "mfds");
 	Ok(())
 }
 
@@ -844,7 +844,7 @@ async fn test_validation_rejects_conflicting_authority_profile() -> Result<()> {
 	let (status, body) = get_validation(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?authority=fda&profile=mfds"),
+		&format!("/api/cases/{case_id}/validation?authority=fda&authority=mfds"),
 	)
 	.await?;
 
@@ -870,13 +870,13 @@ async fn test_validation_rejects_unknown_profile() -> Result<()> {
 	let (status, body) = get_validation(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=unknown"),
+		&format!("/api/cases/{case_id}/validation?authority=unknown"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::BAD_REQUEST);
 	assert!(
-		body.to_string().contains("invalid validation profile"),
+		body.to_string().contains("invalid validation authority"),
 		"unexpected body={body}"
 	);
 	Ok(())
@@ -1295,7 +1295,7 @@ async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()>
 			.await?;
 
 	assert_eq!(status, StatusCode::OK);
-	assert_eq!(body["data"]["profile"], "mfds");
+	assert_eq!(body["data"]["authority"], "mfds");
 	assert!(
 		body["data"]["issues"]
 			.as_array()
@@ -1305,7 +1305,7 @@ async fn test_validation_infers_mfds_profile_from_batch_receiver() -> Result<()>
 					.any(|issue| issue["code"] == "MFDS.C.3.1.KR.1.REQUIRED")
 			})
 			.unwrap_or(false),
-		"expected MFDS issue from inferred profile, body={body}"
+		"expected MFDS issue from inferred authority, body={body}"
 	);
 	Ok(())
 }
@@ -1342,12 +1342,12 @@ async fn test_single_profile_validation_caches_summary() -> Result<()> {
 	let (status, body) = get_validation(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=fda"),
+		&format!("/api/cases/{case_id}/validation?authority=fda"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["profile"], json!("fda"));
+	assert_eq!(body["data"]["authority"], json!("fda"));
 
 	Ok(())
 }
@@ -1365,11 +1365,11 @@ async fn test_validation_reuses_fresh_full_report_cache() -> Result<()> {
 	create_safety_report(&app, &cookie, case_id).await?;
 	create_sender(&app, &cookie, case_id, "3").await?;
 
-	let validation_uri = format!("/api/cases/{case_id}/validation?profile=fda");
+	let validation_uri = format!("/api/cases/{case_id}/validation?authority=fda");
 	let (status, first_body) =
 		get_validation(&app, &cookie, &validation_uri).await?;
 	assert_eq!(status, StatusCode::OK, "{first_body:?}");
-	assert_eq!(first_body["data"]["profile"], json!("fda"));
+	assert_eq!(first_body["data"]["authority"], json!("fda"));
 
 	let sentinel_message = format!("fresh cache sentinel {}", Uuid::new_v4());
 	let mut cached_report = first_body["data"].clone();
@@ -1404,7 +1404,7 @@ async fn test_validation_reuses_fresh_full_report_cache() -> Result<()> {
 				       stale = false,
 				       generated_at = now()
 				 WHERE case_id = $2
-				   AND profile = 'fda'
+				   AND authority = 'fda'
 				"#,
 			)
 			.bind(sqlx::types::Json(cached_report))
@@ -1450,11 +1450,11 @@ async fn test_case_edit_marks_full_validation_report_cache_stale() -> Result<()>
 	let (status, body) = get_validation(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=ich"),
+		&format!("/api/cases/{case_id}/validation?authority=ich"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["profile"], json!("ich"));
+	assert_eq!(body["data"]["authority"], json!("ich"));
 	assert_eq!(
 		full_validation_report_cache_stale(
 			&mm,
@@ -1720,7 +1720,7 @@ async fn test_c1_date_ordering_business_rules() -> Result<()> {
 	let (status, body) = get_validation(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=ich"),
+		&format!("/api/cases/{case_id}/validation?authority=ich"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");

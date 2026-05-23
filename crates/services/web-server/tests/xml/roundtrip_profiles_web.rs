@@ -15,7 +15,7 @@ use uuid::Uuid;
 #[derive(Clone, Copy)]
 struct RoundtripFixture {
 	filename: &'static str,
-	profile: &'static str,
+	authority: &'static str,
 	require_ok: bool,
 }
 
@@ -236,7 +236,7 @@ async fn ensure_fda_device_characteristics(
 		app,
 		cookie,
 		"GET",
-		&format!("/api/cases/{case_id}/validation?profile=fda"),
+		&format!("/api/cases/{case_id}/validation?authority=fda"),
 		None,
 		Body::empty(),
 	)
@@ -387,17 +387,17 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 	let fixtures = [
 		RoundtripFixture {
 			filename: "FAERS2022Scenario1.xml",
-			profile: "ich",
+			authority: "ich",
 			require_ok: true,
 		},
 		RoundtripFixture {
 			filename: "FAERS2022Scenario2.xml",
-			profile: "fda",
+			authority: "fda",
 			require_ok: true,
 		},
 		RoundtripFixture {
 			filename: "FAERS2022Scenario3.xml",
-			profile: "mfds",
+			authority: "mfds",
 			require_ok: false,
 		},
 	];
@@ -413,7 +413,7 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 		let fixture_path = examples_dir().join(fixture.filename);
 		let mut xml = fs::read_to_string(&fixture_path)?;
 		let unique_safety_report_id =
-			format!("RT-{}-{}", fixture.profile, Uuid::new_v4());
+			format!("RT-{}-{}", fixture.authority, Uuid::new_v4());
 		if let Some(start) = xml.find("extension=\"US-") {
 			if let Some(end_rel) = xml[start + 11..].find('"') {
 				let end = start + 11 + end_rel;
@@ -457,7 +457,7 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			failures.push(format!("{}: {err}", fixture.filename));
 			continue;
 		}
-		if fixture.profile == "fda" {
+		if fixture.authority == "fda" {
 			if let Err(err) =
 				ensure_fda_device_characteristics(&app, &cookie, case_id).await
 			{
@@ -470,8 +470,8 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			&cookie,
 			"GET",
 			&format!(
-				"/api/cases/{case_id}/validation?profile={}",
-				fixture.profile
+				"/api/cases/{case_id}/validation?authority={}",
+				fixture.authority
 			),
 			None,
 			Body::empty(),
@@ -491,8 +491,8 @@ async fn test_roundtrip_fixtures_import_validate_export_revalidate() -> Result<(
 			.unwrap_or(false);
 		if fixture.require_ok && !ok {
 			failures.push(format!(
-				"{}: expected ok=true for profile {}, body={}",
-				fixture.filename, fixture.profile, validation_body
+				"{}: expected ok=true for authority {}, body={}",
+				fixture.filename, fixture.authority, validation_body
 			));
 			continue;
 		}

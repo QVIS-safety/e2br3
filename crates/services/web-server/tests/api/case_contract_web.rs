@@ -369,7 +369,7 @@ async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<(
 	let (status, validation_body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=ich"),
+		&format!("/api/cases/{case_id}/validation?authority=ich"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{validation_body:?}");
@@ -480,7 +480,7 @@ async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()>
 	let (status, validation_body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=ich"),
+		&format!("/api/cases/{case_id}/validation?authority=ich"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{validation_body:?}");
@@ -521,13 +521,13 @@ async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()>
 				&& *blocking as u64 == blocking_count
 				&& *non_blocking as u64 == non_blocking_count
 		),
-		"single-profile validation should cache an appendix aggregate row; rows={summary_rows:?}"
+		"single-authority validation should cache an appendix aggregate row; rows={summary_rows:?}"
 	);
 	assert!(
 		summary_rows
 			.iter()
 			.any(|(appendix, page_id, _, _)| appendix == "ich" && page_id != "ALL"),
-		"single-profile validation should cache appendix page rows; rows={summary_rows:?}"
+		"single-authority validation should cache appendix page rows; rows={summary_rows:?}"
 	);
 
 	let (status, raw_body) = get_raw(
@@ -629,20 +629,20 @@ async fn test_single_profile_validation_caches_each_profile() -> Result<()> {
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=fda"),
+		&format!("/api/cases/{case_id}/validation?authority=fda"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["profile"], json!("fda"));
+	assert_eq!(body["data"]["authority"], json!("fda"));
 
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=mfds"),
+		&format!("/api/cases/{case_id}/validation?authority=mfds"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["profile"], json!("mfds"));
+	assert_eq!(body["data"]["authority"], json!("mfds"));
 
 	let case_uuid = Uuid::parse_str(case_id)?;
 	mm.dbx().begin_txn().await?;

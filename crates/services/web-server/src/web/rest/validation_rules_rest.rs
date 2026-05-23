@@ -5,7 +5,7 @@ use axum::Json;
 use lib_core::model::acs::CASE_READ;
 use lib_core::model::ModelManager;
 use lib_core::validation::{
-	canonical_rules_all, canonical_rules_for_profile, canonical_rules_version,
+	canonical_rules_all, canonical_rules_for_authority, canonical_rules_version,
 	RegulatoryAuthority,
 };
 use lib_rest_core::rest_result::DataRestResult;
@@ -16,14 +16,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize)]
 pub struct ValidationRulesQuery {
 	pub authority: Option<String>,
-	pub profile: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
 pub struct ValidationRuleDto {
 	pub code: String,
 	pub authority: String,
-	pub profile: String,
 	pub section: String,
 	pub blocking: bool,
 	pub severity: String,
@@ -32,21 +30,6 @@ pub struct ValidationRuleDto {
 	pub message: String,
 	pub condition: String,
 	pub export_directive: Option<String>,
-}
-
-fn requested_authority(query: &ValidationRulesQuery) -> Result<Option<&str>> {
-	match (query.authority.as_deref(), query.profile.as_deref()) {
-		(Some(authority), Some(profile)) if authority != profile => {
-			Err(Error::BadRequest {
-				message:
-					"conflicting authority parameters: use authority, not legacy profile"
-						.to_string(),
-			})
-		}
-		(Some(authority), _) => Ok(Some(authority)),
-		(None, Some(profile)) => Ok(Some(profile)),
-		(None, None) => Ok(None),
-	}
 }
 
 /// GET /api/validation/rules
@@ -60,7 +43,7 @@ pub async fn list_validation_rules(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
 
-	let authority = if let Some(authority) = requested_authority(&query)? {
+	let authority = if let Some(authority) = query.authority.as_deref() {
 		let authority = RegulatoryAuthority::parse(authority).ok_or_else(|| {
 			Error::BadRequest {
 				message: format!(
@@ -73,7 +56,7 @@ pub async fn list_validation_rules(
 		None
 	};
 	let rules = if let Some(authority) = authority {
-		canonical_rules_for_profile(authority)
+		canonical_rules_for_authority(authority)
 	} else {
 		canonical_rules_all()
 	};
@@ -107,8 +90,7 @@ pub async fn list_validation_rules(
 		.into_iter()
 		.map(|rule| ValidationRuleDto {
 			code: rule.code.to_string(),
-			authority: rule.profile.as_str().to_string(),
-			profile: rule.profile.as_str().to_string(),
+			authority: rule.authority.as_str().to_string(),
 			section: rule.section.to_string(),
 			blocking: rule.blocking,
 			severity: rule.severity.as_str().to_string(),

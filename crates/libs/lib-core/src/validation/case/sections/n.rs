@@ -5,10 +5,10 @@ use crate::validation::{
 
 pub(crate) fn collect(
 	issues: &mut Vec<ValidationIssue>,
-	profile: RegulatoryAuthority,
+	authority: RegulatoryAuthority,
 	validation_ctx: &ValidationContext,
 ) {
-	let _ = profile;
+	let _ = authority;
 	collect_ich_issues(validation_ctx, issues);
 }
 

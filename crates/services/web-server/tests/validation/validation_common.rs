@@ -1058,12 +1058,12 @@ pub async fn validate_case(
 	app: &Router,
 	cookie: &str,
 	case_id: Uuid,
-	profile: &str,
+	authority: &str,
 ) -> Result<Value> {
 	let (status, value) = get_json(
 		app,
 		cookie,
-		format!("/api/cases/{case_id}/validation?profile={profile}"),
+		format!("/api/cases/{case_id}/validation?authority={authority}"),
 	)
 	.await?;
 	if status != StatusCode::OK {

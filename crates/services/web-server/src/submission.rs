@@ -414,7 +414,7 @@ fn parse_timeout_secs(name: &str, default_secs: u64) -> u64 {
 		.unwrap_or(default_secs)
 }
 
-fn submission_history_export_profile(gateway: &str) -> &'static str {
+fn submission_history_export_authority(gateway: &str) -> &'static str {
 	let gateway = gateway.to_ascii_lowercase();
 	if gateway.contains("mfds") {
 		return SubmissionAuthority::Mfds.as_str();
@@ -1113,14 +1113,14 @@ pub async fn list_submission_history(
 				.map(|ack| format_history_timestamp(ack.received_at))
 				.transpose()?;
 			let gateway = row.gateway;
-			let export_profile = submission_history_export_profile(&gateway);
+			let export_authority = submission_history_export_authority(&gateway);
 			let data_file_name = format!(
 				"{}-{}-{}.xml",
-				row.case_number, row.case_id, export_profile
+				row.case_number, row.case_id, export_authority
 			);
 			let data_file_download_url = format!(
-				"/api/cases/{}/export/xml?profile={}",
-				row.case_id, export_profile
+				"/api/cases/{}/export/xml?authority={}",
+				row.case_id, export_authority
 			);
 			Ok(SubmissionHistoryRecord {
 				submission_id: row.submission_id,

@@ -1010,7 +1010,7 @@ async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<
 	);
 	assert_eq!(
 		item["dataFileDownloadUrl"].as_str(),
-		Some(format!("/api/cases/{case_id}/export/xml?profile=fda").as_str())
+		Some(format!("/api/cases/{case_id}/export/xml?authority=fda").as_str())
 	);
 
 	Ok(())

@@ -98,7 +98,7 @@ async fn test_admin_can_list_validation_rules() -> Result<()> {
 
 	let req = Request::builder()
 		.method("GET")
-		.uri("/api/validation/rules?profile=fda")
+		.uri("/api/validation/rules?authority=fda")
 		.header("cookie", cookie)
 		.body(Body::empty())?;
 	let res = app.clone().oneshot(req).await?;
@@ -116,12 +116,12 @@ async fn test_admin_can_list_validation_rules() -> Result<()> {
 	let rules = value
 		.get("data")
 		.and_then(Value::as_array)
-		.ok_or("missing data array for profile query")?;
+		.ok_or("missing data array for authority query")?;
 	assert!(!rules.is_empty(), "expected non-empty filtered rule list");
 	let contains_mfds = rules
 		.iter()
-		.any(|rule| rule.get("profile").and_then(Value::as_str) == Some("mfds"));
-	assert!(!contains_mfds, "profile=fda should not include mfds rules");
+		.any(|rule| rule.get("authority").and_then(Value::as_str) == Some("mfds"));
+	assert!(!contains_mfds, "authority=fda should not include mfds rules");
 
 	let req = Request::builder()
 		.method("GET")
@@ -147,9 +147,9 @@ async fn test_admin_can_list_validation_rules() -> Result<()> {
 	assert!(
 		authority_rules.iter().any(|rule| {
 			rule.get("authority").and_then(Value::as_str) == Some("fda")
-				&& rule.get("profile").and_then(Value::as_str) == Some("fda")
+				&& rule.get("authority").and_then(Value::as_str) == Some("fda")
 		}),
-		"authority=fda should expose authority and legacy profile fields"
+		"authority=fda should expose authority and legacy authority fields"
 	);
 
 	let fda_contains_create_gate_codes = [
@@ -164,7 +164,7 @@ async fn test_admin_can_list_validation_rules() -> Result<()> {
 			.any(|rule| rule.get("code").and_then(Value::as_str) == Some(code));
 		assert!(
 			present,
-			"profile=fda must include inherited ICH required code {code}"
+			"authority=fda must include inherited ICH required code {code}"
 		);
 	}
 

@@ -8,7 +8,7 @@ use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::ModelManager;
 use lib_core::validation::{
-	infer_regulatory_authority_from_receivers, validate_case_for_profile,
+	infer_regulatory_authority_from_receivers, validate_case_for_authority,
 	CaseValidationReport, RegulatoryAuthority,
 };
 use lib_rest_core::rest_result::DataRestResult;
@@ -20,22 +20,6 @@ use uuid::Uuid;
 #[derive(Debug, Deserialize)]
 pub struct ValidationQuery {
 	pub authority: Option<String>,
-	pub profile: Option<String>,
-}
-
-fn requested_authority(query: &ValidationQuery) -> Result<Option<&str>> {
-	match (query.authority.as_deref(), query.profile.as_deref()) {
-		(Some(authority), Some(profile)) if authority != profile => {
-			Err(Error::BadRequest {
-				message:
-					"conflicting authority parameters: use authority, not legacy profile"
-						.to_string(),
-			})
-		}
-		(Some(authority), _) => Ok(Some(authority)),
-		(None, Some(profile)) => Ok(Some(profile)),
-		(None, None) => Ok(None),
-	}
 }
 
 async fn resolve_authority(
@@ -47,7 +31,7 @@ async fn resolve_authority(
 	if let Some(value) = authority {
 		return RegulatoryAuthority::parse(value).ok_or_else(|| Error::BadRequest {
 			message: format!(
-				"invalid validation profile or authority '{value}' (expected: ich, fda or mfds)"
+				"invalid validation authority '{value}' (expected: ich, fda or mfds)"
 			),
 		});
 	}
@@ -87,7 +71,7 @@ pub async fn validate_case(
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
 	let authority =
-		resolve_authority(&ctx, &mm, case_id, requested_authority(&query)?).await?;
+		resolve_authority(&ctx, &mm, case_id, query.authority.as_deref()).await?;
 
 	if let Some(report) = CaseValidationReportCacheBmc::get_fresh(
 		&ctx,
@@ -100,7 +84,7 @@ pub async fn validate_case(
 		return Ok((StatusCode::OK, Json(DataRestResult { data: report })));
 	}
 
-	let report = validate_case_for_profile(&ctx, &mm, case_id, authority).await?;
+	let report = validate_case_for_authority(&ctx, &mm, case_id, authority).await?;
 	CaseValidationSummaryBmc::upsert_for_reports(
 		&ctx,
 		&mm,

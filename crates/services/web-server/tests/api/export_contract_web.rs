@@ -240,7 +240,7 @@ async fn test_xml_export_comments_setting_controls_comments() -> Result<()> {
 	let response = get_response(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/export/xml?profile=ich"),
+		&format!("/api/cases/{case_id}/export/xml?authority=ich"),
 	)
 	.await?;
 	assert_eq!(response.status(), StatusCode::OK);
@@ -264,7 +264,7 @@ async fn test_xml_export_comments_setting_controls_comments() -> Result<()> {
 	let response = get_response(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/export/xml?profile=ich"),
+		&format!("/api/cases/{case_id}/export/xml?authority=ich"),
 	)
 	.await?;
 	assert_eq!(response.status(), StatusCode::OK);
@@ -296,7 +296,7 @@ async fn test_single_export_uses_explicit_profile() -> Result<()> {
 	let response = get_response(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/export/xml?profile=mfds"),
+		&format!("/api/cases/{case_id}/export/xml?authority=mfds"),
 	)
 	.await?;
 	assert_eq!(response.status(), StatusCode::OK);
@@ -354,7 +354,7 @@ async fn test_single_export_rejects_conflicting_authority_profile() -> Result<()
 	let response = get_response(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/export/xml?authority=fda&profile=mfds"),
+		&format!("/api/cases/{case_id}/export/xml?authority=fda&authority=mfds"),
 	)
 	.await?;
 	assert_eq!(response.status(), StatusCode::BAD_REQUEST);
@@ -384,7 +384,7 @@ async fn test_bulk_export_writes_one_xml_for_explicit_profile() -> Result<()> {
 		&app,
 		&cookie,
 		"/api/cases/export/xml",
-		serde_json::json!({ "case_ids": [case_id], "profile": "mfds" }),
+		serde_json::json!({ "case_ids": [case_id], "authority": "mfds" }),
 	)
 	.await?;
 	assert_eq!(response.status(), StatusCode::OK);
@@ -460,8 +460,8 @@ async fn test_export_history_error_details_download_as_text() -> Result<()> {
 		.as_array()
 		.ok_or("missing export history items")?;
 	assert!(
-		items[0].get("validationProfile").is_none(),
-		"export history must not expose legacy validationProfile: {:?}",
+		items[0].get("validationAuthority").is_none(),
+		"export history must not expose legacy validationAuthority: {:?}",
 		items[0]
 	);
 
@@ -520,7 +520,7 @@ async fn test_failed_single_export_records_error_history() -> Result<()> {
 	let response = get_response(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/export/xml?profile=fda"),
+		&format!("/api/cases/{case_id}/export/xml?authority=fda"),
 	)
 	.await?;
 	assert_eq!(response.status(), StatusCode::BAD_REQUEST);
@@ -556,8 +556,8 @@ async fn test_failed_single_export_records_error_history() -> Result<()> {
 		.ok_or_else(|| format!("missing failed export history item: {body}"))?;
 	assert_eq!(item["status"].as_str(), Some("error"), "{item:?}");
 	assert!(
-		item.get("validationProfile").is_none(),
-		"failed export history must not expose legacy validationProfile: {item:?}"
+		item.get("validationAuthority").is_none(),
+		"failed export history must not expose legacy validationAuthority: {item:?}"
 	);
 	assert_eq!(
 		item["fileName"].as_str(),
@@ -651,8 +651,8 @@ async fn test_case_scoped_export_history_only_returns_case_rows() -> Result<()> 
 	);
 	assert_eq!(items[0]["fileName"].as_str(), Some("one.xml"));
 	assert!(
-		items[0].get("validationProfile").is_none(),
-		"case export history must not expose legacy validationProfile: {:?}",
+		items[0].get("validationAuthority").is_none(),
+		"case export history must not expose legacy validationAuthority: {:?}",
 		items[0]
 	);
 

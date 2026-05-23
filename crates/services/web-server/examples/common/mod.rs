@@ -454,9 +454,9 @@ impl FlowClient {
 	pub async fn validate_case(
 		&self,
 		case_id: &str,
-		profile: &str,
+		authority: &str,
 	) -> Result<Value> {
-		let path = format!("/api/cases/{case_id}/validation?profile={profile}");
+		let path = format!("/api/cases/{case_id}/validation?authority={authority}");
 		self.get_json(&path).await
 	}
 

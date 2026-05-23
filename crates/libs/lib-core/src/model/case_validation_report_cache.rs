@@ -11,7 +11,7 @@ impl CaseValidationReportCacheBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
-		profile: &str,
+		authority: &str,
 	) -> Result<Option<CaseValidationReport>> {
 		mm.dbx().begin_txn().await?;
 		if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
@@ -26,12 +26,12 @@ impl CaseValidationReportCacheBmc {
 					SELECT report
 					  FROM case_validation_reports
 					 WHERE case_id = $1
-					   AND profile = $2
+					   AND authority = $2
 					   AND stale = false
 					"#,
 				)
 				.bind(case_id)
-				.bind(profile),
+				.bind(authority),
 			)
 			.await
 		{
@@ -42,12 +42,7 @@ impl CaseValidationReportCacheBmc {
 			}
 		};
 		mm.dbx().commit_txn().await?;
-		Ok(row.map(|(Json(mut report),)| {
-			if report.authority.is_empty() {
-				report.authority = report.profile.clone();
-			}
-			report
-		}))
+		Ok(row.map(|(Json(report),)| report))
 	}
 
 	pub async fn upsert(
@@ -68,13 +63,13 @@ impl CaseValidationReportCacheBmc {
 					r#"
 					INSERT INTO case_validation_reports (
 						case_id,
-						profile,
+						authority,
 						report,
 						stale,
 						generated_at
 					)
 					VALUES ($1, $2, $3, false, now())
-					ON CONFLICT (case_id, profile)
+					ON CONFLICT (case_id, authority)
 					DO UPDATE SET
 						report = EXCLUDED.report,
 						stale = false,
@@ -82,7 +77,7 @@ impl CaseValidationReportCacheBmc {
 					"#,
 				)
 				.bind(case_id)
-				.bind(&report.profile)
+				.bind(&report.authority)
 				.bind(Json(report)),
 			)
 			.await

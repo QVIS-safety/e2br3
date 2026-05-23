@@ -368,19 +368,41 @@ async fn apply_compatibility_alters(
 	sqlx::query(
 		"CREATE TABLE IF NOT EXISTS case_validation_reports (
 			case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
-			profile TEXT NOT NULL,
+			authority TEXT NOT NULL,
 			report JSONB NOT NULL,
 			stale BOOLEAN NOT NULL DEFAULT false,
 			generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-			PRIMARY KEY (case_id, profile),
-			CONSTRAINT case_validation_reports_profile_valid CHECK (profile IN ('ich', 'fda', 'mfds'))
+			PRIMARY KEY (case_id, authority),
+			CONSTRAINT case_validation_reports_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
 		)",
 	)
 	.execute(&mut *tx)
 	.await?;
 	for sql in [
+		"DO $$
+		 BEGIN
+		   IF EXISTS (
+		     SELECT 1 FROM information_schema.columns
+		      WHERE table_name = 'case_validation_reports'
+		        AND column_name = 'profile'
+		   ) AND NOT EXISTS (
+		     SELECT 1 FROM information_schema.columns
+		      WHERE table_name = 'case_validation_reports'
+		        AND column_name = 'authority'
+		   ) THEN
+		     ALTER TABLE case_validation_reports RENAME COLUMN profile TO authority;
+		   END IF;
+		 END $$",
+		"ALTER TABLE case_validation_reports
+		 DROP CONSTRAINT IF EXISTS case_validation_reports_profile_valid",
+		"ALTER TABLE case_validation_reports
+		 DROP CONSTRAINT IF EXISTS case_validation_reports_authority_valid",
+		"ALTER TABLE case_validation_reports
+		 ADD CONSTRAINT case_validation_reports_authority_valid
+		 CHECK (authority IN ('ich', 'fda', 'mfds'))",
+		"DROP INDEX IF EXISTS idx_case_validation_reports_case_fresh",
 		"CREATE INDEX IF NOT EXISTS idx_case_validation_reports_case_fresh
-		 ON case_validation_reports (case_id, profile)
+		 ON case_validation_reports (case_id, authority)
 		 WHERE stale = false",
 		"GRANT SELECT, INSERT, UPDATE, DELETE ON case_validation_reports TO e2br3_app_role",
 		"ALTER TABLE case_validation_reports ENABLE ROW LEVEL SECURITY",

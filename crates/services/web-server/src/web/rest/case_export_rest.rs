@@ -36,13 +36,11 @@ const SETTINGS_KEY: &str = "system";
 pub struct BulkXmlExportInput {
 	pub case_ids: Vec<Uuid>,
 	pub authority: Option<String>,
-	pub profile: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ExportCaseQuery {
 	pub authority: Option<String>,
-	pub profile: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -84,18 +82,18 @@ pub fn message_sender_identifier() -> String {
 		.unwrap_or_else(|_| "DSJP".to_string())
 }
 
-pub fn message_receiver_identifier(profile: RegulatoryAuthority) -> String {
-	let env_name = match profile {
+pub fn message_receiver_identifier(authority: RegulatoryAuthority) -> String {
+	let env_name = match authority {
 		RegulatoryAuthority::Fda => "E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA",
 		RegulatoryAuthority::Ich => "E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH",
 		RegulatoryAuthority::Mfds => "E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS",
 	};
 	std::env::var(env_name).unwrap_or_else(|_| {
-		profile.default_message_receiver_identifier().to_string()
+		authority.default_message_receiver_identifier().to_string()
 	})
 }
 
-fn should_validate_export_xml(profile: RegulatoryAuthority) -> bool {
+fn should_validate_export_xml(authority: RegulatoryAuthority) -> bool {
 	if let Ok(value) = std::env::var("E2BR3_EXPORT_VALIDATE_FDA") {
 		if matches!(
 			value.trim().to_ascii_lowercase().as_str(),
@@ -110,7 +108,7 @@ fn should_validate_export_xml(profile: RegulatoryAuthority) -> bool {
 			return true;
 		}
 	}
-	if matches!(profile, RegulatoryAuthority::Fda) {
+	if matches!(authority, RegulatoryAuthority::Fda) {
 		return true;
 	}
 	match std::env::var("E2BR3_EXPORT_VALIDATE") {
@@ -119,24 +117,6 @@ fn should_validate_export_xml(profile: RegulatoryAuthority) -> bool {
 			"1" | "true" | "yes"
 		),
 		Err(_) => false,
-	}
-}
-
-fn requested_export_authority<'a>(
-	authority: Option<&'a str>,
-	profile: Option<&'a str>,
-) -> Result<Option<&'a str>> {
-	match (authority, profile) {
-		(Some(authority), Some(profile)) if authority != profile => {
-			Err(Error::BadRequest {
-				message:
-					"conflicting authority parameters: use authority, not legacy profile"
-						.to_string(),
-			})
-		}
-		(Some(authority), _) => Ok(Some(authority)),
-		(None, Some(profile)) => Ok(Some(profile)),
-		(None, None) => Ok(None),
 	}
 }
 
@@ -173,15 +153,15 @@ async fn export_xml_options(
 fn export_file_name(
 	case: &lib_core::model::case::Case,
 	case_id: Uuid,
-	profile: RegulatoryAuthority,
-	include_profile_suffix: bool,
+	authority: RegulatoryAuthority,
+	include_authority_suffix: bool,
 ) -> String {
-	if include_profile_suffix {
+	if include_authority_suffix {
 		format!(
 			"{}-{}-{}.xml",
 			case.safety_report_id.as_str(),
 			case_id,
-			profile.as_str()
+			authority.as_str()
 		)
 	} else {
 		format!("{}-{}.xml", case.safety_report_id.as_str(), case_id)
@@ -195,16 +175,16 @@ pub async fn generate_validated_case_xml(
 ) -> Result<(lib_core::model::case::Case, String)> {
 	lib_rest_core::require_case_read_allowed(ctx, mm, id).await?;
 	let case = CaseBmc::get(ctx, mm, id).await?;
-	let profile = RegulatoryAuthority::Fda;
-	generate_validated_case_xml_for_profile(ctx, mm, id, case, profile).await
+	let authority = RegulatoryAuthority::Fda;
+	generate_validated_case_xml_for_authority(ctx, mm, id, case, authority).await
 }
 
-pub async fn generate_validated_case_xml_for_profile(
+pub async fn generate_validated_case_xml_for_authority(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
 	id: Uuid,
 	case: lib_core::model::case::Case,
-	profile: RegulatoryAuthority,
+	authority: RegulatoryAuthority,
 ) -> Result<(lib_core::model::case::Case, String)> {
 	let ctx_clone = ctx.clone();
 	let mm_clone = mm.clone();
@@ -219,7 +199,7 @@ pub async fn generate_validated_case_xml_for_profile(
 		message: format!("export task failed: {err}"),
 	})??;
 
-	if should_validate_export_xml(profile) {
+	if should_validate_export_xml(authority) {
 		let schema_report =
 			validate_e2b_xml(xml.as_bytes(), None).map_err(|err| {
 				Error::BadRequest {
@@ -336,18 +316,16 @@ pub async fn export_case(
 	require_permission(&ctx, XML_EXPORT)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let case = CaseBmc::get(&ctx, &mm, id).await?;
-	let profile = resolve_requested_export_authority(requested_export_authority(
-		query.authority.as_deref(),
-		query.profile.as_deref(),
-	)?)?;
-	let include_profile_suffix = true;
-	let file_name = export_file_name(&case, id, profile, include_profile_suffix);
-	let (case, xml) = match generate_validated_case_xml_for_profile(
+	let authority = resolve_requested_export_authority(query.authority.as_deref())?;
+	let include_authority_suffix = true;
+	let file_name =
+		export_file_name(&case, id, authority, include_authority_suffix);
+	let (case, xml) = match generate_validated_case_xml_for_authority(
 		&ctx,
 		&mm,
 		id,
 		case.clone(),
-		profile,
+		authority,
 	)
 	.await
 	{
@@ -416,10 +394,7 @@ pub async fn export_cases_zip(
 			message: "case_ids is required".to_string(),
 		});
 	}
-	let profile = resolve_requested_export_authority(requested_export_authority(
-		input.authority.as_deref(),
-		input.profile.as_deref(),
-	)?)?;
+	let authority = resolve_requested_export_authority(input.authority.as_deref())?;
 
 	let mut unique_case_ids = Vec::new();
 	let mut seen = HashSet::new();
@@ -438,13 +413,13 @@ pub async fn export_cases_zip(
 			lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 			let case = CaseBmc::get(&ctx, &mm, case_id).await?;
 			{
-				let file_name = export_file_name(&case, case_id, profile, true);
-				let (case, xml) = match generate_validated_case_xml_for_profile(
+				let file_name = export_file_name(&case, case_id, authority, true);
+				let (case, xml) = match generate_validated_case_xml_for_authority(
 					&ctx,
 					&mm,
 					case_id,
 					case.clone(),
-					profile,
+					authority,
 				)
 				.await
 				{

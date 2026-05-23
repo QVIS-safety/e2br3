@@ -55,7 +55,7 @@ fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
 
 pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
-	profile: RegulatoryAuthority,
+	authority: RegulatoryAuthority,
 	mm: &ModelManager,
 	validation_ctx: &ValidationContext,
 	fda_ctx: Option<&FdaValidationContext>,
@@ -63,7 +63,7 @@ pub(crate) async fn collect(
 ) -> Result<()> {
 	let _ = fda_ctx;
 	collect_ich_issues(validation_ctx, issues);
-	match profile {
+	match authority {
 		RegulatoryAuthority::Ich => {}
 		RegulatoryAuthority::Fda => {
 			collect_fda_issues(mm, validation_ctx, issues).await?

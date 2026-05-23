@@ -1,15 +1,15 @@
 CREATE TABLE IF NOT EXISTS case_validation_reports (
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
-    profile TEXT NOT NULL,
+    authority TEXT NOT NULL,
     report JSONB NOT NULL,
     stale BOOLEAN NOT NULL DEFAULT false,
     generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (case_id, profile),
-    CONSTRAINT case_validation_reports_profile_valid CHECK (profile IN ('ich', 'fda', 'mfds'))
+    PRIMARY KEY (case_id, authority),
+    CONSTRAINT case_validation_reports_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_case_validation_reports_case_fresh
-    ON case_validation_reports (case_id, profile)
+    ON case_validation_reports (case_id, authority)
     WHERE stale = false;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON case_validation_reports TO e2br3_app_role;

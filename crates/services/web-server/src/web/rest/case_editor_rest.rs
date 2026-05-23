@@ -120,34 +120,12 @@ fn direct_section_response(
 #[derive(Debug, Deserialize)]
 pub struct CaseEditorPageProjectionQuery {
 	authorities: Option<String>,
-	profiles: Option<String>,
-}
-
-fn requested_authorities_csv(
-	authorities: Option<&str>,
-	profiles: Option<&str>,
-) -> Result<Option<String>> {
-	match (authorities, profiles) {
-		(Some(authorities), Some(profiles)) if authorities != profiles => {
-			Err(Error::BadRequest {
-				message:
-					"conflicting authority parameters: use authorities, not legacy profiles"
-						.to_string(),
-			})
-		}
-		(Some(authorities), _) => Ok(Some(authorities.to_string())),
-		(None, Some(profiles)) => Ok(Some(profiles.to_string())),
-		(None, None) => Ok(None),
-	}
 }
 
 fn query_authorities_csv(
 	query: &CaseEditorPageProjectionQuery,
 ) -> Result<Option<String>> {
-	requested_authorities_csv(
-		query.authorities.as_deref(),
-		query.profiles.as_deref(),
-	)
+	Ok(query.authorities.clone())
 }
 
 fn parse_editor_authorities(
@@ -186,23 +164,10 @@ fn authority_strings(authorities: &[RegulatoryAuthority]) -> Vec<String> {
 		.collect()
 }
 
-fn request_authorities_csv(
-	authorities: Option<&[String]>,
-	profiles: Option<&[String]>,
-) -> Result<Option<String>> {
-	requested_authorities_csv(
-		authorities
-			.map(|authorities| authorities.join(","))
-			.as_deref(),
-		profiles.map(|profiles| profiles.join(",")).as_deref(),
-	)
-}
-
 fn validate_request_projection_context(
 	authorities: Option<&[String]>,
-	profiles: Option<&[String]>,
 ) -> Result<Option<String>> {
-	let requested_authorities = request_authorities_csv(authorities, profiles)?;
+	let requested_authorities = authorities.map(|authorities| authorities.join(","));
 	editor_projection_context(requested_authorities.clone())?;
 	Ok(requested_authorities)
 }
@@ -219,8 +184,7 @@ fn insert_editor_json_context(
 ) -> Result<()> {
 	let authorities = editor_projection_context(requested_authorities)?;
 	let authority_values = authority_strings(&authorities);
-	map.insert("authorities".to_string(), json!(authority_values.clone()));
-	map.insert("profiles".to_string(), json!(authority_values));
+	map.insert("authorities".to_string(), json!(authority_values));
 	Ok(())
 }
 
@@ -385,10 +349,8 @@ pub async fn patch_editor_ci_page_projection(
 	require_permission(&ctx, CASE_UPDATE)?;
 	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.authorities.as_deref(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_authorities =
+		validate_request_projection_context(request.authorities.as_deref())?;
 
 	let mut update = SafetyReportIdentificationForUpdate {
 		transmission_date: None,
@@ -450,7 +412,7 @@ pub async fn patch_editor_ci_page_projection(
 		&mm,
 		case_id,
 		"CI",
-		requested_profiles,
+		requested_authorities,
 		load_editor_ci_data(&ctx, &mm, case_id).await?,
 	)
 	.await?;
@@ -543,10 +505,7 @@ async fn patch_direct_page_projection(
 	require_permission(&ctx, CASE_UPDATE)?;
 	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.authorities.as_deref(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_authorities = validate_request_projection_context(request.authorities.as_deref())?;
 
 	if !request.changes.is_empty() {
 		apply_direct_page_changes_patch(
@@ -586,7 +545,7 @@ async fn patch_direct_page_projection(
 		&mm,
 		case_id,
 		page_id,
-		requested_profiles,
+		requested_authorities,
 		data,
 	)
 	.await?;
@@ -1437,17 +1396,16 @@ async fn direct_page_projection_response(
 	_mm: &ModelManager,
 	case_id: Uuid,
 	page_id: &'static str,
-	requested_profiles: Option<String>,
+	requested_authorities: Option<String>,
 	data: Value,
 ) -> Result<CaseEditorPageProjectionResponse> {
-	let profiles = editor_projection_context(requested_profiles)?;
-	let profile_values = authority_strings(&profiles);
+	let authorities = editor_projection_context(requested_authorities)?;
+	let authority_values = authority_strings(&authorities);
 	let saved = direct_page_saved(page_id, &data);
 	Ok(CaseEditorPageProjectionResponse {
 		case_id,
 		page_id,
-		authorities: profile_values.clone(),
-		profiles: profile_values,
+		authorities: authority_values,
 		saved,
 		required_count: 0,
 		fields: BTreeMap::new(),
@@ -1459,16 +1417,15 @@ async fn direct_page_projection_response(
 fn repeatable_page_projection_response(
 	case_id: Uuid,
 	page_id: &'static str,
-	requested_profiles: Option<String>,
+	requested_authorities: Option<String>,
 	rows: Value,
 ) -> Result<CaseEditorPageProjectionResponse> {
-	let profiles = editor_projection_context(requested_profiles)?;
-	let profile_values = authority_strings(&profiles);
+	let authorities = editor_projection_context(requested_authorities)?;
+	let authority_values = authority_strings(&authorities);
 	Ok(CaseEditorPageProjectionResponse {
 		case_id,
 		page_id,
-		authorities: profile_values.clone(),
-		profiles: profile_values,
+		authorities: authority_values,
 		saved: rows
 			.get("rows")
 			.and_then(Value::as_array)
@@ -2176,14 +2133,14 @@ async fn build_editor_ae_page_row_response(
 	mm: &ModelManager,
 	case_id: Uuid,
 	row_id: Uuid,
-	profiles: Option<String>,
+	authorities: Option<String>,
 ) -> Result<Value> {
 	let reaction = ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let mut response = Map::new();
 	response.insert("caseId".to_string(), json!(case_id));
 	response.insert("section".to_string(), json!("AE"));
 	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, profiles)?;
+	insert_editor_json_context(&mut response, authorities)?;
 	response.insert("data".to_string(), json!({ "reaction": reaction }));
 	Ok(Value::Object(response))
 }
@@ -2197,10 +2154,7 @@ pub async fn create_editor_ae_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, REACTION_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.authorities.as_deref(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_authorities = validate_request_projection_context(request.authorities.as_deref())?;
 
 	let row = required_row_object("AE", &request.rows, "reaction")?;
 	let value = row_model_value(
@@ -2235,7 +2189,7 @@ pub async fn create_editor_ae_page_row(
 		&mm,
 		case_id,
 		row_id,
-		requested_profiles,
+		requested_authorities,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -2250,10 +2204,7 @@ pub async fn patch_editor_ae_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, REACTION_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.authorities.as_deref(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_authorities = validate_request_projection_context(request.authorities.as_deref())?;
 
 	ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let synthesized_rows;
@@ -2302,7 +2253,7 @@ pub async fn patch_editor_ae_page_row(
 		&mm,
 		case_id,
 		row_id,
-		requested_profiles,
+		requested_authorities,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2437,14 +2388,14 @@ async fn build_editor_lb_page_row_response(
 	mm: &ModelManager,
 	case_id: Uuid,
 	row_id: Uuid,
-	profiles: Option<String>,
+	authorities: Option<String>,
 ) -> Result<Value> {
 	let test_result = TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let mut response = Map::new();
 	response.insert("caseId".to_string(), json!(case_id));
 	response.insert("section".to_string(), json!("LB"));
 	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, profiles)?;
+	insert_editor_json_context(&mut response, authorities)?;
 	response.insert("data".to_string(), json!({ "testResult": test_result }));
 	Ok(Value::Object(response))
 }
@@ -2458,10 +2409,7 @@ pub async fn create_editor_lb_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TEST_RESULT_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.authorities.as_deref(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_authorities = validate_request_projection_context(request.authorities.as_deref())?;
 
 	let row = required_row_object("LB", &request.rows, "testResult")?;
 	let value = row_model_value(
@@ -2489,7 +2437,7 @@ pub async fn create_editor_lb_page_row(
 		&mm,
 		case_id,
 		row_id,
-		requested_profiles,
+		requested_authorities,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -2504,10 +2452,7 @@ pub async fn patch_editor_lb_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TEST_RESULT_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.authorities.as_deref(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_authorities = validate_request_projection_context(request.authorities.as_deref())?;
 
 	TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let synthesized_rows;
@@ -2544,7 +2489,7 @@ pub async fn patch_editor_lb_page_row(
 		&mm,
 		case_id,
 		row_id,
-		requested_profiles,
+		requested_authorities,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2781,14 +2726,14 @@ async fn build_editor_dg_page_row_response(
 	mm: &ModelManager,
 	case_id: Uuid,
 	row_id: Uuid,
-	profiles: Option<String>,
+	authorities: Option<String>,
 ) -> Result<Value> {
 	let drug = load_editor_dg_row_detail(&ctx, &mm, case_id, row_id).await?;
 	let mut response = Map::new();
 	response.insert("caseId".to_string(), json!(case_id));
 	response.insert("section".to_string(), json!("DG"));
 	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, profiles)?;
+	insert_editor_json_context(&mut response, authorities)?;
 	response.insert("data".to_string(), json!({ "drug": drug }));
 	Ok(Value::Object(response))
 }
@@ -2802,10 +2747,7 @@ pub async fn create_editor_dg_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.authorities.as_deref(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_authorities = validate_request_projection_context(request.authorities.as_deref())?;
 
 	let row = required_row_object("DG", &request.rows, "drug")?;
 	let value = row_model_value(
@@ -2838,7 +2780,7 @@ pub async fn create_editor_dg_page_row(
 		&mm,
 		case_id,
 		row_id,
-		requested_profiles,
+		requested_authorities,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -2853,10 +2795,7 @@ pub async fn patch_editor_dg_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, DRUG_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.authorities.as_deref(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_authorities = validate_request_projection_context(request.authorities.as_deref())?;
 
 	DrugInformationBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	let synthesized_rows;
@@ -2894,7 +2833,7 @@ pub async fn patch_editor_dg_page_row(
 		&mm,
 		case_id,
 		row_id,
-		requested_profiles,
+		requested_authorities,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -3077,14 +3016,14 @@ async fn build_editor_dh_page_row_response(
 	mm: &ModelManager,
 	case_id: Uuid,
 	row_id: Uuid,
-	profiles: Option<String>,
+	authorities: Option<String>,
 ) -> Result<Value> {
 	let history = load_editor_dh_row_detail(ctx, mm, case_id, row_id).await?;
 	let mut response = Map::new();
 	response.insert("caseId".to_string(), json!(case_id));
 	response.insert("section".to_string(), json!("DH"));
 	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, profiles)?;
+	insert_editor_json_context(&mut response, authorities)?;
 	response.insert("data".to_string(), json!({ "pastDrugHistory": history }));
 	Ok(Value::Object(response))
 }
@@ -3098,10 +3037,7 @@ pub async fn create_editor_dh_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PAST_DRUG_CREATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.authorities.as_deref(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_authorities = validate_request_projection_context(request.authorities.as_deref())?;
 
 	let patient = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
 	let row = required_row_object("DH", &request.rows, "pastDrugHistory")?;
@@ -3130,7 +3066,7 @@ pub async fn create_editor_dh_page_row(
 		&mm,
 		case_id,
 		row_id,
-		requested_profiles,
+		requested_authorities,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::CREATED, Json(response)))
@@ -3145,10 +3081,7 @@ pub async fn patch_editor_dh_page_row(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PAST_DRUG_UPDATE)?;
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_profiles = validate_request_projection_context(
-		request.authorities.as_deref(),
-		request.profiles.as_deref(),
-	)?;
+	let requested_authorities = validate_request_projection_context(request.authorities.as_deref())?;
 
 	load_editor_dh_row_detail(&ctx, &mm, case_id, row_id).await?;
 	let synthesized_rows;
@@ -3181,7 +3114,7 @@ pub async fn patch_editor_dh_page_row(
 		&mm,
 		case_id,
 		row_id,
-		requested_profiles,
+		requested_authorities,
 	)
 	.await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))

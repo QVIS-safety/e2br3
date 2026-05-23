@@ -137,8 +137,8 @@ async fn test_import_history_uploaded_at_is_string_timestamp() -> Result<()> {
 
 	let item = &body["data"]["items"][0];
 	assert!(
-		item.get("validationProfile").is_none(),
-		"import history must not expose legacy validationProfile: {item:?}"
+		item.get("validationAuthority").is_none(),
+		"import history must not expose legacy validationAuthority: {item:?}"
 	);
 	let uploaded_at = item["uploadedAt"]
 		.as_str()

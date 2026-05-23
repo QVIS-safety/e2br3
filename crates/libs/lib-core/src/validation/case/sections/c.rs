@@ -31,14 +31,14 @@ fn is_later_than(
 
 pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
-	profile: RegulatoryAuthority,
+	authority: RegulatoryAuthority,
 	mm: &ModelManager,
 	validation_ctx: &ValidationContext,
 	fda_ctx: Option<&FdaValidationContext>,
 	mfds_ctx: Option<&MfdsValidationContext>,
 ) -> Result<()> {
 	collect_ich_issues(validation_ctx, issues);
-	match profile {
+	match authority {
 		RegulatoryAuthority::Ich => {}
 		RegulatoryAuthority::Fda => {
 			if let Some(fda_ctx) = fda_ctx {

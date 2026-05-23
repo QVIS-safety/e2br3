@@ -7,7 +7,7 @@
 pub const MFDS_REGIONAL_PREFIX: &str = "KR";
 
 // 14 MFDS regional element IDs.
-// Source: MFDS profile summaries from Argus/Vault implementation references.
+// Source: MFDS authority summaries from Argus/Vault implementation references.
 pub const KR_C_2_R_4_1: &str = "C.2.r.4.KR.1";
 pub const KR_C_3_1_1: &str = "C.3.1.KR.1";
 pub const KR_C_5_4_1: &str = "C.5.4.KR.1";

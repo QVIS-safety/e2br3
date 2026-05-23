@@ -326,7 +326,7 @@ pub async fn delete_drug_indication(
 	Ok(StatusCode::NO_CONTENT)
 }
 
-// -- Drug Device Characteristics (FDA device profile)
+// -- Drug Device Characteristics (FDA device authority)
 
 /// POST /api/cases/{case_id}/drugs/{drug_id}/device-characteristics
 pub async fn create_drug_device_characteristic(

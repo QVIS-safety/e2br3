@@ -26,7 +26,7 @@ impl RegulatoryAuthority {
 		}
 	}
 
-	pub fn from_case_profile(value: Option<&str>) -> Option<Self> {
+	pub fn from_case_authority(value: Option<&str>) -> Option<Self> {
 		value.and_then(Self::parse)
 	}
 
@@ -56,7 +56,7 @@ pub const FDA_MSG_RECEIVER_CBER_IND: &str = "CBER_IND";
 pub const FDA_MSG_RECEIVER_CDER_IND_EXEMPT_BA_BE: &str = "CDER_IND_EXEMPT_BA_BE";
 /// Marker string present in all MFDS N.1.4 batch receiver identifiers.
 pub const MFDS_RECEIVER_IDENTIFIER: &str = "MFDS";
-/// MFDS N.1.4 batch receiver identifiers (used for profile inference).
+/// MFDS N.1.4 batch receiver identifiers (used for authority inference).
 pub const MFDS_BATCH_RECEIVER_POSTMARKET_DOMESTIC: &str = "MFDS";
 pub const MFDS_BATCH_RECEIVER_POSTMARKET_FOREIGN: &str = "MFDS_FR";
 pub const MFDS_BATCH_RECEIVER_CLINICAL_TRIAL: &str = "MFDS_CT";

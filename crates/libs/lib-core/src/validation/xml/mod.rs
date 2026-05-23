@@ -167,7 +167,7 @@ pub fn validate_e2b_xml(
 
 /// Business/XML-structure validation only:
 /// - lightweight XML parse/root checks
-/// - catalog-driven XML structure/profile rules (ICH/FDA/MFDS overlays)
+/// - catalog-driven XML structure/authority rules (ICH/FDA/MFDS overlays)
 ///
 /// Does not run XSD validation.
 pub fn validate_e2b_xml_business(

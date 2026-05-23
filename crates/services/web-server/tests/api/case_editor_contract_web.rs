@@ -494,14 +494,14 @@ async fn editor_ci_page_projection_returns_direct_page_rows_without_field_issues
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=fda"),
+		&format!("/api/cases/{case_id}/editor/pages/CI?authorities=fda"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["caseId"], case_id);
 	assert_eq!(body["pageId"], "CI");
-	assert_eq!(body["profiles"], json!(["fda"]));
+	assert_eq!(body["authorities"], json!(["fda"]));
 	assert!(body.get("appendices").is_none(), "{body}");
 	assert!(body["saved"].as_bool().is_some(), "{body}");
 	assert!(body["requiredCount"].as_u64().is_some(), "{body}");
@@ -544,14 +544,14 @@ async fn editor_ci_page_projection_accepts_multiple_profiles() -> Result<()> {
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=fda,mfds"),
+		&format!("/api/cases/{case_id}/editor/pages/CI?authorities=fda,mfds"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["caseId"], case_id);
 	assert_eq!(body["pageId"], "CI");
-	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
+	assert_eq!(body["authorities"], json!(["fda", "mfds"]));
 	assert!(
 		body["fields"]
 			.as_object()
@@ -583,7 +583,7 @@ async fn editor_ci_page_projection_accepts_multiple_authorities() -> Result<()> 
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["authorities"], json!(["fda", "mfds"]));
-	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
+	assert_eq!(body["authorities"], json!(["fda", "mfds"]));
 
 	Ok(())
 }
@@ -603,12 +603,12 @@ async fn editor_ci_page_projection_keeps_profile_context_without_field_visibilit
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=mfds,fda"),
+		&format!("/api/cases/{case_id}/editor/pages/CI?authorities=mfds,fda"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["profiles"], json!(["mfds", "fda"]));
+	assert_eq!(body["authorities"], json!(["mfds", "fda"]));
 	assert!(
 		body["fields"]
 			.as_object()
@@ -639,7 +639,7 @@ async fn editor_ci_page_projection_returns_profiles_context() -> Result<()> {
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["profiles"], json!(["ich"]));
+	assert_eq!(body["authorities"], json!(["ich"]));
 
 	Ok(())
 }
@@ -714,7 +714,7 @@ async fn editor_ci_page_patch_accepts_profiles() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/CI"),
 		json!({
-			"profiles": ["fda", "mfds"],
+			"authorities": ["fda", "mfds"],
 			"changes": {},
 			"rows": {}
 		}),
@@ -722,7 +722,7 @@ async fn editor_ci_page_patch_accepts_profiles() -> Result<()> {
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
+	assert_eq!(body["authorities"], json!(["fda", "mfds"]));
 	Ok(())
 }
 
@@ -750,7 +750,7 @@ async fn editor_ci_page_patch_accepts_authorities() -> Result<()> {
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["authorities"], json!(["fda", "mfds"]));
-	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
+	assert_eq!(body["authorities"], json!(["fda", "mfds"]));
 	Ok(())
 }
 
@@ -771,7 +771,7 @@ async fn editor_ci_page_patch_rejects_invalid_profiles_before_mutation() -> Resu
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/CI"),
 		json!({
-			"profiles": ["unknown"],
+			"authorities": ["unknown"],
 			"changes": {
 				"reportType": { "value": "3" }
 			},
@@ -785,7 +785,7 @@ async fn editor_ci_page_patch_rejects_invalid_profiles_before_mutation() -> Resu
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=ich"),
+		&format!("/api/cases/{case_id}/editor/pages/CI?authorities=ich"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
@@ -822,7 +822,7 @@ async fn editor_ci_page_patch_can_clear_profile_specific_field() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/CI"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"changes": {
 				"localCriteriaReportType": { "value": null }
 			}
@@ -876,13 +876,13 @@ async fn editor_ci_page_projection_preserves_request_profile_context() -> Result
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=ich"),
+		&format!("/api/cases/{case_id}/editor/pages/CI?authorities=ich"),
 	)
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert!(body.get("appendices").is_none(), "{body}");
-	assert_eq!(body["profiles"], json!(["ich"]));
+	assert_eq!(body["authorities"], json!(["ich"]));
 	assert!(
 		body["fields"]
 			.as_object()
@@ -909,7 +909,7 @@ async fn editor_page_projection_rejects_unknown_profile_context() -> Result<()> 
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/editor/pages/CI?profiles=unknown"),
+		&format!("/api/cases/{case_id}/editor/pages/CI?authorities=unknown"),
 	)
 	.await?;
 
@@ -940,7 +940,7 @@ async fn editor_remaining_direct_pages_have_projection_routes() -> Result<()> {
 		let (status, body) = get_json(
 			&app,
 			&cookie,
-			&format!("/api/cases/{case_id}/editor/pages/{section}?profiles=fda"),
+			&format!("/api/cases/{case_id}/editor/pages/{section}?authorities=fda"),
 		)
 		.await?;
 
@@ -986,7 +986,7 @@ async fn editor_remaining_direct_pages_accept_page_patch_with_profiles() -> Resu
 			&cookie,
 			&format!("/api/cases/{case_id}/editor/pages/{section}"),
 			json!({
-				"profiles": ["fda"],
+				"authorities": ["fda"],
 				"changes": {}
 			}),
 		)
@@ -1033,7 +1033,7 @@ async fn editor_remaining_direct_pages_accept_field_delta_changes_with_profiles(
 			&cookie,
 			&format!("/api/cases/{case_id}/editor/pages/{section}"),
 			json!({
-				"profiles": ["fda", "mfds"],
+				"authorities": ["fda", "mfds"],
 				"changes": changes,
 				"rows": {}
 			}),
@@ -1042,7 +1042,7 @@ async fn editor_remaining_direct_pages_accept_field_delta_changes_with_profiles(
 
 		assert_eq!(status, StatusCode::OK, "{section}: {body}");
 		assert_eq!(
-			body["profiles"],
+			body["authorities"],
 			json!(["fda", "mfds"]),
 			"{section}: {body}"
 		);
@@ -1068,7 +1068,7 @@ async fn editor_direct_page_patch_rejects_unknown_field() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/RP"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"changes": {
 				"notAReporterField": { "value": "x" }
 			}
@@ -1097,7 +1097,7 @@ async fn editor_direct_page_patch_rejects_unknown_profile() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/NR"),
 		json!({
-			"profiles": ["unknown"],
+			"authorities": ["unknown"],
 			"changes": {}
 		}),
 	)
@@ -1123,7 +1123,7 @@ async fn editor_nr_page_patch_persists_narrative_row() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/NR"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"narrative": {
 					"caseNarrative": "Narrative saved through page patch"
@@ -1158,7 +1158,7 @@ async fn editor_rp_page_patch_persists_primary_source_row() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/RP"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"primarySources": [{
 					"sequenceNumber": 1,
@@ -1191,7 +1191,7 @@ async fn editor_sd_page_patch_persists_sender_information_row() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/SD"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"senderInformation": {
 					"organizationName": "Sender Org"
@@ -1226,7 +1226,7 @@ async fn editor_lr_page_patch_persists_literature_reference_row() -> Result<()> 
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/LR"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"literatureReferences": [{
 					"sequenceNumber": 1,
@@ -1262,7 +1262,7 @@ async fn editor_si_page_patch_persists_study_information_row() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/SI"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"studyInformation": {
 					"studyName": "Study 001"
@@ -1294,7 +1294,7 @@ async fn editor_dm_page_patch_persists_patient_information_row() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/DM"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"patientInformation": {
 					"patientInitials": "ABC"
@@ -1766,7 +1766,7 @@ async fn editor_repeatable_pages_have_list_projection_routes() -> Result<()> {
 		let (status, body) = get_json(
 			&app,
 			&cookie,
-			&format!("/api/cases/{case_id}/editor/pages/{section}?profiles=fda"),
+			&format!("/api/cases/{case_id}/editor/pages/{section}?authorities=fda"),
 		)
 		.await?;
 
@@ -1810,7 +1810,7 @@ async fn editor_page_projections_do_not_embed_full_validation_issues() -> Result
 			&app,
 			&cookie,
 			&format!(
-				"/api/cases/{case_id}/editor/pages/{page_id}?profiles=ich,fda,mfds"
+				"/api/cases/{case_id}/editor/pages/{page_id}?authorities=ich,fda,mfds"
 			),
 		)
 		.await?;
@@ -1876,7 +1876,7 @@ async fn editor_repeatable_page_rows_return_row_detail_by_uuid() -> Result<()> {
 		&app,
 		&cookie,
 		&format!(
-			"/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}?profiles=fda"
+			"/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}?authorities=fda"
 		),
 	)
 	.await?;
@@ -1906,7 +1906,7 @@ async fn editor_ae_page_row_patch_updates_one_reaction() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"reaction": {
 					"reactionPrimarySourceNative": "Updated reaction"
@@ -1943,7 +1943,7 @@ async fn editor_lb_page_row_patch_updates_one_test_result() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/LB/rows/{test_result_id}"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"testResult": {
 					"testName": "Updated lab"
@@ -1977,7 +1977,7 @@ async fn editor_dg_page_row_patch_updates_one_drug() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/DG/rows/{drug_id}"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"drug": {
 					"medicinalProduct": "Updated product"
@@ -2012,7 +2012,7 @@ async fn editor_dh_page_row_patch_updates_one_drug_history() -> Result<()> {
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/DH/rows/{past_drug_id}"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"pastDrugHistory": {
 					"drugName": "Updated prior drug"
@@ -2078,7 +2078,7 @@ async fn editor_repeatable_page_rows_accept_field_delta_changes_with_profiles(
 			&cookie,
 			&format!("/api/cases/{case_id}/editor/pages/{section}/rows/{row_id}"),
 			json!({
-				"profiles": ["fda"],
+				"authorities": ["fda"],
 				"changes": changes,
 				"rows": {}
 			}),
@@ -2086,7 +2086,7 @@ async fn editor_repeatable_page_rows_accept_field_delta_changes_with_profiles(
 		.await?;
 
 		assert_eq!(status, StatusCode::OK, "{section}: {body}");
-		assert_eq!(body["profiles"], json!(["fda"]), "{section}: {body}");
+		assert_eq!(body["authorities"], json!(["fda"]), "{section}: {body}");
 	}
 
 	Ok(())
@@ -2109,7 +2109,7 @@ async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sectio
 		(
 			"AE",
 			json!({
-				"profiles": ["fda"],
+				"authorities": ["fda"],
 				"rows": {
 					"reaction": {
 						"reactionPrimarySourceNative": "Created reaction"
@@ -2121,7 +2121,7 @@ async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sectio
 		(
 			"LB",
 			json!({
-				"profiles": ["fda"],
+				"authorities": ["fda"],
 				"rows": {
 					"testResult": {
 						"testName": "Created lab"
@@ -2133,7 +2133,7 @@ async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sectio
 		(
 			"DG",
 			json!({
-				"profiles": ["fda"],
+				"authorities": ["fda"],
 				"rows": {
 					"drug": {
 						"medicinalProduct": "Created product"
@@ -2145,7 +2145,7 @@ async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sectio
 		(
 			"DH",
 			json!({
-				"profiles": ["fda"],
+				"authorities": ["fda"],
 				"rows": {
 					"pastDrugHistory": {
 						"drugName": "Created prior drug"
@@ -2197,7 +2197,7 @@ async fn editor_repeatable_page_row_create_and_delete_mark_validation_cache_stal
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=fda"),
+		&format!("/api/cases/{case_id}/validation?authority=fda"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
@@ -2212,7 +2212,7 @@ async fn editor_repeatable_page_row_create_and_delete_mark_validation_cache_stal
 		&cookie,
 		&format!("/api/cases/{case_id}/editor/pages/AE/rows"),
 		json!({
-			"profiles": ["fda"],
+			"authorities": ["fda"],
 			"rows": {
 				"reaction": {
 					"reactionPrimarySourceNative": "Created stale reaction"
@@ -2235,7 +2235,7 @@ async fn editor_repeatable_page_row_create_and_delete_mark_validation_cache_stal
 	let (status, body) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/validation?profile=fda"),
+		&format!("/api/cases/{case_id}/validation?authority=fda"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");

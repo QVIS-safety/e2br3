@@ -22,7 +22,7 @@ pub use c_safety_report_policy::{
 	should_require_fda_local_criteria_report_type,
 	should_warn_fda_combination_product_indicator_missing,
 };
-pub use case::{validate_case_for_profile, validate_case_for_profiles};
+pub use case::{validate_case_for_authority, validate_case_for_authorities};
 pub use catalog::*;
 pub use context::{load_base_validation_context, ValidationContext};
 pub use d_patient_policy::{
@@ -85,7 +85,6 @@ pub struct ValidationSubsectionSummary {
 pub struct CaseValidationReport {
 	#[serde(default)]
 	pub authority: String,
-	pub profile: String,
 	pub case_id: Uuid,
 	pub ok: bool,
 	pub blocking_count: usize,
@@ -240,8 +239,7 @@ pub fn build_report(
 		.collect();
 	let authority = authority.as_str().to_string();
 	CaseValidationReport {
-		authority: authority.clone(),
-		profile: authority,
+		authority,
 		case_id,
 		ok: blocking_count == 0,
 		blocking_count,

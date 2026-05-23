@@ -4,7 +4,7 @@ use serde::Serialize;
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct ValidationRuleMetadata {
 	pub code: &'static str,
-	pub profile: RegulatoryAuthority,
+	pub authority: RegulatoryAuthority,
 	pub section: &'static str,
 	pub blocking: bool,
 	pub message: &'static str,
@@ -73,42 +73,42 @@ pub const VALIDATION_RULES: &[
 ] = &[
 	ValidationRuleMetadata {
 		code: "FDA.C.1.12.RECOMMENDED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "case-identification",
 		blocking: false,
 		message: "FDA recommends [C.1.12] combination product report indicator.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.1.12.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "case-identification",
 		blocking: true,
 		message: "FDA requires [C.1.12] combination product report indicator.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.1.12.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "xml",
 		blocking: true,
 		message: "FDA.C.1.12 combination product report indicator is required.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.1.7.1.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "case-identification",
 		blocking: true,
 		message: "FDA requires [C.1.7.1] when expedited criteria is fulfilled.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.1.7.1.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "xml",
 		blocking: true,
 		message: "FDA.C.1.7.1 local criteria report type is required.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.1.7.1.REQUIRED.MISSING_CODE",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "xml",
 		blocking: true,
 		message:
@@ -116,14 +116,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.2.r.2.EMAIL.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "reporter",
 		blocking: true,
 		message: "FDA requires reporter email when primary source is present.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.5.5a.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "study",
 		blocking: true,
 		message:
@@ -131,7 +131,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.5.5b.FORBIDDEN",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "xml",
 		blocking: true,
 		message:
@@ -139,7 +139,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.5.5b.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "study",
 		blocking: true,
 		message:
@@ -147,7 +147,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.5.5b.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "xml",
 		blocking: true,
 		message:
@@ -155,7 +155,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.5.6.r.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "study",
 		blocking: true,
 		message:
@@ -163,21 +163,21 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.D.11.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "patient",
 		blocking: true,
 		message: "FDA requires [D.11] patient race when patient payload is present.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.D.11.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "xml",
 		blocking: true,
 		message: "FDA.D.11 patient race is required.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.D.12.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "patient",
 		blocking: true,
 		message:
@@ -185,14 +185,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.D.12.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "xml",
 		blocking: true,
 		message: "FDA.D.12 patient ethnicity is required.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.E.i.3.2h.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -200,14 +200,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.E.i.3.2h.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "xml",
 		blocking: true,
 		message: "FDA.E.i.3.2h required intervention is required.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.G.K.1.A.CONDITIONAL",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -215,7 +215,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.G.K.12.R.11.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "drugs",
 		blocking: false,
 		message:
@@ -223,7 +223,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.G.K.12.R.3.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -231,7 +231,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.G.K.12.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -239,28 +239,28 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "FDA.G.k.10a.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "xml",
 		blocking: true,
 		message: "FDA.G.k.10a is required when FDA.C.5.5b is present.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.N.1.4.REQUIRED",
-		profile: RegulatoryAuthority::Fda,
+		authority: RegulatoryAuthority::Fda,
 		section: "xml",
 		blocking: true,
 		message: "FDA.N.1.4 batch receiver identifier missing.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.1] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.11.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message:
@@ -268,21 +268,21 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.2] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.2.FUTURE_DATE.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.2] must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.3.CONDITIONAL",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -290,63 +290,63 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.3.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.3] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.4.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.4] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.4.FUTURE_DATE.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.4] must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.4.AFTER_C.1.2.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.4] cannot be later than [C.1.2].",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.4.AFTER_C.1.5.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.4] cannot be later than [C.1.5].",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.5.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.5] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.5.FUTURE_DATE.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.5] must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.5.AFTER_C.1.2.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.5] cannot be later than [C.1.2].",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.6.1.r.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message:
@@ -354,21 +354,21 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.7.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[C.1.7] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.9.1.CONDITIONAL",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "C.1.9.1 is true but C.1.9.1.r.1/.r.2 are missing.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.9.1.r.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message:
@@ -376,7 +376,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.9.1.r.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message:
@@ -384,14 +384,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "Safety report identification is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.1.ID.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reporter",
 		blocking: true,
 		message:
@@ -399,14 +399,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.1.ID.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reporter",
 		blocking: true,
 		message: "primaryRole/id missing extension; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.1.ID.ROOT_3_6.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reporter",
 		blocking: true,
 		message:
@@ -414,7 +414,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.2.NAME.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reporter",
 		blocking: true,
 		message:
@@ -422,14 +422,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.2.NAME.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reporter",
 		blocking: true,
 		message: "primaryRole name element is empty; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.3.ORG_NAME.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reporter",
 		blocking: true,
 		message:
@@ -437,7 +437,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.3.ORG_NAME.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reporter",
 		blocking: true,
 		message:
@@ -445,28 +445,28 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.4.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reporter",
 		blocking: true,
 		message: "[C.2.r.4] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.3.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "sender",
 		blocking: true,
 		message: "[C.3.1] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.3.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "sender",
 		blocking: true,
 		message: "[C.3.2] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.5.4.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "study",
 		blocking: true,
 		message:
@@ -474,7 +474,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.2.r.2.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reporter",
 		blocking: true,
 		message:
@@ -482,7 +482,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.5.3.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "study",
 		blocking: true,
 		message:
@@ -490,7 +490,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.5.TITLE.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "study",
 		blocking: true,
 		message:
@@ -498,21 +498,21 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.C.5.TITLE.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "study",
 		blocking: true,
 		message: "researchStudy/title is empty; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message: "[D.1] This Element is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.1.1.4.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -520,7 +520,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.2.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -528,7 +528,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.2.2b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -536,14 +536,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.6.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message: "[D.10.6] Parent sex is required when parent data is populated.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.7.1.r.1a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -551,7 +551,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.7.1.r.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -559,7 +559,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -567,7 +567,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.8.r.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -575,7 +575,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.8.r.3a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -583,7 +583,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.8.r.6a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -591,7 +591,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.8.r.6b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -599,7 +599,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.8.r.7a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -607,7 +607,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.8.r.7b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -615,7 +615,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.2.2.1a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -623,7 +623,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.2.2.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -631,14 +631,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.2.1.FUTURE_DATE.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message: "[D.2.1] Date of birth must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.2.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -646,7 +646,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.2.2b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -654,7 +654,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.2.BIRTHTIME.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -662,21 +662,21 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.2.BIRTHTIME.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message: "birthTime missing value; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.5.SEX.CONDITIONAL",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message: "administrativeGenderCode missing code; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.7.1.r.1a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -684,7 +684,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.7.1.r.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -692,21 +692,21 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.7.1.r.FUTURE_DATE.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message: "[D.7.1.r] Medical history dates must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.7.2.CONDITIONAL",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "D.7.2 must be provided when D.7.1.r.1b is not provided.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.8.MPID_PHPID.EXCLUSIVE",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -714,7 +714,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.8.r.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -722,7 +722,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.8.r.3a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -730,7 +730,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.8.r.6a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -738,7 +738,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.8.r.6b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -746,7 +746,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.8.r.7a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -754,7 +754,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.8.r.7b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -762,7 +762,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.9.2.r.1a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -770,7 +770,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.9.2.r.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -778,7 +778,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.9.2.r.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -786,7 +786,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.9.3.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -794,7 +794,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.9.4.r.1a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -802,7 +802,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.9.4.r.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -810,7 +810,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.9.4.r.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -818,7 +818,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.EFFECTIVETIME.LOW_HIGH.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -826,7 +826,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.PARENT.BIRTHTIME.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -834,7 +834,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.PARENT.BIRTHTIME.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -842,7 +842,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.PARENT.NAME.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -850,7 +850,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.PARENT.NAME.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "patient",
 		blocking: true,
 		message:
@@ -858,7 +858,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -866,7 +866,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -874,7 +874,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.3.2.CRITERIA.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -882,7 +882,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.3.2.NI.ONLY",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -890,14 +890,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.1.1a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message: "[E.i.1.1a] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.1.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -905,7 +905,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.1.2.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -913,14 +913,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.1.2.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message: "reaction translation missing value; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.2.1a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -928,7 +928,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.2.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -936,7 +936,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.2.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -944,14 +944,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.2.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message: "reaction term missing code; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -959,21 +959,21 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.4-5.FUTURE_DATE.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message: "[E.i.4/E.i.5] Reaction dates must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.4-6.CONDITIONAL",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: false,
 		message: "Reaction should include start, end, or duration.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.6a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -981,7 +981,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.6b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -989,7 +989,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.7.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message:
@@ -997,42 +997,42 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.7.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message: "reaction outcome value missing code; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.7.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message: "[E.i.7] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.9.COUNTRY.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message: "reaction country missing code; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "tests",
 		blocking: true,
 		message: "[F.r.1] Test date is required when [F.r.2] is populated.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.1.FUTURE_DATE.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "tests",
 		blocking: true,
 		message: "[F.r.1] Test date must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.2.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "tests",
 		blocking: true,
 		message:
@@ -1040,7 +1040,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.2.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "tests",
 		blocking: true,
 		message:
@@ -1048,7 +1048,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.2.2b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "tests",
 		blocking: true,
 		message:
@@ -1056,14 +1056,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "tests",
 		blocking: true,
 		message: "[F.r.2] is required when test payload is present.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.3.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "tests",
 		blocking: true,
 		message:
@@ -1071,7 +1071,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.3.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "tests",
 		blocking: true,
 		message:
@@ -1079,7 +1079,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.3.3.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "tests",
 		blocking: true,
 		message:
@@ -1087,7 +1087,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.3.4.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "tests",
 		blocking: true,
 		message:
@@ -1095,14 +1095,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message: "[G.k.1] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.1.1a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1110,7 +1110,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.1.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1118,14 +1118,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message: "[G.k.2.2] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.3.NAME.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1133,14 +1133,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.3.NAME.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message: "ingredientSubstance/name is empty; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.3.r.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1148,7 +1148,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.3.r.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1156,7 +1156,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.3.r.3b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1164,7 +1164,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.10.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1172,7 +1172,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.10.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1180,7 +1180,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.11.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1188,14 +1188,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.11.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message: "routeCode missing code; originalText or nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1203,7 +1203,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.3.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1211,7 +1211,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1219,7 +1219,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1227,14 +1227,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.4-8.CONDITIONAL",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message: "Drug requires start, end, or duration.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.6a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1242,7 +1242,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.6b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1250,7 +1250,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.4.r.9.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1258,7 +1258,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.5a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1266,7 +1266,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.5b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1274,7 +1274,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.6a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1282,7 +1282,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.6b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1290,7 +1290,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.7.r.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1298,7 +1298,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.7.r.2b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1306,7 +1306,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.9.i.2.ID.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1314,7 +1314,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.9.i.2.ID.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1322,7 +1322,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.9.i.3.1a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1330,7 +1330,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.9.i.3.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1338,7 +1338,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.9.i.3.2a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1346,7 +1346,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.9.i.3.2b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1354,14 +1354,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.H.1.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "narrative",
 		blocking: true,
 		message: "[H.1] This Element is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.H.3.r.1a.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "narrative",
 		blocking: true,
 		message:
@@ -1369,7 +1369,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.H.3.r.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "narrative",
 		blocking: true,
 		message:
@@ -1377,7 +1377,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.H.5.r.1b.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "narrative",
 		blocking: true,
 		message:
@@ -1385,56 +1385,56 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.N.1.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[N.1.2] Batch number is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.N.1.3.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[N.1.3] Batch sender identifier is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.N.1.4.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[N.1.4] Batch receiver identifier is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.N.1.5.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[N.1.5] Date of batch transmission is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.N.2.r.2.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[N.2.r.2] Message sender identifier is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.N.2.r.3.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "[N.2.r.3] Message receiver identifier is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.N.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
 		blocking: true,
 		message: "Message header is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.BL.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -1442,14 +1442,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.BL.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "BL value missing value; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.CODE.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -1457,7 +1457,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.CODE.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -1465,14 +1465,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.COUNTRY.CODE.FORMAT.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "ISO country code must be 2 uppercase letters.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.DOCUMENT.TEXT.COMPRESSION.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: false,
 		message:
@@ -1480,28 +1480,28 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.DOSE_QUANTITY.VALUE_UNIT.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "doseQuantity must include value and unit.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.EFFECTIVETIME.WIDTH.REQUIRES_BOUND",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "effectiveTime with width must include low/high.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.GK11.EMPTY.PRUNE",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: false,
 		message: "Empty G.k.11 relationships should be pruned during export.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.INV_CHAR_BL.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -1509,7 +1509,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.INV_CHAR_BL.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -1517,14 +1517,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.IVL_TS.OPERATOR_A.BOUND_REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "IVL_TS operator='A' must include low, high, or width.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.LOW_HIGH.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -1532,28 +1532,28 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.LOW_HIGH.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "low/high missing value; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.MEDDRA.CODE.FORMAT.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "MedDRA code must be 8 digits.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.MEDDRA.VERSION.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "MedDRA code requires codeSystemVersion.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.OPTIONAL.PATH.EMPTY.PRUNE",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: false,
 		message:
@@ -1561,70 +1561,70 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.PERIOD.VALUE_UNIT.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "period must include value and unit.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.PIVL_TS.PERIOD.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "PIVL_TS must include period.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.PIVL_TS.PERIOD.VALUE_UNIT.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "PIVL_TS period must include value and unit.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.PLACEHOLDER.CODESYSTEMVERSION.PRUNE",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: false,
 		message: "Known placeholder codeSystemVersion attributes should be removed during export.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.PLACEHOLDER.VALUE.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "Placeholder values are not allowed in XML content or attributes.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.PLACEHOLDER.VALUE.PRUNE",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: false,
 		message: "Known placeholder value nodes should be pruned during export.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.RACE.EMPTY.PRUNE",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: false,
 		message: "Empty race nodes should be pruned during export.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.RACE.NI.PRUNE",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: false,
 		message: "Race NI placeholder nodes should be pruned during export.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.ROOT.ITSVERSION.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "Root ITSVersion must be present and set to XML_1.0.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.ROOT.SCHEMALOCATION.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -1632,7 +1632,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.STRUCTURAL.EMPTY.PRUNE",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: false,
 		message:
@@ -1640,7 +1640,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.SUMMARY.LANGUAGE.JA.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: false,
 		message:
@@ -1648,14 +1648,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.SXPR_TS.COMP.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "SXPR_TS must include at least one comp element.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.TELECOM.FORMAT.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -1663,7 +1663,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.TELECOM.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -1671,42 +1671,42 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.TELECOM.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "telecom missing value; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.TESTRESULT.IVL_PQ.COMPONENT.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "IVL_PQ must include low/high/center.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.TESTRESULT.IVL_PQ.VALUE_UNIT.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "IVL_PQ low/high/center must include value and unit.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.TESTRESULT.PQ.VALUE_UNIT.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "PQ must include value and unit.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.TESTRESULT.XSI_TYPE.UNSUPPORTED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "Unsupported test result xsi:type.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.TEXT.NULLFLAVOR.FORBIDDEN",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message:
@@ -1714,14 +1714,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.TEXT.NULLFLAVOR.REQUIRED",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "text/originalText is empty; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.XSI_TYPE.NORMALIZE",
-		profile: RegulatoryAuthority::Ich,
+		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: false,
 		message:
@@ -1729,7 +1729,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "reporter",
 		blocking: true,
 		message:
@@ -1737,14 +1737,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.C.3.1.KR.1.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "case-identification",
 		blocking: true,
-		message: "MFDS KR profile does not allow sender type 3.",
+		message: "MFDS KR authority does not allow sender type 3.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.C.5.4.KR.1.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "study",
 		blocking: true,
 		message:
@@ -1752,7 +1752,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.D.10.8.r.1.KR.1a.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "patient",
 		blocking: false,
 		message:
@@ -1760,15 +1760,15 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.D.10.8.r.1.KR.1b.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "patient",
 		blocking: false,
 		message:
-			"MFDS requires parent past drug code [D.10.8.r.1.KR.1b] for KR/FR receiver profiles.",
+			"MFDS requires parent past drug code [D.10.8.r.1.KR.1b] for KR/FR receiver authorities.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "patient",
 		blocking: false,
 		message:
@@ -1776,15 +1776,15 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "patient",
 		blocking: false,
 		message:
-			"MFDS requires past drug code [D.8.r.1.KR.1b] for KR/FR receiver profiles.",
+			"MFDS requires past drug code [D.8.r.1.KR.1b] for KR/FR receiver authorities.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.2.1.KR.1a.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: false,
 		message:
@@ -1792,15 +1792,15 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: true,
 		message:
-			"MFDS requires product code [G.k.2.1.KR.1b] for KR/FR receiver profiles.",
+			"MFDS requires product code [G.k.2.1.KR.1b] for KR/FR receiver authorities.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: false,
 		message:
@@ -1808,7 +1808,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: false,
 		message:
@@ -1816,7 +1816,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.9.i.2.r.1.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1824,7 +1824,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1832,7 +1832,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -1840,7 +1840,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: false,
 		message:
@@ -1848,7 +1848,7 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: false,
 		message:
@@ -1856,14 +1856,14 @@ pub const VALIDATION_RULES: &[
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: true,
 		message: "MFDS domestic cases require KR product coding for the drug.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
-		profile: RegulatoryAuthority::Mfds,
+		authority: RegulatoryAuthority::Mfds,
 		section: "drugs",
 		blocking: true,
 		message:
@@ -2106,7 +2106,7 @@ pub struct RuleFacts {
 #[derive(Debug, Clone, Copy)]
 pub struct CanonicalRule<'a> {
 	pub code: &'a str,
-	pub profile: RegulatoryAuthority,
+	pub authority: RegulatoryAuthority,
 	pub section: &'a str,
 	pub blocking: bool,
 	pub category: RuleCategory,
@@ -2830,7 +2830,7 @@ fn to_canonical_rule<'a>(rule: &'a ValidationRuleMetadata) -> CanonicalRule<'a> 
 	let severity = severity_for_rule(rule);
 	CanonicalRule {
 		code: rule.code,
-		profile: rule.profile,
+		authority: rule.authority,
 		section: rule.section,
 		blocking: severity.is_blocking(),
 		category,
@@ -2937,24 +2937,24 @@ pub fn find_canonical_rule(code: &str) -> Option<CanonicalRule<'static>> {
 	)
 }
 
-pub fn canonical_rules_for_profile(
-	profile: RegulatoryAuthority,
+pub fn canonical_rules_for_authority(
+	authority: RegulatoryAuthority,
 ) -> Vec<CanonicalRule<'static>> {
 	VALIDATION_RULES
 		.iter()
 		.filter(|rule| {
-			matches!(rule.profile, RegulatoryAuthority::Ich)
-				|| rule.profile == profile
+			matches!(rule.authority, RegulatoryAuthority::Ich)
+				|| rule.authority == authority
 		})
 		.map(to_canonical_rule)
 		.collect()
 }
 
-pub fn canonical_rules_for_profile_phase(
-	profile: RegulatoryAuthority,
+pub fn canonical_rules_for_authority_phase(
+	authority: RegulatoryAuthority,
 	phase: ValidationPhase,
 ) -> Vec<CanonicalRule<'static>> {
-	canonical_rules_for_profile(profile)
+	canonical_rules_for_authority(authority)
 		.into_iter()
 		.filter(|rule| rule_applies_in_phase(*rule, phase))
 		.collect()
@@ -2982,9 +2982,9 @@ fn fnv1a_update(mut hash: u64, bytes: &[u8]) -> u64 {
 	hash
 }
 
-pub fn canonical_rules_version(profile: Option<RegulatoryAuthority>) -> String {
-	let rules = if let Some(profile) = profile {
-		canonical_rules_for_profile(profile)
+pub fn canonical_rules_version(authority: Option<RegulatoryAuthority>) -> String {
+	let rules = if let Some(authority) = authority {
+		canonical_rules_for_authority(authority)
 	} else {
 		canonical_rules_all()
 	};
@@ -2993,7 +2993,7 @@ pub fn canonical_rules_version(profile: Option<RegulatoryAuthority>) -> String {
 	for rule in rules {
 		hash = fnv1a_update(hash, rule.code.as_bytes());
 		hash = fnv1a_update(hash, b"|");
-		hash = fnv1a_update(hash, rule.profile.as_str().as_bytes());
+		hash = fnv1a_update(hash, rule.authority.as_str().as_bytes());
 		hash = fnv1a_update(hash, b"|");
 		hash = fnv1a_update(hash, rule.section.as_bytes());
 		hash = fnv1a_update(hash, b"|");
@@ -3328,7 +3328,7 @@ mod tests {
 	fn no_duplicate_rule_triples() {
 		let mut seen = HashSet::new();
 		for rule in VALIDATION_RULES {
-			let key = (rule.code, rule.profile.as_str(), rule.section);
+			let key = (rule.code, rule.authority.as_str(), rule.section);
 			assert!(seen.insert(key), "duplicate rule triple: {:?}", key);
 		}
 	}
@@ -3450,7 +3450,7 @@ mod tests {
 
 	#[test]
 	fn canonical_profile_rules_include_ich_plus_profile_specific() {
-		let fda_rules = canonical_rules_for_profile(RegulatoryAuthority::Fda);
+		let fda_rules = canonical_rules_for_authority(RegulatoryAuthority::Fda);
 		assert!(fda_rules
 			.iter()
 			.any(|rule| rule.code == "ICH.E.i.7.REQUIRED"));

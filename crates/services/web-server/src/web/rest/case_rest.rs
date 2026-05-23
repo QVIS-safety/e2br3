@@ -20,7 +20,7 @@ use lib_core::model::safety_report::{
 };
 use lib_core::model::ModelManager;
 use lib_core::regulatory::RegulatoryAuthority;
-use lib_core::validation::validate_case_for_profile;
+use lib_core::validation::validate_case_for_authority;
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
@@ -662,7 +662,7 @@ pub async fn mark_case_validated_by_validator(
 	}
 
 	let report =
-		validate_case_for_profile(&ctx, &mm, id, RegulatoryAuthority::Fda).await?;
+		validate_case_for_authority(&ctx, &mm, id, RegulatoryAuthority::Fda).await?;
 	CaseValidationSummaryBmc::upsert_for_reports(&ctx, &mm, id, &[report.clone()])
 		.await?;
 	let total_blocking = report.blocking_count;

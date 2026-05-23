@@ -264,16 +264,16 @@ CREATE INDEX idx_case_validation_summaries_page
 
 CREATE TABLE IF NOT EXISTS case_validation_reports (
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
-    profile TEXT NOT NULL,
+    authority TEXT NOT NULL,
     report JSONB NOT NULL,
     stale BOOLEAN NOT NULL DEFAULT false,
     generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (case_id, profile),
-    CONSTRAINT case_validation_reports_profile_valid CHECK (profile IN ('ich', 'fda', 'mfds'))
+    PRIMARY KEY (case_id, authority),
+    CONSTRAINT case_validation_reports_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_case_validation_reports_case_fresh
-    ON case_validation_reports (case_id, profile)
+    ON case_validation_reports (case_id, authority)
     WHERE stale = false;
 
     -- ============================================================================
@@ -398,7 +398,7 @@ CREATE TABLE if NOT EXISTS xml_import_history (
     case_number VARCHAR(100),
     status VARCHAR(20) NOT NULL,
     error_message TEXT,
-    validation_profile VARCHAR(16),
+    validation_authority VARCHAR(16),
     uploaded_by UUID NOT NULL REFERENCES users(id),
     uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -407,8 +407,8 @@ CREATE TABLE if NOT EXISTS xml_import_history (
     CONSTRAINT xml_import_history_status_valid CHECK (
         status IN ('success', 'warning', 'error')
     ),
-    CONSTRAINT xml_import_history_profile_valid CHECK (
-        validation_profile IS NULL OR validation_profile IN ('ich', 'fda', 'mfds')
+    CONSTRAINT xml_import_history_authority_valid CHECK (
+        validation_authority IS NULL OR validation_authority IN ('ich', 'fda', 'mfds')
     )
 );
 
@@ -426,7 +426,7 @@ CREATE TABLE if NOT EXISTS xml_export_history (
     file_name VARCHAR(255) NOT NULL,
     status VARCHAR(20) NOT NULL,
     error_message TEXT,
-    validation_profile VARCHAR(16),
+    validation_authority VARCHAR(16),
     exported_by UUID NOT NULL REFERENCES users(id),
     exported_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -435,8 +435,8 @@ CREATE TABLE if NOT EXISTS xml_export_history (
     CONSTRAINT xml_export_history_status_valid CHECK (
         status IN ('success', 'error')
     ),
-    CONSTRAINT xml_export_history_profile_valid CHECK (
-        validation_profile IS NULL OR validation_profile IN ('ich', 'fda', 'mfds')
+    CONSTRAINT xml_export_history_authority_valid CHECK (
+        validation_authority IS NULL OR validation_authority IN ('ich', 'fda', 'mfds')
     )
 );
 

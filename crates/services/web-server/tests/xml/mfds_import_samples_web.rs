@@ -327,7 +327,7 @@ async fn test_mfds_samples_import_and_validate() -> Result<()> {
 			&app,
 			&cookie,
 			"GET",
-			&format!("/api/cases/{case_id}/validation?profile=mfds"),
+			&format!("/api/cases/{case_id}/validation?authority=mfds"),
 			None,
 			Body::empty(),
 		)

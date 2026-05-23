@@ -277,7 +277,7 @@ async fn ensure_fda_device_characteristics(
 		app,
 		cookie,
 		"GET",
-		format!("/api/cases/{case_id}/validation?profile=fda"),
+		format!("/api/cases/{case_id}/validation?authority=fda"),
 		None,
 	)
 	.await?;
@@ -460,7 +460,7 @@ async fn mark_case_validated(
 			app,
 			cookie,
 			"GET",
-			format!("/api/cases/{case_id}/validation?profile=fda"),
+			format!("/api/cases/{case_id}/validation?authority=fda"),
 			None,
 		)
 		.await?;
@@ -1048,7 +1048,7 @@ async fn test_fda_export_always_validates_even_when_env_unset() -> Result<()> {
 
 	let req = Request::builder()
 		.method("GET")
-		.uri(format!("/api/cases/{case_id}/export/xml?profile=fda"))
+		.uri(format!("/api/cases/{case_id}/export/xml?authority=fda"))
 		.header("cookie", cookie)
 		.body(Body::empty())?;
 	let res = app.oneshot(req).await?;

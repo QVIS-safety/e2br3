@@ -15,13 +15,13 @@ fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
 
 pub(crate) fn collect(
 	issues: &mut Vec<ValidationIssue>,
-	profile: RegulatoryAuthority,
+	authority: RegulatoryAuthority,
 	validation_ctx: &ValidationContext,
 	fda_ctx: Option<&FdaValidationContext>,
 ) {
 	let _ = fda_ctx;
 	collect_ich_issues(validation_ctx, issues);
-	if profile == RegulatoryAuthority::Fda {
+	if authority == RegulatoryAuthority::Fda {
 		collect_fda_issues(validation_ctx, issues);
 	}
 }

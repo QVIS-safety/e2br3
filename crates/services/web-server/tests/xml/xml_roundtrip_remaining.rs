@@ -268,7 +268,7 @@ async fn ensure_fda_device_characteristics(
 		app,
 		cookie,
 		"GET",
-		format!("/api/cases/{case_id}/validation?profile=fda"),
+		format!("/api/cases/{case_id}/validation?authority=fda"),
 		None,
 	)
 	.await?;
@@ -414,7 +414,7 @@ async fn set_validated(
 			app,
 			cookie,
 			"GET",
-			format!("/api/cases/{case_id}/validation?profile=fda"),
+			format!("/api/cases/{case_id}/validation?authority=fda"),
 			None,
 		)
 		.await?;
