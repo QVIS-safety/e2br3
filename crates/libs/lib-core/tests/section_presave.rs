@@ -1664,6 +1664,61 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn section_presave_field_audit_records_changed_column() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Ich,
+			format!("Field Audit Product {suffix}"),
+		),
+	)
+	.await?;
+
+	ProductPresaveBmc::update(
+		&ctx,
+		&mm,
+		product_id,
+		ProductPresaveForUpdate {
+			brand_name: Some(format!("Field Audit Brand {suffix}")),
+			..Default::default()
+		},
+	)
+	.await?;
+
+	set_auditor_role(&mm).await?;
+	let changed_fields_result = sqlx::query_scalar(
+		"SELECT changed_fields
+		 FROM audit_logs
+		 WHERE table_name = 'product_presaves'
+		   AND record_id = $1
+		   AND action = 'UPDATE'
+		 ORDER BY created_at DESC
+		 LIMIT 1",
+	)
+	.bind(product_id)
+	.fetch_one(mm.dbx().db())
+	.await;
+	reset_role(&mm).await?;
+	let changed_fields: serde_json::Value = changed_fields_result?;
+
+	assert!(
+		changed_fields.get("brand_name").is_some(),
+		"expected changed_fields to contain brand_name, got {changed_fields}"
+	);
+
+	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn section_presave_child_audit_uses_parent_organization() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
