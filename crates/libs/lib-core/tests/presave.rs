@@ -23,7 +23,7 @@ async fn seed_alt_org_user(
 	let mut tx = mm.dbx().db().begin().await?;
 
 	set_user_context(&mut tx, demo_user_id()).await?;
-	set_org_context(&mut tx, demo_org_id(), DEMO_ROLE).await?;
+	set_org_context(&mut tx, demo_org_id(), "system_admin").await?;
 
 	sqlx::query(
 		"INSERT INTO organizations (
@@ -73,7 +73,7 @@ async fn seed_user_in_org(
 	let mut tx = mm.dbx().db().begin().await?;
 
 	set_user_context(&mut tx, demo_user_id()).await?;
-	set_org_context(&mut tx, demo_org_id(), DEMO_ROLE).await?;
+	set_org_context(&mut tx, demo_org_id(), "system_admin").await?;
 
 	sqlx::query(
 		"INSERT INTO users (
@@ -172,6 +172,7 @@ async fn presave_crud_and_audit_cover_all_entity_types() -> Result<()> {
 			&mm,
 			PresaveTemplateForCreate {
 				entity_type,
+				authority: None,
 				name: name.clone(),
 				description: Some(format!(
 					"description for {}",
@@ -203,6 +204,7 @@ async fn presave_crud_and_audit_cover_all_entity_types() -> Result<()> {
 			template_id,
 			PresaveTemplateForUpdate {
 				entity_type: None,
+				authority: None,
 				name: Some(format!("{name}-updated")),
 				description: Some("updated description".to_string()),
 				data: Some(payload.clone()),
@@ -270,6 +272,7 @@ async fn presave_templates_are_scoped_by_organization() -> Result<()> {
 		&mm,
 		PresaveTemplateForCreate {
 			entity_type: PresaveEntityType::Sender,
+			authority: None,
 			name: format!("demo-sender-{}", Uuid::new_v4()),
 			description: None,
 			data: presave_payload(PresaveEntityType::Sender),
@@ -282,6 +285,7 @@ async fn presave_templates_are_scoped_by_organization() -> Result<()> {
 		&mm,
 		PresaveTemplateForCreate {
 			entity_type: PresaveEntityType::Receiver,
+			authority: None,
 			name: format!("alt-receiver-{}", Uuid::new_v4()),
 			description: None,
 			data: presave_payload(PresaveEntityType::Receiver),

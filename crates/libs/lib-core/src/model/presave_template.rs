@@ -235,9 +235,16 @@ impl PresaveTemplateBmc {
 			dbx.rollback_txn().await?;
 			return Err(err);
 		}
-		let sql = format!("SELECT * FROM {} WHERE id = $1", Self::TABLE);
+		let sql = format!(
+			"SELECT * FROM {} WHERE id = $1 AND organization_id = $2",
+			Self::TABLE
+		);
 		let entity = match dbx
-			.fetch_optional(sqlx::query_as::<_, PresaveTemplateRow>(&sql).bind(id))
+			.fetch_optional(
+				sqlx::query_as::<_, PresaveTemplateRow>(&sql)
+					.bind(id)
+					.bind(ctx.organization_id()),
+			)
 			.await
 		{
 			Ok(Some(entity)) => entity,
@@ -281,7 +288,8 @@ impl PresaveTemplateBmc {
 		}
 		let sql = format!(
 			"SELECT * FROM {} \
-			 WHERE ($1::text IS NULL OR entity_type = $1) \
+			 WHERE organization_id = $4 \
+			   AND ($1::text IS NULL OR entity_type = $1) \
 			   AND ( \
 			     $2::text IS NULL \
 			     OR authority = $2 \
@@ -296,7 +304,8 @@ impl PresaveTemplateBmc {
 				sqlx::query_as::<_, PresaveTemplateRow>(&sql)
 					.bind(filter.entity_type.map(PresaveEntityType::as_str))
 					.bind(filter.authority.map(RegulatoryAuthority::as_str))
-					.bind(filter.include_global),
+					.bind(filter.include_global)
+					.bind(ctx.organization_id()),
 			)
 			.await
 		{
@@ -356,7 +365,7 @@ impl PresaveTemplateBmc {
 			 data = COALESCE($6, data), \
 			 updated_by = $7, \
 			 updated_at = NOW() \
-			 WHERE id = $1",
+			 WHERE id = $1 AND organization_id = $8",
 			Self::TABLE
 		);
 
@@ -369,7 +378,8 @@ impl PresaveTemplateBmc {
 					.bind(template_u.name)
 					.bind(template_u.description)
 					.bind(template_u.data)
-					.bind(ctx.user_id()),
+					.bind(ctx.user_id())
+					.bind(ctx.organization_id()),
 			)
 			.await
 		{
@@ -407,8 +417,14 @@ impl PresaveTemplateBmc {
 			return Err(err);
 		}
 
-		let sql = format!("DELETE FROM {} WHERE id = $1", Self::TABLE);
-		let count = match dbx.execute(sqlx::query(&sql).bind(id)).await {
+		let sql = format!(
+			"DELETE FROM {} WHERE id = $1 AND organization_id = $2",
+			Self::TABLE
+		);
+		let count = match dbx
+			.execute(sqlx::query(&sql).bind(id).bind(ctx.organization_id()))
+			.await
+		{
 			Ok(v) => v,
 			Err(err) => {
 				dbx.rollback_txn().await?;

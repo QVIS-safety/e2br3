@@ -20,7 +20,7 @@ fn system_user_id() -> Uuid {
 async fn ensure_demo_seed(mm: &ModelManager) -> Result<()> {
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, system_user_id()).await?;
-	set_org_context(&mut tx, demo_org_id(), DEMO_ROLE).await?;
+	set_org_context(&mut tx, demo_org_id(), "system_admin").await?;
 
 	sqlx::query(
 		"INSERT INTO organizations (
@@ -46,7 +46,7 @@ async fn ensure_demo_seed(mm: &ModelManager) -> Result<()> {
 			'#02#$argon2id$v=19$m=19456,t=2,p=1$B0RCYSuiRr6tIIJVTVqABA$lhortXyud6bAy7oSK7NOVqR72TCmhVOcP9nG6bB+qXw',
 			'07444261-2ba2-46be-ad20-82554d5a8004'::UUID,
 			'1b2091af-64ff-43ea-a47b-3cdf8f9995c5'::UUID,
-			'admin', true, false, $3, NOW(), NOW()
+			$4, true, false, $3, NOW(), NOW()
 		)
 		ON CONFLICT (id) DO UPDATE SET
 			organization_id = EXCLUDED.organization_id,
@@ -63,6 +63,7 @@ async fn ensure_demo_seed(mm: &ModelManager) -> Result<()> {
 	.bind(demo_user_id())
 	.bind(demo_org_id())
 	.bind(system_user_id())
+	.bind(DEMO_ROLE)
 	.execute(&mut *tx)
 	.await?;
 
