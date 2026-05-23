@@ -4,8 +4,8 @@
 // stays in the REST layer. This BMC owns only the raw database operations.
 
 use crate::ctx::{
-	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
-	ROLE_USER, SYSTEM_ORG_ID,
+	Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_USER,
+	SYSTEM_ORG_ID,
 };
 use crate::model::store::dbx::Dbx;
 use crate::model::store::set_full_context_from_ctx_dbx;
@@ -538,8 +538,8 @@ impl AdminSettingsBmc {
 			return Err(err);
 		}
 		let rows = match dbx
-			.fetch_all(sqlx::query_as::<_, (String,)>(
-				"SELECT profile_id FROM permission_profiles WHERE active = true",
+			.fetch_all(sqlx::query_as::<_, (Uuid,)>(
+				"SELECT id FROM permission_profiles WHERE active = true",
 			))
 			.await
 		{
@@ -550,8 +550,8 @@ impl AdminSettingsBmc {
 			}
 		};
 		dbx.commit_txn().await?;
-		for (profile_id,) in rows {
-			let role = canonical_role(&profile_id);
+		for (id,) in rows {
+			let role = id.to_string();
 			if !role.is_empty() {
 				roles.insert(role);
 			}

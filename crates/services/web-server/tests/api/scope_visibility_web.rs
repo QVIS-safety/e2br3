@@ -77,11 +77,8 @@ async fn create_empty_custom_role(
 	app: &Router,
 	admin_cookie: &str,
 	profile_id: &str,
-) -> Result<()> {
-	let _ =
-		create_empty_custom_role_with_generated_id(app, admin_cookie, profile_id)
-			.await?;
-	Ok(())
+) -> Result<String> {
+	create_empty_custom_role_with_generated_id(app, admin_cookie, profile_id).await
 }
 
 async fn create_empty_custom_role_with_generated_id(
@@ -96,7 +93,6 @@ async fn create_empty_custom_role_with_generated_id(
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
 				"name": profile_id,
 				"description": format!("Effective permission test role {profile_id}"),
 				"privileges": []
@@ -105,10 +101,9 @@ async fn create_empty_custom_role_with_generated_id(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	Ok(value["profile_id"]
+	Ok(value["id"]
 		.as_str()
-		.or_else(|| value["profileId"].as_str())
-		.ok_or("missing created profile_id")?
+		.ok_or("missing created role id")?
 		.to_string())
 }
 
@@ -1150,14 +1145,14 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 	let roles = value.as_array().ok_or("roles response should be array")?;
 	let system = roles
 		.iter()
-		.find(|role| role["profile_id"] == ROLE_SYSTEM_ADMIN)
+		.find(|role| role["id"] == ROLE_SYSTEM_ADMIN)
 		.ok_or("missing system permission profile")?;
 	assert_eq!(system["is_operational"].as_bool(), Some(false));
 	assert_eq!(system["is_editable"].as_bool(), Some(false));
 
 	let sponsor = roles
 		.iter()
-		.find(|role| role["profile_id"] == ROLE_SPONSOR_ADMIN_CRO)
+		.find(|role| role["id"] == ROLE_SPONSOR_ADMIN_CRO)
 		.ok_or("missing sponsor permission profile")?;
 	assert_eq!(sponsor["is_builtin"].as_bool(), Some(true));
 	assert_eq!(sponsor["is_sponsor_admin"].as_bool(), Some(true));
@@ -1201,7 +1196,7 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(value["profile_id"], ROLE_SPONSOR_ADMIN_CRO);
+	assert_eq!(value["id"], ROLE_SPONSOR_ADMIN_CRO);
 
 	let (status, _value) = request_json(
 		&app,
@@ -1275,10 +1270,10 @@ async fn test_role_admin_api_filters_sponsor_built_ins_by_org_type() -> Result<(
 	let cro_roles = cro_value.as_array().ok_or("CRO roles should be array")?;
 	assert!(cro_roles
 		.iter()
-		.any(|role| role["profile_id"] == ROLE_SPONSOR_ADMIN_CRO));
+		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_CRO));
 	assert!(!cro_roles
 		.iter()
-		.any(|role| role["profile_id"] == ROLE_SPONSOR_ADMIN_COMPANY));
+		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_COMPANY));
 
 	let (status, company_value) = request_json(
 		&app,
@@ -1294,10 +1289,10 @@ async fn test_role_admin_api_filters_sponsor_built_ins_by_org_type() -> Result<(
 		.ok_or("company roles should be array")?;
 	assert!(company_roles
 		.iter()
-		.any(|role| role["profile_id"] == ROLE_SPONSOR_ADMIN_COMPANY));
+		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_COMPANY));
 	assert!(!company_roles
 		.iter()
-		.any(|role| role["profile_id"] == ROLE_SPONSOR_ADMIN_CRO));
+		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_CRO));
 
 	Ok(())
 }
@@ -1310,7 +1305,6 @@ async fn test_role_admin_api_defaults_visible_name_to_role_id() -> Result<()> {
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let profile_id = format!("qa_desc_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -1319,7 +1313,6 @@ async fn test_role_admin_api_defaults_visible_name_to_role_id() -> Result<()> {
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
 				"description": "Role created with description only",
 				"privileges": [
 					{
@@ -1336,8 +1329,8 @@ async fn test_role_admin_api_defaults_visible_name_to_role_id() -> Result<()> {
 	.await?;
 
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(value["profile_id"], profile_id);
-	assert_eq!(value["name"], profile_id);
+	Uuid::parse_str(value["id"].as_str().ok_or("missing role id")?)?;
+	assert_eq!(value["name"], "Custom Role");
 	assert_eq!(value["description"], "Role created with description only");
 
 	Ok(())
@@ -1351,7 +1344,6 @@ async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> 
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let profile_id = format!("qa_empty_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -1360,7 +1352,6 @@ async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> 
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
 				"name": "QA empty privilege role",
 				"description": "Created before privileges are assigned",
 				"privileges": []
@@ -1370,7 +1361,8 @@ async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> 
 	.await?;
 
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(value["profile_id"], profile_id);
+	Uuid::parse_str(value["id"].as_str().ok_or("missing role id")?)?;
+	assert_eq!(value["name"], "QA empty privilege role");
 	assert_eq!(value["privileges"].as_array().map(Vec::len), Some(0));
 	assert_eq!(value["can_view"].as_bool(), Some(false));
 	assert_eq!(value["can_admin"].as_bool(), Some(false));
@@ -1458,7 +1450,6 @@ async fn test_role_admin_api_preserves_description_equal_to_name() -> Result<()>
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let profile_id = format!("qa_same_desc_{}", Uuid::new_v4().simple());
 	let role_name = "QA Same Description Role";
 
 	let (status, value) = request_json(
@@ -1468,7 +1459,6 @@ async fn test_role_admin_api_preserves_description_equal_to_name() -> Result<()>
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
 				"name": role_name,
 				"description": role_name,
 				"privileges": []
@@ -1478,7 +1468,7 @@ async fn test_role_admin_api_preserves_description_equal_to_name() -> Result<()>
 	.await?;
 
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(value["profile_id"], profile_id);
+	Uuid::parse_str(value["id"].as_str().ok_or("missing role id")?)?;
 	assert_eq!(value["name"], role_name);
 	assert_eq!(value["description"], role_name);
 
@@ -1494,8 +1484,6 @@ async fn test_role_admin_api_rejects_duplicate_role_name_in_same_org() -> Result
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let first_profile_id = format!("qa_dup_a_{}", Uuid::new_v4().simple());
-	let second_profile_id = format!("qa_dup_b_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -1504,7 +1492,6 @@ async fn test_role_admin_api_rejects_duplicate_role_name_in_same_org() -> Result
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": first_profile_id,
 				"name": "Duplicate Role",
 				"description": "First duplicate role",
 				"privileges": []
@@ -1513,6 +1500,7 @@ async fn test_role_admin_api_rejects_duplicate_role_name_in_same_org() -> Result
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	Uuid::parse_str(value["id"].as_str().ok_or("missing role id")?)?;
 
 	let (status, value) = request_json(
 		&app,
@@ -1521,7 +1509,6 @@ async fn test_role_admin_api_rejects_duplicate_role_name_in_same_org() -> Result
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": second_profile_id,
 				"name": " duplicate role ",
 				"description": "Second duplicate role",
 				"privileges": []
@@ -1548,13 +1535,9 @@ async fn test_role_admin_api_rejects_rename_to_duplicate_role_name_in_same_org(
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let first_profile_id = format!("qa_dup_rename_a_{}", Uuid::new_v4().simple());
-	let second_profile_id = format!("qa_dup_rename_b_{}", Uuid::new_v4().simple());
+	let mut second_profile_id = None;
 
-	for (profile_id, name) in [
-		(first_profile_id.as_str(), "Original Role"),
-		(second_profile_id.as_str(), "Other Role"),
-	] {
+	for name in ["Original Role", "Other Role"] {
 		let (status, value) = request_json(
 			&app,
 			"POST",
@@ -1562,7 +1545,6 @@ async fn test_role_admin_api_rejects_rename_to_duplicate_role_name_in_same_org(
 			"/api/admin/permission-profiles".to_string(),
 			Some(json!({
 				"data": {
-					"profile_id": profile_id,
 					"name": name,
 					"privileges": []
 				}
@@ -1570,7 +1552,12 @@ async fn test_role_admin_api_rejects_rename_to_duplicate_role_name_in_same_org(
 		)
 		.await?;
 		assert_eq!(status, StatusCode::CREATED, "{value:?}");
+		if name == "Other Role" {
+			second_profile_id =
+				Some(value["id"].as_str().ok_or("missing role id")?.to_string());
+		}
 	}
+	let second_profile_id = second_profile_id.ok_or("missing second role id")?;
 
 	let (status, value) = request_json(
 		&app,
@@ -1612,7 +1599,6 @@ async fn test_role_admin_api_rejects_overlong_name_and_description() -> Result<(
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": format!("qa_long_name_{}", Uuid::new_v4().simple()),
 				"name": overlong_name,
 				"privileges": []
 			}
@@ -1625,7 +1611,6 @@ async fn test_role_admin_api_rejects_overlong_name_and_description() -> Result<(
 		"role name must be 128 characters or fewer"
 	);
 
-	let profile_id = format!("qa_long_desc_{}", Uuid::new_v4().simple());
 	let (status, value) = request_json(
 		&app,
 		"POST",
@@ -1633,7 +1618,6 @@ async fn test_role_admin_api_rejects_overlong_name_and_description() -> Result<(
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
 				"name": "Description Limit Role",
 				"description": overlong_description,
 				"privileges": []
@@ -1659,7 +1643,6 @@ async fn test_role_admin_api_rejects_overlong_name_and_description_on_update(
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let profile_id = format!("qa_update_limits_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -1668,7 +1651,6 @@ async fn test_role_admin_api_rejects_overlong_name_and_description_on_update(
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
 				"name": "Update Limit Role",
 				"privileges": []
 			}
@@ -1676,6 +1658,7 @@ async fn test_role_admin_api_rejects_overlong_name_and_description_on_update(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let profile_id = value["id"].as_str().ok_or("missing role id")?.to_string();
 
 	for (payload, expected_detail) in [
 		(
@@ -1710,7 +1693,6 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let profile_id = format!("qa_matrix_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -1719,7 +1701,6 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
 				"name": "QA matrix role",
 				"description": "Created before privilege matrix toggles",
 				"privileges": []
@@ -1728,6 +1709,7 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let profile_id = value["id"].as_str().ok_or("missing role id")?.to_string();
 
 	let matrix_privileges = json!([
 		{
@@ -1797,7 +1779,7 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	let roles = value.as_array().ok_or("roles response should be array")?;
 	let persisted_role = roles
 		.iter()
-		.find(|role| role["profile_id"] == profile_id)
+		.find(|role| role["id"] == profile_id)
 		.ok_or("missing persisted matrix role")?;
 	let privileges = persisted_role["privileges"]
 		.as_array()
@@ -1832,7 +1814,6 @@ async fn test_role_privilege_matrix_update_grants_effective_case_access(
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm.clone());
-	let profile_id = format!("qa_effective_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -1841,7 +1822,6 @@ async fn test_role_privilege_matrix_update_grants_effective_case_access(
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
 				"name": "QA effective role",
 				"description": "Starts without effective case permissions",
 				"privileges": []
@@ -1850,6 +1830,7 @@ async fn test_role_privilege_matrix_update_grants_effective_case_access(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let profile_id = value["id"].as_str().ok_or("missing role id")?.to_string();
 
 	let custom_user = insert_user(
 		&mm,
@@ -1912,10 +1893,14 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	let review_profile_id = format!("qacmv_{}", Uuid::new_v4().simple());
 	let lock_profile_id = format!("qacml_{}", Uuid::new_v4().simple());
 
-	create_empty_custom_role(&app, &admin_cookie, &read_profile_id).await?;
-	create_empty_custom_role(&app, &admin_cookie, &edit_profile_id).await?;
-	create_empty_custom_role(&app, &admin_cookie, &review_profile_id).await?;
-	create_empty_custom_role(&app, &admin_cookie, &lock_profile_id).await?;
+	let read_profile_id =
+		create_empty_custom_role(&app, &admin_cookie, &read_profile_id).await?;
+	let edit_profile_id =
+		create_empty_custom_role(&app, &admin_cookie, &edit_profile_id).await?;
+	let review_profile_id =
+		create_empty_custom_role(&app, &admin_cookie, &review_profile_id).await?;
+	let lock_profile_id =
+		create_empty_custom_role(&app, &admin_cookie, &lock_profile_id).await?;
 	let (read_user_id, read_cookie) =
 		custom_role_user(&mm, seed.org_id, &read_profile_id).await?;
 	let (edit_user_id, edit_cookie) =
@@ -2329,7 +2314,8 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 	let app = web_server::app(mm.clone());
 	let profile_id = format!("qa_info_matrix_{}", Uuid::new_v4().simple());
 
-	create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
+	let profile_id =
+		create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
 	let (custom_user_id, custom_cookie) =
 		custom_role_user(&mm, seed.org_id, &profile_id).await?;
 	let template_id = create_sender_presave_template(
@@ -2582,7 +2568,8 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 	let app = web_server::app(mm.clone());
 	let profile_id = format!("qa_data_matrix_{}", Uuid::new_v4().simple());
 
-	create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
+	let profile_id =
+		create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
 	let (_custom_user_id, custom_cookie) =
 		custom_role_user(&mm, seed.org_id, &profile_id).await?;
 
@@ -3016,7 +3003,6 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
-	let profile_id = format!("qa_role_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -3025,7 +3011,6 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
 				"name": "QA Role",
 				"description": "Can edit cases and read audit",
 				"privileges": [
@@ -3049,7 +3034,7 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(value["profile_id"], profile_id);
+	let profile_id = value["id"].as_str().ok_or("missing role id")?.to_string();
 	assert_eq!(value["description"], "Can edit cases and read audit");
 	assert_eq!(value["can_view"].as_bool(), Some(true));
 	assert_eq!(value["can_admin"].as_bool(), Some(false));
@@ -3103,7 +3088,6 @@ async fn test_permission_profile_admin_privilege_grants_admin_page_access(
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm.clone());
-	let profile_id = format!("custom_admin_{}", Uuid::new_v4().simple());
 
 	let (status, value) = request_json(
 		&app,
@@ -3112,7 +3096,6 @@ async fn test_permission_profile_admin_privilege_grants_admin_page_access(
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
 				"name": "Custom Admin",
 				"description": "Custom sponsor-admin equivalent",
 				"privileges": [
@@ -3130,6 +3113,7 @@ async fn test_permission_profile_admin_privilege_grants_admin_page_access(
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	assert_eq!(value["sponsor_admin_capable"].as_bool(), Some(true));
+	let profile_id = value["id"].as_str().ok_or("missing role id")?.to_string();
 
 	let custom_admin = insert_user(
 		&mm,
@@ -3249,7 +3233,6 @@ async fn test_permission_profile_admin_privilege_grants_admin_page_access(
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 
-	let next_role = format!("custom_admin_child_{}", Uuid::new_v4().simple());
 	let (status, value) = request_json(
 		&app,
 		"POST",
@@ -3257,7 +3240,6 @@ async fn test_permission_profile_admin_privilege_grants_admin_page_access(
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": next_role,
 				"name": "Custom Admin Child",
 				"privileges": [
 					{
@@ -3287,7 +3269,8 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 	let app = web_server::app(mm.clone());
 	let profile_id = format!("qa_users_roles_matrix_{}", Uuid::new_v4().simple());
 
-	create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
+	let profile_id =
+		create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
 	let (_custom_user_id, custom_cookie) =
 		custom_role_user(&mm, seed.org_id, &profile_id).await?;
 
@@ -3376,7 +3359,8 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 	);
 
 	let roles_profile_id = format!("qa_roles_matrix_{}", Uuid::new_v4().simple());
-	create_empty_custom_role(&app, &admin_cookie, &roles_profile_id).await?;
+	let roles_profile_id =
+		create_empty_custom_role(&app, &admin_cookie, &roles_profile_id).await?;
 	let (_roles_user_id, roles_cookie) =
 		custom_role_user(&mm, seed.org_id, &roles_profile_id).await?;
 	update_role_privileges(
@@ -3413,7 +3397,6 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 		],
 	)
 	.await?;
-	let roles_child = format!("qa_roles_child_{}", Uuid::new_v4().simple());
 	let (status, value) = request_json(
 		&app,
 		"POST",
@@ -3421,7 +3404,6 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": roles_child,
 				"name": "Roles Matrix Child",
 				"privileges": []
 			}
@@ -3471,7 +3453,6 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 	.await?;
 	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK).await?;
 
-	let next_role = format!("qa_users_roles_child_{}", Uuid::new_v4().simple());
 	let (status, value) = request_json(
 		&app,
 		"POST",
@@ -3479,7 +3460,6 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": next_role,
 				"name": "Users Roles Child",
 				"privileges": []
 			}
@@ -3502,7 +3482,8 @@ async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 	let app = web_server::app(mm.clone());
 	let profile_id = format!("qa_settings_admin_{}", Uuid::new_v4().simple());
 
-	create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
+	let profile_id =
+		create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
 	let (_custom_user_id, custom_cookie) =
 		custom_role_user(&mm, seed.org_id, &profile_id).await?;
 

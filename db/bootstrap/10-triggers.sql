@@ -166,6 +166,66 @@ BEGIN
         END IF;
     END IF;
 
+    IF p_table_name IN (
+        'sender_presave_gateways',
+        'sender_presave_responsible_persons'
+    ) THEN
+        SELECT p.organization_id INTO v_org_id
+        FROM sender_presaves p
+        WHERE p.id = NULLIF(v_values->>'sender_presave_id', '')::UUID;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
+    IF p_table_name = 'receiver_presave_consignees' THEN
+        SELECT p.organization_id INTO v_org_id
+        FROM receiver_presaves p
+        WHERE p.id = NULLIF(v_values->>'receiver_presave_id', '')::UUID;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
+    IF p_table_name IN (
+        'product_presave_substances',
+        'product_presave_fda_cross_reported_inds',
+        'product_presave_mfds_regional_items'
+    ) THEN
+        SELECT p.organization_id INTO v_org_id
+        FROM product_presaves p
+        WHERE p.id = NULLIF(v_values->>'product_presave_id', '')::UUID;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
+    IF p_table_name = 'study_presave_registration_numbers' THEN
+        SELECT p.organization_id INTO v_org_id
+        FROM study_presaves p
+        WHERE p.id = NULLIF(v_values->>'study_presave_id', '')::UUID;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
+    IF p_table_name IN (
+        'narrative_presave_sender_diagnoses',
+        'narrative_presave_case_summaries'
+    ) THEN
+        SELECT p.organization_id INTO v_org_id
+        FROM narrative_presaves p
+        WHERE p.id = NULLIF(v_values->>'narrative_presave_id', '')::UUID;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
     RETURN COALESCE(
         current_organization_id(),
         '00000000-0000-0000-0000-000000000000'::UUID
@@ -561,6 +621,51 @@ CREATE TRIGGER audit_presave_templates AFTER INSERT OR UPDATE OR DELETE ON presa
 CREATE TRIGGER audit_presave_templates_dedicated AFTER INSERT OR UPDATE OR DELETE ON presave_templates
     FOR EACH ROW EXECUTE FUNCTION presave_template_audit_trigger_function();
 
+CREATE TRIGGER audit_sender_presaves AFTER INSERT OR UPDATE OR DELETE ON sender_presaves
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_sender_presave_gateways AFTER INSERT OR UPDATE OR DELETE ON sender_presave_gateways
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_sender_presave_responsible_persons AFTER INSERT OR UPDATE OR DELETE ON sender_presave_responsible_persons
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_receiver_presaves AFTER INSERT OR UPDATE OR DELETE ON receiver_presaves
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_receiver_presave_consignees AFTER INSERT OR UPDATE OR DELETE ON receiver_presave_consignees
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_product_presaves AFTER INSERT OR UPDATE OR DELETE ON product_presaves
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_product_presave_substances AFTER INSERT OR UPDATE OR DELETE ON product_presave_substances
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_product_presave_fda_cross_reported_inds AFTER INSERT OR UPDATE OR DELETE ON product_presave_fda_cross_reported_inds
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_product_presave_mfds_regional_items AFTER INSERT OR UPDATE OR DELETE ON product_presave_mfds_regional_items
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_reporter_presaves AFTER INSERT OR UPDATE OR DELETE ON reporter_presaves
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_study_presaves AFTER INSERT OR UPDATE OR DELETE ON study_presaves
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_study_presave_registration_numbers AFTER INSERT OR UPDATE OR DELETE ON study_presave_registration_numbers
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_narrative_presaves AFTER INSERT OR UPDATE OR DELETE ON narrative_presaves
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_narrative_presave_sender_diagnoses AFTER INSERT OR UPDATE OR DELETE ON narrative_presave_sender_diagnoses
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_narrative_presave_case_summaries AFTER INSERT OR UPDATE OR DELETE ON narrative_presave_case_summaries
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
 CREATE TRIGGER audit_sender_diagnoses AFTER INSERT OR UPDATE OR DELETE ON sender_diagnoses
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
@@ -593,6 +698,9 @@ CREATE TRIGGER audit_organizations AFTER INSERT OR UPDATE OR DELETE ON organizat
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_users AFTER INSERT OR UPDATE OR DELETE ON users
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_permission_profiles AFTER INSERT OR UPDATE OR DELETE ON permission_profiles
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 -- Phase 1-3 new tables audit triggers
@@ -705,6 +813,51 @@ CREATE TRIGGER update_relatedness_assessments_updated_at BEFORE UPDATE ON relate
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_presave_templates_updated_at BEFORE UPDATE ON presave_templates
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_sender_presaves_updated_at BEFORE UPDATE ON sender_presaves
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_sender_presave_gateways_updated_at BEFORE UPDATE ON sender_presave_gateways
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_sender_presave_responsible_persons_updated_at BEFORE UPDATE ON sender_presave_responsible_persons
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_receiver_presaves_updated_at BEFORE UPDATE ON receiver_presaves
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_receiver_presave_consignees_updated_at BEFORE UPDATE ON receiver_presave_consignees
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_product_presaves_updated_at BEFORE UPDATE ON product_presaves
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_product_presave_substances_updated_at BEFORE UPDATE ON product_presave_substances
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_product_presave_fda_cross_reported_inds_updated_at BEFORE UPDATE ON product_presave_fda_cross_reported_inds
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_product_presave_mfds_regional_items_updated_at BEFORE UPDATE ON product_presave_mfds_regional_items
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_reporter_presaves_updated_at BEFORE UPDATE ON reporter_presaves
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_study_presaves_updated_at BEFORE UPDATE ON study_presaves
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_study_presave_registration_numbers_updated_at BEFORE UPDATE ON study_presave_registration_numbers
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_narrative_presaves_updated_at BEFORE UPDATE ON narrative_presaves
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_narrative_presave_sender_diagnoses_updated_at BEFORE UPDATE ON narrative_presave_sender_diagnoses
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_narrative_presave_case_summaries_updated_at BEFORE UPDATE ON narrative_presave_case_summaries
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================================

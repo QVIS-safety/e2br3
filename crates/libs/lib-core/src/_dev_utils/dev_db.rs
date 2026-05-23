@@ -212,9 +212,13 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE dosage_information ADD COLUMN IF NOT EXISTS route_termid_version VARCHAR(10)",
 		"ALTER TABLE users ENABLE ROW LEVEL SECURITY",
 		"ALTER TABLE users FORCE ROW LEVEL SECURITY",
+		"ALTER TABLE users DROP CONSTRAINT IF EXISTS user_role_valid",
+		"ALTER TABLE users ADD CONSTRAINT user_role_valid CHECK (
+			role IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user')
+			OR role ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+		)",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS access_blind_allowed BOOLEAN",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS active_sender_identifier TEXT",
-		"ALTER TABLE users ADD COLUMN IF NOT EXISTS permission_profile_id TEXT",
 		"ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS organization_id UUID",
 		"UPDATE audit_logs
 		 SET organization_id = COALESCE(
@@ -280,6 +284,9 @@ async fn apply_compatibility_alters(
 			UNIQUE (organization_id, notice_key)
 		)",
 		"GRANT SELECT, INSERT, UPDATE, DELETE ON dashboard_notices TO e2br3_app_role",
+		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid()",
+		"UPDATE permission_profiles SET id = gen_random_uuid() WHERE id IS NULL",
+		"ALTER TABLE permission_profiles ALTER COLUMN id SET NOT NULL",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS description TEXT",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS organization_id UUID",
 		"UPDATE permission_profiles
@@ -294,11 +301,48 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS built_in BOOLEAN NOT NULL DEFAULT false",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS editable BOOLEAN NOT NULL DEFAULT true",
 		"ALTER TABLE permission_profiles ADD COLUMN IF NOT EXISTS sponsor_admin_capable BOOLEAN NOT NULL DEFAULT false",
-		"UPDATE users
-		 SET permission_profile_id = role,
-		     role = 'user'
-		 WHERE role NOT IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user')
-		   AND permission_profile_id IS NULL",
+		"DO $$
+		 BEGIN
+		     IF EXISTS (
+		         SELECT 1 FROM information_schema.columns
+		         WHERE table_name = 'users'
+		           AND column_name = 'permission_profile_id'
+		     ) AND EXISTS (
+		         SELECT 1 FROM information_schema.columns
+		         WHERE table_name = 'permission_profiles'
+		           AND column_name = 'profile_id'
+		     ) THEN
+		         UPDATE users u
+		         SET role = pp.id::text
+		         FROM permission_profiles pp
+		         WHERE u.permission_profile_id IS NOT NULL
+		           AND pp.profile_id = u.permission_profile_id;
+		     END IF;
+		 END $$",
+		"ALTER TABLE users DROP COLUMN IF EXISTS permission_profile_id",
+		"DO $$
+		 BEGIN
+		     IF EXISTS (
+		         SELECT 1
+		         FROM pg_constraint
+		         WHERE conname = 'permission_profiles_pkey'
+		           AND conrelid = 'permission_profiles'::regclass
+		     ) THEN
+		         ALTER TABLE permission_profiles DROP CONSTRAINT permission_profiles_pkey;
+		     END IF;
+		     IF NOT EXISTS (
+		         SELECT 1
+		         FROM pg_constraint
+		         WHERE conname = 'permission_profiles_pkey'
+		           AND conrelid = 'permission_profiles'::regclass
+		     ) THEN
+		         ALTER TABLE permission_profiles ADD CONSTRAINT permission_profiles_pkey PRIMARY KEY (id);
+		     END IF;
+		 END $$",
+		"ALTER TABLE permission_profiles DROP COLUMN IF EXISTS profile_id",
+		"DROP TRIGGER IF EXISTS audit_permission_profiles ON permission_profiles",
+		"CREATE TRIGGER audit_permission_profiles AFTER INSERT OR UPDATE OR DELETE ON permission_profiles
+		 FOR EACH ROW EXECUTE FUNCTION audit_trigger_function()",
 		"DROP POLICY IF EXISTS users_org_isolation_select ON users",
 	] {
 		sqlx::query(sql).execute(&mut *tx).await?;
@@ -548,17 +592,17 @@ async fn apply_compatibility_alters(
 	.await?;
 	sqlx::query(
 		"WITH duplicate_roles AS (
-			SELECT profile_id,
+			SELECT id,
 				       row_number() OVER (
 				           PARTITION BY organization_id, lower(btrim(name))
-				           ORDER BY updated_at ASC, profile_id ASC
+				           ORDER BY updated_at ASC, id ASC
 				       ) AS duplicate_rank
 			FROM permission_profiles
 		)
 		UPDATE permission_profiles pp
-		SET name = pp.name || ' (' || pp.profile_id || ')'
+		SET name = pp.name || ' (' || pp.id || ')'
 		FROM duplicate_roles dr
-		WHERE pp.profile_id = dr.profile_id
+		WHERE pp.id = dr.id
 		  AND dr.duplicate_rank > 1",
 	)
 	.execute(&mut *tx)
@@ -594,13 +638,19 @@ async fn apply_compatibility_alters(
 		 FOR SELECT
 		 TO e2br3_app_role
 		 	USING (
-		 		COALESCE(current_setting('app.current_user_role', true), '') IN (
-		 			'system_admin',
-		 			'sponsor_admin_cro',
-		 			'sponsor_admin_company',
-		 			'manager',
-		 			'pvm',
-		 			'head_pv'
+		 		(
+		 			COALESCE(current_setting('app.current_user_role', true), '') IN (
+		 				'system_admin',
+		 				'sponsor_admin_cro',
+		 				'sponsor_admin_company'
+		 			)
+		 			OR EXISTS (
+		 				SELECT 1
+		 				FROM permission_profiles pp
+		 				WHERE pp.id::text = COALESCE(current_setting('app.current_user_role', true), '')
+		 				  AND pp.active = true
+		 				  AND pp.privileges_json @> '[{\"menu_key\":\"audit\",\"can_read\":true}]'::jsonb
+		 			)
 		 		)
 		 		AND (
 		 			organization_id = current_organization_id()

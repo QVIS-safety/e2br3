@@ -53,7 +53,6 @@ CREATE TABLE IF NOT EXISTS users (
     token_salt UUID NOT NULL DEFAULT gen_random_uuid(),
 
     role VARCHAR(50) NOT NULL DEFAULT 'user',
-    permission_profile_id TEXT,
     comments TEXT,
     other_information TEXT,
     access_start_at TIMESTAMPTZ,
@@ -74,7 +73,10 @@ CREATE TABLE IF NOT EXISTS users (
     updated_by UUID,
 
     CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
-    CONSTRAINT user_role_valid CHECK (role IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user'))
+    CONSTRAINT user_role_valid CHECK (
+        role IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user')
+        OR role ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    )
 );
 
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -103,8 +105,8 @@ CREATE TABLE IF NOT EXISTS dashboard_notices (
 );
 
 CREATE TABLE IF NOT EXISTS permission_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    profile_id text PRIMARY KEY,
     name VARCHAR(128) NOT NULL,
     description VARCHAR(512),
     can_view boolean NOT NULL DEFAULT true,
@@ -153,6 +155,417 @@ CREATE TABLE IF NOT EXISTS presave_template_audits (
     CONSTRAINT presave_template_audits_action_valid CHECK (action IN ('CREATE', 'UPDATE', 'DELETE'))
 );
 
+CREATE TABLE IF NOT EXISTS sender_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    sender_type VARCHAR(50),
+    organization_name VARCHAR(500),
+    department VARCHAR(500),
+    street_address TEXT,
+    city VARCHAR(200),
+    state VARCHAR(100),
+    postcode VARCHAR(50),
+    country_code VARCHAR(2),
+    telephone VARCHAR(50),
+    fax VARCHAR(50),
+    email VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT sender_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds')),
+    CONSTRAINT sender_presaves_id_organization_unique UNIQUE (id, organization_id)
+);
+
+CREATE TABLE IF NOT EXISTS sender_presave_gateways (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sender_presave_id UUID NOT NULL REFERENCES sender_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    gateway_authority VARCHAR(16) NOT NULL,
+    sender_identifier VARCHAR(255),
+    routing_identifier VARCHAR(255),
+    cde_sender_identifier VARCHAR(255),
+    cdr_sender_identifier VARCHAR(255),
+    ema_sender_identifier VARCHAR(255),
+    is_default_for_authority BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT sender_presave_gateways_authority_valid CHECK (gateway_authority IN ('fda', 'pmda', 'mfds', 'nmpa', 'ema')),
+    CONSTRAINT sender_presave_gateways_sequence_unique UNIQUE (sender_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS sender_presave_responsible_persons (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sender_presave_id UUID NOT NULL REFERENCES sender_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    department VARCHAR(500),
+    person_title VARCHAR(100),
+    person_given_name VARCHAR(200),
+    person_middle_name VARCHAR(200),
+    person_family_name VARCHAR(200),
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT sender_presave_responsible_persons_sequence_unique UNIQUE (sender_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS receiver_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    receiver_type VARCHAR(50),
+    organization_name VARCHAR(500),
+    receiver_identifier VARCHAR(255),
+    day_count_rule VARCHAR(100),
+    nsae_solicited_day_count INTEGER,
+    nsae_solicited_not_applicable BOOLEAN,
+    nsae_non_solicited_day_count INTEGER,
+    nsae_non_solicited_not_applicable BOOLEAN,
+    sae_solicited_day_count INTEGER,
+    sae_solicited_not_applicable BOOLEAN,
+    sae_non_solicited_day_count INTEGER,
+    sae_non_solicited_not_applicable BOOLEAN,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT receiver_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+);
+
+CREATE TABLE IF NOT EXISTS receiver_presave_consignees (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    receiver_presave_id UUID NOT NULL REFERENCES receiver_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    name VARCHAR(500),
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT receiver_presave_consignees_sequence_unique UNIQUE (receiver_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS product_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    sender_presave_id UUID,
+    drug_characterization VARCHAR(50),
+    medicinal_product VARCHAR(2000),
+    medicinal_product_notation VARCHAR(50),
+    preapproval_ip_name VARCHAR(2000),
+    brand_name VARCHAR(2000),
+    drug_generic_name VARCHAR(2000),
+    manufacturer_name VARCHAR(500),
+    product_description TEXT,
+    mpid VARCHAR(255),
+    mpid_version VARCHAR(50),
+    phpid VARCHAR(255),
+    phpid_version VARCHAR(50),
+    investigational_product_blinded BOOLEAN,
+    obtain_drug_country VARCHAR(2),
+    drug_authorization_number VARCHAR(100),
+    drug_authorization_country VARCHAR(2),
+    drug_authorization_holder VARCHAR(500),
+    holder_applicant_name_notation VARCHAR(50),
+    fda_ind_number_occurred VARCHAR(100),
+    fda_pre_anda_number_occurred VARCHAR(100),
+    mfds_domestic_product_code VARCHAR(100),
+    mfds_domestic_ingredient_code VARCHAR(100),
+    mfds_udl_product_code VARCHAR(100),
+    mfds_udl_ingredient_code VARCHAR(100),
+    mfds_udl_manufacturer_code VARCHAR(100),
+    mfds_udl_manufacturer_name VARCHAR(500),
+    mfds_foreign_ich_product_code VARCHAR(100),
+    mfds_foreign_ich_ingredient_code VARCHAR(100),
+    mfds_foreign_ich_holder_code VARCHAR(100),
+    mfds_foreign_ich_holder_name VARCHAR(500),
+    mfds_foreign_e2b_product_code VARCHAR(100),
+    mfds_foreign_e2b_ingredient_code VARCHAR(100),
+    mfds_foreign_e2b_holder_code VARCHAR(100),
+    mfds_foreign_e2b_holder_name VARCHAR(500),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT product_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds')),
+    CONSTRAINT product_presaves_id_organization_unique UNIQUE (id, organization_id),
+    CONSTRAINT product_presaves_sender_org_fk
+        FOREIGN KEY (sender_presave_id, organization_id)
+        REFERENCES sender_presaves(id, organization_id)
+        ON DELETE SET NULL (sender_presave_id)
+);
+
+CREATE TABLE IF NOT EXISTS product_presave_substances (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    substance_name VARCHAR(2000),
+    substance_termid_version VARCHAR(50),
+    substance_termid VARCHAR(100),
+    strength_value DECIMAL(15,5),
+    strength_unit VARCHAR(50),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT product_presave_substances_sequence_unique UNIQUE (product_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS product_presave_fda_cross_reported_inds (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    ind_number VARCHAR(100),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT product_presave_fda_cross_reported_inds_sequence_unique UNIQUE (product_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS product_presave_mfds_regional_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    item_type VARCHAR(100),
+    item_value TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT product_presave_mfds_regional_items_sequence_unique UNIQUE (product_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS reporter_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    reporter_title VARCHAR(100),
+    reporter_given_name VARCHAR(200),
+    reporter_middle_name VARCHAR(200),
+    reporter_family_name VARCHAR(200),
+    organization VARCHAR(500),
+    department VARCHAR(500),
+    street TEXT,
+    city VARCHAR(200),
+    state VARCHAR(100),
+    postcode VARCHAR(50),
+    telephone VARCHAR(50),
+    country_code VARCHAR(2),
+    email VARCHAR(255),
+    qualification VARCHAR(50),
+    qualification_kr1 VARCHAR(50),
+    primary_source_regulatory VARCHAR(50),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT reporter_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+);
+
+CREATE TABLE IF NOT EXISTS study_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    product_presave_id UUID,
+    study_name VARCHAR(2000),
+    sponsor_study_number VARCHAR(100),
+    study_type_reaction VARCHAR(50),
+    study_type_reaction_kr1 VARCHAR(50),
+    edc_sync BOOLEAN,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT study_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds')),
+    CONSTRAINT study_presaves_product_org_fk
+        FOREIGN KEY (product_presave_id, organization_id)
+        REFERENCES product_presaves(id, organization_id)
+        ON DELETE SET NULL (product_presave_id)
+);
+
+CREATE TABLE IF NOT EXISTS study_presave_registration_numbers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    registration_number VARCHAR(255),
+    country_code VARCHAR(2),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT study_presave_registration_numbers_sequence_unique UNIQUE (study_presave_id, sequence_number)
+);
+
+-- Compatibility for databases that created section presave tables before the
+-- same-organization composite FK constraints were added.
+DO $$
+DECLARE
+    v_constraint_name TEXT;
+BEGIN
+    FOR v_constraint_name IN
+        SELECT c.conname
+        FROM pg_constraint c
+        JOIN pg_attribute a
+            ON a.attrelid = c.conrelid
+            AND a.attnum = c.conkey[1]
+        WHERE c.contype = 'f'
+            AND c.conrelid = 'product_presaves'::regclass
+            AND c.confrelid = 'sender_presaves'::regclass
+            AND array_length(c.conkey, 1) = 1
+            AND a.attname = 'sender_presave_id'
+    LOOP
+        EXECUTE format('ALTER TABLE product_presaves DROP CONSTRAINT %I', v_constraint_name);
+    END LOOP;
+
+    FOR v_constraint_name IN
+        SELECT c.conname
+        FROM pg_constraint c
+        JOIN pg_attribute a
+            ON a.attrelid = c.conrelid
+            AND a.attnum = c.conkey[1]
+        WHERE c.contype = 'f'
+            AND c.conrelid = 'study_presaves'::regclass
+            AND c.confrelid = 'product_presaves'::regclass
+            AND array_length(c.conkey, 1) = 1
+            AND a.attname = 'product_presave_id'
+    LOOP
+        EXECUTE format('ALTER TABLE study_presaves DROP CONSTRAINT %I', v_constraint_name);
+    END LOOP;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'sender_presaves'::regclass
+            AND conname = 'sender_presaves_id_organization_unique'
+    ) THEN
+        ALTER TABLE sender_presaves
+            ADD CONSTRAINT sender_presaves_id_organization_unique
+            UNIQUE (id, organization_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'product_presaves'::regclass
+            AND conname = 'product_presaves_id_organization_unique'
+    ) THEN
+        ALTER TABLE product_presaves
+            ADD CONSTRAINT product_presaves_id_organization_unique
+            UNIQUE (id, organization_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'product_presaves'::regclass
+            AND conname = 'product_presaves_sender_org_fk'
+    ) THEN
+        ALTER TABLE product_presaves
+            ADD CONSTRAINT product_presaves_sender_org_fk
+            FOREIGN KEY (sender_presave_id, organization_id)
+            REFERENCES sender_presaves(id, organization_id)
+            ON DELETE SET NULL (sender_presave_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'study_presaves'::regclass
+            AND conname = 'study_presaves_product_org_fk'
+    ) THEN
+        ALTER TABLE study_presaves
+            ADD CONSTRAINT study_presaves_product_org_fk
+            FOREIGN KEY (product_presave_id, organization_id)
+            REFERENCES product_presaves(id, organization_id)
+            ON DELETE SET NULL (product_presave_id);
+    END IF;
+END;
+$$;
+
+CREATE TABLE IF NOT EXISTS narrative_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    case_narrative TEXT,
+    reporter_comments TEXT,
+    sender_comments TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT narrative_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+);
+
+CREATE TABLE IF NOT EXISTS narrative_presave_sender_diagnoses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    narrative_presave_id UUID NOT NULL REFERENCES narrative_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    diagnosis_meddra_version VARCHAR(50),
+    diagnosis_meddra_code VARCHAR(100),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT narrative_presave_sender_diagnoses_sequence_unique UNIQUE (narrative_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS narrative_presave_case_summaries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    narrative_presave_id UUID NOT NULL REFERENCES narrative_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    summary_type VARCHAR(100),
+    language_code VARCHAR(10),
+    summary_text TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT narrative_presave_case_summaries_sequence_unique UNIQUE (narrative_presave_id, sequence_number)
+);
+
 CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_presave_templates_org ON presave_templates(organization_id);
@@ -165,19 +578,36 @@ CREATE INDEX idx_presave_template_audits_template_id
     ON presave_template_audits(template_id, created_at DESC);
 CREATE INDEX idx_presave_template_audits_org
     ON presave_template_audits(organization_id, created_at DESC);
+CREATE INDEX idx_sender_presaves_org ON sender_presaves(organization_id);
+CREATE INDEX idx_sender_presaves_authority ON sender_presaves(authority);
+CREATE INDEX idx_sender_presave_gateways_parent ON sender_presave_gateways(sender_presave_id);
+CREATE INDEX idx_sender_presave_responsible_persons_parent ON sender_presave_responsible_persons(sender_presave_id);
+CREATE INDEX idx_receiver_presaves_org ON receiver_presaves(organization_id);
+CREATE INDEX idx_receiver_presaves_authority ON receiver_presaves(authority);
+CREATE INDEX idx_receiver_presave_consignees_parent ON receiver_presave_consignees(receiver_presave_id);
+CREATE INDEX idx_product_presaves_org ON product_presaves(organization_id);
+CREATE INDEX idx_product_presaves_authority ON product_presaves(authority);
+CREATE INDEX idx_product_presaves_sender ON product_presaves(sender_presave_id);
+CREATE INDEX idx_product_presave_substances_parent ON product_presave_substances(product_presave_id);
+CREATE INDEX idx_product_presave_fda_cross_reported_inds_parent ON product_presave_fda_cross_reported_inds(product_presave_id);
+CREATE INDEX idx_product_presave_mfds_regional_items_parent ON product_presave_mfds_regional_items(product_presave_id);
+CREATE INDEX idx_reporter_presaves_org ON reporter_presaves(organization_id);
+CREATE INDEX idx_reporter_presaves_authority ON reporter_presaves(authority);
+CREATE INDEX idx_study_presaves_org ON study_presaves(organization_id);
+CREATE INDEX idx_study_presaves_authority ON study_presaves(authority);
+CREATE INDEX idx_study_presaves_product ON study_presaves(product_presave_id);
+CREATE INDEX idx_study_presave_registration_numbers_parent ON study_presave_registration_numbers(study_presave_id);
+CREATE INDEX idx_narrative_presaves_org ON narrative_presaves(organization_id);
+CREATE INDEX idx_narrative_presaves_authority ON narrative_presaves(authority);
+CREATE INDEX idx_narrative_presave_sender_diagnoses_parent ON narrative_presave_sender_diagnoses(narrative_presave_id);
+CREATE INDEX idx_narrative_presave_case_summaries_parent ON narrative_presave_case_summaries(narrative_presave_id);
 
 -- Backward-compatible guard for already-created dev DBs.
 ALTER TABLE users
     ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
 
 ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS permission_profile_id TEXT;
-
-UPDATE users
-SET permission_profile_id = role,
-    role = 'user'
-WHERE role NOT IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user')
-  AND permission_profile_id IS NULL;
+    DROP COLUMN IF EXISTS permission_profile_id;
 
     -- ============================================================================
     -- 3. Safety Cases
@@ -866,13 +1296,19 @@ CREATE POLICY audit_logs_read_for_admin_manager ON audit_logs
     FOR SELECT
     TO e2br3_app_role
     USING (
-        COALESCE(current_setting('app.current_user_role', true), '') IN (
-            'system_admin',
-            'sponsor_admin_cro',
-            'sponsor_admin_company',
-            'manager',
-            'pvm',
-            'head_pv'
+        (
+            COALESCE(current_setting('app.current_user_role', true), '') IN (
+                'system_admin',
+                'sponsor_admin_cro',
+                'sponsor_admin_company'
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM permission_profiles pp
+                WHERE pp.id::text = COALESCE(current_setting('app.current_user_role', true), '')
+                  AND pp.active = true
+                  AND pp.privileges_json @> '[{"menu_key":"audit","can_read":true}]'::jsonb
+            )
         )
         AND (
             organization_id = current_organization_id()
@@ -1244,6 +1680,261 @@ CREATE POLICY presave_template_audits_insert ON presave_template_audits
     TO e2br3_app_role
     WITH CHECK (
         organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+-- ============================================================================
+-- 9.10.1 Section Presave Tables RLS
+-- ============================================================================
+ALTER TABLE sender_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sender_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY sender_presaves_org_isolation ON sender_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE sender_presave_gateways ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sender_presave_gateways FORCE ROW LEVEL SECURITY;
+CREATE POLICY sender_presave_gateways_via_parent ON sender_presave_gateways
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM sender_presaves p
+            WHERE p.id = sender_presave_gateways.sender_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM sender_presaves p
+            WHERE p.id = sender_presave_gateways.sender_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE sender_presave_responsible_persons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sender_presave_responsible_persons FORCE ROW LEVEL SECURITY;
+CREATE POLICY sender_presave_responsible_persons_via_parent ON sender_presave_responsible_persons
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM sender_presaves p
+            WHERE p.id = sender_presave_responsible_persons.sender_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM sender_presaves p
+            WHERE p.id = sender_presave_responsible_persons.sender_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE receiver_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE receiver_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY receiver_presaves_org_isolation ON receiver_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE receiver_presave_consignees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE receiver_presave_consignees FORCE ROW LEVEL SECURITY;
+CREATE POLICY receiver_presave_consignees_via_parent ON receiver_presave_consignees
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM receiver_presaves p
+            WHERE p.id = receiver_presave_consignees.receiver_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM receiver_presaves p
+            WHERE p.id = receiver_presave_consignees.receiver_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE product_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY product_presaves_org_isolation ON product_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE product_presave_substances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_presave_substances FORCE ROW LEVEL SECURITY;
+CREATE POLICY product_presave_substances_via_parent ON product_presave_substances
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_substances.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_substances.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE product_presave_fda_cross_reported_inds ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_presave_fda_cross_reported_inds FORCE ROW LEVEL SECURITY;
+CREATE POLICY product_presave_fda_cross_reported_inds_via_parent ON product_presave_fda_cross_reported_inds
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_fda_cross_reported_inds.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_fda_cross_reported_inds.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE product_presave_mfds_regional_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_presave_mfds_regional_items FORCE ROW LEVEL SECURITY;
+CREATE POLICY product_presave_mfds_regional_items_via_parent ON product_presave_mfds_regional_items
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_mfds_regional_items.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_mfds_regional_items.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE reporter_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reporter_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY reporter_presaves_org_isolation ON reporter_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE study_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE study_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY study_presaves_org_isolation ON study_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE study_presave_registration_numbers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE study_presave_registration_numbers FORCE ROW LEVEL SECURITY;
+CREATE POLICY study_presave_registration_numbers_via_parent ON study_presave_registration_numbers
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM study_presaves p
+            WHERE p.id = study_presave_registration_numbers.study_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM study_presaves p
+            WHERE p.id = study_presave_registration_numbers.study_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE narrative_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE narrative_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY narrative_presaves_org_isolation ON narrative_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE narrative_presave_sender_diagnoses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE narrative_presave_sender_diagnoses FORCE ROW LEVEL SECURITY;
+CREATE POLICY narrative_presave_sender_diagnoses_via_parent ON narrative_presave_sender_diagnoses
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM narrative_presaves p
+            WHERE p.id = narrative_presave_sender_diagnoses.narrative_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM narrative_presaves p
+            WHERE p.id = narrative_presave_sender_diagnoses.narrative_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE narrative_presave_case_summaries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE narrative_presave_case_summaries FORCE ROW LEVEL SECURITY;
+CREATE POLICY narrative_presave_case_summaries_via_parent ON narrative_presave_case_summaries
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM narrative_presaves p
+            WHERE p.id = narrative_presave_case_summaries.narrative_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM narrative_presaves p
+            WHERE p.id = narrative_presave_case_summaries.narrative_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
     );
 
 -- ============================================================================

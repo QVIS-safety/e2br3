@@ -21,8 +21,8 @@ use sqlx::FromRow;
 
 #[derive(Debug, Clone, FromRow)]
 pub struct DbPermissionProfileRow {
+	pub id: Uuid,
 	pub organization_id: Uuid,
-	pub profile_id: String,
 	pub name: String,
 	pub description: Option<String>,
 	pub privileges_json: SqlxJson<Vec<AdminMenuPrivilege>>,
@@ -34,7 +34,6 @@ pub struct DbPermissionProfileRow {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PermissionProfileCreateData {
-	pub profile_id: String,
 	pub name: String,
 	pub description: Option<String>,
 	pub privileges: SqlxJson<Vec<AdminMenuPrivilege>>,
@@ -52,7 +51,7 @@ pub struct PermissionProfileUpdateData {
 }
 
 const PROFILE_SELECT: &str = r#"
-	SELECT organization_id, profile_id, name, description, privileges_json,
+	SELECT id, organization_id, name, description, privileges_json,
 	       active, built_in, editable, sponsor_admin_capable
 	FROM permission_profiles
 "#;
@@ -93,9 +92,9 @@ impl PermissionProfileBmc {
 	pub async fn get(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		profile_id: &str,
+		id: Uuid,
 	) -> Result<DbPermissionProfileRow> {
-		let sql = format!("{PROFILE_SELECT} WHERE profile_id = $1");
+		let sql = format!("{PROFILE_SELECT} WHERE id = $1");
 		let dbx = mm.dbx();
 		dbx.begin_txn().await?;
 		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
@@ -103,9 +102,7 @@ impl PermissionProfileBmc {
 			return Err(err);
 		}
 		let row = match dbx
-			.fetch_one(
-				sqlx::query_as::<_, DbPermissionProfileRow>(&sql).bind(profile_id),
-			)
+			.fetch_one(sqlx::query_as::<_, DbPermissionProfileRow>(&sql).bind(id))
 			.await
 		{
 			Ok(row) => row,
@@ -122,7 +119,7 @@ impl PermissionProfileBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		name: &str,
-		excluding_profile_id: Option<&str>,
+		excluding_id: Option<Uuid>,
 	) -> Result<bool> {
 		let dbx = mm.dbx();
 		dbx.begin_txn().await?;
@@ -139,13 +136,13 @@ impl PermissionProfileBmc {
 						FROM permission_profiles
 						WHERE organization_id = $1
 						  AND lower(btrim(name)) = lower(btrim($2))
-						  AND ($3::text IS NULL OR profile_id <> $3)
+						  AND ($3::uuid IS NULL OR id <> $3)
 					)
 					"#,
 				)
 				.bind(ctx.organization_id())
 				.bind(name)
-				.bind(excluding_profile_id),
+				.bind(excluding_id),
 			)
 			.await
 		{
@@ -163,7 +160,7 @@ impl PermissionProfileBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		data: PermissionProfileCreateData,
-	) -> Result<()> {
+	) -> Result<Uuid> {
 		let dbx = mm.dbx();
 		dbx.begin_txn().await?;
 		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
@@ -171,17 +168,17 @@ impl PermissionProfileBmc {
 			return Err(err);
 		}
 		match dbx
-			.execute(
-				sqlx::query(
+			.fetch_one(
+				sqlx::query_as::<_, (Uuid,)>(
 					r#"
 					INSERT INTO permission_profiles
-						(organization_id, profile_id, name, description, privileges_json, active,
+						(organization_id, name, description, privileges_json, active,
 						 built_in, editable, sponsor_admin_capable)
-						VALUES ($1, $2, $3, $4, $5, $6, false, true, $7)
+						VALUES ($1, $2, $3, $4, $5, false, true, $6)
+						RETURNING id
 					"#,
 				)
 				.bind(ctx.organization_id())
-				.bind(&data.profile_id)
 				.bind(&data.name)
 				.bind(&data.description)
 				.bind(&data.privileges)
@@ -190,9 +187,9 @@ impl PermissionProfileBmc {
 			)
 			.await
 		{
-			Ok(_) => {
+			Ok((id,)) => {
 				dbx.commit_txn().await?;
-				Ok(())
+				Ok(id)
 			}
 			Err(err) => {
 				dbx.rollback_txn().await?;
@@ -204,7 +201,7 @@ impl PermissionProfileBmc {
 	pub async fn update(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		profile_id: &str,
+		id: Uuid,
 		data: PermissionProfileUpdateData,
 	) -> Result<()> {
 		let dbx = mm.dbx();
@@ -224,10 +221,10 @@ impl PermissionProfileBmc {
 						    active = $5,
 						    sponsor_admin_capable = $6,
 						    updated_at = now()
-					WHERE profile_id = $1
+					WHERE id = $1
 					"#,
 				)
-				.bind(profile_id)
+				.bind(id)
 				.bind(&data.name)
 				.bind(&data.description)
 				.bind(&data.privileges)
@@ -247,11 +244,7 @@ impl PermissionProfileBmc {
 		}
 	}
 
-	pub async fn delete(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		profile_id: &str,
-	) -> Result<()> {
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
 		let dbx = mm.dbx();
 		dbx.begin_txn().await?;
 		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
@@ -260,8 +253,8 @@ impl PermissionProfileBmc {
 		}
 		match dbx
 			.execute(
-				sqlx::query("DELETE FROM permission_profiles WHERE profile_id = $1")
-					.bind(profile_id),
+				sqlx::query("DELETE FROM permission_profiles WHERE id = $1")
+					.bind(id),
 			)
 			.await
 		{
@@ -285,7 +278,7 @@ impl PermissionProfileBmc {
 			.map(|row| {
 				let permissions =
 					permissions_for_menu_privileges(&row.privileges_json.0);
-				(row.profile_id, permissions)
+				(row.id.to_string(), permissions)
 			})
 			.collect();
 		replace_dynamic_roles(mapped);
@@ -294,8 +287,8 @@ impl PermissionProfileBmc {
 
 	/// Remove a single role from the in-memory cache without a full reload.
 	/// Call before `refresh_dynamic_roles` on delete, or standalone for cache eviction.
-	pub fn evict_dynamic_role(profile_id: &str) {
-		remove_dynamic_role(profile_id);
+	pub fn evict_dynamic_role(id: Uuid) {
+		remove_dynamic_role(&id.to_string());
 	}
 
 	async fn fetch_all_with_ctx<'q>(

@@ -20,11 +20,27 @@ pub(crate) async fn collect_section_issues(
 	mfds_ctx: Option<&MfdsValidationContext>,
 ) -> Result<Vec<ValidationIssue>> {
 	let mut issues = Vec::new();
-	c::collect(&mut issues, authority, mm, validation_ctx, fda_ctx, mfds_ctx).await?;
+	c::collect(
+		&mut issues,
+		authority,
+		mm,
+		validation_ctx,
+		fda_ctx,
+		mfds_ctx,
+	)
+	.await?;
 	d::collect(&mut issues, authority, validation_ctx, fda_ctx, mfds_ctx);
 	e::collect(&mut issues, authority, validation_ctx, fda_ctx);
 	f::collect(&mut issues, authority, validation_ctx);
-	g::collect(&mut issues, authority, mm, validation_ctx, fda_ctx, mfds_ctx).await?;
+	g::collect(
+		&mut issues,
+		authority,
+		mm,
+		validation_ctx,
+		fda_ctx,
+		mfds_ctx,
+	)
+	.await?;
 	h::collect(&mut issues, authority, validation_ctx);
 	n::collect(&mut issues, authority, validation_ctx);
 	Ok(issues)
