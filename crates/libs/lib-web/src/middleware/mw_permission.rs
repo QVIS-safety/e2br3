@@ -10,7 +10,7 @@ use crate::middleware::mw_auth::CtxW;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use lib_core::ctx::Ctx;
-use lib_core::model::acs::{has_permission, Permission};
+use lib_core::model::acs::{has_permission, Permission, USER_CREATE};
 use std::marker::PhantomData;
 
 // region:    --- RequirePermission Extractor
@@ -71,6 +71,42 @@ where
 }
 
 // endregion: --- RequirePermission Extractor
+
+// region:    --- RequireAdmin Extractor
+
+/// Extractor that requires built-in admin access or custom user-management
+/// administration capability. Put this before body/query extractors so
+/// unauthorized requests fail before request-shape validation.
+pub struct RequireAdmin;
+
+impl<S> FromRequestParts<S> for RequireAdmin
+where
+	S: Send + Sync,
+{
+	type Rejection = Error;
+
+	async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self> {
+		let ctx_result = parts
+			.extensions
+			.get::<core::result::Result<CtxW, crate::middleware::mw_auth::CtxExtError>>(
+			)
+			.ok_or(Error::CtxExt(
+				crate::middleware::mw_auth::CtxExtError::CtxNotInRequestExt,
+			))?;
+
+		let ctx = ctx_result.as_ref().map_err(|e| Error::CtxExt(e.clone()))?;
+		let subject = ctx.0.permission_subject();
+		if !(ctx.0.is_admin() || has_permission(subject, USER_CREATE)) {
+			return Err(Error::AccessDenied {
+				required_role: "admin".to_string(),
+			});
+		}
+
+		Ok(Self)
+	}
+}
+
+// endregion: --- RequireAdmin Extractor
 
 // region:    --- Permission Check Function
 
@@ -283,9 +319,21 @@ define_permission_marker!(
 	acs::TERMINOLOGY_READ,
 	"Terminology.Read"
 );
+define_permission_marker!(
+	TerminologyImport,
+	acs::TERMINOLOGY_IMPORT,
+	"Terminology.Import"
+);
+define_permission_marker!(
+	TerminologyApprove,
+	acs::TERMINOLOGY_APPROVE,
+	"Terminology.Approve"
+);
 
 // XML permissions
+define_permission_marker!(XmlExportRead, acs::XML_EXPORT_READ, "XmlExport.Read");
 define_permission_marker!(XmlExport, acs::XML_EXPORT, "Xml.Export");
+define_permission_marker!(XmlImportRead, acs::XML_IMPORT_READ, "XmlImport.Read");
 define_permission_marker!(XmlImport, acs::XML_IMPORT, "Xml.Import");
 
 // endregion: --- Permission Marker Types

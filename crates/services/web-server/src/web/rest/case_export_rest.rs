@@ -17,6 +17,9 @@ use lib_rest_core::prelude::*;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::Error;
 use lib_web::middleware::mw_auth::CtxW;
+use lib_web::middleware::mw_permission::{
+	RequirePermission, XmlExport as XmlExportPerm,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
 use std::collections::HashSet;
@@ -385,6 +388,7 @@ pub async fn export_case(
 pub async fn export_cases_zip(
 	State(mm): State<lib_core::model::ModelManager>,
 	ctx_w: CtxW,
+	_perm: RequirePermission<XmlExportPerm>,
 	axum::Json(input): axum::Json<BulkXmlExportInput>,
 ) -> Result<Response> {
 	let ctx = ctx_w.0;

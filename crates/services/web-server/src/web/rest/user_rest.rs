@@ -36,6 +36,7 @@ use lib_rest_core::{
 	validate_active_sender_selection, Error, Result,
 };
 use lib_web::middleware::mw_auth::CtxW;
+use lib_web::middleware::mw_permission::RequireAdmin;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use sqlx::types::time::OffsetDateTime;
 use time::{format_description, PrimitiveDateTime};
@@ -626,6 +627,7 @@ fn user_view(user: User) -> UserView {
 pub async fn create_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_admin: RequireAdmin,
 	Json(params): Json<ParamsForCreate<UserForCreateAdminPayload>>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
@@ -791,6 +793,7 @@ pub async fn update_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
+	_admin: RequireAdmin,
 	Json(params): Json<ParamsForUpdate<UserForUpdateAdminPayload>>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;

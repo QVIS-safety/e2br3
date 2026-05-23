@@ -15,6 +15,7 @@ use lib_core::model::permission_profile::{
 use lib_core::model::ModelManager;
 use lib_rest_core::{require_admin, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
+use lib_web::middleware::mw_permission::RequireAdmin;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
 use std::collections::BTreeMap;
@@ -371,6 +372,7 @@ pub async fn get_permission_profile(
 pub async fn create_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_admin: RequireAdmin,
 	Json(params): Json<
 		lib_rest_core::rest_params::ParamsForCreate<PermissionProfileCreateBody>,
 	>,
@@ -440,6 +442,7 @@ pub async fn update_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(profile_id): Path<String>,
+	_admin: RequireAdmin,
 	Json(params): Json<
 		lib_rest_core::rest_params::ParamsForUpdate<PermissionProfileUpdateBody>,
 	>,

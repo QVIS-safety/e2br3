@@ -16,6 +16,11 @@ use lib_core::model::ModelManager;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
+use lib_web::middleware::mw_permission::{
+	RequirePermission, TerminologyApprove as TerminologyApprovePerm,
+	TerminologyImport as TerminologyImportPerm,
+	TerminologyRead as TerminologyReadPerm,
+};
 use serde::{Deserialize, Serialize};
 
 // -- Params
@@ -138,6 +143,7 @@ async fn read_field_limited(
 pub async fn search_meddra(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_perm: RequirePermission<TerminologyReadPerm>,
 	Query(params): Query<TerminologySearchParams>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<MeddraTerm>>>)> {
 	let ctx = ctx_w.0;
@@ -165,6 +171,7 @@ pub async fn search_meddra(
 pub async fn search_whodrug(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_perm: RequirePermission<TerminologyReadPerm>,
 	Query(params): Query<TerminologySearchParams>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<WhodrugProduct>>>)> {
 	let ctx = ctx_w.0;
@@ -197,6 +204,7 @@ pub async fn list_countries(
 pub async fn get_code_list(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_perm: RequirePermission<TerminologyReadPerm>,
 	Query(params): Query<CodeListParams>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<E2bCodeList>>>)> {
 	let ctx = ctx_w.0;
@@ -221,6 +229,7 @@ pub async fn list_ucum_units(
 pub async fn import_meddra(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_perm: RequirePermission<TerminologyImportPerm>,
 	Query(params): Query<TerminologyImportParams>,
 	multipart: Multipart,
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyImportResult>>)> {
@@ -271,6 +280,7 @@ pub async fn import_meddra(
 pub async fn import_whodrug(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_perm: RequirePermission<TerminologyImportPerm>,
 	Query(params): Query<TerminologyImportParams>,
 	multipart: Multipart,
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyImportResult>>)> {
@@ -321,6 +331,7 @@ pub async fn import_whodrug(
 pub async fn list_releases(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_perm: RequirePermission<TerminologyReadPerm>,
 	Query(params): Query<TerminologyReleaseListParams>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<TerminologyReleaseRow>>>)> {
 	let ctx = ctx_w.0;
@@ -342,6 +353,7 @@ pub async fn approve_release(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(path): Path<ReleasePath>,
+	_perm: RequirePermission<TerminologyApprovePerm>,
 	Query(params): Query<TerminologyApproveParams>,
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyReleaseRow>>)> {
 	let ctx = ctx_w.0;
@@ -374,6 +386,7 @@ pub async fn activate_release(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(path): Path<ReleasePath>,
+	_perm: RequirePermission<TerminologyApprovePerm>,
 	Query(params): Query<TerminologyActivateParams>,
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyReleaseRow>>)> {
 	let ctx = ctx_w.0;
@@ -401,6 +414,7 @@ pub async fn rollback_release(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(path): Path<ReleasePath>,
+	_perm: RequirePermission<TerminologyApprovePerm>,
 	Query(params): Query<TerminologyActivateParams>,
 ) -> Result<(StatusCode, Json<DataRestResult<TerminologyReleaseRow>>)> {
 	let ctx = ctx_w.0;

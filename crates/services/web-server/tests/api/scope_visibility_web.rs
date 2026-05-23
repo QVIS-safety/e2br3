@@ -54,6 +54,25 @@ async fn request_json(
 	Ok((status, value))
 }
 
+async fn request_raw_status(
+	app: &Router,
+	method: &str,
+	cookie: &str,
+	uri: &str,
+	content_type: Option<&str>,
+	body: impl Into<Body>,
+) -> Result<StatusCode> {
+	let mut req = Request::builder().method(method).uri(uri);
+	if !cookie.is_empty() {
+		req = req.header("cookie", cookie);
+	}
+	if let Some(content_type) = content_type {
+		req = req.header("content-type", content_type);
+	}
+	let res = app.clone().oneshot(req.body(body.into())?).await?;
+	Ok(res.status())
+}
+
 async fn create_empty_custom_role(
 	app: &Router,
 	admin_cookie: &str,
@@ -1355,6 +1374,78 @@ async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> 
 	assert_eq!(value["privileges"].as_array().map(Vec::len), Some(0));
 	assert_eq!(value["can_view"].as_bool(), Some(false));
 	assert_eq!(value["can_admin"].as_bool(), Some(false));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_privileged_endpoints_authorize_before_request_shape_validation(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let profile_id = format!("qa_no_leak_{}", Uuid::new_v4().simple());
+	let profile_id =
+		create_empty_custom_role_with_generated_id(&app, &admin_cookie, &profile_id)
+			.await?;
+	let (_user_id, custom_cookie) =
+		custom_role_user(&mm, seed.org_id, &profile_id).await?;
+	let target_user_id = Uuid::new_v4();
+	let target_user_uri = format!("/api/users/{target_user_id}");
+
+	for (method, uri, content_type, body) in [
+		(
+			"POST",
+			"/api/users".to_string(),
+			Some("application/json"),
+			"{",
+		),
+		("PUT", target_user_uri, Some("application/json"), "{"),
+		(
+			"PUT",
+			"/api/admin/settings".to_string(),
+			Some("application/json"),
+			"{",
+		),
+		(
+			"PUT",
+			"/api/admin/notices".to_string(),
+			Some("application/json"),
+			"{",
+		),
+		(
+			"POST",
+			"/api/admin/permission-profiles".to_string(),
+			Some("application/json"),
+			"{",
+		),
+		(
+			"PUT",
+			"/api/admin/permission-profiles/no_such_role".to_string(),
+			Some("application/json"),
+			"{",
+		),
+		(
+			"POST",
+			"/api/terminology/import/meddra?version=v1&dry_run=not_bool".to_string(),
+			Some("multipart/form-data; boundary=X"),
+			"",
+		),
+	] {
+		let status = request_raw_status(
+			&app,
+			method,
+			&custom_cookie,
+			&uri,
+			content_type,
+			body,
+		)
+		.await?;
+		assert_eq!(status, StatusCode::FORBIDDEN, "{method} {uri}");
+	}
 
 	Ok(())
 }

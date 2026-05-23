@@ -18,6 +18,9 @@ use lib_core::xml::{
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
+use lib_web::middleware::mw_permission::{
+	RequirePermission, XmlImport as XmlImportPerm,
+};
 use serde::Serialize;
 use std::io::{Cursor, Read};
 use time::format_description::well_known::Rfc3339;
@@ -453,6 +456,7 @@ pub async fn download_import_history_error(
 pub async fn validate_xml(
 	State(_mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_perm: RequirePermission<XmlImportPerm>,
 	multipart: Multipart,
 ) -> Result<(StatusCode, Json<DataRestResult<XmlValidationReport>>)> {
 	let ctx = ctx_w.0;
@@ -474,6 +478,7 @@ pub async fn validate_xml(
 pub async fn import_xml(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_perm: RequirePermission<XmlImportPerm>,
 	multipart: Multipart,
 ) -> Result<(StatusCode, Json<DataRestResult<XmlImportBatchResult>>)> {
 	let ctx = ctx_w.0;

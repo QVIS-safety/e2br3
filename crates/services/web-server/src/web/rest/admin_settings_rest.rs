@@ -9,6 +9,7 @@ use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::ModelManager;
 use lib_rest_core::{require_admin, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
+use lib_web::middleware::mw_permission::RequireAdmin;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashSet;
@@ -458,6 +459,7 @@ pub async fn get_admin_settings(
 pub async fn update_admin_settings(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_admin: RequireAdmin,
 	Json(payload): Json<
 		lib_rest_core::rest_params::ParamsForUpdate<AdminSettingsUpdateBody>,
 	>,
@@ -478,6 +480,7 @@ pub async fn update_admin_settings(
 pub async fn update_admin_notices(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	_admin: RequireAdmin,
 	Json(payload): Json<
 		lib_rest_core::rest_params::ParamsForUpdate<AdminNoticesUpdateBody>,
 	>,
