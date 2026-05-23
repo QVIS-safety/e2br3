@@ -1,11 +1,19 @@
 mod common;
 
 use crate::common::{
-	demo_org_id, demo_user_id, reset_role, set_auditor_role, Result,
+	demo_ctx, demo_org_id, demo_user_id, reset_role, set_auditor_role, Result,
 };
 use lib_core::_dev_utils;
+use lib_core::model::presave::{
+	NarrativePresaveBmc, NarrativePresaveForCreate, ProductPresaveBmc,
+	ProductPresaveForCreate, ReceiverPresaveBmc, ReceiverPresaveForCreate,
+	ReporterPresaveBmc, ReporterPresaveForCreate, SenderPresaveBmc,
+	SenderPresaveForCreate, SenderPresaveForUpdate, StudyPresaveBmc,
+	StudyPresaveForCreate,
+};
 use lib_core::model::store::{set_org_context, set_user_context};
 use lib_core::model::ModelManager;
+use lib_core::regulatory::RegulatoryAuthority;
 use serial_test::serial;
 use std::collections::HashSet;
 
@@ -458,6 +466,232 @@ fn section_presave_compatibility_cleans_cross_org_links_before_composite_fks() {
 		study_cleanup < study_fk,
 		"study->product mismatch cleanup must run before adding the composite FK"
 	);
+}
+
+#[serial]
+#[tokio::test]
+async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveForCreate {
+			authority: RegulatoryAuthority::Ich,
+			name: format!("Sender Presave {suffix}"),
+			comments: Some("sender comment".into()),
+			is_default: Some(true),
+			sender_type: Some("1".into()),
+			organization_name: Some("Sender Org Before".into()),
+			department: Some("Safety".into()),
+			street_address: Some("1 Sender St".into()),
+			city: Some("Seoul".into()),
+			state: Some("11".into()),
+			postcode: Some("04524".into()),
+			country_code: Some("KR".into()),
+			telephone: Some("02-1111-2222".into()),
+			fax: Some("02-1111-3333".into()),
+			email: Some("sender@example.com".into()),
+		},
+	)
+	.await?;
+	let sender = SenderPresaveBmc::get(&ctx, &mm, sender_id).await?;
+	assert_eq!(sender.authority, RegulatoryAuthority::Ich);
+	assert_eq!(sender.name, format!("Sender Presave {suffix}"));
+	assert_eq!(
+		sender.organization_name.as_deref(),
+		Some("Sender Org Before")
+	);
+
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			authority: RegulatoryAuthority::Fda,
+			name: format!("Receiver Presave {suffix}"),
+			comments: None,
+			receiver_type: Some("agency".into()),
+			organization_name: Some("Receiver Org".into()),
+			receiver_identifier: Some("CDER".into()),
+			day_count_rule: Some("calendar".into()),
+			nsae_solicited_day_count: Some(15),
+			nsae_solicited_not_applicable: Some(false),
+			nsae_non_solicited_day_count: Some(15),
+			nsae_non_solicited_not_applicable: Some(false),
+			sae_solicited_day_count: Some(7),
+			sae_solicited_not_applicable: Some(false),
+			sae_non_solicited_day_count: Some(7),
+			sae_non_solicited_not_applicable: Some(false),
+			description: Some("FDA routing".into()),
+		},
+	)
+	.await?;
+	let receiver = ReceiverPresaveBmc::get(&ctx, &mm, receiver_id).await?;
+	assert_eq!(receiver.authority, RegulatoryAuthority::Fda);
+	assert_eq!(receiver.name, format!("Receiver Presave {suffix}"));
+	assert_eq!(receiver.receiver_identifier.as_deref(), Some("CDER"));
+
+	let product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveForCreate {
+			authority: RegulatoryAuthority::Mfds,
+			name: format!("Product Presave {suffix}"),
+			comments: None,
+			sender_presave_id: Some(sender_id),
+			drug_characterization: Some("1".into()),
+			medicinal_product: Some("Medicinal Product".into()),
+			medicinal_product_notation: None,
+			preapproval_ip_name: None,
+			brand_name: Some("Brand".into()),
+			drug_generic_name: Some("Generic".into()),
+			manufacturer_name: Some("Manufacturer".into()),
+			product_description: Some("Product description".into()),
+			mpid: None,
+			mpid_version: None,
+			phpid: None,
+			phpid_version: None,
+			investigational_product_blinded: Some(false),
+			obtain_drug_country: Some("KR".into()),
+			drug_authorization_number: Some("AUTH-1".into()),
+			drug_authorization_country: Some("KR".into()),
+			drug_authorization_holder: Some("Holder".into()),
+			holder_applicant_name_notation: None,
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
+			mfds_domestic_product_code: Some("MFDS-P".into()),
+			mfds_domestic_ingredient_code: Some("MFDS-I".into()),
+			mfds_udl_product_code: None,
+			mfds_udl_ingredient_code: None,
+			mfds_udl_manufacturer_code: None,
+			mfds_udl_manufacturer_name: None,
+			mfds_foreign_ich_product_code: None,
+			mfds_foreign_ich_ingredient_code: None,
+			mfds_foreign_ich_holder_code: None,
+			mfds_foreign_ich_holder_name: None,
+			mfds_foreign_e2b_product_code: None,
+			mfds_foreign_e2b_ingredient_code: None,
+			mfds_foreign_e2b_holder_code: None,
+			mfds_foreign_e2b_holder_name: None,
+		},
+	)
+	.await?;
+	let product = ProductPresaveBmc::get(&ctx, &mm, product_id).await?;
+	assert_eq!(product.authority, RegulatoryAuthority::Mfds);
+	assert_eq!(product.name, format!("Product Presave {suffix}"));
+	assert_eq!(
+		product.medicinal_product.as_deref(),
+		Some("Medicinal Product")
+	);
+
+	let reporter_id = ReporterPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReporterPresaveForCreate {
+			authority: RegulatoryAuthority::Ich,
+			name: format!("Reporter Presave {suffix}"),
+			comments: None,
+			reporter_title: Some("Dr".into()),
+			reporter_given_name: Some("Casey".into()),
+			reporter_middle_name: None,
+			reporter_family_name: Some("Reporter".into()),
+			organization: Some("Reporter Org".into()),
+			department: Some("PV".into()),
+			street: Some("2 Reporter St".into()),
+			city: Some("Busan".into()),
+			state: None,
+			postcode: Some("48000".into()),
+			telephone: Some("051-111-2222".into()),
+			country_code: Some("KR".into()),
+			email: Some("reporter@example.com".into()),
+			qualification: Some("1".into()),
+			qualification_kr1: None,
+			primary_source_regulatory: Some("1".into()),
+		},
+	)
+	.await?;
+	let reporter = ReporterPresaveBmc::get(&ctx, &mm, reporter_id).await?;
+	assert_eq!(reporter.authority, RegulatoryAuthority::Ich);
+	assert_eq!(reporter.name, format!("Reporter Presave {suffix}"));
+	assert_eq!(reporter.reporter_family_name.as_deref(), Some("Reporter"));
+
+	let study_id = StudyPresaveBmc::create(
+		&ctx,
+		&mm,
+		StudyPresaveForCreate {
+			authority: RegulatoryAuthority::Fda,
+			name: format!("Study Presave {suffix}"),
+			comments: None,
+			product_presave_id: Some(product_id),
+			study_name: Some("Study Name".into()),
+			sponsor_study_number: Some("ST-001".into()),
+			study_type_reaction: Some("1".into()),
+			study_type_reaction_kr1: None,
+			edc_sync: Some(true),
+		},
+	)
+	.await?;
+	let study = StudyPresaveBmc::get(&ctx, &mm, study_id).await?;
+	assert_eq!(study.authority, RegulatoryAuthority::Fda);
+	assert_eq!(study.name, format!("Study Presave {suffix}"));
+	assert_eq!(study.sponsor_study_number.as_deref(), Some("ST-001"));
+
+	let narrative_id = NarrativePresaveBmc::create(
+		&ctx,
+		&mm,
+		NarrativePresaveForCreate {
+			authority: RegulatoryAuthority::Mfds,
+			name: format!("Narrative Presave {suffix}"),
+			comments: None,
+			case_narrative: Some("Case narrative text".into()),
+			reporter_comments: Some("Reporter comments".into()),
+			sender_comments: Some("Sender comments".into()),
+		},
+	)
+	.await?;
+	let narrative = NarrativePresaveBmc::get(&ctx, &mm, narrative_id).await?;
+	assert_eq!(narrative.authority, RegulatoryAuthority::Mfds);
+	assert_eq!(narrative.name, format!("Narrative Presave {suffix}"));
+	assert_eq!(
+		narrative.case_narrative.as_deref(),
+		Some("Case narrative text")
+	);
+
+	SenderPresaveBmc::update(
+		&ctx,
+		&mm,
+		sender_id,
+		SenderPresaveForUpdate {
+			organization_name: Some("Sender Org After".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	let updated_sender = SenderPresaveBmc::get(&ctx, &mm, sender_id).await?;
+	assert_eq!(
+		updated_sender.organization_name.as_deref(),
+		Some("Sender Org After")
+	);
+	let ich_senders =
+		SenderPresaveBmc::list_by_authority(&ctx, &mm, RegulatoryAuthority::Ich)
+			.await?;
+	assert!(
+		ich_senders.iter().any(|sender| sender.id == sender_id
+			&& sender.organization_name.as_deref() == Some("Sender Org After")),
+		"updated sender should appear in ICH list_by_authority results"
+	);
+
+	NarrativePresaveBmc::delete(&ctx, &mm, narrative_id).await?;
+	StudyPresaveBmc::delete(&ctx, &mm, study_id).await?;
+	ReporterPresaveBmc::delete(&ctx, &mm, reporter_id).await?;
+	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
+	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
+	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
+
+	Ok(())
 }
 
 #[serial]

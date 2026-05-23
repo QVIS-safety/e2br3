@@ -78,6 +78,7 @@ pub mod audit; // Audit logs and case versions
 pub mod e_signature; // Electronic signatures for Part 11 critical actions
 
 // Presave Templates
+pub mod presave; // Section-specific INFO presave master data
 pub mod presave_template; // Reusable pre-case templates and template audit history
 
 // Admin
