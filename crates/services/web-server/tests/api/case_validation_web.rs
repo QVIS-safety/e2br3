@@ -5,7 +5,8 @@ use crate::common::{
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
-use lib_core::ctx::ROLE_USER;
+use lib_core::ctx::{ROLE_SPONSOR_ADMIN_CRO, ROLE_USER};
+use lib_core::model::store::set_full_context_dbx;
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
@@ -1235,6 +1236,89 @@ async fn test_single_profile_validation_caches_summary() -> Result<()> {
 
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["profile"], json!("fda"));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_validation_reuses_fresh_full_report_cache() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+	create_sender(&app, &cookie, case_id, "3").await?;
+
+	let validation_uri = format!("/api/cases/{case_id}/validation?profile=fda");
+	let (status, first_body) =
+		get_validation(&app, &cookie, &validation_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{first_body:?}");
+	assert_eq!(first_body["data"]["profile"], json!("fda"));
+
+	let sentinel_message = format!("fresh cache sentinel {}", Uuid::new_v4());
+	let mut cached_report = first_body["data"].clone();
+	cached_report["issues"]
+		.as_array_mut()
+		.ok_or("missing data.issues")?
+		.push(json!({
+			"code": "FDA.CACHE.SENTINEL",
+			"message": sentinel_message,
+			"field_path": "case.cache",
+			"path": "case.cache",
+			"section": "case-identification",
+			"subsection": "cache",
+			"blocking": false
+		}));
+
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	let rows = mm
+		.dbx()
+		.execute(
+			sqlx::query(
+				r#"
+				UPDATE case_validation_reports
+				   SET report = $1,
+				       stale = false,
+				       generated_at = now()
+				 WHERE case_id = $2
+				   AND profile = 'fda'
+				"#,
+			)
+			.bind(sqlx::types::Json(cached_report))
+			.bind(case_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	assert_eq!(
+		rows, 1,
+		"expected first validation call to populate a full report cache row"
+	);
+
+	let (status, second_body) =
+		get_validation(&app, &cookie, &validation_uri).await?;
+	assert_eq!(status, StatusCode::OK, "{second_body:?}");
+	assert!(
+		second_body["data"]["issues"]
+			.as_array()
+			.map(|items| {
+				items.iter().any(|issue| {
+					issue["message"].as_str() == Some(sentinel_message.as_str())
+				})
+			})
+			.unwrap_or(false),
+		"expected validation response to include cached sentinel message, body={second_body}"
+	);
 
 	Ok(())
 }
