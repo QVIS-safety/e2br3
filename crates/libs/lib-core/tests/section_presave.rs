@@ -13,21 +13,24 @@ use lib_core::model::presave::{
 	ProductPresaveFdaCrossReportedIndBmc,
 	ProductPresaveFdaCrossReportedIndForCreate,
 	ProductPresaveFdaCrossReportedIndForUpdate, ProductPresaveForCreate,
-	ProductPresaveMfdsRegionalItemBmc, ProductPresaveMfdsRegionalItemForCreate,
+	ProductPresaveForUpdate, ProductPresaveMfdsRegionalItemBmc,
+	ProductPresaveMfdsRegionalItemForCreate,
 	ProductPresaveMfdsRegionalItemForUpdate, ProductPresaveSubstanceBmc,
 	ProductPresaveSubstanceForCreate, ProductPresaveSubstanceForUpdate,
 	ReceiverPresaveBmc, ReceiverPresaveConsigneeBmc,
 	ReceiverPresaveConsigneeForCreate, ReceiverPresaveConsigneeForUpdate,
 	ReceiverPresaveForCreate, ReporterPresaveBmc, ReporterPresaveForCreate,
-	SenderPresaveBmc, SenderPresaveForCreate, SenderPresaveForUpdate,
-	SenderPresaveGatewayBmc, SenderPresaveGatewayForCreate,
+	ReporterPresaveForUpdate, SenderPresaveBmc, SenderPresaveForCreate,
+	SenderPresaveForUpdate, SenderPresaveGatewayBmc, SenderPresaveGatewayForCreate,
 	SenderPresaveGatewayForUpdate, SenderPresaveResponsiblePersonBmc,
 	SenderPresaveResponsiblePersonForCreate,
 	SenderPresaveResponsiblePersonForUpdate, StudyPresaveBmc, StudyPresaveForCreate,
-	StudyPresaveRegistrationNumberBmc, StudyPresaveRegistrationNumberForCreate,
+	StudyPresaveForUpdate, StudyPresaveRegistrationNumberBmc,
+	StudyPresaveRegistrationNumberForCreate,
 	StudyPresaveRegistrationNumberForUpdate,
 };
 use lib_core::model::store::{set_org_context, set_user_context};
+use lib_core::model::Error as ModelError;
 use lib_core::model::ModelManager;
 use lib_core::regulatory::RegulatoryAuthority;
 use serial_test::serial;
@@ -60,6 +63,222 @@ fn is_foreign_key_violation(err: &SqlxError) -> bool {
 		SqlxError::Database(db_err) => db_err.code().as_deref() == Some("23503"),
 		_ => false,
 	}
+}
+
+fn expect_store_error<T>(result: lib_core::model::Result<T>, expected: &str) {
+	match result {
+		Err(ModelError::Store(message)) => assert!(
+			message.contains(expected),
+			"expected Store error containing {expected:?}, got {message:?}"
+		),
+		Err(err) => {
+			panic!("expected Store error containing {expected:?}, got {err:?}")
+		}
+		Ok(_) => panic!("expected Store error containing {expected:?}, got Ok"),
+	}
+}
+
+fn product_presave_create(
+	authority: RegulatoryAuthority,
+	name: String,
+) -> ProductPresaveForCreate {
+	ProductPresaveForCreate {
+		authority,
+		name,
+		comments: None,
+		sender_presave_id: None,
+		drug_characterization: None,
+		medicinal_product: Some("Authority Product".into()),
+		medicinal_product_notation: None,
+		preapproval_ip_name: None,
+		brand_name: None,
+		drug_generic_name: None,
+		manufacturer_name: None,
+		product_description: None,
+		mpid: None,
+		mpid_version: None,
+		phpid: None,
+		phpid_version: None,
+		investigational_product_blinded: None,
+		obtain_drug_country: None,
+		drug_authorization_number: None,
+		drug_authorization_country: None,
+		drug_authorization_holder: None,
+		holder_applicant_name_notation: None,
+		fda_ind_number_occurred: None,
+		fda_pre_anda_number_occurred: None,
+		mfds_domestic_product_code: None,
+		mfds_domestic_ingredient_code: None,
+		mfds_udl_product_code: None,
+		mfds_udl_ingredient_code: None,
+		mfds_udl_manufacturer_code: None,
+		mfds_udl_manufacturer_name: None,
+		mfds_foreign_ich_product_code: None,
+		mfds_foreign_ich_ingredient_code: None,
+		mfds_foreign_ich_holder_code: None,
+		mfds_foreign_ich_holder_name: None,
+		mfds_foreign_e2b_product_code: None,
+		mfds_foreign_e2b_ingredient_code: None,
+		mfds_foreign_e2b_holder_code: None,
+		mfds_foreign_e2b_holder_name: None,
+	}
+}
+
+fn reporter_presave_create(
+	authority: RegulatoryAuthority,
+	name: String,
+) -> ReporterPresaveForCreate {
+	ReporterPresaveForCreate {
+		authority,
+		name,
+		comments: None,
+		reporter_title: None,
+		reporter_given_name: Some("Authority".into()),
+		reporter_middle_name: None,
+		reporter_family_name: Some("Reporter".into()),
+		organization: None,
+		department: None,
+		street: None,
+		city: None,
+		state: None,
+		postcode: None,
+		telephone: None,
+		country_code: Some("KR".into()),
+		email: None,
+		qualification: Some("1".into()),
+		qualification_kr1: None,
+		primary_source_regulatory: None,
+	}
+}
+
+fn study_presave_create(
+	authority: RegulatoryAuthority,
+	name: String,
+) -> StudyPresaveForCreate {
+	StudyPresaveForCreate {
+		authority,
+		name,
+		comments: None,
+		product_presave_id: None,
+		study_name: Some("Authority Study".into()),
+		sponsor_study_number: None,
+		study_type_reaction: Some("1".into()),
+		study_type_reaction_kr1: None,
+		edc_sync: None,
+	}
+}
+
+const PRODUCT_MFDS_FIELDS: &[&str] = &[
+	"mfds_domestic_product_code",
+	"mfds_domestic_ingredient_code",
+	"mfds_udl_product_code",
+	"mfds_udl_ingredient_code",
+	"mfds_udl_manufacturer_code",
+	"mfds_udl_manufacturer_name",
+	"mfds_foreign_ich_product_code",
+	"mfds_foreign_ich_ingredient_code",
+	"mfds_foreign_ich_holder_code",
+	"mfds_foreign_ich_holder_name",
+	"mfds_foreign_e2b_product_code",
+	"mfds_foreign_e2b_ingredient_code",
+	"mfds_foreign_e2b_holder_code",
+	"mfds_foreign_e2b_holder_name",
+];
+
+fn set_product_mfds_create_field(data: &mut ProductPresaveForCreate, field: &str) {
+	match field {
+		"mfds_domestic_product_code" => {
+			data.mfds_domestic_product_code = Some("MFDS-P".into())
+		}
+		"mfds_domestic_ingredient_code" => {
+			data.mfds_domestic_ingredient_code = Some("MFDS-I".into())
+		}
+		"mfds_udl_product_code" => data.mfds_udl_product_code = Some("UDL-P".into()),
+		"mfds_udl_ingredient_code" => {
+			data.mfds_udl_ingredient_code = Some("UDL-I".into())
+		}
+		"mfds_udl_manufacturer_code" => {
+			data.mfds_udl_manufacturer_code = Some("UDL-M".into())
+		}
+		"mfds_udl_manufacturer_name" => {
+			data.mfds_udl_manufacturer_name = Some("UDL Manufacturer".into())
+		}
+		"mfds_foreign_ich_product_code" => {
+			data.mfds_foreign_ich_product_code = Some("ICH-P".into())
+		}
+		"mfds_foreign_ich_ingredient_code" => {
+			data.mfds_foreign_ich_ingredient_code = Some("ICH-I".into())
+		}
+		"mfds_foreign_ich_holder_code" => {
+			data.mfds_foreign_ich_holder_code = Some("ICH-H".into())
+		}
+		"mfds_foreign_ich_holder_name" => {
+			data.mfds_foreign_ich_holder_name = Some("ICH Holder".into())
+		}
+		"mfds_foreign_e2b_product_code" => {
+			data.mfds_foreign_e2b_product_code = Some("E2B-P".into())
+		}
+		"mfds_foreign_e2b_ingredient_code" => {
+			data.mfds_foreign_e2b_ingredient_code = Some("E2B-I".into())
+		}
+		"mfds_foreign_e2b_holder_code" => {
+			data.mfds_foreign_e2b_holder_code = Some("E2B-H".into())
+		}
+		"mfds_foreign_e2b_holder_name" => {
+			data.mfds_foreign_e2b_holder_name = Some("E2B Holder".into())
+		}
+		_ => panic!("unknown MFDS product field {field}"),
+	}
+}
+
+fn product_mfds_update(field: &str) -> ProductPresaveForUpdate {
+	let mut update = ProductPresaveForUpdate::default();
+	match field {
+		"mfds_domestic_product_code" => {
+			update.mfds_domestic_product_code = Some("MFDS-P".into())
+		}
+		"mfds_domestic_ingredient_code" => {
+			update.mfds_domestic_ingredient_code = Some("MFDS-I".into())
+		}
+		"mfds_udl_product_code" => {
+			update.mfds_udl_product_code = Some("UDL-P".into())
+		}
+		"mfds_udl_ingredient_code" => {
+			update.mfds_udl_ingredient_code = Some("UDL-I".into())
+		}
+		"mfds_udl_manufacturer_code" => {
+			update.mfds_udl_manufacturer_code = Some("UDL-M".into())
+		}
+		"mfds_udl_manufacturer_name" => {
+			update.mfds_udl_manufacturer_name = Some("UDL Manufacturer".into())
+		}
+		"mfds_foreign_ich_product_code" => {
+			update.mfds_foreign_ich_product_code = Some("ICH-P".into())
+		}
+		"mfds_foreign_ich_ingredient_code" => {
+			update.mfds_foreign_ich_ingredient_code = Some("ICH-I".into())
+		}
+		"mfds_foreign_ich_holder_code" => {
+			update.mfds_foreign_ich_holder_code = Some("ICH-H".into())
+		}
+		"mfds_foreign_ich_holder_name" => {
+			update.mfds_foreign_ich_holder_name = Some("ICH Holder".into())
+		}
+		"mfds_foreign_e2b_product_code" => {
+			update.mfds_foreign_e2b_product_code = Some("E2B-P".into())
+		}
+		"mfds_foreign_e2b_ingredient_code" => {
+			update.mfds_foreign_e2b_ingredient_code = Some("E2B-I".into())
+		}
+		"mfds_foreign_e2b_holder_code" => {
+			update.mfds_foreign_e2b_holder_code = Some("E2B-H".into())
+		}
+		"mfds_foreign_e2b_holder_name" => {
+			update.mfds_foreign_e2b_holder_name = Some("E2B Holder".into())
+		}
+		_ => panic!("unknown MFDS product field {field}"),
+	}
+	update
 }
 
 #[serial]
@@ -707,6 +926,266 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
 	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
 	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn authority_specific_fields_are_enforced() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let mut ich_product = product_presave_create(
+		RegulatoryAuthority::Ich,
+		format!("Authority ICH Product {suffix}"),
+	);
+	ich_product.fda_ind_number_occurred = Some("IND-ICH".into());
+	expect_store_error(
+		ProductPresaveBmc::create(&ctx, &mm, ich_product).await,
+		"fda_ind_number_occurred",
+	);
+
+	let mut ich_product_pre_anda = product_presave_create(
+		RegulatoryAuthority::Ich,
+		format!("Authority ICH Product Pre-ANDA {suffix}"),
+	);
+	ich_product_pre_anda.fda_pre_anda_number_occurred = Some("ANDA-ICH".into());
+	expect_store_error(
+		ProductPresaveBmc::create(&ctx, &mm, ich_product_pre_anda).await,
+		"fda_pre_anda_number_occurred",
+	);
+
+	let mut fda_product = product_presave_create(
+		RegulatoryAuthority::Fda,
+		format!("Authority FDA Product {suffix}"),
+	);
+	fda_product.mfds_domestic_product_code = Some("MFDS-FDA".into());
+	expect_store_error(
+		ProductPresaveBmc::create(&ctx, &mm, fda_product).await,
+		"mfds_domestic_product_code",
+	);
+
+	for mfds_field in PRODUCT_MFDS_FIELDS {
+		let mut fda_product = product_presave_create(
+			RegulatoryAuthority::Fda,
+			format!("Authority FDA Product {mfds_field} {suffix}"),
+		);
+		set_product_mfds_create_field(&mut fda_product, mfds_field);
+		expect_store_error(
+			ProductPresaveBmc::create(&ctx, &mm, fda_product).await,
+			mfds_field,
+		);
+	}
+
+	let mut valid_fda_product = product_presave_create(
+		RegulatoryAuthority::Fda,
+		format!("Authority Valid FDA Product {suffix}"),
+	);
+	valid_fda_product.fda_ind_number_occurred = Some("IND-FDA".into());
+	valid_fda_product.fda_pre_anda_number_occurred = Some("ANDA-FDA".into());
+	let valid_fda_product_id =
+		ProductPresaveBmc::create(&ctx, &mm, valid_fda_product).await?;
+	ProductPresaveBmc::update(
+		&ctx,
+		&mm,
+		valid_fda_product_id,
+		ProductPresaveForUpdate {
+			fda_ind_number_occurred: Some("IND-FDA-UPDATE".into()),
+			fda_pre_anda_number_occurred: Some("ANDA-FDA-UPDATE".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+
+	let mut valid_mfds_product = product_presave_create(
+		RegulatoryAuthority::Mfds,
+		format!("Authority Valid MFDS Product {suffix}"),
+	);
+	for mfds_field in PRODUCT_MFDS_FIELDS {
+		set_product_mfds_create_field(&mut valid_mfds_product, mfds_field);
+	}
+	let valid_mfds_product_id =
+		ProductPresaveBmc::create(&ctx, &mm, valid_mfds_product).await?;
+	for mfds_field in PRODUCT_MFDS_FIELDS {
+		ProductPresaveBmc::update(
+			&ctx,
+			&mm,
+			valid_mfds_product_id,
+			product_mfds_update(mfds_field),
+		)
+		.await?;
+	}
+
+	let mut mfds_product = product_presave_create(
+		RegulatoryAuthority::Mfds,
+		format!("Authority MFDS Product {suffix}"),
+	);
+	mfds_product.fda_ind_number_occurred = Some("IND-MFDS".into());
+	expect_store_error(
+		ProductPresaveBmc::create(&ctx, &mm, mfds_product).await,
+		"fda_ind_number_occurred",
+	);
+
+	let mut mfds_product_pre_anda = product_presave_create(
+		RegulatoryAuthority::Mfds,
+		format!("Authority MFDS Product Pre-ANDA {suffix}"),
+	);
+	mfds_product_pre_anda.fda_pre_anda_number_occurred = Some("ANDA-MFDS".into());
+	expect_store_error(
+		ProductPresaveBmc::create(&ctx, &mm, mfds_product_pre_anda).await,
+		"fda_pre_anda_number_occurred",
+	);
+
+	let ich_product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Ich,
+			format!("Authority ICH Product Update {suffix}"),
+		),
+	)
+	.await?;
+	expect_store_error(
+		ProductPresaveBmc::update(
+			&ctx,
+			&mm,
+			ich_product_id,
+			ProductPresaveForUpdate {
+				fda_ind_number_occurred: Some("IND-UPDATE".into()),
+				..Default::default()
+			},
+		)
+		.await,
+		"fda_ind_number_occurred",
+	);
+	expect_store_error(
+		ProductPresaveBmc::update(
+			&ctx,
+			&mm,
+			ich_product_id,
+			ProductPresaveForUpdate {
+				fda_pre_anda_number_occurred: Some("ANDA-UPDATE".into()),
+				..Default::default()
+			},
+		)
+		.await,
+		"fda_pre_anda_number_occurred",
+	);
+
+	let fda_product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Fda,
+			format!("Authority FDA Product Update {suffix}"),
+		),
+	)
+	.await?;
+	for mfds_field in PRODUCT_MFDS_FIELDS {
+		expect_store_error(
+			ProductPresaveBmc::update(
+				&ctx,
+				&mm,
+				fda_product_id,
+				product_mfds_update(mfds_field),
+			)
+			.await,
+			mfds_field,
+		);
+	}
+
+	let mut valid_mfds_reporter = reporter_presave_create(
+		RegulatoryAuthority::Mfds,
+		format!("Authority MFDS Reporter {suffix}"),
+	);
+	valid_mfds_reporter.qualification_kr1 = Some("KR-QUAL".into());
+	let mfds_reporter_id =
+		ReporterPresaveBmc::create(&ctx, &mm, valid_mfds_reporter).await?;
+
+	let mut invalid_fda_reporter = reporter_presave_create(
+		RegulatoryAuthority::Fda,
+		format!("Authority FDA Reporter {suffix}"),
+	);
+	invalid_fda_reporter.qualification_kr1 = Some("KR-QUAL".into());
+	expect_store_error(
+		ReporterPresaveBmc::create(&ctx, &mm, invalid_fda_reporter).await,
+		"qualification_kr1",
+	);
+
+	let fda_reporter_id = ReporterPresaveBmc::create(
+		&ctx,
+		&mm,
+		reporter_presave_create(
+			RegulatoryAuthority::Fda,
+			format!("Authority FDA Reporter Update {suffix}"),
+		),
+	)
+	.await?;
+	expect_store_error(
+		ReporterPresaveBmc::update(
+			&ctx,
+			&mm,
+			fda_reporter_id,
+			ReporterPresaveForUpdate {
+				qualification_kr1: Some("KR-QUAL".into()),
+				..Default::default()
+			},
+		)
+		.await,
+		"qualification_kr1",
+	);
+
+	let mut valid_mfds_study = study_presave_create(
+		RegulatoryAuthority::Mfds,
+		format!("Authority MFDS Study {suffix}"),
+	);
+	valid_mfds_study.study_type_reaction_kr1 = Some("KR-STUDY".into());
+	let mfds_study_id = StudyPresaveBmc::create(&ctx, &mm, valid_mfds_study).await?;
+
+	let mut invalid_ich_study = study_presave_create(
+		RegulatoryAuthority::Ich,
+		format!("Authority ICH Study {suffix}"),
+	);
+	invalid_ich_study.study_type_reaction_kr1 = Some("KR-STUDY".into());
+	expect_store_error(
+		StudyPresaveBmc::create(&ctx, &mm, invalid_ich_study).await,
+		"study_type_reaction_kr1",
+	);
+
+	let ich_study_id = StudyPresaveBmc::create(
+		&ctx,
+		&mm,
+		study_presave_create(
+			RegulatoryAuthority::Ich,
+			format!("Authority ICH Study Update {suffix}"),
+		),
+	)
+	.await?;
+	expect_store_error(
+		StudyPresaveBmc::update(
+			&ctx,
+			&mm,
+			ich_study_id,
+			StudyPresaveForUpdate {
+				study_type_reaction_kr1: Some("KR-STUDY".into()),
+				..Default::default()
+			},
+		)
+		.await,
+		"study_type_reaction_kr1",
+	);
+
+	StudyPresaveBmc::delete(&ctx, &mm, ich_study_id).await?;
+	StudyPresaveBmc::delete(&ctx, &mm, mfds_study_id).await?;
+	ProductPresaveBmc::delete(&ctx, &mm, fda_product_id).await?;
+	ProductPresaveBmc::delete(&ctx, &mm, ich_product_id).await?;
+	ProductPresaveBmc::delete(&ctx, &mm, valid_mfds_product_id).await?;
+	ProductPresaveBmc::delete(&ctx, &mm, valid_fda_product_id).await?;
+	ReporterPresaveBmc::delete(&ctx, &mm, fda_reporter_id).await?;
+	ReporterPresaveBmc::delete(&ctx, &mm, mfds_reporter_id).await?;
 
 	Ok(())
 }

@@ -116,6 +116,79 @@ macro_rules! impl_parent_bmc {
 	};
 }
 
+macro_rules! impl_authority_validated_parent_bmc {
+	(
+		$bmc:ident,
+		$model:ty,
+		$create:ty,
+		$update:ty,
+		$table:literal
+	) => {
+		pub struct $bmc;
+
+		impl DbBmc for $bmc {
+			const TABLE: &'static str = $table;
+		}
+
+		impl $bmc {
+			pub async fn create(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				data: $create,
+			) -> Result<Uuid> {
+				data.validate_authority_fields()?;
+				base_uuid::create::<Self, _>(
+					ctx,
+					mm,
+					data.into_insert(ctx.organization_id()),
+				)
+				.await
+			}
+
+			pub async fn get(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				id: Uuid,
+			) -> Result<$model> {
+				base_uuid::get::<Self, _>(ctx, mm, id).await
+			}
+
+			pub async fn list(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				list_options: Option<ListOptions>,
+			) -> Result<Vec<$model>> {
+				base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+					ctx,
+					mm,
+					None,
+					list_options,
+				)
+				.await
+			}
+
+			pub async fn update(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				id: Uuid,
+				data: $update,
+			) -> Result<()> {
+				let current: $model = base_uuid::get::<Self, _>(ctx, mm, id).await?;
+				data.validate_authority_fields(current.authority)?;
+				base_uuid::update::<Self, _>(ctx, mm, id, data).await
+			}
+
+			pub async fn delete(
+				ctx: &Ctx,
+				mm: &ModelManager,
+				id: Uuid,
+			) -> Result<()> {
+				base_uuid::delete::<Self>(ctx, mm, id).await
+			}
+		}
+	};
+}
+
 macro_rules! impl_child_bmc {
 	(
 		$bmc:ident,
@@ -214,6 +287,49 @@ macro_rules! impl_child_bmc {
 			}
 		}
 	};
+}
+
+fn authority_field_error(
+	entity: &str,
+	field: &str,
+	allowed_authority: RegulatoryAuthority,
+) -> crate::model::Error {
+	crate::model::Error::Store(format!(
+		"{entity} field `{field}` is only allowed for {} presaves",
+		allowed_authority.as_str()
+	))
+}
+
+fn validate_fda_only_field(
+	entity: &str,
+	authority: RegulatoryAuthority,
+	field: &str,
+	present: bool,
+) -> Result<()> {
+	if present && !matches!(authority, RegulatoryAuthority::Fda) {
+		return Err(authority_field_error(
+			entity,
+			field,
+			RegulatoryAuthority::Fda,
+		));
+	}
+	Ok(())
+}
+
+fn validate_mfds_only_field(
+	entity: &str,
+	authority: RegulatoryAuthority,
+	field: &str,
+	present: bool,
+) -> Result<()> {
+	if present && !matches!(authority, RegulatoryAuthority::Mfds) {
+		return Err(authority_field_error(
+			entity,
+			field,
+			RegulatoryAuthority::Mfds,
+		));
+	}
+	Ok(())
 }
 
 trait IntoOrgScopedCreate {
@@ -821,6 +937,74 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 	}
 }
 
+impl ProductPresaveForCreate {
+	fn validate_authority_fields(&self) -> Result<()> {
+		validate_product_authority_fields(
+			self.authority,
+			self.fda_ind_number_occurred.is_some(),
+			self.fda_pre_anda_number_occurred.is_some(),
+			&[
+				(
+					"mfds_domestic_product_code",
+					self.mfds_domestic_product_code.is_some(),
+				),
+				(
+					"mfds_domestic_ingredient_code",
+					self.mfds_domestic_ingredient_code.is_some(),
+				),
+				(
+					"mfds_udl_product_code",
+					self.mfds_udl_product_code.is_some(),
+				),
+				(
+					"mfds_udl_ingredient_code",
+					self.mfds_udl_ingredient_code.is_some(),
+				),
+				(
+					"mfds_udl_manufacturer_code",
+					self.mfds_udl_manufacturer_code.is_some(),
+				),
+				(
+					"mfds_udl_manufacturer_name",
+					self.mfds_udl_manufacturer_name.is_some(),
+				),
+				(
+					"mfds_foreign_ich_product_code",
+					self.mfds_foreign_ich_product_code.is_some(),
+				),
+				(
+					"mfds_foreign_ich_ingredient_code",
+					self.mfds_foreign_ich_ingredient_code.is_some(),
+				),
+				(
+					"mfds_foreign_ich_holder_code",
+					self.mfds_foreign_ich_holder_code.is_some(),
+				),
+				(
+					"mfds_foreign_ich_holder_name",
+					self.mfds_foreign_ich_holder_name.is_some(),
+				),
+				(
+					"mfds_foreign_e2b_product_code",
+					self.mfds_foreign_e2b_product_code.is_some(),
+				),
+				(
+					"mfds_foreign_e2b_ingredient_code",
+					self.mfds_foreign_e2b_ingredient_code.is_some(),
+				),
+				(
+					"mfds_foreign_e2b_holder_code",
+					self.mfds_foreign_e2b_holder_code.is_some(),
+				),
+				(
+					"mfds_foreign_e2b_holder_name",
+					self.mfds_foreign_e2b_holder_name.is_some(),
+				),
+			],
+		)
+	}
+}
+
 #[derive(Default, Fields, Deserialize)]
 pub struct ProductPresaveForUpdate {
 	pub name: Option<String>,
@@ -863,7 +1047,102 @@ pub struct ProductPresaveForUpdate {
 	pub mfds_foreign_e2b_holder_name: Option<String>,
 }
 
-impl_parent_bmc!(
+impl ProductPresaveForUpdate {
+	fn validate_authority_fields(
+		&self,
+		authority: RegulatoryAuthority,
+	) -> Result<()> {
+		validate_product_authority_fields(
+			authority,
+			self.fda_ind_number_occurred.is_some(),
+			self.fda_pre_anda_number_occurred.is_some(),
+			&[
+				(
+					"mfds_domestic_product_code",
+					self.mfds_domestic_product_code.is_some(),
+				),
+				(
+					"mfds_domestic_ingredient_code",
+					self.mfds_domestic_ingredient_code.is_some(),
+				),
+				(
+					"mfds_udl_product_code",
+					self.mfds_udl_product_code.is_some(),
+				),
+				(
+					"mfds_udl_ingredient_code",
+					self.mfds_udl_ingredient_code.is_some(),
+				),
+				(
+					"mfds_udl_manufacturer_code",
+					self.mfds_udl_manufacturer_code.is_some(),
+				),
+				(
+					"mfds_udl_manufacturer_name",
+					self.mfds_udl_manufacturer_name.is_some(),
+				),
+				(
+					"mfds_foreign_ich_product_code",
+					self.mfds_foreign_ich_product_code.is_some(),
+				),
+				(
+					"mfds_foreign_ich_ingredient_code",
+					self.mfds_foreign_ich_ingredient_code.is_some(),
+				),
+				(
+					"mfds_foreign_ich_holder_code",
+					self.mfds_foreign_ich_holder_code.is_some(),
+				),
+				(
+					"mfds_foreign_ich_holder_name",
+					self.mfds_foreign_ich_holder_name.is_some(),
+				),
+				(
+					"mfds_foreign_e2b_product_code",
+					self.mfds_foreign_e2b_product_code.is_some(),
+				),
+				(
+					"mfds_foreign_e2b_ingredient_code",
+					self.mfds_foreign_e2b_ingredient_code.is_some(),
+				),
+				(
+					"mfds_foreign_e2b_holder_code",
+					self.mfds_foreign_e2b_holder_code.is_some(),
+				),
+				(
+					"mfds_foreign_e2b_holder_name",
+					self.mfds_foreign_e2b_holder_name.is_some(),
+				),
+			],
+		)
+	}
+}
+
+fn validate_product_authority_fields(
+	authority: RegulatoryAuthority,
+	fda_ind_number_occurred: bool,
+	fda_pre_anda_number_occurred: bool,
+	mfds_fields: &[(&str, bool)],
+) -> Result<()> {
+	validate_fda_only_field(
+		"product presave",
+		authority,
+		"fda_ind_number_occurred",
+		fda_ind_number_occurred,
+	)?;
+	validate_fda_only_field(
+		"product presave",
+		authority,
+		"fda_pre_anda_number_occurred",
+		fda_pre_anda_number_occurred,
+	)?;
+	for (field, present) in mfds_fields {
+		validate_mfds_only_field("product presave", authority, field, *present)?;
+	}
+	Ok(())
+}
+
+impl_authority_validated_parent_bmc!(
 	ProductPresaveBmc,
 	ProductPresave,
 	ProductPresaveForCreate,
@@ -1094,6 +1373,17 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 	}
 }
 
+impl ReporterPresaveForCreate {
+	fn validate_authority_fields(&self) -> Result<()> {
+		validate_mfds_only_field(
+			"reporter presave",
+			self.authority,
+			"qualification_kr1",
+			self.qualification_kr1.is_some(),
+		)
+	}
+}
+
 #[derive(Default, Fields, Deserialize)]
 pub struct ReporterPresaveForUpdate {
 	pub name: Option<String>,
@@ -1117,7 +1407,21 @@ pub struct ReporterPresaveForUpdate {
 	pub primary_source_regulatory: Option<String>,
 }
 
-impl_parent_bmc!(
+impl ReporterPresaveForUpdate {
+	fn validate_authority_fields(
+		&self,
+		authority: RegulatoryAuthority,
+	) -> Result<()> {
+		validate_mfds_only_field(
+			"reporter presave",
+			authority,
+			"qualification_kr1",
+			self.qualification_kr1.is_some(),
+		)
+	}
+}
+
+impl_authority_validated_parent_bmc!(
 	ReporterPresaveBmc,
 	ReporterPresave,
 	ReporterPresaveForCreate,
@@ -1191,6 +1495,17 @@ impl IntoOrgScopedCreate for StudyPresaveForCreate {
 	}
 }
 
+impl StudyPresaveForCreate {
+	fn validate_authority_fields(&self) -> Result<()> {
+		validate_mfds_only_field(
+			"study presave",
+			self.authority,
+			"study_type_reaction_kr1",
+			self.study_type_reaction_kr1.is_some(),
+		)
+	}
+}
+
 #[derive(Default, Fields, Deserialize)]
 pub struct StudyPresaveForUpdate {
 	pub name: Option<String>,
@@ -1204,7 +1519,21 @@ pub struct StudyPresaveForUpdate {
 	pub edc_sync: Option<bool>,
 }
 
-impl_parent_bmc!(
+impl StudyPresaveForUpdate {
+	fn validate_authority_fields(
+		&self,
+		authority: RegulatoryAuthority,
+	) -> Result<()> {
+		validate_mfds_only_field(
+			"study presave",
+			authority,
+			"study_type_reaction_kr1",
+			self.study_type_reaction_kr1.is_some(),
+		)
+	}
+}
+
+impl_authority_validated_parent_bmc!(
 	StudyPresaveBmc,
 	StudyPresave,
 	StudyPresaveForCreate,
