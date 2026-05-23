@@ -168,6 +168,44 @@ async fn create_info_reader(
 	Ok((user.id, cookie_header(&token.to_string())))
 }
 
+async fn create_info_editor(
+	app: &Router,
+	mm: &lib_core::model::ModelManager,
+	admin_cookie: &str,
+	org_id: Uuid,
+) -> Result<(Uuid, String)> {
+	let role_name = format!("presave_editor_{}", Uuid::new_v4().simple());
+	let (status, value) = request_json(
+		app,
+		admin_cookie,
+		Method::POST,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"name": role_name,
+				"description": "Presave scope editor",
+				"privileges": [
+					{
+						"menu_key": "info",
+						"can_read": true,
+						"can_edit": true,
+						"can_review": false,
+						"can_lock": false
+					}
+				]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let role_id = value["id"].as_str().ok_or("missing role id")?.to_string();
+	let user =
+		insert_user(mm, org_id, &role_id, system_user_id(), Some("editorpwd"))
+			.await?;
+	let token = generate_web_token(&user.email, user.token_salt)?;
+	Ok((user.id, cookie_header(&token.to_string())))
+}
+
 fn sample_presave_payload(entity_type: &str) -> Value {
 	match entity_type {
 		"sender" => json!({
@@ -270,7 +308,7 @@ async fn test_presave_product_list_follows_assigned_product_scope() -> Result<()
 		&app,
 		&admin_cookie,
 		viewer_id,
-		json!({ "access_product_ids": [visible_id.to_string()] }),
+		json!({ "access_product_ids": ["VISIBLE-PRODUCT"] }),
 	)
 	.await?;
 
@@ -301,6 +339,185 @@ async fn test_presave_product_list_follows_assigned_product_scope() -> Result<()
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	let (status, value) = get_template(&app, &viewer_cookie, hidden_id).await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_presave_update_delete_respect_assigned_product_scope() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let (editor_id, editor_cookie) =
+		create_info_editor(&app, &mm, &admin_cookie, seed.org_id).await?;
+
+	let (visible_id, _) = create_template(
+		&app,
+		&admin_cookie,
+		"product",
+		"visible-product-template-for-edit",
+		json!({
+			"medicinalProduct": "VISIBLE-PRODUCT-EDIT",
+			"drugGenericName": "Visible Edit Generic"
+		}),
+	)
+	.await?;
+	let (hidden_id, _) = create_template(
+		&app,
+		&admin_cookie,
+		"product",
+		"hidden-product-template-for-edit",
+		json!({
+			"medicinalProduct": "HIDDEN-PRODUCT-EDIT",
+			"drugGenericName": "Hidden Edit Generic"
+		}),
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		editor_id,
+		json!({ "access_product_ids": ["VISIBLE-PRODUCT-EDIT"] }),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::POST,
+		"/api/presave-templates".to_string(),
+		Some(json!({
+			"data": {
+				"entity_type": "product",
+				"name": "out-of-scope product create",
+				"description": "Should be rejected for scoped editor",
+				"data": {
+					"medicinalProduct": "HIDDEN-PRODUCT-CREATED",
+					"drugGenericName": "Hidden Created Generic"
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::POST,
+		"/api/presave-templates".to_string(),
+		Some(json!({
+			"data": {
+				"entity_type": "product",
+				"name": "out-of-scope product create with decoy",
+				"description": "Nested decoy productId must not grant scope",
+				"data": {
+					"medicinalProduct": "HIDDEN-PRODUCT-DECOY",
+					"drugGenericName": "Hidden Decoy Generic",
+					"metadata": {
+						"productId": "VISIBLE-PRODUCT-EDIT"
+					}
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::PATCH,
+		format!("/api/presave-templates/{hidden_id}"),
+		Some(json!({
+			"data": {
+				"name": "hidden product edited out of scope",
+				"data": {
+					"medicinalProduct": "HIDDEN-PRODUCT-EDITED"
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::PATCH,
+		format!("/api/presave-templates/{visible_id}"),
+		Some(json!({
+			"data": {
+				"name": "visible product moved out of scope with decoy",
+				"data": {
+					"medicinalProduct": "HIDDEN-PRODUCT-DECOY-MOVED",
+					"drugGenericName": "Hidden Decoy Moved Generic",
+					"metadata": {
+						"productId": "VISIBLE-PRODUCT-EDIT"
+					}
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::PATCH,
+		format!("/api/presave-templates/{visible_id}"),
+		Some(json!({
+			"data": {
+				"name": "visible product moved out of scope",
+				"data": {
+					"medicinalProduct": "HIDDEN-PRODUCT-MOVED",
+					"drugGenericName": "Hidden Moved Generic"
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::DELETE,
+		format!("/api/presave-templates/{hidden_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::PATCH,
+		format!("/api/presave-templates/{visible_id}"),
+		Some(json!({
+			"data": {
+				"name": "visible product edited in scope",
+				"data": {
+					"medicinalProduct": "VISIBLE-PRODUCT-EDIT",
+					"drugGenericName": "Visible Edit Generic Updated"
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	let (status, value) = get_template(&app, &admin_cookie, hidden_id).await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["data"]["name"].as_str(),
+		Some("hidden-product-template-for-edit"),
+		"{value:?}"
+	);
 
 	Ok(())
 }
@@ -412,7 +629,7 @@ async fn test_presave_study_list_follows_assigned_study_scope() -> Result<()> {
 		&app,
 		&admin_cookie,
 		viewer_id,
-		json!({ "access_study_ids": [visible_id.to_string()] }),
+		json!({ "access_study_ids": ["STUDY-VISIBLE"] }),
 	)
 	.await?;
 

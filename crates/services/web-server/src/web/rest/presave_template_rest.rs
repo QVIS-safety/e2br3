@@ -39,66 +39,57 @@ fn normalized_set(values: Vec<String>) -> HashSet<String> {
 		.collect()
 }
 
-fn collect_json_strings_for_keys(
-	value: &Value,
-	keys: &[&str],
-	out: &mut Vec<String>,
-) {
-	match value {
-		Value::Object(map) => {
-			for (key, value) in map {
-				if keys
-					.iter()
-					.any(|candidate| key.eq_ignore_ascii_case(candidate))
-				{
-					if let Some(text) = value.as_str() {
-						let text = text.trim();
-						if !text.is_empty() {
-							out.push(text.to_ascii_lowercase());
-						}
-					}
-				}
-				collect_json_strings_for_keys(value, keys, out);
+fn collect_direct_string_fields(value: &Value, keys: &[&str]) -> Vec<String> {
+	let mut values = Vec::new();
+	let Some(map) = value.as_object() else {
+		return values;
+	};
+	for key in keys {
+		if let Some(text) = map.get(*key).and_then(Value::as_str) {
+			let text = text.trim();
+			if !text.is_empty() {
+				values.push(text.to_ascii_lowercase());
 			}
 		}
-		Value::Array(items) => {
-			for item in items {
-				collect_json_strings_for_keys(item, keys, out);
-			}
-		}
-		_ => {}
 	}
+	values
 }
 
 fn template_scope_identifiers(template: &PresaveTemplate) -> Vec<String> {
-	let keys = match template.entity_type {
-		PresaveEntityType::Sender => &[
-			"senderIdentifier",
-			"messageSenderIdentifier",
-			"batchSenderIdentifier",
-			"senderOrganization",
-		][..],
-		PresaveEntityType::Product => &[
-			"productId",
-			"productIdentifier",
-			"medicinalProduct",
-			"drugGenericName",
-			"drugBrandName",
-			"drugAuthorizationNumber",
-			"mpid",
-			"phpid",
-		][..],
-		PresaveEntityType::Study => &[
-			"studyId",
-			"sponsorStudyNumber",
-			"studyName",
-			"studyRegistrationNumber",
-		][..],
-		_ => &[][..],
-	};
-	let mut values = vec![template.id.to_string().to_ascii_lowercase()];
-	collect_json_strings_for_keys(&template.data, keys, &mut values);
-	values
+	match template.entity_type {
+		PresaveEntityType::Sender => collect_direct_string_fields(
+			&template.data,
+			&[
+				"senderIdentifier",
+				"messageSenderIdentifier",
+				"batchSenderIdentifier",
+				"senderOrganization",
+			],
+		),
+		PresaveEntityType::Product => collect_direct_string_fields(
+			&template.data,
+			&[
+				"productId",
+				"productIdentifier",
+				"medicinalProduct",
+				"drugGenericName",
+				"drugBrandName",
+				"drugAuthorizationNumber",
+				"mpid",
+				"phpid",
+			],
+		),
+		PresaveEntityType::Study => collect_direct_string_fields(
+			&template.data,
+			&[
+				"studyId",
+				"sponsorStudyNumber",
+				"studyName",
+				"studyRegistrationNumber",
+			],
+		),
+		_ => Vec::new(),
+	}
 }
 
 fn sender_default_requested(data: &Value) -> bool {
@@ -296,6 +287,13 @@ pub async fn create_presave_template(
 		&& sender_default_requested(&data.data);
 	let authority = data.authority;
 	let id = PresaveTemplateBmc::create(&ctx, &mm, data).await?;
+	let entity = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
+	if !presave_template_allowed_for_scope(&ctx, &mm, &entity).await? {
+		PresaveTemplateBmc::delete(&ctx, &mm, id).await?;
+		return Err(Error::PermissionDenied {
+			required_permission: "PresaveTemplate.Scope".to_string(),
+		});
+	}
 	if should_be_default {
 		enforce_single_default_sender(&ctx, &mm, id, authority).await?;
 	}
@@ -354,11 +352,22 @@ pub async fn update_presave_template(
 	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
 	let ParamsForUpdate { data } = params;
 	let current = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
+	if !presave_template_allowed_for_scope(&ctx, &mm, &current).await? {
+		return Err(Error::PermissionDenied {
+			required_permission: "PresaveTemplate.Scope".to_string(),
+		});
+	}
 	let effective_entity_type = data.entity_type.unwrap_or(current.entity_type);
 	let effective_authority = data.authority.or(current.authority);
 	let should_be_default = data.data.as_ref().is_some_and(sender_default_requested)
 		&& effective_entity_type == PresaveEntityType::Sender;
 	PresaveTemplateBmc::update(&ctx, &mm, id, data).await?;
+	let entity = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
+	if !presave_template_allowed_for_scope(&ctx, &mm, &entity).await? {
+		return Err(Error::PermissionDenied {
+			required_permission: "PresaveTemplate.Scope".to_string(),
+		});
+	}
 	if should_be_default {
 		enforce_single_default_sender(&ctx, &mm, id, effective_authority).await?;
 	}
@@ -374,6 +383,12 @@ pub async fn delete_presave_template(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
+	let entity = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
+	if !presave_template_allowed_for_scope(&ctx, &mm, &entity).await? {
+		return Err(Error::PermissionDenied {
+			required_permission: "PresaveTemplate.Scope".to_string(),
+		});
+	}
 	PresaveTemplateBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
