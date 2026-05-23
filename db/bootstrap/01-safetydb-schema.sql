@@ -177,7 +177,8 @@ CREATE TABLE IF NOT EXISTS sender_presaves (
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
-    CONSTRAINT sender_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+    CONSTRAINT sender_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds')),
+    CONSTRAINT sender_presaves_id_organization_unique UNIQUE (id, organization_id)
 );
 
 CREATE TABLE IF NOT EXISTS sender_presave_gateways (
@@ -268,7 +269,7 @@ CREATE TABLE IF NOT EXISTS product_presaves (
     name VARCHAR(255) NOT NULL,
     comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
-    sender_presave_id UUID REFERENCES sender_presaves(id) ON DELETE SET NULL,
+    sender_presave_id UUID,
     drug_characterization VARCHAR(50),
     medicinal_product VARCHAR(2000),
     medicinal_product_notation VARCHAR(50),
@@ -308,7 +309,12 @@ CREATE TABLE IF NOT EXISTS product_presaves (
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
-    CONSTRAINT product_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+    CONSTRAINT product_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds')),
+    CONSTRAINT product_presaves_id_organization_unique UNIQUE (id, organization_id),
+    CONSTRAINT product_presaves_sender_org_fk
+        FOREIGN KEY (sender_presave_id, organization_id)
+        REFERENCES sender_presaves(id, organization_id)
+        ON DELETE SET NULL (sender_presave_id)
 );
 
 CREATE TABLE IF NOT EXISTS product_presave_substances (
@@ -393,7 +399,7 @@ CREATE TABLE IF NOT EXISTS study_presaves (
     name VARCHAR(255) NOT NULL,
     comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
-    product_presave_id UUID REFERENCES product_presaves(id) ON DELETE SET NULL,
+    product_presave_id UUID,
     study_name VARCHAR(2000),
     sponsor_study_number VARCHAR(100),
     study_type_reaction VARCHAR(50),
@@ -404,7 +410,11 @@ CREATE TABLE IF NOT EXISTS study_presaves (
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
-    CONSTRAINT study_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+    CONSTRAINT study_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds')),
+    CONSTRAINT study_presaves_product_org_fk
+        FOREIGN KEY (product_presave_id, organization_id)
+        REFERENCES product_presaves(id, organization_id)
+        ON DELETE SET NULL (product_presave_id)
 );
 
 CREATE TABLE IF NOT EXISTS study_presave_registration_numbers (
@@ -1582,6 +1592,261 @@ CREATE POLICY presave_template_audits_insert ON presave_template_audits
     TO e2br3_app_role
     WITH CHECK (
         organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+-- ============================================================================
+-- 9.10.1 Section Presave Tables RLS
+-- ============================================================================
+ALTER TABLE sender_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sender_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY sender_presaves_org_isolation ON sender_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE sender_presave_gateways ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sender_presave_gateways FORCE ROW LEVEL SECURITY;
+CREATE POLICY sender_presave_gateways_via_parent ON sender_presave_gateways
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM sender_presaves p
+            WHERE p.id = sender_presave_gateways.sender_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM sender_presaves p
+            WHERE p.id = sender_presave_gateways.sender_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE sender_presave_responsible_persons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sender_presave_responsible_persons FORCE ROW LEVEL SECURITY;
+CREATE POLICY sender_presave_responsible_persons_via_parent ON sender_presave_responsible_persons
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM sender_presaves p
+            WHERE p.id = sender_presave_responsible_persons.sender_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM sender_presaves p
+            WHERE p.id = sender_presave_responsible_persons.sender_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE receiver_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE receiver_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY receiver_presaves_org_isolation ON receiver_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE receiver_presave_consignees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE receiver_presave_consignees FORCE ROW LEVEL SECURITY;
+CREATE POLICY receiver_presave_consignees_via_parent ON receiver_presave_consignees
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM receiver_presaves p
+            WHERE p.id = receiver_presave_consignees.receiver_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM receiver_presaves p
+            WHERE p.id = receiver_presave_consignees.receiver_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE product_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY product_presaves_org_isolation ON product_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE product_presave_substances ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_presave_substances FORCE ROW LEVEL SECURITY;
+CREATE POLICY product_presave_substances_via_parent ON product_presave_substances
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_substances.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_substances.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE product_presave_fda_cross_reported_inds ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_presave_fda_cross_reported_inds FORCE ROW LEVEL SECURITY;
+CREATE POLICY product_presave_fda_cross_reported_inds_via_parent ON product_presave_fda_cross_reported_inds
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_fda_cross_reported_inds.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_fda_cross_reported_inds.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE product_presave_mfds_regional_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_presave_mfds_regional_items FORCE ROW LEVEL SECURITY;
+CREATE POLICY product_presave_mfds_regional_items_via_parent ON product_presave_mfds_regional_items
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_mfds_regional_items.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_mfds_regional_items.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE reporter_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reporter_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY reporter_presaves_org_isolation ON reporter_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE study_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE study_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY study_presaves_org_isolation ON study_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE study_presave_registration_numbers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE study_presave_registration_numbers FORCE ROW LEVEL SECURITY;
+CREATE POLICY study_presave_registration_numbers_via_parent ON study_presave_registration_numbers
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM study_presaves p
+            WHERE p.id = study_presave_registration_numbers.study_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM study_presaves p
+            WHERE p.id = study_presave_registration_numbers.study_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE narrative_presaves ENABLE ROW LEVEL SECURITY;
+ALTER TABLE narrative_presaves FORCE ROW LEVEL SECURITY;
+CREATE POLICY narrative_presaves_org_isolation ON narrative_presaves
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+ALTER TABLE narrative_presave_sender_diagnoses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE narrative_presave_sender_diagnoses FORCE ROW LEVEL SECURITY;
+CREATE POLICY narrative_presave_sender_diagnoses_via_parent ON narrative_presave_sender_diagnoses
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM narrative_presaves p
+            WHERE p.id = narrative_presave_sender_diagnoses.narrative_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM narrative_presaves p
+            WHERE p.id = narrative_presave_sender_diagnoses.narrative_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE narrative_presave_case_summaries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE narrative_presave_case_summaries FORCE ROW LEVEL SECURITY;
+CREATE POLICY narrative_presave_case_summaries_via_parent ON narrative_presave_case_summaries
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM narrative_presaves p
+            WHERE p.id = narrative_presave_case_summaries.narrative_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM narrative_presaves p
+            WHERE p.id = narrative_presave_case_summaries.narrative_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
     );
 
 -- ============================================================================
