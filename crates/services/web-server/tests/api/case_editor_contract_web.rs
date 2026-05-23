@@ -940,6 +940,58 @@ async fn editor_remaining_direct_pages_accept_page_patch_with_profiles() -> Resu
 
 #[serial]
 #[tokio::test]
+async fn editor_remaining_direct_pages_accept_field_delta_changes_with_profiles(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &cookie, "EDITOR-DIRECT-DELTAS", &["ich"])
+			.await?;
+
+	let requests = [
+		("RP", json!({ "reporterGivenName": { "value": "Jane" } })),
+		(
+			"SD",
+			json!({ "senderOrganization": { "value": "Sender Org" } }),
+		),
+		(
+			"LR",
+			json!({ "literatureReference": { "value": "PMID:1" } }),
+		),
+		("SI", json!({ "studyName": { "value": "Study A" } })),
+		("DM", json!({ "patientInitials": { "value": "AB" } })),
+		("NR", json!({ "caseNarrative": { "value": "Narrative" } })),
+	];
+
+	for (section, changes) in requests {
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{section}"),
+			json!({
+				"profiles": ["fda", "mfds"],
+				"changes": changes,
+				"rows": {}
+			}),
+		)
+		.await?;
+
+		assert_eq!(status, StatusCode::OK, "{section}: {body}");
+		assert_eq!(
+			body["profiles"],
+			json!(["fda", "mfds"]),
+			"{section}: {body}"
+		);
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_direct_page_patch_rejects_unknown_field() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -1867,6 +1919,65 @@ async fn editor_dh_page_row_patch_updates_one_drug_history() -> Result<()> {
 		body["data"]["pastDrugHistory"]["drug_name"],
 		"Updated prior drug"
 	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn editor_repeatable_page_rows_accept_field_delta_changes_with_profiles(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-ROW-DELTAS").await?;
+	let reaction_id = create_reaction_fixture(&app, &cookie, &case_id).await?;
+	let test_result_id = create_test_result_fixture(&app, &cookie, &case_id).await?;
+	let drug_id = create_drug_fixture(&app, &cookie, &case_id).await?;
+	let past_drug_id =
+		create_past_drug_history_fixture(&app, &cookie, &case_id).await?;
+
+	let requests = [
+		(
+			"AE",
+			reaction_id,
+			json!({ "reactionPrimarySourceNative": { "value": "Headache" } }),
+		),
+		(
+			"LB",
+			test_result_id,
+			json!({ "resultValue": { "value": "10" } }),
+		),
+		(
+			"DG",
+			drug_id,
+			json!({ "medicinalProduct": { "value": "Drug A" } }),
+		),
+		(
+			"DH",
+			past_drug_id,
+			json!({ "drugName": { "value": "Past Drug" } }),
+		),
+	];
+
+	for (section, row_id, changes) in requests {
+		let (status, body) = patch_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/editor/pages/{section}/rows/{row_id}"),
+			json!({
+				"profiles": ["fda"],
+				"changes": changes,
+				"rows": {}
+			}),
+		)
+		.await?;
+
+		assert_eq!(status, StatusCode::OK, "{section}: {body}");
+		assert_eq!(body["profiles"], json!(["fda"]), "{section}: {body}");
+	}
 
 	Ok(())
 }

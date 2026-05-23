@@ -716,14 +716,22 @@ async fn patch_direct_page_projection(
 		validate_request_projection_context(request.profiles.as_deref())?;
 
 	if !request.changes.is_empty() {
-		return Err(Error::BadRequest {
-			message: format!("{page_id} page patch fields are not implemented yet"),
-		});
+		apply_direct_page_changes_patch(
+			&ctx,
+			&mm,
+			case_id,
+			page_id,
+			&request.changes,
+		)
+		.await?;
 	}
 
 	if !request.rows.is_empty() {
 		apply_direct_page_rows_patch(&ctx, &mm, case_id, page_id, &request.rows)
 			.await?;
+	}
+
+	if !request.changes.is_empty() || !request.rows.is_empty() {
 		CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
 	}
 
@@ -811,6 +819,54 @@ fn required_row_object<'a>(
 	optional_row_object(page_id, rows, key)?.ok_or_else(|| Error::BadRequest {
 		message: format!("{page_id}.{key} row payload is required"),
 	})
+}
+
+fn patch_json_value(patch: &CaseEditorFieldPatch) -> Value {
+	patch.value.clone().unwrap_or(Value::Null)
+}
+
+fn changes_to_object(
+	page_id: &str,
+	changes: &BTreeMap<String, CaseEditorFieldPatch>,
+	aliases: &[(&str, &str)],
+) -> Result<serde_json::Map<String, Value>> {
+	let mut row = serde_json::Map::new();
+	for (field, patch) in changes {
+		let Some((_, target)) = aliases.iter().find(|(source, _)| source == field)
+		else {
+			return Err(Error::BadRequest {
+				message: format!("unknown {page_id} field '{field}'"),
+			});
+		};
+		row.insert((*target).to_string(), patch_json_value(patch));
+	}
+	Ok(row)
+}
+
+fn row_payload_from_changes(
+	page_id: &str,
+	row_key: &str,
+	changes: &BTreeMap<String, CaseEditorFieldPatch>,
+	aliases: &[(&str, &str)],
+) -> Result<BTreeMap<String, Value>> {
+	Ok(BTreeMap::from([(
+		row_key.to_string(),
+		Value::Object(changes_to_object(page_id, changes, aliases)?),
+	)]))
+}
+
+fn row_array_payload_from_changes(
+	page_id: &str,
+	row_key: &str,
+	changes: &BTreeMap<String, CaseEditorFieldPatch>,
+	aliases: &[(&str, &str)],
+) -> Result<BTreeMap<String, Value>> {
+	Ok(BTreeMap::from([(
+		row_key.to_string(),
+		Value::Array(vec![Value::Object(changes_to_object(
+			page_id, changes, aliases,
+		)?)]),
+	)]))
 }
 
 fn optional_first_row_object<'a>(
@@ -931,6 +987,120 @@ async fn apply_direct_page_rows_patch(
 			message: format!("unsupported direct page '{page_id}'"),
 		}),
 	}
+}
+
+async fn apply_direct_page_changes_patch(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	page_id: &'static str,
+	changes: &BTreeMap<String, CaseEditorFieldPatch>,
+) -> Result<()> {
+	let rows = match page_id {
+		"RP" => row_array_payload_from_changes(
+			page_id,
+			"primarySources",
+			changes,
+			&[
+				("reporterTitle", "reporterTitle"),
+				("reporterGivenName", "reporterGivenName"),
+				("reporterMiddleName", "reporterMiddleName"),
+				("reporterFamilyName", "reporterFamilyName"),
+				("reporterOrganization", "reporterOrganization"),
+				("reporterCountry", "reporterCountry"),
+				("qualification", "qualification"),
+				("qualificationKr1", "qualificationKr1"),
+			],
+		)?,
+		"SD" => direct_sd_rows_from_changes(page_id, changes)?,
+		"LR" => row_array_payload_from_changes(
+			page_id,
+			"literatureReferences",
+			changes,
+			&[
+				("literatureReference", "referenceText"),
+				("referenceText", "referenceText"),
+			],
+		)?,
+		"SI" => row_payload_from_changes(
+			page_id,
+			"studyInformation",
+			changes,
+			&[
+				("studyName", "studyName"),
+				("sponsorStudyNumber", "sponsorStudyNumber"),
+				("studyTypeReaction", "studyTypeReaction"),
+				("studyTypeReactionKr1", "studyTypeReactionKr1"),
+			],
+		)?,
+		"DM" => row_payload_from_changes(
+			page_id,
+			"patientInformation",
+			changes,
+			&[
+				("patientInitials", "patientInitials"),
+				("patientGivenName", "patientGivenName"),
+				("patientFamilyName", "patientFamilyName"),
+				("patientSex", "sex"),
+				("sex", "sex"),
+			],
+		)?,
+		"NR" => row_payload_from_changes(
+			page_id,
+			"narrative",
+			changes,
+			&[
+				("caseNarrative", "caseNarrative"),
+				("reporterComments", "reporterComments"),
+				("senderComments", "senderComments"),
+			],
+		)?,
+		_ => {
+			return Err(Error::BadRequest {
+				message: format!("unsupported direct page '{page_id}'"),
+			})
+		}
+	};
+	apply_direct_page_rows_patch(ctx, mm, case_id, page_id, &rows).await
+}
+
+fn direct_sd_rows_from_changes(
+	page_id: &str,
+	changes: &BTreeMap<String, CaseEditorFieldPatch>,
+) -> Result<BTreeMap<String, Value>> {
+	let mut rows = BTreeMap::new();
+	for (field, patch) in changes {
+		let (row_key, target) = match field.as_str() {
+			"senderType" => ("senderInformation", "senderType"),
+			"senderOrganization" => ("senderInformation", "organizationName"),
+			"senderDepartment" => ("senderInformation", "department"),
+			"senderCountryCode" => ("senderInformation", "countryCode"),
+			"messageNumber" => ("messageHeader", "messageNumber"),
+			"messageSenderIdentifier" => {
+				("messageHeader", "messageSenderIdentifier")
+			}
+			"messageReceiverIdentifier" => {
+				("messageHeader", "messageReceiverIdentifier")
+			}
+			"receiverOrganization" => ("receiverInformation", "organizationName"),
+			"receiverCountryCode" => ("receiverInformation", "countryCode"),
+			_ => {
+				return Err(Error::BadRequest {
+					message: format!("unknown {page_id} field '{field}'"),
+				})
+			}
+		};
+		let entry = rows
+			.entry(row_key.to_string())
+			.or_insert_with(|| Value::Object(serde_json::Map::new()));
+		let Some(map) = entry.as_object_mut() else {
+			return Err(Error::BadRequest {
+				message: format!("{page_id}.{row_key} must be an object"),
+			});
+		};
+		map.insert(target.to_string(), patch_json_value(patch));
+	}
+	Ok(rows)
 }
 
 async fn apply_rp_page_rows_patch(
@@ -2241,7 +2411,28 @@ pub async fn patch_editor_ae_page_row(
 		validate_request_projection_context(request.profiles.as_deref())?;
 
 	ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	let row = required_row_object("AE", &request.rows, "reaction")?;
+	let synthesized_rows;
+	let rows = if !request.changes.is_empty() {
+		synthesized_rows = row_payload_from_changes(
+			"AE",
+			"reaction",
+			&request.changes,
+			&[
+				("reactionPrimarySourceNative", "reactionPrimarySourceNative"),
+				(
+					"reactionPrimarySourceTranslation",
+					"reactionPrimarySourceTranslation",
+				),
+				("meddraVersion", "meddraVersion"),
+				("meddraCode", "meddraCode"),
+				("outcome", "outcome"),
+			],
+		)?;
+		&synthesized_rows
+	} else {
+		&request.rows
+	};
+	let row = required_row_object("AE", rows, "reaction")?;
 	let value = row_model_value(
 		row,
 		&[
@@ -2470,7 +2661,23 @@ pub async fn patch_editor_lb_page_row(
 		validate_request_projection_context(request.profiles.as_deref())?;
 
 	TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	let row = required_row_object("LB", &request.rows, "testResult")?;
+	let synthesized_rows;
+	let rows = if !request.changes.is_empty() {
+		synthesized_rows = row_payload_from_changes(
+			"LB",
+			"testResult",
+			&request.changes,
+			&[
+				("testName", "testName"),
+				("resultValue", "resultValue"),
+				("resultUnit", "resultUnit"),
+			],
+		)?;
+		&synthesized_rows
+	} else {
+		&request.rows
+	};
+	let row = required_row_object("LB", rows, "testResult")?;
 	let value = row_model_value(
 		row,
 		&[
@@ -2799,7 +3006,24 @@ pub async fn patch_editor_dg_page_row(
 		validate_request_projection_context(request.profiles.as_deref())?;
 
 	DrugInformationBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	let row = required_row_object("DG", &request.rows, "drug")?;
+	let synthesized_rows;
+	let rows = if !request.changes.is_empty() {
+		synthesized_rows = row_payload_from_changes(
+			"DG",
+			"drug",
+			&request.changes,
+			&[
+				("medicinalProduct", "medicinalProduct"),
+				("drugCharacterization", "drugRole"),
+				("drugRole", "drugRole"),
+				("actionTaken", "actionTaken"),
+			],
+		)?;
+		&synthesized_rows
+	} else {
+		&request.rows
+	};
+	let row = required_row_object("DG", rows, "drug")?;
 	let value = row_model_value(
 		row,
 		&[
@@ -3070,7 +3294,19 @@ pub async fn patch_editor_dh_page_row(
 		validate_request_projection_context(request.profiles.as_deref())?;
 
 	load_editor_dh_row_detail(&ctx, &mm, case_id, row_id).await?;
-	let row = required_row_object("DH", &request.rows, "pastDrugHistory")?;
+	let synthesized_rows;
+	let rows = if !request.changes.is_empty() {
+		synthesized_rows = row_payload_from_changes(
+			"DH",
+			"pastDrugHistory",
+			&request.changes,
+			&[("drugName", "drugName"), ("indication", "indication")],
+		)?;
+		&synthesized_rows
+	} else {
+		&request.rows
+	};
+	let row = required_row_object("DH", rows, "pastDrugHistory")?;
 	let value = row_model_value(
 		row,
 		&[
