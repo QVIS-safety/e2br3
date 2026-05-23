@@ -81,7 +81,6 @@ pub async fn validate_case(
 	}
 
 	let report = validate_case_for_profile(&ctx, &mm, case_id, profile).await?;
-	CaseValidationReportCacheBmc::upsert(&ctx, &mm, case_id, &report).await?;
 	CaseValidationSummaryBmc::upsert_for_reports(
 		&ctx,
 		&mm,
@@ -89,6 +88,7 @@ pub async fn validate_case(
 		&[report.clone()],
 	)
 	.await?;
+	CaseValidationReportCacheBmc::upsert(&ctx, &mm, case_id, &report).await?;
 
 	Ok((StatusCode::OK, Json(DataRestResult { data: report })))
 }
