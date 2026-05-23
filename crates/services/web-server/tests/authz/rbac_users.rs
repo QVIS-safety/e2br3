@@ -739,10 +739,10 @@ async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<
 	assert_eq!(role_res.status(), StatusCode::CREATED);
 	let role_body = to_bytes(role_res.into_body(), usize::MAX).await?;
 	let role_json: serde_json::Value = serde_json::from_slice(&role_body)?;
-	let profile_id = role_json["profile_id"]
+	let role_id = role_json["id"]
 		.as_str()
-		.ok_or("expected generated profile_id")?;
-	Uuid::parse_str(profile_id)?;
+		.ok_or("expected generated role id")?;
+	Uuid::parse_str(role_id)?;
 	assert_eq!(role_json["name"], "Blocked By System");
 	assert_eq!(
 		role_json["description"],
@@ -761,13 +761,32 @@ async fn test_create_user_missing_optional_fields_uses_backend_defaults(
 	let suffix = Uuid::new_v4();
 
 	let app = web_server::app(mm);
+	let role_req = Request::builder()
+		.method("POST")
+		.uri("/api/admin/permission-profiles")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({
+				"data": {
+					"name": format!("Missing Fields Role {suffix}"),
+					"privileges": []
+				}
+			})
+			.to_string(),
+		))?;
+	let role_res = app.clone().oneshot(role_req).await?;
+	assert_eq!(role_res.status(), StatusCode::CREATED);
+	let role_body = to_bytes(role_res.into_body(), usize::MAX).await?;
+	let role_json: serde_json::Value = serde_json::from_slice(&role_body)?;
+	let role_id = role_json["id"].as_str().ok_or("missing role id")?;
 	// Mirrors the currently documented frontend payload shape that omits
 	// required fields for backend UserForCreate.
 	let body = json!({
 		"data": {
 			"organization_id": seed.org_id,
 			"email": format!("missing-fields-{suffix}@example.com"),
-			"role": "case_reviewer"
+			"role": role_id
 		}
 	});
 	let req = Request::builder()
@@ -786,11 +805,7 @@ async fn test_create_user_missing_optional_fields_uses_backend_defaults(
 		json["data"]["email"].as_str(),
 		Some(format!("missing-fields-{suffix}@example.com").as_str())
 	);
-	assert_eq!(json["data"]["role"].as_str(), Some("user"));
-	assert_eq!(
-		json["data"]["permissionProfileId"].as_str(),
-		Some("case_reviewer")
-	);
+	assert_eq!(json["data"]["role"].as_str(), Some(role_id));
 	assert!(
 		json["data"]["username"]
 			.as_str()

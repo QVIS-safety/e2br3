@@ -1,10 +1,15 @@
 mod common;
 
-use crate::common::Result;
+use crate::common::{
+	demo_org_id, demo_user_id, reset_role, set_auditor_role, Result,
+};
 use lib_core::_dev_utils;
+use lib_core::model::store::{set_org_context, set_user_context};
 use lib_core::model::ModelManager;
 use serial_test::serial;
 use std::collections::HashSet;
+
+use sqlx::types::Uuid;
 
 const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"sender_presaves",
@@ -150,6 +155,7 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 	let org_aware_fk_count: i64 = sqlx::query_scalar(
 		"WITH fk_columns AS (
 			SELECT
+				c.conname::text AS constraint_name,
 				c.conrelid::regclass::text AS table_name,
 				c.confrelid::regclass::text AS foreign_table_name,
 				c.confdeltype,
@@ -186,6 +192,68 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 		"missing org-aware composite FKs for product->sender and study->product"
 	);
 
+	let expected_constraints = [
+		(
+			"sender_presaves",
+			"sender_presaves_id_organization_unique",
+			"u",
+		),
+		(
+			"product_presaves",
+			"product_presaves_id_organization_unique",
+			"u",
+		),
+		("product_presaves", "product_presaves_sender_org_fk", "f"),
+		("study_presaves", "study_presaves_product_org_fk", "f"),
+	];
+	let constraint_rows: Vec<(String, String, String)> = sqlx::query_as(
+		"SELECT conrelid::regclass::text, conname::text, contype::text
+		 FROM pg_constraint
+		 WHERE connamespace = 'public'::regnamespace
+		   AND conname = ANY($1)",
+	)
+	.bind(
+		expected_constraints
+			.iter()
+			.map(|(_, name, _)| *name)
+			.collect::<Vec<_>>(),
+	)
+	.fetch_all(mm.dbx().db())
+	.await?;
+	let constraints: HashSet<_> = constraint_rows
+		.iter()
+		.map(|(table, name, contype)| {
+			(table.as_str(), name.as_str(), contype.as_str())
+		})
+		.collect();
+	for expected in expected_constraints {
+		assert!(
+			constraints.contains(&expected),
+			"missing expected compatibility constraint {} on {}",
+			expected.1,
+			expected.0
+		);
+	}
+
+	let legacy_fk_names = [
+		"product_presaves_sender_presave_id_fkey",
+		"study_presaves_product_presave_id_fkey",
+	];
+	let legacy_fk_count: i64 = sqlx::query_scalar(
+		"SELECT COUNT(*)
+		 FROM pg_constraint
+		 WHERE connamespace = 'public'::regnamespace
+		   AND contype = 'f'
+		   AND conname = ANY($1)",
+	)
+	.bind(legacy_fk_names)
+	.fetch_one(mm.dbx().db())
+	.await?;
+	assert_eq!(
+		legacy_fk_count, 0,
+		"legacy single-column section presave FKs must be removed"
+	);
+
 	let trigger_rows: Vec<(String, String)> = sqlx::query_as(
 		"SELECT tgrelid::regclass::text, tgname::text
 		 FROM pg_trigger
@@ -212,6 +280,95 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 			"missing updated_at trigger for {table}"
 		);
 	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn section_presave_child_audit_uses_parent_organization() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let parent_org_id = Uuid::new_v4();
+	let sender_id = Uuid::new_v4();
+	let gateway_id = Uuid::new_v4();
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, demo_user_id()).await?;
+	set_org_context(&mut tx, demo_org_id(), "system_admin").await?;
+
+	sqlx::query(
+		"INSERT INTO organizations (
+			id, name, org_type, address, city, state, postcode, country_code,
+			contact_email, contact_phone, active, created_by, created_at, updated_at
+		) VALUES (
+			$1, $2, 'client', '1 Audit St', 'Seoul', '11', '00000',
+			'KR', $3, '02-000-0000', true, $4, NOW(), NOW()
+		)",
+	)
+	.bind(parent_org_id)
+	.bind(format!("Audit Parent Org {parent_org_id}"))
+	.bind(format!("audit-parent-{parent_org_id}@example.com"))
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
+		"INSERT INTO sender_presaves (
+			id, organization_id, authority, name, created_by, updated_by
+		)
+		VALUES ($1, $2, 'ich', $3, $4, $4)",
+	)
+	.bind(sender_id)
+	.bind(parent_org_id)
+	.bind(format!("Audit Sender {sender_id}"))
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
+		"INSERT INTO sender_presave_gateways (
+			id, sender_presave_id, sequence_number, gateway_authority,
+			sender_identifier, created_by, updated_by
+		)
+		VALUES ($1, $2, 1, 'fda', 'before-update', $3, $3)",
+	)
+	.bind(gateway_id)
+	.bind(sender_id)
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
+		"UPDATE sender_presave_gateways
+		 SET sender_identifier = 'after-update',
+		     updated_by = $1
+		 WHERE id = $2",
+	)
+	.bind(demo_user_id())
+	.bind(gateway_id)
+	.execute(&mut *tx)
+	.await?;
+	tx.commit().await?;
+
+	set_auditor_role(&mm).await?;
+	let audited_org_id: Uuid = sqlx::query_scalar(
+		"SELECT organization_id
+		 FROM audit_logs
+		 WHERE table_name = 'sender_presave_gateways'
+		   AND record_id = $1
+		   AND action = 'UPDATE'
+		 ORDER BY created_at DESC, id DESC
+		 LIMIT 1",
+	)
+	.bind(gateway_id)
+	.fetch_one(mm.dbx().db())
+	.await?;
+	reset_role(&mm).await?;
+
+	assert_eq!(
+		audited_org_id, parent_org_id,
+		"child presave audit log should inherit organization from parent"
+	);
 
 	Ok(())
 }

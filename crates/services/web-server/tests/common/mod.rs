@@ -20,8 +20,8 @@ use uuid::Uuid;
 pub type Result<T> =
 	core::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-pub const TEST_CUSTOM_MANAGER_ROLE: &str = "manager";
-pub const TEST_CUSTOM_VIEWER_ROLE: &str = "viewer";
+pub const TEST_CUSTOM_MANAGER_ROLE: &str = "11111111-1111-4111-8111-111111111111";
+pub const TEST_CUSTOM_VIEWER_ROLE: &str = "22222222-2222-4222-8222-222222222222";
 
 pub struct SeedUser {
 	pub id: Uuid,
@@ -398,21 +398,10 @@ pub async fn insert_user(
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, created_by).await?;
 	set_org_context(&mut tx, system_org_id(), ROLE_SYSTEM_ADMIN).await?;
-	let normalized_role = match role {
-		"system_admin" | "sponsor_admin_cro" | "sponsor_admin_company" | "user" => {
-			role
-		}
-		_ => ROLE_USER,
-	};
-	let permission_profile_id = if normalized_role == ROLE_USER && role != ROLE_USER
-	{
-		Some(role)
-	} else {
-		None
-	};
+	let normalized_role = role;
 	sqlx::query(
-		"INSERT INTO users (id, organization_id, email, username, pwd, pwd_salt, token_salt, role, permission_profile_id, active, created_by, updated_by)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, $10)",
+		"INSERT INTO users (id, organization_id, email, username, pwd, pwd_salt, token_salt, role, active, created_by, updated_by)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $9)",
 	)
 	.bind(user_id)
 	.bind(org_id)
@@ -422,7 +411,6 @@ pub async fn insert_user(
 	.bind(pwd_salt)
 	.bind(token_salt)
 	.bind(normalized_role)
-	.bind(permission_profile_id)
 	.bind(created_by)
 	.execute(&mut *tx)
 	.await?;

@@ -86,7 +86,6 @@ pub struct UserView {
 	pub email: String,
 	pub username: String,
 	pub role: String,
-	pub permission_profile_id: Option<String>,
 	pub role_meta: UserRoleMetadata,
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
@@ -174,7 +173,6 @@ pub struct UserForCreateAdminPayload {
 	pub username: Option<String>,
 	pub pwd_clear: Option<String>,
 	pub role: Option<String>,
-	pub permission_profile_id: Option<String>,
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
 	#[serde(default, deserialize_with = "deserialize_access_datetime_option")]
@@ -193,7 +191,6 @@ pub struct UserForUpdateAdminPayload {
 	pub email: Option<String>,
 	pub username: Option<String>,
 	pub role: Option<String>,
-	pub permission_profile_id: Option<String>,
 	pub comments: Option<String>,
 	pub other_information: Option<String>,
 	#[serde(default, deserialize_with = "deserialize_access_datetime_option")]
@@ -299,16 +296,9 @@ fn role_display_name(role: &str) -> String {
 	}
 }
 
-fn role_metadata(
-	role: &str,
-	permission_profile_id: Option<&str>,
-) -> UserRoleMetadata {
+fn role_metadata(role: &str, _unused: Option<&str>) -> UserRoleMetadata {
 	let canonical_role_id = canonical_role(role);
-	let permission_subject = if canonical_role_id == ROLE_USER {
-		permission_profile_id.unwrap_or(&canonical_role_id)
-	} else {
-		&canonical_role_id
-	};
+	let permission_subject = &canonical_role_id;
 	let is_builtin = matches!(
 		canonical_role_id.as_str(),
 		ROLE_SYSTEM_ADMIN | ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
@@ -440,27 +430,9 @@ fn capabilities_for_subject(
 	}
 }
 
-fn normalize_user_role_and_profile(
-	role: Option<String>,
-	permission_profile_id: Option<String>,
-) -> (Option<String>, Option<String>) {
-	let normalized_role = role
-		.map(|role| canonical_role(&role))
-		.filter(|role| !role.trim().is_empty());
-	let normalized_profile = permission_profile_id
-		.map(|profile| canonical_role(&profile))
-		.filter(|profile| !profile.trim().is_empty());
-	match normalized_role.as_deref() {
-		Some(
-			ROLE_SYSTEM_ADMIN | ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY,
-		) => (normalized_role, None),
-		Some(ROLE_USER) => (Some(ROLE_USER.to_string()), normalized_profile),
-		Some(custom_profile) => (
-			Some(ROLE_USER.to_string()),
-			Some(custom_profile.to_string()),
-		),
-		None => (None, normalized_profile),
-	}
+fn normalize_user_role(role: Option<String>) -> Option<String> {
+	role.map(|role| canonical_role(&role))
+		.filter(|role| !role.trim().is_empty())
 }
 
 fn sponsor_admin_role_error() -> Error {
@@ -469,12 +441,9 @@ fn sponsor_admin_role_error() -> Error {
 	}
 }
 
-fn validate_create_role_selection(
-	role: Option<&str>,
-	permission_profile_id: Option<&str>,
-) -> Result<()> {
-	match (role, permission_profile_id) {
-		(Some(ROLE_USER), None) | (None, _) => Err(Error::BadRequest {
+fn validate_create_role_selection(role: Option<&str>) -> Result<()> {
+	match role {
+		Some(ROLE_USER) | None => Err(Error::BadRequest {
 			message: "role selection is required".to_string(),
 		}),
 		_ => Ok(()),
@@ -592,8 +561,7 @@ fn user_view(user: User) -> UserView {
 		email: user.email,
 		username: user.username,
 		role: user.role.clone(),
-		permission_profile_id: user.permission_profile_id.clone(),
-		role_meta: role_metadata(&user.role, user.permission_profile_id.as_deref()),
+		role_meta: role_metadata(&user.role, None),
 		comments: user.comments,
 		other_information: user.other_information,
 		scope: UserScopeView {
@@ -657,12 +625,8 @@ pub async fn create_user(
 		});
 	}
 	// New users are provisioned with a temporary password and must reset it on first login.
-	let (role, permission_profile_id) =
-		normalize_user_role_and_profile(data.role, data.permission_profile_id);
-	validate_create_role_selection(
-		role.as_deref(),
-		permission_profile_id.as_deref(),
-	)?;
+	let role = normalize_user_role(data.role);
+	validate_create_role_selection(role.as_deref())?;
 	validate_sponsor_admin_role_for_org(
 		&db_ctx,
 		&mm,
@@ -681,7 +645,6 @@ pub async fn create_user(
 		username: Some(username),
 		pwd_clear: initial_password(data.pwd_clear),
 		role,
-		permission_profile_id,
 		comments: data.comments,
 		other_information: data.other_information,
 		access_start_at: data.access_start_at,
@@ -810,8 +773,7 @@ pub async fn update_user(
 		return Err(sender_scope_assignment_forbidden());
 	}
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
-	let (role, permission_profile_id) =
-		normalize_user_role_and_profile(data.role, data.permission_profile_id);
+	let role = normalize_user_role(data.role);
 	if role.is_some() {
 		let existing: User = UserBmc::get(&db_ctx, &mm, id).await?;
 		validate_sponsor_admin_role_for_org(
@@ -828,7 +790,6 @@ pub async fn update_user(
 		email,
 		username,
 		role,
-		permission_profile_id,
 		comments: data.comments,
 		other_information: data.other_information,
 		access_start_at: data.access_start_at,
@@ -958,7 +919,6 @@ pub async fn update_current_user_routing(
 			email: None,
 			username: None,
 			role: None,
-			permission_profile_id: None,
 			comments: None,
 			other_information: None,
 			access_start_at: None,

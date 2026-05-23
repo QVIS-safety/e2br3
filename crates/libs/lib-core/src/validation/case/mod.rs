@@ -15,7 +15,8 @@ pub async fn validate_case_for_authority(
 	case_id: Uuid,
 	authority: RegulatoryAuthority,
 ) -> Result<CaseValidationReport> {
-	let reports = validate_case_for_authorities(ctx, mm, case_id, &[authority]).await?;
+	let reports =
+		validate_case_for_authorities(ctx, mm, case_id, &[authority]).await?;
 	Ok(reports
 		.into_iter()
 		.next()

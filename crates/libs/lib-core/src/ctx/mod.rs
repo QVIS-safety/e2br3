@@ -32,7 +32,6 @@ pub struct Ctx {
 	user_id: uuid::Uuid,
 	organization_id: uuid::Uuid,
 	role: String,
-	permission_profile_id: Option<String>,
 	change_reason: Option<String>,
 	e_signature_id: Option<uuid::Uuid>,
 }
@@ -48,7 +47,6 @@ impl Ctx {
 			organization_id: uuid::Uuid::parse_str(SYSTEM_ORG_ID)
 				.expect("Invalid system org UUID"),
 			role: ROLE_SYSTEM_ADMIN.to_string(),
-			permission_profile_id: None,
 			change_reason: None,
 			e_signature_id: None,
 		}
@@ -76,20 +74,9 @@ impl Ctx {
 			user_id,
 			organization_id,
 			role,
-			permission_profile_id: None,
 			change_reason: None,
 			e_signature_id: None,
 		})
-	}
-
-	pub fn with_permission_profile(
-		mut self,
-		permission_profile_id: Option<String>,
-	) -> Self {
-		self.permission_profile_id = permission_profile_id
-			.map(|value| canonical_role(&value))
-			.filter(|value| !value.is_empty());
-		self
 	}
 }
 
@@ -107,16 +94,8 @@ impl Ctx {
 		&self.role
 	}
 
-	pub fn permission_profile_id(&self) -> Option<&str> {
-		self.permission_profile_id.as_deref()
-	}
-
 	pub fn permission_subject(&self) -> &str {
-		if self.role == ROLE_USER {
-			self.permission_profile_id.as_deref().unwrap_or(&self.role)
-		} else {
-			&self.role
-		}
+		&self.role
 	}
 
 	pub fn change_reason(&self) -> Option<&str> {

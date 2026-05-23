@@ -206,13 +206,9 @@ fn current_user_matches_workflow_role(ctx: &Ctx, rule: &WorkflowStatusRule) -> b
 		return true;
 	}
 	let role = canonical_role(ctx.role());
-	let profile = ctx.permission_profile_id().map(canonical_role);
-	rule.allowed_roles.iter().any(|allowed| {
-		allowed.eq_ignore_ascii_case(&role)
-			|| profile
-				.as_deref()
-				.is_some_and(|profile| allowed.eq_ignore_ascii_case(profile))
-	})
+	rule.allowed_roles
+		.iter()
+		.any(|allowed| allowed.eq_ignore_ascii_case(&role))
 }
 
 fn current_user_matches_workflow_assignment(ctx: &Ctx, case: &Case) -> bool {

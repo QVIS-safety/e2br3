@@ -53,7 +53,6 @@ CREATE TABLE IF NOT EXISTS users (
     token_salt UUID NOT NULL DEFAULT gen_random_uuid(),
 
     role VARCHAR(50) NOT NULL DEFAULT 'user',
-    permission_profile_id TEXT,
     comments TEXT,
     other_information TEXT,
     access_start_at TIMESTAMPTZ,
@@ -74,7 +73,10 @@ CREATE TABLE IF NOT EXISTS users (
     updated_by UUID,
 
     CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
-    CONSTRAINT user_role_valid CHECK (role IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user'))
+    CONSTRAINT user_role_valid CHECK (
+        role IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user')
+        OR role ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    )
 );
 
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -103,8 +105,8 @@ CREATE TABLE IF NOT EXISTS dashboard_notices (
 );
 
 CREATE TABLE IF NOT EXISTS permission_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    profile_id text PRIMARY KEY,
     name VARCHAR(128) NOT NULL,
     description VARCHAR(512),
     can_view boolean NOT NULL DEFAULT true,
@@ -431,6 +433,92 @@ CREATE TABLE IF NOT EXISTS study_presave_registration_numbers (
     CONSTRAINT study_presave_registration_numbers_sequence_unique UNIQUE (study_presave_id, sequence_number)
 );
 
+-- Compatibility for databases that created section presave tables before the
+-- same-organization composite FK constraints were added.
+DO $$
+DECLARE
+    v_constraint_name TEXT;
+BEGIN
+    FOR v_constraint_name IN
+        SELECT c.conname
+        FROM pg_constraint c
+        JOIN pg_attribute a
+            ON a.attrelid = c.conrelid
+            AND a.attnum = c.conkey[1]
+        WHERE c.contype = 'f'
+            AND c.conrelid = 'product_presaves'::regclass
+            AND c.confrelid = 'sender_presaves'::regclass
+            AND array_length(c.conkey, 1) = 1
+            AND a.attname = 'sender_presave_id'
+    LOOP
+        EXECUTE format('ALTER TABLE product_presaves DROP CONSTRAINT %I', v_constraint_name);
+    END LOOP;
+
+    FOR v_constraint_name IN
+        SELECT c.conname
+        FROM pg_constraint c
+        JOIN pg_attribute a
+            ON a.attrelid = c.conrelid
+            AND a.attnum = c.conkey[1]
+        WHERE c.contype = 'f'
+            AND c.conrelid = 'study_presaves'::regclass
+            AND c.confrelid = 'product_presaves'::regclass
+            AND array_length(c.conkey, 1) = 1
+            AND a.attname = 'product_presave_id'
+    LOOP
+        EXECUTE format('ALTER TABLE study_presaves DROP CONSTRAINT %I', v_constraint_name);
+    END LOOP;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'sender_presaves'::regclass
+            AND conname = 'sender_presaves_id_organization_unique'
+    ) THEN
+        ALTER TABLE sender_presaves
+            ADD CONSTRAINT sender_presaves_id_organization_unique
+            UNIQUE (id, organization_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'product_presaves'::regclass
+            AND conname = 'product_presaves_id_organization_unique'
+    ) THEN
+        ALTER TABLE product_presaves
+            ADD CONSTRAINT product_presaves_id_organization_unique
+            UNIQUE (id, organization_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'product_presaves'::regclass
+            AND conname = 'product_presaves_sender_org_fk'
+    ) THEN
+        ALTER TABLE product_presaves
+            ADD CONSTRAINT product_presaves_sender_org_fk
+            FOREIGN KEY (sender_presave_id, organization_id)
+            REFERENCES sender_presaves(id, organization_id)
+            ON DELETE SET NULL (sender_presave_id);
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'study_presaves'::regclass
+            AND conname = 'study_presaves_product_org_fk'
+    ) THEN
+        ALTER TABLE study_presaves
+            ADD CONSTRAINT study_presaves_product_org_fk
+            FOREIGN KEY (product_presave_id, organization_id)
+            REFERENCES product_presaves(id, organization_id)
+            ON DELETE SET NULL (product_presave_id);
+    END IF;
+END;
+$$;
+
 CREATE TABLE IF NOT EXISTS narrative_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
@@ -519,13 +607,7 @@ ALTER TABLE users
     ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
 
 ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS permission_profile_id TEXT;
-
-UPDATE users
-SET permission_profile_id = role,
-    role = 'user'
-WHERE role NOT IN ('system_admin', 'sponsor_admin_cro', 'sponsor_admin_company', 'user')
-  AND permission_profile_id IS NULL;
+    DROP COLUMN IF EXISTS permission_profile_id;
 
     -- ============================================================================
     -- 3. Safety Cases
@@ -1214,13 +1296,19 @@ CREATE POLICY audit_logs_read_for_admin_manager ON audit_logs
     FOR SELECT
     TO e2br3_app_role
     USING (
-        COALESCE(current_setting('app.current_user_role', true), '') IN (
-            'system_admin',
-            'sponsor_admin_cro',
-            'sponsor_admin_company',
-            'manager',
-            'pvm',
-            'head_pv'
+        (
+            COALESCE(current_setting('app.current_user_role', true), '') IN (
+                'system_admin',
+                'sponsor_admin_cro',
+                'sponsor_admin_company'
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM permission_profiles pp
+                WHERE pp.id::text = COALESCE(current_setting('app.current_user_role', true), '')
+                  AND pp.active = true
+                  AND pp.privileges_json @> '[{"menu_key":"audit","can_read":true}]'::jsonb
+            )
         )
         AND (
             organization_id = current_organization_id()

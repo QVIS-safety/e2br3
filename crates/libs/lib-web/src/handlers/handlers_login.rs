@@ -32,7 +32,6 @@ pub async fn api_login_handler(
 
 	// Reject malformed/legacy accounts that cannot build an authenticated context.
 	Ctx::new(user.id, user.organization_id, user.role.clone())
-		.map(|ctx| ctx.with_permission_profile(user.permission_profile_id.clone()))
 		.map_err(|_| Error::LoginFailUserCtxCreate { user_id })?;
 
 	// -- Validate the password.

@@ -121,7 +121,10 @@ async fn test_admin_can_list_validation_rules() -> Result<()> {
 	let contains_mfds = rules
 		.iter()
 		.any(|rule| rule.get("authority").and_then(Value::as_str) == Some("mfds"));
-	assert!(!contains_mfds, "authority=fda should not include mfds rules");
+	assert!(
+		!contains_mfds,
+		"authority=fda should not include mfds rules"
+	);
 
 	let req = Request::builder()
 		.method("GET")

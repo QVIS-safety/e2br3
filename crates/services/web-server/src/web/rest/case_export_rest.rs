@@ -321,8 +321,7 @@ pub async fn export_case(
 	let case = CaseBmc::get(&ctx, &mm, id).await?;
 	let authority = resolve_requested_export_authority(query.authority.as_deref())?;
 	let include_authority_suffix = true;
-	let file_name =
-		export_file_name(&case, id, authority, include_authority_suffix);
+	let file_name = export_file_name(&case, id, authority, include_authority_suffix);
 	let (case, xml) = match generate_validated_case_xml_for_authority(
 		&ctx,
 		&mm,

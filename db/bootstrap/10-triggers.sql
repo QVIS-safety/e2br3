@@ -166,6 +166,66 @@ BEGIN
         END IF;
     END IF;
 
+    IF p_table_name IN (
+        'sender_presave_gateways',
+        'sender_presave_responsible_persons'
+    ) THEN
+        SELECT p.organization_id INTO v_org_id
+        FROM sender_presaves p
+        WHERE p.id = NULLIF(v_values->>'sender_presave_id', '')::UUID;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
+    IF p_table_name = 'receiver_presave_consignees' THEN
+        SELECT p.organization_id INTO v_org_id
+        FROM receiver_presaves p
+        WHERE p.id = NULLIF(v_values->>'receiver_presave_id', '')::UUID;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
+    IF p_table_name IN (
+        'product_presave_substances',
+        'product_presave_fda_cross_reported_inds',
+        'product_presave_mfds_regional_items'
+    ) THEN
+        SELECT p.organization_id INTO v_org_id
+        FROM product_presaves p
+        WHERE p.id = NULLIF(v_values->>'product_presave_id', '')::UUID;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
+    IF p_table_name = 'study_presave_registration_numbers' THEN
+        SELECT p.organization_id INTO v_org_id
+        FROM study_presaves p
+        WHERE p.id = NULLIF(v_values->>'study_presave_id', '')::UUID;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
+    IF p_table_name IN (
+        'narrative_presave_sender_diagnoses',
+        'narrative_presave_case_summaries'
+    ) THEN
+        SELECT p.organization_id INTO v_org_id
+        FROM narrative_presaves p
+        WHERE p.id = NULLIF(v_values->>'narrative_presave_id', '')::UUID;
+
+        IF v_org_id IS NOT NULL THEN
+            RETURN v_org_id;
+        END IF;
+    END IF;
+
     RETURN COALESCE(
         current_organization_id(),
         '00000000-0000-0000-0000-000000000000'::UUID
@@ -638,6 +698,9 @@ CREATE TRIGGER audit_organizations AFTER INSERT OR UPDATE OR DELETE ON organizat
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_users AFTER INSERT OR UPDATE OR DELETE ON users
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_permission_profiles AFTER INSERT OR UPDATE OR DELETE ON permission_profiles
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 -- Phase 1-3 new tables audit triggers

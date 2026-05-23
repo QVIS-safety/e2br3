@@ -136,7 +136,7 @@ async fn create_info_reader(
 	admin_cookie: &str,
 	org_id: Uuid,
 ) -> Result<(Uuid, String)> {
-	let profile_id = format!("presave_reader_{}", Uuid::new_v4().simple());
+	let role_name = format!("presave_reader_{}", Uuid::new_v4().simple());
 	let (status, value) = request_json(
 		app,
 		admin_cookie,
@@ -144,8 +144,7 @@ async fn create_info_reader(
 		"/api/admin/permission-profiles".to_string(),
 		Some(json!({
 			"data": {
-				"profile_id": profile_id,
-				"name": profile_id,
+				"name": role_name,
 				"description": "Presave scope reader",
 				"privileges": [
 					{
@@ -161,12 +160,9 @@ async fn create_info_reader(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	let profile_id = value["profile_id"]
-		.as_str()
-		.ok_or("missing permission profile id")?
-		.to_string();
+	let role_id = value["id"].as_str().ok_or("missing role id")?.to_string();
 	let user =
-		insert_user(mm, org_id, &profile_id, system_user_id(), Some("readerpwd"))
+		insert_user(mm, org_id, &role_id, system_user_id(), Some("readerpwd"))
 			.await?;
 	let token = generate_web_token(&user.email, user.token_salt)?;
 	Ok((user.id, cookie_header(&token.to_string())))

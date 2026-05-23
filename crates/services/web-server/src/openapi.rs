@@ -938,7 +938,6 @@ struct UserDoc {
 	/// custom scoped roles.
 	#[schema(example = "sponsor_admin_cro")]
 	role: String,
-	permission_profile_id: Option<String>,
 	role_meta: UserRoleMetadataDoc,
 	comments: Option<String>,
 	other_information: Option<String>,
