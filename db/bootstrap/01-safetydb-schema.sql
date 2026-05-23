@@ -153,6 +153,321 @@ CREATE TABLE IF NOT EXISTS presave_template_audits (
     CONSTRAINT presave_template_audits_action_valid CHECK (action IN ('CREATE', 'UPDATE', 'DELETE'))
 );
 
+CREATE TABLE IF NOT EXISTS sender_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    sender_type VARCHAR(50),
+    organization_name VARCHAR(500),
+    department VARCHAR(500),
+    street_address TEXT,
+    city VARCHAR(200),
+    state VARCHAR(100),
+    postcode VARCHAR(50),
+    country_code VARCHAR(2),
+    telephone VARCHAR(50),
+    fax VARCHAR(50),
+    email VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT sender_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+);
+
+CREATE TABLE IF NOT EXISTS sender_presave_gateways (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sender_presave_id UUID NOT NULL REFERENCES sender_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    gateway_authority VARCHAR(16) NOT NULL,
+    sender_identifier VARCHAR(255),
+    routing_identifier VARCHAR(255),
+    cde_sender_identifier VARCHAR(255),
+    cdr_sender_identifier VARCHAR(255),
+    ema_sender_identifier VARCHAR(255),
+    is_default_for_authority BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT sender_presave_gateways_authority_valid CHECK (gateway_authority IN ('fda', 'pmda', 'mfds', 'nmpa', 'ema')),
+    CONSTRAINT sender_presave_gateways_sequence_unique UNIQUE (sender_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS sender_presave_responsible_persons (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sender_presave_id UUID NOT NULL REFERENCES sender_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    department VARCHAR(500),
+    person_title VARCHAR(100),
+    person_given_name VARCHAR(200),
+    person_middle_name VARCHAR(200),
+    person_family_name VARCHAR(200),
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT sender_presave_responsible_persons_sequence_unique UNIQUE (sender_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS receiver_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    receiver_type VARCHAR(50),
+    organization_name VARCHAR(500),
+    receiver_identifier VARCHAR(255),
+    day_count_rule VARCHAR(100),
+    nsae_solicited_day_count INTEGER,
+    nsae_solicited_not_applicable BOOLEAN,
+    nsae_non_solicited_day_count INTEGER,
+    nsae_non_solicited_not_applicable BOOLEAN,
+    sae_solicited_day_count INTEGER,
+    sae_solicited_not_applicable BOOLEAN,
+    sae_non_solicited_day_count INTEGER,
+    sae_non_solicited_not_applicable BOOLEAN,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT receiver_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+);
+
+CREATE TABLE IF NOT EXISTS receiver_presave_consignees (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    receiver_presave_id UUID NOT NULL REFERENCES receiver_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    name VARCHAR(500),
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT receiver_presave_consignees_sequence_unique UNIQUE (receiver_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS product_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    sender_presave_id UUID REFERENCES sender_presaves(id) ON DELETE SET NULL,
+    drug_characterization VARCHAR(50),
+    medicinal_product VARCHAR(2000),
+    medicinal_product_notation VARCHAR(50),
+    preapproval_ip_name VARCHAR(2000),
+    brand_name VARCHAR(2000),
+    drug_generic_name VARCHAR(2000),
+    manufacturer_name VARCHAR(500),
+    product_description TEXT,
+    mpid VARCHAR(255),
+    mpid_version VARCHAR(50),
+    phpid VARCHAR(255),
+    phpid_version VARCHAR(50),
+    investigational_product_blinded BOOLEAN,
+    obtain_drug_country VARCHAR(2),
+    drug_authorization_number VARCHAR(100),
+    drug_authorization_country VARCHAR(2),
+    drug_authorization_holder VARCHAR(500),
+    holder_applicant_name_notation VARCHAR(50),
+    fda_ind_number_occurred VARCHAR(100),
+    fda_pre_anda_number_occurred VARCHAR(100),
+    mfds_domestic_product_code VARCHAR(100),
+    mfds_domestic_ingredient_code VARCHAR(100),
+    mfds_udl_product_code VARCHAR(100),
+    mfds_udl_ingredient_code VARCHAR(100),
+    mfds_udl_manufacturer_code VARCHAR(100),
+    mfds_udl_manufacturer_name VARCHAR(500),
+    mfds_foreign_ich_product_code VARCHAR(100),
+    mfds_foreign_ich_ingredient_code VARCHAR(100),
+    mfds_foreign_ich_holder_code VARCHAR(100),
+    mfds_foreign_ich_holder_name VARCHAR(500),
+    mfds_foreign_e2b_product_code VARCHAR(100),
+    mfds_foreign_e2b_ingredient_code VARCHAR(100),
+    mfds_foreign_e2b_holder_code VARCHAR(100),
+    mfds_foreign_e2b_holder_name VARCHAR(500),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT product_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+);
+
+CREATE TABLE IF NOT EXISTS product_presave_substances (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    substance_name VARCHAR(2000),
+    substance_termid_version VARCHAR(50),
+    substance_termid VARCHAR(100),
+    strength_value DECIMAL(15,5),
+    strength_unit VARCHAR(50),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT product_presave_substances_sequence_unique UNIQUE (product_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS product_presave_fda_cross_reported_inds (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    ind_number VARCHAR(100),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT product_presave_fda_cross_reported_inds_sequence_unique UNIQUE (product_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS product_presave_mfds_regional_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    item_type VARCHAR(100),
+    item_value TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT product_presave_mfds_regional_items_sequence_unique UNIQUE (product_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS reporter_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    reporter_title VARCHAR(100),
+    reporter_given_name VARCHAR(200),
+    reporter_middle_name VARCHAR(200),
+    reporter_family_name VARCHAR(200),
+    organization VARCHAR(500),
+    department VARCHAR(500),
+    street TEXT,
+    city VARCHAR(200),
+    state VARCHAR(100),
+    postcode VARCHAR(50),
+    telephone VARCHAR(50),
+    country_code VARCHAR(2),
+    email VARCHAR(255),
+    qualification VARCHAR(50),
+    qualification_kr1 VARCHAR(50),
+    primary_source_regulatory VARCHAR(50),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT reporter_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+);
+
+CREATE TABLE IF NOT EXISTS study_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    product_presave_id UUID REFERENCES product_presaves(id) ON DELETE SET NULL,
+    study_name VARCHAR(2000),
+    sponsor_study_number VARCHAR(100),
+    study_type_reaction VARCHAR(50),
+    study_type_reaction_kr1 VARCHAR(50),
+    edc_sync BOOLEAN,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT study_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+);
+
+CREATE TABLE IF NOT EXISTS study_presave_registration_numbers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    registration_number VARCHAR(255),
+    country_code VARCHAR(2),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT study_presave_registration_numbers_sequence_unique UNIQUE (study_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS narrative_presaves (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
+    authority VARCHAR(16) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    case_narrative TEXT,
+    reporter_comments TEXT,
+    sender_comments TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT narrative_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+);
+
+CREATE TABLE IF NOT EXISTS narrative_presave_sender_diagnoses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    narrative_presave_id UUID NOT NULL REFERENCES narrative_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    diagnosis_meddra_version VARCHAR(50),
+    diagnosis_meddra_code VARCHAR(100),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT narrative_presave_sender_diagnoses_sequence_unique UNIQUE (narrative_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS narrative_presave_case_summaries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    narrative_presave_id UUID NOT NULL REFERENCES narrative_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    summary_type VARCHAR(100),
+    language_code VARCHAR(10),
+    summary_text TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT narrative_presave_case_summaries_sequence_unique UNIQUE (narrative_presave_id, sequence_number)
+);
+
 CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_presave_templates_org ON presave_templates(organization_id);
@@ -165,6 +480,29 @@ CREATE INDEX idx_presave_template_audits_template_id
     ON presave_template_audits(template_id, created_at DESC);
 CREATE INDEX idx_presave_template_audits_org
     ON presave_template_audits(organization_id, created_at DESC);
+CREATE INDEX idx_sender_presaves_org ON sender_presaves(organization_id);
+CREATE INDEX idx_sender_presaves_authority ON sender_presaves(authority);
+CREATE INDEX idx_sender_presave_gateways_parent ON sender_presave_gateways(sender_presave_id);
+CREATE INDEX idx_sender_presave_responsible_persons_parent ON sender_presave_responsible_persons(sender_presave_id);
+CREATE INDEX idx_receiver_presaves_org ON receiver_presaves(organization_id);
+CREATE INDEX idx_receiver_presaves_authority ON receiver_presaves(authority);
+CREATE INDEX idx_receiver_presave_consignees_parent ON receiver_presave_consignees(receiver_presave_id);
+CREATE INDEX idx_product_presaves_org ON product_presaves(organization_id);
+CREATE INDEX idx_product_presaves_authority ON product_presaves(authority);
+CREATE INDEX idx_product_presaves_sender ON product_presaves(sender_presave_id);
+CREATE INDEX idx_product_presave_substances_parent ON product_presave_substances(product_presave_id);
+CREATE INDEX idx_product_presave_fda_cross_reported_inds_parent ON product_presave_fda_cross_reported_inds(product_presave_id);
+CREATE INDEX idx_product_presave_mfds_regional_items_parent ON product_presave_mfds_regional_items(product_presave_id);
+CREATE INDEX idx_reporter_presaves_org ON reporter_presaves(organization_id);
+CREATE INDEX idx_reporter_presaves_authority ON reporter_presaves(authority);
+CREATE INDEX idx_study_presaves_org ON study_presaves(organization_id);
+CREATE INDEX idx_study_presaves_authority ON study_presaves(authority);
+CREATE INDEX idx_study_presaves_product ON study_presaves(product_presave_id);
+CREATE INDEX idx_study_presave_registration_numbers_parent ON study_presave_registration_numbers(study_presave_id);
+CREATE INDEX idx_narrative_presaves_org ON narrative_presaves(organization_id);
+CREATE INDEX idx_narrative_presaves_authority ON narrative_presaves(authority);
+CREATE INDEX idx_narrative_presave_sender_diagnoses_parent ON narrative_presave_sender_diagnoses(narrative_presave_id);
+CREATE INDEX idx_narrative_presave_case_summaries_parent ON narrative_presave_case_summaries(narrative_presave_id);
 
 -- Backward-compatible guard for already-created dev DBs.
 ALTER TABLE users
