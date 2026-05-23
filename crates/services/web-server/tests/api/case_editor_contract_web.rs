@@ -475,7 +475,7 @@ async fn editor_ci_returns_ci_payload_only() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn editor_ci_page_projection_returns_profile_aware_field_envelopes(
+async fn editor_ci_page_projection_returns_direct_page_rows_without_field_issues(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -514,33 +514,18 @@ async fn editor_ci_page_projection_returns_profile_aware_field_envelopes(
 	assert!(body["rows"]["otherCaseIdentifiers"].is_array(), "{body}");
 	assert!(body["rows"]["linkedReports"].is_array(), "{body}");
 	assert!(body["rows"]["documentsHeldBySender"].is_array(), "{body}");
-
-	let report_type = &body["fields"]["reportType"];
-	assert_eq!(report_type["fieldId"], "CASE_RPT_TYPE");
-	assert_eq!(report_type["path"], "safetyReportIdentification.reportType");
-	assert_eq!(report_type["value"], "2");
-	assert_eq!(report_type["display"], "Report from study");
-	assert_eq!(report_type["visible"], true);
-	assert_eq!(report_type["editable"], true);
-	assert_eq!(report_type["empty"], false);
-	assert_eq!(report_type["requiredEmpty"], false);
-
-	let local_criteria = &body["fields"]["localCriteriaReportType"];
-	assert_eq!(local_criteria["fieldId"], "CASEU_LOC_REPORT_TYPE");
 	assert_eq!(
-		local_criteria["path"],
-		"safetyReportIdentification.localCriteriaReportType"
+		body["rows"]["safetyReportIdentification"]["report_type"],
+		"2"
 	);
-	assert_eq!(local_criteria["visible"], true);
-	assert_eq!(local_criteria["requiredEmpty"], true);
 	assert!(
-		local_criteria["issues"]
-			.as_array()
-			.ok_or("missing localCriteriaReportType issues")?
-			.iter()
-			.any(|issue| issue["code"] == "FDA.C.1.7.1.REQUIRED"),
+		body["fields"]
+			.as_object()
+			.ok_or("missing fields object")?
+			.is_empty(),
 		"{body}"
 	);
+	assert_eq!(body["requiredCount"], 0, "{body}");
 
 	Ok(())
 }
@@ -567,14 +552,21 @@ async fn editor_ci_page_projection_accepts_multiple_profiles() -> Result<()> {
 	assert_eq!(body["caseId"], case_id);
 	assert_eq!(body["pageId"], "CI");
 	assert_eq!(body["profiles"], json!(["fda", "mfds"]));
-	assert!(body["fields"].is_object(), "{body}");
+	assert!(
+		body["fields"]
+			.as_object()
+			.ok_or("missing fields object")?
+			.is_empty(),
+		"{body}"
+	);
 
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn editor_ci_page_projection_uses_all_profiles_for_visibility() -> Result<()> {
+async fn editor_ci_page_projection_keeps_profile_context_without_field_visibility(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -592,10 +584,12 @@ async fn editor_ci_page_projection_uses_all_profiles_for_visibility() -> Result<
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(body["profiles"], json!(["mfds", "fda"]));
-	assert_eq!(body["fields"]["localCriteriaReportType"]["visible"], true);
-	assert_eq!(
-		body["fields"]["combinationProductReportIndicator"]["visible"],
-		true
+	assert!(
+		body["fields"]
+			.as_object()
+			.ok_or("missing fields object")?
+			.is_empty(),
+		"{body}"
 	);
 
 	Ok(())
@@ -651,9 +645,21 @@ async fn editor_ci_page_patch_updates_only_report_type_and_returns_projection(
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_eq!(body["fields"]["reportType"]["value"], "3");
-	assert_eq!(body["fields"]["reportType"]["display"], "Other");
-	assert_eq!(body["fields"]["fulfilExpeditedCriteria"]["value"], false);
+	assert_eq!(
+		body["rows"]["safetyReportIdentification"]["report_type"],
+		"3"
+	);
+	assert_eq!(
+		body["rows"]["safetyReportIdentification"]["fulfil_expedited_criteria"],
+		false
+	);
+	assert!(
+		body["fields"]
+			.as_object()
+			.ok_or("missing fields object")?
+			.is_empty(),
+		"{body}"
+	);
 
 	let (status, body) = get_json(
 		&app,
@@ -730,7 +736,10 @@ async fn editor_ci_page_patch_rejects_invalid_profiles_before_mutation() -> Resu
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
-	assert_ne!(body["fields"]["reportType"]["value"], "3", "{body}");
+	assert_ne!(
+		body["rows"]["safetyReportIdentification"]["report_type"], "3",
+		"{body}"
+	);
 
 	Ok(())
 }
@@ -770,12 +779,15 @@ async fn editor_ci_page_patch_can_clear_profile_specific_field() -> Result<()> {
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert_eq!(
-		body["fields"]["localCriteriaReportType"]["value"],
+		body["rows"]["safetyReportIdentification"]["local_criteria_report_type"],
 		Value::Null
 	);
-	assert_eq!(
-		body["fields"]["localCriteriaReportType"]["requiredEmpty"],
-		true
+	assert!(
+		body["fields"]
+			.as_object()
+			.ok_or("missing fields object")?
+			.is_empty(),
+		"{body}"
 	);
 
 	let (status, body) = get_json(
@@ -792,8 +804,8 @@ async fn editor_ci_page_patch_can_clear_profile_specific_field() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn editor_ci_page_projection_uses_request_profile_as_validation_context(
-) -> Result<()> {
+async fn editor_ci_page_projection_preserves_request_profile_context() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -817,15 +829,11 @@ async fn editor_ci_page_projection_uses_request_profile_as_validation_context(
 
 	assert_eq!(status, StatusCode::OK, "{body}");
 	assert!(body.get("appendices").is_none(), "{body}");
-	assert_eq!(body["fields"]["localCriteriaReportType"]["visible"], false);
-	assert_eq!(
-		body["fields"]["localCriteriaReportType"]["requiredEmpty"],
-		false
-	);
+	assert_eq!(body["profiles"], json!(["ich"]));
 	assert!(
-		body["fields"]["localCriteriaReportType"]["issues"]
-			.as_array()
-			.ok_or("missing local criteria issues")?
+		body["fields"]
+			.as_object()
+			.ok_or("missing fields object")?
 			.is_empty(),
 		"{body}"
 	);

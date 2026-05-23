@@ -1,9 +1,9 @@
 use crate::web::rest::case_editor_dto::{
 	CaseEditorAeListRowDto, CaseEditorDgListRowDto, CaseEditorDhListRowDto,
-	CaseEditorDirectSectionResponse, CaseEditorFieldEnvelope, CaseEditorFieldIssue,
-	CaseEditorFieldPatch, CaseEditorLbListRowDto, CaseEditorListResponse,
-	CaseEditorPagePatchRequest, CaseEditorPageProjectionResponse,
-	CaseEditorRowDetailResponse, CaseEditorShellDto,
+	CaseEditorDirectSectionResponse, CaseEditorFieldPatch, CaseEditorLbListRowDto,
+	CaseEditorListResponse, CaseEditorPagePatchRequest,
+	CaseEditorPageProjectionResponse, CaseEditorRowDetailResponse,
+	CaseEditorShellDto,
 };
 use crate::web::rest::case_rest::case_to_read_result;
 use axum::extract::{Path, Query, State};
@@ -73,16 +73,14 @@ use lib_core::model::test_result::{
 	TestResultBmc, TestResultForCreate, TestResultForUpdate,
 };
 use lib_core::model::ModelManager;
-use lib_core::validation::{
-	validate_case_for_profiles, ValidationIssue, ValidationProfile,
-};
+use lib_core::validation::ValidationProfile;
 use lib_rest_core::prelude::*;
 use lib_rest_core::Error;
 use lib_web::middleware::mw_auth::CtxW;
 use modql::filter::{ListOptions, OpValValue, OpValsValue};
 use serde::Deserialize;
 use serde_json::{json, Map, Value};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use uuid::Uuid;
 
 pub async fn get_editor_shell(
@@ -269,230 +267,6 @@ pub async fn get_editor_ci(
 	))
 }
 
-fn report_type_display(value: Option<&str>) -> Option<String> {
-	match value.map(str::trim) {
-		Some("1") => Some("Spontaneous report".to_string()),
-		Some("2") => Some("Report from study".to_string()),
-		Some("3") => Some("Other".to_string()),
-		Some("4") => Some("Not available to sender (unknown)".to_string()),
-		Some(value) if !value.is_empty() => Some(value.to_string()),
-		_ => None,
-	}
-}
-
-fn bool_display(value: Option<bool>) -> Option<String> {
-	value.map(|value| value.to_string())
-}
-
-fn string_value(value: Option<&str>) -> Value {
-	value.map(|value| json!(value)).unwrap_or(Value::Null)
-}
-
-fn bool_value(value: Option<bool>) -> Value {
-	value.map(|value| json!(value)).unwrap_or(Value::Null)
-}
-
-fn issue_field_key(issue: &ValidationIssue) -> Option<&'static str> {
-	let path = issue.field_path.as_deref().unwrap_or(issue.path.as_str());
-	match path {
-		"safetyReportIdentification.reportType" => Some("reportType"),
-		"safetyReportIdentification.fulfilExpeditedCriteria" => {
-			Some("fulfilExpeditedCriteria")
-		}
-		"safetyReportIdentification.localCriteriaReportType" => {
-			Some("localCriteriaReportType")
-		}
-		"safetyReportIdentification.combinationProductReportIndicator" => {
-			Some("combinationProductReportIndicator")
-		}
-		_ => None,
-	}
-}
-
-fn collect_projected_issues(
-	issues: &[ValidationIssue],
-	visible_fields: &BTreeSet<&'static str>,
-) -> BTreeMap<&'static str, Vec<CaseEditorFieldIssue>> {
-	let mut grouped: BTreeMap<&'static str, Vec<CaseEditorFieldIssue>> =
-		BTreeMap::new();
-	for issue in issues {
-		let Some(key) = issue_field_key(issue) else {
-			continue;
-		};
-		if !visible_fields.contains(key) {
-			continue;
-		}
-		grouped.entry(key).or_default().push(CaseEditorFieldIssue {
-			code: issue.code.clone(),
-			message: issue.message.clone(),
-			blocking: issue.blocking,
-		});
-	}
-	grouped
-}
-
-struct FieldEnvelopeInput {
-	field_id: &'static str,
-	path: &'static str,
-	label: &'static str,
-	value: Value,
-	display: Option<String>,
-	null_flavor: Option<String>,
-	visible: bool,
-	issues: Vec<CaseEditorFieldIssue>,
-}
-
-fn field_envelope(input: FieldEnvelopeInput) -> CaseEditorFieldEnvelope {
-	let empty = match &input.value {
-		Value::Null => true,
-		Value::String(value) => value.trim().is_empty(),
-		_ => false,
-	};
-	let required_empty = input
-		.issues
-		.iter()
-		.any(|issue| issue.code.ends_with(".REQUIRED"));
-	CaseEditorFieldEnvelope {
-		field_id: input.field_id,
-		path: input.path,
-		label: input.label,
-		value: input.value.clone(),
-		display: input.display,
-		null_flavor: input.null_flavor.clone(),
-		notation: None,
-		origin_value: input.value,
-		origin_null_flavor: input.null_flavor,
-		visible: input.visible,
-		editable: input.visible,
-		empty,
-		required_empty,
-		issues: input.issues,
-	}
-}
-
-async fn build_ci_page_projection(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	case_id: Uuid,
-	requested_profiles: Option<String>,
-) -> Result<CaseEditorPageProjectionResponse> {
-	let profiles = editor_projection_context(requested_profiles)?;
-	let has_fda = profiles.contains(&ValidationProfile::Fda);
-	let safety_report =
-		match SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await {
-			Ok(entity) => Some(entity),
-			Err(lib_core::model::Error::EntityUuidNotFound { .. }) => None,
-			Err(err) => return Err(err.into()),
-		};
-	let reports = validate_case_for_profiles(ctx, mm, case_id, &profiles).await?;
-	let all_issues = reports
-		.iter()
-		.flat_map(|report| report.issues.iter().cloned())
-		.collect::<Vec<_>>();
-
-	let mut visible_fields = BTreeSet::from([
-		"reportType",
-		"fulfilExpeditedCriteria",
-		"combinationProductReportIndicator",
-	]);
-	if has_fda {
-		visible_fields.insert("localCriteriaReportType");
-	}
-	let mut issues_by_field = collect_projected_issues(&all_issues, &visible_fields);
-
-	let mut fields = BTreeMap::new();
-	let report_type = safety_report
-		.as_ref()
-		.and_then(|report| report.report_type.as_deref());
-	fields.insert(
-		"reportType".to_string(),
-		field_envelope(FieldEnvelopeInput {
-			field_id: "CASE_RPT_TYPE",
-			path: "safetyReportIdentification.reportType",
-			label: "Type of Report",
-			value: string_value(report_type),
-			display: report_type_display(report_type),
-			null_flavor: None,
-			visible: true,
-			issues: issues_by_field.remove("reportType").unwrap_or_default(),
-		}),
-	);
-
-	let expedited = safety_report
-		.as_ref()
-		.and_then(|report| report.fulfil_expedited_criteria);
-	fields.insert(
-		"fulfilExpeditedCriteria".to_string(),
-		field_envelope(FieldEnvelopeInput {
-			field_id: "CASE_EXPEDIT",
-			path: "safetyReportIdentification.fulfilExpeditedCriteria",
-			label:
-				"Does This Case Fulfil the Local Criteria for an Expedited Report?",
-			value: bool_value(expedited),
-			display: bool_display(expedited),
-			null_flavor: None,
-			visible: true,
-			issues: issues_by_field
-				.remove("fulfilExpeditedCriteria")
-				.unwrap_or_default(),
-		}),
-	);
-
-	let local_criteria = safety_report
-		.as_ref()
-		.and_then(|report| report.local_criteria_report_type.as_deref());
-	fields.insert(
-		"localCriteriaReportType".to_string(),
-		field_envelope(FieldEnvelopeInput {
-			field_id: "CASEU_LOC_REPORT_TYPE",
-			path: "safetyReportIdentification.localCriteriaReportType",
-			label: "Local Criteria Report Type",
-			value: string_value(local_criteria),
-			display: local_criteria.map(str::to_string),
-			null_flavor: None,
-			visible: has_fda,
-			issues: issues_by_field
-				.remove("localCriteriaReportType")
-				.unwrap_or_default(),
-		}),
-	);
-
-	let combination = safety_report
-		.as_ref()
-		.and_then(|report| report.combination_product_report_indicator.as_deref());
-	fields.insert(
-		"combinationProductReportIndicator".to_string(),
-		field_envelope(FieldEnvelopeInput {
-			field_id: "CASEU_PRD_RPT_IND",
-			path: "safetyReportIdentification.combinationProductReportIndicator",
-			label: "Combination Product Report Indicator",
-			value: string_value(combination),
-			display: combination.map(str::to_string),
-			null_flavor: None,
-			visible: has_fda,
-			issues: issues_by_field
-				.remove("combinationProductReportIndicator")
-				.unwrap_or_default(),
-		}),
-	);
-
-	let required_count = fields
-		.values()
-		.filter(|field| field.visible && field.required_empty)
-		.count();
-
-	Ok(CaseEditorPageProjectionResponse {
-		case_id,
-		page_id: "CI",
-		profiles: profile_strings(&profiles),
-		saved: safety_report.is_some(),
-		required_count,
-		fields,
-		rows: rows_from_direct_section(load_editor_ci_data(ctx, mm, case_id).await?),
-		section_summaries: Vec::new(),
-	})
-}
-
 /// GET /api/cases/{case_id}/editor/pages/CI
 pub async fn get_editor_ci_page_projection(
 	State(mm): State<ModelManager>,
@@ -508,8 +282,15 @@ pub async fn get_editor_ci_page_projection(
 	require_permission(&ctx, SAFETY_REPORT_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let projection =
-		build_ci_page_projection(&ctx, &mm, case_id, query.profiles).await?;
+	let projection = direct_page_projection_response(
+		&ctx,
+		&mm,
+		case_id,
+		"CI",
+		query.profiles,
+		load_editor_ci_data(&ctx, &mm, case_id).await?,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
@@ -621,8 +402,15 @@ pub async fn patch_editor_ci_page_projection(
 			.await?;
 		CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
 	}
-	let projection =
-		build_ci_page_projection(&ctx, &mm, case_id, requested_profiles).await?;
+	let projection = direct_page_projection_response(
+		&ctx,
+		&mm,
+		case_id,
+		"CI",
+		requested_profiles,
+		load_editor_ci_data(&ctx, &mm, case_id).await?,
+	)
+	.await?;
 	Ok((axum::http::StatusCode::OK, Json(projection)))
 }
 
@@ -1568,6 +1356,10 @@ fn direct_page_saved(page_id: &str, data: &Value) -> bool {
 			.get("primarySources")
 			.and_then(Value::as_array)
 			.map(|rows| !rows.is_empty())
+			.unwrap_or(false),
+		"CI" => map
+			.get("safetyReportIdentification")
+			.map(|value| !value.is_null())
 			.unwrap_or(false),
 		"SD" => map
 			.get("senderInformation")
