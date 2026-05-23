@@ -497,6 +497,12 @@ BEGIN
         WHERE conrelid = 'product_presaves'::regclass
             AND conname = 'product_presaves_sender_org_fk'
     ) THEN
+        UPDATE product_presaves p
+        SET sender_presave_id = NULL
+        FROM sender_presaves s
+        WHERE p.sender_presave_id = s.id
+            AND p.organization_id <> s.organization_id;
+
         ALTER TABLE product_presaves
             ADD CONSTRAINT product_presaves_sender_org_fk
             FOREIGN KEY (sender_presave_id, organization_id)
@@ -510,6 +516,12 @@ BEGIN
         WHERE conrelid = 'study_presaves'::regclass
             AND conname = 'study_presaves_product_org_fk'
     ) THEN
+        UPDATE study_presaves s
+        SET product_presave_id = NULL
+        FROM product_presaves p
+        WHERE s.product_presave_id = p.id
+            AND s.organization_id <> p.organization_id;
+
         ALTER TABLE study_presaves
             ADD CONSTRAINT study_presaves_product_org_fk
             FOREIGN KEY (product_presave_id, organization_id)

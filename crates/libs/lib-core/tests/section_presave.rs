@@ -10,6 +10,7 @@ use serial_test::serial;
 use std::collections::HashSet;
 
 use sqlx::types::Uuid;
+use sqlx::Error as SqlxError;
 
 const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"sender_presaves",
@@ -28,6 +29,13 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"narrative_presave_sender_diagnoses",
 	"narrative_presave_case_summaries",
 ];
+
+fn is_foreign_key_violation(err: &SqlxError) -> bool {
+	match err {
+		SqlxError::Database(db_err) => db_err.code().as_deref() == Some("23503"),
+		_ => false,
+	}
+}
 
 #[serial]
 #[tokio::test]
@@ -282,6 +290,174 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 	}
 
 	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let org_a_id = Uuid::new_v4();
+	let org_b_id = Uuid::new_v4();
+	let sender_a_id = Uuid::new_v4();
+	let sender_b_id = Uuid::new_v4();
+	let product_a_id = Uuid::new_v4();
+	let product_b_id = Uuid::new_v4();
+	let study_a_id = Uuid::new_v4();
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, demo_user_id()).await?;
+	set_org_context(&mut tx, demo_org_id(), "system_admin").await?;
+
+	for (org_id, label) in [(org_a_id, "A"), (org_b_id, "B")] {
+		sqlx::query(
+			"INSERT INTO organizations (
+				id, name, org_type, address, city, state, postcode, country_code,
+				contact_email, contact_phone, active, created_by, created_at, updated_at
+			) VALUES (
+				$1, $2, 'client', '1 Presave St', 'Seoul', '11', '00000',
+				'KR', $3, '02-000-0000', true, $4, NOW(), NOW()
+			)",
+		)
+		.bind(org_id)
+		.bind(format!("Presave FK Org {label} {org_id}"))
+		.bind(format!("presave-fk-{label}-{org_id}@example.com"))
+		.bind(demo_user_id())
+		.execute(&mut *tx)
+		.await?;
+	}
+
+	for (sender_id, org_id, label) in
+		[(sender_a_id, org_a_id, "A"), (sender_b_id, org_b_id, "B")]
+	{
+		sqlx::query(
+			"INSERT INTO sender_presaves (
+				id, organization_id, authority, name, created_by, updated_by
+			)
+			VALUES ($1, $2, 'ich', $3, $4, $4)",
+		)
+		.bind(sender_id)
+		.bind(org_id)
+		.bind(format!("Presave FK Sender {label} {sender_id}"))
+		.bind(demo_user_id())
+		.execute(&mut *tx)
+		.await?;
+	}
+
+	sqlx::query(
+		"INSERT INTO product_presaves (
+			id, organization_id, authority, name, sender_presave_id, created_by, updated_by
+		)
+		VALUES ($1, $2, 'ich', $3, $4, $5, $5)",
+	)
+	.bind(product_a_id)
+	.bind(org_a_id)
+	.bind(format!("Presave FK Product A {product_a_id}"))
+	.bind(sender_a_id)
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
+		"INSERT INTO product_presaves (
+			id, organization_id, authority, name, sender_presave_id, created_by, updated_by
+		)
+		VALUES ($1, $2, 'ich', $3, $4, $5, $5)",
+	)
+	.bind(product_b_id)
+	.bind(org_b_id)
+	.bind(format!("Presave FK Product B {product_b_id}"))
+	.bind(sender_b_id)
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
+		"INSERT INTO study_presaves (
+			id, organization_id, authority, name, product_presave_id, created_by, updated_by
+		)
+		VALUES ($1, $2, 'ich', $3, $4, $5, $5)",
+	)
+	.bind(study_a_id)
+	.bind(org_a_id)
+	.bind(format!("Presave FK Study A {study_a_id}"))
+	.bind(product_a_id)
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await?;
+
+	tx.commit().await?;
+
+	let mut invalid_tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut invalid_tx, demo_user_id()).await?;
+	set_org_context(&mut invalid_tx, org_a_id, "system_admin").await?;
+	let cross_org_product = sqlx::query(
+		"INSERT INTO product_presaves (
+			id, organization_id, authority, name, sender_presave_id, created_by, updated_by
+		)
+		VALUES ($1, $2, 'ich', $3, $4, $5, $5)",
+	)
+	.bind(Uuid::new_v4())
+	.bind(org_a_id)
+	.bind("Cross Org Product")
+	.bind(sender_b_id)
+	.bind(demo_user_id())
+	.execute(&mut *invalid_tx)
+	.await;
+	assert!(
+		matches!(cross_org_product, Err(ref err) if is_foreign_key_violation(err)),
+		"cross-org product->sender link should fail composite FK: {cross_org_product:?}"
+	);
+	invalid_tx.rollback().await?;
+
+	let mut invalid_tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut invalid_tx, demo_user_id()).await?;
+	set_org_context(&mut invalid_tx, org_a_id, "system_admin").await?;
+	let cross_org_study = sqlx::query(
+		"INSERT INTO study_presaves (
+			id, organization_id, authority, name, product_presave_id, created_by, updated_by
+		)
+		VALUES ($1, $2, 'ich', $3, $4, $5, $5)",
+	)
+	.bind(Uuid::new_v4())
+	.bind(org_a_id)
+	.bind("Cross Org Study")
+	.bind(product_b_id)
+	.bind(demo_user_id())
+	.execute(&mut *invalid_tx)
+	.await;
+	assert!(
+		matches!(cross_org_study, Err(ref err) if is_foreign_key_violation(err)),
+		"cross-org study->product link should fail composite FK: {cross_org_study:?}"
+	);
+	invalid_tx.rollback().await?;
+
+	Ok(())
+}
+
+#[test]
+fn section_presave_compatibility_cleans_cross_org_links_before_composite_fks() {
+	let schema = include_str!("../../../../db/bootstrap/01-safetydb-schema.sql");
+	let product_cleanup = schema
+		.find("UPDATE product_presaves p")
+		.expect("compatibility block must null cross-org product->sender links");
+	let product_fk = schema
+		.find("ALTER TABLE product_presaves\n            ADD CONSTRAINT product_presaves_sender_org_fk")
+		.expect("compatibility block must add product->sender composite FK");
+	let study_cleanup = schema
+		.find("UPDATE study_presaves s")
+		.expect("compatibility block must null cross-org study->product links");
+	let study_fk = schema
+		.find("ALTER TABLE study_presaves\n            ADD CONSTRAINT study_presaves_product_org_fk")
+		.expect("compatibility block must add study->product composite FK");
+
+	assert!(
+		product_cleanup < product_fk,
+		"product->sender mismatch cleanup must run before adding the composite FK"
+	);
+	assert!(
+		study_cleanup < study_fk,
+		"study->product mismatch cleanup must run before adding the composite FK"
+	);
 }
 
 #[serial]
