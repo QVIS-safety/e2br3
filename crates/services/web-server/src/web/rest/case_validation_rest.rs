@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use axum::Json;
 use lib_core::ctx::Ctx;
 use lib_core::model::acs::CASE_READ;
+use lib_core::model::case_validation_report_cache::CaseValidationReportCacheBmc;
 use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::ModelManager;
@@ -72,7 +73,15 @@ pub async fn validate_case(
 	let profile =
 		resolve_profile(&ctx, &mm, case_id, query.profile.as_deref()).await?;
 
+	if let Some(report) =
+		CaseValidationReportCacheBmc::get_fresh(&ctx, &mm, case_id, profile.as_str())
+			.await?
+	{
+		return Ok((StatusCode::OK, Json(DataRestResult { data: report })));
+	}
+
 	let report = validate_case_for_profile(&ctx, &mm, case_id, profile).await?;
+	CaseValidationReportCacheBmc::upsert(&ctx, &mm, case_id, &report).await?;
 	CaseValidationSummaryBmc::upsert_for_reports(
 		&ctx,
 		&mm,
