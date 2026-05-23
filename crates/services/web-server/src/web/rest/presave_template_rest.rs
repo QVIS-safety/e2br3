@@ -8,11 +8,12 @@ use lib_core::model::acs::{
 use lib_core::model::presave_template::{
 	PresaveEntityType, PresaveTemplate, PresaveTemplateAudit,
 	PresaveTemplateAuditBmc, PresaveTemplateBmc, PresaveTemplateForCreate,
-	PresaveTemplateForUpdate,
+	PresaveTemplateForUpdate, PresaveTemplateListFilter,
 };
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::user::UserBmc;
 use lib_core::model::ModelManager;
+use lib_core::regulatory::RegulatoryAuthority;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -25,6 +26,9 @@ use uuid::Uuid;
 pub struct PresaveTemplateListQuery {
 	#[serde(rename = "entityType")]
 	pub entity_type: Option<PresaveEntityType>,
+	pub authority: Option<RegulatoryAuthority>,
+	#[serde(rename = "includeGlobal")]
+	pub include_global: Option<bool>,
 }
 
 fn normalized_set(values: Vec<String>) -> HashSet<String> {
@@ -107,6 +111,7 @@ async fn enforce_single_default_sender(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	template_id: Uuid,
+	authority: Option<RegulatoryAuthority>,
 ) -> Result<()> {
 	let dbx = mm.dbx();
 	dbx.begin_txn()
@@ -132,10 +137,12 @@ async fn enforce_single_default_sender(
 				WHERE organization_id = $1
 				  AND entity_type = 'sender'
 				  AND id <> $2
+				  AND (($3::text IS NULL AND authority IS NULL) OR authority = $3)
 				"#,
 			)
 			.bind(ctx.organization_id())
-			.bind(template_id),
+			.bind(template_id)
+			.bind(authority.map(RegulatoryAuthority::as_str)),
 		)
 		.await;
 	if let Err(err) = reset_result {
@@ -254,6 +261,7 @@ async fn presave_audits_allowed_for_scope(
 		updated_at: sqlx::types::time::OffsetDateTime::UNIX_EPOCH,
 		created_by: ctx.user_id(),
 		updated_by: None,
+		authority: None,
 	};
 	let identifiers = template_scope_identifiers(&template);
 	Ok(identifiers
@@ -286,9 +294,10 @@ pub async fn create_presave_template(
 	let ParamsForCreate { data } = params;
 	let should_be_default = data.entity_type == PresaveEntityType::Sender
 		&& sender_default_requested(&data.data);
+	let authority = data.authority;
 	let id = PresaveTemplateBmc::create(&ctx, &mm, data).await?;
 	if should_be_default {
-		enforce_single_default_sender(&ctx, &mm, id).await?;
+		enforce_single_default_sender(&ctx, &mm, id, authority).await?;
 	}
 	let entity = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
@@ -319,11 +328,17 @@ pub async fn list_presave_templates(
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<PresaveTemplate>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	let entities = if let Some(entity_type) = query.entity_type {
-		PresaveTemplateBmc::list_by_entity_type(&ctx, &mm, entity_type).await?
-	} else {
-		PresaveTemplateBmc::list(&ctx, &mm).await?
-	};
+	let include_global = query.include_global.unwrap_or(query.authority.is_some());
+	let entities = PresaveTemplateBmc::list_filtered(
+		&ctx,
+		&mm,
+		PresaveTemplateListFilter {
+			entity_type: query.entity_type,
+			authority: query.authority,
+			include_global,
+		},
+	)
+	.await?;
 	let entities = filter_presave_templates_for_scope(&ctx, &mm, entities).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
@@ -339,12 +354,13 @@ pub async fn update_presave_template(
 	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
 	let ParamsForUpdate { data } = params;
 	let current = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
+	let effective_entity_type = data.entity_type.unwrap_or(current.entity_type);
+	let effective_authority = data.authority.or(current.authority);
 	let should_be_default = data.data.as_ref().is_some_and(sender_default_requested)
-		&& data.entity_type.unwrap_or(current.entity_type)
-			== PresaveEntityType::Sender;
+		&& effective_entity_type == PresaveEntityType::Sender;
 	PresaveTemplateBmc::update(&ctx, &mm, id, data).await?;
 	if should_be_default {
-		enforce_single_default_sender(&ctx, &mm, id).await?;
+		enforce_single_default_sender(&ctx, &mm, id, effective_authority).await?;
 	}
 	let entity = PresaveTemplateBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))

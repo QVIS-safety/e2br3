@@ -4,7 +4,9 @@ use crate::model::case_identifiers::{
 	OtherCaseIdentifierBmc, OtherCaseIdentifierForCreate,
 	OtherCaseIdentifierForUpdate,
 };
-use crate::model::presave_template::{PresaveEntityType, PresaveTemplateBmc};
+use crate::model::presave_template::{
+	PresaveEntityType, PresaveTemplateBmc, PresaveTemplateListFilter,
+};
 use crate::model::receiver::{
 	ReceiverInformationBmc, ReceiverInformationForCreate,
 	ReceiverInformationForUpdate,
@@ -18,6 +20,9 @@ use crate::model::safety_report::{
 };
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::{self, ModelManager};
+use crate::regulatory::{
+	infer_regulatory_authority_from_receivers, RegulatoryAuthority,
+};
 use crate::xml::import::CImportSettings;
 use crate::xml::import_runtime::{helpers::c as c_helpers, shared};
 use crate::xml::import_sections::c_safety_report::CSafetyReportImport;
@@ -200,8 +205,14 @@ async fn import_c_2_sender_information(
 	header: Option<&shared::MessageHeaderExtract>,
 	settings: &CImportSettings,
 ) -> Result<()> {
+	let authority = header.map(|header| {
+		infer_regulatory_authority_from_receivers(
+			header.batch_receiver.as_deref(),
+			header.message_receiver.as_deref(),
+		)
+	});
 	let sender = if settings.apply_sender_info_to_imported_cases {
-		match default_sender_from_presave(ctx, mm).await? {
+		match default_sender_from_presave(ctx, mm, authority).await? {
 			Some(sender) => Some(sender),
 			None => c_helpers::parse_sender_information(xml, header)?,
 		}
@@ -289,11 +300,19 @@ fn json_string(value: &serde_json::Value, key: &str) -> Option<String> {
 async fn default_sender_from_presave(
 	ctx: &Ctx,
 	mm: &ModelManager,
+	authority: Option<RegulatoryAuthority>,
 ) -> Result<Option<c_helpers::SenderImport>> {
-	let templates =
-		PresaveTemplateBmc::list_by_entity_type(ctx, mm, PresaveEntityType::Sender)
-			.await
-			.map_err(Error::Model)?;
+	let templates = PresaveTemplateBmc::list_filtered(
+		ctx,
+		mm,
+		PresaveTemplateListFilter {
+			entity_type: Some(PresaveEntityType::Sender),
+			authority,
+			include_global: authority.is_some(),
+		},
+	)
+	.await
+	.map_err(Error::Model)?;
 	let Some(template) = templates.into_iter().find(|template| {
 		template
 			.data

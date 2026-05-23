@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS presave_templates (
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
     entity_type VARCHAR(50) NOT NULL,
+    authority VARCHAR(16),
     name VARCHAR(255) NOT NULL,
     description TEXT,
     data JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -133,6 +134,9 @@ CREATE TABLE IF NOT EXISTS presave_templates (
 
     CONSTRAINT presave_templates_entity_type_valid CHECK (
         entity_type IN ('sender', 'receiver', 'product', 'reporter', 'study', 'narrative')
+    ),
+    CONSTRAINT presave_templates_authority_valid CHECK (
+        authority IS NULL OR authority IN ('ich', 'fda', 'mfds')
     )
 );
 
@@ -153,6 +157,8 @@ CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_presave_templates_org ON presave_templates(organization_id);
 CREATE INDEX idx_presave_templates_entity_type ON presave_templates(entity_type);
+CREATE INDEX idx_presave_templates_authority ON presave_templates(authority);
+CREATE INDEX idx_presave_templates_entity_authority ON presave_templates(entity_type, authority);
 CREATE INDEX idx_presave_templates_created_by ON presave_templates(created_by);
 CREATE INDEX idx_presave_templates_created_at ON presave_templates(created_at DESC);
 CREATE INDEX idx_presave_template_audits_template_id

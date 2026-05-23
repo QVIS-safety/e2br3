@@ -48,14 +48,30 @@ async fn create_template(
 	name: &str,
 	data: Value,
 ) -> Result<(Uuid, Value)> {
-	let body = json!({
-		"data": {
-			"entity_type": entity_type,
-			"name": name,
-			"description": format!("template for {entity_type}"),
-			"data": data
-		}
+	let (id, row) =
+		create_template_with_authority(app, cookie, entity_type, name, None, data)
+			.await?;
+	Ok((id, row["data"].clone()))
+}
+
+async fn create_template_with_authority(
+	app: &Router,
+	cookie: &str,
+	entity_type: &str,
+	name: &str,
+	authority: Option<&str>,
+	data: Value,
+) -> Result<(Uuid, Value)> {
+	let mut template = json!({
+		"entity_type": entity_type,
+		"name": name,
+		"description": format!("template for {entity_type}"),
+		"data": data
 	});
+	if let Some(authority) = authority {
+		template["authority"] = json!(authority);
+	}
+	let body = json!({ "data": template });
 	let (status, value) = request_json(
 		app,
 		cookie,
@@ -73,7 +89,7 @@ async fn create_template(
 	let id = value["data"]["id"]
 		.as_str()
 		.ok_or("missing template data.id")?;
-	Ok((Uuid::parse_str(id)?, value["data"]["data"].clone()))
+	Ok((Uuid::parse_str(id)?, value["data"].clone()))
 }
 
 async fn get_template(
@@ -304,22 +320,24 @@ async fn test_presave_sender_list_follows_assigned_sender_scope() -> Result<()> 
 	let (viewer_id, viewer_cookie) =
 		create_info_reader(&app, &mm, &admin_cookie, seed.org_id).await?;
 
-	let (visible_id, _) = create_template(
+	let (visible_id, _) = create_template_with_authority(
 		&app,
 		&admin_cookie,
 		"sender",
 		"visible-sender-template",
+		Some("fda"),
 		json!({
 			"senderIdentifier": "SENDER-VISIBLE",
 			"senderOrganization": "Visible Sender"
 		}),
 	)
 	.await?;
-	let (hidden_id, _) = create_template(
+	let (hidden_id, _) = create_template_with_authority(
 		&app,
 		&admin_cookie,
 		"sender",
 		"hidden-sender-template",
+		Some("fda"),
 		json!({
 			"senderIdentifier": "SENDER-HIDDEN",
 			"senderOrganization": "Hidden Sender"
@@ -338,7 +356,7 @@ async fn test_presave_sender_list_follows_assigned_sender_scope() -> Result<()> 
 		&app,
 		&viewer_cookie,
 		Method::GET,
-		"/api/presave-templates?entityType=sender".to_string(),
+		"/api/presave-templates?entityType=sender&authority=fda".to_string(),
 		None,
 	)
 	.await?;
@@ -488,6 +506,78 @@ async fn test_presave_contract_supports_all_six_entity_types() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_presave_templates_filter_by_authority_and_include_global() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let (global_id, global) = create_template_with_authority(
+		&app,
+		&admin_cookie,
+		"sender",
+		"global-sender",
+		None,
+		json!({ "senderIdentifier": "GLOBAL-SENDER" }),
+	)
+	.await?;
+	assert_eq!(global["authority"], Value::Null);
+
+	let (fda_id, fda) = create_template_with_authority(
+		&app,
+		&admin_cookie,
+		"sender",
+		"fda-sender",
+		Some("fda"),
+		json!({ "senderIdentifier": "FDA-SENDER" }),
+	)
+	.await?;
+	assert_eq!(fda["authority"], json!("fda"));
+
+	let (mfds_id, mfds) = create_template_with_authority(
+		&app,
+		&admin_cookie,
+		"sender",
+		"mfds-sender",
+		Some("mfds"),
+		json!({ "senderIdentifier": "MFDS-SENDER" }),
+	)
+	.await?;
+	assert_eq!(mfds["authority"], json!("mfds"));
+
+	let (status, list) = request_json(
+		&app,
+		&admin_cookie,
+		Method::GET,
+		"/api/presave-templates?entityType=sender&authority=fda".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{list:?}");
+	let ids: Vec<Uuid> = list["data"]
+		.as_array()
+		.ok_or("presave template list data is not an array")?
+		.iter()
+		.map(|row| {
+			let id = row["id"].as_str().ok_or("missing id")?;
+			Ok(Uuid::parse_str(id)?)
+		})
+		.collect::<Result<Vec<_>>>()?;
+	assert!(ids.contains(&fda_id), "{list:?}");
+	assert!(ids.contains(&global_id), "{list:?}");
+	assert!(!ids.contains(&mfds_id), "{list:?}");
+	assert_eq!(
+		ids.first(),
+		Some(&fda_id),
+		"authority-specific row should sort before global rows"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_presave_sender_default_is_org_level_singleton() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -557,6 +647,52 @@ async fn test_presave_sender_default_is_org_level_singleton() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{second:?}");
 	assert_eq!(second["data"]["data"]["senderDefault"], false);
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_presave_sender_default_is_authority_scoped() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let (fda_one_id, _) = create_template_with_authority(
+		&app,
+		&admin_cookie,
+		"sender",
+		"fda-default-one",
+		Some("fda"),
+		json!({ "senderIdentifier": "FDA-ONE", "senderDefault": true }),
+	)
+	.await?;
+	let (mfds_id, _) = create_template_with_authority(
+		&app,
+		&admin_cookie,
+		"sender",
+		"mfds-default",
+		Some("mfds"),
+		json!({ "senderIdentifier": "MFDS-ONE", "senderDefault": true }),
+	)
+	.await?;
+	let (fda_two_id, _) = create_template_with_authority(
+		&app,
+		&admin_cookie,
+		"sender",
+		"fda-default-two",
+		Some("fda"),
+		json!({ "senderIdentifier": "FDA-TWO", "senderDefault": true }),
+	)
+	.await?;
+
+	let (_, fda_one) = get_template(&app, &admin_cookie, fda_one_id).await?;
+	let (_, fda_two) = get_template(&app, &admin_cookie, fda_two_id).await?;
+	let (_, mfds) = get_template(&app, &admin_cookie, mfds_id).await?;
+	assert_eq!(fda_one["data"]["data"]["senderDefault"], false);
+	assert_eq!(fda_two["data"]["data"]["senderDefault"], true);
+	assert_eq!(mfds["data"]["data"]["senderDefault"], true);
 	Ok(())
 }
 
@@ -646,11 +782,12 @@ async fn test_presave_contract_update_delete_and_audit() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 
-	let (template_id, _) = create_template(
+	let (template_id, _) = create_template_with_authority(
 		&app,
 		&cookie,
 		"sender",
 		"sender-contract-update",
+		Some("fda"),
 		json!({
 			"senderType": "1",
 			"senderOrganization": "Original Sender Org"
@@ -725,6 +862,13 @@ async fn test_presave_contract_update_delete_and_audit() -> Result<()> {
 	assert!(actions.contains(&"CREATE"), "{audit:?}");
 	assert!(actions.contains(&"UPDATE"), "{audit:?}");
 	assert!(actions.contains(&"DELETE"), "{audit:?}");
+	assert!(
+		rows.iter().any(|row| {
+			row["new_values"]["authority"] == json!("fda")
+				|| row["old_values"]["authority"] == json!("fda")
+		}),
+		"{audit:?}"
+	);
 
 	Ok(())
 }
