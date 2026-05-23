@@ -1729,6 +1729,49 @@ async fn editor_repeatable_pages_have_list_projection_routes() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn editor_page_projections_do_not_embed_full_validation_issues(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &cookie, "EDITOR-PROJECTION-CONTRACT", &["ich"])
+			.await?;
+
+	create_safety_report(&app, &cookie, &case_id, "2", true).await?;
+	create_reaction_fixture(&app, &cookie, &case_id).await?;
+	create_test_result_fixture(&app, &cookie, &case_id).await?;
+	create_drug_fixture(&app, &cookie, &case_id).await?;
+	create_past_drug_history_fixture(&app, &cookie, &case_id).await?;
+
+	for page_id in ["CI", "RP", "SD", "LR", "SI", "DM", "NR", "AE", "LB", "DG", "DH"] {
+		let (status, body) = get_json(
+			&app,
+			&cookie,
+			&format!(
+				"/api/cases/{case_id}/editor/pages/{page_id}?profiles=ich,fda,mfds"
+			),
+		)
+		.await?;
+
+		assert_eq!(status, StatusCode::OK, "{page_id}: {body}");
+		assert!(
+			body["fields"]
+				.as_object()
+				.map(|fields| fields.is_empty())
+				.unwrap_or(false),
+			"{page_id} projection must not embed field issue details: {body}"
+		);
+		assert_eq!(body["requiredCount"], 0, "{page_id}: {body}");
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_ae_detail_returns_one_reaction_by_uuid() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
