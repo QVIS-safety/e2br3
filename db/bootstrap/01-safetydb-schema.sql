@@ -403,9 +403,15 @@ CREATE TABLE IF NOT EXISTS study_presaves (
     deleted BOOLEAN NOT NULL DEFAULT false,
     product_presave_id UUID,
     study_name VARCHAR(2000),
+    study_name_notation TEXT,
     sponsor_study_number VARCHAR(100),
+    sponsor_study_number_kind VARCHAR(50),
     study_type_reaction VARCHAR(50),
     study_type_reaction_kr1 VARCHAR(50),
+    mfds_study_number VARCHAR(100),
+    mfds_protocol_number VARCHAR(100),
+    fda_ind_number_occurred VARCHAR(100),
+    fda_pre_anda_number_occurred VARCHAR(100),
     edc_sync BOOLEAN,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -413,6 +419,10 @@ CREATE TABLE IF NOT EXISTS study_presaves (
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
     CONSTRAINT study_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds')),
+    CONSTRAINT study_presaves_sponsor_study_number_kind_valid CHECK (
+        sponsor_study_number_kind IS NULL
+        OR sponsor_study_number_kind IN ('study_no', 'protocol_no')
+    ),
     CONSTRAINT study_presaves_product_org_fk
         FOREIGN KEY (product_presave_id, organization_id)
         REFERENCES product_presaves(id, organization_id)
@@ -425,12 +435,50 @@ CREATE TABLE IF NOT EXISTS study_presave_registration_numbers (
     sequence_number INTEGER NOT NULL,
     registration_number VARCHAR(255),
     country_code VARCHAR(2),
+    deleted BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
     CONSTRAINT study_presave_registration_numbers_sequence_unique UNIQUE (study_presave_id, sequence_number)
+);
+
+ALTER TABLE study_presaves
+    ADD COLUMN IF NOT EXISTS study_name_notation TEXT,
+    ADD COLUMN IF NOT EXISTS sponsor_study_number_kind VARCHAR(50),
+    ADD COLUMN IF NOT EXISTS mfds_study_number VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS mfds_protocol_number VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS fda_ind_number_occurred VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS fda_pre_anda_number_occurred VARCHAR(100);
+
+ALTER TABLE study_presaves
+    DROP CONSTRAINT IF EXISTS study_presaves_sponsor_study_number_kind_valid;
+UPDATE study_presaves
+SET sponsor_study_number_kind = NULL
+WHERE sponsor_study_number_kind IS NOT NULL
+    AND sponsor_study_number_kind NOT IN ('study_no', 'protocol_no');
+ALTER TABLE study_presaves
+    ADD CONSTRAINT study_presaves_sponsor_study_number_kind_valid CHECK (
+        sponsor_study_number_kind IS NULL
+        OR sponsor_study_number_kind IN ('study_no', 'protocol_no')
+    );
+
+ALTER TABLE study_presave_registration_numbers
+    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
+
+CREATE TABLE IF NOT EXISTS study_presave_fda_cross_reported_inds (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    ind_number VARCHAR(100),
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT study_presave_fda_cross_reported_inds_sequence_unique UNIQUE (study_presave_id, sequence_number)
 );
 
 -- Compatibility for databases that created section presave tables before the
@@ -539,6 +587,7 @@ CREATE TABLE IF NOT EXISTS narrative_presaves (
     comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
     case_narrative TEXT,
+    case_narrative_notation TEXT,
     reporter_comments TEXT,
     sender_comments TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -555,6 +604,7 @@ CREATE TABLE IF NOT EXISTS narrative_presave_sender_diagnoses (
     sequence_number INTEGER NOT NULL,
     diagnosis_meddra_version VARCHAR(50),
     diagnosis_meddra_code VARCHAR(100),
+    deleted BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -570,6 +620,7 @@ CREATE TABLE IF NOT EXISTS narrative_presave_case_summaries (
     summary_type VARCHAR(100),
     language_code VARCHAR(10),
     summary_text TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -577,6 +628,15 @@ CREATE TABLE IF NOT EXISTS narrative_presave_case_summaries (
 
     CONSTRAINT narrative_presave_case_summaries_sequence_unique UNIQUE (narrative_presave_id, sequence_number)
 );
+
+ALTER TABLE narrative_presaves
+    ADD COLUMN IF NOT EXISTS case_narrative_notation TEXT;
+
+ALTER TABLE narrative_presave_sender_diagnoses
+    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE narrative_presave_case_summaries
+    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
 
 CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);
@@ -609,6 +669,7 @@ CREATE INDEX idx_study_presaves_org ON study_presaves(organization_id);
 CREATE INDEX idx_study_presaves_authority ON study_presaves(authority);
 CREATE INDEX idx_study_presaves_product ON study_presaves(product_presave_id);
 CREATE INDEX idx_study_presave_registration_numbers_parent ON study_presave_registration_numbers(study_presave_id);
+CREATE INDEX idx_study_presave_fda_cross_reported_inds_parent ON study_presave_fda_cross_reported_inds(study_presave_id);
 CREATE INDEX idx_narrative_presaves_org ON narrative_presaves(organization_id);
 CREATE INDEX idx_narrative_presaves_authority ON narrative_presaves(authority);
 CREATE INDEX idx_narrative_presave_sender_diagnoses_parent ON narrative_presave_sender_diagnoses(narrative_presave_id);
@@ -1893,6 +1954,26 @@ CREATE POLICY study_presave_registration_numbers_via_parent ON study_presave_reg
         EXISTS (
             SELECT 1 FROM study_presaves p
             WHERE p.id = study_presave_registration_numbers.study_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE study_presave_fda_cross_reported_inds ENABLE ROW LEVEL SECURITY;
+ALTER TABLE study_presave_fda_cross_reported_inds FORCE ROW LEVEL SECURITY;
+CREATE POLICY study_presave_fda_cross_reported_inds_via_parent ON study_presave_fda_cross_reported_inds
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM study_presaves p
+            WHERE p.id = study_presave_fda_cross_reported_inds.study_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM study_presaves p
+            WHERE p.id = study_presave_fda_cross_reported_inds.study_presave_id
             AND (p.organization_id = current_organization_id() OR is_current_user_admin())
         )
     );

@@ -24,7 +24,9 @@ use lib_core::model::presave::{
 	SenderPresaveForUpdate, SenderPresaveGatewayBmc, SenderPresaveGatewayForCreate,
 	SenderPresaveGatewayForUpdate, SenderPresaveResponsiblePersonBmc,
 	SenderPresaveResponsiblePersonForCreate,
-	SenderPresaveResponsiblePersonForUpdate, StudyPresaveBmc, StudyPresaveForCreate,
+	SenderPresaveResponsiblePersonForUpdate, StudyPresaveBmc,
+	StudyPresaveFdaCrossReportedIndBmc, StudyPresaveFdaCrossReportedIndForCreate,
+	StudyPresaveFdaCrossReportedIndForUpdate, StudyPresaveForCreate,
 	StudyPresaveForUpdate, StudyPresaveRegistrationNumberBmc,
 	StudyPresaveRegistrationNumberForCreate,
 	StudyPresaveRegistrationNumberForUpdate,
@@ -53,6 +55,7 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"reporter_presaves",
 	"study_presaves",
 	"study_presave_registration_numbers",
+	"study_presave_fda_cross_reported_inds",
 	"narrative_presaves",
 	"narrative_presave_sender_diagnoses",
 	"narrative_presave_case_summaries",
@@ -161,9 +164,15 @@ fn study_presave_create(
 		comments: None,
 		product_presave_id: None,
 		study_name: Some("Authority Study".into()),
+		study_name_notation: None,
 		sponsor_study_number: None,
+		sponsor_study_number_kind: None,
 		study_type_reaction: Some("1".into()),
 		study_type_reaction_kr1: None,
+		mfds_study_number: None,
+		mfds_protocol_number: None,
+		fda_ind_number_occurred: None,
+		fda_pre_anda_number_occurred: None,
 		edc_sync: None,
 	}
 }
@@ -369,6 +378,10 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 		(
 			"study_presave_registration_numbers",
 			"study_presave_registration_numbers_via_parent",
+		),
+		(
+			"study_presave_fda_cross_reported_inds",
+			"study_presave_fda_cross_reported_inds_via_parent",
 		),
 		("narrative_presaves", "narrative_presaves_org_isolation"),
 		(
@@ -863,9 +876,15 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			comments: None,
 			product_presave_id: Some(product_id),
 			study_name: Some("Study Name".into()),
+			study_name_notation: Some("Study Name Notation".into()),
 			sponsor_study_number: Some("ST-001".into()),
+			sponsor_study_number_kind: Some("study_no".into()),
 			study_type_reaction: Some("1".into()),
 			study_type_reaction_kr1: None,
+			mfds_study_number: None,
+			mfds_protocol_number: None,
+			fda_ind_number_occurred: Some("IND-001".into()),
+			fda_pre_anda_number_occurred: Some("ANDA-001".into()),
 			edc_sync: Some(true),
 		},
 	)
@@ -874,6 +893,16 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	assert_eq!(study.authority, RegulatoryAuthority::Fda);
 	assert_eq!(study.name, format!("Study Presave {suffix}"));
 	assert_eq!(study.sponsor_study_number.as_deref(), Some("ST-001"));
+	assert_eq!(
+		study.study_name_notation.as_deref(),
+		Some("Study Name Notation")
+	);
+	assert_eq!(study.sponsor_study_number_kind.as_deref(), Some("study_no"));
+	assert_eq!(study.fda_ind_number_occurred.as_deref(), Some("IND-001"));
+	assert_eq!(
+		study.fda_pre_anda_number_occurred.as_deref(),
+		Some("ANDA-001")
+	);
 
 	let narrative_id = NarrativePresaveBmc::create(
 		&ctx,
@@ -883,6 +912,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			name: format!("Narrative Presave {suffix}"),
 			comments: None,
 			case_narrative: Some("Case narrative text".into()),
+			case_narrative_notation: Some("Case narrative notation".into()),
 			reporter_comments: Some("Reporter comments".into()),
 			sender_comments: Some("Sender comments".into()),
 		},
@@ -894,6 +924,10 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	assert_eq!(
 		narrative.case_narrative.as_deref(),
 		Some("Case narrative text")
+	);
+	assert_eq!(
+		narrative.case_narrative_notation.as_deref(),
+		Some("Case narrative notation")
 	);
 
 	SenderPresaveBmc::update(
@@ -1143,6 +1177,8 @@ async fn authority_specific_fields_are_enforced() -> Result<()> {
 		format!("Authority MFDS Study {suffix}"),
 	);
 	valid_mfds_study.study_type_reaction_kr1 = Some("KR-STUDY".into());
+	valid_mfds_study.mfds_study_number = Some("MFDS-STUDY".into());
+	valid_mfds_study.mfds_protocol_number = Some("MFDS-PROTOCOL".into());
 	let mfds_study_id = StudyPresaveBmc::create(&ctx, &mm, valid_mfds_study).await?;
 
 	let mut invalid_ich_study = study_presave_create(
@@ -1153,6 +1189,78 @@ async fn authority_specific_fields_are_enforced() -> Result<()> {
 	expect_store_error(
 		StudyPresaveBmc::create(&ctx, &mm, invalid_ich_study).await,
 		"study_type_reaction_kr1",
+	);
+
+	let mut invalid_kind_study = study_presave_create(
+		RegulatoryAuthority::Ich,
+		format!("Authority ICH Study Invalid Kind {suffix}"),
+	);
+	invalid_kind_study.sponsor_study_number_kind = Some("other_no".into());
+	expect_store_error(
+		StudyPresaveBmc::create(&ctx, &mm, invalid_kind_study).await,
+		"sponsor_study_number_kind",
+	);
+
+	let mut invalid_fda_study_mfds_number = study_presave_create(
+		RegulatoryAuthority::Fda,
+		format!("Authority FDA Study MFDS Number {suffix}"),
+	);
+	invalid_fda_study_mfds_number.mfds_study_number = Some("MFDS-STUDY".into());
+	expect_store_error(
+		StudyPresaveBmc::create(&ctx, &mm, invalid_fda_study_mfds_number).await,
+		"mfds_study_number",
+	);
+
+	let mut invalid_ich_study_mfds_protocol = study_presave_create(
+		RegulatoryAuthority::Ich,
+		format!("Authority ICH Study MFDS Protocol {suffix}"),
+	);
+	invalid_ich_study_mfds_protocol.mfds_protocol_number =
+		Some("MFDS-PROTOCOL".into());
+	expect_store_error(
+		StudyPresaveBmc::create(&ctx, &mm, invalid_ich_study_mfds_protocol).await,
+		"mfds_protocol_number",
+	);
+
+	let mut valid_fda_study = study_presave_create(
+		RegulatoryAuthority::Fda,
+		format!("Authority Valid FDA Study {suffix}"),
+	);
+	valid_fda_study.fda_ind_number_occurred = Some("IND-FDA".into());
+	valid_fda_study.fda_pre_anda_number_occurred = Some("ANDA-FDA".into());
+	let valid_fda_study_id =
+		StudyPresaveBmc::create(&ctx, &mm, valid_fda_study).await?;
+	StudyPresaveBmc::update(
+		&ctx,
+		&mm,
+		valid_fda_study_id,
+		StudyPresaveForUpdate {
+			fda_ind_number_occurred: Some("IND-FDA-UPDATE".into()),
+			fda_pre_anda_number_occurred: Some("ANDA-FDA-UPDATE".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+
+	let mut invalid_mfds_study_fda_ind = study_presave_create(
+		RegulatoryAuthority::Mfds,
+		format!("Authority MFDS Study FDA IND {suffix}"),
+	);
+	invalid_mfds_study_fda_ind.fda_ind_number_occurred = Some("IND-MFDS".into());
+	expect_store_error(
+		StudyPresaveBmc::create(&ctx, &mm, invalid_mfds_study_fda_ind).await,
+		"fda_ind_number_occurred",
+	);
+
+	let mut invalid_ich_study_fda_pre_anda = study_presave_create(
+		RegulatoryAuthority::Ich,
+		format!("Authority ICH Study FDA Pre-ANDA {suffix}"),
+	);
+	invalid_ich_study_fda_pre_anda.fda_pre_anda_number_occurred =
+		Some("ANDA-ICH".into());
+	expect_store_error(
+		StudyPresaveBmc::create(&ctx, &mm, invalid_ich_study_fda_pre_anda).await,
+		"fda_pre_anda_number_occurred",
 	);
 
 	let ich_study_id = StudyPresaveBmc::create(
@@ -1177,8 +1285,62 @@ async fn authority_specific_fields_are_enforced() -> Result<()> {
 		.await,
 		"study_type_reaction_kr1",
 	);
+	expect_store_error(
+		StudyPresaveBmc::update(
+			&ctx,
+			&mm,
+			ich_study_id,
+			StudyPresaveForUpdate {
+				sponsor_study_number_kind: Some("other_no".into()),
+				..Default::default()
+			},
+		)
+		.await,
+		"sponsor_study_number_kind",
+	);
+	expect_store_error(
+		StudyPresaveBmc::update(
+			&ctx,
+			&mm,
+			ich_study_id,
+			StudyPresaveForUpdate {
+				mfds_study_number: Some("MFDS-STUDY".into()),
+				..Default::default()
+			},
+		)
+		.await,
+		"mfds_study_number",
+	);
+	expect_store_error(
+		StudyPresaveBmc::update(
+			&ctx,
+			&mm,
+			ich_study_id,
+			StudyPresaveForUpdate {
+				fda_ind_number_occurred: Some("IND-ICH".into()),
+				..Default::default()
+			},
+		)
+		.await,
+		"fda_ind_number_occurred",
+	);
+	expect_store_error(
+		StudyPresaveFdaCrossReportedIndBmc::create(
+			&ctx,
+			&mm,
+			StudyPresaveFdaCrossReportedIndForCreate {
+				study_presave_id: ich_study_id,
+				sequence_number: 1,
+				ind_number: Some("IND-ICH".into()),
+				deleted: Some(false),
+			},
+		)
+		.await,
+		"study_presave_fda_cross_reported_inds",
+	);
 
 	StudyPresaveBmc::delete(&ctx, &mm, ich_study_id).await?;
+	StudyPresaveBmc::delete(&ctx, &mm, valid_fda_study_id).await?;
 	StudyPresaveBmc::delete(&ctx, &mm, mfds_study_id).await?;
 	ProductPresaveBmc::delete(&ctx, &mm, fda_product_id).await?;
 	ProductPresaveBmc::delete(&ctx, &mm, ich_product_id).await?;
@@ -1186,6 +1348,45 @@ async fn authority_specific_fields_are_enforced() -> Result<()> {
 	ProductPresaveBmc::delete(&ctx, &mm, valid_fda_product_id).await?;
 	ReporterPresaveBmc::delete(&ctx, &mm, fda_reporter_id).await?;
 	ReporterPresaveBmc::delete(&ctx, &mm, mfds_reporter_id).await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn section_presave_bmcs_remain_permissive_for_rest_required_fields(
+) -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let study_id = StudyPresaveBmc::create(
+		&ctx,
+		&mm,
+		study_presave_create(
+			RegulatoryAuthority::Ich,
+			format!("Permissive Study Required At REST {suffix}"),
+		),
+	)
+	.await?;
+	let narrative_id = NarrativePresaveBmc::create(
+		&ctx,
+		&mm,
+		NarrativePresaveForCreate {
+			authority: RegulatoryAuthority::Ich,
+			name: format!("Permissive Narrative Required At REST {suffix}"),
+			comments: None,
+			case_narrative: None,
+			case_narrative_notation: None,
+			reporter_comments: None,
+			sender_comments: None,
+		},
+	)
+	.await?;
+
+	NarrativePresaveBmc::delete(&ctx, &mm, narrative_id).await?;
+	StudyPresaveBmc::delete(&ctx, &mm, study_id).await?;
 
 	Ok(())
 }
@@ -1297,9 +1498,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			comments: None,
 			product_presave_id: Some(product_id),
 			study_name: Some("Child Study".into()),
+			study_name_notation: None,
 			sponsor_study_number: None,
+			sponsor_study_number_kind: None,
 			study_type_reaction: None,
 			study_type_reaction_kr1: None,
+			mfds_study_number: None,
+			mfds_protocol_number: None,
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
 			edc_sync: None,
 		},
 	)
@@ -1312,6 +1519,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			name: format!("Child Narrative Presave {suffix}"),
 			comments: None,
 			case_narrative: Some("Child narrative".into()),
+			case_narrative_notation: None,
 			reporter_comments: None,
 			sender_comments: None,
 		},
@@ -1553,6 +1761,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			sequence_number: 1,
 			registration_number: Some("REG-before".into()),
 			country_code: Some("KR".into()),
+			deleted: Some(false),
 		},
 	)
 	.await?;
@@ -1562,6 +1771,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		registration_id,
 		StudyPresaveRegistrationNumberForUpdate {
 			registration_number: Some("REG-after".into()),
+			deleted: Some(true),
 			..Default::default()
 		},
 	)
@@ -1573,11 +1783,46 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		registration.registration_number.as_deref(),
 		Some("REG-after")
 	);
+	assert!(registration.deleted);
 	assert_eq!(
 		StudyPresaveRegistrationNumberBmc::list_by_parent(&ctx, &mm, study_id)
 			.await?[0]
 			.id,
 		registration_id
+	);
+
+	let study_ind_id = StudyPresaveFdaCrossReportedIndBmc::create(
+		&ctx,
+		&mm,
+		StudyPresaveFdaCrossReportedIndForCreate {
+			study_presave_id: study_id,
+			sequence_number: 2,
+			ind_number: Some("STUDY-IND-before".into()),
+			deleted: Some(false),
+		},
+	)
+	.await?;
+	StudyPresaveFdaCrossReportedIndBmc::update(
+		&ctx,
+		&mm,
+		study_ind_id,
+		StudyPresaveFdaCrossReportedIndForUpdate {
+			ind_number: Some("STUDY-IND-after".into()),
+			deleted: Some(true),
+			..Default::default()
+		},
+	)
+	.await?;
+	let study_ind =
+		StudyPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, study_ind_id).await?;
+	assert_eq!(study_ind.study_presave_id, study_id);
+	assert_eq!(study_ind.ind_number.as_deref(), Some("STUDY-IND-after"));
+	assert!(study_ind.deleted);
+	assert_eq!(
+		StudyPresaveFdaCrossReportedIndBmc::list_by_parent(&ctx, &mm, study_id)
+			.await?[0]
+			.id,
+		study_ind_id
 	);
 
 	let diagnosis_id = NarrativePresaveSenderDiagnosisBmc::create(
@@ -1588,6 +1833,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			sequence_number: 1,
 			diagnosis_meddra_version: Some("26.1".into()),
 			diagnosis_meddra_code: Some("10000001".into()),
+			deleted: Some(false),
 		},
 	)
 	.await?;
@@ -1597,6 +1843,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		diagnosis_id,
 		NarrativePresaveSenderDiagnosisForUpdate {
 			diagnosis_meddra_code: Some("10000002".into()),
+			deleted: Some(true),
 			..Default::default()
 		},
 	)
@@ -1605,6 +1852,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		NarrativePresaveSenderDiagnosisBmc::get(&ctx, &mm, diagnosis_id).await?;
 	assert_eq!(diagnosis.narrative_presave_id, narrative_id);
 	assert_eq!(diagnosis.diagnosis_meddra_code.as_deref(), Some("10000002"));
+	assert!(diagnosis.deleted);
 	assert_eq!(
 		NarrativePresaveSenderDiagnosisBmc::list_by_parent(&ctx, &mm, narrative_id)
 			.await?[0]
@@ -1621,6 +1869,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			summary_type: Some("sender".into()),
 			language_code: Some("en".into()),
 			summary_text: Some("summary before".into()),
+			deleted: Some(false),
 		},
 	)
 	.await?;
@@ -1630,6 +1879,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		summary_id,
 		NarrativePresaveCaseSummaryForUpdate {
 			summary_text: Some("summary after".into()),
+			deleted: Some(true),
 			..Default::default()
 		},
 	)
@@ -1637,6 +1887,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	let summary = NarrativePresaveCaseSummaryBmc::get(&ctx, &mm, summary_id).await?;
 	assert_eq!(summary.narrative_presave_id, narrative_id);
 	assert_eq!(summary.summary_text.as_deref(), Some("summary after"));
+	assert!(summary.deleted);
 	assert_eq!(
 		NarrativePresaveCaseSummaryBmc::list_by_parent(&ctx, &mm, narrative_id)
 			.await?[0]
@@ -1646,6 +1897,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 
 	NarrativePresaveCaseSummaryBmc::delete(&ctx, &mm, summary_id).await?;
 	NarrativePresaveSenderDiagnosisBmc::delete(&ctx, &mm, diagnosis_id).await?;
+	StudyPresaveFdaCrossReportedIndBmc::delete(&ctx, &mm, study_ind_id).await?;
 	StudyPresaveRegistrationNumberBmc::delete(&ctx, &mm, registration_id).await?;
 	ProductPresaveMfdsRegionalItemBmc::delete(&ctx, &mm, regional_id).await?;
 	ProductPresaveFdaCrossReportedIndBmc::delete(&ctx, &mm, ind_id).await?;
@@ -1725,6 +1977,8 @@ async fn section_presave_child_audit_uses_parent_organization() -> Result<()> {
 	let parent_org_id = Uuid::new_v4();
 	let sender_id = Uuid::new_v4();
 	let gateway_id = Uuid::new_v4();
+	let study_id = Uuid::new_v4();
+	let study_ind_id = Uuid::new_v4();
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, demo_user_id()).await?;
 	set_org_context(&mut tx, demo_org_id(), "system_admin").await?;
@@ -1772,6 +2026,42 @@ async fn section_presave_child_audit_uses_parent_organization() -> Result<()> {
 	.await?;
 
 	sqlx::query(
+		"INSERT INTO study_presaves (
+			id, organization_id, authority, name, created_by, updated_by
+		)
+		VALUES ($1, $2, 'fda', $3, $4, $4)",
+	)
+	.bind(study_id)
+	.bind(parent_org_id)
+	.bind(format!("Audit Study {study_id}"))
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
+		"INSERT INTO study_presave_fda_cross_reported_inds (
+			id, study_presave_id, sequence_number, ind_number, created_by, updated_by
+		)
+		VALUES ($1, $2, 1, 'before-update', $3, $3)",
+	)
+	.bind(study_ind_id)
+	.bind(study_id)
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
+		"UPDATE study_presave_fda_cross_reported_inds
+		 SET ind_number = 'after-update',
+		     updated_by = $1
+		 WHERE id = $2",
+	)
+	.bind(demo_user_id())
+	.bind(study_ind_id)
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
 		"UPDATE sender_presave_gateways
 		 SET sender_identifier = 'after-update',
 		     updated_by = $1
@@ -1801,6 +2091,26 @@ async fn section_presave_child_audit_uses_parent_organization() -> Result<()> {
 	assert_eq!(
 		audited_org_id, parent_org_id,
 		"child presave audit log should inherit organization from parent"
+	);
+
+	set_auditor_role(&mm).await?;
+	let audited_org_id: Uuid = sqlx::query_scalar(
+		"SELECT organization_id
+		 FROM audit_logs
+		 WHERE table_name = 'study_presave_fda_cross_reported_inds'
+		   AND record_id = $1
+		   AND action = 'UPDATE'
+		 ORDER BY created_at DESC, id DESC
+		 LIMIT 1",
+	)
+	.bind(study_ind_id)
+	.fetch_one(mm.dbx().db())
+	.await?;
+	reset_role(&mm).await?;
+
+	assert_eq!(
+		audited_org_id, parent_org_id,
+		"study FDA cross-reported IND audit log should inherit organization from parent"
 	);
 
 	Ok(())

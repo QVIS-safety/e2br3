@@ -332,6 +332,23 @@ fn validate_mfds_only_field(
 	Ok(())
 }
 
+fn validate_allowed_optional_text(
+	entity: &str,
+	field: &str,
+	value: Option<&str>,
+	allowed_values: &[&str],
+) -> Result<()> {
+	if let Some(value) = value {
+		if !allowed_values.contains(&value) {
+			return Err(crate::model::Error::Store(format!(
+				"{entity} field `{field}` must be one of: {}",
+				allowed_values.join(", ")
+			)));
+		}
+	}
+	Ok(())
+}
+
 trait IntoOrgScopedCreate {
 	type Insert: HasSeaFields;
 
@@ -1439,9 +1456,15 @@ pub struct StudyPresave {
 	pub deleted: bool,
 	pub product_presave_id: Option<Uuid>,
 	pub study_name: Option<String>,
+	pub study_name_notation: Option<String>,
 	pub sponsor_study_number: Option<String>,
+	pub sponsor_study_number_kind: Option<String>,
 	pub study_type_reaction: Option<String>,
 	pub study_type_reaction_kr1: Option<String>,
+	pub mfds_study_number: Option<String>,
+	pub mfds_protocol_number: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 	pub edc_sync: Option<bool>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -1456,9 +1479,15 @@ pub struct StudyPresaveForCreate {
 	pub comments: Option<String>,
 	pub product_presave_id: Option<Uuid>,
 	pub study_name: Option<String>,
+	pub study_name_notation: Option<String>,
 	pub sponsor_study_number: Option<String>,
+	pub sponsor_study_number_kind: Option<String>,
 	pub study_type_reaction: Option<String>,
 	pub study_type_reaction_kr1: Option<String>,
+	pub mfds_study_number: Option<String>,
+	pub mfds_protocol_number: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 	pub edc_sync: Option<bool>,
 }
 
@@ -1470,9 +1499,15 @@ struct StudyPresaveForInsert {
 	comments: Option<String>,
 	product_presave_id: Option<Uuid>,
 	study_name: Option<String>,
+	study_name_notation: Option<String>,
 	sponsor_study_number: Option<String>,
+	sponsor_study_number_kind: Option<String>,
 	study_type_reaction: Option<String>,
 	study_type_reaction_kr1: Option<String>,
+	mfds_study_number: Option<String>,
+	mfds_protocol_number: Option<String>,
+	fda_ind_number_occurred: Option<String>,
+	fda_pre_anda_number_occurred: Option<String>,
 	edc_sync: Option<bool>,
 }
 
@@ -1487,9 +1522,15 @@ impl IntoOrgScopedCreate for StudyPresaveForCreate {
 			comments: self.comments,
 			product_presave_id: self.product_presave_id,
 			study_name: self.study_name,
+			study_name_notation: self.study_name_notation,
 			sponsor_study_number: self.sponsor_study_number,
+			sponsor_study_number_kind: self.sponsor_study_number_kind,
 			study_type_reaction: self.study_type_reaction,
 			study_type_reaction_kr1: self.study_type_reaction_kr1,
+			mfds_study_number: self.mfds_study_number,
+			mfds_protocol_number: self.mfds_protocol_number,
+			fda_ind_number_occurred: self.fda_ind_number_occurred,
+			fda_pre_anda_number_occurred: self.fda_pre_anda_number_occurred,
 			edc_sync: self.edc_sync,
 		}
 	}
@@ -1497,11 +1538,21 @@ impl IntoOrgScopedCreate for StudyPresaveForCreate {
 
 impl StudyPresaveForCreate {
 	fn validate_authority_fields(&self) -> Result<()> {
-		validate_mfds_only_field(
-			"study presave",
+		validate_sponsor_study_number_kind(
+			self.sponsor_study_number_kind.as_deref(),
+		)?;
+		validate_study_authority_fields(
 			self.authority,
-			"study_type_reaction_kr1",
-			self.study_type_reaction_kr1.is_some(),
+			&[
+				(
+					"study_type_reaction_kr1",
+					self.study_type_reaction_kr1.is_some(),
+				),
+				("mfds_study_number", self.mfds_study_number.is_some()),
+				("mfds_protocol_number", self.mfds_protocol_number.is_some()),
+			],
+			self.fda_ind_number_occurred.is_some(),
+			self.fda_pre_anda_number_occurred.is_some(),
 		)
 	}
 }
@@ -1513,9 +1564,15 @@ pub struct StudyPresaveForUpdate {
 	pub deleted: Option<bool>,
 	pub product_presave_id: Option<Uuid>,
 	pub study_name: Option<String>,
+	pub study_name_notation: Option<String>,
 	pub sponsor_study_number: Option<String>,
+	pub sponsor_study_number_kind: Option<String>,
 	pub study_type_reaction: Option<String>,
 	pub study_type_reaction_kr1: Option<String>,
+	pub mfds_study_number: Option<String>,
+	pub mfds_protocol_number: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 	pub edc_sync: Option<bool>,
 }
 
@@ -1524,13 +1581,55 @@ impl StudyPresaveForUpdate {
 		&self,
 		authority: RegulatoryAuthority,
 	) -> Result<()> {
-		validate_mfds_only_field(
-			"study presave",
+		validate_sponsor_study_number_kind(
+			self.sponsor_study_number_kind.as_deref(),
+		)?;
+		validate_study_authority_fields(
 			authority,
-			"study_type_reaction_kr1",
-			self.study_type_reaction_kr1.is_some(),
+			&[
+				(
+					"study_type_reaction_kr1",
+					self.study_type_reaction_kr1.is_some(),
+				),
+				("mfds_study_number", self.mfds_study_number.is_some()),
+				("mfds_protocol_number", self.mfds_protocol_number.is_some()),
+			],
+			self.fda_ind_number_occurred.is_some(),
+			self.fda_pre_anda_number_occurred.is_some(),
 		)
 	}
+}
+
+fn validate_sponsor_study_number_kind(value: Option<&str>) -> Result<()> {
+	validate_allowed_optional_text(
+		"study presave",
+		"sponsor_study_number_kind",
+		value,
+		&["study_no", "protocol_no"],
+	)
+}
+
+fn validate_study_authority_fields(
+	authority: RegulatoryAuthority,
+	mfds_fields: &[(&str, bool)],
+	fda_ind_number_occurred: bool,
+	fda_pre_anda_number_occurred: bool,
+) -> Result<()> {
+	for (field, present) in mfds_fields {
+		validate_mfds_only_field("study presave", authority, field, *present)?;
+	}
+	validate_fda_only_field(
+		"study presave",
+		authority,
+		"fda_ind_number_occurred",
+		fda_ind_number_occurred,
+	)?;
+	validate_fda_only_field(
+		"study presave",
+		authority,
+		"fda_pre_anda_number_occurred",
+		fda_pre_anda_number_occurred,
+	)
 }
 
 impl_authority_validated_parent_bmc!(
@@ -1548,6 +1647,7 @@ pub struct StudyPresaveRegistrationNumber {
 	pub sequence_number: i32,
 	pub registration_number: Option<String>,
 	pub country_code: Option<String>,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -1560,6 +1660,7 @@ pub struct StudyPresaveRegistrationNumberForCreate {
 	pub sequence_number: i32,
 	pub registration_number: Option<String>,
 	pub country_code: Option<String>,
+	pub deleted: Option<bool>,
 }
 
 #[derive(Default, Fields, Deserialize)]
@@ -1567,6 +1668,7 @@ pub struct StudyPresaveRegistrationNumberForUpdate {
 	pub sequence_number: Option<i32>,
 	pub registration_number: Option<String>,
 	pub country_code: Option<String>,
+	pub deleted: Option<bool>,
 }
 
 impl_child_bmc!(
@@ -1579,6 +1681,137 @@ impl_child_bmc!(
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct StudyPresaveFdaCrossReportedInd {
+	pub id: Uuid,
+	pub study_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub ind_number: Option<String>,
+	pub deleted: bool,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct StudyPresaveFdaCrossReportedIndForCreate {
+	pub study_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub ind_number: Option<String>,
+	pub deleted: Option<bool>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct StudyPresaveFdaCrossReportedIndForUpdate {
+	pub sequence_number: Option<i32>,
+	pub ind_number: Option<String>,
+	pub deleted: Option<bool>,
+}
+
+pub struct StudyPresaveFdaCrossReportedIndBmc;
+
+impl DbBmc for StudyPresaveFdaCrossReportedIndBmc {
+	const TABLE: &'static str = "study_presave_fda_cross_reported_inds";
+}
+
+impl StudyPresaveFdaCrossReportedIndBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: StudyPresaveFdaCrossReportedIndForCreate,
+	) -> Result<Uuid> {
+		let parent = StudyPresaveBmc::get(ctx, mm, data.study_presave_id).await?;
+		validate_fda_cross_reported_ind_parent(parent.authority)?;
+		base_uuid::create::<Self, _>(ctx, mm, data).await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<StudyPresaveFdaCrossReportedInd> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<StudyPresaveFdaCrossReportedInd>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: StudyPresaveFdaCrossReportedIndForUpdate,
+	) -> Result<()> {
+		let current: StudyPresaveFdaCrossReportedInd =
+			base_uuid::get::<Self, _>(ctx, mm, id).await?;
+		let parent = StudyPresaveBmc::get(ctx, mm, current.study_presave_id).await?;
+		validate_fda_cross_reported_ind_parent(parent.authority)?;
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn list_by_parent(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		parent_id: Uuid,
+	) -> Result<Vec<StudyPresaveFdaCrossReportedInd>> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+
+		let sql = format!(
+			"SELECT * FROM {} WHERE study_presave_id = $1 ORDER BY sequence_number ASC, id ASC",
+			Self::TABLE
+		);
+		let rows = match dbx
+			.fetch_all(
+				sqlx::query_as::<_, StudyPresaveFdaCrossReportedInd>(&sql)
+					.bind(parent_id),
+			)
+			.await
+		{
+			Ok(rows) => rows,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		dbx.commit_txn().await?;
+		Ok(rows)
+	}
+}
+
+fn validate_fda_cross_reported_ind_parent(
+	authority: RegulatoryAuthority,
+) -> Result<()> {
+	validate_fda_only_field(
+		"study_presave_fda_cross_reported_inds",
+		authority,
+		"study_presave_id",
+		true,
+	)
+}
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct NarrativePresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,
@@ -1587,6 +1820,7 @@ pub struct NarrativePresave {
 	pub comments: Option<String>,
 	pub deleted: bool,
 	pub case_narrative: Option<String>,
+	pub case_narrative_notation: Option<String>,
 	pub reporter_comments: Option<String>,
 	pub sender_comments: Option<String>,
 	pub created_at: OffsetDateTime,
@@ -1601,6 +1835,7 @@ pub struct NarrativePresaveForCreate {
 	pub name: String,
 	pub comments: Option<String>,
 	pub case_narrative: Option<String>,
+	pub case_narrative_notation: Option<String>,
 	pub reporter_comments: Option<String>,
 	pub sender_comments: Option<String>,
 }
@@ -1612,6 +1847,7 @@ struct NarrativePresaveForInsert {
 	name: String,
 	comments: Option<String>,
 	case_narrative: Option<String>,
+	case_narrative_notation: Option<String>,
 	reporter_comments: Option<String>,
 	sender_comments: Option<String>,
 }
@@ -1626,6 +1862,7 @@ impl IntoOrgScopedCreate for NarrativePresaveForCreate {
 			name: self.name,
 			comments: self.comments,
 			case_narrative: self.case_narrative,
+			case_narrative_notation: self.case_narrative_notation,
 			reporter_comments: self.reporter_comments,
 			sender_comments: self.sender_comments,
 		}
@@ -1638,6 +1875,7 @@ pub struct NarrativePresaveForUpdate {
 	pub comments: Option<String>,
 	pub deleted: Option<bool>,
 	pub case_narrative: Option<String>,
+	pub case_narrative_notation: Option<String>,
 	pub reporter_comments: Option<String>,
 	pub sender_comments: Option<String>,
 }
@@ -1657,6 +1895,7 @@ pub struct NarrativePresaveSenderDiagnosis {
 	pub sequence_number: i32,
 	pub diagnosis_meddra_version: Option<String>,
 	pub diagnosis_meddra_code: Option<String>,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -1669,6 +1908,7 @@ pub struct NarrativePresaveSenderDiagnosisForCreate {
 	pub sequence_number: i32,
 	pub diagnosis_meddra_version: Option<String>,
 	pub diagnosis_meddra_code: Option<String>,
+	pub deleted: Option<bool>,
 }
 
 #[derive(Default, Fields, Deserialize)]
@@ -1676,6 +1916,7 @@ pub struct NarrativePresaveSenderDiagnosisForUpdate {
 	pub sequence_number: Option<i32>,
 	pub diagnosis_meddra_version: Option<String>,
 	pub diagnosis_meddra_code: Option<String>,
+	pub deleted: Option<bool>,
 }
 
 impl_child_bmc!(
@@ -1695,6 +1936,7 @@ pub struct NarrativePresaveCaseSummary {
 	pub summary_type: Option<String>,
 	pub language_code: Option<String>,
 	pub summary_text: Option<String>,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -1708,6 +1950,7 @@ pub struct NarrativePresaveCaseSummaryForCreate {
 	pub summary_type: Option<String>,
 	pub language_code: Option<String>,
 	pub summary_text: Option<String>,
+	pub deleted: Option<bool>,
 }
 
 #[derive(Default, Fields, Deserialize)]
@@ -1716,6 +1959,7 @@ pub struct NarrativePresaveCaseSummaryForUpdate {
 	pub summary_type: Option<String>,
 	pub language_code: Option<String>,
 	pub summary_text: Option<String>,
+	pub deleted: Option<bool>,
 }
 
 impl_child_bmc!(

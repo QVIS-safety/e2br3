@@ -203,7 +203,10 @@ BEGIN
         END IF;
     END IF;
 
-    IF p_table_name = 'study_presave_registration_numbers' THEN
+    IF p_table_name IN (
+        'study_presave_registration_numbers',
+        'study_presave_fda_cross_reported_inds'
+    ) THEN
         SELECT p.organization_id INTO v_org_id
         FROM study_presaves p
         WHERE p.id = NULLIF(v_values->>'study_presave_id', '')::UUID;
@@ -657,6 +660,9 @@ CREATE TRIGGER audit_study_presaves AFTER INSERT OR UPDATE OR DELETE ON study_pr
 CREATE TRIGGER audit_study_presave_registration_numbers AFTER INSERT OR UPDATE OR DELETE ON study_presave_registration_numbers
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
+CREATE TRIGGER audit_study_presave_fda_cross_reported_inds AFTER INSERT OR UPDATE OR DELETE ON study_presave_fda_cross_reported_inds
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
 CREATE TRIGGER audit_narrative_presaves AFTER INSERT OR UPDATE OR DELETE ON narrative_presaves
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
@@ -849,6 +855,9 @@ CREATE TRIGGER update_study_presaves_updated_at BEFORE UPDATE ON study_presaves
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_study_presave_registration_numbers_updated_at BEFORE UPDATE ON study_presave_registration_numbers
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_study_presave_fda_cross_reported_inds_updated_at BEFORE UPDATE ON study_presave_fda_cross_reported_inds
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_narrative_presaves_updated_at BEFORE UPDATE ON narrative_presaves

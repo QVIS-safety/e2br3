@@ -6,6 +6,9 @@ use axum::body::{to_bytes, Body};
 use axum::http::{Method, Request, StatusCode};
 use axum::Router;
 use lib_auth::token::generate_web_token;
+use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_CRO};
+use lib_core::model::presave::{ProductPresaveBmc, ProductPresaveForCreate};
+use lib_core::regulatory::RegulatoryAuthority;
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
@@ -39,6 +42,65 @@ async fn request_json(
 	let status = res.status();
 	let bytes = to_bytes(res.into_body(), usize::MAX).await?;
 	Ok((status, parse_json_or_raw(&bytes)))
+}
+
+fn data_id(value: &Value) -> Result<Uuid> {
+	let id = value["data"]["id"].as_str().ok_or("missing data.id")?;
+	Ok(Uuid::parse_str(id)?)
+}
+
+async fn create_product_presave(
+	mm: &lib_core::model::ModelManager,
+	org_id: Uuid,
+	user_id: Uuid,
+) -> Result<Uuid> {
+	let ctx = Ctx::new(user_id, org_id, ROLE_SPONSOR_ADMIN_CRO.to_string())?;
+	let id = ProductPresaveBmc::create(
+		&ctx,
+		mm,
+		ProductPresaveForCreate {
+			authority: RegulatoryAuthority::Fda,
+			name: format!("REST Product {}", Uuid::new_v4()),
+			comments: None,
+			sender_presave_id: None,
+			drug_characterization: None,
+			medicinal_product: Some("REST Product".into()),
+			medicinal_product_notation: None,
+			preapproval_ip_name: None,
+			brand_name: None,
+			drug_generic_name: None,
+			manufacturer_name: None,
+			product_description: None,
+			mpid: None,
+			mpid_version: None,
+			phpid: None,
+			phpid_version: None,
+			investigational_product_blinded: None,
+			obtain_drug_country: None,
+			drug_authorization_number: None,
+			drug_authorization_country: None,
+			drug_authorization_holder: None,
+			holder_applicant_name_notation: None,
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
+			mfds_domestic_product_code: None,
+			mfds_domestic_ingredient_code: None,
+			mfds_udl_product_code: None,
+			mfds_udl_ingredient_code: None,
+			mfds_udl_manufacturer_code: None,
+			mfds_udl_manufacturer_name: None,
+			mfds_foreign_ich_product_code: None,
+			mfds_foreign_ich_ingredient_code: None,
+			mfds_foreign_ich_holder_code: None,
+			mfds_foreign_ich_holder_name: None,
+			mfds_foreign_e2b_product_code: None,
+			mfds_foreign_e2b_ingredient_code: None,
+			mfds_foreign_e2b_holder_code: None,
+			mfds_foreign_e2b_holder_name: None,
+		},
+	)
+	.await?;
+	Ok(id)
 }
 
 async fn create_template(
@@ -127,6 +189,383 @@ async fn update_user_scope(
 		)
 		.into());
 	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_section_presave_study_rest_contract() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let product_id = create_product_presave(&mm, seed.org_id, seed.admin.id).await?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/studies".to_string(),
+		Some(json!({
+			"data": {
+				"authority": "fda",
+				"name": "REST Study Missing Product",
+				"study_name": "Missing Product Study"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/studies".to_string(),
+		Some(json!({
+			"data": {
+				"authority": "fda",
+				"name": "REST Study",
+				"product_presave_id": product_id,
+				"study_name": "REST Study Name",
+				"study_name_notation": "REST notation",
+				"sponsor_study_number": "REST-ST-001",
+				"sponsor_study_number_kind": "study_no",
+				"fda_ind_number_occurred": "IND-REST"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let study_id = data_id(&value)?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::GET,
+		"/api/presaves/studies?authority=fda".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert!(
+		value["data"]
+			.as_array()
+			.ok_or("study list data is not array")?
+			.iter()
+			.any(|row| row["id"].as_str() == Some(&study_id.to_string())),
+		"{value:?}"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::GET,
+		format!("/api/presaves/studies/{study_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["data"]["sponsor_study_number_kind"].as_str(),
+		Some("study_no")
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/studies/{study_id}"),
+		Some(json!({
+			"data": {
+				"sponsor_study_number_kind": "protocol_no",
+				"sponsor_study_number": "REST-PROT-001"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["data"]["sponsor_study_number_kind"].as_str(),
+		Some("protocol_no")
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		format!("/api/presaves/studies/{study_id}/registration-numbers"),
+		Some(json!({
+			"data": {
+				"sequence_number": 1,
+				"registration_number": "REG-REST",
+				"country_code": "US"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let registration_id = data_id(&value)?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!(
+			"/api/presaves/studies/{study_id}/registration-numbers/{registration_id}"
+		),
+		Some(json!({ "data": { "deleted": true } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["deleted"].as_bool(), Some(true));
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		format!("/api/presaves/studies/{study_id}/fda-cross-reported-inds"),
+		Some(json!({
+			"data": {
+				"sequence_number": 1,
+				"ind_number": "IND-CHILD-REST"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let ind_id = data_id(&value)?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::GET,
+		format!("/api/presaves/studies/{study_id}/fda-cross-reported-inds"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert!(
+		value["data"]
+			.as_array()
+			.ok_or("study IND list data is not array")?
+			.iter()
+			.any(|row| row["id"].as_str() == Some(&ind_id.to_string())),
+		"{value:?}"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/studies/{study_id}/fda-cross-reported-inds/{ind_id}"),
+		Some(json!({ "data": { "deleted": true } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["deleted"].as_bool(), Some(true));
+
+	let study_delete_uris = [
+		format!("/api/presaves/studies/{study_id}/fda-cross-reported-inds/{ind_id}"),
+		format!(
+			"/api/presaves/studies/{study_id}/registration-numbers/{registration_id}"
+		),
+		format!("/api/presaves/studies/{study_id}"),
+	];
+	for uri in study_delete_uris {
+		let (status, value) =
+			request_json(&app, &admin_cookie, Method::DELETE, uri.clone(), None)
+				.await?;
+		assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+
+		let (status, value) =
+			request_json(&app, &admin_cookie, Method::GET, uri, None).await?;
+		assert_eq!(status, StatusCode::OK, "{value:?}");
+		assert_eq!(value["data"]["deleted"].as_bool(), Some(true));
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_section_presave_narrative_rest_contract() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/narratives".to_string(),
+		Some(json!({
+			"data": {
+				"authority": "ich",
+				"name": "REST Narrative Missing Auto Narrative"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/narratives".to_string(),
+		Some(json!({
+			"data": {
+				"authority": "ich",
+				"name": "REST Narrative",
+				"case_narrative": "REST auto narrative",
+				"case_narrative_notation": "REST notation"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let narrative_id = data_id(&value)?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::GET,
+		"/api/presaves/narratives?authority=ich".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert!(
+		value["data"]
+			.as_array()
+			.ok_or("narrative list data is not array")?
+			.iter()
+			.any(|row| row["id"].as_str() == Some(&narrative_id.to_string())),
+		"{value:?}"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/narratives/{narrative_id}"),
+		Some(json!({
+			"data": {
+				"case_narrative": "REST auto narrative updated"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["data"]["case_narrative"].as_str(),
+		Some("REST auto narrative updated")
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		format!("/api/presaves/narratives/{narrative_id}/sender-diagnoses"),
+		Some(json!({
+			"data": {
+				"sequence_number": 1,
+				"diagnosis_meddra_version": "26.1",
+				"diagnosis_meddra_code": "10000001"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let diagnosis_id = data_id(&value)?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!(
+			"/api/presaves/narratives/{narrative_id}/sender-diagnoses/{diagnosis_id}"
+		),
+		Some(json!({ "data": { "deleted": true } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["deleted"].as_bool(), Some(true));
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		format!("/api/presaves/narratives/{narrative_id}/case-summaries"),
+		Some(json!({
+			"data": {
+				"sequence_number": 1,
+				"summary_type": "sender",
+				"language_code": "en",
+				"summary_text": "REST summary"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let summary_id = data_id(&value)?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::GET,
+		format!("/api/presaves/narratives/{narrative_id}/case-summaries"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert!(
+		value["data"]
+			.as_array()
+			.ok_or("case summary list data is not array")?
+			.iter()
+			.any(|row| row["id"].as_str() == Some(&summary_id.to_string())),
+		"{value:?}"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!(
+			"/api/presaves/narratives/{narrative_id}/case-summaries/{summary_id}"
+		),
+		Some(json!({ "data": { "deleted": true } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["deleted"].as_bool(), Some(true));
+
+	let narrative_delete_uris = [
+		format!(
+			"/api/presaves/narratives/{narrative_id}/case-summaries/{summary_id}"
+		),
+		format!(
+			"/api/presaves/narratives/{narrative_id}/sender-diagnoses/{diagnosis_id}"
+		),
+		format!("/api/presaves/narratives/{narrative_id}"),
+	];
+	for uri in narrative_delete_uris {
+		let (status, value) =
+			request_json(&app, &admin_cookie, Method::DELETE, uri.clone(), None)
+				.await?;
+		assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+
+		let (status, value) =
+			request_json(&app, &admin_cookie, Method::GET, uri, None).await?;
+		assert_eq!(status, StatusCode::OK, "{value:?}");
+		assert_eq!(value["data"]["deleted"].as_bool(), Some(true));
+	}
+
 	Ok(())
 }
 

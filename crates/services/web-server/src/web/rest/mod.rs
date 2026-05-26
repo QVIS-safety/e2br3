@@ -36,6 +36,7 @@ pub mod presave_template_rest;
 pub mod receiver_rest;
 pub mod relatedness_assessment_rest;
 pub mod safety_report_sub_rest;
+pub mod section_presave_rest;
 pub mod submission_rest;
 pub mod terminology_rest;
 pub mod validation_rules_rest;
@@ -758,6 +759,86 @@ pub fn routes_presave_templates(mm: ModelManager) -> Router {
 		.route(
 			"/presave-templates/{id}/audit",
 			get(presave_template_rest::list_presave_template_audits),
+		)
+		.with_state(mm)
+}
+
+/// Routes for relational INFO section presaves.
+pub fn routes_section_presaves(mm: ModelManager) -> Router {
+	Router::new()
+		.route(
+			"/presaves/products",
+			get(section_presave_rest::list_product_presaves),
+		)
+		.route(
+			"/presaves/products/{id}",
+			get(section_presave_rest::get_product_presave),
+		)
+		.route(
+			"/presaves/studies",
+			get(section_presave_rest::list_study_presaves)
+				.post(section_presave_rest::create_study_presave),
+		)
+		.route(
+			"/presaves/studies/{id}",
+			get(section_presave_rest::get_study_presave)
+				.patch(section_presave_rest::update_study_presave)
+				.delete(section_presave_rest::delete_study_presave),
+		)
+		.route(
+			"/presaves/studies/{study_id}/registration-numbers",
+			get(section_presave_rest::list_study_registration_numbers)
+				.post(section_presave_rest::create_study_registration_number),
+		)
+		.route(
+			"/presaves/studies/{study_id}/registration-numbers/{id}",
+			get(section_presave_rest::get_study_registration_number)
+				.patch(section_presave_rest::update_study_registration_number)
+				.delete(section_presave_rest::delete_study_registration_number),
+		)
+		.route(
+			"/presaves/studies/{study_id}/fda-cross-reported-inds",
+			get(section_presave_rest::list_study_fda_cross_reported_inds)
+				.post(section_presave_rest::create_study_fda_cross_reported_ind),
+		)
+		.route(
+			"/presaves/studies/{study_id}/fda-cross-reported-inds/{id}",
+			get(section_presave_rest::get_study_fda_cross_reported_ind)
+				.patch(section_presave_rest::update_study_fda_cross_reported_ind)
+				.delete(section_presave_rest::delete_study_fda_cross_reported_ind),
+		)
+		.route(
+			"/presaves/narratives",
+			get(section_presave_rest::list_narrative_presaves)
+				.post(section_presave_rest::create_narrative_presave),
+		)
+		.route(
+			"/presaves/narratives/{id}",
+			get(section_presave_rest::get_narrative_presave)
+				.patch(section_presave_rest::update_narrative_presave)
+				.delete(section_presave_rest::delete_narrative_presave),
+		)
+		.route(
+			"/presaves/narratives/{narrative_id}/sender-diagnoses",
+			get(section_presave_rest::list_narrative_sender_diagnoses)
+				.post(section_presave_rest::create_narrative_sender_diagnosis),
+		)
+		.route(
+			"/presaves/narratives/{narrative_id}/sender-diagnoses/{id}",
+			get(section_presave_rest::get_narrative_sender_diagnosis)
+				.patch(section_presave_rest::update_narrative_sender_diagnosis)
+				.delete(section_presave_rest::delete_narrative_sender_diagnosis),
+		)
+		.route(
+			"/presaves/narratives/{narrative_id}/case-summaries",
+			get(section_presave_rest::list_narrative_case_summaries)
+				.post(section_presave_rest::create_narrative_case_summary),
+		)
+		.route(
+			"/presaves/narratives/{narrative_id}/case-summaries/{id}",
+			get(section_presave_rest::get_narrative_case_summary)
+				.patch(section_presave_rest::update_narrative_case_summary)
+				.delete(section_presave_rest::delete_narrative_case_summary),
 		)
 		.with_state(mm)
 }
