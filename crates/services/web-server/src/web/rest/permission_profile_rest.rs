@@ -23,6 +23,7 @@ use uuid::Uuid;
 
 const ROLE_NAME_MAX_LEN: usize = 128;
 const ROLE_DESCRIPTION_MAX_LEN: usize = 512;
+const MAX_CUSTOM_ROLES_PER_ORG: i64 = 20;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PermissionProfileRow {
@@ -395,6 +396,15 @@ pub async fn create_permission_profile(
 	{
 		return Err(Error::BadRequest {
 			message: "role name already exists in this organization".to_string(),
+		});
+	}
+	let existing_custom_role_count =
+		PermissionProfileBmc::count_custom_in_org(&ctx, &mm)
+			.await
+			.map_err(Error::Model)?;
+	if existing_custom_role_count >= MAX_CUSTOM_ROLES_PER_ORG {
+		return Err(Error::BadRequest {
+			message: "organizations can create up to 20 custom roles".to_string(),
 		});
 	}
 	let description = normalize_role_description(data.description)?;

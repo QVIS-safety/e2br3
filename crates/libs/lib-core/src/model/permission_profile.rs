@@ -156,6 +156,37 @@ impl PermissionProfileBmc {
 		Ok(exists)
 	}
 
+	pub async fn count_custom_in_org(ctx: &Ctx, mm: &ModelManager) -> Result<i64> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let count = match dbx
+			.fetch_one(
+				sqlx::query_as::<_, (i64,)>(
+					r#"
+					SELECT COUNT(*)
+					FROM permission_profiles
+					WHERE organization_id = $1
+					  AND built_in = false
+					"#,
+				)
+				.bind(ctx.organization_id()),
+			)
+			.await
+		{
+			Ok((count,)) => count,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(crate::model::Error::Store(err.to_string()));
+			}
+		};
+		dbx.commit_txn().await?;
+		Ok(count)
+	}
+
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,

@@ -612,6 +612,64 @@ async fn test_permission_profiles_are_scoped_by_organization_for_sponsor_admins(
 
 #[serial]
 #[tokio::test]
+async fn test_permission_profiles_reject_twenty_first_custom_role_per_org(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let app = web_server::app(mm);
+
+	for index in 1..=20 {
+		let body = json!({
+			"data": {
+				"name": format!("Limited Role {index:02} {}", Uuid::new_v4()),
+				"description": "Counts toward the organization role limit",
+				"privileges": []
+			}
+		});
+		let req = Request::builder()
+			.method("POST")
+			.uri("/api/admin/permission-profiles")
+			.header("cookie", cookie_header(&token.to_string()))
+			.header("content-type", "application/json")
+			.body(Body::from(body.to_string()))?;
+		let res = app.clone().oneshot(req).await?;
+		assert_eq!(
+			res.status(),
+			StatusCode::CREATED,
+			"custom role {index} should still be creatable"
+		);
+	}
+
+	let body = json!({
+		"data": {
+			"name": format!("Limited Role 21 {}", Uuid::new_v4()),
+			"description": "This role exceeds the organization limit",
+			"privileges": []
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/admin/permission-profiles")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let json: serde_json::Value = serde_json::from_slice(&body)?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	assert!(
+		json.to_string().contains("20"),
+		"limit error should mention the maximum role count: {json:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_system_admin_can_manage_admin_console_users_and_roles() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
