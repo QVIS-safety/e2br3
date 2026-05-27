@@ -767,12 +767,129 @@ pub fn routes_presave_templates(mm: ModelManager) -> Router {
 pub fn routes_section_presaves(mm: ModelManager) -> Router {
 	Router::new()
 		.route(
+			"/presaves/senders",
+			get(section_presave_rest::list_sender_presaves)
+				.post(section_presave_rest::create_sender_presave),
+		)
+		.route(
+			"/presaves/senders/{id}",
+			get(section_presave_rest::get_sender_presave)
+				.patch(section_presave_rest::update_sender_presave)
+				.delete(section_presave_rest::delete_sender_presave),
+		)
+		.route(
+			"/presaves/senders/{id}/details",
+			get(section_presave_rest::get_sender_presave_details)
+				.put(section_presave_rest::update_sender_presave_details),
+		)
+		.route(
+			"/presaves/senders/{sender_id}/gateways",
+			get(section_presave_rest::list_sender_gateways)
+				.post(section_presave_rest::create_sender_gateway_from_path),
+		)
+		.route(
+			"/presaves/senders/{sender_id}/gateways/{id}",
+			get(section_presave_rest::get_sender_gateway)
+				.patch(section_presave_rest::update_sender_gateway)
+				.delete(section_presave_rest::delete_sender_gateway),
+		)
+		.route(
+			"/presaves/senders/{sender_id}/responsible-persons",
+			get(section_presave_rest::list_sender_responsible_persons)
+				.post(section_presave_rest::create_sender_responsible_person),
+		)
+		.route(
+			"/presaves/senders/{sender_id}/responsible-persons/{id}",
+			get(section_presave_rest::get_sender_responsible_person)
+				.patch(section_presave_rest::update_sender_responsible_person)
+				.delete(section_presave_rest::delete_sender_responsible_person),
+		)
+		.route(
+			"/presaves/receivers",
+			get(section_presave_rest::list_receiver_presaves)
+				.post(section_presave_rest::create_receiver_presave),
+		)
+		.route(
+			"/presaves/receivers/{id}",
+			get(section_presave_rest::get_receiver_presave)
+				.patch(section_presave_rest::update_receiver_presave)
+				.delete(section_presave_rest::delete_receiver_presave),
+		)
+		.route(
+			"/presaves/receivers/{id}/details",
+			get(section_presave_rest::get_receiver_presave_details)
+				.put(section_presave_rest::update_receiver_presave_details),
+		)
+		.route(
+			"/presaves/receivers/{receiver_id}/consignees",
+			get(section_presave_rest::list_receiver_consignees)
+				.post(section_presave_rest::create_receiver_consignee),
+		)
+		.route(
+			"/presaves/receivers/{receiver_id}/consignees/{id}",
+			get(section_presave_rest::get_receiver_consignee)
+				.patch(section_presave_rest::update_receiver_consignee)
+				.delete(section_presave_rest::delete_receiver_consignee),
+		)
+		.route(
 			"/presaves/products",
-			get(section_presave_rest::list_product_presaves),
+			get(section_presave_rest::list_product_presaves)
+				.post(section_presave_rest::create_product_presave),
 		)
 		.route(
 			"/presaves/products/{id}",
-			get(section_presave_rest::get_product_presave),
+			get(section_presave_rest::get_product_presave)
+				.patch(section_presave_rest::update_product_presave)
+				.delete(section_presave_rest::delete_product_presave),
+		)
+		.route(
+			"/presaves/products/{id}/details",
+			get(section_presave_rest::get_product_presave_details)
+				.put(section_presave_rest::update_product_presave_details),
+		)
+		.route(
+			"/presaves/products/{product_id}/substances",
+			get(section_presave_rest::list_product_substances)
+				.post(section_presave_rest::create_product_substance),
+		)
+		.route(
+			"/presaves/products/{product_id}/substances/{id}",
+			get(section_presave_rest::get_product_substance)
+				.patch(section_presave_rest::update_product_substance)
+				.delete(section_presave_rest::delete_product_substance),
+		)
+		.route(
+			"/presaves/products/{product_id}/fda-cross-reported-inds",
+			get(section_presave_rest::list_product_fda_cross_reported_inds)
+				.post(section_presave_rest::create_product_fda_cross_reported_ind),
+		)
+		.route(
+			"/presaves/products/{product_id}/fda-cross-reported-inds/{id}",
+			get(section_presave_rest::get_product_fda_cross_reported_ind)
+				.patch(section_presave_rest::update_product_fda_cross_reported_ind)
+				.delete(section_presave_rest::delete_product_fda_cross_reported_ind),
+		)
+		.route(
+			"/presaves/products/{product_id}/mfds-regional-items",
+			get(section_presave_rest::list_product_mfds_regional_items)
+				.post(section_presave_rest::create_product_mfds_regional_item),
+		)
+		.route(
+			"/presaves/products/{product_id}/mfds-regional-items/{id}",
+			get(section_presave_rest::get_product_mfds_regional_item)
+				.patch(section_presave_rest::update_product_mfds_regional_item)
+				.delete(section_presave_rest::delete_product_mfds_regional_item),
+		)
+		.route(
+			"/presaves/reporters",
+			get(section_presave_rest::list_reporter_presaves)
+				.post(section_presave_rest::create_reporter_presave),
+		)
+		.route(
+			"/presaves/reporters/{id}",
+			get(section_presave_rest::get_reporter_presave)
+				.patch(section_presave_rest::update_reporter_presave)
+				.delete(section_presave_rest::delete_reporter_presave),
 		)
 		.route(
 			"/presaves/studies",
@@ -784,6 +901,11 @@ pub fn routes_section_presaves(mm: ModelManager) -> Router {
 			get(section_presave_rest::get_study_presave)
 				.patch(section_presave_rest::update_study_presave)
 				.delete(section_presave_rest::delete_study_presave),
+		)
+		.route(
+			"/presaves/studies/{id}/details",
+			get(section_presave_rest::get_study_presave_details)
+				.put(section_presave_rest::update_study_presave_details),
 		)
 		.route(
 			"/presaves/studies/{study_id}/registration-numbers",
@@ -817,6 +939,11 @@ pub fn routes_section_presaves(mm: ModelManager) -> Router {
 			get(section_presave_rest::get_narrative_presave)
 				.patch(section_presave_rest::update_narrative_presave)
 				.delete(section_presave_rest::delete_narrative_presave),
+		)
+		.route(
+			"/presaves/narratives/{id}/details",
+			get(section_presave_rest::get_narrative_presave_details)
+				.put(section_presave_rest::update_narrative_presave_details),
 		)
 		.route(
 			"/presaves/narratives/{narrative_id}/sender-diagnoses",

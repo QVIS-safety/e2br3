@@ -36,6 +36,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 csv = "1"
 zip = "2"
 sha2 = "0.10"
+rust_decimal = { workspace = true }
 
 [dev-dependencies]
 httpc-test = "0.1"

@@ -1489,6 +1489,51 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		},
 	)
 	.await?;
+	let fda_product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveForCreate {
+			authority: RegulatoryAuthority::Fda,
+			name: format!("Child FDA Product Presave {suffix}"),
+			comments: None,
+			sender_presave_id: Some(sender_id),
+			drug_characterization: None,
+			medicinal_product: Some("Child FDA Product".into()),
+			medicinal_product_notation: None,
+			preapproval_ip_name: None,
+			brand_name: None,
+			drug_generic_name: None,
+			manufacturer_name: None,
+			product_description: None,
+			mpid: None,
+			mpid_version: None,
+			phpid: None,
+			phpid_version: None,
+			investigational_product_blinded: None,
+			obtain_drug_country: None,
+			drug_authorization_number: None,
+			drug_authorization_country: None,
+			drug_authorization_holder: None,
+			holder_applicant_name_notation: None,
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
+			mfds_domestic_product_code: None,
+			mfds_domestic_ingredient_code: None,
+			mfds_udl_product_code: None,
+			mfds_udl_ingredient_code: None,
+			mfds_udl_manufacturer_code: None,
+			mfds_udl_manufacturer_name: None,
+			mfds_foreign_ich_product_code: None,
+			mfds_foreign_ich_ingredient_code: None,
+			mfds_foreign_ich_holder_code: None,
+			mfds_foreign_ich_holder_name: None,
+			mfds_foreign_e2b_product_code: None,
+			mfds_foreign_e2b_ingredient_code: None,
+			mfds_foreign_e2b_holder_code: None,
+			mfds_foreign_e2b_holder_name: None,
+		},
+	)
+	.await?;
 	let study_id = StudyPresaveBmc::create(
 		&ctx,
 		&mm,
@@ -1695,7 +1740,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		ProductPresaveFdaCrossReportedIndForCreate {
-			product_presave_id: product_id,
+			product_presave_id: fda_product_id,
 			sequence_number: 2,
 			ind_number: Some("IND-before".into()),
 		},
@@ -1712,10 +1757,12 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let ind = ProductPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, ind_id).await?;
-	assert_eq!(ind.product_presave_id, product_id);
+	assert_eq!(ind.product_presave_id, fda_product_id);
 	assert_eq!(ind.ind_number.as_deref(), Some("IND-after"));
 	assert!(ProductPresaveFdaCrossReportedIndBmc::list_by_parent(
-		&ctx, &mm, product_id
+		&ctx,
+		&mm,
+		fda_product_id
 	)
 	.await?
 	.iter()
@@ -1907,6 +1954,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	SenderPresaveGatewayBmc::delete(&ctx, &mm, gateway_first_id).await?;
 	NarrativePresaveBmc::delete(&ctx, &mm, narrative_id).await?;
 	StudyPresaveBmc::delete(&ctx, &mm, study_id).await?;
+	ProductPresaveBmc::delete(&ctx, &mm, fda_product_id).await?;
 	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
 	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
 	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;

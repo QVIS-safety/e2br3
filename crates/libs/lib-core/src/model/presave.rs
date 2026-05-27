@@ -1238,14 +1238,110 @@ pub struct ProductPresaveFdaCrossReportedIndForUpdate {
 	pub ind_number: Option<String>,
 }
 
-impl_child_bmc!(
-	ProductPresaveFdaCrossReportedIndBmc,
-	ProductPresaveFdaCrossReportedInd,
-	ProductPresaveFdaCrossReportedIndForCreate,
-	ProductPresaveFdaCrossReportedIndForUpdate,
-	"product_presave_fda_cross_reported_inds",
-	"product_presave_id"
-);
+pub struct ProductPresaveFdaCrossReportedIndBmc;
+
+impl DbBmc for ProductPresaveFdaCrossReportedIndBmc {
+	const TABLE: &'static str = "product_presave_fda_cross_reported_inds";
+}
+
+impl ProductPresaveFdaCrossReportedIndBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: ProductPresaveFdaCrossReportedIndForCreate,
+	) -> Result<Uuid> {
+		let parent =
+			ProductPresaveBmc::get(ctx, mm, data.product_presave_id).await?;
+		validate_product_fda_cross_reported_ind_parent(parent.authority)?;
+		base_uuid::create::<Self, _>(ctx, mm, data).await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<ProductPresaveFdaCrossReportedInd> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<ProductPresaveFdaCrossReportedInd>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: ProductPresaveFdaCrossReportedIndForUpdate,
+	) -> Result<()> {
+		let current: ProductPresaveFdaCrossReportedInd =
+			base_uuid::get::<Self, _>(ctx, mm, id).await?;
+		let parent =
+			ProductPresaveBmc::get(ctx, mm, current.product_presave_id).await?;
+		validate_product_fda_cross_reported_ind_parent(parent.authority)?;
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn list_by_parent(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		parent_id: Uuid,
+	) -> Result<Vec<ProductPresaveFdaCrossReportedInd>> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+
+		let sql = format!(
+			"SELECT * FROM {} WHERE product_presave_id = $1 ORDER BY sequence_number ASC, id ASC",
+			Self::TABLE
+		);
+		let rows = match dbx
+			.fetch_all(
+				sqlx::query_as::<_, ProductPresaveFdaCrossReportedInd>(&sql)
+					.bind(parent_id),
+			)
+			.await
+		{
+			Ok(rows) => rows,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		dbx.commit_txn().await?;
+		Ok(rows)
+	}
+}
+
+fn validate_product_fda_cross_reported_ind_parent(
+	authority: RegulatoryAuthority,
+) -> Result<()> {
+	validate_fda_only_field(
+		"product_presave_fda_cross_reported_inds",
+		authority,
+		"product_presave_id",
+		true,
+	)
+}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct ProductPresaveMfdsRegionalItem {
@@ -1275,14 +1371,110 @@ pub struct ProductPresaveMfdsRegionalItemForUpdate {
 	pub item_value: Option<String>,
 }
 
-impl_child_bmc!(
-	ProductPresaveMfdsRegionalItemBmc,
-	ProductPresaveMfdsRegionalItem,
-	ProductPresaveMfdsRegionalItemForCreate,
-	ProductPresaveMfdsRegionalItemForUpdate,
-	"product_presave_mfds_regional_items",
-	"product_presave_id"
-);
+pub struct ProductPresaveMfdsRegionalItemBmc;
+
+impl DbBmc for ProductPresaveMfdsRegionalItemBmc {
+	const TABLE: &'static str = "product_presave_mfds_regional_items";
+}
+
+impl ProductPresaveMfdsRegionalItemBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: ProductPresaveMfdsRegionalItemForCreate,
+	) -> Result<Uuid> {
+		let parent =
+			ProductPresaveBmc::get(ctx, mm, data.product_presave_id).await?;
+		validate_product_mfds_regional_item_parent(parent.authority)?;
+		base_uuid::create::<Self, _>(ctx, mm, data).await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<ProductPresaveMfdsRegionalItem> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<ProductPresaveMfdsRegionalItem>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: ProductPresaveMfdsRegionalItemForUpdate,
+	) -> Result<()> {
+		let current: ProductPresaveMfdsRegionalItem =
+			base_uuid::get::<Self, _>(ctx, mm, id).await?;
+		let parent =
+			ProductPresaveBmc::get(ctx, mm, current.product_presave_id).await?;
+		validate_product_mfds_regional_item_parent(parent.authority)?;
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn list_by_parent(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		parent_id: Uuid,
+	) -> Result<Vec<ProductPresaveMfdsRegionalItem>> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+
+		let sql = format!(
+			"SELECT * FROM {} WHERE product_presave_id = $1 ORDER BY sequence_number ASC, id ASC",
+			Self::TABLE
+		);
+		let rows = match dbx
+			.fetch_all(
+				sqlx::query_as::<_, ProductPresaveMfdsRegionalItem>(&sql)
+					.bind(parent_id),
+			)
+			.await
+		{
+			Ok(rows) => rows,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		dbx.commit_txn().await?;
+		Ok(rows)
+	}
+}
+
+fn validate_product_mfds_regional_item_parent(
+	authority: RegulatoryAuthority,
+) -> Result<()> {
+	validate_mfds_only_field(
+		"product_presave_mfds_regional_items",
+		authority,
+		"product_presave_id",
+		true,
+	)
+}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct ReporterPresave {
