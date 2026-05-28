@@ -6,6 +6,8 @@ Canonical presaves are reusable organization-scoped master data records. Saving 
 
 The backend BMC/domain layer is the source of truth. The frontend mirrors the same rules for user experience, but backend enforcement is required for every canonical write path.
 
+These rules are aligned to the INFO section of `QVIS Safety Database_UI Specification_20May2026_Updated(21May2026).pdf`. Where the PDF uses UI labels, this spec maps them to canonical backend fields.
+
 ## Scope
 
 In scope:
@@ -67,20 +69,28 @@ Required to save:
 
 - `sender_type`
 - `organization_name`
+- `person_given_name`
 
 Duplicate key within same organization:
 
-- `sender_type`
 - normalized `organization_name`
 
 Duplicate condition:
 
-- A non-deleted sender presave already exists in the same organization with the same `sender_type` and normalized `organization_name`.
+- A non-deleted sender presave already exists in the same organization with the same normalized `organization_name`.
 
 Frontend fields:
 
 - `senderType`
 - `senderOrganization`
+- `senderPersonGivenName`
+
+PDF mapping:
+
+- `sender_type` maps to `Sender Type (C.3.1)`.
+- `organization_name` maps to `Sender's Organisation (C.3.2)`.
+- `person_given_name` maps to `Sender's Given Name (C.3.3.3)`.
+- Duplicate blocking is based on `C.3.2`.
 
 ### Receiver
 
@@ -91,12 +101,11 @@ Required to save:
 
 Duplicate key within same organization:
 
-- `receiver_type`
 - normalized `organization_name`
 
 Duplicate condition:
 
-- A non-deleted receiver presave already exists in the same organization with the same `receiver_type` and normalized `organization_name`.
+- A non-deleted receiver presave already exists in the same organization with the same normalized `organization_name`.
 
 Frontend fields:
 
@@ -106,6 +115,8 @@ Frontend fields:
 Notes:
 
 - `receiverName` is not canonical identity. The canonical backend field is `organization_name`.
+- The PDF labels the required name field as `Receiver Name`; in the canonical backend this maps to `organization_name`.
+- `receiver_type` is still required, but the PDF duplicate rule names `Receiver Name`, so duplicate blocking is based on normalized `organization_name`.
 
 ### Product
 
@@ -113,7 +124,7 @@ Required to save:
 
 - `sender_presave_id`
 - at least one of:
-  - `medicinal_product`
+  - `product_id`
   - `preapproval_ip_name`
 
 Duplicate key within same organization:
@@ -123,20 +134,23 @@ Duplicate key within same organization:
 
 Duplicate conditions:
 
-- If both `medicinal_product` and `preapproval_ip_name` are present, a duplicate exists when a non-deleted product presave in the same organization has the same `sender_presave_id`, normalized `medicinal_product`, and normalized `preapproval_ip_name`.
-- If only `medicinal_product` is present, a duplicate exists when a non-deleted product presave in the same organization has the same `sender_presave_id` and normalized `medicinal_product`.
+- If both `product_id` and `preapproval_ip_name` are present, a duplicate exists when a non-deleted product presave in the same organization has the same `sender_presave_id`, normalized `product_id`, and normalized `preapproval_ip_name`.
+- If only `product_id` is present, a duplicate exists when a non-deleted product presave in the same organization has the same `sender_presave_id` and normalized `product_id`.
 - If only `preapproval_ip_name` is present, a duplicate exists when a non-deleted product presave in the same organization has the same `sender_presave_id` and normalized `preapproval_ip_name`.
 
 Frontend fields:
 
 - `senderPresaveId`
-- `medicinalProduct`
+- `productId`
 - `preApprovalIpName`
 
 Notes:
 
 - Free-text `sender` does not satisfy the sender requirement. Product must reference a selected canonical sender presave.
 - `drugCharacterization` is not required for presave save.
+- `medicinal_product` is not a minimal save identity for this rule. The PDF requires one of `Product ID` or `IP Name`.
+- `product_id` maps to PDF `Product ID`.
+- `preapproval_ip_name` maps to PDF `IP Name`.
 
 ### Reporter
 
@@ -167,30 +181,31 @@ Frontend fields:
 Required to save:
 
 - `product_presave_id`
-- at least one of:
-  - `sponsor_study_number`
-  - `study_name`
+- `sponsor_study_number`
+- `study_name`
+- `study_type_reaction`
 
 Duplicate key within same organization:
 
 - `product_presave_id`
-- study identity, using the provided study identity fields
+- normalized `sponsor_study_number`
 
-Duplicate conditions:
+Duplicate condition:
 
-- If both `sponsor_study_number` and `study_name` are present, a duplicate exists when a non-deleted study presave in the same organization has the same `product_presave_id`, normalized `sponsor_study_number`, and normalized `study_name`.
-- If only `sponsor_study_number` is present, a duplicate exists when a non-deleted study presave in the same organization has the same `product_presave_id` and normalized `sponsor_study_number`.
-- If only `study_name` is present, a duplicate exists when a non-deleted study presave in the same organization has the same `product_presave_id` and normalized `study_name`.
+- A non-deleted study presave already exists in the same organization with the same `product_presave_id` and normalized `sponsor_study_number`.
 
 Frontend fields:
 
 - `productPresaveId`
 - `sponsorStudyNumber`
 - `studyName`
+- `studyTypeReaction`
 
 Notes:
 
 - Study must remain tied to a selected canonical product presave.
+- The PDF lists `Sponsor Study No. (C.5.3)`, `Study Name (C.5.2)`, Product ID, and `Study Type Where Reaction(s) / Event(s) Were Observed (C.5.4)` in the Study INFO row, then states all required fields must be entered.
+- The duplicate note says `C.5.3` duplicate should be removed/prevented, so duplicate blocking is based on sponsor study number within the selected product.
 
 ### Narrative
 
@@ -231,8 +246,8 @@ Duplicate identity:
 
 Example messages:
 
-- `Sender presave requires sender_type and organization_name`
-- `Product presave requires sender_presave_id and either medicinal_product or preapproval_ip_name`
+- `Sender presave requires sender_type, organization_name, and person_given_name`
+- `Product presave requires sender_presave_id and either product_id or preapproval_ip_name`
 - `Product presave already exists for this sender and product identity`
 - `Study presave already exists for this product and study identity`
 
@@ -242,7 +257,7 @@ Update validation evaluates the final persisted record, not only the patch paylo
 
 Examples:
 
-- If an existing product already has `sender_presave_id` and `medicinal_product`, updating only comments is valid.
+- If an existing product already has `sender_presave_id` and `product_id`, updating only comments is valid.
 - If an update clears the last product identity field, the update is rejected.
 - If an update changes product identity to match another non-deleted product under the same sender, the update is rejected with conflict.
 - If an update only soft-deletes a record, duplicate validation is skipped.
@@ -263,9 +278,12 @@ Frontend tests:
 
 - Section forms block missing minimal identity before submit.
 - Product requires selected canonical sender and one product identity.
+- Product identity is one of `productId` or `preApprovalIpName`.
 - Product no longer requires `drugCharacterization`.
 - Receiver uses `receiverOrganization` as canonical identity and does not require `receiverName`.
 - Reporter requires qualification.
+- Sender requires sender person given name.
+- Study requires product, sponsor study number, study name, and study type reaction.
 - Backend `409 Conflict` responses are displayed to the user.
 
 ## Acceptance Criteria
