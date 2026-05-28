@@ -2,11 +2,24 @@ use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
-use lib_core::ctx::ROLE_SYSTEM_ADMIN;
+use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN};
+use lib_core::model::drug::{DrugInformationBmc, DrugInformationForCreate};
+use lib_core::model::narrative::{
+	NarrativeInformationBmc, NarrativeInformationForCreate,
+};
+use lib_core::model::patient::{PatientInformationBmc, PatientInformationForCreate};
+use lib_core::model::reaction::{ReactionBmc, ReactionForCreate};
+use lib_core::model::safety_report::{
+	PrimarySourceBmc, PrimarySourceForCreate, SafetyReportIdentificationBmc,
+	SafetyReportIdentificationForCreate, SenderInformationBmc,
+	SenderInformationForCreate,
+};
 use lib_core::model::store::{set_org_context, set_user_context};
+use rust_decimal::Decimal;
 use serde_json::{json, Value};
 use serial_test::serial;
 use std::io::Cursor;
+use time::{Date, Month};
 use tower::ServiceExt;
 use uuid::Uuid;
 use zip::ZipArchive;
@@ -138,6 +151,200 @@ async fn insert_validated_raw_case_with_xml(
 	Ok(case_id)
 }
 
+async fn seed_cioms_case_data(
+	mm: &lib_core::model::ModelManager,
+	org_id: Uuid,
+	user_id: Uuid,
+	case_id: Uuid,
+) -> Result<()> {
+	let ctx = Ctx::new(user_id, org_id, ROLE_SPONSOR_ADMIN_CRO.to_string())?;
+	SafetyReportIdentificationBmc::create(
+		&ctx,
+		mm,
+		SafetyReportIdentificationForCreate {
+			case_id,
+			transmission_date: Some(Date::from_calendar_date(2026, Month::May, 28)?),
+			transmission_date_null_flavor: None,
+			report_type: Some("1".to_string()),
+			date_first_received_from_source: Some(Date::from_calendar_date(
+				2026,
+				Month::May,
+				20,
+			)?),
+			date_first_received_from_source_null_flavor: None,
+			date_of_most_recent_information: Some(Date::from_calendar_date(
+				2026,
+				Month::May,
+				27,
+			)?),
+			date_of_most_recent_information_null_flavor: None,
+			fulfil_expedited_criteria: Some(true),
+			local_criteria_report_type: None,
+			combination_product_report_indicator: None,
+			first_sender_type: Some("1".to_string()),
+			additional_documents_available: Some(false),
+			other_case_identifiers_exist: Some(false),
+			worldwide_unique_id: Some("WW-CASE-9001".to_string()),
+			nullification_code: None,
+			nullification_reason: None,
+			receiver_organization: Some("Global Receiver".to_string()),
+		},
+	)
+	.await?;
+	PatientInformationBmc::create(
+		&ctx,
+		mm,
+		PatientInformationForCreate {
+			case_id,
+			patient_initials: Some("AB".to_string()),
+			patient_given_name: None,
+			patient_family_name: None,
+			patient_initials_null_flavor: None,
+			birth_date: Some(Date::from_calendar_date(1980, Month::March, 14)?),
+			birth_date_null_flavor: None,
+			age_at_time_of_onset: Some(Decimal::new(451, 1)),
+			age_at_time_of_onset_null_flavor: None,
+			age_unit: Some("a".to_string()),
+			gestation_period: None,
+			gestation_period_unit: None,
+			age_group: None,
+			weight_kg: None,
+			height_cm: None,
+			sex: Some("1".to_string()),
+			sex_null_flavor: None,
+			race_code: None,
+			ethnicity_code: None,
+			last_menstrual_period_date: None,
+			last_menstrual_period_date_null_flavor: None,
+			medical_history_text: Some(
+				"Hypertension; shellfish allergy".to_string(),
+			),
+			concomitant_therapy: Some(true),
+		},
+	)
+	.await?;
+	ReactionBmc::create(
+		&ctx,
+		mm,
+		ReactionForCreate {
+			case_id,
+			sequence_number: 1,
+			primary_source_reaction: "Anaphylactic reaction".to_string(),
+			primary_source_reaction_translation: None,
+			reaction_language: Some("en".to_string()),
+			reaction_meddra_code: Some("10002198".to_string()),
+			reaction_meddra_version: Some("27.0".to_string()),
+			term_highlighted: Some(true),
+			serious: Some(true),
+			criteria_death: Some(false),
+			criteria_death_null_flavor: None,
+			criteria_life_threatening: Some(true),
+			criteria_life_threatening_null_flavor: None,
+			criteria_hospitalization: Some(true),
+			criteria_hospitalization_null_flavor: None,
+			criteria_disabling: Some(false),
+			criteria_disabling_null_flavor: None,
+			criteria_congenital_anomaly: Some(false),
+			criteria_congenital_anomaly_null_flavor: None,
+			criteria_other_medically_important: Some(false),
+			criteria_other_medically_important_null_flavor: None,
+			required_intervention: None,
+			start_date: Some(Date::from_calendar_date(2026, Month::May, 18)?),
+			start_date_null_flavor: None,
+			end_date: Some(Date::from_calendar_date(2026, Month::May, 19)?),
+			end_date_null_flavor: None,
+			duration_value: None,
+			duration_unit: None,
+			outcome: Some("2".to_string()),
+			medical_confirmation: Some(true),
+			country_code: Some("KR".to_string()),
+		},
+	)
+	.await?;
+	DrugInformationBmc::create(
+		&ctx,
+		mm,
+		DrugInformationForCreate {
+			case_id,
+			sequence_number: 1,
+			drug_characterization: "1".to_string(),
+			medicinal_product: "Amoxicillin capsule".to_string(),
+			drug_generic_name: Some("Amoxicillin".to_string()),
+			brand_name: Some("Amoxil".to_string()),
+			dosage_text: Some("500 mg twice daily".to_string()),
+			action_taken: Some("1".to_string()),
+			rechallenge: Some("3".to_string()),
+			manufacturer_name: Some("Acme Pharma".to_string()),
+			..Default::default()
+		},
+	)
+	.await?;
+	PrimarySourceBmc::create(
+		&ctx,
+		mm,
+		PrimarySourceForCreate {
+			case_id,
+			sequence_number: 1,
+			reporter_title: Some("Dr".to_string()),
+			reporter_given_name: Some("Mina".to_string()),
+			reporter_middle_name: None,
+			reporter_family_name: Some("Kim".to_string()),
+			organization: Some("Seoul General Hospital".to_string()),
+			department: None,
+			street: None,
+			city: Some("Seoul".to_string()),
+			state: None,
+			postcode: None,
+			telephone: None,
+			country_code: Some("KR".to_string()),
+			email: None,
+			qualification: Some("1".to_string()),
+			qualification_kr1: None,
+			primary_source_regulatory: Some("1".to_string()),
+		},
+	)
+	.await?;
+	SenderInformationBmc::create(
+		&ctx,
+		mm,
+		SenderInformationForCreate {
+			case_id,
+			sender_type: Some("2".to_string()),
+			organization_name: Some("Acme Safety".to_string()),
+			department: Some("Pharmacovigilance".to_string()),
+			street_address: Some("1 Safety-ro".to_string()),
+			city: Some("Seoul".to_string()),
+			state: None,
+			postcode: Some("04524".to_string()),
+			country_code: Some("KR".to_string()),
+			person_title: None,
+			person_given_name: Some("Jun".to_string()),
+			person_middle_name: None,
+			person_family_name: Some("Park".to_string()),
+			telephone: Some("+82-2-555-0100".to_string()),
+			fax: None,
+			email: Some("pv@example.test".to_string()),
+		},
+	)
+	.await?;
+	NarrativeInformationBmc::create(
+		&ctx,
+		mm,
+		NarrativeInformationForCreate {
+			case_id,
+			case_narrative:
+				"Patient developed throat tightness and urticaria after dosing."
+					.to_string(),
+			reporter_comments: Some(
+				"Reporter considered the reaction related.".to_string(),
+			),
+			sender_comments: None,
+		},
+	)
+	.await?;
+	Ok(())
+}
+
 #[serial]
 #[tokio::test]
 async fn test_cioms_pdf_export_returns_pdf() -> Result<()> {
@@ -200,6 +407,122 @@ async fn test_cioms_pdf_export_returns_pdf() -> Result<()> {
 	assert!(pdf.contains("CIOMS"), "{pdf}");
 	assert!(pdf.contains(&safety_report_id), "{pdf}");
 	assert!(pdf.contains("Landscape"), "{pdf}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_cioms_pdf_export_renders_case_data_in_cioms_form() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let safety_report_id = format!("SR-CIOMS-DATA-{}", Uuid::new_v4());
+	let case_id = insert_validated_raw_case(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		&safety_report_id,
+	)
+	.await?;
+	seed_cioms_case_data(&mm, seed.org_id, seed.admin.id, case_id).await?;
+
+	let response = get_response(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/cioms.pdf"),
+	)
+	.await?;
+	let status = response.status();
+	let bytes = to_bytes(response.into_body(), usize::MAX).await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&bytes)
+	);
+	let pdf = String::from_utf8_lossy(&bytes);
+
+	assert!(pdf.contains("CIOMS FORM"), "{pdf}");
+	assert!(pdf.contains("SUSPECT ADVERSE REACTION REPORT"), "{pdf}");
+	assert!(pdf.contains("I. REACTION INFORMATION"), "{pdf}");
+	assert!(pdf.contains("II. SUSPECT DRUG\\(S\\) INFORMATION"), "{pdf}");
+	assert!(pdf.contains("III. CONCOMITANT DRUGS AND HISTORY"), "{pdf}");
+	assert!(pdf.contains("IV. MANUFACTURER INFORMATION"), "{pdf}");
+	assert!(pdf.contains("AB"), "{pdf}");
+	assert!(pdf.contains("1980-03-14"), "{pdf}");
+	assert!(pdf.contains("45.1 years"), "{pdf}");
+	assert!(pdf.contains("Male"), "{pdf}");
+	assert!(pdf.contains("Anaphylactic reaction"), "{pdf}");
+	assert!(
+		pdf.contains(
+			"Patient developed throat tightness and urticaria after dosing."
+		),
+		"{pdf}"
+	);
+	assert!(pdf.contains("Amoxicillin capsule"), "{pdf}");
+	assert!(pdf.contains("500 mg twice daily"), "{pdf}");
+	assert!(pdf.contains("Hypertension; shellfish allergy"), "{pdf}");
+	assert!(pdf.contains("Acme Safety"), "{pdf}");
+	assert!(pdf.contains(&safety_report_id), "{pdf}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_cioms_pdf_export_portrait_setting_changes_layout() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let safety_report_id = format!("SR-CIOMS-PORTRAIT-{}", Uuid::new_v4());
+	let case_id = insert_validated_raw_case(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		&safety_report_id,
+	)
+	.await?;
+	seed_cioms_case_data(&mm, seed.org_id, seed.admin.id, case_id).await?;
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		"/api/admin/settings",
+		json!({
+			"data": {
+				"orientation": "Portrait",
+				"data_ordering": "Primary data will appear first"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let response = get_response(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/cioms.pdf"),
+	)
+	.await?;
+	let status = response.status();
+	let bytes = to_bytes(response.into_body(), usize::MAX).await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&bytes)
+	);
+	let pdf = String::from_utf8_lossy(&bytes);
+
+	assert!(pdf.contains("/MediaBox [0 0 595 842]"), "{pdf}");
+	assert!(pdf.contains("CIOMS layout: Portrait"), "{pdf}");
+	assert!(pdf.contains("Anaphylactic reaction"), "{pdf}");
+	assert!(pdf.contains("Amoxicillin capsule"), "{pdf}");
 
 	Ok(())
 }
