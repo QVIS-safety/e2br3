@@ -39,6 +39,80 @@ struct CiomsCaseData {
 	narrative: Option<NarrativeInformation>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct CiomsFormData {
+	case_number: String,
+	patient_initials: String,
+	patient_birth_date: String,
+	patient_age: String,
+	patient_sex: String,
+	reaction_country: String,
+	reaction_dates: String,
+	reaction_description: String,
+	suspect_drug_name: String,
+	suspect_drug_dose: String,
+	medical_history: String,
+	manufacturer_address: String,
+	reporter_name: String,
+	report_type: String,
+}
+
+impl CiomsFormData {
+	fn from_case_data(data: &CiomsCaseData, _settings: &CiomsSettings) -> Self {
+		let patient = data.patient.as_ref();
+		let first_reaction = data.reactions.first();
+		let source = data.primary_sources.first();
+		let suspect_drug = data
+			.drugs
+			.iter()
+			.find(|drug| drug.drug_characterization == "1")
+			.or_else(|| data.drugs.first());
+		let narrative = data.narrative.as_ref();
+		let report = data.report.as_ref();
+
+		Self {
+			case_number: data.case_number.clone(),
+			patient_initials: patient
+				.and_then(|patient| patient.patient_initials.clone())
+				.unwrap_or_default(),
+			patient_birth_date: date_text(
+				patient.and_then(|patient| patient.birth_date),
+			),
+			patient_age: patient_age(patient),
+			patient_sex: sex_text(
+				patient.and_then(|patient| patient.sex.as_deref()),
+			)
+			.to_string(),
+			reaction_country: first_reaction
+				.and_then(|reaction| reaction.country_code.clone())
+				.or_else(|| source.and_then(|source| source.country_code.clone()))
+				.unwrap_or_default(),
+			reaction_dates: reaction_dates(first_reaction),
+			reaction_description: join_present(
+				&[
+					first_reaction
+						.map(|reaction| reaction.primary_source_reaction.clone()),
+					narrative.map(|narrative| narrative.case_narrative.clone()),
+				],
+				" - ",
+			),
+			suspect_drug_name: drug_name(suspect_drug),
+			suspect_drug_dose: suspect_drug
+				.and_then(|drug| drug.dosage_text.clone())
+				.unwrap_or_default(),
+			medical_history: patient
+				.and_then(|patient| patient.medical_history_text.clone())
+				.unwrap_or_default(),
+			manufacturer_address: sender_address(data.senders.first()),
+			reporter_name: reporter_name(source),
+			report_type: report_type_text(
+				report.and_then(|report| report.report_type.as_deref()),
+			)
+			.to_string(),
+		}
+	}
+}
+
 async fn load_cioms_settings(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -1067,4 +1141,99 @@ pub async fn export_case_cioms_pdf(
 		})?,
 	);
 	Ok(response)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use sqlx::types::time::OffsetDateTime;
+
+	fn test_uuid() -> Uuid {
+		Uuid::parse_str("11111111-1111-4111-8111-111111111111")
+			.expect("valid test uuid")
+	}
+
+	fn test_time() -> OffsetDateTime {
+		OffsetDateTime::UNIX_EPOCH
+	}
+
+	fn default_settings() -> CiomsSettings {
+		CiomsSettings {
+			orientation: "Landscape".to_string(),
+			data_ordering: "Primary data will appear first".to_string(),
+		}
+	}
+
+	#[test]
+	fn cioms_form_data_maps_missing_optional_sections_to_blank_fields() {
+		let data = CiomsCaseData {
+			case_number: "SR-MISSING".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let form = CiomsFormData::from_case_data(&data, &default_settings());
+
+		assert_eq!(form.case_number, "SR-MISSING");
+		assert_eq!(form.patient_initials, "");
+		assert_eq!(form.patient_birth_date, "");
+		assert_eq!(form.patient_age, "");
+		assert_eq!(form.patient_sex, "");
+		assert_eq!(form.reaction_country, "");
+		assert_eq!(form.reaction_dates, "");
+		assert_eq!(form.reaction_description, "");
+		assert_eq!(form.suspect_drug_name, "");
+		assert_eq!(form.suspect_drug_dose, "");
+		assert_eq!(form.medical_history, "");
+		assert_eq!(form.manufacturer_address, "");
+		assert_eq!(form.reporter_name, "");
+		assert_eq!(form.report_type, "");
+	}
+
+	#[test]
+	fn cioms_form_data_maps_primary_source_reporter_name() {
+		let data = CiomsCaseData {
+			case_number: "SR-REPORTER".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: Vec::new(),
+			primary_sources: vec![PrimarySource {
+				id: test_uuid(),
+				case_id: test_uuid(),
+				sequence_number: 1,
+				reporter_title: Some("Dr".to_string()),
+				reporter_given_name: Some("Mina".to_string()),
+				reporter_middle_name: Some("J".to_string()),
+				reporter_family_name: Some("Kim".to_string()),
+				organization: Some("Seoul General Hospital".to_string()),
+				department: None,
+				street: None,
+				city: None,
+				state: None,
+				postcode: None,
+				telephone: None,
+				country_code: Some("KR".to_string()),
+				email: None,
+				qualification: None,
+				qualification_kr1: None,
+				primary_source_regulatory: None,
+				created_at: test_time(),
+				updated_at: test_time(),
+				created_by: test_uuid(),
+				updated_by: None,
+			}],
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let form = CiomsFormData::from_case_data(&data, &default_settings());
+
+		assert_eq!(form.reporter_name, "Dr Mina J Kim");
+	}
 }
