@@ -39,6 +39,53 @@ struct CiomsCaseData {
 	narrative: Option<NarrativeInformation>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CiomsBox {
+	x: i32,
+	y: i32,
+	w: i32,
+	h: i32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CiomsLandscapeTemplate {
+	page_width: i32,
+	page_height: i32,
+	reaction_information: CiomsBox,
+	suspect_drug_information: CiomsBox,
+	concomitant_history: CiomsBox,
+	manufacturer_information: CiomsBox,
+}
+
+const CIOMS_LANDSCAPE_TEMPLATE: CiomsLandscapeTemplate = CiomsLandscapeTemplate {
+	page_width: 842,
+	page_height: 595,
+	reaction_information: CiomsBox {
+		x: 30,
+		y: 357,
+		w: 782,
+		h: 168,
+	},
+	suspect_drug_information: CiomsBox {
+		x: 30,
+		y: 239,
+		w: 782,
+		h: 92,
+	},
+	concomitant_history: CiomsBox {
+		x: 30,
+		y: 151,
+		w: 782,
+		h: 60,
+	},
+	manufacturer_information: CiomsBox {
+		x: 30,
+		y: 53,
+		w: 782,
+		h: 68,
+	},
+};
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct CiomsFormData {
 	case_number: String,
@@ -502,6 +549,7 @@ fn render_landscape_cioms(
 	width: i32,
 	height: i32,
 ) {
+	let template = CIOMS_LANDSCAPE_TEMPLATE;
 	let first_reaction = data.reactions.first();
 	let suspect_drug = data
 		.drugs
@@ -537,11 +585,16 @@ fn render_landscape_cioms(
 	);
 
 	canvas.rect(24, 24, width - 48, height - 62);
-	canvas.text(30, height - 58, 9, "I. REACTION INFORMATION");
+	canvas.text(
+		30,
+		template.reaction_information.y + template.reaction_information.h + 12,
+		9,
+		"I. REACTION INFORMATION",
+	);
 	render_box(
 		canvas,
-		30,
-		height - 116,
+		template.reaction_information.x,
+		template.reaction_information.y + 122,
 		95,
 		46,
 		"1. PATIENT INITIALS",
@@ -553,8 +606,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		125,
-		height - 116,
+		template.reaction_information.x + 95,
+		template.reaction_information.y + 122,
 		68,
 		46,
 		"1a. COUNTRY",
@@ -567,8 +620,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		193,
-		height - 116,
+		template.reaction_information.x + 163,
+		template.reaction_information.y + 122,
 		90,
 		46,
 		"2. DATE OF BIRTH",
@@ -578,8 +631,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		283,
-		height - 116,
+		template.reaction_information.x + 253,
+		template.reaction_information.y + 122,
 		70,
 		46,
 		"2a. AGE",
@@ -589,8 +642,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		353,
-		height - 116,
+		template.reaction_information.x + 323,
+		template.reaction_information.y + 122,
 		55,
 		46,
 		"3. SEX",
@@ -600,8 +653,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		408,
-		height - 116,
+		template.reaction_information.x + 378,
+		template.reaction_information.y + 122,
 		118,
 		46,
 		"4-6. REACTION ONSET",
@@ -611,8 +664,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		526,
-		height - 116,
+		template.reaction_information.x + 496,
+		template.reaction_information.y + 122,
 		286,
 		46,
 		"8-12 CHECK ALL APPROPRIATE TO ADVERSE REACTION",
@@ -623,14 +676,14 @@ fn render_landscape_cioms(
 	render_checkbox(
 		canvas,
 		536,
-		height - 101,
+		template.reaction_information.y + 137,
 		"PATIENT DIED",
 		first_reaction.map(|r| r.criteria_death).unwrap_or(false),
 	);
 	render_checkbox(
 		canvas,
 		632,
-		height - 101,
+		template.reaction_information.y + 137,
 		"HOSPITALIZATION",
 		first_reaction
 			.map(|r| r.criteria_hospitalization)
@@ -639,7 +692,7 @@ fn render_landscape_cioms(
 	render_checkbox(
 		canvas,
 		736,
-		height - 101,
+		template.reaction_information.y + 137,
 		"LIFE THREATENING",
 		first_reaction
 			.map(|r| r.criteria_life_threatening)
@@ -647,9 +700,9 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		30,
-		height - 238,
-		782,
+		template.reaction_information.x,
+		template.reaction_information.y,
+		template.reaction_information.w,
 		122,
 		"7 + 13 DESCRIBE REACTION(S) (including relevant tests/lab data)",
 		&reaction_text,
@@ -657,11 +710,18 @@ fn render_landscape_cioms(
 		8,
 	);
 
-	canvas.text(30, height - 258, 9, "II. SUSPECT DRUG(S) INFORMATION");
+	canvas.text(
+		30,
+		template.suspect_drug_information.y
+			+ template.suspect_drug_information.h
+			+ 10,
+		9,
+		"II. SUSPECT DRUG(S) INFORMATION",
+	);
 	render_box(
 		canvas,
-		30,
-		height - 306,
+		template.suspect_drug_information.x,
+		template.suspect_drug_information.y + 50,
 		286,
 		42,
 		"14. SUSPECT DRUG 1 of 1 (include generic name)",
@@ -671,8 +731,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		316,
-		height - 306,
+		template.suspect_drug_information.x + 286,
+		template.suspect_drug_information.y + 50,
 		130,
 		42,
 		"15. DAILY DOSE(S)",
@@ -684,8 +744,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		446,
-		height - 306,
+		template.suspect_drug_information.x + 416,
+		template.suspect_drug_information.y + 50,
 		130,
 		42,
 		"16. ROUTE(S) OF ADMINISTRATION",
@@ -695,8 +755,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		576,
-		height - 306,
+		template.suspect_drug_information.x + 546,
+		template.suspect_drug_information.y + 50,
 		118,
 		42,
 		"20. DID REACTION ABATE AFTER STOPPING DRUG?",
@@ -706,8 +766,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		694,
-		height - 306,
+		template.suspect_drug_information.x + 664,
+		template.suspect_drug_information.y + 50,
 		118,
 		42,
 		"21. DID REACTION REAPPEAR AFTER REINTRODUCTION?",
@@ -717,8 +777,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		30,
-		height - 356,
+		template.suspect_drug_information.x,
+		template.suspect_drug_information.y,
 		286,
 		50,
 		"17. INDICATION(S) FOR USE",
@@ -728,8 +788,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		316,
-		height - 356,
+		template.suspect_drug_information.x + 286,
+		template.suspect_drug_information.y,
 		260,
 		50,
 		"18. THERAPY DATES (from/to)",
@@ -739,8 +799,8 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		576,
-		height - 356,
+		template.suspect_drug_information.x + 546,
+		template.suspect_drug_information.y,
 		236,
 		50,
 		"19. THERAPY DURATION",
@@ -749,7 +809,12 @@ fn render_landscape_cioms(
 		1,
 	);
 
-	canvas.text(30, height - 376, 9, "III. CONCOMITANT DRUGS AND HISTORY");
+	canvas.text(
+		30,
+		template.concomitant_history.y + template.concomitant_history.h + 8,
+		9,
+		"III. CONCOMITANT DRUGS AND HISTORY",
+	);
 	let concomitant = data
 		.drugs
 		.iter()
@@ -757,13 +822,13 @@ fn render_landscape_cioms(
 		.map(|drug| drug.medicinal_product.as_str())
 		.collect::<Vec<_>>()
 		.join("; ");
-	render_box(canvas, 30, height - 444, 380, 60, "22. CONCOMITANT DRUG(S) AND DATES OF ADMINISTRATION (exclude those used to treat reaction)", &concomitant, 56, 3);
+	render_box(canvas, template.concomitant_history.x, template.concomitant_history.y, 380, template.concomitant_history.h, "22. CONCOMITANT DRUG(S) AND DATES OF ADMINISTRATION (exclude those used to treat reaction)", &concomitant, 56, 3);
 	render_box(
 		canvas,
-		410,
-		height - 444,
+		template.concomitant_history.x + 380,
+		template.concomitant_history.y,
 		402,
-		60,
+		template.concomitant_history.h,
 		"23. OTHER RELEVANT HISTORY (e.g. diagnostics, allergies, pregnancy with last month of period, etc.)",
 		patient
 			.and_then(|p| p.medical_history_text.as_deref())
@@ -772,13 +837,20 @@ fn render_landscape_cioms(
 		3,
 	);
 
-	canvas.text(30, height - 464, 9, "IV. MANUFACTURER INFORMATION");
+	canvas.text(
+		30,
+		template.manufacturer_information.y
+			+ template.manufacturer_information.h
+			+ 10,
+		9,
+		"IV. MANUFACTURER INFORMATION",
+	);
 	render_box(
 		canvas,
-		30,
-		height - 542,
+		template.manufacturer_information.x,
+		template.manufacturer_information.y,
 		290,
-		68,
+		template.manufacturer_information.h,
 		"24a. NAME AND ADDRESS OF MANUFACTURER",
 		&sender_address(sender),
 		42,
@@ -786,10 +858,10 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		320,
-		height - 542,
+		template.manufacturer_information.x + 290,
+		template.manufacturer_information.y,
 		138,
-		68,
+		template.manufacturer_information.h,
 		"24b. MFR CONTROL NO.",
 		&data.case_number,
 		20,
@@ -797,10 +869,10 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		458,
-		height - 542,
+		template.manufacturer_information.x + 428,
+		template.manufacturer_information.y,
 		124,
-		68,
+		template.manufacturer_information.h,
 		"24c. DATE RECEIVED BY MANUFACTURER",
 		&date_text(report.and_then(|r| r.date_first_received_from_source)),
 		18,
@@ -808,10 +880,10 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		582,
-		height - 542,
+		template.manufacturer_information.x + 552,
+		template.manufacturer_information.y,
 		110,
-		68,
+		template.manufacturer_information.h,
 		"DATE OF THIS REPORT",
 		&date_text(report.and_then(|r| r.transmission_date)),
 		16,
@@ -819,10 +891,10 @@ fn render_landscape_cioms(
 	);
 	render_box(
 		canvas,
-		692,
-		height - 542,
+		template.manufacturer_information.x + 662,
+		template.manufacturer_information.y,
 		120,
-		68,
+		template.manufacturer_information.h,
 		"25a. REPORT TYPE",
 		report_type_text(report.and_then(|r| r.report_type.as_deref())),
 		18,
@@ -1053,7 +1125,10 @@ fn build_cioms_pdf(data: &CiomsCaseData, settings: &CiomsSettings) -> Vec<u8> {
 	let (width, height) = if settings.orientation == "Portrait" {
 		(595, 842)
 	} else {
-		(842, 595)
+		(
+			CIOMS_LANDSCAPE_TEMPLATE.page_width,
+			CIOMS_LANDSCAPE_TEMPLATE.page_height,
+		)
 	};
 	let mut ordered = data.clone();
 	if settings
@@ -1235,5 +1310,47 @@ mod tests {
 		let form = CiomsFormData::from_case_data(&data, &default_settings());
 
 		assert_eq!(form.reporter_name, "Dr Mina J Kim");
+	}
+
+	#[test]
+	fn cioms_landscape_template_defines_official_major_boxes() {
+		assert_eq!(CIOMS_LANDSCAPE_TEMPLATE.page_width, 842);
+		assert_eq!(CIOMS_LANDSCAPE_TEMPLATE.page_height, 595);
+		assert_eq!(
+			CIOMS_LANDSCAPE_TEMPLATE.reaction_information,
+			CiomsBox {
+				x: 30,
+				y: 357,
+				w: 782,
+				h: 168
+			}
+		);
+		assert_eq!(
+			CIOMS_LANDSCAPE_TEMPLATE.suspect_drug_information,
+			CiomsBox {
+				x: 30,
+				y: 239,
+				w: 782,
+				h: 92
+			}
+		);
+		assert_eq!(
+			CIOMS_LANDSCAPE_TEMPLATE.concomitant_history,
+			CiomsBox {
+				x: 30,
+				y: 151,
+				w: 782,
+				h: 60
+			}
+		);
+		assert_eq!(
+			CIOMS_LANDSCAPE_TEMPLATE.manufacturer_information,
+			CiomsBox {
+				x: 30,
+				y: 53,
+				w: 782,
+				h: 68
+			}
+		);
 	}
 }
