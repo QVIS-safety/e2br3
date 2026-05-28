@@ -16,76 +16,6 @@ pub struct PresaveListFilter {
 	pub deleted: Option<OpValsBool>,
 }
 
-macro_rules! impl_parent_bmc {
-	(
-		$bmc:ident,
-		$model:ty,
-		$create:ty,
-		$update:ty,
-		$table:literal
-	) => {
-		pub struct $bmc;
-
-		impl DbBmc for $bmc {
-			const TABLE: &'static str = $table;
-		}
-
-		impl $bmc {
-			pub async fn create(
-				ctx: &Ctx,
-				mm: &ModelManager,
-				data: $create,
-			) -> Result<Uuid> {
-				base_uuid::create::<Self, _>(
-					ctx,
-					mm,
-					data.into_insert(ctx.organization_id()),
-				)
-				.await
-			}
-
-			pub async fn get(
-				ctx: &Ctx,
-				mm: &ModelManager,
-				id: Uuid,
-			) -> Result<$model> {
-				base_uuid::get::<Self, _>(ctx, mm, id).await
-			}
-
-			pub async fn list(
-				ctx: &Ctx,
-				mm: &ModelManager,
-				list_options: Option<ListOptions>,
-			) -> Result<Vec<$model>> {
-				base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
-					ctx,
-					mm,
-					None,
-					list_options,
-				)
-				.await
-			}
-
-			pub async fn update(
-				ctx: &Ctx,
-				mm: &ModelManager,
-				id: Uuid,
-				data: $update,
-			) -> Result<()> {
-				base_uuid::update::<Self, _>(ctx, mm, id, data).await
-			}
-
-			pub async fn delete(
-				ctx: &Ctx,
-				mm: &ModelManager,
-				id: Uuid,
-			) -> Result<()> {
-				base_uuid::delete::<Self>(ctx, mm, id).await
-			}
-		}
-	};
-}
-
 macro_rules! impl_child_bmc {
 	(
 		$bmc:ident,
@@ -203,6 +133,29 @@ fn validate_allowed_optional_text(
 	Ok(())
 }
 
+fn normalized_text(value: Option<&str>) -> Option<String> {
+	value
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+		.map(|value| value.to_ascii_lowercase())
+}
+
+fn require_identity(condition: bool, message: &str) -> Result<()> {
+	if condition {
+		Ok(())
+	} else {
+		Err(crate::model::Error::Validation {
+			message: message.to_string(),
+		})
+	}
+}
+
+fn duplicate_identity(message: &str) -> crate::model::Error {
+	crate::model::Error::Conflict {
+		message: message.to_string(),
+	}
+}
+
 trait IntoOrgScopedCreate {
 	type Insert: HasSeaFields;
 
@@ -219,6 +172,7 @@ pub struct SenderPresave {
 	pub is_default: bool,
 	pub sender_type: Option<String>,
 	pub organization_name: Option<String>,
+	pub person_given_name: Option<String>,
 	pub department: Option<String>,
 	pub street_address: Option<String>,
 	pub city: Option<String>,
@@ -241,6 +195,7 @@ pub struct SenderPresaveForCreate {
 	pub is_default: Option<bool>,
 	pub sender_type: Option<String>,
 	pub organization_name: Option<String>,
+	pub person_given_name: Option<String>,
 	pub department: Option<String>,
 	pub street_address: Option<String>,
 	pub city: Option<String>,
@@ -260,6 +215,7 @@ struct SenderPresaveForInsert {
 	is_default: Option<bool>,
 	sender_type: Option<String>,
 	organization_name: Option<String>,
+	person_given_name: Option<String>,
 	department: Option<String>,
 	street_address: Option<String>,
 	city: Option<String>,
@@ -282,6 +238,7 @@ impl IntoOrgScopedCreate for SenderPresaveForCreate {
 			is_default: self.is_default,
 			sender_type: self.sender_type,
 			organization_name: self.organization_name,
+			person_given_name: self.person_given_name,
 			department: self.department,
 			street_address: self.street_address,
 			city: self.city,
@@ -303,6 +260,7 @@ pub struct SenderPresaveForUpdate {
 	pub is_default: Option<bool>,
 	pub sender_type: Option<String>,
 	pub organization_name: Option<String>,
+	pub person_given_name: Option<String>,
 	pub department: Option<String>,
 	pub street_address: Option<String>,
 	pub city: Option<String>,
@@ -314,13 +272,138 @@ pub struct SenderPresaveForUpdate {
 	pub email: Option<String>,
 }
 
-impl_parent_bmc!(
-	SenderPresaveBmc,
-	SenderPresave,
-	SenderPresaveForCreate,
-	SenderPresaveForUpdate,
-	"sender_presaves"
-);
+pub struct SenderPresaveBmc;
+
+impl DbBmc for SenderPresaveBmc {
+	const TABLE: &'static str = "sender_presaves";
+}
+
+impl SenderPresaveBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: SenderPresaveForCreate,
+	) -> Result<Uuid> {
+		Self::validate_identity(
+			data.sender_type.as_deref(),
+			data.organization_name.as_deref(),
+			data.person_given_name.as_deref(),
+		)?;
+		Self::ensure_unique_identity(
+			ctx,
+			mm,
+			None,
+			data.sender_type.as_deref(),
+			data.organization_name.as_deref(),
+		)
+		.await?;
+		base_uuid::create::<Self, _>(
+			ctx,
+			mm,
+			data.into_insert(ctx.organization_id()),
+		)
+		.await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<SenderPresave> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<SenderPresave>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: SenderPresaveForUpdate,
+	) -> Result<()> {
+		if data.deleted != Some(true) {
+			let current = Self::get(ctx, mm, id).await?;
+			let sender_type = data
+				.sender_type
+				.as_deref()
+				.or(current.sender_type.as_deref());
+			let organization_name = data
+				.organization_name
+				.as_deref()
+				.or(current.organization_name.as_deref());
+			let person_given_name = data
+				.person_given_name
+				.as_deref()
+				.or(current.person_given_name.as_deref());
+			Self::validate_identity(
+				sender_type,
+				organization_name,
+				person_given_name,
+			)?;
+			Self::ensure_unique_identity(
+				ctx,
+				mm,
+				Some(id),
+				sender_type,
+				organization_name,
+			)
+			.await?;
+		}
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	fn validate_identity(
+		sender_type: Option<&str>,
+		organization_name: Option<&str>,
+		person_given_name: Option<&str>,
+	) -> Result<()> {
+		require_identity(
+			normalized_text(sender_type).is_some()
+				&& normalized_text(organization_name).is_some()
+				&& normalized_text(person_given_name).is_some(),
+			"sender presave requires sender_type, organization_name, and person_given_name",
+		)
+	}
+
+	async fn ensure_unique_identity(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		excluding_id: Option<Uuid>,
+		sender_type: Option<&str>,
+		organization_name: Option<&str>,
+	) -> Result<()> {
+		let sender_type = normalized_text(sender_type);
+		let organization_name = normalized_text(organization_name);
+		let duplicate = Self::list(ctx, mm, None).await?.into_iter().any(|row| {
+			!row.deleted
+				&& Some(row.id) != excluding_id
+				&& normalized_text(row.sender_type.as_deref()) == sender_type
+				&& normalized_text(row.organization_name.as_deref())
+					== organization_name
+		});
+		if duplicate {
+			Err(duplicate_identity("sender presave duplicate identity"))
+		} else {
+			Ok(())
+		}
+	}
+}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct SenderPresaveGateway {
@@ -531,13 +614,127 @@ pub struct ReceiverPresaveForUpdate {
 	pub description: Option<String>,
 }
 
-impl_parent_bmc!(
-	ReceiverPresaveBmc,
-	ReceiverPresave,
-	ReceiverPresaveForCreate,
-	ReceiverPresaveForUpdate,
-	"receiver_presaves"
-);
+pub struct ReceiverPresaveBmc;
+
+impl DbBmc for ReceiverPresaveBmc {
+	const TABLE: &'static str = "receiver_presaves";
+}
+
+impl ReceiverPresaveBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: ReceiverPresaveForCreate,
+	) -> Result<Uuid> {
+		Self::validate_identity(
+			data.receiver_type.as_deref(),
+			data.organization_name.as_deref(),
+		)?;
+		Self::ensure_unique_identity(
+			ctx,
+			mm,
+			None,
+			data.receiver_type.as_deref(),
+			data.organization_name.as_deref(),
+		)
+		.await?;
+		base_uuid::create::<Self, _>(
+			ctx,
+			mm,
+			data.into_insert(ctx.organization_id()),
+		)
+		.await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<ReceiverPresave> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<ReceiverPresave>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: ReceiverPresaveForUpdate,
+	) -> Result<()> {
+		if data.deleted != Some(true) {
+			let current = Self::get(ctx, mm, id).await?;
+			let receiver_type = data
+				.receiver_type
+				.as_deref()
+				.or(current.receiver_type.as_deref());
+			let organization_name = data
+				.organization_name
+				.as_deref()
+				.or(current.organization_name.as_deref());
+			Self::validate_identity(receiver_type, organization_name)?;
+			Self::ensure_unique_identity(
+				ctx,
+				mm,
+				Some(id),
+				receiver_type,
+				organization_name,
+			)
+			.await?;
+		}
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	fn validate_identity(
+		receiver_type: Option<&str>,
+		organization_name: Option<&str>,
+	) -> Result<()> {
+		require_identity(
+			normalized_text(receiver_type).is_some()
+				&& normalized_text(organization_name).is_some(),
+			"receiver presave requires receiver_type and organization_name",
+		)
+	}
+
+	async fn ensure_unique_identity(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		excluding_id: Option<Uuid>,
+		receiver_type: Option<&str>,
+		organization_name: Option<&str>,
+	) -> Result<()> {
+		let receiver_type = normalized_text(receiver_type);
+		let organization_name = normalized_text(organization_name);
+		let duplicate = Self::list(ctx, mm, None).await?.into_iter().any(|row| {
+			!row.deleted
+				&& Some(row.id) != excluding_id
+				&& normalized_text(row.receiver_type.as_deref()) == receiver_type
+				&& normalized_text(row.organization_name.as_deref())
+					== organization_name
+		});
+		if duplicate {
+			Err(duplicate_identity("receiver presave duplicate identity"))
+		} else {
+			Ok(())
+		}
+	}
+}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct ReceiverPresaveConsignee {
@@ -587,6 +784,7 @@ pub struct ProductPresave {
 	pub comments: Option<String>,
 	pub deleted: bool,
 	pub sender_presave_id: Option<Uuid>,
+	pub product_id: Option<String>,
 	pub drug_characterization: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
@@ -632,6 +830,7 @@ pub struct ProductPresaveForCreate {
 	pub name: String,
 	pub comments: Option<String>,
 	pub sender_presave_id: Option<Uuid>,
+	pub product_id: Option<String>,
 	pub drug_characterization: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
@@ -674,6 +873,7 @@ struct ProductPresaveForInsert {
 	name: String,
 	comments: Option<String>,
 	sender_presave_id: Option<Uuid>,
+	product_id: Option<String>,
 	drug_characterization: Option<String>,
 	medicinal_product: Option<String>,
 	medicinal_product_notation: Option<String>,
@@ -719,6 +919,7 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 			name: self.name,
 			comments: self.comments,
 			sender_presave_id: self.sender_presave_id,
+			product_id: self.product_id,
 			drug_characterization: self.drug_characterization,
 			medicinal_product: self.medicinal_product,
 			medicinal_product_notation: self.medicinal_product_notation,
@@ -763,6 +964,7 @@ pub struct ProductPresaveForUpdate {
 	pub comments: Option<String>,
 	pub deleted: Option<bool>,
 	pub sender_presave_id: Option<Uuid>,
+	pub product_id: Option<String>,
 	pub drug_characterization: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
@@ -799,13 +1001,140 @@ pub struct ProductPresaveForUpdate {
 	pub mfds_foreign_e2b_holder_name: Option<String>,
 }
 
-impl_parent_bmc!(
-	ProductPresaveBmc,
-	ProductPresave,
-	ProductPresaveForCreate,
-	ProductPresaveForUpdate,
-	"product_presaves"
-);
+pub struct ProductPresaveBmc;
+
+impl DbBmc for ProductPresaveBmc {
+	const TABLE: &'static str = "product_presaves";
+}
+
+impl ProductPresaveBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: ProductPresaveForCreate,
+	) -> Result<Uuid> {
+		Self::validate_identity(
+			data.sender_presave_id,
+			data.product_id.as_deref(),
+			data.preapproval_ip_name.as_deref(),
+		)?;
+		Self::ensure_unique_identity(
+			ctx,
+			mm,
+			None,
+			data.sender_presave_id,
+			data.product_id.as_deref(),
+			data.preapproval_ip_name.as_deref(),
+		)
+		.await?;
+		base_uuid::create::<Self, _>(
+			ctx,
+			mm,
+			data.into_insert(ctx.organization_id()),
+		)
+		.await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<ProductPresave> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<ProductPresave>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: ProductPresaveForUpdate,
+	) -> Result<()> {
+		if data.deleted != Some(true) {
+			let current = Self::get(ctx, mm, id).await?;
+			let sender_presave_id =
+				data.sender_presave_id.or(current.sender_presave_id);
+			let product_id =
+				data.product_id.as_deref().or(current.product_id.as_deref());
+			let preapproval_ip_name = data
+				.preapproval_ip_name
+				.as_deref()
+				.or(current.preapproval_ip_name.as_deref());
+			Self::validate_identity(
+				sender_presave_id,
+				product_id,
+				preapproval_ip_name,
+			)?;
+			Self::ensure_unique_identity(
+				ctx,
+				mm,
+				Some(id),
+				sender_presave_id,
+				product_id,
+				preapproval_ip_name,
+			)
+			.await?;
+		}
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	fn validate_identity(
+		sender_presave_id: Option<Uuid>,
+		product_id: Option<&str>,
+		preapproval_ip_name: Option<&str>,
+	) -> Result<()> {
+		require_identity(
+			sender_presave_id.is_some()
+				&& (normalized_text(product_id).is_some()
+					|| normalized_text(preapproval_ip_name).is_some()),
+			"product presave requires sender_presave_id and product_id or preapproval_ip_name",
+		)
+	}
+
+	async fn ensure_unique_identity(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		excluding_id: Option<Uuid>,
+		sender_presave_id: Option<Uuid>,
+		product_id: Option<&str>,
+		preapproval_ip_name: Option<&str>,
+	) -> Result<()> {
+		let product_id = normalized_text(product_id);
+		let preapproval_ip_name = normalized_text(preapproval_ip_name);
+		let duplicate = Self::list(ctx, mm, None).await?.into_iter().any(|row| {
+			!row.deleted
+				&& Some(row.id) != excluding_id
+				&& row.sender_presave_id == sender_presave_id
+				&& ((product_id.is_some()
+					&& normalized_text(row.product_id.as_deref()) == product_id)
+					|| (preapproval_ip_name.is_some()
+						&& normalized_text(row.preapproval_ip_name.as_deref())
+							== preapproval_ip_name))
+		});
+		if duplicate {
+			Err(duplicate_identity("product presave duplicate identity"))
+		} else {
+			Ok(())
+		}
+	}
+}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct ProductPresaveSubstance {
@@ -1203,13 +1532,143 @@ pub struct ReporterPresaveForUpdate {
 	pub primary_source_regulatory: Option<String>,
 }
 
-impl_parent_bmc!(
-	ReporterPresaveBmc,
-	ReporterPresave,
-	ReporterPresaveForCreate,
-	ReporterPresaveForUpdate,
-	"reporter_presaves"
-);
+pub struct ReporterPresaveBmc;
+
+impl DbBmc for ReporterPresaveBmc {
+	const TABLE: &'static str = "reporter_presaves";
+}
+
+impl ReporterPresaveBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: ReporterPresaveForCreate,
+	) -> Result<Uuid> {
+		Self::validate_identity(
+			data.reporter_given_name.as_deref(),
+			data.organization.as_deref(),
+			data.qualification.as_deref(),
+		)?;
+		Self::ensure_unique_identity(
+			ctx,
+			mm,
+			None,
+			data.reporter_given_name.as_deref(),
+			data.organization.as_deref(),
+			data.qualification.as_deref(),
+		)
+		.await?;
+		base_uuid::create::<Self, _>(
+			ctx,
+			mm,
+			data.into_insert(ctx.organization_id()),
+		)
+		.await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<ReporterPresave> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<ReporterPresave>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: ReporterPresaveForUpdate,
+	) -> Result<()> {
+		if data.deleted != Some(true) {
+			let current = Self::get(ctx, mm, id).await?;
+			let reporter_given_name = data
+				.reporter_given_name
+				.as_deref()
+				.or(current.reporter_given_name.as_deref());
+			let organization = data
+				.organization
+				.as_deref()
+				.or(current.organization.as_deref());
+			let qualification = data
+				.qualification
+				.as_deref()
+				.or(current.qualification.as_deref());
+			Self::validate_identity(
+				reporter_given_name,
+				organization,
+				qualification,
+			)?;
+			Self::ensure_unique_identity(
+				ctx,
+				mm,
+				Some(id),
+				reporter_given_name,
+				organization,
+				qualification,
+			)
+			.await?;
+		}
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	fn validate_identity(
+		reporter_given_name: Option<&str>,
+		organization: Option<&str>,
+		qualification: Option<&str>,
+	) -> Result<()> {
+		require_identity(
+			normalized_text(reporter_given_name).is_some()
+				&& normalized_text(organization).is_some()
+				&& normalized_text(qualification).is_some(),
+			"reporter presave requires reporter_given_name, organization, and qualification",
+		)
+	}
+
+	async fn ensure_unique_identity(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		excluding_id: Option<Uuid>,
+		reporter_given_name: Option<&str>,
+		organization: Option<&str>,
+		qualification: Option<&str>,
+	) -> Result<()> {
+		let reporter_given_name = normalized_text(reporter_given_name);
+		let organization = normalized_text(organization);
+		let qualification = normalized_text(qualification);
+		let duplicate = Self::list(ctx, mm, None).await?.into_iter().any(|row| {
+			!row.deleted
+				&& Some(row.id) != excluding_id
+				&& normalized_text(row.reporter_given_name.as_deref())
+					== reporter_given_name
+				&& normalized_text(row.organization.as_deref()) == organization
+				&& normalized_text(row.qualification.as_deref()) == qualification
+		});
+		if duplicate {
+			Err(duplicate_identity("reporter presave duplicate identity"))
+		} else {
+			Ok(())
+		}
+	}
+}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct StudyPresave {
@@ -1350,6 +1809,20 @@ impl StudyPresaveBmc {
 		data: StudyPresaveForCreate,
 	) -> Result<Uuid> {
 		data.validate_fields()?;
+		Self::validate_identity(
+			data.product_presave_id,
+			data.sponsor_study_number.as_deref(),
+			data.study_name.as_deref(),
+			data.study_type_reaction.as_deref(),
+		)?;
+		Self::ensure_unique_identity(
+			ctx,
+			mm,
+			None,
+			data.product_presave_id,
+			data.sponsor_study_number.as_deref(),
+		)
+		.await?;
 		base_uuid::create::<Self, _>(
 			ctx,
 			mm,
@@ -1387,11 +1860,77 @@ impl StudyPresaveBmc {
 		data: StudyPresaveForUpdate,
 	) -> Result<()> {
 		data.validate_fields()?;
+		if data.deleted != Some(true) {
+			let current = Self::get(ctx, mm, id).await?;
+			let product_presave_id =
+				data.product_presave_id.or(current.product_presave_id);
+			let sponsor_study_number = data
+				.sponsor_study_number
+				.as_deref()
+				.or(current.sponsor_study_number.as_deref());
+			let study_name =
+				data.study_name.as_deref().or(current.study_name.as_deref());
+			let study_type_reaction = data
+				.study_type_reaction
+				.as_deref()
+				.or(current.study_type_reaction.as_deref());
+			Self::validate_identity(
+				product_presave_id,
+				sponsor_study_number,
+				study_name,
+				study_type_reaction,
+			)?;
+			Self::ensure_unique_identity(
+				ctx,
+				mm,
+				Some(id),
+				product_presave_id,
+				sponsor_study_number,
+			)
+			.await?;
+		}
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
 		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	fn validate_identity(
+		product_presave_id: Option<Uuid>,
+		sponsor_study_number: Option<&str>,
+		study_name: Option<&str>,
+		study_type_reaction: Option<&str>,
+	) -> Result<()> {
+		require_identity(
+			product_presave_id.is_some()
+				&& normalized_text(sponsor_study_number).is_some()
+				&& normalized_text(study_name).is_some()
+				&& normalized_text(study_type_reaction).is_some(),
+			"study presave requires product_presave_id, sponsor_study_number, study_name, and study_type_reaction",
+		)
+	}
+
+	async fn ensure_unique_identity(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		excluding_id: Option<Uuid>,
+		product_presave_id: Option<Uuid>,
+		sponsor_study_number: Option<&str>,
+	) -> Result<()> {
+		let sponsor_study_number = normalized_text(sponsor_study_number);
+		let duplicate = Self::list(ctx, mm, None).await?.into_iter().any(|row| {
+			!row.deleted
+				&& Some(row.id) != excluding_id
+				&& row.product_presave_id == product_presave_id
+				&& normalized_text(row.sponsor_study_number.as_deref())
+					== sponsor_study_number
+		});
+		if duplicate {
+			Err(duplicate_identity("study presave duplicate identity"))
+		} else {
+			Ok(())
+		}
 	}
 }
 
@@ -1614,13 +2153,96 @@ pub struct NarrativePresaveForUpdate {
 	pub sender_comments: Option<String>,
 }
 
-impl_parent_bmc!(
-	NarrativePresaveBmc,
-	NarrativePresave,
-	NarrativePresaveForCreate,
-	NarrativePresaveForUpdate,
-	"narrative_presaves"
-);
+pub struct NarrativePresaveBmc;
+
+impl DbBmc for NarrativePresaveBmc {
+	const TABLE: &'static str = "narrative_presaves";
+}
+
+impl NarrativePresaveBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: NarrativePresaveForCreate,
+	) -> Result<Uuid> {
+		Self::validate_identity(Some(data.name.as_str()))?;
+		Self::ensure_unique_identity(ctx, mm, None, Some(data.name.as_str()))
+			.await?;
+		base_uuid::create::<Self, _>(
+			ctx,
+			mm,
+			data.into_insert(ctx.organization_id()),
+		)
+		.await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<NarrativePresave> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<NarrativePresave>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: NarrativePresaveForUpdate,
+	) -> Result<()> {
+		if data.deleted != Some(true) {
+			let current = Self::get(ctx, mm, id).await?;
+			let name = data.name.as_deref().or(Some(current.name.as_str()));
+			Self::validate_identity(name)?;
+			Self::ensure_unique_identity(ctx, mm, Some(id), name).await?;
+		}
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	fn validate_identity(name: Option<&str>) -> Result<()> {
+		require_identity(
+			normalized_text(name).is_some(),
+			"narrative presave requires name",
+		)
+	}
+
+	async fn ensure_unique_identity(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		excluding_id: Option<Uuid>,
+		name: Option<&str>,
+	) -> Result<()> {
+		let name = normalized_text(name);
+		let duplicate = Self::list(ctx, mm, None).await?.into_iter().any(|row| {
+			!row.deleted
+				&& Some(row.id) != excluding_id
+				&& normalized_text(Some(row.name.as_str())) == name
+		});
+		if duplicate {
+			Err(duplicate_identity("narrative presave duplicate identity"))
+		} else {
+			Ok(())
+		}
+	}
+}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct NarrativePresaveSenderDiagnosis {

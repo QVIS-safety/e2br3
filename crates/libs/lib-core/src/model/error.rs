@@ -35,6 +35,13 @@ pub enum Error {
 		constraint: String,
 	},
 
+	Validation {
+		message: String,
+	},
+	Conflict {
+		message: String,
+	},
+
 	// -- ModelManager
 	CantCreateModelManagerProvider(String),
 	Store(String),

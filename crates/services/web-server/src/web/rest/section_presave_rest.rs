@@ -2799,73 +2799,6 @@ fn ensure_detail_parent_scope(
 	)
 }
 
-fn validate_study_rest_required(data: &StudyPresaveForCreate) -> Result<()> {
-	if data.product_presave_id.is_none() {
-		return Err(Error::BadRequest {
-			message:
-				"study presave requires product_presave_id at REST save boundary"
-					.to_string(),
-		});
-	}
-	Ok(())
-}
-
-fn validate_study_update_rest_required(
-	current: &StudyPresave,
-	data: &StudyPresaveForUpdate,
-) -> Result<()> {
-	if current
-		.product_presave_id
-		.or(data.product_presave_id)
-		.is_none()
-	{
-		return Err(Error::BadRequest {
-			message:
-				"study presave requires product_presave_id at REST save boundary"
-					.to_string(),
-		});
-	}
-	Ok(())
-}
-
-fn validate_narrative_rest_required(data: &NarrativePresaveForCreate) -> Result<()> {
-	if !text_present(data.case_narrative.as_deref()) {
-		return Err(Error::BadRequest {
-			message:
-				"narrative presave requires case_narrative at REST save boundary"
-					.to_string(),
-		});
-	}
-	Ok(())
-}
-
-fn validate_narrative_update_rest_required(
-	current: &NarrativePresave,
-	data: &NarrativePresaveForUpdate,
-) -> Result<()> {
-	if data
-		.case_narrative
-		.as_deref()
-		.is_some_and(|value| value.trim().is_empty())
-	{
-		return Err(Error::BadRequest {
-			message:
-				"narrative presave requires case_narrative at REST save boundary"
-					.to_string(),
-		});
-	}
-	if data.case_narrative.is_none()
-		&& !text_present(current.case_narrative.as_deref())
-	{
-		return Err(Error::BadRequest {
-			message:
-				"narrative presave requires case_narrative at REST save boundary"
-					.to_string(),
-		});
-	}
-	Ok(())
-}
-
 pub async fn create_study_presave(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -2874,7 +2807,6 @@ pub async fn create_study_presave(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
 	let ParamsForCreate { data } = params;
-	validate_study_rest_required(&data)?;
 	let id = StudyPresaveBmc::create(&ctx, &mm, data).await?;
 	let entity = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	if let Err(err) = ensure_study_presave_scope(&ctx, &mm, &entity).await {
@@ -2921,7 +2853,6 @@ pub async fn update_study_presave(
 	}
 	let current = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &current).await?;
-	validate_study_update_rest_required(&current, &data)?;
 	StudyPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &entity).await?;
@@ -3111,8 +3042,6 @@ async fn apply_study_presave_details_inner(
 	data: StudyPresaveDetailsForUpdate,
 ) -> Result<()> {
 	if let Some(parent) = data.parent {
-		let current = StudyPresaveBmc::get(ctx, mm, id).await?;
-		validate_study_update_rest_required(&current, &parent)?;
 		StudyPresaveBmc::update(ctx, mm, id, parent).await?;
 	}
 	if let Some(registration_numbers) = data.registration_numbers {
@@ -3627,7 +3556,6 @@ pub async fn create_narrative_presave(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
 	let ParamsForCreate { data } = params;
-	validate_narrative_rest_required(&data)?;
 	let id = NarrativePresaveBmc::create(&ctx, &mm, data).await?;
 	let entity = NarrativePresaveBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
@@ -3666,8 +3594,6 @@ pub async fn update_narrative_presave(
 	if data.deleted == Some(true) {
 		require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
 	}
-	let current = NarrativePresaveBmc::get(&ctx, &mm, id).await?;
-	validate_narrative_update_rest_required(&current, &data)?;
 	NarrativePresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = NarrativePresaveBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
@@ -3855,8 +3781,6 @@ async fn apply_narrative_presave_details_inner(
 	data: NarrativePresaveDetailsForUpdate,
 ) -> Result<()> {
 	if let Some(parent) = data.parent {
-		let current = NarrativePresaveBmc::get(ctx, mm, id).await?;
-		validate_narrative_update_rest_required(&current, &parent)?;
 		NarrativePresaveBmc::update(ctx, mm, id, parent).await?;
 	}
 	if let Some(sender_diagnoses) = data.sender_diagnoses {

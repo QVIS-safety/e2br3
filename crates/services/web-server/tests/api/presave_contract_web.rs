@@ -7,7 +7,10 @@ use axum::http::{Method, Request, StatusCode};
 use axum::Router;
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_CRO};
-use lib_core::model::presave::{ProductPresaveBmc, ProductPresaveForCreate};
+use lib_core::model::presave::{
+	ProductPresaveBmc, ProductPresaveForCreate, SenderPresaveBmc,
+	SenderPresaveForCreate,
+};
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
@@ -54,13 +57,39 @@ async fn create_product_presave(
 	user_id: Uuid,
 ) -> Result<Uuid> {
 	let ctx = Ctx::new(user_id, org_id, ROLE_SPONSOR_ADMIN_CRO.to_string())?;
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		mm,
+		SenderPresaveForCreate {
+			name: format!("REST Product Sender {}", Uuid::new_v4()),
+			comments: None,
+			is_default: None,
+			sender_type: Some("1".into()),
+			organization_name: Some(format!(
+				"REST Product Sender Org {}",
+				Uuid::new_v4()
+			)),
+			person_given_name: Some("Sender".into()),
+			department: None,
+			street_address: None,
+			city: None,
+			state: None,
+			postcode: None,
+			country_code: None,
+			telephone: None,
+			fax: None,
+			email: None,
+		},
+	)
+	.await?;
 	let id = ProductPresaveBmc::create(
 		&ctx,
 		mm,
 		ProductPresaveForCreate {
 			name: format!("REST Product {}", Uuid::new_v4()),
 			comments: None,
-			sender_presave_id: None,
+			sender_presave_id: Some(sender_id),
+			product_id: Some(format!("REST-PRODUCT-{}", Uuid::new_v4())),
 			drug_characterization: None,
 			medicinal_product: Some("REST Product".into()),
 			medicinal_product_notation: None,
@@ -155,7 +184,7 @@ async fn create_sender_presave_via_api(
 		cookie,
 		"legacy-unused",
 		format!("REST Sender Details {}", Uuid::new_v4()),
-		"REST Sender Details Org",
+		&format!("REST Sender Details Org {}", Uuid::new_v4()),
 	)
 	.await
 }
@@ -176,6 +205,7 @@ async fn create_named_sender_presave_via_api(
 				"name": name,
 				"sender_type": "1",
 				"organization_name": organization_name,
+				"person_given_name": "Sender",
 				"country_code": "US",
 				"email": "sender-details@example.com"
 			}
@@ -247,7 +277,7 @@ async fn create_receiver_presave_via_api(
 			"data": {
 				"name": format!("REST Receiver Details {}", Uuid::new_v4()),
 				"receiver_type": "1",
-				"organization_name": "REST Receiver Details Org",
+				"organization_name": format!("REST Receiver Details Org {}", Uuid::new_v4()),
 				"receiver_identifier": format!("REC-{}", Uuid::new_v4())
 			}
 		}),
@@ -308,6 +338,8 @@ async fn create_named_product_presave_via_api(
 		json!({
 			"data": {
 				"name": name,
+				"sender_presave_id": create_sender_presave_via_api(app, cookie, "legacy-unused").await?,
+				"product_id": format!("REST-PRODUCT-{}", Uuid::new_v4()),
 				"medicinal_product": medicinal_product
 			}
 		}),
@@ -418,7 +450,9 @@ async fn create_named_study_presave_for_product_via_api(
 			"data": {
 				"name": name,
 				"product_presave_id": product_id,
-				"study_name": study_name
+				"study_name": study_name,
+				"sponsor_study_number": format!("STUDY-{}", Uuid::new_v4()),
+				"study_type_reaction": "1"
 			}
 		}),
 	)
@@ -611,6 +645,8 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
 
 	let created = post_json_created(
 		&app,
@@ -619,6 +655,8 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 		json!({
 			"data": {
 				"name": "Authorityless Union Product",
+				"sender_presave_id": sender_id,
+				"product_id": "UNION-PRODUCT",
 				"medicinal_product": "Union Product",
 				"fda_ind_number_occurred": "IND-UNION",
 				"mfds_domestic_product_code": "MFDS-UNION"
@@ -716,6 +754,7 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 				"study_name_notation": "REST notation",
 				"sponsor_study_number": "REST-ST-001",
 				"sponsor_study_number_kind": "study_no",
+				"study_type_reaction": "1",
 				"fda_ind_number_occurred": "IND-REST"
 			}
 		})),
@@ -888,12 +927,12 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		"/api/presaves/narratives".to_string(),
 		Some(json!({
 			"data": {
-				"name": "REST Narrative Missing Auto Narrative"
+				"name": "REST Narrative Body Optional"
 			}
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 
 	let (status, value) = request_json(
 		&app,
@@ -1071,6 +1110,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 				"name": "REST Sender",
 				"sender_type": "1",
 				"organization_name": "REST Sender Org",
+				"person_given_name": "REST Sender Given",
 				"country_code": "US",
 				"email": "sender@example.com"
 			}
@@ -1158,6 +1198,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 			"data": {
 				"name": "REST Product Canonical",
 				"sender_presave_id": sender_id,
+				"product_id": "REST-PRODUCT-CANONICAL",
 				"medicinal_product": "REST Product Canonical",
 				"fda_ind_number_occurred": "IND-CANONICAL"
 			}
@@ -1176,6 +1217,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 			"data": {
 				"name": "REST MFDS Product Canonical",
 				"sender_presave_id": sender_id,
+				"product_id": "REST-MFDS-PRODUCT-CANONICAL",
 				"medicinal_product": "REST MFDS Product Canonical"
 			}
 		})),
@@ -1246,7 +1288,8 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 				"reporter_given_name": "Grace",
 				"reporter_family_name": "Hopper",
 				"organization": "REST Reporter Org",
-				"country_code": "US"
+				"country_code": "US",
+				"qualification": "1"
 			}
 		})),
 	)
@@ -3220,7 +3263,7 @@ async fn test_narrative_presave_details_rejects_invalid_child_operations(
 		json!({ "data": { "case_summaries": [{ "id": summary_b, "_delete": true }] } }),
 		json!({ "data": { "sender_diagnoses": [{ "id": diagnosis_b, "sequence_number": 2, "diagnosis_meddra_code": "WRONG" }] } }),
 		json!({ "data": { "case_summaries": [{ "id": summary_b, "sequence_number": 2, "summary_text": "Wrong parent" }] } }),
-		json!({ "data": { "parent": { "case_narrative": " " } } }),
+		json!({ "data": { "parent": { "name": " " } } }),
 	] {
 		let (status, value) = request_json(
 			&app,
@@ -3309,6 +3352,8 @@ async fn test_canonical_product_presaves_respect_assigned_product_scope(
 		json!({ "access_product_ids": ["VISIBLE-CANONICAL-PRODUCT"] }),
 	)
 	.await?;
+	let out_of_scope_sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
 
 	let (status, value) = request_json(
 		&app,
@@ -3342,6 +3387,8 @@ async fn test_canonical_product_presaves_respect_assigned_product_scope(
 		Some(json!({
 			"data": {
 				"name": "out-of-scope canonical product create",
+				"sender_presave_id": out_of_scope_sender_id,
+				"product_id": "HIDDEN-CANONICAL-CREATED",
 				"medicinal_product": "HIDDEN-CANONICAL-CREATED"
 			}
 		})),

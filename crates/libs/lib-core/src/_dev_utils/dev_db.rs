@@ -138,6 +138,8 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE receiver_presaves DROP COLUMN IF EXISTS authority",
 		"ALTER TABLE product_presaves DROP CONSTRAINT IF EXISTS product_presaves_authority_valid",
 		"ALTER TABLE product_presaves DROP COLUMN IF EXISTS authority",
+		"ALTER TABLE sender_presaves ADD COLUMN IF NOT EXISTS person_given_name VARCHAR(200)",
+		"ALTER TABLE product_presaves ADD COLUMN IF NOT EXISTS product_id VARCHAR(255)",
 		"ALTER TABLE reporter_presaves DROP CONSTRAINT IF EXISTS reporter_presaves_authority_valid",
 		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS authority",
 		"ALTER TABLE study_presaves DROP CONSTRAINT IF EXISTS study_presaves_authority_valid",

@@ -80,14 +80,42 @@ fn expect_store_error<T>(result: lib_core::model::Result<T>, expected: &str) {
 	}
 }
 
+fn expect_validation_error<T>(result: lib_core::model::Result<T>, expected: &str) {
+	match result {
+		Err(ModelError::Validation { message }) => assert!(
+			message.contains(expected),
+			"expected Validation error containing {expected:?}, got {message:?}"
+		),
+		Err(err) => {
+			panic!("expected Validation error containing {expected:?}, got {err:?}")
+		}
+		Ok(_) => panic!("expected Validation error containing {expected:?}, got Ok"),
+	}
+}
+
+fn expect_conflict_error<T>(result: lib_core::model::Result<T>, expected: &str) {
+	match result {
+		Err(ModelError::Conflict { message }) => assert!(
+			message.contains(expected),
+			"expected Conflict error containing {expected:?}, got {message:?}"
+		),
+		Err(err) => {
+			panic!("expected Conflict error containing {expected:?}, got {err:?}")
+		}
+		Ok(_) => panic!("expected Conflict error containing {expected:?}, got Ok"),
+	}
+}
+
 fn product_presave_create(
 	_authority: RegulatoryAuthority,
 	name: String,
+	sender_presave_id: Uuid,
 ) -> ProductPresaveForCreate {
 	ProductPresaveForCreate {
 		name,
 		comments: None,
-		sender_presave_id: None,
+		sender_presave_id: Some(sender_presave_id),
+		product_id: Some(format!("PRODUCT-{}", Uuid::new_v4())),
 		drug_characterization: None,
 		medicinal_product: Some("Authority Product".into()),
 		medicinal_product_notation: None,
@@ -136,7 +164,7 @@ fn reporter_presave_create(
 		reporter_given_name: Some("Authority".into()),
 		reporter_middle_name: None,
 		reporter_family_name: Some("Reporter".into()),
-		organization: None,
+		organization: Some(format!("Authority Reporter Org {}", Uuid::new_v4())),
 		department: None,
 		street: None,
 		city: None,
@@ -161,7 +189,7 @@ fn study_presave_create(
 		product_presave_id: None,
 		study_name: Some("Authority Study".into()),
 		study_name_notation: None,
-		sponsor_study_number: None,
+		sponsor_study_number: Some("AUTH-STUDY".into()),
 		sponsor_study_number_kind: None,
 		study_type_reaction: Some("1".into()),
 		study_type_reaction_kr1: None,
@@ -616,7 +644,8 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			comments: Some("sender comment".into()),
 			is_default: Some(true),
 			sender_type: Some("1".into()),
-			organization_name: Some("Sender Org Before".into()),
+			organization_name: Some(format!("Sender Org Before {suffix}")),
+			person_given_name: Some("Sender Given".into()),
 			department: Some("Safety".into()),
 			street_address: Some("1 Sender St".into()),
 			city: Some("Seoul".into()),
@@ -633,7 +662,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	assert_eq!(sender.name, format!("Sender Presave {suffix}"));
 	assert_eq!(
 		sender.organization_name.as_deref(),
-		Some("Sender Org Before")
+		Some(format!("Sender Org Before {suffix}").as_str())
 	);
 
 	let receiver_id = ReceiverPresaveBmc::create(
@@ -643,7 +672,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			name: format!("Receiver Presave {suffix}"),
 			comments: None,
 			receiver_type: Some("agency".into()),
-			organization_name: Some("Receiver Org".into()),
+			organization_name: Some(format!("Receiver Org {suffix}")),
 			receiver_identifier: Some("CDER".into()),
 			day_count_rule: Some("calendar".into()),
 			nsae_solicited_day_count: Some(15),
@@ -669,8 +698,9 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			name: format!("Product Presave {suffix}"),
 			comments: None,
 			sender_presave_id: Some(sender_id),
+			product_id: Some(format!("PRODUCT-{suffix}")),
 			drug_characterization: Some("1".into()),
-			medicinal_product: Some("Medicinal Product".into()),
+			medicinal_product: Some(format!("Medicinal Product {suffix}")),
 			medicinal_product_notation: None,
 			preapproval_ip_name: None,
 			brand_name: Some("Brand".into()),
@@ -710,7 +740,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	assert_eq!(product.name, format!("Product Presave {suffix}"));
 	assert_eq!(
 		product.medicinal_product.as_deref(),
-		Some("Medicinal Product")
+		Some(format!("Medicinal Product {suffix}").as_str())
 	);
 
 	let reporter_id = ReporterPresaveBmc::create(
@@ -723,7 +753,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			reporter_given_name: Some("Casey".into()),
 			reporter_middle_name: None,
 			reporter_family_name: Some("Reporter".into()),
-			organization: Some("Reporter Org".into()),
+			organization: Some(format!("Reporter Org {suffix}")),
 			department: Some("PV".into()),
 			street: Some("2 Reporter St".into()),
 			city: Some("Busan".into()),
@@ -749,9 +779,9 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			name: format!("Study Presave {suffix}"),
 			comments: None,
 			product_presave_id: Some(product_id),
-			study_name: Some("Study Name".into()),
+			study_name: Some(format!("Study Name {suffix}")),
 			study_name_notation: Some("Study Name Notation".into()),
-			sponsor_study_number: Some("ST-001".into()),
+			sponsor_study_number: Some(format!("ST-001-{suffix}")),
 			sponsor_study_number_kind: Some("study_no".into()),
 			study_type_reaction: Some("1".into()),
 			study_type_reaction_kr1: None,
@@ -765,7 +795,10 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	.await?;
 	let study = StudyPresaveBmc::get(&ctx, &mm, study_id).await?;
 	assert_eq!(study.name, format!("Study Presave {suffix}"));
-	assert_eq!(study.sponsor_study_number.as_deref(), Some("ST-001"));
+	assert_eq!(
+		study.sponsor_study_number.as_deref(),
+		Some(format!("ST-001-{suffix}").as_str())
+	);
 	assert_eq!(
 		study.study_name_notation.as_deref(),
 		Some("Study Name Notation")
@@ -806,7 +839,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 		&mm,
 		sender_id,
 		SenderPresaveForUpdate {
-			organization_name: Some("Sender Org After".into()),
+			organization_name: Some(format!("Sender Org After {suffix}")),
 			..Default::default()
 		},
 	)
@@ -814,12 +847,13 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	let updated_sender = SenderPresaveBmc::get(&ctx, &mm, sender_id).await?;
 	assert_eq!(
 		updated_sender.organization_name.as_deref(),
-		Some("Sender Org After")
+		Some(format!("Sender Org After {suffix}").as_str())
 	);
 	let ich_senders = SenderPresaveBmc::list(&ctx, &mm, None).await?;
 	assert!(
 		ich_senders.iter().any(|sender| sender.id == sender_id
-			&& sender.organization_name.as_deref() == Some("Sender Org After")),
+			&& sender.organization_name.as_deref()
+				== Some(format!("Sender Org After {suffix}").as_str())),
 		"updated sender should appear in presave list results"
 	);
 
@@ -840,10 +874,33 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveForCreate {
+			name: format!("Authorityless Sender {suffix}"),
+			comments: None,
+			is_default: None,
+			sender_type: Some("1".into()),
+			organization_name: Some(format!("Authorityless Sender Org {suffix}")),
+			person_given_name: Some("Authorityless".into()),
+			department: None,
+			street_address: None,
+			city: None,
+			state: None,
+			postcode: None,
+			country_code: None,
+			telephone: None,
+			fax: None,
+			email: None,
+		},
+	)
+	.await?;
 
 	let mut product = product_presave_create(
 		RegulatoryAuthority::Fda,
 		format!("Authorityless Union Product {suffix}"),
+		sender_id,
 	);
 	product.fda_ind_number_occurred = Some("IND-UNION".into());
 	product.fda_pre_anda_number_occurred = Some("ANDA-UNION".into());
@@ -904,6 +961,7 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 		RegulatoryAuthority::Fda,
 		format!("Authorityless Study {suffix}"),
 	);
+	study.product_presave_id = Some(product_id);
 	study.study_type_reaction_kr1 = Some("KR-STUDY".into());
 	study.mfds_study_number = Some("MFDS-STUDY".into());
 	study.mfds_protocol_number = Some("MFDS-PROTOCOL".into());
@@ -926,6 +984,7 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 		RegulatoryAuthority::Ich,
 		format!("Authorityless Study Invalid Kind {suffix}"),
 	);
+	invalid_kind_study.product_presave_id = Some(product_id);
 	invalid_kind_study.sponsor_study_number_kind = Some("other_no".into());
 	expect_store_error(
 		StudyPresaveBmc::create(&ctx, &mm, invalid_kind_study).await,
@@ -937,27 +996,489 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn section_presave_bmcs_remain_permissive_for_rest_required_fields(
+async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 ) -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
 
+	expect_validation_error(
+		SenderPresaveBmc::create(
+			&ctx,
+			&mm,
+			SenderPresaveForCreate {
+				name: format!("Invalid Sender Presave {suffix}"),
+				comments: None,
+				is_default: None,
+				sender_type: Some("1".into()),
+				organization_name: Some("Invalid Sender Org".into()),
+				person_given_name: None,
+				department: None,
+				street_address: None,
+				city: None,
+				state: None,
+				postcode: None,
+				country_code: None,
+				telephone: None,
+				fax: None,
+				email: None,
+			},
+		)
+		.await,
+		"sender_type, organization_name, and person_given_name",
+	);
+	expect_validation_error(
+		ReceiverPresaveBmc::create(
+			&ctx,
+			&mm,
+			ReceiverPresaveForCreate {
+				name: format!("Invalid Receiver Presave {suffix}"),
+				comments: None,
+				receiver_type: None,
+				organization_name: Some("Invalid Receiver Org".into()),
+				receiver_identifier: None,
+				day_count_rule: None,
+				nsae_solicited_day_count: None,
+				nsae_solicited_not_applicable: None,
+				nsae_non_solicited_day_count: None,
+				nsae_non_solicited_not_applicable: None,
+				sae_solicited_day_count: None,
+				sae_solicited_not_applicable: None,
+				sae_non_solicited_day_count: None,
+				sae_non_solicited_not_applicable: None,
+				description: None,
+			},
+		)
+		.await,
+		"receiver_type and organization_name",
+	);
+	expect_validation_error(
+		ProductPresaveBmc::create(
+			&ctx,
+			&mm,
+			ProductPresaveForCreate {
+				name: format!("Invalid Product Presave {suffix}"),
+				comments: None,
+				sender_presave_id: None,
+				product_id: None,
+				drug_characterization: None,
+				medicinal_product: None,
+				medicinal_product_notation: None,
+				preapproval_ip_name: None,
+				brand_name: None,
+				drug_generic_name: None,
+				manufacturer_name: None,
+				product_description: None,
+				mpid: None,
+				mpid_version: None,
+				phpid: None,
+				phpid_version: None,
+				investigational_product_blinded: None,
+				obtain_drug_country: None,
+				drug_authorization_number: None,
+				drug_authorization_country: None,
+				drug_authorization_holder: None,
+				holder_applicant_name_notation: None,
+				fda_ind_number_occurred: None,
+				fda_pre_anda_number_occurred: None,
+				mfds_domestic_product_code: None,
+				mfds_domestic_ingredient_code: None,
+				mfds_udl_product_code: None,
+				mfds_udl_ingredient_code: None,
+				mfds_udl_manufacturer_code: None,
+				mfds_udl_manufacturer_name: None,
+				mfds_foreign_ich_product_code: None,
+				mfds_foreign_ich_ingredient_code: None,
+				mfds_foreign_ich_holder_code: None,
+				mfds_foreign_ich_holder_name: None,
+				mfds_foreign_e2b_product_code: None,
+				mfds_foreign_e2b_ingredient_code: None,
+				mfds_foreign_e2b_holder_code: None,
+				mfds_foreign_e2b_holder_name: None,
+			},
+		)
+		.await,
+		"sender_presave_id and product_id or preapproval_ip_name",
+	);
+	expect_validation_error(
+		ReporterPresaveBmc::create(
+			&ctx,
+			&mm,
+			ReporterPresaveForCreate {
+				name: format!("Invalid Reporter Presave {suffix}"),
+				comments: None,
+				reporter_title: None,
+				reporter_given_name: Some("Invalid".into()),
+				reporter_middle_name: None,
+				reporter_family_name: None,
+				organization: None,
+				department: None,
+				street: None,
+				city: None,
+				state: None,
+				postcode: None,
+				telephone: None,
+				country_code: None,
+				email: None,
+				qualification: Some("1".into()),
+				qualification_kr1: None,
+				primary_source_regulatory: None,
+			},
+		)
+		.await,
+		"reporter_given_name, organization, and qualification",
+	);
+	expect_validation_error(
+		StudyPresaveBmc::create(
+			&ctx,
+			&mm,
+			StudyPresaveForCreate {
+				name: format!("Invalid Study Presave {suffix}"),
+				comments: None,
+				product_presave_id: None,
+				study_name: Some("Invalid Study".into()),
+				study_name_notation: None,
+				sponsor_study_number: Some("INVALID-STUDY".into()),
+				sponsor_study_number_kind: None,
+				study_type_reaction: None,
+				study_type_reaction_kr1: None,
+				mfds_study_number: None,
+				mfds_protocol_number: None,
+				fda_ind_number_occurred: None,
+				fda_pre_anda_number_occurred: None,
+				edc_sync: None,
+			},
+		)
+		.await,
+		"product_presave_id, sponsor_study_number, study_name, and study_type_reaction",
+	);
+	expect_validation_error(
+		NarrativePresaveBmc::create(
+			&ctx,
+			&mm,
+			NarrativePresaveForCreate {
+				name: "   ".into(),
+				comments: None,
+				case_narrative: None,
+				case_narrative_notation: None,
+				reporter_comments: None,
+				sender_comments: None,
+			},
+		)
+		.await,
+		"name",
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
+) -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveForCreate {
+			name: format!("Duplicate Sender Presave {suffix}"),
+			comments: None,
+			is_default: None,
+			sender_type: Some("1".into()),
+			organization_name: Some(format!("Duplicate Sender Org {suffix}")),
+			person_given_name: Some("Alice".into()),
+			department: None,
+			street_address: None,
+			city: None,
+			state: None,
+			postcode: None,
+			country_code: None,
+			telephone: None,
+			fax: None,
+			email: None,
+		},
+	)
+	.await?;
+	expect_conflict_error(
+		SenderPresaveBmc::create(
+			&ctx,
+			&mm,
+			SenderPresaveForCreate {
+				name: format!("Duplicate Sender Presave Copy {suffix}"),
+				comments: None,
+				is_default: None,
+				sender_type: Some("1".into()),
+				organization_name: Some(format!(" duplicate sender org {suffix} ")),
+				person_given_name: Some("Bob".into()),
+				department: None,
+				street_address: None,
+				city: None,
+				state: None,
+				postcode: None,
+				country_code: None,
+				telephone: None,
+				fax: None,
+				email: None,
+			},
+		)
+		.await,
+		"sender presave duplicate",
+	);
+
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			name: format!("Duplicate Receiver Presave {suffix}"),
+			comments: None,
+			receiver_type: Some("1".into()),
+			organization_name: Some(format!("Duplicate Receiver Org {suffix}")),
+			receiver_identifier: None,
+			day_count_rule: None,
+			nsae_solicited_day_count: None,
+			nsae_solicited_not_applicable: None,
+			nsae_non_solicited_day_count: None,
+			nsae_non_solicited_not_applicable: None,
+			sae_solicited_day_count: None,
+			sae_solicited_not_applicable: None,
+			sae_non_solicited_day_count: None,
+			sae_non_solicited_not_applicable: None,
+			description: None,
+		},
+	)
+	.await?;
+	expect_conflict_error(
+		ReceiverPresaveBmc::create(
+			&ctx,
+			&mm,
+			ReceiverPresaveForCreate {
+				name: format!("Duplicate Receiver Presave Copy {suffix}"),
+				comments: None,
+				receiver_type: Some("1".into()),
+				organization_name: Some(format!(
+					" duplicate receiver org {suffix} "
+				)),
+				receiver_identifier: None,
+				day_count_rule: None,
+				nsae_solicited_day_count: None,
+				nsae_solicited_not_applicable: None,
+				nsae_non_solicited_day_count: None,
+				nsae_non_solicited_not_applicable: None,
+				sae_solicited_day_count: None,
+				sae_solicited_not_applicable: None,
+				sae_non_solicited_day_count: None,
+				sae_non_solicited_not_applicable: None,
+				description: None,
+			},
+		)
+		.await,
+		"receiver presave duplicate",
+	);
+
+	let product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveForCreate {
+			name: format!("Duplicate Product Presave {suffix}"),
+			comments: None,
+			sender_presave_id: Some(sender_id),
+			product_id: Some(format!("DUP-PRODUCT-{suffix}")),
+			drug_characterization: None,
+			medicinal_product: None,
+			medicinal_product_notation: None,
+			preapproval_ip_name: None,
+			brand_name: None,
+			drug_generic_name: None,
+			manufacturer_name: None,
+			product_description: None,
+			mpid: None,
+			mpid_version: None,
+			phpid: None,
+			phpid_version: None,
+			investigational_product_blinded: None,
+			obtain_drug_country: None,
+			drug_authorization_number: None,
+			drug_authorization_country: None,
+			drug_authorization_holder: None,
+			holder_applicant_name_notation: None,
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
+			mfds_domestic_product_code: None,
+			mfds_domestic_ingredient_code: None,
+			mfds_udl_product_code: None,
+			mfds_udl_ingredient_code: None,
+			mfds_udl_manufacturer_code: None,
+			mfds_udl_manufacturer_name: None,
+			mfds_foreign_ich_product_code: None,
+			mfds_foreign_ich_ingredient_code: None,
+			mfds_foreign_ich_holder_code: None,
+			mfds_foreign_ich_holder_name: None,
+			mfds_foreign_e2b_product_code: None,
+			mfds_foreign_e2b_ingredient_code: None,
+			mfds_foreign_e2b_holder_code: None,
+			mfds_foreign_e2b_holder_name: None,
+		},
+	)
+	.await?;
+	expect_conflict_error(
+		ProductPresaveBmc::create(
+			&ctx,
+			&mm,
+			ProductPresaveForCreate {
+				name: format!("Duplicate Product Presave Copy {suffix}"),
+				comments: None,
+				sender_presave_id: Some(sender_id),
+				product_id: Some(format!(" dup-product-{suffix} ")),
+				drug_characterization: None,
+				medicinal_product: None,
+				medicinal_product_notation: None,
+				preapproval_ip_name: None,
+				brand_name: None,
+				drug_generic_name: None,
+				manufacturer_name: None,
+				product_description: None,
+				mpid: None,
+				mpid_version: None,
+				phpid: None,
+				phpid_version: None,
+				investigational_product_blinded: None,
+				obtain_drug_country: None,
+				drug_authorization_number: None,
+				drug_authorization_country: None,
+				drug_authorization_holder: None,
+				holder_applicant_name_notation: None,
+				fda_ind_number_occurred: None,
+				fda_pre_anda_number_occurred: None,
+				mfds_domestic_product_code: None,
+				mfds_domestic_ingredient_code: None,
+				mfds_udl_product_code: None,
+				mfds_udl_ingredient_code: None,
+				mfds_udl_manufacturer_code: None,
+				mfds_udl_manufacturer_name: None,
+				mfds_foreign_ich_product_code: None,
+				mfds_foreign_ich_ingredient_code: None,
+				mfds_foreign_ich_holder_code: None,
+				mfds_foreign_ich_holder_name: None,
+				mfds_foreign_e2b_product_code: None,
+				mfds_foreign_e2b_ingredient_code: None,
+				mfds_foreign_e2b_holder_code: None,
+				mfds_foreign_e2b_holder_name: None,
+			},
+		)
+		.await,
+		"product presave duplicate",
+	);
+
+	let reporter_id = ReporterPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReporterPresaveForCreate {
+			name: format!("Duplicate Reporter Presave {suffix}"),
+			comments: None,
+			reporter_title: None,
+			reporter_given_name: Some("Robin".into()),
+			reporter_middle_name: None,
+			reporter_family_name: None,
+			organization: Some(format!("Duplicate Reporter Org {suffix}")),
+			department: None,
+			street: None,
+			city: None,
+			state: None,
+			postcode: None,
+			telephone: None,
+			country_code: None,
+			email: None,
+			qualification: Some("1".into()),
+			qualification_kr1: None,
+			primary_source_regulatory: None,
+		},
+	)
+	.await?;
+	expect_conflict_error(
+		ReporterPresaveBmc::create(
+			&ctx,
+			&mm,
+			ReporterPresaveForCreate {
+				name: format!("Duplicate Reporter Presave Copy {suffix}"),
+				comments: None,
+				reporter_title: None,
+				reporter_given_name: Some(" robin ".into()),
+				reporter_middle_name: None,
+				reporter_family_name: None,
+				organization: Some(format!(" duplicate reporter org {suffix} ")),
+				department: None,
+				street: None,
+				city: None,
+				state: None,
+				postcode: None,
+				telephone: None,
+				country_code: None,
+				email: None,
+				qualification: Some("1".into()),
+				qualification_kr1: None,
+				primary_source_regulatory: None,
+			},
+		)
+		.await,
+		"reporter presave duplicate",
+	);
+
 	let study_id = StudyPresaveBmc::create(
 		&ctx,
 		&mm,
-		study_presave_create(
-			RegulatoryAuthority::Ich,
-			format!("Permissive Study Required At REST {suffix}"),
-		),
+		StudyPresaveForCreate {
+			name: format!("Duplicate Study Presave {suffix}"),
+			comments: None,
+			product_presave_id: Some(product_id),
+			study_name: Some("Duplicate Study".into()),
+			study_name_notation: None,
+			sponsor_study_number: Some(format!("DUP-STUDY-{suffix}")),
+			sponsor_study_number_kind: None,
+			study_type_reaction: Some("1".into()),
+			study_type_reaction_kr1: None,
+			mfds_study_number: None,
+			mfds_protocol_number: None,
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
+			edc_sync: None,
+		},
 	)
 	.await?;
+	expect_conflict_error(
+		StudyPresaveBmc::create(
+			&ctx,
+			&mm,
+			StudyPresaveForCreate {
+				name: format!("Duplicate Study Presave Copy {suffix}"),
+				comments: None,
+				product_presave_id: Some(product_id),
+				study_name: Some("Different Study".into()),
+				study_name_notation: None,
+				sponsor_study_number: Some(format!(" dup-study-{suffix} ")),
+				sponsor_study_number_kind: None,
+				study_type_reaction: Some("2".into()),
+				study_type_reaction_kr1: None,
+				mfds_study_number: None,
+				mfds_protocol_number: None,
+				fda_ind_number_occurred: None,
+				fda_pre_anda_number_occurred: None,
+				edc_sync: None,
+			},
+		)
+		.await,
+		"study presave duplicate",
+	);
+
 	let narrative_id = NarrativePresaveBmc::create(
 		&ctx,
 		&mm,
 		NarrativePresaveForCreate {
-			name: format!("Permissive Narrative Required At REST {suffix}"),
+			name: format!("Duplicate Narrative Presave {suffix}"),
 			comments: None,
 			case_narrative: None,
 			case_narrative_notation: None,
@@ -966,9 +1487,29 @@ async fn section_presave_bmcs_remain_permissive_for_rest_required_fields(
 		},
 	)
 	.await?;
+	expect_conflict_error(
+		NarrativePresaveBmc::create(
+			&ctx,
+			&mm,
+			NarrativePresaveForCreate {
+				name: format!(" duplicate narrative presave {suffix} "),
+				comments: None,
+				case_narrative: Some("Body is not part of identity".into()),
+				case_narrative_notation: None,
+				reporter_comments: None,
+				sender_comments: None,
+			},
+		)
+		.await,
+		"narrative presave duplicate",
+	);
 
 	NarrativePresaveBmc::delete(&ctx, &mm, narrative_id).await?;
 	StudyPresaveBmc::delete(&ctx, &mm, study_id).await?;
+	ReporterPresaveBmc::delete(&ctx, &mm, reporter_id).await?;
+	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
+	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
+	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
 
 	Ok(())
 }
@@ -988,8 +1529,9 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			name: format!("Child Sender Presave {suffix}"),
 			comments: None,
 			is_default: None,
-			sender_type: None,
+			sender_type: Some("1".into()),
 			organization_name: Some("Child Sender Org".into()),
+			person_given_name: Some("Child Sender Given".into()),
 			department: None,
 			street_address: None,
 			city: None,
@@ -1008,7 +1550,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		ReceiverPresaveForCreate {
 			name: format!("Child Receiver Presave {suffix}"),
 			comments: None,
-			receiver_type: None,
+			receiver_type: Some("1".into()),
 			organization_name: Some("Child Receiver Org".into()),
 			receiver_identifier: None,
 			day_count_rule: None,
@@ -1031,6 +1573,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			name: format!("Child Product Presave {suffix}"),
 			comments: None,
 			sender_presave_id: Some(sender_id),
+			product_id: Some(format!("CHILD-PRODUCT-{suffix}")),
 			drug_characterization: None,
 			medicinal_product: Some("Child Product".into()),
 			medicinal_product_notation: None,
@@ -1075,6 +1618,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			name: format!("Child FDA Product Presave {suffix}"),
 			comments: None,
 			sender_presave_id: Some(sender_id),
+			product_id: Some(format!("CHILD-FDA-PRODUCT-{suffix}")),
 			drug_characterization: None,
 			medicinal_product: Some("Child FDA Product".into()),
 			medicinal_product_notation: None,
@@ -1121,9 +1665,9 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			product_presave_id: Some(product_id),
 			study_name: Some("Child Study".into()),
 			study_name_notation: None,
-			sponsor_study_number: None,
+			sponsor_study_number: Some(format!("CHILD-STUDY-{suffix}")),
 			sponsor_study_number_kind: None,
-			study_type_reaction: None,
+			study_type_reaction: Some("1".into()),
 			study_type_reaction_kr1: None,
 			mfds_study_number: None,
 			mfds_protocol_number: None,
@@ -1543,6 +2087,28 @@ async fn section_presave_field_audit_records_changed_column() -> Result<()> {
 	let mm = ModelManager::new().await?;
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveForCreate {
+			name: format!("Field Audit Sender {suffix}"),
+			comments: None,
+			is_default: None,
+			sender_type: Some("1".into()),
+			organization_name: Some(format!("Field Audit Sender Org {suffix}")),
+			person_given_name: Some("Audit".into()),
+			department: None,
+			street_address: None,
+			city: None,
+			state: None,
+			postcode: None,
+			country_code: None,
+			telephone: None,
+			fax: None,
+			email: None,
+		},
+	)
+	.await?;
 
 	let product_id = ProductPresaveBmc::create(
 		&ctx,
@@ -1550,6 +2116,7 @@ async fn section_presave_field_audit_records_changed_column() -> Result<()> {
 		product_presave_create(
 			RegulatoryAuthority::Ich,
 			format!("Field Audit Product {suffix}"),
+			sender_id,
 		),
 	)
 	.await?;
@@ -1587,6 +2154,7 @@ async fn section_presave_field_audit_records_changed_column() -> Result<()> {
 	);
 
 	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
+	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
 
 	Ok(())
 }

@@ -95,6 +95,16 @@ fn map_model_error_to_client(
 					.to_string(),
 			)),
 		),
+		model::Error::Validation { message } => (
+			StatusCode::BAD_REQUEST,
+			ClientError::SERVICE_ERROR,
+			Some(serde_json::Value::String(message.clone())),
+		),
+		model::Error::Conflict { message } => (
+			StatusCode::CONFLICT,
+			ClientError::SERVICE_ERROR,
+			Some(serde_json::Value::String(message.clone())),
+		),
 		_ => {
 			if let Some(db_err) = model_err.as_database_error() {
 				let code = db_err.code().map(|c| c.to_string()).unwrap_or_default();
