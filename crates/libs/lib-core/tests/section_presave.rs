@@ -1158,7 +1158,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			routing_identifier: None,
 			cde_sender_identifier: None,
 			cdr_sender_identifier: None,
-			ema_sender_identifier: None,
 			is_default_for_authority: Some(false),
 		},
 	)
@@ -1174,7 +1173,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			routing_identifier: Some("route-before".into()),
 			cde_sender_identifier: None,
 			cdr_sender_identifier: None,
-			ema_sender_identifier: None,
 			is_default_for_authority: Some(true),
 		},
 	)

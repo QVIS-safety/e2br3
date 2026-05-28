@@ -156,14 +156,13 @@ CREATE TABLE IF NOT EXISTS sender_presave_gateways (
     routing_identifier VARCHAR(255),
     cde_sender_identifier VARCHAR(255),
     cdr_sender_identifier VARCHAR(255),
-    ema_sender_identifier VARCHAR(255),
     is_default_for_authority BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
-    CONSTRAINT sender_presave_gateways_authority_valid CHECK (gateway_authority IN ('fda', 'pmda', 'mfds', 'nmpa', 'ema')),
+    CONSTRAINT sender_presave_gateways_authority_valid CHECK (gateway_authority IN ('fda', 'mfds')),
     CONSTRAINT sender_presave_gateways_sequence_unique UNIQUE (sender_presave_id, sequence_number)
 );
 

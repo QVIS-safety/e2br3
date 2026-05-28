@@ -1388,7 +1388,7 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 					{
 						"id": gateway_id,
 						"sequence_number": 2,
-						"gateway_authority": "ema",
+						"gateway_authority": "mfds",
 						"sender_identifier": "SENDER-2"
 					},
 					{
@@ -1440,7 +1440,7 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 		updated_gateway["sender_identifier"].as_str(),
 		Some("SENDER-2")
 	);
-	assert_eq!(updated_gateway["gateway_authority"].as_str(), Some("ema"));
+	assert_eq!(updated_gateway["gateway_authority"].as_str(), Some("mfds"));
 	assert_eq!(updated_gateway["sequence_number"].as_i64(), Some(2));
 	let created_gateway = gateways
 		.iter()

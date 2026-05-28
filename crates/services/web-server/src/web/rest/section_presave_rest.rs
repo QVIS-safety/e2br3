@@ -130,7 +130,6 @@ async fn sender_scope_identifiers(
 		push_scope_identifier(&mut values, gateway.routing_identifier.as_deref());
 		push_scope_identifier(&mut values, gateway.cde_sender_identifier.as_deref());
 		push_scope_identifier(&mut values, gateway.cdr_sender_identifier.as_deref());
-		push_scope_identifier(&mut values, gateway.ema_sender_identifier.as_deref());
 	}
 	Ok(values)
 }
@@ -412,7 +411,6 @@ pub struct SenderGatewayDetailsForUpdate {
 	pub routing_identifier: Option<String>,
 	pub cde_sender_identifier: Option<String>,
 	pub cdr_sender_identifier: Option<String>,
-	pub ema_sender_identifier: Option<String>,
 	pub is_default_for_authority: Option<bool>,
 }
 
@@ -425,7 +423,6 @@ impl SenderGatewayDetailsForUpdate {
 			routing_identifier: self.routing_identifier,
 			cde_sender_identifier: self.cde_sender_identifier,
 			cdr_sender_identifier: self.cdr_sender_identifier,
-			ema_sender_identifier: self.ema_sender_identifier,
 			is_default_for_authority: self.is_default_for_authority,
 		}
 	}
@@ -454,7 +451,6 @@ impl SenderGatewayDetailsForUpdate {
 			routing_identifier: self.routing_identifier,
 			cde_sender_identifier: self.cde_sender_identifier,
 			cdr_sender_identifier: self.cdr_sender_identifier,
-			ema_sender_identifier: self.ema_sender_identifier,
 			is_default_for_authority: self.is_default_for_authority,
 		})
 	}
@@ -870,7 +866,6 @@ pub struct SenderGatewayForRestCreate {
 	pub routing_identifier: Option<String>,
 	pub cde_sender_identifier: Option<String>,
 	pub cdr_sender_identifier: Option<String>,
-	pub ema_sender_identifier: Option<String>,
 	pub is_default_for_authority: Option<bool>,
 }
 
@@ -884,7 +879,6 @@ impl SenderGatewayForRestCreate {
 			routing_identifier: self.routing_identifier,
 			cde_sender_identifier: self.cde_sender_identifier,
 			cdr_sender_identifier: self.cdr_sender_identifier,
-			ema_sender_identifier: self.ema_sender_identifier,
 			is_default_for_authority: self.is_default_for_authority,
 		}
 	}

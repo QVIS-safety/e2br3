@@ -332,7 +332,6 @@ pub struct SenderPresaveGateway {
 	pub routing_identifier: Option<String>,
 	pub cde_sender_identifier: Option<String>,
 	pub cdr_sender_identifier: Option<String>,
-	pub ema_sender_identifier: Option<String>,
 	pub is_default_for_authority: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -349,7 +348,6 @@ pub struct SenderPresaveGatewayForCreate {
 	pub routing_identifier: Option<String>,
 	pub cde_sender_identifier: Option<String>,
 	pub cdr_sender_identifier: Option<String>,
-	pub ema_sender_identifier: Option<String>,
 	pub is_default_for_authority: Option<bool>,
 }
 
@@ -361,7 +359,6 @@ pub struct SenderPresaveGatewayForUpdate {
 	pub routing_identifier: Option<String>,
 	pub cde_sender_identifier: Option<String>,
 	pub cdr_sender_identifier: Option<String>,
-	pub ema_sender_identifier: Option<String>,
 	pub is_default_for_authority: Option<bool>,
 }
 

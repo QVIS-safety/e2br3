@@ -140,7 +140,7 @@ async fn test_admin_settings_appendices_are_supported_and_never_empty() -> Resul
 		"/api/admin/settings",
 		Some(json!({
 			"data": {
-				"appendices": ["PMDA", "FDA", "EMA", "MFDS", "NMPA", "ICH"]
+				"appendices": ["FDA", "MFDS", "ICH"]
 			}
 		})),
 	)
