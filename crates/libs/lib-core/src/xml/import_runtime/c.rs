@@ -289,16 +289,12 @@ async fn import_c_2_sender_information(
 async fn default_sender_from_presave(
 	ctx: &Ctx,
 	mm: &ModelManager,
-	authority: Option<RegulatoryAuthority>,
+	_authority: Option<RegulatoryAuthority>,
 ) -> Result<Option<c_helpers::SenderImport>> {
 	let mut senders = SenderPresaveBmc::list(ctx, mm, None)
 		.await
 		.map_err(Error::Model)?;
-	senders.retain(|sender| {
-		!sender.deleted
-			&& sender.is_default
-			&& authority.map_or(true, |authority| sender.authority == authority)
-	});
+	senders.retain(|sender| !sender.deleted && sender.is_default);
 	let Some(sender) = senders.into_iter().next() else {
 		return Ok(None);
 	};

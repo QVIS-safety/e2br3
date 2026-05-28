@@ -1,4 +1,4 @@
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::model::acs::{
@@ -38,7 +38,6 @@ use lib_core::model::presave::{
 };
 use lib_core::model::user::UserBmc;
 use lib_core::model::{self, ModelManager};
-use lib_core::regulatory::RegulatoryAuthority;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -46,11 +45,6 @@ use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use uuid::Uuid;
-
-#[derive(Debug, Deserialize)]
-pub struct PresaveAuthorityQuery {
-	pub authority: Option<RegulatoryAuthority>,
-}
 
 #[derive(Clone, Copy)]
 enum PresaveScopeSection {
@@ -331,14 +325,10 @@ pub async fn create_sender_presave(
 pub async fn list_sender_presaves(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Query(query): Query<PresaveAuthorityQuery>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<SenderPresave>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	let mut entities = SenderPresaveBmc::list(&ctx, &mm, None).await?;
-	if let Some(authority) = query.authority {
-		entities.retain(|entity| entity.authority == authority);
-	}
+	let entities = SenderPresaveBmc::list(&ctx, &mm, None).await?;
 	let entities = filter_sender_presaves_for_scope(&ctx, &mm, entities).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
@@ -1138,14 +1128,10 @@ pub async fn create_receiver_presave(
 pub async fn list_receiver_presaves(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Query(query): Query<PresaveAuthorityQuery>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<ReceiverPresave>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	let mut entities = ReceiverPresaveBmc::list(&ctx, &mm, None).await?;
-	if let Some(authority) = query.authority {
-		entities.retain(|entity| entity.authority == authority);
-	}
+	let entities = ReceiverPresaveBmc::list(&ctx, &mm, None).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
 
@@ -1590,14 +1576,10 @@ pub async fn create_product_presave(
 pub async fn list_product_presaves(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Query(query): Query<PresaveAuthorityQuery>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<ProductPresave>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	let mut entities = ProductPresaveBmc::list(&ctx, &mm, None).await?;
-	if let Some(authority) = query.authority {
-		entities.retain(|entity| entity.authority == authority);
-	}
+	let entities = ProductPresaveBmc::list(&ctx, &mm, None).await?;
 	let entities = filter_product_presaves_for_scope(&ctx, &mm, entities).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
@@ -2039,31 +2021,10 @@ async fn preflight_product_fda_cross_reported_ind_detail(
 			"product_presave_fda_cross_reported_inds",
 		)?;
 		if !ind.delete {
-			validate_product_details_fda_cross_reported_ind_parent(
-				ctx, mm, product_id,
-			)
-			.await?;
+			let _ = (ctx, mm, product_id);
 		}
 	} else if !ind.delete {
-		validate_product_details_fda_cross_reported_ind_parent(ctx, mm, product_id)
-			.await?;
 		validate_product_fda_cross_reported_ind_detail_create(ind)?;
-	}
-	Ok(())
-}
-
-async fn validate_product_details_fda_cross_reported_ind_parent(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	product_id: Uuid,
-) -> Result<()> {
-	let parent = ProductPresaveBmc::get(ctx, mm, product_id).await?;
-	if !matches!(parent.authority, RegulatoryAuthority::Fda) {
-		return Err(Error::BadRequest {
-			message:
-				"product FDA cross-reported IND details require FDA product presave"
-					.to_string(),
-		});
 	}
 	Ok(())
 }
@@ -2102,29 +2063,10 @@ async fn preflight_product_mfds_regional_item_detail(
 			"product_presave_mfds_regional_items",
 		)?;
 		if !item.delete {
-			validate_product_details_mfds_regional_item_parent(ctx, mm, product_id)
-				.await?;
+			let _ = (ctx, mm, product_id);
 		}
 	} else if !item.delete {
-		validate_product_details_mfds_regional_item_parent(ctx, mm, product_id)
-			.await?;
 		validate_product_mfds_regional_item_detail_create(item)?;
-	}
-	Ok(())
-}
-
-async fn validate_product_details_mfds_regional_item_parent(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	product_id: Uuid,
-) -> Result<()> {
-	let parent = ProductPresaveBmc::get(ctx, mm, product_id).await?;
-	if !matches!(parent.authority, RegulatoryAuthority::Mfds) {
-		return Err(Error::BadRequest {
-			message:
-				"product MFDS regional item details require MFDS product presave"
-					.to_string(),
-		});
 	}
 	Ok(())
 }
@@ -2680,14 +2622,10 @@ pub async fn create_reporter_presave(
 pub async fn list_reporter_presaves(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Query(query): Query<PresaveAuthorityQuery>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<ReporterPresave>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	let mut entities = ReporterPresaveBmc::list(&ctx, &mm, None).await?;
-	if let Some(authority) = query.authority {
-		entities.retain(|entity| entity.authority == authority);
-	}
+	let entities = ReporterPresaveBmc::list(&ctx, &mm, None).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
 
@@ -2955,14 +2893,10 @@ pub async fn create_study_presave(
 pub async fn list_study_presaves(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Query(query): Query<PresaveAuthorityQuery>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<StudyPresave>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	let mut entities = StudyPresaveBmc::list(&ctx, &mm, None).await?;
-	if let Some(authority) = query.authority {
-		entities.retain(|entity| entity.authority == authority);
-	}
+	let entities = StudyPresaveBmc::list(&ctx, &mm, None).await?;
 	let entities = filter_study_presaves_for_scope(&ctx, &mm, entities).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
@@ -3708,14 +3642,10 @@ pub async fn create_narrative_presave(
 pub async fn list_narrative_presaves(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	Query(query): Query<PresaveAuthorityQuery>,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<NarrativePresave>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	let mut entities = NarrativePresaveBmc::list(&ctx, &mm, None).await?;
-	if let Some(authority) = query.authority {
-		entities.retain(|entity| entity.authority == authority);
-	}
+	let entities = NarrativePresaveBmc::list(&ctx, &mm, None).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
 

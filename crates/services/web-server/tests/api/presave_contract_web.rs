@@ -8,7 +8,6 @@ use axum::Router;
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_CRO};
 use lib_core::model::presave::{ProductPresaveBmc, ProductPresaveForCreate};
-use lib_core::regulatory::RegulatoryAuthority;
 use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
@@ -59,7 +58,6 @@ async fn create_product_presave(
 		&ctx,
 		mm,
 		ProductPresaveForCreate {
-			authority: RegulatoryAuthority::Fda,
 			name: format!("REST Product {}", Uuid::new_v4()),
 			comments: None,
 			sender_presave_id: None,
@@ -150,12 +148,12 @@ async fn put_json_ok(
 async fn create_sender_presave_via_api(
 	app: &Router,
 	cookie: &str,
-	authority: &str,
+	_authority: &str,
 ) -> Result<Uuid> {
 	create_named_sender_presave_via_api(
 		app,
 		cookie,
-		authority,
+		"legacy-unused",
 		format!("REST Sender Details {}", Uuid::new_v4()),
 		"REST Sender Details Org",
 	)
@@ -165,7 +163,7 @@ async fn create_sender_presave_via_api(
 async fn create_named_sender_presave_via_api(
 	app: &Router,
 	cookie: &str,
-	authority: &str,
+	_authority: &str,
 	name: String,
 	organization_name: &str,
 ) -> Result<Uuid> {
@@ -175,7 +173,6 @@ async fn create_named_sender_presave_via_api(
 		"/api/presaves/senders".to_string(),
 		json!({
 			"data": {
-				"authority": authority,
 				"name": name,
 				"sender_type": "1",
 				"organization_name": organization_name,
@@ -240,7 +237,7 @@ async fn create_sender_responsible_person_via_api(
 async fn create_receiver_presave_via_api(
 	app: &Router,
 	cookie: &str,
-	authority: &str,
+	_authority: &str,
 ) -> Result<Uuid> {
 	let value = post_json_created(
 		app,
@@ -248,7 +245,6 @@ async fn create_receiver_presave_via_api(
 		"/api/presaves/receivers".to_string(),
 		json!({
 			"data": {
-				"authority": authority,
 				"name": format!("REST Receiver Details {}", Uuid::new_v4()),
 				"receiver_type": "1",
 				"organization_name": "REST Receiver Details Org",
@@ -286,12 +282,12 @@ async fn create_receiver_consignee_via_api(
 async fn create_product_presave_via_api(
 	app: &Router,
 	cookie: &str,
-	authority: &str,
+	_authority: &str,
 ) -> Result<Uuid> {
 	create_named_product_presave_via_api(
 		app,
 		cookie,
-		authority,
+		"legacy-unused",
 		format!("REST Product Details {}", Uuid::new_v4()),
 		"REST Product Details",
 	)
@@ -301,7 +297,7 @@ async fn create_product_presave_via_api(
 async fn create_named_product_presave_via_api(
 	app: &Router,
 	cookie: &str,
-	authority: &str,
+	_authority: &str,
 	name: String,
 	medicinal_product: &str,
 ) -> Result<Uuid> {
@@ -311,7 +307,6 @@ async fn create_named_product_presave_via_api(
 		"/api/presaves/products".to_string(),
 		json!({
 			"data": {
-				"authority": authority,
 				"name": name,
 				"medicinal_product": medicinal_product
 			}
@@ -394,13 +389,13 @@ async fn create_study_presave_for_product_via_api(
 	app: &Router,
 	cookie: &str,
 	product_id: Uuid,
-	authority: &str,
+	_authority: &str,
 ) -> Result<Uuid> {
 	create_named_study_presave_for_product_via_api(
 		app,
 		cookie,
 		product_id,
-		authority,
+		"legacy-unused",
 		format!("REST Study Details {}", Uuid::new_v4()),
 		"REST Study Details",
 	)
@@ -411,7 +406,7 @@ async fn create_named_study_presave_for_product_via_api(
 	app: &Router,
 	cookie: &str,
 	product_id: Uuid,
-	authority: &str,
+	_authority: &str,
 	name: String,
 	study_name: &str,
 ) -> Result<Uuid> {
@@ -421,7 +416,6 @@ async fn create_named_study_presave_for_product_via_api(
 		"/api/presaves/studies".to_string(),
 		json!({
 			"data": {
-				"authority": authority,
 				"name": name,
 				"product_presave_id": product_id,
 				"study_name": study_name
@@ -480,7 +474,7 @@ async fn create_study_fda_cross_reported_ind_via_api(
 async fn create_narrative_presave_with_authority_via_api(
 	app: &Router,
 	cookie: &str,
-	authority: &str,
+	_authority: &str,
 ) -> Result<Uuid> {
 	let value = post_json_created(
 		app,
@@ -488,7 +482,6 @@ async fn create_narrative_presave_with_authority_via_api(
 		"/api/presaves/narratives".to_string(),
 		json!({
 			"data": {
-				"authority": authority,
 				"name": format!("REST Narrative Details {}", Uuid::new_v4()),
 				"case_narrative": "REST narrative details"
 			}
@@ -611,6 +604,82 @@ async fn update_user_scope(
 
 #[serial]
 #[tokio::test]
+async fn test_canonical_product_presave_is_authorityless_union_record() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let created = post_json_created(
+		&app,
+		&admin_cookie,
+		"/api/presaves/products".to_string(),
+		json!({
+			"data": {
+				"name": "Authorityless Union Product",
+				"medicinal_product": "Union Product",
+				"fda_ind_number_occurred": "IND-UNION",
+				"mfds_domestic_product_code": "MFDS-UNION"
+			}
+		}),
+	)
+	.await?;
+	assert!(
+		created["data"].get("authority").is_none(),
+		"canonical presave responses must not expose authority: {created:?}"
+	);
+	let product_id = data_id(&created)?;
+
+	let saved = put_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/products/{product_id}/details"),
+		json!({
+			"data": {
+				"fda_cross_reported_inds": [
+					{ "sequence_number": 1, "ind_number": "IND-CHILD" }
+				],
+				"mfds_regional_items": [
+					{
+						"sequence_number": 1,
+						"item_type": "domestic_product_code",
+						"item_value": "MFDS-CHILD"
+					}
+				]
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		saved["data"]["parent"]["fda_ind_number_occurred"].as_str(),
+		Some("IND-UNION")
+	);
+	assert_eq!(
+		saved["data"]["parent"]["mfds_domestic_product_code"].as_str(),
+		Some("MFDS-UNION")
+	);
+	assert_eq!(
+		saved["data"]["fda_cross_reported_inds"]
+			.as_array()
+			.ok_or("missing fda child rows")?
+			.len(),
+		1
+	);
+	assert_eq!(
+		saved["data"]["mfds_regional_items"]
+			.as_array()
+			.ok_or("missing mfds child rows")?
+			.len(),
+		1
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_section_presave_study_rest_contract() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -626,7 +695,6 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 		"/api/presaves/studies".to_string(),
 		Some(json!({
 			"data": {
-				"authority": "fda",
 				"name": "REST Study Missing Product",
 				"study_name": "Missing Product Study"
 			}
@@ -642,7 +710,6 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 		"/api/presaves/studies".to_string(),
 		Some(json!({
 			"data": {
-				"authority": "fda",
 				"name": "REST Study",
 				"product_presave_id": product_id,
 				"study_name": "REST Study Name",
@@ -661,7 +728,7 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 		&app,
 		&admin_cookie,
 		Method::GET,
-		"/api/presaves/studies?authority=fda".to_string(),
+		"/api/presaves/studies".to_string(),
 		None,
 	)
 	.await?;
@@ -821,7 +888,6 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		"/api/presaves/narratives".to_string(),
 		Some(json!({
 			"data": {
-				"authority": "ich",
 				"name": "REST Narrative Missing Auto Narrative"
 			}
 		})),
@@ -836,7 +902,6 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		"/api/presaves/narratives".to_string(),
 		Some(json!({
 			"data": {
-				"authority": "ich",
 				"name": "REST Narrative",
 				"case_narrative": "REST auto narrative",
 				"case_narrative_notation": "REST notation"
@@ -851,7 +916,7 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		&app,
 		&admin_cookie,
 		Method::GET,
-		"/api/presaves/narratives?authority=ich".to_string(),
+		"/api/presaves/narratives".to_string(),
 		None,
 	)
 	.await?;
@@ -1003,7 +1068,6 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		"/api/presaves/senders".to_string(),
 		Some(json!({
 			"data": {
-				"authority": "ich",
 				"name": "REST Sender",
 				"sender_type": "1",
 				"organization_name": "REST Sender Org",
@@ -1057,7 +1121,6 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		"/api/presaves/receivers".to_string(),
 		Some(json!({
 			"data": {
-				"authority": "ich",
 				"name": "REST Receiver",
 				"receiver_type": "1",
 				"organization_name": "REST Receiver Org",
@@ -1093,7 +1156,6 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		"/api/presaves/products".to_string(),
 		Some(json!({
 			"data": {
-				"authority": "fda",
 				"name": "REST Product Canonical",
 				"sender_presave_id": sender_id,
 				"medicinal_product": "REST Product Canonical",
@@ -1112,7 +1174,6 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		"/api/presaves/products".to_string(),
 		Some(json!({
 			"data": {
-				"authority": "mfds",
 				"name": "REST MFDS Product Canonical",
 				"sender_presave_id": sender_id,
 				"medicinal_product": "REST MFDS Product Canonical"
@@ -1181,7 +1242,6 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		"/api/presaves/reporters".to_string(),
 		Some(json!({
 			"data": {
-				"authority": "ich",
 				"name": "REST Reporter",
 				"reporter_given_name": "Grace",
 				"reporter_family_name": "Hopper",
@@ -1195,19 +1255,10 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 	let reporter_id = data_id(&value)?;
 
 	for (uri, id) in [
-		("/api/presaves/senders?authority=ich".to_string(), sender_id),
-		(
-			"/api/presaves/receivers?authority=ich".to_string(),
-			receiver_id,
-		),
-		(
-			"/api/presaves/products?authority=fda".to_string(),
-			product_id,
-		),
-		(
-			"/api/presaves/reporters?authority=ich".to_string(),
-			reporter_id,
-		),
+		("/api/presaves/senders".to_string(), sender_id),
+		("/api/presaves/receivers".to_string(), receiver_id),
+		("/api/presaves/products".to_string(), product_id),
+		("/api/presaves/reporters".to_string(), reporter_id),
 	] {
 		let (status, value) =
 			request_json(&app, &admin_cookie, Method::GET, uri, None).await?;
@@ -2228,7 +2279,7 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 
 #[serial]
 #[tokio::test]
-async fn test_product_presave_details_rejects_fda_inds_for_non_fda_products(
+async fn test_product_presave_details_allows_fda_inds_on_authorityless_products(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -2253,7 +2304,12 @@ async fn test_product_presave_details_rejects_fda_inds_for_non_fda_products(
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["data"]["fda_cross_reported_inds"][0]["ind_number"].as_str(),
+		Some("IND-NON-FDA-CREATE"),
+		"{value:?}"
+	);
 
 	let (status, value) = request_json(
 		&app,
@@ -2262,20 +2318,25 @@ async fn test_product_presave_details_rejects_fda_inds_for_non_fda_products(
 		format!("/api/presaves/products/{mfds_product}/fda-cross-reported-inds"),
 		Some(json!({
 			"data": {
-				"sequence_number": 1,
+				"sequence_number": 2,
 				"ind_number": "IND-DIRECT-NON-FDA-CREATE"
 			}
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(
+		value["data"]["ind_number"].as_str(),
+		Some("IND-DIRECT-NON-FDA-CREATE"),
+		"{value:?}"
+	);
 
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_product_presave_details_rejects_mfds_regional_items_for_non_mfds_products(
+async fn test_product_presave_details_allows_mfds_regional_items_on_authorityless_products(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -2301,7 +2362,12 @@ async fn test_product_presave_details_rejects_mfds_regional_items_for_non_mfds_p
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(
+		value["data"]["mfds_regional_items"][0]["item_value"].as_str(),
+		Some("MFDS-NON-MFDS-CREATE"),
+		"{value:?}"
+	);
 
 	let (status, value) = request_json(
 		&app,
@@ -2310,14 +2376,19 @@ async fn test_product_presave_details_rejects_mfds_regional_items_for_non_mfds_p
 		format!("/api/presaves/products/{fda_product}/mfds-regional-items"),
 		Some(json!({
 			"data": {
-				"sequence_number": 1,
+				"sequence_number": 2,
 				"item_type": "domestic_product_code",
 				"item_value": "MFDS-DIRECT-NON-MFDS-CREATE"
 			}
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(
+		value["data"]["item_value"].as_str(),
+		Some("MFDS-DIRECT-NON-MFDS-CREATE"),
+		"{value:?}"
+	);
 
 	Ok(())
 }
@@ -3243,7 +3314,7 @@ async fn test_canonical_product_presaves_respect_assigned_product_scope(
 		&app,
 		&editor_cookie,
 		Method::GET,
-		"/api/presaves/products?authority=fda".to_string(),
+		"/api/presaves/products".to_string(),
 		None,
 	)
 	.await?;
@@ -3270,7 +3341,6 @@ async fn test_canonical_product_presaves_respect_assigned_product_scope(
 		"/api/presaves/products".to_string(),
 		Some(json!({
 			"data": {
-				"authority": "fda",
 				"name": "out-of-scope canonical product create",
 				"medicinal_product": "HIDDEN-CANONICAL-CREATED"
 			}

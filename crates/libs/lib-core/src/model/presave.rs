@@ -3,43 +3,13 @@ use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
 use crate::model::ModelManager;
 use crate::model::Result;
-use crate::regulatory::RegulatoryAuthority;
 use modql::field::{Fields, HasSeaFields};
 use modql::filter::{FilterNodes, ListOptions, OpValsBool};
 use rust_decimal::Decimal;
-use sea_query::Value;
 use serde::{Deserialize, Serialize};
-use sqlx::decode::Decode;
-use sqlx::postgres::{PgTypeInfo, PgValueRef};
 use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
-use sqlx::{FromRow, Postgres, Type};
-
-impl From<RegulatoryAuthority> for Value {
-	fn from(value: RegulatoryAuthority) -> Self {
-		value.as_str().into()
-	}
-}
-
-impl Type<Postgres> for RegulatoryAuthority {
-	fn type_info() -> PgTypeInfo {
-		<String as Type<Postgres>>::type_info()
-	}
-
-	fn compatible(ty: &PgTypeInfo) -> bool {
-		<String as Type<Postgres>>::compatible(ty)
-	}
-}
-
-impl<'r> Decode<'r, Postgres> for RegulatoryAuthority {
-	fn decode(
-		value: PgValueRef<'r>,
-	) -> std::result::Result<Self, Box<dyn std::error::Error + Send + Sync>> {
-		let value = <String as Decode<Postgres>>::decode(value)?;
-		RegulatoryAuthority::parse(&value)
-			.ok_or_else(|| format!("invalid regulatory authority: {value}").into())
-	}
-}
+use sqlx::FromRow;
 
 #[derive(FilterNodes, Deserialize, Default)]
 pub struct PresaveListFilter {
@@ -102,79 +72,6 @@ macro_rules! impl_parent_bmc {
 				id: Uuid,
 				data: $update,
 			) -> Result<()> {
-				base_uuid::update::<Self, _>(ctx, mm, id, data).await
-			}
-
-			pub async fn delete(
-				ctx: &Ctx,
-				mm: &ModelManager,
-				id: Uuid,
-			) -> Result<()> {
-				base_uuid::delete::<Self>(ctx, mm, id).await
-			}
-		}
-	};
-}
-
-macro_rules! impl_authority_validated_parent_bmc {
-	(
-		$bmc:ident,
-		$model:ty,
-		$create:ty,
-		$update:ty,
-		$table:literal
-	) => {
-		pub struct $bmc;
-
-		impl DbBmc for $bmc {
-			const TABLE: &'static str = $table;
-		}
-
-		impl $bmc {
-			pub async fn create(
-				ctx: &Ctx,
-				mm: &ModelManager,
-				data: $create,
-			) -> Result<Uuid> {
-				data.validate_authority_fields()?;
-				base_uuid::create::<Self, _>(
-					ctx,
-					mm,
-					data.into_insert(ctx.organization_id()),
-				)
-				.await
-			}
-
-			pub async fn get(
-				ctx: &Ctx,
-				mm: &ModelManager,
-				id: Uuid,
-			) -> Result<$model> {
-				base_uuid::get::<Self, _>(ctx, mm, id).await
-			}
-
-			pub async fn list(
-				ctx: &Ctx,
-				mm: &ModelManager,
-				list_options: Option<ListOptions>,
-			) -> Result<Vec<$model>> {
-				base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
-					ctx,
-					mm,
-					None,
-					list_options,
-				)
-				.await
-			}
-
-			pub async fn update(
-				ctx: &Ctx,
-				mm: &ModelManager,
-				id: Uuid,
-				data: $update,
-			) -> Result<()> {
-				let current: $model = base_uuid::get::<Self, _>(ctx, mm, id).await?;
-				data.validate_authority_fields(current.authority)?;
 				base_uuid::update::<Self, _>(ctx, mm, id, data).await
 			}
 
@@ -289,49 +186,6 @@ macro_rules! impl_child_bmc {
 	};
 }
 
-fn authority_field_error(
-	entity: &str,
-	field: &str,
-	allowed_authority: RegulatoryAuthority,
-) -> crate::model::Error {
-	crate::model::Error::Store(format!(
-		"{entity} field `{field}` is only allowed for {} presaves",
-		allowed_authority.as_str()
-	))
-}
-
-fn validate_fda_only_field(
-	entity: &str,
-	authority: RegulatoryAuthority,
-	field: &str,
-	present: bool,
-) -> Result<()> {
-	if present && !matches!(authority, RegulatoryAuthority::Fda) {
-		return Err(authority_field_error(
-			entity,
-			field,
-			RegulatoryAuthority::Fda,
-		));
-	}
-	Ok(())
-}
-
-fn validate_mfds_only_field(
-	entity: &str,
-	authority: RegulatoryAuthority,
-	field: &str,
-	present: bool,
-) -> Result<()> {
-	if present && !matches!(authority, RegulatoryAuthority::Mfds) {
-		return Err(authority_field_error(
-			entity,
-			field,
-			RegulatoryAuthority::Mfds,
-		));
-	}
-	Ok(())
-}
-
 fn validate_allowed_optional_text(
 	entity: &str,
 	field: &str,
@@ -359,7 +213,6 @@ trait IntoOrgScopedCreate {
 pub struct SenderPresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub deleted: bool,
@@ -383,7 +236,6 @@ pub struct SenderPresave {
 
 #[derive(Deserialize)]
 pub struct SenderPresaveForCreate {
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub is_default: Option<bool>,
@@ -403,7 +255,6 @@ pub struct SenderPresaveForCreate {
 #[derive(Fields)]
 struct SenderPresaveForInsert {
 	organization_id: Uuid,
-	authority: RegulatoryAuthority,
 	name: String,
 	comments: Option<String>,
 	is_default: Option<bool>,
@@ -426,7 +277,6 @@ impl IntoOrgScopedCreate for SenderPresaveForCreate {
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
 		SenderPresaveForInsert {
 			organization_id,
-			authority: self.authority,
 			name: self.name,
 			comments: self.comments,
 			is_default: self.is_default,
@@ -471,42 +321,6 @@ impl_parent_bmc!(
 	SenderPresaveForUpdate,
 	"sender_presaves"
 );
-
-impl SenderPresaveBmc {
-	pub async fn list_by_authority(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		authority: RegulatoryAuthority,
-	) -> Result<Vec<SenderPresave>> {
-		let dbx = mm.dbx();
-		dbx.begin_txn().await?;
-		if let Err(err) =
-			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
-		{
-			dbx.rollback_txn().await?;
-			return Err(err);
-		}
-
-		let sql = format!(
-			"SELECT * FROM {} WHERE authority = $1 ORDER BY updated_at DESC, id ASC",
-			Self::TABLE
-		);
-		let rows = match dbx
-			.fetch_all(
-				sqlx::query_as::<_, SenderPresave>(&sql).bind(authority.as_str()),
-			)
-			.await
-		{
-			Ok(rows) => rows,
-			Err(err) => {
-				dbx.rollback_txn().await?;
-				return Err(err.into());
-			}
-		};
-		dbx.commit_txn().await?;
-		Ok(rows)
-	}
-}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct SenderPresaveGateway {
@@ -613,7 +427,6 @@ impl_child_bmc!(
 pub struct ReceiverPresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub deleted: bool,
@@ -638,7 +451,6 @@ pub struct ReceiverPresave {
 
 #[derive(Deserialize)]
 pub struct ReceiverPresaveForCreate {
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub receiver_type: Option<String>,
@@ -659,7 +471,6 @@ pub struct ReceiverPresaveForCreate {
 #[derive(Fields)]
 struct ReceiverPresaveForInsert {
 	organization_id: Uuid,
-	authority: RegulatoryAuthority,
 	name: String,
 	comments: Option<String>,
 	receiver_type: Option<String>,
@@ -683,7 +494,6 @@ impl IntoOrgScopedCreate for ReceiverPresaveForCreate {
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
 		ReceiverPresaveForInsert {
 			organization_id,
-			authority: self.authority,
 			name: self.name,
 			comments: self.comments,
 			receiver_type: self.receiver_type,
@@ -776,7 +586,6 @@ impl_child_bmc!(
 pub struct ProductPresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub deleted: bool,
@@ -823,7 +632,6 @@ pub struct ProductPresave {
 
 #[derive(Deserialize)]
 pub struct ProductPresaveForCreate {
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub sender_presave_id: Option<Uuid>,
@@ -866,7 +674,6 @@ pub struct ProductPresaveForCreate {
 #[derive(Fields)]
 struct ProductPresaveForInsert {
 	organization_id: Uuid,
-	authority: RegulatoryAuthority,
 	name: String,
 	comments: Option<String>,
 	sender_presave_id: Option<Uuid>,
@@ -912,7 +719,6 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
 		ProductPresaveForInsert {
 			organization_id,
-			authority: self.authority,
 			name: self.name,
 			comments: self.comments,
 			sender_presave_id: self.sender_presave_id,
@@ -951,74 +757,6 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 			mfds_foreign_e2b_holder_code: self.mfds_foreign_e2b_holder_code,
 			mfds_foreign_e2b_holder_name: self.mfds_foreign_e2b_holder_name,
 		}
-	}
-}
-
-impl ProductPresaveForCreate {
-	fn validate_authority_fields(&self) -> Result<()> {
-		validate_product_authority_fields(
-			self.authority,
-			self.fda_ind_number_occurred.is_some(),
-			self.fda_pre_anda_number_occurred.is_some(),
-			&[
-				(
-					"mfds_domestic_product_code",
-					self.mfds_domestic_product_code.is_some(),
-				),
-				(
-					"mfds_domestic_ingredient_code",
-					self.mfds_domestic_ingredient_code.is_some(),
-				),
-				(
-					"mfds_udl_product_code",
-					self.mfds_udl_product_code.is_some(),
-				),
-				(
-					"mfds_udl_ingredient_code",
-					self.mfds_udl_ingredient_code.is_some(),
-				),
-				(
-					"mfds_udl_manufacturer_code",
-					self.mfds_udl_manufacturer_code.is_some(),
-				),
-				(
-					"mfds_udl_manufacturer_name",
-					self.mfds_udl_manufacturer_name.is_some(),
-				),
-				(
-					"mfds_foreign_ich_product_code",
-					self.mfds_foreign_ich_product_code.is_some(),
-				),
-				(
-					"mfds_foreign_ich_ingredient_code",
-					self.mfds_foreign_ich_ingredient_code.is_some(),
-				),
-				(
-					"mfds_foreign_ich_holder_code",
-					self.mfds_foreign_ich_holder_code.is_some(),
-				),
-				(
-					"mfds_foreign_ich_holder_name",
-					self.mfds_foreign_ich_holder_name.is_some(),
-				),
-				(
-					"mfds_foreign_e2b_product_code",
-					self.mfds_foreign_e2b_product_code.is_some(),
-				),
-				(
-					"mfds_foreign_e2b_ingredient_code",
-					self.mfds_foreign_e2b_ingredient_code.is_some(),
-				),
-				(
-					"mfds_foreign_e2b_holder_code",
-					self.mfds_foreign_e2b_holder_code.is_some(),
-				),
-				(
-					"mfds_foreign_e2b_holder_name",
-					self.mfds_foreign_e2b_holder_name.is_some(),
-				),
-			],
-		)
 	}
 }
 
@@ -1064,102 +802,7 @@ pub struct ProductPresaveForUpdate {
 	pub mfds_foreign_e2b_holder_name: Option<String>,
 }
 
-impl ProductPresaveForUpdate {
-	fn validate_authority_fields(
-		&self,
-		authority: RegulatoryAuthority,
-	) -> Result<()> {
-		validate_product_authority_fields(
-			authority,
-			self.fda_ind_number_occurred.is_some(),
-			self.fda_pre_anda_number_occurred.is_some(),
-			&[
-				(
-					"mfds_domestic_product_code",
-					self.mfds_domestic_product_code.is_some(),
-				),
-				(
-					"mfds_domestic_ingredient_code",
-					self.mfds_domestic_ingredient_code.is_some(),
-				),
-				(
-					"mfds_udl_product_code",
-					self.mfds_udl_product_code.is_some(),
-				),
-				(
-					"mfds_udl_ingredient_code",
-					self.mfds_udl_ingredient_code.is_some(),
-				),
-				(
-					"mfds_udl_manufacturer_code",
-					self.mfds_udl_manufacturer_code.is_some(),
-				),
-				(
-					"mfds_udl_manufacturer_name",
-					self.mfds_udl_manufacturer_name.is_some(),
-				),
-				(
-					"mfds_foreign_ich_product_code",
-					self.mfds_foreign_ich_product_code.is_some(),
-				),
-				(
-					"mfds_foreign_ich_ingredient_code",
-					self.mfds_foreign_ich_ingredient_code.is_some(),
-				),
-				(
-					"mfds_foreign_ich_holder_code",
-					self.mfds_foreign_ich_holder_code.is_some(),
-				),
-				(
-					"mfds_foreign_ich_holder_name",
-					self.mfds_foreign_ich_holder_name.is_some(),
-				),
-				(
-					"mfds_foreign_e2b_product_code",
-					self.mfds_foreign_e2b_product_code.is_some(),
-				),
-				(
-					"mfds_foreign_e2b_ingredient_code",
-					self.mfds_foreign_e2b_ingredient_code.is_some(),
-				),
-				(
-					"mfds_foreign_e2b_holder_code",
-					self.mfds_foreign_e2b_holder_code.is_some(),
-				),
-				(
-					"mfds_foreign_e2b_holder_name",
-					self.mfds_foreign_e2b_holder_name.is_some(),
-				),
-			],
-		)
-	}
-}
-
-fn validate_product_authority_fields(
-	authority: RegulatoryAuthority,
-	fda_ind_number_occurred: bool,
-	fda_pre_anda_number_occurred: bool,
-	mfds_fields: &[(&str, bool)],
-) -> Result<()> {
-	validate_fda_only_field(
-		"product presave",
-		authority,
-		"fda_ind_number_occurred",
-		fda_ind_number_occurred,
-	)?;
-	validate_fda_only_field(
-		"product presave",
-		authority,
-		"fda_pre_anda_number_occurred",
-		fda_pre_anda_number_occurred,
-	)?;
-	for (field, present) in mfds_fields {
-		validate_mfds_only_field("product presave", authority, field, *present)?;
-	}
-	Ok(())
-}
-
-impl_authority_validated_parent_bmc!(
+impl_parent_bmc!(
 	ProductPresaveBmc,
 	ProductPresave,
 	ProductPresaveForCreate,
@@ -1250,9 +893,6 @@ impl ProductPresaveFdaCrossReportedIndBmc {
 		mm: &ModelManager,
 		data: ProductPresaveFdaCrossReportedIndForCreate,
 	) -> Result<Uuid> {
-		let parent =
-			ProductPresaveBmc::get(ctx, mm, data.product_presave_id).await?;
-		validate_product_fda_cross_reported_ind_parent(parent.authority)?;
 		base_uuid::create::<Self, _>(ctx, mm, data).await
 	}
 
@@ -1284,11 +924,6 @@ impl ProductPresaveFdaCrossReportedIndBmc {
 		id: Uuid,
 		data: ProductPresaveFdaCrossReportedIndForUpdate,
 	) -> Result<()> {
-		let current: ProductPresaveFdaCrossReportedInd =
-			base_uuid::get::<Self, _>(ctx, mm, id).await?;
-		let parent =
-			ProductPresaveBmc::get(ctx, mm, current.product_presave_id).await?;
-		validate_product_fda_cross_reported_ind_parent(parent.authority)?;
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
 
@@ -1332,17 +967,6 @@ impl ProductPresaveFdaCrossReportedIndBmc {
 	}
 }
 
-fn validate_product_fda_cross_reported_ind_parent(
-	authority: RegulatoryAuthority,
-) -> Result<()> {
-	validate_fda_only_field(
-		"product_presave_fda_cross_reported_inds",
-		authority,
-		"product_presave_id",
-		true,
-	)
-}
-
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct ProductPresaveMfdsRegionalItem {
 	pub id: Uuid,
@@ -1383,9 +1007,6 @@ impl ProductPresaveMfdsRegionalItemBmc {
 		mm: &ModelManager,
 		data: ProductPresaveMfdsRegionalItemForCreate,
 	) -> Result<Uuid> {
-		let parent =
-			ProductPresaveBmc::get(ctx, mm, data.product_presave_id).await?;
-		validate_product_mfds_regional_item_parent(parent.authority)?;
 		base_uuid::create::<Self, _>(ctx, mm, data).await
 	}
 
@@ -1417,11 +1038,6 @@ impl ProductPresaveMfdsRegionalItemBmc {
 		id: Uuid,
 		data: ProductPresaveMfdsRegionalItemForUpdate,
 	) -> Result<()> {
-		let current: ProductPresaveMfdsRegionalItem =
-			base_uuid::get::<Self, _>(ctx, mm, id).await?;
-		let parent =
-			ProductPresaveBmc::get(ctx, mm, current.product_presave_id).await?;
-		validate_product_mfds_regional_item_parent(parent.authority)?;
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
 
@@ -1465,22 +1081,10 @@ impl ProductPresaveMfdsRegionalItemBmc {
 	}
 }
 
-fn validate_product_mfds_regional_item_parent(
-	authority: RegulatoryAuthority,
-) -> Result<()> {
-	validate_mfds_only_field(
-		"product_presave_mfds_regional_items",
-		authority,
-		"product_presave_id",
-		true,
-	)
-}
-
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct ReporterPresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub deleted: bool,
@@ -1508,7 +1112,6 @@ pub struct ReporterPresave {
 
 #[derive(Deserialize)]
 pub struct ReporterPresaveForCreate {
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub reporter_title: Option<String>,
@@ -1532,7 +1135,6 @@ pub struct ReporterPresaveForCreate {
 #[derive(Fields)]
 struct ReporterPresaveForInsert {
 	organization_id: Uuid,
-	authority: RegulatoryAuthority,
 	name: String,
 	comments: Option<String>,
 	reporter_title: Option<String>,
@@ -1559,7 +1161,6 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
 		ReporterPresaveForInsert {
 			organization_id,
-			authority: self.authority,
 			name: self.name,
 			comments: self.comments,
 			reporter_title: self.reporter_title,
@@ -1579,17 +1180,6 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 			qualification_kr1: self.qualification_kr1,
 			primary_source_regulatory: self.primary_source_regulatory,
 		}
-	}
-}
-
-impl ReporterPresaveForCreate {
-	fn validate_authority_fields(&self) -> Result<()> {
-		validate_mfds_only_field(
-			"reporter presave",
-			self.authority,
-			"qualification_kr1",
-			self.qualification_kr1.is_some(),
-		)
 	}
 }
 
@@ -1616,21 +1206,7 @@ pub struct ReporterPresaveForUpdate {
 	pub primary_source_regulatory: Option<String>,
 }
 
-impl ReporterPresaveForUpdate {
-	fn validate_authority_fields(
-		&self,
-		authority: RegulatoryAuthority,
-	) -> Result<()> {
-		validate_mfds_only_field(
-			"reporter presave",
-			authority,
-			"qualification_kr1",
-			self.qualification_kr1.is_some(),
-		)
-	}
-}
-
-impl_authority_validated_parent_bmc!(
+impl_parent_bmc!(
 	ReporterPresaveBmc,
 	ReporterPresave,
 	ReporterPresaveForCreate,
@@ -1642,7 +1218,6 @@ impl_authority_validated_parent_bmc!(
 pub struct StudyPresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub deleted: bool,
@@ -1666,7 +1241,6 @@ pub struct StudyPresave {
 
 #[derive(Deserialize)]
 pub struct StudyPresaveForCreate {
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub product_presave_id: Option<Uuid>,
@@ -1686,7 +1260,6 @@ pub struct StudyPresaveForCreate {
 #[derive(Fields)]
 struct StudyPresaveForInsert {
 	organization_id: Uuid,
-	authority: RegulatoryAuthority,
 	name: String,
 	comments: Option<String>,
 	product_presave_id: Option<Uuid>,
@@ -1709,7 +1282,6 @@ impl IntoOrgScopedCreate for StudyPresaveForCreate {
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
 		StudyPresaveForInsert {
 			organization_id,
-			authority: self.authority,
 			name: self.name,
 			comments: self.comments,
 			product_presave_id: self.product_presave_id,
@@ -1729,23 +1301,8 @@ impl IntoOrgScopedCreate for StudyPresaveForCreate {
 }
 
 impl StudyPresaveForCreate {
-	fn validate_authority_fields(&self) -> Result<()> {
-		validate_sponsor_study_number_kind(
-			self.sponsor_study_number_kind.as_deref(),
-		)?;
-		validate_study_authority_fields(
-			self.authority,
-			&[
-				(
-					"study_type_reaction_kr1",
-					self.study_type_reaction_kr1.is_some(),
-				),
-				("mfds_study_number", self.mfds_study_number.is_some()),
-				("mfds_protocol_number", self.mfds_protocol_number.is_some()),
-			],
-			self.fda_ind_number_occurred.is_some(),
-			self.fda_pre_anda_number_occurred.is_some(),
-		)
+	fn validate_fields(&self) -> Result<()> {
+		validate_sponsor_study_number_kind(self.sponsor_study_number_kind.as_deref())
 	}
 }
 
@@ -1769,26 +1326,8 @@ pub struct StudyPresaveForUpdate {
 }
 
 impl StudyPresaveForUpdate {
-	fn validate_authority_fields(
-		&self,
-		authority: RegulatoryAuthority,
-	) -> Result<()> {
-		validate_sponsor_study_number_kind(
-			self.sponsor_study_number_kind.as_deref(),
-		)?;
-		validate_study_authority_fields(
-			authority,
-			&[
-				(
-					"study_type_reaction_kr1",
-					self.study_type_reaction_kr1.is_some(),
-				),
-				("mfds_study_number", self.mfds_study_number.is_some()),
-				("mfds_protocol_number", self.mfds_protocol_number.is_some()),
-			],
-			self.fda_ind_number_occurred.is_some(),
-			self.fda_pre_anda_number_occurred.is_some(),
-		)
+	fn validate_fields(&self) -> Result<()> {
+		validate_sponsor_study_number_kind(self.sponsor_study_number_kind.as_deref())
 	}
 }
 
@@ -1801,36 +1340,63 @@ fn validate_sponsor_study_number_kind(value: Option<&str>) -> Result<()> {
 	)
 }
 
-fn validate_study_authority_fields(
-	authority: RegulatoryAuthority,
-	mfds_fields: &[(&str, bool)],
-	fda_ind_number_occurred: bool,
-	fda_pre_anda_number_occurred: bool,
-) -> Result<()> {
-	for (field, present) in mfds_fields {
-		validate_mfds_only_field("study presave", authority, field, *present)?;
-	}
-	validate_fda_only_field(
-		"study presave",
-		authority,
-		"fda_ind_number_occurred",
-		fda_ind_number_occurred,
-	)?;
-	validate_fda_only_field(
-		"study presave",
-		authority,
-		"fda_pre_anda_number_occurred",
-		fda_pre_anda_number_occurred,
-	)
+pub struct StudyPresaveBmc;
+
+impl DbBmc for StudyPresaveBmc {
+	const TABLE: &'static str = "study_presaves";
 }
 
-impl_authority_validated_parent_bmc!(
-	StudyPresaveBmc,
-	StudyPresave,
-	StudyPresaveForCreate,
-	StudyPresaveForUpdate,
-	"study_presaves"
-);
+impl StudyPresaveBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: StudyPresaveForCreate,
+	) -> Result<Uuid> {
+		data.validate_fields()?;
+		base_uuid::create::<Self, _>(
+			ctx,
+			mm,
+			data.into_insert(ctx.organization_id()),
+		)
+		.await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<StudyPresave> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<StudyPresave>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: StudyPresaveForUpdate,
+	) -> Result<()> {
+		data.validate_fields()?;
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct StudyPresaveRegistrationNumber {
@@ -1912,8 +1478,6 @@ impl StudyPresaveFdaCrossReportedIndBmc {
 		mm: &ModelManager,
 		data: StudyPresaveFdaCrossReportedIndForCreate,
 	) -> Result<Uuid> {
-		let parent = StudyPresaveBmc::get(ctx, mm, data.study_presave_id).await?;
-		validate_fda_cross_reported_ind_parent(parent.authority)?;
 		base_uuid::create::<Self, _>(ctx, mm, data).await
 	}
 
@@ -1945,10 +1509,6 @@ impl StudyPresaveFdaCrossReportedIndBmc {
 		id: Uuid,
 		data: StudyPresaveFdaCrossReportedIndForUpdate,
 	) -> Result<()> {
-		let current: StudyPresaveFdaCrossReportedInd =
-			base_uuid::get::<Self, _>(ctx, mm, id).await?;
-		let parent = StudyPresaveBmc::get(ctx, mm, current.study_presave_id).await?;
-		validate_fda_cross_reported_ind_parent(parent.authority)?;
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
 
@@ -1992,22 +1552,10 @@ impl StudyPresaveFdaCrossReportedIndBmc {
 	}
 }
 
-fn validate_fda_cross_reported_ind_parent(
-	authority: RegulatoryAuthority,
-) -> Result<()> {
-	validate_fda_only_field(
-		"study_presave_fda_cross_reported_inds",
-		authority,
-		"study_presave_id",
-		true,
-	)
-}
-
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct NarrativePresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub deleted: bool,
@@ -2023,7 +1571,6 @@ pub struct NarrativePresave {
 
 #[derive(Deserialize)]
 pub struct NarrativePresaveForCreate {
-	pub authority: RegulatoryAuthority,
 	pub name: String,
 	pub comments: Option<String>,
 	pub case_narrative: Option<String>,
@@ -2035,7 +1582,6 @@ pub struct NarrativePresaveForCreate {
 #[derive(Fields)]
 struct NarrativePresaveForInsert {
 	organization_id: Uuid,
-	authority: RegulatoryAuthority,
 	name: String,
 	comments: Option<String>,
 	case_narrative: Option<String>,
@@ -2050,7 +1596,6 @@ impl IntoOrgScopedCreate for NarrativePresaveForCreate {
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
 		NarrativePresaveForInsert {
 			organization_id,
-			authority: self.authority,
 			name: self.name,
 			comments: self.comments,
 			case_narrative: self.case_narrative,

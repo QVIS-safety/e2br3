@@ -124,7 +124,6 @@ CREATE TABLE IF NOT EXISTS permission_profiles (
 CREATE TABLE IF NOT EXISTS sender_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    authority VARCHAR(16) NOT NULL,
     name VARCHAR(255) NOT NULL,
     comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
@@ -145,7 +144,6 @@ CREATE TABLE IF NOT EXISTS sender_presaves (
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
-    CONSTRAINT sender_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds')),
     CONSTRAINT sender_presaves_id_organization_unique UNIQUE (id, organization_id)
 );
 
@@ -190,7 +188,6 @@ CREATE TABLE IF NOT EXISTS sender_presave_responsible_persons (
 CREATE TABLE IF NOT EXISTS receiver_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    authority VARCHAR(16) NOT NULL,
     name VARCHAR(255) NOT NULL,
     comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
@@ -210,9 +207,7 @@ CREATE TABLE IF NOT EXISTS receiver_presaves (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT receiver_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS receiver_presave_consignees (
@@ -233,7 +228,6 @@ CREATE TABLE IF NOT EXISTS receiver_presave_consignees (
 CREATE TABLE IF NOT EXISTS product_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    authority VARCHAR(16) NOT NULL,
     name VARCHAR(255) NOT NULL,
     comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
@@ -277,7 +271,6 @@ CREATE TABLE IF NOT EXISTS product_presaves (
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
-    CONSTRAINT product_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds')),
     CONSTRAINT product_presaves_id_organization_unique UNIQUE (id, organization_id),
     CONSTRAINT product_presaves_sender_org_fk
         FOREIGN KEY (sender_presave_id, organization_id)
@@ -332,7 +325,6 @@ CREATE TABLE IF NOT EXISTS product_presave_mfds_regional_items (
 CREATE TABLE IF NOT EXISTS reporter_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    authority VARCHAR(16) NOT NULL,
     name VARCHAR(255) NOT NULL,
     comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
@@ -355,15 +347,12 @@ CREATE TABLE IF NOT EXISTS reporter_presaves (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT reporter_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS study_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    authority VARCHAR(16) NOT NULL,
     name VARCHAR(255) NOT NULL,
     comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
@@ -384,7 +373,6 @@ CREATE TABLE IF NOT EXISTS study_presaves (
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
-    CONSTRAINT study_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds')),
     CONSTRAINT study_presaves_sponsor_study_number_kind_valid CHECK (
         sponsor_study_number_kind IS NULL
         OR sponsor_study_number_kind IN ('study_no', 'protocol_no')
@@ -548,7 +536,6 @@ $$;
 CREATE TABLE IF NOT EXISTS narrative_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    authority VARCHAR(16) NOT NULL,
     name VARCHAR(255) NOT NULL,
     comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
@@ -559,9 +546,7 @@ CREATE TABLE IF NOT EXISTS narrative_presaves (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT narrative_presaves_authority_valid CHECK (authority IN ('ich', 'fda', 'mfds'))
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS narrative_presave_sender_diagnoses (
@@ -607,27 +592,21 @@ ALTER TABLE narrative_presave_case_summaries
 CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_sender_presaves_org ON sender_presaves(organization_id);
-CREATE INDEX idx_sender_presaves_authority ON sender_presaves(authority);
 CREATE INDEX idx_sender_presave_gateways_parent ON sender_presave_gateways(sender_presave_id);
 CREATE INDEX idx_sender_presave_responsible_persons_parent ON sender_presave_responsible_persons(sender_presave_id);
 CREATE INDEX idx_receiver_presaves_org ON receiver_presaves(organization_id);
-CREATE INDEX idx_receiver_presaves_authority ON receiver_presaves(authority);
 CREATE INDEX idx_receiver_presave_consignees_parent ON receiver_presave_consignees(receiver_presave_id);
 CREATE INDEX idx_product_presaves_org ON product_presaves(organization_id);
-CREATE INDEX idx_product_presaves_authority ON product_presaves(authority);
 CREATE INDEX idx_product_presaves_sender ON product_presaves(sender_presave_id);
 CREATE INDEX idx_product_presave_substances_parent ON product_presave_substances(product_presave_id);
 CREATE INDEX idx_product_presave_fda_cross_reported_inds_parent ON product_presave_fda_cross_reported_inds(product_presave_id);
 CREATE INDEX idx_product_presave_mfds_regional_items_parent ON product_presave_mfds_regional_items(product_presave_id);
 CREATE INDEX idx_reporter_presaves_org ON reporter_presaves(organization_id);
-CREATE INDEX idx_reporter_presaves_authority ON reporter_presaves(authority);
 CREATE INDEX idx_study_presaves_org ON study_presaves(organization_id);
-CREATE INDEX idx_study_presaves_authority ON study_presaves(authority);
 CREATE INDEX idx_study_presaves_product ON study_presaves(product_presave_id);
 CREATE INDEX idx_study_presave_registration_numbers_parent ON study_presave_registration_numbers(study_presave_id);
 CREATE INDEX idx_study_presave_fda_cross_reported_inds_parent ON study_presave_fda_cross_reported_inds(study_presave_id);
 CREATE INDEX idx_narrative_presaves_org ON narrative_presaves(organization_id);
-CREATE INDEX idx_narrative_presaves_authority ON narrative_presaves(authority);
 CREATE INDEX idx_narrative_presave_sender_diagnoses_parent ON narrative_presave_sender_diagnoses(narrative_presave_id);
 CREATE INDEX idx_narrative_presave_case_summaries_parent ON narrative_presave_case_summaries(narrative_presave_id);
 
