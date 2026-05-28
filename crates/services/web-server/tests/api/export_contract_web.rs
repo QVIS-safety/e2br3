@@ -3,7 +3,10 @@ use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN};
-use lib_core::model::drug::{DrugInformationBmc, DrugInformationForCreate};
+use lib_core::model::drug::{
+	DosageInformationBmc, DosageInformationForCreate, DrugIndicationBmc,
+	DrugIndicationForCreate, DrugInformationBmc, DrugInformationForCreate,
+};
 use lib_core::model::narrative::{
 	NarrativeInformationBmc, NarrativeInformationForCreate,
 };
@@ -261,7 +264,7 @@ async fn seed_cioms_case_data(
 		},
 	)
 	.await?;
-	DrugInformationBmc::create(
+	let drug_id = DrugInformationBmc::create(
 		&ctx,
 		mm,
 		DrugInformationForCreate {
@@ -276,6 +279,60 @@ async fn seed_cioms_case_data(
 			rechallenge: Some("3".to_string()),
 			manufacturer_name: Some("Acme Pharma".to_string()),
 			..Default::default()
+		},
+	)
+	.await?;
+	DosageInformationBmc::create(
+		&ctx,
+		mm,
+		DosageInformationForCreate {
+			drug_id,
+			sequence_number: 1,
+			dose_value: None,
+			dose_unit: None,
+			number_of_units: None,
+			frequency_value: None,
+			frequency_unit: None,
+			first_administration_date: Some(Date::from_calendar_date(
+				2026,
+				Month::May,
+				1,
+			)?),
+			first_administration_time: None,
+			last_administration_date: Some(Date::from_calendar_date(
+				2026,
+				Month::May,
+				10,
+			)?),
+			last_administration_time: None,
+			duration_value: Some(Decimal::new(10, 0)),
+			duration_unit: Some("d".to_string()),
+			continuing: Some(false),
+			batch_lot_number: None,
+			dosage_text: Some("500 mg twice daily".to_string()),
+			dose_form: None,
+			dose_form_termid: None,
+			dose_form_termid_version: None,
+			route_of_administration: Some("PO".to_string()),
+			route_termid: None,
+			route_termid_version: None,
+			parent_route: None,
+			parent_route_termid: None,
+			parent_route_termid_version: None,
+			first_administration_date_null_flavor: None,
+			last_administration_date_null_flavor: None,
+		},
+	)
+	.await?;
+	DrugIndicationBmc::create(
+		&ctx,
+		mm,
+		DrugIndicationForCreate {
+			drug_id,
+			sequence_number: 1,
+			indication_text: Some("Bacterial sinusitis".to_string()),
+			indication_meddra_version: None,
+			indication_meddra_code: None,
 		},
 	)
 	.await?;
@@ -464,6 +521,10 @@ async fn test_cioms_pdf_export_renders_case_data_in_cioms_form() -> Result<()> {
 	);
 	assert!(pdf.contains("Amoxicillin capsule"), "{pdf}");
 	assert!(pdf.contains("500 mg twice daily"), "{pdf}");
+	assert!(pdf.contains("PO"), "{pdf}");
+	assert!(pdf.contains("Bacterial sinusitis"), "{pdf}");
+	assert!(pdf.contains("2026-05-01 to 2026-05-10"), "{pdf}");
+	assert!(pdf.contains("10 days"), "{pdf}");
 	assert!(pdf.contains("Hypertension; shellfish allergy"), "{pdf}");
 	assert!(pdf.contains("Acme Safety"), "{pdf}");
 	assert!(pdf.contains(&safety_report_id), "{pdf}");

@@ -4,7 +4,9 @@ use axum::response::{IntoResponse, Response};
 use lib_core::model::acs::XML_EXPORT;
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::case::CaseBmc;
-use lib_core::model::drug::{DrugInformation, DrugInformationBmc};
+use lib_core::model::drug::{
+	DosageInformation, DrugIndication, DrugInformation, DrugInformationBmc,
+};
 use lib_core::model::narrative::NarrativeInformation;
 use lib_core::model::patient::PatientInformation;
 use lib_core::model::reaction::{Reaction, ReactionBmc};
@@ -34,6 +36,8 @@ struct CiomsCaseData {
 	patient: Option<PatientInformation>,
 	reactions: Vec<Reaction>,
 	drugs: Vec<DrugInformation>,
+	dosages: Vec<DosageInformation>,
+	indications: Vec<DrugIndication>,
 	primary_sources: Vec<PrimarySource>,
 	senders: Vec<SenderInformation>,
 	narrative: Option<NarrativeInformation>,
@@ -98,6 +102,10 @@ struct CiomsFormData {
 	reaction_description: String,
 	suspect_drug_name: String,
 	suspect_drug_dose: String,
+	suspect_drug_route: String,
+	suspect_drug_indication: String,
+	suspect_drug_therapy_dates: String,
+	suspect_drug_therapy_duration: String,
 	medical_history: String,
 	manufacturer_address: String,
 	reporter_name: String,
@@ -114,6 +122,15 @@ impl CiomsFormData {
 			.iter()
 			.find(|drug| drug.drug_characterization == "1")
 			.or_else(|| data.drugs.first());
+		let suspect_drug_id = suspect_drug.map(|drug| drug.id);
+		let suspect_dosage = suspect_drug_id.and_then(|drug_id| {
+			data.dosages.iter().find(|dosage| dosage.drug_id == drug_id)
+		});
+		let suspect_indication = suspect_drug_id.and_then(|drug_id| {
+			data.indications
+				.iter()
+				.find(|indication| indication.drug_id == drug_id)
+		});
 		let narrative = data.narrative.as_ref();
 		let report = data.report.as_ref();
 
@@ -146,7 +163,18 @@ impl CiomsFormData {
 			suspect_drug_name: drug_name(suspect_drug),
 			suspect_drug_dose: suspect_drug
 				.and_then(|drug| drug.dosage_text.clone())
+				.or_else(|| {
+					suspect_dosage.and_then(|dosage| dosage.dosage_text.clone())
+				})
 				.unwrap_or_default(),
+			suspect_drug_route: suspect_dosage
+				.and_then(|dosage| dosage.route_of_administration.clone())
+				.unwrap_or_default(),
+			suspect_drug_indication: suspect_indication
+				.and_then(|indication| indication.indication_text.clone())
+				.unwrap_or_default(),
+			suspect_drug_therapy_dates: dosage_therapy_dates(suspect_dosage),
+			suspect_drug_therapy_duration: dosage_duration(suspect_dosage),
 			medical_history: patient
 				.and_then(|patient| patient.medical_history_text.clone())
 				.unwrap_or_default(),
@@ -237,6 +265,44 @@ where
 		.map_err(ModelError::Dbx)
 }
 
+async fn load_dosages_by_case(
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> lib_core::model::Result<Vec<DosageInformation>> {
+	mm.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, DosageInformation>(
+				"SELECT dosage_information.*
+				 FROM dosage_information
+				 JOIN drug_information ON drug_information.id = dosage_information.drug_id
+				 WHERE drug_information.case_id = $1
+				 ORDER BY drug_information.sequence_number, dosage_information.sequence_number",
+			)
+			.bind(case_id),
+		)
+		.await
+		.map_err(ModelError::Dbx)
+}
+
+async fn load_indications_by_case(
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> lib_core::model::Result<Vec<DrugIndication>> {
+	mm.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, DrugIndication>(
+				"SELECT drug_indications.*
+				 FROM drug_indications
+				 JOIN drug_information ON drug_information.id = drug_indications.drug_id
+				 WHERE drug_information.case_id = $1
+				 ORDER BY drug_information.sequence_number, drug_indications.sequence_number",
+			)
+			.bind(case_id),
+		)
+		.await
+		.map_err(ModelError::Dbx)
+}
+
 async fn load_cioms_case_data(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -270,6 +336,12 @@ async fn load_cioms_case_data(
 	let drugs = DrugInformationBmc::list_by_case(ctx, mm, case_id)
 		.await
 		.map_err(Error::Model)?;
+	let dosages = load_dosages_by_case(mm, case_id)
+		.await
+		.map_err(Error::Model)?;
+	let indications = load_indications_by_case(mm, case_id)
+		.await
+		.map_err(Error::Model)?;
 	let primary_sources =
 		load_list_by_case::<PrimarySource>(mm, "primary_sources", case_id)
 			.await
@@ -287,6 +359,8 @@ async fn load_cioms_case_data(
 		patient,
 		reactions,
 		drugs,
+		dosages,
+		indications,
 		primary_sources,
 		senders,
 		narrative,
@@ -324,6 +398,18 @@ fn age_unit_text(value: Option<&str>) -> &'static str {
 		"wk" => "weeks",
 		"d" => "days",
 		"h" => "hours",
+		_ => "",
+	}
+}
+
+fn duration_unit_text(value: Option<&str>) -> &'static str {
+	match value.unwrap_or_default() {
+		"a" => "years",
+		"mo" => "months",
+		"wk" => "weeks",
+		"d" => "days",
+		"h" => "hours",
+		"min" => "minutes",
 		_ => "",
 	}
 }
@@ -398,6 +484,36 @@ fn reaction_dates(reaction: Option<&Reaction>) -> String {
 
 fn drug_therapy_dates(_drug: Option<&DrugInformation>) -> String {
 	String::new()
+}
+
+fn dosage_therapy_dates(dosage: Option<&DosageInformation>) -> String {
+	let Some(dosage) = dosage else {
+		return String::new();
+	};
+	let start = date_text(dosage.first_administration_date);
+	let end = date_text(dosage.last_administration_date);
+	match (start.is_empty(), end.is_empty()) {
+		(false, false) => format!("{start} to {end}"),
+		(false, true) => start,
+		(true, false) => end,
+		(true, true) => String::new(),
+	}
+}
+
+fn dosage_duration(dosage: Option<&DosageInformation>) -> String {
+	let Some(dosage) = dosage else {
+		return String::new();
+	};
+	let value = decimal_text(dosage.duration_value);
+	if value.is_empty() {
+		return String::new();
+	}
+	let unit = duration_unit_text(dosage.duration_unit.as_deref());
+	if unit.is_empty() {
+		value
+	} else {
+		format!("{value} {unit}")
+	}
 }
 
 fn drug_name(drug: Option<&DrugInformation>) -> String {
@@ -550,6 +666,7 @@ fn render_landscape_cioms(
 	height: i32,
 ) {
 	let template = CIOMS_LANDSCAPE_TEMPLATE;
+	let form = CiomsFormData::from_case_data(data, settings);
 	let first_reaction = data.reactions.first();
 	let suspect_drug = data
 		.drugs
@@ -736,9 +853,7 @@ fn render_landscape_cioms(
 		130,
 		42,
 		"15. DAILY DOSE(S)",
-		suspect_drug
-			.and_then(|drug| drug.dosage_text.as_deref())
-			.unwrap_or(""),
+		&form.suspect_drug_dose,
 		22,
 		1,
 	);
@@ -749,7 +864,7 @@ fn render_landscape_cioms(
 		130,
 		42,
 		"16. ROUTE(S) OF ADMINISTRATION",
-		"",
+		&form.suspect_drug_route,
 		22,
 		1,
 	);
@@ -782,7 +897,7 @@ fn render_landscape_cioms(
 		286,
 		50,
 		"17. INDICATION(S) FOR USE",
-		"",
+		&form.suspect_drug_indication,
 		42,
 		2,
 	);
@@ -793,7 +908,7 @@ fn render_landscape_cioms(
 		260,
 		50,
 		"18. THERAPY DATES (from/to)",
-		&drug_therapy_dates(suspect_drug),
+		&form.suspect_drug_therapy_dates,
 		38,
 		1,
 	);
@@ -804,7 +919,7 @@ fn render_landscape_cioms(
 		236,
 		50,
 		"19. THERAPY DURATION",
-		"",
+		&form.suspect_drug_therapy_duration,
 		34,
 		1,
 	);
@@ -916,6 +1031,7 @@ fn render_portrait_cioms(
 	width: i32,
 	height: i32,
 ) {
+	let form = CiomsFormData::from_case_data(data, settings);
 	let first_reaction = data.reactions.first();
 	let suspect_drug = data
 		.drugs
@@ -1030,9 +1146,7 @@ fn render_portrait_cioms(
 		130,
 		42,
 		"15. DAILY DOSE(S)",
-		suspect_drug
-			.and_then(|drug| drug.dosage_text.as_deref())
-			.unwrap_or(""),
+		&form.suspect_drug_dose,
 		20,
 		1,
 	);
@@ -1065,7 +1179,13 @@ fn render_portrait_cioms(
 		270,
 		50,
 		"18. THERAPY DATES / 19. DURATION",
-		&drug_therapy_dates(suspect_drug),
+		&join_present(
+			&[
+				Some(form.suspect_drug_therapy_dates.clone()),
+				Some(form.suspect_drug_therapy_duration.clone()),
+			],
+			" / ",
+		),
 		40,
 		1,
 	);
@@ -1221,7 +1341,8 @@ pub async fn export_case_cioms_pdf(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use sqlx::types::time::OffsetDateTime;
+	use sqlx::types::time::{Date, OffsetDateTime};
+	use time::Month;
 
 	fn test_uuid() -> Uuid {
 		Uuid::parse_str("11111111-1111-4111-8111-111111111111")
@@ -1247,6 +1368,8 @@ mod tests {
 			patient: None,
 			reactions: Vec::new(),
 			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
 			primary_sources: Vec::new(),
 			senders: Vec::new(),
 			narrative: None,
@@ -1278,6 +1401,8 @@ mod tests {
 			patient: None,
 			reactions: Vec::new(),
 			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
 			primary_sources: vec![PrimarySource {
 				id: test_uuid(),
 				case_id: test_uuid(),
@@ -1310,6 +1435,119 @@ mod tests {
 		let form = CiomsFormData::from_case_data(&data, &default_settings());
 
 		assert_eq!(form.reporter_name, "Dr Mina J Kim");
+	}
+
+	#[test]
+	fn cioms_form_data_maps_suspect_drug_dosage_and_indication_fields() {
+		let drug_id = test_uuid();
+		let data = CiomsCaseData {
+			case_number: "SR-DRUG-MAPPING".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: vec![DrugInformation {
+				id: drug_id,
+				case_id: test_uuid(),
+				sequence_number: 1,
+				drug_characterization: "1".to_string(),
+				medicinal_product: "Amoxicillin capsule".to_string(),
+				mpid: None,
+				mpid_version: None,
+				phpid: None,
+				phpid_version: None,
+				investigational_product_blinded: None,
+				obtain_drug_country: None,
+				brand_name: None,
+				drug_generic_name: Some("Amoxicillin".to_string()),
+				drug_authorization_number: None,
+				manufacturer_name: None,
+				manufacturer_country: None,
+				batch_lot_number: None,
+				cumulative_dose_first_reaction_value: None,
+				cumulative_dose_first_reaction_unit: None,
+				gestation_period_exposure_value: None,
+				gestation_period_exposure_unit: None,
+				dosage_text: None,
+				action_taken: None,
+				rechallenge: None,
+				parent_route: None,
+				parent_route_termid: None,
+				parent_route_termid_version: None,
+				parent_dosage_text: None,
+				fda_additional_info_coded: None,
+				drug_additional_info_codes_json: None,
+				drug_additional_information: None,
+				fda_specialized_product_category: None,
+				fda_device_info_json: None,
+				created_at: test_time(),
+				updated_at: test_time(),
+				created_by: test_uuid(),
+				updated_by: None,
+			}],
+			dosages: vec![DosageInformation {
+				id: test_uuid(),
+				drug_id,
+				sequence_number: 1,
+				dose_value: None,
+				dose_unit: None,
+				number_of_units: None,
+				frequency_value: None,
+				frequency_unit: None,
+				first_administration_date: Some(
+					Date::from_calendar_date(2026, Month::May, 1)
+						.expect("valid date"),
+				),
+				first_administration_time: None,
+				last_administration_date: Some(
+					Date::from_calendar_date(2026, Month::May, 10)
+						.expect("valid date"),
+				),
+				last_administration_time: None,
+				duration_value: Some(Decimal::new(10, 0)),
+				duration_unit: Some("d".to_string()),
+				continuing: Some(false),
+				batch_lot_number: None,
+				dosage_text: Some("500 mg twice daily".to_string()),
+				dose_form: None,
+				dose_form_termid: None,
+				dose_form_termid_version: None,
+				route_of_administration: Some("Oral".to_string()),
+				route_termid: None,
+				route_termid_version: None,
+				parent_route: None,
+				parent_route_termid: None,
+				parent_route_termid_version: None,
+				first_administration_date_null_flavor: None,
+				last_administration_date_null_flavor: None,
+				created_at: test_time(),
+				updated_at: test_time(),
+				created_by: test_uuid(),
+				updated_by: None,
+			}],
+			indications: vec![DrugIndication {
+				id: test_uuid(),
+				drug_id,
+				sequence_number: 1,
+				indication_text: Some("Bacterial sinusitis".to_string()),
+				indication_meddra_version: None,
+				indication_meddra_code: None,
+				created_at: test_time(),
+				updated_at: test_time(),
+				created_by: test_uuid(),
+				updated_by: None,
+			}],
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let form = CiomsFormData::from_case_data(&data, &default_settings());
+
+		assert_eq!(form.suspect_drug_dose, "500 mg twice daily");
+		assert_eq!(form.suspect_drug_route, "Oral");
+		assert_eq!(form.suspect_drug_indication, "Bacterial sinusitis");
+		assert_eq!(form.suspect_drug_therapy_dates, "2026-05-01 to 2026-05-10");
+		assert_eq!(form.suspect_drug_therapy_duration, "10 days");
 	}
 
 	#[test]
