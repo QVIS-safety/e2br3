@@ -271,6 +271,23 @@ async fn create_product_presave_via_api(
 	cookie: &str,
 	authority: &str,
 ) -> Result<Uuid> {
+	create_named_product_presave_via_api(
+		app,
+		cookie,
+		authority,
+		format!("REST Product Details {}", Uuid::new_v4()),
+		"REST Product Details",
+	)
+	.await
+}
+
+async fn create_named_product_presave_via_api(
+	app: &Router,
+	cookie: &str,
+	authority: &str,
+	name: String,
+	medicinal_product: &str,
+) -> Result<Uuid> {
 	let value = post_json_created(
 		app,
 		cookie,
@@ -278,8 +295,8 @@ async fn create_product_presave_via_api(
 		json!({
 			"data": {
 				"authority": authority,
-				"name": format!("REST Product Details {}", Uuid::new_v4()),
-				"medicinal_product": "REST Product Details"
+				"name": name,
+				"medicinal_product": medicinal_product
 			}
 		}),
 	)
@@ -2414,13 +2431,7 @@ async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(saved["data"]["parent"]["study_name"], "Study Graph Updated");
-	assert_eq!(
-		saved["data"]["registrations"]
-			.as_array()
-			.unwrap()
-			.len(),
-		2
-	);
+	assert_eq!(saved["data"]["registrations"].as_array().unwrap().len(), 2);
 	assert_eq!(
 		saved["data"]["fda_cross_reported_inds"]
 			.as_array()
@@ -2669,13 +2680,7 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		saved["data"]["parent"]["comments"],
 		"updated by study graph"
 	);
-	assert_eq!(
-		saved["data"]["registrations"]
-			.as_array()
-			.unwrap()
-			.len(),
-		2
-	);
+	assert_eq!(saved["data"]["registrations"].as_array().unwrap().len(), 2);
 	assert_eq!(
 		saved["data"]["fda_cross_reported_inds"]
 			.as_array()
@@ -2690,9 +2695,7 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		format!("/api/presaves/studies/{study_id}/details"),
 	)
 	.await?;
-	let registrations = persisted["data"]["registrations"]
-		.as_array()
-		.unwrap();
+	let registrations = persisted["data"]["registrations"].as_array().unwrap();
 	let updated_registration = registrations
 		.iter()
 		.find(|row| row["id"].as_str() == Some(&registration_id.to_string()))
@@ -2833,9 +2836,7 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 		}),
 	)
 	.await?;
-	let registrations = after_delete["data"]["registrations"]
-		.as_array()
-		.unwrap();
+	let registrations = after_delete["data"]["registrations"].as_array().unwrap();
 	let deleted_registration = registrations
 		.iter()
 		.find(|row| row["id"].as_str() == Some(&registration_delete_id.to_string()))
@@ -3582,6 +3583,183 @@ async fn test_presave_update_delete_respect_assigned_product_scope() -> Result<(
 		Some("hidden-product-template-for-edit"),
 		"{value:?}"
 	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_canonical_product_presaves_respect_assigned_product_scope(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let (editor_id, editor_cookie) =
+		create_info_editor(&app, &mm, &admin_cookie, seed.org_id).await?;
+
+	let visible_id = create_named_product_presave_via_api(
+		&app,
+		&admin_cookie,
+		"fda",
+		"visible canonical product".to_string(),
+		"VISIBLE-CANONICAL-PRODUCT",
+	)
+	.await?;
+	let hidden_id = create_named_product_presave_via_api(
+		&app,
+		&admin_cookie,
+		"fda",
+		"hidden canonical product".to_string(),
+		"HIDDEN-CANONICAL-PRODUCT",
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		editor_id,
+		json!({ "access_product_ids": ["VISIBLE-CANONICAL-PRODUCT"] }),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::GET,
+		"/api/presaves/products?authority=fda".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let rows = value["data"]
+		.as_array()
+		.ok_or("canonical product list data is not an array")?;
+	assert!(
+		rows.iter()
+			.any(|row| row["id"].as_str() == Some(&visible_id.to_string())),
+		"{value:?}"
+	);
+	assert!(
+		!rows
+			.iter()
+			.any(|row| row["id"].as_str() == Some(&hidden_id.to_string())),
+		"{value:?}"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::POST,
+		"/api/presaves/products".to_string(),
+		Some(json!({
+			"data": {
+				"authority": "fda",
+				"name": "out-of-scope canonical product create",
+				"medicinal_product": "HIDDEN-CANONICAL-CREATED"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	for uri in [
+		format!("/api/presaves/products/{hidden_id}"),
+		format!("/api/presaves/products/{hidden_id}/details"),
+	] {
+		let (status, value) =
+			request_json(&app, &editor_cookie, Method::GET, uri, None).await?;
+		assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+	}
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::PATCH,
+		format!("/api/presaves/products/{hidden_id}"),
+		Some(json!({
+			"data": {
+				"name": "hidden canonical product edited"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::DELETE,
+		format!("/api/presaves/products/{hidden_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::PUT,
+		format!("/api/presaves/products/{visible_id}/details"),
+		Some(json!({
+			"data": {
+				"parent": {
+					"name": "visible canonical product details edit"
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_canonical_product_parent_soft_delete_requires_delete_permission(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let (_editor_id, editor_cookie) =
+		create_info_editor(&app, &mm, &admin_cookie, seed.org_id).await?;
+
+	let patch_id =
+		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::PATCH,
+		format!("/api/presaves/products/{patch_id}"),
+		Some(json!({
+			"data": {
+				"deleted": true
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let details_id =
+		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::PUT,
+		format!("/api/presaves/products/{details_id}/details"),
+		Some(json!({
+			"data": {
+				"parent": {
+					"deleted": true
+				}
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 
 	Ok(())
 }
