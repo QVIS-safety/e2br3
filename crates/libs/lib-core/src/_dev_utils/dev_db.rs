@@ -125,22 +125,7 @@ async fn apply_compatibility_alters(
 		 CHECK (drug_characterization IN ('1', '2', '3', '4'))",
 	)
 	.await?;
-	sqlx::query("ALTER TABLE presave_templates ADD COLUMN IF NOT EXISTS authority VARCHAR(16)")
-		.execute(&mut *tx)
-		.await?;
-	sqlx::query("ALTER TABLE presave_templates DROP CONSTRAINT IF EXISTS presave_templates_authority_valid")
-		.execute(&mut *tx)
-		.await?;
-	execute_ignoring_duplicate_constraint(
-		&mut tx,
-		"ALTER TABLE presave_templates
-		 ADD CONSTRAINT presave_templates_authority_valid
-		 CHECK (authority IS NULL OR authority IN ('ich', 'fda', 'mfds'))",
-	)
-	.await?;
 	for sql in [
-		"CREATE INDEX IF NOT EXISTS idx_presave_templates_authority ON presave_templates(authority)",
-		"CREATE INDEX IF NOT EXISTS idx_presave_templates_entity_authority ON presave_templates(entity_type, authority)",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS mfds_report_type VARCHAR(20)",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS report_year VARCHAR(4)",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS review_receivers_json TEXT",

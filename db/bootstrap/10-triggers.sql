@@ -479,73 +479,6 @@ EXCEPTION
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION presave_template_audit_trigger_function()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_user_id UUID;
-BEGIN
-    v_user_id := get_current_user_context();
-
-    IF TG_OP = 'INSERT' THEN
-        INSERT INTO presave_template_audits (
-            template_id,
-            organization_id,
-            action,
-            changed_by,
-            old_values,
-            new_values
-        ) VALUES (
-            NEW.id,
-            NEW.organization_id,
-            'CREATE',
-            v_user_id,
-            NULL,
-            to_jsonb(NEW)
-        );
-        RETURN NEW;
-    ELSIF TG_OP = 'UPDATE' THEN
-        INSERT INTO presave_template_audits (
-            template_id,
-            organization_id,
-            action,
-            changed_by,
-            old_values,
-            new_values
-        ) VALUES (
-            NEW.id,
-            NEW.organization_id,
-            'UPDATE',
-            v_user_id,
-            to_jsonb(OLD),
-            to_jsonb(NEW)
-        );
-        RETURN NEW;
-    ELSIF TG_OP = 'DELETE' THEN
-        INSERT INTO presave_template_audits (
-            template_id,
-            organization_id,
-            action,
-            changed_by,
-            old_values,
-            new_values
-        ) VALUES (
-            OLD.id,
-            OLD.organization_id,
-            'DELETE',
-            v_user_id,
-            to_jsonb(OLD),
-            NULL
-        );
-        RETURN OLD;
-    END IF;
-
-    RETURN NULL;
-END;
-$$;
-
 CREATE TRIGGER audit_cases AFTER INSERT OR UPDATE OR DELETE ON cases
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
@@ -617,12 +550,6 @@ CREATE TRIGGER audit_drug_indications AFTER INSERT OR UPDATE OR DELETE ON drug_i
 
 CREATE TRIGGER audit_narrative_information AFTER INSERT OR UPDATE OR DELETE ON narrative_information
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
-
-CREATE TRIGGER audit_presave_templates AFTER INSERT OR UPDATE OR DELETE ON presave_templates
-    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
-
-CREATE TRIGGER audit_presave_templates_dedicated AFTER INSERT OR UPDATE OR DELETE ON presave_templates
-    FOR EACH ROW EXECUTE FUNCTION presave_template_audit_trigger_function();
 
 CREATE TRIGGER audit_sender_presaves AFTER INSERT OR UPDATE OR DELETE ON sender_presaves
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
@@ -816,9 +743,6 @@ CREATE TRIGGER update_drug_reaction_assessments_updated_at BEFORE UPDATE ON drug
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_relatedness_assessments_updated_at BEFORE UPDATE ON relatedness_assessments
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_presave_templates_updated_at BEFORE UPDATE ON presave_templates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_sender_presaves_updated_at BEFORE UPDATE ON sender_presaves

@@ -15,8 +15,6 @@ pub fn routes(mm: ModelManager) -> Router {
 		.merge(rest::routes_organizations(mm.clone()))
 		// System entities
 		.merge(rest::routes_users(mm.clone()))
-		// Presave templates (case-independent reusable drafts)
-		.merge(rest::routes_presave_templates(mm.clone()))
 		// Relational INFO section presaves
 		.merge(rest::routes_section_presaves(mm.clone()))
 		// Terminology search

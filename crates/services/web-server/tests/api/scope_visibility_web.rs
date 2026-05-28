@@ -267,7 +267,7 @@ async fn create_message_header(
 	Ok(())
 }
 
-async fn create_sender_presave_template(
+async fn create_sender_presave(
 	app: &Router,
 	cookie: &str,
 	name: &str,
@@ -277,30 +277,48 @@ async fn create_sender_presave_template(
 		app,
 		"POST",
 		cookie,
-		"/api/presave-templates".to_string(),
+		"/api/presaves/senders".to_string(),
 		Some(json!({
 			"data": {
-				"entity_type": "sender",
+				"authority": "fda",
 				"name": name,
-				"description": "Routing source-of-truth test sender",
-				"data": {
-					"senderType": "2",
-					"senderIdentifier": sender_identifier,
-					"senderOrganization": name,
-					"linkedOrganizationName": name,
-					"linkedOrganizationType": "client"
-				}
+				"comments": "Routing source-of-truth test sender",
+				"sender_type": "2",
+				"organization_name": name,
+				"email": format!("{sender_identifier}@example.test")
 			}
 		})),
 	)
 	.await?;
 	if status != StatusCode::CREATED {
 		return Err(format!(
-			"create sender presave template failed: status={status} body={value}"
+			"create sender presave failed: status={status} body={value}"
 		)
 		.into());
 	}
-	extract_id(&value)
+	let id = extract_id(&value)?;
+	let (status, value) = request_json(
+		app,
+		"POST",
+		cookie,
+		format!("/api/presaves/senders/{id}/gateways"),
+		Some(json!({
+			"data": {
+				"sequence_number": 1,
+				"gateway_authority": "fda",
+				"sender_identifier": sender_identifier,
+				"is_default_for_authority": true
+			}
+		})),
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create sender presave gateway failed: status={status} body={value}"
+		)
+		.into());
+	}
+	Ok(id)
 }
 
 async fn create_study(
@@ -869,7 +887,7 @@ async fn test_routing_profile_sender_options_include_info_sender_masters(
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
 	let app = web_server::app(mm);
 
-	create_sender_presave_template(
+	create_sender_presave(
 		&app,
 		&admin_cookie,
 		"Client A Sender Master",
@@ -2318,21 +2336,21 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
 	let (custom_user_id, custom_cookie) =
 		custom_role_user(&mm, seed.org_id, &profile_id).await?;
-	let template_id = create_sender_presave_template(
+	let template_id = create_sender_presave(
 		&app,
 		&admin_cookie,
 		&format!("Info Matrix Seed {}", Uuid::new_v4().simple()),
 		"INFO-MATRIX-SEED",
 	)
 	.await?;
-	let editable_template_id = create_sender_presave_template(
+	let editable_template_id = create_sender_presave(
 		&app,
 		&admin_cookie,
 		&format!("Info Matrix Editable {}", Uuid::new_v4().simple()),
 		"INFO-MATRIX-EDITABLE",
 	)
 	.await?;
-	let deletable_template_id = create_sender_presave_template(
+	let deletable_template_id = create_sender_presave(
 		&app,
 		&admin_cookie,
 		&format!("Info Matrix Deletable {}", Uuid::new_v4().simple()),
@@ -2357,7 +2375,7 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 	assert_get_status(
 		&app,
 		&custom_cookie,
-		"/api/presave-templates",
+		"/api/presaves/senders",
 		StatusCode::FORBIDDEN,
 	)
 	.await?;
@@ -2396,14 +2414,14 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 	assert_get_status(
 		&app,
 		&custom_cookie,
-		"/api/presave-templates",
+		"/api/presaves/senders",
 		StatusCode::OK,
 	)
 	.await?;
 	assert_get_status(
 		&app,
 		&custom_cookie,
-		&format!("/api/presave-templates/{template_id}"),
+		&format!("/api/presaves/senders/{template_id}"),
 		StatusCode::OK,
 	)
 	.await?;
@@ -2412,19 +2430,14 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		&app,
 		"POST",
 		&custom_cookie,
-		"/api/presave-templates".to_string(),
+		"/api/presaves/senders".to_string(),
 		Some(json!({
 			"data": {
-				"entity_type": "sender",
+				"authority": "fda",
 				"name": "Info Matrix Sender",
-				"description": "Should require info edit",
-				"data": {
-					"senderType": "2",
-					"senderIdentifier": "INFO-MATRIX",
-					"senderOrganization": "Info Matrix Sender",
-					"linkedOrganizationName": "Info Matrix Sender",
-					"linkedOrganizationType": "client"
-				}
+				"comments": "Should require info edit",
+				"sender_type": "2",
+				"organization_name": "Info Matrix Sender"
 			}
 		})),
 	)
@@ -2435,11 +2448,11 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		&app,
 		"PATCH",
 		&custom_cookie,
-		format!("/api/presave-templates/{editable_template_id}"),
+		format!("/api/presaves/senders/{editable_template_id}"),
 		Some(json!({
 			"data": {
 				"name": "Info Matrix Readonly Patch",
-				"description": "Read-only info should not update templates"
+				"comments": "Read-only info should not update templates"
 			}
 		})),
 	)
@@ -2450,7 +2463,7 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		&app,
 		"DELETE",
 		&custom_cookie,
-		format!("/api/presave-templates/{deletable_template_id}"),
+		format!("/api/presaves/senders/{deletable_template_id}"),
 		None,
 	)
 	.await?;
@@ -2490,19 +2503,14 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		&app,
 		"POST",
 		&custom_cookie,
-		"/api/presave-templates".to_string(),
+		"/api/presaves/senders".to_string(),
 		Some(json!({
 			"data": {
-				"entity_type": "sender",
+				"authority": "fda",
 				"name": format!("Info Matrix Sender {}", Uuid::new_v4().simple()),
-				"description": "Info edit should allow creation",
-				"data": {
-					"senderType": "2",
-					"senderIdentifier": "INFO-MATRIX-EDIT",
-					"senderOrganization": "Info Matrix Sender Edit",
-					"linkedOrganizationName": "Info Matrix Sender Edit",
-					"linkedOrganizationType": "client"
-				}
+				"comments": "Info edit should allow creation",
+				"sender_type": "2",
+				"organization_name": "INFO-MATRIX-EDIT"
 			}
 		})),
 	)
@@ -2514,18 +2522,13 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		&app,
 		"PATCH",
 		&custom_cookie,
-		format!("/api/presave-templates/{editable_template_id}"),
+		format!("/api/presaves/senders/{editable_template_id}"),
 		Some(json!({
 			"data": {
 				"name": "Info Matrix Editable Updated",
-				"description": "Info edit should allow updates",
-				"data": {
-					"senderType": "2",
-					"senderIdentifier": "INFO-MATRIX-EDITABLE",
-					"senderOrganization": "Info Matrix Editable Updated",
-					"linkedOrganizationName": "Info Matrix Editable Updated",
-					"linkedOrganizationType": "client"
-				}
+				"comments": "Info edit should allow updates",
+				"sender_type": "2",
+				"organization_name": "INFO-MATRIX-EDITABLE"
 			}
 		})),
 	)
@@ -2541,7 +2544,7 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		&app,
 		"DELETE",
 		&custom_cookie,
-		format!("/api/presave-templates/{deletable_template_id}"),
+		format!("/api/presaves/senders/{deletable_template_id}"),
 		None,
 	)
 	.await?;
@@ -2549,7 +2552,7 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 	assert_get_status(
 		&app,
 		&custom_cookie,
-		&format!("/api/presave-templates/{created_template_id}"),
+		&format!("/api/presaves/senders/{created_template_id}"),
 		StatusCode::OK,
 	)
 	.await?;

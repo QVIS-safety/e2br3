@@ -299,22 +299,20 @@ async fn test_import_settings_apply_default_sender_only_when_enabled() -> Result
 	let (status, body) = post_json(
 		&app,
 		&cookie,
-		"/api/presave-templates",
+		"/api/presaves/senders",
 		json!({
 			"data": {
-				"entity_type": "sender",
+				"authority": "fda",
 				"name": "Default import sender",
-				"description": "sender used for import defaults",
-				"data": {
-					"senderType": "2",
-					"senderOrganization": "Admin Default Sender",
-					"senderDepartment": "Import Ops",
-					"senderStreetAddress": "10 Default Road",
-					"senderCity": "Seoul",
-					"senderCountryCode": "KR",
-					"senderEmail": "default-sender@example.test",
-					"senderDefault": true
-				}
+				"comments": "sender used for import defaults",
+				"sender_type": "2",
+				"organization_name": "Admin Default Sender",
+				"department": "Import Ops",
+				"street_address": "10 Default Road",
+				"city": "Seoul",
+				"country_code": "KR",
+				"email": "default-sender@example.test",
+				"is_default": true
 			}
 		}),
 	)

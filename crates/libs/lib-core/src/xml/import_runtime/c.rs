@@ -4,9 +4,7 @@ use crate::model::case_identifiers::{
 	OtherCaseIdentifierBmc, OtherCaseIdentifierForCreate,
 	OtherCaseIdentifierForUpdate,
 };
-use crate::model::presave_template::{
-	PresaveEntityType, PresaveTemplateBmc, PresaveTemplateListFilter,
-};
+use crate::model::presave::{SenderPresaveBmc, SenderPresaveResponsiblePersonBmc};
 use crate::model::receiver::{
 	ReceiverInformationBmc, ReceiverInformationForCreate,
 	ReceiverInformationForUpdate,
@@ -288,63 +286,54 @@ async fn import_c_2_sender_information(
 	Ok(())
 }
 
-fn json_string(value: &serde_json::Value, key: &str) -> Option<String> {
-	value
-		.get(key)
-		.and_then(|value| value.as_str())
-		.map(str::trim)
-		.filter(|value| !value.is_empty())
-		.map(ToOwned::to_owned)
-}
-
 async fn default_sender_from_presave(
 	ctx: &Ctx,
 	mm: &ModelManager,
 	authority: Option<RegulatoryAuthority>,
 ) -> Result<Option<c_helpers::SenderImport>> {
-	let templates = PresaveTemplateBmc::list_filtered(
-		ctx,
-		mm,
-		PresaveTemplateListFilter {
-			entity_type: Some(PresaveEntityType::Sender),
-			authority,
-			include_global: authority.is_some(),
-		},
-	)
-	.await
-	.map_err(Error::Model)?;
-	let Some(template) = templates.into_iter().find(|template| {
-		template
-			.data
-			.get("senderDefault")
-			.and_then(|value| value.as_bool())
-			.unwrap_or(false)
-	}) else {
+	let mut senders = SenderPresaveBmc::list(ctx, mm, None)
+		.await
+		.map_err(Error::Model)?;
+	senders.retain(|sender| {
+		!sender.deleted
+			&& sender.is_default
+			&& authority.map_or(true, |authority| sender.authority == authority)
+	});
+	let Some(sender) = senders.into_iter().next() else {
 		return Ok(None);
 	};
-	let data = template.data;
-	let sender_type =
-		json_string(&data, "senderType").unwrap_or_else(|| "1".to_string());
-	let organization_name = json_string(&data, "senderOrganization")
-		.or_else(|| json_string(&data, "organizationName"))
-		.unwrap_or_else(|| template.name);
+
+	let responsible_people =
+		SenderPresaveResponsiblePersonBmc::list_by_parent(ctx, mm, sender.id)
+			.await
+			.map_err(Error::Model)?;
+	let responsible = responsible_people
+		.iter()
+		.find(|person| person.is_default)
+		.or_else(|| responsible_people.first());
+
+	let organization_name = sender.organization_name.unwrap_or(sender.name);
+	let sender_type = sender.sender_type.unwrap_or_else(|| "1".to_string());
 
 	Ok(Some(c_helpers::SenderImport {
 		sender_type,
 		organization_name,
-		department: json_string(&data, "senderDepartment"),
-		street_address: json_string(&data, "senderStreetAddress"),
-		city: json_string(&data, "senderCity"),
-		state: json_string(&data, "senderState"),
-		postcode: json_string(&data, "senderPostcode"),
-		country_code: json_string(&data, "senderCountryCode"),
-		person_title: json_string(&data, "senderPersonTitle"),
-		person_given_name: json_string(&data, "senderPersonGivenName"),
-		person_middle_name: json_string(&data, "senderPersonMiddleName"),
-		person_family_name: json_string(&data, "senderPersonFamilyName"),
-		telephone: json_string(&data, "senderTelephone"),
-		fax: json_string(&data, "senderFax"),
-		email: json_string(&data, "senderEmail"),
+		department: sender.department,
+		street_address: sender.street_address,
+		city: sender.city,
+		state: sender.state,
+		postcode: sender.postcode,
+		country_code: sender.country_code,
+		person_title: responsible.and_then(|person| person.person_title.clone()),
+		person_given_name: responsible
+			.and_then(|person| person.person_given_name.clone()),
+		person_middle_name: responsible
+			.and_then(|person| person.person_middle_name.clone()),
+		person_family_name: responsible
+			.and_then(|person| person.person_family_name.clone()),
+		telephone: sender.telephone,
+		fax: sender.fax,
+		email: sender.email,
 	}))
 }
 

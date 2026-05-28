@@ -32,7 +32,6 @@ pub mod narrative_sub_rest;
 pub mod parent_history_rest;
 pub mod patient_sub_rest;
 pub mod permission_profile_rest;
-pub mod presave_template_rest;
 pub mod receiver_rest;
 pub mod relatedness_assessment_rest;
 pub mod safety_report_sub_rest;
@@ -738,27 +737,6 @@ pub fn routes_users(mm: ModelManager) -> Router {
 			get(permission_profile_rest::get_permission_profile)
 				.delete(permission_profile_rest::delete_permission_profile)
 				.put(permission_profile_rest::update_permission_profile),
-		)
-		.with_state(mm)
-}
-
-/// Routes for /api/presave-templates
-pub fn routes_presave_templates(mm: ModelManager) -> Router {
-	Router::new()
-		.route(
-			"/presave-templates",
-			get(presave_template_rest::list_presave_templates)
-				.post(presave_template_rest::create_presave_template),
-		)
-		.route(
-			"/presave-templates/{id}",
-			get(presave_template_rest::get_presave_template)
-				.patch(presave_template_rest::update_presave_template)
-				.delete(presave_template_rest::delete_presave_template),
-		)
-		.route(
-			"/presave-templates/{id}/audit",
-			get(presave_template_rest::list_presave_template_audits),
 		)
 		.with_state(mm)
 }

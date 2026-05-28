@@ -36,7 +36,6 @@ use lib_core::model::presave::{
 	StudyPresaveRegistrationNumberBmc, StudyPresaveRegistrationNumberForCreate,
 	StudyPresaveRegistrationNumberForUpdate,
 };
-use lib_core::model::presave_template::PresaveEntityType;
 use lib_core::model::user::UserBmc;
 use lib_core::model::{self, ModelManager};
 use lib_core::regulatory::RegulatoryAuthority;
@@ -51,6 +50,13 @@ use uuid::Uuid;
 #[derive(Debug, Deserialize)]
 pub struct PresaveAuthorityQuery {
 	pub authority: Option<RegulatoryAuthority>,
+}
+
+#[derive(Clone, Copy)]
+enum PresaveScopeSection {
+	Sender,
+	Product,
+	Study,
 }
 
 fn normalized_set(values: Vec<String>) -> HashSet<String> {
@@ -71,27 +77,26 @@ fn push_scope_identifier(values: &mut Vec<String>, value: Option<&str>) {
 	}
 }
 
-async fn allowed_scope_for_entity(
+async fn allowed_scope_for_section(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
-	entity_type: PresaveEntityType,
+	section: PresaveScopeSection,
 ) -> Result<Option<HashSet<String>>> {
 	if lib_rest_core::is_admin(ctx, mm).await? {
 		return Ok(None);
 	}
 	let user: lib_core::model::user::User =
 		UserBmc::get(ctx, mm, ctx.user_id()).await?;
-	let values = match entity_type {
-		PresaveEntityType::Sender => {
+	let values = match section {
+		PresaveScopeSection::Sender => {
 			lib_rest_core::scope_values_from_raw(user.access_sender_ids.as_deref())
 		}
-		PresaveEntityType::Product => {
+		PresaveScopeSection::Product => {
 			lib_rest_core::scope_values_from_raw(user.access_product_ids.as_deref())
 		}
-		PresaveEntityType::Study => {
+		PresaveScopeSection::Study => {
 			lib_rest_core::scope_values_from_raw(user.access_study_ids.as_deref())
 		}
-		_ => return Ok(None),
 	};
 	Ok(Some(normalized_set(values)))
 }
@@ -139,10 +144,10 @@ async fn sender_scope_identifiers(
 async fn identifiers_allowed_for_scope(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
-	entity_type: PresaveEntityType,
+	section: PresaveScopeSection,
 	identifiers: Vec<String>,
 ) -> Result<bool> {
-	let Some(allowed) = allowed_scope_for_entity(ctx, mm, entity_type).await? else {
+	let Some(allowed) = allowed_scope_for_section(ctx, mm, section).await? else {
 		return Ok(true);
 	};
 	if allowed.is_empty() {
@@ -167,7 +172,7 @@ async fn ensure_sender_presave_scope(
 	if identifiers_allowed_for_scope(
 		ctx,
 		mm,
-		PresaveEntityType::Sender,
+		PresaveScopeSection::Sender,
 		sender_scope_identifiers(ctx, mm, entity).await?,
 	)
 	.await?
@@ -185,7 +190,7 @@ async fn ensure_product_presave_scope(
 	if identifiers_allowed_for_scope(
 		ctx,
 		mm,
-		PresaveEntityType::Product,
+		PresaveScopeSection::Product,
 		product_scope_identifiers(entity),
 	)
 	.await?
@@ -203,7 +208,7 @@ async fn ensure_study_presave_scope(
 	if identifiers_allowed_for_scope(
 		ctx,
 		mm,
-		PresaveEntityType::Study,
+		PresaveScopeSection::Study,
 		study_scope_identifiers(entity),
 	)
 	.await?
@@ -213,13 +218,40 @@ async fn ensure_study_presave_scope(
 	Err(deny_presave_scope())
 }
 
+async fn ensure_sender_presave_id_scope(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	sender_id: Uuid,
+) -> Result<()> {
+	let parent = SenderPresaveBmc::get(ctx, mm, sender_id).await?;
+	ensure_sender_presave_scope(ctx, mm, &parent).await
+}
+
+async fn ensure_product_presave_id_scope(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	product_id: Uuid,
+) -> Result<()> {
+	let parent = ProductPresaveBmc::get(ctx, mm, product_id).await?;
+	ensure_product_presave_scope(ctx, mm, &parent).await
+}
+
+async fn ensure_study_presave_id_scope(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	study_id: Uuid,
+) -> Result<()> {
+	let parent = StudyPresaveBmc::get(ctx, mm, study_id).await?;
+	ensure_study_presave_scope(ctx, mm, &parent).await
+}
+
 async fn filter_sender_presaves_for_scope(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	entities: Vec<SenderPresave>,
 ) -> Result<Vec<SenderPresave>> {
 	let Some(allowed) =
-		allowed_scope_for_entity(ctx, mm, PresaveEntityType::Sender).await?
+		allowed_scope_for_section(ctx, mm, PresaveScopeSection::Sender).await?
 	else {
 		return Ok(entities);
 	};
@@ -243,7 +275,7 @@ async fn filter_product_presaves_for_scope(
 	entities: Vec<ProductPresave>,
 ) -> Result<Vec<ProductPresave>> {
 	let Some(allowed) =
-		allowed_scope_for_entity(ctx, mm, PresaveEntityType::Product).await?
+		allowed_scope_for_section(ctx, mm, PresaveScopeSection::Product).await?
 	else {
 		return Ok(entities);
 	};
@@ -264,7 +296,7 @@ async fn filter_study_presaves_for_scope(
 	entities: Vec<StudyPresave>,
 ) -> Result<Vec<StudyPresave>> {
 	let Some(allowed) =
-		allowed_scope_for_entity(ctx, mm, PresaveEntityType::Study).await?
+		allowed_scope_for_section(ctx, mm, PresaveScopeSection::Study).await?
 	else {
 		return Ok(entities);
 	};
@@ -876,6 +908,7 @@ pub async fn create_sender_gateway_from_path(
 ) -> Result<(StatusCode, Json<DataRestResult<SenderPresaveGateway>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
+	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	let ParamsForCreate { data } = params;
 	let id = SenderPresaveGatewayBmc::create(&ctx, &mm, data.into_core(sender_id))
 		.await?;
@@ -890,6 +923,7 @@ pub async fn list_sender_gateways(
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<SenderPresaveGateway>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
+	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	let entities =
 		SenderPresaveGatewayBmc::list_by_parent(&ctx, &mm, sender_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
@@ -909,6 +943,7 @@ pub async fn get_sender_gateway(
 		id,
 		"sender_presave_gateways",
 	)?;
+	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
@@ -927,6 +962,7 @@ pub async fn update_sender_gateway(
 		id,
 		"sender_presave_gateways",
 	)?;
+	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	let ParamsForUpdate { data } = params;
 	SenderPresaveGatewayBmc::update(&ctx, &mm, id, data).await?;
 	let entity = SenderPresaveGatewayBmc::get(&ctx, &mm, id).await?;
@@ -947,6 +983,7 @@ pub async fn delete_sender_gateway(
 		id,
 		"sender_presave_gateways",
 	)?;
+	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	SenderPresaveGatewayBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
@@ -991,6 +1028,7 @@ pub async fn create_sender_responsible_person(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
+	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	let ParamsForCreate { data } = params;
 	let id = SenderPresaveResponsiblePersonBmc::create(
 		&ctx,
@@ -1012,6 +1050,7 @@ pub async fn list_sender_responsible_persons(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
+	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	let entities =
 		SenderPresaveResponsiblePersonBmc::list_by_parent(&ctx, &mm, sender_id)
 			.await?;
@@ -1035,6 +1074,7 @@ pub async fn get_sender_responsible_person(
 		id,
 		"sender_presave_responsible_persons",
 	)?;
+	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
@@ -1056,6 +1096,7 @@ pub async fn update_sender_responsible_person(
 		id,
 		"sender_presave_responsible_persons",
 	)?;
+	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	let ParamsForUpdate { data } = params;
 	SenderPresaveResponsiblePersonBmc::update(&ctx, &mm, id, data).await?;
 	let entity = SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, id).await?;
@@ -1076,6 +1117,7 @@ pub async fn delete_sender_responsible_person(
 		id,
 		"sender_presave_responsible_persons",
 	)?;
+	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	SenderPresaveResponsiblePersonBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
@@ -2256,6 +2298,7 @@ pub async fn create_product_substance(
 ) -> Result<(StatusCode, Json<DataRestResult<ProductPresaveSubstance>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	let ParamsForCreate { data } = params;
 	let id =
 		ProductPresaveSubstanceBmc::create(&ctx, &mm, data.into_core(product_id))
@@ -2274,6 +2317,7 @@ pub async fn list_product_substances(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	let entities =
 		ProductPresaveSubstanceBmc::list_by_parent(&ctx, &mm, product_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
@@ -2293,6 +2337,7 @@ pub async fn get_product_substance(
 		id,
 		"product_presave_substances",
 	)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
@@ -2311,6 +2356,7 @@ pub async fn update_product_substance(
 		id,
 		"product_presave_substances",
 	)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	let ParamsForUpdate { data } = params;
 	ProductPresaveSubstanceBmc::update(&ctx, &mm, id, data).await?;
 	let entity = ProductPresaveSubstanceBmc::get(&ctx, &mm, id).await?;
@@ -2331,6 +2377,7 @@ pub async fn delete_product_substance(
 		id,
 		"product_presave_substances",
 	)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	ProductPresaveSubstanceBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
@@ -2365,6 +2412,7 @@ pub async fn create_product_fda_cross_reported_ind(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	let ParamsForCreate { data } = params;
 	let id = ProductPresaveFdaCrossReportedIndBmc::create(
 		&ctx,
@@ -2387,6 +2435,7 @@ pub async fn list_product_fda_cross_reported_inds(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	let entities =
 		ProductPresaveFdaCrossReportedIndBmc::list_by_parent(&ctx, &mm, product_id)
 			.await?;
@@ -2410,6 +2459,7 @@ pub async fn get_product_fda_cross_reported_ind(
 		id,
 		"product_presave_fda_cross_reported_inds",
 	)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
@@ -2431,6 +2481,7 @@ pub async fn update_product_fda_cross_reported_ind(
 		id,
 		"product_presave_fda_cross_reported_inds",
 	)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	let ParamsForUpdate { data } = params;
 	ProductPresaveFdaCrossReportedIndBmc::update(&ctx, &mm, id, data)
 		.await
@@ -2466,6 +2517,7 @@ pub async fn delete_product_fda_cross_reported_ind(
 		id,
 		"product_presave_fda_cross_reported_inds",
 	)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	ProductPresaveFdaCrossReportedIndBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
@@ -2502,6 +2554,7 @@ pub async fn create_product_mfds_regional_item(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	let ParamsForCreate { data } = params;
 	let id = ProductPresaveMfdsRegionalItemBmc::create(
 		&ctx,
@@ -2524,6 +2577,7 @@ pub async fn list_product_mfds_regional_items(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	let entities =
 		ProductPresaveMfdsRegionalItemBmc::list_by_parent(&ctx, &mm, product_id)
 			.await?;
@@ -2547,6 +2601,7 @@ pub async fn get_product_mfds_regional_item(
 		id,
 		"product_presave_mfds_regional_items",
 	)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
@@ -2568,6 +2623,7 @@ pub async fn update_product_mfds_regional_item(
 		id,
 		"product_presave_mfds_regional_items",
 	)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	let ParamsForUpdate { data } = params;
 	ProductPresaveMfdsRegionalItemBmc::update(&ctx, &mm, id, data)
 		.await
@@ -2603,6 +2659,7 @@ pub async fn delete_product_mfds_regional_item(
 		id,
 		"product_presave_mfds_regional_items",
 	)?;
+	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	ProductPresaveMfdsRegionalItemBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
@@ -3425,6 +3482,7 @@ pub async fn create_study_registration_number(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let ParamsForCreate { data } = params;
 	let data = data.into_core(study_id);
 	let id = StudyPresaveRegistrationNumberBmc::create(&ctx, &mm, data).await?;
@@ -3442,6 +3500,7 @@ pub async fn list_study_registration_numbers(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let entities =
 		StudyPresaveRegistrationNumberBmc::list_by_parent(&ctx, &mm, study_id)
 			.await?;
@@ -3465,6 +3524,7 @@ pub async fn get_study_registration_number(
 		id,
 		"study_presave_registration_numbers",
 	)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
@@ -3486,6 +3546,7 @@ pub async fn update_study_registration_number(
 		id,
 		"study_presave_registration_numbers",
 	)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let ParamsForUpdate { data } = params;
 	StudyPresaveRegistrationNumberBmc::update(&ctx, &mm, id, data).await?;
 	let entity = StudyPresaveRegistrationNumberBmc::get(&ctx, &mm, id).await?;
@@ -3506,6 +3567,7 @@ pub async fn delete_study_registration_number(
 		id,
 		"study_presave_registration_numbers",
 	)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	StudyPresaveRegistrationNumberBmc::update(
 		&ctx,
 		&mm,
@@ -3530,6 +3592,7 @@ pub async fn create_study_fda_cross_reported_ind(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let ParamsForCreate { data } = params;
 	let data = data.into_core(study_id);
 	let id = StudyPresaveFdaCrossReportedIndBmc::create(&ctx, &mm, data).await?;
@@ -3547,6 +3610,7 @@ pub async fn list_study_fda_cross_reported_inds(
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let entities =
 		StudyPresaveFdaCrossReportedIndBmc::list_by_parent(&ctx, &mm, study_id)
 			.await?;
@@ -3570,6 +3634,7 @@ pub async fn get_study_fda_cross_reported_ind(
 		id,
 		"study_presave_fda_cross_reported_inds",
 	)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
@@ -3591,6 +3656,7 @@ pub async fn update_study_fda_cross_reported_ind(
 		id,
 		"study_presave_fda_cross_reported_inds",
 	)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let ParamsForUpdate { data } = params;
 	StudyPresaveFdaCrossReportedIndBmc::update(&ctx, &mm, id, data).await?;
 	let entity = StudyPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
@@ -3611,6 +3677,7 @@ pub async fn delete_study_fda_cross_reported_ind(
 		id,
 		"study_presave_fda_cross_reported_inds",
 	)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	StudyPresaveFdaCrossReportedIndBmc::update(
 		&ctx,
 		&mm,

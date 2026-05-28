@@ -117,12 +117,6 @@ pub fn router() -> Router {
 		submit_case_to_fda,
 		submit_case_to_mfds,
 		list_case_submissions,
-		list_presave_templates,
-		create_presave_template,
-		get_presave_template,
-		update_presave_template,
-		delete_presave_template,
-		list_presave_template_audits,
 		search_meddra,
 		search_whodrug,
 		import_meddra,
@@ -313,7 +307,6 @@ pub fn router() -> Router {
 		(name = "cases", description = "Case CRUD operations"),
 		(name = "case-editor", description = "Explicit case editor read APIs"),
 		(name = "case-subresources", description = "Nested case resources and workflows"),
-		(name = "presave-templates", description = "Reusable presave templates"),
 		(name = "terminology", description = "Terminology search and release management"),
 		(name = "import", description = "XML validation and import"),
 		(name = "audit", description = "Audit log APIs"),
@@ -3498,83 +3491,6 @@ fn submit_case_to_mfds() {}
 	responses((status = 200, description = "Submission history for case", body = CaseSubmissionListResponse))
 )]
 fn list_case_submissions() {}
-
-#[utoipa::path(
-	get,
-	path = "/api/presave-templates",
-	tag = "presave-templates",
-	security(
-		("auth_token" = [])
-	),
-	params(
-		("entityType" = Option<String>, Query, description = "Presave entity type: sender,receiver,product,reporter,study,narrative"),
-		("authority" = Option<String>, Query, description = "Regulatory authority filter: ich,fda,mfds. When set, global templates are included by default."),
-		("includeGlobal" = Option<bool>, Query, description = "Include global templates when authority is set")
-	),
-	responses((status = 200, description = "Presave templates", body = GenericDataResponse))
-)]
-fn list_presave_templates() {}
-
-#[utoipa::path(
-	post,
-	path = "/api/presave-templates",
-	tag = "presave-templates",
-	security(
-		("auth_token" = [])
-	),
-	request_body = GenericDataRequest,
-	responses((status = 201, description = "Presave template created", body = GenericDataResponse))
-)]
-fn create_presave_template() {}
-
-#[utoipa::path(
-	get,
-	path = "/api/presave-templates/{id}",
-	tag = "presave-templates",
-	security(
-		("auth_token" = [])
-	),
-	params(("id" = String, Path, description = "Template ID")),
-	responses((status = 200, description = "Presave template", body = GenericDataResponse))
-)]
-fn get_presave_template() {}
-
-#[utoipa::path(
-	patch,
-	path = "/api/presave-templates/{id}",
-	tag = "presave-templates",
-	security(
-		("auth_token" = [])
-	),
-	params(("id" = String, Path, description = "Template ID")),
-	request_body = GenericDataRequest,
-	responses((status = 200, description = "Presave template updated", body = GenericDataResponse))
-)]
-fn update_presave_template() {}
-
-#[utoipa::path(
-	delete,
-	path = "/api/presave-templates/{id}",
-	tag = "presave-templates",
-	security(
-		("auth_token" = [])
-	),
-	params(("id" = String, Path, description = "Template ID")),
-	responses((status = 204, description = "Presave template deleted"))
-)]
-fn delete_presave_template() {}
-
-#[utoipa::path(
-	get,
-	path = "/api/presave-templates/{id}/audit",
-	tag = "presave-templates",
-	security(
-		("auth_token" = [])
-	),
-	params(("id" = String, Path, description = "Template ID")),
-	responses((status = 200, description = "Presave template audit trail", body = GenericDataResponse))
-)]
-fn list_presave_template_audits() {}
 
 #[utoipa::path(
 	get,

@@ -555,7 +555,7 @@ async fn create_narrative(
 	Ok(())
 }
 
-async fn create_receiver_presave_template(
+async fn create_receiver_presave(
 	app: &axum::Router,
 	cookie: &str,
 	name: &str,
@@ -564,13 +564,16 @@ async fn create_receiver_presave_template(
 	let (status, value) = post_json(
 		app,
 		cookie,
-		"/api/presave-templates",
+		"/api/presaves/receivers",
 		json!({
 			"data": {
-				"entity_type": "receiver",
+				"authority": "fda",
 				"name": name,
-				"description": "receiver routing template",
-				"data": data
+				"comments": "receiver routing template",
+				"receiver_type": data["receiverType"].as_str(),
+				"organization_name": data["organizationName"].as_str(),
+				"receiver_identifier": data["routingRules"][0]["messageReceiverIdentifier"].as_str(),
+				"description": data["email"].as_str()
 			}
 		}),
 	)
@@ -712,7 +715,7 @@ async fn test_receiver_presave_applies_submission_routing_to_case_resources(
 			}
 		]
 	});
-	let template_id = create_receiver_presave_template(
+	let template_id = create_receiver_presave(
 		&app,
 		&cookie,
 		"receiver-routing-template",
@@ -722,11 +725,14 @@ async fn test_receiver_presave_applies_submission_routing_to_case_resources(
 	let (status, saved_template) = get_json(
 		&app,
 		&cookie,
-		&format!("/api/presave-templates/{template_id}"),
+		&format!("/api/presaves/receivers/{template_id}"),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{saved_template:?}");
-	assert_eq!(saved_template["data"]["data"], template_payload);
+	assert_eq!(
+		saved_template["data"]["organization_name"].as_str(),
+		Some("Submission Receiver Org")
+	);
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	create_message_header(&app, &cookie, case_id).await?;
@@ -734,7 +740,7 @@ async fn test_receiver_presave_applies_submission_routing_to_case_resources(
 		&app,
 		&cookie,
 		case_id,
-		&saved_template["data"]["data"],
+		&template_payload,
 		"fda",
 		"1",
 	)

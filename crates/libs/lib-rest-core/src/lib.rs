@@ -460,15 +460,13 @@ async fn load_sender_options_for_org(
 				r#"
 			WITH sender_master_options AS (
 				SELECT DISTINCT
-				       NULLIF(
-				           BTRIM(data->>'senderIdentifier'),
-				           ''
-				       ) AS sender_identifier,
+				       NULLIF(BTRIM(g.sender_identifier), '') AS sender_identifier,
 				       0::bigint AS case_count
-				FROM presave_templates
-				WHERE organization_id = $1
-				  AND entity_type = 'sender'
-				  AND LOWER(COALESCE(data->>'senderDeleted', 'false')) NOT IN ('true', '1', 'yes')
+				FROM sender_presaves s
+				JOIN sender_presave_gateways g ON g.sender_presave_id = s.id
+				WHERE s.organization_id = $1
+				  AND s.deleted = FALSE
+				  AND NULLIF(BTRIM(g.sender_identifier), '') IS NOT NULL
 			),
 			case_sender_options AS (
 				SELECT sender_identifier, COUNT(DISTINCT case_id) AS case_count

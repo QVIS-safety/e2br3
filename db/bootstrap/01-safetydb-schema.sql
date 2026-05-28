@@ -121,40 +121,6 @@ CREATE TABLE IF NOT EXISTS permission_profiles (
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS presave_templates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-    entity_type VARCHAR(50) NOT NULL,
-    authority VARCHAR(16),
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    data JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT presave_templates_entity_type_valid CHECK (
-        entity_type IN ('sender', 'receiver', 'product', 'reporter', 'study', 'narrative')
-    ),
-    CONSTRAINT presave_templates_authority_valid CHECK (
-        authority IS NULL OR authority IN ('ich', 'fda', 'mfds')
-    )
-);
-
-CREATE TABLE IF NOT EXISTS presave_template_audits (
-    id BIGSERIAL PRIMARY KEY,
-    template_id UUID NOT NULL,
-    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    action VARCHAR(50) NOT NULL,
-    changed_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    old_values JSONB,
-    new_values JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT presave_template_audits_action_valid CHECK (action IN ('CREATE', 'UPDATE', 'DELETE'))
-);
-
 CREATE TABLE IF NOT EXISTS sender_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
@@ -640,16 +606,6 @@ ALTER TABLE narrative_presave_case_summaries
 
 CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_presave_templates_org ON presave_templates(organization_id);
-CREATE INDEX idx_presave_templates_entity_type ON presave_templates(entity_type);
-CREATE INDEX idx_presave_templates_authority ON presave_templates(authority);
-CREATE INDEX idx_presave_templates_entity_authority ON presave_templates(entity_type, authority);
-CREATE INDEX idx_presave_templates_created_by ON presave_templates(created_by);
-CREATE INDEX idx_presave_templates_created_at ON presave_templates(created_at DESC);
-CREATE INDEX idx_presave_template_audits_template_id
-    ON presave_template_audits(template_id, created_at DESC);
-CREATE INDEX idx_presave_template_audits_org
-    ON presave_template_audits(organization_id, created_at DESC);
 CREATE INDEX idx_sender_presaves_org ON sender_presaves(organization_id);
 CREATE INDEX idx_sender_presaves_authority ON sender_presaves(authority);
 CREATE INDEX idx_sender_presave_gateways_parent ON sender_presave_gateways(sender_presave_id);
@@ -1725,38 +1681,7 @@ CREATE POLICY xml_export_history_via_case ON xml_export_history
     );
 
 -- ============================================================================
--- 9.10 Presave Templates Table RLS
--- ============================================================================
-ALTER TABLE presave_templates ENABLE ROW LEVEL SECURITY;
-ALTER TABLE presave_templates FORCE ROW LEVEL SECURITY;
-CREATE POLICY presave_templates_org_isolation ON presave_templates
-    FOR ALL
-    TO e2br3_app_role
-    USING (
-        organization_id = current_organization_id() OR is_current_user_admin()
-    )
-    WITH CHECK (
-        organization_id = current_organization_id() OR is_current_user_admin()
-    );
-
-ALTER TABLE presave_template_audits ENABLE ROW LEVEL SECURITY;
-ALTER TABLE presave_template_audits FORCE ROW LEVEL SECURITY;
-CREATE POLICY presave_template_audits_select ON presave_template_audits
-    FOR SELECT
-    TO e2br3_app_role
-    USING (
-        organization_id = current_organization_id() OR is_current_user_admin()
-    );
-
-CREATE POLICY presave_template_audits_insert ON presave_template_audits
-    FOR INSERT
-    TO e2br3_app_role
-    WITH CHECK (
-        organization_id = current_organization_id() OR is_current_user_admin()
-    );
-
--- ============================================================================
--- 9.10.1 Section Presave Tables RLS
+-- 9.10 Section Presave Tables RLS
 -- ============================================================================
 ALTER TABLE sender_presaves ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sender_presaves FORCE ROW LEVEL SECURITY;
