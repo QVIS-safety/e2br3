@@ -1073,46 +1073,60 @@ fn render_portrait_cioms(
 		canvas,
 		30,
 		height - 112,
-		95,
+		80,
 		40,
 		"1. PATIENT INITIALS",
 		patient
 			.and_then(|p| p.patient_initials.as_deref())
 			.unwrap_or(""),
-		18,
+		14,
 		1,
 	);
 	render_box(
 		canvas,
-		125,
+		110,
 		height - 112,
-		95,
+		60,
 		40,
-		"2. DATE OF BIRTH",
-		&date_text(patient.and_then(|p| p.birth_date)),
-		18,
+		"1a. COUNTRY",
+		first_reaction
+			.and_then(|r| r.country_code.as_deref())
+			.or_else(|| source.and_then(|s| s.country_code.as_deref()))
+			.unwrap_or(""),
+		12,
 		1,
 	);
 	render_box(
 		canvas,
-		220,
+		170,
 		height - 112,
 		90,
 		40,
-		"2a. AGE",
-		&patient_age(patient),
+		"2. DATE OF BIRTH",
+		&date_text(patient.and_then(|p| p.birth_date)),
 		16,
 		1,
 	);
 	render_box(
 		canvas,
-		310,
+		260,
 		height - 112,
-		80,
+		70,
+		40,
+		"2a. AGE",
+		&patient_age(patient),
+		12,
+		1,
+	);
+	render_box(
+		canvas,
+		330,
+		height - 112,
+		60,
 		40,
 		"3. SEX",
 		sex_text(patient.and_then(|p| p.sex.as_deref())),
-		12,
+		10,
 		1,
 	);
 	render_box(
@@ -1653,6 +1667,47 @@ mod tests {
 		}
 	}
 
+	fn reaction_with_country(country_code: &str) -> Reaction {
+		Reaction {
+			id: test_uuid(),
+			case_id: test_uuid(),
+			sequence_number: 1,
+			primary_source_reaction: "Headache".to_string(),
+			primary_source_reaction_translation: None,
+			reaction_language: Some("en".to_string()),
+			reaction_meddra_version: None,
+			reaction_meddra_code: None,
+			term_highlighted: None,
+			serious: None,
+			criteria_death: false,
+			criteria_death_null_flavor: None,
+			criteria_life_threatening: false,
+			criteria_life_threatening_null_flavor: None,
+			criteria_hospitalization: false,
+			criteria_hospitalization_null_flavor: None,
+			criteria_disabling: false,
+			criteria_disabling_null_flavor: None,
+			criteria_congenital_anomaly: false,
+			criteria_congenital_anomaly_null_flavor: None,
+			criteria_other_medically_important: false,
+			criteria_other_medically_important_null_flavor: None,
+			required_intervention: None,
+			start_date: None,
+			start_date_null_flavor: None,
+			end_date: None,
+			end_date_null_flavor: None,
+			duration_value: None,
+			duration_unit: None,
+			outcome: None,
+			medical_confirmation: None,
+			country_code: Some(country_code.to_string()),
+			created_at: test_time(),
+			updated_at: test_time(),
+			created_by: test_uuid(),
+			updated_by: None,
+		}
+	}
+
 	#[test]
 	fn cioms_form_data_maps_missing_optional_sections_to_blank_fields() {
 		let data = CiomsCaseData {
@@ -2172,6 +2227,28 @@ mod tests {
 		let text = String::from_utf8_lossy(&pdf);
 
 		assert!(text.contains("Data ordering: Latest data will appear first"));
+	}
+
+	#[test]
+	fn cioms_portrait_pdf_renders_reaction_country() {
+		let data = CiomsCaseData {
+			case_number: "SR-PORTRAIT-COUNTRY".to_string(),
+			report: None,
+			patient: None,
+			reactions: vec![reaction_with_country("JP")],
+			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &portrait_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("1a. COUNTRY"));
+		assert!(text.contains("JP"));
 	}
 
 	#[test]
