@@ -612,6 +612,22 @@ impl PdfCanvas {
 		let mut line = String::new();
 		let mut lines = Vec::new();
 		for word in value.split_whitespace() {
+			if word.chars().count() > max_chars
+				&& word.chars().all(|ch| ch.is_ascii_alphabetic())
+			{
+				if !line.is_empty() {
+					lines.push(line);
+					line = String::new();
+				}
+				for ch in word.chars() {
+					line.push(ch);
+					if line.chars().count() == max_chars {
+						lines.push(line);
+						line = String::new();
+					}
+				}
+				continue;
+			}
 			let next_len = if line.is_empty() {
 				word.len()
 			} else {
@@ -1783,6 +1799,18 @@ mod tests {
 		let form = CiomsFormData::from_case_data(&data, &default_settings());
 
 		assert_eq!(form.reporter_name, "Dr Mina J Kim");
+	}
+
+	#[test]
+	fn cioms_wrapped_text_splits_unbroken_long_words() {
+		let mut canvas = PdfCanvas::new();
+
+		canvas.wrapped_text(10, 20, 9, 6, 3, "ABCDEFGHIJKLMNOPQR");
+
+		assert!(!canvas.stream.contains("ABCDEFGHIJKLMNOPQR"));
+		assert!(canvas.stream.contains("(ABCDEF)"));
+		assert!(canvas.stream.contains("(GHIJKL)"));
+		assert!(canvas.stream.contains("(MNOPQR)"));
 	}
 
 	#[test]
