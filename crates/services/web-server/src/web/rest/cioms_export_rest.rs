@@ -374,7 +374,7 @@ fn escape_pdf_text(value: &str) -> String {
 			'(' => "\\(".chars().collect::<Vec<_>>(),
 			')' => "\\)".chars().collect::<Vec<_>>(),
 			'\\' => "\\\\".chars().collect::<Vec<_>>(),
-			'\n' | '\r' => " ".chars().collect::<Vec<_>>(),
+			ch if ch.is_ascii_control() => " ".chars().collect::<Vec<_>>(),
 			ch if !ch.is_ascii() => "?".chars().collect::<Vec<_>>(),
 			_ => vec![ch],
 		})
@@ -1811,6 +1811,11 @@ mod tests {
 		assert!(canvas.stream.contains("(ABCDEF)"));
 		assert!(canvas.stream.contains("(GHIJKL)"));
 		assert!(canvas.stream.contains("(MNOPQR)"));
+	}
+
+	#[test]
+	fn cioms_pdf_text_escape_normalizes_control_whitespace() {
+		assert_eq!(escape_pdf_text("Line\tone\nLine\rtwo"), "Line one Line two");
 	}
 
 	#[test]
