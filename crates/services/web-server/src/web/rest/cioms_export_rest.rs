@@ -1137,44 +1137,55 @@ fn render_portrait_cioms(
 		canvas,
 		30,
 		height - 322,
-		210,
+		165,
 		42,
 		"14. SUSPECT DRUG 1 of 1 (include generic name)",
 		&drug_name(suspect_drug),
-		30,
+		24,
 		1,
 	);
 	render_box(
 		canvas,
-		240,
+		195,
 		height - 322,
-		110,
+		90,
 		42,
 		"15. DAILY DOSE(S)",
 		&form.suspect_drug_dose,
-		18,
+		14,
 		1,
 	);
 	render_box(
 		canvas,
-		350,
+		285,
 		height - 322,
-		100,
+		80,
 		42,
 		"16. ROUTE",
 		&form.suspect_drug_route,
-		16,
+		12,
 		1,
 	);
 	render_box(
 		canvas,
-		450,
+		365,
 		height - 322,
-		110,
+		95,
 		42,
 		"20. ABATE AFTER STOPPING?",
 		yes_no_na(suspect_drug.and_then(|drug| drug.action_taken.as_deref())),
-		16,
+		14,
+		1,
+	);
+	render_box(
+		canvas,
+		460,
+		height - 322,
+		100,
+		42,
+		"21. REAPPEAR AFTER REINTRODUCTION?",
+		yes_no_na(suspect_drug.and_then(|drug| drug.rechallenge.as_deref())),
+		14,
 		1,
 	);
 	render_box(
@@ -1539,6 +1550,15 @@ mod tests {
 			created_by: test_uuid(),
 			updated_by: None,
 		}
+	}
+
+	fn suspect_drug_with_rechallenge(
+		drug_id: Uuid,
+		rechallenge: &str,
+	) -> DrugInformation {
+		let mut drug = suspect_drug(drug_id);
+		drug.rechallenge = Some(rechallenge.to_string());
+		drug
 	}
 
 	fn concomitant_drug(drug_id: Uuid, product: &str) -> DrugInformation {
@@ -2022,6 +2042,29 @@ mod tests {
 
 		assert!(text.contains("16. ROUTE"));
 		assert!(text.contains("Oral"));
+	}
+
+	#[test]
+	fn cioms_portrait_pdf_renders_rechallenge_response() {
+		let drug_id = test_uuid();
+		let data = CiomsCaseData {
+			case_number: "SR-PORTRAIT-RECHALLENGE".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: vec![suspect_drug_with_rechallenge(drug_id, "1")],
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &portrait_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("21. REAPPEAR"));
+		assert!(text.contains("Yes"));
 	}
 
 	#[test]
