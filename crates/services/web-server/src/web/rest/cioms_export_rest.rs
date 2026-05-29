@@ -683,6 +683,18 @@ fn render_checkbox(
 	canvas.text(x + 12, y + 1, 7, label);
 }
 
+fn render_reporter_footer(
+	canvas: &mut PdfCanvas,
+	x: i32,
+	y: i32,
+	source: Option<&PrimarySource>,
+) {
+	let reporter = reporter_name(source);
+	if !reporter.is_empty() {
+		canvas.text(x, y, 7, &format!("Reporter: {reporter}"));
+	}
+}
+
 fn render_landscape_cioms(
 	canvas: &mut PdfCanvas,
 	data: &CiomsCaseData,
@@ -1034,7 +1046,7 @@ fn render_landscape_cioms(
 		18,
 		2,
 	);
-	canvas.text(34, 38, 7, &format!("Reporter: {}", reporter_name(source)));
+	render_reporter_footer(canvas, 34, 38, source);
 	canvas.text(
 		300,
 		38,
@@ -1335,7 +1347,7 @@ fn render_portrait_cioms(
 		24,
 		1,
 	);
-	canvas.text(34, 38, 7, &format!("Reporter: {}", reporter_name(source)));
+	render_reporter_footer(canvas, 34, 38, source);
 }
 
 fn ordered_cioms_case_data(
@@ -1816,6 +1828,27 @@ mod tests {
 	#[test]
 	fn cioms_pdf_text_escape_normalizes_control_whitespace() {
 		assert_eq!(escape_pdf_text("Line\tone\nLine\rtwo"), "Line one Line two");
+	}
+
+	#[test]
+	fn cioms_pdf_omits_empty_reporter_footer() {
+		let data = CiomsCaseData {
+			case_number: "SR-NO-REPORTER".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &default_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(!text.contains("Reporter: "));
 	}
 
 	#[test]
