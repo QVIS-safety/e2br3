@@ -1061,6 +1061,12 @@ fn render_portrait_cioms(
 		8,
 		&format!("CIOMS layout: {}", settings.orientation),
 	);
+	canvas.text(
+		390,
+		height - 44,
+		7,
+		&format!("Data ordering: {}", settings.data_ordering),
+	);
 	canvas.rect(24, 24, width - 48, height - 70);
 	canvas.text(30, height - 62, 9, "I. REACTION INFORMATION");
 	render_box(
@@ -1447,6 +1453,13 @@ mod tests {
 		CiomsSettings {
 			orientation: "Portrait".to_string(),
 			data_ordering: "Primary data will appear first".to_string(),
+		}
+	}
+
+	fn portrait_latest_first_settings() -> CiomsSettings {
+		CiomsSettings {
+			orientation: "Portrait".to_string(),
+			data_ordering: "Latest data will appear first".to_string(),
 		}
 	}
 
@@ -2138,6 +2151,27 @@ mod tests {
 		let text = String::from_utf8_lossy(&pdf);
 
 		assert!(text.contains("Reporter: Dr Mina Kim"));
+	}
+
+	#[test]
+	fn cioms_portrait_pdf_renders_data_ordering_setting() {
+		let data = CiomsCaseData {
+			case_number: "SR-PORTRAIT-ORDERING".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &portrait_latest_first_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("Data ordering: Latest data will appear first"));
 	}
 
 	#[test]
