@@ -1168,7 +1168,7 @@ fn render_portrait_cioms(
 		260,
 		50,
 		"17. INDICATION(S) FOR USE",
-		"",
+		&form.suspect_drug_indication,
 		38,
 		2,
 	);
@@ -1379,6 +1379,55 @@ mod tests {
 		CiomsSettings {
 			orientation: "Landscape".to_string(),
 			data_ordering: "Latest data will appear first".to_string(),
+		}
+	}
+
+	fn portrait_settings() -> CiomsSettings {
+		CiomsSettings {
+			orientation: "Portrait".to_string(),
+			data_ordering: "Primary data will appear first".to_string(),
+		}
+	}
+
+	fn suspect_drug(drug_id: Uuid) -> DrugInformation {
+		DrugInformation {
+			id: drug_id,
+			case_id: test_uuid(),
+			sequence_number: 1,
+			drug_characterization: "1".to_string(),
+			medicinal_product: "Amoxicillin capsule".to_string(),
+			mpid: None,
+			mpid_version: None,
+			phpid: None,
+			phpid_version: None,
+			investigational_product_blinded: None,
+			obtain_drug_country: None,
+			brand_name: None,
+			drug_generic_name: None,
+			drug_authorization_number: None,
+			manufacturer_name: None,
+			manufacturer_country: None,
+			batch_lot_number: None,
+			cumulative_dose_first_reaction_value: None,
+			cumulative_dose_first_reaction_unit: None,
+			gestation_period_exposure_value: None,
+			gestation_period_exposure_unit: None,
+			dosage_text: None,
+			action_taken: None,
+			rechallenge: None,
+			parent_route: None,
+			parent_route_termid: None,
+			parent_route_termid_version: None,
+			parent_dosage_text: None,
+			fda_additional_info_coded: None,
+			drug_additional_info_codes_json: None,
+			drug_additional_information: None,
+			fda_specialized_product_category: None,
+			fda_device_info_json: None,
+			created_at: test_time(),
+			updated_at: test_time(),
+			created_by: test_uuid(),
+			updated_by: None,
 		}
 	}
 
@@ -1728,6 +1777,39 @@ mod tests {
 		assert!(text.contains("Latest child indication"));
 		assert!(!text.contains("Older child dose"));
 		assert!(!text.contains("Older child indication"));
+	}
+
+	#[test]
+	fn cioms_portrait_pdf_renders_suspect_drug_indication() {
+		let drug_id = test_uuid();
+		let data = CiomsCaseData {
+			case_number: "SR-PORTRAIT-INDICATION".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: vec![suspect_drug(drug_id)],
+			dosages: Vec::new(),
+			indications: vec![DrugIndication {
+				id: test_uuid(),
+				drug_id,
+				sequence_number: 1,
+				indication_text: Some("Bacterial sinusitis".to_string()),
+				indication_meddra_version: None,
+				indication_meddra_code: None,
+				created_at: test_time(),
+				updated_at: test_time(),
+				created_by: test_uuid(),
+				updated_by: None,
+			}],
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &portrait_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("Bacterial sinusitis"));
 	}
 
 	#[test]
