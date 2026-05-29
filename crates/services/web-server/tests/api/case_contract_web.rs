@@ -209,23 +209,18 @@ async fn test_kr_device_characteristics_round_trip_via_api() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	let rows = body["data"].as_array().ok_or("missing rows")?;
+	assert_eq!(rows.len(), 2, "{rows:?}");
 	assert!(
 		rows.iter().any(|row| {
 			row["code"].as_str() == Some("KR_DVC_PROBC")
-				&& row["valueCode"]
-					.as_str()
-					.or_else(|| row["value_code"].as_str())
-					== Some("PROB-1")
+				&& row["value_code"].as_str() == Some("PROB-1")
 		}),
 		"{rows:?}"
 	);
 	assert!(
 		rows.iter().any(|row| {
 			row["code"].as_str() == Some("KR_DVC_MFR")
-				&& row["valueValue"]
-					.as_str()
-					.or_else(|| row["value_value"].as_str())
-					== Some("KR Maker")
+				&& row["value_value"].as_str() == Some("KR Maker")
 		}),
 		"{rows:?}"
 	);
