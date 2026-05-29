@@ -117,6 +117,124 @@ async fn get_raw(
 
 #[serial]
 #[tokio::test]
+async fn test_kr_device_characteristics_round_trip_via_api() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let suffix = Uuid::new_v4().simple().to_string();
+	let case_no = format!("KR-DVC-{suffix}");
+
+	let (status, raw_body) = post_raw(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"organization_id": seed.org_id,
+				"safety_report_id": case_no,
+				"version": 1,
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let case_id = body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?;
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/drugs"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sequence_number": 1,
+				"drug_characterization": "1",
+				"medicinal_product": "KR Device Product"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let drug_id = body["data"]["id"].as_str().ok_or("missing drug id")?;
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"),
+		json!({
+			"data": {
+				"drug_id": drug_id,
+				"sequence_number": 1,
+				"code": "KR_DVC_PROBC",
+				"value_code": "PROB-1"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"),
+		json!({
+			"data": {
+				"drug_id": drug_id,
+				"sequence_number": 2,
+				"code": "KR_DVC_MFR",
+				"value_value": "KR Maker"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/drugs/{drug_id}/device-characteristics"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let rows = body["data"].as_array().ok_or("missing rows")?;
+	assert!(
+		rows.iter().any(|row| {
+			row["code"].as_str() == Some("KR_DVC_PROBC")
+				&& row["valueCode"]
+					.as_str()
+					.or_else(|| row["value_code"].as_str())
+					== Some("PROB-1")
+		}),
+		"{rows:?}"
+	);
+	assert!(
+		rows.iter().any(|row| {
+			row["code"].as_str() == Some("KR_DVC_MFR")
+				&& row["valueValue"]
+					.as_str()
+					.or_else(|| row["value_value"].as_str())
+					== Some("KR Maker")
+		}),
+		"{rows:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
