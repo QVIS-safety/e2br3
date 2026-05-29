@@ -267,6 +267,36 @@ async fn create_message_header(
 	Ok(())
 }
 
+async fn create_sender_information(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	organization_name: &str,
+) -> Result<()> {
+	let (status, value) = request_json(
+		app,
+		"POST",
+		cookie,
+		format!("/api/cases/{case_id}/safety-report/senders"),
+		Some(json!({
+			"data": {
+				"case_id": case_id,
+				"sender_type": "1",
+				"organization_name": organization_name,
+				"person_given_name": "Safety"
+			}
+		})),
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create sender information failed: status={status} body={value}"
+		)
+		.into());
+	}
+	Ok(())
+}
+
 async fn create_sender_presave(
 	app: &Router,
 	cookie: &str,
@@ -285,6 +315,7 @@ async fn create_sender_presave(
 				"comments": "Routing source-of-truth test sender",
 				"sender_type": "2",
 				"organization_name": name,
+				"person_given_name": "Safety",
 				"email": format!("{sender_identifier}@example.test")
 			}
 		})),
@@ -365,7 +396,8 @@ async fn create_drug(
 				"case_id": case_id,
 				"sequence_number": 1,
 				"drug_characterization": "1",
-				"medicinal_product": "Demo Product"
+				"medicinal_product": "Demo Product",
+				"brand_name": "Demo Product"
 			}
 		})),
 	)
@@ -394,6 +426,37 @@ async fn create_drug(
 				format!("update drug failed: status={status} body={value}").into()
 			);
 		}
+	}
+	Ok(())
+}
+
+async fn create_drug_with_brand(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	brand_name: &str,
+) -> Result<()> {
+	let (status, value) = request_json(
+		app,
+		"POST",
+		cookie,
+		format!("/api/cases/{case_id}/drugs"),
+		Some(json!({
+			"data": {
+				"case_id": case_id,
+				"sequence_number": 1,
+				"drug_characterization": "1",
+				"medicinal_product": "Demo Product",
+				"brand_name": brand_name
+			}
+		})),
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create drug with brand failed: status={status} body={value}"
+		)
+		.into());
 	}
 	Ok(())
 }
@@ -514,13 +577,15 @@ async fn test_case_list_is_filtered_by_sender_scope() -> Result<()> {
 	.await?;
 	create_message_header(&app, &admin_cookie, case_a, "SEND-A").await?;
 	create_message_header(&app, &admin_cookie, case_b, "SEND-B").await?;
+	create_sender_information(&app, &admin_cookie, case_a, "Sender Org A").await?;
+	create_sender_information(&app, &admin_cookie, case_b, "Sender Org B").await?;
 
 	update_user_scope(
 		&app,
 		&admin_cookie,
 		seed.viewer.id,
 		json!({
-			"access_sender_ids": "[\"SEND-A\"]"
+			"access_sender_ids": "[\"Sender Org A\"]"
 		}),
 	)
 	.await?;
@@ -532,6 +597,48 @@ async fn test_case_list_is_filtered_by_sender_scope() -> Result<()> {
 	let cases = value["data"].as_array().ok_or("missing cases array")?;
 	assert!(cases.iter().any(|row| row["id"] == case_a.to_string()));
 	assert!(!cases.iter().any(|row| row["id"] == case_b.to_string()));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_get_does_not_match_sender_scope_by_message_header_only(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(
+		&app,
+		&admin_cookie,
+		&format!("SR-SENDER-HEADER-ONLY-{}", Uuid::new_v4()),
+		None,
+	)
+	.await?;
+	create_message_header(&app, &admin_cookie, case_id, "MSG-ONLY").await?;
+	create_sender_information(&app, &admin_cookie, case_id, "Sender Org B").await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({ "access_sender_ids": ["MSG-ONLY"] }),
+	)
+	.await?;
+
+	let (status, _value) = request_json(
+		&app,
+		"GET",
+		&viewer_cookie,
+		format!("/api/cases/{case_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN);
 	Ok(())
 }
 
@@ -563,11 +670,13 @@ async fn test_case_update_requires_matching_sender_scope() -> Result<()> {
 	.await?;
 	create_message_header(&app, &admin_cookie, case_a, "SEND-A").await?;
 	create_message_header(&app, &admin_cookie, case_b, "SEND-B").await?;
+	create_sender_information(&app, &admin_cookie, case_a, "Sender Org A").await?;
+	create_sender_information(&app, &admin_cookie, case_b, "Sender Org B").await?;
 	update_user_scope(
 		&app,
 		&admin_cookie,
 		seed.viewer.id,
-		json!({ "access_sender_ids": ["SEND-A"] }),
+		json!({ "access_sender_ids": ["Sender Org A"] }),
 	)
 	.await?;
 
@@ -583,7 +692,7 @@ async fn test_case_update_requires_matching_sender_scope() -> Result<()> {
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 
 	Ok(())
 }
@@ -608,6 +717,8 @@ async fn test_case_get_requires_matching_product_and_study_scope() -> Result<()>
 	)
 	.await?;
 	create_message_header(&app, &admin_cookie, case_id, "SEND-A").await?;
+	create_sender_information(&app, &admin_cookie, case_id, "Sender Org A").await?;
+	create_drug_with_brand(&app, &admin_cookie, case_id, "Brand Alpha").await?;
 	create_study(&app, &admin_cookie, case_id, "STUDY-ALPHA").await?;
 
 	update_user_scope(
@@ -615,8 +726,8 @@ async fn test_case_get_requires_matching_product_and_study_scope() -> Result<()>
 		&admin_cookie,
 		seed.viewer.id,
 		json!({
-			"access_sender_ids": "[\"SEND-A\"]",
-			"access_product_ids": "[\"PROD-ALPHA\"]",
+			"access_sender_ids": "[\"Sender Org A\"]",
+			"access_product_ids": "[\"Brand Alpha\"]",
 			"access_study_ids": "[\"STUDY-ALPHA\"]"
 		}),
 	)
@@ -656,13 +767,16 @@ async fn test_case_get_blocks_empty_product_or_study_scope_when_case_has_values(
 	)
 	.await?;
 	create_message_header(&app, &admin_cookie, case_id, "SEND-STRICT").await?;
+	create_sender_information(&app, &admin_cookie, case_id, "Sender Strict Org")
+		.await?;
+	create_drug_with_brand(&app, &admin_cookie, case_id, "Brand Strict").await?;
 	create_study(&app, &admin_cookie, case_id, "STUDY-STRICT").await?;
 
 	update_user_scope(
 		&app,
 		&admin_cookie,
 		seed.viewer.id,
-		json!({ "access_sender_ids": ["SEND-STRICT"] }),
+		json!({ "access_sender_ids": ["Sender Strict Org"] }),
 	)
 	.await?;
 
@@ -681,8 +795,8 @@ async fn test_case_get_blocks_empty_product_or_study_scope_when_case_has_values(
 		&admin_cookie,
 		seed.viewer.id,
 		json!({
-			"access_sender_ids": ["SEND-STRICT"],
-			"access_product_ids": ["PROD-STRICT"],
+			"access_sender_ids": ["Sender Strict Org"],
+			"access_product_ids": ["Brand Strict"],
 			"access_study_ids": ["STUDY-STRICT"]
 		}),
 	)
@@ -720,6 +834,7 @@ async fn test_case_get_blocks_blinded_case_without_blind_scope() -> Result<()> {
 	)
 	.await?;
 	create_message_header(&app, &admin_cookie, case_id, "SEND-A").await?;
+	create_sender_information(&app, &admin_cookie, case_id, "Sender Org A").await?;
 	create_study(&app, &admin_cookie, case_id, "STUDY-BLIND").await?;
 	create_drug(&app, &admin_cookie, case_id, true).await?;
 
@@ -728,8 +843,8 @@ async fn test_case_get_blocks_blinded_case_without_blind_scope() -> Result<()> {
 		&admin_cookie,
 		seed.viewer.id,
 		json!({
-			"access_sender_ids": "[\"SEND-A\"]",
-			"access_product_ids": "[\"PROD-BLIND\"]",
+			"access_sender_ids": "[\"Sender Org A\"]",
+			"access_product_ids": "[\"Demo Product\"]",
 			"access_study_ids": "[\"STUDY-BLIND\"]",
 			"access_blind_allowed": false
 		}),
@@ -779,6 +894,12 @@ async fn test_import_export_submission_histories_follow_product_scope() -> Resul
 			.await?;
 	create_message_header(&app, &admin_cookie, case_allowed, "SEND-HIST").await?;
 	create_message_header(&app, &admin_cookie, case_hidden, "SEND-HIST").await?;
+	create_sender_information(&app, &admin_cookie, case_allowed, "Sender Hist Org")
+		.await?;
+	create_sender_information(&app, &admin_cookie, case_hidden, "Sender Hist Org")
+		.await?;
+	create_drug_with_brand(&app, &admin_cookie, case_allowed, "Brand A").await?;
+	create_drug_with_brand(&app, &admin_cookie, case_hidden, "Brand B").await?;
 	insert_history_rows_for_case(
 		&mm,
 		case_allowed,
@@ -802,8 +923,8 @@ async fn test_import_export_submission_histories_follow_product_scope() -> Resul
 		&admin_cookie,
 		scoped_manager.id,
 		json!({
-			"access_sender_ids": ["SEND-HIST"],
-			"access_product_ids": ["PROD-A"]
+			"access_sender_ids": ["Sender Hist Org"],
+			"access_product_ids": ["Brand A"]
 		}),
 	)
 	.await?;
@@ -898,7 +1019,7 @@ async fn test_routing_profile_sender_options_include_info_sender_masters(
 		&app,
 		&admin_cookie,
 		seed.viewer.id,
-		json!({ "access_sender_ids": ["SEND-MASTER-A"] }),
+		json!({ "access_sender_ids": ["Client A Sender Master"] }),
 	)
 	.await?;
 
@@ -968,7 +1089,7 @@ async fn test_company_sponsor_admin_cannot_assign_sender_scope() -> Result<()> {
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 
 	Ok(())
 }
@@ -1012,11 +1133,13 @@ async fn test_routing_profile_sender_options_follow_role_scope() -> Result<()> {
 	.await?;
 	create_message_header(&app, &admin_cookie, case_a, "SEND-A").await?;
 	create_message_header(&app, &admin_cookie, case_b, "SEND-B").await?;
+	create_sender_information(&app, &admin_cookie, case_a, "Sender Org A").await?;
+	create_sender_information(&app, &admin_cookie, case_b, "Sender Org B").await?;
 	update_user_scope(
 		&app,
 		&admin_cookie,
 		seed.viewer.id,
-		json!({ "access_sender_ids": ["SEND-A"] }),
+		json!({ "access_sender_ids": ["Sender Org A"] }),
 	)
 	.await?;
 
@@ -1104,11 +1227,13 @@ async fn test_active_sender_selection_filters_case_list() -> Result<()> {
 	.await?;
 	create_message_header(&app, &admin_cookie, case_a, "SEND-A").await?;
 	create_message_header(&app, &admin_cookie, case_b, "SEND-B").await?;
+	create_sender_information(&app, &admin_cookie, case_a, "Sender Org A").await?;
+	create_sender_information(&app, &admin_cookie, case_b, "Sender Org B").await?;
 	update_user_scope(
 		&app,
 		&admin_cookie,
 		seed.viewer.id,
-		json!({ "access_sender_ids": ["SEND-A", "SEND-B"] }),
+		json!({ "access_sender_ids": ["Sender Org A", "Sender Org B"] }),
 	)
 	.await?;
 
@@ -1936,32 +2061,34 @@ async fn test_case_matrix_privileges_grant_effective_case_permissions() -> Resul
 	.await?;
 	create_message_header(&app, &admin_cookie, case_id, "CASE-MATRIX-SENDER")
 		.await?;
+	create_sender_information(&app, &admin_cookie, case_id, "Case Matrix Sender")
+		.await?;
 	update_user_scope(
 		&app,
 		&admin_cookie,
 		read_user_id,
-		json!({ "access_sender_ids": ["CASE-MATRIX-SENDER"] }),
+		json!({ "access_sender_ids": ["Case Matrix Sender"] }),
 	)
 	.await?;
 	update_user_scope(
 		&app,
 		&admin_cookie,
 		edit_user_id,
-		json!({ "access_sender_ids": ["CASE-MATRIX-SENDER"] }),
+		json!({ "access_sender_ids": ["Case Matrix Sender"] }),
 	)
 	.await?;
 	update_user_scope(
 		&app,
 		&admin_cookie,
 		review_user_id,
-		json!({ "access_sender_ids": ["CASE-MATRIX-SENDER"] }),
+		json!({ "access_sender_ids": ["Case Matrix Sender"] }),
 	)
 	.await?;
 	update_user_scope(
 		&app,
 		&admin_cookie,
 		lock_user_id,
-		json!({ "access_sender_ids": ["CASE-MATRIX-SENDER"] }),
+		json!({ "access_sender_ids": ["Case Matrix Sender"] }),
 	)
 	.await?;
 
@@ -2336,24 +2463,29 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
 	let (custom_user_id, custom_cookie) =
 		custom_role_user(&mm, seed.org_id, &profile_id).await?;
+	let seed_sender_name = format!("Info Matrix Seed {}", Uuid::new_v4().simple());
+	let editable_sender_name =
+		format!("Info Matrix Editable {}", Uuid::new_v4().simple());
+	let deletable_sender_name =
+		format!("Info Matrix Deletable {}", Uuid::new_v4().simple());
 	let template_id = create_sender_presave(
 		&app,
 		&admin_cookie,
-		&format!("Info Matrix Seed {}", Uuid::new_v4().simple()),
+		&seed_sender_name,
 		"INFO-MATRIX-SEED",
 	)
 	.await?;
 	let editable_template_id = create_sender_presave(
 		&app,
 		&admin_cookie,
-		&format!("Info Matrix Editable {}", Uuid::new_v4().simple()),
+		&editable_sender_name,
 		"INFO-MATRIX-EDITABLE",
 	)
 	.await?;
 	let deletable_template_id = create_sender_presave(
 		&app,
 		&admin_cookie,
-		&format!("Info Matrix Deletable {}", Uuid::new_v4().simple()),
+		&deletable_sender_name,
 		"INFO-MATRIX-DELETABLE",
 	)
 	.await?;
@@ -2363,9 +2495,9 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		custom_user_id,
 		json!({
 			"access_sender_ids": [
-				"INFO-MATRIX-SEED",
-				"INFO-MATRIX-EDITABLE",
-				"INFO-MATRIX-DELETABLE",
+				seed_sender_name,
+				editable_sender_name,
+				deletable_sender_name,
 				"INFO-MATRIX-EDIT"
 			]
 		}),
@@ -2437,7 +2569,8 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 				"name": "Info Matrix Sender",
 				"comments": "Should require info edit",
 				"sender_type": "2",
-				"organization_name": "Info Matrix Sender"
+				"organization_name": "Info Matrix Sender",
+				"person_given_name": "Safety"
 			}
 		})),
 	)
@@ -2510,7 +2643,8 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 				"name": format!("Info Matrix Sender {}", Uuid::new_v4().simple()),
 				"comments": "Info edit should allow creation",
 				"sender_type": "2",
-				"organization_name": "INFO-MATRIX-EDIT"
+				"organization_name": "INFO-MATRIX-EDIT",
+				"person_given_name": "Safety"
 			}
 		})),
 	)
@@ -2528,7 +2662,8 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 				"name": "Info Matrix Editable Updated",
 				"comments": "Info edit should allow updates",
 				"sender_type": "2",
-				"organization_name": "INFO-MATRIX-EDITABLE"
+				"organization_name": editable_sender_name,
+				"person_given_name": "Safety"
 			}
 		})),
 	)

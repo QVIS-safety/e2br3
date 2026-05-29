@@ -97,40 +97,23 @@ async fn allowed_scope_for_section(
 
 fn product_scope_identifiers(entity: &ProductPresave) -> Vec<String> {
 	let mut values = Vec::new();
-	push_scope_identifier(&mut values, entity.medicinal_product.as_deref());
 	push_scope_identifier(&mut values, entity.brand_name.as_deref());
-	push_scope_identifier(&mut values, entity.drug_generic_name.as_deref());
-	push_scope_identifier(&mut values, entity.drug_authorization_number.as_deref());
-	push_scope_identifier(&mut values, entity.mpid.as_deref());
-	push_scope_identifier(&mut values, entity.phpid.as_deref());
 	values
 }
 
 fn study_scope_identifiers(entity: &StudyPresave) -> Vec<String> {
 	let mut values = Vec::new();
 	push_scope_identifier(&mut values, entity.sponsor_study_number.as_deref());
-	push_scope_identifier(&mut values, entity.study_name.as_deref());
-	push_scope_identifier(&mut values, entity.mfds_study_number.as_deref());
-	push_scope_identifier(&mut values, entity.mfds_protocol_number.as_deref());
 	values
 }
 
 async fn sender_scope_identifiers(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
+	_ctx: &lib_core::ctx::Ctx,
+	_mm: &ModelManager,
 	entity: &SenderPresave,
 ) -> Result<Vec<String>> {
 	let mut values = Vec::new();
-	push_scope_identifier(&mut values, Some(&entity.name));
 	push_scope_identifier(&mut values, entity.organization_name.as_deref());
-	let gateways =
-		SenderPresaveGatewayBmc::list_by_parent(ctx, mm, entity.id).await?;
-	for gateway in gateways {
-		push_scope_identifier(&mut values, gateway.sender_identifier.as_deref());
-		push_scope_identifier(&mut values, gateway.routing_identifier.as_deref());
-		push_scope_identifier(&mut values, gateway.cde_sender_identifier.as_deref());
-		push_scope_identifier(&mut values, gateway.cdr_sender_identifier.as_deref());
-	}
 	Ok(values)
 }
 
@@ -155,6 +138,111 @@ fn deny_presave_scope() -> Error {
 	Error::PermissionDenied {
 		required_permission: "PresaveTemplate.Scope".to_string(),
 	}
+}
+
+fn presave_case_link_conflict(message: &str) -> Error {
+	model::Error::Conflict {
+		message: message.to_string(),
+	}
+	.into()
+}
+
+async fn sender_presave_used_by_cases(
+	mm: &ModelManager,
+	organization_id: Uuid,
+	organization_name: Option<&str>,
+) -> Result<bool> {
+	let Some(organization_name) = organization_name
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+	else {
+		return Ok(false);
+	};
+	let (exists,) = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (bool,)>(
+				r#"
+				SELECT EXISTS (
+					SELECT 1
+					FROM sender_information sender
+					JOIN cases c ON c.id = sender.case_id
+					WHERE c.organization_id = $1
+					  AND LOWER(BTRIM(sender.organization_name)) = LOWER(BTRIM($2))
+				)
+				"#,
+			)
+			.bind(organization_id)
+			.bind(organization_name),
+		)
+		.await
+		.map_err(|err| Error::from(model::Error::from(err)))?;
+	Ok(exists)
+}
+
+async fn product_presave_used_by_cases(
+	mm: &ModelManager,
+	organization_id: Uuid,
+	brand_name: Option<&str>,
+) -> Result<bool> {
+	let Some(brand_name) =
+		brand_name.map(str::trim).filter(|value| !value.is_empty())
+	else {
+		return Ok(false);
+	};
+	let (exists,) = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (bool,)>(
+				r#"
+				SELECT EXISTS (
+					SELECT 1
+					FROM drug_information drug
+					JOIN cases c ON c.id = drug.case_id
+					WHERE c.organization_id = $1
+					  AND LOWER(BTRIM(drug.brand_name)) = LOWER(BTRIM($2))
+				)
+				"#,
+			)
+			.bind(organization_id)
+			.bind(brand_name),
+		)
+		.await
+		.map_err(|err| Error::from(model::Error::from(err)))?;
+	Ok(exists)
+}
+
+async fn study_presave_used_by_cases(
+	mm: &ModelManager,
+	organization_id: Uuid,
+	sponsor_study_number: Option<&str>,
+) -> Result<bool> {
+	let Some(sponsor_study_number) = sponsor_study_number
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+	else {
+		return Ok(false);
+	};
+	let (exists,) = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (bool,)>(
+				r#"
+				SELECT EXISTS (
+					SELECT 1
+					FROM study_information study
+					JOIN cases c ON c.id = study.case_id
+					WHERE c.organization_id = $1
+					  AND LOWER(BTRIM(study.sponsor_study_number)) = LOWER(BTRIM($2))
+				)
+				"#,
+			)
+			.bind(organization_id)
+			.bind(sponsor_study_number),
+		)
+		.await
+		.map_err(|err| Error::from(model::Error::from(err)))?;
+	Ok(exists)
 }
 
 async fn ensure_sender_presave_scope(
@@ -373,6 +461,17 @@ pub async fn delete_sender_presave(
 	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
 	let entity = SenderPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_sender_presave_scope(&ctx, &mm, &entity).await?;
+	if sender_presave_used_by_cases(
+		&mm,
+		ctx.organization_id(),
+		entity.organization_name.as_deref(),
+	)
+	.await?
+	{
+		return Err(presave_case_link_conflict(
+			"sender presave is used by cases",
+		));
+	}
 	SenderPresaveBmc::update(
 		&ctx,
 		&mm,
@@ -1619,6 +1718,17 @@ pub async fn delete_product_presave(
 	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
 	let entity = ProductPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &entity).await?;
+	if product_presave_used_by_cases(
+		&mm,
+		ctx.organization_id(),
+		entity.brand_name.as_deref(),
+	)
+	.await?
+	{
+		return Err(presave_case_link_conflict(
+			"product presave is used by cases",
+		));
+	}
 	ProductPresaveBmc::update(
 		&ctx,
 		&mm,
@@ -2868,6 +2978,15 @@ pub async fn delete_study_presave(
 	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
 	let entity = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &entity).await?;
+	if study_presave_used_by_cases(
+		&mm,
+		ctx.organization_id(),
+		entity.sponsor_study_number.as_deref(),
+	)
+	.await?
+	{
+		return Err(presave_case_link_conflict("study presave is used by cases"));
+	}
 	StudyPresaveBmc::update(
 		&ctx,
 		&mm,

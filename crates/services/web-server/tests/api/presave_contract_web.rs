@@ -164,6 +164,96 @@ async fn post_json_created(
 	.await
 }
 
+async fn create_case_via_api(
+	app: &Router,
+	cookie: &str,
+	safety_report_id: &str,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		"/api/cases".to_string(),
+		json!({
+			"data": {
+				"safety_report_id": safety_report_id,
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
+async fn create_case_sender_via_api(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	organization_name: &str,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/safety-report/senders"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sender_type": "1",
+				"organization_name": organization_name,
+				"person_given_name": "Sender"
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
+async fn create_case_drug_via_api(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	brand_name: &str,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/drugs"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sequence_number": 1,
+				"drug_characterization": "1",
+				"medicinal_product": brand_name,
+				"brand_name": brand_name
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
+async fn create_case_study_via_api(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	sponsor_study_number: &str,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/safety-report/studies"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"sponsor_study_number": sponsor_study_number,
+				"study_name": sponsor_study_number,
+				"study_type_reaction": "1"
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
 async fn put_json_ok(
 	app: &Router,
 	cookie: &str,
@@ -331,6 +421,25 @@ async fn create_named_product_presave_via_api(
 	name: String,
 	medicinal_product: &str,
 ) -> Result<Uuid> {
+	let sender_id =
+		create_sender_presave_via_api(app, cookie, "legacy-unused").await?;
+	create_named_product_presave_for_sender_via_api(
+		app,
+		cookie,
+		sender_id,
+		name,
+		medicinal_product,
+	)
+	.await
+}
+
+async fn create_named_product_presave_for_sender_via_api(
+	app: &Router,
+	cookie: &str,
+	sender_id: Uuid,
+	name: String,
+	medicinal_product: &str,
+) -> Result<Uuid> {
 	let value = post_json_created(
 		app,
 		cookie,
@@ -338,9 +447,34 @@ async fn create_named_product_presave_via_api(
 		json!({
 			"data": {
 				"name": name,
-				"sender_presave_id": create_sender_presave_via_api(app, cookie, "legacy-unused").await?,
+				"sender_presave_id": sender_id,
 				"product_id": format!("REST-PRODUCT-{}", Uuid::new_v4()),
 				"medicinal_product": medicinal_product
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
+async fn create_brand_product_presave_for_sender_via_api(
+	app: &Router,
+	cookie: &str,
+	sender_id: Uuid,
+	name: String,
+	brand_name: &str,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		"/api/presaves/products".to_string(),
+		json!({
+			"data": {
+				"name": name,
+				"sender_presave_id": sender_id,
+				"product_id": format!("REST-PRODUCT-{}", Uuid::new_v4()),
+				"medicinal_product": brand_name,
+				"brand_name": brand_name
 			}
 		}),
 	)
@@ -452,6 +586,31 @@ async fn create_named_study_presave_for_product_via_api(
 				"product_presave_id": product_id,
 				"study_name": study_name,
 				"sponsor_study_number": format!("STUDY-{}", Uuid::new_v4()),
+				"study_type_reaction": "1"
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
+async fn create_study_presave_with_sponsor_via_api(
+	app: &Router,
+	cookie: &str,
+	product_id: Uuid,
+	name: String,
+	sponsor_study_number: &str,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		"/api/presaves/studies".to_string(),
+		json!({
+			"data": {
+				"name": name,
+				"product_presave_id": product_id,
+				"study_name": sponsor_study_number,
+				"sponsor_study_number": sponsor_study_number,
 				"study_type_reaction": "1"
 			}
 		}),
@@ -712,6 +871,155 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 			.len(),
 		1
 	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_presave_rest_rejects_deleting_referenced_parent() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let product_id = create_named_product_presave_for_sender_via_api(
+		&app,
+		&admin_cookie,
+		sender_id,
+		format!("REST Referenced Product {}", Uuid::new_v4()),
+		"Referenced Product",
+	)
+	.await?;
+	let _study_id = create_study_presave_for_product_via_api(
+		&app,
+		&admin_cookie,
+		product_id,
+		"fda",
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::DELETE,
+		format!("/api/presaves/senders/{sender_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+	assert!(
+		value
+			.to_string()
+			.contains("sender presave is used by product presaves"),
+		"unexpected sender delete conflict body: {value:?}"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::DELETE,
+		format!("/api/presaves/products/{product_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+	assert!(
+		value
+			.to_string()
+			.contains("product presave is used by study presaves"),
+		"unexpected product delete conflict body: {value:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_presave_rest_rejects_deleting_case_linked_templates() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let sender_org = format!("Case Linked Sender Org {}", Uuid::new_v4());
+	let brand_name = format!("Case Linked Brand {}", Uuid::new_v4());
+	let sponsor_study_number = format!("CASE-LINKED-STUDY-{}", Uuid::new_v4());
+
+	let sender_id = create_named_sender_presave_via_api(
+		&app,
+		&admin_cookie,
+		"fda",
+		format!("Case Linked Sender {}", Uuid::new_v4()),
+		&sender_org,
+	)
+	.await?;
+	let product_parent_sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let product_id = create_brand_product_presave_for_sender_via_api(
+		&app,
+		&admin_cookie,
+		product_parent_sender_id,
+		format!("Case Linked Product {}", Uuid::new_v4()),
+		&brand_name,
+	)
+	.await?;
+	let study_parent_sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let study_parent_product_id = create_named_product_presave_for_sender_via_api(
+		&app,
+		&admin_cookie,
+		study_parent_sender_id,
+		format!("Case Linked Study Parent Product {}", Uuid::new_v4()),
+		"Case Linked Study Parent Product",
+	)
+	.await?;
+	let study_id = create_study_presave_with_sponsor_via_api(
+		&app,
+		&admin_cookie,
+		study_parent_product_id,
+		format!("Case Linked Study {}", Uuid::new_v4()),
+		&sponsor_study_number,
+	)
+	.await?;
+
+	let case_id = create_case_via_api(
+		&app,
+		&admin_cookie,
+		&format!("CASE-LINKED-PRESAVE-{}", Uuid::new_v4()),
+	)
+	.await?;
+	create_case_sender_via_api(&app, &admin_cookie, case_id, &sender_org).await?;
+	create_case_drug_via_api(&app, &admin_cookie, case_id, &brand_name).await?;
+	create_case_study_via_api(&app, &admin_cookie, case_id, &sponsor_study_number)
+		.await?;
+
+	for (uri, expected_message) in [
+		(
+			format!("/api/presaves/senders/{sender_id}"),
+			"sender presave is used by cases",
+		),
+		(
+			format!("/api/presaves/products/{product_id}"),
+			"product presave is used by cases",
+		),
+		(
+			format!("/api/presaves/studies/{study_id}"),
+			"study presave is used by cases",
+		),
+	] {
+		let (status, value) =
+			request_json(&app, &admin_cookie, Method::DELETE, uri, None).await?;
+		assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+		assert!(
+			value.to_string().contains(expected_message),
+			"unexpected case-linked delete conflict body: {value:?}"
+		);
+	}
 
 	Ok(())
 }

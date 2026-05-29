@@ -156,6 +156,12 @@ fn duplicate_identity(message: &str) -> crate::model::Error {
 	}
 }
 
+fn relationship_conflict(message: &str) -> crate::model::Error {
+	crate::model::Error::Conflict {
+		message: message.to_string(),
+	}
+}
+
 trait IntoOrgScopedCreate {
 	type Insert: HasSeaFields;
 
@@ -333,7 +339,9 @@ impl SenderPresaveBmc {
 		id: Uuid,
 		data: SenderPresaveForUpdate,
 	) -> Result<()> {
-		if data.deleted != Some(true) {
+		if data.deleted == Some(true) {
+			Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
+		} else {
 			let current = Self::get(ctx, mm, id).await?;
 			let sender_type = data
 				.sender_type
@@ -365,6 +373,7 @@ impl SenderPresaveBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
 		base_uuid::delete::<Self>(ctx, mm, id).await
 	}
 
@@ -399,6 +408,24 @@ impl SenderPresaveBmc {
 		});
 		if duplicate {
 			Err(duplicate_identity("sender presave duplicate identity"))
+		} else {
+			Ok(())
+		}
+	}
+
+	async fn ensure_not_referenced_by_products(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<()> {
+		let referenced = ProductPresaveBmc::list(ctx, mm, None)
+			.await?
+			.into_iter()
+			.any(|row| !row.deleted && row.sender_presave_id == Some(id));
+		if referenced {
+			Err(relationship_conflict(
+				"sender presave is used by product presaves",
+			))
 		} else {
 			Ok(())
 		}
@@ -1063,7 +1090,9 @@ impl ProductPresaveBmc {
 		id: Uuid,
 		data: ProductPresaveForUpdate,
 	) -> Result<()> {
-		if data.deleted != Some(true) {
+		if data.deleted == Some(true) {
+			Self::ensure_not_referenced_by_studies(ctx, mm, id).await?;
+		} else {
 			let current = Self::get(ctx, mm, id).await?;
 			let sender_presave_id =
 				data.sender_presave_id.or(current.sender_presave_id);
@@ -1092,6 +1121,7 @@ impl ProductPresaveBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		Self::ensure_not_referenced_by_studies(ctx, mm, id).await?;
 		base_uuid::delete::<Self>(ctx, mm, id).await
 	}
 
@@ -1130,6 +1160,24 @@ impl ProductPresaveBmc {
 		});
 		if duplicate {
 			Err(duplicate_identity("product presave duplicate identity"))
+		} else {
+			Ok(())
+		}
+	}
+
+	async fn ensure_not_referenced_by_studies(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<()> {
+		let referenced = StudyPresaveBmc::list(ctx, mm, None)
+			.await?
+			.into_iter()
+			.any(|row| !row.deleted && row.product_presave_id == Some(id));
+		if referenced {
+			Err(relationship_conflict(
+				"product presave is used by study presaves",
+			))
 		} else {
 			Ok(())
 		}

@@ -153,6 +153,26 @@ fn product_presave_create(
 	}
 }
 
+fn sender_presave_create(name: String) -> SenderPresaveForCreate {
+	SenderPresaveForCreate {
+		name,
+		comments: None,
+		is_default: None,
+		sender_type: Some("1".into()),
+		organization_name: Some(format!("Sender Org {}", Uuid::new_v4())),
+		person_given_name: Some("Sender Given".into()),
+		department: None,
+		street_address: None,
+		city: None,
+		state: None,
+		postcode: None,
+		country_code: None,
+		telephone: None,
+		fax: None,
+		email: None,
+	}
+}
+
 fn reporter_presave_create(
 	_authority: RegulatoryAuthority,
 	name: String,
@@ -190,6 +210,28 @@ fn study_presave_create(
 		study_name: Some("Authority Study".into()),
 		study_name_notation: None,
 		sponsor_study_number: Some("AUTH-STUDY".into()),
+		sponsor_study_number_kind: None,
+		study_type_reaction: Some("1".into()),
+		study_type_reaction_kr1: None,
+		mfds_study_number: None,
+		mfds_protocol_number: None,
+		fda_ind_number_occurred: None,
+		fda_pre_anda_number_occurred: None,
+		edc_sync: None,
+	}
+}
+
+fn study_presave_create_for_product(
+	name: String,
+	product_presave_id: Uuid,
+) -> StudyPresaveForCreate {
+	StudyPresaveForCreate {
+		name,
+		comments: None,
+		product_presave_id: Some(product_presave_id),
+		study_name: Some("Relationship Study".into()),
+		study_name_notation: None,
+		sponsor_study_number: Some(format!("REL-STUDY-{}", Uuid::new_v4())),
 		sponsor_study_number_kind: None,
 		study_type_reaction: Some("1".into()),
 		study_type_reaction_kr1: None,
@@ -1510,6 +1552,79 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
 	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
 	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn section_presave_parent_bmcs_reject_delete_when_referenced() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create(format!("Referenced Sender {suffix}")),
+	)
+	.await?;
+	let product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Fda,
+			format!("Referenced Product {suffix}"),
+			sender_id,
+		),
+	)
+	.await?;
+	let _study_id = StudyPresaveBmc::create(
+		&ctx,
+		&mm,
+		study_presave_create_for_product(
+			format!("Referenced Study {suffix}"),
+			product_id,
+		),
+	)
+	.await?;
+
+	expect_conflict_error(
+		SenderPresaveBmc::update(
+			&ctx,
+			&mm,
+			sender_id,
+			SenderPresaveForUpdate {
+				deleted: Some(true),
+				..Default::default()
+			},
+		)
+		.await,
+		"sender presave is used by product presaves",
+	);
+	expect_conflict_error(
+		SenderPresaveBmc::delete(&ctx, &mm, sender_id).await,
+		"sender presave is used by product presaves",
+	);
+
+	expect_conflict_error(
+		ProductPresaveBmc::update(
+			&ctx,
+			&mm,
+			product_id,
+			ProductPresaveForUpdate {
+				deleted: Some(true),
+				..Default::default()
+			},
+		)
+		.await,
+		"product presave is used by study presaves",
+	);
+	expect_conflict_error(
+		ProductPresaveBmc::delete(&ctx, &mm, product_id).await,
+		"product presave is used by study presaves",
+	);
 
 	Ok(())
 }

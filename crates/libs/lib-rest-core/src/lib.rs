@@ -345,6 +345,7 @@ pub async fn load_workflow_runtime_settings(
 #[derive(Debug, FromRow)]
 struct CaseScopeRow {
 	sender_identifiers: Vec<String>,
+	routing_sender_identifiers: Vec<String>,
 	product_identifiers: Vec<String>,
 	study_identifiers: Vec<String>,
 	has_blinded_data: bool,
@@ -355,6 +356,8 @@ struct CaseScopeRow {
 pub struct RoutingSenderOption {
 	pub sender_identifier: String,
 	pub case_count: i64,
+	#[serde(skip)]
+	scope_identifiers: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -384,6 +387,7 @@ pub struct RoutingProfile {
 #[derive(Debug, FromRow)]
 struct SenderOptionRow {
 	sender_identifier: String,
+	scope_identifiers: Vec<String>,
 	case_count: i64,
 }
 
@@ -458,18 +462,20 @@ async fn load_sender_options_for_org(
 		.fetch_all(
 			sqlx::query_as::<_, SenderOptionRow>(
 				r#"
-			WITH sender_master_options AS (
+			WITH sender_master_rows AS (
 				SELECT DISTINCT
 				       NULLIF(BTRIM(g.sender_identifier), '') AS sender_identifier,
-				       0::bigint AS case_count
+				       NULLIF(BTRIM(s.organization_name), '') AS scope_identifier
 				FROM sender_presaves s
 				JOIN sender_presave_gateways g ON g.sender_presave_id = s.id
 				WHERE s.organization_id = $1
 				  AND s.deleted = FALSE
 				  AND NULLIF(BTRIM(g.sender_identifier), '') IS NOT NULL
 			),
-			case_sender_options AS (
-				SELECT sender_identifier, COUNT(DISTINCT case_id) AS case_count
+			case_sender_rows AS (
+				SELECT DISTINCT senders.case_id,
+				       senders.sender_identifier,
+				       NULLIF(BTRIM(sender.organization_name), '') AS scope_identifier
 				FROM (
 					SELECT mh.case_id,
 					       NULLIF(BTRIM(mh.message_sender_identifier), '') AS sender_identifier
@@ -480,18 +486,31 @@ async fn load_sender_options_for_org(
 					FROM message_headers mh
 				) senders
 				JOIN cases c ON c.id = senders.case_id
+				LEFT JOIN sender_information sender ON sender.case_id = senders.case_id
 				WHERE c.organization_id = $1
 				  AND sender_identifier IS NOT NULL
+			),
+			case_sender_counts AS (
+				SELECT sender_identifier, COUNT(DISTINCT case_id) AS case_count
+				FROM case_sender_rows
 				GROUP BY sender_identifier
+			),
+			sender_scope_rows AS (
+				SELECT sender_identifier, scope_identifier FROM sender_master_rows
+				UNION
+				SELECT sender_identifier, scope_identifier FROM case_sender_rows
 			)
-			SELECT sender_identifier, SUM(case_count)::bigint AS case_count
-			FROM (
-				SELECT sender_identifier, case_count FROM sender_master_options
-				UNION ALL
-				SELECT sender_identifier, case_count FROM case_sender_options
-			) sender_options
-			WHERE sender_identifier IS NOT NULL
-			GROUP BY sender_identifier
+			SELECT r.sender_identifier,
+			       COALESCE(
+				       ARRAY_AGG(DISTINCT r.scope_identifier)
+				       FILTER (WHERE r.scope_identifier IS NOT NULL),
+				       ARRAY[]::text[]
+			       ) AS scope_identifiers,
+			       COALESCE(c.case_count, 0)::bigint AS case_count
+			FROM sender_scope_rows r
+			LEFT JOIN case_sender_counts c ON c.sender_identifier = r.sender_identifier
+			WHERE r.sender_identifier IS NOT NULL
+			GROUP BY r.sender_identifier, c.case_count
 			ORDER BY sender_identifier ASC
 			"#,
 			)
@@ -505,6 +524,7 @@ async fn load_sender_options_for_org(
 		.map(|row| RoutingSenderOption {
 			sender_identifier: row.sender_identifier,
 			case_count: row.case_count,
+			scope_identifiers: row.scope_identifiers,
 		})
 		.collect())
 }
@@ -542,7 +562,9 @@ pub async fn routing_profile_for_user(
 			.filter(|row| {
 				!assigned_sender_ids.is_empty()
 					&& assigned_sender_ids.iter().any(|assigned| {
-						assigned.eq_ignore_ascii_case(&row.sender_identifier)
+						row.scope_identifiers
+							.iter()
+							.any(|scope| assigned.eq_ignore_ascii_case(scope))
 					})
 			})
 			.collect()
@@ -609,16 +631,13 @@ async fn load_case_scope(
 			SELECT
 				COALESCE(
 					(
-						SELECT array_remove(
-							ARRAY[
-								NULLIF(BTRIM(mh.message_sender_identifier), ''),
-								NULLIF(BTRIM(mh.batch_sender_identifier), '')
-							],
-							NULL
-						)
-						FROM message_headers mh
-						WHERE mh.case_id = c.id
-						LIMIT 1
+						SELECT array_agg(DISTINCT ident)
+						FROM (
+							SELECT NULLIF(BTRIM(sender.organization_name), '') AS ident
+							FROM sender_information sender
+							WHERE sender.case_id = c.id
+						) senders
+						WHERE ident IS NOT NULL
 					),
 					ARRAY[]::text[]
 				) AS sender_identifiers,
@@ -626,13 +645,23 @@ async fn load_case_scope(
 					(
 						SELECT array_agg(DISTINCT ident)
 						FROM (
-							SELECT NULLIF(BTRIM(c.dg_prd_key), '') AS ident
+							SELECT NULLIF(BTRIM(mh.message_sender_identifier), '') AS ident
+							FROM message_headers mh
+							WHERE mh.case_id = c.id
 							UNION ALL
-							SELECT NULLIF(BTRIM(d.mpid), '')
-							FROM drug_information d
-							WHERE d.case_id = c.id
-							UNION ALL
-							SELECT NULLIF(BTRIM(d.medicinal_product), '')
+							SELECT NULLIF(BTRIM(mh.batch_sender_identifier), '')
+							FROM message_headers mh
+							WHERE mh.case_id = c.id
+						) routing_senders
+						WHERE ident IS NOT NULL
+					),
+					ARRAY[]::text[]
+				) AS routing_sender_identifiers,
+				COALESCE(
+					(
+						SELECT array_agg(DISTINCT ident)
+						FROM (
+							SELECT NULLIF(BTRIM(d.brand_name), '') AS ident
 							FROM drug_information d
 							WHERE d.case_id = c.id
 						) products
@@ -645,10 +674,6 @@ async fn load_case_scope(
 						SELECT array_agg(DISTINCT ident)
 						FROM (
 							SELECT NULLIF(BTRIM(s.sponsor_study_number), '') AS ident
-							FROM study_information s
-							WHERE s.case_id = c.id
-							UNION ALL
-							SELECT NULLIF(BTRIM(s.study_name), '')
 							FROM study_information s
 							WHERE s.case_id = c.id
 						) studies
@@ -710,7 +735,7 @@ pub async fn case_matches_user_scope(
 	}
 	if !selected_sender_matches(
 		user.active_sender_identifier.as_deref(),
-		&scope.sender_identifiers,
+		&scope.routing_sender_identifiers,
 	) {
 		return Ok(false);
 	}
