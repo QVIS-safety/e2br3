@@ -1042,6 +1042,7 @@ fn render_portrait_cioms(
 		.find(|drug| drug.drug_characterization == "1")
 		.or_else(|| data.drugs.first());
 	let patient = data.patient.as_ref();
+	let report = data.report.as_ref();
 	let narrative = data.narrative.as_ref();
 	let reaction_text = join_present(
 		&[
@@ -1253,6 +1254,39 @@ fn render_portrait_cioms(
 		38,
 		2,
 	);
+	render_box(
+		canvas,
+		30,
+		height - 690,
+		175,
+		40,
+		"24c. DATE RECEIVED",
+		&date_text(report.and_then(|r| r.date_first_received_from_source)),
+		24,
+		1,
+	);
+	render_box(
+		canvas,
+		205,
+		height - 690,
+		175,
+		40,
+		"DATE OF THIS REPORT",
+		&date_text(report.and_then(|r| r.transmission_date)),
+		24,
+		1,
+	);
+	render_box(
+		canvas,
+		380,
+		height - 690,
+		180,
+		40,
+		"25a. REPORT TYPE",
+		report_type_text(report.and_then(|r| r.report_type.as_deref())),
+		24,
+		1,
+	);
 }
 
 fn ordered_cioms_case_data(
@@ -1400,6 +1434,38 @@ mod tests {
 		CiomsSettings {
 			orientation: "Portrait".to_string(),
 			data_ordering: "Primary data will appear first".to_string(),
+		}
+	}
+
+	fn safety_report_identification() -> SafetyReportIdentification {
+		SafetyReportIdentification {
+			id: test_uuid(),
+			case_id: test_uuid(),
+			transmission_date: Some(
+				Date::from_calendar_date(2026, Month::May, 12).expect("valid date"),
+			),
+			transmission_date_null_flavor: None,
+			report_type: Some("1".to_string()),
+			date_first_received_from_source: Some(
+				Date::from_calendar_date(2026, Month::May, 11).expect("valid date"),
+			),
+			date_first_received_from_source_null_flavor: None,
+			date_of_most_recent_information: None,
+			date_of_most_recent_information_null_flavor: None,
+			fulfil_expedited_criteria: None,
+			local_criteria_report_type: None,
+			combination_product_report_indicator: None,
+			worldwide_unique_id: None,
+			first_sender_type: None,
+			additional_documents_available: None,
+			other_case_identifiers_exist: None,
+			nullification_code: None,
+			nullification_reason: None,
+			receiver_organization: None,
+			created_at: test_time(),
+			updated_at: test_time(),
+			created_by: test_uuid(),
+			updated_by: None,
 		}
 	}
 
@@ -1952,6 +2018,32 @@ mod tests {
 		let text = String::from_utf8_lossy(&pdf);
 
 		assert!(text.contains("Ibuprofen tablet"));
+	}
+
+	#[test]
+	fn cioms_portrait_pdf_renders_report_dates_and_type() {
+		let data = CiomsCaseData {
+			case_number: "SR-PORTRAIT-REPORT".to_string(),
+			report: Some(safety_report_identification()),
+			patient: None,
+			reactions: Vec::new(),
+			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &portrait_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("24c. DATE RECEIVED"));
+		assert!(text.contains("2026-05-11"));
+		assert!(text.contains("DATE OF THIS REPORT"));
+		assert!(text.contains("2026-05-12"));
+		assert!(text.contains("25a. REPORT TYPE"));
+		assert!(text.contains("Spontaneous report"));
 	}
 
 	#[test]
