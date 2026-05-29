@@ -561,6 +561,15 @@ fn sender_address(sender: Option<&SenderInformation>) -> String {
 	)
 }
 
+fn concomitant_drugs_text(data: &CiomsCaseData) -> String {
+	data.drugs
+		.iter()
+		.filter(|drug| drug.drug_characterization != "1")
+		.map(|drug| drug.medicinal_product.as_str())
+		.collect::<Vec<_>>()
+		.join("; ")
+}
+
 struct PdfCanvas {
 	stream: String,
 }
@@ -930,13 +939,7 @@ fn render_landscape_cioms(
 		9,
 		"III. CONCOMITANT DRUGS AND HISTORY",
 	);
-	let concomitant = data
-		.drugs
-		.iter()
-		.filter(|drug| drug.drug_characterization != "1")
-		.map(|drug| drug.medicinal_product.as_str())
-		.collect::<Vec<_>>()
-		.join("; ");
+	let concomitant = concomitant_drugs_text(data);
 	render_box(canvas, template.concomitant_history.x, template.concomitant_history.y, 380, template.concomitant_history.h, "22. CONCOMITANT DRUG(S) AND DATES OF ADMINISTRATION (exclude those used to treat reaction)", &concomitant, 56, 3);
 	render_box(
 		canvas,
@@ -1209,7 +1212,7 @@ fn render_portrait_cioms(
 		530,
 		60,
 		"22. CONCOMITANT DRUG(S) AND DATES OF ADMINISTRATION",
-		"",
+		&concomitant_drugs_text(data),
 		78,
 		3,
 	);
@@ -1407,6 +1410,48 @@ mod tests {
 			sequence_number: 1,
 			drug_characterization: "1".to_string(),
 			medicinal_product: "Amoxicillin capsule".to_string(),
+			mpid: None,
+			mpid_version: None,
+			phpid: None,
+			phpid_version: None,
+			investigational_product_blinded: None,
+			obtain_drug_country: None,
+			brand_name: None,
+			drug_generic_name: None,
+			drug_authorization_number: None,
+			manufacturer_name: None,
+			manufacturer_country: None,
+			batch_lot_number: None,
+			cumulative_dose_first_reaction_value: None,
+			cumulative_dose_first_reaction_unit: None,
+			gestation_period_exposure_value: None,
+			gestation_period_exposure_unit: None,
+			dosage_text: None,
+			action_taken: None,
+			rechallenge: None,
+			parent_route: None,
+			parent_route_termid: None,
+			parent_route_termid_version: None,
+			parent_dosage_text: None,
+			fda_additional_info_coded: None,
+			drug_additional_info_codes_json: None,
+			drug_additional_information: None,
+			fda_specialized_product_category: None,
+			fda_device_info_json: None,
+			created_at: test_time(),
+			updated_at: test_time(),
+			created_by: test_uuid(),
+			updated_by: None,
+		}
+	}
+
+	fn concomitant_drug(drug_id: Uuid, product: &str) -> DrugInformation {
+		DrugInformation {
+			id: drug_id,
+			case_id: test_uuid(),
+			sequence_number: 2,
+			drug_characterization: "2".to_string(),
+			medicinal_product: product.to_string(),
 			mpid: None,
 			mpid_version: None,
 			phpid: None,
@@ -1881,6 +1926,32 @@ mod tests {
 
 		assert!(text.contains("16. ROUTE"));
 		assert!(text.contains("Oral"));
+	}
+
+	#[test]
+	fn cioms_portrait_pdf_renders_concomitant_drugs() {
+		let suspect_id = test_uuid();
+		let concomitant_id = other_test_uuid();
+		let data = CiomsCaseData {
+			case_number: "SR-PORTRAIT-CONCOMITANT".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: vec![
+				suspect_drug(suspect_id),
+				concomitant_drug(concomitant_id, "Ibuprofen tablet"),
+			],
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &portrait_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("Ibuprofen tablet"));
 	}
 
 	#[test]
