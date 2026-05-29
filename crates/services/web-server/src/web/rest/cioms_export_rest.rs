@@ -1043,6 +1043,7 @@ fn render_portrait_cioms(
 		.or_else(|| data.drugs.first());
 	let patient = data.patient.as_ref();
 	let report = data.report.as_ref();
+	let source = data.primary_sources.first();
 	let narrative = data.narrative.as_ref();
 	let reaction_text = join_present(
 		&[
@@ -1287,6 +1288,7 @@ fn render_portrait_cioms(
 		24,
 		1,
 	);
+	canvas.text(34, 38, 7, &format!("Reporter: {}", reporter_name(source)));
 }
 
 fn ordered_cioms_case_data(
@@ -1462,6 +1464,34 @@ mod tests {
 			nullification_code: None,
 			nullification_reason: None,
 			receiver_organization: None,
+			created_at: test_time(),
+			updated_at: test_time(),
+			created_by: test_uuid(),
+			updated_by: None,
+		}
+	}
+
+	fn primary_source() -> PrimarySource {
+		PrimarySource {
+			id: test_uuid(),
+			case_id: test_uuid(),
+			sequence_number: 1,
+			reporter_title: Some("Dr".to_string()),
+			reporter_given_name: Some("Mina".to_string()),
+			reporter_middle_name: None,
+			reporter_family_name: Some("Kim".to_string()),
+			organization: Some("Seoul General Hospital".to_string()),
+			department: None,
+			street: None,
+			city: None,
+			state: None,
+			postcode: None,
+			telephone: None,
+			country_code: Some("KR".to_string()),
+			email: None,
+			qualification: None,
+			qualification_kr1: None,
+			primary_source_regulatory: None,
 			created_at: test_time(),
 			updated_at: test_time(),
 			created_by: test_uuid(),
@@ -2044,6 +2074,27 @@ mod tests {
 		assert!(text.contains("2026-05-12"));
 		assert!(text.contains("25a. REPORT TYPE"));
 		assert!(text.contains("Spontaneous report"));
+	}
+
+	#[test]
+	fn cioms_portrait_pdf_renders_reporter_name() {
+		let data = CiomsCaseData {
+			case_number: "SR-PORTRAIT-REPORTER".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: vec![primary_source()],
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &portrait_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("Reporter: Dr Mina Kim"));
 	}
 
 	#[test]
