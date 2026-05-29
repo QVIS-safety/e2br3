@@ -1132,33 +1132,44 @@ fn render_portrait_cioms(
 		canvas,
 		30,
 		height - 322,
-		260,
+		210,
 		42,
 		"14. SUSPECT DRUG 1 of 1 (include generic name)",
 		&drug_name(suspect_drug),
-		38,
+		30,
 		1,
 	);
 	render_box(
 		canvas,
-		290,
+		240,
 		height - 322,
-		130,
+		110,
 		42,
 		"15. DAILY DOSE(S)",
 		&form.suspect_drug_dose,
-		20,
+		18,
 		1,
 	);
 	render_box(
 		canvas,
-		420,
+		350,
 		height - 322,
-		140,
+		100,
+		42,
+		"16. ROUTE",
+		&form.suspect_drug_route,
+		16,
+		1,
+	);
+	render_box(
+		canvas,
+		450,
+		height - 322,
+		110,
 		42,
 		"20. ABATE AFTER STOPPING?",
 		yes_no_na(suspect_drug.and_then(|drug| drug.action_taken.as_deref())),
-		20,
+		16,
 		1,
 	);
 	render_box(
@@ -1424,6 +1435,43 @@ mod tests {
 			drug_additional_information: None,
 			fda_specialized_product_category: None,
 			fda_device_info_json: None,
+			created_at: test_time(),
+			updated_at: test_time(),
+			created_by: test_uuid(),
+			updated_by: None,
+		}
+	}
+
+	fn dosage_with_route(drug_id: Uuid, route: &str) -> DosageInformation {
+		DosageInformation {
+			id: test_uuid(),
+			drug_id,
+			sequence_number: 1,
+			dose_value: None,
+			dose_unit: None,
+			number_of_units: None,
+			frequency_value: None,
+			frequency_unit: None,
+			first_administration_date: None,
+			first_administration_time: None,
+			last_administration_date: None,
+			last_administration_time: None,
+			duration_value: None,
+			duration_unit: None,
+			continuing: None,
+			batch_lot_number: None,
+			dosage_text: None,
+			dose_form: None,
+			dose_form_termid: None,
+			dose_form_termid_version: None,
+			route_of_administration: Some(route.to_string()),
+			route_termid: None,
+			route_termid_version: None,
+			parent_route: None,
+			parent_route_termid: None,
+			parent_route_termid_version: None,
+			first_administration_date_null_flavor: None,
+			last_administration_date_null_flavor: None,
 			created_at: test_time(),
 			updated_at: test_time(),
 			created_by: test_uuid(),
@@ -1810,6 +1858,29 @@ mod tests {
 		let text = String::from_utf8_lossy(&pdf);
 
 		assert!(text.contains("Bacterial sinusitis"));
+	}
+
+	#[test]
+	fn cioms_portrait_pdf_renders_suspect_drug_route() {
+		let drug_id = test_uuid();
+		let data = CiomsCaseData {
+			case_number: "SR-PORTRAIT-ROUTE".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: vec![suspect_drug(drug_id)],
+			dosages: vec![dosage_with_route(drug_id, "Oral")],
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &portrait_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("16. ROUTE"));
+		assert!(text.contains("Oral"));
 	}
 
 	#[test]
