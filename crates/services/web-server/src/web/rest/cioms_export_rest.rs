@@ -695,6 +695,15 @@ fn render_reporter_footer(
 	}
 }
 
+fn render_missing_information_legend(canvas: &mut PdfCanvas, x: i32, y: i32) {
+	canvas.text(
+		x,
+		y,
+		7,
+		"NI - No information available at this time. UNK - Information unknown.",
+	);
+}
+
 fn render_landscape_cioms(
 	canvas: &mut PdfCanvas,
 	data: &CiomsCaseData,
@@ -1047,12 +1056,7 @@ fn render_landscape_cioms(
 		2,
 	);
 	render_reporter_footer(canvas, 34, 38, source);
-	canvas.text(
-		300,
-		38,
-		7,
-		"NI - No information available at this time. UNK - Information unknown.",
-	);
+	render_missing_information_legend(canvas, 300, 38);
 }
 
 fn render_portrait_cioms(
@@ -1348,6 +1352,7 @@ fn render_portrait_cioms(
 		1,
 	);
 	render_reporter_footer(canvas, 34, 38, source);
+	render_missing_information_legend(canvas, 300, 38);
 }
 
 fn ordered_cioms_case_data(
@@ -2293,6 +2298,28 @@ mod tests {
 		let text = String::from_utf8_lossy(&pdf);
 
 		assert!(text.contains("Data ordering: Latest data will appear first"));
+	}
+
+	#[test]
+	fn cioms_portrait_pdf_renders_missing_information_legend() {
+		let data = CiomsCaseData {
+			case_number: "SR-PORTRAIT-LEGEND".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &portrait_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("NI - No information available"));
+		assert!(text.contains("UNK - Information unknown"));
 	}
 
 	#[test]
