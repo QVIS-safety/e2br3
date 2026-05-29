@@ -1241,6 +1241,25 @@ fn render_portrait_cioms(
 	);
 }
 
+fn ordered_cioms_case_data(
+	data: &CiomsCaseData,
+	settings: &CiomsSettings,
+) -> CiomsCaseData {
+	let mut ordered = data.clone();
+	if settings
+		.data_ordering
+		.eq_ignore_ascii_case("Latest data will appear first")
+	{
+		ordered.reactions.reverse();
+		ordered.drugs.reverse();
+		ordered.dosages.reverse();
+		ordered.indications.reverse();
+		ordered.primary_sources.reverse();
+		ordered.senders.reverse();
+	}
+	ordered
+}
+
 fn build_cioms_pdf(data: &CiomsCaseData, settings: &CiomsSettings) -> Vec<u8> {
 	let (width, height) = if settings.orientation == "Portrait" {
 		(595, 842)
@@ -1250,16 +1269,7 @@ fn build_cioms_pdf(data: &CiomsCaseData, settings: &CiomsSettings) -> Vec<u8> {
 			CIOMS_LANDSCAPE_TEMPLATE.page_height,
 		)
 	};
-	let mut ordered = data.clone();
-	if settings
-		.data_ordering
-		.eq_ignore_ascii_case("Latest data will appear first")
-	{
-		ordered.reactions.reverse();
-		ordered.drugs.reverse();
-		ordered.primary_sources.reverse();
-		ordered.senders.reverse();
-	}
+	let ordered = ordered_cioms_case_data(data, settings);
 	let mut canvas = PdfCanvas::new();
 	canvas.stream.push_str("0.8 w\n");
 	if settings.orientation == "Portrait" {
@@ -1349,6 +1359,11 @@ mod tests {
 			.expect("valid test uuid")
 	}
 
+	fn other_test_uuid() -> Uuid {
+		Uuid::parse_str("22222222-2222-4222-8222-222222222222")
+			.expect("valid test uuid")
+	}
+
 	fn test_time() -> OffsetDateTime {
 		OffsetDateTime::UNIX_EPOCH
 	}
@@ -1357,6 +1372,13 @@ mod tests {
 		CiomsSettings {
 			orientation: "Landscape".to_string(),
 			data_ordering: "Primary data will appear first".to_string(),
+		}
+	}
+
+	fn latest_first_settings() -> CiomsSettings {
+		CiomsSettings {
+			orientation: "Landscape".to_string(),
+			data_ordering: "Latest data will appear first".to_string(),
 		}
 	}
 
@@ -1548,6 +1570,164 @@ mod tests {
 		assert_eq!(form.suspect_drug_indication, "Bacterial sinusitis");
 		assert_eq!(form.suspect_drug_therapy_dates, "2026-05-01 to 2026-05-10");
 		assert_eq!(form.suspect_drug_therapy_duration, "10 days");
+	}
+
+	#[test]
+	fn cioms_pdf_uses_latest_suspect_drug_child_records_when_latest_first() {
+		let drug_id = test_uuid();
+		let data = CiomsCaseData {
+			case_number: "SR-LATEST-CHILD".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: vec![DrugInformation {
+				id: drug_id,
+				case_id: test_uuid(),
+				sequence_number: 1,
+				drug_characterization: "1".to_string(),
+				medicinal_product: "Suspect product".to_string(),
+				mpid: None,
+				mpid_version: None,
+				phpid: None,
+				phpid_version: None,
+				investigational_product_blinded: None,
+				obtain_drug_country: None,
+				brand_name: None,
+				drug_generic_name: None,
+				drug_authorization_number: None,
+				manufacturer_name: None,
+				manufacturer_country: None,
+				batch_lot_number: None,
+				cumulative_dose_first_reaction_value: None,
+				cumulative_dose_first_reaction_unit: None,
+				gestation_period_exposure_value: None,
+				gestation_period_exposure_unit: None,
+				dosage_text: None,
+				action_taken: None,
+				rechallenge: None,
+				parent_route: None,
+				parent_route_termid: None,
+				parent_route_termid_version: None,
+				parent_dosage_text: None,
+				fda_additional_info_coded: None,
+				drug_additional_info_codes_json: None,
+				drug_additional_information: None,
+				fda_specialized_product_category: None,
+				fda_device_info_json: None,
+				created_at: test_time(),
+				updated_at: test_time(),
+				created_by: test_uuid(),
+				updated_by: None,
+			}],
+			dosages: vec![
+				DosageInformation {
+					id: test_uuid(),
+					drug_id,
+					sequence_number: 1,
+					dose_value: None,
+					dose_unit: None,
+					number_of_units: None,
+					frequency_value: None,
+					frequency_unit: None,
+					first_administration_date: None,
+					first_administration_time: None,
+					last_administration_date: None,
+					last_administration_time: None,
+					duration_value: None,
+					duration_unit: None,
+					continuing: None,
+					batch_lot_number: None,
+					dosage_text: Some("Older child dose".to_string()),
+					dose_form: None,
+					dose_form_termid: None,
+					dose_form_termid_version: None,
+					route_of_administration: Some("OLD".to_string()),
+					route_termid: None,
+					route_termid_version: None,
+					parent_route: None,
+					parent_route_termid: None,
+					parent_route_termid_version: None,
+					first_administration_date_null_flavor: None,
+					last_administration_date_null_flavor: None,
+					created_at: test_time(),
+					updated_at: test_time(),
+					created_by: test_uuid(),
+					updated_by: None,
+				},
+				DosageInformation {
+					id: other_test_uuid(),
+					drug_id,
+					sequence_number: 2,
+					dose_value: None,
+					dose_unit: None,
+					number_of_units: None,
+					frequency_value: None,
+					frequency_unit: None,
+					first_administration_date: None,
+					first_administration_time: None,
+					last_administration_date: None,
+					last_administration_time: None,
+					duration_value: None,
+					duration_unit: None,
+					continuing: None,
+					batch_lot_number: None,
+					dosage_text: Some("Latest child dose".to_string()),
+					dose_form: None,
+					dose_form_termid: None,
+					dose_form_termid_version: None,
+					route_of_administration: Some("NEW".to_string()),
+					route_termid: None,
+					route_termid_version: None,
+					parent_route: None,
+					parent_route_termid: None,
+					parent_route_termid_version: None,
+					first_administration_date_null_flavor: None,
+					last_administration_date_null_flavor: None,
+					created_at: test_time(),
+					updated_at: test_time(),
+					created_by: test_uuid(),
+					updated_by: None,
+				},
+			],
+			indications: vec![
+				DrugIndication {
+					id: test_uuid(),
+					drug_id,
+					sequence_number: 1,
+					indication_text: Some("Older child indication".to_string()),
+					indication_meddra_version: None,
+					indication_meddra_code: None,
+					created_at: test_time(),
+					updated_at: test_time(),
+					created_by: test_uuid(),
+					updated_by: None,
+				},
+				DrugIndication {
+					id: other_test_uuid(),
+					drug_id,
+					sequence_number: 2,
+					indication_text: Some("Latest child indication".to_string()),
+					indication_meddra_version: None,
+					indication_meddra_code: None,
+					created_at: test_time(),
+					updated_at: test_time(),
+					created_by: test_uuid(),
+					updated_by: None,
+				},
+			],
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &latest_first_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("Latest child dose"));
+		assert!(text.contains("NEW"));
+		assert!(text.contains("Latest child indication"));
+		assert!(!text.contains("Older child dose"));
+		assert!(!text.contains("Older child indication"));
 	}
 
 	#[test]
