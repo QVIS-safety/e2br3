@@ -74,6 +74,16 @@ async fn test_idle_session_settings_are_org_scoped_and_validated() -> Result<()>
 		None,
 	)
 	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&viewer_cookie,
+		Method::GET,
+		"/api/settings/runtime",
+		None,
+	)
+	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(value["idle_session_minutes"], 30);
 	assert_eq!(value["session_warning_minutes"], 10);
@@ -82,7 +92,7 @@ async fn test_idle_session_settings_are_org_scoped_and_validated() -> Result<()>
 		&app,
 		&other_viewer_cookie,
 		Method::GET,
-		"/api/admin/settings",
+		"/api/settings/runtime",
 		None,
 	)
 	.await?;
@@ -355,7 +365,7 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 		&app,
 		&viewer_cookie,
 		Method::GET,
-		"/api/admin/settings",
+		"/api/settings/runtime",
 		None,
 	)
 	.await?;
@@ -367,7 +377,7 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 		&app,
 		&other_viewer_cookie,
 		Method::GET,
-		"/api/admin/settings",
+		"/api/settings/runtime",
 		None,
 	)
 	.await?;

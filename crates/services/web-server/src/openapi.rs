@@ -1040,6 +1040,7 @@ struct UserCapabilitiesDoc {
 	admin: AdminCapabilitiesDoc,
 	users: ModuleCrudCapabilitiesDoc,
 	roles: ModuleCrudCapabilitiesDoc,
+	settings: AdminCapabilitiesDoc,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]

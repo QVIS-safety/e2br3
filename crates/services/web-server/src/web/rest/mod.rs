@@ -719,6 +719,10 @@ pub fn routes_users(mm: ModelManager) -> Router {
 				.delete(user_rest::delete_user),
 		)
 		.route(
+			"/settings/runtime",
+			get(admin_settings_rest::get_runtime_settings),
+		)
+		.route(
 			"/admin/settings",
 			get(admin_settings_rest::get_admin_settings)
 				.put(admin_settings_rest::update_admin_settings),
