@@ -80,7 +80,6 @@ async fn mark_case_dirty_c(
 			status: None,
 			review_receivers_json: None,
 			workflow_routes_json: None,
-			mfds_report_type: None,
 			report_year: None,
 			source_document_name: None,
 			source_document_base64: None,
