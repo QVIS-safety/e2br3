@@ -150,7 +150,6 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE sender_presave_gateways DROP CONSTRAINT IF EXISTS sender_presave_gateways_authority_valid",
 		"ALTER TABLE sender_presave_gateways DROP COLUMN IF EXISTS ema_sender_identifier",
 		"ALTER TABLE sender_presave_gateways ADD CONSTRAINT sender_presave_gateways_authority_valid CHECK (gateway_authority IN ('fda', 'mfds'))",
-		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS mfds_report_type VARCHAR(20)",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS report_year VARCHAR(4)",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS review_receivers_json TEXT",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS workflow_routes_json TEXT",
