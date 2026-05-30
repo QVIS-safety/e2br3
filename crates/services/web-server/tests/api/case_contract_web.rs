@@ -1003,6 +1003,66 @@ async fn test_public_case_update_ignores_system_managed_fields() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_manual_case_save_updates_public_fields_without_import_noise(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (create_status, create_body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(create_status, StatusCode::CREATED, "{create_body:?}");
+	let case_id = create_body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?
+		.to_string();
+
+	let (update_status, update_body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {
+				"report_year": "2026",
+				"source_document_name": "manual-source.pdf"
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(update_status, StatusCode::OK, "{update_body:?}");
+	assert_eq!(
+		update_body["data"]["report_year"].as_str(),
+		Some("2026"),
+		"{update_body:?}"
+	);
+	assert_eq!(
+		update_body["data"]["source_document_name"].as_str(),
+		Some("manual-source.pdf"),
+		"{update_body:?}"
+	);
+	let response_text = update_body.to_string().to_ascii_lowercase();
+	assert!(!response_text.contains("batch"), "{response_text}");
+	assert!(!response_text.contains("header"), "{response_text}");
+	assert!(!response_text.contains("import"), "{response_text}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_payload_does_not_expose_authority_report_type_fields(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
