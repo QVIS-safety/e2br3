@@ -1131,6 +1131,7 @@ async fn test_case_update_ignores_authority_report_type_fields() -> Result<()> {
 		.as_str()
 		.ok_or("missing created case id")?
 		.to_string();
+	let next_safety_report_id = format!("CASE-AUTHORITY-NEUTRAL-{}", Uuid::new_v4());
 
 	let (update_status, update_body) = put_json(
 		&app,
@@ -1138,7 +1139,7 @@ async fn test_case_update_ignores_authority_report_type_fields() -> Result<()> {
 		&format!("/api/cases/{case_id}"),
 		json!({
 			"data": {
-				"safety_report_id": "CASE-AUTHORITY-NEUTRAL",
+				"safety_report_id": next_safety_report_id,
 				"mfds_report_type": "5",
 				"fda_report_type": "4"
 			},
@@ -1150,7 +1151,7 @@ async fn test_case_update_ignores_authority_report_type_fields() -> Result<()> {
 	assert_eq!(update_status, StatusCode::OK, "{update_body:?}");
 	assert_eq!(
 		update_body["data"]["safety_report_id"].as_str(),
-		Some("CASE-AUTHORITY-NEUTRAL"),
+		Some(next_safety_report_id.as_str()),
 		"{update_body:?}"
 	);
 	assert!(
