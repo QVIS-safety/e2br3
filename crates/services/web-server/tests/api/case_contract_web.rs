@@ -1003,8 +1003,51 @@ async fn test_public_case_update_ignores_system_managed_fields() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_manual_case_save_updates_public_fields_without_import_noise(
+async fn test_case_payload_does_not_expose_authority_report_type_fields(
 ) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (create_status, create_body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(create_status, StatusCode::CREATED, "{create_body:?}");
+	let case_id = create_body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?
+		.to_string();
+
+	let (get_status, body) =
+		get_json(&app, &cookie, &format!("/api/cases/{case_id}")).await?;
+
+	assert_eq!(get_status, StatusCode::OK, "{body:?}");
+	assert!(
+		body["data"].get("mfds_report_type").is_none(),
+		"case payload must not expose mfds_report_type: {body}"
+	);
+	assert!(
+		body["data"].get("fda_report_type").is_none(),
+		"case payload must not expose fda_report_type: {body}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_update_ignores_authority_report_type_fields() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -1035,28 +1078,29 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise(
 		&format!("/api/cases/{case_id}"),
 		json!({
 			"data": {
-				"report_year": "2026",
-				"mfds_report_type": "spontaneous"
-			}
+				"safety_report_id": "CASE-AUTHORITY-NEUTRAL",
+				"mfds_report_type": "5",
+				"fda_report_type": "4"
+			},
+			"reason_for_change": "verify authority report types remain section scoped"
 		}),
 	)
 	.await?;
 
 	assert_eq!(update_status, StatusCode::OK, "{update_body:?}");
 	assert_eq!(
-		update_body["data"]["report_year"].as_str(),
-		Some("2026"),
+		update_body["data"]["safety_report_id"].as_str(),
+		Some("CASE-AUTHORITY-NEUTRAL"),
 		"{update_body:?}"
 	);
-	assert_eq!(
-		update_body["data"]["mfds_report_type"].as_str(),
-		Some("spontaneous"),
-		"{update_body:?}"
+	assert!(
+		update_body["data"].get("mfds_report_type").is_none(),
+		"case update response must not expose mfds_report_type: {update_body}"
 	);
-	let response_text = update_body.to_string().to_ascii_lowercase();
-	assert!(!response_text.contains("batch"), "{response_text}");
-	assert!(!response_text.contains("header"), "{response_text}");
-	assert!(!response_text.contains("import"), "{response_text}");
+	assert!(
+		update_body["data"].get("fda_report_type").is_none(),
+		"case update response must not expose fda_report_type: {update_body}"
+	);
 
 	Ok(())
 }
