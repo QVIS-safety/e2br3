@@ -105,7 +105,7 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise() -> R
 		json!({
 			"data": {
 				"report_year": "2026",
-				"mfds_report_type": "spontaneous"
+				"source_document_name": "source.pdf"
 			}
 		}),
 	)
@@ -113,8 +113,8 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise() -> R
 	assert_eq!(update_status, StatusCode::OK, "{update_body:?}");
 	assert_eq!(update_body["data"]["report_year"].as_str(), Some("2026"));
 	assert_eq!(
-		update_body["data"]["mfds_report_type"].as_str(),
-		Some("spontaneous")
+		update_body["data"]["source_document_name"].as_str(),
+		Some("source.pdf")
 	);
 	let rendered = update_body.to_string().to_ascii_lowercase();
 	assert!(!rendered.contains("batch"), "{update_body:?}");
