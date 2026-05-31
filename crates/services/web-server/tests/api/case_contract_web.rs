@@ -1036,7 +1036,7 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise(
 		json!({
 			"data": {
 				"report_year": "2026",
-				"mfds_report_type": "spontaneous"
+				"source_document_name": "manual-source.pdf"
 			}
 		}),
 	)
@@ -1049,8 +1049,8 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise(
 		"{update_body:?}"
 	);
 	assert_eq!(
-		update_body["data"]["mfds_report_type"].as_str(),
-		Some("spontaneous"),
+		update_body["data"]["source_document_name"].as_str(),
+		Some("manual-source.pdf"),
 		"{update_body:?}"
 	);
 	let response_text = update_body.to_string().to_ascii_lowercase();
