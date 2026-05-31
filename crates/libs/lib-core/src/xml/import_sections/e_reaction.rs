@@ -34,6 +34,26 @@ pub struct EReactionImport {
 	pub criteria_other_medically_important: Option<bool>,
 	pub criteria_other_medically_important_null_flavor: Option<String>,
 	pub required_intervention: Option<String>,
+	pub included_in_ema_ime_list: Option<bool>,
+	pub expectedness: Option<String>,
+	pub severity: Option<String>,
+	pub mfds_device_ae_classification: Option<String>,
+	pub mfds_device_ae_outcome: Option<String>,
+	pub mfds_device_cause_medical_device: Option<bool>,
+	pub mfds_device_cause_procedure_issue: Option<bool>,
+	pub mfds_device_cause_patient_condition: Option<bool>,
+	pub mfds_device_cause_unable_to_assess: Option<bool>,
+	pub mfds_device_cause_other: Option<String>,
+	pub mfds_device_action_reason: Option<String>,
+	pub mfds_device_action_recall: Option<bool>,
+	pub mfds_device_action_repair: Option<bool>,
+	pub mfds_device_action_inspection: Option<bool>,
+	pub mfds_device_action_replacement: Option<bool>,
+	pub mfds_device_action_improvement: Option<bool>,
+	pub mfds_device_action_monitoring: Option<bool>,
+	pub mfds_device_action_notification: Option<bool>,
+	pub mfds_device_action_label_change: Option<bool>,
+	pub mfds_device_action_other: Option<String>,
 	pub start_date: Option<Date>,
 	pub start_date_null_flavor: Option<String>,
 	pub end_date: Option<Date>,
@@ -203,6 +223,46 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 			first_attr(&mut xpath, &node, EReactionPaths::REQUIRED_INTERVENTION),
 			10,
 		);
+		let included_in_ema_ime_list =
+			extension_bool(&mut xpath, &node, "AE_IME_LIST");
+		let expectedness =
+			clamp_str(extension_code(&mut xpath, &node, "AE_EXPECTEDNESS"), 1);
+		let severity =
+			clamp_str(extension_code(&mut xpath, &node, "AE_SEVERITY"), 20);
+		let mfds_device_ae_classification =
+			clamp_str(extension_code(&mut xpath, &node, "KR_DVC_AECL"), 1);
+		let mfds_device_ae_outcome =
+			clamp_str(extension_code(&mut xpath, &node, "KR_DVC_AEOUT"), 2);
+		let mfds_device_cause_medical_device =
+			extension_bool(&mut xpath, &node, "KR_DVC_CC_MD");
+		let mfds_device_cause_procedure_issue =
+			extension_bool(&mut xpath, &node, "KR_DVC_CC_PI");
+		let mfds_device_cause_patient_condition =
+			extension_bool(&mut xpath, &node, "KR_DVC_CC_PC");
+		let mfds_device_cause_unable_to_assess =
+			extension_bool(&mut xpath, &node, "KR_DVC_CC_UA");
+		let mfds_device_cause_other =
+			clamp_str(extension_text(&mut xpath, &node, "KR_DVC_CC_OTH"), 20000);
+		let mfds_device_action_reason =
+			clamp_str(extension_text(&mut xpath, &node, "KR_DVC_ACT_RSN"), 20000);
+		let mfds_device_action_recall =
+			extension_bool(&mut xpath, &node, "KR_DVC_ACT_RC");
+		let mfds_device_action_repair =
+			extension_bool(&mut xpath, &node, "KR_DVC_ACT_RP");
+		let mfds_device_action_inspection =
+			extension_bool(&mut xpath, &node, "KR_DVC_ACT_INSP");
+		let mfds_device_action_replacement =
+			extension_bool(&mut xpath, &node, "KR_DVC_ACT_REPL");
+		let mfds_device_action_improvement =
+			extension_bool(&mut xpath, &node, "KR_DVC_ACT_IMP");
+		let mfds_device_action_monitoring =
+			extension_bool(&mut xpath, &node, "KR_DVC_ACT_MON");
+		let mfds_device_action_notification =
+			extension_bool(&mut xpath, &node, "KR_DVC_ACT_NTF");
+		let mfds_device_action_label_change =
+			extension_bool(&mut xpath, &node, "KR_DVC_ACT_CAS");
+		let mfds_device_action_other =
+			clamp_str(extension_text(&mut xpath, &node, "KR_DVC_ACT_OTH"), 20000);
 		let start_date = first_attr(&mut xpath, &node, EReactionPaths::START_DATE)
 			.or_else(|| {
 				first_attr(&mut xpath, &node, EReactionPaths::START_DATE_FALLBACK)
@@ -271,6 +331,26 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 			criteria_other_medically_important,
 			criteria_other_medically_important_null_flavor,
 			required_intervention,
+			included_in_ema_ime_list,
+			expectedness,
+			severity,
+			mfds_device_ae_classification,
+			mfds_device_ae_outcome,
+			mfds_device_cause_medical_device,
+			mfds_device_cause_procedure_issue,
+			mfds_device_cause_patient_condition,
+			mfds_device_cause_unable_to_assess,
+			mfds_device_cause_other,
+			mfds_device_action_reason,
+			mfds_device_action_recall,
+			mfds_device_action_repair,
+			mfds_device_action_inspection,
+			mfds_device_action_replacement,
+			mfds_device_action_improvement,
+			mfds_device_action_monitoring,
+			mfds_device_action_notification,
+			mfds_device_action_label_change,
+			mfds_device_action_other,
 			start_date,
 			start_date_null_flavor,
 			end_date,
@@ -284,6 +364,35 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 	}
 
 	Ok(imports)
+}
+
+fn extension_bool(xpath: &mut Context, node: &Node, code: &str) -> Option<bool> {
+	parse_bool_value(extension_value_attr(xpath, node, code, "value"))
+}
+
+fn extension_code(xpath: &mut Context, node: &Node, code: &str) -> Option<String> {
+	extension_value_attr(xpath, node, code, "code")
+		.or_else(|| extension_value_attr(xpath, node, code, "value"))
+		.or_else(|| extension_text(xpath, node, code))
+}
+
+fn extension_text(xpath: &mut Context, node: &Node, code: &str) -> Option<String> {
+	let expr = format!(
+		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='{code}']]/hl7:value"
+	);
+	first_text(xpath, node, &expr)
+}
+
+fn extension_value_attr(
+	xpath: &mut Context,
+	node: &Node,
+	code: &str,
+	attr: &str,
+) -> Option<String> {
+	let expr = format!(
+		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='{code}']]/hl7:value/@{attr}"
+	);
+	first_attr(xpath, node, &expr)
 }
 
 fn first_attr(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {

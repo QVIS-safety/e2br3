@@ -56,6 +56,40 @@ pub(crate) async fn import_section_e(
 					.criteria_other_medically_important_null_flavor
 					.clone(),
 				required_intervention: reaction.required_intervention.clone(),
+				included_in_ema_ime_list: reaction.included_in_ema_ime_list,
+				expectedness: reaction.expectedness.clone(),
+				severity: reaction.severity.clone(),
+				mfds_device_ae_classification: reaction
+					.mfds_device_ae_classification
+					.clone(),
+				mfds_device_ae_outcome: reaction.mfds_device_ae_outcome.clone(),
+				mfds_device_cause_medical_device: reaction
+					.mfds_device_cause_medical_device,
+				mfds_device_cause_procedure_issue: reaction
+					.mfds_device_cause_procedure_issue,
+				mfds_device_cause_patient_condition: reaction
+					.mfds_device_cause_patient_condition,
+				mfds_device_cause_unable_to_assess: reaction
+					.mfds_device_cause_unable_to_assess,
+				mfds_device_cause_other: reaction.mfds_device_cause_other.clone(),
+				mfds_device_action_reason: reaction
+					.mfds_device_action_reason
+					.clone(),
+				mfds_device_action_recall: reaction.mfds_device_action_recall,
+				mfds_device_action_repair: reaction.mfds_device_action_repair,
+				mfds_device_action_inspection: reaction
+					.mfds_device_action_inspection,
+				mfds_device_action_replacement: reaction
+					.mfds_device_action_replacement,
+				mfds_device_action_improvement: reaction
+					.mfds_device_action_improvement,
+				mfds_device_action_monitoring: reaction
+					.mfds_device_action_monitoring,
+				mfds_device_action_notification: reaction
+					.mfds_device_action_notification,
+				mfds_device_action_label_change: reaction
+					.mfds_device_action_label_change,
+				mfds_device_action_other: reaction.mfds_device_action_other.clone(),
 				start_date: reaction.start_date,
 				start_date_null_flavor: reaction.start_date_null_flavor.clone(),
 				end_date: reaction.end_date,

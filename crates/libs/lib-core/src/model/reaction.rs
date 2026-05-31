@@ -54,6 +54,27 @@ pub struct Reaction {
 	// FDA.E.i.3.2h - Required Intervention (FDA)
 	pub required_intervention: Option<String>,
 
+	pub included_in_ema_ime_list: Option<bool>,
+	pub expectedness: Option<String>,
+	pub severity: Option<String>,
+	pub mfds_device_ae_classification: Option<String>,
+	pub mfds_device_ae_outcome: Option<String>,
+	pub mfds_device_cause_medical_device: Option<bool>,
+	pub mfds_device_cause_procedure_issue: Option<bool>,
+	pub mfds_device_cause_patient_condition: Option<bool>,
+	pub mfds_device_cause_unable_to_assess: Option<bool>,
+	pub mfds_device_cause_other: Option<String>,
+	pub mfds_device_action_reason: Option<String>,
+	pub mfds_device_action_recall: Option<bool>,
+	pub mfds_device_action_repair: Option<bool>,
+	pub mfds_device_action_inspection: Option<bool>,
+	pub mfds_device_action_replacement: Option<bool>,
+	pub mfds_device_action_improvement: Option<bool>,
+	pub mfds_device_action_monitoring: Option<bool>,
+	pub mfds_device_action_notification: Option<bool>,
+	pub mfds_device_action_label_change: Option<bool>,
+	pub mfds_device_action_other: Option<String>,
+
 	// E.i.4-6 - Timing
 	pub start_date: Option<Date>,
 	pub start_date_null_flavor: Option<String>,
@@ -102,6 +123,26 @@ pub struct ReactionForCreate {
 	pub criteria_other_medically_important: Option<bool>,
 	pub criteria_other_medically_important_null_flavor: Option<String>,
 	pub required_intervention: Option<String>,
+	pub included_in_ema_ime_list: Option<bool>,
+	pub expectedness: Option<String>,
+	pub severity: Option<String>,
+	pub mfds_device_ae_classification: Option<String>,
+	pub mfds_device_ae_outcome: Option<String>,
+	pub mfds_device_cause_medical_device: Option<bool>,
+	pub mfds_device_cause_procedure_issue: Option<bool>,
+	pub mfds_device_cause_patient_condition: Option<bool>,
+	pub mfds_device_cause_unable_to_assess: Option<bool>,
+	pub mfds_device_cause_other: Option<String>,
+	pub mfds_device_action_reason: Option<String>,
+	pub mfds_device_action_recall: Option<bool>,
+	pub mfds_device_action_repair: Option<bool>,
+	pub mfds_device_action_inspection: Option<bool>,
+	pub mfds_device_action_replacement: Option<bool>,
+	pub mfds_device_action_improvement: Option<bool>,
+	pub mfds_device_action_monitoring: Option<bool>,
+	pub mfds_device_action_notification: Option<bool>,
+	pub mfds_device_action_label_change: Option<bool>,
+	pub mfds_device_action_other: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
@@ -143,6 +184,26 @@ pub struct ReactionForUpdate {
 	pub criteria_other_medically_important: Option<bool>,
 	pub criteria_other_medically_important_null_flavor: Option<String>,
 	pub required_intervention: Option<String>,
+	pub included_in_ema_ime_list: Option<bool>,
+	pub expectedness: Option<String>,
+	pub severity: Option<String>,
+	pub mfds_device_ae_classification: Option<String>,
+	pub mfds_device_ae_outcome: Option<String>,
+	pub mfds_device_cause_medical_device: Option<bool>,
+	pub mfds_device_cause_procedure_issue: Option<bool>,
+	pub mfds_device_cause_patient_condition: Option<bool>,
+	pub mfds_device_cause_unable_to_assess: Option<bool>,
+	pub mfds_device_cause_other: Option<String>,
+	pub mfds_device_action_reason: Option<String>,
+	pub mfds_device_action_recall: Option<bool>,
+	pub mfds_device_action_repair: Option<bool>,
+	pub mfds_device_action_inspection: Option<bool>,
+	pub mfds_device_action_replacement: Option<bool>,
+	pub mfds_device_action_improvement: Option<bool>,
+	pub mfds_device_action_monitoring: Option<bool>,
+	pub mfds_device_action_notification: Option<bool>,
+	pub mfds_device_action_label_change: Option<bool>,
+	pub mfds_device_action_other: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
@@ -200,7 +261,16 @@ impl ReactionBmc {
 			 criteria_hospitalization_null_flavor, criteria_disabling,
 			 criteria_disabling_null_flavor, criteria_congenital_anomaly,
 			 criteria_congenital_anomaly_null_flavor, criteria_other_medically_important,
-			 criteria_other_medically_important_null_flavor, required_intervention, start_date,
+			 criteria_other_medically_important_null_flavor, required_intervention,
+			 included_in_ema_ime_list, expectedness, severity, mfds_device_ae_classification,
+			 mfds_device_ae_outcome, mfds_device_cause_medical_device,
+			 mfds_device_cause_procedure_issue, mfds_device_cause_patient_condition,
+			 mfds_device_cause_unable_to_assess, mfds_device_cause_other,
+			 mfds_device_action_reason, mfds_device_action_recall, mfds_device_action_repair,
+			 mfds_device_action_inspection, mfds_device_action_replacement,
+			 mfds_device_action_improvement, mfds_device_action_monitoring,
+			 mfds_device_action_notification, mfds_device_action_label_change,
+			 mfds_device_action_other, start_date,
 			 start_date_null_flavor, end_date, end_date_null_flavor, duration_value, duration_unit,
 			 outcome, medical_confirmation, country_code, created_at, updated_at, created_by
 			)
@@ -212,9 +282,14 @@ impl ReactionBmc {
 			 $15, COALESCE($16, false),
 			 $17, COALESCE($18, false),
 			 $19, COALESCE($20, false),
-			 $21, $22, $23,
-			 $24, $25, $26, $27, $28,
-			 $29, $30, $31, now(), now(), $32
+			 $21, $22, $23, $24,
+			 $25, $26, $27, $28,
+			 $29, $30, $31, $32, $33,
+			 $34, $35, $36,
+			 $37, $38, $39,
+			 $40, $41, $42,
+			 $43, $44, $45, $46, $47,
+			 $48, $49, $50, $51, now(), now(), $52
 			)
 			 RETURNING id",
 			Self::TABLE
@@ -245,6 +320,26 @@ impl ReactionBmc {
 					.bind(reaction_c.criteria_other_medically_important)
 					.bind(reaction_c.criteria_other_medically_important_null_flavor)
 					.bind(reaction_c.required_intervention)
+					.bind(reaction_c.included_in_ema_ime_list)
+					.bind(reaction_c.expectedness)
+					.bind(reaction_c.severity)
+					.bind(reaction_c.mfds_device_ae_classification)
+					.bind(reaction_c.mfds_device_ae_outcome)
+					.bind(reaction_c.mfds_device_cause_medical_device)
+					.bind(reaction_c.mfds_device_cause_procedure_issue)
+					.bind(reaction_c.mfds_device_cause_patient_condition)
+					.bind(reaction_c.mfds_device_cause_unable_to_assess)
+					.bind(reaction_c.mfds_device_cause_other)
+					.bind(reaction_c.mfds_device_action_reason)
+					.bind(reaction_c.mfds_device_action_recall)
+					.bind(reaction_c.mfds_device_action_repair)
+					.bind(reaction_c.mfds_device_action_inspection)
+					.bind(reaction_c.mfds_device_action_replacement)
+					.bind(reaction_c.mfds_device_action_improvement)
+					.bind(reaction_c.mfds_device_action_monitoring)
+					.bind(reaction_c.mfds_device_action_notification)
+					.bind(reaction_c.mfds_device_action_label_change)
+					.bind(reaction_c.mfds_device_action_other)
 					.bind(reaction_c.start_date)
 					.bind(reaction_c.start_date_null_flavor)
 					.bind(reaction_c.end_date)
@@ -312,17 +407,37 @@ impl ReactionBmc {
 			     criteria_other_medically_important = COALESCE($19, criteria_other_medically_important),
 			     criteria_other_medically_important_null_flavor = COALESCE($20, criteria_other_medically_important_null_flavor),
 			     required_intervention = COALESCE($21, required_intervention),
-			     start_date = CASE WHEN $23 IS NOT NULL THEN NULL ELSE COALESCE($22, start_date) END,
-			     start_date_null_flavor = CASE WHEN $22 IS NOT NULL THEN NULL ELSE COALESCE($23, start_date_null_flavor) END,
-			     end_date = CASE WHEN $25 IS NOT NULL THEN NULL ELSE COALESCE($24, end_date) END,
-			     end_date_null_flavor = CASE WHEN $24 IS NOT NULL THEN NULL ELSE COALESCE($25, end_date_null_flavor) END,
-			     duration_value = COALESCE($26, duration_value),
-			     duration_unit = COALESCE($27, duration_unit),
-			     outcome = COALESCE($28, outcome),
-			     medical_confirmation = COALESCE($29, medical_confirmation),
-			     country_code = COALESCE($30, country_code),
+			     included_in_ema_ime_list = COALESCE($22, included_in_ema_ime_list),
+			     expectedness = COALESCE($23, expectedness),
+			     severity = COALESCE($24, severity),
+			     mfds_device_ae_classification = COALESCE($25, mfds_device_ae_classification),
+			     mfds_device_ae_outcome = COALESCE($26, mfds_device_ae_outcome),
+			     mfds_device_cause_medical_device = COALESCE($27, mfds_device_cause_medical_device),
+			     mfds_device_cause_procedure_issue = COALESCE($28, mfds_device_cause_procedure_issue),
+			     mfds_device_cause_patient_condition = COALESCE($29, mfds_device_cause_patient_condition),
+			     mfds_device_cause_unable_to_assess = COALESCE($30, mfds_device_cause_unable_to_assess),
+			     mfds_device_cause_other = COALESCE($31, mfds_device_cause_other),
+			     mfds_device_action_reason = COALESCE($32, mfds_device_action_reason),
+			     mfds_device_action_recall = COALESCE($33, mfds_device_action_recall),
+			     mfds_device_action_repair = COALESCE($34, mfds_device_action_repair),
+			     mfds_device_action_inspection = COALESCE($35, mfds_device_action_inspection),
+			     mfds_device_action_replacement = COALESCE($36, mfds_device_action_replacement),
+			     mfds_device_action_improvement = COALESCE($37, mfds_device_action_improvement),
+			     mfds_device_action_monitoring = COALESCE($38, mfds_device_action_monitoring),
+			     mfds_device_action_notification = COALESCE($39, mfds_device_action_notification),
+			     mfds_device_action_label_change = COALESCE($40, mfds_device_action_label_change),
+			     mfds_device_action_other = COALESCE($41, mfds_device_action_other),
+			     start_date = CASE WHEN $43 IS NOT NULL THEN NULL ELSE COALESCE($42, start_date) END,
+			     start_date_null_flavor = CASE WHEN $42 IS NOT NULL THEN NULL ELSE COALESCE($43, start_date_null_flavor) END,
+			     end_date = CASE WHEN $45 IS NOT NULL THEN NULL ELSE COALESCE($44, end_date) END,
+			     end_date_null_flavor = CASE WHEN $44 IS NOT NULL THEN NULL ELSE COALESCE($45, end_date_null_flavor) END,
+			     duration_value = COALESCE($46, duration_value),
+			     duration_unit = COALESCE($47, duration_unit),
+			     outcome = COALESCE($48, outcome),
+			     medical_confirmation = COALESCE($49, medical_confirmation),
+			     country_code = COALESCE($50, country_code),
 			     updated_at = now(),
-			     updated_by = $31
+			     updated_by = $51
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -351,6 +466,26 @@ impl ReactionBmc {
 					.bind(reaction_u.criteria_other_medically_important)
 					.bind(reaction_u.criteria_other_medically_important_null_flavor)
 					.bind(reaction_u.required_intervention)
+					.bind(reaction_u.included_in_ema_ime_list)
+					.bind(reaction_u.expectedness)
+					.bind(reaction_u.severity)
+					.bind(reaction_u.mfds_device_ae_classification)
+					.bind(reaction_u.mfds_device_ae_outcome)
+					.bind(reaction_u.mfds_device_cause_medical_device)
+					.bind(reaction_u.mfds_device_cause_procedure_issue)
+					.bind(reaction_u.mfds_device_cause_patient_condition)
+					.bind(reaction_u.mfds_device_cause_unable_to_assess)
+					.bind(reaction_u.mfds_device_cause_other)
+					.bind(reaction_u.mfds_device_action_reason)
+					.bind(reaction_u.mfds_device_action_recall)
+					.bind(reaction_u.mfds_device_action_repair)
+					.bind(reaction_u.mfds_device_action_inspection)
+					.bind(reaction_u.mfds_device_action_replacement)
+					.bind(reaction_u.mfds_device_action_improvement)
+					.bind(reaction_u.mfds_device_action_monitoring)
+					.bind(reaction_u.mfds_device_action_notification)
+					.bind(reaction_u.mfds_device_action_label_change)
+					.bind(reaction_u.mfds_device_action_other)
 					.bind(reaction_u.start_date)
 					.bind(reaction_u.start_date_null_flavor)
 					.bind(reaction_u.end_date)
@@ -451,17 +586,37 @@ impl ReactionBmc {
 			     criteria_other_medically_important = COALESCE($20, criteria_other_medically_important),
 			     criteria_other_medically_important_null_flavor = COALESCE($21, criteria_other_medically_important_null_flavor),
 			     required_intervention = COALESCE($22, required_intervention),
-			     start_date = CASE WHEN $24 IS NOT NULL THEN NULL ELSE COALESCE($23, start_date) END,
-			     start_date_null_flavor = CASE WHEN $23 IS NOT NULL THEN NULL ELSE COALESCE($24, start_date_null_flavor) END,
-			     end_date = CASE WHEN $26 IS NOT NULL THEN NULL ELSE COALESCE($25, end_date) END,
-			     end_date_null_flavor = CASE WHEN $25 IS NOT NULL THEN NULL ELSE COALESCE($26, end_date_null_flavor) END,
-			     duration_value = COALESCE($27, duration_value),
-			     duration_unit = COALESCE($28, duration_unit),
-			     outcome = COALESCE($29, outcome),
-			     medical_confirmation = COALESCE($30, medical_confirmation),
-			     country_code = COALESCE($31, country_code),
+			     included_in_ema_ime_list = COALESCE($23, included_in_ema_ime_list),
+			     expectedness = COALESCE($24, expectedness),
+			     severity = COALESCE($25, severity),
+			     mfds_device_ae_classification = COALESCE($26, mfds_device_ae_classification),
+			     mfds_device_ae_outcome = COALESCE($27, mfds_device_ae_outcome),
+			     mfds_device_cause_medical_device = COALESCE($28, mfds_device_cause_medical_device),
+			     mfds_device_cause_procedure_issue = COALESCE($29, mfds_device_cause_procedure_issue),
+			     mfds_device_cause_patient_condition = COALESCE($30, mfds_device_cause_patient_condition),
+			     mfds_device_cause_unable_to_assess = COALESCE($31, mfds_device_cause_unable_to_assess),
+			     mfds_device_cause_other = COALESCE($32, mfds_device_cause_other),
+			     mfds_device_action_reason = COALESCE($33, mfds_device_action_reason),
+			     mfds_device_action_recall = COALESCE($34, mfds_device_action_recall),
+			     mfds_device_action_repair = COALESCE($35, mfds_device_action_repair),
+			     mfds_device_action_inspection = COALESCE($36, mfds_device_action_inspection),
+			     mfds_device_action_replacement = COALESCE($37, mfds_device_action_replacement),
+			     mfds_device_action_improvement = COALESCE($38, mfds_device_action_improvement),
+			     mfds_device_action_monitoring = COALESCE($39, mfds_device_action_monitoring),
+			     mfds_device_action_notification = COALESCE($40, mfds_device_action_notification),
+			     mfds_device_action_label_change = COALESCE($41, mfds_device_action_label_change),
+			     mfds_device_action_other = COALESCE($42, mfds_device_action_other),
+			     start_date = CASE WHEN $44 IS NOT NULL THEN NULL ELSE COALESCE($43, start_date) END,
+			     start_date_null_flavor = CASE WHEN $43 IS NOT NULL THEN NULL ELSE COALESCE($44, start_date_null_flavor) END,
+			     end_date = CASE WHEN $46 IS NOT NULL THEN NULL ELSE COALESCE($45, end_date) END,
+			     end_date_null_flavor = CASE WHEN $45 IS NOT NULL THEN NULL ELSE COALESCE($46, end_date_null_flavor) END,
+			     duration_value = COALESCE($47, duration_value),
+			     duration_unit = COALESCE($48, duration_unit),
+			     outcome = COALESCE($49, outcome),
+			     medical_confirmation = COALESCE($50, medical_confirmation),
+			     country_code = COALESCE($51, country_code),
 			     updated_at = now(),
-			     updated_by = $32
+			     updated_by = $52
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -491,6 +646,26 @@ impl ReactionBmc {
 					.bind(reaction_u.criteria_other_medically_important)
 					.bind(reaction_u.criteria_other_medically_important_null_flavor)
 					.bind(reaction_u.required_intervention)
+					.bind(reaction_u.included_in_ema_ime_list)
+					.bind(reaction_u.expectedness)
+					.bind(reaction_u.severity)
+					.bind(reaction_u.mfds_device_ae_classification)
+					.bind(reaction_u.mfds_device_ae_outcome)
+					.bind(reaction_u.mfds_device_cause_medical_device)
+					.bind(reaction_u.mfds_device_cause_procedure_issue)
+					.bind(reaction_u.mfds_device_cause_patient_condition)
+					.bind(reaction_u.mfds_device_cause_unable_to_assess)
+					.bind(reaction_u.mfds_device_cause_other)
+					.bind(reaction_u.mfds_device_action_reason)
+					.bind(reaction_u.mfds_device_action_recall)
+					.bind(reaction_u.mfds_device_action_repair)
+					.bind(reaction_u.mfds_device_action_inspection)
+					.bind(reaction_u.mfds_device_action_replacement)
+					.bind(reaction_u.mfds_device_action_improvement)
+					.bind(reaction_u.mfds_device_action_monitoring)
+					.bind(reaction_u.mfds_device_action_notification)
+					.bind(reaction_u.mfds_device_action_label_change)
+					.bind(reaction_u.mfds_device_action_other)
 					.bind(reaction_u.start_date)
 					.bind(reaction_u.start_date_null_flavor)
 					.bind(reaction_u.end_date)

@@ -69,6 +69,11 @@ async fn apply_patient_section(
 	};
 	let identifiers = fetch_patient_identifiers(ctx, mm, patient.id).await?;
 	let parent = fetch_parent_information(ctx, mm, patient.id).await?;
+	let parent_past_drugs = if let Some(parent) = parent.as_ref() {
+		fetch_parent_past_drug_history(ctx, mm, parent.id).await?
+	} else {
+		Vec::new()
+	};
 	let medical_history =
 		fetch_medical_history_episodes(ctx, mm, patient.id).await?;
 	let past_drugs = fetch_past_drug_history(ctx, mm, patient.id).await?;
@@ -455,12 +460,162 @@ async fn apply_patient_section(
 				set_attr_first(xpath, age_value_xpath, "nullFlavor", null_flavor);
 			}
 		}
+		apply_parent_past_drug_history_section(
+			doc,
+			parser,
+			xpath,
+			&parent_past_drugs,
+		)?;
 	}
 
 	apply_past_drug_history_section(doc, parser, xpath, &past_drugs)?;
 	apply_patient_death_null_flavor(doc, parser, xpath, &death_info)?;
 
 	Ok(())
+}
+
+fn apply_parent_past_drug_history_section(
+	doc: &mut Document,
+	parser: &Parser,
+	xpath: &mut Context,
+	past_drugs: &[ParentPastDrugHistory],
+) -> Result<()> {
+	if past_drugs.is_empty() {
+		return Ok(());
+	}
+
+	let parent_role_xpath =
+		"//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]";
+	remove_nodes(
+		xpath,
+		"//hl7:primaryRole/hl7:player1/hl7:role[hl7:code[@code='PRN']]/hl7:subjectOf2[hl7:organizer/hl7:code[@code='2']]",
+	);
+
+	let mut rows = past_drugs.to_vec();
+	rows.sort_by_key(|row| row.sequence_number);
+
+	for drug in rows {
+		append_fragment_child(
+			doc,
+			parser,
+			xpath,
+			parent_role_xpath,
+			&parent_past_drug_history_fragment(&drug),
+		)?;
+	}
+
+	Ok(())
+}
+
+fn parent_past_drug_history_fragment(drug: &ParentPastDrugHistory) -> String {
+	let name_fragment = if let Some(name) = drug.drug_name.as_deref() {
+		format!("<name>{}</name>", xml_escape(name))
+	} else if let Some(null_flavor) = drug.drug_name_null_flavor.as_deref() {
+		format!("<name nullFlavor=\"{}\"/>", xml_escape(null_flavor))
+	} else {
+		"<name/>".to_string()
+	};
+
+	let mfds_code = if drug.mfds_medicinal_product_id.is_some()
+		|| drug.mfds_medicinal_product_version.is_some()
+	{
+		let mut attrs = String::new();
+		if let Some(id) = drug.mfds_medicinal_product_id.as_deref() {
+			attrs.push_str(&format!(" code=\"{}\"", xml_escape(id)));
+		}
+		if let Some(version) = drug.mfds_medicinal_product_version.as_deref() {
+			attrs.push_str(&format!(
+				" codeSystemVersion=\"{}\"",
+				xml_escape(version)
+			));
+		}
+		format!("<code{attrs}/>")
+	} else {
+		String::new()
+	};
+
+	let mut identifiers = String::new();
+	if drug.mpid.is_some() || drug.mpid_version.is_some() {
+		let mut code_attrs = String::from(
+			"code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
+		);
+		if let Some(version) = drug.mpid_version.as_deref() {
+			code_attrs.push_str(&format!(
+				" codeSystemVersion=\"{}\"",
+				xml_escape(version)
+			));
+		}
+		identifiers.push_str(&format!(
+			"<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"{}\"/><code {code_attrs}/></asIdentifiedEntity>",
+			xml_escape(drug.mpid.as_deref().unwrap_or(""))
+		));
+	}
+	if drug.phpid.is_some() || drug.phpid_version.is_some() {
+		let mut code_attrs = String::from(
+			"code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
+		);
+		if let Some(version) = drug.phpid_version.as_deref() {
+			code_attrs.push_str(&format!(
+				" codeSystemVersion=\"{}\"",
+				xml_escape(version)
+			));
+		}
+		identifiers.push_str(&format!(
+			"<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"{}\"/><code {code_attrs}/></asIdentifiedEntity>",
+			xml_escape(drug.phpid.as_deref().unwrap_or(""))
+		));
+	}
+
+	let effective_time = history_effective_time(
+		drug.start_date,
+		drug.start_date_null_flavor.as_deref(),
+		drug.end_date,
+		drug.end_date_null_flavor.as_deref(),
+	);
+
+	let indication = if drug.indication_meddra_version.is_some()
+		|| drug.indication_meddra_code.is_some()
+	{
+		let mut value_attrs = String::from("xsi:type=\"CE\"");
+		if let Some(code) = drug.indication_meddra_code.as_deref() {
+			value_attrs.push_str(&format!(" code=\"{}\"", xml_escape(code)));
+		}
+		if let Some(version) = drug.indication_meddra_version.as_deref() {
+			value_attrs.push_str(&format!(
+				" codeSystemVersion=\"{}\"",
+				xml_escape(version)
+			));
+		}
+		format!(
+			"<outboundRelationship2 typeCode=\"RSON\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"19\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" codeSystemVersion=\"1.1\" displayName=\"indication\"/><value {value_attrs}/></observation></outboundRelationship2>"
+		)
+	} else {
+		String::new()
+	};
+
+	let reaction = if drug.reaction_meddra_version.is_some()
+		|| drug.reaction_meddra_code.is_some()
+	{
+		let mut value_attrs = String::from("xsi:type=\"CE\"");
+		if let Some(code) = drug.reaction_meddra_code.as_deref() {
+			value_attrs.push_str(&format!(" code=\"{}\"", xml_escape(code)));
+		}
+		if let Some(version) = drug.reaction_meddra_version.as_deref() {
+			value_attrs.push_str(&format!(
+				" codeSystemVersion=\"{}\"",
+				xml_escape(version)
+			));
+		}
+		format!(
+			"<outboundRelationship2 typeCode=\"CAUS\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"29\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\" codeSystemVersion=\"1.1\" displayName=\"reaction\"/><value {value_attrs}/></observation></outboundRelationship2>"
+		)
+	} else {
+		String::new()
+	};
+
+	format!(
+		"<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"2\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\" displayName=\"drugHistory\"/><component typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">{effective_time}<consumable typeCode=\"CSM\"><instanceOfKind classCode=\"INST\"><kindOfProduct classCode=\"MMAT\" determinerCode=\"KIND\">{mfds_code}{name_fragment}{identifiers}</kindOfProduct></instanceOfKind></consumable>{indication}{reaction}</substanceAdministration></component></organizer></subjectOf2>"
+	)
 }
 
 fn apply_medical_history_section(
@@ -727,4 +882,57 @@ async fn fetch_patient_death_information(
 		)
 		.await
 		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use sqlx::types::time::OffsetDateTime;
+	use sqlx::types::Uuid;
+
+	#[test]
+	fn parent_past_drug_fragment_exports_mfds_code_separate_from_identifiers() {
+		let drug = ParentPastDrugHistory {
+			id: Uuid::nil(),
+			parent_id: Uuid::nil(),
+			sequence_number: 1,
+			drug_name: Some("Parent & <drug> \"A\" 'B'".to_string()),
+			drug_name_null_flavor: None,
+			mpid: Some("MP&<>\"'".to_string()),
+			mpid_version: Some("MPV&<>\"'".to_string()),
+			mfds_medicinal_product_version: Some("MFV&<>\"'".to_string()),
+			mfds_medicinal_product_id: Some("MF&<>\"'".to_string()),
+			phpid: Some("PH&<>\"'".to_string()),
+			phpid_version: Some("PHV&<>\"'".to_string()),
+			start_date: None,
+			start_date_null_flavor: None,
+			end_date: None,
+			end_date_null_flavor: None,
+			indication_meddra_version: None,
+			indication_meddra_code: None,
+			reaction_meddra_version: None,
+			reaction_meddra_code: None,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		};
+
+		let fragment = parent_past_drug_history_fragment(&drug);
+
+		let mfds_code = "<code code=\"MF&amp;&lt;&gt;&quot;&apos;\" codeSystemVersion=\"MFV&amp;&lt;&gt;&quot;&apos;\"/>";
+		let name =
+			"<name>Parent &amp; &lt;drug&gt; &quot;A&quot; &apos;B&apos;</name>";
+		let mpid = "<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"MP&amp;&lt;&gt;&quot;&apos;\"/><code code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\" codeSystemVersion=\"MPV&amp;&lt;&gt;&quot;&apos;\"/></asIdentifiedEntity>";
+		let phpid = "<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"PH&amp;&lt;&gt;&quot;&apos;\"/><code code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\" codeSystemVersion=\"PHV&amp;&lt;&gt;&quot;&apos;\"/></asIdentifiedEntity>";
+
+		let mfds_index = fragment.find(mfds_code).expect("MFDS product code");
+		let name_index = fragment.find(name).expect("drug name");
+		let mpid_index = fragment.find(mpid).expect("MPID identifier");
+		let phpid_index = fragment.find(phpid).expect("PhPID identifier");
+
+		assert!(mfds_index < name_index);
+		assert!(name_index < mpid_index);
+		assert!(mpid_index < phpid_index);
+	}
 }

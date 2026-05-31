@@ -447,6 +447,321 @@ async fn create_reaction_assessment(
 
 #[serial]
 #[tokio::test]
+async fn dg_kr_substance_fields_create_read_and_update_independently() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let drug_id = create_drug(&app, &cookie, case_id).await?;
+
+	let substance_payload = json!({
+		"data": {
+			"drug_id": drug_id,
+			"sequence_number": 1,
+			"substance_name": "Substance A",
+			"substance_termid": "BASE-SUB",
+			"substance_termid_version": "BASE-SV1",
+			"mfds_id": "KR-SUB",
+			"mfds_version": "KR-SV1"
+		}
+	});
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}/active-substances"),
+		substance_payload,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	let created: Value = serde_json::from_slice(&body)?;
+	let substance_id = extract_id(&body)?;
+	assert_eq!(created["data"]["substance_termid"], "BASE-SUB");
+	assert_eq!(created["data"]["substance_termid_version"], "BASE-SV1");
+	assert_eq!(created["data"]["mfds_id"], "KR-SUB");
+	assert_eq!(created["data"]["mfds_version"], "KR-SV1");
+
+	let update_payload = json!({
+		"data": {
+			"mfds_id": "KR-SUB-2",
+			"mfds_version": "KR-SV2"
+		}
+	});
+	let (status, body) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		format!(
+			"/api/cases/{case_id}/drugs/{drug_id}/active-substances/{substance_id}"
+		),
+		update_payload,
+		"update KR substance fields",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let updated: Value = serde_json::from_slice(&body)?;
+	assert_eq!(updated["data"]["substance_termid"], "BASE-SUB");
+	assert_eq!(updated["data"]["substance_termid_version"], "BASE-SV1");
+	assert_eq!(updated["data"]["mfds_id"], "KR-SUB-2");
+	assert_eq!(updated["data"]["mfds_version"], "KR-SV2");
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		format!(
+			"/api/cases/{case_id}/drugs/{drug_id}/active-substances/{substance_id}"
+		),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let fetched: Value = serde_json::from_slice(&body)?;
+	assert_eq!(fetched["data"]["substance_termid"], "BASE-SUB");
+	assert_eq!(fetched["data"]["substance_termid_version"], "BASE-SV1");
+	assert_eq!(fetched["data"]["mfds_id"], "KR-SUB-2");
+	assert_eq!(fetched["data"]["mfds_version"], "KR-SV2");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn dg_kr_product_fields_create_read_and_update_independently() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let create_payload = json!({
+		"data": {
+			"case_id": case_id,
+			"sequence_number": 1,
+			"drug_characterization": "1",
+			"medicinal_product": "Base Product",
+			"mpid": "BASE-MPID",
+			"mpid_version": "BASE-V1",
+			"mfds_mpid": "KR-MPID",
+			"mfds_mpid_version": "KR-V1"
+		}
+	});
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs"),
+		create_payload,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	let created: Value = serde_json::from_slice(&body)?;
+	assert_eq!(created["data"]["mpid"], "BASE-MPID");
+	assert_eq!(created["data"]["mpid_version"], "BASE-V1");
+	assert_eq!(created["data"]["mfds_mpid"], "KR-MPID");
+	assert_eq!(created["data"]["mfds_mpid_version"], "KR-V1");
+	let drug_id = created["data"]["id"].as_str().ok_or("missing drug id")?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let fetched: Value = serde_json::from_slice(&body)?;
+	assert_eq!(fetched["data"]["mpid"], "BASE-MPID");
+	assert_eq!(fetched["data"]["mpid_version"], "BASE-V1");
+	assert_eq!(fetched["data"]["mfds_mpid"], "KR-MPID");
+	assert_eq!(fetched["data"]["mfds_mpid_version"], "KR-V1");
+
+	let update_payload = json!({
+		"data": {
+			"mfds_mpid": "KR-MPID-2",
+			"mfds_mpid_version": "KR-V2"
+		}
+	});
+	let (status, body) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}"),
+		update_payload,
+		"update KR product fields",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let updated: Value = serde_json::from_slice(&body)?;
+	assert_eq!(updated["data"]["mpid"], "BASE-MPID");
+	assert_eq!(updated["data"]["mpid_version"], "BASE-V1");
+	assert_eq!(updated["data"]["mfds_mpid"], "KR-MPID-2");
+	assert_eq!(updated["data"]["mfds_mpid_version"], "KR-V2");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_reaction_supports_ae_common_and_mfds_device_fields() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+
+	let body = json!({"data": {
+		"case_id": case_id,
+		"sequence_number": 1,
+		"primary_source_reaction": "Device site pain",
+		"included_in_ema_ime_list": true,
+		"expectedness": "2",
+		"severity": "severe",
+		"mfds_device_ae_classification": "0",
+		"mfds_device_ae_outcome": "10",
+		"mfds_device_cause_medical_device": true,
+		"mfds_device_cause_procedure_issue": false,
+		"mfds_device_cause_patient_condition": true,
+		"mfds_device_cause_unable_to_assess": false,
+		"mfds_device_cause_other": "Other device cause",
+		"mfds_device_action_reason": "Action reason text",
+		"mfds_device_action_recall": true,
+		"mfds_device_action_repair": true,
+		"mfds_device_action_inspection": false,
+		"mfds_device_action_replacement": true,
+		"mfds_device_action_improvement": false,
+		"mfds_device_action_monitoring": true,
+		"mfds_device_action_notification": true,
+		"mfds_device_action_label_change": false,
+		"mfds_device_action_other": "Other action text"
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/reactions"),
+		body,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	let created: Value = serde_json::from_slice(&body)?;
+	let reaction_id = created["data"]["id"]
+		.as_str()
+		.ok_or("missing reaction id")?;
+	assert_eq!(created["data"]["expectedness"], "2");
+	assert_eq!(created["data"]["mfds_device_ae_outcome"], "10");
+	assert_eq!(
+		created["data"]["mfds_device_action_reason"],
+		"Action reason text"
+	);
+
+	let body = json!({"data": {
+		"expectedness": "1",
+		"severity": "moderate",
+		"mfds_device_ae_classification": "1",
+		"mfds_device_action_other": "Updated other action"
+	}});
+	let (status, body) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/reactions/{reaction_id}"),
+		body,
+		"update AE common and MFDS device fields",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let updated: Value = serde_json::from_slice(&body)?;
+	assert_eq!(updated["data"]["expectedness"], "1");
+	assert_eq!(updated["data"]["severity"], "moderate");
+	assert_eq!(updated["data"]["mfds_device_ae_classification"], "1");
+	assert_eq!(
+		updated["data"]["mfds_device_action_other"],
+		"Updated other action"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_test_results_support_50_character_normal_ranges() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let low = "L".repeat(50);
+	let high = "H".repeat(50);
+
+	let body = json!({"data": {
+		"case_id": case_id,
+		"sequence_number": 1,
+		"test_name": "ALT",
+		"normal_low_value": low,
+		"normal_high_value": high
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/test-results"),
+		body,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["normal_low_value"], low);
+	assert_eq!(value["data"]["normal_high_value"], high);
+	let test_result_id = value["data"]["id"]
+		.as_str()
+		.ok_or("missing test result id")?;
+
+	let updated_low = "A".repeat(50);
+	let updated_high = "B".repeat(50);
+	let body = json!({"data": {
+		"normal_low_value": updated_low,
+		"normal_high_value": updated_high
+	}});
+	let (status, body) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/test-results/{test_result_id}"),
+		body,
+		"test normal range widening",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["normal_low_value"], updated_low);
+	assert_eq!(value["data"]["normal_high_value"], updated_high);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_audit_reason_header_records_normal_patient_update_reason() -> Result<()>
 {
 	let mm = init_test_mm().await?;
@@ -623,7 +938,7 @@ async fn test_patient_subresources_endpoints_ok() -> Result<()> {
 
 	// Parent info
 	let body = json!({"data": {"patient_id": patient_id, "sex": "2", "medical_history_text": "none"}});
-	let (status, _) = post_json(
+	let (status, body) = post_json(
 		&app,
 		&cookie,
 		format!("/api/cases/{case_id}/patient/parents"),
@@ -631,6 +946,27 @@ async fn test_patient_subresources_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+	let parent_id = extract_id(&body)?;
+
+	// Parent past drug history
+	let body = json!({"data": {
+		"parent_id": parent_id,
+		"sequence_number": 1,
+		"drug_name": "Parent Test",
+		"mfds_medicinal_product_version": "MFDS-V1",
+		"mfds_medicinal_product_id": "MFDS-ID"
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/patient/parent/{parent_id}/past-drugs"),
+		body,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["mfds_medicinal_product_version"], "MFDS-V1");
+	assert_eq!(value["data"]["mfds_medicinal_product_id"], "MFDS-ID");
 
 	Ok(())
 }
@@ -663,7 +999,12 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 		body,
 	)
 	.await?;
-	assert_eq!(status, StatusCode::CREATED);
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
 	let value: Value = serde_json::from_slice(&body)?;
 	assert_eq!(value["data"]["substance_name"], "Substance");
 	assert_eq!(value["data"]["substance_termid"], "TERM-1");
@@ -877,8 +1218,16 @@ async fn test_safety_report_subresources_endpoints_ok() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
 
-	let body = json!({"data": {"case_id": case_id, "sequence_number": 1, "reference_text": "ref"}});
-	let (status, _) = post_json(
+	let body = json!({"data": {
+		"case_id": case_id,
+		"sequence_number": 1,
+		"reference_text": "Smith J. Case literature 2026.",
+		"document_base64": "cGRm",
+		"media_type": "application/pdf",
+		"representation": "B64",
+		"compression": "DF"
+	}});
+	let (status, body) = post_json(
 		&app,
 		&cookie,
 		format!("/api/cases/{case_id}/safety-report/literature"),
@@ -886,8 +1235,23 @@ async fn test_safety_report_subresources_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(
+		value["data"]["reference_text"],
+		"Smith J. Case literature 2026."
+	);
+	assert_eq!(value["data"]["document_base64"], "cGRm");
+	assert_eq!(value["data"]["media_type"], "application/pdf");
+	assert_eq!(value["data"]["representation"], "B64");
+	assert_eq!(value["data"]["compression"], "DF");
 
-	let body = json!({"data": {"case_id": case_id, "study_name": "Study", "sponsor_study_number": "S-1"}});
+	let body = json!({"data": {
+		"case_id": case_id,
+		"study_name": "Study",
+		"sponsor_study_number": "S-1",
+		"fda_ind_number_occurred": "1234567890",
+		"fda_pre_anda_number_occurred": "9876543210"
+	}});
 	let (status, body) = post_json(
 		&app,
 		&cookie,
@@ -896,6 +1260,9 @@ async fn test_safety_report_subresources_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["fda_ind_number_occurred"], "1234567890");
+	assert_eq!(value["data"]["fda_pre_anda_number_occurred"], "9876543210");
 	let study_id = extract_id(&body)?;
 
 	let body = json!({"data": {"study_information_id": study_id, "registration_number": "REG-1", "sequence_number": 1}});
@@ -909,6 +1276,180 @@ async fn test_safety_report_subresources_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+
+	let body = json!({"data": {"study_information_id": study_id, "ind_number": "IND-123", "sequence_number": 1}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!(
+			"/api/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds"
+		),
+		body,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["ind_number"], "IND-123");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_primary_source_supports_regional_rp_fields() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let body = json!({"data": {
+		"case_id": case_id,
+		"sequence_number": 1,
+		"reporter_given_name": "Mina",
+		"organization": "Seoul General Hospital",
+		"country_code": "KR",
+		"email": "mina.initial@example.test",
+		"qualification": "3",
+		"qualification_kr1": "1",
+		"primary_source_regulatory": "1"
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/safety-report/primary-sources"),
+		body,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["reporter_given_name"], "Mina");
+	assert_eq!(value["data"]["organization"], "Seoul General Hospital");
+	assert_eq!(value["data"]["country_code"], "KR");
+	assert_eq!(value["data"]["email"], "mina.initial@example.test");
+	assert_eq!(value["data"]["qualification"], "3");
+	assert_eq!(value["data"]["qualification_kr1"], "1");
+	assert_eq!(value["data"]["primary_source_regulatory"], "1");
+	let primary_source_id = extract_id(&body)?;
+
+	let body = json!({"data": {
+		"case_id": case_id,
+		"sequence_number": 2,
+		"reporter_given_name": "Backup",
+		"organization": "Backup Reporter Org",
+		"country_code": "KR",
+		"qualification": "3",
+		"primary_source_regulatory": "1"
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/safety-report/primary-sources"),
+		body,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+
+	let body = json!({"data": {
+		"email": "mina.updated@example.test",
+		"qualification_kr1": "2",
+		"primary_source_regulatory": "2"
+	}});
+	let (status, body) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		format!(
+			"/api/cases/{case_id}/safety-report/primary-sources/{primary_source_id}"
+		),
+		body,
+		"update primary source regional fields",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["email"], "mina.updated@example.test");
+	assert_eq!(value["data"]["qualification_kr1"], "2");
+	assert_eq!(value["data"]["primary_source_regulatory"], "2");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_sender_information_supports_mfds_health_professional_type_kr1(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let body = json!({"data": {
+		"case_id": case_id,
+		"sender_type": "3",
+		"organization_name": "KR Sender",
+		"health_professional_type_kr1": "4"
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/safety-report/senders"),
+		body,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	let sender_id = extract_id(&body)?;
+
+	let body = json!({"data": {
+		"sender_type": "3",
+		"organization_name": "KR Sender",
+		"health_professional_type_kr1": "2"
+	}});
+	let (status, body) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/safety-report/senders/{sender_id}"),
+		body,
+		"update sender KR.1",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/safety-report/senders/{sender_id}"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["health_professional_type_kr1"], "2");
 
 	Ok(())
 }

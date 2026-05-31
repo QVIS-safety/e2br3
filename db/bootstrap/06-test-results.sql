@@ -31,10 +31,10 @@ CREATE TABLE test_results (
     result_unstructured TEXT,
 
     -- F.r.4 - Normal Low Value
-    normal_low_value VARCHAR(20),
+    normal_low_value VARCHAR(50),
 
     -- F.r.5 - Normal High Value
-    normal_high_value VARCHAR(20),
+    normal_high_value VARCHAR(50),
 
     -- F.r.6 - Comments
     comments TEXT,

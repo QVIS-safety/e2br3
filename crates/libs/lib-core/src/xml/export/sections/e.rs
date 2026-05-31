@@ -174,6 +174,102 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 	out.push_str(&observation_rel_required_intervention(
 		reaction.required_intervention.as_deref(),
 	));
+	append_extension_bool(
+		&mut out,
+		"AE_IME_LIST",
+		reaction.included_in_ema_ime_list,
+	);
+	append_extension_code(
+		&mut out,
+		"AE_EXPECTEDNESS",
+		reaction.expectedness.as_deref(),
+	);
+	append_extension_code(&mut out, "AE_SEVERITY", reaction.severity.as_deref());
+	append_extension_code(
+		&mut out,
+		"KR_DVC_AECL",
+		reaction.mfds_device_ae_classification.as_deref(),
+	);
+	append_extension_code(
+		&mut out,
+		"KR_DVC_AEOUT",
+		reaction.mfds_device_ae_outcome.as_deref(),
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_CC_MD",
+		reaction.mfds_device_cause_medical_device,
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_CC_PI",
+		reaction.mfds_device_cause_procedure_issue,
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_CC_PC",
+		reaction.mfds_device_cause_patient_condition,
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_CC_UA",
+		reaction.mfds_device_cause_unable_to_assess,
+	);
+	append_extension_text(
+		&mut out,
+		"KR_DVC_CC_OTH",
+		reaction.mfds_device_cause_other.as_deref(),
+	);
+	append_extension_text(
+		&mut out,
+		"KR_DVC_ACT_RSN",
+		reaction.mfds_device_action_reason.as_deref(),
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_ACT_RC",
+		reaction.mfds_device_action_recall,
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_ACT_RP",
+		reaction.mfds_device_action_repair,
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_ACT_INSP",
+		reaction.mfds_device_action_inspection,
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_ACT_REPL",
+		reaction.mfds_device_action_replacement,
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_ACT_IMP",
+		reaction.mfds_device_action_improvement,
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_ACT_MON",
+		reaction.mfds_device_action_monitoring,
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_ACT_NTF",
+		reaction.mfds_device_action_notification,
+	);
+	append_extension_bool(
+		&mut out,
+		"KR_DVC_ACT_CAS",
+		reaction.mfds_device_action_label_change,
+	);
+	append_extension_text(
+		&mut out,
+		"KR_DVC_ACT_OTH",
+		reaction.mfds_device_action_other.as_deref(),
+	);
 	out.push_str(&observation_rel_outcome(
 		reaction.outcome.as_deref(),
 		reaction.sequence_number,
@@ -198,6 +294,39 @@ fn observation_rel_bool(code: &str, value: bool) -> String {
 	format!(
 		"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"{code}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" value=\"{v}\"/></observation></outboundRelationship2>"
 	)
+}
+
+fn append_extension_bool(out: &mut String, code: &str, value: Option<bool>) {
+	if let Some(value) = value {
+		let v = if value { "true" } else { "false" };
+		out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"");
+		out.push_str(&xml_escape(code));
+		out.push_str("\"/><value xsi:type=\"BL\" value=\"");
+		out.push_str(v);
+		out.push_str("\"/></observation></outboundRelationship2>");
+	}
+}
+
+fn append_extension_code(out: &mut String, code: &str, value: Option<&str>) {
+	let Some(value) = value.map(str::trim).filter(|v| !v.is_empty()) else {
+		return;
+	};
+	out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"");
+	out.push_str(&xml_escape(code));
+	out.push_str("\"/><value xsi:type=\"CE\" code=\"");
+	out.push_str(&xml_escape(value));
+	out.push_str("\"/></observation></outboundRelationship2>");
+}
+
+fn append_extension_text(out: &mut String, code: &str, value: Option<&str>) {
+	let Some(value) = value.map(str::trim).filter(|v| !v.is_empty()) else {
+		return;
+	};
+	out.push_str("<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"");
+	out.push_str(&xml_escape(code));
+	out.push_str("\"/><value xsi:type=\"ED\">");
+	out.push_str(&xml_escape(value));
+	out.push_str("</value></observation></outboundRelationship2>");
 }
 
 fn observation_rel_code(code: &str, value: &str) -> String {

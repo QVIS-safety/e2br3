@@ -75,7 +75,8 @@ CREATE TABLE sender_information (
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
 
     -- C.3.1 - Sender Type (MANDATORY - E2B(R3) codes)
-    sender_type VARCHAR(1) CHECK (sender_type IN ('1', '2', '3', '4', '5', '6')),
+    sender_type VARCHAR(1) CHECK (sender_type IN ('1', '2', '3', '4', '5', '6', '7')),
+    health_professional_type_kr1 VARCHAR(20),
     -- 1=Pharmaceutical company, 2=Regulatory authority, 3=Health professional
     -- 4=Regional pharmacovigilance center, 5=WHO collaborating center, 6=Other
 
@@ -169,15 +170,17 @@ CREATE TABLE study_information (
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
 
     -- C.5.1 - Study Name
-    study_name VARCHAR(500),
+    study_name VARCHAR(2000),
 
     -- C.5.2 - Sponsor Study Number
-    sponsor_study_number VARCHAR(100),
+    sponsor_study_number VARCHAR(50),
 
     -- C.5.3 - Study Type Reaction
     study_type_reaction VARCHAR(2),  -- E2B(R3) code list
     -- MFDS.C.5.4.KR.1 - Other studies type (KR extension)
     study_type_reaction_kr1 VARCHAR(1) CHECK (study_type_reaction_kr1 IN ('1', '2', '3', '4')),
+    fda_ind_number_occurred VARCHAR(10),
+    fda_pre_anda_number_occurred VARCHAR(10),
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -192,7 +195,7 @@ CREATE TABLE study_information (
 CREATE TABLE study_registration_numbers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     study_information_id UUID NOT NULL REFERENCES study_information(id) ON DELETE CASCADE,
-    registration_number VARCHAR(100) NOT NULL,
+    registration_number VARCHAR(50) NOT NULL,
     country_code VARCHAR(2),  -- ISO 3166-1 alpha-2
     sequence_number INTEGER NOT NULL,
 
@@ -205,8 +208,24 @@ CREATE TABLE study_registration_numbers (
     CONSTRAINT unique_study_reg_num UNIQUE (study_information_id, sequence_number)
 );
 
+CREATE TABLE study_fda_cross_reported_inds (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    study_information_id UUID NOT NULL REFERENCES study_information(id) ON DELETE CASCADE,
+    ind_number VARCHAR(10) NOT NULL,
+    sequence_number INTEGER NOT NULL,
+
+    -- Audit fields (standardized UUID-based)
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT unique_study_fda_cross_reported_ind UNIQUE (study_information_id, sequence_number)
+);
+
 CREATE INDEX idx_study_info_case ON study_information(case_id);
 CREATE INDEX idx_study_reg_nums ON study_registration_numbers(study_information_id);
+CREATE INDEX idx_study_fda_cross_reported_inds ON study_fda_cross_reported_inds(study_information_id);
 
 -- ============================================================================
 -- SECTION C.2.r: Primary Source Information (Repeating)

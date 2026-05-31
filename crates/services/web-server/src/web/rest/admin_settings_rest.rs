@@ -5,11 +5,11 @@ use lib_core::ctx::{
 	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
 	ROLE_USER,
 };
+use lib_core::model::acs::{SETTINGS_READ, SETTINGS_UPDATE};
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::ModelManager;
-use lib_rest_core::{require_admin, Error, Result};
+use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
-use lib_web::middleware::mw_permission::RequireAdmin;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashSet;
@@ -432,13 +432,11 @@ async fn payload_to_value(
 	}))
 }
 
-/// GET /api/admin/settings
-pub async fn get_admin_settings(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
-	let ctx = ctx_w.0;
-	let value = AdminSettingsBmc::get(&ctx, &mm, SETTINGS_KEY)
+async fn load_admin_settings_payload(
+	ctx: &Ctx,
+	mm: &ModelManager,
+) -> Result<AdminSettingsPayload> {
+	let value = AdminSettingsBmc::get(ctx, mm, SETTINGS_KEY)
 		.await
 		.map_err(Error::Model)?;
 	if let Some(value) = value {
@@ -446,12 +444,33 @@ pub async fn get_admin_settings(
 			.unwrap_or_else(|_| default_settings());
 		payload.appendices =
 			Some(normalize_appendices(payload.appendices.as_deref()));
-		payload.notices = Some(load_notices(&ctx, &mm).await?);
-		return Ok((StatusCode::OK, Json(payload)));
+		payload.notices = Some(load_notices(ctx, mm).await?);
+		return Ok(payload);
 	}
 	let mut payload = default_settings();
 	payload.appendices = Some(normalize_appendices(payload.appendices.as_deref()));
-	payload.notices = Some(load_notices(&ctx, &mm).await?);
+	payload.notices = Some(load_notices(ctx, mm).await?);
+	Ok(payload)
+}
+
+/// GET /api/settings/runtime
+pub async fn get_runtime_settings(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
+	let ctx = ctx_w.0;
+	let payload = load_admin_settings_payload(&ctx, &mm).await?;
+	Ok((StatusCode::OK, Json(payload)))
+}
+
+/// GET /api/admin/settings
+pub async fn get_admin_settings(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SETTINGS_READ)?;
+	let payload = load_admin_settings_payload(&ctx, &mm).await?;
 	Ok((StatusCode::OK, Json(payload)))
 }
 
@@ -459,13 +478,12 @@ pub async fn get_admin_settings(
 pub async fn update_admin_settings(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	_admin: RequireAdmin,
 	Json(payload): Json<
 		lib_rest_core::rest_params::ParamsForUpdate<AdminSettingsUpdateBody>,
 	>,
 ) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_permission(&ctx, SETTINGS_UPDATE)?;
 	let value = payload_to_value(&ctx, &mm, &payload.data).await?;
 	let updated_by: Option<Uuid> = Some(ctx.user_id());
 	AdminSettingsBmc::upsert(&ctx, &mm, SETTINGS_KEY, &value, updated_by)
@@ -480,13 +498,12 @@ pub async fn update_admin_settings(
 pub async fn update_admin_notices(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	_admin: RequireAdmin,
 	Json(payload): Json<
 		lib_rest_core::rest_params::ParamsForUpdate<AdminNoticesUpdateBody>,
 	>,
 ) -> Result<(StatusCode, Json<AdminNoticesPayload>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_permission(&ctx, SETTINGS_UPDATE)?;
 	let writer = current_user_email(&ctx, &mm, ctx.user_id()).await?;
 	let notices = normalize_notices(payload.data.notices, writer);
 	let values = notices

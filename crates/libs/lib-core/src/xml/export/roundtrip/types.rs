@@ -28,6 +28,7 @@ pub struct CSafetyReportPatch<'a> {
 	pub nullification_reason: Option<&'a str>,
 	// C.3 Sender information (best-effort; patch only when values are provided)
 	pub sender_type: Option<&'a str>,
+	pub sender_health_professional_type_kr1: Option<&'a str>,
 	pub sender_org_name: Option<&'a str>,
 	pub sender_department: Option<&'a str>,
 	pub sender_street_address: Option<&'a str>,

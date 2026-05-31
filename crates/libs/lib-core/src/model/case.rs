@@ -34,6 +34,7 @@ pub struct Case {
 	pub workflow_description: Option<String>,
 	pub workflow_updated_at: OffsetDateTime,
 	pub mfds_report_type: Option<String>,
+	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
 	pub source_document_name: Option<String>,
 	pub source_document_base64: Option<String>,
@@ -68,6 +69,7 @@ pub struct CaseForCreate {
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
 	pub mfds_report_type: Option<String>,
+	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
 	pub source_document_name: Option<String>,
 	pub source_document_base64: Option<String>,
@@ -83,6 +85,7 @@ pub struct CaseForUpdate {
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
 	pub mfds_report_type: Option<String>,
+	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
 	pub source_document_name: Option<String>,
 	pub source_document_base64: Option<String>,
@@ -205,6 +208,7 @@ pub fn update_touches_non_status_fields(case_u: &CaseForUpdate) -> bool {
 		|| case_u.review_receivers_json.is_some()
 		|| case_u.workflow_routes_json.is_some()
 		|| case_u.mfds_report_type.is_some()
+		|| case_u.fda_report_type.is_some()
 		|| case_u.report_year.is_some()
 		|| case_u.source_document_name.is_some()
 		|| case_u.source_document_base64.is_some()

@@ -110,10 +110,21 @@ async fn create_sender(
 	case_id: Uuid,
 	sender_type: &str,
 ) -> Result<()> {
+	create_sender_with_kr1(app, cookie, case_id, sender_type, None).await
+}
+
+async fn create_sender_with_kr1(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+	sender_type: &str,
+	health_professional_type_kr1: Option<&str>,
+) -> Result<()> {
 	let body = json!({
 		"data": {
 			"case_id": case_id,
 			"sender_type": sender_type,
+			"health_professional_type_kr1": health_professional_type_kr1,
 			"organization_name": "Test Sender Org"
 		}
 	});
@@ -343,6 +354,77 @@ async fn create_drug(app: &axum::Router, cookie: &str, case_id: Uuid) -> Result<
 	Ok(())
 }
 
+async fn create_domestic_kr_drug(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"case_id": case_id,
+			"sequence_number": 1,
+			"drug_characterization": "1",
+			"medicinal_product": "Drug A",
+			"obtain_drug_country": "KR"
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!("/api/cases/{case_id}/drugs"))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value: Value = serde_json::from_slice(&body)?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create domestic KR drug status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let drug_id = value["data"]["id"].as_str().ok_or("missing drug id")?;
+	Ok(Uuid::parse_str(drug_id)?)
+}
+
+async fn create_drug_active_substance(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+	drug_id: Uuid,
+) -> Result<()> {
+	let body = json!({
+		"data": {
+			"drug_id": drug_id,
+			"sequence_number": 1,
+			"substance_name": "Substance A"
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!(
+			"/api/cases/{case_id}/drugs/{drug_id}/active-substances"
+		))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create active substance status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	Ok(())
+}
+
 async fn create_narrative(
 	app: &axum::Router,
 	cookie: &str,
@@ -472,6 +554,127 @@ async fn update_message_header_receiver(
 	if status != StatusCode::OK {
 		return Err(format!(
 			"update message header status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	Ok(())
+}
+
+async fn update_message_header_message_receiver(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+	message_receiver_identifier: &str,
+) -> Result<()> {
+	let body = json!({
+		"data": {
+			"message_receiver_identifier": message_receiver_identifier
+		}
+	});
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/cases/{case_id}/message-header"))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"update message header status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	Ok(())
+}
+
+async fn create_parent_information(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+) -> Result<Uuid> {
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/cases/{case_id}/patient"))
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value: Value = serde_json::from_slice(&body)?;
+	if status != StatusCode::OK {
+		return Err(format!(
+			"get patient status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let patient_id = value["data"]["id"].as_str().ok_or("missing patient id")?;
+	let body = json!({
+		"data": {
+			"patient_id": patient_id,
+			"sex": "2"
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!("/api/cases/{case_id}/patient/parents"))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value: Value = serde_json::from_slice(&body)?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create parent status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let parent_id = value["data"]["id"].as_str().ok_or("missing parent id")?;
+	Ok(Uuid::parse_str(parent_id)?)
+}
+
+async fn create_parent_past_drug_history(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+	parent_id: Uuid,
+	mfds_medicinal_product_id: Option<&str>,
+	mfds_medicinal_product_version: Option<&str>,
+) -> Result<()> {
+	let body = json!({
+		"data": {
+			"parent_id": parent_id,
+			"sequence_number": 1,
+			"drug_name": "Parent Prior Drug",
+			"mfds_medicinal_product_id": mfds_medicinal_product_id,
+			"mfds_medicinal_product_version": mfds_medicinal_product_version
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!(
+			"/api/cases/{case_id}/patient/parent/{parent_id}/past-drugs"
+		))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create parent past drug status {} body {}",
 			status,
 			String::from_utf8_lossy(&body)
 		)
@@ -771,7 +974,7 @@ async fn test_validation_defaults_to_fda_profile() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_validation_supports_mfds_profile() -> Result<()> {
+async fn test_mfds_sender_type_3_requires_kr1() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -802,6 +1005,211 @@ async fn test_validation_supports_mfds_profile() -> Result<()> {
 			.unwrap_or(false),
 		"expected MFDS sender KR issue, body={body}"
 	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_mfds_sender_type_3_with_kr1_is_valid_for_sender_rule() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+	create_sender_with_kr1(&app, &cookie, case_id, "3", Some("2")).await?;
+
+	let (status, body) = get_validation(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation?authority=mfds"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK);
+	assert_eq!(body["data"]["authority"], "mfds");
+	assert!(
+		!body["data"]["issues"]
+			.as_array()
+			.map(|items| {
+				items
+					.iter()
+					.any(|issue| issue["code"] == "MFDS.C.3.1.KR.1.REQUIRED")
+			})
+			.unwrap_or(false),
+		"did not expect MFDS sender KR issue, body={body}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_mfds_parent_past_drug_rules_emit_mfds_field_paths() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let missing_id_case_id = create_case(&app, &cookie, seed.org_id).await?;
+	seed_rule_clean_case(&app, &cookie, missing_id_case_id).await?;
+	update_message_header_message_receiver(&app, &cookie, missing_id_case_id, "FR")
+		.await?;
+	let parent_id =
+		create_parent_information(&app, &cookie, missing_id_case_id).await?;
+	create_parent_past_drug_history(
+		&app,
+		&cookie,
+		missing_id_case_id,
+		parent_id,
+		None,
+		None,
+	)
+	.await?;
+
+	let (status, body) = get_validation(
+		&app,
+		&cookie,
+		&format!("/api/cases/{missing_id_case_id}/validation?authority=mfds"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let issues = body["data"]["issues"].as_array().ok_or("missing issues")?;
+	assert!(
+		issues.iter().any(|issue| {
+			issue["code"] == "MFDS.D.10.8.r.1.KR.1b.REQUIRED"
+				&& issue["path"]
+					== "patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductId"
+				&& issue["field_path"]
+					== "patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductId"
+		}),
+		"expected parent past-drug MFDS product ID path, body={body}"
+	);
+	assert!(
+		!issues.iter().any(|issue| {
+			issue["code"] == "MFDS.D.10.8.r.1.KR.1b.REQUIRED"
+				&& issue["path"]
+					.as_str()
+					.map(|path| path.ends_with(".mpid"))
+					.unwrap_or(false)
+		}),
+		"parent past-drug MFDS product ID rule should not emit .mpid, body={body}"
+	);
+
+	let missing_version_case_id = create_case(&app, &cookie, seed.org_id).await?;
+	seed_rule_clean_case(&app, &cookie, missing_version_case_id).await?;
+	update_message_header_message_receiver(
+		&app,
+		&cookie,
+		missing_version_case_id,
+		"FR",
+	)
+	.await?;
+	let parent_id =
+		create_parent_information(&app, &cookie, missing_version_case_id).await?;
+	create_parent_past_drug_history(
+		&app,
+		&cookie,
+		missing_version_case_id,
+		parent_id,
+		Some("MFDS-ID"),
+		None,
+	)
+	.await?;
+
+	let (status, body) = get_validation(
+		&app,
+		&cookie,
+		&format!("/api/cases/{missing_version_case_id}/validation?authority=mfds"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let issues = body["data"]["issues"].as_array().ok_or("missing issues")?;
+	assert!(
+		issues.iter().any(|issue| {
+			issue["code"] == "MFDS.D.10.8.r.1.KR.1a.REQUIRED"
+				&& issue["path"]
+					== "patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductVersion"
+				&& issue["field_path"]
+					== "patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductVersion"
+		}),
+		"expected parent past-drug MFDS product version path, body={body}"
+	);
+	assert!(
+		!issues.iter().any(|issue| {
+			issue["code"] == "MFDS.D.10.8.r.1.KR.1a.REQUIRED"
+				&& issue["path"]
+					.as_str()
+					.map(|path| path.ends_with(".mpidVersion"))
+					.unwrap_or(false)
+		}),
+		"parent past-drug MFDS product version rule should not emit .mpidVersion, body={body}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_mfds_domestic_product_ingredient_paths() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+	create_message_header(&app, &cookie, case_id).await?;
+	create_sender(&app, &cookie, case_id, "1").await?;
+	create_primary_source(&app, &cookie, case_id).await?;
+	create_patient(&app, &cookie, case_id).await?;
+	create_reaction(&app, &cookie, case_id).await?;
+	create_narrative(&app, &cookie, case_id).await?;
+	update_message_header_message_receiver(&app, &cookie, case_id, "KR").await?;
+	let drug_id = create_domestic_kr_drug(&app, &cookie, case_id).await?;
+	create_drug_active_substance(&app, &cookie, case_id, drug_id).await?;
+
+	let (status, body) = get_validation(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation?authority=mfds"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let issues = body["data"]["issues"].as_array().ok_or("missing issues")?;
+	assert!(
+		issues.iter().any(|issue| {
+			issue["code"] == "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED"
+				&& issue["path"] == "drugs.0.mfdsMpid"
+		}),
+		"expected domestic MFDS product code path, body={body}"
+	);
+	assert!(
+		!issues.iter().any(|issue| {
+			issue["code"] == "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED"
+				&& issue["path"] == "drugs.0.mpid"
+		}),
+		"domestic MFDS product code rule should not emit generic MPID path, body={body}"
+	);
+	assert!(
+		issues.iter().any(|issue| {
+			issue["code"] == "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED"
+				&& issue["path"] == "drugs.0.activeSubstances.0.mfdsId"
+		}),
+		"expected domestic MFDS ingredient code path, body={body}"
+	);
+	assert!(
+		!issues.iter().any(|issue| {
+			issue["code"] == "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED"
+				&& issue["path"] == "drugs.0.activeSubstances.0.substanceTermId"
+		}),
+		"domestic MFDS ingredient code rule should not emit generic substance ID path, body={body}"
+	);
+
 	Ok(())
 }
 

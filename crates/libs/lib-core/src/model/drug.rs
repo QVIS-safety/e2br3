@@ -33,6 +33,8 @@ pub struct DrugInformation {
 	// G.k.2.4-5 - Product identifiers
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
+	pub mfds_mpid_version: Option<String>,
+	pub mfds_mpid: Option<String>,
 	pub phpid: Option<String>,
 	pub phpid_version: Option<String>,
 	// G.k.2.5 - Investigational Product Blinded
@@ -114,6 +116,8 @@ pub struct DrugInformationForCreate {
 	pub investigational_product_blinded: Option<bool>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
+	pub mfds_mpid_version: Option<String>,
+	pub mfds_mpid: Option<String>,
 	pub phpid: Option<String>,
 	pub phpid_version: Option<String>,
 	pub obtain_drug_country: Option<String>,
@@ -148,6 +152,8 @@ pub struct DrugInformationForUpdate {
 	pub investigational_product_blinded: Option<bool>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
+	pub mfds_mpid_version: Option<String>,
+	pub mfds_mpid: Option<String>,
 	pub phpid: Option<String>,
 	pub phpid_version: Option<String>,
 	pub obtain_drug_country: Option<String>,
@@ -631,6 +637,10 @@ pub struct DrugActiveSubstance {
 	pub substance_termid: Option<String>,
 	pub substance_termid_version: Option<String>,
 
+	// G.k.2.3.r.1.KR.1a/b - MFDS substance fields
+	pub mfds_version: Option<String>,
+	pub mfds_id: Option<String>,
+
 	// G.k.2.3.r.3 - Strength
 	pub strength_value: Option<Decimal>,
 	pub strength_unit: Option<String>,
@@ -647,6 +657,8 @@ pub struct DrugActiveSubstanceForCreate {
 	pub substance_name: Option<String>,
 	pub substance_termid: Option<String>,
 	pub substance_termid_version: Option<String>,
+	pub mfds_version: Option<String>,
+	pub mfds_id: Option<String>,
 	pub strength_value: Option<Decimal>,
 	pub strength_unit: Option<String>,
 }
@@ -656,6 +668,8 @@ pub struct DrugActiveSubstanceForUpdate {
 	pub substance_name: Option<String>,
 	pub substance_termid: Option<String>,
 	pub substance_termid_version: Option<String>,
+	pub mfds_version: Option<String>,
+	pub mfds_id: Option<String>,
 	pub strength_value: Option<Decimal>,
 	pub strength_unit: Option<String>,
 }
@@ -940,7 +954,7 @@ impl DrugInformationBmc {
 			     batch_lot_number, cumulative_dose_first_reaction_value, cumulative_dose_first_reaction_unit,
 			     gestation_period_exposure_value, gestation_period_exposure_unit, dosage_text,
 			     action_taken, rechallenge, investigational_product_blinded, mpid, mpid_version,
-			     phpid, phpid_version, obtain_drug_country, parent_route, parent_route_termid,
+			     mfds_mpid_version, mfds_mpid, phpid, phpid_version, obtain_drug_country, parent_route, parent_route_termid,
 			     parent_route_termid_version, parent_dosage_text, fda_additional_info_coded,
 			     drug_additional_info_codes_json, drug_additional_information, fda_specialized_product_category, fda_device_info_json,
 			     created_at, updated_at, created_by
@@ -951,10 +965,10 @@ impl DrugInformationBmc {
 			     $10, $11, $12,
 			     $13, $14, $15,
 			     $16, $17, $18, $19, $20,
-			     $21, $22, $23, $24, $25,
-			     $26, $27, $28,
-			     $29, $30, $31, $32,
-			     now(), now(), $33
+			     $21, $22, $23, $24, $25, $26, $27,
+			     $28, $29, $30,
+			     $31, $32, $33, $34,
+			     now(), now(), $35
 			 )
 			 RETURNING id",
 			Self::TABLE
@@ -983,6 +997,8 @@ impl DrugInformationBmc {
 					.bind(drug_c.investigational_product_blinded)
 					.bind(drug_c.mpid)
 					.bind(drug_c.mpid_version)
+					.bind(drug_c.mfds_mpid_version)
+					.bind(drug_c.mfds_mpid)
 					.bind(drug_c.phpid)
 					.bind(drug_c.phpid_version)
 					.bind(drug_c.obtain_drug_country)
@@ -1055,20 +1071,22 @@ impl DrugInformationBmc {
 			     investigational_product_blinded = COALESCE($17, investigational_product_blinded),
 			     mpid = COALESCE($18, mpid),
 			     mpid_version = COALESCE($19, mpid_version),
-			     phpid = COALESCE($20, phpid),
-			     phpid_version = COALESCE($21, phpid_version),
-			     obtain_drug_country = COALESCE($22, obtain_drug_country),
-			     parent_route = COALESCE($23, parent_route),
-			     parent_route_termid = COALESCE($24, parent_route_termid),
-			     parent_route_termid_version = COALESCE($25, parent_route_termid_version),
-			     parent_dosage_text = COALESCE($26, parent_dosage_text),
-			     fda_additional_info_coded = COALESCE($27, fda_additional_info_coded),
-			     drug_additional_info_codes_json = COALESCE($28, drug_additional_info_codes_json),
-			     drug_additional_information = COALESCE($29, drug_additional_information),
-			     fda_specialized_product_category = COALESCE($30, fda_specialized_product_category),
-			     fda_device_info_json = COALESCE($31, fda_device_info_json),
+			     mfds_mpid_version = COALESCE($20, mfds_mpid_version),
+			     mfds_mpid = COALESCE($21, mfds_mpid),
+			     phpid = COALESCE($22, phpid),
+			     phpid_version = COALESCE($23, phpid_version),
+			     obtain_drug_country = COALESCE($24, obtain_drug_country),
+			     parent_route = COALESCE($25, parent_route),
+			     parent_route_termid = COALESCE($26, parent_route_termid),
+			     parent_route_termid_version = COALESCE($27, parent_route_termid_version),
+			     parent_dosage_text = COALESCE($28, parent_dosage_text),
+			     fda_additional_info_coded = COALESCE($29, fda_additional_info_coded),
+			     drug_additional_info_codes_json = COALESCE($30, drug_additional_info_codes_json),
+			     drug_additional_information = COALESCE($31, drug_additional_information),
+			     fda_specialized_product_category = COALESCE($32, fda_specialized_product_category),
+			     fda_device_info_json = COALESCE($33, fda_device_info_json),
 			     updated_at = now(),
-			     updated_by = $32
+			     updated_by = $34
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -1095,6 +1113,8 @@ impl DrugInformationBmc {
 					.bind(drug_u.investigational_product_blinded)
 					.bind(drug_u.mpid)
 					.bind(drug_u.mpid_version)
+					.bind(drug_u.mfds_mpid_version)
+					.bind(drug_u.mfds_mpid)
 					.bind(drug_u.phpid)
 					.bind(drug_u.phpid_version)
 					.bind(drug_u.obtain_drug_country)
@@ -1198,20 +1218,22 @@ impl DrugInformationBmc {
 			     investigational_product_blinded = COALESCE($18, investigational_product_blinded),
 			     mpid = COALESCE($19, mpid),
 			     mpid_version = COALESCE($20, mpid_version),
-			     phpid = COALESCE($21, phpid),
-			     phpid_version = COALESCE($22, phpid_version),
-			     obtain_drug_country = COALESCE($23, obtain_drug_country),
-			     parent_route = COALESCE($24, parent_route),
-			     parent_route_termid = COALESCE($25, parent_route_termid),
-			     parent_route_termid_version = COALESCE($26, parent_route_termid_version),
-			     parent_dosage_text = COALESCE($27, parent_dosage_text),
-			     fda_additional_info_coded = COALESCE($28, fda_additional_info_coded),
-			     drug_additional_info_codes_json = COALESCE($29, drug_additional_info_codes_json),
-			     drug_additional_information = COALESCE($30, drug_additional_information),
-			     fda_specialized_product_category = COALESCE($31, fda_specialized_product_category),
-			     fda_device_info_json = COALESCE($32, fda_device_info_json),
+			     mfds_mpid_version = COALESCE($21, mfds_mpid_version),
+			     mfds_mpid = COALESCE($22, mfds_mpid),
+			     phpid = COALESCE($23, phpid),
+			     phpid_version = COALESCE($24, phpid_version),
+			     obtain_drug_country = COALESCE($25, obtain_drug_country),
+			     parent_route = COALESCE($26, parent_route),
+			     parent_route_termid = COALESCE($27, parent_route_termid),
+			     parent_route_termid_version = COALESCE($28, parent_route_termid_version),
+			     parent_dosage_text = COALESCE($29, parent_dosage_text),
+			     fda_additional_info_coded = COALESCE($30, fda_additional_info_coded),
+			     drug_additional_info_codes_json = COALESCE($31, drug_additional_info_codes_json),
+			     drug_additional_information = COALESCE($32, drug_additional_information),
+			     fda_specialized_product_category = COALESCE($33, fda_specialized_product_category),
+			     fda_device_info_json = COALESCE($34, fda_device_info_json),
 			     updated_at = now(),
-			     updated_by = $33
+			     updated_by = $35
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -1239,6 +1261,8 @@ impl DrugInformationBmc {
 					.bind(drug_u.investigational_product_blinded)
 					.bind(drug_u.mpid)
 					.bind(drug_u.mpid_version)
+					.bind(drug_u.mfds_mpid_version)
+					.bind(drug_u.mfds_mpid)
 					.bind(drug_u.phpid)
 					.bind(drug_u.phpid_version)
 					.bind(drug_u.obtain_drug_country)

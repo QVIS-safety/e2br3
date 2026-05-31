@@ -240,6 +240,9 @@ async fn import_c_2_sender_information(
 			SenderInformationForCreate {
 				case_id,
 				sender_type: Some(sender.sender_type.clone()),
+				health_professional_type_kr1: sender
+					.health_professional_type_kr1
+					.clone(),
 				organization_name: Some(sender.organization_name.clone()),
 				department: sender.department.clone(),
 				street_address: sender.street_address.clone(),
@@ -265,6 +268,7 @@ async fn import_c_2_sender_information(
 		sender_id,
 		SenderInformationForUpdate {
 			sender_type: Some(sender.sender_type),
+			health_professional_type_kr1: sender.health_professional_type_kr1,
 			organization_name: Some(sender.organization_name),
 			department: sender.department,
 			street_address: sender.street_address,
@@ -313,6 +317,7 @@ async fn default_sender_from_presave(
 
 	Ok(Some(c_helpers::SenderImport {
 		sender_type,
+		health_professional_type_kr1: None,
 		organization_name,
 		department: sender.department,
 		street_address: sender.street_address,

@@ -34,6 +34,7 @@ use lib_core::model::store::{set_org_context, set_user_context};
 use lib_core::model::Error as ModelError;
 use lib_core::model::ModelManager;
 use lib_core::regulatory::RegulatoryAuthority;
+use serde_json::json;
 use serial_test::serial;
 use std::collections::HashSet;
 
@@ -104,6 +105,51 @@ fn expect_conflict_error<T>(result: lib_core::model::Result<T>, expected: &str) 
 		}
 		Ok(_) => panic!("expected Conflict error containing {expected:?}, got Ok"),
 	}
+}
+
+async fn latest_audit_changed_fields(
+	mm: &ModelManager,
+	table_name: &str,
+	record_id: Uuid,
+) -> Result<serde_json::Value> {
+	set_auditor_role(mm).await?;
+	let changed_fields_result = sqlx::query_scalar(
+		"SELECT changed_fields
+		 FROM audit_logs
+		 WHERE table_name = $1
+		   AND record_id = $2
+		   AND action = 'UPDATE'
+		 ORDER BY created_at DESC, id DESC
+		 LIMIT 1",
+	)
+	.bind(table_name)
+	.bind(record_id)
+	.fetch_one(mm.dbx().db())
+	.await;
+	reset_role(mm).await?;
+
+	Ok(changed_fields_result?)
+}
+
+async fn assert_audit_changed_field(
+	mm: &ModelManager,
+	table_name: &str,
+	record_id: Uuid,
+	field_name: &str,
+	expected_old: serde_json::Value,
+	expected_new: serde_json::Value,
+) -> Result<()> {
+	let changed_fields =
+		latest_audit_changed_fields(mm, table_name, record_id).await?;
+	assert_eq!(
+		changed_fields.get(field_name),
+		Some(&json!({
+			"old": expected_old,
+			"new": expected_new
+		})),
+		"expected {table_name}.{field_name} audit diff for {record_id}, got {changed_fields}"
+	);
+	Ok(())
 }
 
 fn product_presave_create(
@@ -1854,6 +1900,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		gateway_first.routing_identifier.as_deref(),
 		Some("route-after")
 	);
+	assert_audit_changed_field(
+		&mm,
+		"sender_presave_gateways",
+		gateway_first_id,
+		"routing_identifier",
+		json!("route-before"),
+		json!("route-after"),
+	)
+	.await?;
 	let gateways =
 		SenderPresaveGatewayBmc::list_by_parent(&ctx, &mm, sender_id).await?;
 	assert_eq!(gateways[0].id, gateway_first_id);
@@ -1896,6 +1951,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, responsible_id).await?;
 	assert_eq!(responsible.sender_presave_id, sender_id);
 	assert_eq!(responsible.person_given_name.as_deref(), Some("After"));
+	assert_audit_changed_field(
+		&mm,
+		"sender_presave_responsible_persons",
+		responsible_id,
+		"person_given_name",
+		json!("Before"),
+		json!("After"),
+	)
+	.await?;
 	assert_eq!(
 		SenderPresaveResponsiblePersonBmc::list_by_parent(&ctx, &mm, sender_id)
 			.await?[0]
@@ -1929,6 +1993,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		ReceiverPresaveConsigneeBmc::get(&ctx, &mm, consignee_id).await?;
 	assert_eq!(consignee.receiver_presave_id, receiver_id);
 	assert_eq!(consignee.name.as_deref(), Some("Consignee After"));
+	assert_audit_changed_field(
+		&mm,
+		"receiver_presave_consignees",
+		consignee_id,
+		"name",
+		json!("Consignee Before"),
+		json!("Consignee After"),
+	)
+	.await?;
 	assert_eq!(
 		ReceiverPresaveConsigneeBmc::list_by_parent(&ctx, &mm, receiver_id).await?
 			[0]
@@ -1963,6 +2036,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	let substance = ProductPresaveSubstanceBmc::get(&ctx, &mm, substance_id).await?;
 	assert_eq!(substance.product_presave_id, product_id);
 	assert_eq!(substance.substance_name.as_deref(), Some("Substance After"));
+	assert_audit_changed_field(
+		&mm,
+		"product_presave_substances",
+		substance_id,
+		"substance_name",
+		json!("Substance Before"),
+		json!("Substance After"),
+	)
+	.await?;
 	assert_eq!(
 		ProductPresaveSubstanceBmc::list_by_parent(&ctx, &mm, product_id).await?[0]
 			.id,
@@ -1992,6 +2074,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	let ind = ProductPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, ind_id).await?;
 	assert_eq!(ind.product_presave_id, fda_product_id);
 	assert_eq!(ind.ind_number.as_deref(), Some("IND-after"));
+	assert_audit_changed_field(
+		&mm,
+		"product_presave_fda_cross_reported_inds",
+		ind_id,
+		"ind_number",
+		json!("IND-before"),
+		json!("IND-after"),
+	)
+	.await?;
 	assert!(ProductPresaveFdaCrossReportedIndBmc::list_by_parent(
 		&ctx,
 		&mm,
@@ -2026,6 +2117,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		ProductPresaveMfdsRegionalItemBmc::get(&ctx, &mm, regional_id).await?;
 	assert_eq!(regional.product_presave_id, product_id);
 	assert_eq!(regional.item_value.as_deref(), Some("after"));
+	assert_audit_changed_field(
+		&mm,
+		"product_presave_mfds_regional_items",
+		regional_id,
+		"item_value",
+		json!("before"),
+		json!("after"),
+	)
+	.await?;
 	assert!(ProductPresaveMfdsRegionalItemBmc::list_by_parent(
 		&ctx, &mm, product_id
 	)
@@ -2064,6 +2164,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		Some("REG-after")
 	);
 	assert!(registration.deleted);
+	assert_audit_changed_field(
+		&mm,
+		"study_presave_registration_numbers",
+		registration_id,
+		"registration_number",
+		json!("REG-before"),
+		json!("REG-after"),
+	)
+	.await?;
 	assert_eq!(
 		StudyPresaveRegistrationNumberBmc::list_by_parent(&ctx, &mm, study_id)
 			.await?[0]
@@ -2098,6 +2207,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	assert_eq!(study_ind.study_presave_id, study_id);
 	assert_eq!(study_ind.ind_number.as_deref(), Some("STUDY-IND-after"));
 	assert!(study_ind.deleted);
+	assert_audit_changed_field(
+		&mm,
+		"study_presave_fda_cross_reported_inds",
+		study_ind_id,
+		"ind_number",
+		json!("STUDY-IND-before"),
+		json!("STUDY-IND-after"),
+	)
+	.await?;
 	assert_eq!(
 		StudyPresaveFdaCrossReportedIndBmc::list_by_parent(&ctx, &mm, study_id)
 			.await?[0]
@@ -2133,6 +2251,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	assert_eq!(diagnosis.narrative_presave_id, narrative_id);
 	assert_eq!(diagnosis.diagnosis_meddra_code.as_deref(), Some("10000002"));
 	assert!(diagnosis.deleted);
+	assert_audit_changed_field(
+		&mm,
+		"narrative_presave_sender_diagnoses",
+		diagnosis_id,
+		"diagnosis_meddra_code",
+		json!("10000001"),
+		json!("10000002"),
+	)
+	.await?;
 	assert_eq!(
 		NarrativePresaveSenderDiagnosisBmc::list_by_parent(&ctx, &mm, narrative_id)
 			.await?[0]
@@ -2168,6 +2295,15 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	assert_eq!(summary.narrative_presave_id, narrative_id);
 	assert_eq!(summary.summary_text.as_deref(), Some("summary after"));
 	assert!(summary.deleted);
+	assert_audit_changed_field(
+		&mm,
+		"narrative_presave_case_summaries",
+		summary_id,
+		"summary_text",
+		json!("summary before"),
+		json!("summary after"),
+	)
+	.await?;
 	assert_eq!(
 		NarrativePresaveCaseSummaryBmc::list_by_parent(&ctx, &mm, narrative_id)
 			.await?[0]
@@ -2269,6 +2405,115 @@ async fn section_presave_field_audit_records_changed_column() -> Result<()> {
 	);
 
 	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
+	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn section_presave_child_audit_tracks_rows_separately() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create(format!("Multi Child Audit Sender {suffix}")),
+	)
+	.await?;
+
+	let first_gateway_id = SenderPresaveGatewayBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveGatewayForCreate {
+			sender_presave_id: sender_id,
+			sequence_number: 1,
+			gateway_authority: "fda".into(),
+			sender_identifier: Some("first-before".into()),
+			routing_identifier: None,
+			cde_sender_identifier: None,
+			cdr_sender_identifier: None,
+			is_default_for_authority: Some(false),
+		},
+	)
+	.await?;
+	let second_gateway_id = SenderPresaveGatewayBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveGatewayForCreate {
+			sender_presave_id: sender_id,
+			sequence_number: 2,
+			gateway_authority: "mfds".into(),
+			sender_identifier: Some("second-before".into()),
+			routing_identifier: None,
+			cde_sender_identifier: None,
+			cdr_sender_identifier: None,
+			is_default_for_authority: Some(false),
+		},
+	)
+	.await?;
+
+	SenderPresaveGatewayBmc::update(
+		&ctx,
+		&mm,
+		first_gateway_id,
+		SenderPresaveGatewayForUpdate {
+			sender_identifier: Some("first-after".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+	SenderPresaveGatewayBmc::update(
+		&ctx,
+		&mm,
+		second_gateway_id,
+		SenderPresaveGatewayForUpdate {
+			sender_identifier: Some("second-after".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+
+	assert_audit_changed_field(
+		&mm,
+		"sender_presave_gateways",
+		first_gateway_id,
+		"sender_identifier",
+		json!("first-before"),
+		json!("first-after"),
+	)
+	.await?;
+	assert_audit_changed_field(
+		&mm,
+		"sender_presave_gateways",
+		second_gateway_id,
+		"sender_identifier",
+		json!("second-before"),
+		json!("second-after"),
+	)
+	.await?;
+
+	set_auditor_role(&mm).await?;
+	let parent_update_count: i64 = sqlx::query_scalar(
+		"SELECT COUNT(*)
+		 FROM audit_logs
+		 WHERE table_name = 'sender_presaves'
+		   AND record_id = $1
+		   AND action = 'UPDATE'",
+	)
+	.bind(sender_id)
+	.fetch_one(mm.dbx().db())
+	.await?;
+	reset_role(&mm).await?;
+	assert_eq!(
+		parent_update_count, 0,
+		"child row updates should not be collapsed into parent presave audit rows"
+	);
+
+	SenderPresaveGatewayBmc::delete(&ctx, &mm, second_gateway_id).await?;
+	SenderPresaveGatewayBmc::delete(&ctx, &mm, first_gateway_id).await?;
 	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
 
 	Ok(())

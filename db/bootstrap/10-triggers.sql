@@ -503,6 +503,9 @@ CREATE TRIGGER audit_study_information AFTER INSERT OR UPDATE OR DELETE ON study
 CREATE TRIGGER audit_study_registration_numbers AFTER INSERT OR UPDATE OR DELETE ON study_registration_numbers
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
+CREATE TRIGGER audit_study_fda_cross_reported_inds AFTER INSERT OR UPDATE OR DELETE ON study_fda_cross_reported_inds
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
 CREATE TRIGGER audit_primary_sources AFTER INSERT OR UPDATE OR DELETE ON primary_sources
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
@@ -691,6 +694,9 @@ CREATE TRIGGER update_documents_held_by_sender_updated_at BEFORE UPDATE ON docum
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_study_registration_numbers_updated_at BEFORE UPDATE ON study_registration_numbers
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_study_fda_cross_reported_inds_updated_at BEFORE UPDATE ON study_fda_cross_reported_inds
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_medical_history_episodes_updated_at BEFORE UPDATE ON medical_history_episodes
@@ -1139,6 +1145,28 @@ CREATE POLICY study_reg_numbers_via_case ON study_registration_numbers
             SELECT 1 FROM study_information si
             JOIN cases c ON c.id = si.case_id
             WHERE si.id = study_registration_numbers.study_information_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+-- Study FDA Cross-Reported INDs (via study_information)
+ALTER TABLE study_fda_cross_reported_inds ENABLE ROW LEVEL SECURITY;
+ALTER TABLE study_fda_cross_reported_inds FORCE ROW LEVEL SECURITY;
+CREATE POLICY study_fda_cross_reported_inds_via_case ON study_fda_cross_reported_inds
+    FOR ALL TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM study_information si
+            JOIN cases c ON c.id = si.case_id
+            WHERE si.id = study_fda_cross_reported_inds.study_information_id
+            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM study_information si
+            JOIN cases c ON c.id = si.case_id
+            WHERE si.id = study_fda_cross_reported_inds.study_information_id
             AND (c.organization_id = current_organization_id() OR is_current_user_admin())
         )
     );
@@ -1785,6 +1813,9 @@ CREATE TRIGGER aa_dirty_c_study_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c();
 CREATE TRIGGER aa_dirty_c_study_registration_numbers
   AFTER INSERT OR UPDATE OR DELETE ON study_registration_numbers
+  FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c_from_study_info();
+CREATE TRIGGER aa_dirty_c_study_fda_cross_reported_inds
+  AFTER INSERT OR UPDATE OR DELETE ON study_fda_cross_reported_inds
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_c_from_study_info();
 CREATE TRIGGER aa_dirty_c_primary_sources
   AFTER INSERT OR UPDATE OR DELETE ON primary_sources

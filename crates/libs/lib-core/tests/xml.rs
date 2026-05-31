@@ -1,3 +1,5 @@
+#[path = "xml/xml_export_e.rs"]
+mod xml_export_e;
 #[path = "xml/xml_export_h.rs"]
 mod xml_export_h;
 #[path = "xml/xml_import_c.rs"]

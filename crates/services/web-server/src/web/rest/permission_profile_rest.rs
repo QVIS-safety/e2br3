@@ -107,7 +107,7 @@ fn role_summary_booleans(
 	let can_admin = privileges.iter().any(|privilege| {
 		matches!(
 			privilege.menu_key.as_str(),
-			"admin" | "settings" | "roles" | "users" | "user"
+			"admin" | "roles" | "users" | "user"
 		) && (privilege.can_edit
 			|| privilege.can_review
 			|| privilege.can_lock

@@ -644,6 +644,7 @@ CREATE TABLE if NOT EXISTS cases (
     workflow_due_at TIMESTAMPTZ,
     workflow_description TEXT,
     workflow_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    fda_report_type VARCHAR(20),
     mfds_report_type TEXT,
     report_year VARCHAR(10),
     source_document_name TEXT,

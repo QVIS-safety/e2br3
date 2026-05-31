@@ -42,6 +42,30 @@ CREATE TABLE reactions (
     -- FDA.E.i.3.2h - Required Intervention (FDA)
     required_intervention VARCHAR(10),
 
+    -- Reference AE common metadata
+    included_in_ema_ime_list BOOLEAN,
+    expectedness VARCHAR(1) CHECK (expectedness IS NULL OR expectedness IN ('1', '2')),
+    severity VARCHAR(20),
+
+    -- MFDS reaction-scoped medical device adverse event fields
+    mfds_device_ae_classification VARCHAR(1) CHECK (mfds_device_ae_classification IS NULL OR mfds_device_ae_classification IN ('0', '1')),
+    mfds_device_ae_outcome VARCHAR(2) CHECK (mfds_device_ae_outcome IS NULL OR mfds_device_ae_outcome IN ('3', '4', '5', '8', '9', '10', '11', '12')),
+    mfds_device_cause_medical_device BOOLEAN,
+    mfds_device_cause_procedure_issue BOOLEAN,
+    mfds_device_cause_patient_condition BOOLEAN,
+    mfds_device_cause_unable_to_assess BOOLEAN,
+    mfds_device_cause_other VARCHAR(20000),
+    mfds_device_action_reason VARCHAR(20000),
+    mfds_device_action_recall BOOLEAN,
+    mfds_device_action_repair BOOLEAN,
+    mfds_device_action_inspection BOOLEAN,
+    mfds_device_action_replacement BOOLEAN,
+    mfds_device_action_improvement BOOLEAN,
+    mfds_device_action_monitoring BOOLEAN,
+    mfds_device_action_notification BOOLEAN,
+    mfds_device_action_label_change BOOLEAN,
+    mfds_device_action_other VARCHAR(20000),
+
     -- E.i.4 - Date of Start of Reaction/Event
     start_date DATE,
 

@@ -346,6 +346,8 @@ CREATE TABLE parent_past_drug_history (
     -- D.10.8.r.2 - MPID (Medicinal Product ID)
     mpid VARCHAR(100),
     mpid_version VARCHAR(10),
+    mfds_medicinal_product_version VARCHAR(20),
+    mfds_medicinal_product_id VARCHAR(10),
 
     -- D.10.8.r.3 - PhPID (Pharmaceutical Product ID)
     phpid VARCHAR(100),

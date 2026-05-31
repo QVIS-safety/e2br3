@@ -87,16 +87,14 @@ pub fn parse_c_safety_report(xml: &[u8]) -> Result<Option<CSafetyReportImport>> 
 			&mut xpath,
 			CSafetyReportPaths::FDA_LOCAL_CRITERIA_REPORT_TYPE_CODE,
 		),
-		&["1", "2", "3", "4", "5"],
+		&["1", "2", "4", "5", "6"],
 	);
 
-	let combination_product_report_indicator = clamp_str(
-		first_value_root(
+	let combination_product_report_indicator =
+		normalize_fda_combination_product_indicator(first_value_root(
 			&mut xpath,
 			CSafetyReportPaths::FDA_COMBINATION_PRODUCT_INDICATOR_VALUE,
-		),
-		10,
-	);
+		));
 
 	let worldwide_unique_id = clamp_str(
 		first_value_root(&mut xpath, CSafetyReportPaths::WORLDWIDE_UNIQUE_ID_EXT),
@@ -164,6 +162,12 @@ fn clamp_str(value: Option<String>, max_len: usize) -> Option<String> {
 	Some(value)
 }
 
+fn normalize_fda_combination_product_indicator(
+	value: Option<String>,
+) -> Option<String> {
+	parse_bool_value(value).map(|value| value.to_string())
+}
+
 fn parse_bool_value(value: Option<String>) -> Option<bool> {
 	value.and_then(|raw| match raw.trim().to_ascii_lowercase().as_str() {
 		"true" | "1" | "yes" => Some(true),
@@ -182,4 +186,41 @@ fn parse_date(value: String) -> Option<Date> {
 	let d: u8 = digits[6..8].parse().ok()?;
 	let month = Month::try_from(m).ok()?;
 	Date::from_calendar_date(y, month, d).ok()
+}
+
+#[cfg(test)]
+mod tests {
+	use super::{normalize_code, normalize_fda_combination_product_indicator};
+
+	#[test]
+	fn fda_local_criteria_import_uses_current_code_set() {
+		assert_eq!(
+			normalize_code(Some("6".to_string()), &["1", "2", "4", "5", "6"]),
+			Some("6".to_string())
+		);
+		assert_eq!(
+			normalize_code(Some("3".to_string()), &["1", "2", "4", "5", "6"]),
+			None
+		);
+	}
+
+	#[test]
+	fn fda_combination_product_import_normalizes_to_boolean_strings() {
+		assert_eq!(
+			normalize_fda_combination_product_indicator(Some("true".to_string())),
+			Some("true".to_string())
+		);
+		assert_eq!(
+			normalize_fda_combination_product_indicator(Some("1".to_string())),
+			Some("true".to_string())
+		);
+		assert_eq!(
+			normalize_fda_combination_product_indicator(Some("0".to_string())),
+			Some("false".to_string())
+		);
+		assert_eq!(
+			normalize_fda_combination_product_indicator(Some("unknown".to_string())),
+			None
+		);
+	}
 }

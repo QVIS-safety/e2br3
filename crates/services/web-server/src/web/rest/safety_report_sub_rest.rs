@@ -24,10 +24,13 @@ use lib_core::model::safety_report::{
 	PrimarySourceBmc, PrimarySourceFilter, PrimarySourceForCreate,
 	PrimarySourceForUpdate, SenderInformation, SenderInformationBmc,
 	SenderInformationFilter, SenderInformationForCreate, SenderInformationForUpdate,
-	StudyInformation, StudyInformationBmc, StudyInformationFilter,
-	StudyInformationForCreate, StudyInformationForUpdate, StudyRegistrationNumber,
-	StudyRegistrationNumberBmc, StudyRegistrationNumberFilter,
-	StudyRegistrationNumberForCreate, StudyRegistrationNumberForUpdate,
+	StudyFdaCrossReportedInd, StudyFdaCrossReportedIndBmc,
+	StudyFdaCrossReportedIndFilter, StudyFdaCrossReportedIndForCreate,
+	StudyFdaCrossReportedIndForUpdate, StudyInformation, StudyInformationBmc,
+	StudyInformationFilter, StudyInformationForCreate, StudyInformationForUpdate,
+	StudyRegistrationNumber, StudyRegistrationNumberBmc,
+	StudyRegistrationNumberFilter, StudyRegistrationNumberForCreate,
+	StudyRegistrationNumberForUpdate,
 };
 use lib_core::model::{self, ModelManager};
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
@@ -81,6 +84,7 @@ async fn mark_case_dirty_c(
 			review_receivers_json: None,
 			workflow_routes_json: None,
 			mfds_report_type: None,
+			fda_report_type: None,
 			report_year: None,
 			source_document_name: None,
 			source_document_base64: None,
@@ -797,5 +801,122 @@ pub async fn delete_study_registration_number(
 	}
 	ensure_study_case(&ctx, &mm, case_id, study_id).await?;
 	StudyRegistrationNumberBmc::delete(&ctx, &mm, id).await?;
+	Ok(StatusCode::NO_CONTENT)
+}
+
+// -- Study FDA Cross-Reported INDs (FDA.C.5.6.r)
+
+/// POST /api/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds
+pub async fn create_study_fda_cross_reported_ind(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, study_id)): Path<(Uuid, Uuid)>,
+	Json(params): Json<ParamsForCreate<StudyFdaCrossReportedIndForCreate>>,
+) -> Result<(StatusCode, Json<DataRestResult<StudyFdaCrossReportedInd>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, STUDY_REGISTRATION_CREATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	ensure_study_case(&ctx, &mm, case_id, study_id).await?;
+	let ParamsForCreate { data } = params;
+	let mut data = data;
+	data.study_information_id = study_id;
+
+	let id = StudyFdaCrossReportedIndBmc::create(&ctx, &mm, data).await?;
+	let entity = StudyFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+}
+
+/// GET /api/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds
+pub async fn list_study_fda_cross_reported_inds(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, study_id)): Path<(Uuid, Uuid)>,
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<Vec<StudyFdaCrossReportedInd>>>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, STUDY_REGISTRATION_LIST)?;
+	ensure_study_case(&ctx, &mm, case_id, study_id).await?;
+	let filter = StudyFdaCrossReportedIndFilter {
+		study_information_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			study_id.to_string()
+		))])),
+		..Default::default()
+	};
+	let entities = StudyFdaCrossReportedIndBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+}
+
+/// GET /api/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds/{id}
+pub async fn get_study_fda_cross_reported_ind(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, study_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<StudyFdaCrossReportedInd>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, STUDY_REGISTRATION_READ)?;
+	let entity = StudyFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	if entity.study_information_id != study_id {
+		return Err(model::Error::EntityUuidNotFound {
+			entity: "study_fda_cross_reported_inds",
+			id,
+		}
+		.into());
+	}
+	ensure_study_case(&ctx, &mm, case_id, study_id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+/// PUT /api/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds/{id}
+pub async fn update_study_fda_cross_reported_ind(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, study_id, id)): Path<(Uuid, Uuid, Uuid)>,
+	Json(params): Json<ParamsForUpdate<StudyFdaCrossReportedIndForUpdate>>,
+) -> Result<(StatusCode, Json<DataRestResult<StudyFdaCrossReportedInd>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, STUDY_REGISTRATION_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let ParamsForUpdate { data } = params;
+	let entity = StudyFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	if entity.study_information_id != study_id {
+		return Err(model::Error::EntityUuidNotFound {
+			entity: "study_fda_cross_reported_inds",
+			id,
+		}
+		.into());
+	}
+	ensure_study_case(&ctx, &mm, case_id, study_id).await?;
+	StudyFdaCrossReportedIndBmc::update(&ctx, &mm, id, data).await?;
+	let entity = StudyFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+/// DELETE /api/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds/{id}
+pub async fn delete_study_fda_cross_reported_ind(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, study_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<StatusCode> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, STUDY_REGISTRATION_DELETE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = StudyFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	if entity.study_information_id != study_id {
+		return Err(model::Error::EntityUuidNotFound {
+			entity: "study_fda_cross_reported_inds",
+			id,
+		}
+		.into());
+	}
+	ensure_study_case(&ctx, &mm, case_id, study_id).await?;
+	StudyFdaCrossReportedIndBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }

@@ -12,9 +12,9 @@ use lib_core::ctx::{
 use lib_core::model::acs::{
 	has_permission, CASE_APPROVE, CASE_CREATE, CASE_UPDATE, PRESAVE_TEMPLATE_CREATE,
 	PRESAVE_TEMPLATE_DELETE, PRESAVE_TEMPLATE_LIST, PRESAVE_TEMPLATE_READ,
-	PRESAVE_TEMPLATE_UPDATE, TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT, USER_CREATE,
-	USER_DELETE, USER_LIST, USER_READ, USER_UPDATE, XML_EXPORT, XML_EXPORT_READ,
-	XML_IMPORT, XML_IMPORT_READ,
+	PRESAVE_TEMPLATE_UPDATE, SETTINGS_READ, SETTINGS_UPDATE, TERMINOLOGY_APPROVE,
+	TERMINOLOGY_IMPORT, USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE,
+	XML_EXPORT, XML_EXPORT_READ, XML_IMPORT, XML_IMPORT_READ,
 };
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
@@ -3611,8 +3611,8 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 
 #[serial]
 #[tokio::test]
-async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
-) -> Result<()> {
+async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -3627,6 +3627,13 @@ async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 
 	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
 		.await?;
+	assert_get_status(
+		&app,
+		&custom_cookie,
+		"/api/admin/settings",
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
 	let (status, value) = request_json(
 		&app,
 		"POST",
@@ -3690,6 +3697,26 @@ async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 	);
 	assert_get_status(&app, &custom_cookie, "/api/admin/settings", StatusCode::OK)
 		.await?;
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&custom_cookie,
+		"/api/admin/settings".to_string(),
+		Some(json!({
+			"data": {
+				"idle_session_minutes": 45,
+				"session_warning_minutes": 5
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::FORBIDDEN,
+		"settings.can_read alone must not update admin settings: {value:?}"
+	);
+	assert!(has_permission(&profile_id, SETTINGS_READ));
+	assert!(!has_permission(&profile_id, SETTINGS_UPDATE));
 	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
 		.await?;
 	let (status, value) = request_json(
@@ -3747,30 +3774,53 @@ async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 	.await?;
 	assert_eq!(
 		value["sponsor_admin_capable"].as_bool(),
-		Some(true),
-		"settings.can_edit should make the role admin-page capable: {value:?}"
+		Some(false),
+		"settings.can_edit alone must not make the role broadly admin capable: {value:?}"
 	);
 	assert_profile_capabilities(
 		&app,
 		&custom_cookie,
 		&[
-			("admin", "read", true),
-			("admin", "update", true),
-			("users", "read", true),
-			("users", "create", true),
-			("users", "update", true),
-			("users", "delete", true),
-			("roles", "read", true),
-			("roles", "create", true),
-			("roles", "update", true),
-			("roles", "delete", true),
+			("admin", "read", false),
+			("admin", "update", false),
+			("users", "read", false),
+			("users", "create", false),
+			("users", "update", false),
+			("users", "delete", false),
+			("roles", "read", false),
+			("roles", "create", false),
+			("roles", "update", false),
+			("roles", "delete", false),
+			("settings", "read", true),
+			("settings", "update", true),
 		],
 	)
 	.await?;
-	assert!(has_permission(&profile_id, USER_CREATE));
-	assert!(has_permission(&profile_id, USER_UPDATE));
-	assert!(has_permission(&profile_id, USER_DELETE));
-	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK).await?;
+	assert!(has_permission(&profile_id, SETTINGS_READ));
+	assert!(has_permission(&profile_id, SETTINGS_UPDATE));
+	assert!(!has_permission(&profile_id, USER_CREATE));
+	assert!(!has_permission(&profile_id, USER_UPDATE));
+	assert!(!has_permission(&profile_id, USER_DELETE));
+	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
+		.await?;
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&custom_cookie,
+		"/api/admin/settings".to_string(),
+		Some(json!({
+			"data": {
+				"idle_session_minutes": 45,
+				"session_warning_minutes": 5
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"settings.can_edit should update admin settings: {value:?}"
+	);
 	let (status, value) = request_json(
 		&app,
 		"DELETE",
@@ -3781,8 +3831,8 @@ async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 	.await?;
 	assert_eq!(
 		status,
-		StatusCode::BAD_REQUEST,
-		"settings.can_edit must not delete built-in roles: {value:?}"
+		StatusCode::FORBIDDEN,
+		"settings.can_edit must not delete roles: {value:?}"
 	);
 	let (status, value) = request_json(
 		&app,
@@ -3800,8 +3850,8 @@ async fn test_settings_admin_matrix_grants_admin_route_access_when_editable(
 	.await?;
 	assert_eq!(
 		status,
-		StatusCode::CREATED,
-		"admin-capable permission profiles should create users through POST /api/users: {value:?}"
+		StatusCode::FORBIDDEN,
+		"settings.can_edit must not create users through POST /api/users: {value:?}"
 	);
 
 	Ok(())

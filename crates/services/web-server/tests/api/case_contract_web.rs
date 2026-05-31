@@ -1063,6 +1063,97 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise(
 
 #[serial]
 #[tokio::test]
+async fn test_case_save_updates_fda_report_type_public_field() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (create_status, create_body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": format!("SR-FDA-{}", Uuid::new_v4()),
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(create_status, StatusCode::CREATED, "{create_body:?}");
+	let case_id = create_body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?
+		.to_string();
+
+	let (update_status, update_body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {
+				"report_year": "2026",
+				"fda_report_type": "4"
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(update_status, StatusCode::OK, "{update_body:?}");
+	assert_eq!(
+		update_body["data"]["report_year"].as_str(),
+		Some("2026"),
+		"{update_body:?}"
+	);
+	assert_eq!(
+		update_body["data"]["fda_report_type"].as_str(),
+		Some("4"),
+		"{update_body:?}"
+	);
+
+	let (invalid_update_status, invalid_update_body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {
+				"fda_report_type": "9"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		invalid_update_status,
+		StatusCode::BAD_REQUEST,
+		"{invalid_update_body:?}"
+	);
+
+	let (invalid_create_status, invalid_create_body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safety_report_id": format!("SR-FDA-BAD-{}", Uuid::new_v4()),
+				"fda_report_type": "9",
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(
+		invalid_create_status,
+		StatusCode::BAD_REQUEST,
+		"{invalid_create_body:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_imported_case_save_updates_public_fields_without_import_noise(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;

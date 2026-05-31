@@ -1740,7 +1740,8 @@ pub const VALIDATION_RULES: &[
 		authority: RegulatoryAuthority::Mfds,
 		section: "case-identification",
 		blocking: true,
-		message: "MFDS KR authority does not allow sender type 3.",
+		message:
+			"MFDS requires [C.3.1.KR.1] when sender type [C.3.1] is health professional (3).",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.C.5.4.KR.1.REQUIRED",
@@ -1975,7 +1976,7 @@ pub enum RuleCondition {
 	MfdsParentPastDrugVersionRequiredContext,
 	MfdsDrugDomesticKr,
 	MfdsDrugForeignNonKr,
-	MfdsSenderTypeDisallowed,
+	MfdsSenderTypeIsHealthProfessional,
 	MfdsPrimarySourceQualificationIsThree,
 	MfdsStudyTypeReactionIsThree,
 	IchTestPayloadPresent,
@@ -2048,7 +2049,9 @@ impl RuleCondition {
 			}
 			Self::MfdsDrugDomesticKr => "mfds_drug_domestic_kr",
 			Self::MfdsDrugForeignNonKr => "mfds_drug_foreign_non_kr",
-			Self::MfdsSenderTypeDisallowed => "mfds_sender_type_disallowed",
+			Self::MfdsSenderTypeIsHealthProfessional => {
+				"mfds_sender_type_is_health_professional"
+			}
 			Self::MfdsPrimarySourceQualificationIsThree => {
 				"mfds_primary_source_qualification_is_three"
 			}
@@ -2097,7 +2100,7 @@ pub struct RuleFacts {
 	pub mfds_parent_past_drug_version_required_context: Option<bool>,
 	pub mfds_drug_domestic_kr: Option<bool>,
 	pub mfds_drug_foreign_non_kr: Option<bool>,
-	pub mfds_sender_type_disallowed: Option<bool>,
+	pub mfds_sender_type_is_health_professional: Option<bool>,
 	pub mfds_primary_source_qualification_is_three: Option<bool>,
 	pub mfds_study_type_reaction_is_three: Option<bool>,
 	pub ich_test_payload_present: Option<bool>,
@@ -2210,7 +2213,7 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 	},
 	ConditionBinding {
 		code: "MFDS.C.3.1.KR.1.REQUIRED",
-		condition: RuleCondition::MfdsSenderTypeDisallowed,
+		condition: RuleCondition::MfdsSenderTypeIsHealthProfessional,
 	},
 	ConditionBinding {
 		code: "MFDS.C.5.4.KR.1.REQUIRED",
@@ -2286,7 +2289,9 @@ enum ValuePolicy {
 	FdaRaceCodeOrNullFlavor,
 	FdaEthnicityCodeOrNullFlavor,
 	FdaGk10aCodeOrNa,
-	FdaLocalCriteriaCodeByFacts,
+	FdaBooleanStringOrNullFlavor,
+	FdaLocalCriteriaAllowedCode,
+	MfdsHealthProfessionalTypeKr1,
 	IchC13ConditionalMustBeTwo,
 }
 
@@ -2299,11 +2304,11 @@ struct ValuePolicyBinding {
 const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
 		code: "FDA.C.1.12.REQUIRED",
-		policy: ValuePolicy::NonEmptyOrNullFlavor,
+		policy: ValuePolicy::FdaBooleanStringOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "FDA.C.1.7.1.REQUIRED",
-		policy: ValuePolicy::FdaLocalCriteriaCodeByFacts,
+		policy: ValuePolicy::FdaLocalCriteriaAllowedCode,
 	},
 	ValuePolicyBinding {
 		code: "FDA.C.1.7.1.REQUIRED.MISSING_CODE",
@@ -2692,6 +2697,10 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
 		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "MFDS.C.3.1.KR.1.REQUIRED",
+		policy: ValuePolicy::MfdsHealthProfessionalTypeKr1,
 	},
 	ValuePolicyBinding {
 		code: "MFDS.C.5.4.KR.1.REQUIRED",
@@ -3126,9 +3135,9 @@ pub fn is_rule_condition_satisfied(code: &str, facts: RuleFacts) -> bool {
 		RuleCondition::MfdsDrugForeignNonKr => {
 			facts.mfds_drug_foreign_non_kr.unwrap_or(false)
 		}
-		RuleCondition::MfdsSenderTypeDisallowed => {
-			facts.mfds_sender_type_disallowed.unwrap_or(false)
-		}
+		RuleCondition::MfdsSenderTypeIsHealthProfessional => facts
+			.mfds_sender_type_is_health_professional
+			.unwrap_or(false),
 		RuleCondition::MfdsPrimarySourceQualificationIsThree => facts
 			.mfds_primary_source_qualification_is_three
 			.unwrap_or(false),
@@ -3182,22 +3191,18 @@ pub fn is_rule_value_valid(
 			let null_ok = null_flavor.map(|v| v == "NA").unwrap_or(false);
 			code_ok || null_ok
 		}
-		Some(ValuePolicy::FdaLocalCriteriaCodeByFacts) => {
-			let comb_true = facts.fda_combination_product_true.unwrap_or(false);
-			let criteria_true = facts.fda_fulfil_expedited_criteria.unwrap_or(false);
-			let allowed: &[&str] = if comb_true && criteria_true {
-				&["1", "4"]
-			} else if comb_true && !criteria_true {
-				&["2", "5"]
-			} else if !comb_true && criteria_true {
-				&["1"]
-			} else {
-				&["2"]
-			};
-			value_code
-				.map(|code| allowed.contains(&code))
-				.unwrap_or(false)
+		Some(ValuePolicy::FdaBooleanStringOrNullFlavor) => {
+			let value = value_code.map(str::trim).filter(|v| !v.is_empty());
+			matches!(value, Some("false" | "true")) || null_flavor.is_some()
 		}
+		Some(ValuePolicy::FdaLocalCriteriaAllowedCode) => value_code
+			.map(str::trim)
+			.map(|code| matches!(code, "1" | "2" | "4" | "5" | "6"))
+			.unwrap_or(false),
+		Some(ValuePolicy::MfdsHealthProfessionalTypeKr1) => value_code
+			.map(str::trim)
+			.map(|code| matches!(code, "1" | "2" | "3" | "4"))
+			.unwrap_or(false),
 		Some(ValuePolicy::IchC13ConditionalMustBeTwo) => {
 			let applies =
 				is_rule_condition_satisfied("ICH.C.1.3.CONDITIONAL", facts);
@@ -3589,7 +3594,7 @@ mod tests {
 		assert!(is_rule_condition_satisfied(
 			"MFDS.C.3.1.KR.1.REQUIRED",
 			RuleFacts {
-				mfds_sender_type_disallowed: Some(true),
+				mfds_sender_type_is_health_professional: Some(true),
 				..RuleFacts::default()
 			}
 		));
@@ -3649,6 +3654,18 @@ mod tests {
 		assert!(is_rule_value_valid(
 			"FDA.C.1.12.REQUIRED",
 			Some("true"),
+			None,
+			RuleFacts::default()
+		));
+		assert!(is_rule_value_valid(
+			"FDA.C.1.12.REQUIRED",
+			Some("false"),
+			None,
+			RuleFacts::default()
+		));
+		assert!(!is_rule_value_valid(
+			"FDA.C.1.12.REQUIRED",
+			Some("1"),
 			None,
 			RuleFacts::default()
 		));
@@ -3752,7 +3769,7 @@ mod tests {
 				..RuleFacts::default()
 			}
 		));
-		assert!(!is_rule_value_valid(
+		assert!(is_rule_value_valid(
 			"FDA.C.1.7.1.REQUIRED",
 			Some("5"),
 			None,
@@ -3761,6 +3778,12 @@ mod tests {
 				fda_fulfil_expedited_criteria: Some(true),
 				..RuleFacts::default()
 			}
+		));
+		assert!(!is_rule_value_valid(
+			"FDA.C.1.7.1.REQUIRED",
+			Some("3"),
+			None,
+			RuleFacts::default()
 		));
 	}
 

@@ -4,6 +4,9 @@ use crate::model::narrative::{
 	CaseSummaryInformation, CaseSummaryInformationBmc, CaseSummaryInformationFilter,
 	SenderDiagnosis, SenderDiagnosisBmc, SenderDiagnosisFilter,
 };
+use crate::model::parent_history::{
+	ParentPastDrugHistory, ParentPastDrugHistoryBmc, ParentPastDrugHistoryFilter,
+};
 use crate::model::patient::{
 	MedicalHistoryEpisode, MedicalHistoryEpisodeBmc, MedicalHistoryEpisodeFilter,
 	ParentInformation, ParentInformationBmc, ParentInformationFilter,

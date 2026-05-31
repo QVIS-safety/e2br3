@@ -2,9 +2,9 @@ use crate::model::{ModelManager, Result};
 use crate::validation::{
 	has_any_primary_source_content, has_text, is_fda_ind_message_receiver,
 	is_fda_pre_anda_message_receiver, list_study_registrations, push_issue_by_code,
-	push_issue_if_condition_violated, push_issue_if_conditioned_value_invalid,
-	push_issue_if_rule_invalid, FdaValidationContext, MfdsValidationContext,
-	RegulatoryAuthority, RuleFacts, ValidationContext, ValidationIssue,
+	push_issue_if_conditioned_value_invalid, push_issue_if_rule_invalid,
+	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority, RuleFacts,
+	ValidationContext, ValidationIssue,
 };
 
 fn is_six_digit_numeric(value: Option<&str>) -> bool {
@@ -91,8 +91,9 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		"ICH.C.1.11.2.REQUIRED" => {
 			Some("safetyReportIdentification.nullificationReason")
 		}
-		"ICH.C.3.1.REQUIRED" | "MFDS.C.3.1.KR.1.REQUIRED" => {
-			Some("safetyReportIdentification.senderType")
+		"ICH.C.3.1.REQUIRED" => Some("safetyReportIdentification.senderType"),
+		"MFDS.C.3.1.KR.1.REQUIRED" => {
+			Some("safetyReportIdentification.senderHealthProfessionalTypeKr1")
 		}
 		"ICH.C.3.2.REQUIRED" => {
 			Some("safetyReportIdentification.senderOrganization")
@@ -471,7 +472,7 @@ pub(crate) async fn collect_fda_issues(
 				),
 				fda_combination_product_true: Some(
 					report.combination_product_report_indicator.as_deref()
-						== Some("1"),
+						== Some("true"),
 				),
 				..RuleFacts::default()
 			},
@@ -589,12 +590,16 @@ pub(crate) fn collect_mfds_issues(
 		.iter()
 		.enumerate()
 		.for_each(|(idx, sender)| {
-			let _ = push_issue_if_condition_violated(
+			let _ = push_issue_if_conditioned_value_invalid(
 				issues,
 				"MFDS.C.3.1.KR.1.REQUIRED",
-				format!("senderInformation.{idx}.senderType"),
+				"MFDS.C.3.1.KR.1.REQUIRED",
+				"MFDS.C.3.1.KR.1.REQUIRED",
+				format!("senderInformation.{idx}.healthProfessionalTypeKr1"),
+				sender.health_professional_type_kr1.as_deref(),
+				None,
 				RuleFacts {
-					mfds_sender_type_disallowed: Some(
+					mfds_sender_type_is_health_professional: Some(
 						sender
 							.sender_type
 							.as_deref()
@@ -603,6 +608,7 @@ pub(crate) fn collect_mfds_issues(
 					),
 					..RuleFacts::default()
 				},
+				RuleFacts::default(),
 			);
 		});
 

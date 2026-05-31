@@ -36,6 +36,7 @@ use uuid::Uuid;
 
 const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
 	"system validation: validator mark-validated endpoint";
+const FDA_REPORT_TYPE_VALUES: &[&str] = &["1", "2", "3", "4"];
 
 // -- Public helpers (used by sibling modules)
 
@@ -51,6 +52,7 @@ pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> 
 			message: "safety_report_id is required".to_string(),
 		});
 	}
+	validate_fda_report_type(data.fda_report_type.as_deref())?;
 
 	if let Some(status) = data.status.as_deref() {
 		if !is_valid_case_status(status) {
@@ -78,6 +80,7 @@ fn validate_case_update_payload(data: &InternalCaseForUpdate) -> Result<()> {
 			});
 		}
 	}
+	validate_fda_report_type(data.fda_report_type.as_deref())?;
 
 	if let Some(status) = data.status.as_deref() {
 		if !is_valid_case_status(status) {
@@ -88,6 +91,18 @@ fn validate_case_update_payload(data: &InternalCaseForUpdate) -> Result<()> {
 	}
 
 	Ok(())
+}
+
+fn validate_fda_report_type(value: Option<&str>) -> Result<()> {
+	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
+		return Ok(());
+	};
+	if FDA_REPORT_TYPE_VALUES.contains(&value) {
+		return Ok(());
+	}
+	Err(Error::BadRequest {
+		message: "fda_report_type must be one of: 1, 2, 3, 4".to_string(),
+	})
 }
 
 fn to_internal_case_for_create(
@@ -103,6 +118,7 @@ fn to_internal_case_for_create(
 		review_receivers_json: data.review_receivers_json,
 		workflow_routes_json: data.workflow_routes_json,
 		mfds_report_type: data.mfds_report_type,
+		fda_report_type: data.fda_report_type,
 		report_year: data.report_year,
 		source_document_name: data.source_document_name,
 		source_document_base64: data.source_document_base64,
@@ -119,6 +135,7 @@ fn to_internal_case_for_update(data: PublicCaseForUpdate) -> InternalCaseForUpda
 		review_receivers_json: data.review_receivers_json,
 		workflow_routes_json: data.workflow_routes_json,
 		mfds_report_type: data.mfds_report_type,
+		fda_report_type: data.fda_report_type,
 		report_year: data.report_year,
 		source_document_name: data.source_document_name,
 		source_document_base64: data.source_document_base64,
@@ -216,6 +233,7 @@ pub struct PublicCaseForCreate {
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
 	pub mfds_report_type: Option<String>,
+	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
 	pub source_document_name: Option<String>,
 	pub source_document_base64: Option<String>,
@@ -230,6 +248,7 @@ pub struct PublicCaseForUpdate {
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
 	pub mfds_report_type: Option<String>,
+	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
 	pub source_document_name: Option<String>,
 	pub source_document_base64: Option<String>,

@@ -286,6 +286,8 @@ pub fn export_c_safety_report_patch(
 		nullification_code: report.nullification_code.as_deref(),
 		nullification_reason: report.nullification_reason.as_deref(),
 		sender_type: sender.and_then(|s| s.sender_type.as_deref()),
+		sender_health_professional_type_kr1: sender
+			.and_then(|s| s.health_professional_type_kr1.as_deref()),
 		sender_org_name: sender.and_then(|s| s.organization_name.as_deref()),
 		sender_department: sender.and_then(|s| s.department.as_deref()),
 		sender_street_address: sender.and_then(|s| s.street_address.as_deref()),

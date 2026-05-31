@@ -58,6 +58,7 @@ pub enum Resource {
 	User,
 	Organization,
 	AuditLog,
+	Settings,
 
 	// Terminology
 	Terminology,
@@ -509,6 +510,12 @@ pub const ORG_LIST: Permission =
 pub const AUDIT_READ: Permission = Permission::new(Resource::AuditLog, Action::Read);
 pub const AUDIT_LIST: Permission = Permission::new(Resource::AuditLog, Action::List);
 
+// Settings permissions
+pub const SETTINGS_READ: Permission =
+	Permission::new(Resource::Settings, Action::Read);
+pub const SETTINGS_UPDATE: Permission =
+	Permission::new(Resource::Settings, Action::Update);
+
 // Terminology permissions
 pub const TERMINOLOGY_READ: Permission =
 	Permission::new(Resource::Terminology, Action::Read);
@@ -729,6 +736,9 @@ fn admin_permissions() -> &'static [Permission] {
 		// AuditLog
 		AUDIT_READ,
 		AUDIT_LIST,
+		// Settings
+		SETTINGS_READ,
+		SETTINGS_UPDATE,
 		// Terminology
 		TERMINOLOGY_READ,
 		TERMINOLOGY_IMPORT,
@@ -739,6 +749,10 @@ fn admin_permissions() -> &'static [Permission] {
 		XML_IMPORT_READ,
 		XML_IMPORT,
 	]
+}
+
+fn system_admin_permissions() -> &'static [Permission] {
+	&[SETTINGS_READ, SETTINGS_UPDATE]
 }
 
 /// Returns operational edit permissions used by permission profiles.
@@ -1123,7 +1137,14 @@ fn permissions_for_menu_key(
 			}
 		}
 		"settings" | "roles" => {
-			if can_edit || can_review || can_lock {
+			if menu_key == "settings" {
+				if can_read {
+					push_unique(&mut permissions, &[SETTINGS_READ]);
+				}
+				if can_edit || can_review || can_lock {
+					push_unique(&mut permissions, &[SETTINGS_READ, SETTINGS_UPDATE]);
+				}
+			} else if can_edit || can_review || can_lock {
 				push_unique(&mut permissions, admin_permissions());
 			}
 		}
@@ -1173,7 +1194,7 @@ pub fn remove_dynamic_role(role: &str) {
 pub fn role_permissions(role: &str) -> &'static [Permission] {
 	let normalized = canonical_role(role);
 	match normalized.as_str() {
-		ROLE_SYSTEM_ADMIN => &[],
+		ROLE_SYSTEM_ADMIN => system_admin_permissions(),
 		ROLE_SPONSOR_ADMIN_CRO => admin_permissions(),
 		ROLE_SPONSOR_ADMIN_COMPANY => admin_permissions(),
 		ROLE_USER => &[],
@@ -1346,6 +1367,8 @@ mod tests {
 				can_review: false,
 				can_lock: false,
 			}]);
+		assert!(read_permissions.contains(&SETTINGS_READ));
+		assert!(!read_permissions.contains(&SETTINGS_UPDATE));
 		assert!(!read_permissions.contains(&CASE_CREATE));
 		assert!(!read_permissions.contains(&USER_CREATE));
 
@@ -1357,8 +1380,10 @@ mod tests {
 				can_review: false,
 				can_lock: false,
 			}]);
-		assert!(edit_permissions.contains(&CASE_CREATE));
-		assert!(edit_permissions.contains(&USER_CREATE));
+		assert!(edit_permissions.contains(&SETTINGS_READ));
+		assert!(edit_permissions.contains(&SETTINGS_UPDATE));
+		assert!(!edit_permissions.contains(&CASE_CREATE));
+		assert!(!edit_permissions.contains(&USER_CREATE));
 	}
 }
 

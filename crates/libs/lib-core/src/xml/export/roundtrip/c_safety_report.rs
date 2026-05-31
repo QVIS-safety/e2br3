@@ -1,4 +1,5 @@
 use super::*;
+use crate::xml::mfds::codes::KR_C_3_1_1;
 
 pub fn patch_c_safety_report(
 	raw_xml: &[u8],
@@ -319,6 +320,39 @@ pub fn patch_c_safety_report(
 	let sender_base = "//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity";
 	if let Some(v) = patch.sender_type {
 		set_attr_first(&mut xpath, &format!("{sender_base}/hl7:code"), "code", v);
+	}
+	if let Some(v) = patch.sender_health_professional_type_kr1 {
+		let kr1_path = &format!(
+			"{sender_base}/hl7:subjectOf2/hl7:observation[hl7:code[@code='{KR_C_3_1_1}']]"
+		);
+		if xpath
+			.findnodes(kr1_path, None)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				&mut doc,
+				&parser,
+				&mut xpath,
+				sender_base,
+				&format!(
+					"<subjectOf2 typeCode=\"SUBJ\">\
+						<observation classCode=\"OBS\" moodCode=\"EVN\">\
+							<code code=\"{KR_C_3_1_1}\"/>\
+							<value xsi:type=\"CE\"/>\
+						</observation>\
+					</subjectOf2>"
+				),
+			)?;
+		}
+		set_attr_first(
+			&mut xpath,
+			&format!(
+				"{sender_base}/hl7:subjectOf2/hl7:observation[hl7:code[@code='{KR_C_3_1_1}']]/hl7:value"
+			),
+			"code",
+			v,
+		);
 	}
 	if let Some(v) = patch.sender_street_address {
 		if xpath

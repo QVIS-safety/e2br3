@@ -564,6 +564,18 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(safety_report_sub_rest::update_study_registration_number)
 			.delete(safety_report_sub_rest::delete_study_registration_number),
 	)
+	// Study FDA Cross-Reported INDs (collection per study) - FDA.C.5.6.r
+	.route(
+		"/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds",
+		get(safety_report_sub_rest::list_study_fda_cross_reported_inds)
+			.post(safety_report_sub_rest::create_study_fda_cross_reported_ind),
+	)
+	.route(
+		"/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds/{id}",
+		get(safety_report_sub_rest::get_study_fda_cross_reported_ind)
+			.put(safety_report_sub_rest::update_study_fda_cross_reported_ind)
+			.delete(safety_report_sub_rest::delete_study_fda_cross_reported_ind),
+	)
 	// Receiver (singleton per case) - Section A
 	.route(
 		"/cases/{case_id}/receiver",
@@ -717,6 +729,10 @@ pub fn routes_users(mm: ModelManager) -> Router {
 			get(user_rest::get_user)
 				.put(user_rest::update_user)
 				.delete(user_rest::delete_user),
+		)
+		.route(
+			"/settings/runtime",
+			get(admin_settings_rest::get_runtime_settings),
 		)
 		.route(
 			"/admin/settings",

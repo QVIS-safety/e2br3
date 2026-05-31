@@ -30,7 +30,7 @@ pub(super) use super::shared::*;
 
 pub(crate) mod c;
 pub(crate) mod d;
-pub(crate) mod e;
+pub mod e;
 pub(crate) mod f;
 pub(crate) mod g;
 pub mod h;

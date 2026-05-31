@@ -25,6 +25,8 @@ pub struct ParentPastDrugByCase {
 	pub sequence_number: i32,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
+	pub mfds_medicinal_product_id: Option<String>,
+	pub mfds_medicinal_product_version: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -118,6 +120,8 @@ SELECT pph.parent_id
      , pph.sequence_number
      , pph.mpid
      , pph.mpid_version
+     , pph.mfds_medicinal_product_id
+     , pph.mfds_medicinal_product_version
 FROM parent_past_drug_history pph
 JOIN parent_information parent ON parent.id = pph.parent_id
 JOIN patient_information pi ON pi.id = parent.patient_id

@@ -1006,6 +1006,10 @@ async fn apply_sd_page_rows_patch(
 	};
 	let update = SenderInformationForUpdate {
 		sender_type: string_field(sender, &["senderType", "sender_type"]),
+		health_professional_type_kr1: string_field(
+			sender,
+			&["healthProfessionalTypeKr1", "health_professional_type_kr1"],
+		),
 		organization_name: string_field(
 			sender,
 			&["organizationName", "organization_name"],
@@ -1042,6 +1046,7 @@ async fn apply_sd_page_rows_patch(
 			SenderInformationForCreate {
 				case_id,
 				sender_type: update.sender_type,
+				health_professional_type_kr1: update.health_professional_type_kr1,
 				organization_name: update.organization_name,
 				department: update.department,
 				street_address: update.street_address,
@@ -1143,6 +1148,14 @@ async fn apply_si_page_rows_patch(
 			study,
 			&["studyTypeReactionKr1", "study_type_reaction_kr1"],
 		),
+		fda_ind_number_occurred: string_field(
+			study,
+			&["fdaIndNumberOccurred", "fda_ind_number_occurred"],
+		),
+		fda_pre_anda_number_occurred: string_field(
+			study,
+			&["fdaPreAndaNumberOccurred", "fda_pre_anda_number_occurred"],
+		),
 	};
 	if let Some(id) = uuid_field(study, &["id"]) {
 		StudyInformationBmc::update(ctx, mm, id, update).await?;
@@ -1156,6 +1169,8 @@ async fn apply_si_page_rows_patch(
 				sponsor_study_number: update.sponsor_study_number,
 				study_type_reaction: update.study_type_reaction,
 				study_type_reaction_kr1: update.study_type_reaction_kr1,
+				fda_ind_number_occurred: update.fda_ind_number_occurred,
+				fda_pre_anda_number_occurred: update.fda_pre_anda_number_occurred,
 			},
 		)
 		.await?;

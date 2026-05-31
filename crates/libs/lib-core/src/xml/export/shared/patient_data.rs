@@ -118,6 +118,27 @@ pub(crate) async fn fetch_past_drug_history(
 	.map_err(Error::from)
 }
 
+pub(crate) async fn fetch_parent_past_drug_history(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	parent_id: sqlx::types::Uuid,
+) -> Result<Vec<ParentPastDrugHistory>> {
+	let filter = ParentPastDrugHistoryFilter {
+		parent_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			parent_id.to_string()
+		))])),
+		..Default::default()
+	};
+	ParentPastDrugHistoryBmc::list(
+		ctx,
+		mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await
+	.map_err(Error::from)
+}
+
 pub(crate) async fn fetch_medical_history_episodes(
 	ctx: &Ctx,
 	mm: &ModelManager,

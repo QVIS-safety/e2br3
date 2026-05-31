@@ -20,6 +20,10 @@ CREATE TABLE drug_information (
     mpid VARCHAR(100),
     mpid_version VARCHAR(10),
 
+    -- G.k.2.1.KR.1a/b - MFDS medicinal product fields
+    mfds_mpid_version VARCHAR(20),
+    mfds_mpid VARCHAR(10),
+
     -- G.k.2.5 - PhPID (Pharmaceutical Product Identifier)
     phpid VARCHAR(100),
     phpid_version VARCHAR(10),
@@ -102,6 +106,7 @@ CREATE TABLE drug_information (
 
 CREATE INDEX idx_drug_info_case ON drug_information(case_id);
 CREATE INDEX idx_drug_info_mpid ON drug_information(mpid);
+CREATE INDEX idx_drug_info_mfds_mpid ON drug_information(mfds_mpid);
 
 -- ============================================================================
 -- G.k.2.3.r: Active Substance(s) (Repeating)
@@ -118,6 +123,10 @@ CREATE TABLE drug_active_substances (
     -- G.k.2.3.r.2 - Substance TermID (SUB TermID)
     substance_termid VARCHAR(100),
     substance_termid_version VARCHAR(10),
+
+    -- G.k.2.3.r.1.KR.1a/b - MFDS substance fields
+    mfds_version VARCHAR(20),
+    mfds_id VARCHAR(10),
 
     -- G.k.2.3.r.3 - Strength (value + unit)
     strength_value DECIMAL(15,5),

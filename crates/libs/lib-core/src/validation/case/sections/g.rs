@@ -128,14 +128,14 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		}
 		"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED"
 		| "MFDS.G.k.2.1.KR.1b.REQUIRED"
-		| "MFDS.KR.FOREIGN.WHOMPID.REQUIRED" => Some("drugs.0.mpid"),
-		"MFDS.G.k.2.1.KR.1a.REQUIRED" => Some("drugs.0.mpidVersion"),
+		| "MFDS.KR.FOREIGN.WHOMPID.REQUIRED" => Some("drugs.0.mfdsMpid"),
+		"MFDS.G.k.2.1.KR.1a.REQUIRED" => Some("drugs.0.mfdsMpidVersion"),
 		"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED"
 		| "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED" => {
-			Some("drugs.0.activeSubstances.0.substanceTermId")
+			Some("drugs.0.activeSubstances.0.mfdsId")
 		}
 		"MFDS.G.k.2.3.r.1.KR.1a.REQUIRED" => {
-			Some("drugs.0.activeSubstances.0.substanceTermIdVersion")
+			Some("drugs.0.activeSubstances.0.mfdsVersion")
 		}
 		"MFDS.G.k.9.i.2.r.1.REQUIRED" => {
 			Some("drugs.0.drugReactionAssessments.0.sourceOfAssessment")
@@ -509,7 +509,7 @@ pub(crate) fn collect_mfds_issues(
 
 	let mut domestic_drug_ids = std::collections::HashSet::new();
 	let mut drug_index_by_id = std::collections::HashMap::new();
-	let mut drug_has_mpid_by_id = std::collections::HashMap::new();
+	let mut drug_has_mfds_mpid_by_id = std::collections::HashMap::new();
 
 	validation_ctx
 		.drugs
@@ -517,15 +517,15 @@ pub(crate) fn collect_mfds_issues(
 		.enumerate()
 		.for_each(|(idx, drug)| {
 			drug_index_by_id.insert(drug.id, idx);
-			let has_mpid = has_text(drug.mpid.as_deref());
-			drug_has_mpid_by_id.insert(drug.id, has_mpid);
+			let has_mfds_mpid = has_text(drug.mfds_mpid.as_deref());
+			drug_has_mfds_mpid_by_id.insert(drug.id, has_mfds_mpid);
 			let _ = push_issue_if_conditioned_value_invalid(
 				issues,
 				"MFDS.G.k.2.1.KR.1b.REQUIRED",
 				"MFDS.G.k.2.1.KR.1b.REQUIRED",
 				"MFDS.G.k.2.1.KR.1b.REQUIRED",
-				format!("drugs.{idx}.mpid"),
-				drug.mpid.as_deref(),
+				format!("drugs.{idx}.mfdsMpid"),
+				drug.mfds_mpid.as_deref(),
 				None,
 				RuleFacts {
 					mfds_product_code_required_context: Some(
@@ -540,12 +540,12 @@ pub(crate) fn collect_mfds_issues(
 				"MFDS.G.k.2.1.KR.1a.REQUIRED",
 				"MFDS.G.k.2.1.KR.1a.REQUIRED",
 				"MFDS.G.k.2.1.KR.1a.REQUIRED",
-				format!("drugs.{idx}.mpidVersion"),
-				drug.mpid_version.as_deref(),
+				format!("drugs.{idx}.mfdsMpidVersion"),
+				drug.mfds_mpid_version.as_deref(),
 				None,
 				RuleFacts {
 					mfds_product_version_required_context: Some(
-						receiver_is_fr && has_mpid,
+						receiver_is_fr && has_mfds_mpid,
 					),
 					..RuleFacts::default()
 				},
@@ -563,8 +563,8 @@ pub(crate) fn collect_mfds_issues(
 						"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
 						"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
 						"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
-						format!("drugs.{idx}.mpid"),
-						drug.mpid.as_deref(),
+						format!("drugs.{idx}.mfdsMpid"),
+						drug.mfds_mpid.as_deref(),
 						None,
 						RuleFacts {
 							mfds_drug_domestic_kr: Some(is_domestic_kr),
@@ -579,8 +579,8 @@ pub(crate) fn collect_mfds_issues(
 						"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
 						"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
 						"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
-						format!("drugs.{idx}.mpid"),
-						drug.mpid.as_deref(),
+						format!("drugs.{idx}.mfdsMpid"),
+						drug.mfds_mpid.as_deref(),
 						None,
 						RuleFacts {
 							mfds_drug_foreign_non_kr: Some(is_foreign_non_kr),
@@ -595,7 +595,7 @@ pub(crate) fn collect_mfds_issues(
 
 	mfds_ctx.active_substances.iter().for_each(|substance| {
 		let drug_index = drug_index_by_id.get(&substance.drug_id).copied();
-		let drug_has_mpid = drug_has_mpid_by_id
+		let drug_has_mfds_mpid = drug_has_mfds_mpid_by_id
 			.get(&substance.drug_id)
 			.copied()
 			.unwrap_or(false);
@@ -605,7 +605,7 @@ pub(crate) fn collect_mfds_issues(
 			.and_then(|v| usize::try_from(v).ok());
 		let path = match (drug_index, substance_index) {
 			(Some(d_idx), Some(s_idx)) => {
-				format!("drugs.{d_idx}.activeSubstances.{s_idx}.substanceTermId")
+				format!("drugs.{d_idx}.activeSubstances.{s_idx}.mfdsId")
 			}
 			_ => "drugs".to_string(),
 		};
@@ -615,7 +615,7 @@ pub(crate) fn collect_mfds_issues(
 			"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
 			"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
 			path.clone(),
-			substance.substance_termid.as_deref(),
+			substance.mfds_id.as_deref(),
 			None,
 			RuleFacts {
 				mfds_drug_domestic_kr: Some(
@@ -631,11 +631,11 @@ pub(crate) fn collect_mfds_issues(
 			"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
 			"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
 			path,
-			substance.substance_termid.as_deref(),
+			substance.mfds_id.as_deref(),
 			None,
 			RuleFacts {
 				mfds_substance_code_required_context: Some(
-					(receiver_is_kr || receiver_is_fr) && !drug_has_mpid,
+					(receiver_is_kr || receiver_is_fr) && !drug_has_mfds_mpid,
 				),
 				..RuleFacts::default()
 			},
@@ -643,7 +643,7 @@ pub(crate) fn collect_mfds_issues(
 		);
 		let version_path = match (drug_index, substance_index) {
 			(Some(d_idx), Some(s_idx)) => format!(
-				"drugs.{d_idx}.activeSubstances.{s_idx}.substanceTermIdVersion"
+				"drugs.{d_idx}.activeSubstances.{s_idx}.mfdsVersion"
 			),
 			_ => "drugs".to_string(),
 		};
@@ -653,12 +653,11 @@ pub(crate) fn collect_mfds_issues(
 			"MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
 			"MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
 			version_path,
-			substance.substance_termid_version.as_deref(),
+			substance.mfds_version.as_deref(),
 			None,
 			RuleFacts {
 				mfds_substance_version_required_context: Some(
-					receiver_is_fr
-						&& has_text(substance.substance_termid.as_deref()),
+					receiver_is_fr && has_text(substance.mfds_id.as_deref()),
 				),
 				..RuleFacts::default()
 			},

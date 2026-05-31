@@ -104,10 +104,10 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 			Some("patientInformation.pastDrugHistory.0.mpidVersion")
 		}
 		"MFDS.D.10.8.r.1.KR.1b.REQUIRED" => {
-			Some("patientInformation.parentInformation.pastDrugHistory.0.mpid")
+			Some("patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductId")
 		}
 		"MFDS.D.10.8.r.1.KR.1a.REQUIRED" => Some(
-			"patientInformation.parentInformation.pastDrugHistory.0.mpidVersion",
+			"patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductVersion",
 		),
 		_ => None,
 	}
@@ -630,7 +630,8 @@ pub(crate) fn collect_mfds_issues(
 				next_parent_idx += 1;
 				idx
 			});
-		let has_mpid = has_text(past.mpid.as_deref());
+		let has_mfds_medicinal_product_id =
+			has_text(past.mfds_medicinal_product_id.as_deref());
 		let past_idx = past
 			.sequence_number
 			.checked_sub(1)
@@ -642,9 +643,9 @@ pub(crate) fn collect_mfds_issues(
 			"MFDS.D.10.8.r.1.KR.1b.REQUIRED",
 			"MFDS.D.10.8.r.1.KR.1b.REQUIRED",
 			format!(
-				"patientInformation.parents.{parent_idx}.pastDrugs.{past_idx}.mpid"
+				"patientInformation.parents.{parent_idx}.pastDrugs.{past_idx}.mfdsMedicinalProductId"
 			),
-			past.mpid.as_deref(),
+			past.mfds_medicinal_product_id.as_deref(),
 			None,
 			RuleFacts {
 				mfds_parent_past_drug_code_required_context: Some(
@@ -660,13 +661,13 @@ pub(crate) fn collect_mfds_issues(
 			"MFDS.D.10.8.r.1.KR.1a.REQUIRED",
 			"MFDS.D.10.8.r.1.KR.1a.REQUIRED",
 			format!(
-				"patientInformation.parents.{parent_idx}.pastDrugs.{past_idx}.mpidVersion"
+				"patientInformation.parents.{parent_idx}.pastDrugs.{past_idx}.mfdsMedicinalProductVersion"
 			),
-			past.mpid_version.as_deref(),
+			past.mfds_medicinal_product_version.as_deref(),
 			None,
 			RuleFacts {
 				mfds_parent_past_drug_version_required_context: Some(
-					receiver_is_fr && has_mpid,
+					receiver_is_fr && has_mfds_medicinal_product_id,
 				),
 				..RuleFacts::default()
 			},

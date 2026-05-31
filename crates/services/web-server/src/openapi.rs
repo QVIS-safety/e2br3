@@ -251,6 +251,13 @@ pub fn router() -> Router {
 			MessageHeaderResponse,
 			CreateMessageHeaderRequest,
 			UpdateMessageHeaderRequest,
+			SenderInformationDoc,
+			SenderInformationForCreateDoc,
+			SenderInformationForUpdateDoc,
+			SenderInformationResponse,
+			SenderInformationListResponse,
+			CreateSenderInformationRequest,
+			UpdateSenderInformationRequest,
 			ReceiverInformationDoc,
 			ReceiverInformationForCreateDoc,
 			ReceiverInformationForUpdateDoc,
@@ -765,6 +772,26 @@ struct MessageHeaderResponse {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct CreateSenderInformationRequest {
+	data: SenderInformationForCreateDoc,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct UpdateSenderInformationRequest {
+	data: SenderInformationForUpdateDoc,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct SenderInformationResponse {
+	data: SenderInformationDoc,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct SenderInformationListResponse {
+	data: Vec<SenderInformationDoc>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct CreateReceiverInformationRequest {
 	data: ReceiverInformationForCreateDoc,
 }
@@ -1040,6 +1067,7 @@ struct UserCapabilitiesDoc {
 	admin: AdminCapabilitiesDoc,
 	users: ModuleCrudCapabilitiesDoc,
 	roles: ModuleCrudCapabilitiesDoc,
+	settings: AdminCapabilitiesDoc,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -1120,6 +1148,7 @@ struct CaseDoc {
 	can_act_on_workflow: bool,
 	workflow_block_reason: Option<String>,
 	mfds_report_type: Option<String>,
+	fda_report_type: Option<String>,
 	report_year: Option<String>,
 	source_document_name: Option<String>,
 	source_document_base64: Option<String>,
@@ -1156,6 +1185,7 @@ struct RawCaseDoc {
 	workflow_description: Option<String>,
 	workflow_updated_at: String,
 	mfds_report_type: Option<String>,
+	fda_report_type: Option<String>,
 	report_year: Option<String>,
 	source_document_name: Option<String>,
 	source_document_base64: Option<String>,
@@ -1189,6 +1219,7 @@ struct CaseForCreateDoc {
 	workflow_description: Option<String>,
 	workflow_updated_at: String,
 	mfds_report_type: Option<String>,
+	fda_report_type: Option<String>,
 	report_year: Option<String>,
 	source_document_name: Option<String>,
 	source_document_base64: Option<String>,
@@ -1203,6 +1234,7 @@ struct CaseForUpdateDoc {
 	review_receivers_json: Option<String>,
 	workflow_routes_json: Option<String>,
 	mfds_report_type: Option<String>,
+	fda_report_type: Option<String>,
 	report_year: Option<String>,
 	source_document_name: Option<String>,
 	source_document_base64: Option<String>,
@@ -1278,6 +1310,7 @@ struct CaseFromIntakeInputDoc {
 	/// is incomplete. Duplicate hits are always hard-blocked.
 	allow_duplicate_override: Option<bool>,
 	mfds_report_type: Option<String>,
+	fda_report_type: Option<String>,
 	report_year: Option<String>,
 	source_document_name: Option<String>,
 	source_document_base64: Option<String>,
@@ -1393,6 +1426,26 @@ struct ReactionDoc {
 	criteria_other_medically_important: bool,
 	criteria_other_medically_important_null_flavor: Option<String>,
 	required_intervention: Option<String>,
+	included_in_ema_ime_list: Option<bool>,
+	expectedness: Option<String>,
+	severity: Option<String>,
+	mfds_device_ae_classification: Option<String>,
+	mfds_device_ae_outcome: Option<String>,
+	mfds_device_cause_medical_device: Option<bool>,
+	mfds_device_cause_procedure_issue: Option<bool>,
+	mfds_device_cause_patient_condition: Option<bool>,
+	mfds_device_cause_unable_to_assess: Option<bool>,
+	mfds_device_cause_other: Option<String>,
+	mfds_device_action_reason: Option<String>,
+	mfds_device_action_recall: Option<bool>,
+	mfds_device_action_repair: Option<bool>,
+	mfds_device_action_inspection: Option<bool>,
+	mfds_device_action_replacement: Option<bool>,
+	mfds_device_action_improvement: Option<bool>,
+	mfds_device_action_monitoring: Option<bool>,
+	mfds_device_action_notification: Option<bool>,
+	mfds_device_action_label_change: Option<bool>,
+	mfds_device_action_other: Option<String>,
 	start_date: Option<String>,
 	start_date_null_flavor: Option<String>,
 	end_date: Option<String>,
@@ -1413,6 +1466,26 @@ struct ReactionForCreateDoc {
 	case_id: String,
 	sequence_number: i32,
 	primary_source_reaction: String,
+	included_in_ema_ime_list: Option<bool>,
+	expectedness: Option<String>,
+	severity: Option<String>,
+	mfds_device_ae_classification: Option<String>,
+	mfds_device_ae_outcome: Option<String>,
+	mfds_device_cause_medical_device: Option<bool>,
+	mfds_device_cause_procedure_issue: Option<bool>,
+	mfds_device_cause_patient_condition: Option<bool>,
+	mfds_device_cause_unable_to_assess: Option<bool>,
+	mfds_device_cause_other: Option<String>,
+	mfds_device_action_reason: Option<String>,
+	mfds_device_action_recall: Option<bool>,
+	mfds_device_action_repair: Option<bool>,
+	mfds_device_action_inspection: Option<bool>,
+	mfds_device_action_replacement: Option<bool>,
+	mfds_device_action_improvement: Option<bool>,
+	mfds_device_action_monitoring: Option<bool>,
+	mfds_device_action_notification: Option<bool>,
+	mfds_device_action_label_change: Option<bool>,
+	mfds_device_action_other: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -1437,6 +1510,26 @@ struct ReactionForUpdateDoc {
 	criteria_other_medically_important: Option<bool>,
 	criteria_other_medically_important_null_flavor: Option<String>,
 	required_intervention: Option<String>,
+	included_in_ema_ime_list: Option<bool>,
+	expectedness: Option<String>,
+	severity: Option<String>,
+	mfds_device_ae_classification: Option<String>,
+	mfds_device_ae_outcome: Option<String>,
+	mfds_device_cause_medical_device: Option<bool>,
+	mfds_device_cause_procedure_issue: Option<bool>,
+	mfds_device_cause_patient_condition: Option<bool>,
+	mfds_device_cause_unable_to_assess: Option<bool>,
+	mfds_device_cause_other: Option<String>,
+	mfds_device_action_reason: Option<String>,
+	mfds_device_action_recall: Option<bool>,
+	mfds_device_action_repair: Option<bool>,
+	mfds_device_action_inspection: Option<bool>,
+	mfds_device_action_replacement: Option<bool>,
+	mfds_device_action_improvement: Option<bool>,
+	mfds_device_action_monitoring: Option<bool>,
+	mfds_device_action_notification: Option<bool>,
+	mfds_device_action_label_change: Option<bool>,
+	mfds_device_action_other: Option<String>,
 	start_date: Option<String>,
 	start_date_null_flavor: Option<String>,
 	end_date: Option<String>,
@@ -1634,6 +1727,73 @@ struct MessageHeaderForUpdateDoc {
 	message_sender_identifier: Option<String>,
 	message_receiver_identifier: Option<String>,
 	message_date: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct SenderInformationDoc {
+	id: String,
+	case_id: String,
+	sender_type: Option<String>,
+	health_professional_type_kr1: Option<String>,
+	organization_name: Option<String>,
+	department: Option<String>,
+	street_address: Option<String>,
+	city: Option<String>,
+	state: Option<String>,
+	postcode: Option<String>,
+	country_code: Option<String>,
+	person_title: Option<String>,
+	person_given_name: Option<String>,
+	person_middle_name: Option<String>,
+	person_family_name: Option<String>,
+	telephone: Option<String>,
+	fax: Option<String>,
+	email: Option<String>,
+	created_at: String,
+	updated_at: String,
+	created_by: String,
+	updated_by: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct SenderInformationForCreateDoc {
+	case_id: String,
+	sender_type: Option<String>,
+	health_professional_type_kr1: Option<String>,
+	organization_name: Option<String>,
+	department: Option<String>,
+	street_address: Option<String>,
+	city: Option<String>,
+	state: Option<String>,
+	postcode: Option<String>,
+	country_code: Option<String>,
+	person_title: Option<String>,
+	person_given_name: Option<String>,
+	person_middle_name: Option<String>,
+	person_family_name: Option<String>,
+	telephone: Option<String>,
+	fax: Option<String>,
+	email: Option<String>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct SenderInformationForUpdateDoc {
+	sender_type: Option<String>,
+	health_professional_type_kr1: Option<String>,
+	organization_name: Option<String>,
+	department: Option<String>,
+	street_address: Option<String>,
+	city: Option<String>,
+	state: Option<String>,
+	postcode: Option<String>,
+	country_code: Option<String>,
+	person_title: Option<String>,
+	person_given_name: Option<String>,
+	person_middle_name: Option<String>,
+	person_family_name: Option<String>,
+	telephone: Option<String>,
+	fax: Option<String>,
+	email: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]

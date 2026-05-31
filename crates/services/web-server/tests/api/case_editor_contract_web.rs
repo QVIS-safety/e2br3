@@ -1194,7 +1194,9 @@ async fn editor_sd_page_patch_persists_sender_information_row() -> Result<()> {
 			"authorities": ["fda"],
 			"rows": {
 				"senderInformation": {
-					"organizationName": "Sender Org"
+					"senderType": "3",
+					"organizationName": "Sender Org",
+					"healthProfessionalTypeKr1": "4"
 				}
 			}
 		}),
@@ -1205,6 +1207,10 @@ async fn editor_sd_page_patch_persists_sender_information_row() -> Result<()> {
 	assert_eq!(
 		body["rows"]["senderInformation"][0]["organization_name"],
 		"Sender Org"
+	);
+	assert_eq!(
+		body["rows"]["senderInformation"][0]["health_professional_type_kr1"],
+		"4"
 	);
 
 	Ok(())

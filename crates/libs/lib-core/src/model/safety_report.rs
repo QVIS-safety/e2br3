@@ -192,6 +192,8 @@ pub struct SenderInformation {
 
 	// C.3.1 - Sender Type (MANDATORY)
 	pub sender_type: Option<String>,
+	// MFDS.C.3.1.KR.1 - Sender health professional type
+	pub health_professional_type_kr1: Option<String>,
 
 	// C.3.2 - Sender's Organisation (MANDATORY)
 	pub organization_name: Option<String>,
@@ -224,6 +226,7 @@ pub struct SenderInformation {
 pub struct SenderInformationForCreate {
 	pub case_id: Uuid,
 	pub sender_type: Option<String>,
+	pub health_professional_type_kr1: Option<String>,
 	pub organization_name: Option<String>,
 	pub department: Option<String>,
 	pub street_address: Option<String>,
@@ -243,6 +246,7 @@ pub struct SenderInformationForCreate {
 #[derive(Fields, Deserialize)]
 pub struct SenderInformationForUpdate {
 	pub sender_type: Option<String>,
+	pub health_professional_type_kr1: Option<String>,
 	pub organization_name: Option<String>,
 	pub department: Option<String>,
 	pub street_address: Option<String>,
@@ -459,6 +463,8 @@ pub struct StudyInformation {
 	pub study_type_reaction: Option<String>,
 	// MFDS.C.5.4.KR.1 - Other studies type
 	pub study_type_reaction_kr1: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -473,6 +479,8 @@ pub struct StudyInformationForCreate {
 	pub sponsor_study_number: Option<String>,
 	pub study_type_reaction: Option<String>,
 	pub study_type_reaction_kr1: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -481,6 +489,8 @@ pub struct StudyInformationForUpdate {
 	pub sponsor_study_number: Option<String>,
 	pub study_type_reaction: Option<String>,
 	pub study_type_reaction_kr1: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 }
 
 #[derive(FilterNodes, Deserialize, Default)]
@@ -521,6 +531,40 @@ pub struct StudyRegistrationNumberForUpdate {
 
 #[derive(FilterNodes, Deserialize, Default)]
 pub struct StudyRegistrationNumberFilter {
+	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
+	pub study_information_id: Option<OpValsValue>,
+	pub sequence_number: Option<OpValsValue>,
+}
+
+// -- StudyFdaCrossReportedInd
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct StudyFdaCrossReportedInd {
+	pub id: Uuid,
+	pub study_information_id: Uuid,
+	pub ind_number: String,
+	pub sequence_number: i32,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct StudyFdaCrossReportedIndForCreate {
+	pub study_information_id: Uuid,
+	pub ind_number: String,
+	pub sequence_number: i32,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct StudyFdaCrossReportedIndForUpdate {
+	pub ind_number: Option<String>,
+	pub sequence_number: Option<i32>,
+}
+
+#[derive(FilterNodes, Deserialize, Default)]
+pub struct StudyFdaCrossReportedIndFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub study_information_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
@@ -1021,6 +1065,51 @@ impl StudyRegistrationNumberBmc {
 		mm: &ModelManager,
 		id: Uuid,
 		data: StudyRegistrationNumberForUpdate,
+	) -> Result<()> {
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+}
+
+pub struct StudyFdaCrossReportedIndBmc;
+impl DbBmc for StudyFdaCrossReportedIndBmc {
+	const TABLE: &'static str = "study_fda_cross_reported_inds";
+}
+
+impl StudyFdaCrossReportedIndBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: StudyFdaCrossReportedIndForCreate,
+	) -> Result<Uuid> {
+		base_uuid::create::<Self, _>(ctx, mm, data).await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<StudyFdaCrossReportedInd> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<StudyFdaCrossReportedIndFilter>>,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<StudyFdaCrossReportedInd>> {
+		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: StudyFdaCrossReportedIndForUpdate,
 	) -> Result<()> {
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}

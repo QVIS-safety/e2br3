@@ -115,6 +115,7 @@ INSERT INTO e2b_code_lists (list_name, code, display_name, sort_order) VALUES
 ('sender_type', '4', 'Regional pharmacovigilance center', 4),
 ('sender_type', '5', 'WHO collaborating center for international drug monitoring', 5),
 ('sender_type', '6', 'Other', 6),
+('sender_type', '7', 'Patient / Consumer', 7),
 
 -- Qualification (C.2.r.4)
 ('qualification', '1', 'Physician', 1),

@@ -34,6 +34,28 @@ pub fn should_clear_combination_product_null_flavor_on_value() -> bool {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::validation::is_rule_value_valid;
+
+	fn is_fda_local_criteria_report_type_allowed(value: &str) -> bool {
+		is_rule_value_valid(
+			"FDA.C.1.7.1.REQUIRED",
+			Some(value),
+			None,
+			RuleFacts {
+				fda_fulfil_expedited_criteria: Some(true),
+				..RuleFacts::default()
+			},
+		)
+	}
+
+	fn is_fda_combination_product_indicator_allowed(value: &str) -> bool {
+		is_rule_value_valid(
+			"FDA.C.1.12.REQUIRED",
+			Some(value),
+			None,
+			RuleFacts::default(),
+		)
+	}
 
 	#[test]
 	fn report_type_presence_is_trim_aware() {
@@ -52,5 +74,28 @@ mod tests {
 	fn c_section_null_flavor_clear_policy_tracks_catalog() {
 		assert!(should_clear_local_criteria_null_flavor_on_value());
 		assert!(should_clear_combination_product_null_flavor_on_value());
+	}
+
+	#[test]
+	fn fda_local_criteria_report_type_uses_reference_value_contract() {
+		for value in ["1", "2", "4", "5", "6"] {
+			assert!(is_fda_local_criteria_report_type_allowed(value), "{value}");
+		}
+
+		assert!(!is_fda_local_criteria_report_type_allowed("3"));
+		assert!(!is_fda_local_criteria_report_type_allowed(""));
+	}
+
+	#[test]
+	fn fda_combination_product_indicator_uses_boolean_string_contract() {
+		assert!(is_fda_combination_product_indicator_allowed("false"));
+		assert!(is_fda_combination_product_indicator_allowed("true"));
+
+		for value in ["1", "2", "3", ""] {
+			assert!(
+				!is_fda_combination_product_indicator_allowed(value),
+				"{value}"
+			);
+		}
 	}
 }

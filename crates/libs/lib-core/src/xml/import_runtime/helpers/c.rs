@@ -4,12 +4,14 @@ use crate::xml::import_runtime::shared::{
 	first_attr, first_text, first_text_root, first_value_root, normalize_code,
 	normalize_iso2, telecom_first, telecom_first_in_node, MessageHeaderExtract,
 };
+use crate::xml::mfds::codes::KR_C_3_1_1;
 use crate::xml::Result;
 use libxml::parser::Parser;
 use libxml::xpath::Context;
 
 pub(crate) struct SenderImport {
 	pub(crate) sender_type: String,
+	pub(crate) health_professional_type_kr1: Option<String>,
 	pub(crate) organization_name: String,
 	pub(crate) department: Option<String>,
 	pub(crate) street_address: Option<String>,
@@ -122,7 +124,7 @@ pub(crate) fn parse_sender_information(
 				"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:code/@code",
 			)
 		}),
-		&["1", "2", "3", "4", "5", "6"],
+		&["1", "2", "3", "4", "5", "6", "7"],
 		"sender_information.sender_type",
 	)
 	.ok_or_else(|| Error::InvalidXml {
@@ -150,6 +152,16 @@ pub(crate) fn parse_sender_information(
 
 	Ok(Some(SenderImport {
 		sender_type,
+		health_professional_type_kr1: normalize_code(
+			first_value_root(
+				&mut xpath,
+				&format!(
+					"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:subjectOf2/hl7:observation[hl7:code[@code='{KR_C_3_1_1}']]/hl7:value/@code"
+				),
+			),
+			&["1", "2", "3", "4"],
+			"sender_information.health_professional_type_kr1",
+		),
 		organization_name,
 		department: first_text_root(
 			&mut xpath,

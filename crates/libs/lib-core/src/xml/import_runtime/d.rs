@@ -530,6 +530,9 @@ async fn import_parent_information(
 					drug_name_null_flavor: None,
 					mpid: entry.mpid,
 					mpid_version: entry.mpid_version,
+					mfds_medicinal_product_version: entry
+						.mfds_medicinal_product_version,
+					mfds_medicinal_product_id: entry.mfds_medicinal_product_id,
 					phpid: entry.phpid,
 					phpid_version: entry.phpid_version,
 					start_date: entry.start_date,
@@ -553,6 +556,12 @@ async fn import_parent_information(
 					sequence_number: seq,
 					drug_name,
 					drug_name_null_flavor: None,
+					mfds_medicinal_product_version: entry
+						.mfds_medicinal_product_version
+						.clone(),
+					mfds_medicinal_product_id: entry
+						.mfds_medicinal_product_id
+						.clone(),
 					start_date_null_flavor: None,
 					end_date_null_flavor: None,
 				},
@@ -567,6 +576,9 @@ async fn import_parent_information(
 					drug_name_null_flavor: None,
 					mpid: entry.mpid,
 					mpid_version: entry.mpid_version,
+					mfds_medicinal_product_version: entry
+						.mfds_medicinal_product_version,
+					mfds_medicinal_product_id: entry.mfds_medicinal_product_id,
 					phpid: entry.phpid,
 					phpid_version: entry.phpid_version,
 					start_date: entry.start_date,
