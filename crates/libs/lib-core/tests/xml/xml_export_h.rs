@@ -13,6 +13,7 @@ fn export_h_narrative_basic() {
 		case_narrative: "Patient improved.".to_string(),
 		reporter_comments: Some("Reporter note".to_string()),
 		sender_comments: Some("Sender note".to_string()),
+		additional_information: None,
 		created_at: OffsetDateTime::now_utc(),
 		updated_at: OffsetDateTime::now_utc(),
 		created_by: Uuid::new_v4(),

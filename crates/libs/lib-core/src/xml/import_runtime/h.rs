@@ -46,6 +46,7 @@ pub(crate) async fn import_section_h(
 						case_narrative: Some(narrative.case_narrative),
 						reporter_comments: narrative.reporter_comments,
 						sender_comments: narrative.sender_comments,
+						additional_information: None,
 					},
 				)
 				.await?;
@@ -60,6 +61,7 @@ pub(crate) async fn import_section_h(
 						case_narrative: narrative.case_narrative.clone(),
 						reporter_comments: narrative.reporter_comments.clone(),
 						sender_comments: narrative.sender_comments.clone(),
+						additional_information: None,
 					},
 				)
 				.await?

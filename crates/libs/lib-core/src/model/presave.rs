@@ -822,6 +822,8 @@ pub struct ProductPresave {
 	pub product_description: Option<String>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
+	pub mfds_mpid: Option<String>,
+	pub mfds_mpid_version: Option<String>,
 	pub phpid: Option<String>,
 	pub phpid_version: Option<String>,
 	pub investigational_product_blinded: Option<bool>,
@@ -832,20 +834,6 @@ pub struct ProductPresave {
 	pub holder_applicant_name_notation: Option<String>,
 	pub fda_ind_number_occurred: Option<String>,
 	pub fda_pre_anda_number_occurred: Option<String>,
-	pub mfds_domestic_product_code: Option<String>,
-	pub mfds_domestic_ingredient_code: Option<String>,
-	pub mfds_udl_product_code: Option<String>,
-	pub mfds_udl_ingredient_code: Option<String>,
-	pub mfds_udl_manufacturer_code: Option<String>,
-	pub mfds_udl_manufacturer_name: Option<String>,
-	pub mfds_foreign_ich_product_code: Option<String>,
-	pub mfds_foreign_ich_ingredient_code: Option<String>,
-	pub mfds_foreign_ich_holder_code: Option<String>,
-	pub mfds_foreign_ich_holder_name: Option<String>,
-	pub mfds_foreign_e2b_product_code: Option<String>,
-	pub mfds_foreign_e2b_ingredient_code: Option<String>,
-	pub mfds_foreign_e2b_holder_code: Option<String>,
-	pub mfds_foreign_e2b_holder_name: Option<String>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -868,6 +856,8 @@ pub struct ProductPresaveForCreate {
 	pub product_description: Option<String>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
+	pub mfds_mpid: Option<String>,
+	pub mfds_mpid_version: Option<String>,
 	pub phpid: Option<String>,
 	pub phpid_version: Option<String>,
 	pub investigational_product_blinded: Option<bool>,
@@ -878,20 +868,6 @@ pub struct ProductPresaveForCreate {
 	pub holder_applicant_name_notation: Option<String>,
 	pub fda_ind_number_occurred: Option<String>,
 	pub fda_pre_anda_number_occurred: Option<String>,
-	pub mfds_domestic_product_code: Option<String>,
-	pub mfds_domestic_ingredient_code: Option<String>,
-	pub mfds_udl_product_code: Option<String>,
-	pub mfds_udl_ingredient_code: Option<String>,
-	pub mfds_udl_manufacturer_code: Option<String>,
-	pub mfds_udl_manufacturer_name: Option<String>,
-	pub mfds_foreign_ich_product_code: Option<String>,
-	pub mfds_foreign_ich_ingredient_code: Option<String>,
-	pub mfds_foreign_ich_holder_code: Option<String>,
-	pub mfds_foreign_ich_holder_name: Option<String>,
-	pub mfds_foreign_e2b_product_code: Option<String>,
-	pub mfds_foreign_e2b_ingredient_code: Option<String>,
-	pub mfds_foreign_e2b_holder_code: Option<String>,
-	pub mfds_foreign_e2b_holder_name: Option<String>,
 }
 
 #[derive(Fields)]
@@ -911,6 +887,8 @@ struct ProductPresaveForInsert {
 	product_description: Option<String>,
 	mpid: Option<String>,
 	mpid_version: Option<String>,
+	mfds_mpid: Option<String>,
+	mfds_mpid_version: Option<String>,
 	phpid: Option<String>,
 	phpid_version: Option<String>,
 	investigational_product_blinded: Option<bool>,
@@ -921,20 +899,6 @@ struct ProductPresaveForInsert {
 	holder_applicant_name_notation: Option<String>,
 	fda_ind_number_occurred: Option<String>,
 	fda_pre_anda_number_occurred: Option<String>,
-	mfds_domestic_product_code: Option<String>,
-	mfds_domestic_ingredient_code: Option<String>,
-	mfds_udl_product_code: Option<String>,
-	mfds_udl_ingredient_code: Option<String>,
-	mfds_udl_manufacturer_code: Option<String>,
-	mfds_udl_manufacturer_name: Option<String>,
-	mfds_foreign_ich_product_code: Option<String>,
-	mfds_foreign_ich_ingredient_code: Option<String>,
-	mfds_foreign_ich_holder_code: Option<String>,
-	mfds_foreign_ich_holder_name: Option<String>,
-	mfds_foreign_e2b_product_code: Option<String>,
-	mfds_foreign_e2b_ingredient_code: Option<String>,
-	mfds_foreign_e2b_holder_code: Option<String>,
-	mfds_foreign_e2b_holder_name: Option<String>,
 }
 
 impl IntoOrgScopedCreate for ProductPresaveForCreate {
@@ -957,6 +921,8 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 			product_description: self.product_description,
 			mpid: self.mpid,
 			mpid_version: self.mpid_version,
+			mfds_mpid: self.mfds_mpid,
+			mfds_mpid_version: self.mfds_mpid_version,
 			phpid: self.phpid,
 			phpid_version: self.phpid_version,
 			investigational_product_blinded: self.investigational_product_blinded,
@@ -967,20 +933,6 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 			holder_applicant_name_notation: self.holder_applicant_name_notation,
 			fda_ind_number_occurred: self.fda_ind_number_occurred,
 			fda_pre_anda_number_occurred: self.fda_pre_anda_number_occurred,
-			mfds_domestic_product_code: self.mfds_domestic_product_code,
-			mfds_domestic_ingredient_code: self.mfds_domestic_ingredient_code,
-			mfds_udl_product_code: self.mfds_udl_product_code,
-			mfds_udl_ingredient_code: self.mfds_udl_ingredient_code,
-			mfds_udl_manufacturer_code: self.mfds_udl_manufacturer_code,
-			mfds_udl_manufacturer_name: self.mfds_udl_manufacturer_name,
-			mfds_foreign_ich_product_code: self.mfds_foreign_ich_product_code,
-			mfds_foreign_ich_ingredient_code: self.mfds_foreign_ich_ingredient_code,
-			mfds_foreign_ich_holder_code: self.mfds_foreign_ich_holder_code,
-			mfds_foreign_ich_holder_name: self.mfds_foreign_ich_holder_name,
-			mfds_foreign_e2b_product_code: self.mfds_foreign_e2b_product_code,
-			mfds_foreign_e2b_ingredient_code: self.mfds_foreign_e2b_ingredient_code,
-			mfds_foreign_e2b_holder_code: self.mfds_foreign_e2b_holder_code,
-			mfds_foreign_e2b_holder_name: self.mfds_foreign_e2b_holder_name,
 		}
 	}
 }
@@ -1002,6 +954,8 @@ pub struct ProductPresaveForUpdate {
 	pub product_description: Option<String>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
+	pub mfds_mpid: Option<String>,
+	pub mfds_mpid_version: Option<String>,
 	pub phpid: Option<String>,
 	pub phpid_version: Option<String>,
 	pub investigational_product_blinded: Option<bool>,
@@ -1012,20 +966,6 @@ pub struct ProductPresaveForUpdate {
 	pub holder_applicant_name_notation: Option<String>,
 	pub fda_ind_number_occurred: Option<String>,
 	pub fda_pre_anda_number_occurred: Option<String>,
-	pub mfds_domestic_product_code: Option<String>,
-	pub mfds_domestic_ingredient_code: Option<String>,
-	pub mfds_udl_product_code: Option<String>,
-	pub mfds_udl_ingredient_code: Option<String>,
-	pub mfds_udl_manufacturer_code: Option<String>,
-	pub mfds_udl_manufacturer_name: Option<String>,
-	pub mfds_foreign_ich_product_code: Option<String>,
-	pub mfds_foreign_ich_ingredient_code: Option<String>,
-	pub mfds_foreign_ich_holder_code: Option<String>,
-	pub mfds_foreign_ich_holder_name: Option<String>,
-	pub mfds_foreign_e2b_product_code: Option<String>,
-	pub mfds_foreign_e2b_ingredient_code: Option<String>,
-	pub mfds_foreign_e2b_holder_code: Option<String>,
-	pub mfds_foreign_e2b_holder_name: Option<String>,
 }
 
 pub struct ProductPresaveBmc;
@@ -1192,6 +1132,8 @@ pub struct ProductPresaveSubstance {
 	pub substance_name: Option<String>,
 	pub substance_termid_version: Option<String>,
 	pub substance_termid: Option<String>,
+	pub mfds_version: Option<String>,
+	pub mfds_id: Option<String>,
 	pub strength_value: Option<Decimal>,
 	pub strength_unit: Option<String>,
 	pub created_at: OffsetDateTime,
@@ -1207,6 +1149,8 @@ pub struct ProductPresaveSubstanceForCreate {
 	pub substance_name: Option<String>,
 	pub substance_termid_version: Option<String>,
 	pub substance_termid: Option<String>,
+	pub mfds_version: Option<String>,
+	pub mfds_id: Option<String>,
 	pub strength_value: Option<Decimal>,
 	pub strength_unit: Option<String>,
 }
@@ -1217,6 +1161,8 @@ pub struct ProductPresaveSubstanceForUpdate {
 	pub substance_name: Option<String>,
 	pub substance_termid_version: Option<String>,
 	pub substance_termid: Option<String>,
+	pub mfds_version: Option<String>,
+	pub mfds_id: Option<String>,
 	pub strength_value: Option<Decimal>,
 	pub strength_unit: Option<String>,
 }
@@ -1440,6 +1386,123 @@ impl ProductPresaveMfdsRegionalItemBmc {
 		let rows = match dbx
 			.fetch_all(
 				sqlx::query_as::<_, ProductPresaveMfdsRegionalItem>(&sql)
+					.bind(parent_id),
+			)
+			.await
+		{
+			Ok(rows) => rows,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		dbx.commit_txn().await?;
+		Ok(rows)
+	}
+}
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct ProductPresaveMfdsDeviceItem {
+	pub id: Uuid,
+	pub product_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub code: Option<String>,
+	pub value_code: Option<String>,
+	pub value_value: Option<String>,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct ProductPresaveMfdsDeviceItemForCreate {
+	pub product_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub code: Option<String>,
+	pub value_code: Option<String>,
+	pub value_value: Option<String>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct ProductPresaveMfdsDeviceItemForUpdate {
+	pub sequence_number: Option<i32>,
+	pub code: Option<String>,
+	pub value_code: Option<String>,
+	pub value_value: Option<String>,
+}
+
+pub struct ProductPresaveMfdsDeviceItemBmc;
+
+impl DbBmc for ProductPresaveMfdsDeviceItemBmc {
+	const TABLE: &'static str = "product_presave_mfds_device_items";
+}
+
+impl ProductPresaveMfdsDeviceItemBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: ProductPresaveMfdsDeviceItemForCreate,
+	) -> Result<Uuid> {
+		base_uuid::create::<Self, _>(ctx, mm, data).await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<ProductPresaveMfdsDeviceItem> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<ProductPresaveMfdsDeviceItem>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: ProductPresaveMfdsDeviceItemForUpdate,
+	) -> Result<()> {
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn list_by_parent(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		parent_id: Uuid,
+	) -> Result<Vec<ProductPresaveMfdsDeviceItem>> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+
+		let sql = format!(
+			"SELECT * FROM {} WHERE product_presave_id = $1 ORDER BY sequence_number ASC, id ASC",
+			Self::TABLE
+		);
+		let rows = match dbx
+			.fetch_all(
+				sqlx::query_as::<_, ProductPresaveMfdsDeviceItem>(&sql)
 					.bind(parent_id),
 			)
 			.await

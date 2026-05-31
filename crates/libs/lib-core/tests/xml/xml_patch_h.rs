@@ -22,6 +22,7 @@ fn patch_h_narrative_updates_raw_xml() {
 		case_narrative: "Updated narrative".to_string(),
 		reporter_comments: Some("Reporter note".to_string()),
 		sender_comments: None,
+		additional_information: None,
 		created_at: OffsetDateTime::now_utc(),
 		updated_at: OffsetDateTime::now_utc(),
 		created_by: Uuid::new_v4(),

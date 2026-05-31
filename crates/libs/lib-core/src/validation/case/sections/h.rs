@@ -64,7 +64,7 @@ pub(crate) fn collect_ich_issues(
 		.iter()
 		.enumerate()
 		.for_each(|(idx, summary)| {
-			if has_text(summary.summary_type.as_deref()) {
+			if has_text(summary.summary_text.as_deref()) {
 				let _ = push_issue_if_rule_invalid(
 					issues,
 					"ICH.H.5.r.1b.REQUIRED",

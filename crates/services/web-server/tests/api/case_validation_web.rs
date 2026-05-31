@@ -2367,6 +2367,25 @@ async fn test_workflow_transition_updates_case_and_persists_event() -> Result<()
 		events["data"][0]["comment"].as_str(),
 		Some("Ready for review")
 	);
+	assert!(events["data"][0].get("fromRole").is_some());
+	assert!(events["data"][0].get("fromUserId").is_some());
+	assert!(events["data"][0].get("targetUserDisplay").is_some());
+	assert!(
+		events["data"][0]["actedByDisplay"].as_str().is_some(),
+		"{events:?}"
+	);
+	assert_eq!(
+		events["data"][0]["dateOfMostRecent"]
+			.as_str()
+			.unwrap_or("N/A"),
+		"N/A"
+	);
+	assert!(
+		events["data"][0]["delay"]
+			.as_str()
+			.is_some_and(|value| value == "N/A" || value.ends_with('d')),
+		"{events:?}"
+	);
 	assert_eq!(events["data"][0]["usedAdminOverride"].as_bool(), Some(true));
 	Ok(())
 }
@@ -2443,6 +2462,22 @@ async fn test_workflow_assignment_updates_owner_without_changing_status(
 	assert_eq!(
 		events["data"][0]["comment"].as_str(),
 		Some("Assign authoring owner")
+	);
+	assert!(events["data"][0].get("fromRole").is_some());
+	assert!(events["data"][0].get("fromUserId").is_some());
+	assert!(
+		events["data"][0]["targetUserDisplay"].as_str().is_some(),
+		"{events:?}"
+	);
+	assert!(
+		events["data"][0]["actedByDisplay"].as_str().is_some(),
+		"{events:?}"
+	);
+	assert!(
+		events["data"][0]["delay"]
+			.as_str()
+			.is_some_and(|value| value == "N/A" || value.ends_with('d')),
+		"{events:?}"
 	);
 	assert_eq!(events["data"][0]["usedAdminOverride"].as_bool(), Some(true));
 	Ok(())

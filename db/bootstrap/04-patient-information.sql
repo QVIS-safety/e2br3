@@ -144,12 +144,16 @@ CREATE TABLE past_drug_history (
     drug_name VARCHAR(500),
     drug_name_null_flavor VARCHAR(4) CHECK (drug_name_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
+    -- D.8.r.1.KR.1a/b - MFDS product code fields
+    mfds_medicinal_product_version VARCHAR(20),
+    mfds_medicinal_product_id VARCHAR(10),
+
     -- D.8.r.2 - MPID (Medicinal Product ID)
-    mpid VARCHAR(100),
+    mpid VARCHAR(200),
     mpid_version VARCHAR(10),
 
     -- D.8.r.3 - PhPID (Pharmaceutical Product ID)
-    phpid VARCHAR(100),
+    phpid VARCHAR(200),
     phpid_version VARCHAR(10),
 
     -- D.8.r.4 - Start Date

@@ -192,6 +192,9 @@ async fn import_past_drug_history(
 				PastDrugHistoryForUpdate {
 					drug_name: entry.drug_name,
 					drug_name_null_flavor: None,
+					mfds_medicinal_product_version: entry
+						.mfds_medicinal_product_version,
+					mfds_medicinal_product_id: entry.mfds_medicinal_product_id,
 					mpid: entry.mpid,
 					mpid_version: entry.mpid_version,
 					phpid: entry.phpid,
@@ -216,6 +219,9 @@ async fn import_past_drug_history(
 					sequence_number: seq,
 					drug_name: entry.drug_name,
 					drug_name_null_flavor: None,
+					mfds_medicinal_product_version: entry
+						.mfds_medicinal_product_version,
+					mfds_medicinal_product_id: entry.mfds_medicinal_product_id,
 					mpid: entry.mpid,
 					mpid_version: entry.mpid_version,
 					phpid: entry.phpid,

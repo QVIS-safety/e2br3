@@ -19,6 +19,7 @@ use lib_utils::time::parse_utc;
 use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
+use time::Duration;
 use uuid::Uuid;
 
 use crate::web::rest::case_rest::CaseReadResult;
@@ -58,6 +59,31 @@ pub struct WorkflowAssignInput {
 	pub comment: Option<String>,
 	pub due_at: Option<String>,
 	pub override_reason: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkflowEventReadResult {
+	pub id: Uuid,
+	pub case_id: Uuid,
+	pub from_status: String,
+	pub from_role: Option<String>,
+	pub from_user_id: Option<Uuid>,
+	pub from_user_display: Option<String>,
+	pub to_status: String,
+	pub target_role: Option<String>,
+	pub target_user_id: Option<Uuid>,
+	pub target_user_display: Option<String>,
+	pub comment: Option<String>,
+	pub date_of_most_recent: Option<String>,
+	pub due_at: Option<OffsetDateTime>,
+	pub delay: String,
+	pub acted_by: Uuid,
+	pub acted_by_display: Option<String>,
+	pub actor_role_id: String,
+	pub used_admin_override: bool,
+	pub override_reason: Option<String>,
+	pub created_at: OffsetDateTime,
 }
 
 // -- Helpers
@@ -111,6 +137,74 @@ fn normalize_override_reason(
 		}));
 	}
 	provided
+}
+
+fn workflow_delay(
+	due_at: Option<OffsetDateTime>,
+	created_at: OffsetDateTime,
+) -> String {
+	let Some(due_at) = due_at else {
+		return "N/A".to_string();
+	};
+	if created_at <= due_at {
+		return "N/A".to_string();
+	}
+	let elapsed: Duration = created_at - due_at;
+	format!("{}d", elapsed.whole_days().max(1))
+}
+
+async fn user_display(
+	mm: &ModelManager,
+	user_id: Option<Uuid>,
+) -> Result<Option<String>> {
+	let Some(user_id) = user_id else {
+		return Ok(None);
+	};
+	let row = mm
+		.dbx()
+		.fetch_optional(
+			sqlx::query_as::<_, (Option<String>,)>(
+				r#"
+				SELECT audit_user_display($1)
+				"#,
+			)
+			.bind(user_id),
+		)
+		.await
+		.map_err(|err| Error::Model(err.into()))?;
+	Ok(row.and_then(|(display,)| display))
+}
+
+async fn workflow_event_to_read_result(
+	mm: &ModelManager,
+	row: CaseWorkflowEventRow,
+) -> Result<WorkflowEventReadResult> {
+	let from_user_display = user_display(mm, row.from_user_id).await?;
+	let target_user_display = user_display(mm, row.target_user_id).await?;
+	let acted_by_display = user_display(mm, Some(row.acted_by)).await?;
+	let delay = workflow_delay(row.due_at, row.created_at);
+	Ok(WorkflowEventReadResult {
+		id: row.id,
+		case_id: row.case_id,
+		from_status: row.from_status,
+		from_role: row.from_role,
+		from_user_id: row.from_user_id,
+		from_user_display,
+		to_status: row.to_status,
+		target_role: row.target_role,
+		target_user_id: row.target_user_id,
+		target_user_display,
+		comment: row.comment,
+		date_of_most_recent: row.date_of_most_recent,
+		due_at: row.due_at,
+		delay,
+		acted_by: row.acted_by,
+		acted_by_display,
+		actor_role_id: row.actor_role_id,
+		used_admin_override: row.used_admin_override,
+		override_reason: row.override_reason,
+		created_at: row.created_at,
+	})
 }
 
 // -- Handlers
@@ -222,10 +316,13 @@ pub async fn transition_case_workflow(
 		WorkflowTransitionRecord {
 			case_id: id,
 			from_status: current.workflow_status.clone(),
+			from_role: current.workflow_assigned_role.clone(),
+			from_user_id: current.workflow_assigned_user_id,
 			to_status: target_status.name.clone(),
 			target_role,
 			target_user_id: input.target_user_id,
 			comment,
+			date_of_most_recent: None,
 			due_at,
 			workflow_description,
 			actor_user_id: ctx.user_id(),
@@ -332,9 +429,12 @@ pub async fn assign_case_workflow(
 		WorkflowAssignRecord {
 			case_id: id,
 			current_status: current.workflow_status.clone(),
+			from_role: current.workflow_assigned_role.clone(),
+			from_user_id: current.workflow_assigned_user_id,
 			target_role,
 			target_user_id: input.target_user_id,
 			comment,
+			date_of_most_recent: None,
 			due_at,
 			workflow_description,
 			actor_user_id: ctx.user_id(),
@@ -362,7 +462,7 @@ pub async fn list_case_workflow_events(
 	Path(id): Path<Uuid>,
 ) -> Result<(
 	axum::http::StatusCode,
-	Json<DataRestResult<Vec<CaseWorkflowEventRow>>>,
+	Json<DataRestResult<Vec<WorkflowEventReadResult>>>,
 )> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
@@ -371,11 +471,12 @@ pub async fn list_case_workflow_events(
 	let rows = CaseWorkflowEventBmc::list_by_case(&mm, id)
 		.await
 		.map_err(Error::Model)?;
+	let mut data = Vec::with_capacity(rows.len());
+	for row in rows {
+		data.push(workflow_event_to_read_result(&mm, row).await?);
+	}
 
-	Ok((
-		axum::http::StatusCode::OK,
-		Json(DataRestResult { data: rows }),
-	))
+	Ok((axum::http::StatusCode::OK, Json(DataRestResult { data })))
 }
 
 /// GET /api/cases/workflow/config

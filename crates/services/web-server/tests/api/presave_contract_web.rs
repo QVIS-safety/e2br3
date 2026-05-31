@@ -100,6 +100,8 @@ async fn create_product_presave(
 			product_description: None,
 			mpid: None,
 			mpid_version: None,
+			mfds_mpid: None,
+			mfds_mpid_version: None,
 			phpid: None,
 			phpid_version: None,
 			investigational_product_blinded: None,
@@ -110,20 +112,6 @@ async fn create_product_presave(
 			holder_applicant_name_notation: None,
 			fda_ind_number_occurred: None,
 			fda_pre_anda_number_occurred: None,
-			mfds_domestic_product_code: None,
-			mfds_domestic_ingredient_code: None,
-			mfds_udl_product_code: None,
-			mfds_udl_ingredient_code: None,
-			mfds_udl_manufacturer_code: None,
-			mfds_udl_manufacturer_name: None,
-			mfds_foreign_ich_product_code: None,
-			mfds_foreign_ich_ingredient_code: None,
-			mfds_foreign_ich_holder_code: None,
-			mfds_foreign_ich_holder_name: None,
-			mfds_foreign_e2b_product_code: None,
-			mfds_foreign_e2b_ingredient_code: None,
-			mfds_foreign_e2b_holder_code: None,
-			mfds_foreign_e2b_holder_name: None,
 		},
 	)
 	.await?;
@@ -817,8 +805,7 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 				"sender_presave_id": sender_id,
 				"product_id": "UNION-PRODUCT",
 				"medicinal_product": "Union Product",
-				"fda_ind_number_occurred": "IND-UNION",
-				"mfds_domestic_product_code": "MFDS-UNION"
+				"fda_ind_number_occurred": "IND-UNION"
 			}
 		}),
 	)
@@ -853,10 +840,9 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 		saved["data"]["parent"]["fda_ind_number_occurred"].as_str(),
 		Some("IND-UNION")
 	);
-	assert_eq!(
-		saved["data"]["parent"]["mfds_domestic_product_code"].as_str(),
-		Some("MFDS-UNION")
-	);
+	assert!(saved["data"]["parent"]
+		.get("unknown_extra_product_code")
+		.is_none());
 	assert_eq!(
 		saved["data"]["fda_cross_reported_inds"]
 			.as_array()
@@ -871,6 +857,79 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 			.len(),
 		1
 	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn product_presave_details_expose_effective_mfds_dg_fields() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "mfds").await?;
+
+	let created = post_json_created(
+		&app,
+		&admin_cookie,
+		"/api/presaves/products".to_string(),
+		json!({
+			"data": {
+				"name": "Effective MFDS DG Product",
+				"sender_presave_id": sender_id,
+				"product_id": "EFFECTIVE-MFDS-PRODUCT",
+				"medicinal_product": "Effective MFDS Product",
+				"mfds_mpid": "KR-MPID",
+				"mfds_mpid_version": "KR-V1"
+			}
+		}),
+	)
+	.await?;
+	let product_id = data_id(&created)?;
+
+	let saved = put_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/products/{product_id}/details"),
+		json!({
+			"data": {
+				"substances": [
+					{
+						"sequence_number": 1,
+						"substance_name": "Acetaminophen",
+						"substance_termid_version": "ICH-SUB-V1",
+						"substance_termid": "ICH-SUB",
+						"mfds_version": "KR-SUB-V1",
+						"mfds_id": "KR-SUB",
+						"strength_value": "500",
+						"strength_unit": "mg"
+					}
+				]
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(
+		saved["data"]["parent"]["mfds_mpid"].as_str(),
+		Some("KR-MPID")
+	);
+	assert_eq!(
+		saved["data"]["parent"]["mfds_mpid_version"].as_str(),
+		Some("KR-V1")
+	);
+	assert!(saved["data"]["parent"]
+		.get("unknown_extra_product_code")
+		.is_none());
+	let substance = &saved["data"]["substances"]
+		.as_array()
+		.ok_or("missing substances")?[0];
+	assert_eq!(substance["mfds_id"].as_str(), Some("KR-SUB"));
+	assert_eq!(substance["mfds_version"].as_str(), Some("KR-SUB-V1"));
+	assert_eq!(substance["substance_termid"].as_str(), Some("ICH-SUB"));
 
 	Ok(())
 }
@@ -2432,6 +2491,91 @@ async fn test_product_presave_details_mfds_regional_items_load_and_save(
 			.len(),
 		2
 	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn product_presave_details_round_trips_mfds_device_items_and_hides_old_source_fields(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let product_id =
+		create_product_presave_via_api(&app, &admin_cookie, "mfds").await?;
+
+	let saved = put_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/products/{product_id}/details"),
+		json!({
+			"data": {
+				"parent": {
+					"mfds_mpid": "KR-MPID",
+					"mfds_mpid_version": "KR-V1"
+				},
+				"mfds_device_items": [
+					{
+						"sequence_number": 1,
+						"code": "KR_DVC_MFR",
+						"value_value": "KR Maker"
+					},
+					{
+						"sequence_number": 2,
+						"code": "KR_DVC_PROBC",
+						"value_code": "PROB-1"
+					}
+				]
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(saved["data"]["parent"]["mfds_mpid"], "KR-MPID");
+	assert!(saved["data"]["parent"]
+		.get("unknown_extra_product_code")
+		.is_none());
+	assert!(saved["data"]["parent"]
+		.get("unknown_extra_udl_product_code")
+		.is_none());
+	assert!(saved["data"]["parent"]
+		.get("unknown_extra_foreign_ich_product_code")
+		.is_none());
+	assert!(saved["data"]["parent"]
+		.get("unknown_extra_foreign_e2b_product_code")
+		.is_none());
+	assert_eq!(saved["data"]["mfds_device_items"][0]["code"], "KR_DVC_MFR");
+	assert_eq!(
+		saved["data"]["mfds_device_items"][0]["value_value"],
+		"KR Maker"
+	);
+	assert_eq!(
+		saved["data"]["mfds_device_items"][1]["code"],
+		"KR_DVC_PROBC"
+	);
+	assert_eq!(
+		saved["data"]["mfds_device_items"][1]["value_code"],
+		"PROB-1"
+	);
+
+	let loaded = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/products/{product_id}/details"),
+	)
+	.await?;
+	assert_eq!(
+		loaded["data"]["mfds_device_items"]
+			.as_array()
+			.unwrap()
+			.len(),
+		2
+	);
+	assert!(loaded["data"]["parent"]
+		.get("unknown_extra_product_code")
+		.is_none());
 
 	Ok(())
 }

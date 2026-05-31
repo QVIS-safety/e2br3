@@ -13,8 +13,9 @@ use lib_core::model::presave::{
 	ProductPresaveFdaCrossReportedIndBmc,
 	ProductPresaveFdaCrossReportedIndForCreate,
 	ProductPresaveFdaCrossReportedIndForUpdate, ProductPresaveForCreate,
-	ProductPresaveForUpdate, ProductPresaveMfdsRegionalItemBmc,
-	ProductPresaveMfdsRegionalItemForCreate,
+	ProductPresaveForUpdate, ProductPresaveMfdsDeviceItemBmc,
+	ProductPresaveMfdsDeviceItemForCreate, ProductPresaveMfdsDeviceItemForUpdate,
+	ProductPresaveMfdsRegionalItemBmc, ProductPresaveMfdsRegionalItemForCreate,
 	ProductPresaveMfdsRegionalItemForUpdate, ProductPresaveSubstanceBmc,
 	ProductPresaveSubstanceForCreate, ProductPresaveSubstanceForUpdate,
 	ReceiverPresaveBmc, ReceiverPresaveConsigneeBmc,
@@ -52,6 +53,7 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"product_presave_substances",
 	"product_presave_fda_cross_reported_inds",
 	"product_presave_mfds_regional_items",
+	"product_presave_mfds_device_items",
 	"reporter_presaves",
 	"study_presaves",
 	"study_presave_registration_numbers",
@@ -172,6 +174,8 @@ fn product_presave_create(
 		product_description: None,
 		mpid: None,
 		mpid_version: None,
+		mfds_mpid: None,
+		mfds_mpid_version: None,
 		phpid: None,
 		phpid_version: None,
 		investigational_product_blinded: None,
@@ -182,20 +186,6 @@ fn product_presave_create(
 		holder_applicant_name_notation: None,
 		fda_ind_number_occurred: None,
 		fda_pre_anda_number_occurred: None,
-		mfds_domestic_product_code: None,
-		mfds_domestic_ingredient_code: None,
-		mfds_udl_product_code: None,
-		mfds_udl_ingredient_code: None,
-		mfds_udl_manufacturer_code: None,
-		mfds_udl_manufacturer_name: None,
-		mfds_foreign_ich_product_code: None,
-		mfds_foreign_ich_ingredient_code: None,
-		mfds_foreign_ich_holder_code: None,
-		mfds_foreign_ich_holder_name: None,
-		mfds_foreign_e2b_product_code: None,
-		mfds_foreign_e2b_ingredient_code: None,
-		mfds_foreign_e2b_holder_code: None,
-		mfds_foreign_e2b_holder_name: None,
 	}
 }
 
@@ -371,6 +361,10 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 		(
 			"product_presave_mfds_regional_items",
 			"product_presave_mfds_regional_items_via_parent",
+		),
+		(
+			"product_presave_mfds_device_items",
+			"product_presave_mfds_device_items_via_parent",
 		),
 		("reporter_presaves", "reporter_presaves_org_isolation"),
 		("study_presaves", "study_presaves_org_isolation"),
@@ -797,6 +791,8 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			product_description: Some("Product description".into()),
 			mpid: None,
 			mpid_version: None,
+			mfds_mpid: None,
+			mfds_mpid_version: None,
 			phpid: None,
 			phpid_version: None,
 			investigational_product_blinded: Some(false),
@@ -807,20 +803,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			holder_applicant_name_notation: None,
 			fda_ind_number_occurred: None,
 			fda_pre_anda_number_occurred: None,
-			mfds_domestic_product_code: Some("MFDS-P".into()),
-			mfds_domestic_ingredient_code: Some("MFDS-I".into()),
-			mfds_udl_product_code: None,
-			mfds_udl_ingredient_code: None,
-			mfds_udl_manufacturer_code: None,
-			mfds_udl_manufacturer_name: None,
-			mfds_foreign_ich_product_code: None,
-			mfds_foreign_ich_ingredient_code: None,
-			mfds_foreign_ich_holder_code: None,
-			mfds_foreign_ich_holder_name: None,
-			mfds_foreign_e2b_product_code: None,
-			mfds_foreign_e2b_ingredient_code: None,
-			mfds_foreign_e2b_holder_code: None,
-			mfds_foreign_e2b_holder_name: None,
 		},
 	)
 	.await?;
@@ -992,8 +974,6 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 	);
 	product.fda_ind_number_occurred = Some("IND-UNION".into());
 	product.fda_pre_anda_number_occurred = Some("ANDA-UNION".into());
-	product.mfds_domestic_product_code = Some("MFDS-P".into());
-	product.mfds_domestic_ingredient_code = Some("MFDS-I".into());
 	let product_id = ProductPresaveBmc::create(&ctx, &mm, product).await?;
 	ProductPresaveBmc::update(
 		&ctx,
@@ -1001,7 +981,6 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 		product_id,
 		ProductPresaveForUpdate {
 			fda_ind_number_occurred: Some("IND-UPDATED".into()),
-			mfds_domestic_product_code: Some("MFDS-UPDATED".into()),
 			..Default::default()
 		},
 	)
@@ -1160,6 +1139,8 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 				product_description: None,
 				mpid: None,
 				mpid_version: None,
+				mfds_mpid: None,
+				mfds_mpid_version: None,
 				phpid: None,
 				phpid_version: None,
 				investigational_product_blinded: None,
@@ -1170,20 +1151,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 				holder_applicant_name_notation: None,
 				fda_ind_number_occurred: None,
 				fda_pre_anda_number_occurred: None,
-				mfds_domestic_product_code: None,
-				mfds_domestic_ingredient_code: None,
-				mfds_udl_product_code: None,
-				mfds_udl_ingredient_code: None,
-				mfds_udl_manufacturer_code: None,
-				mfds_udl_manufacturer_name: None,
-				mfds_foreign_ich_product_code: None,
-				mfds_foreign_ich_ingredient_code: None,
-				mfds_foreign_ich_holder_code: None,
-				mfds_foreign_ich_holder_name: None,
-				mfds_foreign_e2b_product_code: None,
-				mfds_foreign_e2b_ingredient_code: None,
-				mfds_foreign_e2b_holder_code: None,
-				mfds_foreign_e2b_holder_name: None,
 			},
 		)
 		.await,
@@ -1386,6 +1353,8 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			product_description: None,
 			mpid: None,
 			mpid_version: None,
+			mfds_mpid: None,
+			mfds_mpid_version: None,
 			phpid: None,
 			phpid_version: None,
 			investigational_product_blinded: None,
@@ -1396,20 +1365,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			holder_applicant_name_notation: None,
 			fda_ind_number_occurred: None,
 			fda_pre_anda_number_occurred: None,
-			mfds_domestic_product_code: None,
-			mfds_domestic_ingredient_code: None,
-			mfds_udl_product_code: None,
-			mfds_udl_ingredient_code: None,
-			mfds_udl_manufacturer_code: None,
-			mfds_udl_manufacturer_name: None,
-			mfds_foreign_ich_product_code: None,
-			mfds_foreign_ich_ingredient_code: None,
-			mfds_foreign_ich_holder_code: None,
-			mfds_foreign_ich_holder_name: None,
-			mfds_foreign_e2b_product_code: None,
-			mfds_foreign_e2b_ingredient_code: None,
-			mfds_foreign_e2b_holder_code: None,
-			mfds_foreign_e2b_holder_name: None,
 		},
 	)
 	.await?;
@@ -1432,6 +1387,8 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				product_description: None,
 				mpid: None,
 				mpid_version: None,
+				mfds_mpid: None,
+				mfds_mpid_version: None,
 				phpid: None,
 				phpid_version: None,
 				investigational_product_blinded: None,
@@ -1442,20 +1399,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				holder_applicant_name_notation: None,
 				fda_ind_number_occurred: None,
 				fda_pre_anda_number_occurred: None,
-				mfds_domestic_product_code: None,
-				mfds_domestic_ingredient_code: None,
-				mfds_udl_product_code: None,
-				mfds_udl_ingredient_code: None,
-				mfds_udl_manufacturer_code: None,
-				mfds_udl_manufacturer_name: None,
-				mfds_foreign_ich_product_code: None,
-				mfds_foreign_ich_ingredient_code: None,
-				mfds_foreign_ich_holder_code: None,
-				mfds_foreign_ich_holder_name: None,
-				mfds_foreign_e2b_product_code: None,
-				mfds_foreign_e2b_ingredient_code: None,
-				mfds_foreign_e2b_holder_code: None,
-				mfds_foreign_e2b_holder_name: None,
 			},
 		)
 		.await,
@@ -1745,6 +1688,8 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			product_description: None,
 			mpid: None,
 			mpid_version: None,
+			mfds_mpid: None,
+			mfds_mpid_version: None,
 			phpid: None,
 			phpid_version: None,
 			investigational_product_blinded: None,
@@ -1755,20 +1700,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			holder_applicant_name_notation: None,
 			fda_ind_number_occurred: None,
 			fda_pre_anda_number_occurred: None,
-			mfds_domestic_product_code: None,
-			mfds_domestic_ingredient_code: None,
-			mfds_udl_product_code: None,
-			mfds_udl_ingredient_code: None,
-			mfds_udl_manufacturer_code: None,
-			mfds_udl_manufacturer_name: None,
-			mfds_foreign_ich_product_code: None,
-			mfds_foreign_ich_ingredient_code: None,
-			mfds_foreign_ich_holder_code: None,
-			mfds_foreign_ich_holder_name: None,
-			mfds_foreign_e2b_product_code: None,
-			mfds_foreign_e2b_ingredient_code: None,
-			mfds_foreign_e2b_holder_code: None,
-			mfds_foreign_e2b_holder_name: None,
 		},
 	)
 	.await?;
@@ -1790,6 +1721,8 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			product_description: None,
 			mpid: None,
 			mpid_version: None,
+			mfds_mpid: None,
+			mfds_mpid_version: None,
 			phpid: None,
 			phpid_version: None,
 			investigational_product_blinded: None,
@@ -1800,20 +1733,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			holder_applicant_name_notation: None,
 			fda_ind_number_occurred: None,
 			fda_pre_anda_number_occurred: None,
-			mfds_domestic_product_code: None,
-			mfds_domestic_ingredient_code: None,
-			mfds_udl_product_code: None,
-			mfds_udl_ingredient_code: None,
-			mfds_udl_manufacturer_code: None,
-			mfds_udl_manufacturer_name: None,
-			mfds_foreign_ich_product_code: None,
-			mfds_foreign_ich_ingredient_code: None,
-			mfds_foreign_ich_holder_code: None,
-			mfds_foreign_ich_holder_name: None,
-			mfds_foreign_e2b_product_code: None,
-			mfds_foreign_e2b_ingredient_code: None,
-			mfds_foreign_e2b_holder_code: None,
-			mfds_foreign_e2b_holder_name: None,
 		},
 	)
 	.await?;
@@ -2018,6 +1937,8 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			substance_name: Some("Substance Before".into()),
 			substance_termid_version: None,
 			substance_termid: Some("SUB-1".into()),
+			mfds_version: None,
+			mfds_id: None,
 			strength_value: Some(Decimal::new(125, 2)),
 			strength_unit: Some("mg".into()),
 		},
@@ -2132,6 +2053,68 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	.await?
 	.iter()
 	.any(|item| item.id == regional_id));
+
+	let maker_id = ProductPresaveMfdsDeviceItemBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveMfdsDeviceItemForCreate {
+			product_presave_id: product_id,
+			sequence_number: 1,
+			code: Some("KR_DVC_MFR".into()),
+			value_code: None,
+			value_value: Some("KR Maker".into()),
+		},
+	)
+	.await?;
+	let problem_id = ProductPresaveMfdsDeviceItemBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveMfdsDeviceItemForCreate {
+			product_presave_id: product_id,
+			sequence_number: 2,
+			code: Some("KR_DVC_PROBC".into()),
+			value_code: Some("PROB-1".into()),
+			value_value: None,
+		},
+	)
+	.await?;
+	ProductPresaveMfdsDeviceItemBmc::update(
+		&ctx,
+		&mm,
+		problem_id,
+		ProductPresaveMfdsDeviceItemForUpdate {
+			sequence_number: Some(3),
+			code: Some("KR_DVC_PROBC".into()),
+			value_code: Some("PROB-2".into()),
+			value_value: None,
+		},
+	)
+	.await?;
+	let device_items =
+		ProductPresaveMfdsDeviceItemBmc::list_by_parent(&ctx, &mm, product_id)
+			.await?;
+	assert_eq!(device_items.len(), 2);
+	assert_eq!(device_items[0].id, maker_id);
+	assert_eq!(device_items[0].code.as_deref(), Some("KR_DVC_MFR"));
+	assert_eq!(device_items[0].value_value.as_deref(), Some("KR Maker"));
+	assert_eq!(device_items[1].id, problem_id);
+	assert_eq!(device_items[1].sequence_number, 3);
+	assert_eq!(device_items[1].value_code.as_deref(), Some("PROB-2"));
+	assert_audit_changed_field(
+		&mm,
+		"product_presave_mfds_device_items",
+		problem_id,
+		"value_code",
+		json!("PROB-1"),
+		json!("PROB-2"),
+	)
+	.await?;
+	ProductPresaveMfdsDeviceItemBmc::delete(&ctx, &mm, maker_id).await?;
+	let device_items =
+		ProductPresaveMfdsDeviceItemBmc::list_by_parent(&ctx, &mm, product_id)
+			.await?;
+	assert_eq!(device_items.len(), 1);
+	assert_eq!(device_items[0].id, problem_id);
 
 	let registration_id = StudyPresaveRegistrationNumberBmc::create(
 		&ctx,
@@ -2328,6 +2311,91 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
 	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn product_presave_mfds_device_items_round_trip() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create(format!("Device Item Sender {}", Uuid::new_v4())),
+	)
+	.await?;
+	let product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Mfds,
+			format!("Device Item Product {}", Uuid::new_v4()),
+			sender_id,
+		),
+	)
+	.await?;
+
+	let maker_id = ProductPresaveMfdsDeviceItemBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveMfdsDeviceItemForCreate {
+			product_presave_id: product_id,
+			sequence_number: 1,
+			code: Some("KR_DVC_MFR".into()),
+			value_code: None,
+			value_value: Some("KR Maker".into()),
+		},
+	)
+	.await?;
+	let problem_id = ProductPresaveMfdsDeviceItemBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveMfdsDeviceItemForCreate {
+			product_presave_id: product_id,
+			sequence_number: 2,
+			code: Some("KR_DVC_PROBC".into()),
+			value_code: Some("PROB-1".into()),
+			value_value: None,
+		},
+	)
+	.await?;
+
+	ProductPresaveMfdsDeviceItemBmc::update(
+		&ctx,
+		&mm,
+		problem_id,
+		ProductPresaveMfdsDeviceItemForUpdate {
+			sequence_number: Some(3),
+			code: Some("KR_DVC_PROBC".into()),
+			value_code: Some("PROB-2".into()),
+			value_value: None,
+		},
+	)
+	.await?;
+
+	let rows =
+		ProductPresaveMfdsDeviceItemBmc::list_by_parent(&ctx, &mm, product_id)
+			.await?;
+	assert_eq!(rows.len(), 2);
+	assert_eq!(rows[0].id, maker_id);
+	assert_eq!(rows[0].code.as_deref(), Some("KR_DVC_MFR"));
+	assert_eq!(rows[0].value_value.as_deref(), Some("KR Maker"));
+	assert_eq!(rows[1].id, problem_id);
+	assert_eq!(rows[1].sequence_number, 3);
+	assert_eq!(rows[1].value_code.as_deref(), Some("PROB-2"));
+
+	ProductPresaveMfdsDeviceItemBmc::delete(&ctx, &mm, maker_id).await?;
+	let rows =
+		ProductPresaveMfdsDeviceItemBmc::list_by_parent(&ctx, &mm, product_id)
+			.await?;
+	assert_eq!(rows.len(), 1);
+	assert_eq!(rows[0].id, problem_id);
+
+	ProductPresaveMfdsDeviceItemBmc::delete(&ctx, &mm, problem_id).await?;
+	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
+	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
 	Ok(())
 }
 

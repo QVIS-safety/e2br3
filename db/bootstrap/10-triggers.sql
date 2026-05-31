@@ -192,7 +192,8 @@ BEGIN
     IF p_table_name IN (
         'product_presave_substances',
         'product_presave_fda_cross_reported_inds',
-        'product_presave_mfds_regional_items'
+        'product_presave_mfds_regional_items',
+        'product_presave_mfds_device_items'
     ) THEN
         SELECT p.organization_id INTO v_org_id
         FROM product_presaves p
@@ -581,6 +582,9 @@ CREATE TRIGGER audit_product_presave_fda_cross_reported_inds AFTER INSERT OR UPD
 CREATE TRIGGER audit_product_presave_mfds_regional_items AFTER INSERT OR UPDATE OR DELETE ON product_presave_mfds_regional_items
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
+CREATE TRIGGER audit_product_presave_mfds_device_items AFTER INSERT OR UPDATE OR DELETE ON product_presave_mfds_device_items
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
 CREATE TRIGGER audit_reporter_presaves AFTER INSERT OR UPDATE OR DELETE ON reporter_presaves
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
@@ -776,6 +780,9 @@ CREATE TRIGGER update_product_presave_fda_cross_reported_inds_updated_at BEFORE 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_product_presave_mfds_regional_items_updated_at BEFORE UPDATE ON product_presave_mfds_regional_items
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_product_presave_mfds_device_items_updated_at BEFORE UPDATE ON product_presave_mfds_device_items
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reporter_presaves_updated_at BEFORE UPDATE ON reporter_presaves

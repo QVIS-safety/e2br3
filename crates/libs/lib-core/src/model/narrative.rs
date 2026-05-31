@@ -29,6 +29,9 @@ pub struct NarrativeInformation {
 	// H.4 - Sender's Comments
 	pub sender_comments: Option<String>,
 
+	// NR_SPONSOR - Additional Information
+	pub additional_information: Option<String>,
+
 	// Timestamps
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -43,6 +46,7 @@ pub struct NarrativeInformationForCreate {
 	pub case_narrative: String,
 	pub reporter_comments: Option<String>,
 	pub sender_comments: Option<String>,
+	pub additional_information: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -51,6 +55,7 @@ pub struct NarrativeInformationForUpdate {
 	pub case_narrative: Option<String>,
 	pub reporter_comments: Option<String>,
 	pub sender_comments: Option<String>,
+	pub additional_information: Option<String>,
 }
 
 // -- SenderDiagnosis
@@ -168,11 +173,12 @@ impl NarrativeInformationBmc {
 				case_narrative,
 				reporter_comments,
 				sender_comments,
+				additional_information,
 				created_at,
 				updated_at,
 				created_by
 			)
-			 VALUES ($1, $2, $3, $4, now(), now(), $5)
+			 VALUES ($1, $2, $3, $4, $5, now(), now(), $6)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -184,6 +190,7 @@ impl NarrativeInformationBmc {
 					.bind(data.case_narrative)
 					.bind(data.reporter_comments)
 					.bind(data.sender_comments)
+					.bind(data.additional_information)
 					.bind(ctx.user_id()),
 			)
 			.await?;
@@ -245,8 +252,9 @@ impl NarrativeInformationBmc {
 			 SET case_narrative = COALESCE($2, case_narrative),
 			     reporter_comments = COALESCE($3, reporter_comments),
 			     sender_comments = COALESCE($4, sender_comments),
+			     additional_information = COALESCE($5, additional_information),
 			     updated_at = now(),
-			     updated_by = $5
+			     updated_by = $6
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -258,6 +266,7 @@ impl NarrativeInformationBmc {
 					.bind(data.case_narrative)
 					.bind(data.reporter_comments)
 					.bind(data.sender_comments)
+					.bind(data.additional_information)
 					.bind(ctx.user_id()),
 			)
 			.await?;

@@ -634,6 +634,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 	)
 	// Case Versions (read-only collection per case)
 	.route(
+		"/cases/{case_id}/audit-trail",
+		get(audit_rest::list_case_audit_trail),
+	)
+	.route(
 		"/cases/{case_id}/versions",
 		get(audit_rest::list_case_versions),
 	)

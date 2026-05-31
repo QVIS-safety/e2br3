@@ -277,16 +277,36 @@ pub(crate) fn parse_past_drug_history(
 			&node,
 			"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:name",
 		);
+		let mfds_medicinal_product_id = clamp_str(
+			first_attr(
+				&mut xpath,
+				&node,
+				"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code",
+				"code",
+			),
+			10,
+			"past_drug_history.mfds_medicinal_product_id",
+		);
+		let mfds_medicinal_product_version = clamp_str(
+			first_attr(
+				&mut xpath,
+				&node,
+				"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code",
+				"codeSystemVersion",
+			),
+			20,
+			"past_drug_history.mfds_medicinal_product_version",
+		);
 		let mpid = first_value(
 			&mut xpath,
 			&node,
-			"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:id/@extension | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@code)[1]",
+			"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:id/@extension",
 		);
 		let mpid_version = clamp_str(
 			first_value(
 				&mut xpath,
 				&node,
-				"(hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:code/@codeSystemVersion | hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:code/@codeSystemVersion)[1]",
+				"hl7:consumable/hl7:instanceOfKind/hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:code/@codeSystemVersion",
 			),
 			10,
 			"past_drug_history.mpid_version",
@@ -347,8 +367,8 @@ pub(crate) fn parse_past_drug_history(
 			drug_name,
 			mpid,
 			mpid_version,
-			mfds_medicinal_product_version: None,
-			mfds_medicinal_product_id: None,
+			mfds_medicinal_product_version,
+			mfds_medicinal_product_id,
 			phpid,
 			phpid_version,
 			start_date,
@@ -763,6 +783,67 @@ pub(crate) fn parse_parent_information(xml: &[u8]) -> Result<Option<ParentImport
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn parse_past_drug_uses_mfds_fields_separate_from_mpid() {
+		let xml = br#"
+<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <PORR_IN049016UV>
+    <controlActProcess>
+      <subject>
+        <investigationEvent>
+          <subjectOf2>
+            <primaryRole>
+              <subjectOf2>
+                <organizer>
+                  <code code="2" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/>
+                  <component>
+                    <substanceAdministration>
+                      <consumable>
+                        <instanceOfKind>
+                          <kindOfProduct>
+                            <code code="KR-DH-ID" codeSystemVersion="KR-DH-V1"/>
+                            <name>Past DH Drug</name>
+                            <asIdentifiedEntity>
+                              <id extension="MPID-EXACT"/>
+                              <code code="MPID" codeSystemVersion="MPID-V1"/>
+                            </asIdentifiedEntity>
+                            <asIdentifiedEntity>
+                              <id extension="PHPID-EXACT"/>
+                              <code code="PHPID" codeSystemVersion="PHPID-V1"/>
+                            </asIdentifiedEntity>
+                          </kindOfProduct>
+                        </instanceOfKind>
+                      </consumable>
+                    </substanceAdministration>
+                  </component>
+                </organizer>
+              </subjectOf2>
+            </primaryRole>
+          </subjectOf2>
+        </investigationEvent>
+      </subject>
+    </controlActProcess>
+  </PORR_IN049016UV>
+</MCCI_IN200100UV01>
+"#;
+
+		let past_drugs = parse_past_drug_history(xml).expect("parse");
+		let past_drug = past_drugs.first().expect("past drug");
+
+		assert_eq!(
+			past_drug.mfds_medicinal_product_version.as_deref(),
+			Some("KR-DH-V1")
+		);
+		assert_eq!(
+			past_drug.mfds_medicinal_product_id.as_deref(),
+			Some("KR-DH-ID")
+		);
+		assert_eq!(past_drug.mpid.as_deref(), Some("MPID-EXACT"));
+		assert_eq!(past_drug.mpid_version.as_deref(), Some("MPID-V1"));
+		assert_eq!(past_drug.phpid.as_deref(), Some("PHPID-EXACT"));
+		assert_eq!(past_drug.phpid_version.as_deref(), Some("PHPID-V1"));
+	}
 
 	#[test]
 	fn parse_parent_past_drug_uses_mfds_fields_separate_from_mpid() {

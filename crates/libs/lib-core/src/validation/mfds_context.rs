@@ -17,6 +17,8 @@ pub struct RelatednessWithDrug {
 pub struct PastDrugByCase {
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
+	pub mfds_medicinal_product_id: Option<String>,
+	pub mfds_medicinal_product_version: Option<String>,
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -100,6 +102,8 @@ async fn list_past_drugs_by_case(
 	let sql = r#"
 SELECT pdh.mpid
      , pdh.mpid_version
+     , pdh.mfds_medicinal_product_id
+     , pdh.mfds_medicinal_product_version
 FROM past_drug_history pdh
 JOIN patient_information pi ON pi.id = pdh.patient_id
 WHERE pi.case_id = $1

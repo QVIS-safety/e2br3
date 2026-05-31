@@ -1550,6 +1550,8 @@ struct DrugInformationDoc {
 	medicinal_product: String,
 	mpid: Option<String>,
 	mpid_version: Option<String>,
+	mfds_mpid_version: Option<String>,
+	mfds_mpid: Option<String>,
 	phpid: Option<String>,
 	phpid_version: Option<String>,
 	investigational_product_blinded: Option<bool>,
@@ -1589,6 +1591,10 @@ struct DrugInformationForCreateDoc {
 	sequence_number: i32,
 	drug_characterization: String,
 	medicinal_product: String,
+	mpid: Option<String>,
+	mpid_version: Option<String>,
+	mfds_mpid_version: Option<String>,
+	mfds_mpid: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
@@ -1611,6 +1617,8 @@ struct DrugInformationForUpdateDoc {
 	investigational_product_blinded: Option<bool>,
 	mpid: Option<String>,
 	mpid_version: Option<String>,
+	mfds_mpid_version: Option<String>,
+	mfds_mpid: Option<String>,
 	phpid: Option<String>,
 	phpid_version: Option<String>,
 	obtain_drug_country: Option<String>,
@@ -4057,5 +4065,35 @@ mod tests {
 			shell_schema.get("appendices").is_none(),
 			"case editor shell schema must not expose case-level authority metadata: {shell_schema}"
 		);
+	}
+
+	#[test]
+	fn drug_information_documents_dg_kr_product_fields() {
+		let doc = serde_json::to_value(ApiDoc::openapi()).expect("openapi json");
+		let schemas = &doc["components"]["schemas"];
+
+		for schema_name in [
+			"DrugInformationDoc",
+			"DrugInformationForCreateDoc",
+			"DrugInformationForUpdateDoc",
+		] {
+			let properties = &schemas[schema_name]["properties"];
+			assert!(
+				properties.get("mpid").is_some(),
+				"{schema_name} must expose base mpid: {properties}"
+			);
+			assert!(
+				properties.get("mpid_version").is_some(),
+				"{schema_name} must expose base mpid_version: {properties}"
+			);
+			assert!(
+				properties.get("mfds_mpid_version").is_some(),
+				"{schema_name} must expose KR mfds_mpid_version: {properties}"
+			);
+			assert!(
+				properties.get("mfds_mpid").is_some(),
+				"{schema_name} must expose KR mfds_mpid: {properties}"
+			);
+		}
 	}
 }

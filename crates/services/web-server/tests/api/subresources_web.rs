@@ -123,7 +123,8 @@ async fn create_narrative(
 	let body = json!({
 		"data": {
 			"case_id": case_id,
-			"case_narrative": "test narrative"
+			"case_narrative": "test narrative",
+			"additional_information": "test sponsor information"
 		}
 	});
 	let (status, body) =
@@ -326,7 +327,8 @@ async fn test_singleton_post_endpoints_are_idempotent() -> Result<()> {
 	create_narrative(&app, &cookie, case_id).await?;
 	let body = json!({"data": {
 		"case_id": case_id,
-		"case_narrative": "updated narrative"
+		"case_narrative": "updated narrative",
+		"additional_information": "updated sponsor information"
 	}});
 	let (status, _) = post_json(
 		&app,
@@ -336,11 +338,28 @@ async fn test_singleton_post_endpoints_are_idempotent() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK);
+	let body = json!({"data": {
+		"case_narrative": "updated narrative",
+		"additional_information": "updated sponsor information"
+	}});
+	let (status, _) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/narrative"),
+		body,
+		"update narrative sponsor information",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
 	let (status, body) =
 		get_json(&app, &cookie, format!("/api/cases/{case_id}/narrative")).await?;
 	assert_eq!(status, StatusCode::OK);
 	let value: Value = serde_json::from_slice(&body)?;
 	assert!(value["data"]["id"].as_str().is_some(), "{value:?}");
+	assert_eq!(
+		value["data"]["additional_information"],
+		"updated sponsor information"
+	);
 
 	// safety report
 	create_safety_report(&app, &cookie, case_id).await?;
@@ -967,6 +986,57 @@ async fn test_patient_subresources_endpoints_ok() -> Result<()> {
 	let value: Value = serde_json::from_slice(&body)?;
 	assert_eq!(value["data"]["mfds_medicinal_product_version"], "MFDS-V1");
 	assert_eq!(value["data"]["mfds_medicinal_product_id"], "MFDS-ID");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_past_drugs_support_mfds_product_fields_and_200_char_ids() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let patient_id = create_patient(&app, &cookie, case_id).await?;
+	let long_mpid = "M".repeat(200);
+	let long_phpid = "P".repeat(200);
+
+	let body = json!({"data": {
+		"patient_id": patient_id,
+		"sequence_number": 1,
+		"drug_name": "Past drug",
+		"mfds_medicinal_product_version": "KR-VERSION-123456",
+		"mfds_medicinal_product_id": "KRPROD1234",
+		"mpid_version": "MPID-V1",
+		"mpid": long_mpid,
+		"phpid_version": "PHPID-V1",
+		"phpid": long_phpid
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/patient/past-drugs"),
+		body,
+	)
+	.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"past-drug create status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	let value: Value = serde_json::from_slice(&body)?;
+	let data = &value["data"];
+	assert_eq!(data["mfds_medicinal_product_version"], "KR-VERSION-123456");
+	assert_eq!(data["mfds_medicinal_product_id"], "KRPROD1234");
+	assert_eq!(data["mpid"], long_mpid);
+	assert_eq!(data["phpid"], long_phpid);
 
 	Ok(())
 }

@@ -713,6 +713,30 @@ fn apply_past_drug_history_section(
 		};
 
 		let mut identifiers = String::new();
+		let mfds_product_id = drug
+			.mfds_medicinal_product_id
+			.as_deref()
+			.filter(|value| !value.trim().is_empty());
+		let mfds_product_version = drug
+			.mfds_medicinal_product_version
+			.as_deref()
+			.filter(|value| !value.trim().is_empty());
+		let mfds_code =
+			if mfds_product_id.is_some() || mfds_product_version.is_some() {
+				let mut attrs = String::new();
+				if let Some(id) = mfds_product_id {
+					attrs.push_str(&format!(" code=\"{}\"", xml_escape(id)));
+				}
+				if let Some(version) = mfds_product_version {
+					attrs.push_str(&format!(
+						" codeSystemVersion=\"{}\"",
+						xml_escape(version)
+					));
+				}
+				format!("<code{attrs}/>")
+			} else {
+				String::new()
+			};
 		if drug.mpid.is_some() || drug.mpid_version.is_some() {
 			let mut code_attrs = String::from(
 				"code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\"",
@@ -792,7 +816,7 @@ fn apply_past_drug_history_section(
 		};
 
 		let fragment = format!(
-			"<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"2\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\" displayName=\"drugHistory\"/><component typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">{effective_time}<consumable typeCode=\"CSM\"><instanceOfKind classCode=\"INST\"><kindOfProduct classCode=\"MMAT\" determinerCode=\"KIND\">{name_fragment}{identifiers}</kindOfProduct></instanceOfKind></consumable>{indication}{reaction}</substanceAdministration></component></organizer></subjectOf2>"
+			"<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\"><code code=\"2\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.20\" displayName=\"drugHistory\"/><component typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">{effective_time}<consumable typeCode=\"CSM\"><instanceOfKind classCode=\"INST\"><kindOfProduct classCode=\"MMAT\" determinerCode=\"KIND\">{mfds_code}{name_fragment}{identifiers}</kindOfProduct></instanceOfKind></consumable>{indication}{reaction}</substanceAdministration></component></organizer></subjectOf2>"
 		);
 		append_fragment_child(doc, parser, xpath, "//hl7:primaryRole", &fragment)?;
 	}
@@ -889,6 +913,108 @@ mod tests {
 	use super::*;
 	use sqlx::types::time::OffsetDateTime;
 	use sqlx::types::Uuid;
+
+	#[test]
+	fn past_drug_fragment_exports_mfds_code_separate_from_identifiers() {
+		let drug = PastDrugHistory {
+			id: Uuid::nil(),
+			patient_id: Uuid::nil(),
+			sequence_number: 1,
+			drug_name: Some("Past & <drug> \"A\"".to_string()),
+			drug_name_null_flavor: None,
+			mfds_medicinal_product_version: Some("MFV&<>\"".to_string()),
+			mfds_medicinal_product_id: Some("MF&<>\"".to_string()),
+			mpid: Some("MP&<>\"".to_string()),
+			mpid_version: Some("MPV&<>\"".to_string()),
+			phpid: Some("PH&<>\"".to_string()),
+			phpid_version: Some("PHV&<>\"".to_string()),
+			start_date: None,
+			start_date_null_flavor: None,
+			end_date: None,
+			end_date_null_flavor: None,
+			indication_meddra_version: None,
+			indication_meddra_code: None,
+			reaction_meddra_version: None,
+			reaction_meddra_code: None,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		};
+
+		let parser = Parser::default();
+		let mut doc = parser
+			.parse_string(
+				"<MCCI_IN200100UV01 xmlns=\"urn:hl7-org:v3\"><primaryRole/></MCCI_IN200100UV01>",
+			)
+			.expect("doc");
+		let mut xpath = Context::new(&doc).expect("xpath");
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+		apply_past_drug_history_section(&mut doc, &parser, &mut xpath, &[drug])
+			.expect("apply");
+		let fragment = doc.to_string();
+
+		let name = "<name>Past &amp; &lt;drug&gt; \"A\"</name>";
+		let mpid = "<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"MP&amp;&lt;&gt;&quot;\"/><code code=\"MPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\" codeSystemVersion=\"MPV&amp;&lt;&gt;&quot;\"/></asIdentifiedEntity>";
+		let phpid = "<asIdentifiedEntity classCode=\"IDENT\"><id extension=\"PH&amp;&lt;&gt;&quot;\"/><code code=\"PHPID\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.4\" codeSystemVersion=\"PHV&amp;&lt;&gt;&quot;\"/></asIdentifiedEntity>";
+
+		let mfds_index = fragment
+			.find("code=\"MF&amp;&lt;&gt;&quot;\"")
+			.expect("MFDS product code");
+		assert!(fragment.contains("codeSystemVersion=\"MFV&amp;&lt;&gt;&quot;\""));
+		let name_index = fragment.find(name).expect("drug name");
+		let mpid_index = fragment.find(mpid).expect("MPID identifier");
+		let phpid_index = fragment.find(phpid).expect("PhPID identifier");
+
+		assert!(mfds_index < name_index);
+		assert!(name_index < mpid_index);
+		assert!(mpid_index < phpid_index);
+	}
+
+	#[test]
+	fn past_drug_fragment_omits_blank_mfds_code() {
+		let drug = PastDrugHistory {
+			id: Uuid::nil(),
+			patient_id: Uuid::nil(),
+			sequence_number: 1,
+			drug_name: Some("Past Drug".to_string()),
+			drug_name_null_flavor: None,
+			mfds_medicinal_product_version: Some(" ".to_string()),
+			mfds_medicinal_product_id: Some(String::new()),
+			mpid: Some("MPID-EXACT".to_string()),
+			mpid_version: Some("MPID-V1".to_string()),
+			phpid: None,
+			phpid_version: None,
+			start_date: None,
+			start_date_null_flavor: None,
+			end_date: None,
+			end_date_null_flavor: None,
+			indication_meddra_version: None,
+			indication_meddra_code: None,
+			reaction_meddra_version: None,
+			reaction_meddra_code: None,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		};
+
+		let parser = Parser::default();
+		let mut doc = parser
+			.parse_string(
+				"<MCCI_IN200100UV01 xmlns=\"urn:hl7-org:v3\"><primaryRole/></MCCI_IN200100UV01>",
+			)
+			.expect("doc");
+		let mut xpath = Context::new(&doc).expect("xpath");
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+		apply_past_drug_history_section(&mut doc, &parser, &mut xpath, &[drug])
+			.expect("apply");
+		let fragment = doc.to_string();
+
+		assert!(!fragment.contains("<code code=\"\""));
+		assert!(!fragment.contains("codeSystemVersion=\" \""));
+		assert!(fragment.contains("code=\"MPID\""));
+	}
 
 	#[test]
 	fn parent_past_drug_fragment_exports_mfds_code_separate_from_identifiers() {

@@ -891,3 +891,126 @@ fn base_g_drug_skeleton() -> &'static str {
 \t</PORR_IN049016UV>\
 </MCCI_IN200100UV01>"
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use sqlx::types::Uuid;
+	use time::OffsetDateTime;
+
+	fn test_drug(id: Uuid, case_id: Uuid) -> DrugInformation {
+		DrugInformation {
+			id,
+			case_id,
+			sequence_number: 1,
+			drug_characterization: "1".to_string(),
+			medicinal_product: "Drug A".to_string(),
+			mpid: Some("BASE-MPID".to_string()),
+			mpid_version: Some("BASE-V1".to_string()),
+			mfds_mpid_version: Some("KR-V1".to_string()),
+			mfds_mpid: Some("KR-MPID".to_string()),
+			phpid: None,
+			phpid_version: None,
+			investigational_product_blinded: None,
+			obtain_drug_country: None,
+			brand_name: None,
+			drug_generic_name: None,
+			drug_authorization_number: None,
+			manufacturer_name: None,
+			manufacturer_country: None,
+			batch_lot_number: None,
+			cumulative_dose_first_reaction_value: None,
+			cumulative_dose_first_reaction_unit: None,
+			gestation_period_exposure_value: None,
+			gestation_period_exposure_unit: None,
+			dosage_text: None,
+			action_taken: None,
+			rechallenge: None,
+			parent_route: None,
+			parent_route_termid: None,
+			parent_route_termid_version: None,
+			parent_dosage_text: None,
+			fda_additional_info_coded: None,
+			drug_additional_info_codes_json: None,
+			drug_additional_information: None,
+			fda_specialized_product_category: None,
+			fda_device_info_json: None,
+			created_at: OffsetDateTime::now_utc(),
+			updated_at: OffsetDateTime::now_utc(),
+			created_by: Uuid::new_v4(),
+			updated_by: None,
+		}
+	}
+
+	fn test_substance(drug_id: Uuid) -> DrugActiveSubstance {
+		DrugActiveSubstance {
+			id: Uuid::new_v4(),
+			drug_id,
+			sequence_number: 1,
+			substance_name: Some("Substance".to_string()),
+			substance_termid: Some("BASE-SUB".to_string()),
+			substance_termid_version: Some("BASE-SV1".to_string()),
+			mfds_version: Some("KR-SV1".to_string()),
+			mfds_id: Some("KR-SUB".to_string()),
+			strength_value: None,
+			strength_unit: None,
+			created_at: OffsetDateTime::now_utc(),
+			updated_at: OffsetDateTime::now_utc(),
+			created_by: Uuid::new_v4(),
+			updated_by: None,
+		}
+	}
+
+	#[test]
+	fn export_g_does_not_alias_mfds_fields_to_base_paths() {
+		let case_id = Uuid::new_v4();
+		let drug_id = Uuid::new_v4();
+		let drug = test_drug(drug_id, case_id);
+		let substance = test_substance(drug_id);
+
+		let xml = export_g_drugs_xml(&[drug], &[substance], &[], &[], &[], &[], &[])
+			.expect("export xml");
+		let parser = libxml::parser::Parser::default();
+		let doc = parser.parse_string(&xml).expect("parse exported xml");
+		let mut xpath = libxml::xpath::Context::new(&doc).expect("xpath");
+		xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
+
+		let mpid = xpath
+			.findvalue(
+				"//hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:id/@extension",
+				None,
+			)
+			.unwrap();
+		assert_eq!(mpid, "BASE-MPID");
+		let mpid_version = xpath
+			.findvalue(
+				"//hl7:kindOfProduct/hl7:asIdentifiedEntity[hl7:code[@code='MPID']]/hl7:code/@codeSystemVersion",
+				None,
+			)
+			.unwrap();
+		assert_eq!(mpid_version, "BASE-V1");
+		let substance_code = xpath
+			.findvalue(
+				"//hl7:ingredient/hl7:ingredientSubstance/hl7:code/@code",
+				None,
+			)
+			.unwrap();
+		assert_eq!(substance_code, "BASE-SUB");
+		let substance_version = xpath
+			.findvalue(
+				"//hl7:ingredient/hl7:ingredientSubstance/hl7:code/@codeSystemVersion",
+				None,
+			)
+			.unwrap();
+		assert_eq!(substance_version, "BASE-SV1");
+
+		assert!(
+			!xml.contains("KR-MPID") && !xml.contains("KR-V1"),
+			"MFDS MPID values must wait for verified MFDS XML paths"
+		);
+		assert!(
+			!xml.contains("KR-SUB") && !xml.contains("KR-SV1"),
+			"MFDS substance values must wait for verified MFDS XML paths"
+		);
+	}
+}

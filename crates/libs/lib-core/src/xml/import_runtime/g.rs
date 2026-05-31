@@ -203,6 +203,8 @@ async fn import_drugs(
 					.investigational_product_blinded,
 				mpid: drug.mpid,
 				mpid_version: drug.mpid_version,
+				// MFDS G product XML mapping is deferred until a verified local
+				// canonical element path exists; do not alias base MPID values.
 				mfds_mpid_version: None,
 				mfds_mpid: None,
 				phpid: drug.phpid,
@@ -231,6 +233,8 @@ async fn import_drugs(
 					substance_name: sub.substance_name,
 					substance_termid: sub.substance_termid,
 					substance_termid_version: sub.substance_termid_version,
+					// MFDS G substance XML mapping is deferred until a verified
+					// local canonical element path exists; do not alias base terms.
 					mfds_version: None,
 					mfds_id: None,
 					strength_value: sub.strength_value,

@@ -98,10 +98,10 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		"FDA.D.11.REQUIRED" => Some("patientInformation.raceCode"),
 		"FDA.D.12.REQUIRED" => Some("patientInformation.ethnicityCode"),
 		"MFDS.D.8.r.1.KR.1b.REQUIRED" => {
-			Some("patientInformation.pastDrugHistory.0.mpid")
+			Some("patientInformation.pastDrugHistory.0.mfdsMedicinalProductId")
 		}
 		"MFDS.D.8.r.1.KR.1a.REQUIRED" => {
-			Some("patientInformation.pastDrugHistory.0.mpidVersion")
+			Some("patientInformation.pastDrugHistory.0.mfdsMedicinalProductVersion")
 		}
 		"MFDS.D.10.8.r.1.KR.1b.REQUIRED" => {
 			Some("patientInformation.parents.0.pastDrugs.0.mfdsMedicinalProductId")
@@ -586,14 +586,17 @@ pub(crate) fn collect_mfds_issues(
 		.iter()
 		.enumerate()
 		.for_each(|(idx, past)| {
-			let has_mpid = has_text(past.mpid.as_deref());
+			let has_mfds_medicinal_product_id =
+				has_text(past.mfds_medicinal_product_id.as_deref());
 			let _ = push_issue_if_conditioned_value_invalid(
 				issues,
 				"MFDS.D.8.r.1.KR.1b.REQUIRED",
 				"MFDS.D.8.r.1.KR.1b.REQUIRED",
 				"MFDS.D.8.r.1.KR.1b.REQUIRED",
-				format!("patientInformation.pastDrugs.{idx}.mpid"),
-				past.mpid.as_deref(),
+				format!(
+					"patientInformation.pastDrugHistory.{idx}.mfdsMedicinalProductId"
+				),
+				past.mfds_medicinal_product_id.as_deref(),
 				None,
 				RuleFacts {
 					mfds_past_drug_code_required_context: Some(
@@ -608,12 +611,14 @@ pub(crate) fn collect_mfds_issues(
 				"MFDS.D.8.r.1.KR.1a.REQUIRED",
 				"MFDS.D.8.r.1.KR.1a.REQUIRED",
 				"MFDS.D.8.r.1.KR.1a.REQUIRED",
-				format!("patientInformation.pastDrugs.{idx}.mpidVersion"),
-				past.mpid_version.as_deref(),
+				format!(
+					"patientInformation.pastDrugHistory.{idx}.mfdsMedicinalProductVersion"
+				),
+				past.mfds_medicinal_product_version.as_deref(),
 				None,
 				RuleFacts {
 					mfds_past_drug_version_required_context: Some(
-						receiver_is_fr && has_mpid,
+						receiver_is_fr && has_mfds_medicinal_product_id,
 					),
 					..RuleFacts::default()
 				},

@@ -9,6 +9,7 @@ pub fn has_case_narrative(narrative: &NarrativeInformation) -> bool {
 pub fn has_narrative_payload(narrative: &NarrativeInformation) -> bool {
 	super::has_text(narrative.reporter_comments.as_deref())
 		|| super::has_text(narrative.sender_comments.as_deref())
+		|| super::has_text(narrative.additional_information.as_deref())
 		|| has_case_narrative(narrative)
 }
 
@@ -29,6 +30,7 @@ mod tests {
 			case_narrative: "".to_string(),
 			reporter_comments: None,
 			sender_comments: None,
+			additional_information: None,
 			created_at: OffsetDateTime::now_utc(),
 			updated_at: OffsetDateTime::now_utc(),
 			created_by: Uuid::new_v4(),

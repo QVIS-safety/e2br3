@@ -243,6 +243,8 @@ CREATE TABLE IF NOT EXISTS product_presaves (
     product_description TEXT,
     mpid VARCHAR(255),
     mpid_version VARCHAR(50),
+    mfds_mpid VARCHAR(255),
+    mfds_mpid_version VARCHAR(50),
     phpid VARCHAR(255),
     phpid_version VARCHAR(50),
     investigational_product_blinded BOOLEAN,
@@ -253,20 +255,6 @@ CREATE TABLE IF NOT EXISTS product_presaves (
     holder_applicant_name_notation VARCHAR(50),
     fda_ind_number_occurred VARCHAR(100),
     fda_pre_anda_number_occurred VARCHAR(100),
-    mfds_domestic_product_code VARCHAR(100),
-    mfds_domestic_ingredient_code VARCHAR(100),
-    mfds_udl_product_code VARCHAR(100),
-    mfds_udl_ingredient_code VARCHAR(100),
-    mfds_udl_manufacturer_code VARCHAR(100),
-    mfds_udl_manufacturer_name VARCHAR(500),
-    mfds_foreign_ich_product_code VARCHAR(100),
-    mfds_foreign_ich_ingredient_code VARCHAR(100),
-    mfds_foreign_ich_holder_code VARCHAR(100),
-    mfds_foreign_ich_holder_name VARCHAR(500),
-    mfds_foreign_e2b_product_code VARCHAR(100),
-    mfds_foreign_e2b_ingredient_code VARCHAR(100),
-    mfds_foreign_e2b_holder_code VARCHAR(100),
-    mfds_foreign_e2b_holder_name VARCHAR(500),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -282,9 +270,6 @@ CREATE TABLE IF NOT EXISTS product_presaves (
 ALTER TABLE sender_presaves
     ADD COLUMN IF NOT EXISTS person_given_name VARCHAR(200);
 
-ALTER TABLE product_presaves
-    ADD COLUMN IF NOT EXISTS product_id VARCHAR(255);
-
 CREATE TABLE IF NOT EXISTS product_presave_substances (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
@@ -292,6 +277,8 @@ CREATE TABLE IF NOT EXISTS product_presave_substances (
     substance_name VARCHAR(2000),
     substance_termid_version VARCHAR(50),
     substance_termid VARCHAR(100),
+    mfds_version VARCHAR(50),
+    mfds_id VARCHAR(100),
     strength_value DECIMAL(15,5),
     strength_unit VARCHAR(50),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -327,6 +314,19 @@ CREATE TABLE IF NOT EXISTS product_presave_mfds_regional_items (
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
     CONSTRAINT product_presave_mfds_regional_items_sequence_unique UNIQUE (product_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS product_presave_mfds_device_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL DEFAULT 1,
+    code VARCHAR(50),
+    value_code VARCHAR(255),
+    value_value TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS reporter_presaves (
@@ -608,6 +608,8 @@ CREATE INDEX idx_product_presaves_sender ON product_presaves(sender_presave_id);
 CREATE INDEX idx_product_presave_substances_parent ON product_presave_substances(product_presave_id);
 CREATE INDEX idx_product_presave_fda_cross_reported_inds_parent ON product_presave_fda_cross_reported_inds(product_presave_id);
 CREATE INDEX idx_product_presave_mfds_regional_items_parent ON product_presave_mfds_regional_items(product_presave_id);
+CREATE INDEX IF NOT EXISTS idx_product_presave_mfds_device_items_product_presave_id
+    ON product_presave_mfds_device_items(product_presave_id);
 CREATE INDEX idx_reporter_presaves_org ON reporter_presaves(organization_id);
 CREATE INDEX idx_study_presaves_org ON study_presaves(organization_id);
 CREATE INDEX idx_study_presaves_product ON study_presaves(product_presave_id);
@@ -743,10 +745,13 @@ CREATE TABLE if NOT EXISTS case_workflow_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
     from_status TEXT NOT NULL,
+    from_role TEXT,
+    from_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     to_status TEXT NOT NULL,
     target_role TEXT,
     target_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     comment TEXT,
+    date_of_most_recent TEXT,
     due_at TIMESTAMPTZ,
     acted_by UUID NOT NULL REFERENCES users(id),
     actor_role_id TEXT NOT NULL,
@@ -1822,6 +1827,26 @@ CREATE POLICY product_presave_mfds_regional_items_via_parent ON product_presave_
         EXISTS (
             SELECT 1 FROM product_presaves p
             WHERE p.id = product_presave_mfds_regional_items.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE product_presave_mfds_device_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE product_presave_mfds_device_items FORCE ROW LEVEL SECURITY;
+CREATE POLICY product_presave_mfds_device_items_via_parent ON product_presave_mfds_device_items
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_mfds_device_items.product_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM product_presaves p
+            WHERE p.id = product_presave_mfds_device_items.product_presave_id
             AND (p.organization_id = current_organization_id() OR is_current_user_admin())
         )
     );

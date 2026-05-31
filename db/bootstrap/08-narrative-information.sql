@@ -13,7 +13,10 @@ CREATE TABLE narrative_information (
     reporter_comments TEXT,  -- Max 20000 chars
 
     -- H.4 - Sender's Comments
-    sender_comments TEXT,  -- Max 2000 chars
+    sender_comments TEXT,  -- Max 20000 chars
+
+    -- NR_SPONSOR - Additional Information
+    additional_information TEXT,  -- Max 20000 chars
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -59,13 +62,13 @@ CREATE TABLE case_summary_information (
     narrative_id UUID NOT NULL REFERENCES narrative_information(id) ON DELETE CASCADE,
     sequence_number INTEGER NOT NULL,
 
-    -- H.5.r.1 - Case Summary Type
+    -- Local compatibility field; hidden from the reference-aligned NR UI
     summary_type VARCHAR(2),  -- E2B(R3) code list
 
-    -- H.5.r.2 - Case Summary Language
+    -- H.5.r.1b - Language
     language_code VARCHAR(2),  -- ISO 639-1
 
-    -- H.5.r.3 - Text
+    -- H.5.r.1a - Case summary and reporter's comments
     summary_text TEXT,
 
     -- Audit fields (standardized UUID-based)

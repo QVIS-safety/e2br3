@@ -1335,6 +1335,10 @@ async fn apply_nr_page_rows_patch(
 			narrative,
 			&["senderComments", "sender_comments"],
 		),
+		additional_information: string_field(
+			narrative,
+			&["additionalInformation", "additional_information"],
+		),
 	};
 	match NarrativeInformationBmc::get_by_case_optional(ctx, mm, case_id).await? {
 		Some(_) => {
@@ -1352,6 +1356,7 @@ async fn apply_nr_page_rows_patch(
 					case_narrative,
 					reporter_comments: update.reporter_comments,
 					sender_comments: update.sender_comments,
+					additional_information: update.additional_information,
 				},
 			)
 			.await?;

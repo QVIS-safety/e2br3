@@ -450,10 +450,13 @@ pub struct CaseWorkflowEventRow {
 	pub id: Uuid,
 	pub case_id: Uuid,
 	pub from_status: String,
+	pub from_role: Option<String>,
+	pub from_user_id: Option<Uuid>,
 	pub to_status: String,
 	pub target_role: Option<String>,
 	pub target_user_id: Option<Uuid>,
 	pub comment: Option<String>,
+	pub date_of_most_recent: Option<String>,
 	pub due_at: Option<OffsetDateTime>,
 	pub acted_by: Uuid,
 	pub actor_role_id: String,
@@ -468,10 +471,13 @@ pub struct CaseWorkflowEventRow {
 pub struct WorkflowTransitionRecord {
 	pub case_id: Uuid,
 	pub from_status: String,
+	pub from_role: Option<String>,
+	pub from_user_id: Option<Uuid>,
 	pub to_status: String,
 	pub target_role: Option<String>,
 	pub target_user_id: Option<Uuid>,
 	pub comment: Option<String>,
+	pub date_of_most_recent: Option<String>,
 	pub due_at: Option<OffsetDateTime>,
 	pub workflow_description: Option<String>,
 	pub actor_user_id: Uuid,
@@ -484,9 +490,12 @@ pub struct WorkflowTransitionRecord {
 pub struct WorkflowAssignRecord {
 	pub case_id: Uuid,
 	pub current_status: String,
+	pub from_role: Option<String>,
+	pub from_user_id: Option<Uuid>,
 	pub target_role: String,
 	pub target_user_id: Option<Uuid>,
 	pub comment: Option<String>,
+	pub date_of_most_recent: Option<String>,
 	pub due_at: Option<OffsetDateTime>,
 	pub workflow_description: Option<String>,
 	pub actor_user_id: Uuid,
@@ -538,18 +547,22 @@ impl CaseWorkflowEventBmc {
 				sqlx::query(
 					r#"
 					INSERT INTO case_workflow_events (
-						case_id, from_status, to_status, target_role, target_user_id,
-						comment, due_at, acted_by, actor_role_id, used_admin_override,
+						case_id, from_status, from_role, from_user_id, to_status,
+						target_role, target_user_id, comment, date_of_most_recent,
+						due_at, acted_by, actor_role_id, used_admin_override,
 						override_reason
-					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 					"#,
 				)
 				.bind(r.case_id)
 				.bind(&r.from_status)
+				.bind(r.from_role.as_deref())
+				.bind(r.from_user_id)
 				.bind(&r.to_status)
 				.bind(r.target_role.as_deref())
 				.bind(r.target_user_id)
 				.bind(r.comment.as_deref())
+				.bind(r.date_of_most_recent.as_deref())
 				.bind(r.due_at)
 				.bind(r.actor_user_id)
 				.bind(canonical_role(&r.actor_role))
@@ -598,18 +611,22 @@ impl CaseWorkflowEventBmc {
 				sqlx::query(
 					r#"
 					INSERT INTO case_workflow_events (
-						case_id, from_status, to_status, target_role, target_user_id,
-						comment, due_at, acted_by, actor_role_id, used_admin_override,
+						case_id, from_status, from_role, from_user_id, to_status,
+						target_role, target_user_id, comment, date_of_most_recent,
+						due_at, acted_by, actor_role_id, used_admin_override,
 						override_reason
-					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+					) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 					"#,
 				)
 				.bind(r.case_id)
 				.bind(&r.current_status)
+				.bind(r.from_role.as_deref())
+				.bind(r.from_user_id)
 				.bind(&r.current_status)
 				.bind(&r.target_role)
 				.bind(r.target_user_id)
 				.bind(r.comment.as_deref())
+				.bind(r.date_of_most_recent.as_deref())
 				.bind(r.due_at)
 				.bind(r.actor_user_id)
 				.bind(canonical_role(&r.actor_role))
@@ -633,8 +650,9 @@ impl CaseWorkflowEventBmc {
 				sqlx::query_as::<_, CaseWorkflowEventRow>(
 					r#"
 					SELECT
-						id, case_id, from_status, to_status, target_role, target_user_id,
-						comment, due_at, acted_by, actor_role_id, used_admin_override,
+						id, case_id, from_status, from_role, from_user_id, to_status,
+						target_role, target_user_id, comment, date_of_most_recent,
+						due_at, acted_by, actor_role_id, used_admin_override,
 						override_reason, created_at
 					FROM case_workflow_events
 					WHERE case_id = $1

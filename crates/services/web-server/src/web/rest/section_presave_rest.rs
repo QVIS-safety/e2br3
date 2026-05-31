@@ -15,7 +15,9 @@ use lib_core::model::presave::{
 	ProductPresaveFdaCrossReportedInd, ProductPresaveFdaCrossReportedIndBmc,
 	ProductPresaveFdaCrossReportedIndForCreate,
 	ProductPresaveFdaCrossReportedIndForUpdate, ProductPresaveForCreate,
-	ProductPresaveForUpdate, ProductPresaveMfdsRegionalItem,
+	ProductPresaveForUpdate, ProductPresaveMfdsDeviceItem,
+	ProductPresaveMfdsDeviceItemBmc, ProductPresaveMfdsDeviceItemForCreate,
+	ProductPresaveMfdsDeviceItemForUpdate, ProductPresaveMfdsRegionalItem,
 	ProductPresaveMfdsRegionalItemBmc, ProductPresaveMfdsRegionalItemForCreate,
 	ProductPresaveMfdsRegionalItemForUpdate, ProductPresaveSubstance,
 	ProductPresaveSubstanceBmc, ProductPresaveSubstanceForCreate,
@@ -1748,6 +1750,7 @@ pub struct ProductPresaveDetails {
 	pub substances: Vec<ProductPresaveSubstance>,
 	pub fda_cross_reported_inds: Vec<ProductPresaveFdaCrossReportedInd>,
 	pub mfds_regional_items: Vec<ProductPresaveMfdsRegionalItem>,
+	pub mfds_device_items: Vec<ProductPresaveMfdsDeviceItem>,
 }
 
 #[derive(Deserialize)]
@@ -1757,6 +1760,7 @@ pub struct ProductPresaveDetailsForUpdate {
 	pub fda_cross_reported_inds:
 		Option<Vec<ProductFdaCrossReportedIndDetailsForUpdate>>,
 	pub mfds_regional_items: Option<Vec<ProductMfdsRegionalItemDetailsForUpdate>>,
+	pub mfds_device_items: Option<Vec<ProductMfdsDeviceItemDetailsForUpdate>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1768,6 +1772,8 @@ pub struct ProductSubstanceDetailsForUpdate {
 	pub substance_name: Option<String>,
 	pub substance_termid_version: Option<String>,
 	pub substance_termid: Option<String>,
+	pub mfds_version: Option<String>,
+	pub mfds_id: Option<String>,
 	pub strength_value: Option<rust_decimal::Decimal>,
 	pub strength_unit: Option<String>,
 }
@@ -1779,6 +1785,8 @@ impl ProductSubstanceDetailsForUpdate {
 			substance_name: self.substance_name,
 			substance_termid_version: self.substance_termid_version,
 			substance_termid: self.substance_termid,
+			mfds_version: self.mfds_version,
+			mfds_id: self.mfds_id,
 			strength_value: self.strength_value,
 			strength_unit: self.strength_unit,
 		}
@@ -1800,6 +1808,8 @@ impl ProductSubstanceDetailsForUpdate {
 			substance_name: self.substance_name,
 			substance_termid_version: self.substance_termid_version,
 			substance_termid: self.substance_termid,
+			mfds_version: self.mfds_version,
+			mfds_id: self.mfds_id,
 			strength_value: self.strength_value,
 			strength_unit: self.strength_unit,
 		})
@@ -1875,6 +1885,47 @@ impl ProductMfdsRegionalItemDetailsForUpdate {
 			})?,
 			item_type: self.item_type,
 			item_value: self.item_value,
+		})
+	}
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ProductMfdsDeviceItemDetailsForUpdate {
+	pub id: Option<Uuid>,
+	#[serde(default, rename = "_delete")]
+	pub delete: bool,
+	pub sequence_number: Option<i32>,
+	pub code: Option<String>,
+	pub value_code: Option<String>,
+	pub value_value: Option<String>,
+}
+
+impl ProductMfdsDeviceItemDetailsForUpdate {
+	fn into_update(self) -> ProductPresaveMfdsDeviceItemForUpdate {
+		ProductPresaveMfdsDeviceItemForUpdate {
+			sequence_number: self.sequence_number,
+			code: self.code,
+			value_code: self.value_code,
+			value_value: self.value_value,
+		}
+	}
+
+	fn into_create(
+		self,
+		product_presave_id: Uuid,
+	) -> Result<ProductPresaveMfdsDeviceItemForCreate> {
+		Ok(ProductPresaveMfdsDeviceItemForCreate {
+			product_presave_id,
+			sequence_number: self.sequence_number.ok_or_else(|| {
+				Error::BadRequest {
+					message:
+						"product MFDS device item details create requires sequence_number"
+							.to_string(),
+				}
+			})?,
+			code: self.code,
+			value_code: self.value_code,
+			value_value: self.value_value,
 		})
 	}
 }
@@ -1961,6 +2012,11 @@ async fn apply_product_presave_details_inner(
 			upsert_product_mfds_regional_item_detail(ctx, mm, id, item).await?;
 		}
 	}
+	if let Some(items) = data.mfds_device_items {
+		for item in items {
+			upsert_product_mfds_device_item_detail(ctx, mm, id, item).await?;
+		}
+	}
 	Ok(())
 }
 
@@ -1975,11 +2031,14 @@ async fn load_product_presave_details(
 		ProductPresaveFdaCrossReportedIndBmc::list_by_parent(ctx, mm, id).await?;
 	let mfds_regional_items =
 		ProductPresaveMfdsRegionalItemBmc::list_by_parent(ctx, mm, id).await?;
+	let mfds_device_items =
+		ProductPresaveMfdsDeviceItemBmc::list_by_parent(ctx, mm, id).await?;
 	Ok(ProductPresaveDetails {
 		parent,
 		substances,
 		fda_cross_reported_inds,
 		mfds_regional_items,
+		mfds_device_items,
 	})
 }
 
@@ -2004,6 +2063,12 @@ fn require_product_detail_operation_permissions(
 			.as_deref()
 			.unwrap_or_default()
 			.iter()
+			.any(|item| item.id.is_none() && !item.delete)
+		|| data
+			.mfds_device_items
+			.as_deref()
+			.unwrap_or_default()
+			.iter()
 			.any(|item| item.id.is_none() && !item.delete);
 	let deletes_child = data
 		.substances
@@ -2019,6 +2084,12 @@ fn require_product_detail_operation_permissions(
 			.any(|item| item.delete)
 		|| data
 			.mfds_regional_items
+			.as_deref()
+			.unwrap_or_default()
+			.iter()
+			.any(|item| item.delete)
+		|| data
+			.mfds_device_items
 			.as_deref()
 			.unwrap_or_default()
 			.iter()
@@ -2060,6 +2131,12 @@ async fn preflight_product_presave_details(
 	if let Some(items) = &data.mfds_regional_items {
 		for item in items {
 			preflight_product_mfds_regional_item_detail(ctx, mm, product_id, item)
+				.await?;
+		}
+	}
+	if let Some(items) = &data.mfds_device_items {
+		for item in items {
+			preflight_product_mfds_device_item_detail(ctx, mm, product_id, item)
 				.await?;
 		}
 	}
@@ -2188,6 +2265,48 @@ fn validate_product_mfds_regional_item_detail_create(
 	Ok(())
 }
 
+async fn preflight_product_mfds_device_item_detail(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	product_id: Uuid,
+	item: &ProductMfdsDeviceItemDetailsForUpdate,
+) -> Result<()> {
+	if item.delete && item.id.is_none() {
+		return Err(Error::BadRequest {
+			message: "product MFDS device item delete requires id".to_string(),
+		});
+	}
+	if let Some(id) = item.id {
+		let entity = ProductPresaveMfdsDeviceItemBmc::get(ctx, mm, id).await?;
+		ensure_detail_parent_scope(
+			product_id,
+			entity.product_presave_id,
+			id,
+			"product",
+			"product_presave_mfds_device_items",
+		)?;
+		if !item.delete {
+			let _ = (ctx, mm, product_id);
+		}
+	} else if !item.delete {
+		validate_product_mfds_device_item_detail_create(item)?;
+	}
+	Ok(())
+}
+
+fn validate_product_mfds_device_item_detail_create(
+	item: &ProductMfdsDeviceItemDetailsForUpdate,
+) -> Result<()> {
+	if item.sequence_number.is_none() {
+		return Err(Error::BadRequest {
+			message:
+				"product MFDS device item details create requires sequence_number"
+					.to_string(),
+		});
+	}
+	Ok(())
+}
+
 async fn upsert_product_substance_detail(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -2309,12 +2428,51 @@ async fn upsert_product_mfds_regional_item_detail(
 	Ok(())
 }
 
+async fn upsert_product_mfds_device_item_detail(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	product_id: Uuid,
+	item: ProductMfdsDeviceItemDetailsForUpdate,
+) -> Result<()> {
+	if item.delete && item.id.is_none() {
+		return Err(Error::BadRequest {
+			message: "product MFDS device item delete requires id".to_string(),
+		});
+	}
+	if let Some(id) = item.id {
+		let entity = ProductPresaveMfdsDeviceItemBmc::get(ctx, mm, id).await?;
+		ensure_detail_parent_scope(
+			product_id,
+			entity.product_presave_id,
+			id,
+			"product",
+			"product_presave_mfds_device_items",
+		)?;
+		if item.delete {
+			ProductPresaveMfdsDeviceItemBmc::delete(ctx, mm, id).await?;
+		} else {
+			ProductPresaveMfdsDeviceItemBmc::update(ctx, mm, id, item.into_update())
+				.await?;
+		}
+	} else {
+		ProductPresaveMfdsDeviceItemBmc::create(
+			ctx,
+			mm,
+			item.into_create(product_id)?,
+		)
+		.await?;
+	}
+	Ok(())
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ProductSubstanceForRestCreate {
 	pub sequence_number: i32,
 	pub substance_name: Option<String>,
 	pub substance_termid_version: Option<String>,
 	pub substance_termid: Option<String>,
+	pub mfds_version: Option<String>,
+	pub mfds_id: Option<String>,
 	pub strength_value: Option<rust_decimal::Decimal>,
 	pub strength_unit: Option<String>,
 }
@@ -2330,6 +2488,8 @@ impl ProductSubstanceForRestCreate {
 			substance_name: self.substance_name,
 			substance_termid_version: self.substance_termid_version,
 			substance_termid: self.substance_termid,
+			mfds_version: self.mfds_version,
+			mfds_id: self.mfds_id,
 			strength_value: self.strength_value,
 			strength_unit: self.strength_unit,
 		}

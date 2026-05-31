@@ -417,6 +417,7 @@ async fn seed_cioms_case_data(
 				"Reporter considered the reaction related.".to_string(),
 			),
 			sender_comments: None,
+			additional_information: None,
 		},
 	)
 	.await?;

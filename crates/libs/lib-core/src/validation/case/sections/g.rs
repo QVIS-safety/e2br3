@@ -131,9 +131,7 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 		| "MFDS.KR.FOREIGN.WHOMPID.REQUIRED" => Some("drugs.0.mfdsMpid"),
 		"MFDS.G.k.2.1.KR.1a.REQUIRED" => Some("drugs.0.mfdsMpidVersion"),
 		"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED"
-		| "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED" => {
-			Some("drugs.0.activeSubstances.0.mfdsId")
-		}
+		| "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED" => Some("drugs.0.activeSubstances.0.mfdsId"),
 		"MFDS.G.k.2.3.r.1.KR.1a.REQUIRED" => {
 			Some("drugs.0.activeSubstances.0.mfdsVersion")
 		}
@@ -642,9 +640,9 @@ pub(crate) fn collect_mfds_issues(
 			RuleFacts::default(),
 		);
 		let version_path = match (drug_index, substance_index) {
-			(Some(d_idx), Some(s_idx)) => format!(
-				"drugs.{d_idx}.activeSubstances.{s_idx}.mfdsVersion"
-			),
+			(Some(d_idx), Some(s_idx)) => {
+				format!("drugs.{d_idx}.activeSubstances.{s_idx}.mfdsVersion")
+			}
 			_ => "drugs".to_string(),
 		};
 		let _ = push_issue_if_conditioned_value_invalid(
