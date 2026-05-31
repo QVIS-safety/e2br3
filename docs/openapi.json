@@ -3658,12 +3658,6 @@
           "is_locked": {
             "type": "boolean"
           },
-          "mfds_report_type": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "organization_id": {
             "type": "string"
           },
@@ -3807,12 +3801,6 @@
               "null"
             ]
           },
-          "mfds_report_type": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "report_year": {
             "type": [
               "string",
@@ -3906,12 +3894,6 @@
             ]
           },
           "dg_prd_key": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "mfds_report_type": {
             "type": [
               "string",
               "null"
@@ -4031,12 +4013,6 @@
             ]
           },
           "investigation_number": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "mfds_report_type": {
             "type": [
               "string",
               "null"
@@ -6136,12 +6112,6 @@
           },
           "id": {
             "type": "string"
-          },
-          "mfds_report_type": {
-            "type": [
-              "string",
-              "null"
-            ]
           },
           "organization_id": {
             "type": "string"
