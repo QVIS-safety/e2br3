@@ -1,7 +1,7 @@
 # Reporter Presave C.2.r Reference Matrix
 
 Date: 2026-06-01
-Reference scope: live reporter presave UI, MFDS authority, English locale
+Reference scope: live reporter presave UI, MFDS authority, English locale; FDA authority cross-check through the live page bundle used by the reference UI
 Local scope: reporter presave templates and import into Case Section C.2.r
 
 ## Live Reference Evidence
@@ -24,9 +24,15 @@ The live reporter presave detail page exposes these reporter fields:
 - Primary Source for Regulatory Purposes (C.2.r.5)
 - Deleted
 
-The live reporter presave detail page did not expose Reporter's Email. Selecting
-Qualification = 3: Other health professional did not reveal a C.2.r.4.KR.1
-field in reporter presave.
+The live MFDS reporter presave detail page did not expose Reporter's Email.
+Selecting Qualification = 3: Other health professional did not reveal a
+C.2.r.4.KR.1 field in reporter presave.
+
+FDA cross-check: the live reference page bundle for the case reporter section
+does include the FDA-only C.2.r.2.8 `reporterEmail` case field, but the
+case-info reporter presave component contains no `RPT_EMAIL`/`rptEmail` field.
+That keeps Reporter's Email classified as a case-section field, not a reporter
+presave field.
 
 ## Field Matrix
 
@@ -43,7 +49,7 @@ field in reporter presave.
 | reporterState | C.2.r.2.5 | Present | Import into Section C.2.r | Reference-imported |
 | reporterPostcode | C.2.r.2.6 | Present | Import into Section C.2.r | Reference-imported |
 | reporterTelephone | C.2.r.2.7 | Present | Import into Section C.2.r | Reference-imported |
-| reporterEmail | C.2.r.2.8 / local FDA case field | Not present | Do not import from reporter presave | Case-only, remove from reporter presave |
+| reporterEmail | C.2.r.2.8 / FDA case field | Not present in reporter presave; present in FDA case reporter section | Do not import from reporter presave | Case-only, remove from reporter presave |
 | reporterCountry | C.2.r.3 | Present | Import into Section C.2.r | Reference-imported |
 | qualification | C.2.r.4 | Present, required | Import into Section C.2.r | Reference-imported |
 | qualificationKr1 | C.2.r.4.KR.1 / local MFDS case field | Not present | Do not import from reporter presave | Case-only, remove from reporter presave |
