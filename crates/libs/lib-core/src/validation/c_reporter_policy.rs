@@ -30,6 +30,7 @@ mod tests {
 		let source = PrimarySource {
 			id: Default::default(),
 			case_id: Default::default(),
+			source_reporter_presave_id: None,
 			sequence_number: 1,
 			reporter_title: None,
 			reporter_given_name: None,
@@ -60,6 +61,7 @@ mod tests {
 		let source = PrimarySource {
 			id: Default::default(),
 			case_id: Default::default(),
+			source_reporter_presave_id: None,
 			sequence_number: 1,
 			reporter_title: None,
 			reporter_given_name: Some("Jane".to_string()),

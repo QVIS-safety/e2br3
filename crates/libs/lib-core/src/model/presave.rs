@@ -1297,9 +1297,7 @@ pub struct ReporterPresave {
 	pub postcode: Option<String>,
 	pub telephone: Option<String>,
 	pub country_code: Option<String>,
-	pub email: Option<String>,
 	pub qualification: Option<String>,
-	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -1323,9 +1321,7 @@ pub struct ReporterPresaveForCreate {
 	pub postcode: Option<String>,
 	pub telephone: Option<String>,
 	pub country_code: Option<String>,
-	pub email: Option<String>,
 	pub qualification: Option<String>,
-	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 }
 
@@ -1346,9 +1342,7 @@ struct ReporterPresaveForInsert {
 	postcode: Option<String>,
 	telephone: Option<String>,
 	country_code: Option<String>,
-	email: Option<String>,
 	qualification: Option<String>,
-	qualification_kr1: Option<String>,
 	primary_source_regulatory: Option<String>,
 }
 
@@ -1372,9 +1366,7 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 			postcode: self.postcode,
 			telephone: self.telephone,
 			country_code: self.country_code,
-			email: self.email,
 			qualification: self.qualification,
-			qualification_kr1: self.qualification_kr1,
 			primary_source_regulatory: self.primary_source_regulatory,
 		}
 	}
@@ -1397,9 +1389,7 @@ pub struct ReporterPresaveForUpdate {
 	pub postcode: Option<String>,
 	pub telephone: Option<String>,
 	pub country_code: Option<String>,
-	pub email: Option<String>,
 	pub qualification: Option<String>,
-	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 }
 

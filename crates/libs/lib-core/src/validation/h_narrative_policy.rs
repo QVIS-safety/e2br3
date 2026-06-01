@@ -27,6 +27,7 @@ mod tests {
 		NarrativeInformation {
 			id: Uuid::new_v4(),
 			case_id: Uuid::new_v4(),
+			source_narrative_presave_id: None,
 			case_narrative: "".to_string(),
 			reporter_comments: None,
 			sender_comments: None,

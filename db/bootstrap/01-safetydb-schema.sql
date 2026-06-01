@@ -320,9 +320,7 @@ CREATE TABLE IF NOT EXISTS reporter_presaves (
     postcode VARCHAR(50),
     telephone VARCHAR(50),
     country_code VARCHAR(2),
-    email VARCHAR(255),
     qualification VARCHAR(50),
-    qualification_kr1 VARCHAR(50),
     primary_source_regulatory VARCHAR(50),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -568,6 +566,10 @@ ALTER TABLE narrative_presave_sender_diagnoses
 
 ALTER TABLE narrative_presave_case_summaries
     ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE reporter_presaves
+    DROP COLUMN IF EXISTS email,
+    DROP COLUMN IF EXISTS qualification_kr1;
 
 CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);

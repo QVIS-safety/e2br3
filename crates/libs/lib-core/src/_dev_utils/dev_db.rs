@@ -150,6 +150,8 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE sender_presaves ADD COLUMN IF NOT EXISTS organization_name_notation VARCHAR(50)",
 		"ALTER TABLE reporter_presaves DROP CONSTRAINT IF EXISTS reporter_presaves_authority_valid",
 		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS authority",
+		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS email",
+		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS qualification_kr1",
 		"ALTER TABLE study_presaves DROP CONSTRAINT IF EXISTS study_presaves_authority_valid",
 		"ALTER TABLE study_presaves DROP COLUMN IF EXISTS authority",
 		"ALTER TABLE narrative_presaves DROP CONSTRAINT IF EXISTS narrative_presaves_authority_valid",

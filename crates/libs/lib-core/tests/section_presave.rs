@@ -219,9 +219,7 @@ fn reporter_presave_create(
 		postcode: None,
 		telephone: None,
 		country_code: Some("KR".into()),
-		email: None,
 		qualification: Some("1".into()),
-		qualification_kr1: None,
 		primary_source_regulatory: None,
 	}
 }
@@ -288,6 +286,32 @@ async fn section_presave_tables_exist() -> Result<()> {
 		.await?;
 		assert!(exists, "missing table {table}");
 	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn reporter_presaves_store_only_reference_reporter_fields() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+
+	let columns: Vec<String> = sqlx::query_scalar(
+		"SELECT column_name::text
+		 FROM information_schema.columns
+		 WHERE table_schema = 'public' AND table_name = 'reporter_presaves'",
+	)
+	.fetch_all(mm.dbx().db())
+	.await?;
+
+	assert!(
+		!columns.iter().any(|column| column == "email"),
+		"reporter_presaves.email is case-only and must not be a reporter presave column"
+	);
+	assert!(
+		!columns.iter().any(|column| column == "qualification_kr1"),
+		"reporter_presaves.qualification_kr1 is case-only and must not be a reporter presave column"
+	);
 
 	Ok(())
 }
@@ -811,9 +835,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			postcode: Some("48000".into()),
 			telephone: Some("051-111-2222".into()),
 			country_code: Some("KR".into()),
-			email: Some("reporter@example.com".into()),
 			qualification: Some("1".into()),
-			qualification_kr1: None,
 			primary_source_regulatory: Some("1".into()),
 		},
 	)
@@ -972,14 +994,14 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 		RegulatoryAuthority::Mfds,
 		format!("Authorityless Reporter {suffix}"),
 	);
-	reporter.qualification_kr1 = Some("KR-QUAL".into());
+	reporter.primary_source_regulatory = Some("1".into());
 	let reporter_id = ReporterPresaveBmc::create(&ctx, &mm, reporter).await?;
 	ReporterPresaveBmc::update(
 		&ctx,
 		&mm,
 		reporter_id,
 		ReporterPresaveForUpdate {
-			qualification_kr1: Some("KR-QUAL-UPDATED".into()),
+			primary_source_regulatory: Some("2".into()),
 			..Default::default()
 		},
 	)
@@ -1133,9 +1155,7 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 				postcode: None,
 				telephone: None,
 				country_code: None,
-				email: None,
 				qualification: Some("1".into()),
-				qualification_kr1: None,
 				primary_source_regulatory: None,
 			},
 		)
@@ -1375,9 +1395,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			postcode: None,
 			telephone: None,
 			country_code: None,
-			email: None,
 			qualification: Some("1".into()),
-			qualification_kr1: None,
 			primary_source_regulatory: None,
 		},
 	)
@@ -1401,9 +1419,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				postcode: None,
 				telephone: None,
 				country_code: None,
-				email: None,
 				qualification: Some("1".into()),
-				qualification_kr1: None,
 				primary_source_regulatory: None,
 			},
 		)

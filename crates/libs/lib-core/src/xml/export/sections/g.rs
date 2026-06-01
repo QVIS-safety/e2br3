@@ -902,6 +902,7 @@ mod tests {
 		DrugInformation {
 			id,
 			case_id,
+			source_product_presave_id: None,
 			sequence_number: 1,
 			drug_characterization: "1".to_string(),
 			medicinal_product: "Drug A".to_string(),
