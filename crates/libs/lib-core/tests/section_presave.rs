@@ -40,6 +40,7 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"sender_presave_responsible_persons",
 	"receiver_presaves",
 	"receiver_presave_consignees",
+	"receiver_presave_routes",
 	"product_presaves",
 	"product_presave_substances",
 	"reporter_presaves",
@@ -544,6 +545,10 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 		(
 			"receiver_presave_consignees",
 			"receiver_presave_consignees_via_parent",
+		),
+		(
+			"receiver_presave_routes",
+			"receiver_presave_routes_via_parent",
 		),
 		("product_presaves", "product_presaves_org_isolation"),
 		(

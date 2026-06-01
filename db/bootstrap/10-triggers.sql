@@ -183,7 +183,10 @@ BEGIN
         END IF;
     END IF;
 
-    IF p_table_name = 'receiver_presave_consignees' THEN
+    IF p_table_name IN (
+        'receiver_presave_consignees',
+        'receiver_presave_routes'
+    ) THEN
         SELECT p.organization_id INTO v_org_id
         FROM receiver_presaves p
         WHERE p.id = NULLIF(v_values->>'receiver_presave_id', '')::UUID;
@@ -569,6 +572,9 @@ CREATE TRIGGER audit_receiver_presave_consignees AFTER INSERT OR UPDATE OR DELET
 CREATE TRIGGER audit_submission_receiver_options AFTER INSERT OR UPDATE OR DELETE ON submission_receiver_options
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
+CREATE TRIGGER audit_receiver_presave_routes AFTER INSERT OR UPDATE OR DELETE ON receiver_presave_routes
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
 CREATE TRIGGER audit_product_presaves AFTER INSERT OR UPDATE OR DELETE ON product_presaves
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
@@ -755,6 +761,9 @@ CREATE TRIGGER update_receiver_presaves_updated_at BEFORE UPDATE ON receiver_pre
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_receiver_presave_consignees_updated_at BEFORE UPDATE ON receiver_presave_consignees
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_receiver_presave_routes_updated_at BEFORE UPDATE ON receiver_presave_routes
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_product_presaves_updated_at BEFORE UPDATE ON product_presaves
