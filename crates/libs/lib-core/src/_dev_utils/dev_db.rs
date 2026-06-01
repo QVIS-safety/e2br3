@@ -156,6 +156,7 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE study_presaves DROP COLUMN IF EXISTS authority",
 		"ALTER TABLE narrative_presaves DROP CONSTRAINT IF EXISTS narrative_presaves_authority_valid",
 		"ALTER TABLE narrative_presaves DROP COLUMN IF EXISTS authority",
+		"ALTER TABLE narrative_presaves ADD COLUMN IF NOT EXISTS additional_information TEXT",
 		"DELETE FROM sender_presave_gateways WHERE lower(gateway_authority) NOT IN ('fda', 'mfds')",
 		"ALTER TABLE sender_presave_gateways DROP CONSTRAINT IF EXISTS sender_presave_gateways_authority_valid",
 		"ALTER TABLE sender_presave_gateways DROP COLUMN IF EXISTS ema_sender_identifier",
