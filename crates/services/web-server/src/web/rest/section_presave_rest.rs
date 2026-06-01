@@ -12,14 +12,9 @@ use lib_core::model::presave::{
 	NarrativePresaveForUpdate, NarrativePresaveSenderDiagnosis,
 	NarrativePresaveSenderDiagnosisBmc, NarrativePresaveSenderDiagnosisForCreate,
 	NarrativePresaveSenderDiagnosisForUpdate, ProductPresave, ProductPresaveBmc,
-	ProductPresaveFdaCrossReportedInd, ProductPresaveFdaCrossReportedIndBmc,
-	ProductPresaveFdaCrossReportedIndForCreate,
-	ProductPresaveFdaCrossReportedIndForUpdate, ProductPresaveForCreate,
-	ProductPresaveForUpdate, ProductPresaveMfdsDeviceItem,
+	ProductPresaveForCreate, ProductPresaveForUpdate, ProductPresaveMfdsDeviceItem,
 	ProductPresaveMfdsDeviceItemBmc, ProductPresaveMfdsDeviceItemForCreate,
-	ProductPresaveMfdsDeviceItemForUpdate, ProductPresaveMfdsRegionalItem,
-	ProductPresaveMfdsRegionalItemBmc, ProductPresaveMfdsRegionalItemForCreate,
-	ProductPresaveMfdsRegionalItemForUpdate, ProductPresaveSubstance,
+	ProductPresaveMfdsDeviceItemForUpdate, ProductPresaveSubstance,
 	ProductPresaveSubstanceBmc, ProductPresaveSubstanceForCreate,
 	ProductPresaveSubstanceForUpdate, ReceiverPresave, ReceiverPresaveBmc,
 	ReceiverPresaveConsignee, ReceiverPresaveConsigneeBmc,
@@ -1748,8 +1743,6 @@ pub async fn delete_product_presave(
 pub struct ProductPresaveDetails {
 	pub parent: ProductPresave,
 	pub substances: Vec<ProductPresaveSubstance>,
-	pub fda_cross_reported_inds: Vec<ProductPresaveFdaCrossReportedInd>,
-	pub mfds_regional_items: Vec<ProductPresaveMfdsRegionalItem>,
 	pub mfds_device_items: Vec<ProductPresaveMfdsDeviceItem>,
 }
 
@@ -1757,9 +1750,6 @@ pub struct ProductPresaveDetails {
 pub struct ProductPresaveDetailsForUpdate {
 	pub parent: Option<ProductPresaveForUpdate>,
 	pub substances: Option<Vec<ProductSubstanceDetailsForUpdate>>,
-	pub fda_cross_reported_inds:
-		Option<Vec<ProductFdaCrossReportedIndDetailsForUpdate>>,
-	pub mfds_regional_items: Option<Vec<ProductMfdsRegionalItemDetailsForUpdate>>,
 	pub mfds_device_items: Option<Vec<ProductMfdsDeviceItemDetailsForUpdate>>,
 }
 
@@ -1812,79 +1802,6 @@ impl ProductSubstanceDetailsForUpdate {
 			mfds_id: self.mfds_id,
 			strength_value: self.strength_value,
 			strength_unit: self.strength_unit,
-		})
-	}
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ProductFdaCrossReportedIndDetailsForUpdate {
-	pub id: Option<Uuid>,
-	#[serde(default, rename = "_delete")]
-	pub delete: bool,
-	pub sequence_number: Option<i32>,
-	pub ind_number: Option<String>,
-}
-
-impl ProductFdaCrossReportedIndDetailsForUpdate {
-	fn into_update(self) -> ProductPresaveFdaCrossReportedIndForUpdate {
-		ProductPresaveFdaCrossReportedIndForUpdate {
-			sequence_number: self.sequence_number,
-			ind_number: self.ind_number,
-		}
-	}
-
-	fn into_create(
-		self,
-		product_presave_id: Uuid,
-	) -> Result<ProductPresaveFdaCrossReportedIndForCreate> {
-		Ok(ProductPresaveFdaCrossReportedIndForCreate {
-			product_presave_id,
-			sequence_number: self.sequence_number.ok_or_else(|| {
-				Error::BadRequest {
-					message:
-						"product FDA cross-reported IND details create requires sequence_number"
-							.to_string(),
-				}
-			})?,
-			ind_number: self.ind_number,
-		})
-	}
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ProductMfdsRegionalItemDetailsForUpdate {
-	pub id: Option<Uuid>,
-	#[serde(default, rename = "_delete")]
-	pub delete: bool,
-	pub sequence_number: Option<i32>,
-	pub item_type: Option<String>,
-	pub item_value: Option<String>,
-}
-
-impl ProductMfdsRegionalItemDetailsForUpdate {
-	fn into_update(self) -> ProductPresaveMfdsRegionalItemForUpdate {
-		ProductPresaveMfdsRegionalItemForUpdate {
-			sequence_number: self.sequence_number,
-			item_type: self.item_type,
-			item_value: self.item_value,
-		}
-	}
-
-	fn into_create(
-		self,
-		product_presave_id: Uuid,
-	) -> Result<ProductPresaveMfdsRegionalItemForCreate> {
-		Ok(ProductPresaveMfdsRegionalItemForCreate {
-			product_presave_id,
-			sequence_number: self.sequence_number.ok_or_else(|| {
-				Error::BadRequest {
-					message:
-						"product MFDS regional item details create requires sequence_number"
-							.to_string(),
-				}
-			})?,
-			item_type: self.item_type,
-			item_value: self.item_value,
 		})
 	}
 }
@@ -2002,16 +1919,6 @@ async fn apply_product_presave_details_inner(
 			upsert_product_substance_detail(ctx, mm, id, substance).await?;
 		}
 	}
-	if let Some(inds) = data.fda_cross_reported_inds {
-		for ind in inds {
-			upsert_product_fda_cross_reported_ind_detail(ctx, mm, id, ind).await?;
-		}
-	}
-	if let Some(items) = data.mfds_regional_items {
-		for item in items {
-			upsert_product_mfds_regional_item_detail(ctx, mm, id, item).await?;
-		}
-	}
 	if let Some(items) = data.mfds_device_items {
 		for item in items {
 			upsert_product_mfds_device_item_detail(ctx, mm, id, item).await?;
@@ -2027,17 +1934,11 @@ async fn load_product_presave_details(
 ) -> Result<ProductPresaveDetails> {
 	let parent = ProductPresaveBmc::get(ctx, mm, id).await?;
 	let substances = ProductPresaveSubstanceBmc::list_by_parent(ctx, mm, id).await?;
-	let fda_cross_reported_inds =
-		ProductPresaveFdaCrossReportedIndBmc::list_by_parent(ctx, mm, id).await?;
-	let mfds_regional_items =
-		ProductPresaveMfdsRegionalItemBmc::list_by_parent(ctx, mm, id).await?;
 	let mfds_device_items =
 		ProductPresaveMfdsDeviceItemBmc::list_by_parent(ctx, mm, id).await?;
 	Ok(ProductPresaveDetails {
 		parent,
 		substances,
-		fda_cross_reported_inds,
-		mfds_regional_items,
 		mfds_device_items,
 	})
 }
@@ -2053,18 +1954,6 @@ fn require_product_detail_operation_permissions(
 		.iter()
 		.any(|item| item.id.is_none() && !item.delete)
 		|| data
-			.fda_cross_reported_inds
-			.as_deref()
-			.unwrap_or_default()
-			.iter()
-			.any(|item| item.id.is_none() && !item.delete)
-		|| data
-			.mfds_regional_items
-			.as_deref()
-			.unwrap_or_default()
-			.iter()
-			.any(|item| item.id.is_none() && !item.delete)
-		|| data
 			.mfds_device_items
 			.as_deref()
 			.unwrap_or_default()
@@ -2076,18 +1965,6 @@ fn require_product_detail_operation_permissions(
 		.unwrap_or_default()
 		.iter()
 		.any(|item| item.delete)
-		|| data
-			.fda_cross_reported_inds
-			.as_deref()
-			.unwrap_or_default()
-			.iter()
-			.any(|item| item.delete)
-		|| data
-			.mfds_regional_items
-			.as_deref()
-			.unwrap_or_default()
-			.iter()
-			.any(|item| item.delete)
 		|| data
 			.mfds_device_items
 			.as_deref()
@@ -2117,20 +1994,6 @@ async fn preflight_product_presave_details(
 	if let Some(substances) = &data.substances {
 		for substance in substances {
 			preflight_product_substance_detail(ctx, mm, product_id, substance)
-				.await?;
-		}
-	}
-	if let Some(inds) = &data.fda_cross_reported_inds {
-		for ind in inds {
-			preflight_product_fda_cross_reported_ind_detail(
-				ctx, mm, product_id, ind,
-			)
-			.await?;
-		}
-	}
-	if let Some(items) = &data.mfds_regional_items {
-		for item in items {
-			preflight_product_mfds_regional_item_detail(ctx, mm, product_id, item)
 				.await?;
 		}
 	}
@@ -2176,90 +2039,6 @@ fn validate_product_substance_detail_create(
 		return Err(Error::BadRequest {
 			message: "product substance details create requires sequence_number"
 				.to_string(),
-		});
-	}
-	Ok(())
-}
-
-async fn preflight_product_fda_cross_reported_ind_detail(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	product_id: Uuid,
-	ind: &ProductFdaCrossReportedIndDetailsForUpdate,
-) -> Result<()> {
-	if ind.delete && ind.id.is_none() {
-		return Err(Error::BadRequest {
-			message: "product FDA cross-reported IND delete requires id".to_string(),
-		});
-	}
-	if let Some(id) = ind.id {
-		let entity = ProductPresaveFdaCrossReportedIndBmc::get(ctx, mm, id).await?;
-		ensure_detail_parent_scope(
-			product_id,
-			entity.product_presave_id,
-			id,
-			"product",
-			"product_presave_fda_cross_reported_inds",
-		)?;
-		if !ind.delete {
-			let _ = (ctx, mm, product_id);
-		}
-	} else if !ind.delete {
-		validate_product_fda_cross_reported_ind_detail_create(ind)?;
-	}
-	Ok(())
-}
-
-fn validate_product_fda_cross_reported_ind_detail_create(
-	ind: &ProductFdaCrossReportedIndDetailsForUpdate,
-) -> Result<()> {
-	if ind.sequence_number.is_none() {
-		return Err(Error::BadRequest {
-			message:
-				"product FDA cross-reported IND details create requires sequence_number"
-					.to_string(),
-		});
-	}
-	Ok(())
-}
-
-async fn preflight_product_mfds_regional_item_detail(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	product_id: Uuid,
-	item: &ProductMfdsRegionalItemDetailsForUpdate,
-) -> Result<()> {
-	if item.delete && item.id.is_none() {
-		return Err(Error::BadRequest {
-			message: "product MFDS regional item delete requires id".to_string(),
-		});
-	}
-	if let Some(id) = item.id {
-		let entity = ProductPresaveMfdsRegionalItemBmc::get(ctx, mm, id).await?;
-		ensure_detail_parent_scope(
-			product_id,
-			entity.product_presave_id,
-			id,
-			"product",
-			"product_presave_mfds_regional_items",
-		)?;
-		if !item.delete {
-			let _ = (ctx, mm, product_id);
-		}
-	} else if !item.delete {
-		validate_product_mfds_regional_item_detail_create(item)?;
-	}
-	Ok(())
-}
-
-fn validate_product_mfds_regional_item_detail_create(
-	item: &ProductMfdsRegionalItemDetailsForUpdate,
-) -> Result<()> {
-	if item.sequence_number.is_none() {
-		return Err(Error::BadRequest {
-			message:
-				"product MFDS regional item details create requires sequence_number"
-					.to_string(),
 		});
 	}
 	Ok(())
@@ -2338,90 +2117,6 @@ async fn upsert_product_substance_detail(
 			ctx,
 			mm,
 			substance.into_create(product_id)?,
-		)
-		.await?;
-	}
-	Ok(())
-}
-
-async fn upsert_product_fda_cross_reported_ind_detail(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	product_id: Uuid,
-	ind: ProductFdaCrossReportedIndDetailsForUpdate,
-) -> Result<()> {
-	if ind.delete && ind.id.is_none() {
-		return Err(Error::BadRequest {
-			message: "product FDA cross-reported IND delete requires id".to_string(),
-		});
-	}
-	if let Some(id) = ind.id {
-		let entity = ProductPresaveFdaCrossReportedIndBmc::get(ctx, mm, id).await?;
-		ensure_detail_parent_scope(
-			product_id,
-			entity.product_presave_id,
-			id,
-			"product",
-			"product_presave_fda_cross_reported_inds",
-		)?;
-		if ind.delete {
-			ProductPresaveFdaCrossReportedIndBmc::delete(ctx, mm, id).await?;
-		} else {
-			ProductPresaveFdaCrossReportedIndBmc::update(
-				ctx,
-				mm,
-				id,
-				ind.into_update(),
-			)
-			.await?;
-		}
-	} else {
-		ProductPresaveFdaCrossReportedIndBmc::create(
-			ctx,
-			mm,
-			ind.into_create(product_id)?,
-		)
-		.await?;
-	}
-	Ok(())
-}
-
-async fn upsert_product_mfds_regional_item_detail(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	product_id: Uuid,
-	item: ProductMfdsRegionalItemDetailsForUpdate,
-) -> Result<()> {
-	if item.delete && item.id.is_none() {
-		return Err(Error::BadRequest {
-			message: "product MFDS regional item delete requires id".to_string(),
-		});
-	}
-	if let Some(id) = item.id {
-		let entity = ProductPresaveMfdsRegionalItemBmc::get(ctx, mm, id).await?;
-		ensure_detail_parent_scope(
-			product_id,
-			entity.product_presave_id,
-			id,
-			"product",
-			"product_presave_mfds_regional_items",
-		)?;
-		if item.delete {
-			ProductPresaveMfdsRegionalItemBmc::delete(ctx, mm, id).await?;
-		} else {
-			ProductPresaveMfdsRegionalItemBmc::update(
-				ctx,
-				mm,
-				id,
-				item.into_update(),
-			)
-			.await?;
-		}
-	} else {
-		ProductPresaveMfdsRegionalItemBmc::create(
-			ctx,
-			mm,
-			item.into_create(product_id)?,
 		)
 		.await?;
 	}
@@ -2587,289 +2282,6 @@ pub async fn delete_product_substance(
 	ProductPresaveSubstanceBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
-
-#[derive(Debug, Deserialize)]
-pub struct ProductFdaCrossReportedIndForRestCreate {
-	pub sequence_number: i32,
-	pub ind_number: Option<String>,
-}
-
-impl ProductFdaCrossReportedIndForRestCreate {
-	fn into_core(
-		self,
-		product_presave_id: Uuid,
-	) -> ProductPresaveFdaCrossReportedIndForCreate {
-		ProductPresaveFdaCrossReportedIndForCreate {
-			product_presave_id,
-			sequence_number: self.sequence_number,
-			ind_number: self.ind_number,
-		}
-	}
-}
-
-pub async fn create_product_fda_cross_reported_ind(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(product_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<ProductFdaCrossReportedIndForRestCreate>>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<ProductPresaveFdaCrossReportedInd>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	let ParamsForCreate { data } = params;
-	let id = ProductPresaveFdaCrossReportedIndBmc::create(
-		&ctx,
-		&mm,
-		data.into_core(product_id),
-	)
-	.await
-	.map_err(map_product_fda_cross_reported_ind_model_error)?;
-	let entity = ProductPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-}
-
-pub async fn list_product_fda_cross_reported_inds(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(product_id): Path<Uuid>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<Vec<ProductPresaveFdaCrossReportedInd>>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	let entities =
-		ProductPresaveFdaCrossReportedIndBmc::list_by_parent(&ctx, &mm, product_id)
-			.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-}
-
-pub async fn get_product_fda_cross_reported_ind(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((product_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<ProductPresaveFdaCrossReportedInd>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
-	let entity = ProductPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		product_id,
-		entity.product_presave_id,
-		id,
-		"product_presave_fda_cross_reported_inds",
-	)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-pub async fn update_product_fda_cross_reported_ind(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((product_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<ProductPresaveFdaCrossReportedIndForUpdate>>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<ProductPresaveFdaCrossReportedInd>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
-	let entity = ProductPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		product_id,
-		entity.product_presave_id,
-		id,
-		"product_presave_fda_cross_reported_inds",
-	)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	let ParamsForUpdate { data } = params;
-	ProductPresaveFdaCrossReportedIndBmc::update(&ctx, &mm, id, data)
-		.await
-		.map_err(map_product_fda_cross_reported_ind_model_error)?;
-	let entity = ProductPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-fn map_product_fda_cross_reported_ind_model_error(err: model::Error) -> Error {
-	match err {
-		model::Error::Store(message)
-			if message.contains(
-				"product_presave_fda_cross_reported_inds field `product_presave_id`",
-			) =>
-		{
-			Error::BadRequest { message }
-		}
-		err => err.into(),
-	}
-}
-
-pub async fn delete_product_fda_cross_reported_ind(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((product_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	let entity = ProductPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		product_id,
-		entity.product_presave_id,
-		id,
-		"product_presave_fda_cross_reported_inds",
-	)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	ProductPresaveFdaCrossReportedIndBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ProductMfdsRegionalItemForRestCreate {
-	pub sequence_number: i32,
-	pub item_type: Option<String>,
-	pub item_value: Option<String>,
-}
-
-impl ProductMfdsRegionalItemForRestCreate {
-	fn into_core(
-		self,
-		product_presave_id: Uuid,
-	) -> ProductPresaveMfdsRegionalItemForCreate {
-		ProductPresaveMfdsRegionalItemForCreate {
-			product_presave_id,
-			sequence_number: self.sequence_number,
-			item_type: self.item_type,
-			item_value: self.item_value,
-		}
-	}
-}
-
-pub async fn create_product_mfds_regional_item(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(product_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<ProductMfdsRegionalItemForRestCreate>>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<ProductPresaveMfdsRegionalItem>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	let ParamsForCreate { data } = params;
-	let id = ProductPresaveMfdsRegionalItemBmc::create(
-		&ctx,
-		&mm,
-		data.into_core(product_id),
-	)
-	.await
-	.map_err(map_product_mfds_regional_item_model_error)?;
-	let entity = ProductPresaveMfdsRegionalItemBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-}
-
-pub async fn list_product_mfds_regional_items(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(product_id): Path<Uuid>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<Vec<ProductPresaveMfdsRegionalItem>>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	let entities =
-		ProductPresaveMfdsRegionalItemBmc::list_by_parent(&ctx, &mm, product_id)
-			.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-}
-
-pub async fn get_product_mfds_regional_item(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((product_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<ProductPresaveMfdsRegionalItem>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
-	let entity = ProductPresaveMfdsRegionalItemBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		product_id,
-		entity.product_presave_id,
-		id,
-		"product_presave_mfds_regional_items",
-	)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-pub async fn update_product_mfds_regional_item(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((product_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<ProductPresaveMfdsRegionalItemForUpdate>>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<ProductPresaveMfdsRegionalItem>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
-	let entity = ProductPresaveMfdsRegionalItemBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		product_id,
-		entity.product_presave_id,
-		id,
-		"product_presave_mfds_regional_items",
-	)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	let ParamsForUpdate { data } = params;
-	ProductPresaveMfdsRegionalItemBmc::update(&ctx, &mm, id, data)
-		.await
-		.map_err(map_product_mfds_regional_item_model_error)?;
-	let entity = ProductPresaveMfdsRegionalItemBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-fn map_product_mfds_regional_item_model_error(err: model::Error) -> Error {
-	match err {
-		model::Error::Store(message)
-			if message.contains(
-				"product_presave_mfds_regional_items field `product_presave_id`",
-			) =>
-		{
-			Error::BadRequest { message }
-		}
-		err => err.into(),
-	}
-}
-
-pub async fn delete_product_mfds_regional_item(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((product_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	let entity = ProductPresaveMfdsRegionalItemBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		product_id,
-		entity.product_presave_id,
-		id,
-		"product_presave_mfds_regional_items",
-	)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	ProductPresaveMfdsRegionalItemBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
 pub async fn create_reporter_presave(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,

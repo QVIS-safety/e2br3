@@ -812,13 +812,11 @@ pub struct ProductPresave {
 	pub deleted: bool,
 	pub sender_presave_id: Option<Uuid>,
 	pub product_id: Option<String>,
-	pub drug_characterization: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
 	pub preapproval_ip_name: Option<String>,
 	pub brand_name: Option<String>,
-	pub drug_generic_name: Option<String>,
-	pub manufacturer_name: Option<String>,
+	pub original_manufacturer: Option<String>,
 	pub product_description: Option<String>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
@@ -832,8 +830,6 @@ pub struct ProductPresave {
 	pub drug_authorization_country: Option<String>,
 	pub drug_authorization_holder: Option<String>,
 	pub holder_applicant_name_notation: Option<String>,
-	pub fda_ind_number_occurred: Option<String>,
-	pub fda_pre_anda_number_occurred: Option<String>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -846,13 +842,11 @@ pub struct ProductPresaveForCreate {
 	pub comments: Option<String>,
 	pub sender_presave_id: Option<Uuid>,
 	pub product_id: Option<String>,
-	pub drug_characterization: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
 	pub preapproval_ip_name: Option<String>,
 	pub brand_name: Option<String>,
-	pub drug_generic_name: Option<String>,
-	pub manufacturer_name: Option<String>,
+	pub original_manufacturer: Option<String>,
 	pub product_description: Option<String>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
@@ -866,8 +860,6 @@ pub struct ProductPresaveForCreate {
 	pub drug_authorization_country: Option<String>,
 	pub drug_authorization_holder: Option<String>,
 	pub holder_applicant_name_notation: Option<String>,
-	pub fda_ind_number_occurred: Option<String>,
-	pub fda_pre_anda_number_occurred: Option<String>,
 }
 
 #[derive(Fields)]
@@ -877,13 +869,11 @@ struct ProductPresaveForInsert {
 	comments: Option<String>,
 	sender_presave_id: Option<Uuid>,
 	product_id: Option<String>,
-	drug_characterization: Option<String>,
 	medicinal_product: Option<String>,
 	medicinal_product_notation: Option<String>,
 	preapproval_ip_name: Option<String>,
 	brand_name: Option<String>,
-	drug_generic_name: Option<String>,
-	manufacturer_name: Option<String>,
+	original_manufacturer: Option<String>,
 	product_description: Option<String>,
 	mpid: Option<String>,
 	mpid_version: Option<String>,
@@ -897,8 +887,6 @@ struct ProductPresaveForInsert {
 	drug_authorization_country: Option<String>,
 	drug_authorization_holder: Option<String>,
 	holder_applicant_name_notation: Option<String>,
-	fda_ind_number_occurred: Option<String>,
-	fda_pre_anda_number_occurred: Option<String>,
 }
 
 impl IntoOrgScopedCreate for ProductPresaveForCreate {
@@ -911,13 +899,11 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 			comments: self.comments,
 			sender_presave_id: self.sender_presave_id,
 			product_id: self.product_id,
-			drug_characterization: self.drug_characterization,
 			medicinal_product: self.medicinal_product,
 			medicinal_product_notation: self.medicinal_product_notation,
 			preapproval_ip_name: self.preapproval_ip_name,
 			brand_name: self.brand_name,
-			drug_generic_name: self.drug_generic_name,
-			manufacturer_name: self.manufacturer_name,
+			original_manufacturer: self.original_manufacturer,
 			product_description: self.product_description,
 			mpid: self.mpid,
 			mpid_version: self.mpid_version,
@@ -931,8 +917,6 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 			drug_authorization_country: self.drug_authorization_country,
 			drug_authorization_holder: self.drug_authorization_holder,
 			holder_applicant_name_notation: self.holder_applicant_name_notation,
-			fda_ind_number_occurred: self.fda_ind_number_occurred,
-			fda_pre_anda_number_occurred: self.fda_pre_anda_number_occurred,
 		}
 	}
 }
@@ -944,13 +928,11 @@ pub struct ProductPresaveForUpdate {
 	pub deleted: Option<bool>,
 	pub sender_presave_id: Option<Uuid>,
 	pub product_id: Option<String>,
-	pub drug_characterization: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
 	pub preapproval_ip_name: Option<String>,
 	pub brand_name: Option<String>,
-	pub drug_generic_name: Option<String>,
-	pub manufacturer_name: Option<String>,
+	pub original_manufacturer: Option<String>,
 	pub product_description: Option<String>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
@@ -964,8 +946,6 @@ pub struct ProductPresaveForUpdate {
 	pub drug_authorization_country: Option<String>,
 	pub drug_authorization_holder: Option<String>,
 	pub holder_applicant_name_notation: Option<String>,
-	pub fda_ind_number_occurred: Option<String>,
-	pub fda_pre_anda_number_occurred: Option<String>,
 }
 
 pub struct ProductPresaveBmc;
@@ -1175,231 +1155,6 @@ impl_child_bmc!(
 	"product_presave_substances",
 	"product_presave_id"
 );
-
-#[derive(Debug, Clone, Fields, FromRow, Serialize)]
-pub struct ProductPresaveFdaCrossReportedInd {
-	pub id: Uuid,
-	pub product_presave_id: Uuid,
-	pub sequence_number: i32,
-	pub ind_number: Option<String>,
-	pub created_at: OffsetDateTime,
-	pub updated_at: OffsetDateTime,
-	pub created_by: Uuid,
-	pub updated_by: Option<Uuid>,
-}
-
-#[derive(Fields, Deserialize)]
-pub struct ProductPresaveFdaCrossReportedIndForCreate {
-	pub product_presave_id: Uuid,
-	pub sequence_number: i32,
-	pub ind_number: Option<String>,
-}
-
-#[derive(Default, Fields, Deserialize)]
-pub struct ProductPresaveFdaCrossReportedIndForUpdate {
-	pub sequence_number: Option<i32>,
-	pub ind_number: Option<String>,
-}
-
-pub struct ProductPresaveFdaCrossReportedIndBmc;
-
-impl DbBmc for ProductPresaveFdaCrossReportedIndBmc {
-	const TABLE: &'static str = "product_presave_fda_cross_reported_inds";
-}
-
-impl ProductPresaveFdaCrossReportedIndBmc {
-	pub async fn create(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		data: ProductPresaveFdaCrossReportedIndForCreate,
-	) -> Result<Uuid> {
-		base_uuid::create::<Self, _>(ctx, mm, data).await
-	}
-
-	pub async fn get(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		id: Uuid,
-	) -> Result<ProductPresaveFdaCrossReportedInd> {
-		base_uuid::get::<Self, _>(ctx, mm, id).await
-	}
-
-	pub async fn list(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		list_options: Option<ListOptions>,
-	) -> Result<Vec<ProductPresaveFdaCrossReportedInd>> {
-		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
-			ctx,
-			mm,
-			None,
-			list_options,
-		)
-		.await
-	}
-
-	pub async fn update(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		id: Uuid,
-		data: ProductPresaveFdaCrossReportedIndForUpdate,
-	) -> Result<()> {
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
-	}
-
-	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
-	}
-
-	pub async fn list_by_parent(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		parent_id: Uuid,
-	) -> Result<Vec<ProductPresaveFdaCrossReportedInd>> {
-		let dbx = mm.dbx();
-		dbx.begin_txn().await?;
-		if let Err(err) =
-			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
-		{
-			dbx.rollback_txn().await?;
-			return Err(err);
-		}
-
-		let sql = format!(
-			"SELECT * FROM {} WHERE product_presave_id = $1 ORDER BY sequence_number ASC, id ASC",
-			Self::TABLE
-		);
-		let rows = match dbx
-			.fetch_all(
-				sqlx::query_as::<_, ProductPresaveFdaCrossReportedInd>(&sql)
-					.bind(parent_id),
-			)
-			.await
-		{
-			Ok(rows) => rows,
-			Err(err) => {
-				dbx.rollback_txn().await?;
-				return Err(err.into());
-			}
-		};
-		dbx.commit_txn().await?;
-		Ok(rows)
-	}
-}
-
-#[derive(Debug, Clone, Fields, FromRow, Serialize)]
-pub struct ProductPresaveMfdsRegionalItem {
-	pub id: Uuid,
-	pub product_presave_id: Uuid,
-	pub sequence_number: i32,
-	pub item_type: Option<String>,
-	pub item_value: Option<String>,
-	pub created_at: OffsetDateTime,
-	pub updated_at: OffsetDateTime,
-	pub created_by: Uuid,
-	pub updated_by: Option<Uuid>,
-}
-
-#[derive(Fields, Deserialize)]
-pub struct ProductPresaveMfdsRegionalItemForCreate {
-	pub product_presave_id: Uuid,
-	pub sequence_number: i32,
-	pub item_type: Option<String>,
-	pub item_value: Option<String>,
-}
-
-#[derive(Default, Fields, Deserialize)]
-pub struct ProductPresaveMfdsRegionalItemForUpdate {
-	pub sequence_number: Option<i32>,
-	pub item_type: Option<String>,
-	pub item_value: Option<String>,
-}
-
-pub struct ProductPresaveMfdsRegionalItemBmc;
-
-impl DbBmc for ProductPresaveMfdsRegionalItemBmc {
-	const TABLE: &'static str = "product_presave_mfds_regional_items";
-}
-
-impl ProductPresaveMfdsRegionalItemBmc {
-	pub async fn create(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		data: ProductPresaveMfdsRegionalItemForCreate,
-	) -> Result<Uuid> {
-		base_uuid::create::<Self, _>(ctx, mm, data).await
-	}
-
-	pub async fn get(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		id: Uuid,
-	) -> Result<ProductPresaveMfdsRegionalItem> {
-		base_uuid::get::<Self, _>(ctx, mm, id).await
-	}
-
-	pub async fn list(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		list_options: Option<ListOptions>,
-	) -> Result<Vec<ProductPresaveMfdsRegionalItem>> {
-		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
-			ctx,
-			mm,
-			None,
-			list_options,
-		)
-		.await
-	}
-
-	pub async fn update(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		id: Uuid,
-		data: ProductPresaveMfdsRegionalItemForUpdate,
-	) -> Result<()> {
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
-	}
-
-	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
-	}
-
-	pub async fn list_by_parent(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		parent_id: Uuid,
-	) -> Result<Vec<ProductPresaveMfdsRegionalItem>> {
-		let dbx = mm.dbx();
-		dbx.begin_txn().await?;
-		if let Err(err) =
-			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
-		{
-			dbx.rollback_txn().await?;
-			return Err(err);
-		}
-
-		let sql = format!(
-			"SELECT * FROM {} WHERE product_presave_id = $1 ORDER BY sequence_number ASC, id ASC",
-			Self::TABLE
-		);
-		let rows = match dbx
-			.fetch_all(
-				sqlx::query_as::<_, ProductPresaveMfdsRegionalItem>(&sql)
-					.bind(parent_id),
-			)
-			.await
-		{
-			Ok(rows) => rows,
-			Err(err) => {
-				dbx.rollback_txn().await?;
-				return Err(err.into());
-			}
-		};
-		dbx.commit_txn().await?;
-		Ok(rows)
-	}
-}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct ProductPresaveMfdsDeviceItem {

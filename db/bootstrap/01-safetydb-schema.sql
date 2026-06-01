@@ -233,13 +233,11 @@ CREATE TABLE IF NOT EXISTS product_presaves (
     deleted BOOLEAN NOT NULL DEFAULT false,
     sender_presave_id UUID,
     product_id VARCHAR(255),
-    drug_characterization VARCHAR(50),
     medicinal_product VARCHAR(2000),
     medicinal_product_notation VARCHAR(50),
     preapproval_ip_name VARCHAR(2000),
     brand_name VARCHAR(2000),
-    drug_generic_name VARCHAR(2000),
-    manufacturer_name VARCHAR(500),
+    original_manufacturer VARCHAR(500),
     product_description TEXT,
     mpid VARCHAR(255),
     mpid_version VARCHAR(50),
@@ -253,8 +251,6 @@ CREATE TABLE IF NOT EXISTS product_presaves (
     drug_authorization_country VARCHAR(2),
     drug_authorization_holder VARCHAR(500),
     holder_applicant_name_notation VARCHAR(50),
-    fda_ind_number_occurred VARCHAR(100),
-    fda_pre_anda_number_occurred VARCHAR(100),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -266,6 +262,9 @@ CREATE TABLE IF NOT EXISTS product_presaves (
         REFERENCES sender_presaves(id, organization_id)
         ON DELETE SET NULL (sender_presave_id)
 );
+
+ALTER TABLE product_presaves
+    ADD COLUMN IF NOT EXISTS original_manufacturer VARCHAR(500);
 
 ALTER TABLE sender_presaves
     ADD COLUMN IF NOT EXISTS person_given_name VARCHAR(200);
@@ -287,33 +286,6 @@ CREATE TABLE IF NOT EXISTS product_presave_substances (
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
     CONSTRAINT product_presave_substances_sequence_unique UNIQUE (product_presave_id, sequence_number)
-);
-
-CREATE TABLE IF NOT EXISTS product_presave_fda_cross_reported_inds (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
-    sequence_number INTEGER NOT NULL,
-    ind_number VARCHAR(100),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT product_presave_fda_cross_reported_inds_sequence_unique UNIQUE (product_presave_id, sequence_number)
-);
-
-CREATE TABLE IF NOT EXISTS product_presave_mfds_regional_items (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
-    sequence_number INTEGER NOT NULL,
-    item_type VARCHAR(100),
-    item_value TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT product_presave_mfds_regional_items_sequence_unique UNIQUE (product_presave_id, sequence_number)
 );
 
 CREATE TABLE IF NOT EXISTS product_presave_mfds_device_items (
@@ -606,8 +578,6 @@ CREATE INDEX idx_receiver_presave_consignees_parent ON receiver_presave_consigne
 CREATE INDEX idx_product_presaves_org ON product_presaves(organization_id);
 CREATE INDEX idx_product_presaves_sender ON product_presaves(sender_presave_id);
 CREATE INDEX idx_product_presave_substances_parent ON product_presave_substances(product_presave_id);
-CREATE INDEX idx_product_presave_fda_cross_reported_inds_parent ON product_presave_fda_cross_reported_inds(product_presave_id);
-CREATE INDEX idx_product_presave_mfds_regional_items_parent ON product_presave_mfds_regional_items(product_presave_id);
 CREATE INDEX IF NOT EXISTS idx_product_presave_mfds_device_items_product_presave_id
     ON product_presave_mfds_device_items(product_presave_id);
 CREATE INDEX idx_reporter_presaves_org ON reporter_presaves(organization_id);
@@ -1787,46 +1757,6 @@ CREATE POLICY product_presave_substances_via_parent ON product_presave_substance
         EXISTS (
             SELECT 1 FROM product_presaves p
             WHERE p.id = product_presave_substances.product_presave_id
-            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    );
-
-ALTER TABLE product_presave_fda_cross_reported_inds ENABLE ROW LEVEL SECURITY;
-ALTER TABLE product_presave_fda_cross_reported_inds FORCE ROW LEVEL SECURITY;
-CREATE POLICY product_presave_fda_cross_reported_inds_via_parent ON product_presave_fda_cross_reported_inds
-    FOR ALL
-    TO e2br3_app_role
-    USING (
-        EXISTS (
-            SELECT 1 FROM product_presaves p
-            WHERE p.id = product_presave_fda_cross_reported_inds.product_presave_id
-            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM product_presaves p
-            WHERE p.id = product_presave_fda_cross_reported_inds.product_presave_id
-            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    );
-
-ALTER TABLE product_presave_mfds_regional_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE product_presave_mfds_regional_items FORCE ROW LEVEL SECURITY;
-CREATE POLICY product_presave_mfds_regional_items_via_parent ON product_presave_mfds_regional_items
-    FOR ALL
-    TO e2br3_app_role
-    USING (
-        EXISTS (
-            SELECT 1 FROM product_presaves p
-            WHERE p.id = product_presave_mfds_regional_items.product_presave_id
-            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM product_presaves p
-            WHERE p.id = product_presave_mfds_regional_items.product_presave_id
             AND (p.organization_id = current_organization_id() OR is_current_user_admin())
         )
     );

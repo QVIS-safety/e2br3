@@ -10,13 +10,9 @@ use lib_core::model::presave::{
 	NarrativePresaveForCreate, NarrativePresaveSenderDiagnosisBmc,
 	NarrativePresaveSenderDiagnosisForCreate,
 	NarrativePresaveSenderDiagnosisForUpdate, ProductPresaveBmc,
-	ProductPresaveFdaCrossReportedIndBmc,
-	ProductPresaveFdaCrossReportedIndForCreate,
-	ProductPresaveFdaCrossReportedIndForUpdate, ProductPresaveForCreate,
-	ProductPresaveForUpdate, ProductPresaveMfdsDeviceItemBmc,
-	ProductPresaveMfdsDeviceItemForCreate, ProductPresaveMfdsDeviceItemForUpdate,
-	ProductPresaveMfdsRegionalItemBmc, ProductPresaveMfdsRegionalItemForCreate,
-	ProductPresaveMfdsRegionalItemForUpdate, ProductPresaveSubstanceBmc,
+	ProductPresaveForCreate, ProductPresaveForUpdate,
+	ProductPresaveMfdsDeviceItemBmc, ProductPresaveMfdsDeviceItemForCreate,
+	ProductPresaveMfdsDeviceItemForUpdate, ProductPresaveSubstanceBmc,
 	ProductPresaveSubstanceForCreate, ProductPresaveSubstanceForUpdate,
 	ReceiverPresaveBmc, ReceiverPresaveConsigneeBmc,
 	ReceiverPresaveConsigneeForCreate, ReceiverPresaveConsigneeForUpdate,
@@ -51,8 +47,6 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"receiver_presave_consignees",
 	"product_presaves",
 	"product_presave_substances",
-	"product_presave_fda_cross_reported_inds",
-	"product_presave_mfds_regional_items",
 	"product_presave_mfds_device_items",
 	"reporter_presaves",
 	"study_presaves",
@@ -164,13 +158,11 @@ fn product_presave_create(
 		comments: None,
 		sender_presave_id: Some(sender_presave_id),
 		product_id: Some(format!("PRODUCT-{}", Uuid::new_v4())),
-		drug_characterization: None,
 		medicinal_product: Some("Authority Product".into()),
 		medicinal_product_notation: None,
 		preapproval_ip_name: None,
 		brand_name: None,
-		drug_generic_name: None,
-		manufacturer_name: None,
+		original_manufacturer: None,
 		product_description: None,
 		mpid: None,
 		mpid_version: None,
@@ -184,8 +176,6 @@ fn product_presave_create(
 		drug_authorization_country: None,
 		drug_authorization_holder: None,
 		holder_applicant_name_notation: None,
-		fda_ind_number_occurred: None,
-		fda_pre_anda_number_occurred: None,
 	}
 }
 
@@ -353,14 +343,6 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 		(
 			"product_presave_substances",
 			"product_presave_substances_via_parent",
-		),
-		(
-			"product_presave_fda_cross_reported_inds",
-			"product_presave_fda_cross_reported_inds_via_parent",
-		),
-		(
-			"product_presave_mfds_regional_items",
-			"product_presave_mfds_regional_items_via_parent",
 		),
 		(
 			"product_presave_mfds_device_items",
@@ -781,13 +763,11 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			comments: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("PRODUCT-{suffix}")),
-			drug_characterization: Some("1".into()),
 			medicinal_product: Some(format!("Medicinal Product {suffix}")),
 			medicinal_product_notation: None,
 			preapproval_ip_name: None,
 			brand_name: Some("Brand".into()),
-			drug_generic_name: Some("Generic".into()),
-			manufacturer_name: Some("Manufacturer".into()),
+			original_manufacturer: None,
 			product_description: Some("Product description".into()),
 			mpid: None,
 			mpid_version: None,
@@ -801,8 +781,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			drug_authorization_country: Some("KR".into()),
 			drug_authorization_holder: Some("Holder".into()),
 			holder_applicant_name_notation: None,
-			fda_ind_number_occurred: None,
-			fda_pre_anda_number_occurred: None,
 		},
 	)
 	.await?;
@@ -967,42 +945,19 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 	)
 	.await?;
 
-	let mut product = product_presave_create(
+	let product = product_presave_create(
 		RegulatoryAuthority::Fda,
 		format!("Authorityless Union Product {suffix}"),
 		sender_id,
 	);
-	product.fda_ind_number_occurred = Some("IND-UNION".into());
-	product.fda_pre_anda_number_occurred = Some("ANDA-UNION".into());
 	let product_id = ProductPresaveBmc::create(&ctx, &mm, product).await?;
 	ProductPresaveBmc::update(
 		&ctx,
 		&mm,
 		product_id,
 		ProductPresaveForUpdate {
-			fda_ind_number_occurred: Some("IND-UPDATED".into()),
+			medicinal_product: Some("Authorityless Union Product Updated".into()),
 			..Default::default()
-		},
-	)
-	.await?;
-	ProductPresaveFdaCrossReportedIndBmc::create(
-		&ctx,
-		&mm,
-		ProductPresaveFdaCrossReportedIndForCreate {
-			product_presave_id: product_id,
-			sequence_number: 1,
-			ind_number: Some("IND-CHILD".into()),
-		},
-	)
-	.await?;
-	ProductPresaveMfdsRegionalItemBmc::create(
-		&ctx,
-		&mm,
-		ProductPresaveMfdsRegionalItemForCreate {
-			product_presave_id: product_id,
-			sequence_number: 1,
-			item_type: Some("domestic_product_code".into()),
-			item_value: Some("MFDS-CHILD".into()),
 		},
 	)
 	.await?;
@@ -1129,13 +1084,11 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 				comments: None,
 				sender_presave_id: None,
 				product_id: None,
-				drug_characterization: None,
 				medicinal_product: None,
 				medicinal_product_notation: None,
 				preapproval_ip_name: None,
 				brand_name: None,
-				drug_generic_name: None,
-				manufacturer_name: None,
+				original_manufacturer: None,
 				product_description: None,
 				mpid: None,
 				mpid_version: None,
@@ -1149,8 +1102,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 				drug_authorization_country: None,
 				drug_authorization_holder: None,
 				holder_applicant_name_notation: None,
-				fda_ind_number_occurred: None,
-				fda_pre_anda_number_occurred: None,
 			},
 		)
 		.await,
@@ -1343,13 +1294,11 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			comments: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("DUP-PRODUCT-{suffix}")),
-			drug_characterization: None,
 			medicinal_product: None,
 			medicinal_product_notation: None,
 			preapproval_ip_name: None,
 			brand_name: None,
-			drug_generic_name: None,
-			manufacturer_name: None,
+			original_manufacturer: None,
 			product_description: None,
 			mpid: None,
 			mpid_version: None,
@@ -1363,8 +1312,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			drug_authorization_country: None,
 			drug_authorization_holder: None,
 			holder_applicant_name_notation: None,
-			fda_ind_number_occurred: None,
-			fda_pre_anda_number_occurred: None,
 		},
 	)
 	.await?;
@@ -1377,13 +1324,11 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				comments: None,
 				sender_presave_id: Some(sender_id),
 				product_id: Some(format!(" dup-product-{suffix} ")),
-				drug_characterization: None,
 				medicinal_product: None,
 				medicinal_product_notation: None,
 				preapproval_ip_name: None,
 				brand_name: None,
-				drug_generic_name: None,
-				manufacturer_name: None,
+				original_manufacturer: None,
 				product_description: None,
 				mpid: None,
 				mpid_version: None,
@@ -1397,8 +1342,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				drug_authorization_country: None,
 				drug_authorization_holder: None,
 				holder_applicant_name_notation: None,
-				fda_ind_number_occurred: None,
-				fda_pre_anda_number_occurred: None,
 			},
 		)
 		.await,
@@ -1678,13 +1621,11 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			comments: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("CHILD-PRODUCT-{suffix}")),
-			drug_characterization: None,
 			medicinal_product: Some("Child Product".into()),
 			medicinal_product_notation: None,
 			preapproval_ip_name: None,
 			brand_name: None,
-			drug_generic_name: None,
-			manufacturer_name: None,
+			original_manufacturer: None,
 			product_description: None,
 			mpid: None,
 			mpid_version: None,
@@ -1698,8 +1639,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			drug_authorization_country: None,
 			drug_authorization_holder: None,
 			holder_applicant_name_notation: None,
-			fda_ind_number_occurred: None,
-			fda_pre_anda_number_occurred: None,
 		},
 	)
 	.await?;
@@ -1711,13 +1650,11 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			comments: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("CHILD-FDA-PRODUCT-{suffix}")),
-			drug_characterization: None,
 			medicinal_product: Some("Child FDA Product".into()),
 			medicinal_product_notation: None,
 			preapproval_ip_name: None,
 			brand_name: None,
-			drug_generic_name: None,
-			manufacturer_name: None,
+			original_manufacturer: None,
 			product_description: None,
 			mpid: None,
 			mpid_version: None,
@@ -1731,8 +1668,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			drug_authorization_country: None,
 			drug_authorization_holder: None,
 			holder_applicant_name_notation: None,
-			fda_ind_number_occurred: None,
-			fda_pre_anda_number_occurred: None,
 		},
 	)
 	.await?;
@@ -1971,88 +1906,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			.id,
 		substance_id
 	);
-
-	let ind_id = ProductPresaveFdaCrossReportedIndBmc::create(
-		&ctx,
-		&mm,
-		ProductPresaveFdaCrossReportedIndForCreate {
-			product_presave_id: fda_product_id,
-			sequence_number: 2,
-			ind_number: Some("IND-before".into()),
-		},
-	)
-	.await?;
-	ProductPresaveFdaCrossReportedIndBmc::update(
-		&ctx,
-		&mm,
-		ind_id,
-		ProductPresaveFdaCrossReportedIndForUpdate {
-			ind_number: Some("IND-after".into()),
-			..Default::default()
-		},
-	)
-	.await?;
-	let ind = ProductPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, ind_id).await?;
-	assert_eq!(ind.product_presave_id, fda_product_id);
-	assert_eq!(ind.ind_number.as_deref(), Some("IND-after"));
-	assert_audit_changed_field(
-		&mm,
-		"product_presave_fda_cross_reported_inds",
-		ind_id,
-		"ind_number",
-		json!("IND-before"),
-		json!("IND-after"),
-	)
-	.await?;
-	assert!(ProductPresaveFdaCrossReportedIndBmc::list_by_parent(
-		&ctx,
-		&mm,
-		fda_product_id
-	)
-	.await?
-	.iter()
-	.any(|item| item.id == ind_id));
-
-	let regional_id = ProductPresaveMfdsRegionalItemBmc::create(
-		&ctx,
-		&mm,
-		ProductPresaveMfdsRegionalItemForCreate {
-			product_presave_id: product_id,
-			sequence_number: 3,
-			item_type: Some("domestic".into()),
-			item_value: Some("before".into()),
-		},
-	)
-	.await?;
-	ProductPresaveMfdsRegionalItemBmc::update(
-		&ctx,
-		&mm,
-		regional_id,
-		ProductPresaveMfdsRegionalItemForUpdate {
-			item_value: Some("after".into()),
-			..Default::default()
-		},
-	)
-	.await?;
-	let regional =
-		ProductPresaveMfdsRegionalItemBmc::get(&ctx, &mm, regional_id).await?;
-	assert_eq!(regional.product_presave_id, product_id);
-	assert_eq!(regional.item_value.as_deref(), Some("after"));
-	assert_audit_changed_field(
-		&mm,
-		"product_presave_mfds_regional_items",
-		regional_id,
-		"item_value",
-		json!("before"),
-		json!("after"),
-	)
-	.await?;
-	assert!(ProductPresaveMfdsRegionalItemBmc::list_by_parent(
-		&ctx, &mm, product_id
-	)
-	.await?
-	.iter()
-	.any(|item| item.id == regional_id));
 
 	let maker_id = ProductPresaveMfdsDeviceItemBmc::create(
 		&ctx,
@@ -2298,8 +2151,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	NarrativePresaveSenderDiagnosisBmc::delete(&ctx, &mm, diagnosis_id).await?;
 	StudyPresaveFdaCrossReportedIndBmc::delete(&ctx, &mm, study_ind_id).await?;
 	StudyPresaveRegistrationNumberBmc::delete(&ctx, &mm, registration_id).await?;
-	ProductPresaveMfdsRegionalItemBmc::delete(&ctx, &mm, regional_id).await?;
-	ProductPresaveFdaCrossReportedIndBmc::delete(&ctx, &mm, ind_id).await?;
 	ProductPresaveSubstanceBmc::delete(&ctx, &mm, substance_id).await?;
 	ReceiverPresaveConsigneeBmc::delete(&ctx, &mm, consignee_id).await?;
 	SenderPresaveResponsiblePersonBmc::delete(&ctx, &mm, responsible_id).await?;

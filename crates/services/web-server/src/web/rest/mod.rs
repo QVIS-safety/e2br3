@@ -857,28 +857,6 @@ pub fn routes_section_presaves(mm: ModelManager) -> Router {
 				.delete(section_presave_rest::delete_product_substance),
 		)
 		.route(
-			"/presaves/products/{product_id}/fda-cross-reported-inds",
-			get(section_presave_rest::list_product_fda_cross_reported_inds)
-				.post(section_presave_rest::create_product_fda_cross_reported_ind),
-		)
-		.route(
-			"/presaves/products/{product_id}/fda-cross-reported-inds/{id}",
-			get(section_presave_rest::get_product_fda_cross_reported_ind)
-				.patch(section_presave_rest::update_product_fda_cross_reported_ind)
-				.delete(section_presave_rest::delete_product_fda_cross_reported_ind),
-		)
-		.route(
-			"/presaves/products/{product_id}/mfds-regional-items",
-			get(section_presave_rest::list_product_mfds_regional_items)
-				.post(section_presave_rest::create_product_mfds_regional_item),
-		)
-		.route(
-			"/presaves/products/{product_id}/mfds-regional-items/{id}",
-			get(section_presave_rest::get_product_mfds_regional_item)
-				.patch(section_presave_rest::update_product_mfds_regional_item)
-				.delete(section_presave_rest::delete_product_mfds_regional_item),
-		)
-		.route(
 			"/presaves/reporters",
 			get(section_presave_rest::list_reporter_presaves)
 				.post(section_presave_rest::create_reporter_presave),

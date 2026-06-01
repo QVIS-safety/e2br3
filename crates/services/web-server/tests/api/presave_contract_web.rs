@@ -90,13 +90,11 @@ async fn create_product_presave(
 			comments: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("REST-PRODUCT-{}", Uuid::new_v4())),
-			drug_characterization: None,
 			medicinal_product: Some("REST Product".into()),
 			medicinal_product_notation: None,
 			preapproval_ip_name: None,
 			brand_name: None,
-			drug_generic_name: None,
-			manufacturer_name: None,
+			original_manufacturer: None,
 			product_description: None,
 			mpid: None,
 			mpid_version: None,
@@ -110,8 +108,6 @@ async fn create_product_presave(
 			drug_authorization_country: None,
 			drug_authorization_holder: None,
 			holder_applicant_name_notation: None,
-			fda_ind_number_occurred: None,
-			fda_pre_anda_number_occurred: None,
 		},
 	)
 	.await?;
@@ -494,51 +490,6 @@ async fn create_product_substance_via_api(
 	data_id(&value)
 }
 
-async fn create_product_fda_cross_reported_ind_via_api(
-	app: &Router,
-	cookie: &str,
-	product_id: Uuid,
-	sequence_number: i32,
-	ind_number: &str,
-) -> Result<Uuid> {
-	let value = post_json_created(
-		app,
-		cookie,
-		format!("/api/presaves/products/{product_id}/fda-cross-reported-inds"),
-		json!({
-			"data": {
-				"sequence_number": sequence_number,
-				"ind_number": ind_number
-			}
-		}),
-	)
-	.await?;
-	data_id(&value)
-}
-
-async fn create_product_mfds_regional_item_via_api(
-	app: &Router,
-	cookie: &str,
-	product_id: Uuid,
-	sequence_number: i32,
-	item_value: &str,
-) -> Result<Uuid> {
-	let value = post_json_created(
-		app,
-		cookie,
-		format!("/api/presaves/products/{product_id}/mfds-regional-items"),
-		json!({
-			"data": {
-				"sequence_number": sequence_number,
-				"item_type": "domestic_product_code",
-				"item_value": item_value
-			}
-		}),
-	)
-	.await?;
-	data_id(&value)
-}
-
 async fn create_study_presave_for_product_via_api(
 	app: &Router,
 	cookie: &str,
@@ -804,8 +755,7 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 				"name": "Authorityless Union Product",
 				"sender_presave_id": sender_id,
 				"product_id": "UNION-PRODUCT",
-				"medicinal_product": "Union Product",
-				"fda_ind_number_occurred": "IND-UNION"
+				"medicinal_product": "Union Product"
 			}
 		}),
 	)
@@ -822,38 +772,24 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 		format!("/api/presaves/products/{product_id}/details"),
 		json!({
 			"data": {
-				"fda_cross_reported_inds": [
-					{ "sequence_number": 1, "ind_number": "IND-CHILD" }
-				],
-				"mfds_regional_items": [
+				"mfds_device_items": [
 					{
 						"sequence_number": 1,
-						"item_type": "domestic_product_code",
-						"item_value": "MFDS-CHILD"
+						"code": "KR_DVC_MFR",
+						"value_value": "MFDS-CHILD"
 					}
 				]
 			}
 		}),
 	)
 	.await?;
-	assert_eq!(
-		saved["data"]["parent"]["fda_ind_number_occurred"].as_str(),
-		Some("IND-UNION")
-	);
 	assert!(saved["data"]["parent"]
 		.get("unknown_extra_product_code")
 		.is_none());
 	assert_eq!(
-		saved["data"]["fda_cross_reported_inds"]
+		saved["data"]["mfds_device_items"]
 			.as_array()
-			.ok_or("missing fda child rows")?
-			.len(),
-		1
-	);
-	assert_eq!(
-		saved["data"]["mfds_regional_items"]
-			.as_array()
-			.ok_or("missing mfds child rows")?
+			.ok_or("missing MFDS device rows")?
 			.len(),
 		1
 	);
@@ -1562,36 +1498,17 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		Method::POST,
 		"/api/presaves/products".to_string(),
 		Some(json!({
-			"data": {
+		"data": {
 				"name": "REST Product Canonical",
 				"sender_presave_id": sender_id,
 				"product_id": "REST-PRODUCT-CANONICAL",
-				"medicinal_product": "REST Product Canonical",
-				"fda_ind_number_occurred": "IND-CANONICAL"
+				"medicinal_product": "REST Product Canonical"
 			}
 		})),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	let product_id = data_id(&value)?;
-
-	let (status, value) = request_json(
-		&app,
-		&admin_cookie,
-		Method::POST,
-		"/api/presaves/products".to_string(),
-		Some(json!({
-			"data": {
-				"name": "REST MFDS Product Canonical",
-				"sender_presave_id": sender_id,
-				"product_id": "REST-MFDS-PRODUCT-CANONICAL",
-				"medicinal_product": "REST MFDS Product Canonical"
-			}
-		})),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	let mfds_product_id = data_id(&value)?;
 
 	let (status, value) = request_json(
 		&app,
@@ -1610,39 +1527,6 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	let substance_id = data_id(&value)?;
-
-	let (status, value) = request_json(
-		&app,
-		&admin_cookie,
-		Method::POST,
-		format!("/api/presaves/products/{product_id}/fda-cross-reported-inds"),
-		Some(json!({
-			"data": {
-				"sequence_number": 1,
-				"ind_number": "IND-PRODUCT-REST"
-			}
-		})),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	let product_ind_id = data_id(&value)?;
-
-	let (status, value) = request_json(
-		&app,
-		&admin_cookie,
-		Method::POST,
-		format!("/api/presaves/products/{mfds_product_id}/mfds-regional-items"),
-		Some(json!({
-			"data": {
-				"sequence_number": 1,
-				"item_type": "domestic_product_code",
-				"item_value": "MFDS-REST"
-			}
-		})),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	let regional_item_id = data_id(&value)?;
 
 	let (status, value) = request_json(
 		&app,
@@ -1690,12 +1574,6 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		),
 		format!("/api/presaves/receivers/{receiver_id}/consignees/{consignee_id}"),
 		format!("/api/presaves/products/{product_id}/substances/{substance_id}"),
-		format!(
-			"/api/presaves/products/{product_id}/fda-cross-reported-inds/{product_ind_id}"
-		),
-		format!(
-				"/api/presaves/products/{mfds_product_id}/mfds-regional-items/{regional_item_id}"
-			),
 	] {
 		let (status, value) =
 			request_json(&app, &admin_cookie, Method::GET, uri, None).await?;
@@ -1742,14 +1620,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		),
 		format!("/api/presaves/receivers/{receiver_id}/consignees/{consignee_id}"),
 		format!("/api/presaves/products/{product_id}/substances/{substance_id}"),
-		format!(
-			"/api/presaves/products/{product_id}/fda-cross-reported-inds/{product_ind_id}"
-		),
-		format!(
-				"/api/presaves/products/{mfds_product_id}/mfds-regional-items/{regional_item_id}"
-			),
 		format!("/api/presaves/reporters/{reporter_id}"),
-		format!("/api/presaves/products/{mfds_product_id}"),
 		format!("/api/presaves/products/{product_id}"),
 		format!("/api/presaves/receivers/{receiver_id}"),
 		format!("/api/presaves/senders/{sender_id}"),
@@ -2349,14 +2220,6 @@ async fn test_product_presave_details_graph_load_and_save() -> Result<()> {
 		"Substance A",
 	)
 	.await?;
-	let ind_id = create_product_fda_cross_reported_ind_via_api(
-		&app,
-		&admin_cookie,
-		product_id,
-		1,
-		"IND-OLD",
-	)
-	.await?;
 	let details = get_json_ok(
 		&app,
 		&admin_cookie,
@@ -2367,17 +2230,6 @@ async fn test_product_presave_details_graph_load_and_save() -> Result<()> {
 	assert_eq!(
 		details["data"]["substances"][0]["id"],
 		substance_id.to_string()
-	);
-	assert_eq!(
-		details["data"]["fda_cross_reported_inds"][0]["id"],
-		ind_id.to_string()
-	);
-	assert_eq!(
-		details["data"]["mfds_regional_items"]
-			.as_array()
-			.unwrap()
-			.len(),
-		0
 	);
 
 	let saved = put_json_ok(
@@ -2399,98 +2251,13 @@ async fn test_product_presave_details_graph_load_and_save() -> Result<()> {
 						"sequence_number": 3,
 						"substance_name": "Substance Created"
 					}
-				],
-				"fda_cross_reported_inds": [
-					{ "id": ind_id, "sequence_number": 2, "ind_number": "IND-UPDATED" },
-					{ "sequence_number": 3, "ind_number": "IND-CREATED" }
-				],
-				"mfds_regional_items": []
+				]
 			}
 		}),
 	)
 	.await?;
 	assert_eq!(saved["data"]["parent"]["brand_name"], "Graph Brand");
 	assert_eq!(saved["data"]["substances"].as_array().unwrap().len(), 2);
-	assert_eq!(
-		saved["data"]["fda_cross_reported_inds"]
-			.as_array()
-			.unwrap()
-			.len(),
-		2
-	);
-	assert_eq!(
-		saved["data"]["mfds_regional_items"]
-			.as_array()
-			.unwrap()
-			.len(),
-		0
-	);
-
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_product_presave_details_mfds_regional_items_load_and_save(
-) -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
-	let product_id =
-		create_product_presave_via_api(&app, &admin_cookie, "mfds").await?;
-	let item_id = create_product_mfds_regional_item_via_api(
-		&app,
-		&admin_cookie,
-		product_id,
-		1,
-		"MFDS-OLD",
-	)
-	.await?;
-
-	let details = get_json_ok(
-		&app,
-		&admin_cookie,
-		format!("/api/presaves/products/{product_id}/details"),
-	)
-	.await?;
-	assert_eq!(details["data"]["parent"]["id"], product_id.to_string());
-	assert_eq!(
-		details["data"]["mfds_regional_items"][0]["id"],
-		item_id.to_string()
-	);
-
-	let saved = put_json_ok(
-		&app,
-		&admin_cookie,
-		format!("/api/presaves/products/{product_id}/details"),
-		json!({
-			"data": {
-				"mfds_regional_items": [
-					{
-						"id": item_id,
-						"sequence_number": 2,
-						"item_type": "domestic_product_code",
-						"item_value": "MFDS-UPDATED"
-					},
-					{
-						"sequence_number": 3,
-						"item_type": "domestic_ingredient_code",
-						"item_value": "MFDS-CREATED"
-					}
-				]
-			}
-		}),
-	)
-	.await?;
-	assert_eq!(
-		saved["data"]["mfds_regional_items"]
-			.as_array()
-			.unwrap()
-			.len(),
-		2
-	);
 
 	Ok(())
 }
@@ -2617,14 +2384,6 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		"Other Product Substance",
 	)
 	.await?;
-	let ind_keep = create_product_fda_cross_reported_ind_via_api(
-		&app,
-		&admin_cookie,
-		product_a,
-		1,
-		"IND-KEEP",
-	)
-	.await?;
 	put_json_ok(
 		&app,
 		&admin_cookie,
@@ -2642,20 +2401,6 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		after_omit["data"]["substances"].as_array().unwrap().len(),
 		2
 	);
-	assert_eq!(
-		after_omit["data"]["fda_cross_reported_inds"]
-			.as_array()
-			.unwrap()
-			.len(),
-		1
-	);
-	assert_eq!(
-		after_omit["data"]["mfds_regional_items"]
-			.as_array()
-			.unwrap()
-			.len(),
-		0
-	);
 
 	put_json_ok(
 		&app,
@@ -2663,9 +2408,7 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		format!("/api/presaves/products/{product_a}/details"),
 		json!({
 			"data": {
-				"substances": [],
-				"fda_cross_reported_inds": [],
-				"mfds_regional_items": []
+				"substances": []
 			}
 		}),
 	)
@@ -2679,20 +2422,6 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 	assert_eq!(
 		after_empty["data"]["substances"].as_array().unwrap().len(),
 		2
-	);
-	assert_eq!(
-		after_empty["data"]["fda_cross_reported_inds"]
-			.as_array()
-			.unwrap()
-			.len(),
-		1
-	);
-	assert_eq!(
-		after_empty["data"]["mfds_regional_items"]
-			.as_array()
-			.unwrap()
-			.len(),
-		0
 	);
 
 	put_json_ok(
@@ -2725,22 +2454,6 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 			.any(|row| row["id"].as_str() == Some(&substance_keep.to_string())),
 		"{after_delete:?}"
 	);
-	assert!(
-		after_delete["data"]["fda_cross_reported_inds"]
-			.as_array()
-			.unwrap()
-			.iter()
-			.any(|row| row["id"].as_str() == Some(&ind_keep.to_string())),
-		"{after_delete:?}"
-	);
-	assert_eq!(
-		after_delete["data"]["mfds_regional_items"]
-			.as_array()
-			.unwrap()
-			.len(),
-		0
-	);
-
 	let (status, value) = request_json(
 		&app,
 		&admin_cookie,
@@ -2768,122 +2481,6 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
-
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_product_presave_details_allows_fda_inds_on_authorityless_products(
-) -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
-	let mfds_product =
-		create_product_presave_via_api(&app, &admin_cookie, "mfds").await?;
-
-	let (status, value) = request_json(
-		&app,
-		&admin_cookie,
-		Method::PUT,
-		format!("/api/presaves/products/{mfds_product}/details"),
-		Some(json!({
-			"data": {
-				"fda_cross_reported_inds": [{
-					"sequence_number": 1,
-					"ind_number": "IND-NON-FDA-CREATE"
-				}]
-			}
-		})),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(
-		value["data"]["fda_cross_reported_inds"][0]["ind_number"].as_str(),
-		Some("IND-NON-FDA-CREATE"),
-		"{value:?}"
-	);
-
-	let (status, value) = request_json(
-		&app,
-		&admin_cookie,
-		Method::POST,
-		format!("/api/presaves/products/{mfds_product}/fda-cross-reported-inds"),
-		Some(json!({
-			"data": {
-				"sequence_number": 2,
-				"ind_number": "IND-DIRECT-NON-FDA-CREATE"
-			}
-		})),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(
-		value["data"]["ind_number"].as_str(),
-		Some("IND-DIRECT-NON-FDA-CREATE"),
-		"{value:?}"
-	);
-
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_product_presave_details_allows_mfds_regional_items_on_authorityless_products(
-) -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let admin_cookie = cookie_header(&admin_token.to_string());
-	let app = web_server::app(mm);
-	let fda_product =
-		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;
-
-	let (status, value) = request_json(
-		&app,
-		&admin_cookie,
-		Method::PUT,
-		format!("/api/presaves/products/{fda_product}/details"),
-		Some(json!({
-			"data": {
-				"mfds_regional_items": [{
-					"sequence_number": 1,
-					"item_type": "domestic_product_code",
-					"item_value": "MFDS-NON-MFDS-CREATE"
-				}]
-			}
-		})),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(
-		value["data"]["mfds_regional_items"][0]["item_value"].as_str(),
-		Some("MFDS-NON-MFDS-CREATE"),
-		"{value:?}"
-	);
-
-	let (status, value) = request_json(
-		&app,
-		&admin_cookie,
-		Method::POST,
-		format!("/api/presaves/products/{fda_product}/mfds-regional-items"),
-		Some(json!({
-			"data": {
-				"sequence_number": 2,
-				"item_type": "domestic_product_code",
-				"item_value": "MFDS-DIRECT-NON-MFDS-CREATE"
-			}
-		})),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(
-		value["data"]["item_value"].as_str(),
-		Some("MFDS-DIRECT-NON-MFDS-CREATE"),
-		"{value:?}"
-	);
 
 	Ok(())
 }
