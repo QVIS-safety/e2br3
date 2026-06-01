@@ -147,6 +147,7 @@ async fn apply_compatibility_alters(
 		"DROP TABLE IF EXISTS product_presave_fda_cross_reported_inds CASCADE",
 		"DROP TABLE IF EXISTS product_presave_mfds_regional_items CASCADE",
 		"ALTER TABLE sender_presaves ADD COLUMN IF NOT EXISTS person_given_name VARCHAR(200)",
+		"ALTER TABLE sender_presaves ADD COLUMN IF NOT EXISTS organization_name_notation VARCHAR(50)",
 		"ALTER TABLE reporter_presaves DROP CONSTRAINT IF EXISTS reporter_presaves_authority_valid",
 		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS authority",
 		"ALTER TABLE study_presaves DROP CONSTRAINT IF EXISTS study_presaves_authority_valid",

@@ -69,6 +69,7 @@ async fn create_product_presave(
 				"REST Product Sender Org {}",
 				Uuid::new_v4()
 			)),
+			organization_name_notation: None,
 			person_given_name: Some("Sender".into()),
 			department: None,
 			street_address: None,
@@ -1664,7 +1665,10 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 		format!("/api/presaves/senders/{sender_id}/details"),
 		json!({
 			"data": {
-				"parent": { "comments": "updated by graph" },
+				"parent": {
+					"comments": "updated by graph",
+					"organization_name_notation": "REST notation"
+				},
 				"gateways": [
 					{
 						"id": gateway_id,
@@ -1709,6 +1713,11 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 	assert_eq!(
 		persisted["data"]["parent"]["comments"].as_str(),
 		Some("updated by graph"),
+		"{persisted:?}"
+	);
+	assert_eq!(
+		persisted["data"]["parent"]["organization_name_notation"].as_str(),
+		Some("REST notation"),
 		"{persisted:?}"
 	);
 	let gateways = persisted["data"]["gateways"].as_array().unwrap();

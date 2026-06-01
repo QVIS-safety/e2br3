@@ -130,6 +130,7 @@ CREATE TABLE IF NOT EXISTS sender_presaves (
     is_default BOOLEAN NOT NULL DEFAULT false,
     sender_type VARCHAR(50),
     organization_name VARCHAR(500),
+    organization_name_notation VARCHAR(50),
     person_given_name VARCHAR(200),
     department VARCHAR(500),
     street_address TEXT,
