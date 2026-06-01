@@ -895,15 +895,26 @@ pub fn routes_section_presaves(mm: ModelManager) -> Router {
 				.delete(section_presave_rest::delete_study_registration_number),
 		)
 		.route(
-			"/presaves/studies/{study_id}/fda-cross-reported-inds",
-			get(section_presave_rest::list_study_fda_cross_reported_inds)
-				.post(section_presave_rest::create_study_fda_cross_reported_ind),
+			"/presaves/studies/{study_id}/products",
+			get(section_presave_rest::list_study_products)
+				.post(section_presave_rest::create_study_product),
 		)
 		.route(
-			"/presaves/studies/{study_id}/fda-cross-reported-inds/{id}",
-			get(section_presave_rest::get_study_fda_cross_reported_ind)
-				.patch(section_presave_rest::update_study_fda_cross_reported_ind)
-				.delete(section_presave_rest::delete_study_fda_cross_reported_ind),
+			"/presaves/studies/{study_id}/products/{id}",
+			get(section_presave_rest::get_study_product)
+				.patch(section_presave_rest::update_study_product)
+				.delete(section_presave_rest::delete_study_product),
+		)
+		.route(
+			"/presaves/studies/{study_id}/reporters",
+			get(section_presave_rest::list_study_reporters)
+				.post(section_presave_rest::create_study_reporter),
+		)
+		.route(
+			"/presaves/studies/{study_id}/reporters/{id}",
+			get(section_presave_rest::get_study_reporter)
+				.patch(section_presave_rest::update_study_reporter)
+				.delete(section_presave_rest::delete_study_reporter),
 		)
 		.route(
 			"/presaves/narratives",

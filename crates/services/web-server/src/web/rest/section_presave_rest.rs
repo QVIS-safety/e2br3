@@ -26,12 +26,13 @@ use lib_core::model::presave::{
 	SenderPresaveGatewayForUpdate, SenderPresaveResponsiblePerson,
 	SenderPresaveResponsiblePersonBmc, SenderPresaveResponsiblePersonForCreate,
 	SenderPresaveResponsiblePersonForUpdate, StudyPresave, StudyPresaveBmc,
-	StudyPresaveFdaCrossReportedInd, StudyPresaveFdaCrossReportedIndBmc,
-	StudyPresaveFdaCrossReportedIndForCreate,
-	StudyPresaveFdaCrossReportedIndForUpdate, StudyPresaveForCreate,
-	StudyPresaveForUpdate, StudyPresaveRegistrationNumber,
+	StudyPresaveForCreate, StudyPresaveForUpdate, StudyPresaveProduct,
+	StudyPresaveProductBmc, StudyPresaveProductForCreate,
+	StudyPresaveProductForUpdate, StudyPresaveRegistrationNumber,
 	StudyPresaveRegistrationNumberBmc, StudyPresaveRegistrationNumberForCreate,
-	StudyPresaveRegistrationNumberForUpdate,
+	StudyPresaveRegistrationNumberForUpdate, StudyPresaveReporter,
+	StudyPresaveReporterBmc, StudyPresaveReporterForCreate,
+	StudyPresaveReporterForUpdate,
 };
 use lib_core::model::user::UserBmc;
 use lib_core::model::{self, ModelManager};
@@ -2408,21 +2409,44 @@ impl StudyRegistrationNumberForRestCreate {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct StudyFdaCrossReportedIndForRestCreate {
+pub struct StudyProductForRestCreate {
 	pub sequence_number: i32,
-	pub ind_number: Option<String>,
+	pub product_presave_id: Option<Uuid>,
+	pub product_name: Option<String>,
 	pub deleted: Option<bool>,
 }
 
-impl StudyFdaCrossReportedIndForRestCreate {
-	fn into_core(
-		self,
-		study_presave_id: Uuid,
-	) -> StudyPresaveFdaCrossReportedIndForCreate {
-		StudyPresaveFdaCrossReportedIndForCreate {
+impl StudyProductForRestCreate {
+	fn into_core(self, study_presave_id: Uuid) -> StudyPresaveProductForCreate {
+		StudyPresaveProductForCreate {
 			study_presave_id,
 			sequence_number: self.sequence_number,
-			ind_number: self.ind_number,
+			product_presave_id: self.product_presave_id,
+			product_name: self.product_name,
+			deleted: self.deleted,
+		}
+	}
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StudyReporterForRestCreate {
+	pub sequence_number: i32,
+	pub reporter_presave_id: Option<Uuid>,
+	pub reporter_organization: Option<String>,
+	pub reporter_given_name: Option<String>,
+	pub reporter_qualification: Option<String>,
+	pub deleted: Option<bool>,
+}
+
+impl StudyReporterForRestCreate {
+	fn into_core(self, study_presave_id: Uuid) -> StudyPresaveReporterForCreate {
+		StudyPresaveReporterForCreate {
+			study_presave_id,
+			sequence_number: self.sequence_number,
+			reporter_presave_id: self.reporter_presave_id,
+			reporter_organization: self.reporter_organization,
+			reporter_given_name: self.reporter_given_name,
+			reporter_qualification: self.reporter_qualification,
 			deleted: self.deleted,
 		}
 	}
@@ -2600,18 +2624,59 @@ pub async fn delete_study_presave(
 #[derive(Debug, Serialize)]
 pub struct StudyPresaveDetails {
 	pub parent: StudyPresave,
+	pub products: Vec<StudyPresaveProduct>,
 	#[serde(rename = "registrations")]
 	pub registration_numbers: Vec<StudyPresaveRegistrationNumber>,
-	pub fda_cross_reported_inds: Vec<StudyPresaveFdaCrossReportedInd>,
+	pub reporters: Vec<StudyPresaveReporter>,
 }
 
 #[derive(Deserialize)]
 pub struct StudyPresaveDetailsForUpdate {
 	pub parent: Option<StudyPresaveForUpdate>,
+	pub products: Option<Vec<StudyProductDetailsForUpdate>>,
 	#[serde(rename = "registrations")]
 	pub registration_numbers: Option<Vec<StudyRegistrationNumberDetailsForUpdate>>,
-	pub fda_cross_reported_inds:
-		Option<Vec<StudyFdaCrossReportedIndDetailsForUpdate>>,
+	pub reporters: Option<Vec<StudyReporterDetailsForUpdate>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StudyProductDetailsForUpdate {
+	pub id: Option<Uuid>,
+	#[serde(default, rename = "_delete")]
+	pub delete: bool,
+	pub sequence_number: Option<i32>,
+	pub product_presave_id: Option<Uuid>,
+	pub product_name: Option<String>,
+	pub deleted: Option<bool>,
+}
+
+impl StudyProductDetailsForUpdate {
+	fn into_update(self) -> StudyPresaveProductForUpdate {
+		StudyPresaveProductForUpdate {
+			sequence_number: self.sequence_number,
+			product_presave_id: self.product_presave_id,
+			product_name: self.product_name,
+			deleted: self.deleted,
+		}
+	}
+
+	fn into_create(
+		self,
+		study_presave_id: Uuid,
+	) -> Result<StudyPresaveProductForCreate> {
+		Ok(StudyPresaveProductForCreate {
+			study_presave_id,
+			sequence_number: self.sequence_number.ok_or_else(|| {
+				Error::BadRequest {
+					message: "study product details create requires sequence_number"
+						.to_string(),
+				}
+			})?,
+			product_presave_id: self.product_presave_id,
+			product_name: self.product_name,
+			deleted: self.deleted,
+		})
+	}
 }
 
 #[derive(Debug, Deserialize)]
@@ -2656,20 +2721,26 @@ impl StudyRegistrationNumberDetailsForUpdate {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct StudyFdaCrossReportedIndDetailsForUpdate {
+pub struct StudyReporterDetailsForUpdate {
 	pub id: Option<Uuid>,
 	#[serde(default, rename = "_delete")]
 	pub delete: bool,
 	pub sequence_number: Option<i32>,
-	pub ind_number: Option<String>,
+	pub reporter_presave_id: Option<Uuid>,
+	pub reporter_organization: Option<String>,
+	pub reporter_given_name: Option<String>,
+	pub reporter_qualification: Option<String>,
 	pub deleted: Option<bool>,
 }
 
-impl StudyFdaCrossReportedIndDetailsForUpdate {
-	fn into_update(self) -> StudyPresaveFdaCrossReportedIndForUpdate {
-		StudyPresaveFdaCrossReportedIndForUpdate {
+impl StudyReporterDetailsForUpdate {
+	fn into_update(self) -> StudyPresaveReporterForUpdate {
+		StudyPresaveReporterForUpdate {
 			sequence_number: self.sequence_number,
-			ind_number: self.ind_number,
+			reporter_presave_id: self.reporter_presave_id,
+			reporter_organization: self.reporter_organization,
+			reporter_given_name: self.reporter_given_name,
+			reporter_qualification: self.reporter_qualification,
 			deleted: self.deleted,
 		}
 	}
@@ -2677,17 +2748,20 @@ impl StudyFdaCrossReportedIndDetailsForUpdate {
 	fn into_create(
 		self,
 		study_presave_id: Uuid,
-	) -> Result<StudyPresaveFdaCrossReportedIndForCreate> {
-		Ok(StudyPresaveFdaCrossReportedIndForCreate {
+	) -> Result<StudyPresaveReporterForCreate> {
+		Ok(StudyPresaveReporterForCreate {
 			study_presave_id,
 			sequence_number: self.sequence_number.ok_or_else(|| {
 				Error::BadRequest {
 					message:
-						"study FDA cross-reported IND details create requires sequence_number"
+						"study reporter details create requires sequence_number"
 							.to_string(),
 				}
 			})?,
-			ind_number: self.ind_number,
+			reporter_presave_id: self.reporter_presave_id,
+			reporter_organization: self.reporter_organization,
+			reporter_given_name: self.reporter_given_name,
+			reporter_qualification: self.reporter_qualification,
 			deleted: self.deleted,
 		})
 	}
@@ -2760,6 +2834,11 @@ async fn apply_study_presave_details_inner(
 	if let Some(parent) = data.parent {
 		StudyPresaveBmc::update(ctx, mm, id, parent).await?;
 	}
+	if let Some(products) = data.products {
+		for product in products {
+			upsert_study_product_detail(ctx, mm, id, product).await?;
+		}
+	}
 	if let Some(registration_numbers) = data.registration_numbers {
 		for registration_number in registration_numbers {
 			upsert_study_registration_number_detail(
@@ -2771,9 +2850,9 @@ async fn apply_study_presave_details_inner(
 			.await?;
 		}
 	}
-	if let Some(inds) = data.fda_cross_reported_inds {
-		for ind in inds {
-			upsert_study_fda_cross_reported_ind_detail(ctx, mm, id, ind).await?;
+	if let Some(reporters) = data.reporters {
+		for reporter in reporters {
+			upsert_study_reporter_detail(ctx, mm, id, reporter).await?;
 		}
 	}
 	Ok(())
@@ -2785,14 +2864,15 @@ async fn load_study_presave_details(
 	id: Uuid,
 ) -> Result<StudyPresaveDetails> {
 	let parent = StudyPresaveBmc::get(ctx, mm, id).await?;
+	let products = StudyPresaveProductBmc::list_by_parent(ctx, mm, id).await?;
 	let registration_numbers =
 		StudyPresaveRegistrationNumberBmc::list_by_parent(ctx, mm, id).await?;
-	let fda_cross_reported_inds =
-		StudyPresaveFdaCrossReportedIndBmc::list_by_parent(ctx, mm, id).await?;
+	let reporters = StudyPresaveReporterBmc::list_by_parent(ctx, mm, id).await?;
 	Ok(StudyPresaveDetails {
 		parent,
+		products,
 		registration_numbers,
-		fda_cross_reported_inds,
+		reporters,
 	})
 }
 
@@ -2801,25 +2881,37 @@ fn require_study_detail_operation_permissions(
 	data: &StudyPresaveDetailsForUpdate,
 ) -> Result<()> {
 	let creates_child = data
-		.registration_numbers
+		.products
 		.as_deref()
 		.unwrap_or_default()
 		.iter()
 		.any(|item| item.id.is_none() && !item.delete)
 		|| data
-			.fda_cross_reported_inds
+			.registration_numbers
+			.as_deref()
+			.unwrap_or_default()
+			.iter()
+			.any(|item| item.id.is_none() && !item.delete)
+		|| data
+			.reporters
 			.as_deref()
 			.unwrap_or_default()
 			.iter()
 			.any(|item| item.id.is_none() && !item.delete);
 	let deletes_child = data
-		.registration_numbers
+		.products
 		.as_deref()
 		.unwrap_or_default()
 		.iter()
 		.any(|item| item.delete || item.deleted == Some(true))
 		|| data
-			.fda_cross_reported_inds
+			.registration_numbers
+			.as_deref()
+			.unwrap_or_default()
+			.iter()
+			.any(|item| item.delete || item.deleted == Some(true))
+		|| data
+			.reporters
 			.as_deref()
 			.unwrap_or_default()
 			.iter()
@@ -2844,6 +2936,11 @@ async fn preflight_study_presave_details(
 	study_id: Uuid,
 	data: &StudyPresaveDetailsForUpdate,
 ) -> Result<()> {
+	if let Some(products) = &data.products {
+		for product in products {
+			preflight_study_product_detail(ctx, mm, study_id, product).await?;
+		}
+	}
 	if let Some(registration_numbers) = &data.registration_numbers {
 		for registration_number in registration_numbers {
 			preflight_study_registration_number_detail(
@@ -2855,11 +2952,48 @@ async fn preflight_study_presave_details(
 			.await?;
 		}
 	}
-	if let Some(inds) = &data.fda_cross_reported_inds {
-		for ind in inds {
-			preflight_study_fda_cross_reported_ind_detail(ctx, mm, study_id, ind)
-				.await?;
+	if let Some(reporters) = &data.reporters {
+		for reporter in reporters {
+			preflight_study_reporter_detail(ctx, mm, study_id, reporter).await?;
 		}
+	}
+	Ok(())
+}
+
+async fn preflight_study_product_detail(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	study_id: Uuid,
+	product: &StudyProductDetailsForUpdate,
+) -> Result<()> {
+	if product.delete && product.id.is_none() {
+		return Err(Error::BadRequest {
+			message: "study product delete requires id".to_string(),
+		});
+	}
+	if let Some(id) = product.id {
+		let entity = StudyPresaveProductBmc::get(ctx, mm, id).await?;
+		ensure_detail_parent_scope(
+			study_id,
+			entity.study_presave_id,
+			id,
+			"study",
+			"study_presave_products",
+		)?;
+	} else if !product.delete {
+		validate_study_product_detail_create(product)?;
+	}
+	Ok(())
+}
+
+fn validate_study_product_detail_create(
+	product: &StudyProductDetailsForUpdate,
+) -> Result<()> {
+	if product.sequence_number.is_none() {
+		return Err(Error::BadRequest {
+			message: "study product details create requires sequence_number"
+				.to_string(),
+		});
 	}
 	Ok(())
 }
@@ -2903,41 +3037,82 @@ fn validate_study_registration_number_detail_create(
 	Ok(())
 }
 
-async fn preflight_study_fda_cross_reported_ind_detail(
+async fn preflight_study_reporter_detail(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	study_id: Uuid,
-	ind: &StudyFdaCrossReportedIndDetailsForUpdate,
+	reporter: &StudyReporterDetailsForUpdate,
 ) -> Result<()> {
-	if ind.delete && ind.id.is_none() {
+	if reporter.delete && reporter.id.is_none() {
 		return Err(Error::BadRequest {
-			message: "study FDA cross-reported IND delete requires id".to_string(),
+			message: "study reporter delete requires id".to_string(),
 		});
 	}
-	if let Some(id) = ind.id {
-		let entity = StudyPresaveFdaCrossReportedIndBmc::get(ctx, mm, id).await?;
+	if let Some(id) = reporter.id {
+		let entity = StudyPresaveReporterBmc::get(ctx, mm, id).await?;
 		ensure_detail_parent_scope(
 			study_id,
 			entity.study_presave_id,
 			id,
 			"study",
-			"study_presave_fda_cross_reported_inds",
+			"study_presave_reporters",
 		)?;
-	} else if !ind.delete {
-		validate_study_fda_cross_reported_ind_detail_create(ind)?;
+	} else if !reporter.delete {
+		validate_study_reporter_detail_create(reporter)?;
 	}
 	Ok(())
 }
 
-fn validate_study_fda_cross_reported_ind_detail_create(
-	ind: &StudyFdaCrossReportedIndDetailsForUpdate,
+fn validate_study_reporter_detail_create(
+	reporter: &StudyReporterDetailsForUpdate,
 ) -> Result<()> {
-	if ind.sequence_number.is_none() {
+	if reporter.sequence_number.is_none() {
 		return Err(Error::BadRequest {
-			message:
-				"study FDA cross-reported IND details create requires sequence_number"
-					.to_string(),
+			message: "study reporter details create requires sequence_number"
+				.to_string(),
 		});
+	}
+	Ok(())
+}
+
+async fn upsert_study_product_detail(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	study_id: Uuid,
+	product: StudyProductDetailsForUpdate,
+) -> Result<()> {
+	if product.delete && product.id.is_none() {
+		return Err(Error::BadRequest {
+			message: "study product delete requires id".to_string(),
+		});
+	}
+	if let Some(id) = product.id {
+		let entity = StudyPresaveProductBmc::get(ctx, mm, id).await?;
+		ensure_detail_parent_scope(
+			study_id,
+			entity.study_presave_id,
+			id,
+			"study",
+			"study_presave_products",
+		)?;
+		if product.delete {
+			StudyPresaveProductBmc::update(
+				ctx,
+				mm,
+				id,
+				StudyPresaveProductForUpdate {
+					deleted: Some(true),
+					..Default::default()
+				},
+			)
+			.await?;
+		} else {
+			StudyPresaveProductBmc::update(ctx, mm, id, product.into_update())
+				.await?;
+		}
+	} else {
+		StudyPresaveProductBmc::create(ctx, mm, product.into_create(study_id)?)
+			.await?;
 	}
 	Ok(())
 }
@@ -2993,53 +3168,44 @@ async fn upsert_study_registration_number_detail(
 	Ok(())
 }
 
-async fn upsert_study_fda_cross_reported_ind_detail(
+async fn upsert_study_reporter_detail(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	study_id: Uuid,
-	ind: StudyFdaCrossReportedIndDetailsForUpdate,
+	reporter: StudyReporterDetailsForUpdate,
 ) -> Result<()> {
-	if ind.delete && ind.id.is_none() {
+	if reporter.delete && reporter.id.is_none() {
 		return Err(Error::BadRequest {
-			message: "study FDA cross-reported IND delete requires id".to_string(),
+			message: "study reporter delete requires id".to_string(),
 		});
 	}
-	if let Some(id) = ind.id {
-		let entity = StudyPresaveFdaCrossReportedIndBmc::get(ctx, mm, id).await?;
+	if let Some(id) = reporter.id {
+		let entity = StudyPresaveReporterBmc::get(ctx, mm, id).await?;
 		ensure_detail_parent_scope(
 			study_id,
 			entity.study_presave_id,
 			id,
 			"study",
-			"study_presave_fda_cross_reported_inds",
+			"study_presave_reporters",
 		)?;
-		if ind.delete {
-			StudyPresaveFdaCrossReportedIndBmc::update(
+		if reporter.delete {
+			StudyPresaveReporterBmc::update(
 				ctx,
 				mm,
 				id,
-				StudyPresaveFdaCrossReportedIndForUpdate {
+				StudyPresaveReporterForUpdate {
 					deleted: Some(true),
 					..Default::default()
 				},
 			)
 			.await?;
 		} else {
-			StudyPresaveFdaCrossReportedIndBmc::update(
-				ctx,
-				mm,
-				id,
-				ind.into_update(),
-			)
-			.await?;
+			StudyPresaveReporterBmc::update(ctx, mm, id, reporter.into_update())
+				.await?;
 		}
 	} else {
-		StudyPresaveFdaCrossReportedIndBmc::create(
-			ctx,
-			mm,
-			ind.into_create(study_id)?,
-		)
-		.await?;
+		StudyPresaveReporterBmc::create(ctx, mm, reporter.into_create(study_id)?)
+			.await?;
 	}
 	Ok(())
 }
@@ -3154,108 +3320,192 @@ pub async fn delete_study_registration_number(
 	Ok(StatusCode::NO_CONTENT)
 }
 
-pub async fn create_study_fda_cross_reported_ind(
+pub async fn create_study_product(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(study_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<StudyFdaCrossReportedIndForRestCreate>>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<StudyPresaveFdaCrossReportedInd>>,
-)> {
+	Json(params): Json<ParamsForCreate<StudyProductForRestCreate>>,
+) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveProduct>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
 	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let ParamsForCreate { data } = params;
 	let data = data.into_core(study_id);
-	let id = StudyPresaveFdaCrossReportedIndBmc::create(&ctx, &mm, data).await?;
-	let entity = StudyPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	let id = StudyPresaveProductBmc::create(&ctx, &mm, data).await?;
+	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
 }
 
-pub async fn list_study_fda_cross_reported_inds(
+pub async fn list_study_products(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(study_id): Path<Uuid>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<Vec<StudyPresaveFdaCrossReportedInd>>>,
-)> {
+) -> Result<(StatusCode, Json<DataRestResult<Vec<StudyPresaveProduct>>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
 	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let entities =
-		StudyPresaveFdaCrossReportedIndBmc::list_by_parent(&ctx, &mm, study_id)
-			.await?;
+		StudyPresaveProductBmc::list_by_parent(&ctx, &mm, study_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
 
-pub async fn get_study_fda_cross_reported_ind(
+pub async fn get_study_product(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path((study_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<StudyPresaveFdaCrossReportedInd>>,
-)> {
+) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveProduct>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
-	let entity = StudyPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
 	ensure_parent_scope(
 		study_id,
 		entity.study_presave_id,
 		id,
-		"study_presave_fda_cross_reported_inds",
+		"study_presave_products",
 	)?;
 	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
-pub async fn update_study_fda_cross_reported_ind(
+pub async fn update_study_product(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path((study_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<StudyPresaveFdaCrossReportedIndForUpdate>>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<StudyPresaveFdaCrossReportedInd>>,
-)> {
+	Json(params): Json<ParamsForUpdate<StudyPresaveProductForUpdate>>,
+) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveProduct>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
-	let entity = StudyPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
 	ensure_parent_scope(
 		study_id,
 		entity.study_presave_id,
 		id,
-		"study_presave_fda_cross_reported_inds",
+		"study_presave_products",
 	)?;
 	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let ParamsForUpdate { data } = params;
-	StudyPresaveFdaCrossReportedIndBmc::update(&ctx, &mm, id, data).await?;
-	let entity = StudyPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	StudyPresaveProductBmc::update(&ctx, &mm, id, data).await?;
+	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
-pub async fn delete_study_fda_cross_reported_ind(
+pub async fn delete_study_product(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path((study_id, id)): Path<(Uuid, Uuid)>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	let entity = StudyPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
 	ensure_parent_scope(
 		study_id,
 		entity.study_presave_id,
 		id,
-		"study_presave_fda_cross_reported_inds",
+		"study_presave_products",
 	)?;
 	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	StudyPresaveFdaCrossReportedIndBmc::update(
+	StudyPresaveProductBmc::update(
 		&ctx,
 		&mm,
 		id,
-		StudyPresaveFdaCrossReportedIndForUpdate {
+		StudyPresaveProductForUpdate {
+			deleted: Some(true),
+			..Default::default()
+		},
+	)
+	.await?;
+	Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn create_study_reporter(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(study_id): Path<Uuid>,
+	Json(params): Json<ParamsForCreate<StudyReporterForRestCreate>>,
+) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveReporter>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
+	let ParamsForCreate { data } = params;
+	let data = data.into_core(study_id);
+	let id = StudyPresaveReporterBmc::create(&ctx, &mm, data).await?;
+	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+}
+
+pub async fn list_study_reporters(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(study_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<DataRestResult<Vec<StudyPresaveReporter>>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
+	let entities =
+		StudyPresaveReporterBmc::list_by_parent(&ctx, &mm, study_id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+}
+
+pub async fn get_study_reporter(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((study_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveReporter>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
+	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
+	ensure_parent_scope(
+		study_id,
+		entity.study_presave_id,
+		id,
+		"study_presave_reporters",
+	)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+pub async fn update_study_reporter(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((study_id, id)): Path<(Uuid, Uuid)>,
+	Json(params): Json<ParamsForUpdate<StudyPresaveReporterForUpdate>>,
+) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveReporter>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
+	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
+	ensure_parent_scope(
+		study_id,
+		entity.study_presave_id,
+		id,
+		"study_presave_reporters",
+	)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
+	let ParamsForUpdate { data } = params;
+	StudyPresaveReporterBmc::update(&ctx, &mm, id, data).await?;
+	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+pub async fn delete_study_reporter(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((study_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
+	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
+	ensure_parent_scope(
+		study_id,
+		entity.study_presave_id,
+		id,
+		"study_presave_reporters",
+	)?;
+	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
+	StudyPresaveReporterBmc::update(
+		&ctx,
+		&mm,
+		id,
+		StudyPresaveReporterForUpdate {
 			deleted: Some(true),
 			..Default::default()
 		},

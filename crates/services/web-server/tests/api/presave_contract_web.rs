@@ -637,21 +637,49 @@ async fn create_study_registration_number_via_api(
 	data_id(&value)
 }
 
-async fn create_study_fda_cross_reported_ind_via_api(
+async fn create_study_product_via_api(
 	app: &Router,
 	cookie: &str,
 	study_id: Uuid,
 	sequence_number: i32,
-	ind_number: &str,
+	product_id: Uuid,
+	product_name: &str,
 ) -> Result<Uuid> {
 	let value = post_json_created(
 		app,
 		cookie,
-		format!("/api/presaves/studies/{study_id}/fda-cross-reported-inds"),
+		format!("/api/presaves/studies/{study_id}/products"),
 		json!({
 			"data": {
 				"sequence_number": sequence_number,
-				"ind_number": ind_number
+				"product_presave_id": product_id,
+				"product_name": product_name
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
+async fn create_study_reporter_via_api(
+	app: &Router,
+	cookie: &str,
+	study_id: Uuid,
+	sequence_number: i32,
+	reporter_id: Uuid,
+	organization: &str,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		format!("/api/presaves/studies/{study_id}/reporters"),
+		json!({
+			"data": {
+				"sequence_number": sequence_number,
+				"reporter_presave_id": reporter_id,
+				"reporter_organization": organization,
+				"reporter_given_name": "Reporter",
+				"reporter_qualification": "1"
 			}
 		}),
 	)
@@ -1196,7 +1224,7 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 				"sponsor_study_number": "REST-ST-001",
 				"sponsor_study_number_kind": "PROTOCOL_NO",
 				"study_type_reaction": "1",
-				"fda_ind_number_occurred": "IND-REST"
+				"exclude_case_key_from_sync": true
 			}
 		})),
 	)
@@ -1289,23 +1317,24 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 		&app,
 		&admin_cookie,
 		Method::POST,
-		format!("/api/presaves/studies/{study_id}/fda-cross-reported-inds"),
+		format!("/api/presaves/studies/{study_id}/products"),
 		Some(json!({
 			"data": {
 				"sequence_number": 1,
-				"ind_number": "IND-CHILD-REST"
+				"product_presave_id": product_id,
+				"product_name": "Study Product REST"
 			}
 		})),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	let ind_id = data_id(&value)?;
+	let study_product_id = data_id(&value)?;
 
 	let (status, value) = request_json(
 		&app,
 		&admin_cookie,
 		Method::GET,
-		format!("/api/presaves/studies/{study_id}/fda-cross-reported-inds"),
+		format!("/api/presaves/studies/{study_id}/products"),
 		None,
 	)
 	.await?;
@@ -1313,9 +1342,9 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 	assert!(
 		value["data"]
 			.as_array()
-			.ok_or("study IND list data is not array")?
+			.ok_or("study product list data is not array")?
 			.iter()
-			.any(|row| row["id"].as_str() == Some(&ind_id.to_string())),
+			.any(|row| row["id"].as_str() == Some(&study_product_id.to_string())),
 		"{value:?}"
 	);
 
@@ -1323,7 +1352,7 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 		&app,
 		&admin_cookie,
 		Method::PATCH,
-		format!("/api/presaves/studies/{study_id}/fda-cross-reported-inds/{ind_id}"),
+		format!("/api/presaves/studies/{study_id}/products/{study_product_id}"),
 		Some(json!({ "data": { "deleted": true } })),
 	)
 	.await?;
@@ -1331,7 +1360,7 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 	assert_eq!(value["data"]["deleted"].as_bool(), Some(true));
 
 	let study_delete_uris = [
-		format!("/api/presaves/studies/{study_id}/fda-cross-reported-inds/{ind_id}"),
+		format!("/api/presaves/studies/{study_id}/products/{study_product_id}"),
 		format!(
 			"/api/presaves/studies/{study_id}/registration-numbers/{registration_id}"
 		),
@@ -1384,12 +1413,17 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 			"data": {
 				"name": "REST Narrative",
 				"case_narrative": "REST auto narrative",
-				"case_narrative_notation": "REST notation"
+				"case_narrative_notation": "REST notation",
+				"additional_information": "REST sponsor additional information"
 			}
 		})),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(
+		value["data"]["additional_information"].as_str(),
+		Some("REST sponsor additional information")
+	);
 	let narrative_id = data_id(&value)?;
 
 	let (status, value) = request_json(
@@ -1417,7 +1451,8 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		format!("/api/presaves/narratives/{narrative_id}"),
 		Some(json!({
 			"data": {
-				"case_narrative": "REST auto narrative updated"
+				"case_narrative": "REST auto narrative updated",
+				"additional_information": "REST sponsor additional information updated"
 			}
 		})),
 	)
@@ -1426,6 +1461,10 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 	assert_eq!(
 		value["data"]["case_narrative"].as_str(),
 		Some("REST auto narrative updated")
+	);
+	assert_eq!(
+		value["data"]["additional_information"].as_str(),
+		Some("REST sponsor additional information updated")
 	);
 
 	let (status, value) = request_json(
@@ -2656,12 +2695,29 @@ async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 		"REG-OLD",
 	)
 	.await?;
-	let ind_id = create_study_fda_cross_reported_ind_via_api(
+	let reporter_id = create_named_reporter_presave_via_api(
+		&app,
+		&admin_cookie,
+		format!("REST Study Reporter {}", Uuid::new_v4()),
+		"Study Reporter Org",
+	)
+	.await?;
+	let study_product_id = create_study_product_via_api(
 		&app,
 		&admin_cookie,
 		study_id,
 		1,
-		"IND-OLD",
+		product_id,
+		"Study Product Old",
+	)
+	.await?;
+	let study_reporter_id = create_study_reporter_via_api(
+		&app,
+		&admin_cookie,
+		study_id,
+		1,
+		reporter_id,
+		"Study Reporter Org",
 	)
 	.await?;
 
@@ -2677,8 +2733,12 @@ async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 		registration_id.to_string()
 	);
 	assert_eq!(
-		details["data"]["fda_cross_reported_inds"][0]["id"],
-		ind_id.to_string()
+		details["data"]["products"][0]["id"],
+		study_product_id.to_string()
+	);
+	assert_eq!(
+		details["data"]["reporters"][0]["id"],
+		study_reporter_id.to_string()
 	);
 
 	let saved = put_json_ok(
@@ -2701,9 +2761,13 @@ async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 						"country_code": "US"
 					}
 				],
-				"fda_cross_reported_inds": [
-					{ "id": ind_id, "sequence_number": 2, "ind_number": "IND-UPDATED" },
-					{ "sequence_number": 3, "ind_number": "IND-CREATED" }
+				"products": [
+					{ "id": study_product_id, "sequence_number": 2, "product_presave_id": product_id, "product_name": "Study Product Updated" },
+					{ "sequence_number": 3, "product_presave_id": product_id, "product_name": "Study Product Created" }
+				],
+				"reporters": [
+					{ "id": study_reporter_id, "sequence_number": 2, "reporter_presave_id": reporter_id, "reporter_organization": "Study Reporter Updated" },
+					{ "sequence_number": 3, "reporter_presave_id": reporter_id, "reporter_organization": "Study Reporter Created" }
 				]
 			}
 		}),
@@ -2711,13 +2775,8 @@ async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 	.await?;
 	assert_eq!(saved["data"]["parent"]["study_name"], "Study Graph Updated");
 	assert_eq!(saved["data"]["registrations"].as_array().unwrap().len(), 2);
-	assert_eq!(
-		saved["data"]["fda_cross_reported_inds"]
-			.as_array()
-			.unwrap()
-			.len(),
-		2
-	);
+	assert_eq!(saved["data"]["products"].as_array().unwrap().len(), 2);
+	assert_eq!(saved["data"]["reporters"].as_array().unwrap().len(), 2);
 
 	put_json_ok(
 		&app,
@@ -2895,12 +2954,13 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		"REG-1",
 	)
 	.await?;
-	let ind_id = create_study_fda_cross_reported_ind_via_api(
+	let study_product_id = create_study_product_via_api(
 		&app,
 		&admin_cookie,
 		study_id,
 		1,
-		"IND-1",
+		product_id,
+		"Study Product 1",
 	)
 	.await?;
 
@@ -2916,8 +2976,8 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		registration_id.to_string()
 	);
 	assert_eq!(
-		details["data"]["fda_cross_reported_inds"][0]["id"],
-		ind_id.to_string()
+		details["data"]["products"][0]["id"],
+		study_product_id.to_string()
 	);
 
 	let saved = put_json_ok(
@@ -2940,15 +3000,17 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 						"country_code": "GB"
 					}
 				],
-				"fda_cross_reported_inds": [
+				"products": [
 					{
-						"id": ind_id,
+						"id": study_product_id,
 						"sequence_number": 2,
-						"ind_number": "IND-2"
+						"product_presave_id": product_id,
+						"product_name": "Study Product 2"
 					},
 					{
 						"sequence_number": 3,
-						"ind_number": "IND-3"
+						"product_presave_id": product_id,
+						"product_name": "Study Product 3"
 					}
 				]
 			}
@@ -2960,13 +3022,7 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		"updated by study graph"
 	);
 	assert_eq!(saved["data"]["registrations"].as_array().unwrap().len(), 2);
-	assert_eq!(
-		saved["data"]["fda_cross_reported_inds"]
-			.as_array()
-			.unwrap()
-			.len(),
-		2
-	);
+	assert_eq!(saved["data"]["products"].as_array().unwrap().len(), 2);
 
 	let persisted = get_json_ok(
 		&app,
@@ -2990,17 +3046,17 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		.ok_or("missing created registration")?;
 	assert_eq!(created_registration["country_code"].as_str(), Some("GB"));
 
-	let inds = persisted["data"]["fda_cross_reported_inds"]
-		.as_array()
-		.unwrap();
+	let products = persisted["data"]["products"].as_array().unwrap();
 	assert!(
-		inds.iter()
-			.any(|row| row["ind_number"].as_str() == Some("IND-2")),
+		products
+			.iter()
+			.any(|row| row["product_name"].as_str() == Some("Study Product 2")),
 		"{persisted:?}"
 	);
 	assert!(
-		inds.iter()
-			.any(|row| row["ind_number"].as_str() == Some("IND-3")),
+		products
+			.iter()
+			.any(|row| row["product_name"].as_str() == Some("Study Product 3")),
 		"{persisted:?}"
 	);
 
@@ -3039,12 +3095,13 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 		"KEEP",
 	)
 	.await?;
-	let ind_id = create_study_fda_cross_reported_ind_via_api(
+	let study_product_id = create_study_product_via_api(
 		&app,
 		&admin_cookie,
 		study_id,
 		1,
-		"KEEP-IND",
+		product_id,
+		"KEEP-PRODUCT",
 	)
 	.await?;
 
@@ -3068,19 +3125,13 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 			.len(),
 		2
 	);
-	assert_eq!(
-		after_omit["data"]["fda_cross_reported_inds"]
-			.as_array()
-			.unwrap()
-			.len(),
-		1
-	);
+	assert_eq!(after_omit["data"]["products"].as_array().unwrap().len(), 1);
 
 	put_json_ok(
 		&app,
 		&admin_cookie,
 		format!("/api/presaves/studies/{study_id}/details"),
-		json!({ "data": { "registrations": [], "fda_cross_reported_inds": [] } }),
+		json!({ "data": { "registrations": [], "products": [] } }),
 	)
 	.await?;
 	let after_empty = get_json_ok(
@@ -3096,13 +3147,7 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 			.len(),
 		2
 	);
-	assert_eq!(
-		after_empty["data"]["fda_cross_reported_inds"]
-			.as_array()
-			.unwrap()
-			.len(),
-		1
-	);
+	assert_eq!(after_empty["data"]["products"].as_array().unwrap().len(), 1);
 
 	let after_delete = put_json_ok(
 		&app,
@@ -3127,11 +3172,11 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 		.ok_or("missing kept registration")?;
 	assert_eq!(kept_registration["deleted"].as_bool(), Some(false));
 	assert!(
-		after_delete["data"]["fda_cross_reported_inds"]
+		after_delete["data"]["products"]
 			.as_array()
 			.unwrap()
 			.iter()
-			.any(|row| row["id"].as_str() == Some(&ind_id.to_string())),
+			.any(|row| row["id"].as_str() == Some(&study_product_id.to_string())),
 		"{after_delete:?}"
 	);
 
@@ -3171,22 +3216,23 @@ async fn test_study_presave_details_rejects_invalid_child_operations() -> Result
 		"OTHER",
 	)
 	.await?;
-	let ind_b = create_study_fda_cross_reported_ind_via_api(
+	let product_b_child = create_study_product_via_api(
 		&app,
 		&admin_cookie,
 		study_b,
 		1,
-		"OTHER-IND",
+		product_b,
+		"OTHER-PRODUCT",
 	)
 	.await?;
 
 	for body in [
 		json!({ "data": { "registrations": [{ "_delete": true }] } }),
-		json!({ "data": { "fda_cross_reported_inds": [{ "_delete": true }] } }),
+		json!({ "data": { "products": [{ "_delete": true }] } }),
 		json!({ "data": { "registrations": [{ "id": registration_b, "_delete": true }] } }),
-		json!({ "data": { "fda_cross_reported_inds": [{ "id": ind_b, "_delete": true }] } }),
+		json!({ "data": { "products": [{ "id": product_b_child, "_delete": true }] } }),
 		json!({ "data": { "registrations": [{ "id": registration_b, "sequence_number": 2, "registration_number": "WRONG" }] } }),
-		json!({ "data": { "fda_cross_reported_inds": [{ "id": ind_b, "sequence_number": 2, "ind_number": "WRONG" }] } }),
+		json!({ "data": { "products": [{ "id": product_b_child, "sequence_number": 2, "product_name": "WRONG" }] } }),
 	] {
 		let (status, value) = request_json(
 			&app,
