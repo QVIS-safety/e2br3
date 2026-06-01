@@ -239,6 +239,7 @@ async fn import_c_2_sender_information(
 			mm,
 			SenderInformationForCreate {
 				case_id,
+				source_sender_presave_id: None,
 				sender_type: Some(sender.sender_type.clone()),
 				health_professional_type_kr1: sender
 					.health_professional_type_kr1
@@ -267,6 +268,7 @@ async fn import_c_2_sender_information(
 		mm,
 		sender_id,
 		SenderInformationForUpdate {
+			source_sender_presave_id: None,
 			sender_type: Some(sender.sender_type),
 			health_professional_type_kr1: sender.health_professional_type_kr1,
 			organization_name: Some(sender.organization_name),
@@ -368,9 +370,10 @@ async fn import_c_3_primary_sources(
 			PrimarySourceBmc::create(
 				ctx,
 				mm,
-				PrimarySourceForCreate {
-					case_id,
-					sequence_number: seq,
+					PrimarySourceForCreate {
+						case_id,
+						source_reporter_presave_id: None,
+						sequence_number: seq,
 					reporter_title: primary.reporter_title.clone(),
 					reporter_given_name: primary.reporter_given_name.clone(),
 					reporter_middle_name: primary.reporter_middle_name.clone(),
@@ -397,6 +400,7 @@ async fn import_c_3_primary_sources(
 			mm,
 			primary_id,
 			PrimarySourceForUpdate {
+				source_reporter_presave_id: None,
 				reporter_title: primary.reporter_title,
 				reporter_given_name: primary.reporter_given_name,
 				reporter_middle_name: primary.reporter_middle_name,

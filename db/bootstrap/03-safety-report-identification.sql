@@ -73,6 +73,7 @@ CREATE INDEX idx_safety_report_id_worldwide ON safety_report_identification(worl
 CREATE TABLE sender_information (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    source_sender_presave_id UUID REFERENCES sender_presaves(id) ON DELETE SET NULL,
 
     -- C.3.1 - Sender Type (MANDATORY - E2B(R3) codes)
     sender_type VARCHAR(1) CHECK (sender_type IN ('1', '2', '3', '4', '5', '6', '7')),
@@ -110,6 +111,7 @@ CREATE TABLE sender_information (
 );
 
 CREATE INDEX idx_sender_info_case ON sender_information(case_id);
+CREATE INDEX idx_sender_info_source_presave ON sender_information(source_sender_presave_id);
 
 -- ============================================================================
 -- SECTION C.4.r: Literature References (Repeating)
@@ -168,6 +170,7 @@ CREATE INDEX idx_documents_held_by_sender_case ON documents_held_by_sender(case_
 CREATE TABLE study_information (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    source_study_presave_id UUID REFERENCES study_presaves(id) ON DELETE SET NULL,
 
     -- C.5.1 - Study Name
     study_name VARCHAR(2000),
@@ -224,6 +227,7 @@ CREATE TABLE study_fda_cross_reported_inds (
 );
 
 CREATE INDEX idx_study_info_case ON study_information(case_id);
+CREATE INDEX idx_study_info_source_presave ON study_information(source_study_presave_id);
 CREATE INDEX idx_study_reg_nums ON study_registration_numbers(study_information_id);
 CREATE INDEX idx_study_fda_cross_reported_inds ON study_fda_cross_reported_inds(study_information_id);
 
@@ -234,6 +238,7 @@ CREATE INDEX idx_study_fda_cross_reported_inds ON study_fda_cross_reported_inds(
 CREATE TABLE primary_sources (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    source_reporter_presave_id UUID REFERENCES reporter_presaves(id) ON DELETE SET NULL,
     sequence_number INTEGER NOT NULL,  -- For ordering multiple reporters
 
     -- C.2.r.1 - Reporter's Name
@@ -277,6 +282,7 @@ CREATE TABLE primary_sources (
 );
 
 CREATE INDEX idx_primary_sources_case ON primary_sources(case_id);
+CREATE INDEX idx_primary_sources_source_presave ON primary_sources(source_reporter_presave_id);
 
 -- ============================================================================
 -- SECTION A: Receiver Information

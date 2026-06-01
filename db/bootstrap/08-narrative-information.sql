@@ -5,6 +5,7 @@
 CREATE TABLE narrative_information (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    source_narrative_presave_id UUID REFERENCES narrative_presaves(id) ON DELETE SET NULL,
 
     -- H.1 - Case Narrative Including Clinical Course, Therapeutic Measures, etc.
     case_narrative TEXT NOT NULL,  -- Free text, no length limit
@@ -28,6 +29,7 @@ CREATE TABLE narrative_information (
 );
 
 CREATE INDEX idx_narrative_case ON narrative_information(case_id);
+CREATE INDEX idx_narrative_source_presave ON narrative_information(source_narrative_presave_id);
 
 -- ============================================================================
 -- H.3.r: Sender's Diagnosis/Syndrome and/or Reclassification (Repeating, MedDRA)

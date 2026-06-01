@@ -909,6 +909,10 @@ async fn apply_rp_page_rows_patch(
 		return Ok(());
 	};
 	let update = PrimarySourceForUpdate {
+		source_reporter_presave_id: uuid_field(
+			source,
+			&["sourceReporterPresaveId", "source_reporter_presave_id"],
+		),
 		reporter_title: string_field(source, &["reporterTitle", "reporter_title"]),
 		reporter_given_name: string_field(
 			source,
@@ -955,6 +959,7 @@ async fn apply_rp_page_rows_patch(
 			mm,
 			PrimarySourceForCreate {
 				case_id,
+				source_reporter_presave_id: update.source_reporter_presave_id,
 				sequence_number: i32_field(
 					source,
 					&["sequenceNumber", "sequence_number"],
@@ -1005,6 +1010,10 @@ async fn apply_sd_page_rows_patch(
 		return Ok(());
 	};
 	let update = SenderInformationForUpdate {
+		source_sender_presave_id: uuid_field(
+			sender,
+			&["sourceSenderPresaveId", "source_sender_presave_id"],
+		),
 		sender_type: string_field(sender, &["senderType", "sender_type"]),
 		health_professional_type_kr1: string_field(
 			sender,
@@ -1045,6 +1054,7 @@ async fn apply_sd_page_rows_patch(
 			mm,
 			SenderInformationForCreate {
 				case_id,
+				source_sender_presave_id: update.source_sender_presave_id,
 				sender_type: update.sender_type,
 				health_professional_type_kr1: update.health_professional_type_kr1,
 				organization_name: update.organization_name,
@@ -1135,6 +1145,10 @@ async fn apply_si_page_rows_patch(
 		return Ok(());
 	};
 	let update = StudyInformationForUpdate {
+		source_study_presave_id: uuid_field(
+			study,
+			&["sourceStudyPresaveId", "source_study_presave_id"],
+		),
 		study_name: string_field(study, &["studyName", "study_name"]),
 		sponsor_study_number: string_field(
 			study,
@@ -1165,6 +1179,7 @@ async fn apply_si_page_rows_patch(
 			mm,
 			StudyInformationForCreate {
 				case_id,
+				source_study_presave_id: update.source_study_presave_id,
 				study_name: update.study_name,
 				sponsor_study_number: update.sponsor_study_number,
 				study_type_reaction: update.study_type_reaction,
@@ -1326,6 +1341,10 @@ async fn apply_nr_page_rows_patch(
 	let case_narrative =
 		string_field(narrative, &["caseNarrative", "case_narrative"]);
 	let update = NarrativeInformationForUpdate {
+		source_narrative_presave_id: uuid_field(
+			narrative,
+			&["sourceNarrativePresaveId", "source_narrative_presave_id"],
+		),
 		case_narrative: case_narrative.clone(),
 		reporter_comments: string_field(
 			narrative,
@@ -1353,6 +1372,7 @@ async fn apply_nr_page_rows_patch(
 				mm,
 				NarrativeInformationForCreate {
 					case_id,
+					source_narrative_presave_id: update.source_narrative_presave_id,
 					case_narrative,
 					reporter_comments: update.reporter_comments,
 					sender_comments: update.sender_comments,
@@ -2779,6 +2799,7 @@ pub async fn create_editor_dg_page_row(
 	let value = row_model_value(
 		row,
 		&[
+			("source_product_presave_id", &["sourceProductPresaveId"][..]),
 			("medicinal_product", &["medicinalProduct"][..]),
 			("drug_characterization", &["drugRole"][..]),
 			("action_taken", &["actionTaken"][..]),
@@ -2846,6 +2867,7 @@ pub async fn patch_editor_dg_page_row(
 	let value = row_model_value(
 		row,
 		&[
+			("source_product_presave_id", &["sourceProductPresaveId"][..]),
 			("medicinal_product", &["medicinalProduct"][..]),
 			("drug_characterization", &["drugRole"][..]),
 			("action_taken", &["actionTaken"][..]),

@@ -22,6 +22,7 @@ use sqlx::FromRow;
 pub struct DrugInformation {
 	pub id: Uuid,
 	pub case_id: Uuid,
+	pub source_product_presave_id: Option<Uuid>,
 	pub sequence_number: i32,
 
 	// G.k.1 - Drug role (MANDATORY)
@@ -97,6 +98,7 @@ pub struct DrugInformation {
 #[derive(Default, Deserialize)]
 pub struct DrugInformationForCreate {
 	pub case_id: Uuid,
+	pub source_product_presave_id: Option<Uuid>,
 	pub sequence_number: i32,
 	pub drug_characterization: String,
 	pub medicinal_product: String,
@@ -134,6 +136,7 @@ pub struct DrugInformationForCreate {
 
 #[derive(Deserialize)]
 pub struct DrugInformationForUpdate {
+	pub source_product_presave_id: Option<Uuid>,
 	pub medicinal_product: Option<String>,
 	pub drug_characterization: Option<String>,
 	pub brand_name: Option<String>,
@@ -948,29 +951,29 @@ impl DrugInformationBmc {
 		.await?;
 
 		let sql = format!(
-			"INSERT INTO {} (
-			     case_id, sequence_number, drug_characterization, medicinal_product, drug_generic_name,
-			     drug_authorization_number, brand_name, manufacturer_name, manufacturer_country,
-			     batch_lot_number, cumulative_dose_first_reaction_value, cumulative_dose_first_reaction_unit,
-			     gestation_period_exposure_value, gestation_period_exposure_unit, dosage_text,
+				"INSERT INTO {} (
+				     case_id, source_product_presave_id, sequence_number, drug_characterization, medicinal_product, drug_generic_name,
+				     drug_authorization_number, brand_name, manufacturer_name, manufacturer_country,
+				     batch_lot_number, cumulative_dose_first_reaction_value, cumulative_dose_first_reaction_unit,
+				     gestation_period_exposure_value, gestation_period_exposure_unit, dosage_text,
 			     action_taken, rechallenge, investigational_product_blinded, mpid, mpid_version,
 			     mfds_mpid_version, mfds_mpid, phpid, phpid_version, obtain_drug_country, parent_route, parent_route_termid,
 			     parent_route_termid_version, parent_dosage_text, fda_additional_info_coded,
 			     drug_additional_info_codes_json, drug_additional_information, fda_specialized_product_category, fda_device_info_json,
 			     created_at, updated_at, created_by
-			 )
-			 VALUES (
-			     $1, $2, $3, $4, $5,
-			     $6, $7, $8, $9,
-			     $10, $11, $12,
-			     $13, $14, $15,
-			     $16, $17, $18, $19, $20,
-			     $21, $22, $23, $24, $25, $26, $27,
-			     $28, $29, $30,
-			     $31, $32, $33, $34,
-			     now(), now(), $35
-			 )
-			 RETURNING id",
+				 )
+				 VALUES (
+				     $1, $2, $3, $4, $5,
+				     $6, $7, $8, $9, $10,
+				     $11, $12, $13,
+				     $14, $15, $16,
+				     $17, $18, $19, $20, $21,
+				     $22, $23, $24, $25, $26, $27, $28,
+				     $29, $30, $31,
+				     $32, $33, $34, $35,
+				     now(), now(), $36
+				 )
+				 RETURNING id",
 			Self::TABLE
 		);
 		let (id,) = mm
@@ -978,6 +981,7 @@ impl DrugInformationBmc {
 			.fetch_one(
 				sqlx::query_as::<_, (Uuid,)>(&sql)
 					.bind(drug_c.case_id)
+					.bind(drug_c.source_product_presave_id)
 					.bind(drug_c.sequence_number)
 					.bind(drug_c.drug_characterization)
 					.bind(drug_c.medicinal_product)
@@ -1084,10 +1088,11 @@ impl DrugInformationBmc {
 			     drug_additional_info_codes_json = COALESCE($30, drug_additional_info_codes_json),
 			     drug_additional_information = COALESCE($31, drug_additional_information),
 			     fda_specialized_product_category = COALESCE($32, fda_specialized_product_category),
-			     fda_device_info_json = COALESCE($33, fda_device_info_json),
-			     updated_at = now(),
-			     updated_by = $34
-			 WHERE id = $1",
+				     fda_device_info_json = COALESCE($33, fda_device_info_json),
+				     source_product_presave_id = COALESCE($34, source_product_presave_id),
+				     updated_at = now(),
+				     updated_by = $35
+				 WHERE id = $1",
 			Self::TABLE
 		);
 		let result = mm
@@ -1127,6 +1132,7 @@ impl DrugInformationBmc {
 					.bind(drug_u.drug_additional_information)
 					.bind(drug_u.fda_specialized_product_category)
 					.bind(drug_u.fda_device_info_json)
+					.bind(drug_u.source_product_presave_id)
 					.bind(ctx.user_id()),
 			)
 			.await?;

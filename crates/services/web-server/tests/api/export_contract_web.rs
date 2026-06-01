@@ -361,6 +361,7 @@ async fn seed_cioms_case_data(
 		mm,
 		PrimarySourceForCreate {
 			case_id,
+			source_reporter_presave_id: None,
 			sequence_number: 1,
 			reporter_title: Some("Dr".to_string()),
 			reporter_given_name: Some("Mina".to_string()),
@@ -386,6 +387,7 @@ async fn seed_cioms_case_data(
 		mm,
 		SenderInformationForCreate {
 			case_id,
+			source_sender_presave_id: None,
 			sender_type: Some("2".to_string()),
 			health_professional_type_kr1: None,
 			organization_name: Some("Acme Safety".to_string()),
@@ -410,6 +412,7 @@ async fn seed_cioms_case_data(
 		mm,
 		NarrativeInformationForCreate {
 			case_id,
+			source_narrative_presave_id: None,
 			case_narrative:
 				"Patient developed throat tightness and urticaria after dosing."
 					.to_string(),

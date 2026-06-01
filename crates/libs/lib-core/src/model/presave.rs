@@ -1663,7 +1663,7 @@ fn validate_sponsor_study_number_kind(value: Option<&str>) -> Result<()> {
 		"study presave",
 		"sponsor_study_number_kind",
 		value,
-		&["study_no", "protocol_no"],
+		&["STUDY_NO", "PROTOCOL_NO"],
 	)
 }
 

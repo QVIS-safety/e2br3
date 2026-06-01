@@ -174,6 +174,7 @@ async fn create_case_sender_via_api(
 	cookie: &str,
 	case_id: Uuid,
 	organization_name: &str,
+	source_sender_presave_id: Uuid,
 ) -> Result<Uuid> {
 	let value = post_json_created(
 		app,
@@ -182,6 +183,7 @@ async fn create_case_sender_via_api(
 		json!({
 			"data": {
 				"case_id": case_id,
+				"source_sender_presave_id": source_sender_presave_id,
 				"sender_type": "1",
 				"organization_name": organization_name,
 				"person_given_name": "Sender"
@@ -197,6 +199,7 @@ async fn create_case_drug_via_api(
 	cookie: &str,
 	case_id: Uuid,
 	brand_name: &str,
+	source_product_presave_id: Uuid,
 ) -> Result<Uuid> {
 	let value = post_json_created(
 		app,
@@ -205,6 +208,7 @@ async fn create_case_drug_via_api(
 		json!({
 			"data": {
 				"case_id": case_id,
+				"source_product_presave_id": source_product_presave_id,
 				"sequence_number": 1,
 				"drug_characterization": "1",
 				"medicinal_product": brand_name,
@@ -221,6 +225,7 @@ async fn create_case_study_via_api(
 	cookie: &str,
 	case_id: Uuid,
 	sponsor_study_number: &str,
+	source_study_presave_id: Uuid,
 ) -> Result<Uuid> {
 	let value = post_json_created(
 		app,
@@ -229,9 +234,59 @@ async fn create_case_study_via_api(
 		json!({
 			"data": {
 				"case_id": case_id,
+				"source_study_presave_id": source_study_presave_id,
 				"sponsor_study_number": sponsor_study_number,
 				"study_name": sponsor_study_number,
 				"study_type_reaction": "1"
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
+async fn create_case_primary_source_via_api(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	organization: &str,
+	source_reporter_presave_id: Uuid,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/safety-report/primary-sources"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"source_reporter_presave_id": source_reporter_presave_id,
+				"sequence_number": 1,
+				"reporter_given_name": "Reporter",
+				"organization": organization,
+				"qualification": "1",
+				"primary_source_regulatory": "1"
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
+async fn create_case_narrative_from_presave_via_api(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+	narrative_presave_id: Uuid,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		format!("/api/cases/{case_id}/narrative"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"case_narrative": "Case narrative from presave",
+				"source_narrative_presave_id": narrative_presave_id
 			}
 		}),
 	)
@@ -604,6 +659,30 @@ async fn create_study_fda_cross_reported_ind_via_api(
 	data_id(&value)
 }
 
+async fn create_named_reporter_presave_via_api(
+	app: &Router,
+	cookie: &str,
+	name: String,
+	organization: &str,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		"/api/presaves/reporters".to_string(),
+		json!({
+			"data": {
+				"name": name,
+				"reporter_given_name": "Reporter",
+				"organization": organization,
+				"qualification": "1",
+				"primary_source_regulatory": "1"
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
 async fn create_narrative_presave_with_authority_via_api(
 	app: &Router,
 	cookie: &str,
@@ -944,7 +1023,14 @@ async fn test_presave_rest_rejects_deleting_case_linked_templates() -> Result<()
 
 	let sender_org = format!("Case Linked Sender Org {}", Uuid::new_v4());
 	let brand_name = format!("Case Linked Brand {}", Uuid::new_v4());
-	let sponsor_study_number = format!("CASE-LINKED-STUDY-{}", Uuid::new_v4());
+	let sponsor_study_number = format!("CL-STUDY-{}", Uuid::new_v4().simple());
+	let reporter_org = format!("CL Reporter {}", Uuid::new_v4().simple());
+	let case_sender_org = format!("Case Edited Sender Org {}", Uuid::new_v4());
+	let case_brand_name = format!("Case Edited Brand {}", Uuid::new_v4());
+	let case_sponsor_study_number =
+		format!("CL-EDITED-STUDY-{}", Uuid::new_v4().simple());
+	let case_reporter_org =
+		format!("CL Edited Reporter {}", Uuid::new_v4().simple());
 
 	let sender_id = create_named_sender_presave_via_api(
 		&app,
@@ -982,6 +1068,14 @@ async fn test_presave_rest_rejects_deleting_case_linked_templates() -> Result<()
 		&sponsor_study_number,
 	)
 	.await?;
+	let reporter_id = create_named_reporter_presave_via_api(
+		&app,
+		&admin_cookie,
+		format!("Case Linked Reporter {}", Uuid::new_v4()),
+		&reporter_org,
+	)
+	.await?;
+	let narrative_id = create_narrative_presave_via_api(&app, &admin_cookie).await?;
 
 	let case_id = create_case_via_api(
 		&app,
@@ -989,10 +1083,45 @@ async fn test_presave_rest_rejects_deleting_case_linked_templates() -> Result<()
 		&format!("CASE-LINKED-PRESAVE-{}", Uuid::new_v4()),
 	)
 	.await?;
-	create_case_sender_via_api(&app, &admin_cookie, case_id, &sender_org).await?;
-	create_case_drug_via_api(&app, &admin_cookie, case_id, &brand_name).await?;
-	create_case_study_via_api(&app, &admin_cookie, case_id, &sponsor_study_number)
-		.await?;
+	create_case_sender_via_api(
+		&app,
+		&admin_cookie,
+		case_id,
+		&case_sender_org,
+		sender_id,
+	)
+	.await?;
+	create_case_drug_via_api(
+		&app,
+		&admin_cookie,
+		case_id,
+		&case_brand_name,
+		product_id,
+	)
+	.await?;
+	create_case_study_via_api(
+		&app,
+		&admin_cookie,
+		case_id,
+		&case_sponsor_study_number,
+		study_id,
+	)
+	.await?;
+	create_case_primary_source_via_api(
+		&app,
+		&admin_cookie,
+		case_id,
+		&case_reporter_org,
+		reporter_id,
+	)
+	.await?;
+	create_case_narrative_from_presave_via_api(
+		&app,
+		&admin_cookie,
+		case_id,
+		narrative_id,
+	)
+	.await?;
 
 	for (uri, expected_message) in [
 		(
@@ -1006,6 +1135,14 @@ async fn test_presave_rest_rejects_deleting_case_linked_templates() -> Result<()
 		(
 			format!("/api/presaves/studies/{study_id}"),
 			"study presave is used by cases",
+		),
+		(
+			format!("/api/presaves/reporters/{reporter_id}"),
+			"reporter presave is used by cases",
+		),
+		(
+			format!("/api/presaves/narratives/{narrative_id}"),
+			"narrative presave is used by cases",
 		),
 	] {
 		let (status, value) =
@@ -1057,7 +1194,7 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 				"study_name": "REST Study Name",
 				"study_name_notation": "REST notation",
 				"sponsor_study_number": "REST-ST-001",
-				"sponsor_study_number_kind": "study_no",
+				"sponsor_study_number_kind": "PROTOCOL_NO",
 				"study_type_reaction": "1",
 				"fda_ind_number_occurred": "IND-REST"
 			}
@@ -1096,7 +1233,7 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(
 		value["data"]["sponsor_study_number_kind"].as_str(),
-		Some("study_no")
+		Some("PROTOCOL_NO")
 	);
 
 	let (status, value) = request_json(
@@ -1106,7 +1243,7 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 		format!("/api/presaves/studies/{study_id}"),
 		Some(json!({
 			"data": {
-				"sponsor_study_number_kind": "protocol_no",
+				"sponsor_study_number_kind": "STUDY_NO",
 				"sponsor_study_number": "REST-PROT-001"
 			}
 		})),
@@ -1115,7 +1252,7 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(
 		value["data"]["sponsor_study_number_kind"].as_str(),
-		Some("protocol_no")
+		Some("STUDY_NO")
 	);
 
 	let (status, value) = request_json(

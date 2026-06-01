@@ -1545,6 +1545,7 @@ struct ReactionForUpdateDoc {
 struct DrugInformationDoc {
 	id: String,
 	case_id: String,
+	source_product_presave_id: Option<String>,
 	sequence_number: i32,
 	drug_characterization: String,
 	medicinal_product: String,
@@ -1588,6 +1589,7 @@ struct DrugInformationDoc {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct DrugInformationForCreateDoc {
 	case_id: String,
+	source_product_presave_id: Option<String>,
 	sequence_number: i32,
 	drug_characterization: String,
 	medicinal_product: String,
@@ -1599,6 +1601,7 @@ struct DrugInformationForCreateDoc {
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct DrugInformationForUpdateDoc {
+	source_product_presave_id: Option<String>,
 	medicinal_product: Option<String>,
 	drug_characterization: Option<String>,
 	brand_name: Option<String>,
@@ -1741,6 +1744,7 @@ struct MessageHeaderForUpdateDoc {
 struct SenderInformationDoc {
 	id: String,
 	case_id: String,
+	source_sender_presave_id: Option<String>,
 	sender_type: Option<String>,
 	health_professional_type_kr1: Option<String>,
 	organization_name: Option<String>,
@@ -1766,6 +1770,7 @@ struct SenderInformationDoc {
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct SenderInformationForCreateDoc {
 	case_id: String,
+	source_sender_presave_id: Option<String>,
 	sender_type: Option<String>,
 	health_professional_type_kr1: Option<String>,
 	organization_name: Option<String>,
@@ -1786,6 +1791,7 @@ struct SenderInformationForCreateDoc {
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct SenderInformationForUpdateDoc {
+	source_sender_presave_id: Option<String>,
 	sender_type: Option<String>,
 	health_professional_type_kr1: Option<String>,
 	organization_name: Option<String>,
@@ -1934,17 +1940,21 @@ struct NarrativeInformationDoc {
 #[serde(deny_unknown_fields)]
 struct NarrativeInformationForCreateDoc {
 	case_id: String,
+	source_narrative_presave_id: Option<String>,
 	case_narrative: String,
 	reporter_comments: Option<String>,
 	sender_comments: Option<String>,
+	additional_information: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 struct NarrativeInformationForUpdateDoc {
+	source_narrative_presave_id: Option<String>,
 	case_narrative: Option<String>,
 	reporter_comments: Option<String>,
 	sender_comments: Option<String>,
+	additional_information: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]

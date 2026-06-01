@@ -355,7 +355,7 @@ CREATE TABLE IF NOT EXISTS study_presaves (
 
     CONSTRAINT study_presaves_sponsor_study_number_kind_valid CHECK (
         sponsor_study_number_kind IS NULL
-        OR sponsor_study_number_kind IN ('study_no', 'protocol_no')
+        OR sponsor_study_number_kind IN ('STUDY_NO', 'PROTOCOL_NO')
     ),
     CONSTRAINT study_presaves_product_org_fk
         FOREIGN KEY (product_presave_id, organization_id)
@@ -391,11 +391,11 @@ ALTER TABLE study_presaves
 UPDATE study_presaves
 SET sponsor_study_number_kind = NULL
 WHERE sponsor_study_number_kind IS NOT NULL
-    AND sponsor_study_number_kind NOT IN ('study_no', 'protocol_no');
+    AND sponsor_study_number_kind NOT IN ('STUDY_NO', 'PROTOCOL_NO');
 ALTER TABLE study_presaves
     ADD CONSTRAINT study_presaves_sponsor_study_number_kind_valid CHECK (
         sponsor_study_number_kind IS NULL
-        OR sponsor_study_number_kind IN ('study_no', 'protocol_no')
+        OR sponsor_study_number_kind IN ('STUDY_NO', 'PROTOCOL_NO')
     );
 
 ALTER TABLE study_presave_registration_numbers

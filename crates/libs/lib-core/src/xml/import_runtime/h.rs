@@ -43,6 +43,7 @@ pub(crate) async fn import_section_h(
 					mm,
 					case_id,
 					NarrativeInformationForUpdate {
+						source_narrative_presave_id: None,
 						case_narrative: Some(narrative.case_narrative),
 						reporter_comments: narrative.reporter_comments,
 						sender_comments: narrative.sender_comments,
@@ -58,6 +59,7 @@ pub(crate) async fn import_section_h(
 					mm,
 					NarrativeInformationForCreate {
 						case_id,
+						source_narrative_presave_id: None,
 						case_narrative: narrative.case_narrative.clone(),
 						reporter_comments: narrative.reporter_comments.clone(),
 						sender_comments: narrative.sender_comments.clone(),

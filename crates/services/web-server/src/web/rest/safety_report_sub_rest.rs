@@ -127,6 +127,7 @@ fn normalize_primary_source_regulatory_value(
 
 fn primary_source_flag_update(value: &str) -> PrimarySourceForUpdate {
 	PrimarySourceForUpdate {
+		source_reporter_presave_id: None,
 		reporter_title: None,
 		reporter_given_name: None,
 		reporter_middle_name: None,

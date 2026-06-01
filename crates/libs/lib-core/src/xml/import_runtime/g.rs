@@ -165,6 +165,7 @@ async fn import_drugs(
 			mm,
 			DrugInformationForCreate {
 				case_id,
+				source_product_presave_id: None,
 				sequence_number: drug.sequence_number,
 				drug_characterization: drug.drug_characterization.clone(),
 				medicinal_product: drug.medicinal_product.clone(),
@@ -179,6 +180,7 @@ async fn import_drugs(
 			mm,
 			drug_id,
 			DrugInformationForUpdate {
+				source_product_presave_id: None,
 				medicinal_product: Some(drug.medicinal_product),
 				drug_characterization: Some(drug.drug_characterization),
 				brand_name: drug.brand_name,

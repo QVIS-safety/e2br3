@@ -19,6 +19,7 @@ use sqlx::FromRow;
 pub struct NarrativeInformation {
 	pub id: Uuid,
 	pub case_id: Uuid,
+	pub source_narrative_presave_id: Option<Uuid>,
 
 	// H.1 - Case Narrative
 	pub case_narrative: String,
@@ -43,6 +44,7 @@ pub struct NarrativeInformation {
 #[serde(deny_unknown_fields)]
 pub struct NarrativeInformationForCreate {
 	pub case_id: Uuid,
+	pub source_narrative_presave_id: Option<Uuid>,
 	pub case_narrative: String,
 	pub reporter_comments: Option<String>,
 	pub sender_comments: Option<String>,
@@ -52,6 +54,7 @@ pub struct NarrativeInformationForCreate {
 #[derive(Fields, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NarrativeInformationForUpdate {
+	pub source_narrative_presave_id: Option<Uuid>,
 	pub case_narrative: Option<String>,
 	pub reporter_comments: Option<String>,
 	pub sender_comments: Option<String>,
@@ -169,17 +172,18 @@ impl NarrativeInformationBmc {
 
 		let sql = format!(
 			"INSERT INTO {} (
-				case_id,
-				case_narrative,
-				reporter_comments,
-				sender_comments,
+					case_id,
+					source_narrative_presave_id,
+					case_narrative,
+					reporter_comments,
+					sender_comments,
 				additional_information,
 				created_at,
 				updated_at,
-				created_by
-			)
-			 VALUES ($1, $2, $3, $4, $5, now(), now(), $6)
-			 RETURNING id",
+					created_by
+				)
+				 VALUES ($1, $2, $3, $4, $5, $6, now(), now(), $7)
+				 RETURNING id",
 			Self::TABLE
 		);
 		let (id,) = mm
@@ -187,6 +191,7 @@ impl NarrativeInformationBmc {
 			.fetch_one(
 				sqlx::query_as::<_, (Uuid,)>(&sql)
 					.bind(data.case_id)
+					.bind(data.source_narrative_presave_id)
 					.bind(data.case_narrative)
 					.bind(data.reporter_comments)
 					.bind(data.sender_comments)
@@ -249,13 +254,14 @@ impl NarrativeInformationBmc {
 
 		let sql = format!(
 			"UPDATE {}
-			 SET case_narrative = COALESCE($2, case_narrative),
-			     reporter_comments = COALESCE($3, reporter_comments),
-			     sender_comments = COALESCE($4, sender_comments),
-			     additional_information = COALESCE($5, additional_information),
-			     updated_at = now(),
-			     updated_by = $6
-			 WHERE case_id = $1",
+				 SET source_narrative_presave_id = COALESCE($2, source_narrative_presave_id),
+				     case_narrative = COALESCE($3, case_narrative),
+				     reporter_comments = COALESCE($4, reporter_comments),
+				     sender_comments = COALESCE($5, sender_comments),
+				     additional_information = COALESCE($6, additional_information),
+				     updated_at = now(),
+				     updated_by = $7
+				 WHERE case_id = $1",
 			Self::TABLE
 		);
 		let result = mm
@@ -263,6 +269,7 @@ impl NarrativeInformationBmc {
 			.execute(
 				sqlx::query(&sql)
 					.bind(case_id)
+					.bind(data.source_narrative_presave_id)
 					.bind(data.case_narrative)
 					.bind(data.reporter_comments)
 					.bind(data.sender_comments)

@@ -832,7 +832,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			study_name: Some(format!("Study Name {suffix}")),
 			study_name_notation: Some("Study Name Notation".into()),
 			sponsor_study_number: Some(format!("ST-001-{suffix}")),
-			sponsor_study_number_kind: Some("study_no".into()),
+			sponsor_study_number_kind: Some("PROTOCOL_NO".into()),
 			study_type_reaction: Some("1".into()),
 			study_type_reaction_kr1: None,
 			mfds_study_number: None,
@@ -853,7 +853,10 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 		study.study_name_notation.as_deref(),
 		Some("Study Name Notation")
 	);
-	assert_eq!(study.sponsor_study_number_kind.as_deref(), Some("study_no"));
+	assert_eq!(
+		study.sponsor_study_number_kind.as_deref(),
+		Some("PROTOCOL_NO")
+	);
 	assert_eq!(study.fda_ind_number_occurred.as_deref(), Some("IND-001"));
 	assert_eq!(
 		study.fda_pre_anda_number_occurred.as_deref(),

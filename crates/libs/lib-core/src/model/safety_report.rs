@@ -189,6 +189,7 @@ pub struct SafetyReportIdentificationForUpdate {
 pub struct SenderInformation {
 	pub id: Uuid,
 	pub case_id: Uuid,
+	pub source_sender_presave_id: Option<Uuid>,
 
 	// C.3.1 - Sender Type (MANDATORY)
 	pub sender_type: Option<String>,
@@ -225,6 +226,7 @@ pub struct SenderInformation {
 #[derive(Fields, Deserialize)]
 pub struct SenderInformationForCreate {
 	pub case_id: Uuid,
+	pub source_sender_presave_id: Option<Uuid>,
 	pub sender_type: Option<String>,
 	pub health_professional_type_kr1: Option<String>,
 	pub organization_name: Option<String>,
@@ -245,6 +247,7 @@ pub struct SenderInformationForCreate {
 
 #[derive(Fields, Deserialize)]
 pub struct SenderInformationForUpdate {
+	pub source_sender_presave_id: Option<Uuid>,
 	pub sender_type: Option<String>,
 	pub health_professional_type_kr1: Option<String>,
 	pub organization_name: Option<String>,
@@ -275,6 +278,7 @@ pub struct SenderInformationFilter {
 pub struct PrimarySource {
 	pub id: Uuid,
 	pub case_id: Uuid,
+	pub source_reporter_presave_id: Option<Uuid>,
 	pub sequence_number: i32,
 
 	// C.2.r.1 - Reporter's Name
@@ -314,6 +318,7 @@ pub struct PrimarySource {
 #[derive(Fields, Deserialize)]
 pub struct PrimarySourceForCreate {
 	pub case_id: Uuid,
+	pub source_reporter_presave_id: Option<Uuid>,
 	pub sequence_number: i32,
 	pub reporter_title: Option<String>,
 	pub reporter_given_name: Option<String>,
@@ -335,6 +340,7 @@ pub struct PrimarySourceForCreate {
 
 #[derive(Fields, Deserialize)]
 pub struct PrimarySourceForUpdate {
+	pub source_reporter_presave_id: Option<Uuid>,
 	pub reporter_title: Option<String>,
 	pub reporter_given_name: Option<String>,
 	pub reporter_middle_name: Option<String>,
@@ -457,6 +463,7 @@ pub struct DocumentsHeldBySenderFilter {
 pub struct StudyInformation {
 	pub id: Uuid,
 	pub case_id: Uuid,
+	pub source_study_presave_id: Option<Uuid>,
 
 	pub study_name: Option<String>,
 	pub sponsor_study_number: Option<String>,
@@ -475,6 +482,7 @@ pub struct StudyInformation {
 #[derive(Fields, Deserialize)]
 pub struct StudyInformationForCreate {
 	pub case_id: Uuid,
+	pub source_study_presave_id: Option<Uuid>,
 	pub study_name: Option<String>,
 	pub sponsor_study_number: Option<String>,
 	pub study_type_reaction: Option<String>,
@@ -485,6 +493,7 @@ pub struct StudyInformationForCreate {
 
 #[derive(Fields, Deserialize)]
 pub struct StudyInformationForUpdate {
+	pub source_study_presave_id: Option<Uuid>,
 	pub study_name: Option<String>,
 	pub sponsor_study_number: Option<String>,
 	pub study_type_reaction: Option<String>,
