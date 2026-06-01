@@ -7,15 +7,20 @@ use lib_core::_dev_utils;
 use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO};
 use lib_core::model::presave::{
 	NarrativePresaveBmc, NarrativePresaveForCreate, ProductPresaveBmc,
-	ProductPresaveForCreate, ProductPresaveForUpdate, ProductPresaveSubstanceBmc,
+	ProductPresaveForCreate, ProductPresaveForUpdate,
+	ProductPresaveMfdsDeviceItemBmc, ProductPresaveMfdsDeviceItemForCreate,
+	ProductPresaveMfdsDeviceItemForUpdate, ProductPresaveSubstanceBmc,
 	ProductPresaveSubstanceForCreate, ProductPresaveSubstanceForUpdate,
 	ReceiverPresaveBmc, ReceiverPresaveConsigneeBmc,
 	ReceiverPresaveConsigneeForCreate, ReceiverPresaveConsigneeForUpdate,
-	ReceiverPresaveForCreate, ReceiverPresaveForUpdate, ReporterPresaveBmc,
-	ReporterPresaveForCreate, ReporterPresaveForUpdate, SenderPresaveBmc,
-	SenderPresaveForCreate, SenderPresaveForUpdate, SenderPresaveGatewayBmc,
-	SenderPresaveGatewayForCreate, SenderPresaveGatewayForUpdate,
-	SenderPresaveResponsiblePersonBmc, SenderPresaveResponsiblePersonForCreate,
+	ReceiverPresaveForCreate, ReceiverPresaveRouteBmc,
+	ReceiverPresaveRouteForCreate, ReceiverPresaveRouteForUpdate,
+	ReceiverPresaveForUpdate,
+	ReporterPresaveBmc, ReporterPresaveForCreate, ReporterPresaveForUpdate,
+	SenderPresaveBmc, SenderPresaveForCreate, SenderPresaveForUpdate,
+	SenderPresaveGatewayBmc, SenderPresaveGatewayForCreate,
+	SenderPresaveGatewayForUpdate, SenderPresaveResponsiblePersonBmc,
+	SenderPresaveResponsiblePersonForCreate,
 	SenderPresaveResponsiblePersonForUpdate, StudyPresaveBmc, StudyPresaveForCreate,
 	StudyPresaveProductBmc, StudyPresaveProductForCreate,
 	StudyPresaveProductForUpdate, StudyPresaveRegistrationNumberBmc,
@@ -2454,6 +2459,185 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
 	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_receiver_presave_route_bmc_crud() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			name: format!("Route Receiver Presave {suffix}"),
+			comments: None,
+			receiver_type: Some("agency".into()),
+			organization_name: Some(format!("Route Receiver Org {suffix}")),
+			receiver_identifier: Some("CBER".into()),
+			day_count_rule: None,
+			nsae_solicited_day_count: None,
+			nsae_solicited_not_applicable: None,
+			nsae_non_solicited_day_count: None,
+			nsae_non_solicited_not_applicable: None,
+			sae_solicited_day_count: None,
+			sae_solicited_not_applicable: None,
+			sae_non_solicited_day_count: None,
+			sae_non_solicited_not_applicable: None,
+			description: None,
+		},
+	)
+	.await?;
+
+	let route_id = ReceiverPresaveRouteBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveRouteForCreate {
+			receiver_presave_id: receiver_id,
+			sequence_number: 1,
+			authority: "fda".into(),
+			receiver_label: "FDA(CBER IND)".into(),
+			batch_receiver_identifier: Some("FDA-CBER-BATCH".into()),
+			message_receiver_identifier: "FDA-CBER-MESSAGE".into(),
+			condition_page: "C.5.4".into(),
+			condition_field_code: "C.5.4.r.1".into(),
+			condition_operator: "Equal".into(),
+			condition_value_code: "IND".into(),
+			condition_value_label: "Investigational New Drug".into(),
+		},
+	)
+	.await?;
+
+	let routes =
+		ReceiverPresaveRouteBmc::list_by_parent(&ctx, &mm, receiver_id).await?;
+	assert_eq!(routes.len(), 1);
+	assert_eq!(routes[0].id, route_id);
+	assert_eq!(routes[0].receiver_presave_id, receiver_id);
+	assert_eq!(routes[0].receiver_label, "FDA(CBER IND)");
+	assert_eq!(
+		routes[0].batch_receiver_identifier.as_deref(),
+		Some("FDA-CBER-BATCH")
+	);
+	assert_eq!(routes[0].message_receiver_identifier, "FDA-CBER-MESSAGE");
+
+	ReceiverPresaveRouteBmc::update(
+		&ctx,
+		&mm,
+		route_id,
+		ReceiverPresaveRouteForUpdate {
+			sequence_number: Some(2),
+			batch_receiver_identifier: Some("FDA-CBER-BATCH-2".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+
+	let route = ReceiverPresaveRouteBmc::get(&ctx, &mm, route_id).await?;
+	assert_eq!(route.sequence_number, 2);
+	assert_eq!(
+		route.batch_receiver_identifier.as_deref(),
+		Some("FDA-CBER-BATCH-2")
+	);
+	assert_eq!(route.authority, "fda");
+	assert_eq!(route.condition_operator, "Equal");
+
+	ReceiverPresaveRouteBmc::delete(&ctx, &mm, route_id).await?;
+	assert!(
+		ReceiverPresaveRouteBmc::list_by_parent(&ctx, &mm, receiver_id)
+			.await?
+			.is_empty()
+	);
+	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn product_presave_mfds_device_items_round_trip() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create(format!("Device Item Sender {}", Uuid::new_v4())),
+	)
+	.await?;
+	let product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Mfds,
+			format!("Device Item Product {}", Uuid::new_v4()),
+			sender_id,
+		),
+	)
+	.await?;
+
+	let maker_id = ProductPresaveMfdsDeviceItemBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveMfdsDeviceItemForCreate {
+			product_presave_id: product_id,
+			sequence_number: 1,
+			code: Some("KR_DVC_MFR".into()),
+			value_code: None,
+			value_value: Some("KR Maker".into()),
+		},
+	)
+	.await?;
+	let problem_id = ProductPresaveMfdsDeviceItemBmc::create(
+		&ctx,
+		&mm,
+		ProductPresaveMfdsDeviceItemForCreate {
+			product_presave_id: product_id,
+			sequence_number: 2,
+			code: Some("KR_DVC_PROBC".into()),
+			value_code: Some("PROB-1".into()),
+			value_value: None,
+		},
+	)
+	.await?;
+
+	ProductPresaveMfdsDeviceItemBmc::update(
+		&ctx,
+		&mm,
+		problem_id,
+		ProductPresaveMfdsDeviceItemForUpdate {
+			sequence_number: Some(3),
+			code: Some("KR_DVC_PROBC".into()),
+			value_code: Some("PROB-2".into()),
+			value_value: None,
+		},
+	)
+	.await?;
+
+	let rows =
+		ProductPresaveMfdsDeviceItemBmc::list_by_parent(&ctx, &mm, product_id)
+			.await?;
+	assert_eq!(rows.len(), 2);
+	assert_eq!(rows[0].id, maker_id);
+	assert_eq!(rows[0].code.as_deref(), Some("KR_DVC_MFR"));
+	assert_eq!(rows[0].value_value.as_deref(), Some("KR Maker"));
+	assert_eq!(rows[1].id, problem_id);
+	assert_eq!(rows[1].sequence_number, 3);
+	assert_eq!(rows[1].value_code.as_deref(), Some("PROB-2"));
+
+	ProductPresaveMfdsDeviceItemBmc::delete(&ctx, &mm, maker_id).await?;
+	let rows =
+		ProductPresaveMfdsDeviceItemBmc::list_by_parent(&ctx, &mm, product_id)
+			.await?;
+	assert_eq!(rows.len(), 1);
+	assert_eq!(rows[0].id, problem_id);
+
+	ProductPresaveMfdsDeviceItemBmc::delete(&ctx, &mm, problem_id).await?;
+	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
+	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
 	Ok(())
 }
 
