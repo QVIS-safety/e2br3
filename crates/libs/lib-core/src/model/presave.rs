@@ -1421,6 +1421,10 @@ impl ReporterPresaveBmc {
 			data.organization.as_deref(),
 			data.qualification.as_deref(),
 		)?;
+		Self::validate_qualification_kr1(
+			data.qualification.as_deref(),
+			data.qualification_kr1.as_deref(),
+		)?;
 		Self::ensure_unique_identity(
 			ctx,
 			mm,
@@ -1480,11 +1484,16 @@ impl ReporterPresaveBmc {
 				.qualification
 				.as_deref()
 				.or(current.qualification.as_deref());
+			let qualification_kr1 = data
+				.qualification_kr1
+				.as_deref()
+				.or(current.qualification_kr1.as_deref());
 			Self::validate_identity(
 				reporter_given_name,
 				organization,
 				qualification,
 			)?;
+			Self::validate_qualification_kr1(qualification, qualification_kr1)?;
 			Self::ensure_unique_identity(
 				ctx,
 				mm,
@@ -1512,6 +1521,19 @@ impl ReporterPresaveBmc {
 				&& normalized_text(organization).is_some()
 				&& normalized_text(qualification).is_some(),
 			"reporter presave requires reporter_given_name, organization, and qualification",
+		)
+	}
+
+	fn validate_qualification_kr1(
+		qualification: Option<&str>,
+		qualification_kr1: Option<&str>,
+	) -> Result<()> {
+		if normalized_text(qualification_kr1).is_none() {
+			return Ok(());
+		}
+		require_identity(
+			normalized_text(qualification).as_deref() == Some("3"),
+			"reporter qualification_kr1 requires qualification 3",
 		)
 	}
 

@@ -1166,6 +1166,43 @@ async fn test_reporter_presave_stores_mfds_qualification_detail() -> Result<()> 
 
 #[serial]
 #[tokio::test]
+async fn test_reporter_presave_rejects_mfds_qualification_detail_outside_qualification_three(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/reporters".to_string(),
+		Some(json!({
+			"data": {
+				"name": format!("MFDS Reporter Invalid {}", Uuid::new_v4()),
+				"reporter_given_name": "Min",
+				"organization": "MFDS Reporter Invalid Org",
+				"qualification": "1",
+				"qualification_kr1": "1"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert!(
+		value
+			.to_string()
+			.contains("reporter qualification_kr1 requires qualification 3"),
+		"unexpected qualification_kr1 validation body: {value:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_sender_presave_rejects_duplicate_active_identity() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
