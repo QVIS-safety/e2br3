@@ -2544,6 +2544,48 @@ async fn test_seeded_receiver_presave_routes_match_reference_labels() -> Result<
 		)
 	);
 
+	let fda_postmarket = routes
+		.iter()
+		.find(|(_, _, receiver_label, _, _, _, _, _, _)| {
+			receiver_label == "FDA(Postmarket)"
+		})
+		.expect("FDA(Postmarket) route should be seeded");
+	assert_eq!(
+		fda_postmarket,
+		&(
+			"FDA".to_string(),
+			"fda".to_string(),
+			"FDA(Postmarket)".to_string(),
+			"CI".to_string(),
+			"FDA_REPORT_TYPE".to_string(),
+			"4".to_string(),
+			"Postmarket".to_string(),
+			Some("ZZFDA".to_string()),
+			"CDER".to_string(),
+		)
+	);
+
+	let mfds_ct = routes
+		.iter()
+		.find(|(_, _, receiver_label, _, _, _, _, _, _)| {
+			receiver_label == "MFDS(CT)"
+		})
+		.expect("MFDS(CT) route should be seeded");
+	assert_eq!(
+		mfds_ct,
+		&(
+			"MFDS".to_string(),
+			"mfds".to_string(),
+			"MFDS(CT)".to_string(),
+			"CI".to_string(),
+			"MFDS_REPORT_TYPE".to_string(),
+			"1".to_string(),
+			"임상시험계획의 승인을 받은 자".to_string(),
+			Some("MFDS_CT".to_string()),
+			"CT".to_string(),
+		)
+	);
+
 	let mfds_kr = routes
 		.iter()
 		.find(|(_, _, receiver_label, _, _, _, _, _, _)| {
