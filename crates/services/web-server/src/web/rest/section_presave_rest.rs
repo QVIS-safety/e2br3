@@ -664,7 +664,7 @@ pub async fn update_sender_presave_details(
 	ensure_sender_presave_scope(&ctx, &mm, &current).await?;
 
 	let ParamsForUpdate { data } = params;
-	require_sender_detail_operation_permissions(&ctx, &data)?;
+	require_sender_detail_operation_permissions(&ctx, &mm, id, &data).await?;
 	preflight_sender_presave_details(&ctx, &mm, id, &data).await?;
 
 	apply_sender_presave_details(&ctx, &mm, id, data).await?;
@@ -741,8 +741,10 @@ async fn load_sender_presave_details(
 	})
 }
 
-fn require_sender_detail_operation_permissions(
+async fn require_sender_detail_operation_permissions(
 	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	sender_id: Uuid,
 	data: &SenderPresaveDetailsForUpdate,
 ) -> Result<()> {
 	let creates_child = data
@@ -759,20 +761,8 @@ fn require_sender_detail_operation_permissions(
 			.any(|responsible_person| {
 				responsible_person.id.is_none() && !responsible_person.delete
 			});
-	let deletes_child = data
-		.gateways
-		.as_deref()
-		.unwrap_or_default()
-		.iter()
-		.any(|gateway| gateway.delete || gateway.deleted == Some(true))
-		|| data
-			.responsible_persons
-			.as_deref()
-			.unwrap_or_default()
-			.iter()
-			.any(|responsible_person| {
-				responsible_person.delete || responsible_person.deleted == Some(true)
-			});
+	let deletes_child =
+		sender_detail_payload_deletes_child(ctx, mm, sender_id, data).await?;
 	let deletes_parent = data
 		.parent
 		.as_ref()
@@ -786,6 +776,70 @@ fn require_sender_detail_operation_permissions(
 	}
 
 	Ok(())
+}
+
+async fn sender_detail_payload_deletes_child(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	sender_id: Uuid,
+	data: &SenderPresaveDetailsForUpdate,
+) -> Result<bool> {
+	for gateway in data.gateways.as_deref().unwrap_or_default() {
+		if gateway.delete {
+			return Ok(true);
+		}
+		if gateway.deleted == Some(true)
+			&& sender_gateway_deleted_transition(ctx, mm, sender_id, gateway).await?
+		{
+			return Ok(true);
+		}
+	}
+
+	for responsible_person in data.responsible_persons.as_deref().unwrap_or_default()
+	{
+		if responsible_person.delete {
+			return Ok(true);
+		}
+		if responsible_person.deleted == Some(true)
+			&& sender_responsible_person_deleted_transition(
+				ctx,
+				mm,
+				sender_id,
+				responsible_person,
+			)
+			.await?
+		{
+			return Ok(true);
+		}
+	}
+
+	Ok(false)
+}
+
+async fn sender_gateway_deleted_transition(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	sender_id: Uuid,
+	gateway: &SenderGatewayDetailsForUpdate,
+) -> Result<bool> {
+	let Some(id) = gateway.id else {
+		return Ok(true);
+	};
+	let entity = SenderPresaveGatewayBmc::get(ctx, mm, id).await?;
+	Ok(entity.sender_presave_id != sender_id || !entity.deleted)
+}
+
+async fn sender_responsible_person_deleted_transition(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	sender_id: Uuid,
+	responsible_person: &SenderResponsiblePersonDetailsForUpdate,
+) -> Result<bool> {
+	let Some(id) = responsible_person.id else {
+		return Ok(true);
+	};
+	let entity = SenderPresaveResponsiblePersonBmc::get(ctx, mm, id).await?;
+	Ok(entity.sender_presave_id != sender_id || !entity.deleted)
 }
 
 async fn preflight_sender_presave_details(

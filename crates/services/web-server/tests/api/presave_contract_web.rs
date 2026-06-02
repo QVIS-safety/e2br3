@@ -2362,6 +2362,67 @@ async fn test_sender_presave_direct_child_patch_delete_requires_delete_permissio
 
 #[serial]
 #[tokio::test]
+async fn test_sender_presave_details_allows_update_editor_to_keep_deleted_child(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let (_editor_id, editor_cookie) =
+		create_info_editor(&app, &mm, &admin_cookie, seed.org_id).await?;
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "ich").await?;
+	let gateway_id =
+		create_sender_gateway_via_api(&app, &admin_cookie, sender_id, 1, "DELETED")
+			.await?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::DELETE,
+		format!("/api/presaves/senders/{sender_id}/gateways/{gateway_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+
+	let saved = put_json_ok(
+		&app,
+		&editor_cookie,
+		format!("/api/presaves/senders/{sender_id}/details"),
+		json!({
+			"data": {
+				"parent": {
+					"comments": "updated with already-deleted gateway"
+				},
+				"gateways": [{
+					"id": gateway_id,
+					"deleted": true
+				}]
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(
+		saved["data"]["parent"]["comments"].as_str(),
+		Some("updated with already-deleted gateway"),
+		"{saved:?}"
+	);
+	let gateway = saved["data"]["gateways"]
+		.as_array()
+		.unwrap()
+		.iter()
+		.find(|row| row["id"].as_str() == Some(&gateway_id.to_string()))
+		.ok_or("missing already-deleted gateway")?;
+	assert_eq!(gateway["deleted"].as_bool(), Some(true));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_sender_presave_details_requires_explicit_child_delete() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
