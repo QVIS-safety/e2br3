@@ -1161,6 +1161,23 @@ async fn test_reporter_presave_stores_mfds_qualification_detail() -> Result<()> 
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(value["data"]["qualification_kr1"].as_str(), Some("2"));
 
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/reporters/{reporter_id}"),
+		Some(json!({
+			"data": {
+				"qualification": "1",
+				"qualification_kr1": ""
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["qualification"].as_str(), Some("1"));
+	assert!(value["data"]["qualification_kr1"].is_null(), "{value:?}");
+
 	Ok(())
 }
 
