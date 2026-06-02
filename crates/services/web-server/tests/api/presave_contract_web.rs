@@ -1220,17 +1220,18 @@ async fn info_update_audit_reason_records_sender_presave_reason() -> Result<()> 
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
 	let reason = "Edited Data: Corrected sender organization";
-	let organization_name =
-		format!("Audit Reason Sender Org {}", Uuid::new_v4());
+	let organization_name = format!("Audit Reason Sender Org {}", Uuid::new_v4());
 
 	request_json_ok_with_audit_reason(
 		&app,
 		&admin_cookie,
-		Method::PATCH,
-		format!("/api/presaves/senders/{sender_id}"),
+		Method::PUT,
+		format!("/api/presaves/senders/{sender_id}/details"),
 		json!({
 			"data": {
-				"organization_name": organization_name
+				"parent": {
+					"organization_name": organization_name
+				}
 			}
 		}),
 		reason,
