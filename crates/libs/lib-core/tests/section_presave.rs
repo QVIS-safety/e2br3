@@ -1723,6 +1723,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			cde_sender_identifier: None,
 			cdr_sender_identifier: None,
 			is_default_for_authority: Some(false),
+			deleted: None,
 		},
 	)
 	.await?;
@@ -1738,6 +1739,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			cde_sender_identifier: None,
 			cdr_sender_identifier: None,
 			is_default_for_authority: Some(true),
+			deleted: None,
 		},
 	)
 	.await?;
@@ -1792,6 +1794,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			person_middle_name: None,
 			person_family_name: Some("Person".into()),
 			is_default: Some(false),
+			deleted: None,
 		},
 	)
 	.await?;
@@ -2363,6 +2366,7 @@ async fn section_presave_child_audit_tracks_rows_separately() -> Result<()> {
 			cde_sender_identifier: None,
 			cdr_sender_identifier: None,
 			is_default_for_authority: Some(false),
+			deleted: None,
 		},
 	)
 	.await?;
@@ -2378,6 +2382,7 @@ async fn section_presave_child_audit_tracks_rows_separately() -> Result<()> {
 			cde_sender_identifier: None,
 			cdr_sender_identifier: None,
 			is_default_for_authority: Some(false),
+			deleted: None,
 		},
 	)
 	.await?;

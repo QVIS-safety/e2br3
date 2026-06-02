@@ -1093,7 +1093,12 @@ pub async fn update_sender_gateway(
 	Json(params): Json<ParamsForUpdate<SenderPresaveGatewayForUpdate>>,
 ) -> Result<(StatusCode, Json<DataRestResult<SenderPresaveGateway>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
+	let ParamsForUpdate { data } = params;
+	if data.deleted == Some(true) {
+		require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
+	} else {
+		require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
+	}
 	let entity = SenderPresaveGatewayBmc::get(&ctx, &mm, id).await?;
 	ensure_parent_scope(
 		sender_id,
@@ -1102,7 +1107,6 @@ pub async fn update_sender_gateway(
 		"sender_presave_gateways",
 	)?;
 	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	let ParamsForUpdate { data } = params;
 	SenderPresaveGatewayBmc::update(&ctx, &mm, id, data).await?;
 	let entity = SenderPresaveGatewayBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
@@ -1237,7 +1241,12 @@ pub async fn update_sender_responsible_person(
 	Json<DataRestResult<SenderPresaveResponsiblePerson>>,
 )> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
+	let ParamsForUpdate { data } = params;
+	if data.deleted == Some(true) {
+		require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
+	} else {
+		require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
+	}
 	let entity = SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, id).await?;
 	ensure_parent_scope(
 		sender_id,
@@ -1246,7 +1255,6 @@ pub async fn update_sender_responsible_person(
 		"sender_presave_responsible_persons",
 	)?;
 	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	let ParamsForUpdate { data } = params;
 	SenderPresaveResponsiblePersonBmc::update(&ctx, &mm, id, data).await?;
 	let entity = SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))

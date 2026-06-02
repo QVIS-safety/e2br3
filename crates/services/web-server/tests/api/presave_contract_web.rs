@@ -2295,6 +2295,63 @@ async fn test_sender_presave_direct_child_delete_soft_deletes_details_rows(
 
 #[serial]
 #[tokio::test]
+async fn test_sender_presave_direct_child_patch_delete_requires_delete_permission(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let (_, editor_cookie) =
+		create_info_editor(&app, &mm, &admin_cookie, seed.org_id).await?;
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "ich").await?;
+	let gateway_id =
+		create_sender_gateway_via_api(&app, &admin_cookie, sender_id, 1, "PATCH")
+			.await?;
+	let responsible_id = create_sender_responsible_person_via_api(
+		&app,
+		&admin_cookie,
+		sender_id,
+		1,
+		"Ari",
+	)
+	.await?;
+
+	for uri in [
+		format!("/api/presaves/senders/{sender_id}/gateways/{gateway_id}"),
+		format!(
+			"/api/presaves/senders/{sender_id}/responsible-persons/{responsible_id}"
+		),
+	] {
+		let (status, value) = request_json(
+			&app,
+			&editor_cookie,
+			Method::PATCH,
+			uri,
+			Some(json!({ "data": { "deleted": true } })),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+	}
+
+	let (status, value) = request_json(
+		&app,
+		&editor_cookie,
+		Method::PATCH,
+		format!(
+			"/api/presaves/senders/{sender_id}/responsible-persons/{responsible_id}"
+		),
+		Some(json!({ "data": { "person_family_name": "Updated" } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_sender_presave_details_requires_explicit_child_delete() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

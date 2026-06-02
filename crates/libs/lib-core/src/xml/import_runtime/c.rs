@@ -311,8 +311,9 @@ async fn default_sender_from_presave(
 			.map_err(Error::Model)?;
 	let responsible = responsible_people
 		.iter()
+		.filter(|person| !person.deleted)
 		.find(|person| person.is_default)
-		.or_else(|| responsible_people.first());
+		.or_else(|| responsible_people.iter().find(|person| !person.deleted));
 
 	let organization_name = sender.organization_name.unwrap_or(sender.name);
 	let sender_type = sender.sender_type.unwrap_or_else(|| "1".to_string());

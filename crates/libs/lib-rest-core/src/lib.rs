@@ -470,6 +470,7 @@ async fn load_sender_options_for_org(
 				JOIN sender_presave_gateways g ON g.sender_presave_id = s.id
 				WHERE s.organization_id = $1
 				  AND s.deleted = FALSE
+				  AND g.deleted = FALSE
 				  AND NULLIF(BTRIM(g.sender_identifier), '') IS NOT NULL
 			),
 			case_sender_rows AS (
