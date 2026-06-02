@@ -2464,6 +2464,112 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_seeded_receiver_presave_routes_match_reference_labels() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+
+	let routes: Vec<(
+		String,
+		String,
+		String,
+		String,
+		String,
+		String,
+		String,
+		Option<String>,
+		String,
+	)> = sqlx::query_as(
+		"SELECT
+			p.organization_name,
+			r.authority,
+			r.receiver_label,
+			r.condition_page,
+			r.condition_field_code,
+			r.condition_value_code,
+			r.condition_value_label,
+			r.batch_receiver_identifier,
+			r.message_receiver_identifier
+		 FROM receiver_presave_routes r
+		 JOIN receiver_presaves p ON p.id = r.receiver_presave_id
+		 WHERE p.organization_id = $1
+		   AND (p.organization_name = ANY($2) OR p.name = ANY($2))
+		 ORDER BY r.authority, r.receiver_label",
+	)
+	.bind(demo_org_id())
+	.bind(&["MFDS", "FDA"])
+	.fetch_all(mm.dbx().db())
+	.await?;
+
+	let labels: HashSet<&str> = routes
+		.iter()
+		.map(|(_, _, receiver_label, _, _, _, _, _, _)| receiver_label.as_str())
+		.collect();
+	for expected in [
+		"MFDS(CT)",
+		"MFDS(CU)",
+		"MFDS(KR)",
+		"MFDS(FR)",
+		"MFDS(CF)",
+		"FDA(CDER IND)",
+		"FDA(CDER IND-exempt BA/BE)",
+		"FDA(CBER IND)",
+		"FDA(Postmarket)",
+	] {
+		assert!(labels.contains(expected), "missing seeded route {expected}");
+	}
+	assert_eq!(
+		labels.len(),
+		9,
+		"seeded receiver route labels should match the reference set"
+	);
+
+	let fda_cber_ind = routes
+		.iter()
+		.find(|(_, _, receiver_label, _, _, _, _, _, _)| {
+			receiver_label == "FDA(CBER IND)"
+		})
+		.expect("FDA(CBER IND) route should be seeded");
+	assert_eq!(
+		fda_cber_ind,
+		&(
+			"FDA".to_string(),
+			"fda".to_string(),
+			"FDA(CBER IND)".to_string(),
+			"CI".to_string(),
+			"FDA_REPORT_TYPE".to_string(),
+			"3".to_string(),
+			"CBER IND".to_string(),
+			Some("CBER_IND".to_string()),
+			"CBER_IND".to_string(),
+		)
+	);
+
+	let mfds_kr = routes
+		.iter()
+		.find(|(_, _, receiver_label, _, _, _, _, _, _)| {
+			receiver_label == "MFDS(KR)"
+		})
+		.expect("MFDS(KR) route should be seeded");
+	assert_eq!(
+		mfds_kr,
+		&(
+			"MFDS".to_string(),
+			"mfds".to_string(),
+			"MFDS(KR)".to_string(),
+			"CI".to_string(),
+			"MFDS_REPORT_TYPE".to_string(),
+			"3".to_string(),
+			"시판 후 이상사례 국내보고".to_string(),
+			Some("KR".to_string()),
+			"KR".to_string(),
+		)
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_receiver_presave_route_bmc_crud() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
