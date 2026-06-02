@@ -544,6 +544,31 @@ async fn create_named_product_presave_for_sender_via_api(
 	data_id(&value)
 }
 
+async fn create_product_presave_with_identity_for_sender_via_api(
+	app: &Router,
+	cookie: &str,
+	sender_id: Uuid,
+	product_id: Option<&str>,
+	preapproval_ip_name: Option<&str>,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		"/api/presaves/products".to_string(),
+		json!({
+			"data": {
+				"name": format!("REST Product Identity {}", Uuid::new_v4()),
+				"sender_presave_id": sender_id,
+				"product_id": product_id,
+				"preapproval_ip_name": preapproval_ip_name,
+				"medicinal_product": "REST Product Identity"
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
 async fn create_brand_product_presave_for_sender_via_api(
 	app: &Router,
 	cookie: &str,
@@ -1166,6 +1191,164 @@ async fn test_sender_presave_rejects_duplicate_active_identity() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_product_presave_rejects_missing_sender_or_identity() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+
+	for (body, label) in [
+		(
+			json!({
+				"data": {
+					"name": format!("Missing Product Sender {}", Uuid::new_v4()),
+					"product_id": format!("PRODUCT-{}", Uuid::new_v4())
+				}
+			}),
+			"missing sender",
+		),
+		(
+			json!({
+				"data": {
+					"name": format!("Missing Product Identity {}", Uuid::new_v4()),
+					"sender_presave_id": sender_id,
+					"product_id": " ",
+					"preapproval_ip_name": " "
+				}
+			}),
+			"missing product identity",
+		),
+	] {
+		let (status, value) = request_json(
+			&app,
+			&admin_cookie,
+			Method::POST,
+			"/api/presaves/products".to_string(),
+			Some(body),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+		assert!(
+			value
+				.to_string()
+				.contains("product presave requires sender_presave_id and product_id or preapproval_ip_name"),
+			"unexpected product validation body for {label}: {value:?}"
+		);
+	}
+
+	let product_id = create_product_presave_with_identity_for_sender_via_api(
+		&app,
+		&admin_cookie,
+		sender_id,
+		Some(&format!("PRODUCT-{}", Uuid::new_v4())),
+		None,
+	)
+	.await?;
+	for (method, uri, body, label) in [(
+		Method::PUT,
+		format!("/api/presaves/products/{product_id}/details"),
+		json!({ "data": { "parent": { "product_id": " ", "preapproval_ip_name": " " } } }),
+		"details missing identity",
+	)] {
+		let (status, value) =
+			request_json(&app, &admin_cookie, method, uri, Some(body)).await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+		assert!(
+			value
+				.to_string()
+				.contains("product presave requires sender_presave_id and product_id or preapproval_ip_name"),
+			"unexpected product validation body for {label}: {value:?}"
+		);
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_product_presave_rejects_duplicate_identity_under_same_sender(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let other_sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let product_id_value = format!("DUP-PRODUCT-{}", Uuid::new_v4());
+	let ip_name_value = format!("DUP-IP-{}", Uuid::new_v4());
+
+	let first_id = create_product_presave_with_identity_for_sender_via_api(
+		&app,
+		&admin_cookie,
+		sender_id,
+		Some(&product_id_value),
+		Some(&ip_name_value),
+	)
+	.await?;
+
+	for (body, label) in [
+		(
+			json!({
+				"data": {
+					"name": format!("Duplicate Product ID {}", Uuid::new_v4()),
+					"sender_presave_id": sender_id,
+					"product_id": product_id_value.clone(),
+					"medicinal_product": "Duplicate Product ID"
+				}
+			}),
+			"product_id",
+		),
+		(
+			json!({
+				"data": {
+					"name": format!("Duplicate IP Name {}", Uuid::new_v4()),
+					"sender_presave_id": sender_id,
+					"preapproval_ip_name": ip_name_value.clone(),
+					"medicinal_product": "Duplicate IP Name"
+				}
+			}),
+			"preapproval_ip_name",
+		),
+	] {
+		let (status, value) = request_json(
+			&app,
+			&admin_cookie,
+			Method::POST,
+			"/api/presaves/products".to_string(),
+			Some(body),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+		assert!(
+			value
+				.to_string()
+				.contains("product presave duplicate identity"),
+			"unexpected duplicate product {label} body: {value:?}"
+		);
+	}
+
+	let reused_by_other_sender =
+		create_product_presave_with_identity_for_sender_via_api(
+			&app,
+			&admin_cookie,
+			other_sender_id,
+			Some(&product_id_value),
+			Some(&ip_name_value),
+		)
+		.await?;
+	assert_ne!(first_id, reused_by_other_sender);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_presave_rest_rejects_deleting_referenced_parent() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -1428,6 +1611,77 @@ async fn info_update_audit_reason_records_sender_presave_reason() -> Result<()> 
 		recorded_reason.and_then(|(value,)| value),
 		Some(reason.to_string())
 	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_product_presave_rejects_case_linked_soft_delete_updates() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let product_id = create_brand_product_presave_for_sender_via_api(
+		&app,
+		&admin_cookie,
+		sender_id,
+		format!("Case Linked Soft Delete Product {}", Uuid::new_v4()),
+		&format!("Case Linked Soft Delete Brand {}", Uuid::new_v4()),
+	)
+	.await?;
+	let case_id = create_case_via_api(
+		&app,
+		&admin_cookie,
+		&format!("CASE-PRODUCT-SOFT-{}", Uuid::new_v4()),
+	)
+	.await?;
+	create_case_drug_via_api(
+		&app,
+		&admin_cookie,
+		case_id,
+		"Case Linked Soft Delete Brand",
+		product_id,
+	)
+	.await?;
+
+	for (method, uri, body, label) in [
+		(
+			Method::PATCH,
+			format!("/api/presaves/products/{product_id}"),
+			json!({ "data": { "deleted": true } }),
+			"patch",
+		),
+		(
+			Method::PUT,
+			format!("/api/presaves/products/{product_id}/details"),
+			json!({ "data": { "parent": { "deleted": true } } }),
+			"details",
+		),
+	] {
+		let (status, value) =
+			request_json(&app, &admin_cookie, method, uri, Some(body)).await?;
+		assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+		assert!(
+			value
+				.to_string()
+				.contains("product presave is used by cases"),
+			"unexpected case-linked product soft-delete body for {label}: {value:?}"
+		);
+	}
+
+	let value = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/products/{product_id}"),
+	)
+	.await?;
+	assert_eq!(value["data"]["deleted"].as_bool(), Some(false));
 
 	Ok(())
 }

@@ -1840,6 +1840,13 @@ pub async fn update_product_presave(
 	}
 	let current = ProductPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &current).await?;
+	if data.deleted == Some(true)
+		&& product_presave_used_by_cases(&mm, ctx.organization_id(), id).await?
+	{
+		return Err(presave_case_link_conflict(
+			"product presave is used by cases",
+		));
+	}
 	ProductPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = ProductPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &entity).await?;
@@ -2006,6 +2013,16 @@ pub async fn update_product_presave_details(
 
 	let ParamsForUpdate { data } = params;
 	require_product_detail_operation_permissions(&ctx, &data)?;
+	if data
+		.parent
+		.as_ref()
+		.is_some_and(|parent| parent.deleted == Some(true))
+		&& product_presave_used_by_cases(&mm, ctx.organization_id(), id).await?
+	{
+		return Err(presave_case_link_conflict(
+			"product presave is used by cases",
+		));
+	}
 	preflight_product_presave_details(&ctx, &mm, id, &data).await?;
 	apply_product_presave_details(&ctx, &mm, id, data).await?;
 
