@@ -159,6 +159,7 @@ CREATE TABLE IF NOT EXISTS sender_presave_gateways (
     cde_sender_identifier VARCHAR(255),
     cdr_sender_identifier VARCHAR(255),
     is_default_for_authority BOOLEAN NOT NULL DEFAULT false,
+    deleted BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -178,6 +179,7 @@ CREATE TABLE IF NOT EXISTS sender_presave_responsible_persons (
     person_middle_name VARCHAR(200),
     person_family_name VARCHAR(200),
     is_default BOOLEAN NOT NULL DEFAULT false,
+    deleted BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -589,6 +591,12 @@ ALTER TABLE narrative_presave_sender_diagnoses
     ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
 
 ALTER TABLE narrative_presave_case_summaries
+    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE sender_presave_gateways
+    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE sender_presave_responsible_persons
     ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
 
 ALTER TABLE reporter_presaves

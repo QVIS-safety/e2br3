@@ -2324,7 +2324,12 @@ async fn test_sender_presave_details_requires_explicit_child_delete() -> Result<
 		&app,
 		&admin_cookie,
 		format!("/api/presaves/senders/{sender_id}/details"),
-		json!({ "data": { "gateways": [{ "id": gateway_delete_id, "_delete": true }] } }),
+		json!({
+			"data": {
+				"gateways": [{ "id": gateway_delete_id, "_delete": true }],
+				"responsible_persons": [{ "id": responsible_id, "_delete": true }]
+			}
+		}),
 	)
 	.await?;
 	let after_delete = get_json_ok(
@@ -2337,25 +2342,44 @@ async fn test_sender_presave_details_requires_explicit_child_delete() -> Result<
 	let responsible_persons = after_delete["data"]["responsible_persons"]
 		.as_array()
 		.unwrap();
-	assert_eq!(gateways.len(), 1);
+	assert_eq!(gateways.len(), 2);
 	assert_eq!(responsible_persons.len(), 1);
+	let deleted_gateway = gateways
+		.iter()
+		.find(|row| row["id"].as_str() == Some(&gateway_delete_id.to_string()))
+		.ok_or("missing deleted gateway")?;
+	assert_eq!(deleted_gateway["deleted"].as_bool(), Some(true));
+	assert_eq!(
+		deleted_gateway["sender_identifier"].as_str(),
+		Some("DELETE")
+	);
+	assert_eq!(
+		deleted_gateway["routing_identifier"].as_str(),
+		Some("ROUTE-DELETE")
+	);
 	assert!(
 		gateways
 			.iter()
 			.any(|row| row["id"].as_str() == Some(&gateway_keep_id.to_string())),
 		"{after_delete:?}"
 	);
-	assert!(
-		!gateways
-			.iter()
-			.any(|row| row["id"].as_str() == Some(&gateway_delete_id.to_string())),
-		"{after_delete:?}"
+	let kept_gateway = gateways
+		.iter()
+		.find(|row| row["id"].as_str() == Some(&gateway_keep_id.to_string()))
+		.ok_or("missing kept gateway")?;
+	assert_eq!(kept_gateway["deleted"].as_bool(), Some(false));
+	let deleted_responsible_person = responsible_persons
+		.iter()
+		.find(|row| row["id"].as_str() == Some(&responsible_id.to_string()))
+		.ok_or("missing deleted responsible person")?;
+	assert_eq!(deleted_responsible_person["deleted"].as_bool(), Some(true));
+	assert_eq!(
+		deleted_responsible_person["person_given_name"].as_str(),
+		Some("Ari")
 	);
-	assert!(
-		responsible_persons
-			.iter()
-			.any(|row| row["id"].as_str() == Some(&responsible_id.to_string())),
-		"{after_delete:?}"
+	assert_eq!(
+		deleted_responsible_person["person_family_name"].as_str(),
+		Some("Kim")
 	);
 
 	Ok(())

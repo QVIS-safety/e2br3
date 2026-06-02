@@ -446,6 +446,7 @@ pub struct SenderPresaveGateway {
 	pub cde_sender_identifier: Option<String>,
 	pub cdr_sender_identifier: Option<String>,
 	pub is_default_for_authority: bool,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -462,6 +463,7 @@ pub struct SenderPresaveGatewayForCreate {
 	pub cde_sender_identifier: Option<String>,
 	pub cdr_sender_identifier: Option<String>,
 	pub is_default_for_authority: Option<bool>,
+	pub deleted: Option<bool>,
 }
 
 #[derive(Default, Fields, Deserialize)]
@@ -473,6 +475,7 @@ pub struct SenderPresaveGatewayForUpdate {
 	pub cde_sender_identifier: Option<String>,
 	pub cdr_sender_identifier: Option<String>,
 	pub is_default_for_authority: Option<bool>,
+	pub deleted: Option<bool>,
 }
 
 impl_child_bmc!(
@@ -495,6 +498,7 @@ pub struct SenderPresaveResponsiblePerson {
 	pub person_middle_name: Option<String>,
 	pub person_family_name: Option<String>,
 	pub is_default: bool,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -511,6 +515,7 @@ pub struct SenderPresaveResponsiblePersonForCreate {
 	pub person_middle_name: Option<String>,
 	pub person_family_name: Option<String>,
 	pub is_default: Option<bool>,
+	pub deleted: Option<bool>,
 }
 
 #[derive(Default, Fields, Deserialize)]
@@ -522,6 +527,7 @@ pub struct SenderPresaveResponsiblePersonForUpdate {
 	pub person_middle_name: Option<String>,
 	pub person_family_name: Option<String>,
 	pub is_default: Option<bool>,
+	pub deleted: Option<bool>,
 }
 
 impl_child_bmc!(

@@ -540,6 +540,7 @@ pub struct SenderGatewayDetailsForUpdate {
 	pub cde_sender_identifier: Option<String>,
 	pub cdr_sender_identifier: Option<String>,
 	pub is_default_for_authority: Option<bool>,
+	pub deleted: Option<bool>,
 }
 
 impl SenderGatewayDetailsForUpdate {
@@ -552,6 +553,7 @@ impl SenderGatewayDetailsForUpdate {
 			cde_sender_identifier: self.cde_sender_identifier,
 			cdr_sender_identifier: self.cdr_sender_identifier,
 			is_default_for_authority: self.is_default_for_authority,
+			deleted: self.deleted,
 		}
 	}
 
@@ -580,6 +582,7 @@ impl SenderGatewayDetailsForUpdate {
 			cde_sender_identifier: self.cde_sender_identifier,
 			cdr_sender_identifier: self.cdr_sender_identifier,
 			is_default_for_authority: self.is_default_for_authority,
+			deleted: self.deleted,
 		})
 	}
 }
@@ -596,6 +599,7 @@ pub struct SenderResponsiblePersonDetailsForUpdate {
 	pub person_middle_name: Option<String>,
 	pub person_family_name: Option<String>,
 	pub is_default: Option<bool>,
+	pub deleted: Option<bool>,
 }
 
 impl SenderResponsiblePersonDetailsForUpdate {
@@ -608,6 +612,7 @@ impl SenderResponsiblePersonDetailsForUpdate {
 			person_middle_name: self.person_middle_name,
 			person_family_name: self.person_family_name,
 			is_default: self.is_default,
+			deleted: self.deleted,
 		}
 	}
 
@@ -630,6 +635,7 @@ impl SenderResponsiblePersonDetailsForUpdate {
 			person_middle_name: self.person_middle_name,
 			person_family_name: self.person_family_name,
 			is_default: self.is_default,
+			deleted: self.deleted,
 		})
 	}
 }
@@ -758,13 +764,15 @@ fn require_sender_detail_operation_permissions(
 		.as_deref()
 		.unwrap_or_default()
 		.iter()
-		.any(|gateway| gateway.delete)
+		.any(|gateway| gateway.delete || gateway.deleted == Some(true))
 		|| data
 			.responsible_persons
 			.as_deref()
 			.unwrap_or_default()
 			.iter()
-			.any(|responsible_person| responsible_person.delete);
+			.any(|responsible_person| {
+				responsible_person.delete || responsible_person.deleted == Some(true)
+			});
 	let deletes_parent = data
 		.parent
 		.as_ref()
@@ -915,7 +923,16 @@ async fn upsert_sender_gateway_detail(
 			"sender_presave_gateways",
 		)?;
 		if gateway.delete {
-			SenderPresaveGatewayBmc::delete(ctx, mm, id).await?;
+			SenderPresaveGatewayBmc::update(
+				ctx,
+				mm,
+				id,
+				SenderPresaveGatewayForUpdate {
+					deleted: Some(true),
+					..Default::default()
+				},
+			)
+			.await?;
 		} else {
 			SenderPresaveGatewayBmc::update(ctx, mm, id, gateway.into_update())
 				.await?;
@@ -949,7 +966,16 @@ async fn upsert_sender_responsible_person_detail(
 			"sender_presave_responsible_persons",
 		)?;
 		if responsible_person.delete {
-			SenderPresaveResponsiblePersonBmc::delete(ctx, mm, id).await?;
+			SenderPresaveResponsiblePersonBmc::update(
+				ctx,
+				mm,
+				id,
+				SenderPresaveResponsiblePersonForUpdate {
+					deleted: Some(true),
+					..Default::default()
+				},
+			)
+			.await?;
 		} else {
 			SenderPresaveResponsiblePersonBmc::update(
 				ctx,
@@ -1008,6 +1034,7 @@ impl SenderGatewayForRestCreate {
 			cde_sender_identifier: self.cde_sender_identifier,
 			cdr_sender_identifier: self.cdr_sender_identifier,
 			is_default_for_authority: self.is_default_for_authority,
+			deleted: None,
 		}
 	}
 }
@@ -1125,6 +1152,7 @@ impl SenderResponsiblePersonForRestCreate {
 			person_middle_name: self.person_middle_name,
 			person_family_name: self.person_family_name,
 			is_default: self.is_default,
+			deleted: None,
 		}
 	}
 }
