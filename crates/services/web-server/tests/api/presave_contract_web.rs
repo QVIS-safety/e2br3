@@ -1732,6 +1732,12 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	let study_id = data_id(&value)?;
+	let expected_product_presave_id = product_id.to_string();
+	assert_eq!(
+		value["data"]["product_presave_id"].as_str(),
+		Some(expected_product_presave_id.as_str()),
+		"{value:?}"
+	);
 
 	let (status, value) = request_json(
 		&app,
@@ -1804,6 +1810,24 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 	let (status, value) = request_json(
 		&app,
 		&admin_cookie,
+		Method::POST,
+		format!("/api/presaves/studies/{study_id}/registration-numbers"),
+		Some(json!({
+			"data": {
+				"sequence_number": 2,
+				"registration_number": "REG-EU",
+				"country_code": "EU"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(value["data"]["country_code"].as_str(), Some("EU"));
+	let eu_registration_id = data_id(&value)?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
 		Method::PATCH,
 		format!(
 			"/api/presaves/studies/{study_id}/registration-numbers/{registration_id}"
@@ -1864,6 +1888,9 @@ async fn test_section_presave_study_rest_contract() -> Result<()> {
 		format!("/api/presaves/studies/{study_id}/products/{study_product_id}"),
 		format!(
 			"/api/presaves/studies/{study_id}/registration-numbers/{registration_id}"
+		),
+		format!(
+			"/api/presaves/studies/{study_id}/registration-numbers/{eu_registration_id}"
 		),
 		format!("/api/presaves/studies/{study_id}"),
 	];
