@@ -304,6 +304,29 @@ async fn put_json_ok(
 		.await
 }
 
+async fn request_json_ok_with_audit_reason(
+	app: &Router,
+	cookie: &str,
+	method: Method,
+	uri: String,
+	body: Value,
+	reason: &str,
+) -> Result<Value> {
+	let req = Request::builder()
+		.method(method)
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.header("x-e2br3-reason-for-change", reason)
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let bytes = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = parse_json_or_raw(&bytes);
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	Ok(value)
+}
+
 async fn create_sender_presave_via_api(
 	app: &Router,
 	cookie: &str,
@@ -1181,6 +1204,66 @@ async fn test_presave_rest_rejects_deleting_case_linked_templates() -> Result<()
 			"unexpected case-linked delete conflict body: {value:?}"
 		);
 	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn info_update_audit_reason_records_sender_presave_reason() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let reason = "Edited Data: Corrected sender organization";
+	let organization_name =
+		format!("Audit Reason Sender Org {}", Uuid::new_v4());
+
+	request_json_ok_with_audit_reason(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/senders/{sender_id}"),
+		json!({
+			"data": {
+				"organization_name": organization_name
+			}
+		}),
+		reason,
+	)
+	.await?;
+
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
+		.await?;
+	let recorded_reason = dbx
+		.fetch_optional(
+			sqlx::query_as::<_, (Option<String>,)>(
+				r#"
+				SELECT reason_for_change
+				FROM audit_logs
+				WHERE table_name = 'sender_presaves'
+				  AND record_id = $1
+				  AND action = 'UPDATE'
+				  AND changed_fields ? 'organization_name'
+				ORDER BY id DESC
+				LIMIT 1
+				"#,
+			)
+			.bind(sender_id),
+		)
+		.await?;
+	dbx.rollback_txn().await?;
+
+	assert_eq!(
+		recorded_reason.and_then(|(value,)| value),
+		Some(reason.to_string())
+	);
 
 	Ok(())
 }
