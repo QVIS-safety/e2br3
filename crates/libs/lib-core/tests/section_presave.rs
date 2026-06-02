@@ -2539,7 +2539,7 @@ async fn test_seeded_receiver_presave_routes_match_reference_labels() -> Result<
 			"FDA_REPORT_TYPE".to_string(),
 			"3".to_string(),
 			"CBER IND".to_string(),
-			Some("CBER_IND".to_string()),
+			Some("ZZFDA_PREMKT".to_string()),
 			"CBER_IND".to_string(),
 		)
 	);
@@ -2560,7 +2560,7 @@ async fn test_seeded_receiver_presave_routes_match_reference_labels() -> Result<
 			"MFDS_REPORT_TYPE".to_string(),
 			"3".to_string(),
 			"시판 후 이상사례 국내보고".to_string(),
-			Some("KR".to_string()),
+			Some("MFDS".to_string()),
 			"KR".to_string(),
 		)
 	);

@@ -256,21 +256,22 @@ BEGIN
         sequence_number,
         authority,
         receiver_label,
-        receiver_identifier,
+        batch_receiver_identifier,
+        message_receiver_identifier,
         condition_field_code,
         condition_value_code,
         condition_value_label
     ) AS (
         VALUES
-            ('MFDS', 1, 'mfds', 'MFDS(CT)', 'CT', 'MFDS_REPORT_TYPE', '1', '임상시험계획의 승인을 받은 자'),
-            ('MFDS', 2, 'mfds', 'MFDS(CU)', 'CU', 'MFDS_REPORT_TYPE', '2', '임상시험용의약품의 치료목적 사용승인을 받은 자'),
-            ('MFDS', 3, 'mfds', 'MFDS(KR)', 'KR', 'MFDS_REPORT_TYPE', '3', '시판 후 이상사례 국내보고'),
-            ('MFDS', 4, 'mfds', 'MFDS(FR)', 'FR', 'MFDS_REPORT_TYPE', '4', '시판 후 이상사례 국외보고'),
-            ('MFDS', 5, 'mfds', 'MFDS(CF)', 'CF', 'MFDS_REPORT_TYPE', '5', '임상시험계획의 승인을 받은 자 (국외)'),
-            ('FDA', 1, 'fda', 'FDA(CDER IND)', 'CDER_IND', 'FDA_REPORT_TYPE', '1', 'CDER IND'),
-            ('FDA', 2, 'fda', 'FDA(CDER IND-exempt BA/BE)', 'CDER_IND_EXEMPT_BA_BE', 'FDA_REPORT_TYPE', '2', 'CDER IND-exempt BA/BE'),
-            ('FDA', 3, 'fda', 'FDA(CBER IND)', 'CBER_IND', 'FDA_REPORT_TYPE', '3', 'CBER IND'),
-            ('FDA', 4, 'fda', 'FDA(Postmarket)', 'POSTMARKET', 'FDA_REPORT_TYPE', '4', 'Postmarket')
+            ('MFDS', 1, 'mfds', 'MFDS(CT)', 'MFDS_CT', 'CT', 'MFDS_REPORT_TYPE', '1', '임상시험계획의 승인을 받은 자'),
+            ('MFDS', 2, 'mfds', 'MFDS(CU)', 'MFDS_CU', 'CU', 'MFDS_REPORT_TYPE', '2', '임상시험용의약품의 치료목적 사용승인을 받은 자'),
+            ('MFDS', 3, 'mfds', 'MFDS(KR)', 'MFDS', 'KR', 'MFDS_REPORT_TYPE', '3', '시판 후 이상사례 국내보고'),
+            ('MFDS', 4, 'mfds', 'MFDS(FR)', 'MFDS_FR', 'FR', 'MFDS_REPORT_TYPE', '4', '시판 후 이상사례 국외보고'),
+            ('MFDS', 5, 'mfds', 'MFDS(CF)', 'MFDS_CT', 'CT', 'MFDS_REPORT_TYPE', '5', '임상시험계획의 승인을 받은 자 (국외)'),
+            ('FDA', 1, 'fda', 'FDA(CDER IND)', 'ZZFDA_PREMKT', 'CDER_IND', 'FDA_REPORT_TYPE', '1', 'CDER IND'),
+            ('FDA', 2, 'fda', 'FDA(CDER IND-exempt BA/BE)', 'ZZFDA_PREMKT', 'CDER_IND_EXEMPT_BA_BE', 'FDA_REPORT_TYPE', '2', 'CDER IND-exempt BA/BE'),
+            ('FDA', 3, 'fda', 'FDA(CBER IND)', 'ZZFDA_PREMKT', 'CBER_IND', 'FDA_REPORT_TYPE', '3', 'CBER IND'),
+            ('FDA', 4, 'fda', 'FDA(Postmarket)', 'ZZFDA', 'CDER', 'FDA_REPORT_TYPE', '4', 'Postmarket')
     ),
     receiver_parent AS (
         SELECT DISTINCT ON (route_seed.receiver_name)
@@ -314,8 +315,8 @@ BEGIN
         route_seed.sequence_number,
         route_seed.authority,
         route_seed.receiver_label,
-        route_seed.receiver_identifier,
-        route_seed.receiver_identifier,
+        route_seed.batch_receiver_identifier,
+        route_seed.message_receiver_identifier,
         'CI',
         route_seed.condition_field_code,
         'Equal',
