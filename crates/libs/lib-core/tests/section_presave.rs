@@ -221,6 +221,7 @@ fn reporter_presave_create(
 		telephone: None,
 		country_code: Some("KR".into()),
 		qualification: Some("1".into()),
+		qualification_kr1: None,
 		primary_source_regulatory: None,
 	}
 }
@@ -285,7 +286,8 @@ async fn section_presave_tables_exist() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn reporter_presaves_store_only_reference_reporter_fields() -> Result<()> {
+async fn reporter_presaves_store_mfds_qualification_detail_but_not_case_only_email(
+) -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;
 
@@ -302,8 +304,8 @@ async fn reporter_presaves_store_only_reference_reporter_fields() -> Result<()> 
 		"reporter_presaves.email is case-only and must not be a reporter presave column"
 	);
 	assert!(
-		!columns.iter().any(|column| column == "qualification_kr1"),
-		"reporter_presaves.qualification_kr1 is case-only and must not be a reporter presave column"
+		columns.iter().any(|column| column == "qualification_kr1"),
+		"reporter_presaves.qualification_kr1 stores MFDS C.2.r.4.KR.1 for reporter presave"
 	);
 
 	Ok(())
@@ -833,6 +835,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			telephone: Some("051-111-2222".into()),
 			country_code: Some("KR".into()),
 			qualification: Some("1".into()),
+			qualification_kr1: None,
 			primary_source_regulatory: Some("1".into()),
 		},
 	)
@@ -1127,32 +1130,44 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 		.await,
 		"sender_presave_id and product_id or preapproval_ip_name",
 	);
-	expect_validation_error(
-		ReporterPresaveBmc::create(
-			&ctx,
-			&mm,
-			ReporterPresaveForCreate {
-				name: format!("Invalid Reporter Presave {suffix}"),
-				comments: None,
-				reporter_title: None,
-				reporter_given_name: Some("Invalid".into()),
-				reporter_middle_name: None,
-				reporter_family_name: None,
-				organization: None,
-				department: None,
-				street: None,
-				city: None,
-				state: None,
-				postcode: None,
-				telephone: None,
-				country_code: None,
-				qualification: Some("1".into()),
-				primary_source_regulatory: None,
-			},
-		)
-		.await,
-		"reporter_given_name, organization, and qualification",
-	);
+	for (label, reporter_given_name, organization, qualification) in [
+		("given name", None, Some("Invalid Reporter Org"), Some("1")),
+		("organization", Some("Invalid"), None, Some("1")),
+		(
+			"qualification",
+			Some("Invalid"),
+			Some("Invalid Reporter Org"),
+			None,
+		),
+	] {
+		expect_validation_error(
+			ReporterPresaveBmc::create(
+				&ctx,
+				&mm,
+				ReporterPresaveForCreate {
+					name: format!("Invalid Reporter Presave {label} {suffix}"),
+					comments: None,
+					reporter_title: None,
+					reporter_given_name: reporter_given_name.map(str::to_string),
+					reporter_middle_name: None,
+					reporter_family_name: None,
+					organization: organization.map(str::to_string),
+					department: None,
+					street: None,
+					city: None,
+					state: None,
+					postcode: None,
+					telephone: None,
+					country_code: None,
+					qualification: qualification.map(str::to_string),
+					qualification_kr1: None,
+					primary_source_regulatory: None,
+				},
+			)
+			.await,
+			"reporter_given_name, organization, and qualification",
+		);
+	}
 	expect_validation_error(
 		StudyPresaveBmc::create(
 			&ctx,
@@ -1384,6 +1399,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			telephone: None,
 			country_code: None,
 			qualification: Some("1".into()),
+			qualification_kr1: None,
 			primary_source_regulatory: None,
 		},
 	)
@@ -1408,6 +1424,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				telephone: None,
 				country_code: None,
 				qualification: Some("1".into()),
+				qualification_kr1: None,
 				primary_source_regulatory: None,
 			},
 		)

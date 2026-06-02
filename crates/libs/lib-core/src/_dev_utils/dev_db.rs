@@ -151,7 +151,7 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE reporter_presaves DROP CONSTRAINT IF EXISTS reporter_presaves_authority_valid",
 		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS authority",
 		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS email",
-		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS qualification_kr1",
+		"ALTER TABLE reporter_presaves ADD COLUMN IF NOT EXISTS qualification_kr1 VARCHAR(1) CHECK (qualification_kr1 IN ('1', '2'))",
 		"ALTER TABLE study_presaves DROP CONSTRAINT IF EXISTS study_presaves_authority_valid",
 		"ALTER TABLE study_presaves DROP COLUMN IF EXISTS authority",
 		"ALTER TABLE narrative_presaves DROP CONSTRAINT IF EXISTS narrative_presaves_authority_valid",
