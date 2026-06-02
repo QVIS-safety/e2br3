@@ -368,6 +368,30 @@ async fn create_named_sender_presave_via_api(
 	data_id(&value)
 }
 
+async fn create_sender_presave_with_type_via_api(
+	app: &Router,
+	cookie: &str,
+	sender_type: &str,
+	name: String,
+	organization_name: &str,
+) -> Result<Uuid> {
+	let value = post_json_created(
+		app,
+		cookie,
+		"/api/presaves/senders".to_string(),
+		json!({
+			"data": {
+				"name": name,
+				"sender_type": sender_type,
+				"organization_name": organization_name,
+				"person_given_name": "Sender"
+			}
+		}),
+	)
+	.await?;
+	data_id(&value)
+}
+
 async fn create_sender_gateway_via_api(
 	app: &Router,
 	cookie: &str,
@@ -997,6 +1021,135 @@ async fn product_presave_details_expose_effective_mfds_dg_fields() -> Result<()>
 	assert_eq!(substance["mfds_id"].as_str(), Some("KR-SUB"));
 	assert_eq!(substance["mfds_version"].as_str(), Some("KR-SUB-V1"));
 	assert_eq!(substance["substance_termid"].as_str(), Some("ICH-SUB"));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_sender_presave_rejects_missing_given_name_on_create_update_and_details(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let missing_given_name = json!({
+		"data": {
+			"name": format!("Missing Sender Given {}", Uuid::new_v4()),
+			"sender_type": "1",
+			"organization_name": format!("Missing Sender Given Org {}", Uuid::new_v4()),
+			"person_given_name": " "
+		}
+	});
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/senders".to_string(),
+		Some(missing_given_name),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert!(
+		value
+			.to_string()
+			.contains("sender presave requires sender_type, organization_name, and person_given_name"),
+		"unexpected missing given name body on create: {value:?}"
+	);
+
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+	for (method, uri, body, label) in [
+		(
+			Method::PATCH,
+			format!("/api/presaves/senders/{sender_id}"),
+			json!({ "data": { "person_given_name": " " } }),
+			"patch",
+		),
+		(
+			Method::PUT,
+			format!("/api/presaves/senders/{sender_id}/details"),
+			json!({ "data": { "parent": { "person_given_name": " " } } }),
+			"details",
+		),
+	] {
+		let (status, value) =
+			request_json(&app, &admin_cookie, method, uri, Some(body)).await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+		assert!(
+			value
+				.to_string()
+				.contains("sender presave requires sender_type, organization_name, and person_given_name"),
+			"unexpected missing given name body on {label}: {value:?}"
+		);
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_sender_presave_rejects_duplicate_active_organization() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let organization_name = format!("Duplicate Sender Org {}", Uuid::new_v4());
+
+	let sender_id = create_sender_presave_with_type_via_api(
+		&app,
+		&admin_cookie,
+		"1",
+		format!("Duplicate Sender {}", Uuid::new_v4()),
+		&organization_name,
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/senders".to_string(),
+		Some(json!({
+			"data": {
+				"name": format!("Duplicate Sender {}", Uuid::new_v4()),
+				"sender_type": "2",
+				"organization_name": organization_name,
+				"person_given_name": "Sender"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+	assert!(
+		value
+			.to_string()
+			.contains("sender presave duplicate identity"),
+		"unexpected duplicate sender body: {value:?}"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::DELETE,
+		format!("/api/presaves/senders/{sender_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+
+	let reused_id = create_sender_presave_with_type_via_api(
+		&app,
+		&admin_cookie,
+		"2",
+		format!("Reused Sender {}", Uuid::new_v4()),
+		&organization_name,
+	)
+	.await?;
+	assert_ne!(sender_id, reused_id);
 
 	Ok(())
 }
