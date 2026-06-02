@@ -1123,7 +1123,16 @@ pub async fn delete_sender_gateway(
 		"sender_presave_gateways",
 	)?;
 	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	SenderPresaveGatewayBmc::delete(&ctx, &mm, id).await?;
+	SenderPresaveGatewayBmc::update(
+		&ctx,
+		&mm,
+		id,
+		SenderPresaveGatewayForUpdate {
+			deleted: Some(true),
+			..Default::default()
+		},
+	)
+	.await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 
@@ -1258,7 +1267,16 @@ pub async fn delete_sender_responsible_person(
 		"sender_presave_responsible_persons",
 	)?;
 	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	SenderPresaveResponsiblePersonBmc::delete(&ctx, &mm, id).await?;
+	SenderPresaveResponsiblePersonBmc::update(
+		&ctx,
+		&mm,
+		id,
+		SenderPresaveResponsiblePersonForUpdate {
+			deleted: Some(true),
+			..Default::default()
+		},
+	)
+	.await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 

@@ -2221,6 +2221,80 @@ async fn test_sender_presave_details_rolls_back_parent_on_child_constraint_failu
 
 #[serial]
 #[tokio::test]
+async fn test_sender_presave_direct_child_delete_soft_deletes_details_rows(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "ich").await?;
+	let gateway_id =
+		create_sender_gateway_via_api(&app, &admin_cookie, sender_id, 1, "DELETE")
+			.await?;
+	let responsible_id = create_sender_responsible_person_via_api(
+		&app,
+		&admin_cookie,
+		sender_id,
+		1,
+		"Ari",
+	)
+	.await?;
+
+	for uri in [
+		format!("/api/presaves/senders/{sender_id}/gateways/{gateway_id}"),
+		format!(
+			"/api/presaves/senders/{sender_id}/responsible-persons/{responsible_id}"
+		),
+	] {
+		let (status, value) =
+			request_json(&app, &admin_cookie, Method::DELETE, uri, None).await?;
+		assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+	}
+
+	let after_delete = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/senders/{sender_id}/details"),
+	)
+	.await?;
+	let gateways = after_delete["data"]["gateways"].as_array().unwrap();
+	let responsible_persons = after_delete["data"]["responsible_persons"]
+		.as_array()
+		.unwrap();
+	let deleted_gateway = gateways
+		.iter()
+		.find(|row| row["id"].as_str() == Some(&gateway_id.to_string()))
+		.ok_or("missing direct-deleted gateway")?;
+	assert_eq!(deleted_gateway["deleted"].as_bool(), Some(true));
+	assert_eq!(
+		deleted_gateway["sender_identifier"].as_str(),
+		Some("DELETE")
+	);
+	assert_eq!(
+		deleted_gateway["routing_identifier"].as_str(),
+		Some("ROUTE-DELETE")
+	);
+	let deleted_responsible_person = responsible_persons
+		.iter()
+		.find(|row| row["id"].as_str() == Some(&responsible_id.to_string()))
+		.ok_or("missing direct-deleted responsible person")?;
+	assert_eq!(deleted_responsible_person["deleted"].as_bool(), Some(true));
+	assert_eq!(
+		deleted_responsible_person["person_given_name"].as_str(),
+		Some("Ari")
+	);
+	assert_eq!(
+		deleted_responsible_person["person_family_name"].as_str(),
+		Some("Kim")
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_sender_presave_details_requires_explicit_child_delete() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
