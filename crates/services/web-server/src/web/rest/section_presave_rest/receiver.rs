@@ -75,12 +75,28 @@ pub async fn delete_receiver_presave(
 pub struct ReceiverPresaveDetails {
 	pub parent: ReceiverPresave,
 	pub consignees: Vec<ReceiverPresaveConsignee>,
+	pub routes: Vec<ReceiverPresaveRoute>,
+	pub children: ReceiverPresaveDetailsChildren,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ReceiverPresaveDetailsChildren {
+	pub consignees: Vec<ReceiverPresaveConsignee>,
+	pub routes: Vec<ReceiverPresaveRoute>,
 }
 
 #[derive(Deserialize)]
 pub struct ReceiverPresaveDetailsForUpdate {
 	pub parent: Option<ReceiverPresaveForUpdate>,
 	pub consignees: Option<Vec<ReceiverConsigneeDetailsForUpdate>>,
+	pub routes: Option<Vec<ReceiverRouteDetailsForUpdate>>,
+	pub children: Option<ReceiverPresaveChildrenDetailsForUpdate>,
+}
+
+#[derive(Deserialize)]
+pub struct ReceiverPresaveChildrenDetailsForUpdate {
+	pub consignees: Option<Vec<ReceiverConsigneeDetailsForUpdate>>,
+	pub routes: Option<Vec<ReceiverRouteDetailsForUpdate>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -120,6 +136,106 @@ impl ReceiverConsigneeDetailsForUpdate {
 			name: self.name,
 			phone: self.phone,
 			email: self.email,
+		})
+	}
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ReceiverRouteDetailsForUpdate {
+	pub id: Option<Uuid>,
+	#[serde(default, rename = "_delete")]
+	pub delete: bool,
+	pub sequence_number: Option<i32>,
+	pub authority: Option<String>,
+	pub receiver_label: Option<String>,
+	pub batch_receiver_identifier: Option<String>,
+	pub message_receiver_identifier: Option<String>,
+	pub condition_page: Option<String>,
+	pub condition_field_code: Option<String>,
+	pub condition_operator: Option<String>,
+	pub condition_value_code: Option<String>,
+	pub condition_value_label: Option<String>,
+}
+
+impl ReceiverRouteDetailsForUpdate {
+	fn into_update(self) -> ReceiverPresaveRouteForUpdate {
+		ReceiverPresaveRouteForUpdate {
+			sequence_number: self.sequence_number,
+			authority: self.authority,
+			receiver_label: self.receiver_label,
+			batch_receiver_identifier: self.batch_receiver_identifier,
+			message_receiver_identifier: self.message_receiver_identifier,
+			condition_page: self.condition_page,
+			condition_field_code: self.condition_field_code,
+			condition_operator: self.condition_operator,
+			condition_value_code: self.condition_value_code,
+			condition_value_label: self.condition_value_label,
+		}
+	}
+
+	fn into_create(
+		self,
+		receiver_presave_id: Uuid,
+	) -> Result<ReceiverPresaveRouteForCreate> {
+		Ok(ReceiverPresaveRouteForCreate {
+			receiver_presave_id,
+			sequence_number: self.sequence_number.ok_or_else(|| {
+				Error::BadRequest {
+					message:
+						"receiver route details create requires sequence_number"
+							.to_string(),
+				}
+			})?,
+			authority: self.authority.ok_or_else(|| Error::BadRequest {
+				message: "receiver route details create requires authority"
+					.to_string(),
+			})?,
+			receiver_label: self.receiver_label.ok_or_else(|| {
+				Error::BadRequest {
+					message: "receiver route details create requires receiver_label"
+						.to_string(),
+				}
+			})?,
+			batch_receiver_identifier: self.batch_receiver_identifier,
+			message_receiver_identifier: self.message_receiver_identifier.ok_or_else(
+				|| Error::BadRequest {
+					message:
+						"receiver route details create requires message_receiver_identifier"
+							.to_string(),
+				},
+			)?,
+			condition_page: self.condition_page.ok_or_else(|| Error::BadRequest {
+				message: "receiver route details create requires condition_page"
+					.to_string(),
+			})?,
+			condition_field_code: self.condition_field_code.ok_or_else(|| {
+				Error::BadRequest {
+					message:
+						"receiver route details create requires condition_field_code"
+							.to_string(),
+				}
+			})?,
+			condition_operator: self.condition_operator.ok_or_else(|| {
+				Error::BadRequest {
+					message:
+						"receiver route details create requires condition_operator"
+							.to_string(),
+				}
+			})?,
+			condition_value_code: self.condition_value_code.ok_or_else(|| {
+				Error::BadRequest {
+					message:
+						"receiver route details create requires condition_value_code"
+							.to_string(),
+				}
+			})?,
+			condition_value_label: self.condition_value_label.ok_or_else(|| {
+				Error::BadRequest {
+					message:
+						"receiver route details create requires condition_value_label"
+							.to_string(),
+				}
+			})?,
 		})
 	}
 }
@@ -193,6 +309,23 @@ async fn apply_receiver_presave_details_inner(
 			upsert_receiver_consignee_detail(ctx, mm, id, consignee).await?;
 		}
 	}
+	if let Some(routes) = data.routes {
+		for route in routes {
+			upsert_receiver_route_detail(ctx, mm, id, route).await?;
+		}
+	}
+	if let Some(children) = data.children {
+		if let Some(consignees) = children.consignees {
+			for consignee in consignees {
+				upsert_receiver_consignee_detail(ctx, mm, id, consignee).await?;
+			}
+		}
+		if let Some(routes) = children.routes {
+			for route in routes {
+				upsert_receiver_route_detail(ctx, mm, id, route).await?;
+			}
+		}
+	}
 	Ok(())
 }
 
@@ -204,7 +337,17 @@ async fn load_receiver_presave_details(
 	let parent = ReceiverPresaveBmc::get(ctx, mm, id).await?;
 	let consignees =
 		ReceiverPresaveConsigneeBmc::list_by_parent(ctx, mm, id).await?;
-	Ok(ReceiverPresaveDetails { parent, consignees })
+	let routes = ReceiverPresaveRouteBmc::list_by_parent(ctx, mm, id).await?;
+	let children = ReceiverPresaveDetailsChildren {
+		consignees: consignees.clone(),
+		routes: routes.clone(),
+	};
+	Ok(ReceiverPresaveDetails {
+		parent,
+		consignees,
+		routes,
+		children,
+	})
 }
 
 fn require_receiver_detail_operation_permissions(
@@ -217,21 +360,61 @@ fn require_receiver_detail_operation_permissions(
 		.unwrap_or_default()
 		.iter()
 		.any(|consignee| consignee.id.is_none() && !consignee.delete);
+	let creates_route = data
+		.routes
+		.as_deref()
+		.unwrap_or_default()
+		.iter()
+		.any(|route| route.id.is_none() && !route.delete);
+	let creates_nested_child = data
+		.children
+		.as_ref()
+		.and_then(|children| children.consignees.as_deref())
+		.unwrap_or_default()
+		.iter()
+		.any(|consignee| consignee.id.is_none() && !consignee.delete)
+		|| data
+			.children
+			.as_ref()
+			.and_then(|children| children.routes.as_deref())
+			.unwrap_or_default()
+			.iter()
+			.any(|route| route.id.is_none() && !route.delete);
 	let deletes_child = data
 		.consignees
 		.as_deref()
 		.unwrap_or_default()
 		.iter()
 		.any(|consignee| consignee.delete);
+	let deletes_route = data
+		.routes
+		.as_deref()
+		.unwrap_or_default()
+		.iter()
+		.any(|route| route.delete);
+	let deletes_nested_child = data
+		.children
+		.as_ref()
+		.and_then(|children| children.consignees.as_deref())
+		.unwrap_or_default()
+		.iter()
+		.any(|consignee| consignee.delete)
+		|| data
+			.children
+			.as_ref()
+			.and_then(|children| children.routes.as_deref())
+			.unwrap_or_default()
+			.iter()
+			.any(|route| route.delete);
 	let deletes_parent = data
 		.parent
 		.as_ref()
 		.is_some_and(|parent| parent.deleted == Some(true));
 
-	if creates_child {
+	if creates_child || creates_route || creates_nested_child {
 		require_permission(ctx, PRESAVE_TEMPLATE_CREATE)?;
 	}
-	if deletes_child || deletes_parent {
+	if deletes_child || deletes_route || deletes_nested_child || deletes_parent {
 		require_permission(ctx, PRESAVE_TEMPLATE_DELETE)?;
 	}
 	Ok(())
@@ -247,6 +430,24 @@ async fn preflight_receiver_presave_details(
 		for consignee in consignees {
 			preflight_receiver_consignee_detail(ctx, mm, receiver_id, consignee)
 				.await?;
+		}
+	}
+	if let Some(routes) = &data.routes {
+		for route in routes {
+			preflight_receiver_route_detail(ctx, mm, receiver_id, route).await?;
+		}
+	}
+	if let Some(children) = &data.children {
+		if let Some(consignees) = &children.consignees {
+			for consignee in consignees {
+				preflight_receiver_consignee_detail(ctx, mm, receiver_id, consignee)
+					.await?;
+			}
+		}
+		if let Some(routes) = &children.routes {
+			for route in routes {
+				preflight_receiver_route_detail(ctx, mm, receiver_id, route).await?;
+			}
 		}
 	}
 	Ok(())
@@ -291,6 +492,60 @@ fn validate_receiver_consignee_detail_create(
 	Ok(())
 }
 
+async fn preflight_receiver_route_detail(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	receiver_id: Uuid,
+	route: &ReceiverRouteDetailsForUpdate,
+) -> Result<()> {
+	if route.delete && route.id.is_none() {
+		return Err(Error::BadRequest {
+			message: "receiver route delete requires id".to_string(),
+		});
+	}
+
+	if let Some(id) = route.id {
+		let entity = ReceiverPresaveRouteBmc::get(ctx, mm, id).await?;
+		ensure_detail_parent_scope(
+			receiver_id,
+			entity.receiver_presave_id,
+			id,
+			"receiver",
+			"receiver_presave_routes",
+		)?;
+	} else if !route.delete {
+		validate_receiver_route_detail_create(route)?;
+	}
+	Ok(())
+}
+
+fn validate_receiver_route_detail_create(
+	route: &ReceiverRouteDetailsForUpdate,
+) -> Result<()> {
+	let required = [
+		(route.sequence_number.is_some(), "sequence_number"),
+		(route.authority.is_some(), "authority"),
+		(route.receiver_label.is_some(), "receiver_label"),
+		(
+			route.message_receiver_identifier.is_some(),
+			"message_receiver_identifier",
+		),
+		(route.condition_page.is_some(), "condition_page"),
+		(route.condition_field_code.is_some(), "condition_field_code"),
+		(route.condition_operator.is_some(), "condition_operator"),
+		(route.condition_value_code.is_some(), "condition_value_code"),
+		(route.condition_value_label.is_some(), "condition_value_label"),
+	];
+	for (present, field) in required {
+		if !present {
+			return Err(Error::BadRequest {
+				message: format!("receiver route details create requires {field}"),
+			});
+		}
+	}
+	Ok(())
+}
+
 async fn upsert_receiver_consignee_detail(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -330,6 +585,40 @@ async fn upsert_receiver_consignee_detail(
 			consignee.into_create(receiver_id)?,
 		)
 		.await?;
+	}
+	Ok(())
+}
+
+async fn upsert_receiver_route_detail(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	receiver_id: Uuid,
+	route: ReceiverRouteDetailsForUpdate,
+) -> Result<()> {
+	if route.delete && route.id.is_none() {
+		return Err(Error::BadRequest {
+			message: "receiver route delete requires id".to_string(),
+		});
+	}
+
+	if let Some(id) = route.id {
+		let entity = ReceiverPresaveRouteBmc::get(ctx, mm, id).await?;
+		ensure_detail_parent_scope(
+			receiver_id,
+			entity.receiver_presave_id,
+			id,
+			"receiver",
+			"receiver_presave_routes",
+		)?;
+		if route.delete {
+			ReceiverPresaveRouteBmc::delete(ctx, mm, id).await?;
+		} else {
+			ReceiverPresaveRouteBmc::update(ctx, mm, id, route.into_update())
+				.await?;
+		}
+	} else {
+		ReceiverPresaveRouteBmc::create(ctx, mm, route.into_create(receiver_id)?)
+			.await?;
 	}
 	Ok(())
 }
