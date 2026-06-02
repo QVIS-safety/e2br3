@@ -1091,7 +1091,7 @@ async fn test_sender_presave_rejects_missing_given_name_on_create_update_and_det
 
 #[serial]
 #[tokio::test]
-async fn test_sender_presave_rejects_duplicate_active_organization() -> Result<()> {
+async fn test_sender_presave_rejects_duplicate_active_identity() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -1116,7 +1116,7 @@ async fn test_sender_presave_rejects_duplicate_active_organization() -> Result<(
 		Some(json!({
 			"data": {
 				"name": format!("Duplicate Sender {}", Uuid::new_v4()),
-				"sender_type": "2",
+				"sender_type": "1",
 				"organization_name": organization_name,
 				"person_given_name": "Sender"
 			}
@@ -1131,6 +1131,16 @@ async fn test_sender_presave_rejects_duplicate_active_organization() -> Result<(
 		"unexpected duplicate sender body: {value:?}"
 	);
 
+	let different_type_id = create_sender_presave_with_type_via_api(
+		&app,
+		&admin_cookie,
+		"2",
+		format!("Different Type Sender {}", Uuid::new_v4()),
+		&organization_name,
+	)
+	.await?;
+	assert_ne!(sender_id, different_type_id);
+
 	let (status, value) = request_json(
 		&app,
 		&admin_cookie,
@@ -1144,7 +1154,7 @@ async fn test_sender_presave_rejects_duplicate_active_organization() -> Result<(
 	let reused_id = create_sender_presave_with_type_via_api(
 		&app,
 		&admin_cookie,
-		"2",
+		"1",
 		format!("Reused Sender {}", Uuid::new_v4()),
 		&organization_name,
 	)

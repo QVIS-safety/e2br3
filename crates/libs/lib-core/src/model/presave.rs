@@ -399,13 +399,15 @@ impl SenderPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		excluding_id: Option<Uuid>,
-		_sender_type: Option<&str>,
+		sender_type: Option<&str>,
 		organization_name: Option<&str>,
 	) -> Result<()> {
+		let sender_type = normalized_text(sender_type);
 		let organization_name = normalized_text(organization_name);
 		let duplicate = Self::list(ctx, mm, None).await?.into_iter().any(|row| {
 			!row.deleted
 				&& Some(row.id) != excluding_id
+				&& normalized_text(row.sender_type.as_deref()) == sender_type
 				&& normalized_text(row.organization_name.as_deref())
 					== organization_name
 		});
