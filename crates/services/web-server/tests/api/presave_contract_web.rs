@@ -453,7 +453,7 @@ async fn create_receiver_presave_via_api(
 		json!({
 			"data": {
 				"name": format!("REST Receiver Details {}", Uuid::new_v4()),
-				"receiver_type": "1",
+				"receiver_type": "Regulatory Authority",
 				"organization_name": format!("REST Receiver Details Org {}", Uuid::new_v4()),
 				"receiver_identifier": format!("REC-{}", Uuid::new_v4())
 			}
@@ -484,6 +484,105 @@ async fn create_receiver_consignee_via_api(
 	)
 	.await?;
 	data_id(&value)
+}
+
+#[tokio::test]
+#[serial]
+async fn test_receiver_presave_alignment_contract() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let receiver_name = format!("Aligned Receiver {}", Uuid::new_v4());
+
+	let value = post_json_created(
+		&app,
+		&admin_cookie,
+		"/api/presaves/receivers".to_string(),
+		json!({
+			"data": {
+				"name": format!("Receiver Template {}", Uuid::new_v4()),
+				"receiver_type": "Regulatory Authority",
+				"organization_name": receiver_name,
+				"nsae_non_solicited_day_count": 7,
+				"nsae_solicited_not_applicable": true,
+				"sae_non_solicited_day_count": 15,
+				"sae_solicited_not_applicable": true
+			}
+		}),
+	)
+	.await?;
+	let receiver_id = data_id(&value)?;
+	assert_eq!(
+		value["data"]["receiver_type"].as_str(),
+		Some("Regulatory Authority")
+	);
+	assert_eq!(
+		value["data"]["nsae_non_solicited_day_count"].as_i64(),
+		Some(7)
+	);
+	assert_eq!(
+		value["data"]["nsae_solicited_not_applicable"].as_bool(),
+		Some(true)
+	);
+	assert_eq!(
+		value["data"]["sae_non_solicited_day_count"].as_i64(),
+		Some(15)
+	);
+	assert_eq!(
+		value["data"]["sae_solicited_not_applicable"].as_bool(),
+		Some(true)
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/receivers".to_string(),
+		Some(json!({
+			"data": {
+				"name": format!("Receiver Template {}", Uuid::new_v4()),
+				"receiver_type": "Original Manufacturer",
+				"organization_name": receiver_name
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/receivers".to_string(),
+		Some(json!({
+			"data": {
+				"name": format!("Receiver Template {}", Uuid::new_v4()),
+				"receiver_type": "1",
+				"organization_name": format!("Legacy Receiver {}", Uuid::new_v4())
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/receivers/{receiver_id}"),
+		Some(json!({
+			"data": {
+				"nsae_non_solicited_day_count": 5,
+				"nsae_non_solicited_not_applicable": true
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+
+	Ok(())
 }
 
 async fn create_product_presave_via_api(
@@ -2386,7 +2485,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		Some(json!({
 			"data": {
 				"name": "REST Receiver",
-				"receiver_type": "1",
+				"receiver_type": "Regulatory Authority",
 				"organization_name": "REST Receiver Org",
 				"receiver_identifier": "REST-RECEIVER"
 			}

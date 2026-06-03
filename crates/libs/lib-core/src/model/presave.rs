@@ -163,6 +163,12 @@ fn relationship_conflict(message: &str) -> crate::model::Error {
 	}
 }
 
+fn validation_error(message: &str) -> crate::model::Error {
+	crate::model::Error::Validation {
+		message: message.to_string(),
+	}
+}
+
 trait IntoOrgScopedCreate {
 	type Insert: HasSeaFields;
 
@@ -660,6 +666,10 @@ impl DbBmc for ReceiverPresaveBmc {
 }
 
 impl ReceiverPresaveBmc {
+	const RECEIVER_TYPE_ORIGINAL_MANUFACTURER: &'static str =
+		"Original Manufacturer";
+	const RECEIVER_TYPE_REGULATORY_AUTHORITY: &'static str = "Regulatory Authority";
+
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
@@ -669,11 +679,20 @@ impl ReceiverPresaveBmc {
 			data.receiver_type.as_deref(),
 			data.organization_name.as_deref(),
 		)?;
+		Self::validate_timeline(
+			data.nsae_non_solicited_day_count,
+			data.nsae_non_solicited_not_applicable,
+			data.sae_non_solicited_day_count,
+			data.sae_non_solicited_not_applicable,
+			data.nsae_solicited_day_count,
+			data.nsae_solicited_not_applicable,
+			data.sae_solicited_day_count,
+			data.sae_solicited_not_applicable,
+		)?;
 		Self::ensure_unique_identity(
 			ctx,
 			mm,
 			None,
-			data.receiver_type.as_deref(),
 			data.organization_name.as_deref(),
 		)
 		.await?;
@@ -724,14 +743,26 @@ impl ReceiverPresaveBmc {
 				.as_deref()
 				.or(current.organization_name.as_deref());
 			Self::validate_identity(receiver_type, organization_name)?;
-			Self::ensure_unique_identity(
-				ctx,
-				mm,
-				Some(id),
-				receiver_type,
-				organization_name,
-			)
-			.await?;
+			Self::validate_timeline(
+				data.nsae_non_solicited_day_count
+					.or(current.nsae_non_solicited_day_count),
+				data.nsae_non_solicited_not_applicable
+					.or(current.nsae_non_solicited_not_applicable),
+				data.sae_non_solicited_day_count
+					.or(current.sae_non_solicited_day_count),
+				data.sae_non_solicited_not_applicable
+					.or(current.sae_non_solicited_not_applicable),
+				data.nsae_solicited_day_count
+					.or(current.nsae_solicited_day_count),
+				data.nsae_solicited_not_applicable
+					.or(current.nsae_solicited_not_applicable),
+				data.sae_solicited_day_count
+					.or(current.sae_solicited_day_count),
+				data.sae_solicited_not_applicable
+					.or(current.sae_solicited_not_applicable),
+			)?;
+			Self::ensure_unique_identity(ctx, mm, Some(id), organization_name)
+				.await?;
 		}
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
@@ -748,6 +779,63 @@ impl ReceiverPresaveBmc {
 			normalized_text(receiver_type).is_some()
 				&& normalized_text(organization_name).is_some(),
 			"receiver presave requires receiver_type and organization_name",
+		)?;
+		match receiver_type.map(str::trim) {
+			Some(Self::RECEIVER_TYPE_REGULATORY_AUTHORITY)
+			| Some(Self::RECEIVER_TYPE_ORIGINAL_MANUFACTURER) => Ok(()),
+			_ => Err(validation_error(
+				"receiver_type must be Regulatory Authority or Original Manufacturer",
+			)),
+		}
+	}
+
+	fn validate_timeline_category(
+		label: &str,
+		day_count: Option<i32>,
+		not_applicable: Option<bool>,
+	) -> Result<()> {
+		if day_count.is_some_and(|value| value < 0) {
+			return Err(validation_error(&format!(
+				"{label} day count must be zero or greater"
+			)));
+		}
+		if day_count.is_some() && not_applicable == Some(true) {
+			return Err(validation_error(&format!(
+				"{label} cannot have both day count and Not Applicable"
+			)));
+		}
+		Ok(())
+	}
+
+	fn validate_timeline(
+		nsae_spontaneous_day_count: Option<i32>,
+		nsae_spontaneous_not_applicable: Option<bool>,
+		sae_spontaneous_day_count: Option<i32>,
+		sae_spontaneous_not_applicable: Option<bool>,
+		nsae_solicited_day_count: Option<i32>,
+		nsae_solicited_not_applicable: Option<bool>,
+		sae_solicited_day_count: Option<i32>,
+		sae_solicited_not_applicable: Option<bool>,
+	) -> Result<()> {
+		Self::validate_timeline_category(
+			"Non-SAE Spontaneous",
+			nsae_spontaneous_day_count,
+			nsae_spontaneous_not_applicable,
+		)?;
+		Self::validate_timeline_category(
+			"SAE Spontaneous",
+			sae_spontaneous_day_count,
+			sae_spontaneous_not_applicable,
+		)?;
+		Self::validate_timeline_category(
+			"Non-SAE Solicited",
+			nsae_solicited_day_count,
+			nsae_solicited_not_applicable,
+		)?;
+		Self::validate_timeline_category(
+			"SAE Solicited",
+			sae_solicited_day_count,
+			sae_solicited_not_applicable,
 		)
 	}
 
@@ -755,15 +843,12 @@ impl ReceiverPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		excluding_id: Option<Uuid>,
-		receiver_type: Option<&str>,
 		organization_name: Option<&str>,
 	) -> Result<()> {
-		let receiver_type = normalized_text(receiver_type);
 		let organization_name = normalized_text(organization_name);
 		let duplicate = Self::list(ctx, mm, None).await?.into_iter().any(|row| {
 			!row.deleted
 				&& Some(row.id) != excluding_id
-				&& normalized_text(row.receiver_type.as_deref()) == receiver_type
 				&& normalized_text(row.organization_name.as_deref())
 					== organization_name
 		});

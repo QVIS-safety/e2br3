@@ -1274,7 +1274,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 		ReceiverPresaveForCreate {
 			name: format!("Duplicate Receiver Presave {suffix}"),
 			comments: None,
-			receiver_type: Some("1".into()),
+			receiver_type: Some("Regulatory Authority".into()),
 			organization_name: Some(format!("Duplicate Receiver Org {suffix}")),
 			receiver_identifier: None,
 			day_count_rule: None,
@@ -1297,7 +1297,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			ReceiverPresaveForCreate {
 				name: format!("Duplicate Receiver Presave Copy {suffix}"),
 				comments: None,
-				receiver_type: Some("1".into()),
+				receiver_type: Some("Original Manufacturer".into()),
 				organization_name: Some(format!(
 					" duplicate receiver org {suffix} "
 				)),
@@ -1622,7 +1622,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		ReceiverPresaveForCreate {
 			name: format!("Child Receiver Presave {suffix}"),
 			comments: None,
-			receiver_type: Some("1".into()),
+			receiver_type: Some("Regulatory Authority".into()),
 			organization_name: Some("Child Receiver Org".into()),
 			receiver_identifier: None,
 			day_count_rule: None,
