@@ -2044,7 +2044,7 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		Some(json!({
 			"data": {
 				"name": "REST Narrative",
-				"case_narrative": "REST auto narrative",
+				"case_narrative": "REST auto narrative {D.2.2a} {D.5}",
 				"case_narrative_notation": "REST notation",
 				"additional_information": "REST sponsor additional information"
 			}
@@ -2052,6 +2052,10 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(
+		value["data"]["case_narrative"].as_str(),
+		Some("REST auto narrative {D.2.2a} {D.5}")
+	);
 	assert_eq!(
 		value["data"]["additional_information"].as_str(),
 		Some("REST sponsor additional information")
@@ -2083,7 +2087,7 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		format!("/api/presaves/narratives/{narrative_id}"),
 		Some(json!({
 			"data": {
-				"case_narrative": "REST auto narrative updated",
+				"case_narrative": "REST auto narrative updated {D.2.2a} {D.5}",
 				"additional_information": "REST sponsor additional information updated"
 			}
 		})),
@@ -2092,7 +2096,7 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(
 		value["data"]["case_narrative"].as_str(),
-		Some("REST auto narrative updated")
+		Some("REST auto narrative updated {D.2.2a} {D.5}")
 	);
 	assert_eq!(
 		value["data"]["additional_information"].as_str(),
@@ -2198,6 +2202,23 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		assert_eq!(status, StatusCode::OK, "{value:?}");
 		assert_eq!(value["data"]["deleted"].as_bool(), Some(true));
 	}
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::GET,
+		"/api/presaves/narratives".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let deleted_row = value["data"]
+		.as_array()
+		.ok_or("narrative list data is not array")?
+		.iter()
+		.find(|row| row["id"].as_str() == Some(&narrative_id.to_string()))
+		.ok_or("deleted narrative missing from list")?;
+	assert_eq!(deleted_row["deleted"].as_bool(), Some(true));
 
 	Ok(())
 }
