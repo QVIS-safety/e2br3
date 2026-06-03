@@ -1551,7 +1551,7 @@ ALTER TABLE meddra_terms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE meddra_terms FORCE ROW LEVEL SECURITY;
 CREATE POLICY meddra_terms_read ON meddra_terms
     FOR SELECT TO e2br3_app_role
-    USING (active = true);
+    USING (active = true OR is_current_user_admin());
 CREATE POLICY meddra_terms_insert ON meddra_terms
     FOR INSERT TO e2br3_app_role
     WITH CHECK (is_current_user_admin());
@@ -1567,7 +1567,7 @@ ALTER TABLE whodrug_products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE whodrug_products FORCE ROW LEVEL SECURITY;
 CREATE POLICY whodrug_products_read ON whodrug_products
     FOR SELECT TO e2br3_app_role
-    USING (active = true);
+    USING (active = true OR is_current_user_admin());
 CREATE POLICY whodrug_products_insert ON whodrug_products
     FOR INSERT TO e2br3_app_role
     WITH CHECK (is_current_user_admin());

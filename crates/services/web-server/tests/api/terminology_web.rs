@@ -571,7 +571,15 @@ async fn test_reimport_same_version_is_idempotent_for_meddra_and_whodrug(
 			.header("content-type", ct)
 			.body(Body::from(body))?;
 		let res = app.clone().oneshot(req).await?;
-		assert_eq!(res.status(), StatusCode::OK);
+		if res.status() != StatusCode::OK {
+			let status = res.status();
+			let body = to_bytes(res.into_body(), usize::MAX).await?;
+			return Err(format!(
+				"meddra import {meddra_version}/en status {status} body {}",
+				String::from_utf8_lossy(&body)
+			)
+			.into());
+		}
 	}
 
 	for (boundary, label) in [("----idem-w-a", "A"), ("----idem-w-b", "B")] {
@@ -589,7 +597,15 @@ async fn test_reimport_same_version_is_idempotent_for_meddra_and_whodrug(
 			.header("content-type", ct)
 			.body(Body::from(body))?;
 		let res = app.clone().oneshot(req).await?;
-		assert_eq!(res.status(), StatusCode::OK);
+		if res.status() != StatusCode::OK {
+			let status = res.status();
+			let body = to_bytes(res.into_body(), usize::MAX).await?;
+			return Err(format!(
+				"whodrug import {whodrug_version}/en status {status} body {}",
+				String::from_utf8_lossy(&body)
+			)
+			.into());
+		}
 	}
 
 	let req = Request::builder()
@@ -644,10 +660,12 @@ async fn test_language_specific_activation_and_search_switching() -> Result<()> 
 	let en_v1 = format!("E1{tag}");
 	let en_v2 = format!("E2{tag}");
 	let ko_v1 = format!("K1{tag}");
+	let en_lang = "qa";
+	let ko_lang = "qb";
 
 	for (version, language, en_or_ko, boundary) in [
-		(en_v1.clone(), "en", "EN1", "----lang-en1"),
-		(ko_v1.clone(), "ko", "KO1", "----lang-ko1"),
+		(en_v1.clone(), en_lang, "EN1", "----lang-en1"),
+		(ko_v1.clone(), ko_lang, "KO1", "----lang-ko1"),
 	] {
 		let zip = make_meddra_zip_bytes_with_terms(
 			&format!("{stem} {en_or_ko} LLT"),
@@ -671,7 +689,15 @@ async fn test_language_specific_activation_and_search_switching() -> Result<()> 
 			.header("content-type", ct)
 			.body(Body::from(body))?;
 		let res = app.clone().oneshot(req).await?;
-		assert_eq!(res.status(), StatusCode::OK);
+		if res.status() != StatusCode::OK {
+			let status = res.status();
+			let body = to_bytes(res.into_body(), usize::MAX).await?;
+			return Err(format!(
+				"meddra import {version}/{language} status {status} body {}",
+				String::from_utf8_lossy(&body)
+			)
+			.into());
+		}
 
 		let req = Request::builder()
 			.method("POST")
@@ -705,15 +731,37 @@ async fn test_language_specific_activation_and_search_switching() -> Result<()> 
 	let payload: serde_json::Value = serde_json::from_slice(&body)?;
 	let rows = payload["data"].as_array().cloned().unwrap_or_default();
 	assert!(rows.iter().any(|r| {
-		r["language"] == "en"
+		r["language"] == en_lang
 			&& r["version"] == en_v1
 			&& r["term"].as_str().unwrap_or("").contains("EN1")
 	}));
 	assert!(rows.iter().any(|r| {
-		r["language"] == "ko"
+		r["language"] == ko_lang
 			&& r["version"] == ko_v1
 			&& r["term"].as_str().unwrap_or("").contains("KO1")
 	}));
+
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!(
+			"/api/terminology/meddra?q={stem}&limit=100&language={ko_lang}"
+		))
+		.header("cookie", cookie.clone())
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	let rows = payload["data"].as_array().cloned().unwrap_or_default();
+	assert!(rows.iter().any(|r| {
+		r["language"] == ko_lang
+			&& r["version"] == ko_v1
+			&& r["term"].as_str().unwrap_or("").contains("KO1")
+	}));
+	assert!(
+		!rows.iter().any(|r| r["language"] == en_lang),
+		"language={ko_lang} search must not return English MedDRA rows: {rows:?}"
+	);
 
 	let zip_en_v2 = make_meddra_zip_bytes_with_terms(
 		&format!("{stem} EN2 LLT"),
@@ -731,7 +779,7 @@ async fn test_language_specific_activation_and_search_switching() -> Result<()> 
 	let req = Request::builder()
 		.method("POST")
 		.uri(format!(
-			"/api/terminology/import/meddra?version={en_v2}&language=en&dry_run=false"
+			"/api/terminology/import/meddra?version={en_v2}&language={en_lang}&dry_run=false"
 		))
 		.header("cookie", cookie.clone())
 		.header("content-type", ct)
@@ -742,7 +790,7 @@ async fn test_language_specific_activation_and_search_switching() -> Result<()> 
 	let req = Request::builder()
 		.method("POST")
 		.uri(format!(
-			"/api/terminology/releases/meddra/{en_v2}/approve?language=en"
+			"/api/terminology/releases/meddra/{en_v2}/approve?language={en_lang}"
 		))
 		.header("cookie", cookie.clone())
 		.body(Body::empty())?;
@@ -752,7 +800,7 @@ async fn test_language_specific_activation_and_search_switching() -> Result<()> 
 	let req = Request::builder()
 		.method("POST")
 		.uri(format!(
-			"/api/terminology/releases/meddra/{en_v2}/activate?language=en"
+			"/api/terminology/releases/meddra/{en_v2}/activate?language={en_lang}"
 		))
 		.header("cookie", cookie.clone())
 		.body(Body::empty())?;
@@ -770,17 +818,17 @@ async fn test_language_specific_activation_and_search_switching() -> Result<()> 
 	let payload: serde_json::Value = serde_json::from_slice(&body)?;
 	let rows = payload["data"].as_array().cloned().unwrap_or_default();
 	assert!(rows.iter().any(|r| {
-		r["language"] == "en"
+		r["language"] == en_lang
 			&& r["version"] == en_v2
 			&& r["term"].as_str().unwrap_or("").contains("EN2")
 	}));
 	assert!(!rows.iter().any(|r| {
-		r["language"] == "en"
+		r["language"] == en_lang
 			&& r["version"] == en_v1
 			&& r["term"].as_str().unwrap_or("").contains("EN1")
 	}));
 	assert!(rows.iter().any(|r| {
-		r["language"] == "ko"
+		r["language"] == ko_lang
 			&& r["version"] == ko_v1
 			&& r["term"].as_str().unwrap_or("").contains("KO1")
 	}));

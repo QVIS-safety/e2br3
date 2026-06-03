@@ -8,7 +8,7 @@ use modql::field::Fields;
 use modql::filter::{FilterNodes, OpValsBool, OpValsString};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
-use sqlx::FromRow;
+use sqlx::{FromRow, Postgres, QueryBuilder};
 
 // -- MeddraTerm
 
@@ -136,40 +136,28 @@ impl MeddraTermBmc {
 		mm: &ModelManager,
 		query: &str,
 		version: Option<&str>,
+		language: Option<&str>,
 		limit: i64,
 	) -> Result<Vec<MeddraTerm>> {
-		let sql = if let Some(_ver) = version {
-			format!(
-				"SELECT * FROM {} WHERE term ILIKE $1 AND version = $2 AND active = true ORDER BY term LIMIT $3",
-				Self::TABLE
-			)
-		} else {
-			format!(
-				"SELECT * FROM {} WHERE term ILIKE $1 AND active = true ORDER BY term LIMIT $2",
-				Self::TABLE
-			)
-		};
-
 		let search_pattern = format!("%{query}%");
+		let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(format!(
+			"SELECT * FROM {} WHERE term ILIKE ",
+			Self::TABLE
+		));
+		qb.push_bind(search_pattern);
+		qb.push(" AND active = true");
+		if let Some(ver) = version {
+			qb.push(" AND version = ").push_bind(ver);
+		}
+		if let Some(lang) = language {
+			qb.push(" AND language = ").push_bind(lang);
+		}
+		qb.push(" ORDER BY term LIMIT ").push_bind(limit);
 
-		let terms = if let Some(ver) = version {
-			mm.dbx()
-				.fetch_all(
-					sqlx::query_as::<_, MeddraTerm>(&sql)
-						.bind(&search_pattern)
-						.bind(ver)
-						.bind(limit),
-				)
-				.await?
-		} else {
-			mm.dbx()
-				.fetch_all(
-					sqlx::query_as::<_, MeddraTerm>(&sql)
-						.bind(&search_pattern)
-						.bind(limit),
-				)
-				.await?
-		};
+		let terms = mm
+			.dbx()
+			.fetch_all(qb.build_query_as::<MeddraTerm>())
+			.await?;
 
 		Ok(terms)
 	}

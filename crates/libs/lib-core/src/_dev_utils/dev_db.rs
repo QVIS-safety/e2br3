@@ -905,7 +905,7 @@ async fn apply_compatibility_alters(
 		"CREATE POLICY meddra_terms_read ON meddra_terms
 		 FOR SELECT
 		 TO e2br3_app_role
-		 USING (active = true)",
+		 USING (active = true OR is_current_user_admin())",
 	)
 	.await?;
 	sqlx::query("DROP POLICY IF EXISTS whodrug_products_read ON whodrug_products")
@@ -916,7 +916,7 @@ async fn apply_compatibility_alters(
 		"CREATE POLICY whodrug_products_read ON whodrug_products
 		 FOR SELECT
 		 TO e2br3_app_role
-		 USING (active = true)",
+		 USING (active = true OR is_current_user_admin())",
 	)
 	.await?;
 	for sql in dirty_trigger_compatibility_sql() {

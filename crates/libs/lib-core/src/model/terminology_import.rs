@@ -4,6 +4,7 @@
 //! dictionaries. HTTP handlers in `terminology_rest` are thin wrappers that
 //! call these functions.
 
+use crate::ctx::ROLE_SYSTEM_ADMIN;
 use crate::model::store::dbx::Dbx;
 use crate::model::ModelManager;
 use csv::ReaderBuilder;
@@ -435,7 +436,7 @@ pub async fn stage_meddra_rows(
 	mm: &ModelManager,
 	uploader_id: Uuid,
 	organization_id: Uuid,
-	role: &str,
+	_role: &str,
 	rows: &[MeddraRow],
 	version: &str,
 	language: &str,
@@ -444,7 +445,8 @@ pub async fn stage_meddra_rows(
 	let dbx = mm.dbx();
 	dbx.begin_txn().await.map_err(store_err)?;
 	let run_result = async {
-		set_full_context(dbx, uploader_id, organization_id, role).await?;
+		set_full_context(dbx, uploader_id, organization_id, ROLE_SYSTEM_ADMIN)
+			.await?;
 		upsert_release_header(
 			mm,
 			"meddra",
@@ -485,7 +487,7 @@ pub async fn stage_whodrug_rows(
 	mm: &ModelManager,
 	uploader_id: Uuid,
 	organization_id: Uuid,
-	role: &str,
+	_role: &str,
 	rows: &[WhodrugRow],
 	version: &str,
 	language: &str,
@@ -494,7 +496,8 @@ pub async fn stage_whodrug_rows(
 	let dbx = mm.dbx();
 	dbx.begin_txn().await.map_err(store_err)?;
 	let run_result = async {
-		set_full_context(dbx, uploader_id, organization_id, role).await?;
+		set_full_context(dbx, uploader_id, organization_id, ROLE_SYSTEM_ADMIN)
+			.await?;
 		upsert_release_header(
 			mm,
 			"whodrug",
@@ -517,7 +520,8 @@ pub async fn stage_whodrug_rows(
 	for chunk in rows.chunks(1000) {
 		dbx.begin_txn().await.map_err(store_err)?;
 		let run_result = async {
-			set_full_context(dbx, uploader_id, organization_id, role).await?;
+			set_full_context(dbx, uploader_id, organization_id, ROLE_SYSTEM_ADMIN)
+				.await?;
 			upsert_whodrug_rows(mm, chunk, version, language, false).await?;
 			Ok::<(), ImportError>(())
 		}
@@ -527,7 +531,8 @@ pub async fn stage_whodrug_rows(
 
 	dbx.begin_txn().await.map_err(store_err)?;
 	let run_result = async {
-		set_full_context(dbx, uploader_id, organization_id, role).await?;
+		set_full_context(dbx, uploader_id, organization_id, ROLE_SYSTEM_ADMIN)
+			.await?;
 		upsert_release_header(
 			mm,
 			"whodrug",
@@ -555,7 +560,7 @@ pub async fn activate_release_tx(
 	mm: &ModelManager,
 	actor_user_id: Uuid,
 	organization_id: Uuid,
-	role: &str,
+	_role: &str,
 	dictionary: &str,
 	target_version: &str,
 	language: &str,
@@ -566,7 +571,8 @@ pub async fn activate_release_tx(
 	let dbx = mm.dbx();
 	dbx.begin_txn().await.map_err(store_err)?;
 	let run_result = async {
-		set_full_context(dbx, actor_user_id, organization_id, role).await?;
+		set_full_context(dbx, actor_user_id, organization_id, ROLE_SYSTEM_ADMIN)
+			.await?;
 
 		let target = dbx
 			.fetch_optional(

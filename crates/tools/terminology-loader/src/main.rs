@@ -112,6 +112,9 @@ async fn load_meddra(
 
 		upsert_meddra_rows(mm, &rows, &args.version, &args.language).await?;
 
+		retire_other_active_releases(mm, "meddra", &args.version, &args.language)
+			.await?;
+
 		upsert_release_header(
 			mm,
 			"meddra",
@@ -216,6 +219,9 @@ async fn load_whodrug(
 			)
 			.await?;
 
+		retire_other_active_releases(mm, "whodrug", &args.version, &args.language)
+			.await?;
+
 		upsert_release_header(
 			mm,
 			"whodrug",
@@ -286,6 +292,30 @@ async fn set_loader_context(
 		root_ctx.role(),
 	)
 	.await?;
+	Ok(())
+}
+
+async fn retire_other_active_releases(
+	mm: &ModelManager,
+	dictionary: &str,
+	version: &str,
+	language: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"UPDATE terminology_releases
+				 SET status = 'retired', updated_at = NOW()
+				 WHERE dictionary = $1
+				   AND language = $2
+				   AND version <> $3
+				   AND status = 'active'",
+			)
+			.bind(dictionary)
+			.bind(language)
+			.bind(version),
+		)
+		.await?;
 	Ok(())
 }
 
@@ -712,6 +742,119 @@ mod tests {
 		assert_eq!(duplicate_code_rows[0].term, "LLT preferred duplicate");
 		assert_eq!(duplicate_code_rows[0].level, "LLT");
 		let _ = fs::remove_dir_all(dir);
+	}
+
+	#[tokio::test]
+	async fn load_meddra_allows_sequential_versions_for_same_language() {
+		std::env::var("SERVICE_DB_URL")
+			.expect("SERVICE_DB_URL must be set for terminology loader DB test");
+		std::env::set_var("SERVICE_WEB_FOLDER", "web-folder");
+		let mm = ModelManager::new().await.expect("model manager");
+		let tag = format!(
+			"t{}{}",
+			std::process::id(),
+			ZIP_COUNTER.fetch_add(1, Ordering::Relaxed)
+		);
+		let language =
+			format!("x{}", ZIP_COUNTER.fetch_add(1, Ordering::Relaxed) % 10);
+		let version_v1 = format!("{}-v1", tag);
+		let version_v2 = format!("{}-v2", tag);
+		let zip_v1 = write_zip(&[
+			("llt.asc", "10000001$First version term$$$$$$$$$$$$$$$$$$$$\n"),
+			(
+				"mdhier.asc",
+				"10000002$20000001$30000001$40000001$First PT$First HLT$First HLGT$First SOC$$$$\n",
+			),
+		]);
+		let zip_v2 = write_zip(&[
+			("llt.asc", "10000001$Second version term$$$$$$$$$$$$$$$$$$$$\n"),
+			(
+				"mdhier.asc",
+				"10000002$20000001$30000001$40000001$Second PT$Second HLT$Second HLGT$Second SOC$$$$\n",
+			),
+		]);
+
+		load_meddra(
+			&mm,
+			&LoadArgs {
+				input: zip_v1.clone(),
+				version: version_v1.clone(),
+				language: language.clone(),
+				dry_run: false,
+			},
+		)
+		.await
+		.expect("first MedDRA load");
+		load_meddra(
+			&mm,
+			&LoadArgs {
+				input: zip_v2.clone(),
+				version: version_v2.clone(),
+				language: language.clone(),
+				dry_run: false,
+			},
+		)
+		.await
+		.expect("second MedDRA load for same language");
+
+		mm.dbx()
+			.begin_txn()
+			.await
+			.expect("begin verification transaction");
+		set_loader_context(&mm)
+			.await
+			.expect("set verification loader context");
+		let counts: Vec<(String, bool, i64)> = mm
+			.dbx()
+			.fetch_all(
+				sqlx::query_as(
+					"SELECT version, active, COUNT(*)
+				 FROM meddra_terms
+				 WHERE language = $1 AND version IN ($2, $3)
+				 GROUP BY version, active
+				 ORDER BY version, active",
+				)
+				.bind(&language)
+				.bind(&version_v1)
+				.bind(&version_v2),
+			)
+			.await
+			.expect("loaded row counts");
+		let release_statuses: Vec<(String, String)> = mm
+			.dbx()
+			.fetch_all(
+				sqlx::query_as(
+					"SELECT version, status
+				 FROM terminology_releases
+				 WHERE dictionary = 'meddra' AND language = $1 AND version IN ($2, $3)
+				 ORDER BY version",
+				)
+				.bind(&language)
+				.bind(&version_v1)
+				.bind(&version_v2),
+			)
+			.await
+			.expect("release statuses");
+		mm.dbx()
+			.rollback_txn()
+			.await
+			.expect("rollback verification transaction");
+
+		assert!(counts
+			.iter()
+			.any(|row| row == &(version_v1.clone(), false, 5)));
+		assert!(counts
+			.iter()
+			.any(|row| row == &(version_v2.clone(), true, 5)));
+		assert!(release_statuses
+			.iter()
+			.any(|row| row == &(version_v1.clone(), "retired".to_string())));
+		assert!(release_statuses
+			.iter()
+			.any(|row| row == &(version_v2.clone(), "active".to_string())));
+
+		let _ = fs::remove_file(zip_v1);
+		let _ = fs::remove_file(zip_v2);
 	}
 
 	#[test]
