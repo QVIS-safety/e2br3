@@ -107,9 +107,16 @@ use crate::model::store::new_db_pool;
 
 #[allow(unexpected_cfgs)]
 #[cfg_attr(feature = "with-rpc", derive(rpc_router::RpcResource))]
-#[derive(Clone)]
 pub struct ModelManager {
 	dbx: Dbx,
+}
+
+impl Clone for ModelManager {
+	fn clone(&self) -> Self {
+		let dbx = Dbx::new(self.dbx.db().clone(), true)
+			.expect("cloning ModelManager should create a Dbx over the existing pool");
+		ModelManager { dbx }
+	}
 }
 
 impl ModelManager {

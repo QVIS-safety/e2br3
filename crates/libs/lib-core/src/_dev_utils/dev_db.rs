@@ -154,6 +154,89 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE reporter_presaves ADD COLUMN IF NOT EXISTS qualification_kr1 VARCHAR(1) CHECK (qualification_kr1 IN ('1', '2'))",
 		"ALTER TABLE study_presaves DROP CONSTRAINT IF EXISTS study_presaves_authority_valid",
 		"ALTER TABLE study_presaves DROP COLUMN IF EXISTS authority",
+		"ALTER TABLE study_presaves ADD COLUMN IF NOT EXISTS exclude_case_key_from_sync BOOLEAN",
+		"CREATE TABLE IF NOT EXISTS study_presave_products (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,
+			sequence_number INTEGER NOT NULL,
+			product_presave_id UUID REFERENCES product_presaves(id) ON DELETE SET NULL,
+			product_name VARCHAR(255),
+			deleted BOOLEAN NOT NULL DEFAULT false,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+			updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+			CONSTRAINT study_presave_products_sequence_unique UNIQUE (study_presave_id, sequence_number)
+		)",
+		"CREATE TABLE IF NOT EXISTS study_presave_reporters (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,
+			sequence_number INTEGER NOT NULL,
+			reporter_presave_id UUID REFERENCES reporter_presaves(id) ON DELETE SET NULL,
+			reporter_organization VARCHAR(255),
+			reporter_given_name VARCHAR(100),
+			reporter_qualification VARCHAR(50),
+			deleted BOOLEAN NOT NULL DEFAULT false,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+			updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+			CONSTRAINT study_presave_reporters_sequence_unique UNIQUE (study_presave_id, sequence_number)
+		)",
+		"CREATE INDEX IF NOT EXISTS idx_study_presave_products_parent ON study_presave_products(study_presave_id)",
+		"CREATE INDEX IF NOT EXISTS idx_study_presave_reporters_parent ON study_presave_reporters(study_presave_id)",
+		"GRANT SELECT, INSERT, UPDATE, DELETE ON study_presave_products TO e2br3_app_role",
+		"GRANT SELECT, INSERT, UPDATE, DELETE ON study_presave_reporters TO e2br3_app_role",
+		"ALTER TABLE study_presave_products ENABLE ROW LEVEL SECURITY",
+		"ALTER TABLE study_presave_products FORCE ROW LEVEL SECURITY",
+		"DROP POLICY IF EXISTS study_presave_products_via_parent ON study_presave_products",
+		"CREATE POLICY study_presave_products_via_parent ON study_presave_products
+			FOR ALL TO e2br3_app_role
+			USING (
+				EXISTS (
+					SELECT 1 FROM study_presaves p
+					WHERE p.id = study_presave_products.study_presave_id
+					AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+				)
+			)
+			WITH CHECK (
+				EXISTS (
+					SELECT 1 FROM study_presaves p
+					WHERE p.id = study_presave_products.study_presave_id
+					AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+				)
+			)",
+		"ALTER TABLE study_presave_reporters ENABLE ROW LEVEL SECURITY",
+		"ALTER TABLE study_presave_reporters FORCE ROW LEVEL SECURITY",
+		"DROP POLICY IF EXISTS study_presave_reporters_via_parent ON study_presave_reporters",
+		"CREATE POLICY study_presave_reporters_via_parent ON study_presave_reporters
+			FOR ALL TO e2br3_app_role
+			USING (
+				EXISTS (
+					SELECT 1 FROM study_presaves p
+					WHERE p.id = study_presave_reporters.study_presave_id
+					AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+				)
+			)
+			WITH CHECK (
+				EXISTS (
+					SELECT 1 FROM study_presaves p
+					WHERE p.id = study_presave_reporters.study_presave_id
+					AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+				)
+			)",
+		"DROP TRIGGER IF EXISTS audit_study_presave_products ON study_presave_products",
+		"CREATE TRIGGER audit_study_presave_products AFTER INSERT OR UPDATE OR DELETE ON study_presave_products
+			FOR EACH ROW EXECUTE FUNCTION audit_trigger_function()",
+		"DROP TRIGGER IF EXISTS audit_study_presave_reporters ON study_presave_reporters",
+		"CREATE TRIGGER audit_study_presave_reporters AFTER INSERT OR UPDATE OR DELETE ON study_presave_reporters
+			FOR EACH ROW EXECUTE FUNCTION audit_trigger_function()",
+		"DROP TRIGGER IF EXISTS update_study_presave_products_updated_at ON study_presave_products",
+		"CREATE TRIGGER update_study_presave_products_updated_at BEFORE UPDATE ON study_presave_products
+			FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
+		"DROP TRIGGER IF EXISTS update_study_presave_reporters_updated_at ON study_presave_reporters",
+		"CREATE TRIGGER update_study_presave_reporters_updated_at BEFORE UPDATE ON study_presave_reporters
+			FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
 		"ALTER TABLE narrative_presaves DROP CONSTRAINT IF EXISTS narrative_presaves_authority_valid",
 		"ALTER TABLE narrative_presaves DROP COLUMN IF EXISTS authority",
 		"ALTER TABLE narrative_presaves ADD COLUMN IF NOT EXISTS additional_information TEXT",
