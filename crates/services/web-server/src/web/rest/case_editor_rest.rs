@@ -2613,7 +2613,7 @@ async fn load_editor_dg_list_rows(
 			id: drug.id,
 			sequence_number: drug.sequence_number,
 			drug_role: drug.drug_characterization,
-			dg_prd_key: None,
+			dg_prd_key: drug.source_product_presave_id.map(|id| id.to_string()),
 			medicinal_product: drug.medicinal_product,
 			action_taken: drug.action_taken,
 			warning_count: 0,

@@ -113,8 +113,9 @@ pub struct ModelManager {
 
 impl Clone for ModelManager {
 	fn clone(&self) -> Self {
-		let dbx = Dbx::new(self.dbx.db().clone(), true)
-			.expect("cloning ModelManager should create a Dbx over the existing pool");
+		let dbx = Dbx::new(self.dbx.db().clone(), true).expect(
+			"cloning ModelManager should create a Dbx over the existing pool",
+		);
 		ModelManager { dbx }
 	}
 }

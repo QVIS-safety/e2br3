@@ -39,6 +39,7 @@ pub struct AuditRecordQuery {
 pub struct CaseAuditTrailRow {
 	pub no: i64,
 	pub audit_log_id: i64,
+	#[serde(with = "time::serde::rfc3339")]
 	pub date_time: OffsetDateTime,
 	pub user_display: Option<String>,
 	pub page: String,

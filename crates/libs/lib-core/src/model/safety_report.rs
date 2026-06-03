@@ -631,21 +631,39 @@ impl SafetyReportIdentificationBmc {
 	}
 
 	pub async fn get_by_case(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<SafetyReportIdentification> {
+		mm.dbx().begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+			let _ = mm.dbx().rollback_txn().await;
+			return Err(err);
+		}
 		let sql = format!("SELECT * FROM {} WHERE case_id = $1", Self::TABLE);
-		let report = mm
+		let result = mm
 			.dbx()
 			.fetch_optional(
 				sqlx::query_as::<_, SafetyReportIdentification>(&sql).bind(case_id),
 			)
-			.await?;
-		report.ok_or(crate::model::Error::EntityUuidNotFound {
-			entity: Self::TABLE,
-			id: case_id,
-		})
+			.await;
+		match result {
+			Ok(Some(report)) => {
+				mm.dbx().commit_txn().await?;
+				Ok(report)
+			}
+			Ok(None) => {
+				let _ = mm.dbx().rollback_txn().await;
+				Err(crate::model::Error::EntityUuidNotFound {
+					entity: Self::TABLE,
+					id: case_id,
+				})
+			}
+			Err(err) => {
+				let _ = mm.dbx().rollback_txn().await;
+				Err(err.into())
+			}
+		}
 	}
 
 	pub async fn update_by_case(

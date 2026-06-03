@@ -1911,6 +1911,37 @@ async fn editor_page_projections_do_not_embed_full_validation_issues() -> Result
 
 #[serial]
 #[tokio::test]
+async fn editor_dg_page_projection_returns_created_drug_rows() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-DG-PROJECTION").await?;
+
+	let drug_id = create_drug_fixture(&app, &cookie, &case_id).await?;
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/DG?authorities=fda,mfds"),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let rows = body["rows"]["rows"]
+		.as_array()
+		.ok_or("missing DG projection rows")?;
+	assert!(
+		rows.iter().any(|row| row["id"] == drug_id),
+		"DG projection should include the created drug row: {body}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_ae_detail_returns_one_reaction_by_uuid() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

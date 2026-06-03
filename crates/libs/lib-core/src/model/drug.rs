@@ -1148,44 +1148,81 @@ impl DrugInformationBmc {
 	}
 
 	pub async fn list_by_case(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<Vec<DrugInformation>> {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
 		let sql = format!(
 			"SELECT * FROM {} WHERE case_id = $1 ORDER BY sequence_number",
 			Self::TABLE
 		);
-		let drugs = mm
+		let result = mm
 			.dbx()
 			.fetch_all(sqlx::query_as::<_, DrugInformation>(&sql).bind(case_id))
-			.await?;
-		Ok(drugs)
+			.await;
+		match result {
+			Ok(drugs) => {
+				mm.dbx().commit_txn().await?;
+				Ok(drugs)
+			}
+			Err(err) => {
+				let _ = mm.dbx().rollback_txn().await;
+				Err(err.into())
+			}
+		}
 	}
 
 	pub async fn get_in_case(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 		id: Uuid,
 	) -> Result<DrugInformation> {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
 		let sql = format!(
 			"SELECT * FROM {} WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
-		let drug = mm
+		let result = mm
 			.dbx()
 			.fetch_optional(
 				sqlx::query_as::<_, DrugInformation>(&sql)
 					.bind(id)
 					.bind(case_id),
 			)
-			.await?
-			.ok_or(crate::model::Error::EntityUuidNotFound {
-				entity: Self::TABLE,
-				id,
-			})?;
-		Ok(drug)
+			.await;
+		match result {
+			Ok(Some(drug)) => {
+				mm.dbx().commit_txn().await?;
+				Ok(drug)
+			}
+			Ok(None) => {
+				let _ = mm.dbx().rollback_txn().await;
+				Err(crate::model::Error::EntityUuidNotFound {
+					entity: Self::TABLE,
+					id,
+				})
+			}
+			Err(err) => {
+				let _ = mm.dbx().rollback_txn().await;
+				Err(err.into())
+			}
+		}
 	}
 
 	pub async fn update_in_case(

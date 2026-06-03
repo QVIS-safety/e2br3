@@ -245,42 +245,79 @@ impl TestResultBmc {
 	}
 
 	pub async fn list_by_case(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<Vec<TestResult>> {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
 		let sql = format!(
 			"SELECT * FROM {} WHERE case_id = $1 ORDER BY sequence_number",
 			Self::TABLE
 		);
-		let tests = mm
+		let result = mm
 			.dbx()
 			.fetch_all(sqlx::query_as::<_, TestResult>(&sql).bind(case_id))
-			.await?;
-		Ok(tests)
+			.await;
+		match result {
+			Ok(tests) => {
+				mm.dbx().commit_txn().await?;
+				Ok(tests)
+			}
+			Err(err) => {
+				let _ = mm.dbx().rollback_txn().await;
+				Err(err.into())
+			}
+		}
 	}
 
 	pub async fn get_in_case(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 		id: Uuid,
 	) -> Result<TestResult> {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
 		let sql = format!(
 			"SELECT * FROM {} WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
-		let test = mm
+		let result = mm
 			.dbx()
 			.fetch_optional(
 				sqlx::query_as::<_, TestResult>(&sql).bind(id).bind(case_id),
 			)
-			.await?
-			.ok_or(crate::model::Error::EntityUuidNotFound {
-				entity: Self::TABLE,
-				id,
-			})?;
-		Ok(test)
+			.await;
+		match result {
+			Ok(Some(test)) => {
+				mm.dbx().commit_txn().await?;
+				Ok(test)
+			}
+			Ok(None) => {
+				let _ = mm.dbx().rollback_txn().await;
+				Err(crate::model::Error::EntityUuidNotFound {
+					entity: Self::TABLE,
+					id,
+				})
+			}
+			Err(err) => {
+				let _ = mm.dbx().rollback_txn().await;
+				Err(err.into())
+			}
+		}
 	}
 
 	pub async fn update_in_case(
