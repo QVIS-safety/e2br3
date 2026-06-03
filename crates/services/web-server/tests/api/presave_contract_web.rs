@@ -1515,6 +1515,97 @@ async fn test_presave_rest_rejects_deleting_referenced_parent() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_presave_rest_rejects_deleting_user_assigned_scope_templates(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let sender_org = format!("Assigned Sender Org {}", Uuid::new_v4());
+	let product_brand = format!("Assigned Product Brand {}", Uuid::new_v4());
+	let sponsor_study_number = format!("ASSIGNED-STUDY-{}", Uuid::new_v4().simple());
+
+	let assigned_sender_id = create_named_sender_presave_via_api(
+		&app,
+		&admin_cookie,
+		"fda",
+		format!("Assigned Sender {}", Uuid::new_v4()),
+		&sender_org,
+	)
+	.await?;
+
+	let product_parent_sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let assigned_product_id = create_brand_product_presave_for_sender_via_api(
+		&app,
+		&admin_cookie,
+		product_parent_sender_id,
+		format!("Assigned Product {}", Uuid::new_v4()),
+		&product_brand,
+	)
+	.await?;
+
+	let study_parent_sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
+	let study_parent_product_id = create_named_product_presave_for_sender_via_api(
+		&app,
+		&admin_cookie,
+		study_parent_sender_id,
+		format!("Assigned Study Parent Product {}", Uuid::new_v4()),
+		"Assigned Study Parent Product",
+	)
+	.await?;
+	let assigned_study_id = create_study_presave_with_sponsor_via_api(
+		&app,
+		&admin_cookie,
+		study_parent_product_id,
+		format!("Assigned Study {}", Uuid::new_v4()),
+		&sponsor_study_number,
+	)
+	.await?;
+
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({
+			"access_sender_ids": [sender_org],
+			"access_product_ids": [product_brand],
+			"access_study_ids": [sponsor_study_number]
+		}),
+	)
+	.await?;
+
+	for (uri, expected_message) in [
+		(
+			format!("/api/presaves/senders/{assigned_sender_id}"),
+			"sender presave is assigned to users",
+		),
+		(
+			format!("/api/presaves/products/{assigned_product_id}"),
+			"product presave is assigned to users",
+		),
+		(
+			format!("/api/presaves/studies/{assigned_study_id}"),
+			"study presave is assigned to users",
+		),
+	] {
+		let (status, value) =
+			request_json(&app, &admin_cookie, Method::DELETE, uri, None).await?;
+		assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+		assert!(
+			value.to_string().contains(expected_message),
+			"unexpected user assignment delete conflict body: {value:?}"
+		);
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_presave_rest_rejects_deleting_case_linked_templates() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

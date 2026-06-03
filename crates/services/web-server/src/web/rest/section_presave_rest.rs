@@ -145,6 +145,84 @@ fn presave_case_link_conflict(message: &str) -> Error {
 	.into()
 }
 
+async fn presave_scope_assigned_to_users(
+	mm: &ModelManager,
+	organization_id: Uuid,
+	scope_column: &str,
+	identifiers: Vec<String>,
+) -> Result<bool> {
+	if identifiers.is_empty() {
+		return Ok(false);
+	}
+	let sql = match scope_column {
+		"access_sender_ids" => {
+			r#"
+			SELECT EXISTS (
+				SELECT 1
+				FROM users u
+				CROSS JOIN LATERAL jsonb_array_elements_text(
+					CASE
+						WHEN u.access_sender_ids IS NULL OR btrim(u.access_sender_ids) = ''
+							THEN '[]'::jsonb
+						ELSE u.access_sender_ids::jsonb
+					END
+				) AS scope_value(value)
+				WHERE u.organization_id = $1
+				  AND u.active = true
+				  AND lower(btrim(scope_value.value)) = ANY($2)
+			)
+			"#
+		}
+		"access_product_ids" => {
+			r#"
+			SELECT EXISTS (
+				SELECT 1
+				FROM users u
+				CROSS JOIN LATERAL jsonb_array_elements_text(
+					CASE
+						WHEN u.access_product_ids IS NULL OR btrim(u.access_product_ids) = ''
+							THEN '[]'::jsonb
+						ELSE u.access_product_ids::jsonb
+					END
+				) AS scope_value(value)
+				WHERE u.organization_id = $1
+				  AND u.active = true
+				  AND lower(btrim(scope_value.value)) = ANY($2)
+			)
+			"#
+		}
+		"access_study_ids" => {
+			r#"
+			SELECT EXISTS (
+				SELECT 1
+				FROM users u
+				CROSS JOIN LATERAL jsonb_array_elements_text(
+					CASE
+						WHEN u.access_study_ids IS NULL OR btrim(u.access_study_ids) = ''
+							THEN '[]'::jsonb
+						ELSE u.access_study_ids::jsonb
+					END
+				) AS scope_value(value)
+				WHERE u.organization_id = $1
+				  AND u.active = true
+				  AND lower(btrim(scope_value.value)) = ANY($2)
+			)
+			"#
+		}
+		_ => return Ok(false),
+	};
+	let (exists,) = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (bool,)>(sql)
+				.bind(organization_id)
+				.bind(identifiers),
+		)
+		.await
+		.map_err(|err| Error::from(model::Error::from(err)))?;
+	Ok(exists)
+}
+
 async fn sender_presave_used_by_cases(
 	mm: &ModelManager,
 	organization_id: Uuid,
@@ -481,6 +559,21 @@ pub async fn update_sender_presave(
 	}
 	let current = SenderPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_sender_presave_scope(&ctx, &mm, &current).await?;
+	if data.deleted == Some(true) {
+		let identifiers = sender_scope_identifiers(&ctx, &mm, &current).await?;
+		if presave_scope_assigned_to_users(
+			&mm,
+			ctx.organization_id(),
+			"access_sender_ids",
+			identifiers,
+		)
+		.await?
+		{
+			return Err(presave_case_link_conflict(
+				"sender presave is assigned to users",
+			));
+		}
+	}
 	SenderPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = SenderPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_sender_presave_scope(&ctx, &mm, &entity).await?;
@@ -499,6 +592,19 @@ pub async fn delete_sender_presave(
 	if sender_presave_used_by_cases(&mm, ctx.organization_id(), id).await? {
 		return Err(presave_case_link_conflict(
 			"sender presave is used by cases",
+		));
+	}
+	let identifiers = sender_scope_identifiers(&ctx, &mm, &entity).await?;
+	if presave_scope_assigned_to_users(
+		&mm,
+		ctx.organization_id(),
+		"access_sender_ids",
+		identifiers,
+	)
+	.await?
+	{
+		return Err(presave_case_link_conflict(
+			"sender presave is assigned to users",
 		));
 	}
 	SenderPresaveBmc::update(
@@ -665,6 +771,25 @@ pub async fn update_sender_presave_details(
 
 	let ParamsForUpdate { data } = params;
 	require_sender_detail_operation_permissions(&ctx, &mm, id, &data).await?;
+	if data
+		.parent
+		.as_ref()
+		.is_some_and(|parent| parent.deleted == Some(true))
+	{
+		let identifiers = sender_scope_identifiers(&ctx, &mm, &current).await?;
+		if presave_scope_assigned_to_users(
+			&mm,
+			ctx.organization_id(),
+			"access_sender_ids",
+			identifiers,
+		)
+		.await?
+		{
+			return Err(presave_case_link_conflict(
+				"sender presave is assigned to users",
+			));
+		}
+	}
 	preflight_sender_presave_details(&ctx, &mm, id, &data).await?;
 
 	apply_sender_presave_details(&ctx, &mm, id, data).await?;
@@ -1847,6 +1972,19 @@ pub async fn update_product_presave(
 			"product presave is used by cases",
 		));
 	}
+	if data.deleted == Some(true)
+		&& presave_scope_assigned_to_users(
+			&mm,
+			ctx.organization_id(),
+			"access_product_ids",
+			product_scope_identifiers(&current),
+		)
+		.await?
+	{
+		return Err(presave_case_link_conflict(
+			"product presave is assigned to users",
+		));
+	}
 	ProductPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = ProductPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &entity).await?;
@@ -1865,6 +2003,18 @@ pub async fn delete_product_presave(
 	if product_presave_used_by_cases(&mm, ctx.organization_id(), id).await? {
 		return Err(presave_case_link_conflict(
 			"product presave is used by cases",
+		));
+	}
+	if presave_scope_assigned_to_users(
+		&mm,
+		ctx.organization_id(),
+		"access_product_ids",
+		product_scope_identifiers(&entity),
+	)
+	.await?
+	{
+		return Err(presave_case_link_conflict(
+			"product presave is assigned to users",
 		));
 	}
 	ProductPresaveBmc::update(
@@ -2021,6 +2171,22 @@ pub async fn update_product_presave_details(
 	{
 		return Err(presave_case_link_conflict(
 			"product presave is used by cases",
+		));
+	}
+	if data
+		.parent
+		.as_ref()
+		.is_some_and(|parent| parent.deleted == Some(true))
+		&& presave_scope_assigned_to_users(
+			&mm,
+			ctx.organization_id(),
+			"access_product_ids",
+			product_scope_identifiers(&current),
+		)
+		.await?
+	{
+		return Err(presave_case_link_conflict(
+			"product presave is assigned to users",
 		));
 	}
 	preflight_product_presave_details(&ctx, &mm, id, &data).await?;
@@ -2715,6 +2881,19 @@ pub async fn update_study_presave(
 	}
 	let current = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &current).await?;
+	if data.deleted == Some(true)
+		&& presave_scope_assigned_to_users(
+			&mm,
+			ctx.organization_id(),
+			"access_study_ids",
+			study_scope_identifiers(&current),
+		)
+		.await?
+	{
+		return Err(presave_case_link_conflict(
+			"study presave is assigned to users",
+		));
+	}
 	StudyPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &entity).await?;
@@ -2732,6 +2911,18 @@ pub async fn delete_study_presave(
 	ensure_study_presave_scope(&ctx, &mm, &entity).await?;
 	if study_presave_used_by_cases(&mm, ctx.organization_id(), id).await? {
 		return Err(presave_case_link_conflict("study presave is used by cases"));
+	}
+	if presave_scope_assigned_to_users(
+		&mm,
+		ctx.organization_id(),
+		"access_study_ids",
+		study_scope_identifiers(&entity),
+	)
+	.await?
+	{
+		return Err(presave_case_link_conflict(
+			"study presave is assigned to users",
+		));
 	}
 	StudyPresaveBmc::update(
 		&ctx,
@@ -2917,6 +3108,22 @@ pub async fn update_study_presave_details(
 
 	let ParamsForUpdate { data } = params;
 	require_study_detail_operation_permissions(&ctx, &data)?;
+	if data
+		.parent
+		.as_ref()
+		.is_some_and(|parent| parent.deleted == Some(true))
+		&& presave_scope_assigned_to_users(
+			&mm,
+			ctx.organization_id(),
+			"access_study_ids",
+			study_scope_identifiers(&current),
+		)
+		.await?
+	{
+		return Err(presave_case_link_conflict(
+			"study presave is assigned to users",
+		));
+	}
 	preflight_study_presave_details(&ctx, &mm, id, &data).await?;
 	apply_study_presave_details(&ctx, &mm, id, data).await?;
 
