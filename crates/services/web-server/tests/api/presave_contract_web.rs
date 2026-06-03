@@ -582,6 +582,63 @@ async fn test_receiver_presave_alignment_contract() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
 
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/receivers/{receiver_id}"),
+		Some(json!({
+			"data": {
+				"nsae_non_solicited_not_applicable": true
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert!(
+		value["data"]["nsae_non_solicited_day_count"].is_null(),
+		"{value:?}"
+	);
+	assert_eq!(
+		value["data"]["nsae_non_solicited_not_applicable"].as_bool(),
+		Some(true)
+	);
+
+	let sender_id =
+		create_sender_presave_via_api(&app, &admin_cookie, "legacy-unused").await?;
+	let product_value = post_json_created(
+		&app,
+		&admin_cookie,
+		"/api/presaves/products".to_string(),
+		json!({
+			"data": {
+				"name": format!("Receiver-linked Product {}", Uuid::new_v4()),
+				"sender_presave_id": sender_id,
+				"product_id": format!("RECEIVER-LINKED-{}", Uuid::new_v4()),
+				"medicinal_product": "Receiver linked product",
+				"original_manufacturer": receiver_name
+			}
+		}),
+	)
+	.await?;
+	let _product_id = data_id(&product_value)?;
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::DELETE,
+		format!("/api/presaves/receivers/{receiver_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+	assert!(
+		value
+			.to_string()
+			.contains("receiver presave is used by product presaves"),
+		"unexpected receiver reference body: {value:?}"
+	);
+
 	Ok(())
 }
 

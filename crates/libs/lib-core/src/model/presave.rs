@@ -732,7 +732,9 @@ impl ReceiverPresaveBmc {
 		id: Uuid,
 		data: ReceiverPresaveForUpdate,
 	) -> Result<()> {
-		if data.deleted != Some(true) {
+		if data.deleted == Some(true) {
+			Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
+		} else {
 			let current = Self::get(ctx, mm, id).await?;
 			let receiver_type = data
 				.receiver_type
@@ -743,31 +745,68 @@ impl ReceiverPresaveBmc {
 				.as_deref()
 				.or(current.organization_name.as_deref());
 			Self::validate_identity(receiver_type, organization_name)?;
+			let clear_nsae_non_solicited_day_count =
+				data.nsae_non_solicited_not_applicable == Some(true);
+			let clear_sae_non_solicited_day_count =
+				data.sae_non_solicited_not_applicable == Some(true);
+			let clear_nsae_solicited_day_count =
+				data.nsae_solicited_not_applicable == Some(true);
+			let clear_sae_solicited_day_count =
+				data.sae_solicited_not_applicable == Some(true);
 			Self::validate_timeline(
-				data.nsae_non_solicited_day_count
-					.or(current.nsae_non_solicited_day_count),
+				if clear_nsae_non_solicited_day_count {
+					None
+				} else {
+					data.nsae_non_solicited_day_count
+						.or(current.nsae_non_solicited_day_count)
+				},
 				data.nsae_non_solicited_not_applicable
 					.or(current.nsae_non_solicited_not_applicable),
-				data.sae_non_solicited_day_count
-					.or(current.sae_non_solicited_day_count),
+				if clear_sae_non_solicited_day_count {
+					None
+				} else {
+					data.sae_non_solicited_day_count
+						.or(current.sae_non_solicited_day_count)
+				},
 				data.sae_non_solicited_not_applicable
 					.or(current.sae_non_solicited_not_applicable),
-				data.nsae_solicited_day_count
-					.or(current.nsae_solicited_day_count),
+				if clear_nsae_solicited_day_count {
+					None
+				} else {
+					data.nsae_solicited_day_count
+						.or(current.nsae_solicited_day_count)
+				},
 				data.nsae_solicited_not_applicable
 					.or(current.nsae_solicited_not_applicable),
-				data.sae_solicited_day_count
-					.or(current.sae_solicited_day_count),
+				if clear_sae_solicited_day_count {
+					None
+				} else {
+					data.sae_solicited_day_count
+						.or(current.sae_solicited_day_count)
+				},
 				data.sae_solicited_not_applicable
 					.or(current.sae_solicited_not_applicable),
 			)?;
 			Self::ensure_unique_identity(ctx, mm, Some(id), organization_name)
 				.await?;
+			base_uuid::update::<Self, _>(ctx, mm, id, data).await?;
+			Self::clear_not_applicable_day_counts(
+				ctx,
+				mm,
+				id,
+				clear_nsae_non_solicited_day_count,
+				clear_sae_non_solicited_day_count,
+				clear_nsae_solicited_day_count,
+				clear_sae_solicited_day_count,
+			)
+			.await?;
+			return Ok(());
 		}
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
 		base_uuid::delete::<Self>(ctx, mm, id).await
 	}
 
@@ -857,6 +896,98 @@ impl ReceiverPresaveBmc {
 		} else {
 			Ok(())
 		}
+	}
+
+	async fn ensure_not_referenced_by_products(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<()> {
+		let receiver = Self::get(ctx, mm, id).await?;
+		let receiver_names = [
+			normalized_text(Some(&receiver.name)),
+			normalized_text(receiver.organization_name.as_deref()),
+		];
+		let referenced = ProductPresaveBmc::list(ctx, mm, None)
+			.await?
+			.into_iter()
+			.any(|row| {
+				!row.deleted
+					&& normalized_text(row.original_manufacturer.as_deref())
+						.is_some_and(|manufacturer| {
+							receiver_names
+								.iter()
+								.flatten()
+								.any(|receiver_name| receiver_name == &manufacturer)
+						})
+			});
+		if referenced {
+			Err(relationship_conflict(
+				"receiver presave is used by product presaves",
+			))
+		} else {
+			Ok(())
+		}
+	}
+
+	async fn clear_not_applicable_day_counts(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		clear_nsae_non_solicited_day_count: bool,
+		clear_sae_non_solicited_day_count: bool,
+		clear_nsae_solicited_day_count: bool,
+		clear_sae_solicited_day_count: bool,
+	) -> Result<()> {
+		if !clear_nsae_non_solicited_day_count
+			&& !clear_sae_non_solicited_day_count
+			&& !clear_nsae_solicited_day_count
+			&& !clear_sae_solicited_day_count
+		{
+			return Ok(());
+		}
+
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let result = dbx
+			.execute(
+				sqlx::query(
+					"UPDATE receiver_presaves SET \
+					 nsae_non_solicited_day_count = CASE WHEN $2 THEN NULL ELSE nsae_non_solicited_day_count END, \
+					 sae_non_solicited_day_count = CASE WHEN $3 THEN NULL ELSE sae_non_solicited_day_count END, \
+					 nsae_solicited_day_count = CASE WHEN $4 THEN NULL ELSE nsae_solicited_day_count END, \
+					 sae_solicited_day_count = CASE WHEN $5 THEN NULL ELSE sae_solicited_day_count END, \
+					 updated_by = $6, updated_at = NOW() \
+					 WHERE id = $1",
+				)
+				.bind(id)
+				.bind(clear_nsae_non_solicited_day_count)
+				.bind(clear_sae_non_solicited_day_count)
+				.bind(clear_nsae_solicited_day_count)
+				.bind(clear_sae_solicited_day_count)
+				.bind(ctx.user_id()),
+			)
+			.await;
+		let count = match result {
+			Ok(count) => count,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		if count == 0 {
+			dbx.rollback_txn().await?;
+			return Err(crate::model::Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
+		}
+		dbx.commit_txn().await?;
+		Ok(())
 	}
 }
 
