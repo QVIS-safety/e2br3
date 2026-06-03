@@ -1931,13 +1931,6 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 
 	let matrix_privileges = json!([
 		{
-			"menu_key": "home_notice",
-			"can_read": true,
-			"can_edit": true,
-			"can_review": false,
-			"can_lock": false
-		},
-		{
 			"menu_key": "home_workflow",
 			"can_read": true,
 			"can_edit": false,
@@ -1945,28 +1938,21 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 			"can_lock": false
 		},
 		{
-			"menu_key": "monitoring",
-			"can_read": true,
-			"can_edit": false,
-			"can_review": false,
-			"can_lock": true
-		},
-		{
-			"menu_key": "sync",
+			"menu_key": "case",
 			"can_read": true,
 			"can_edit": true,
 			"can_review": true,
-			"can_lock": false
-		},
-		{
-			"menu_key": "sync_mapping",
-			"can_read": true,
-			"can_edit": false,
-			"can_review": true,
 			"can_lock": true
 		},
 		{
-			"menu_key": "report_due_mail",
+			"menu_key": "info",
+			"can_read": true,
+			"can_edit": true,
+			"can_review": false,
+			"can_lock": false
+		},
+		{
+			"menu_key": "import",
 			"can_read": true,
 			"can_edit": true,
 			"can_review": false,
@@ -2003,12 +1989,10 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 		.as_array()
 		.ok_or("persisted role privileges should be an array")?;
 	for (menu_key, can_read, can_edit, can_review, can_lock) in [
-		("home_notice", true, true, false, false),
 		("home_workflow", true, false, true, false),
-		("monitoring", true, false, false, true),
-		("sync", true, true, true, false),
-		("sync_mapping", true, false, true, true),
-		("report_due_mail", true, true, false, false),
+		("case", true, true, true, true),
+		("info", true, true, false, false),
+		("import", true, true, false, false),
 	] {
 		let row = privileges
 			.iter()
@@ -2018,6 +2002,38 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 		assert_eq!(row["can_edit"].as_bool(), Some(can_edit), "{menu_key}");
 		assert_eq!(row["can_review"].as_bool(), Some(can_review), "{menu_key}");
 		assert_eq!(row["can_lock"].as_bool(), Some(can_lock), "{menu_key}");
+	}
+	for menu_key in [
+		"home_notice",
+		"report_due_mail",
+		"monitoring",
+		"sync",
+		"sync_mapping",
+	] {
+		let invalid_privileges = json!([
+			{
+				"menu_key": menu_key,
+				"can_read": true,
+				"can_edit": true,
+				"can_review": false,
+				"can_lock": false
+			}
+		]);
+		let (status, value) = request_json(
+			&app,
+			"PUT",
+			&admin_cookie,
+			format!("/api/admin/permission-profiles/{profile_id}"),
+			Some(json!({ "data": { "privileges": invalid_privileges } })),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+		assert!(
+			value
+				.to_string()
+				.contains(&format!("unknown role privilege menu '{menu_key}'")),
+			"unexpected unsupported privilege body for {menu_key}: {value:?}"
+		);
 	}
 
 	Ok(())
