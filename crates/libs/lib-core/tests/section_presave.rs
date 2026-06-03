@@ -1633,6 +1633,24 @@ async fn section_presave_receiver_allows_legacy_type_update() -> Result<()> {
 			Some("legacy receiver still editable")
 		);
 
+		ReceiverPresaveBmc::update(
+			&ctx,
+			&mm,
+			receiver_id,
+			ReceiverPresaveForUpdate {
+				receiver_type: Some(legacy_type.into()),
+				description: Some("legacy receiver round-tripped".into()),
+				..Default::default()
+			},
+		)
+		.await?;
+		let receiver = ReceiverPresaveBmc::get(&ctx, &mm, receiver_id).await?;
+		assert_eq!(receiver.receiver_type.as_deref(), Some(legacy_type));
+		assert_eq!(
+			receiver.description.as_deref(),
+			Some("legacy receiver round-tripped")
+		);
+
 		ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
 	}
 

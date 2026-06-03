@@ -736,18 +736,15 @@ impl ReceiverPresaveBmc {
 			Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
 		} else {
 			let current = Self::get(ctx, mm, id).await?;
-			let receiver_type = data
-				.receiver_type
-				.as_deref()
-				.or(current.receiver_type.as_deref());
-			let receiver_type_for_validation =
-				Self::legacy_receiver_type_label(receiver_type).or(receiver_type);
+			let receiver_type = data.receiver_type.as_deref();
+			let current_receiver_type = current.receiver_type.as_deref();
 			let organization_name = data
 				.organization_name
 				.as_deref()
 				.or(current.organization_name.as_deref());
-			Self::validate_identity(
-				receiver_type_for_validation,
+			Self::validate_update_identity(
+				receiver_type,
+				current_receiver_type,
 				organization_name,
 			)?;
 			let clear_nsae_non_solicited_day_count =
@@ -833,14 +830,45 @@ impl ReceiverPresaveBmc {
 		}
 	}
 
-	fn legacy_receiver_type_label(
+	fn validate_update_identity(
 		receiver_type: Option<&str>,
-	) -> Option<&'static str> {
-		match receiver_type.map(str::trim) {
-			Some("1") => Some(Self::RECEIVER_TYPE_ORIGINAL_MANUFACTURER),
-			Some("2") => Some(Self::RECEIVER_TYPE_REGULATORY_AUTHORITY),
-			_ => None,
+		current_receiver_type: Option<&str>,
+		organization_name: Option<&str>,
+	) -> Result<()> {
+		let effective_receiver_type = receiver_type.or(current_receiver_type);
+		if Self::is_unchanged_legacy_receiver_type(
+			receiver_type,
+			current_receiver_type,
+		) {
+			require_identity(
+				normalized_text(effective_receiver_type).is_some()
+					&& normalized_text(organization_name).is_some(),
+				"receiver presave requires receiver_type and organization_name",
+			)?;
+			return Ok(());
 		}
+		Self::validate_identity(effective_receiver_type, organization_name)
+	}
+
+	fn is_unchanged_legacy_receiver_type(
+		receiver_type: Option<&str>,
+		current_receiver_type: Option<&str>,
+	) -> bool {
+		let Some(current_receiver_type) = current_receiver_type.map(str::trim)
+		else {
+			return false;
+		};
+		if !Self::is_legacy_receiver_type_code(current_receiver_type) {
+			return false;
+		}
+		match receiver_type.map(str::trim) {
+			Some(receiver_type) => receiver_type == current_receiver_type,
+			None => true,
+		}
+	}
+
+	fn is_legacy_receiver_type_code(receiver_type: &str) -> bool {
+		matches!(receiver_type, "1" | "2" | "3" | "4" | "5" | "6")
 	}
 
 	fn validate_timeline_category(
