@@ -16,11 +16,11 @@ use lib_core::model::presave::{
 	ProductPresaveSubstanceForCreate, ProductPresaveSubstanceForUpdate,
 	ReceiverPresaveBmc, ReceiverPresaveConsigneeBmc,
 	ReceiverPresaveConsigneeForCreate, ReceiverPresaveConsigneeForUpdate,
-	ReceiverPresaveForCreate, ReporterPresaveBmc, ReporterPresaveForCreate,
-	ReporterPresaveForUpdate, SenderPresaveBmc, SenderPresaveForCreate,
-	SenderPresaveForUpdate, SenderPresaveGatewayBmc, SenderPresaveGatewayForCreate,
-	SenderPresaveGatewayForUpdate, SenderPresaveResponsiblePersonBmc,
-	SenderPresaveResponsiblePersonForCreate,
+	ReceiverPresaveForCreate, ReceiverPresaveForUpdate, ReporterPresaveBmc,
+	ReporterPresaveForCreate, ReporterPresaveForUpdate, SenderPresaveBmc,
+	SenderPresaveForCreate, SenderPresaveForUpdate, SenderPresaveGatewayBmc,
+	SenderPresaveGatewayForCreate, SenderPresaveGatewayForUpdate,
+	SenderPresaveResponsiblePersonBmc, SenderPresaveResponsiblePersonForCreate,
 	SenderPresaveResponsiblePersonForUpdate, StudyPresaveBmc, StudyPresaveForCreate,
 	StudyPresaveProductBmc, StudyPresaveProductForCreate,
 	StudyPresaveProductForUpdate, StudyPresaveRegistrationNumberBmc,
@@ -1581,6 +1581,118 @@ async fn section_presave_parent_bmcs_reject_delete_when_referenced() -> Result<(
 		ProductPresaveBmc::delete(&ctx, &mm, product_id).await,
 		"product presave is used by study presaves",
 	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn section_presave_receiver_allows_legacy_type_update() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	for legacy_type in ["1", "2"] {
+		let receiver_id = Uuid::new_v4();
+		let mut tx = mm.dbx().db().begin().await?;
+		set_user_context(&mut tx, demo_user_id()).await?;
+		set_org_context(&mut tx, demo_org_id(), "system_admin").await?;
+
+		sqlx::query(
+			"INSERT INTO receiver_presaves (
+				id, organization_id, name, receiver_type, organization_name,
+				created_by, updated_by
+			)
+			VALUES ($1, $2, $3, $4, $5, $6, $6)",
+		)
+		.bind(receiver_id)
+		.bind(demo_org_id())
+		.bind(format!("Legacy Receiver Template {legacy_type} {suffix}"))
+		.bind(legacy_type)
+		.bind(format!("Legacy Receiver Org {legacy_type} {suffix}"))
+		.bind(demo_user_id())
+		.execute(&mut *tx)
+		.await?;
+		tx.commit().await?;
+
+		ReceiverPresaveBmc::update(
+			&ctx,
+			&mm,
+			receiver_id,
+			ReceiverPresaveForUpdate {
+				description: Some("legacy receiver still editable".into()),
+				..Default::default()
+			},
+		)
+		.await?;
+		let receiver = ReceiverPresaveBmc::get(&ctx, &mm, receiver_id).await?;
+		assert_eq!(receiver.receiver_type.as_deref(), Some(legacy_type));
+		assert_eq!(
+			receiver.description.as_deref(),
+			Some("legacy receiver still editable")
+		);
+
+		ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn section_presave_receiver_delete_uses_receiver_name_not_template_name(
+) -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create(format!("Receiver Delete Sender {suffix}")),
+	)
+	.await?;
+	let template_name = format!("Receiver Delete Template {suffix}");
+	let receiver_org = format!("Receiver Delete Org {suffix}");
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			name: template_name.clone(),
+			comments: None,
+			receiver_type: Some("Regulatory Authority".into()),
+			organization_name: Some(receiver_org.clone()),
+			receiver_identifier: None,
+			day_count_rule: None,
+			nsae_solicited_day_count: None,
+			nsae_solicited_not_applicable: None,
+			nsae_non_solicited_day_count: None,
+			nsae_non_solicited_not_applicable: None,
+			sae_solicited_day_count: None,
+			sae_solicited_not_applicable: None,
+			sae_non_solicited_day_count: None,
+			sae_non_solicited_not_applicable: None,
+			description: None,
+		},
+	)
+	.await?;
+
+	let mut product = product_presave_create(
+		RegulatoryAuthority::Fda,
+		format!("Template Name Manufacturer Product {suffix}"),
+		sender_id,
+	);
+	product.original_manufacturer = Some(template_name);
+	let product_id = ProductPresaveBmc::create(&ctx, &mm, product).await?;
+
+	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
+	let deleted_receiver = ReceiverPresaveBmc::get(&ctx, &mm, receiver_id).await?;
+	assert!(deleted_receiver.deleted);
+
+	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
+	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
 
 	Ok(())
 }

@@ -740,11 +740,16 @@ impl ReceiverPresaveBmc {
 				.receiver_type
 				.as_deref()
 				.or(current.receiver_type.as_deref());
+			let receiver_type_for_validation =
+				Self::legacy_receiver_type_label(receiver_type).or(receiver_type);
 			let organization_name = data
 				.organization_name
 				.as_deref()
 				.or(current.organization_name.as_deref());
-			Self::validate_identity(receiver_type, organization_name)?;
+			Self::validate_identity(
+				receiver_type_for_validation,
+				organization_name,
+			)?;
 			let clear_nsae_non_solicited_day_count =
 				data.nsae_non_solicited_not_applicable == Some(true);
 			let clear_sae_non_solicited_day_count =
@@ -828,6 +833,16 @@ impl ReceiverPresaveBmc {
 		}
 	}
 
+	fn legacy_receiver_type_label(
+		receiver_type: Option<&str>,
+	) -> Option<&'static str> {
+		match receiver_type.map(str::trim) {
+			Some("1") => Some(Self::RECEIVER_TYPE_ORIGINAL_MANUFACTURER),
+			Some("2") => Some(Self::RECEIVER_TYPE_REGULATORY_AUTHORITY),
+			_ => None,
+		}
+	}
+
 	fn validate_timeline_category(
 		label: &str,
 		day_count: Option<i32>,
@@ -904,10 +919,7 @@ impl ReceiverPresaveBmc {
 		id: Uuid,
 	) -> Result<()> {
 		let receiver = Self::get(ctx, mm, id).await?;
-		let receiver_names = [
-			normalized_text(Some(&receiver.name)),
-			normalized_text(receiver.organization_name.as_deref()),
-		];
+		let receiver_name = normalized_text(receiver.organization_name.as_deref());
 		let referenced = ProductPresaveBmc::list(ctx, mm, None)
 			.await?
 			.into_iter()
@@ -915,10 +927,9 @@ impl ReceiverPresaveBmc {
 				!row.deleted
 					&& normalized_text(row.original_manufacturer.as_deref())
 						.is_some_and(|manufacturer| {
-							receiver_names
-								.iter()
-								.flatten()
-								.any(|receiver_name| receiver_name == &manufacturer)
+							receiver_name.as_ref().is_some_and(|receiver_name| {
+								receiver_name == &manufacturer
+							})
 						})
 			});
 		if referenced {
