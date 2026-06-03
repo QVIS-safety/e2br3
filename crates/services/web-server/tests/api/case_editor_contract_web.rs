@@ -1218,6 +1218,80 @@ async fn editor_sd_page_patch_persists_sender_information_row() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn editor_sd_page_patch_accepts_batch_receiver_identifier_change() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &cookie, "EDITOR-SD-BATCH", &["ich"]).await?;
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/message-header"),
+		json!({
+			"data": {
+				"case_id": case_id,
+				"message_number": "MSG-001",
+				"message_sender_identifier": "SENDER",
+				"message_receiver_identifier": "OLD-RECEIVER",
+				"message_date": "20260603120000"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body}");
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/SD"),
+		json!({
+			"authorities": ["fda"],
+			"changes": {
+				"messageReceiverIdentifier": { "value": "CDER" },
+				"batchReceiverIdentifier": { "value": "ZZFDA" }
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["rows"]["messageHeader"]["message_receiver_identifier"],
+		"CDER"
+	);
+	assert_eq!(
+		body["rows"]["messageHeader"]["batch_receiver_identifier"],
+		"ZZFDA"
+	);
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/SD"),
+		json!({
+			"changes": {
+				"batchReceiverIdentifier": { "value": "" }
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["rows"]["messageHeader"]["batch_receiver_identifier"],
+		""
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_lr_page_patch_persists_literature_reference_row() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

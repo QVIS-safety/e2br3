@@ -37,7 +37,7 @@ use lib_core::model::drug::{
 };
 use lib_core::model::drug_reaction_assessment::DrugReactionAssessmentBmc;
 use lib_core::model::drug_recurrence::DrugRecurrenceInformationBmc;
-use lib_core::model::message_header::MessageHeaderBmc;
+use lib_core::model::message_header::{MessageHeaderBmc, MessageHeaderForUpdate};
 use lib_core::model::narrative::{
 	CaseSummaryInformationBmc, CaseSummaryInformationFilter,
 	NarrativeInformationBmc, NarrativeInformationForCreate,
@@ -875,6 +875,9 @@ fn direct_sd_rows_from_changes(
 			"messageReceiverIdentifier" => {
 				("messageHeader", "messageReceiverIdentifier")
 			}
+			"batchReceiverIdentifier" => {
+				("messageHeader", "batchReceiverIdentifier")
+			}
 			"receiverOrganization" => ("receiverInformation", "organizationName"),
 			"receiverCountryCode" => ("receiverInformation", "countryCode"),
 			_ => {
@@ -1005,75 +1008,118 @@ async fn apply_sd_page_rows_patch(
 			"receiverInformation",
 		],
 	)?;
-	let Some(sender) = optional_row_object(page_id, rows, "senderInformation")?
-	else {
-		return Ok(());
-	};
-	let update = SenderInformationForUpdate {
-		source_sender_presave_id: uuid_field(
-			sender,
-			&["sourceSenderPresaveId", "source_sender_presave_id"],
-		),
-		sender_type: string_field(sender, &["senderType", "sender_type"]),
-		health_professional_type_kr1: string_field(
-			sender,
-			&["healthProfessionalTypeKr1", "health_professional_type_kr1"],
-		),
-		organization_name: string_field(
-			sender,
-			&["organizationName", "organization_name"],
-		),
-		department: string_field(sender, &["department"]),
-		street_address: string_field(sender, &["streetAddress", "street_address"]),
-		city: string_field(sender, &["city"]),
-		state: string_field(sender, &["state"]),
-		postcode: string_field(sender, &["postcode"]),
-		country_code: string_field(sender, &["countryCode", "country_code"]),
-		person_title: string_field(sender, &["personTitle", "person_title"]),
-		person_given_name: string_field(
-			sender,
-			&["personGivenName", "person_given_name"],
-		),
-		person_middle_name: string_field(
-			sender,
-			&["personMiddleName", "person_middle_name"],
-		),
-		person_family_name: string_field(
-			sender,
-			&["personFamilyName", "person_family_name"],
-		),
-		telephone: string_field(sender, &["telephone"]),
-		fax: string_field(sender, &["fax"]),
-		email: string_field(sender, &["email"]),
-	};
-	if let Some(id) = uuid_field(sender, &["id"]) {
-		SenderInformationBmc::update(ctx, mm, id, update).await?;
-	} else {
-		SenderInformationBmc::create(
+	if let Some(message_header) =
+		optional_row_object(page_id, rows, "messageHeader")?
+	{
+		MessageHeaderBmc::update_by_case(
 			ctx,
 			mm,
-			SenderInformationForCreate {
-				case_id,
-				source_sender_presave_id: update.source_sender_presave_id,
-				sender_type: update.sender_type,
-				health_professional_type_kr1: update.health_professional_type_kr1,
-				organization_name: update.organization_name,
-				department: update.department,
-				street_address: update.street_address,
-				city: update.city,
-				state: update.state,
-				postcode: update.postcode,
-				country_code: update.country_code,
-				person_title: update.person_title,
-				person_given_name: update.person_given_name,
-				person_middle_name: update.person_middle_name,
-				person_family_name: update.person_family_name,
-				telephone: update.telephone,
-				fax: update.fax,
-				email: update.email,
+			case_id,
+			MessageHeaderForUpdate {
+				batch_number: string_field(
+					message_header,
+					&["batchNumber", "batch_number"],
+				),
+				batch_sender_identifier: string_field(
+					message_header,
+					&["batchSenderIdentifier", "batch_sender_identifier"],
+				),
+				batch_receiver_identifier: string_field(
+					message_header,
+					&["batchReceiverIdentifier", "batch_receiver_identifier"],
+				),
+				batch_transmission_date: None,
+				message_number: string_field(
+					message_header,
+					&["messageNumber", "message_number"],
+				),
+				message_sender_identifier: string_field(
+					message_header,
+					&["messageSenderIdentifier", "message_sender_identifier"],
+				),
+				message_receiver_identifier: string_field(
+					message_header,
+					&["messageReceiverIdentifier", "message_receiver_identifier"],
+				),
+				message_date: string_field(
+					message_header,
+					&["messageDate", "message_date"],
+				),
 			},
 		)
 		.await?;
+	}
+	if let Some(sender) = optional_row_object(page_id, rows, "senderInformation")? {
+		let update = SenderInformationForUpdate {
+			source_sender_presave_id: uuid_field(
+				sender,
+				&["sourceSenderPresaveId", "source_sender_presave_id"],
+			),
+			sender_type: string_field(sender, &["senderType", "sender_type"]),
+			health_professional_type_kr1: string_field(
+				sender,
+				&["healthProfessionalTypeKr1", "health_professional_type_kr1"],
+			),
+			organization_name: string_field(
+				sender,
+				&["organizationName", "organization_name"],
+			),
+			department: string_field(sender, &["department"]),
+			street_address: string_field(
+				sender,
+				&["streetAddress", "street_address"],
+			),
+			city: string_field(sender, &["city"]),
+			state: string_field(sender, &["state"]),
+			postcode: string_field(sender, &["postcode"]),
+			country_code: string_field(sender, &["countryCode", "country_code"]),
+			person_title: string_field(sender, &["personTitle", "person_title"]),
+			person_given_name: string_field(
+				sender,
+				&["personGivenName", "person_given_name"],
+			),
+			person_middle_name: string_field(
+				sender,
+				&["personMiddleName", "person_middle_name"],
+			),
+			person_family_name: string_field(
+				sender,
+				&["personFamilyName", "person_family_name"],
+			),
+			telephone: string_field(sender, &["telephone"]),
+			fax: string_field(sender, &["fax"]),
+			email: string_field(sender, &["email"]),
+		};
+		if let Some(id) = uuid_field(sender, &["id"]) {
+			SenderInformationBmc::update(ctx, mm, id, update).await?;
+		} else {
+			SenderInformationBmc::create(
+				ctx,
+				mm,
+				SenderInformationForCreate {
+					case_id,
+					source_sender_presave_id: update.source_sender_presave_id,
+					sender_type: update.sender_type,
+					health_professional_type_kr1: update
+						.health_professional_type_kr1,
+					organization_name: update.organization_name,
+					department: update.department,
+					street_address: update.street_address,
+					city: update.city,
+					state: update.state,
+					postcode: update.postcode,
+					country_code: update.country_code,
+					person_title: update.person_title,
+					person_given_name: update.person_given_name,
+					person_middle_name: update.person_middle_name,
+					person_family_name: update.person_family_name,
+					telephone: update.telephone,
+					fax: update.fax,
+					email: update.email,
+				},
+			)
+			.await?;
+		}
 	}
 	Ok(())
 }
