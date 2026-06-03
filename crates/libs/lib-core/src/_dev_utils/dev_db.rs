@@ -410,6 +410,7 @@ async fn apply_compatibility_alters(
 		"ALTER TABLE audit_logs ALTER COLUMN organization_id SET NOT NULL",
 		"ALTER TABLE audit_logs ALTER COLUMN organization_id SET DEFAULT COALESCE(current_organization_id(), '00000000-0000-0000-0000-000000000000'::UUID)",
 		"ALTER TABLE app_settings ADD COLUMN IF NOT EXISTS organization_id UUID",
+		"ALTER TABLE whodrug_products ALTER COLUMN drug_name TYPE TEXT",
 		"UPDATE app_settings
 		 SET organization_id = '00000000-0000-0000-0000-000000000000'::UUID
 		 WHERE organization_id IS NULL",

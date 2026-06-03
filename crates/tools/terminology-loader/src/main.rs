@@ -192,14 +192,14 @@ async fn load_whodrug(
 	.await?;
 
 	for chunk in rows.chunks(1000) {
-		with_loader_txn(mm, || async {
+		with_whodrug_row_audit_disabled(mm, || async {
 			upsert_whodrug_rows(mm, chunk, &args.version, &args.language, false)
 				.await
 		})
 		.await?;
 	}
 
-	with_loader_txn(mm, || async {
+	with_whodrug_row_audit_disabled(mm, || async {
 		mm.dbx()
 			.execute(
 				sqlx::query(
@@ -266,6 +266,45 @@ where
 	let run_result = async {
 		set_loader_context(mm).await?;
 		run().await
+	}
+	.await;
+
+	match run_result {
+		Ok(_) => {
+			mm.dbx().commit_txn().await?;
+			Ok(())
+		}
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(err)
+		}
+	}
+}
+
+async fn with_whodrug_row_audit_disabled<F, Fut>(
+	mm: &ModelManager,
+	run: F,
+) -> Result<(), Box<dyn std::error::Error>>
+where
+	F: FnOnce() -> Fut,
+	Fut: std::future::Future<Output = Result<(), Box<dyn std::error::Error>>>,
+{
+	mm.dbx().begin_txn().await?;
+	let run_result = async {
+		mm.dbx()
+			.execute(sqlx::query(
+				"ALTER TABLE whodrug_products DISABLE TRIGGER audit_whodrug_products",
+			))
+			.await?;
+		set_loader_context(mm).await?;
+		run().await?;
+		mm.dbx().execute(sqlx::query("RESET ROLE")).await?;
+		mm.dbx()
+			.execute(sqlx::query(
+				"ALTER TABLE whodrug_products ENABLE TRIGGER audit_whodrug_products",
+			))
+			.await?;
+		Ok::<(), Box<dyn std::error::Error>>(())
 	}
 	.await;
 
