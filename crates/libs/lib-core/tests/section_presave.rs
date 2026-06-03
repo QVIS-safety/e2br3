@@ -1593,7 +1593,7 @@ async fn section_presave_receiver_allows_legacy_type_update() -> Result<()> {
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
 
-	for legacy_type in ["1", "2"] {
+	for legacy_type in ["1", "2", "3", "4", "5", "6"] {
 		let receiver_id = Uuid::new_v4();
 		let mut tx = mm.dbx().db().begin().await?;
 		set_user_context(&mut tx, demo_user_id()).await?;
