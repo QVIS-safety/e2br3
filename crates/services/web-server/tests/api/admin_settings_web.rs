@@ -200,6 +200,48 @@ async fn test_admin_settings_audit_trail_records_changed_field() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
+		.await?;
+	let create_audit = dbx
+		.fetch_optional(
+			sqlx::query_as::<
+				_,
+				(
+					Uuid,
+					String,
+					serde_json::Value,
+					Option<serde_json::Value>,
+					serde_json::Value,
+				),
+			>(
+				r#"
+				SELECT user_id, action, changed_fields, old_values, new_values
+				FROM audit_logs
+				WHERE table_name = 'app_settings'
+				  AND organization_id = $1
+				  AND record_id = $1
+				  AND action = 'CREATE'
+				  AND changed_fields ? 'timezone'
+				ORDER BY id DESC
+				LIMIT 1
+				"#,
+			)
+			.bind(seed.org_id),
+		)
+		.await?;
+	dbx.rollback_txn().await?;
+
+	let (user_id, action, changed_fields, old_values, new_values) =
+		create_audit.ok_or("missing app_settings create audit row")?;
+	assert_eq!(user_id, seed.admin.id);
+	assert_eq!(action, "CREATE");
+	assert_eq!(changed_fields["timezone"]["old"], serde_json::Value::Null);
+	assert_eq!(changed_fields["timezone"]["new"], json!("Asia/Seoul"));
+	assert!(old_values.is_none());
+	assert_eq!(new_values["timezone"], json!("Asia/Seoul"));
+
 	let (status, value) = request_json(
 		&app,
 		&admin_cookie,

@@ -146,6 +146,16 @@ fn audit_null_flavor_value(field: &str, diff: &JsonValue) -> String {
 	}
 }
 
+fn audit_reason_value(action: &str, reason: Option<String>) -> String {
+	reason.unwrap_or_else(|| {
+		if action == "CREATE" {
+			"Initial Data".to_string()
+		} else {
+			String::new()
+		}
+	})
+}
+
 /// GET /api/audit-logs
 /// List all audit logs with optional filtering
 /// **Requires AuditLog.List permission**
@@ -244,7 +254,10 @@ pub async fn list_case_audit_trail(
 				value: audit_display_value(&log.action, &diff),
 				notation: audit_notation_value(&field, &diff),
 				null_flavor: audit_null_flavor_value(&field, &diff),
-				reason: log.reason_for_change.clone().unwrap_or_default(),
+				reason: audit_reason_value(
+					&log.action,
+					log.reason_for_change.clone(),
+				),
 				e_signature_id: log.e_signature_id,
 			});
 		}
@@ -326,5 +339,15 @@ mod tests {
 		assert_eq!(audit_display_value("UPDATE", &diff), "2");
 		assert_eq!(audit_display_value("CREATE", &diff), "2");
 		assert_eq!(audit_display_value("DELETE", &diff), "1");
+	}
+
+	#[test]
+	fn audit_reason_defaults_create_to_initial_data() {
+		assert_eq!(audit_reason_value("CREATE", None), "Initial Data");
+		assert_eq!(
+			audit_reason_value("CREATE", Some("Imported row".to_string())),
+			"Imported row"
+		);
+		assert_eq!(audit_reason_value("UPDATE", None), "");
 	}
 }
