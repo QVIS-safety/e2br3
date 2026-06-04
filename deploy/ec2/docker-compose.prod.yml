@@ -42,4 +42,4 @@ services:
       RUST_LOG: "${RUST_LOG:-terminology_loader=info,lib_core=info}"
       SKIP_DEV_INIT: "1"
     volumes:
-      - ${E2BR3_TERMINOLOGY_DIR:-/opt/e2br3/e2br3/terminology}:/terminology:ro
+      - ${E2BR3_TERMINOLOGY_DIR:-/opt/e2br3/terminology}:/terminology:ro

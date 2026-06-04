@@ -28,6 +28,14 @@ chmod +x "${TMP_DIR}/bin/docker"
 touch "${APP_DIR}/.env.prod" "${APP_DIR}/docker-compose.prod.yml"
 touch "${INCOMING_DIR}/meddra_28_1.zip" "${INCOMING_DIR}/whodrug.zip"
 
+if PATH="${TMP_DIR}/bin:${PATH}" \
+  APP_DIR="${APP_DIR}" \
+  sh "${SCRIPT}" 2>"${TMP_DIR}/default-manifest.err"; then
+  echo "script should use the production terminology directory default"
+  exit 1
+fi
+grep -F "Missing terminology manifest: /opt/e2br3/terminology/terminology-manifest.prod" "${TMP_DIR}/default-manifest.err" >/dev/null
+
 cat > "${MANIFEST}" <<EOF
 # production terminology files
 

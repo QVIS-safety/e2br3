@@ -4,7 +4,7 @@ set -eu
 APP_DIR=${APP_DIR:-/opt/e2br3}
 ENV_FILE=${ENV_FILE:-.env.prod}
 COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.prod.yml}
-E2BR3_TERMINOLOGY_DIR=${E2BR3_TERMINOLOGY_DIR:-/opt/e2br3/e2br3/terminology}
+E2BR3_TERMINOLOGY_DIR=${E2BR3_TERMINOLOGY_DIR:-/opt/e2br3/terminology}
 TERMINOLOGY_MANIFEST=${TERMINOLOGY_MANIFEST:-${E2BR3_TERMINOLOGY_DIR}/terminology-manifest.prod}
 
 case "${ENV_FILE}" in
