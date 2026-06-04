@@ -1762,6 +1762,47 @@ async fn test_single_profile_validation_caches_summary() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_cached_validation_read_does_not_compute_when_cache_missing(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_safety_report(&app, &cookie, case_id).await?;
+
+	let (status, body) = get_validation(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation/cache?authority=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert!(
+		body["data"]["report"].is_null(),
+		"cached read must not compute"
+	);
+
+	assert_eq!(
+		full_validation_report_cache_stale(
+			&mm,
+			seed.admin.id,
+			seed.org_id,
+			case_id,
+			"ich",
+		)
+		.await?,
+		None,
+		"cached read must not write cache rows",
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_validation_reuses_fresh_full_report_cache() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

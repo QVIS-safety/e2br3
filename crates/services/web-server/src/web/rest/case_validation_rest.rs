@@ -14,12 +14,20 @@ use lib_core::validation::{
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
 pub struct ValidationQuery {
 	pub authority: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CachedValidationResponse {
+	pub authority: String,
+	pub case_id: Uuid,
+	pub report: Option<CaseValidationReport>,
 }
 
 async fn resolve_authority(
@@ -95,4 +103,38 @@ pub async fn validate_case(
 	CaseValidationReportCacheBmc::upsert(&ctx, &mm, case_id, &report).await?;
 
 	Ok((StatusCode::OK, Json(DataRestResult { data: report })))
+}
+
+/// GET /api/cases/{case_id}/validation/cache
+/// Returns only a fresh cached validation report, without computing on cache miss.
+pub async fn get_cached_validation(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Query(query): Query<ValidationQuery>,
+) -> Result<(StatusCode, Json<DataRestResult<CachedValidationResponse>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+	let authority =
+		resolve_authority(&ctx, &mm, case_id, query.authority.as_deref()).await?;
+	let report = CaseValidationReportCacheBmc::get_fresh(
+		&ctx,
+		&mm,
+		case_id,
+		authority.as_str(),
+	)
+	.await?;
+
+	Ok((
+		StatusCode::OK,
+		Json(DataRestResult {
+			data: CachedValidationResponse {
+				authority: authority.as_str().to_owned(),
+				case_id,
+				report,
+			},
+		}),
+	))
 }

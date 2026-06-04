@@ -642,6 +642,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(audit_rest::list_case_versions),
 	)
 	.route(
+		"/cases/{case_id}/validation/cache",
+		get(case_validation_rest::get_cached_validation),
+	)
+	.route(
 		"/cases/{case_id}/validation",
 		get(case_validation_rest::validate_case),
 	)
