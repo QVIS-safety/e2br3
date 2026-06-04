@@ -2080,6 +2080,45 @@ async fn editor_ae_page_row_patch_updates_one_reaction() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_editor_repeatable_row_save_refreshes_validation_cache() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &cookie, "EDITOR-AE-REFRESH", &["ich"]).await?;
+	let reaction_id = create_reaction_fixture(&app, &cookie, &case_id).await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}"),
+		json!({
+			"authorities": ["ich"],
+			"changes": {
+				"reactionPrimarySourceNative": { "value": "Headache updated" }
+			},
+			"rows": {}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation/cache?authority=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["report"]["authority"], "ich", "{body}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_lb_page_row_patch_updates_one_test_result() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
