@@ -57,6 +57,32 @@ fi
 echo "Pulling ${IMAGE_REF}"
 docker pull "${IMAGE_REF}"
 
+if [ "${RESET_DB:-}" = "1" ]; then
+  if [ -z "${SERVICE_DB_URL:-}" ]; then
+    echo "SERVICE_DB_URL is required when RESET_DB=1"
+    exit 1
+  fi
+  if [ -z "${SERVICE_DB_ROOT_URL:-}" ]; then
+    echo "SERVICE_DB_ROOT_URL is required when RESET_DB=1"
+    exit 1
+  fi
+
+  docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" stop app
+
+  DATABASE_URL="${SERVICE_DB_URL}" \
+  ROOT_DATABASE_URL="${SERVICE_DB_ROOT_URL}" \
+  RESET_DB=1 \
+  INCLUDE_SEED="${INCLUDE_SEED:-1}" \
+  PROJECT_DIR="${APP_DIR}" \
+  "${APP_DIR}/init-rds.sh"
+
+  APP_DIR="${APP_DIR}" \
+  ENV_FILE="${ENV_FILE}" \
+  COMPOSE_FILE="${COMPOSE_FILE}" \
+  E2BR3_TERMINOLOGY_DIR="${E2BR3_TERMINOLOGY_DIR:-/opt/e2br3/terminology}" \
+  "${APP_DIR}/run-terminology-manifest.sh"
+fi
+
 # Update runtime image reference in env file idempotently.
 if grep -q '^IMAGE_REF=' "${ENV_FILE}"; then
   sed -i.bak "s|^IMAGE_REF=.*|IMAGE_REF=${IMAGE_REF}|" "${ENV_FILE}"
@@ -65,6 +91,22 @@ else
 fi
 
 docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" up -d app
+
+if [ -n "${HEALTHCHECK_URL:-}" ]; then
+  attempt=1
+  while [ "${attempt}" -le 10 ]; do
+    if curl -fsS "${HEALTHCHECK_URL}" >/dev/null; then
+      break
+    fi
+    if [ "${attempt}" -eq 10 ]; then
+      echo "Healthcheck failed after 10 attempts: ${HEALTHCHECK_URL}"
+      exit 1
+    fi
+    sleep 3
+    attempt=$((attempt + 1))
+  done
+fi
+
 docker image prune -f
 
 echo "Deploy complete: ${IMAGE_REF}"
