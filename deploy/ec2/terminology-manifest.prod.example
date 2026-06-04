@@ -4,5 +4,5 @@
 # The host_input_path must be inside E2BR3_TERMINOLOGY_DIR.
 # Licensed dictionary source files must stay outside git.
 
-meddra /opt/e2br3/terminology/incoming/meddra_28_1.zip 28.1 en
-whodrug /opt/e2br3/terminology/incoming/whodrug_global_b3_mar_1_2026.zip 2026.03 en
+meddra /opt/e2br3/terminology/incoming/<meddra-release>.zip <meddra-version> en
+whodrug /opt/e2br3/terminology/incoming/<whodrug-release>.zip <whodrug-version> en

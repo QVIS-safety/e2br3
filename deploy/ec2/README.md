@@ -18,20 +18,27 @@
    - `docker-compose.prod.yml`
    - `.env.prod.example` as `.env.prod`
    - `deploy.sh`
+   - `run-terminology-manifest.sh`
    - `terminology-load.sh`
+   - `terminology-manifest.prod.example`
    - `schemas/`
 4. Make script executable:
    - `chmod +x /opt/e2br3/deploy.sh`
+   - `chmod +x /opt/e2br3/run-terminology-manifest.sh`
    - `chmod +x /opt/e2br3/terminology-load.sh`
-5. Fill `/opt/e2br3/.env.prod` with real secrets and RDS URL.
-6. Ensure `/opt/e2br3/.env.prod` has `E2BR3_SCHEMAS_DIR=/opt/e2br3/schemas`
+5. Create the production terminology manifest:
+   - `sudo mkdir -p /opt/e2br3/terminology`
+   - `cp /opt/e2br3/terminology-manifest.prod.example /opt/e2br3/terminology/terminology-manifest.prod`
+   - Edit `/opt/e2br3/terminology/terminology-manifest.prod` to reference the licensed release files uploaded to `/opt/e2br3/terminology/incoming`.
+6. Fill `/opt/e2br3/.env.prod` with real secrets and RDS URL.
+7. Ensure `/opt/e2br3/.env.prod` has `E2BR3_SCHEMAS_DIR=/opt/e2br3/schemas`
    so the container bind-mount includes `/app/schemas/...`.
    - `deploy.sh` now syncs the bundled `schemas/` tree into that runtime directory on each deploy,
      so newly added XSDs are included automatically.
-7. Keep `SERVICE_PWD_KEY` stable across deployments and bootstrap runs.
+8. Keep `SERVICE_PWD_KEY` stable across deployments and bootstrap runs.
    Seeded user password hashes are derived from `SERVICE_PWD_KEY`, so changing the key later will make
    existing passwords fail with `403 LOGIN_FAIL`.
-8. The app now re-syncs the initial platform admin (`hdh4063@gmail.com` / `welcome`)
+9. The app now re-syncs the initial platform admin (`hdh4063@gmail.com` / `welcome`)
    and demo tenant sponsor admins through application code on startup, instead of relying on
    hard-coded SQL password hashes.
 
@@ -107,8 +114,8 @@ chmod 700 /opt/e2br3/terminology /opt/e2br3/terminology/incoming
 Upload the licensed source files from your workstation with `scp`:
 
 ```sh
-scp ./meddra_27_1.zip ec2-user@<ec2-host>:/opt/e2br3/terminology/incoming/
-scp ./whodrug_2025_09.zip ec2-user@<ec2-host>:/opt/e2br3/terminology/incoming/
+scp './<meddra-release>.zip' 'ec2-user@<ec2-host>:/opt/e2br3/terminology/incoming/'
+scp './<whodrug-release>.zip' 'ec2-user@<ec2-host>:/opt/e2br3/terminology/incoming/'
 ```
 
 If the EC2 host has no public IP, upload the files to private S3 first, then pull them down from a
@@ -118,12 +125,12 @@ Session Manager shell:
 mkdir -p /opt/e2br3/terminology/incoming
 chmod 700 /opt/e2br3/terminology /opt/e2br3/terminology/incoming
 
-aws s3 cp s3://qvis-safety-db/terminology/OneDrive_1_5-18-2026.zip \
-  /opt/e2br3/terminology/incoming/meddra_28_1.zip \
+aws s3 cp 's3://<private-bucket>/terminology/<meddra-release>.zip' \
+  '/opt/e2br3/terminology/incoming/<meddra-release>.zip' \
   --region ap-northeast-2
 
-aws s3 cp s3://qvis-safety-db/terminology/whodrug_global_b3_mar_1_2026.zip \
-  /opt/e2br3/terminology/incoming/whodrug_global_b3_mar_1_2026.zip \
+aws s3 cp 's3://<private-bucket>/terminology/<whodrug-release>.zip' \
+  '/opt/e2br3/terminology/incoming/<whodrug-release>.zip' \
   --region ap-northeast-2
 ```
 
@@ -135,15 +142,15 @@ cd /opt/e2br3/e2br3
 
 docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
   meddra \
-  --input /terminology/incoming/meddra_28_1.zip \
-  --version 28.1 \
+  --input '/terminology/incoming/<meddra-release>.zip' \
+  --version '<meddra-version>' \
   --language en \
   --dry-run
 
 docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
   whodrug \
-  --input /terminology/incoming/whodrug_global_b3_mar_1_2026.zip \
-  --version 2026.03 \
+  --input '/terminology/incoming/<whodrug-release>.zip' \
+  --version '<whodrug-version>' \
   --language en \
   --dry-run
 ```
@@ -155,14 +162,14 @@ cd /opt/e2br3/e2br3
 
 docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
   meddra \
-  --input /terminology/incoming/meddra_28_1.zip \
-  --version 28.1 \
+  --input '/terminology/incoming/<meddra-release>.zip' \
+  --version '<meddra-version>' \
   --language en
 
 docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
   whodrug \
-  --input /terminology/incoming/whodrug_global_b3_mar_1_2026.zip \
-  --version 2026.03 \
+  --input '/terminology/incoming/<whodrug-release>.zip' \
+  --version '<whodrug-version>' \
   --language en
 ```
 
