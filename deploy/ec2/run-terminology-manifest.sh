@@ -83,11 +83,13 @@ while IFS= read -r line || [ -n "${line}" ]; do
       ;;
   esac
 
-  docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" run --rm terminology-loader \
-    "${dictionary}" \
-    --input "${container_input}" \
-    --version "${version}" \
-    --language "${language}"
+  if [ "${CHECK_ONLY:-}" != "1" ]; then
+    docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" run --rm terminology-loader \
+      "${dictionary}" \
+      --input "${container_input}" \
+      --version "${version}" \
+      --language "${language}"
+  fi
   loaded=$((loaded + 1))
 done < "${TERMINOLOGY_MANIFEST}"
 
@@ -96,4 +98,8 @@ if [ "${loaded}" -eq 0 ]; then
   exit 1
 fi
 
-echo "Terminology manifest complete: loaded=${loaded}"
+if [ "${CHECK_ONLY:-}" = "1" ]; then
+  echo "Terminology manifest check complete: entries=${loaded}"
+else
+  echo "Terminology manifest complete: loaded=${loaded}"
+fi

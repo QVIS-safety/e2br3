@@ -87,6 +87,21 @@ awk '
   }
 ' "${DOCKER_LOG}"
 
+rm -f "${DOCKER_LOG}"
+PATH="${TMP_DIR}/bin:${PATH}" \
+APP_DIR="${APP_DIR}" \
+E2BR3_TERMINOLOGY_DIR="${TERMINOLOGY_DIR}" \
+TERMINOLOGY_MANIFEST="${MANIFEST}" \
+DOCKER_LOG="${DOCKER_LOG}" \
+CHECK_ONLY=1 \
+sh "${SCRIPT}" >"${TMP_DIR}/check-only.out"
+
+grep -F "Terminology manifest check complete: entries=2" "${TMP_DIR}/check-only.out" >/dev/null
+if [ -e "${DOCKER_LOG}" ] && [ -s "${DOCKER_LOG}" ]; then
+  echo "CHECK_ONLY=1 must not invoke docker compose"
+  exit 1
+fi
+
 OUTSIDE_INPUT="${TMP_DIR}/outside.zip"
 OUTSIDE_MANIFEST="${TMP_DIR}/outside-manifest.prod"
 touch "${OUTSIDE_INPUT}"
