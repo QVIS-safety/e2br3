@@ -8,8 +8,8 @@ use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::ModelManager;
 use lib_core::validation::{
-	infer_regulatory_authority_from_receivers, validate_case_for_authority,
-	CaseValidationReport, RegulatoryAuthority,
+	infer_regulatory_authority_from_receivers, validate_case_for_authorities,
+	validate_case_for_authority, CaseValidationReport, RegulatoryAuthority,
 };
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -64,6 +64,21 @@ async fn resolve_authority(
 	);
 
 	Ok(authority)
+}
+
+pub async fn refresh_case_validation_cache(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	authorities: &[RegulatoryAuthority],
+) -> Result<Vec<CaseValidationReport>> {
+	let reports =
+		validate_case_for_authorities(ctx, mm, case_id, authorities).await?;
+	CaseValidationSummaryBmc::upsert_for_reports(ctx, mm, case_id, &reports).await?;
+	for report in &reports {
+		CaseValidationReportCacheBmc::upsert(ctx, mm, case_id, report).await?;
+	}
+	Ok(reports)
 }
 
 /// GET /api/cases/{case_id}/validation

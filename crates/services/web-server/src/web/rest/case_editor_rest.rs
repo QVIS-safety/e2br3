@@ -6,6 +6,7 @@ use crate::web::rest::case_editor_dto::{
 	CaseEditorShellDto,
 };
 use crate::web::rest::case_rest::case_to_read_result;
+use crate::web::rest::case_validation_rest::refresh_case_validation_cache;
 use axum::extract::{Path, Query, State};
 use axum::Json;
 use lib_core::model::acs::{
@@ -351,6 +352,8 @@ pub async fn patch_editor_ci_page_projection(
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let requested_authorities =
 		validate_request_projection_context(request.authorities.as_deref())?;
+	let refresh_authorities =
+		editor_projection_context(requested_authorities.clone())?;
 
 	let mut update = SafetyReportIdentificationForUpdate {
 		transmission_date: None,
@@ -405,7 +408,8 @@ pub async fn patch_editor_ci_page_projection(
 	if !request.changes.is_empty() {
 		SafetyReportIdentificationBmc::update_by_case(&ctx, &mm, case_id, update)
 			.await?;
-		CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+		refresh_case_validation_cache(&ctx, &mm, case_id, &refresh_authorities)
+			.await?;
 	}
 	let projection = direct_page_projection_response(
 		&ctx,
@@ -507,6 +511,8 @@ async fn patch_direct_page_projection(
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let requested_authorities =
 		validate_request_projection_context(request.authorities.as_deref())?;
+	let refresh_authorities =
+		editor_projection_context(requested_authorities.clone())?;
 
 	if !request.changes.is_empty() {
 		apply_direct_page_changes_patch(
@@ -525,7 +531,8 @@ async fn patch_direct_page_projection(
 	}
 
 	if !request.changes.is_empty() || !request.rows.is_empty() {
-		CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
+		refresh_case_validation_cache(&ctx, &mm, case_id, &refresh_authorities)
+			.await?;
 	}
 
 	let data = match page_id {
