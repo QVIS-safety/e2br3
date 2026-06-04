@@ -4,9 +4,11 @@
 
 - `docker-compose.prod.yml`: Production compose file (app only, uses RDS).
 - `.env.prod.example`: Template for required runtime environment variables.
-- `deploy.sh`: Pull and rollout script used by CD.
+- `deploy.sh`: Pull and rollout script used by CD. In the temporary demo environment it can reset RDS, load seed data, reload terminology, and restart the app.
 - `init-rds.sh`: One-time SQL bootstrap runner for RDS.
-- `terminology-load.sh`: EC2 host-side MedDRA/WHODrug loader wrapper.
+- `run-terminology-manifest.sh`: Loads every terminology release listed in the EC2 terminology manifest.
+- `terminology-manifest.prod.example`: Example manifest format. Real licensed dictionary files stay outside git.
+- `terminology-load.sh`: Docker Compose wrapper for one-off terminology dry-run/load operations.
 - `../../db/`: Organized SQL source tree (`admin/`, `bootstrap/`, `migrations/`, `seed/`).
 
 ## One-time setup on EC2
@@ -41,6 +43,9 @@
 9. The app now re-syncs the initial platform admin (`hdh4063@gmail.com` / `welcome`)
    and demo tenant sponsor admins through application code on startup, instead of relying on
    hard-coded SQL password hashes.
+10. Ensure the EC2 instance is managed by AWS Systems Manager Session Manager and can pull the
+    GHCR runtime image, either through existing Docker authentication or an instance/runtime process
+    that provides registry credentials.
 
 ## One-time RDS bootstrap
 
@@ -67,7 +72,7 @@ cd /opt/e2br3
 set -a
 . /opt/e2br3/.env.prod
 set +a
-RESET_DB=1 DATABASE_URL="$SERVICE_DB_URL" ./deploy/ec2/init-rds.sh
+RESET_DB=1 DATABASE_URL="$SERVICE_DB_URL" ./init-rds.sh
 ```
 
 `init-rds.sh` will use `SERVICE_DB_ROOT_URL` from the env file as `ROOT_DATABASE_URL`.
@@ -97,6 +102,49 @@ with the current runtime key.
 cd /opt/e2br3
 IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> ./deploy.sh
 ```
+
+## Automatic demo deploy
+
+After CI succeeds on `main`, CD builds the runtime image and deploys through AWS Systems Manager
+using:
+
+```sh
+IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> RESET_DB=1 INCLUDE_SEED=1 ./deploy.sh
+```
+
+`RESET_DB=1` recreates the database. `INCLUDE_SEED=1` reloads demo seed data.
+`run-terminology-manifest.sh` reloads the MedDRA and WHODrug releases listed in the production
+terminology manifest. This is intentionally destructive for the temporary demo environment and wipes
+demo data on every automatic deploy.
+
+## GitHub Actions configuration
+
+Required repository secrets for the CD deploy job:
+
+- `AWS_ROLE_TO_ASSUME`
+- `AWS_REGION`
+- `AWS_SSM_TARGET`
+
+CD does not use SSH. Runtime DB URLs and app secrets stay on the EC2 host in `/opt/e2br3/.env.prod`.
+The workflow passes `IMAGE_REF` automatically to the SSM command.
+
+## Terminology manifest
+
+The production manifest lives at `/opt/e2br3/terminology/terminology-manifest.prod`. Start from
+`/opt/e2br3/terminology-manifest.prod.example` and keep real licensed dictionary archive names outside
+git.
+
+Each non-comment row is pipe-delimited:
+
+```text
+kind|version|language|relative-path
+meddra|<meddra-version>|en|incoming/<meddra-release>.zip
+whodrug|<whodrug-version>|en|incoming/<whodrug-release>.zip
+```
+
+`kind` is `meddra` or `whodrug`, `version` is the release identifier passed to the loader, `language`
+is usually `en`, and `relative-path` is resolved under `E2BR3_TERMINOLOGY_DIR`. The default
+`E2BR3_TERMINOLOGY_DIR` is `/opt/e2br3/terminology`, mounted into the container as `/terminology`.
 
 ## Loading MedDRA and WHODrug on EC2
 
@@ -177,15 +225,3 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm terminol
 `/opt/e2br3/terminology`.
 
 Remove uploaded source files after the load has been verified according to your retention policy.
-
-## GitHub Actions secrets (for CD deploy job)
-
-- `DEPLOY_HOST`
-- `DEPLOY_USER`
-- `DEPLOY_SSH_KEY`
-- `DEPLOY_COMMAND`:
-  - `cd /opt/e2br3 && APP_DIR=/opt/e2br3 ./deploy.sh`
-- `GHCR_USERNAME` (optional if host already authenticated)
-- `GHCR_TOKEN` (optional if host already authenticated)
-
-The workflow passes `IMAGE_REF` automatically to the remote command.
