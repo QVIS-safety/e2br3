@@ -135,6 +135,53 @@ if ! cmp -s "${TMP_DIR}/expected-requested-reset.log" "${DEPLOY_LOG}"; then
   exit 1
 fi
 
+APP_DIR="${TMP_DIR}/app-healthcheck-disabled"
+DEPLOY_LOG="${TMP_DIR}/deploy-healthcheck-disabled.log"
+create_app "${APP_DIR}"
+cat >> "${APP_DIR}/.env.prod" <<'ENV'
+HEALTHCHECK_URL=http://127.0.0.1:1/health
+ENV
+
+cat > "${APP_DIR}/run-terminology-manifest.sh" <<'SH'
+#!/usr/bin/env sh
+set -eu
+if [ "${CHECK_ONLY:-}" != "1" ]; then
+  printf 'terminology manifest\n' >> "${DEPLOY_LOG}"
+fi
+SH
+chmod +x "${APP_DIR}/run-terminology-manifest.sh"
+
+cat > "${BIN_DIR}/curl" <<'SH'
+#!/usr/bin/env sh
+set -eu
+printf 'curl %s\n' "$*" >> "${DEPLOY_LOG}"
+exit 1
+SH
+chmod +x "${BIN_DIR}/curl"
+
+cat > "${BIN_DIR}/sleep" <<'SH'
+#!/usr/bin/env sh
+set -eu
+printf 'sleep %s\n' "$*" >> "${DEPLOY_LOG}"
+SH
+chmod +x "${BIN_DIR}/sleep"
+
+PATH="${BIN_DIR}:${PATH}" \
+DEPLOY_LOG="${DEPLOY_LOG}" \
+APP_DIR="${APP_DIR}" \
+COMPOSE_FILE=docker-compose.prod.yml \
+ENV_FILE=.env.prod \
+IMAGE_REF=ghcr.io/example/e2br3-web-server:abc123 \
+RESET_DB=0 \
+HEALTHCHECK_URL="" \
+sh "${SCRIPT}"
+
+if grep -F "curl " "${DEPLOY_LOG}" >/dev/null; then
+  echo "caller HEALTHCHECK_URL= should disable .env.prod healthcheck"
+  cat "${DEPLOY_LOG}"
+  exit 1
+fi
+
 APP_DIR="${TMP_DIR}/app-preflight-fail"
 DEPLOY_LOG="${TMP_DIR}/deploy-preflight-fail.log"
 create_app "${APP_DIR}"
