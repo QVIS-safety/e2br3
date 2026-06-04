@@ -115,16 +115,15 @@ If the EC2 host has no public IP, upload the files to private S3 first, then pul
 Session Manager shell:
 
 ```sh
-cd /opt/e2br3/e2br3
-mkdir -p terminology/incoming
-chmod 700 terminology terminology/incoming
+mkdir -p /opt/e2br3/terminology/incoming
+chmod 700 /opt/e2br3/terminology /opt/e2br3/terminology/incoming
 
 aws s3 cp s3://qvis-safety-db/terminology/OneDrive_1_5-18-2026.zip \
-  terminology/incoming/meddra_28_1.zip \
+  /opt/e2br3/terminology/incoming/meddra_28_1.zip \
   --region ap-northeast-2
 
 aws s3 cp s3://qvis-safety-db/terminology/whodrug_global_b3_mar_1_2026.zip \
-  terminology/incoming/whodrug_global_b3_mar_1_2026.zip \
+  /opt/e2br3/terminology/incoming/whodrug_global_b3_mar_1_2026.zip \
   --region ap-northeast-2
 ```
 
@@ -168,7 +167,7 @@ docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod
 ```
 
 `E2BR3_TERMINOLOGY_DIR` can override the host directory mounted at `/terminology`. The default is
-`/opt/e2br3/e2br3/terminology`.
+`/opt/e2br3/terminology`.
 
 Remove uploaded source files after the load has been verified according to your retention policy.
 
