@@ -23,7 +23,7 @@ fi
 cd "${APP_DIR}"
 
 if [ ! -f "${ENV_FILE}" ]; then
-  echo "Missing ${APP_DIR}/${ENV_FILE}. Copy from .env.prod.example and fill secrets."
+  echo "Missing ${APP_DIR}/${ENV_FILE}. Create it with the required runtime secrets and database settings."
   exit 1
 fi
 

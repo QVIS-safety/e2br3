@@ -136,7 +136,7 @@ IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> RESET_DB=1 INCLUDE_SEED=1 ./dep
 ```
 
 `RESET_DB=1` recreates the database. `INCLUDE_SEED=1` reloads demo seed data.
-`run-terminology-manifest.sh` reloads the MedDRA and WHODrug releases listed in the production
+`run-terminology-manifest.sh` reloads the terminology releases listed in the production
 terminology manifest. This is intentionally destructive for the temporary demo environment and wipes
 demo data on every automatic deploy.
 
@@ -170,7 +170,7 @@ The fields are `dictionary host_input_path version [language]`. `dictionary` is 
 The host input path must be inside `E2BR3_TERMINOLOGY_DIR`. The default `E2BR3_TERMINOLOGY_DIR` is
 `/opt/e2br3/terminology`, mounted into the container as `/terminology`.
 
-## Loading MedDRA and WHODrug on EC2
+## Loading Terminology on EC2
 
 Dictionary files are licensed operational inputs. Do not commit them to git, bake them into the Docker
 image, or leave extra copies in deployment bundles.
@@ -183,14 +183,7 @@ sudo chown -R "$USER":"$USER" /opt/e2br3/terminology
 chmod 700 /opt/e2br3/terminology /opt/e2br3/terminology/incoming
 ```
 
-Upload the licensed source files from your workstation with `scp`:
-
-```sh
-scp './<meddra-release>.zip' 'ec2-user@<ec2-host>:/opt/e2br3/terminology/incoming/'
-scp './<whodrug-release>.zip' 'ec2-user@<ec2-host>:/opt/e2br3/terminology/incoming/'
-```
-
-If the EC2 host has no public IP, upload the files to private S3 first, then pull them down from a
+Upload licensed source files to private object storage first, then pull them down from a
 Session Manager shell:
 
 ```sh
