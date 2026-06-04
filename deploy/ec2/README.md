@@ -29,7 +29,8 @@
    - `chmod +x /opt/e2br3/run-terminology-manifest.sh`
    - `chmod +x /opt/e2br3/terminology-load.sh`
 5. Create the production terminology manifest:
-   - `sudo mkdir -p /opt/e2br3/terminology`
+   - `sudo mkdir -p /opt/e2br3/terminology/incoming`
+   - `sudo chown -R "$USER":"$USER" /opt/e2br3/terminology`
    - `cp /opt/e2br3/terminology-manifest.prod.example /opt/e2br3/terminology/terminology-manifest.prod`
    - Edit `/opt/e2br3/terminology/terminology-manifest.prod` to reference the licensed release files uploaded to `/opt/e2br3/terminology/incoming`.
 6. Fill `/opt/e2br3/.env.prod` with real secrets and RDS URL.
@@ -134,17 +135,18 @@ The production manifest lives at `/opt/e2br3/terminology/terminology-manifest.pr
 `/opt/e2br3/terminology-manifest.prod.example` and keep real licensed dictionary archive names outside
 git.
 
-Each non-comment row is pipe-delimited:
+Each non-comment line is whitespace-delimited:
 
 ```text
-kind|version|language|relative-path
-meddra|<meddra-version>|en|incoming/<meddra-release>.zip
-whodrug|<whodrug-version>|en|incoming/<whodrug-release>.zip
+# dictionary host_input_path version language
+meddra /opt/e2br3/terminology/incoming/<meddra-release>.zip <meddra-version> en
+whodrug /opt/e2br3/terminology/incoming/<whodrug-release>.zip <whodrug-version> en
 ```
 
-`kind` is `meddra` or `whodrug`, `version` is the release identifier passed to the loader, `language`
-is usually `en`, and `relative-path` is resolved under `E2BR3_TERMINOLOGY_DIR`. The default
-`E2BR3_TERMINOLOGY_DIR` is `/opt/e2br3/terminology`, mounted into the container as `/terminology`.
+The fields are `dictionary host_input_path version language`. `dictionary` is `meddra` or `whodrug`,
+`version` is the release identifier passed to the loader, and `language` is usually `en`. The host
+input path must be inside `E2BR3_TERMINOLOGY_DIR`. The default `E2BR3_TERMINOLOGY_DIR` is
+`/opt/e2br3/terminology`, mounted into the container as `/terminology`.
 
 ## Loading MedDRA and WHODrug on EC2
 
