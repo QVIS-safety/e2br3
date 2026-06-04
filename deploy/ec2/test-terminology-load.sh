@@ -7,48 +7,68 @@ TMP_DIR=$(mktemp -d)
 trap 'rm -rf "${TMP_DIR}"' EXIT INT TERM
 
 APP_DIR="${TMP_DIR}/app"
-INPUT_DIR="${APP_DIR}/terminology/incoming"
-BIN_LOG="${TMP_DIR}/loader.log"
-mkdir -p "${INPUT_DIR}" "${TMP_DIR}/bin"
+BIN_DIR="${TMP_DIR}/bin"
+INPUT_DIR="${TMP_DIR}/terminology/incoming"
+LOG="${TMP_DIR}/docker.log"
+
+mkdir -p "${APP_DIR}" "${BIN_DIR}" "${INPUT_DIR}"
 
 cat > "${APP_DIR}/.env.prod" <<'ENV'
 SERVICE_DB_URL=postgres://app_user:secret@example.com:5432/app_db?sslmode=require
 ENV
 
-cat > "${TMP_DIR}/bin/fake-terminology-loader" <<'SH'
+cat > "${APP_DIR}/docker-compose.prod.yml" <<'YAML'
+services:
+  terminology-loader:
+    image: example/terminology-loader
+YAML
+
+cat > "${BIN_DIR}/docker" <<'SH'
 #!/usr/bin/env sh
 set -eu
-printf 'SERVICE_DB_URL=%s\n' "${SERVICE_DB_URL:-}" >> "${TERMINOLOGY_LOADER_LOG}"
-printf 'ARGS=%s\n' "$*" >> "${TERMINOLOGY_LOADER_LOG}"
+i=0
+for arg in "$@"; do
+  i=$((i + 1))
+  printf 'ARG_%02d=%s\n' "${i}" "${arg}" >> "${DOCKER_LOG}"
+done
+printf 'CMD=%s\n' "$*" >> "${DOCKER_LOG}"
 SH
-chmod +x "${TMP_DIR}/bin/fake-terminology-loader"
+chmod +x "${BIN_DIR}/docker"
 
 touch "${INPUT_DIR}/meddra.zip" "${INPUT_DIR}/whodrug.zip"
 
+PATH="${BIN_DIR}:${PATH}" \
+DOCKER_LOG="${LOG}" \
 APP_DIR="${APP_DIR}" \
-TERMINOLOGY_LOADER_BIN="${TMP_DIR}/bin/fake-terminology-loader" \
-TERMINOLOGY_LOADER_LOG="${BIN_LOG}" \
+E2BR3_TERMINOLOGY_DIR="${TMP_DIR}/terminology" \
 sh "${SCRIPT}" --dry-run meddra "${INPUT_DIR}/meddra.zip" 27.1
 
-grep -F "SERVICE_DB_URL=postgres://app_user:secret@example.com:5432/app_db?sslmode=require" "${BIN_LOG}" >/dev/null
-grep -F "ARGS=meddra --input ${INPUT_DIR}/meddra.zip --version 27.1 --language en --dry-run" "${BIN_LOG}" >/dev/null
+grep -F "CMD=compose --env-file .env.prod -f docker-compose.prod.yml run --rm terminology-loader meddra --input /terminology/incoming/meddra.zip --version 27.1 --language en --dry-run" "${LOG}" >/dev/null
+grep -F "ARG_11=/terminology/incoming/meddra.zip" "${LOG}" >/dev/null
+grep -F "ARG_16=--dry-run" "${LOG}" >/dev/null
 
-: > "${BIN_LOG}"
+: > "${LOG}"
+PATH="${BIN_DIR}:${PATH}" \
+DOCKER_LOG="${LOG}" \
 APP_DIR="${APP_DIR}" \
-TERMINOLOGY_LOADER_BIN="${TMP_DIR}/bin/fake-terminology-loader" \
-TERMINOLOGY_LOADER_LOG="${BIN_LOG}" \
+E2BR3_TERMINOLOGY_DIR="${TMP_DIR}/terminology" \
 sh "${SCRIPT}" --load whodrug "${INPUT_DIR}/whodrug.zip" 2025.09 ko
 
-grep -F "ARGS=whodrug --input ${INPUT_DIR}/whodrug.zip --version 2025.09 --language ko" "${BIN_LOG}" >/dev/null
-if grep -F -- "--dry-run" "${BIN_LOG}" >/dev/null; then
+grep -F "CMD=compose --env-file .env.prod -f docker-compose.prod.yml run --rm terminology-loader whodrug --input /terminology/incoming/whodrug.zip --version 2025.09 --language ko" "${LOG}" >/dev/null
+grep -F "ARG_11=/terminology/incoming/whodrug.zip" "${LOG}" >/dev/null
+if grep -F -- "--dry-run" "${LOG}" >/dev/null; then
   echo "load mode must not pass --dry-run"
   exit 1
 fi
 
-if APP_DIR="${APP_DIR}" sh "${SCRIPT}" meddra "${INPUT_DIR}/meddra.zip" 27.1 2>"${TMP_DIR}/missing-mode.err"; then
-  echo "script should require --dry-run or --load"
+if PATH="${BIN_DIR}:${PATH}" \
+  DOCKER_LOG="${LOG}" \
+  APP_DIR="${APP_DIR}" \
+  E2BR3_TERMINOLOGY_DIR="${TMP_DIR}/terminology" \
+  sh "${SCRIPT}" --load meddra "${INPUT_DIR}/missing.zip" 27.1 2>"${TMP_DIR}/missing-input.err"; then
+  echo "script should fail when input is missing"
   exit 1
 fi
-grep -F "Choose exactly one mode: --dry-run or --load." "${TMP_DIR}/missing-mode.err" >/dev/null
+grep -F "Input path not found: ${INPUT_DIR}/missing.zip" "${TMP_DIR}/missing-input.err" >/dev/null
 
-echo "terminology-load.sh tests passed."
+echo "terminology-load tests passed"

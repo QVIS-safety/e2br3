@@ -3,8 +3,8 @@ set -eu
 
 APP_DIR="${APP_DIR:-/opt/e2br3}"
 ENV_FILE="${ENV_FILE:-.env.prod}"
-PROJECT_DIR="${PROJECT_DIR:-${APP_DIR}/e2br3}"
-TERMINOLOGY_LOADER_BIN="${TERMINOLOGY_LOADER_BIN:-}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
+E2BR3_TERMINOLOGY_DIR="${E2BR3_TERMINOLOGY_DIR:-/opt/e2br3/terminology}"
 
 usage() {
   cat >&2 <<'EOF'
@@ -13,10 +13,10 @@ Usage:
   terminology-load.sh --load    <meddra|whodrug> <input-path> <version> [language]
 
 Environment:
-  APP_DIR                 EC2 app directory. Default: /opt/e2br3
-  ENV_FILE                Env file path, relative to APP_DIR unless absolute. Default: .env.prod
-  PROJECT_DIR             Repo checkout used for cargo run. Default: ${APP_DIR}/e2br3
-  TERMINOLOGY_LOADER_BIN  Optional prebuilt terminology-loader binary path.
+  APP_DIR                  EC2 app directory. Default: /opt/e2br3
+  ENV_FILE                 Docker Compose env file, relative to APP_DIR unless absolute. Default: .env.prod
+  COMPOSE_FILE             Docker Compose file, relative to APP_DIR unless absolute. Default: docker-compose.prod.yml
+  E2BR3_TERMINOLOGY_DIR    Host terminology mount root. Default: /opt/e2br3/terminology
 
 Examples:
   APP_DIR=/opt/e2br3 ./terminology-load.sh --dry-run meddra /opt/e2br3/terminology/incoming/meddra_27_1.zip 27.1
@@ -67,46 +67,51 @@ case "${ENV_FILE}" in
   *) RESOLVED_ENV_FILE="${APP_DIR}/${ENV_FILE}" ;;
 esac
 
+case "${COMPOSE_FILE}" in
+  /*) RESOLVED_COMPOSE_FILE="${COMPOSE_FILE}" ;;
+  *) RESOLVED_COMPOSE_FILE="${APP_DIR}/${COMPOSE_FILE}" ;;
+esac
+
 if [ ! -f "${RESOLVED_ENV_FILE}" ]; then
   echo "Missing env file: ${RESOLVED_ENV_FILE}" >&2
-  echo "Set APP_DIR or ENV_FILE to the EC2 production env file." >&2
   exit 1
 fi
 
-set -a
-. "${RESOLVED_ENV_FILE}"
-set +a
-
-if [ -z "${SERVICE_DB_URL:-}" ]; then
-  echo "SERVICE_DB_URL is required in ${RESOLVED_ENV_FILE}." >&2
+if [ ! -f "${RESOLVED_COMPOSE_FILE}" ]; then
+  echo "Missing compose file: ${RESOLVED_COMPOSE_FILE}" >&2
   exit 1
 fi
+
+INPUT_DIR=$(CDPATH= cd -- "$(dirname -- "${INPUT_PATH}")" && pwd)
+INPUT_ABS="${INPUT_DIR}/$(basename -- "${INPUT_PATH}")"
+TERMINOLOGY_ABS=$(CDPATH= cd -- "${E2BR3_TERMINOLOGY_DIR}" && pwd)
+
+case "${INPUT_ABS}" in
+  "${TERMINOLOGY_ABS}"/*)
+    RELATIVE_INPUT=${INPUT_ABS#"${TERMINOLOGY_ABS}/"}
+    ;;
+  *)
+    echo "Input path must be under E2BR3_TERMINOLOGY_DIR: ${E2BR3_TERMINOLOGY_DIR}" >&2
+    exit 1
+    ;;
+esac
+
+CONTAINER_INPUT="/terminology/${RELATIVE_INPUT}"
 
 echo "Dictionary: ${DICTIONARY}"
-echo "Input: ${INPUT_PATH}"
+echo "Input: ${INPUT_ABS}"
+echo "Container input: ${CONTAINER_INPUT}"
 echo "Version: ${VERSION}"
 echo "Language: ${LANGUAGE}"
 echo "Mode: ${MODE}"
 
-if [ -n "${TERMINOLOGY_LOADER_BIN}" ]; then
-  if [ ! -x "${TERMINOLOGY_LOADER_BIN}" ]; then
-    echo "TERMINOLOGY_LOADER_BIN is not executable: ${TERMINOLOGY_LOADER_BIN}" >&2
-    exit 1
-  fi
-  set -- "${TERMINOLOGY_LOADER_BIN}" "${DICTIONARY}" --input "${INPUT_PATH}" --version "${VERSION}" --language "${LANGUAGE}"
-else
-  if ! command -v cargo >/dev/null 2>&1; then
-    echo "cargo is required when TERMINOLOGY_LOADER_BIN is not set." >&2
-    echo "Install Rust on EC2 or provide a prebuilt terminology-loader binary." >&2
-    exit 1
-  fi
-  if [ ! -f "${PROJECT_DIR}/Cargo.toml" ]; then
-    echo "Cargo.toml not found under PROJECT_DIR: ${PROJECT_DIR}" >&2
-    echo "Set PROJECT_DIR to the repository checkout on EC2." >&2
-    exit 1
-  fi
-  set -- cargo run --manifest-path "${PROJECT_DIR}/Cargo.toml" -p terminology-loader -- "${DICTIONARY}" --input "${INPUT_PATH}" --version "${VERSION}" --language "${LANGUAGE}"
-fi
+cd "${APP_DIR}"
+
+set -- docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" run --rm terminology-loader \
+  "${DICTIONARY}" \
+  --input "${CONTAINER_INPUT}" \
+  --version "${VERSION}" \
+  --language "${LANGUAGE}"
 
 if [ "${MODE}" = "dry-run" ]; then
   set -- "$@" --dry-run
