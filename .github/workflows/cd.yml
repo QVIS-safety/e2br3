@@ -141,12 +141,14 @@ jobs:
           AWS_SSM_TARGET: ${{ secrets.AWS_SSM_TARGET }}
         run: |
           set -eu
+          image_ref_q="$(jq -rn --arg v "${IMAGE_REF}" '$v|@sh')"
+          deploy_command="IMAGE_REF=${image_ref_q} RESET_DB=1 INCLUDE_SEED=1 ./deploy.sh"
           commands_json="$(jq -n \
-            --arg image_ref "${IMAGE_REF}" \
+            --arg deploy_command "${deploy_command}" \
             '[
               "set -eu",
               "cd /opt/e2br3",
-              "IMAGE_REF=\($image_ref) RESET_DB=1 INCLUDE_SEED=1 ./deploy.sh"
+              $deploy_command
             ]'
           )"
 
@@ -216,16 +218,20 @@ jobs:
             mode="dry-run"
           fi
 
-          commands_json="$(jq -n \
-            --arg mode "${mode}" \
+          term_command="$(jq -rn \
+            --arg mode "--${mode}" \
             --arg dictionary "${DICTIONARY}" \
             --arg input_path "${INPUT_PATH}" \
             --arg version "${VERSION}" \
             --arg language "${LANGUAGE}" \
+            '["./terminology-load.sh", $mode, $dictionary, $input_path, $version, $language] | @sh'
+          )"
+          commands_json="$(jq -n \
+            --arg term_command "${term_command}" \
             '[
               "set -eu",
               "cd /opt/e2br3",
-              "./terminology-load.sh --\($mode) \($dictionary) \($input_path) \($version) \($language)"
+              $term_command
             ]'
           )"
 
