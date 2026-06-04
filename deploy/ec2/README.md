@@ -60,12 +60,12 @@ DATABASE_URL='postgres://<app-user>:<app-pwd>@<rds-endpoint>:5432/app_db?sslmode
 ./deploy/ec2/init-rds.sh
 ```
 
-If you keep DB URLs in `/opt/e2br3/e2br3/deploy/ec2/.env.prod`, you can run:
+If you keep DB URLs in `/opt/e2br3/.env.prod`, you can run:
 
 ```sh
-cd /opt/e2br3/e2br3
+cd /opt/e2br3
 set -a
-. /opt/e2br3/e2br3/deploy/ec2/.env.prod
+. /opt/e2br3/.env.prod
 set +a
 RESET_DB=1 DATABASE_URL="$SERVICE_DB_URL" ./deploy/ec2/init-rds.sh
 ```
@@ -138,16 +138,16 @@ Run a dry run first through the one-off Docker Compose service. This uses the sa
 the app, but runs `/app/terminology-loader` instead of starting the web server:
 
 ```sh
-cd /opt/e2br3/e2br3
+cd /opt/e2br3
 
-docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
+docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm terminology-loader \
   meddra \
   --input '/terminology/incoming/<meddra-release>.zip' \
   --version '<meddra-version>' \
   --language en \
   --dry-run
 
-docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
+docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm terminology-loader \
   whodrug \
   --input '/terminology/incoming/<whodrug-release>.zip' \
   --version '<whodrug-version>' \
@@ -158,15 +158,15 @@ docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod
 If the dry run succeeds, load the releases:
 
 ```sh
-cd /opt/e2br3/e2br3
+cd /opt/e2br3
 
-docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
+docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm terminology-loader \
   meddra \
   --input '/terminology/incoming/<meddra-release>.zip' \
   --version '<meddra-version>' \
   --language en
 
-docker compose --env-file deploy/ec2/.env.prod -f deploy/ec2/docker-compose.prod.yml run --rm terminology-loader \
+docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm terminology-loader \
   whodrug \
   --input '/terminology/incoming/<whodrug-release>.zip' \
   --version '<whodrug-version>' \

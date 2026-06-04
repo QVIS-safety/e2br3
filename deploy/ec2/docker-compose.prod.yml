@@ -1,6 +1,6 @@
 services:
   app:
-    image: ${IMAGE_REF:-ghcr.io/REPLACE_ME/e2br3-web-server:latest}
+    image: ${IMAGE_REF:-ghcr.io/replace-me/e2br3-web-server:latest}
     container_name: e2br3-web-server
     restart: unless-stopped
     ports:
@@ -30,7 +30,7 @@ services:
       - ${E2BR3_SCHEMAS_DIR:-./schemas}:/app/schemas:ro
 
   terminology-loader:
-    image: ${IMAGE_REF:-ghcr.io/REPLACE_ME/e2br3-web-server:latest}
+    image: ${IMAGE_REF:-ghcr.io/replace-me/e2br3-web-server:latest}
     profiles:
       - tools
     restart: "no"
