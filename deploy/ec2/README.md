@@ -3,7 +3,6 @@
 ## Files
 
 - `docker-compose.prod.yml`: Production compose file (app only, uses RDS).
-- `.env.prod.example`: Template for required runtime environment variables.
 - `deploy.sh`: Pull and rollout script used by CD. In the temporary demo environment it can reset RDS, load seed data, reload terminology, and restart the app.
 - `init-rds.sh`: One-time SQL bootstrap runner for RDS.
 - `run-terminology-manifest.sh`: Loads every terminology release listed in the EC2 terminology manifest.
@@ -18,7 +17,6 @@
    - `sudo mkdir -p /opt/e2br3/schemas`
 3. Copy these files to `/opt/e2br3`:
    - `docker-compose.prod.yml`
-   - `.env.prod.example` as `.env.prod`
    - `deploy.sh`
    - `run-terminology-manifest.sh`
    - `terminology-load.sh`
@@ -33,7 +31,31 @@
    - `sudo chown -R "$USER":"$USER" /opt/e2br3/terminology`
    - `cp /opt/e2br3/terminology-manifest.prod.example /opt/e2br3/terminology/terminology-manifest.prod`
    - Edit `/opt/e2br3/terminology/terminology-manifest.prod` to reference the licensed release files uploaded to `/opt/e2br3/terminology/incoming`.
-6. Fill `/opt/e2br3/.env.prod` with real secrets and RDS URL.
+6. Create `/opt/e2br3/.env.prod` manually with the runtime image, RDS URLs, secrets, and deployment
+   settings. Use real operational values for secrets and URLs:
+
+   ```sh
+   IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha>
+   APP_PORT=3000
+   SERVICE_DB_URL=postgres://<app-user>:<app-password>@<rds-endpoint>:5432/<app-db>?sslmode=require
+   SERVICE_DB_ROOT_URL=postgres://<admin-user>:<admin-password>@<rds-endpoint>:5432/postgres?sslmode=require
+   SERVICE_PWD_KEY=<stable-password-hash-key>
+   SERVICE_TOKEN_KEY=<stable-token-signing-key>
+   SERVICE_TOKEN_DURATION_SEC=86400
+   E2BR3_VALIDATOR_TOKEN=<validator-token>
+   E2BR3_SCHEMAS_DIR=/opt/e2br3/schemas
+   E2BR3_XSD_PATH=/opt/e2br3/schemas/ich-icsr-v3.0.xsd
+   E2BR3_SKIP_XML_VALIDATE=false
+   E2BR3_EXPORT_VALIDATE=true
+   E2BR3_DEFAULT_MESSAGE_SENDER=<sender-id>
+   E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA=<fda-receiver-id>
+   E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH=<ich-receiver-id>
+   E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS=<mfds-receiver-id>
+   RUST_LOG=info
+   E2BR3_ENV=prod
+   E2BR3_STRICT_SUBMISSION_CONFIG=true
+   E2BR3_ALLOW_MOCK_SUBMISSION=false
+   ```
 7. Ensure `/opt/e2br3/.env.prod` has `E2BR3_SCHEMAS_DIR=/opt/e2br3/schemas`
    so the container bind-mount includes `/app/schemas/...`.
    - `deploy.sh` now syncs the bundled `schemas/` tree into that runtime directory on each deploy,
@@ -138,14 +160,14 @@ git.
 Each non-comment line is whitespace-delimited:
 
 ```text
-# dictionary host_input_path version language
+# dictionary host_input_path version [language]
 meddra /opt/e2br3/terminology/incoming/<meddra-release>.zip <meddra-version> en
 whodrug /opt/e2br3/terminology/incoming/<whodrug-release>.zip <whodrug-version> en
 ```
 
-The fields are `dictionary host_input_path version language`. `dictionary` is `meddra` or `whodrug`,
-`version` is the release identifier passed to the loader, and `language` is usually `en`. The host
-input path must be inside `E2BR3_TERMINOLOGY_DIR`. The default `E2BR3_TERMINOLOGY_DIR` is
+The fields are `dictionary host_input_path version [language]`. `dictionary` is `meddra` or `whodrug`,
+`version` is the release identifier passed to the loader, and `language` defaults to `en` when omitted.
+The host input path must be inside `E2BR3_TERMINOLOGY_DIR`. The default `E2BR3_TERMINOLOGY_DIR` is
 `/opt/e2br3/terminology`, mounted into the container as `/terminology`.
 
 ## Loading MedDRA and WHODrug on EC2
