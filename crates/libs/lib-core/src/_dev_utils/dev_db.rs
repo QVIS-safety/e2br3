@@ -320,6 +320,88 @@ END $$"#,
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS mfds_report_type VARCHAR(20)",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS fda_report_type VARCHAR(20)",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS report_year VARCHAR(4)",
+		"DROP TABLE IF EXISTS receiver_presave_routes CASCADE",
+		"CREATE TABLE IF NOT EXISTS submission_receiver_options (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+			authority VARCHAR(20) NOT NULL,
+			sequence_number INTEGER NOT NULL,
+			receiver_label VARCHAR(120) NOT NULL,
+			condition_page VARCHAR(20) NOT NULL DEFAULT 'CI',
+			condition_field_code VARCHAR(80) NOT NULL,
+			condition_operator VARCHAR(20) NOT NULL DEFAULT 'EQ',
+			condition_value_code VARCHAR(40) NOT NULL,
+			condition_value_label VARCHAR(120),
+			batch_receiver_identifier VARCHAR(60) NOT NULL,
+			message_receiver_identifier VARCHAR(60) NOT NULL,
+			deleted BOOLEAN NOT NULL DEFAULT false,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			created_by UUID REFERENCES users(id),
+			updated_by UUID REFERENCES users(id),
+			CONSTRAINT submission_receiver_options_authority_valid CHECK (authority IN ('fda', 'mfds')),
+			CONSTRAINT submission_receiver_options_condition_page_valid CHECK (condition_page = 'CI'),
+			CONSTRAINT submission_receiver_options_operator_valid CHECK (condition_operator = 'EQ')
+		)",
+		"CREATE INDEX IF NOT EXISTS idx_submission_receiver_options_org_authority
+			ON submission_receiver_options(organization_id, authority, sequence_number)
+			WHERE deleted = false",
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_submission_receiver_options_label_unique
+			ON submission_receiver_options(organization_id, authority, receiver_label)
+			WHERE deleted = false",
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_submission_receiver_options_condition_unique
+			ON submission_receiver_options(
+				organization_id,
+				authority,
+				condition_field_code,
+				condition_value_code,
+				message_receiver_identifier
+			)
+			WHERE deleted = false",
+		"GRANT SELECT, INSERT, UPDATE, DELETE ON submission_receiver_options TO e2br3_app_role",
+		"ALTER TABLE submission_receiver_options ENABLE ROW LEVEL SECURITY",
+		"ALTER TABLE submission_receiver_options FORCE ROW LEVEL SECURITY",
+		"DROP POLICY IF EXISTS submission_receiver_options_org_isolation ON submission_receiver_options",
+		"CREATE POLICY submission_receiver_options_org_isolation ON submission_receiver_options
+			FOR ALL TO e2br3_app_role
+			USING (
+				organization_id = current_organization_id() OR is_current_user_admin()
+			)
+			WITH CHECK (
+				organization_id = current_organization_id() OR is_current_user_admin()
+			)",
+		"INSERT INTO submission_receiver_options (
+			organization_id,
+			authority,
+			sequence_number,
+			receiver_label,
+			condition_field_code,
+			condition_value_code,
+			condition_value_label,
+			batch_receiver_identifier,
+			message_receiver_identifier
+		)
+		SELECT o.id, v.authority, v.sequence_number, v.receiver_label, v.condition_field_code,
+			   v.condition_value_code, v.condition_value_label, v.batch_receiver_identifier,
+			   v.message_receiver_identifier
+		FROM organizations o
+		CROSS JOIN (VALUES
+			('fda', 1, 'FDA(CDER IND)', 'FDA_REPORT_TYPE', '1', 'CDER IND', 'ZZFDA_PREMKT', 'CDER_IND'),
+			('fda', 2, 'FDA(CDER IND-exempt BA/BE)', 'FDA_REPORT_TYPE', '2', 'CDER IND-exempt BA/BE', 'ZZFDA_PREMKT', 'CDER_IND_EXEMPT_BA_BE'),
+			('fda', 3, 'FDA(CBER IND)', 'FDA_REPORT_TYPE', '3', 'CBER IND', 'ZZFDA_PREMKT', 'CBER_IND'),
+			('fda', 4, 'FDA(Postmarket)', 'FDA_REPORT_TYPE', '4', 'Postmarket', 'ZZFDA', 'CDER'),
+			('mfds', 1, 'MFDS(CT)', 'MFDS_REPORT_TYPE', '1', 'CT', 'MFDS_CT', 'CT'),
+			('mfds', 2, 'MFDS(CU)', 'MFDS_REPORT_TYPE', '2', 'CU', 'MFDS_CU', 'CU'),
+			('mfds', 3, 'MFDS(KR)', 'MFDS_REPORT_TYPE', '3', 'KR', 'MFDS', 'KR'),
+			('mfds', 4, 'MFDS(FR)', 'MFDS_REPORT_TYPE', '4', 'FR', 'MFDS_FR', 'FR')
+		) AS v(authority, sequence_number, receiver_label, condition_field_code, condition_value_code, condition_value_label, batch_receiver_identifier, message_receiver_identifier)
+		ON CONFLICT DO NOTHING",
+		"DROP TRIGGER IF EXISTS audit_submission_receiver_options ON submission_receiver_options",
+		"CREATE TRIGGER audit_submission_receiver_options AFTER INSERT OR UPDATE OR DELETE ON submission_receiver_options
+			FOR EACH ROW EXECUTE FUNCTION audit_trigger_function()",
+		"DROP TRIGGER IF EXISTS update_submission_receiver_options_updated_at ON submission_receiver_options",
+		"CREATE TRIGGER update_submission_receiver_options_updated_at BEFORE UPDATE ON submission_receiver_options
+			FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS review_receivers_json TEXT",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS workflow_routes_json TEXT",
 		"ALTER TABLE cases ADD COLUMN IF NOT EXISTS workflow_status TEXT NOT NULL DEFAULT 'Saved'",

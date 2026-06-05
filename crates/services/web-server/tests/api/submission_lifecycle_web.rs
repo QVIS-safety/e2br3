@@ -1024,6 +1024,39 @@ async fn test_submission_history_includes_latest_ack_time_and_event() -> Result<
 
 #[serial]
 #[tokio::test]
+async fn test_submission_receiver_options_list_defaults_by_authority() -> Result<()>
+{
+	clear_esg_env();
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, value) = get_json(
+		&app,
+		&cookie,
+		"/api/submissions/receiver-options?authority=fda",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	let items = value["data"]["items"]
+		.as_array()
+		.ok_or("missing receiver option items")?;
+	assert!(items.iter().any(|item| {
+		item["receiver_label"].as_str() == Some("FDA(Postmarket)")
+			&& item["batch_receiver_identifier"].as_str() == Some("ZZFDA")
+			&& item["message_receiver_identifier"].as_str() == Some("CDER")
+			&& item["condition_field_code"].as_str() == Some("FDA_REPORT_TYPE")
+			&& item["condition_value_code"].as_str() == Some("4")
+	}));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_submission_ack_can_be_downloaded_as_text() -> Result<()> {
 	clear_esg_env();
 	let mm = init_test_mm().await?;

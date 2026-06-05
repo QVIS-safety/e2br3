@@ -54,6 +54,9 @@ CREATE TRIGGER update_case_submissions_updated_at BEFORE UPDATE ON case_submissi
 CREATE TRIGGER update_submission_dispatch_state_updated_at BEFORE UPDATE ON submission_dispatch_state
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_submission_receiver_options_updated_at BEFORE UPDATE ON submission_receiver_options
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_e_signatures_updated_at BEFORE UPDATE ON e_signatures
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -567,6 +570,9 @@ CREATE TRIGGER audit_receiver_presaves AFTER INSERT OR UPDATE OR DELETE ON recei
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_receiver_presave_consignees AFTER INSERT OR UPDATE OR DELETE ON receiver_presave_consignees
+    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
+
+CREATE TRIGGER audit_submission_receiver_options AFTER INSERT OR UPDATE OR DELETE ON submission_receiver_options
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_product_presaves AFTER INSERT OR UPDATE OR DELETE ON product_presaves

@@ -920,7 +920,78 @@ CREATE TABLE if NOT EXISTS submission_idempotency (
 CREATE INDEX idx_submission_idempotency_submission ON submission_idempotency(submission_id);
 
     -- ============================================================================
-    -- 4.5 XML Import History
+    -- 4.5 Submission Receiver Options
+    -- ============================================================================
+CREATE TABLE if NOT EXISTS submission_receiver_options (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    authority VARCHAR(20) NOT NULL,
+    sequence_number INTEGER NOT NULL,
+    receiver_label VARCHAR(120) NOT NULL,
+    condition_page VARCHAR(20) NOT NULL DEFAULT 'CI',
+    condition_field_code VARCHAR(80) NOT NULL,
+    condition_operator VARCHAR(20) NOT NULL DEFAULT 'EQ',
+    condition_value_code VARCHAR(40) NOT NULL,
+    condition_value_label VARCHAR(120),
+    batch_receiver_identifier VARCHAR(60) NOT NULL,
+    message_receiver_identifier VARCHAR(60) NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID REFERENCES users(id),
+    updated_by UUID REFERENCES users(id),
+    CONSTRAINT submission_receiver_options_authority_valid CHECK (authority IN ('fda', 'mfds')),
+    CONSTRAINT submission_receiver_options_condition_page_valid CHECK (condition_page = 'CI'),
+    CONSTRAINT submission_receiver_options_operator_valid CHECK (condition_operator = 'EQ')
+);
+
+CREATE INDEX idx_submission_receiver_options_org_authority
+    ON submission_receiver_options(organization_id, authority, sequence_number)
+    WHERE deleted = false;
+
+CREATE UNIQUE INDEX idx_submission_receiver_options_label_unique
+    ON submission_receiver_options(organization_id, authority, receiver_label)
+    WHERE deleted = false;
+
+CREATE UNIQUE INDEX idx_submission_receiver_options_condition_unique
+    ON submission_receiver_options(
+        organization_id,
+        authority,
+        condition_field_code,
+        condition_value_code,
+        message_receiver_identifier
+    )
+    WHERE deleted = false;
+
+INSERT INTO submission_receiver_options (
+    organization_id,
+    authority,
+    sequence_number,
+    receiver_label,
+    condition_field_code,
+    condition_value_code,
+    condition_value_label,
+    batch_receiver_identifier,
+    message_receiver_identifier
+)
+SELECT o.id, v.authority, v.sequence_number, v.receiver_label, v.condition_field_code,
+       v.condition_value_code, v.condition_value_label, v.batch_receiver_identifier,
+       v.message_receiver_identifier
+FROM organizations o
+CROSS JOIN (VALUES
+    ('fda', 1, 'FDA(CDER IND)', 'FDA_REPORT_TYPE', '1', 'CDER IND', 'ZZFDA_PREMKT', 'CDER_IND'),
+    ('fda', 2, 'FDA(CDER IND-exempt BA/BE)', 'FDA_REPORT_TYPE', '2', 'CDER IND-exempt BA/BE', 'ZZFDA_PREMKT', 'CDER_IND_EXEMPT_BA_BE'),
+    ('fda', 3, 'FDA(CBER IND)', 'FDA_REPORT_TYPE', '3', 'CBER IND', 'ZZFDA_PREMKT', 'CBER_IND'),
+    ('fda', 4, 'FDA(Postmarket)', 'FDA_REPORT_TYPE', '4', 'Postmarket', 'ZZFDA', 'CDER'),
+    ('mfds', 1, 'MFDS(CT)', 'MFDS_REPORT_TYPE', '1', 'CT', 'MFDS_CT', 'CT'),
+    ('mfds', 2, 'MFDS(CU)', 'MFDS_REPORT_TYPE', '2', 'CU', 'MFDS_CU', 'CU'),
+    ('mfds', 3, 'MFDS(KR)', 'MFDS_REPORT_TYPE', '3', 'KR', 'MFDS', 'KR'),
+    ('mfds', 4, 'MFDS(FR)', 'MFDS_REPORT_TYPE', '4', 'FR', 'MFDS_FR', 'FR')
+) AS v(authority, sequence_number, receiver_label, condition_field_code, condition_value_code, condition_value_label, batch_receiver_identifier, message_receiver_identifier)
+ON CONFLICT DO NOTHING;
+
+    -- ============================================================================
+    -- 4.6 XML Import History
     -- ============================================================================
 CREATE TABLE if NOT EXISTS xml_import_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -949,7 +1020,7 @@ CREATE INDEX idx_xml_import_history_case ON xml_import_history(case_id, uploaded
 CREATE INDEX idx_xml_import_history_user ON xml_import_history(uploaded_by, uploaded_at DESC);
 
     -- ============================================================================
-    -- 4.6 XML Export History
+    -- 4.7 XML Export History
     -- ============================================================================
 CREATE TABLE if NOT EXISTS xml_export_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -977,7 +1048,7 @@ CREATE INDEX idx_xml_export_history_case ON xml_export_history(case_id, exported
 CREATE INDEX idx_xml_export_history_user ON xml_export_history(exported_by, exported_at DESC);
 
     -- ============================================================================
-    -- 4.5 Submission ACKs (durable ACK history)
+    -- 4.8 Submission ACKs (durable ACK history)
     -- ============================================================================
 CREATE TABLE if NOT EXISTS submission_acks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -995,7 +1066,7 @@ CREATE UNIQUE INDEX idx_submission_acks_unique_event
     ON submission_acks(submission_id, ack_level, success, COALESCE(ack_code, ''), received_at);
 
     -- ============================================================================
-    -- 4.6 Electronic Signatures (Part 11 / Annex 11)
+    -- 4.9 Electronic Signatures (Part 11 / Annex 11)
     -- ============================================================================
 CREATE TABLE if NOT EXISTS e_signatures (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1680,7 +1751,22 @@ CREATE POLICY submission_idempotency_via_case ON submission_idempotency
     );
 
 -- ============================================================================
--- 9.7 Submission ACKs Table RLS
+-- 9.7 Submission Receiver Options Table RLS
+-- ============================================================================
+ALTER TABLE submission_receiver_options ENABLE ROW LEVEL SECURITY;
+ALTER TABLE submission_receiver_options FORCE ROW LEVEL SECURITY;
+CREATE POLICY submission_receiver_options_org_isolation ON submission_receiver_options
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id() OR is_current_user_admin()
+    );
+
+-- ============================================================================
+-- 9.8 Submission ACKs Table RLS
 -- ============================================================================
 ALTER TABLE submission_acks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE submission_acks FORCE ROW LEVEL SECURITY;

@@ -1,5 +1,5 @@
 use crate::web::rest::compliance::{capture_e_signature, ComplianceActionInput};
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::header;
 use axum::http::StatusCode;
 use axum::http::{HeaderMap, HeaderValue};
@@ -7,11 +7,14 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use lib_core::model::acs::{XML_EXPORT, XML_EXPORT_READ};
 use lib_core::model::store::set_full_context_dbx;
+use lib_core::model::submission_receiver_option::{
+	SubmissionReceiverOption, SubmissionReceiverOptionBmc,
+};
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::submission::{
@@ -40,6 +43,11 @@ pub struct SubmissionHistoryList {
 }
 
 #[derive(Debug, Serialize)]
+pub struct SubmissionReceiverOptionList {
+	pub items: Vec<SubmissionReceiverOption>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct SubmissionDispatchStateData {
 	pub state: SubmissionDispatchStateRecord,
 }
@@ -57,6 +65,11 @@ pub struct SubmissionReconcileStatusData {
 #[derive(Debug, serde::Deserialize)]
 pub struct ReconcileRequestInput {
 	pub limit: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ReceiverOptionsQuery {
+	pub authority: String,
 }
 
 /// POST /api/cases/{id}/submissions/fda
@@ -155,6 +168,36 @@ pub async fn list_case_submissions(
 		StatusCode::OK,
 		Json(DataRestResult {
 			data: CaseSubmissionList { items: rows },
+		}),
+	))
+}
+
+/// GET /api/submissions/receiver-options
+pub async fn list_receiver_options(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Query(query): Query<ReceiverOptionsQuery>,
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<SubmissionReceiverOptionList>>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, XML_EXPORT_READ)?;
+	let authority = query.authority.trim().to_ascii_lowercase();
+	if !matches!(authority.as_str(), "fda" | "mfds") {
+		return Err(Error::BadRequest {
+			message: format!(
+				"unsupported receiver option authority: {}",
+				query.authority
+			),
+		});
+	}
+	let rows = SubmissionReceiverOptionBmc::list_by_authority(&ctx, &mm, &authority)
+		.await?;
+	Ok((
+		StatusCode::OK,
+		Json(DataRestResult {
+			data: SubmissionReceiverOptionList { items: rows },
 		}),
 	))
 }

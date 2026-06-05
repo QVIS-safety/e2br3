@@ -312,6 +312,39 @@ async fn reporter_presaves_do_not_store_case_only_reporter_fields() -> Result<()
 
 #[serial]
 #[tokio::test]
+async fn submission_receiver_options_schema_exists_without_receiver_presave_routes(
+) -> Result<()> {
+	_dev_utils::init_dev().await;
+	_dev_utils::ensure_dev_schema_compatibility()
+		.await
+		.expect("ensure_dev_schema_compatibility failed");
+	let mm = ModelManager::new().await?;
+
+	let submission_options_exists: bool = sqlx::query_scalar(
+		"SELECT to_regclass('public.submission_receiver_options') IS NOT NULL",
+	)
+	.fetch_one(mm.dbx().db())
+	.await?;
+	assert!(
+		submission_options_exists,
+		"submission_receiver_options must own submission routing options"
+	);
+
+	let receiver_presave_routes_exists: bool = sqlx::query_scalar(
+		"SELECT to_regclass('public.receiver_presave_routes') IS NOT NULL",
+	)
+	.fetch_one(mm.dbx().db())
+	.await?;
+	assert!(
+		!receiver_presave_routes_exists,
+		"receiver_presave_routes must not exist; receiver presave is parent plus consignees only"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()> {
 	_dev_utils::init_dev().await;
 	let mm = ModelManager::new().await?;

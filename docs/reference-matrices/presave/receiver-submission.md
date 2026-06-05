@@ -2,6 +2,8 @@
 
 Date: 2026-06-01
 
+Updated: 2026-06-05. The 2026-06-05 bundle investigation supersedes the original recommendation to add `receiver_presave_routes`. Receiver detail owns master plus consignees only. Submission receiver options belong to the submission workflow.
+
 Scope: receiver presave master records and receiver selection in `SUB > SUBMISSION`. The reference workflow was inspected through the logged-in Chrome UI only. No direct API calls and no bundle downloads were used.
 
 Reference routes inspected:
@@ -68,27 +70,25 @@ The local flow currently writes selected receiver presave data to `/api/cases/{c
 | `receiver_presave_consignees.updated_at` | Not a reference receiver form field. | Not edited by receiver form. | `receiver_presave_consignees.updated_at`. | Audit metadata. | `localSystemOnly` | Keep. |
 | `receiver_presave_consignees.created_by` | Not a reference receiver form field. | Not edited by receiver form. | `receiver_presave_consignees.created_by`. | Audit metadata. | `localSystemOnly` | Keep. |
 | `receiver_presave_consignees.updated_by` | Not a reference receiver form field. | Not edited by receiver form. | `receiver_presave_consignees.updated_by`. | Audit metadata. | `localSystemOnly` | Keep. |
-| `SUB.RECEIVER` selection | Reference `SUB > SUBMISSION` receiver input opens route options such as `MFDS(KR)` and `FDA(CBER IND)`. | `selectedReceiverTemplate`; `resolveReceiverRouting`. | No backend receiver route child table. | Submission receiver route selection. | `referenceImportedToCase` | Add route child rows under receiver presave; selection should choose one route row. |
-| `SUB.RECEIVER` route label | Reference route labels captured: `MFDS(CF)`, `MFDS(FR)`, `MFDS(KR)`, `MFDS(CU)`, `MFDS(CT)`, `FDA(Postmarket)`, `FDA(CDER IND)`, `FDA(CDER IND-exempt BA/BE)`, `FDA(CBER IND)`. | Current `routingRules[]` has no display label field. | No backend route label column/table. | Submission receiver route selection. | `referenceImportedToCase` | Add `receiver_presave_routes.receiver_label`. |
-| route authority | Reference route label and condition field split by authority: MFDS uses MFDS report type; FDA uses FDA report type. | `routingRules[].authority`. | No backend route child table. | Submission receiver route matching. | `referenceImportedToCase` | Move from loose frontend-only `routingRules[]` to persisted route row `authority`. |
-| route condition page | Reference generated row `0-PAGE = CI (C.1)` for MFDS and FDA receiver routes. | No explicit persisted local field. | No backend route child table. | Submission condition row. | `referenceImportedToCase` | Add `condition_page` route column; seed `CI`. |
-| route condition item: MFDS | Reference generated row `0-ITEM = MFDS Report Type(-)` for `MFDS(...)` routes. | Local submission derives report type from case safety report, not from persisted route condition row. | No backend route child table. | `CI.MFDS_REPORT_TYPE`. | `referenceImportedToCase` | Add `condition_field_code = MFDS_REPORT_TYPE` route column. |
-| route condition item: FDA | Reference generated row `0-ITEM = FDA Report Type(FDA_REPORT_TYPE)` for `FDA(...)` routes. | Local submission derives report type from case safety report, not from persisted route condition row. | No backend route child table. | `CI.FDA_REPORT_TYPE`. | `referenceImportedToCase` | Add `condition_field_code = FDA_REPORT_TYPE` route column. |
-| route condition operator | Reference generated row `0-CONDITION = Equal`. | No explicit persisted local field. | No backend route child table. | Submission condition row. | `referenceImportedToCase` | Add `condition_operator`, fixed to `Equal` for captured routes. |
-| route condition value: `MFDS(CT)` | Reference generated value `1` for `MFDS(CT)`. | Current `routingRules[].reportType` can carry a code but lacks route label and condition metadata. | No backend route child table. | `CI.MFDS_REPORT_TYPE = 1`. | `referenceImportedToCase` | Add persisted route row. |
-| route condition value: `MFDS(CU)` | Reference generated value `2` for `MFDS(CU)`. | Same as above. | No backend route child table. | `CI.MFDS_REPORT_TYPE = 2`. | `referenceImportedToCase` | Add persisted route row. |
-| route condition value: `MFDS(KR)` | Reference generated value `3` for `MFDS(KR)`. | Same as above. | No backend route child table. | `CI.MFDS_REPORT_TYPE = 3`. | `referenceImportedToCase` | Add persisted route row. |
-| route condition value: `MFDS(FR)` | Reference generated value `4` for `MFDS(FR)`. | Same as above. | No backend route child table. | `CI.MFDS_REPORT_TYPE = 4`. | `referenceImportedToCase` | Add persisted route row. |
-| route condition value: `MFDS(CF)` | Reference generated value `5` for `MFDS(CF)`. | Same as above. | No backend route child table. | `CI.MFDS_REPORT_TYPE = 5`. | `referenceImportedToCase` | Add persisted route row. |
-| route condition value: `FDA(CDER IND)` | Reference generated value `1` for `FDA(CDER IND)`. | Same as above. | No backend route child table. | `CI.FDA_REPORT_TYPE = 1`. | `referenceImportedToCase` | Add persisted route row. |
-| route condition value: `FDA(CDER IND-exempt BA/BE)` | Reference generated value `2` for `FDA(CDER IND-exempt BA/BE)`. | Same as above. | No backend route child table. | `CI.FDA_REPORT_TYPE = 2`. | `referenceImportedToCase` | Add persisted route row. |
-| route condition value: `FDA(CBER IND)` | Reference generated value `3` for `FDA(CBER IND)`. | Same as above. | No backend route child table. | `CI.FDA_REPORT_TYPE = 3`. | `referenceImportedToCase` | Add persisted route row. |
-| route condition value: `FDA(Postmarket)` | Reference generated value `4` for `FDA(Postmarket)`. | Same as above. | No backend route child table. | `CI.FDA_REPORT_TYPE = 4`. | `referenceImportedToCase` | Add persisted route row. |
-| `message_headers.batch_receiver_identifier` / `batchReceiverId` | Reference selection is a submission receiver route; exact N header value is not displayed in case edit UI, but this is the local N receiver batch target. | `batchReceiverId`; `resolveReceiverRouting` writes `batchReceiverIdentifier`. | `message_headers.batch_receiver_identifier`. | Message header receiver routing. | `referenceImportedToCase` | Make route row provide this value explicitly; stop parent-level implicit identifier substitution. |
-| `message_headers.message_receiver_identifier` / route message identifier | Reference receiver route labels encode receiver variants, and the CI warning says Receiver ID applies from MFDS report type. | `receiverId`; `routingRules[].messageReceiverIdentifier`; `resolveReceiverRouting`. | `message_headers.message_receiver_identifier`. | Message header receiver routing. | `referenceImportedToCase` | Make route row provide this value explicitly; stop parent-level implicit identifier substitution. |
-| `routingRules[].reportType` | Reference route condition value is per route row. | Current loose frontend child array. | No backend route child table. | Submission route condition value. | `removed` | Replace with persisted route row `condition_value_code`. |
-| `routingRules[].batchReceiverIdentifier` | Reference target belongs to selected receiver route, not loose frontend-only data. | Current loose frontend child array. | No backend route child table. | Message header receiver routing. | `removed` | Replace with persisted route row `batch_receiver_identifier`. |
-| `routingRules[].messageReceiverIdentifier` | Reference target belongs to selected receiver route, not loose frontend-only data. | Current loose frontend child array. | No backend route child table. | Message header receiver routing. | `removed` | Replace with persisted route row `message_receiver_identifier`. |
+| `SUB.RECEIVER` selection | Reference `SUB > SUBMISSION` receiver input opens submission options such as `MFDS(KR)` and `FDA(CBER IND)` through `ReceiverSelectInput` with `type="Submission"`. | Current local submission no longer reads receiver presave `routes`; it uses explicit N.1.4/N.2.r.3 inputs. | No backend receiver route child table. | Submission receiver route selection. | `referenceImportedToCase` | Model as a separate submission receiver option source, not receiver presave children. |
+| `SUB.RECEIVER` route label | Reference route labels captured: `MFDS(CF)`, `MFDS(FR)`, `MFDS(KR)`, `MFDS(CU)`, `MFDS(CT)`, `FDA(Postmarket)`, `FDA(CDER IND)`, `FDA(CDER IND-exempt BA/BE)`, `FDA(CBER IND)`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | Submission receiver route selection. | `referenceImportedToCase` | Future route option model should be named around submission receiver routing. Do not add `receiver_presave_routes`. |
+| route authority | Reference route label and condition field split by authority: MFDS uses MFDS report type; FDA uses FDA report type. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | Submission receiver route matching. | `referenceImportedToCase` | Store/derive this under a submission receiver option source if local needs persisted options. |
+| route condition page | Reference generated row `0-PAGE = CI (C.1)` for MFDS and FDA receiver routes. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | Submission condition row. | `referenceImportedToCase` | Derived by submission workflow from selected label; not a receiver presave field. |
+| route condition item: MFDS | Reference generated row `0-ITEM = MFDS Report Type(-)` for `MFDS(...)` routes. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.MFDS_REPORT_TYPE`. | `referenceImportedToCase` | Derived by submission workflow from selected label. |
+| route condition item: FDA | Reference generated row `0-ITEM = FDA Report Type(FDA_REPORT_TYPE)` for `FDA(...)` routes. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.FDA_REPORT_TYPE`. | `referenceImportedToCase` | Derived by submission workflow from selected label. |
+| route condition operator | Reference generated row `0-CONDITION = Equal`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | Submission condition row. | `referenceImportedToCase` | Derived by submission workflow from selected label. |
+| route condition value: `MFDS(CT)` | Reference bundle maps `MFDS(CT)` to value `1`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.MFDS_REPORT_TYPE = 1`. | `referenceImportedToCase` | Keep in submission receiver option logic if implemented. |
+| route condition value: `MFDS(CU)` | Reference bundle maps `MFDS(CU)` to value `2`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.MFDS_REPORT_TYPE = 2`. | `referenceImportedToCase` | Keep in submission receiver option logic if implemented. |
+| route condition value: `MFDS(KR)` | Reference bundle maps `MFDS(KR)` to value `3`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.MFDS_REPORT_TYPE = 3`. | `referenceImportedToCase` | Keep in submission receiver option logic if implemented. |
+| route condition value: `MFDS(FR)` | Reference bundle maps `MFDS(FR)` to value `4`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.MFDS_REPORT_TYPE = 4`. | `referenceImportedToCase` | Keep in submission receiver option logic if implemented. |
+| route condition value: `MFDS(CF)` | Reference bundle maps `MFDS(CF)` to value `5`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.MFDS_REPORT_TYPE = 5`. | `referenceImportedToCase` | Keep in submission receiver option logic if implemented. |
+| route condition value: `FDA(CDER IND)` | Reference bundle maps `FDA(CDER IND)` to value `1`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.FDA_REPORT_TYPE = 1`. | `referenceImportedToCase` | Keep in submission receiver option logic if implemented. |
+| route condition value: `FDA(CDER IND-exempt BA/BE)` | Reference bundle maps `FDA(CDER IND-exempt BA/BE)` to value `2`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.FDA_REPORT_TYPE = 2`. | `referenceImportedToCase` | Keep in submission receiver option logic if implemented. |
+| route condition value: `FDA(CBER IND)` | Reference bundle maps `FDA(CBER IND)` to value `3`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.FDA_REPORT_TYPE = 3`. | `referenceImportedToCase` | Keep in submission receiver option logic if implemented. |
+| route condition value: `FDA(Postmarket)` | Reference bundle maps `FDA(Postmarket)` to value `4`. | No active receiver-presave route owner after cleanup. | No backend receiver route child table. | `CI.FDA_REPORT_TYPE = 4`. | `referenceImportedToCase` | Keep in submission receiver option logic if implemented. |
+| `message_headers.batch_receiver_identifier` | Reference selection is a submission receiver route; exact N header value is not displayed in the inspected submission UI bundle. | Explicit `routingBatchReceiverIdentifier` writes `batchReceiverIdentifier`. | `message_headers.batch_receiver_identifier`. | Message header receiver routing. | `localSystemOnly` | Keep explicit local submission input until a separate submission receiver option source is implemented. Do not source from receiver presave parent/children. |
+| `message_headers.message_receiver_identifier` | Reference receiver route labels encode receiver variants and CI condition values; exact N.2.r.3 write path was not visible in inspected bundle. | Explicit `routingMessageReceiverIdentifier` writes `messageReceiverIdentifier`. | `message_headers.message_receiver_identifier`. | Message header receiver routing. | `localSystemOnly` | Keep explicit local submission input until a separate submission receiver option source is implemented. Do not source from receiver presave parent/children. |
+| legacy `routingRules[]` | Not a reference payload shape. | Removed/ignored as receiver presave route source. | No backend receiver route child table. | None. | `removed` | Do not reintroduce. |
 | `receiverDepartment` | No receiver presave detail field and no receiver presave import into visible C.3 receiver fields was captured. | Frontend type/form/write mapper. | No `receiver_presaves` column; exists only as case `receiver_information.department`. | C.3 receiver information remains a case field, not receiver presave import target. | `removed` | Remove from receiver presave type/form/write mapper. Keep case receiver field outside presave import. |
 | `receiverStreetAddress` | Same as above. | Frontend type/form/write mapper. | No `receiver_presaves` column; case field is `receiver_information.street_address`. | C.3 receiver information only. | `removed` | Remove from receiver presave type/form/write mapper. |
 | `receiverCity` | Same as above. | Frontend type/form/write mapper. | No `receiver_presaves` column; case field is `receiver_information.city`. | C.3 receiver information only. | `removed` | Remove from receiver presave type/form/write mapper. |
@@ -111,34 +111,30 @@ The local flow currently writes selected receiver presave data to `/api/cases/{c
 | `receiver_information.fax` | Same as above. | `upsertReceiverInformation` accepts it. | `receiver_information.fax`. | C.3 receiver information. | `removed` | Do not populate from receiver presave. Keep as case edit field. |
 | `receiver_information.email` | Same as above. | `upsertReceiverInformation` accepts it. | `receiver_information.email`. | C.3 receiver information. | `removed` | Do not populate from receiver presave. Keep as case edit field. |
 
-## Required Backend Migration
+## Required Architecture Correction
 
-Backend architecture migration is needed to match the reference.
+Do not add `receiver_presave_routes`.
 
-Add a receiver routing child table, for example `receiver_presave_routes`, with at least:
+The 2026-06-05 receiver-detail and submission-bundle trace showed two separate reference owners:
 
-- `id`
-- `receiver_presave_id`
-- `sequence_number`
-- `authority`
-- `receiver_label`
-- `batch_receiver_identifier`
-- `message_receiver_identifier`
-- `condition_page`
-- `condition_field_code`
-- `condition_operator`
-- `condition_value_code`
-- `condition_value_label`
-- standard created/updated metadata
+- `INFO > RECEIVER` uses manufacturer master APIs and owns receiver master fields plus consignees.
+- `SUB > SUBMISSION` uses submission receiver options and derives CI report-type condition rows from labels like `MFDS(KR)` and `FDA(CDER IND)`.
 
-Then expose it through receiver presave details in the same style as sender gateways and product child rows. The parent receiver presave remains the preserve-only master record; route rows drive submission receiver selection and N-section message header identifiers.
+Backend receiver presave should therefore remain `parent + consignees`.
+
+Future backend work, if local needs reference-equivalent receiver option selection, should create a submission receiver option source outside receiver presave. The minimum proven option data is:
+
+- receiver option label, such as `MFDS(KR)` or `FDA(Postmarket)`
+- authority/reporting family
+- CI condition item derived from the label family: `MFDS_REPORT_TYPE` or `FDA_REPORT_TYPE`
+- CI condition value derived from the label value
+- local N.1.4/N.2.r.3 identifiers only if local export needs explicit message-header writing
 
 Frontend migration should:
 
-- Replace loose `routingRules[]` with persisted receiver route rows.
-- Stop copying receiver presave parent data into `/api/cases/{caseId}/receiver`.
-- Write message header receiver identifiers from the selected route row.
-- Remove receiver presave form fields that only belong to case receiver information.
+- Keep receiver presave master data out of `/api/cases/{caseId}/receiver` during submission routing.
+- Keep explicit local N.1.4/N.2.r.3 submission inputs until a separate submission receiver option source exists.
+- Remove or ignore receiver-presave `routingRules[]` / `routes[]` as submission route sources.
 - Align day-count and NA fields to backend column names.
 
 ## Coverage Check
