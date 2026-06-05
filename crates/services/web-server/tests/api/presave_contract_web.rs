@@ -70,8 +70,6 @@ async fn create_product_presave(
 				Uuid::new_v4()
 			)),
 			organization_name_notation: None,
-			person_given_name: Some("Sender".into()),
-			department: None,
 			street_address: None,
 			city: None,
 			state: None,
@@ -185,8 +183,7 @@ async fn create_case_sender_via_api(
 				"case_id": case_id,
 				"source_sender_presave_id": source_sender_presave_id,
 				"sender_type": "1",
-				"organization_name": organization_name,
-				"person_given_name": "Sender"
+				"organization_name": organization_name
 			}
 		}),
 	)
@@ -358,7 +355,6 @@ async fn create_named_sender_presave_via_api(
 				"name": name,
 				"sender_type": "1",
 				"organization_name": organization_name,
-				"person_given_name": "Sender",
 				"country_code": "US",
 				"email": "sender-details@example.com"
 			}
@@ -383,8 +379,7 @@ async fn create_sender_presave_with_type_via_api(
 			"data": {
 				"name": name,
 				"sender_type": sender_type,
-				"organization_name": organization_name,
-				"person_given_name": "Sender"
+				"organization_name": organization_name
 			}
 		}),
 	)
@@ -1208,7 +1203,7 @@ async fn product_presave_details_expose_effective_mfds_dg_fields() -> Result<()>
 
 #[serial]
 #[tokio::test]
-async fn test_sender_presave_rejects_missing_given_name_on_create_update_and_details(
+async fn test_sender_presave_parent_does_not_store_person_or_department_fields(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -1216,12 +1211,11 @@ async fn test_sender_presave_rejects_missing_given_name_on_create_update_and_det
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
 
-	let missing_given_name = json!({
+	let parent_without_given_name = json!({
 		"data": {
-			"name": format!("Missing Sender Given {}", Uuid::new_v4()),
+			"name": format!("Sender Without Parent Given {}", Uuid::new_v4()),
 			"sender_type": "1",
-			"organization_name": format!("Missing Sender Given Org {}", Uuid::new_v4()),
-			"person_given_name": " "
+			"organization_name": format!("Sender Without Parent Given Org {}", Uuid::new_v4())
 		}
 	});
 	let (status, value) = request_json(
@@ -1229,43 +1223,58 @@ async fn test_sender_presave_rejects_missing_given_name_on_create_update_and_det
 		&admin_cookie,
 		Method::POST,
 		"/api/presaves/senders".to_string(),
-		Some(missing_given_name),
+		Some(parent_without_given_name),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	assert!(
-		value
-			.to_string()
-			.contains("sender presave requires sender_type, organization_name, and person_given_name"),
-		"unexpected missing given name body on create: {value:?}"
+		value["data"].get("person_given_name").is_none(),
+		"sender parent response must not expose person_given_name: {value:?}",
+	);
+	assert!(
+		value["data"].get("department").is_none(),
+		"sender parent response must not expose department: {value:?}",
 	);
 
 	let sender_id =
 		create_sender_presave_via_api(&app, &admin_cookie, "fda").await?;
-	for (method, uri, body, label) in [
-		(
-			Method::PATCH,
-			format!("/api/presaves/senders/{sender_id}"),
-			json!({ "data": { "person_given_name": " " } }),
-			"patch",
-		),
-		(
-			Method::PUT,
-			format!("/api/presaves/senders/{sender_id}/details"),
-			json!({ "data": { "parent": { "person_given_name": " " } } }),
-			"details",
-		),
-	] {
-		let (status, value) =
-			request_json(&app, &admin_cookie, method, uri, Some(body)).await?;
-		assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
-		assert!(
-			value
-				.to_string()
-				.contains("sender presave requires sender_type, organization_name, and person_given_name"),
-			"unexpected missing given name body on {label}: {value:?}"
-		);
-	}
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PUT,
+		format!("/api/presaves/senders/{sender_id}/details"),
+		Some(json!({
+			"data": {
+				"parent": {
+					"sender_type": "1",
+					"organization_name": format!("Updated Sender Org {}", Uuid::new_v4())
+				},
+				"responsible_persons": [{
+					"sequence_number": 1,
+					"department": "Safety Ops",
+					"person_given_name": "Ada"
+				}]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert!(
+		value["data"]["parent"].get("person_given_name").is_none(),
+		"sender details parent response must not expose person_given_name: {value:?}",
+	);
+	assert!(
+		value["data"]["parent"].get("department").is_none(),
+		"sender details parent response must not expose department: {value:?}",
+	);
+	assert_eq!(
+		value["data"]["responsible_persons"][0]["department"].as_str(),
+		Some("Safety Ops"),
+	);
+	assert_eq!(
+		value["data"]["responsible_persons"][0]["person_given_name"].as_str(),
+		Some("Ada"),
+	);
 
 	Ok(())
 }
@@ -1402,8 +1411,7 @@ async fn test_sender_presave_rejects_duplicate_active_identity() -> Result<()> {
 			"data": {
 				"name": format!("Duplicate Sender {}", Uuid::new_v4()),
 				"sender_type": "1",
-				"organization_name": organization_name,
-				"person_given_name": "Sender"
+				"organization_name": organization_name
 			}
 		})),
 	)
@@ -2490,7 +2498,6 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 				"name": "REST Sender",
 				"sender_type": "1",
 				"organization_name": "REST Sender Org",
-				"person_given_name": "REST Sender Given",
 				"country_code": "US",
 				"email": "sender@example.com"
 			}

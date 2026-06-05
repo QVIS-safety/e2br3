@@ -322,18 +322,25 @@ async fn default_sender_from_presave(
 		sender_type,
 		health_professional_type_kr1: None,
 		organization_name,
-		department: sender.department,
+		department: responsible
+			.as_ref()
+			.and_then(|person| person.department.clone()),
 		street_address: sender.street_address,
 		city: sender.city,
 		state: sender.state,
 		postcode: sender.postcode,
 		country_code: sender.country_code,
-		person_title: responsible.and_then(|person| person.person_title.clone()),
+		person_title: responsible
+			.as_ref()
+			.and_then(|person| person.person_title.clone()),
 		person_given_name: responsible
+			.as_ref()
 			.and_then(|person| person.person_given_name.clone()),
 		person_middle_name: responsible
+			.as_ref()
 			.and_then(|person| person.person_middle_name.clone()),
 		person_family_name: responsible
+			.as_ref()
 			.and_then(|person| person.person_family_name.clone()),
 		telephone: sender.telephone,
 		fax: sender.fax,

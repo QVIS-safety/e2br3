@@ -131,8 +131,6 @@ CREATE TABLE IF NOT EXISTS sender_presaves (
     sender_type VARCHAR(50),
     organization_name VARCHAR(500),
     organization_name_notation VARCHAR(50),
-    person_given_name VARCHAR(200),
-    department VARCHAR(500),
     street_address TEXT,
     city VARCHAR(200),
     state VARCHAR(100),
@@ -269,8 +267,85 @@ CREATE TABLE IF NOT EXISTS product_presaves (
 ALTER TABLE product_presaves
     ADD COLUMN IF NOT EXISTS original_manufacturer VARCHAR(500);
 
+ALTER TABLE sender_presave_responsible_persons
+    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
+
+DO $$
+DECLARE
+    has_sender_department BOOLEAN;
+    has_sender_person_given_name BOOLEAN;
+BEGIN
+    SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'sender_presaves'
+          AND column_name = 'department'
+    ) INTO has_sender_department;
+
+    SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'sender_presaves'
+          AND column_name = 'person_given_name'
+    ) INTO has_sender_person_given_name;
+
+    IF has_sender_department OR has_sender_person_given_name THEN
+        EXECUTE format($sql$
+            INSERT INTO sender_presave_responsible_persons (
+                sender_presave_id,
+                sequence_number,
+                department,
+                person_given_name,
+                is_default,
+                deleted,
+                created_by,
+                updated_by
+            )
+            SELECT
+                p.id,
+                COALESCE((
+                    SELECT MAX(r.sequence_number) + 1
+                    FROM sender_presave_responsible_persons r
+                    WHERE r.sender_presave_id = p.id
+                ), 1),
+                %s,
+                %s,
+                NOT EXISTS (
+                    SELECT 1
+                    FROM sender_presave_responsible_persons r
+                    WHERE r.sender_presave_id = p.id
+                      AND r.is_default
+                      AND NOT r.deleted
+                ),
+                false,
+                p.created_by,
+                COALESCE(p.updated_by, p.created_by)
+            FROM sender_presaves p
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM sender_presave_responsible_persons r
+                WHERE r.sender_presave_id = p.id
+                  AND NOT r.deleted
+                  AND (r.department IS NOT NULL OR r.person_given_name IS NOT NULL)
+            )
+              AND (%s)
+        $sql$,
+            CASE WHEN has_sender_department THEN 'p.department' ELSE 'NULL::VARCHAR(500)' END,
+            CASE WHEN has_sender_person_given_name THEN 'p.person_given_name' ELSE 'NULL::VARCHAR(200)' END,
+            concat_ws(
+                ' OR ',
+                CASE WHEN has_sender_department THEN 'p.department IS NOT NULL' END,
+                CASE WHEN has_sender_person_given_name THEN 'p.person_given_name IS NOT NULL' END
+            )
+        );
+    END IF;
+END $$;
+
 ALTER TABLE sender_presaves
-    ADD COLUMN IF NOT EXISTS person_given_name VARCHAR(200);
+    DROP COLUMN IF EXISTS person_given_name;
+
+ALTER TABLE sender_presaves
+    DROP COLUMN IF EXISTS department;
 
 CREATE TABLE IF NOT EXISTS product_presave_substances (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

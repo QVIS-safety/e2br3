@@ -186,8 +186,6 @@ pub struct SenderPresave {
 	pub sender_type: Option<String>,
 	pub organization_name: Option<String>,
 	pub organization_name_notation: Option<String>,
-	pub person_given_name: Option<String>,
-	pub department: Option<String>,
 	pub street_address: Option<String>,
 	pub city: Option<String>,
 	pub state: Option<String>,
@@ -210,8 +208,6 @@ pub struct SenderPresaveForCreate {
 	pub sender_type: Option<String>,
 	pub organization_name: Option<String>,
 	pub organization_name_notation: Option<String>,
-	pub person_given_name: Option<String>,
-	pub department: Option<String>,
 	pub street_address: Option<String>,
 	pub city: Option<String>,
 	pub state: Option<String>,
@@ -231,8 +227,6 @@ struct SenderPresaveForInsert {
 	sender_type: Option<String>,
 	organization_name: Option<String>,
 	organization_name_notation: Option<String>,
-	person_given_name: Option<String>,
-	department: Option<String>,
 	street_address: Option<String>,
 	city: Option<String>,
 	state: Option<String>,
@@ -255,8 +249,6 @@ impl IntoOrgScopedCreate for SenderPresaveForCreate {
 			sender_type: self.sender_type,
 			organization_name: self.organization_name,
 			organization_name_notation: self.organization_name_notation,
-			person_given_name: self.person_given_name,
-			department: self.department,
 			street_address: self.street_address,
 			city: self.city,
 			state: self.state,
@@ -278,8 +270,6 @@ pub struct SenderPresaveForUpdate {
 	pub sender_type: Option<String>,
 	pub organization_name: Option<String>,
 	pub organization_name_notation: Option<String>,
-	pub person_given_name: Option<String>,
-	pub department: Option<String>,
 	pub street_address: Option<String>,
 	pub city: Option<String>,
 	pub state: Option<String>,
@@ -305,7 +295,6 @@ impl SenderPresaveBmc {
 		Self::validate_identity(
 			data.sender_type.as_deref(),
 			data.organization_name.as_deref(),
-			data.person_given_name.as_deref(),
 		)?;
 		Self::ensure_unique_identity(
 			ctx,
@@ -363,15 +352,7 @@ impl SenderPresaveBmc {
 				.organization_name
 				.as_deref()
 				.or(current.organization_name.as_deref());
-			let person_given_name = data
-				.person_given_name
-				.as_deref()
-				.or(current.person_given_name.as_deref());
-			Self::validate_identity(
-				sender_type,
-				organization_name,
-				person_given_name,
-			)?;
+			Self::validate_identity(sender_type, organization_name)?;
 			Self::ensure_unique_identity(
 				ctx,
 				mm,
@@ -392,13 +373,11 @@ impl SenderPresaveBmc {
 	fn validate_identity(
 		sender_type: Option<&str>,
 		organization_name: Option<&str>,
-		person_given_name: Option<&str>,
 	) -> Result<()> {
 		require_identity(
 			normalized_text(sender_type).is_some()
-				&& normalized_text(organization_name).is_some()
-				&& normalized_text(person_given_name).is_some(),
-			"sender presave requires sender_type, organization_name, and person_given_name",
+				&& normalized_text(organization_name).is_some(),
+			"sender presave requires sender_type and organization_name",
 		)
 	}
 

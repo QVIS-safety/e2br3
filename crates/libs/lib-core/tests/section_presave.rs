@@ -188,8 +188,6 @@ fn sender_presave_create(name: String) -> SenderPresaveForCreate {
 		sender_type: Some("1".into()),
 		organization_name: Some(format!("Sender Org {}", Uuid::new_v4())),
 		organization_name_notation: None,
-		person_given_name: Some("Sender Given".into()),
-		department: None,
 		street_address: None,
 		city: None,
 		state: None,
@@ -734,8 +732,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			sender_type: Some("1".into()),
 			organization_name: Some(format!("Sender Org Before {suffix}")),
 			organization_name_notation: None,
-			person_given_name: Some("Sender Given".into()),
-			department: Some("Safety".into()),
 			street_address: Some("1 Sender St".into()),
 			city: Some("Seoul".into()),
 			state: Some("11".into()),
@@ -956,8 +952,6 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 			sender_type: Some("1".into()),
 			organization_name: Some(format!("Authorityless Sender Org {suffix}")),
 			organization_name_notation: None,
-			person_given_name: Some("Authorityless".into()),
-			department: None,
 			street_address: None,
 			city: None,
 			state: None,
@@ -1047,31 +1041,30 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 	let ctx = demo_ctx();
 	let suffix = Uuid::new_v4();
 
-	expect_validation_error(
-		SenderPresaveBmc::create(
-			&ctx,
-			&mm,
-			SenderPresaveForCreate {
-				name: format!("Invalid Sender Presave {suffix}"),
-				comments: None,
-				is_default: None,
-				sender_type: Some("1".into()),
-				organization_name: Some("Invalid Sender Org".into()),
-				organization_name_notation: None,
-				person_given_name: None,
-				department: None,
-				street_address: None,
-				city: None,
-				state: None,
-				postcode: None,
-				country_code: None,
-				telephone: None,
-				fax: None,
-				email: None,
-			},
-		)
-		.await,
-		"sender_type, organization_name, and person_given_name",
+	let valid_sender_without_parent_person = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveForCreate {
+			name: format!("Valid Sender Without Parent Person {suffix}"),
+			comments: None,
+			is_default: None,
+			sender_type: Some("1".into()),
+			organization_name: Some(format!("Valid Sender Org {suffix}")),
+			organization_name_notation: None,
+			street_address: None,
+			city: None,
+			state: None,
+			postcode: None,
+			country_code: None,
+			telephone: None,
+			fax: None,
+			email: None,
+		},
+	)
+	.await?;
+	assert!(
+		!valid_sender_without_parent_person.is_nil(),
+		"sender parent identity should not require person_given_name",
 	);
 	expect_validation_error(
 		ReceiverPresaveBmc::create(
@@ -1228,8 +1221,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			sender_type: Some("1".into()),
 			organization_name: Some(format!("Duplicate Sender Org {suffix}")),
 			organization_name_notation: None,
-			person_given_name: Some("Alice".into()),
-			department: None,
 			street_address: None,
 			city: None,
 			state: None,
@@ -1252,8 +1243,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				sender_type: Some("1".into()),
 				organization_name: Some(format!(" duplicate sender org {suffix} ")),
 				organization_name_notation: None,
-				person_given_name: Some("Bob".into()),
-				department: None,
 				street_address: None,
 				city: None,
 				state: None,
@@ -1731,10 +1720,8 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			comments: None,
 			is_default: None,
 			sender_type: Some("1".into()),
-			organization_name: Some("Child Sender Org".into()),
+			organization_name: Some(format!("Child Sender Org {suffix}")),
 			organization_name_notation: None,
-			person_given_name: Some("Child Sender Given".into()),
-			department: None,
 			street_address: None,
 			city: None,
 			state: None,
@@ -1753,7 +1740,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			name: format!("Child Receiver Presave {suffix}"),
 			comments: None,
 			receiver_type: Some("Regulatory Authority".into()),
-			organization_name: Some("Child Receiver Org".into()),
+			organization_name: Some(format!("Child Receiver Org {suffix}")),
 			receiver_identifier: None,
 			day_count_rule: None,
 			nsae_solicited_day_count: None,
@@ -1959,6 +1946,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	let responsible =
 		SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, responsible_id).await?;
 	assert_eq!(responsible.sender_presave_id, sender_id);
+	assert_eq!(responsible.department.as_deref(), Some("PV"));
 	assert_eq!(responsible.person_given_name.as_deref(), Some("After"));
 	assert_audit_changed_field(
 		&mm,
@@ -2424,8 +2412,6 @@ async fn section_presave_field_audit_records_changed_column() -> Result<()> {
 			sender_type: Some("1".into()),
 			organization_name: Some(format!("Field Audit Sender Org {suffix}")),
 			organization_name_notation: None,
-			person_given_name: Some("Audit".into()),
-			department: None,
 			street_address: None,
 			city: None,
 			state: None,
