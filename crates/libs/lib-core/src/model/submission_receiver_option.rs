@@ -107,10 +107,11 @@ impl SubmissionReceiverOptionBmc {
 						('fda', 2, 'FDA(CDER IND-exempt BA/BE)', 'FDA_REPORT_TYPE', '2', 'CDER IND-exempt BA/BE', 'ZZFDA_PREMKT', 'CDER_IND_EXEMPT_BA_BE'),
 						('fda', 3, 'FDA(CBER IND)', 'FDA_REPORT_TYPE', '3', 'CBER IND', 'ZZFDA_PREMKT', 'CBER_IND'),
 						('fda', 4, 'FDA(Postmarket)', 'FDA_REPORT_TYPE', '4', 'Postmarket', 'ZZFDA', 'CDER'),
-						('mfds', 1, 'MFDS(CT)', 'MFDS_REPORT_TYPE', '1', 'CT', 'MFDS_CT', 'CT'),
-						('mfds', 2, 'MFDS(CU)', 'MFDS_REPORT_TYPE', '2', 'CU', 'MFDS_CU', 'CU'),
+						('mfds', 1, 'MFDS(CT)', 'MFDS_REPORT_TYPE', '1', '임상시험계획의 승인을 받은 자', 'MFDS_CT', 'CT'),
+						('mfds', 2, 'MFDS(CU)', 'MFDS_REPORT_TYPE', '2', '임상시험용의약품의 치료목적 사용승인을 받은 자', 'MFDS_CU', 'CU'),
 						('mfds', 3, 'MFDS(KR)', 'MFDS_REPORT_TYPE', '3', '시판 후 이상사례 국내보고', 'MFDS', 'KR'),
-						('mfds', 4, 'MFDS(FR)', 'MFDS_REPORT_TYPE', '4', 'FR', 'MFDS_FR', 'FR')
+						('mfds', 4, 'MFDS(FR)', 'MFDS_REPORT_TYPE', '4', '시판 후 이상사례 국외보고', 'MFDS_FR', 'FR'),
+						('mfds', 5, 'MFDS(CF)', 'MFDS_REPORT_TYPE', '5', '임상시험계획의 승인을 받은 자 (국외)', 'MFDS_CF', 'CF')
 					) AS v(authority, sequence_number, receiver_label, condition_field_code, condition_value_code, condition_value_label, batch_receiver_identifier, message_receiver_identifier)
 					ON CONFLICT DO NOTHING
 					"#,
@@ -124,14 +125,23 @@ impl SubmissionReceiverOptionBmc {
 				sqlx::query(
 					r#"
 					UPDATE submission_receiver_options
-					SET condition_value_label = '시판 후 이상사례 국내보고',
+					SET condition_value_label = CASE receiver_label
+							WHEN 'MFDS(CT)' THEN '임상시험계획의 승인을 받은 자'
+							WHEN 'MFDS(CU)' THEN '임상시험용의약품의 치료목적 사용승인을 받은 자'
+							WHEN 'MFDS(KR)' THEN '시판 후 이상사례 국내보고'
+							WHEN 'MFDS(FR)' THEN '시판 후 이상사례 국외보고'
+							ELSE condition_value_label
+						END,
 						updated_by = $2
 					WHERE organization_id = $1
 					  AND authority = 'mfds'
-					  AND receiver_label = 'MFDS(KR)'
 					  AND condition_field_code = 'MFDS_REPORT_TYPE'
-					  AND condition_value_code = '3'
-					  AND condition_value_label = 'KR'
+					  AND (
+						(receiver_label = 'MFDS(CT)' AND condition_value_code = '1' AND condition_value_label = 'CT')
+						OR (receiver_label = 'MFDS(CU)' AND condition_value_code = '2' AND condition_value_label = 'CU')
+						OR (receiver_label = 'MFDS(KR)' AND condition_value_code = '3' AND condition_value_label = 'KR')
+						OR (receiver_label = 'MFDS(FR)' AND condition_value_code = '4' AND condition_value_label = 'FR')
+					  )
 					"#,
 				)
 				.bind(ctx.organization_id())

@@ -1063,15 +1063,61 @@ async fn test_submission_receiver_options_list_defaults_by_authority() -> Result
 	let mfds_items = mfds_value["data"]["items"]
 		.as_array()
 		.ok_or("missing MFDS receiver option items")?;
-	assert!(mfds_items.iter().any(|item| {
-		item["receiver_label"].as_str() == Some("MFDS(KR)")
-			&& item["condition_field_code"].as_str() == Some("MFDS_REPORT_TYPE")
-			&& item["condition_value_code"].as_str() == Some("3")
-			&& item["condition_value_label"].as_str()
-				== Some("시판 후 이상사례 국내보고")
-			&& item["batch_receiver_identifier"].as_str() == Some("MFDS")
-			&& item["message_receiver_identifier"].as_str() == Some("KR")
-	}));
+	assert_eq!(mfds_items.len(), 5, "{mfds_items:?}");
+	for (
+		receiver_label,
+		condition_value_code,
+		condition_value_label,
+		batch_receiver_identifier,
+		message_receiver_identifier,
+	) in [
+		(
+			"MFDS(CT)",
+			"1",
+			"임상시험계획의 승인을 받은 자",
+			"MFDS_CT",
+			"CT",
+		),
+		(
+			"MFDS(CU)",
+			"2",
+			"임상시험용의약품의 치료목적 사용승인을 받은 자",
+			"MFDS_CU",
+			"CU",
+		),
+		("MFDS(KR)", "3", "시판 후 이상사례 국내보고", "MFDS", "KR"),
+		(
+			"MFDS(FR)",
+			"4",
+			"시판 후 이상사례 국외보고",
+			"MFDS_FR",
+			"FR",
+		),
+		(
+			"MFDS(CF)",
+			"5",
+			"임상시험계획의 승인을 받은 자 (국외)",
+			"MFDS_CF",
+			"CF",
+		),
+	] {
+		assert!(
+			mfds_items.iter().any(|item| {
+				item["receiver_label"].as_str() == Some(receiver_label)
+					&& item["condition_field_code"].as_str()
+						== Some("MFDS_REPORT_TYPE")
+					&& item["condition_value_code"].as_str()
+						== Some(condition_value_code)
+					&& item["condition_value_label"].as_str()
+						== Some(condition_value_label)
+					&& item["batch_receiver_identifier"].as_str()
+						== Some(batch_receiver_identifier)
+					&& item["message_receiver_identifier"].as_str()
+						== Some(message_receiver_identifier)
+			}),
+			"missing MFDS receiver option {receiver_label}: {mfds_items:?}"
+		);
+	}
 
 	Ok(())
 }
