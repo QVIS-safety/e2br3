@@ -219,7 +219,6 @@ fn reporter_presave_create(
 		telephone: None,
 		country_code: Some("KR".into()),
 		qualification: Some("1".into()),
-		qualification_kr1: None,
 		primary_source_regulatory: None,
 	}
 }
@@ -284,9 +283,11 @@ async fn section_presave_tables_exist() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn reporter_presaves_store_mfds_qualification_detail_but_not_case_only_email(
-) -> Result<()> {
+async fn reporter_presaves_do_not_store_case_only_reporter_fields() -> Result<()> {
 	_dev_utils::init_dev().await;
+	_dev_utils::ensure_dev_schema_compatibility()
+		.await
+		.expect("ensure_dev_schema_compatibility failed");
 	let mm = ModelManager::new().await?;
 
 	let columns: Vec<String> = sqlx::query_scalar(
@@ -302,8 +303,8 @@ async fn reporter_presaves_store_mfds_qualification_detail_but_not_case_only_ema
 		"reporter_presaves.email is case-only and must not be a reporter presave column"
 	);
 	assert!(
-		columns.iter().any(|column| column == "qualification_kr1"),
-		"reporter_presaves.qualification_kr1 stores MFDS C.2.r.4.KR.1 for reporter presave"
+		!columns.iter().any(|column| column == "qualification_kr1"),
+		"reporter_presaves.qualification_kr1 is case-only and must not be a reporter presave column"
 	);
 
 	Ok(())
@@ -831,7 +832,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			telephone: Some("051-111-2222".into()),
 			country_code: Some("KR".into()),
 			qualification: Some("1".into()),
-			qualification_kr1: None,
 			primary_source_regulatory: Some("1".into()),
 		},
 	)
@@ -1153,7 +1153,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 					telephone: None,
 					country_code: None,
 					qualification: qualification.map(str::to_string),
-					qualification_kr1: None,
 					primary_source_regulatory: None,
 				},
 			)
@@ -1388,7 +1387,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			telephone: None,
 			country_code: None,
 			qualification: Some("1".into()),
-			qualification_kr1: None,
 			primary_source_regulatory: None,
 		},
 	)
@@ -1413,7 +1411,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				telephone: None,
 				country_code: None,
 				qualification: Some("1".into()),
-				qualification_kr1: None,
 				primary_source_regulatory: None,
 			},
 		)

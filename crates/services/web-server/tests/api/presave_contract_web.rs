@@ -1281,7 +1281,8 @@ async fn test_sender_presave_parent_does_not_store_person_or_department_fields(
 
 #[serial]
 #[tokio::test]
-async fn test_reporter_presave_stores_mfds_qualification_detail() -> Result<()> {
+async fn test_reporter_presave_does_not_store_mfds_qualification_detail(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -1309,7 +1310,10 @@ async fn test_reporter_presave_stores_mfds_qualification_detail() -> Result<()> 
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	let reporter_id = data_id(&value)?;
-	assert_eq!(value["data"]["qualification_kr1"].as_str(), Some("1"));
+	assert!(
+		value["data"].get("qualification_kr1").is_none(),
+		"reporter presave response must not expose case-only qualification_kr1: {value:?}"
+	);
 
 	let (status, value) = request_json(
 		&app,
@@ -1324,7 +1328,10 @@ async fn test_reporter_presave_stores_mfds_qualification_detail() -> Result<()> 
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(value["data"]["qualification_kr1"].as_str(), Some("2"));
+	assert!(
+		value["data"].get("qualification_kr1").is_none(),
+		"reporter presave patch response must not expose case-only qualification_kr1: {value:?}"
+	);
 
 	let (status, value) = request_json(
 		&app,
@@ -1341,15 +1348,18 @@ async fn test_reporter_presave_stores_mfds_qualification_detail() -> Result<()> 
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(value["data"]["qualification"].as_str(), Some("1"));
-	assert!(value["data"]["qualification_kr1"].is_null(), "{value:?}");
+	assert!(
+		value["data"].get("qualification_kr1").is_none(),
+		"reporter presave clear response must not expose case-only qualification_kr1: {value:?}"
+	);
 
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_reporter_presave_rejects_mfds_qualification_detail_outside_qualification_three(
-) -> Result<()> {
+async fn test_reporter_presave_ignores_mfds_qualification_detail_input() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -1372,12 +1382,10 @@ async fn test_reporter_presave_rejects_mfds_qualification_detail_outside_qualifi
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	assert!(
-		value
-			.to_string()
-			.contains("reporter qualification_kr1 requires qualification 3"),
-		"unexpected qualification_kr1 validation body: {value:?}"
+		value["data"].get("qualification_kr1").is_none(),
+		"reporter presave should ignore case-only qualification_kr1 input: {value:?}"
 	);
 
 	Ok(())

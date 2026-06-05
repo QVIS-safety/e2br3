@@ -398,7 +398,6 @@ CREATE TABLE IF NOT EXISTS reporter_presaves (
     telephone VARCHAR(50),
     country_code VARCHAR(2),
     qualification VARCHAR(50),
-    qualification_kr1 VARCHAR(1) CHECK (qualification_kr1 IN ('1', '2')),
     primary_source_regulatory VARCHAR(50),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -677,7 +676,7 @@ ALTER TABLE sender_presave_responsible_persons
 
 ALTER TABLE reporter_presaves
     DROP COLUMN IF EXISTS email,
-    ADD COLUMN IF NOT EXISTS qualification_kr1 VARCHAR(1) CHECK (qualification_kr1 IN ('1', '2'));
+    DROP COLUMN IF EXISTS qualification_kr1;
 
 CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);

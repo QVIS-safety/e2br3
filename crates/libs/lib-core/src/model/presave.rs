@@ -1539,7 +1539,6 @@ pub struct ReporterPresave {
 	pub telephone: Option<String>,
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
-	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -1564,7 +1563,6 @@ pub struct ReporterPresaveForCreate {
 	pub telephone: Option<String>,
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
-	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 }
 
@@ -1586,7 +1584,6 @@ struct ReporterPresaveForInsert {
 	telephone: Option<String>,
 	country_code: Option<String>,
 	qualification: Option<String>,
-	qualification_kr1: Option<String>,
 	primary_source_regulatory: Option<String>,
 }
 
@@ -1611,7 +1608,6 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 			telephone: self.telephone,
 			country_code: self.country_code,
 			qualification: self.qualification,
-			qualification_kr1: self.qualification_kr1,
 			primary_source_regulatory: self.primary_source_regulatory,
 		}
 	}
@@ -1635,7 +1631,6 @@ pub struct ReporterPresaveForUpdate {
 	pub telephone: Option<String>,
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
-	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 }
 
@@ -1649,19 +1644,12 @@ impl ReporterPresaveBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
-		mut data: ReporterPresaveForCreate,
+		data: ReporterPresaveForCreate,
 	) -> Result<Uuid> {
-		if normalized_text(data.qualification_kr1.as_deref()).is_none() {
-			data.qualification_kr1 = None;
-		}
 		Self::validate_identity(
 			data.reporter_given_name.as_deref(),
 			data.organization.as_deref(),
 			data.qualification.as_deref(),
-		)?;
-		Self::validate_qualification_kr1(
-			data.qualification.as_deref(),
-			data.qualification_kr1.as_deref(),
 		)?;
 		Self::ensure_unique_identity(
 			ctx,
@@ -1706,9 +1694,8 @@ impl ReporterPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		mut data: ReporterPresaveForUpdate,
+		data: ReporterPresaveForUpdate,
 	) -> Result<()> {
-		let mut clear_qualification_kr1 = false;
 		if data.deleted != Some(true) {
 			let current = Self::get(ctx, mm, id).await?;
 			let reporter_given_name = data
@@ -1723,42 +1710,11 @@ impl ReporterPresaveBmc {
 				.qualification
 				.as_deref()
 				.or(current.qualification.as_deref());
-			let incoming_qualification_kr1 = data.qualification_kr1.as_deref();
-			let incoming_qualification_kr1_provided =
-				data.qualification_kr1.is_some();
-			let incoming_qualification_kr1_normalized =
-				normalized_text(incoming_qualification_kr1);
-			let current_qualification_kr1_normalized =
-				normalized_text(current.qualification_kr1.as_deref());
-			let qualification_is_other_health_professional =
-				normalized_text(qualification).as_deref() == Some("3");
 			Self::validate_identity(
 				reporter_given_name,
 				organization,
 				qualification,
 			)?;
-			if incoming_qualification_kr1_provided
-				&& incoming_qualification_kr1_normalized.is_none()
-			{
-				data.qualification_kr1 = None;
-				clear_qualification_kr1 =
-					current_qualification_kr1_normalized.is_some();
-			} else if qualification_is_other_health_professional {
-				Self::validate_qualification_kr1(
-					qualification,
-					incoming_qualification_kr1
-						.or(current_qualification_kr1_normalized.as_deref()),
-				)?;
-			} else {
-				Self::validate_qualification_kr1(
-					qualification,
-					incoming_qualification_kr1,
-				)?;
-				if current_qualification_kr1_normalized.is_some() {
-					data.qualification_kr1 = None;
-					clear_qualification_kr1 = true;
-				}
-			}
 			Self::ensure_unique_identity(
 				ctx,
 				mm,
@@ -1770,9 +1726,6 @@ impl ReporterPresaveBmc {
 			.await?;
 		}
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await?;
-		if clear_qualification_kr1 {
-			Self::clear_qualification_kr1(ctx, mm, id).await?;
-		}
 		Ok(())
 	}
 
@@ -1791,60 +1744,6 @@ impl ReporterPresaveBmc {
 				&& normalized_text(qualification).is_some(),
 			"reporter presave requires reporter_given_name, organization, and qualification",
 		)
-	}
-
-	fn validate_qualification_kr1(
-		qualification: Option<&str>,
-		qualification_kr1: Option<&str>,
-	) -> Result<()> {
-		if normalized_text(qualification_kr1).is_none() {
-			return Ok(());
-		}
-		require_identity(
-			normalized_text(qualification).as_deref() == Some("3"),
-			"reporter qualification_kr1 requires qualification 3",
-		)
-	}
-
-	async fn clear_qualification_kr1(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		id: Uuid,
-	) -> Result<()> {
-		let dbx = mm.dbx();
-		dbx.begin_txn().await?;
-		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
-			dbx.rollback_txn().await?;
-			return Err(err);
-		}
-
-		let result = dbx
-			.execute(
-				sqlx::query(
-					"UPDATE reporter_presaves \
-					 SET qualification_kr1 = NULL, updated_by = $2, updated_at = NOW() \
-					 WHERE id = $1",
-				)
-				.bind(id)
-				.bind(ctx.user_id()),
-			)
-			.await;
-		let count = match result {
-			Ok(count) => count,
-			Err(err) => {
-				dbx.rollback_txn().await?;
-				return Err(err.into());
-			}
-		};
-		if count == 0 {
-			dbx.rollback_txn().await?;
-			return Err(crate::model::Error::EntityUuidNotFound {
-				entity: Self::TABLE,
-				id,
-			});
-		}
-		dbx.commit_txn().await?;
-		Ok(())
 	}
 
 	async fn ensure_unique_identity(
