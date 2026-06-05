@@ -1052,6 +1052,27 @@ async fn test_submission_receiver_options_list_defaults_by_authority() -> Result
 			&& item["condition_value_code"].as_str() == Some("4")
 	}));
 
+	let (mfds_status, mfds_value) = get_json(
+		&app,
+		&cookie,
+		"/api/submissions/receiver-options?authority=mfds",
+	)
+	.await?;
+	assert_eq!(mfds_status, StatusCode::OK, "{mfds_value:?}");
+
+	let mfds_items = mfds_value["data"]["items"]
+		.as_array()
+		.ok_or("missing MFDS receiver option items")?;
+	assert!(mfds_items.iter().any(|item| {
+		item["receiver_label"].as_str() == Some("MFDS(KR)")
+			&& item["condition_field_code"].as_str() == Some("MFDS_REPORT_TYPE")
+			&& item["condition_value_code"].as_str() == Some("3")
+			&& item["condition_value_label"].as_str()
+				== Some("시판 후 이상사례 국내보고")
+			&& item["batch_receiver_identifier"].as_str() == Some("MFDS")
+			&& item["message_receiver_identifier"].as_str() == Some("KR")
+	}));
+
 	Ok(())
 }
 

@@ -109,10 +109,29 @@ impl SubmissionReceiverOptionBmc {
 						('fda', 4, 'FDA(Postmarket)', 'FDA_REPORT_TYPE', '4', 'Postmarket', 'ZZFDA', 'CDER'),
 						('mfds', 1, 'MFDS(CT)', 'MFDS_REPORT_TYPE', '1', 'CT', 'MFDS_CT', 'CT'),
 						('mfds', 2, 'MFDS(CU)', 'MFDS_REPORT_TYPE', '2', 'CU', 'MFDS_CU', 'CU'),
-						('mfds', 3, 'MFDS(KR)', 'MFDS_REPORT_TYPE', '3', 'KR', 'MFDS', 'KR'),
+						('mfds', 3, 'MFDS(KR)', 'MFDS_REPORT_TYPE', '3', '시판 후 이상사례 국내보고', 'MFDS', 'KR'),
 						('mfds', 4, 'MFDS(FR)', 'MFDS_REPORT_TYPE', '4', 'FR', 'MFDS_FR', 'FR')
 					) AS v(authority, sequence_number, receiver_label, condition_field_code, condition_value_code, condition_value_label, batch_receiver_identifier, message_receiver_identifier)
 					ON CONFLICT DO NOTHING
+					"#,
+				)
+				.bind(ctx.organization_id())
+				.bind(ctx.user_id()),
+			)
+			.await?;
+		mm.dbx()
+			.execute(
+				sqlx::query(
+					r#"
+					UPDATE submission_receiver_options
+					SET condition_value_label = '시판 후 이상사례 국내보고',
+						updated_by = $2
+					WHERE organization_id = $1
+					  AND authority = 'mfds'
+					  AND receiver_label = 'MFDS(KR)'
+					  AND condition_field_code = 'MFDS_REPORT_TYPE'
+					  AND condition_value_code = '3'
+					  AND condition_value_label = 'KR'
 					"#,
 				)
 				.bind(ctx.organization_id())
