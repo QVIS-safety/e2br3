@@ -36,6 +36,26 @@ REQUIRED_HEADER = [
     "category",
     "action",
 ]
+ONE_SOURCE_HEADER = [
+    "field",
+    "reference evidence",
+    "canonical frontend source",
+    "canonical backend source",
+    "allowed read aliases",
+    "allowed write keys",
+    "case import target",
+    "duplicate sources found",
+    "category",
+    "decision",
+    "tests required",
+]
+ONE_SOURCE_MATRIX_IDS = {
+    "narrative-h",
+    "product-dg",
+    "reporter-c2r",
+    "sender-c3",
+    "study-c5",
+}
 
 
 def split_row(line: str) -> list[str]:
@@ -78,12 +98,15 @@ def require_coverage(path: Path, text: str) -> list[str]:
     return errors
 
 
-def validate_matrix(path: Path) -> list[str]:
+def validate_matrix(matrix_id: str, path: Path) -> list[str]:
     errors: list[str] = []
     text = path.read_text(encoding="utf-8")
     header, rows = find_matrix_rows(path)
-    if header != REQUIRED_HEADER:
-        errors.append(f"{path}: matrix header must be {REQUIRED_HEADER!r}")
+    required_header = (
+        ONE_SOURCE_HEADER if matrix_id in ONE_SOURCE_MATRIX_IDS else REQUIRED_HEADER
+    )
+    if header != required_header:
+        errors.append(f"{path}: matrix header must be {required_header!r}")
     category_index = [cell.lower() for cell in header].index("category")
 
     if not rows:
@@ -129,7 +152,7 @@ def main() -> int:
         if not matrix_path.is_file():
             errors.append(f"index.json: {matrix_id} path does not exist: {matrix_path}")
             continue
-        errors.extend(validate_matrix(matrix_path))
+        errors.extend(validate_matrix(matrix_id, matrix_path))
 
     if errors:
         for error in errors:
