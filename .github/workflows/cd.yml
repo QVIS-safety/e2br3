@@ -138,16 +138,31 @@ jobs:
       - name: Deploy via AWS Systems Manager
         env:
           IMAGE_REF: ${{ steps.image.outputs.image_ref }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_SSM_TARGET: ${{ secrets.AWS_SSM_TARGET }}
         run: |
           set -eu
           image_ref_q="$(jq -rn --arg v "${IMAGE_REF}" '$v|@sh')"
+          aws_region_q="$(jq -rn --arg v "${AWS_REGION}" '$v|@sh')"
           deploy_command="IMAGE_REF=${image_ref_q} RESET_DB=1 INCLUDE_SEED=1 ./deploy.sh"
           commands_json="$(jq -n \
+            --arg aws_region_q "${aws_region_q}" \
             --arg deploy_command "${deploy_command}" \
             '[
               "set -eu",
               "cd /opt/e2br3",
+              "set -a",
+              ". ./.env.prod",
+              "set +a",
+              "root_authority=${SERVICE_DB_ROOT_URL#*://}",
+              "root_authority=${root_authority%%/*}",
+              "root_hostport=${root_authority#*@}",
+              "root_userinfo=${root_authority%@*}",
+              "root_user=${root_userinfo%%:*}",
+              "root_host=${root_hostport%%:*}",
+              "root_port=${root_hostport#*:}",
+              "if [ \"${root_port}\" = \"${root_hostport}\" ]; then root_port=5432; fi",
+              "export PGPASSWORD=$(aws rds generate-db-auth-token --hostname \"${root_host}\" --port \"${root_port}\" --username \"${root_user}\" --region " + $aws_region_q + ")",
               $deploy_command
             ]'
           )"
