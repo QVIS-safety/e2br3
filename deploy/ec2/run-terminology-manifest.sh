@@ -84,7 +84,7 @@ while IFS= read -r line || [ -n "${line}" ]; do
   esac
 
   if [ "${CHECK_ONLY:-}" != "1" ]; then
-    docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" run --rm terminology-loader \
+    docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" run --rm -T terminology-loader \
       "${dictionary}" \
       --input "${container_input}" \
       --version "${version}" \

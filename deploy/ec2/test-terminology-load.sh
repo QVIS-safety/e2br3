@@ -43,9 +43,9 @@ APP_DIR="${APP_DIR}" \
 E2BR3_TERMINOLOGY_DIR="${TMP_DIR}/terminology" \
 sh "${SCRIPT}" --dry-run meddra "${INPUT_DIR}/meddra.zip" 27.1
 
-grep -F "CMD=compose --env-file .env.prod -f docker-compose.prod.yml run --rm terminology-loader meddra --input /terminology/incoming/meddra.zip --version 27.1 --language en --dry-run" "${LOG}" >/dev/null
-grep -F "ARG_11=/terminology/incoming/meddra.zip" "${LOG}" >/dev/null
-grep -F "ARG_16=--dry-run" "${LOG}" >/dev/null
+grep -F "CMD=compose --env-file .env.prod -f docker-compose.prod.yml run --rm -T terminology-loader meddra --input /terminology/incoming/meddra.zip --version 27.1 --language en --dry-run" "${LOG}" >/dev/null
+grep -F "ARG_12=/terminology/incoming/meddra.zip" "${LOG}" >/dev/null
+grep -F "ARG_17=--dry-run" "${LOG}" >/dev/null
 
 : > "${LOG}"
 PATH="${BIN_DIR}:${PATH}" \
@@ -54,8 +54,8 @@ APP_DIR="${APP_DIR}" \
 E2BR3_TERMINOLOGY_DIR="${TMP_DIR}/terminology" \
 sh "${SCRIPT}" --load whodrug "${INPUT_DIR}/whodrug.zip" 2025.09 ko
 
-grep -F "CMD=compose --env-file .env.prod -f docker-compose.prod.yml run --rm terminology-loader whodrug --input /terminology/incoming/whodrug.zip --version 2025.09 --language ko" "${LOG}" >/dev/null
-grep -F "ARG_11=/terminology/incoming/whodrug.zip" "${LOG}" >/dev/null
+grep -F "CMD=compose --env-file .env.prod -f docker-compose.prod.yml run --rm -T terminology-loader whodrug --input /terminology/incoming/whodrug.zip --version 2025.09 --language ko" "${LOG}" >/dev/null
+grep -F "ARG_12=/terminology/incoming/whodrug.zip" "${LOG}" >/dev/null
 if grep -F -- "--dry-run" "${LOG}" >/dev/null; then
   echo "load mode must not pass --dry-run"
   exit 1

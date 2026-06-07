@@ -107,7 +107,7 @@ echo "Mode: ${MODE}"
 
 cd "${APP_DIR}"
 
-set -- docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" run --rm terminology-loader \
+set -- docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" run --rm -T terminology-loader \
   "${DICTIONARY}" \
   --input "${CONTAINER_INPUT}" \
   --version "${VERSION}" \

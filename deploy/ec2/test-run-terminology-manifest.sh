@@ -53,14 +53,15 @@ awk '
   call == 1 && $0 == "ARG5=docker-compose.prod.yml" { first_arg5 = 1 }
   call == 1 && $0 == "ARG6=run" { first_arg6 = 1 }
   call == 1 && $0 == "ARG7=--rm" { first_arg7 = 1 }
-  call == 1 && $0 == "ARG8=terminology-loader" { first_arg8 = 1 }
-  call == 1 && $0 == "ARG9=meddra" { first_arg9 = 1 }
-  call == 1 && $0 == "ARG10=--input" { first_arg10 = 1 }
-  call == 1 && $0 == "ARG11=/terminology/incoming/meddra_28_1.zip" { first_arg11 = 1 }
-  call == 1 && $0 == "ARG12=--version" { first_arg12 = 1 }
-  call == 1 && $0 == "ARG13=28.1" { first_arg13 = 1 }
-  call == 1 && $0 == "ARG14=--language" { first_arg14 = 1 }
-  call == 1 && $0 == "ARG15=en" { first_arg15 = 1 }
+  call == 1 && $0 == "ARG8=-T" { first_arg8 = 1 }
+  call == 1 && $0 == "ARG9=terminology-loader" { first_arg9 = 1 }
+  call == 1 && $0 == "ARG10=meddra" { first_arg10 = 1 }
+  call == 1 && $0 == "ARG11=--input" { first_arg11 = 1 }
+  call == 1 && $0 == "ARG12=/terminology/incoming/meddra_28_1.zip" { first_arg12 = 1 }
+  call == 1 && $0 == "ARG13=--version" { first_arg13 = 1 }
+  call == 1 && $0 == "ARG14=28.1" { first_arg14 = 1 }
+  call == 1 && $0 == "ARG15=--language" { first_arg15 = 1 }
+  call == 1 && $0 == "ARG16=en" { first_arg16 = 1 }
   call == 2 && $0 == "ARG1=compose" { second_arg1 = 1 }
   call == 2 && $0 == "ARG2=--env-file" { second_arg2 = 1 }
   call == 2 && $0 == "ARG3=.env.prod" { second_arg3 = 1 }
@@ -68,22 +69,23 @@ awk '
   call == 2 && $0 == "ARG5=docker-compose.prod.yml" { second_arg5 = 1 }
   call == 2 && $0 == "ARG6=run" { second_arg6 = 1 }
   call == 2 && $0 == "ARG7=--rm" { second_arg7 = 1 }
-  call == 2 && $0 == "ARG8=terminology-loader" { second_arg8 = 1 }
-  call == 2 && $0 == "ARG9=whodrug" { second_arg9 = 1 }
-  call == 2 && $0 == "ARG10=--input" { second_arg10 = 1 }
-  call == 2 && $0 == "ARG11=/terminology/incoming/whodrug.zip" { second_arg11 = 1 }
-  call == 2 && $0 == "ARG12=--version" { second_arg12 = 1 }
-  call == 2 && $0 == "ARG13=2026.03" { second_arg13 = 1 }
-  call == 2 && $0 == "ARG14=--language" { second_arg14 = 1 }
-  call == 2 && $0 == "ARG15=ko" { second_arg15 = 1 }
+  call == 2 && $0 == "ARG8=-T" { second_arg8 = 1 }
+  call == 2 && $0 == "ARG9=terminology-loader" { second_arg9 = 1 }
+  call == 2 && $0 == "ARG10=whodrug" { second_arg10 = 1 }
+  call == 2 && $0 == "ARG11=--input" { second_arg11 = 1 }
+  call == 2 && $0 == "ARG12=/terminology/incoming/whodrug.zip" { second_arg12 = 1 }
+  call == 2 && $0 == "ARG13=--version" { second_arg13 = 1 }
+  call == 2 && $0 == "ARG14=2026.03" { second_arg14 = 1 }
+  call == 2 && $0 == "ARG15=--language" { second_arg15 = 1 }
+  call == 2 && $0 == "ARG16=ko" { second_arg16 = 1 }
   END {
     if (call != 2 ||
       !first_arg1 || !first_arg2 || !first_arg3 || !first_arg4 || !first_arg5 ||
       !first_arg6 || !first_arg7 || !first_arg8 || !first_arg9 || !first_arg10 ||
-      !first_arg11 || !first_arg12 || !first_arg13 || !first_arg14 || !first_arg15 ||
+      !first_arg11 || !first_arg12 || !first_arg13 || !first_arg14 || !first_arg15 || !first_arg16 ||
       !second_arg1 || !second_arg2 || !second_arg3 || !second_arg4 || !second_arg5 ||
       !second_arg6 || !second_arg7 || !second_arg8 || !second_arg9 || !second_arg10 ||
-      !second_arg11 || !second_arg12 || !second_arg13 || !second_arg14 || !second_arg15) {
+      !second_arg11 || !second_arg12 || !second_arg13 || !second_arg14 || !second_arg15 || !second_arg16) {
       exit 1
     }
   }
