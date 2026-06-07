@@ -18,6 +18,7 @@ RESET_DB="${RESET_DB:-0}"
 LIST_SQL_SCRIPT="${PROJECT_DIR}/scripts/db/list_init_sql.sh"
 DB_DIR="${PROJECT_DIR}/db"
 SQL_EXEC_URL=""
+APP_USER_PASSWORD=""
 
 if [ -z "${DATABASE_URL}" ]; then
   echo "DATABASE_URL is required."
@@ -59,8 +60,26 @@ if [ "${RESET_DB}" = "1" ]; then
     exit 1
   fi
 
+  APP_USER_PASSWORD="$(python3 - "${DATABASE_URL}" <<'PY'
+import sys
+from urllib.parse import unquote, urlsplit
+
+url = urlsplit(sys.argv[1])
+if url.password is None:
+    sys.exit(1)
+print(unquote(url.password))
+PY
+)"
+  if [ -z "${APP_USER_PASSWORD}" ]; then
+    echo "Could not derive app_user password from DATABASE_URL."
+    exit 1
+  fi
+
   echo "RESET_DB=1 -> running admin/00-recreate-db.sql on root DB URL"
-  psql "${ROOT_DATABASE_URL}" -v ON_ERROR_STOP=1 -f "${recreate_path}"
+  psql "${ROOT_DATABASE_URL}" \
+    -v ON_ERROR_STOP=1 \
+    -v "app_user_password=${APP_USER_PASSWORD}" \
+    -f "${recreate_path}"
 fi
 
 SQL_EXEC_URL="${DATABASE_URL}"
