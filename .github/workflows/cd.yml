@@ -1,6 +1,8 @@
 name: CD
 
 on:
+  push:
+    branches: [main]
   workflow_run:
     workflows: ["CI"]
     types: [completed]
@@ -54,7 +56,7 @@ jobs:
   publish:
     name: Build and Publish Runtime Image
     runs-on: ubuntu-latest
-    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'deploy' && inputs.image_ref == '') }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') || (github.event_name == 'workflow_dispatch' && inputs.operation == 'deploy' && inputs.image_ref == '') }}
     outputs:
       image_ref: ${{ steps.image.outputs.image_ref }}
 
@@ -90,6 +92,7 @@ jobs:
           images: ${{ env.RUNTIME_IMAGE_NAME }}
           tags: |
             type=raw,value=${{ github.event.workflow_run.head_sha || github.sha }}
+            type=raw,value=latest
 
       - name: Build and push
         uses: docker/build-push-action@v5
