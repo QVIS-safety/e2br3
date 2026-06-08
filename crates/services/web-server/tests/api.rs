@@ -28,8 +28,8 @@ mod import_contract_web;
 mod import_history_web;
 #[path = "api/middleware_ctx.rs"]
 mod middleware_ctx;
-#[path = "api/presave_contract_web.rs"]
-mod presave_contract_web;
+#[path = "api/presave/mod.rs"]
+mod presave;
 #[path = "api/scope_visibility_web.rs"]
 mod scope_visibility_web;
 #[path = "api/submission_lifecycle_web.rs"]

@@ -1,7 +1,7 @@
 use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::body::{to_bytes, Body};
 use axum::extract::State;
-use axum::http::{Method, Request, StatusCode};
+use axum::http::{Request, StatusCode};
 use axum::routing::post;
 use axum::{Json, Router};
 use lib_auth::token::generate_web_token;
@@ -99,29 +99,6 @@ async fn get_json(
 		.uri(uri)
 		.header("cookie", cookie)
 		.body(Body::empty())?;
-	let res = app.clone().oneshot(req).await?;
-	let status = res.status();
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value = parse_json_or_raw(&body);
-	Ok((status, value))
-}
-
-async fn request_json(
-	app: &axum::Router,
-	cookie: &str,
-	method: Method,
-	uri: String,
-	body: Option<Value>,
-) -> Result<(StatusCode, Value)> {
-	let mut builder = Request::builder()
-		.method(method)
-		.uri(uri)
-		.header("cookie", cookie);
-	if body.is_some() {
-		builder = builder.header("content-type", "application/json");
-	}
-	let req =
-		builder.body(Body::from(body.map(|v| v.to_string()).unwrap_or_default()))?;
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
@@ -555,123 +532,6 @@ async fn create_narrative(
 	Ok(())
 }
 
-async fn create_receiver_presave(
-	app: &axum::Router,
-	cookie: &str,
-	name: &str,
-	data: Value,
-) -> Result<Uuid> {
-	let (status, value) = post_json(
-		app,
-		cookie,
-		"/api/presaves/receivers",
-		json!({
-			"data": {
-				"authority": "fda",
-				"name": name,
-				"comments": "receiver routing template",
-				"receiver_type": data["receiverType"].as_str(),
-				"organization_name": data["organizationName"].as_str(),
-				"receiver_identifier": data["routingRules"][0]["messageReceiverIdentifier"].as_str(),
-				"description": data["email"].as_str()
-			}
-		}),
-	)
-	.await?;
-	if status != StatusCode::CREATED {
-		return Err(format!(
-			"create receiver presave failed: status={status} body={value}"
-		)
-		.into());
-	}
-	let id = value["data"]["id"]
-		.as_str()
-		.ok_or("missing receiver presave id")?;
-	Ok(Uuid::parse_str(id)?)
-}
-
-async fn apply_receiver_presave_to_case(
-	app: &axum::Router,
-	cookie: &str,
-	case_id: Uuid,
-	template_data: &Value,
-	authority: &str,
-	report_type: &str,
-) -> Result<()> {
-	let (status, value) = post_json(
-		app,
-		cookie,
-		&format!("/api/cases/{case_id}/receiver"),
-		json!({
-			"data": {
-				"case_id": case_id,
-				"receiver_type": template_data["receiverType"].as_str(),
-				"organization_name": template_data["organizationName"].as_str()
-			}
-		}),
-	)
-	.await?;
-	if status != StatusCode::CREATED && status != StatusCode::OK {
-		return Err(format!(
-			"create case receiver failed: status={status} body={value}"
-		)
-		.into());
-	}
-	let receiver_id = value["data"]["id"].as_str().ok_or("missing receiver id")?;
-	let (status, value) = request_json(
-		app,
-		cookie,
-		Method::PUT,
-		format!("/api/cases/{case_id}/receiver"),
-		Some(json!({
-			"data": {
-				"id": receiver_id,
-				"department": template_data["department"].as_str(),
-				"city": template_data["city"].as_str(),
-				"email": template_data["email"].as_str(),
-				"country_code": template_data["countryCode"].as_str()
-			}
-		})),
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(format!(
-			"update case receiver failed: status={status} body={value}"
-		)
-		.into());
-	}
-
-	let routing_rule = template_data["routingRules"]
-		.as_array()
-		.and_then(|rules| {
-			rules.iter().find(|rule| {
-				rule["authority"].as_str() == Some(authority)
-					&& rule["reportType"].as_str() == Some(report_type)
-			})
-		})
-		.ok_or("missing matching receiver routing rule")?;
-	let (status, value) = request_json(
-		app,
-		cookie,
-		Method::PUT,
-		format!("/api/cases/{case_id}/message-header"),
-		Some(json!({
-			"data": {
-				"message_receiver_identifier": routing_rule["messageReceiverIdentifier"].as_str(),
-				"batch_receiver_identifier": routing_rule["batchReceiverIdentifier"].as_str()
-			}
-		})),
-	)
-	.await?;
-	if status != StatusCode::OK {
-		return Err(format!(
-			"update message header from receiver presave failed: status={status} body={value}"
-		)
-		.into());
-	}
-	Ok(())
-}
-
 async fn seed_rule_clean_case(
 	app: &axum::Router,
 	cookie: &str,
@@ -685,99 +545,6 @@ async fn seed_rule_clean_case(
 	create_reaction(app, cookie, case_id).await?;
 	create_drug(app, cookie, case_id).await?;
 	create_narrative(app, cookie, case_id).await?;
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_receiver_presave_applies_submission_routing_to_case_resources(
-) -> Result<()> {
-	clear_esg_env();
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
-
-	let template_payload = json!({
-		"receiverType": "2",
-		"organizationName": "Submission Receiver Org",
-		"department": "CDER",
-		"city": "Silver Spring",
-		"countryCode": "US",
-		"email": "receiver@example.com",
-		"routingRules": [
-			{
-				"authority": "fda",
-				"reportType": "1",
-				"batchReceiverIdentifier": "ZZFDA",
-				"messageReceiverIdentifier": "CDER"
-			}
-		]
-	});
-	let template_id = create_receiver_presave(
-		&app,
-		&cookie,
-		"receiver-routing-template",
-		template_payload.clone(),
-	)
-	.await?;
-	let (status, saved_template) = get_json(
-		&app,
-		&cookie,
-		&format!("/api/presaves/receivers/{template_id}"),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{saved_template:?}");
-	assert_eq!(
-		saved_template["data"]["organization_name"].as_str(),
-		Some("Submission Receiver Org")
-	);
-
-	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	create_message_header(&app, &cookie, case_id).await?;
-	apply_receiver_presave_to_case(
-		&app,
-		&cookie,
-		case_id,
-		&template_payload,
-		"fda",
-		"1",
-	)
-	.await?;
-
-	let (status, receiver) =
-		get_json(&app, &cookie, &format!("/api/cases/{case_id}/receiver")).await?;
-	assert_eq!(status, StatusCode::OK, "{receiver:?}");
-	assert_eq!(
-		receiver["data"]["organization_name"].as_str(),
-		Some("Submission Receiver Org")
-	);
-	assert_eq!(receiver["data"]["receiver_type"].as_str(), Some("2"));
-	assert_eq!(receiver["data"]["department"].as_str(), Some("CDER"));
-	assert_eq!(receiver["data"]["city"].as_str(), Some("Silver Spring"));
-	assert_eq!(receiver["data"]["country_code"].as_str(), Some("US"));
-	assert_eq!(
-		receiver["data"]["email"].as_str(),
-		Some("receiver@example.com")
-	);
-
-	let (status, header) = get_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}/message-header"),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{header:?}");
-	assert_eq!(
-		header["data"]["batch_receiver_identifier"].as_str(),
-		Some("ZZFDA")
-	);
-	assert_eq!(
-		header["data"]["message_receiver_identifier"].as_str(),
-		Some("CDER")
-	);
-
 	Ok(())
 }
 

@@ -1,0 +1,118 @@
+use super::helpers::*;
+use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
+use axum::http::{Method, StatusCode};
+use lib_auth::token::generate_web_token;
+use serde_json::json;
+use serial_test::serial;
+use uuid::Uuid;
+
+#[tokio::test]
+async fn test_reporter_presave_does_not_store_mfds_qualification_detail(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let reporter_name = format!("MFDS Reporter {}", Uuid::new_v4());
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/reporters".to_string(),
+		Some(json!({
+			"data": {
+				"name": reporter_name,
+				"reporter_given_name": "Min",
+				"organization": "MFDS Reporter Org",
+				"country_code": "KR",
+				"qualification": "3",
+				"qualification_kr1": "1",
+				"primary_source_regulatory": "1"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	let reporter_id = data_id(&value)?;
+	assert!(
+		value["data"].get("qualification_kr1").is_none(),
+		"reporter presave response must not expose case-only qualification_kr1: {value:?}"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/reporters/{reporter_id}"),
+		Some(json!({
+			"data": {
+				"qualification_kr1": "2"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert!(
+		value["data"].get("qualification_kr1").is_none(),
+		"reporter presave patch response must not expose case-only qualification_kr1: {value:?}"
+	);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/reporters/{reporter_id}"),
+		Some(json!({
+			"data": {
+				"qualification": "1",
+				"qualification_kr1": ""
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["qualification"].as_str(), Some("1"));
+	assert!(
+		value["data"].get("qualification_kr1").is_none(),
+		"reporter presave clear response must not expose case-only qualification_kr1: {value:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_reporter_presave_ignores_mfds_qualification_detail_input() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/reporters".to_string(),
+		Some(json!({
+			"data": {
+				"name": format!("MFDS Reporter Invalid {}", Uuid::new_v4()),
+				"reporter_given_name": "Min",
+				"organization": "MFDS Reporter Invalid Org",
+				"qualification": "1",
+				"qualification_kr1": "1"
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert!(
+		value["data"].get("qualification_kr1").is_none(),
+		"reporter presave should ignore case-only qualification_kr1 input: {value:?}"
+	);
+
+	Ok(())
+}
