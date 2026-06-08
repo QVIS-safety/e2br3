@@ -228,6 +228,8 @@ END $$"#,
 		"ALTER TABLE study_presaves DROP CONSTRAINT IF EXISTS study_presaves_authority_valid",
 		"ALTER TABLE study_presaves DROP COLUMN IF EXISTS authority",
 		"ALTER TABLE study_presaves ADD COLUMN IF NOT EXISTS exclude_case_key_from_sync BOOLEAN",
+		"ALTER TABLE study_presaves ALTER COLUMN sponsor_study_number TYPE VARCHAR(50) USING LEFT(sponsor_study_number, 50)",
+		"ALTER TABLE study_presave_registration_numbers ALTER COLUMN registration_number TYPE VARCHAR(50) USING LEFT(registration_number, 50)",
 		"CREATE TABLE IF NOT EXISTS study_presave_products (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,

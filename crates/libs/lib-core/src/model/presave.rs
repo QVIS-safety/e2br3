@@ -117,6 +117,9 @@ macro_rules! impl_child_bmc {
 	};
 }
 
+const STUDY_PRESAVE_SPONSOR_STUDY_NUMBER_MAX_LEN: usize = 50;
+const STUDY_PRESAVE_REGISTRATION_NUMBER_MAX_LEN: usize = 50;
+
 fn validate_allowed_optional_text(
 	entity: &str,
 	field: &str,
@@ -129,6 +132,24 @@ fn validate_allowed_optional_text(
 				"{entity} field `{field}` must be one of: {}",
 				allowed_values.join(", ")
 			)));
+		}
+	}
+	Ok(())
+}
+
+fn validate_optional_text_max_len(
+	entity: &str,
+	field: &str,
+	value: Option<&str>,
+	max_len: usize,
+) -> Result<()> {
+	if let Some(value) = value {
+		if value.chars().count() > max_len {
+			return Err(crate::model::Error::Validation {
+				message: format!(
+					"{entity} field `{field}` must be at most {max_len} characters"
+				),
+			});
 		}
 	}
 	Ok(())
@@ -1845,7 +1866,15 @@ impl IntoOrgScopedCreate for StudyPresaveForCreate {
 
 impl StudyPresaveForCreate {
 	fn validate_fields(&self) -> Result<()> {
-		validate_sponsor_study_number_kind(self.sponsor_study_number_kind.as_deref())
+		validate_sponsor_study_number_kind(
+			self.sponsor_study_number_kind.as_deref(),
+		)?;
+		validate_optional_text_max_len(
+			"study presave",
+			"sponsor_study_number",
+			self.sponsor_study_number.as_deref(),
+			STUDY_PRESAVE_SPONSOR_STUDY_NUMBER_MAX_LEN,
+		)
 	}
 }
 
@@ -1866,7 +1895,15 @@ pub struct StudyPresaveForUpdate {
 
 impl StudyPresaveForUpdate {
 	fn validate_fields(&self) -> Result<()> {
-		validate_sponsor_study_number_kind(self.sponsor_study_number_kind.as_deref())
+		validate_sponsor_study_number_kind(
+			self.sponsor_study_number_kind.as_deref(),
+		)?;
+		validate_optional_text_max_len(
+			"study presave",
+			"sponsor_study_number",
+			self.sponsor_study_number.as_deref(),
+			STUDY_PRESAVE_SPONSOR_STUDY_NUMBER_MAX_LEN,
+		)
 	}
 }
 
@@ -2048,14 +2085,112 @@ pub struct StudyPresaveRegistrationNumberForUpdate {
 	pub deleted: Option<bool>,
 }
 
-impl_child_bmc!(
-	StudyPresaveRegistrationNumberBmc,
-	StudyPresaveRegistrationNumber,
-	StudyPresaveRegistrationNumberForCreate,
-	StudyPresaveRegistrationNumberForUpdate,
-	"study_presave_registration_numbers",
-	"study_presave_id"
-);
+impl StudyPresaveRegistrationNumberForCreate {
+	fn validate_fields(&self) -> Result<()> {
+		validate_optional_text_max_len(
+			"study presave registration number",
+			"registration_number",
+			self.registration_number.as_deref(),
+			STUDY_PRESAVE_REGISTRATION_NUMBER_MAX_LEN,
+		)
+	}
+}
+
+impl StudyPresaveRegistrationNumberForUpdate {
+	fn validate_fields(&self) -> Result<()> {
+		validate_optional_text_max_len(
+			"study presave registration number",
+			"registration_number",
+			self.registration_number.as_deref(),
+			STUDY_PRESAVE_REGISTRATION_NUMBER_MAX_LEN,
+		)
+	}
+}
+
+pub struct StudyPresaveRegistrationNumberBmc;
+
+impl DbBmc for StudyPresaveRegistrationNumberBmc {
+	const TABLE: &'static str = "study_presave_registration_numbers";
+}
+
+impl StudyPresaveRegistrationNumberBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: StudyPresaveRegistrationNumberForCreate,
+	) -> Result<Uuid> {
+		data.validate_fields()?;
+		base_uuid::create::<Self, _>(ctx, mm, data).await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<StudyPresaveRegistrationNumber> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<StudyPresaveRegistrationNumber>> {
+		base_uuid::list::<Self, _, Vec<PresaveListFilter>>(
+			ctx,
+			mm,
+			None,
+			list_options,
+		)
+		.await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: StudyPresaveRegistrationNumberForUpdate,
+	) -> Result<()> {
+		data.validate_fields()?;
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn list_by_parent(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		parent_id: Uuid,
+	) -> Result<Vec<StudyPresaveRegistrationNumber>> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+
+		let sql = "SELECT * FROM study_presave_registration_numbers WHERE study_presave_id = $1 ORDER BY sequence_number ASC, id ASC";
+		let rows = match dbx
+			.fetch_all(
+				sqlx::query_as::<_, StudyPresaveRegistrationNumber>(sql)
+					.bind(parent_id),
+			)
+			.await
+		{
+			Ok(rows) => rows,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		dbx.commit_txn().await?;
+		Ok(rows)
+	}
+}
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct StudyPresaveProduct {

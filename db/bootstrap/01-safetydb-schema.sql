@@ -414,7 +414,7 @@ CREATE TABLE IF NOT EXISTS study_presaves (
     product_presave_id UUID,
     study_name VARCHAR(2000),
     study_name_notation TEXT,
-    sponsor_study_number VARCHAR(100),
+    sponsor_study_number VARCHAR(50),
     sponsor_study_number_kind VARCHAR(50),
     study_type_reaction VARCHAR(50),
     edc_sync BOOLEAN,
@@ -438,7 +438,7 @@ CREATE TABLE IF NOT EXISTS study_presave_registration_numbers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,
     sequence_number INTEGER NOT NULL,
-    registration_number VARCHAR(255),
+    registration_number VARCHAR(50),
     country_code VARCHAR(2),
     deleted BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -453,6 +453,9 @@ ALTER TABLE study_presaves
     ADD COLUMN IF NOT EXISTS study_name_notation TEXT,
     ADD COLUMN IF NOT EXISTS sponsor_study_number_kind VARCHAR(50),
     ADD COLUMN IF NOT EXISTS exclude_case_key_from_sync BOOLEAN;
+
+ALTER TABLE study_presaves
+    ALTER COLUMN sponsor_study_number TYPE VARCHAR(50) USING LEFT(sponsor_study_number, 50);
 
 ALTER TABLE study_presaves
     DROP COLUMN IF EXISTS study_type_reaction_kr1,
@@ -475,6 +478,9 @@ ALTER TABLE study_presaves
 
 ALTER TABLE study_presave_registration_numbers
     ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE study_presave_registration_numbers
+    ALTER COLUMN registration_number TYPE VARCHAR(50) USING LEFT(registration_number, 50);
 
 CREATE TABLE IF NOT EXISTS study_presave_products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

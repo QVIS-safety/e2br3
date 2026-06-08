@@ -1067,6 +1067,99 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn study_presave_registration_numbers_enforce_registration_number_max_length(
+) -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		SenderPresaveForCreate {
+			name: format!("Registration Length Sender {suffix}"),
+			comments: None,
+			is_default: None,
+			sender_type: Some("1".into()),
+			organization_name: Some(format!(
+				"Registration Length Sender Org {suffix}"
+			)),
+			organization_name_notation: None,
+			street_address: None,
+			city: None,
+			state: None,
+			postcode: None,
+			country_code: None,
+			telephone: None,
+			fax: None,
+			email: None,
+		},
+	)
+	.await?;
+	let product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Ich,
+			format!("Registration Length Product {suffix}"),
+			sender_id,
+		),
+	)
+	.await?;
+	let mut study = study_presave_create(
+		RegulatoryAuthority::Ich,
+		format!("Registration Length Study {suffix}"),
+	);
+	study.product_presave_id = Some(product_id);
+	let study_id = StudyPresaveBmc::create(&ctx, &mm, study).await?;
+
+	let registration_id = StudyPresaveRegistrationNumberBmc::create(
+		&ctx,
+		&mm,
+		StudyPresaveRegistrationNumberForCreate {
+			study_presave_id: study_id,
+			sequence_number: 1,
+			registration_number: Some("REG-before".into()),
+			country_code: Some("KR".into()),
+			deleted: Some(false),
+		},
+	)
+	.await?;
+	expect_validation_error(
+		StudyPresaveRegistrationNumberBmc::create(
+			&ctx,
+			&mm,
+			StudyPresaveRegistrationNumberForCreate {
+				study_presave_id: study_id,
+				sequence_number: 2,
+				registration_number: Some("R".repeat(51)),
+				country_code: Some("KR".into()),
+				deleted: Some(false),
+			},
+		)
+		.await,
+		"registration_number` must be at most 50 characters",
+	);
+	expect_validation_error(
+		StudyPresaveRegistrationNumberBmc::update(
+			&ctx,
+			&mm,
+			registration_id,
+			StudyPresaveRegistrationNumberForUpdate {
+				registration_number: Some("R".repeat(51)),
+				..Default::default()
+			},
+		)
+		.await,
+		"registration_number` must be at most 50 characters",
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 ) -> Result<()> {
 	_dev_utils::init_dev().await;
@@ -1212,6 +1305,26 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 		)
 		.await,
 		"product_presave_id, sponsor_study_number, study_name, and study_type_reaction",
+	);
+	let mut long_sponsor_number = study_presave_create(
+		RegulatoryAuthority::Ich,
+		format!("Invalid Study Presave Sponsor Length {suffix}"),
+	);
+	let sponsor_length_product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Ich,
+			format!("Invalid Study Presave Sponsor Length Product {suffix}"),
+			valid_sender_without_parent_person,
+		),
+	)
+	.await?;
+	long_sponsor_number.product_presave_id = Some(sponsor_length_product_id);
+	long_sponsor_number.sponsor_study_number = Some("S".repeat(51));
+	expect_validation_error(
+		StudyPresaveBmc::create(&ctx, &mm, long_sponsor_number).await,
+		"sponsor_study_number` must be at most 50 characters",
 	);
 	expect_validation_error(
 		NarrativePresaveBmc::create(
