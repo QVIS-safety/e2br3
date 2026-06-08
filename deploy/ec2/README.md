@@ -15,21 +15,16 @@
 1. Install Docker and Docker Compose plugin.
 2. Create app directory:
    - `sudo mkdir -p /opt/e2br3/schemas`
-3. Copy these files to `/opt/e2br3`:
-   - `docker-compose.prod.yml`
-   - `deploy.sh`
-   - `run-terminology-manifest.sh`
-   - `terminology-load.sh`
-   - `terminology-manifest.prod.example`
-   - `schemas/`
-4. Make script executable:
-   - `chmod +x /opt/e2br3/deploy.sh`
-   - `chmod +x /opt/e2br3/run-terminology-manifest.sh`
-   - `chmod +x /opt/e2br3/terminology-load.sh`
+3. Clone or update this repository under `/opt/e2br3`.
+4. Make deployment scripts executable:
+   - `chmod +x /opt/e2br3/deploy/ec2/deploy.sh`
+   - `chmod +x /opt/e2br3/deploy/ec2/init-rds.sh`
+   - `chmod +x /opt/e2br3/deploy/ec2/run-terminology-manifest.sh`
+   - `chmod +x /opt/e2br3/deploy/ec2/terminology-load.sh`
 5. Create the production terminology manifest:
    - `sudo mkdir -p /opt/e2br3/terminology/incoming`
    - `sudo chown -R "$USER":"$USER" /opt/e2br3/terminology`
-   - `cp /opt/e2br3/terminology-manifest.prod.example /opt/e2br3/terminology/terminology-manifest.prod`
+   - `cp /opt/e2br3/deploy/ec2/terminology-manifest.prod.example /opt/e2br3/terminology/terminology-manifest.prod`
    - Edit `/opt/e2br3/terminology/terminology-manifest.prod` to reference the licensed release files uploaded to `/opt/e2br3/terminology/incoming`.
 6. Create `/opt/e2br3/.env.prod` manually with the runtime image, RDS URLs, secrets, and deployment
    settings. Use real operational values for secrets and URLs:
@@ -100,7 +95,7 @@ cd /opt/e2br3
 set -a
 . /opt/e2br3/.env.prod
 set +a
-RESET_DB=1 DATABASE_URL="$SERVICE_DB_URL" ./init-rds.sh
+RESET_DB=1 DATABASE_URL="$SERVICE_DB_URL" ./deploy/ec2/init-rds.sh
 ```
 
 `init-rds.sh` will use `SERVICE_DB_ROOT_URL` from the env file as `ROOT_DATABASE_URL`.
@@ -128,7 +123,7 @@ with the current runtime key.
 
 ```sh
 cd /opt/e2br3
-IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> ./deploy.sh
+IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> ./deploy/ec2/deploy.sh
 ```
 
 Manual demo reset without reloading terminology:
@@ -141,7 +136,7 @@ RESET_PRESERVE_TERMINOLOGY=1 \
 INCLUDE_SEED=1 \
 RELOAD_TERMINOLOGY=0 \
 HEALTHCHECK_URL=http://127.0.0.1:8080/health \
-./deploy.sh
+./deploy/ec2/deploy.sh
 ```
 
 Manual demo reset that also reloads terminology from the manifest:
@@ -154,7 +149,7 @@ RESET_PRESERVE_TERMINOLOGY=0 \
 INCLUDE_SEED=1 \
 RELOAD_TERMINOLOGY=1 \
 HEALTHCHECK_URL=http://127.0.0.1:8080/health \
-./deploy.sh
+./deploy/ec2/deploy.sh
 ```
 
 ## Automatic demo deploy
@@ -163,7 +158,7 @@ After CI succeeds on `main`, CD builds the runtime image and deploys through AWS
 using:
 
 ```sh
-IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 RELOAD_TERMINOLOGY=0 ./deploy.sh
+IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 RELOAD_TERMINOLOGY=0 ./deploy/ec2/deploy.sh
 ```
 
 `RESET_DB=1` recreates the database. With the default `RESET_PRESERVE_TERMINOLOGY=1`,

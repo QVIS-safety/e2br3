@@ -17,6 +17,8 @@ REQUESTED_RELOAD_TERMINOLOGY=${RELOAD_TERMINOLOGY:-}
 REQUESTED_HEALTHCHECK_URL_SET=${HEALTHCHECK_URL+x}
 REQUESTED_HEALTHCHECK_URL=${HEALTHCHECK_URL:-}
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+INIT_RDS_SCRIPT="${INIT_RDS_SCRIPT:-${SCRIPT_DIR}/init-rds.sh}"
+TERMINOLOGY_MANIFEST_SCRIPT="${TERMINOLOGY_MANIFEST_SCRIPT:-${SCRIPT_DIR}/run-terminology-manifest.sh}"
 if [ -d "${SCRIPT_DIR}/../../docs/exporter/schema" ]; then
   BUNDLED_SCHEMAS_DIR="${SCRIPT_DIR}/../../docs/exporter/schema"
 else
@@ -125,7 +127,7 @@ if [ "${RESET_DB:-}" = "1" ]; then
     ENV_FILE="${ENV_FILE}" \
     COMPOSE_FILE="${COMPOSE_FILE}" \
     E2BR3_TERMINOLOGY_DIR="${E2BR3_TERMINOLOGY_DIR:-/opt/e2br3/terminology}" \
-    "${APP_DIR}/run-terminology-manifest.sh"
+    "${TERMINOLOGY_MANIFEST_SCRIPT}"
   fi
 
   docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" stop app
@@ -136,14 +138,14 @@ if [ "${RESET_DB:-}" = "1" ]; then
   RESET_PRESERVE_TERMINOLOGY="${RESET_PRESERVE_TERMINOLOGY}" \
   INCLUDE_SEED="${INCLUDE_SEED:-1}" \
   PROJECT_DIR="${APP_DIR}" \
-  "${APP_DIR}/init-rds.sh"
+  "${INIT_RDS_SCRIPT}"
 
   if [ "${RELOAD_TERMINOLOGY}" = "1" ]; then
     APP_DIR="${APP_DIR}" \
     ENV_FILE="${ENV_FILE}" \
     COMPOSE_FILE="${COMPOSE_FILE}" \
     E2BR3_TERMINOLOGY_DIR="${E2BR3_TERMINOLOGY_DIR:-/opt/e2br3/terminology}" \
-    "${APP_DIR}/run-terminology-manifest.sh"
+    "${TERMINOLOGY_MANIFEST_SCRIPT}"
   fi
 fi
 

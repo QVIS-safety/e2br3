@@ -147,7 +147,7 @@ jobs:
           set -eu
           image_ref_q="$(jq -rn --arg v "${IMAGE_REF}" '$v|@sh')"
           aws_region_q="$(jq -rn --arg v "${AWS_REGION}" '$v|@sh')"
-          deploy_command="IMAGE_REF=${image_ref_q} RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 RELOAD_TERMINOLOGY=0 ./deploy.sh"
+          deploy_command="IMAGE_REF=${image_ref_q} RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 RELOAD_TERMINOLOGY=0 ./deploy/ec2/deploy.sh"
           commands_json="$(jq -n \
             --arg aws_region_q "${aws_region_q}" \
             --arg deploy_command "${deploy_command}" \
@@ -242,7 +242,7 @@ jobs:
             --arg input_path "${INPUT_PATH}" \
             --arg version "${VERSION}" \
             --arg language "${LANGUAGE}" \
-            '["./terminology-load.sh", $mode, $dictionary, $input_path, $version, $language] | @sh'
+            '["./deploy/ec2/terminology-load.sh", $mode, $dictionary, $input_path, $version, $language] | @sh'
           )"
           commands_json="$(jq -n \
             --arg term_command "${term_command}" \

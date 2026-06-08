@@ -9,8 +9,8 @@ E2BR3_TERMINOLOGY_DIR="${E2BR3_TERMINOLOGY_DIR:-/opt/e2br3/terminology}"
 usage() {
   cat >&2 <<'EOF'
 Usage:
-  terminology-load.sh --dry-run <meddra|whodrug> <input-path> <version> [language]
-  terminology-load.sh --load    <meddra|whodrug> <input-path> <version> [language]
+  deploy/ec2/terminology-load.sh --dry-run <meddra|whodrug> <input-path> <version> [language]
+  deploy/ec2/terminology-load.sh --load    <meddra|whodrug> <input-path> <version> [language]
 
 Environment:
   APP_DIR                  EC2 app directory. Default: /opt/e2br3
@@ -19,8 +19,8 @@ Environment:
   E2BR3_TERMINOLOGY_DIR    Host terminology mount root. Default: /opt/e2br3/terminology
 
 Examples:
-  APP_DIR=/opt/e2br3 ./terminology-load.sh --dry-run meddra /opt/e2br3/terminology/incoming/meddra_27_1.zip 27.1
-  APP_DIR=/opt/e2br3 ./terminology-load.sh --load whodrug /opt/e2br3/terminology/incoming/whodrug_2025_09.zip 2025.09 en
+  APP_DIR=/opt/e2br3 ./deploy/ec2/terminology-load.sh --dry-run meddra /opt/e2br3/terminology/incoming/meddra_27_1.zip 27.1
+  APP_DIR=/opt/e2br3 ./deploy/ec2/terminology-load.sh --load whodrug /opt/e2br3/terminology/incoming/whodrug_2025_09.zip 2025.09 en
 EOF
 }
 

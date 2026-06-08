@@ -30,7 +30,7 @@ services:
     image: placeholder
 YAML
 
-cat > "${APP_DIR}/init-rds.sh" <<'SH'
+  cat > "${APP_DIR}/init-rds.sh" <<'SH'
 #!/usr/bin/env sh
 set -eu
 printf 'init-rds RESET_DB=%s RESET_PRESERVE_TERMINOLOGY=%s INCLUDE_SEED=%s DATABASE_URL=%s ROOT_DATABASE_URL=%s\n' \
@@ -41,6 +41,10 @@ printf 'init-rds RESET_DB=%s RESET_PRESERVE_TERMINOLOGY=%s INCLUDE_SEED=%s DATAB
   "${ROOT_DATABASE_URL:-}" >> "${DEPLOY_LOG}"
 SH
   chmod +x "${APP_DIR}/init-rds.sh"
+
+  INIT_RDS_SCRIPT="${APP_DIR}/init-rds.sh"
+  TERMINOLOGY_MANIFEST_SCRIPT="${APP_DIR}/run-terminology-manifest.sh"
+  export INIT_RDS_SCRIPT TERMINOLOGY_MANIFEST_SCRIPT
 }
 
 APP_DIR="${TMP_DIR}/app-success"
