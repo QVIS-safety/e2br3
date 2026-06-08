@@ -18,7 +18,7 @@ mod rbac_patient;
 mod rbac_safety_report;
 #[path = "authz/rbac_subresources.rs"]
 mod rbac_subresources;
-#[path = "authz/rbac_users.rs"]
+#[path = "authz/rbac_users/mod.rs"]
 mod rbac_users;
 #[path = "authz/rls_web.rs"]
 mod rls_web;

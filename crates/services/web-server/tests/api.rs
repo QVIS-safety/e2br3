@@ -4,8 +4,8 @@ mod common;
 #[path = "validation/validation_common.rs"]
 mod validation_common;
 
-#[path = "api/admin_settings_web.rs"]
-mod admin_settings_web;
+#[path = "api/admin_settings/mod.rs"]
+mod admin_settings;
 #[path = "api/app_branding_web.rs"]
 mod app_branding_web;
 #[path = "api/audit_web.rs"]
@@ -30,6 +30,8 @@ mod import_history_web;
 mod middleware_ctx;
 #[path = "api/presave/mod.rs"]
 mod presave;
+#[path = "api/role_admin/mod.rs"]
+mod role_admin;
 #[path = "api/scope_visibility_web.rs"]
 mod scope_visibility_web;
 #[path = "api/submission_lifecycle_web.rs"]
