@@ -16,6 +16,75 @@ use serial_test::serial;
 use tower::ServiceExt;
 use uuid::Uuid;
 
+#[serial]
+#[tokio::test]
+async fn test_sponsor_admin_can_set_and_persist_blind_scope() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&token.to_string());
+
+	let app = web_server::app(mm);
+	let suffix = Uuid::new_v4();
+	let role_id = create_empty_permission_profile(
+		&app,
+		&admin_cookie,
+		format!("Blind Scope Role {suffix}"),
+	)
+	.await?;
+	let create_body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": format!("blind-scope-{suffix}@example.com"),
+			"username": format!("blind_scope_{suffix}"),
+			"role": role_id,
+			"access_blind_allowed": true
+		}
+	});
+	let create_req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", admin_cookie.as_str())
+		.header("content-type", "application/json")
+		.body(Body::from(create_body.to_string()))?;
+	let create_res = app.clone().oneshot(create_req).await?;
+	assert_eq!(create_res.status(), StatusCode::CREATED);
+	let create_bytes =
+		axum::body::to_bytes(create_res.into_body(), usize::MAX).await?;
+	let created: serde_json::Value = serde_json::from_slice(&create_bytes)?;
+	let created_id = created["data"]["id"]
+		.as_str()
+		.ok_or("missing created user id")?;
+	assert_eq!(
+		created["data"]["scope"]["accessBlindAllowed"].as_bool(),
+		Some(true),
+		"{created:?}"
+	);
+
+	let update_body = json!({
+		"data": {
+			"access_blind_allowed": false
+		}
+	});
+	let update_req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{created_id}"))
+		.header("cookie", admin_cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(update_body.to_string()))?;
+	let update_res = app.clone().oneshot(update_req).await?;
+	assert_eq!(update_res.status(), StatusCode::OK);
+	let update_bytes =
+		axum::body::to_bytes(update_res.into_body(), usize::MAX).await?;
+	let updated: serde_json::Value = serde_json::from_slice(&update_bytes)?;
+	assert_eq!(
+		updated["data"]["scope"]["accessBlindAllowed"].as_bool(),
+		Some(false),
+		"{updated:?}"
+	);
+	Ok(())
+}
+
 #[tokio::test]
 async fn test_admin_can_update_user() -> Result<()> {
 	let mm = init_test_mm().await?;
