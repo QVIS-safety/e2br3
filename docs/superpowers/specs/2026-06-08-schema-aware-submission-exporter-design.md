@@ -26,7 +26,7 @@ The web export path in `crates/services/web-server/src/web/rest/case_export_rest
 - business/XML validation through `validate_e2b_xml_business`,
 - export history recording.
 
-Those validation/history responsibilities should be kept, but the XML generation layer should be replaced.
+The new architecture should keep export history and XSD/basic validation. Receiver/business readiness should be owned by the existing case BMC validation layer before XML generation. Any post-XML business validation should be treated as a temporary compatibility or regression guard, not the primary owner of FDA/MFDS/ICH rules.
 
 ### Schema Evidence
 
@@ -76,7 +76,8 @@ This supports a submission/export job model, not a dirty-section XML patch model
 - Generate XML from a complete saved case snapshot.
 - Make receiver/sender/submission profile explicit.
 - Support `MCCI_IN200100UV01` plus `PORR_IN049016UV` first.
-- Reuse existing business/XML validation and XSD validation.
+- Reuse existing BMC receiver/business validation before XML generation.
+- Reuse XSD/basic XML validation after XML generation.
 - Keep schema files available from a deployed runtime schema directory.
 - Record export/submission history and expose generated XML artifacts.
 - Keep importer/edit dirty flags outside exporter semantics.
@@ -95,10 +96,10 @@ This supports a submission/export job model, not a dirty-section XML patch model
 Export or submission request
   -> ExportProfile
   -> CaseSnapshotLoader
+  -> BMC receiver/business validation
   -> CanonicalE2bExportBuilder
   -> SchemaAwareXmlWriter
   -> XSD validation
-  -> Business/XML validation
   -> ExportArtifact
   -> Export/submission history
   -> Download
@@ -202,18 +203,20 @@ The runtime path should contain:
 
 The source evidence copy can remain in `docs/exporter/schema`, but production must use a stable deployed read-only schema path.
 
-### Business/XML Validation
+### BMC Receiver/Business Validation
 
-Existing validation logic should be reused after XML generation.
+Existing case BMC validation should run before XML generation.
 
 Responsibilities:
 
-- authority-specific XML rules,
+- authority-specific case readiness rules,
 - required regulatory fields,
 - code-list and value constraints,
 - existing FDA/MFDS/ICH export checks.
 
-The XML writer must not duplicate these rules. It should generate structure; validators should reject invalid content.
+The XML writer must not duplicate these rules. It should consume a case snapshot that has already passed the receiver/business gate.
+
+The existing post-XML `validate_e2b_xml_business` path may remain during migration as a compatibility or regression guard. Long term, rule ownership should be consolidated in BMC validation, while post-write validation focuses on XML well-formedness, supported root/message checks, and XSD compliance.
 
 ### ExportArtifact
 
@@ -242,9 +245,10 @@ For single-case direct XML export, the artifact can be returned immediately. For
 User requests XML export for one case
   -> choose authority/profile
   -> load complete case snapshot
+  -> run BMC receiver/business validation
   -> build canonical E2B model
   -> write full XML
-  -> validate XML
+  -> validate XML structure against XSD/basic checks
   -> record export history
   -> return XML download
 ```
@@ -300,7 +304,7 @@ Exporter errors should be typed and actionable:
 - mapping failure,
 - XML writer failure,
 - XSD validation failure,
-- business/XML validation failure,
+- BMC receiver/business validation failure,
 - artifact persistence failure.
 
 Errors returned to users should avoid raw internal paths unless explicitly in debug/test mode. Internal logs may include validation details and debug artifact IDs.
@@ -389,8 +393,9 @@ Keep importer roundtrip tests only where they explicitly test import/export comp
 - exporter ignores dirty flags.
 - changing a persisted case field changes exported XML even if no dirty flag is set.
 - raw imported XML is not returned as the export source.
+- export fails before XML writing when BMC receiver/business validation fails.
 - generated XML passes XSD validation.
-- generated XML passes existing business/XML validation.
+- optional post-XML business validation, while enabled, remains consistent with BMC validation.
 
 ### Regression Tests
 
@@ -421,8 +426,8 @@ When submission workflow exists locally:
 - New exporter can generate MFDS and FDA XML from complete saved case state.
 - Dirty flags do not affect XML output.
 - Export profile controls sender, receiver, authority, root schema, and file naming.
+- Existing BMC receiver/business validation runs before XML generation.
 - Generated XML validates against deployed XSD schema bundle.
-- Existing business/XML validation still runs.
 - Export history records success and failure.
 - Submission-style flow can create a downloadable XML artifact from selected case IDs.
 - Legacy raw XML patch exporter is no longer the default production path.
