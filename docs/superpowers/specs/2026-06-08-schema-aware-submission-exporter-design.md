@@ -26,7 +26,7 @@ The web export path in `crates/services/web-server/src/web/rest/case_export_rest
 - XML business validation through `validate_e2b_xml_business`,
 - export history recording.
 
-The new architecture should keep export history and XSD/basic validation. Receiver/business readiness must be owned by the existing case BMC validation layer before XML generation. `validate_e2b_xml_business` is not part of the new exporter architecture and should not be used as an export gate.
+The new architecture keeps export history and XSD/basic validation. Receiver/business readiness must be owned by the existing case BMC validation layer before XML generation. `validate_e2b_xml_business` is not part of the new exporter architecture and must not be used as an export gate.
 
 ### Schema Evidence
 
@@ -35,7 +35,7 @@ The current FDA and MFDS example XML instances both use:
 - root message: `MCCI_IN200100UV01`
 - ICSR payload interaction: `PORR_IN049016UV`
 
-For the first redesign scope, exporter support should target this message pair. The complete schema bundle must still be deployed because `MCCI_IN200100UV01.xsd` depends on many core and multicache schema files.
+For the first redesign scope, exporter support must target this message pair. The complete schema bundle must still be deployed because `MCCI_IN200100UV01.xsd` depends on many core and multicache schema files.
 
 ### CubeSafety Workflow Evidence
 
@@ -111,32 +111,53 @@ Export or submission request
 
 The export profile represents the receiver/submission envelope.
 
-Fields:
+Required fields:
 
 - authority: `ich`, `fda`, or `mfds`
-- sender identifier
-- receiver identifier
+- sender identifier used in the E2B message header
+- receiver identifier used in the E2B message header
 - receiver label, such as `MFDS(KR)`
 - root element: `MCCI_IN200100UV01`
 - case element: `PORR_IN049016UV`
 - schema entrypoint: `MCCI_IN200100UV01.xsd`
-- filename policy
-- authority-specific export options
+- filename policy: `<receiver-label>_<batch-or-export-no>.<timestamp>.xml`
+- export mode: `single_case` or `submission_batch`
 
 The profile is selected by the export/submission workflow. It is not inferred from dirty flags.
+
+The first implementation must reject profiles that request any root or payload other than `MCCI_IN200100UV01` and `PORR_IN049016UV`. It must not silently fall back to FDA sample XML or another schema.
 
 ### CaseSnapshotLoader
 
 Loads the complete current saved case state for one or more case IDs.
 
-Rules:
+The loader must read from persisted BMC/model tables, including the records needed by the canonical export builder:
 
-- Read accepted persisted case data.
-- Do not read frontend dirty state.
-- Do not decide output from `dirty_c` through `dirty_h`.
-- Do not return raw imported XML as the export source.
+- `cases`
+- `message_headers`
+- `safety_report_identification`
+- sender/receiver/reporting entities used by C and N sections
+- patient and parent entities used by D section
+- reactions used by E section
+- tests used by F section
+- drugs, substances, indications, dosages, and relatedness used by G section
+- narrative, sender diagnoses, literature/case summaries used by H section
 
-This loader can initially use existing BMC tables and models. It should provide a stable snapshot contract to the exporter.
+The loader must not read these fields as export inputs:
+
+- `cases.raw_xml`
+- `cases.dirty_c`
+- `cases.dirty_d`
+- `cases.dirty_e`
+- `cases.dirty_f`
+- `cases.dirty_g`
+- `cases.dirty_h`
+- frontend form dirty state
+- import patch state
+
+If the first implementation cannot map a required persisted BMC field into the canonical model, it must return a mapping error. It must not copy missing XML from `raw_xml`.
+
+The first implementation may use existing BMC tables and models internally, but the public exporter boundary must be a stable snapshot contract, not raw table access from XML writer code.
 
 ### CanonicalE2bExportBuilder
 
@@ -160,10 +181,10 @@ Mapping gaps must produce explicit exporter errors. Silent omission is not accep
 
 ### SchemaAwareXmlWriter
 
-Writes full XML for the supported message pair:
+Writes full XML for the supported message pair. The first implementation supports exactly:
 
 ```xml
-<MCCI_IN200100UV01>
+<MCCI_IN200100UV01 ITSVersion="XML_1.0">
   ...
   <PORR_IN049016UV>
     ...
@@ -171,9 +192,17 @@ Writes full XML for the supported message pair:
 </MCCI_IN200100UV01>
 ```
 
+The writer must set the HL7 namespace expected by the schema and must include:
+
+```text
+xsi:schemaLocation="urn:hl7-org:v3 MCCI_IN200100UV01.xsd"
+```
+
+That `schemaLocation` value is only a hint in the XML. Runtime validation must use the deployed local schema bundle, not a schema fetched from the XML.
+
 The writer owns XML element order and structural placement. It must not serialize arbitrary maps or rely on incidental struct field order.
 
-Writer modules should be organized by E2B sections and XML responsibility:
+Writer modules must be organized by E2B sections and XML responsibility:
 
 - message wrapper/header
 - C safety report/header data
@@ -188,54 +217,83 @@ Writer modules should be organized by E2B sections and XML responsibility:
 
 The generated XML must be validated against the deployed schema bundle.
 
-Runtime schema path should be configured, for example:
+Post-write validation must run:
+
+- XML byte-size limit check,
+- XML well-formedness parse,
+- root element allow-list check,
+- `ITSVersion="XML_1.0"` check when configured,
+- XSD validation using `MCCI_IN200100UV01.xsd` from the local schema bundle.
+
+Post-write validation must not run `validate_e2b_xml_business`.
+
+Runtime schema path must be configured, for example:
 
 ```text
 E2BR3_SCHEMAS_DIR=/app/schemas
 ```
 
-The runtime path should contain:
+The runtime path must contain:
 
 ```text
 /app/schemas/coreschemas
 /app/schemas/multicacheschemas
 ```
 
-The source evidence copy can remain in `docs/exporter/schema`, but production must use a stable deployed read-only schema path.
+The source evidence copy may remain in `docs/exporter/schema`, but production must use a stable deployed read-only schema path.
 
 ### BMC Receiver/Business Validation
 
-Existing case BMC validation should run before XML generation.
+Existing case BMC validation must run before XML generation.
 
-Responsibilities:
+Pre-write validation must call the case validation engine for the selected export authority:
+
+```text
+validate_case_for_authority(ctx, mm, case_id, profile.authority)
+```
+
+For a batch export, this must run for every selected case ID before any XML artifact is generated.
+
+The exporter must block XML generation when the returned `CaseValidationReport` contains blocking issues. The export result must preserve the authority, case ID, blocking count, and issue list needed to show the user why export was blocked.
+
+This pre-write gate owns:
 
 - authority-specific case readiness rules,
 - required regulatory fields,
 - code-list and value constraints,
 - existing FDA/MFDS/ICH export checks.
 
-The XML writer must not duplicate these rules. It should consume a case snapshot that has already passed the receiver/business gate.
+The XML writer must not duplicate these rules. It must consume a case snapshot that has already passed the receiver/business gate.
 
 The new exporter must not call `validate_e2b_xml_business`. Post-write validation is limited to XML well-formedness, supported root/message checks, and XSD compliance.
 
 ### ExportArtifact
 
-The exporter should return or persist a generated artifact record:
+Every successful generated XML must have an artifact record. The artifact record must store:
 
-- artifact ID
-- case IDs
-- authority
-- sender
-- receiver
-- batch number or export number
-- file name
-- file content location
-- validation status
-- errors and warnings
-- created by
-- created at
+- artifact ID,
+- export mode: `single_case` or `submission_batch`,
+- case IDs included in the XML,
+- authority,
+- sender identifier,
+- receiver identifier,
+- receiver label,
+- root element: `MCCI_IN200100UV01`,
+- case element: `PORR_IN049016UV`,
+- schema entrypoint: `MCCI_IN200100UV01.xsd`,
+- batch number or export number,
+- file name,
+- file MIME type: `application/xml` or another explicit XML download type,
+- file size in bytes,
+- file content location or blob key,
+- XSD/basic validation status,
+- validation errors when generation failed,
+- created by user ID,
+- created at timestamp.
 
-For single-case direct XML export, the artifact can be returned immediately. For submission-style export, the artifact should be attached to submission history and downloaded from history.
+The artifact record must not store dirty flags as export criteria. If dirty flag values are kept for audit/debug, they must be explicitly marked as diagnostic metadata and must not be read by the exporter.
+
+For single-case direct XML export, the artifact may be returned immediately. For submission-style export, the artifact must be attached to submission history and downloaded from history.
 
 ## Data Flow
 
@@ -246,9 +304,12 @@ User requests XML export for one case
   -> choose authority/profile
   -> load complete case snapshot
   -> run BMC receiver/business validation
+     -> if blocking issues exist: stop, record failed export result, do not write XML
   -> build canonical E2B model
+     -> if mapping gap exists: stop, record mapping error
   -> write full XML
   -> validate XML structure against XSD/basic checks
+     -> if validation fails: record failed artifact/error, do not return file
   -> record export history
   -> return XML download
 ```
@@ -260,7 +321,10 @@ User selects sender and receiver
   -> create/check submission batch
   -> user selects case IDs
   -> submit batch
+  -> run BMC receiver/business validation for each selected case
+     -> if any selected case has blocking issues: stop, show per-case errors
   -> generate one XML artifact
+     -> if XML generation or XSD validation fails: record failed batch artifact/error
   -> record submission history
   -> user downloads Data File from history
 ```
@@ -285,16 +349,29 @@ Exporter rule:
 Dirty flags must not affect XML generation.
 ```
 
-The exporter must not:
+Dirty flags may be used only for:
 
-- skip clean sections,
-- patch only dirty sections,
-- return raw XML just because no section is dirty,
-- treat imported XML provenance as the export source.
+- deciding whether an edit form has unsaved changes,
+- building a PATCH payload during a save,
+- clearing edit-session state after save,
+- audit/debug metadata outside exporter decisions.
+
+Dirty flags must not be used for:
+
+- skipping clean sections,
+- patching only dirty sections,
+- returning raw XML just because no section is dirty,
+- treating imported XML provenance as the export source,
+- selecting which E2B sections appear in XML,
+- selecting which BMC tables are loaded,
+- deciding whether validation runs,
+- deciding whether a case is exportable.
+
+Implementation check: changing only `cases.dirty_c` through `cases.dirty_h` on an otherwise identical case must not change exported XML bytes, except for timestamp/message-number fields intentionally generated at export time.
 
 ## Error Handling
 
-Exporter errors should be typed and actionable:
+Exporter errors must be typed and actionable:
 
 - missing export profile,
 - unsupported authority,
@@ -307,7 +384,7 @@ Exporter errors should be typed and actionable:
 - BMC receiver/business validation failure,
 - artifact persistence failure.
 
-Errors returned to users should avoid raw internal paths unless explicitly in debug/test mode. Internal logs may include validation details and debug artifact IDs.
+Errors returned to users must avoid raw internal paths unless explicitly in debug/test mode. Internal logs may include validation details and debug artifact IDs.
 
 ## Migration Plan
 
@@ -318,10 +395,10 @@ Introduce a new exporter module without deleting the legacy path.
 Target:
 
 ```text
-xml/export_v2
+crates/libs/lib-core/src/xml/export_v2
 ```
 
-or equivalent naming aligned with local conventions.
+The implementation may choose a different module name only if it preserves a separate new-exporter entrypoint that does not share legacy dirty-patch code.
 
 Add:
 
@@ -330,6 +407,13 @@ Add:
 - `CanonicalE2bExportCase`
 - `SchemaAwareXmlWriter`
 - `ExportArtifact`
+
+Exit criteria:
+
+- new entrypoint accepts `ExportProfile` plus case ID(s),
+- new entrypoint loads a complete snapshot without reading `raw_xml` or dirty flags,
+- tests prove dirty flag changes do not alter the canonical model,
+- legacy exporter remains callable only through the old entrypoint.
 
 ### Phase 2: Support MFDS/FDA Primary XML
 
@@ -347,11 +431,27 @@ Use the sample instances under:
 
 as structural regression evidence.
 
+Exit criteria:
+
+- unsupported root/payload combinations return an explicit unsupported-interaction error,
+- MFDS and FDA profiles both use `MCCI_IN200100UV01` plus `PORR_IN049016UV`,
+- XML writer no longer uses `docs/exporter/fda/FAERS2022Scenario1.xml` as a production skeleton,
+- generated XML passes XSD/basic validation from the deployed schema path.
+
 ### Phase 3: Switch Direct Export Endpoint
 
 Change single-case XML export to call the new full-snapshot exporter.
 
-Keep old path only behind an explicit compatibility flag if needed.
+The old path may remain only behind an explicit compatibility flag, and that flag must be disabled by default.
+
+Exit criteria:
+
+- default single-case export no longer calls `try_fast_path_export`,
+- default single-case export no longer calls `try_fresh_section_export`,
+- default single-case export no longer calls `apply_dirty_sections_from_db`,
+- default single-case export does not return `cases.raw_xml`,
+- default single-case export does not call `validate_e2b_xml_business`,
+- failed BMC receiver/business validation blocks XML writing before the writer is invoked.
 
 ### Phase 4: Add Submission Artifact Flow
 
@@ -366,6 +466,15 @@ Add or align a submission-style workflow:
 
 This can be implemented after the direct single-case path is stable.
 
+Exit criteria:
+
+- submission request stores sender, receiver, authority, selected case IDs, and batch/export number,
+- batch submit validates every selected case before XML generation,
+- successful submit creates an artifact and a history row,
+- Data File download reads the generated artifact by artifact/file key,
+- download filename follows `<receiver-label>_<batch-or-export-no>.<timestamp>.xml`,
+- failed validation or XML generation creates a failed history/artifact state with inspectable errors.
+
 ### Phase 5: Retire Legacy Dirty Export
 
 Remove or quarantine:
@@ -377,6 +486,14 @@ Remove or quarantine:
 - FDA sample skeleton as production export base
 
 Keep importer roundtrip tests only where they explicitly test import/export compatibility, not production exporter semantics.
+
+Exit criteria:
+
+- production export code has no call path that uses `cases.dirty_c` through `cases.dirty_h`,
+- production export code has no call path that uses `cases.raw_xml` as the XML source,
+- production export code has no call path that uses FDA examples as XML skeletons,
+- legacy patch exporter tests are either removed or renamed as importer/roundtrip compatibility tests,
+- all direct and submission export tests pass through the new full-snapshot exporter.
 
 ## Testing Strategy
 
@@ -418,7 +535,7 @@ When submission workflow exists locally:
 
 1. Whether direct single-case XML export remains as a first-class workflow or becomes a shortcut over the submission artifact model.
 2. Whether generated XML artifacts are stored in database, filesystem/object storage, or both.
-3. Whether export validation should always run synchronously or become job-based for large batches.
+3. Decision required: export validation runs synchronously for all exports or moves to a job for large batches.
 4. Whether old roundtrip raw XML behavior is kept only for test utilities or removed entirely.
 
 ## Acceptance Criteria
