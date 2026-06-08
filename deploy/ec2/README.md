@@ -3,7 +3,7 @@
 ## Files
 
 - `docker-compose.prod.yml`: Production compose file (app only, uses RDS).
-- `deploy.sh`: Pull and rollout script used by CD. In the temporary demo environment it can reset RDS, load seed data, reload terminology, and restart the app.
+- `deploy.sh`: Pull and rollout script used by CD. In the temporary demo environment it can reset RDS, load seed data, preserve terminology, and restart the app.
 - `init-rds.sh`: One-time SQL bootstrap runner for RDS.
 - `run-terminology-manifest.sh`: Loads every terminology release listed in the EC2 terminology manifest.
 - `terminology-manifest.prod.example`: Example manifest format. Real licensed dictionary files stay outside git.
@@ -79,14 +79,19 @@ DATABASE_URL='postgres://<user>:<pwd>@<rds-endpoint>:5432/app_db?sslmode=require
 ./deploy/ec2/init-rds.sh
 ```
 
-Optional: reset DB/user first (destructive, runs `db/admin/00-recreate-db.sql`):
+Optional: reset DB/user first. By default this preserves terminology rows by dumping
+`meddra_terms`, `whodrug_products`, and `terminology_releases`, recreating the database,
+then restoring those rows before seed data is applied:
 
 ```sh
 RESET_DB=1 \
+RESET_PRESERVE_TERMINOLOGY=1 \
 ROOT_DATABASE_URL='postgres://<admin-user>:<admin-pwd>@<rds-endpoint>:5432/postgres?sslmode=require' \
 DATABASE_URL='postgres://<app-user>:<app-pwd>@<rds-endpoint>:5432/app_db?sslmode=require' \
 ./deploy/ec2/init-rds.sh
 ```
+
+For a truly destructive terminology reset, use `RESET_PRESERVE_TERMINOLOGY=0`.
 
 If you keep DB URLs in `/opt/e2br3/.env.prod`, you can run:
 
@@ -126,19 +131,48 @@ cd /opt/e2br3
 IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> ./deploy.sh
 ```
 
+Manual demo reset without reloading terminology:
+
+```sh
+cd /opt/e2br3
+IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> \
+RESET_DB=1 \
+RESET_PRESERVE_TERMINOLOGY=1 \
+INCLUDE_SEED=1 \
+RELOAD_TERMINOLOGY=0 \
+HEALTHCHECK_URL=http://127.0.0.1:8080/health \
+./deploy.sh
+```
+
+Manual demo reset that also reloads terminology from the manifest:
+
+```sh
+cd /opt/e2br3
+IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> \
+RESET_DB=1 \
+RESET_PRESERVE_TERMINOLOGY=0 \
+INCLUDE_SEED=1 \
+RELOAD_TERMINOLOGY=1 \
+HEALTHCHECK_URL=http://127.0.0.1:8080/health \
+./deploy.sh
+```
+
 ## Automatic demo deploy
 
 After CI succeeds on `main`, CD builds the runtime image and deploys through AWS Systems Manager
 using:
 
 ```sh
-IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> RESET_DB=1 INCLUDE_SEED=1 ./deploy.sh
+IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha> RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 RELOAD_TERMINOLOGY=0 ./deploy.sh
 ```
 
-`RESET_DB=1` recreates the database. `INCLUDE_SEED=1` reloads demo seed data.
-`run-terminology-manifest.sh` reloads the terminology releases listed in the production
-terminology manifest. This is intentionally destructive for the temporary demo environment and wipes
-demo data on every automatic deploy.
+`RESET_DB=1` recreates the database. With the default `RESET_PRESERVE_TERMINOLOGY=1`,
+the deploy preserves the already-loaded terminology tables and avoids parsing the licensed zip files
+on every deploy. `INCLUDE_SEED=1` reloads demo seed data. `RELOAD_TERMINOLOGY=0` means
+automatic demo deploys do not run the terminology manifest.
+
+Use `RELOAD_TERMINOLOGY=1` only when you intentionally want to reload the releases listed in
+`/opt/e2br3/terminology/terminology-manifest.prod`.
 
 ## GitHub Actions configuration
 

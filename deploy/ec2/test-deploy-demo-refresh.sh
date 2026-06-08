@@ -30,11 +30,12 @@ services:
     image: placeholder
 YAML
 
-  cat > "${APP_DIR}/init-rds.sh" <<'SH'
+cat > "${APP_DIR}/init-rds.sh" <<'SH'
 #!/usr/bin/env sh
 set -eu
-printf 'init-rds RESET_DB=%s INCLUDE_SEED=%s DATABASE_URL=%s ROOT_DATABASE_URL=%s\n' \
+printf 'init-rds RESET_DB=%s RESET_PRESERVE_TERMINOLOGY=%s INCLUDE_SEED=%s DATABASE_URL=%s ROOT_DATABASE_URL=%s\n' \
   "${RESET_DB:-}" \
+  "${RESET_PRESERVE_TERMINOLOGY:-}" \
   "${INCLUDE_SEED:-}" \
   "${DATABASE_URL:-}" \
   "${ROOT_DATABASE_URL:-}" >> "${DEPLOY_LOG}"
@@ -76,8 +77,7 @@ sh "${SCRIPT}"
 cat > "${TMP_DIR}/expected.log" <<'LOG'
 docker pull ghcr.io/example/e2br3-web-server:abc123
 docker compose --env-file .env.prod -f docker-compose.prod.yml stop app
-init-rds RESET_DB=1 INCLUDE_SEED=1 DATABASE_URL=postgres://app_user:pwd@example/app_db ROOT_DATABASE_URL=postgres://root:pwd@example/postgres
-terminology manifest
+init-rds RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 DATABASE_URL=postgres://app_user:pwd@example/app_db ROOT_DATABASE_URL=postgres://root:pwd@example/postgres
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d app
 docker image prune -f
 LOG
@@ -123,8 +123,7 @@ sh "${SCRIPT}"
 cat > "${TMP_DIR}/expected-requested-reset.log" <<'LOG'
 docker pull ghcr.io/example/e2br3-web-server:abc123
 docker compose --env-file .env.prod -f docker-compose.prod.yml stop app
-init-rds RESET_DB=1 INCLUDE_SEED=1 DATABASE_URL=postgres://app_user:pwd@example/app_db ROOT_DATABASE_URL=postgres://root:pwd@example/postgres
-terminology manifest
+init-rds RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 DATABASE_URL=postgres://app_user:pwd@example/app_db ROOT_DATABASE_URL=postgres://root:pwd@example/postgres
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d app
 docker image prune -f
 LOG
@@ -132,6 +131,49 @@ LOG
 if ! cmp -s "${TMP_DIR}/expected-requested-reset.log" "${DEPLOY_LOG}"; then
   echo "caller RESET_DB and INCLUDE_SEED should override .env.prod"
   diff -u "${TMP_DIR}/expected-requested-reset.log" "${DEPLOY_LOG}" || true
+  exit 1
+fi
+
+APP_DIR="${TMP_DIR}/app-reload-terminology"
+DEPLOY_LOG="${TMP_DIR}/deploy-reload-terminology.log"
+create_app "${APP_DIR}"
+
+cat > "${APP_DIR}/run-terminology-manifest.sh" <<'SH'
+#!/usr/bin/env sh
+set -eu
+if [ "${CHECK_ONLY:-}" = "1" ]; then
+  printf 'terminology preflight\n' >> "${DEPLOY_LOG}"
+else
+  printf 'terminology manifest\n' >> "${DEPLOY_LOG}"
+fi
+SH
+chmod +x "${APP_DIR}/run-terminology-manifest.sh"
+
+PATH="${BIN_DIR}:${PATH}" \
+DEPLOY_LOG="${DEPLOY_LOG}" \
+APP_DIR="${APP_DIR}" \
+COMPOSE_FILE=docker-compose.prod.yml \
+ENV_FILE=.env.prod \
+IMAGE_REF=ghcr.io/example/e2br3-web-server:abc123 \
+RESET_DB=1 \
+INCLUDE_SEED=1 \
+RELOAD_TERMINOLOGY=1 \
+HEALTHCHECK_URL="" \
+sh "${SCRIPT}"
+
+cat > "${TMP_DIR}/expected-reload-terminology.log" <<'LOG'
+docker pull ghcr.io/example/e2br3-web-server:abc123
+terminology preflight
+docker compose --env-file .env.prod -f docker-compose.prod.yml stop app
+init-rds RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 DATABASE_URL=postgres://app_user:pwd@example/app_db ROOT_DATABASE_URL=postgres://root:pwd@example/postgres
+terminology manifest
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d app
+docker image prune -f
+LOG
+
+if ! cmp -s "${TMP_DIR}/expected-reload-terminology.log" "${DEPLOY_LOG}"; then
+  echo "RELOAD_TERMINOLOGY=1 should preflight and reload terminology"
+  diff -u "${TMP_DIR}/expected-reload-terminology.log" "${DEPLOY_LOG}" || true
   exit 1
 fi
 
@@ -205,6 +247,7 @@ if PATH="${BIN_DIR}:${PATH}" \
   IMAGE_REF=ghcr.io/example/e2br3-web-server:abc123 \
   RESET_DB=1 \
   INCLUDE_SEED=1 \
+  RELOAD_TERMINOLOGY=1 \
   HEALTHCHECK_URL="" \
   sh "${SCRIPT}"; then
   echo "deploy should fail when terminology preflight fails"
