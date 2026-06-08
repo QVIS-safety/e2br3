@@ -20,13 +20,13 @@ The current exporter in `crates/libs/lib-core/src/xml/export.rs` still branches 
 
 That architecture couples export output to importer/edit history instead of complete current case state.
 
-The web export path in `crates/services/web-server/src/web/rest/case_export_rest.rs` already performs post-generation validation:
+The web export path in `crates/services/web-server/src/web/rest/case_export_rest.rs` currently performs post-generation validation:
 
 - XSD/basic validation through `validate_e2b_xml`,
-- business/XML validation through `validate_e2b_xml_business`,
+- XML business validation through `validate_e2b_xml_business`,
 - export history recording.
 
-The new architecture should keep export history and XSD/basic validation. Receiver/business readiness should be owned by the existing case BMC validation layer before XML generation. Any post-XML business validation should be treated as a temporary compatibility or regression guard, not the primary owner of FDA/MFDS/ICH rules.
+The new architecture should keep export history and XSD/basic validation. Receiver/business readiness must be owned by the existing case BMC validation layer before XML generation. `validate_e2b_xml_business` is not part of the new exporter architecture and should not be used as an export gate.
 
 ### Schema Evidence
 
@@ -216,7 +216,7 @@ Responsibilities:
 
 The XML writer must not duplicate these rules. It should consume a case snapshot that has already passed the receiver/business gate.
 
-The existing post-XML `validate_e2b_xml_business` path may remain during migration as a compatibility or regression guard. Long term, rule ownership should be consolidated in BMC validation, while post-write validation focuses on XML well-formedness, supported root/message checks, and XSD compliance.
+The new exporter must not call `validate_e2b_xml_business`. Post-write validation is limited to XML well-formedness, supported root/message checks, and XSD compliance.
 
 ### ExportArtifact
 
@@ -395,7 +395,7 @@ Keep importer roundtrip tests only where they explicitly test import/export comp
 - raw imported XML is not returned as the export source.
 - export fails before XML writing when BMC receiver/business validation fails.
 - generated XML passes XSD validation.
-- optional post-XML business validation, while enabled, remains consistent with BMC validation.
+- generated XML export does not call `validate_e2b_xml_business`.
 
 ### Regression Tests
 
