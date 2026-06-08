@@ -22,6 +22,7 @@ for arg do
   i=$((i + 1))
   printf 'ARG%s=%s\n' "$i" "$arg" >> "${DOCKER_LOG}"
 done
+cat >/dev/null
 SH
 chmod +x "${TMP_DIR}/bin/docker"
 

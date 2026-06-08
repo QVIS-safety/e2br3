@@ -88,7 +88,8 @@ while IFS= read -r line || [ -n "${line}" ]; do
       "${dictionary}" \
       --input "${container_input}" \
       --version "${version}" \
-      --language "${language}"
+      --language "${language}" \
+      </dev/null
   fi
   loaded=$((loaded + 1))
 done < "${TERMINOLOGY_MANIFEST}"
