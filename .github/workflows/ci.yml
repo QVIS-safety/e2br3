@@ -11,6 +11,22 @@ env:
 
 jobs:
   # ============================================
+  # Job 0: Validate E2BR3 registry
+  # ============================================
+  registry:
+    name: E2BR3 Registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate registry
+        run: |
+          python3 -m unittest registry/tools/test_validate.py
+          python3 -m unittest registry/tools/test_build_dictionary.py
+          python3 registry/tools/validate.py
+          python3 registry/tools/validate.py --strict-dictionary
+
+  # ============================================
   # Job 1: Check code formatting
   # ============================================
   fmt:

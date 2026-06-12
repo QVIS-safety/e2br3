@@ -1,0 +1,1007 @@
+[
+  {
+    "id": "E.i.1.1a",
+    "e2br3_code": "E.i.1.1a",
+    "label": "Reaction/Event as Reported by the Primary Source",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "primary_source_reaction",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.primary_source_reaction is annotated as E.i.1.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "primarySourceReaction",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE registers reactions.${activeIndex}.primarySourceReaction."
+    },
+    "action": "",
+    "notes": "Renamed from E.i.1.1 to match the ICH dictionary (E.i.1.1a)."
+  },
+  {
+    "id": "E.i.1.2",
+    "e2br3_code": "E.i.1.2",
+    "label": "Reaction/Event as Reported by Primary Source for Translation",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "primary_source_reaction_translation",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.primary_source_reaction_translation is annotated as E.i.1.2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "primarySourceReactionTranslation",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE registers reactions.${activeIndex}.primarySourceReactionTranslation."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.2.1b",
+    "e2br3_code": "E.i.2.1b",
+    "label": "Reaction/Event MedDRA Code",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "reaction_meddra_code",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.reaction_meddra_code is annotated under E.i.2.1 MedDRA coding."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionMeddraCodeLLT",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE registers reactions.${activeIndex}.reactionMeddraCodeLLT."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.4",
+    "e2br3_code": "E.i.4",
+    "label": "Date of Start of Reaction/Event",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "start_date",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.start_date is annotated under E.i.4-6 timing."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionStartDate",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/core/detail.reactions.ts",
+      "evidence": "Frontend input inventory extracts reactions.reactionStartDate from the case-form section source."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.7",
+    "e2br3_code": "E.i.7",
+    "label": "Outcome of Reaction/Event",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "outcome",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.outcome is annotated as E.i.7."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionOutcome",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE registers reactions.${activeIndex}.reactionOutcome."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.1.1b",
+    "e2br3_code": "E.i.1.1b",
+    "label": "Reaction/Event Language",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "reaction_language",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.reaction_language stores E.i.1.1b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionLanguage",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.1.1b to reactions[index].reactionLanguage."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.2.1a",
+    "e2br3_code": "E.i.2.1a",
+    "label": "Reaction/Event MedDRA Version",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "reaction_meddra_version",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.reaction_meddra_version stores E.i.2.1a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionMeddraVersionLLT",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.2.1a to reactions[index].reactionMeddraVersionLLT."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.3.1",
+    "e2br3_code": "E.i.3.1",
+    "label": "Term Highlighted by Reporter",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "term_highlighted",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.term_highlighted stores E.i.3.1 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "termHighlighted",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.3.1 to reactions[index].termHighlighted."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.serious",
+    "e2br3_code": "E.i.serious",
+    "label": "Derived Serious Event Flag",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "serious",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.serious stores E.i.serious values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.serious",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber seriousness.serious to reactions[index].seriousness.serious."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.3.2a",
+    "e2br3_code": "E.i.3.2a",
+    "label": "Seriousness Results in Death",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_death",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_death stores E.i.3.2a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaResultsInDeath",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.3.2a to reactions[index].seriousness.criteriaResultsInDeath."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.3.2b",
+    "e2br3_code": "E.i.3.2b",
+    "label": "Seriousness Life Threatening",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_life_threatening",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_life_threatening stores E.i.3.2b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaLifeThreatening",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.3.2b to reactions[index].seriousness.criteriaLifeThreatening."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.3.2c",
+    "e2br3_code": "E.i.3.2c",
+    "label": "Seriousness Hospitalization",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_hospitalization",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_hospitalization stores E.i.3.2c values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaHospitalization",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.3.2c to reactions[index].seriousness.criteriaHospitalization."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.3.2d",
+    "e2br3_code": "E.i.3.2d",
+    "label": "Seriousness Disabling",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_disabling",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_disabling stores E.i.3.2d values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaDisabling",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.3.2d to reactions[index].seriousness.criteriaDisabling."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.3.2e",
+    "e2br3_code": "E.i.3.2e",
+    "label": "Seriousness Congenital Anomaly",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_congenital_anomaly",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_congenital_anomaly stores E.i.3.2e values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaCongenitalAnomaly",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.3.2e to reactions[index].seriousness.criteriaCongenitalAnomaly."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.3.2f",
+    "e2br3_code": "E.i.3.2f",
+    "label": "Seriousness Other Medically Important",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "criteria_other_medically_important",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.criteria_other_medically_important stores E.i.3.2f values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "seriousness.criteriaOtherMedicallyImportant",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.3.2f to reactions[index].seriousness.criteriaOtherMedicallyImportant."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "FDA.E.i.3.2h",
+    "e2br3_code": "FDA.E.i.3.2h",
+    "label": "Required Intervention",
+    "section": "E",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "required_intervention",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.required_intervention stores FDA.E.i.3.2h values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "requiredIntervention",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber FDA.E.i.3.2h to reactions[index].requiredIntervention."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.local.includedInEmaImeList",
+    "e2br3_code": "E.local.includedInEmaImeList",
+    "label": "Included in EMA IME List",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "included_in_ema_ime_list",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.included_in_ema_ime_list stores E.local.includedInEmaImeList values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "includedInEmaImeList",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber AE_IME_LIST to reactions[index].includedInEmaImeList."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.local.expectedness",
+    "e2br3_code": "E.local.expectedness",
+    "label": "Expectedness",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "expectedness",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.expectedness stores E.local.expectedness values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "expectedness",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber AE_EXPECTEDNESS to reactions[index].expectedness."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.local.severity",
+    "e2br3_code": "E.local.severity",
+    "label": "Severity",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "severity",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.severity stores E.local.severity values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "severity",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber AE_SEVERITY to reactions[index].severity."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.5",
+    "e2br3_code": "E.i.5",
+    "label": "Date of End of Reaction/Event",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "end_date",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.end_date stores E.i.5 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionEndDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.5 to reactions[index].reactionEndDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.6a",
+    "e2br3_code": "E.i.6a",
+    "label": "Duration of Reaction/Event Number",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "duration_value",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.duration_value stores E.i.6a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionDuration.value",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.6a to reactions[index].reactionDuration.value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.6b",
+    "e2br3_code": "E.i.6b",
+    "label": "Duration of Reaction/Event Unit",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "duration_unit",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.duration_unit stores E.i.6b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionDuration.unit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.6b to reactions[index].reactionDuration.unit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.8",
+    "e2br3_code": "E.i.8",
+    "label": "Medical Confirmation by Healthcare Professional",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "medical_confirmation",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.medical_confirmation stores E.i.8 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "medicalConfirmation",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.8 to reactions[index].medicalConfirmation."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.9",
+    "e2br3_code": "E.i.9",
+    "label": "Country Where Reaction/Event Occurred",
+    "section": "E",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "country_code",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.country_code stores E.i.9 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "reactionCountry",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber E.i.9 to reactions[index].reactionCountry."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "E.i.KR.device.aeClassification",
+    "e2br3_code": "E.i.KR.device.aeClassification",
+    "label": "MFDS Device AE Classification",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_ae_classification",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_ae_classification stores E.i.KR.device.aeClassification values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.aeClassification",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_AECL to reactions[index].mfdsDeviceAe.aeClassification."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.aeOutcome",
+    "e2br3_code": "E.i.KR.device.aeOutcome",
+    "label": "MFDS Device AE Outcome",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_ae_outcome",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_ae_outcome stores E.i.KR.device.aeOutcome values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.aeOutcome",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_AEOUT to reactions[index].mfdsDeviceAe.aeOutcome."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.causeMedicalDevice",
+    "e2br3_code": "E.i.KR.device.causeMedicalDevice",
+    "label": "MFDS Device Cause Medical Device",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_cause_medical_device",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_cause_medical_device stores E.i.KR.device.causeMedicalDevice values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.causeMedicalDevice",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_CC_MD to reactions[index].mfdsDeviceAe.causeMedicalDevice."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.causeProcedureIssue",
+    "e2br3_code": "E.i.KR.device.causeProcedureIssue",
+    "label": "MFDS Device Cause Procedure Issue",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_cause_procedure_issue",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_cause_procedure_issue stores E.i.KR.device.causeProcedureIssue values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.causeProcedureIssue",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_CC_PI to reactions[index].mfdsDeviceAe.causeProcedureIssue."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.causePatientCondition",
+    "e2br3_code": "E.i.KR.device.causePatientCondition",
+    "label": "MFDS Device Cause Patient Condition",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_cause_patient_condition",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_cause_patient_condition stores E.i.KR.device.causePatientCondition values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.causePatientCondition",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_CC_PC to reactions[index].mfdsDeviceAe.causePatientCondition."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.causeUnableToAssess",
+    "e2br3_code": "E.i.KR.device.causeUnableToAssess",
+    "label": "MFDS Device Cause Unable To Assess",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_cause_unable_to_assess",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_cause_unable_to_assess stores E.i.KR.device.causeUnableToAssess values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.causeUnableToAssess",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_CC_UA to reactions[index].mfdsDeviceAe.causeUnableToAssess."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.causeOther",
+    "e2br3_code": "E.i.KR.device.causeOther",
+    "label": "MFDS Device Cause Other",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_cause_other",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_cause_other stores E.i.KR.device.causeOther values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.causeOther",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_CC_OTH to reactions[index].mfdsDeviceAe.causeOther."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.actionReason",
+    "e2br3_code": "E.i.KR.device.actionReason",
+    "label": "MFDS Device Action Reason",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_action_reason",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_action_reason stores E.i.KR.device.actionReason values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.actionReason",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_ACT_RSN to reactions[index].mfdsDeviceAe.actionReason."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.actionRecall",
+    "e2br3_code": "E.i.KR.device.actionRecall",
+    "label": "MFDS Device Action Recall",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_action_recall",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_action_recall stores E.i.KR.device.actionRecall values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.actionRecall",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_ACT_RC to reactions[index].mfdsDeviceAe.actionRecall."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.actionRepair",
+    "e2br3_code": "E.i.KR.device.actionRepair",
+    "label": "MFDS Device Action Repair",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_action_repair",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_action_repair stores E.i.KR.device.actionRepair values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.actionRepair",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_ACT_RP to reactions[index].mfdsDeviceAe.actionRepair."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.actionInspection",
+    "e2br3_code": "E.i.KR.device.actionInspection",
+    "label": "MFDS Device Action Inspection",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_action_inspection",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_action_inspection stores E.i.KR.device.actionInspection values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.actionInspection",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_ACT_INSP to reactions[index].mfdsDeviceAe.actionInspection."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.actionReplacement",
+    "e2br3_code": "E.i.KR.device.actionReplacement",
+    "label": "MFDS Device Action Replacement",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_action_replacement",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_action_replacement stores E.i.KR.device.actionReplacement values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.actionReplacement",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_ACT_REPL to reactions[index].mfdsDeviceAe.actionReplacement."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.actionImprovement",
+    "e2br3_code": "E.i.KR.device.actionImprovement",
+    "label": "MFDS Device Action Improvement",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_action_improvement",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_action_improvement stores E.i.KR.device.actionImprovement values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.actionImprovement",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_ACT_IMP to reactions[index].mfdsDeviceAe.actionImprovement."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.actionMonitoring",
+    "e2br3_code": "E.i.KR.device.actionMonitoring",
+    "label": "MFDS Device Action Monitoring",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_action_monitoring",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_action_monitoring stores E.i.KR.device.actionMonitoring values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.actionMonitoring",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_ACT_MON to reactions[index].mfdsDeviceAe.actionMonitoring."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.actionNotification",
+    "e2br3_code": "E.i.KR.device.actionNotification",
+    "label": "MFDS Device Action Notification",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_action_notification",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_action_notification stores E.i.KR.device.actionNotification values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.actionNotification",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_ACT_NTF to reactions[index].mfdsDeviceAe.actionNotification."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.actionLabelChange",
+    "e2br3_code": "E.i.KR.device.actionLabelChange",
+    "label": "MFDS Device Action Label Change",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_action_label_change",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_action_label_change stores E.i.KR.device.actionLabelChange values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.actionLabelChange",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_ACT_CAS to reactions[index].mfdsDeviceAe.actionLabelChange."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  },
+  {
+    "id": "E.i.KR.device.actionOther",
+    "e2br3_code": "E.i.KR.device.actionOther",
+    "label": "MFDS Device Action Other",
+    "section": "E",
+    "authority": "MFDS",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "Reaction",
+      "field": "mfds_device_action_other",
+      "file": "crates/libs/lib-core/src/model/reaction.rs",
+      "evidence": "Reaction.mfds_device_action_other stores E.i.KR.device.actionOther values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "reactions",
+      "field": "mfdsDeviceAe.actionOther",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
+      "evidence": "SectionE binds fieldNumber KR_DVC_ACT_OTH to reactions[index].mfdsDeviceAe.actionOther."
+    },
+    "action": "",
+    "notes": "Official MFDS medical-device reporting guideline is not yet imported as a dictionary source; revisit when available."
+  }
+]

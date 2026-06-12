@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "E2BR3 Dictionary Rules File",
+  "type": "object",
+  "required": ["authority", "source", "rules"],
+  "additionalProperties": false,
+  "properties": {
+    "authority": {
+      "type": "string",
+      "enum": ["ICH", "FDA", "MFDS"]
+    },
+    "source": { "type": "string", "minLength": 1 },
+    "rules": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    }
+  }
+}

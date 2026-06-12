@@ -1,0 +1,2007 @@
+[
+  {
+    "id": "C.1.2",
+    "e2br3_code": "C.1.2",
+    "label": "Date of Creation",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "transmission_date",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.transmission_date is annotated as C.1.2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "transmissionDate",
+      "file": "../frontend/E2BR3-frontend/__tests__/validation/backendFieldBanners.test.ts",
+      "evidence": "Frontend validation/banner tests reference safetyReportIdentification.transmissionDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.3",
+    "e2br3_code": "C.1.3",
+    "label": "Type of Report",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "report_type",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.report_type is annotated as C.1.3."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "reportType",
+      "file": "../frontend/E2BR3-frontend/node-tests/create-gate.validation.test.ts",
+      "evidence": "Frontend create gate tests require safetyReportIdentification.reportType."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.4",
+    "e2br3_code": "C.1.4",
+    "label": "Date Report Was First Received from Source",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "date_first_received_from_source",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.date_first_received_from_source is annotated as C.1.4."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "dateFirstReceivedFromSource",
+      "file": "../frontend/E2BR3-frontend/node-tests/create-gate.validation.test.ts",
+      "evidence": "Frontend create gate tests require safetyReportIdentification.dateFirstReceivedFromSource."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.5",
+    "e2br3_code": "C.1.5",
+    "label": "Date of Most Recent Information",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "date_of_most_recent_information",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.date_of_most_recent_information is annotated as C.1.5."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "dateOfMostRecentInformation",
+      "file": "../frontend/E2BR3-frontend/node-tests/create-gate.validation.test.ts",
+      "evidence": "Frontend create gate tests require safetyReportIdentification.dateOfMostRecentInformation."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.6.1",
+    "e2br3_code": "C.1.6.1",
+    "label": "Are Additional Documents Available?",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "additional_documents_available",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.additional_documents_available is annotated as C.1.6.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "additionalDocumentsAvailable",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "SectionC1 binds fieldNumber C.1.6.1 to safetyReportIdentification.additionalDocumentsAvailable."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.6.1.r.1",
+    "e2br3_code": "C.1.6.1.r.1",
+    "label": "Documents Held by Sender",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DocumentsHeldBySender",
+      "field": "title",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Backend validation maps C.1.6.1.r.1 to DocumentsHeldBySender.title."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "documentsHeldBySender.documentDescription",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "SectionC1 binds fieldNumber C.1.6.1.r.1 to safetyReportIdentification.documentsHeldBySender[index].documentDescription."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.6.1.r.2",
+    "e2br3_code": "C.1.6.1.r.2",
+    "label": "Included Document Payload",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DocumentsHeldBySender",
+      "field": "document_base64",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save endpoint posts document_base64 for C.1.6.1.r.2 documents held by sender."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "documentsHeldBySender.includedDocument",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "SectionC1 binds fieldNumber C.1.6.1.r.2 to safetyReportIdentification.documentsHeldBySender[index].includedDocument."
+    },
+    "action": "",
+    "notes": "ED component row for C.1.6.1.r.2. Renamed from C.1.6.1.r.2@documentBase64: this payload field is the official Included Documents element."
+  },
+  {
+    "id": "C.1.6.1.r.2.local.mediaType",
+    "e2br3_code": "C.1.6.1.r.2.local.mediaType",
+    "label": "Included Document Media Type",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DocumentsHeldBySender",
+      "field": "media_type",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save endpoint posts media_type for documents held by sender."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "documentsHeldBySender.mediaType",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/report.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add a visible frontend input or keep this as backend-only derived ED metadata.",
+    "notes": "Backend inventory is covered, but the case-form frontend source does not expose this ED component as an input. XML ED attribute of the C.1.6.1.r.2 attachment element, not a separate ICH data element."
+  },
+  {
+    "id": "C.1.6.1.r.2.local.representation",
+    "e2br3_code": "C.1.6.1.r.2.local.representation",
+    "label": "Included Document Representation",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DocumentsHeldBySender",
+      "field": "representation",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save endpoint posts representation for documents held by sender."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "documentsHeldBySender.representation",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/report.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add a visible frontend input or keep this as backend-only derived ED metadata.",
+    "notes": "Backend inventory is covered, but the case-form frontend source does not expose this ED component as an input. XML ED attribute of the C.1.6.1.r.2 attachment element, not a separate ICH data element."
+  },
+  {
+    "id": "C.1.6.1.r.2.local.compression",
+    "e2br3_code": "C.1.6.1.r.2.local.compression",
+    "label": "Included Document Compression",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DocumentsHeldBySender",
+      "field": "compression",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save endpoint posts compression for documents held by sender."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "documentsHeldBySender.compression",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/report.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add a visible frontend input or keep this as backend-only derived ED metadata.",
+    "notes": "Backend inventory is covered, but the case-form frontend source does not expose this ED component as an input. XML ED attribute of the C.1.6.1.r.2 attachment element, not a separate ICH data element."
+  },
+  {
+    "id": "C.1.7",
+    "e2br3_code": "C.1.7",
+    "label": "Does This Case Fulfil the Local Criteria for an Expedited Report?",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "fulfil_expedited_criteria",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.fulfil_expedited_criteria is annotated as C.1.7."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "fulfilExpeditedCriteria",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "SectionC1 binds fieldNumber C.1.7 to safetyReportIdentification.fulfilExpeditedCriteria."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "FDA.C.1.7.1",
+    "e2br3_code": "FDA.C.1.7.1",
+    "label": "Local Criteria Report Type",
+    "section": "C",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "local_criteria_report_type",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.local_criteria_report_type is annotated as FDA.C.1.7.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "localCriteriaReportType",
+      "file": "../frontend/E2BR3-frontend/node-tests/validation.domain-format.parity.test.ts",
+      "evidence": "Frontend parity tests reference safetyReportIdentification.localCriteriaReportType."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "FDA.C.1.12",
+    "e2br3_code": "FDA.C.1.12",
+    "label": "Combination Product Report Indicator",
+    "section": "C",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "combination_product_report_indicator",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.combination_product_report_indicator is annotated as FDA.C.1.12."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "combinationProductReportIndicator",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "SectionC1 binds fieldNumber FDA.C.1.12 to safetyReportIdentification.combinationProductReportIndicator."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.8.1",
+    "e2br3_code": "C.1.8.1",
+    "label": "Worldwide Unique Case Identification Number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "worldwide_unique_id",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.worldwide_unique_id is annotated as C.1.8.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "worldwideUniqueId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "SectionC1 binds fieldNumber C.1.8.1 to safetyReportIdentification.worldwideUniqueId."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.8.2",
+    "e2br3_code": "C.1.8.2",
+    "label": "First Sender of This Case",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "first_sender_type",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.first_sender_type is annotated as C.1.8.2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "firstSenderType",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "SectionC1 binds fieldNumber C.1.8.2 to safetyReportIdentification.firstSenderType."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.9.1",
+    "e2br3_code": "C.1.9.1",
+    "label": "Other Case Identifiers in Previous Transmissions",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "other_case_identifiers_exist",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.other_case_identifiers_exist is annotated as C.1.9.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "otherCaseIdentifiersExist",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "SectionC1 binds fieldNumber C.1.9.1 to safetyReportIdentification.otherCaseIdentifiersExist."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.11.1",
+    "e2br3_code": "C.1.11.1",
+    "label": "Report Nullification / Amendment Code",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "nullification_code",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.nullification_code is annotated as C.1.11.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "nullificationAmendmentCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "SectionC1 binds fieldNumber C.1.11.1 to safetyReportIdentification.nullificationAmendmentCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.1.11.2",
+    "e2br3_code": "C.1.11.2",
+    "label": "Reason for Nullification / Amendment",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SafetyReportIdentification",
+      "field": "nullification_reason",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.nullification_reason is annotated as C.1.11.2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "nullificationReason",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "SectionC1 binds fieldNumber C.1.11.2 to safetyReportIdentification.nullificationReason."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.1.1",
+    "e2br3_code": "C.2.r.1.1",
+    "label": "Reporter's Title",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "reporter_title",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.reporter_title is part of C.2.r.1 reporter name; frontend save-field proof maps C.2.r.1.1 to reporter_title."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterTitle",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.1.1 to primarySources[index].reporterTitle."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.1.2",
+    "e2br3_code": "C.2.r.1.2",
+    "label": "Reporter's Given Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "reporter_given_name",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.reporter_given_name is part of C.2.r.1 reporter name; frontend save-field proof maps C.2.r.1.2 to reporter_given_name."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterGivenName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.1.2 to primarySources[index].reporterGivenName."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.1.3",
+    "e2br3_code": "C.2.r.1.3",
+    "label": "Reporter's Middle Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "reporter_middle_name",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.reporter_middle_name is part of C.2.r.1 reporter name; frontend save-field proof maps C.2.r.1.3 to reporter_middle_name."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterMiddleName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.1.3 to primarySources[index].reporterMiddleName."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.1.4",
+    "e2br3_code": "C.2.r.1.4",
+    "label": "Reporter's Family Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "reporter_family_name",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.reporter_family_name is part of C.2.r.1 reporter name; frontend save-field proof maps C.2.r.1.4 to reporter_family_name."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterFamilyName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.1.4 to primarySources[index].reporterFamilyName."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.2.1",
+    "e2br3_code": "C.2.r.2.1",
+    "label": "Reporter's Organisation",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "organization",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.organization is part of C.2.r.2 reporter address; frontend save-field proof maps C.2.r.2.1 to organization."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterOrganization",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.2.1 to primarySources[index].reporterOrganization."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.2.2",
+    "e2br3_code": "C.2.r.2.2",
+    "label": "Reporter's Department",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "department",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.department is part of C.2.r.2 reporter address; frontend save-field proof maps C.2.r.2.2 to department."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterDepartment",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.2.2 to primarySources[index].reporterDepartment."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.2.3",
+    "e2br3_code": "C.2.r.2.3",
+    "label": "Reporter's Street",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "street",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.street is part of C.2.r.2 reporter address; frontend save-field proof maps C.2.r.2.3 to street."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterStreet",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.2.3 to primarySources[index].reporterStreet."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.2.4",
+    "e2br3_code": "C.2.r.2.4",
+    "label": "Reporter's City",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "city",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.city is part of C.2.r.2 reporter address; frontend save-field proof maps C.2.r.2.4 to city."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterCity",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.2.4 to primarySources[index].reporterCity."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.2.5",
+    "e2br3_code": "C.2.r.2.5",
+    "label": "Reporter's State or Province",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "state",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.state is part of C.2.r.2 reporter address; frontend save-field proof maps C.2.r.2.5 to state."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterState",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.2.5 to primarySources[index].reporterState."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.2.6",
+    "e2br3_code": "C.2.r.2.6",
+    "label": "Reporter's Postcode",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "postcode",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.postcode is part of C.2.r.2 reporter address; frontend save-field proof maps C.2.r.2.6 to postcode."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterPostcode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.2.6 to primarySources[index].reporterPostcode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.2.7",
+    "e2br3_code": "C.2.r.2.7",
+    "label": "Reporter's Telephone",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "telephone",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.telephone is part of C.2.r.2 reporter address; frontend save-field proof maps C.2.r.2.7 to telephone."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterTelephone",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.2.7 to primarySources[index].reporterTelephone."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.3",
+    "e2br3_code": "C.2.r.3",
+    "label": "Reporter's Country Code",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "country_code",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.country_code is annotated as C.2.r.3; frontend save-field proof maps C.2.r.3 to country_code."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterCountry",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.3 to primarySources[index].reporterCountry."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "FDA.C.2.r.2.8",
+    "e2br3_code": "FDA.C.2.r.2.8",
+    "label": "Reporter's Email",
+    "section": "C",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "email",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.email is rendered as FDA.C.2.r.2.8 in SectionC2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterEmail",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber FDA.C.2.r.2.8 to primarySources[index].reporterEmail."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.4",
+    "e2br3_code": "C.2.r.4",
+    "label": "Qualification",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "qualification",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.qualification is annotated as C.2.r.4; frontend save-field proof maps C.2.r.4 to qualification."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "qualification",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.4 to primarySources[index].qualification."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.4.KR.1",
+    "e2br3_code": "C.2.r.4.KR.1",
+    "label": "Other Health Professional Type",
+    "section": "C",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "qualification_kr1",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.qualification_kr1 is annotated as MFDS.C.2.r.4.KR.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "qualificationKr1",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.4.KR.1 to primarySources[index].qualificationKr1."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.2.r.5",
+    "e2br3_code": "C.2.r.5",
+    "label": "Primary Source for Regulatory Purposes",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "primary_source_regulatory",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.primary_source_regulatory is annotated as C.2.r.5; frontend save-field proof maps C.2.r.5 to primary_source_regulatory."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "primarySourceForRegulatoryPurposes",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "SectionC2 binds fieldNumber C.2.r.5 to primarySources[index].primarySourceForRegulatoryPurposes."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.1",
+    "e2br3_code": "C.3.1",
+    "label": "Sender Type",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "sender_type",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SenderInformation.sender_type is annotated as C.3.1; frontend save-field proof maps C.3.1 to sender_type."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderType",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.1 to safetyReportIdentification.senderType."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.1.KR.1",
+    "e2br3_code": "C.3.1.KR.1",
+    "label": "Sender Health Professional Type",
+    "section": "C",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "health_professional_type_kr1",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SenderInformation.health_professional_type_kr1 is annotated as MFDS.C.3.1.KR.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderHealthProfessionalTypeKr1",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.1.KR.1 to safetyReportIdentification.senderHealthProfessionalTypeKr1."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.2",
+    "e2br3_code": "C.3.2",
+    "label": "Sender's Organisation",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "organization_name",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SenderInformation.organization_name is annotated as C.3.2; frontend save-field proof maps C.3.2 to organization_name."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderOrganization",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.2 to safetyReportIdentification.senderOrganization."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.3.1",
+    "e2br3_code": "C.3.3.1",
+    "label": "Sender's Department",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "department",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.3.1 to SenderInformation.department."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderDepartment",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.3.1 to safetyReportIdentification.senderDepartment."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.3.2",
+    "e2br3_code": "C.3.3.2",
+    "label": "Sender's Title",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "person_title",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.3.2 to SenderInformation.person_title."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderPersonTitle",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.3.2 to safetyReportIdentification.senderPersonTitle."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.3.3",
+    "e2br3_code": "C.3.3.3",
+    "label": "Sender's Given Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "person_given_name",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.3.3 to SenderInformation.person_given_name."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderPersonGivenName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.3.3 to safetyReportIdentification.senderPersonGivenName."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.3.4",
+    "e2br3_code": "C.3.3.4",
+    "label": "Sender's Middle Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "person_middle_name",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.3.4 to SenderInformation.person_middle_name."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderPersonMiddleName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.3.4 to safetyReportIdentification.senderPersonMiddleName."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.3.5",
+    "e2br3_code": "C.3.3.5",
+    "label": "Sender's Family Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "person_family_name",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.3.5 to SenderInformation.person_family_name."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderPersonFamilyName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.3.5 to safetyReportIdentification.senderPersonFamilyName."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.4.1",
+    "e2br3_code": "C.3.4.1",
+    "label": "Sender's Street Address",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "street_address",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.4.1 to SenderInformation.street_address."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderStreetAddress",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.4.1 to safetyReportIdentification.senderStreetAddress."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.4.2",
+    "e2br3_code": "C.3.4.2",
+    "label": "Sender's City",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "city",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.4.2 to SenderInformation.city."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderCity",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.4.2 to safetyReportIdentification.senderCity."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.4.3",
+    "e2br3_code": "C.3.4.3",
+    "label": "Sender's State or Province",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "state",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.4.3 to SenderInformation.state."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderState",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.4.3 to safetyReportIdentification.senderState."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.4.4",
+    "e2br3_code": "C.3.4.4",
+    "label": "Sender's Postcode",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "postcode",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.4.4 to SenderInformation.postcode."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderPostcode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.4.4 to safetyReportIdentification.senderPostcode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.4.5",
+    "e2br3_code": "C.3.4.5",
+    "label": "Sender's Country Code",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "country_code",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.4.5 to SenderInformation.country_code."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderCountryCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.4.5 to safetyReportIdentification.senderCountryCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.4.6",
+    "e2br3_code": "C.3.4.6",
+    "label": "Sender's Telephone",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "telephone",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.4.6 to SenderInformation.telephone."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderTelephone",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.4.6 to safetyReportIdentification.senderTelephone."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.4.7",
+    "e2br3_code": "C.3.4.7",
+    "label": "Sender's Fax",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "fax",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.4.7 to SenderInformation.fax."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderFax",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.4.7 to safetyReportIdentification.senderFax."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.4.8",
+    "e2br3_code": "C.3.4.8",
+    "label": "Sender's E-mail Address",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderInformation",
+      "field": "email",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.3.4.8 to SenderInformation.email."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "senderEmail",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC3.tsx",
+      "evidence": "SectionC3 binds fieldNumber C.3.4.8 to safetyReportIdentification.senderEmail."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.4.r.1",
+    "e2br3_code": "C.4.r.1",
+    "label": "Literature Reference(s)",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "LiteratureReference",
+      "field": "reference_text",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "LiteratureReference.reference_text stores C.4.r.1 literature references."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "literatureReferences",
+      "field": "referenceText",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
+      "evidence": "SectionLiterature binds fieldNumber C.4.r.1 to literatureReferences[index].referenceText."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.4.r.2",
+    "e2br3_code": "C.4.r.2",
+    "label": "Literature Included Document Payload",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "LiteratureReference",
+      "field": "document_base64",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "LiteratureReference.document_base64 stores the C.4.r.2 attachment payload."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "literatureReferences",
+      "field": "documentBase64",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
+      "evidence": "SectionLiterature binds fieldNumber C.4.r.2 to literatureReferences[index].documentBase64."
+    },
+    "action": "",
+    "notes": "ED component row for C.4.r.2. Renamed from C.4.r.2@documentBase64: this payload field is the official literature Included Documents element."
+  },
+  {
+    "id": "C.4.r.2.local.mediaType",
+    "e2br3_code": "C.4.r.2.local.mediaType",
+    "label": "Literature Included Document Media Type",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "LiteratureReference",
+      "field": "media_type",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "LiteratureReference.media_type stores the C.4.r.2 attachment media type."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "literatureReferences",
+      "field": "mediaType",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
+      "evidence": "SectionLiterature sets literatureReferences[index].mediaType when a C.4.r.2 attachment is selected."
+    },
+    "action": "",
+    "notes": "ED component row for C.4.r.2. XML ED attribute of the C.4.r.2 attachment element, not a separate ICH data element."
+  },
+  {
+    "id": "C.4.r.2.local.representation",
+    "e2br3_code": "C.4.r.2.local.representation",
+    "label": "Literature Included Document Representation",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "LiteratureReference",
+      "field": "representation",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "LiteratureReference.representation stores the C.4.r.2 attachment representation."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "literatureReferences",
+      "field": "representation",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
+      "evidence": "SectionLiterature sets literatureReferences[index].representation to B64 when a C.4.r.2 attachment is selected."
+    },
+    "action": "",
+    "notes": "ED component row for C.4.r.2. XML ED attribute of the C.4.r.2 attachment element, not a separate ICH data element."
+  },
+  {
+    "id": "C.4.r.2.local.compression",
+    "e2br3_code": "C.4.r.2.local.compression",
+    "label": "Literature Included Document Compression",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "LiteratureReference",
+      "field": "compression",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "LiteratureReference.compression stores the C.4.r.2 attachment compression value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "literatureReferences",
+      "field": "compression",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
+      "evidence": "SectionLiterature clears and saves literatureReferences[index].compression for C.4.r.2 attachments."
+    },
+    "action": "",
+    "notes": "ED component row for C.4.r.2. XML ED attribute of the C.4.r.2 attachment element, not a separate ICH data element."
+  },
+  {
+    "id": "C.5.1.r.1",
+    "e2br3_code": "C.5.1.r.1",
+    "label": "Study Registration Number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyRegistrationNumber",
+      "field": "registration_number",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "StudyRegistrationNumber.registration_number stores C.5.1.r.1 study registration values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "studyRegistrationNumbers.registrationNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "SectionStudy binds fieldNumber C.5.1.r.1 to studyInformation.studyRegistrationNumbers[index].registrationNumber."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.5.1.r.2",
+    "e2br3_code": "C.5.1.r.2",
+    "label": "Study Registration Country",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyRegistrationNumber",
+      "field": "country_code",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "StudyRegistrationNumber.country_code stores C.5.1.r.2 study registration country values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "studyRegistrationNumbers.countryCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "SectionStudy binds fieldNumber C.5.1.r.2 to studyInformation.studyRegistrationNumbers[index].countryCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.5.2",
+    "e2br3_code": "C.5.2",
+    "label": "Study Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyInformation",
+      "field": "study_name",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.5.2 to StudyInformation.study_name."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "studyName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "SectionStudy binds fieldNumber C.5.2 to studyInformation.studyName."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.5.3",
+    "e2br3_code": "C.5.3",
+    "label": "Sponsor Study Number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyInformation",
+      "field": "sponsor_study_number",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.5.3 to StudyInformation.sponsor_study_number."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "sponsorStudyNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "SectionStudy binds fieldNumber C.5.3 to studyInformation.sponsorStudyNumber."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.5.4",
+    "e2br3_code": "C.5.4",
+    "label": "Study Type Where Reaction(s) or Event(s) Were Observed",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyInformation",
+      "field": "study_type_reaction",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "Frontend save-field proof maps C.5.4 to StudyInformation.study_type_reaction."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "studyTypeReaction",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "SectionStudy binds fieldNumber C.5.4 to studyInformation.studyTypeReaction."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.5.4.KR.1",
+    "e2br3_code": "C.5.4.KR.1",
+    "label": "Other Studies Type",
+    "section": "C",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyInformation",
+      "field": "study_type_reaction_kr1",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "StudyInformation.study_type_reaction_kr1 is annotated as MFDS.C.5.4.KR.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "studyTypeReactionKr1",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "SectionStudy binds fieldNumber C.5.4.KR.1 to studyInformation.studyTypeReactionKr1."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "FDA.C.5.5a",
+    "e2br3_code": "FDA.C.5.5a",
+    "label": "IND Number Where AE Occurred",
+    "section": "C",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyInformation",
+      "field": "fda_ind_number_occurred",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "StudyInformation.fda_ind_number_occurred stores FDA.C.5.5a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "fdaIndNumberOccurred",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "SectionStudy binds fieldNumber FDA.C.5.5a to studyInformation.fdaIndNumberOccurred."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "FDA.C.5.5b",
+    "e2br3_code": "FDA.C.5.5b",
+    "label": "Pre-ANDA Number Where AE Occurred",
+    "section": "C",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyInformation",
+      "field": "fda_pre_anda_number_occurred",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "StudyInformation.fda_pre_anda_number_occurred stores FDA.C.5.5b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "fdaPreAndaNumberOccurred",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "SectionStudy binds fieldNumber FDA.C.5.5b to studyInformation.fdaPreAndaNumberOccurred."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "FDA.C.5.6.r",
+    "e2br3_code": "FDA.C.5.6.r",
+    "label": "IND Number of Cross Reported IND",
+    "section": "C",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyFdaCrossReportedInd",
+      "field": "ind_number",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "StudyFdaCrossReportedInd.ind_number stores FDA.C.5.6.r cross-reported IND values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "fdaCrossReportedIndNumbers.indNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "SectionStudy binds fieldNumber FDA.C.5.6.r to studyInformation.fdaCrossReportedIndNumbers[index].indNumber."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "C.3.receiver.1",
+    "e2br3_code": "C.3.receiver.1",
+    "label": "Receiver Organization",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "organization_name",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.organization_name stores the receiver singleton value saved by C.3.receiver.1."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverOrganization",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.3.receiver.2",
+    "e2br3_code": "C.3.receiver.2",
+    "label": "Receiver Type",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "receiver_type",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.receiver_type stores the receiver singleton value saved by C.3.receiver.2."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverType",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.3.receiver.3",
+    "e2br3_code": "C.3.receiver.3",
+    "label": "Receiver Department",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "department",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.department stores the receiver singleton value saved by C.3.receiver.3."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverDepartment",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.3.receiver.4",
+    "e2br3_code": "C.3.receiver.4",
+    "label": "Receiver Street Address",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "street_address",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.street_address stores the receiver singleton value saved by C.3.receiver.4."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverStreet",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.3.receiver.5",
+    "e2br3_code": "C.3.receiver.5",
+    "label": "Receiver City",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "city",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.city stores the receiver singleton value saved by C.3.receiver.5."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverCity",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.3.receiver.6",
+    "e2br3_code": "C.3.receiver.6",
+    "label": "Receiver State/Province",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "state_province",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.state_province stores the receiver singleton value saved by C.3.receiver.6."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverState",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.3.receiver.7",
+    "e2br3_code": "C.3.receiver.7",
+    "label": "Receiver Postcode",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "postcode",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.postcode stores the receiver singleton value saved by C.3.receiver.7."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverPostcode",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.3.receiver.country",
+    "e2br3_code": "C.3.receiver.country",
+    "label": "Receiver Country Code",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "country_code",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.country_code stores the receiver singleton value saved by C.3.receiver.country."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverCountry",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.3.receiver.8",
+    "e2br3_code": "C.3.receiver.8",
+    "label": "Receiver Telephone",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "telephone",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.telephone stores the receiver singleton value saved by C.3.receiver.8."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverTelephone",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.3.receiver.9",
+    "e2br3_code": "C.3.receiver.9",
+    "label": "Receiver Fax",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "fax",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.fax stores the receiver singleton value saved by C.3.receiver.9."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverFax",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.3.receiver.10",
+    "e2br3_code": "C.3.receiver.10",
+    "label": "Receiver Email",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverInformation",
+      "field": "email",
+      "file": "crates/libs/lib-core/src/model/receiver.rs",
+      "evidence": "ReceiverInformation.email stores the receiver singleton value saved by C.3.receiver.10."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "receiverEmail",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+  },
+  {
+    "id": "C.1.1",
+    "e2br3_code": "C.1.1",
+    "label": "Sender's (case) Safety Report Unique Identifier",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "backend": {
+      "status": "missing",
+      "model": "SafetyReportIdentification",
+      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.safetyReportId.",
+      "field": "safety_report_id"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "safetyReportId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.safetyReportId from the case-form section source."
+    },
+    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Renamed from C.1@safetyReportId: this is the official mandatory C.1.1 element."
+  },
+  {
+    "id": "C.local.reportYear",
+    "e2br3_code": "C.local.reportYear",
+    "label": "Report Year",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "SafetyReportIdentification",
+      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.reportYear.",
+      "field": "report_year"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "reportYear",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.reportYear from the case-form section source."
+    },
+    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Local field feeding the report identifier composition; not an ICH data element."
+  },
+  {
+    "id": "C.local.sourceDocumentName",
+    "e2br3_code": "C.local.sourceDocumentName",
+    "label": "Source Document Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "SafetyReportIdentification",
+      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.sourceDocumentName.",
+      "field": "source_document_name"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "sourceDocumentName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.sourceDocumentName from the case-form section source."
+    },
+    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Report-level local field; the documents-held title is separately mapped as C.1.6.1.r.1."
+  },
+  {
+    "id": "C.1.10.r",
+    "e2br3_code": "C.1.10.r",
+    "label": "Linked Report Number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "backend": {
+      "status": "missing",
+      "model": "SafetyReportIdentification",
+      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.linkedReports.linkedReportNumber.",
+      "field": "linked_report_number"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "linkedReports.linkedReportNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.linkedReports.linkedReportNumber from the case-form section source."
+    },
+    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Renamed from C.1.10.r@linkedReportNumber: the repeatable linked-report identification number is C.1.10.r itself."
+  },
+  {
+    "id": "C.1.9.1.r.1",
+    "e2br3_code": "C.1.9.1.r.1",
+    "label": "Other Case Identifier Source",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "backend": {
+      "status": "missing",
+      "model": "SafetyReportIdentification",
+      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.otherCaseIdentifiers.source.",
+      "field": "other_case_identifier_source"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "otherCaseIdentifiers.source",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.otherCaseIdentifiers.source from the case-form section source."
+    },
+    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Renamed from C.1.9.1.r@source to the official Source(s) of the Case Identifier element."
+  },
+  {
+    "id": "C.1.9.1.r.2",
+    "e2br3_code": "C.1.9.1.r.2",
+    "label": "Other Case Identifier Value",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "backend": {
+      "status": "missing",
+      "model": "SafetyReportIdentification",
+      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.otherCaseIdentifiers.caseIdentifier.",
+      "field": "other_case_identifier"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "otherCaseIdentifiers.caseIdentifier",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.otherCaseIdentifiers.caseIdentifier from the case-form section source."
+    },
+    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Renamed from C.1.9.1.r@caseIdentifier to the official Case Identifier(s) element."
+  },
+  {
+    "id": "FDA.C.1.local.fdaReportType",
+    "e2br3_code": "FDA.C.1.local.fdaReportType",
+    "label": "FDA Report Type",
+    "section": "C",
+    "authority": "FDA",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "SafetyReportIdentification",
+      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.fdaReportType.",
+      "field": "fda_report_type"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "fdaReportType",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.fdaReportType from the case-form section source."
+    },
+    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Appears to duplicate FDA.C.1.7.1 (Local Criteria Report Type), which is already complete via localCriteriaReportType. Decide: remove this frontend input or merge it with FDA.C.1.7.1."
+  },
+  {
+    "id": "C.1.KR.mfdsReportType",
+    "e2br3_code": "C.1.KR.mfdsReportType",
+    "label": "MFDS Report Type",
+    "section": "C",
+    "authority": "MFDS",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "SafetyReportIdentification",
+      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.mfdsReportType.",
+      "field": "mfds_report_type"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "mfdsReportType",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.mfdsReportType from the case-form section source."
+    },
+    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Not among the official KR extension elements in the MFDS business-rule workbook; confirm the official code when the MFDS dictionary source is expanded."
+  }
+]

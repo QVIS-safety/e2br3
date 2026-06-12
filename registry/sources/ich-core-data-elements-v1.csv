@@ -1,0 +1,427 @@
+﻿Field Identification,,,,Business rules,,,,,,Q&A ,NullFlavor Applicable,,,,,,,,Field OIDs,,,,,,
+SOURCE,HEADER ELEMENT,DATA ELEMENT NUMBER,DATA ELEMENT NAME,MAX LENGTH,DATA TYPE ,VALUE ALLOWED,CONFORMANCE,ICH BUSINESS RULE,REGIONAL BUSINESS RULE,,NI,MSK,UNK,NA,ASKU,NASK,NINF,PINF,Code system OID,,,,,,
+ICH,N.1 ,-,ICH CSR Transmission Identification (batch wrapper),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,N.1 ,N.1.1,Types of Message in batch,2,N,1=ichicsr,Mandatory ,"Note the ‘Value Allowed’ for this data element is case sensitive, e.g. only lower case characters should be used for this data element.
+Other codes may be used regionally.",,,No,No,No,No,No,No,No,No,ICH - 2.16.840.1.113883.3.989.2.1.1.1,,,,,,
+ICH,N.1 ,N.1.2,Batch Number,100,AN,Free Text,Mandatory ,"The following notation will be used to represent N.1.2: <id extension=”batch number"" root=""2.16.840.1.113883.3.989.2.1.3.22""/>
+The root indicates the namespace of N.1.2, the actual batch number is populated at id extension.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.22,,,,,,
+ICH,N.1 ,N.1.3,Batch Sender Identifier,60,AN,Free Text,Mandatory,"The following notation will be used to represent N.1.3: <id extension=""sender identifier"" root=""2.16.840.1.113883.3.989.2.1.3.13""/>
+The root indicates the namespace of N.1.3, the actual batch sender identifier is populated at id extension.
+The sender identifier should be agreed between trading partners.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.13,,,,,,
+ICH,N.1 ,N.1.4,Batch Receiver Identifier,60,AN,Free Text,Mandatory ,"The following notation will be used to represent N.1.4:
+<id extension=""receiver identifier"" root=""2.16.840.1.113883.3.989.2.1.3.14""/>
+The root indicates the namespace of N.1.4, the actual batch receiver identifier is populated at id extension.
+The receiver identifier should be agreed between trading partners.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.14,,,,,,
+ICH,N.1 ,N.1.5,Date of Batch Transmission,-,Date/Time,See Appendix II for further information.,Mandatory ,"The full precision of date and time must be recorded down to the second.
+(i.e. ‘CCYYMMDDhhmmss[+/-ZZzz]’).
+The date specified cannot refer to a future date.
+The date should be local time at point of transmission of ICSR message.",,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,N.2.R ,-,ICH ICSR Message Header (message wrapper) (Repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,N.2.R ,N.2.r.1 ,Message Identifier,100,AN,Free Text,Mandatory ,"The value is the same as C.1.1.Therefore the notation would be:
+<id extension=""message identifier"" root=""2.16.840.1.113883.3.989.2.1.3.1""/>",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.1,,,,,,
+ICH,N.2.R ,N.2.r.2 ,Message Sender Identifier,60,AN,Free text,Mandatory ,"The following notation will be used to represent N.2.r.2:
+<id extension=""message sender identifier""root=""2.16.840.1.113883.3.989.2.1.3.11""/>
+The root indicates the namespace of N.2.r.2, the actual message sender identifier is populated at id extension.
+The sender identifier should be agreed between trading partners.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.11,,,,,,
+ICH,N.2.R ,N.2.r.3 ,Message Receiver Identifier,60,AN,Free text,Mandatory ,"The following notation will be used to represent N.2.r.3:
+<id extension=""message receiver identifier"" root=""2.16.840.1.113883.3.989.2.1.3.12""/>
+The root indicates the namespace of N.2.r.3, the actual message receiver identifier is populated at id extension. The receiver identifier should be agreed between trading partners.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.12,,,,,,
+ICH,N.2.R ,N.2.r.4 ,Date of Message Creation,-,Date/Time,See Appendix II for further information.,Mandatory ,"The value must be the same as C.1.2.
+The full precision of date and time must be recorded down to the second (i.e. CCYYMMDDhhmmss[+/-ZZzz]).",,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.1 ,-,Identification of the Case Safety Report,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.1 ,C.1.1 ,Sender’s (case) Safety Report Unique Identifier,100,AN,Free text (country code-company or regulator name-report number),Mandatory ,"A two character country code will be used in all instances for the country component of the Unique Identifier. The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union. In this case, ‘EU’ will be accepted as the country code.
+The format of C.1.1 ensures a unique report identifier for the sender of particular ICSR.
+The use of a ‘-’ (dash/hyphen) should be avoided in the ‘company or regulator name’.
+Both the ‘Sender's (case) Safety Report Unique Identifier’ (C.1.1) and the ‘Worldwide Unique Case Identification Number’ (C.1.8.1) data elements are mapped to the repeatable XML attribute<id> in the ‘investigationEvent’ entity in the HL7 ICSR model (See Appendix I (D) the Reference Instances).ICH uses two value－‘2.16.840.1.113883.3.989.2.1.3.1’ and ‘2.16.840.1.113883.3.989.2.1.3.2’－in the root portion of the investigationEvent.id to distinguish C.1.1 and C.1.8.1.
+The following notation will be used to represent C.1.1:
+<id extension=""country code-company name-report no"" root=""2.16.840.1.113883.3.989.2.1.3.1""/>
+The following notation will be used to represent C.1.8.1:
+<id extension=""country code-company name-report no"" root=""2.16.840.1.113883.3.989.2.1.3.2""/>",,4.1 (009),No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.1,,,,,,
+ICH,C.1 ,C.1.2 ,Date of Creation,-,Date/Time,See Appendix II for further information.,Mandatory ,"Minimum precision required is date and time to the second.
+The date specified cannot refer to a future date; the time zone may have to be specified.
+(i.e. ‘CCYYMMDDhhmmss[+/-ZZzz]’)",,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.1 ,C.1.3 ,Type of Report,1,N,1=Spontaneous Report  2=Report from study  3= other  4= Not available to sender (unknown),Mandatory,,,4.2 (014),No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.2,,,,,,
+ICH,C.1 ,C.1.4 ,Date Report Was First Received from Source,-,Date/Time,See Appendix II for further information.,Mandatory,"Minimum precision required is the day (i.e. ‘CCYYMMDD’).
+The date specified cannot refer to a future date.",,4.3 (015),No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.1 ,C.1.5,Date of Most Recent Information for This Report,-,Date/Time,See Appendix II for further information.,Mandatory,"Minimum precision required is the day (i.e. ‘CCYYMMDD’).
+The date specified cannot refer to a future date.",,4.3 (015),No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.1 ,C.1.6.1,Are Additional Documents Available?,-,Boolean,"false, true",Mandatory,"For further information on how to attach documents to an ICSR, please see Section 3.5 (of IG)",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,C.1.6.1.r ,-,Identification of the Case Safety Report,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.1.6.1.r ,C.1.6.1.r.1,Documents Held by Sender,2000,AN,Free Text,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.27,,,,,,
+ICH,C.1.6.1.r ,C.1.6.1.r.2,Included Documents,-,N/A,"Media type: e.g. Application/PDF, image/jpeg, application/DICOM, text/plain Representation: e.g.B64  Compression: e.g.DF",Optional,"For further information on how to attach documents to an ICSR, please see Section 3.5.
+Because a receiver’s system may have particular configurations on handling attachments, ‘Value Allowed’ is defined by each region.",,,No,No,No,No,No,No,No,No,-,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.1 ,C.1.7 ,Does This Case Fulfil the Local Criteria for an Expedited Report?,-,Boolean,"false, true, nullFlavor:NI*",Mandatory,"*’nullFlavor’ is only allowed when sender is retransmitting a case that was first received ICH E2B (R2) format, where the equivalent data element for C.1.7 was optionally not populated; in other cases, only ‘false’ or ‘true’ should be used.",,,Yes,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,C.1 ,C.1.8.1,Worldwide Unique Case Identification,100,AN,Free text (See C.1.1 user guidance for format),Mandatory ,"Both the ‘Sender's (case) Safety Report Unique Identifier’ (C.1.1) and the ‘Worldwide Unique Case Identification’ (C.1.8) data elements are mapped to the repeatable XML attribute<id> in the ‘investigationEvent’ entity in the HL7 ICSR model. (See the Reference Instance)ICH uses two values - ‘2.16.840.1.113883.3.989.2.1.3.1’ and ‘2.16.840.1.113883.3.989.2.1.3.2’ in the root portion of the investigationEvent.id to distinguish C.1.1 and C.1.8.
+The following notation will be used to represent C.1.1:
+<id extension=""country code-company name-report no"" root="" 2.16.840.1.113883.3.989.2.1.3.1 ""/>
+The following notation will be used to represent C.1.8:
+<id extension=""country code-company name-report no"" root="" 2.16.840.1.113883.3.989.2.1.3.2""/>
+Although the attribute <id> can repeat in the message, but there must be a single instance of the <id> attribute with the root value of ‘2.16.840.1.113883.3.989.2.1.3.2 ‘ for a particular case safety report.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.2,,,,,,
+ICH,C.1 ,C.1.8.2,First Sender of This Case,1,N,1=Regulator 2=Other,Mandatory ,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.3,,,,,,
+ICH,C.1 ,C.1.9.1 ,Other Case Identifiers in Previous Transmissions,-,Boolean,"true, nullFlavor: NI",Mandatory ,False is not a value allowed for this data element. This mandatory data element should either be ‘true’ or ‘nullFlavor’.,,,Yes,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.23,,,,,,
+ICH,C.1.9.1.r ,-,Source(s) of the Case Identifier(s) (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.1.9.1.r ,C.1.9.1.r.1 ,Source(s) of the Case Identifier,100,AN,Free Text,Conditional-Mandatory,"The following notation will be used to represent C.1.9.1.r.1:
+<idassigningAuthorityName=""C.1.9.1.r.1"" extension=""C.1.9.1.r.2"" root=""2.16.840.1.113883.3.989.2.1.3.3""/>
+The root indicates the namespace of C.1.9.1, the actual ‘Source of the Case Identifier’ (C.1.9.1.r.1) and the ‘Case Identifier’ (C.1.9.1.r.2) are populated at id and extension, respectively.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.3,,,,,,
+ICH,C.1.9.1.r ,C.1.9.1.r.2 ,Case Identifier(s),100,AN,Free text (See C.1.1 user guidance for format),Conditional-Mandatory,"The following notation will be used to represent C.1.9.1.r.2:
+<idassigningAuthorityName=""C.1.9.1.r.1"" extension=""C.1.9.1.r.2"" root=""2.16.840.1.113883.3.989.2.1.3.3""/>
+The root indicates the namespace of C.1.9.1, the actual source of the case identifier (C.1.9.1.r.1) and case identifier (C.1.9.1.r.2) are populated at id and extension, respectively.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.3,,,,,,
+ICH,C.1.10.r ,-,Identification Number of the Report Which Is Linked to This Report (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.1.10.r ,C.1.10.r ,Identification Number of the Report Which Is Linked to This Report ,100,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.2,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.1 ,C.1.11.1 ,Report Nullification / Amendment,1,N,1=Nullification   2=Amendment,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.5,,,,,,
+ICH,C.1 ,C.1.11.2 ,Reason for Nullification / Amendment,2000,AN,Free Text,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.23,,,,,,
+ICH,C.2.r ,,Primary Source(s) of Information (repeat as necessary),-,-,-,-,"Each ICSR shall have one primary reporter (primary source) identified in conformance with regional confidentiality requirements.
+Depending on the local legal requirements regarding confidentiality, it might be necessary to mask some of the elements used to identify the reporter in the transmitted message.
+If the elements that are being used to identify the reporter are known to the sender but cannot be transmitted due to data privacy requirements, then those data elements should be left blank with nullFlavor = MSK.
+Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,4.2 (014),-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.2.r ,C.2.r.1.1,Reporter’s Title,50,AN,"Free text   nullFlavor: MSK, ASKU, NASK, UNK",Optional,See the business rules for C.2.r.,,,No,Yes,Yes,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.1.2 ,Reporter’s Given Name,60,AN,"Free Text  nullFlavor: MSK, ASKU, NASK  ",Optional,See the business rules for C.2.r.,,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.1.3 ,Reporter’s Middle Name,60,AN,"Free Text  nullFlavor: MSK, ASKU, NASK",Optional,"See the business rules for C.2.r.
+ISO / HL7 27953-2 does not support the concept of ‘middle name’, thus to transmit this in the message it is necessary to repeat the ‘given name’ tag. The first ‘given name’ tag captures reporter’s given name and the second ‘given name’ tag captures reporter’s middle name. The order of the tags indicate the order of the names.
+<name>
+<prefix>C.2.r.1.1</prefix>
+<!--C.2.r.1.1: Reporter's Title #1 -->
+<given>C.2.r.1.2</given>
+<!--C.2.r.1.2: Reporter's Given Name #1 -->
+<given>C.2.r.1.3</given>
+<!--C.2.r.1.3: Reporter's Middle Name #1 -->
+<family>C.2.r.1.4</family>
+<!--C.2.r.1.4: Reporter's Family Name #1 -->
+</name>",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.1.4 ,Reporter’s Family Name,60,AN,"Free Text  nullFlavor: MSK, ASKU, NASK",Optional,See the business rules for C.2.r.,,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.2.1 ,Reporter’s Organisation,60,AN,"Free Text  nullFlavor: MSK, ASKU, NASK",Optional,See the business rules for C.2.r.,,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.2.2 ,Reporter’s Department,60,AN,"Free Text  nullFlavor: MSK, ASKU, NASK",Optional,See the business rules for C.2.r.,,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.2.3 ,Reporter’s Street,100,AN,"Free Text  nullFlavor: MSK, ASKU, NASK",Optional,See the business rules for C.2.r.,,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.2.4 ,Reporter’s City,35,AN,"Free Text  nullFlavor: MSK, ASKU, NASK",Optional,See the business rules for C.2.r.,,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.2.5,Reporter’s State or Province,40,AN,"Free Text  nullFlavor: MSK, ASKU, NASK",Conditional-Mandatory,See the business rules for C.2.r.,,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.2.6 ,Reporter’s Postcode,15,AN,"Free Text  nullFlavor: MSK, ASKU, NASK",Optional,See the business rules for C.2.r.,,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.2.7 ,Reporter’s Telephone,33,AN,"Free Text  nullFlavor: MSK, ASKU, NASK",Optional,See the business rules for C.2.r.,,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.2.r ,C.2.r.3 ,Reporter’s Country Code,2,A,"ISO 3166-1 alpha-2, EU",Conditional-Mandatory,"A two character country code will be used in all instances.
+The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union.In this case, ‘EU’ will be accepted as the country code.",,4.1 (009),No,Yes,Yes,No,Yes,Yes,No,No,1.0.3166.1.2.2,,,,,,
+ICH,C.2.r ,C.2.r.4,Qualification,1,N,"
+1=Physician
+2=Pharmacist
+3=Other health professional
+4=Lawyer
+5=Consumer or other non health professional  nullFlavor:UNK
+
+",Mandatory ,"If the reporter's qualification is unknown to the sender, this data element should be left blank with nullFlavor = UNK.   Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missiong or non-transmitted information.",,,No,No,Yes,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.6,,,,,,
+ICH,C.2.r ,C.2.r.5 ,Primary Source for Regulatory Purposes,1,N,1=primary,Conditional-Mandatory,"It is required that one Primary Source of Information (C.2) be flagged as Primary source for regulatory purposes.  Therefore this data element must be set to '1' once, and only once, for C.2 block in each ICH ICSR message.  Do not use this element to rank sources either sequentially, chronologically, or heirarchically.",,4.11 (030),No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,-,Information on Sender of Case Safety Report,-,-,-,-,-,,4.11 (030),-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.3 ,C.3.1 ,Sender Type,1,N,"1=Pharmaceutical Company
+2=Regulatory Authority
+3=Health Professional
+4=Regional Pharmacovigilance Centre
+5=WHO collaborating centres for international drug monitoring
+6=Other (e.g. distributor or other organisation)
+7=Patient / Consumer",Mandatory ,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.7,,,,,,
+ICH,C.3 ,C.3.2 ,Sender’s Organisation,100,AN,Free Text,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.3,Person Responsible for Sending Report,-,-,-,-,"Depending on the local legal requirements regarding confidentiality, it might be necessary to omit some of the elements used to identify the person responsible for sending the report in the transmitted message.",,,,,,,,,,,,,,,,,
+ICH,C.3 ,C.3.3.1 ,Sender’s Department,60,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.3.2,Sender’s Title,50,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.3.3 ,Sender’s Given Name,60,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.3.4 ,Sender’s Middle Name,60,AN,Free Text,Optional,"
+ISO / HL7 27953-2 does not support the concept of ‘middle name’, thus to transmit this in the message it is necessary to repeat the ‘given name’ tag. The first ‘given name’ tag captures sender’s given name and the second ‘given name’ tag captures sender’s middle name. The order of the tags indicate the order of the names.
+<name>
+<prefix>C.3.3.2</prefix>
+<!--C.3.3.2: Sender's Title #1 -->
+<given>C.3.3.3</given>
+<!--C.3.3.3: Sender's Given Name #1 -->
+<given>C.3.4</given>
+<!--C.3.3.4: Sender's Middle Name #1 -->
+<family>C.3.3.5</family>
+<!--C.3.3.5: Sender's Family Name #1 -->
+</name>",,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.3.5 ,Sender’s Family Name,60,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.4.1,Sender’s Street Address,100,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.4.2 ,Sender’s City,35,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.4.3 ,Sender’s State or Province,40,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.4.4 ,Sender’s Postcode,15,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.4.5 ,Sender’s Country Code,2,AN,ISO 3166-1 alpha-2,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,1.0.3166.1.2.2,,,,,,
+ICH,C.3 ,C.3.4.6 ,Sender’s Telephone,33,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.4.7,Sender’s Fax,33,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.3 ,C.3.4.8 ,Sender’s E-mail Address,100,AN,Free Text,Optional,See the business rules for C.3.3.,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.4.r,-, Literature Reference(s) (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.4.r,C.4.r.1 ,Literature Reference(s),500,AN,"Free text   nullFlavor: ASKU, NASK",Optional,Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.,,,No,No,No,No,Yes,Yes,No,No,2.16.840.1.113883.3.989.2.1.1.27,,,,,,
+ICH,C.4.r,C.4.r.2 ,Included Documents,-,N/A,"Media type: e.g. Application/PDF, image/jpeg, application/DICOM, text/plain Representation: e.g.B64  Compression: e.g.DF",Optional,"For further information on how to attach documents to an ICSR, please see section 3.5.    Because a receiver's system may have particular configurations on handling attachments, 'Value Allowed' is defined by each region.",,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,C.5 ,-,Study Identification,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.5.1.r ,-,Study Registration (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.5.1.r ,C.5.1.r.1,Study Registration Number,50,AN,"Free Text  nullFlavor: ASKU,NASK",Optional,"Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.
+The following notation will be used to represent C.5.1.r.1:
+<id extension=""study registration number"" root=""2.16.840.1.113883.3.989.2.1.3.6""/>
+The root indicates the namespace of C.5.1.r.1, the actual study registration number is populated at id extension.",,,No,No,No,No,Yes,Yes,No,No,2.16.840.1.113883.3.989.2.1.3.6,,,,,,
+ICH,C.5.1.r ,C.5.1.r.2 ,Study Registration Country,2,A,"ISO 3166-1 alpha-2, EU  nullFlavor: ASKU, NASK",Optional,"A two character country code will be used in all instances.   The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union.   In this case, 'EU' will be accepted as the country code.   Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,No,No,No,Yes,Yes,No,No,1.0.3166.1.2.2,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,C.5 ,C.5.2 ,Study Name,2000,AN,"Free Text  nullFlavor: ASKU,NASK",Optional,Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information,,,No,No,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,C.5 ,C.5.3,Sponsor Study Number,50,AN,"Free Text  nullFlavor: ASKU,NASK",Optional,"Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.   The following notation will be used to represent C.5.3: <id extension=""sponsor study number"" root=""2.16.840.1.113883.3.989.2.1.3.5""/>     The root indicates the namespace of C.5.3, the actual sponsor study number is populated at id extension.",,,No,No,No,No,Yes,Yes,No,No,2.16.840.1.113883.3.989.2.1.3.5,,,,,,
+ICH,C.5 ,C.5.4,Study Type Where Reaction(s) / Event(s) Were Observed,1,N,"1=Clinical trials  2=Individual patient use(e.g. 'compassionate use' or 'named patient basis') 3=Other studies (e.g. pharmacoepidemiology, pharmacoeconomics, intensive monitoring)",Conditional-Mandatory,"Optional, but required if C.1.3=2(Report from study)",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.8,,,,,,
+ICH,D. ,-,Patient Characteristics,-,-,-,-,-,,4.1 (009),-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D. ,D.1 ,Patient (name or initials),60,AN,"Free Text  nullFlavor: MSK, ASKU, NASK, UNK",Required,"If the initials are known to the sender but cannot be transmitted due to data privacy requirements, this data element should be left blank with nullFlavor = MSK.
+Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,Yes,No,Yes,Yes,No,No,-,,,,,,
+ICH,D. ,D.1.1.1 ,Patient Medical Record Number(s) and Source(s) of the Record Number (GP Medical Record Number),20,AN,Free Text   nullFlavor: MSK,Optional,"Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.
+The following notation will be used to represent D.1.1.1:
+<id extension=""medical record number"" root=""2.16.840.1.113883.3.989.2.1.3.7""/>
+<code code=""gpmrn""codeSystem=""2.16.840.1.113883.3.989.2.1.1.4""/> The root indicates the namespace of D.1.1.1, the actual medical record number is populated at id extension. The code of ‘gpmn’ is populated to distinguish from D.1.1.2 to D.1.1.4.",,,No,Yes,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.3.7
+2.16.840.1.113883.3.989.2.1.1.4",,,,,,
+ICH,D. ,D.1.1.2 ,Patient Medical Record Number(s) and Source(s) of the Record Number (Specialist Record Number),20,AN,Free Text  nullFlavor: MSK,Optional,"Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.
+The following notation will be used to represent D.1.1.2:
+<id extension=""medical record number""root=""2.16.840.1.113883.3.989.2.1.3.8""/>
+<code code=""specialistMrn""codeSystem=""2.16.840.1.113883.3.989.2.1.1.4""/>
+The root indicates the namespace of D.1.1.2, the actual medical record number is populated at id extension. The code of ‘specialistMrn’ is populated to distinguish from D.1.1.1, D.1.1.3 and D.1.1.4.",,,No,Yes,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.3.8
+2.16.840.1.113883.3.989.2.1.1.4",,,,,,
+ICH,D. ,D.1.1.3 ,Patient Medical Record Number(s) and Source(s) of the Record Number (Hospital Record Number),20,AN,Free Text  nullFlavor: MSK,Optional,"Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.
+The following notation will be used to represent D.1.1.3:
+<id extension="" medical record number "" root=""2.16.840.1.113883.3.989.2.1.3.9""/>
+<code code=""hospitalMrn""codeSystem=""2.16.840.1.113883.3.989.2.1.1.4""/>
+The root indicates the namespace of D.1.1.3, the actual medical record number is populated at id extension. The code of ‘hospitalMrn’ is populated to distinguish from D.1.1.1, D.1.1.2 and D.1.1.4.",,,No,Yes,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.3.9
+2.16.840.1.113883.3.989.2.1.1.4",,,,,,
+ICH,D. ,D.1.1.4 ,Patient Medical Record Number(s) and Source(s) of the Record Number (Investigation Number),20,AN,Free Text  nullFlavor: MSK,Optional,"Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.
+The following notation will be used to represent D.1.1.4:
+<id extension="" medical record number "" root=""2.16.840.1.113883.3.989.2.1.3.10""/>
+<code code=""investigation""codeSystem=""2.16.840.1.113883.3.989.2.1.1.4""/>
+The root indicates the namespace of D.1.1.4, the actual medical record number is populated at id extension. The code of ‘investigation’ is populated to distinguish from D.1.1.1 to D.1.1.3.",,,No,Yes,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.3.10
+2.16.840.1.113883.3.989.2.1.1.4",,,,,,
+ICH,D.2 ,-,Age Information,-,-,-,-,Only one of the elements describing age should be used.  The choice should be based upon the most precise information available and in conformance with the regional confidentiality requirements.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D. ,D.2.1,Date of Birth,-,Date/Time,See Appendix II for further information.  nullFlavor: MSK,Optional,"Minimum precision required is the day (i.e. ‘CCYYMMDD’).
+The date specified cannot refer to a future date.
+If the date of birth is known to the sender but cannot be transmitted due to data privacy requirements, this data element should be left blank with nullFlavor = MSK.
+Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,No,No,No,No,-,,,,,,
+ICH,D.2 ,-,Age at time of Onset of Reaction / Event,-,-,-,-,"If several reactions/events are in the report, the age at the time of first reaction/event should be used.   For foetal reaction(s)/event(s), the Gestation Period When Reaction/Event Was Observed in the Foetus (D.2.2.1) should be used.    When providing the age in decades, please note that, for example, the 7th decade refers to a person in his/her 60s.",,4.15 (035),-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D. ,D.2.2a ,Age at Time of Onset of Reaction / Event (number),5,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D. ,D.2.2b,Age at Time of Onset of Reaction / Event (unit),50,AN,"UCUM
+Year, Month, Week, Day, Hour and Decade",Conditional-Mandatory,,,4.18,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,D. ,D.2.2.1a ,Gestation Period When Reaction / Event Was Observed in the Foetus (number),3,N,Numeric,Conditional-Mandatory,,,4.14 (034),No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D. ,D.2.2.1b ,Gestation Period When Reaction/Event Was Observed in the Foetus (unit),50,AN,"UCUM
+Month, Week, Day and {Trimester}",Conditional-Mandatory,,,4.14 (034),No,No,No,No,No,No,No,No,-,,,,,,
+ICH,D. ,D.2.3,Patient Age Group (as per reporter),1,N,0=Foetus 1=Neonate (Preterm and Term newborns) 2=Infant 3=Child 4=Adolescent 5=Adult 6=Elderly,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D. ,D.3,Body Weight (kg),6,N,Numeric,Optional,Fractions or decimals are allowed using a period (dot).  No commas are allowed in this numeric data element.,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D. ,D.4 ,Height (cm),3,N,Numeric,Optional,"Provide rounded number.   No fractions, decimals, and commas are allowed in this numeric data element.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D. ,D.5 ,Sex,1,N,"1=Male  2=Female nullFlavor: MSK, UNK, ASKU, NASK",Optional,"If the sex is known to the sender but cannot be transmitted due to data privacy requirements, then leave the data element blank and use the nullFlavor element with 'MSK' as masked.   Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,Yes,No,Yes,Yes,No,No,-,,,,,,
+ICH,D. ,D.6 ,Last Menstrual Period Date,-,Date/Time,See Appendix II for further information.  nullFlavor: MSK,Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,No,No,No,No,-,,,,,,
+ICH,D.7.1.r,-, Structured Information on Relevant Medical History (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.7.1.r,D.7.1.r.1a ,MedDRA Version for Medical History,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.7.1.r,D.7.1.r.1b,Medical History (disease / surgical procedure / etc.) (MedDRA code),8,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.20
+2.16.840.1.113883.6.163",,,,,,
+ICH,D.7.1.r,D.7.1.r.2 ,Start Date,-,Date/Time,"See Appendix II for further information.  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,D.7.1.r,D.7.1.r.3 ,Continuing,-,Boolean,"false, true, nullFlavor: MSK, ASKU, NASK, UNK",Optional,Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.,,,No,Yes,Yes,No,Yes,Yes,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.7.1.r,D.7.1.r.4 ,End Date,-,Date/Time,"See Appendix II for further information.  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,D.7.1.r,D.7.1.r.5 ,Comments,2000,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.7.1.r,D.7.1.r.6 ,Family History,-,Boolean,TRUE,Optional,"When Parent Medical history already is provided in D.10.7, do not set this data element to 'true' (Yes) for similar medical concepts also coded for the patient.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D. ,D.7.2 ,Text for Relevant Medical History and Concurrent Conditions (not including reaction / event),10000,AN,"Free Text  nullFlavor:MSK,ASKU,NASK,UNK",Conditional-Mandatory,"If the relevant medical history is unknown to the sender (e.g. not reported), this data element should be left blank with nullFlavor = UNK.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,Yes,No,Yes,Yes,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D. ,D.7.3 ,Concomitant Therapies,-,Boolean,TRUE,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.8.r ,D.8.r,Relevant Past Drug History (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.8.r ,D.8.r.1 ,Name of Drug as Reported,250,AN,"Free Text  nullFlavor:  UNK, NA",Conditional-Mandatory,"Nullflavor=NA should be used when there is no previous exposure to a drug or vaccine.
+Null flavor = UNK is allowed when there is previous drug history but the name of the drug or vaccine is not known.",,,No,No,Yes,Yes,No,No,No,No,-,,,,,,
+ICH,D.8.r ,D.8.r.2a ,MPID Version Date/Number,10,AN,Free Text,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,D.8.r ,D.8.r.2b ,Medicinal Product Identifier (MPID),1000,AN,MPID,Conditional-Mandatory,"Any given drug entry may have either MPID or PhPID, but NOT both.",,,No,No,No,No,No,No,No,No,TBD,,,,,,
+ICH,D.8.r ,D.8.r.3a ,PhPID Version Date/Number,10,AN,Free Text,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,D.8.r ,D.8.r.3b ,Pharmaceutical Product Identifier (PhPID),250,AN,PhPID,Conditional-Mandatory,"Any given drug entry may have either MPID or PhPID, but NOT both.",,,No,No,No,No,No,No,No,No,TBD,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.8.r ,D.8.r.4 ,Start Date,-,Date/Time,"See Appendix II for further information.  nullFlavor:  MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,D.8.r ,D.8.r.5 ,End Date,-,Date/Time,"See Appendix II for further information.  nullFlavor:  MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,D.8.r ,D.8.r.6a ,MedDRA Version for Indication,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.8.r ,D.8.r.6b ,Indication (MedDRA code),8,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.6.163",,,,,,
+ICH,D.8.r ,D.8.r.7a ,MedDRA Version for Reaction,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.8.r ,D.8.r.7b,Reaction (MedDRA code),8,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.6.163",,,,,,
+-,-,D.9,In Case of Death,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D. ,D.9.1 ,Date of Death,-,Date/Time,"See Appendix II for further information.  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,D.9.2.r,D.9.2.r, Reported Cause(s) of Death (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.9.2.r,D.9.2.r.1a ,MedDRA Version for Reported Cause(s) of Death,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.9.2.r,D.9.2.r.1b ,Reported Cause(s) of Death (MedDRA code),8,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.6.163",,,,,,
+ICH,D.9.2.r,D.9.2.r.2,Reported Cause(s) of Death (free text),250,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D. ,D.9.3 ,Was Autopsy Done?,-,Boolean,"false, true, nullFlavor: MSK, ASKU, NASK, UNK",Conditional-Mandatory,Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.,,,No,No,Yes,No,Yes,Yes,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.9.4.r,D.9.4.r,Autopsy-determined Cause(s) of Death (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.9.4.r,D.9.4.r.1a ,MedDRA Version for Autopsy-determined Cause(s) of Death,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.9.4.r,D.9.4.r.1b,Autopsy-determined Cause(s) of Death (MedDRA code),8,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.6.163",,,,,,
+ICH,D.9.4.r,D.9.4.r.2 ,Autopsy-determined Cause(s) of Death (free text),250,AN,Free Text,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.10 ,D.10,"For a Parent-Child / Foetus Report, Information Concerning The Parent",-,-,-,-,"This section should be used in the case of parent-child/foetus report where the parent had no reaction/event.  Otherwise, this section should not be used.",,4.14 (034),-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.10 ,D.10.1 ,Parent Identification,60,AN,"Free Text  nullFlavor: MSK, ASKU, NASK, UNK",Optional,"If the name or initials of the parent are unknown to the sender, this data element should be left blank with nullFlavor=UNK.
+If the name or initials are known to the sender but cannot be transmitted due to data privacy requirements, this data element should be left blank with nullFlavor=MSK.
+Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,Yes,No,Yes,Yes,No,No,2.16.840.1.113883.5.111,,,,,,
+ICH,D.10 ,D.10.2,Parent Age Information,-,-,-,-,The parent age at time of reaction/event to the child/foetus should be used.   Select only one of the data elements from D.10.2.1 or D.10.2.2.     ,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.10 ,D.10.2.1,Date of Birth of Parent,-,Date/Time,"CCYY (Minimum)  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ‘CCYY’).
+The date specified cannot refer to a future date.
+If the date of birth is known to the sender but cannot be transmitted due to data privacy requirements, this data element should be left blank with nullFlavor set to ‘MSK’.
+Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,D.10 ,D.10.2.2a ,Age of Parent (number),3,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.10 ,D.10.2.2b ,Age of Parent (unit),50,AN,UCUM codes for the Year: {Decade},Conditional-Mandatory,,,4.18,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,D.10 ,D.10.3 ,Last Menstrual Period Date of Parent,-,Date/Time,"See Appendix II for further information.  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.10 ,D.10.4 ,Body Weight (kg) of Parent,6,N,Numeric,Optional,Fractions or decimals are allowed using a period (dot).  No commas are allowed in this numeric data element.,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.10 ,D.10.5 ,Height (cm) of Parent,3,N,Numeric,Optional,"Provide rounded number.   No fractions, decimals, and commas are allowed in this numeric data element.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.10 ,D.10.6,Sex of Parent,1,N,"1=Male  2=Female nullFlavor: MSK, UNK, ASKU, NASK",Optional,"If the sex of the parent is known to the sender but cannot be transmitted due to data privacy requirements, this data element should be left blank with nullFlavor='MSK'.   Please see section 3.3.6 for further guidance on the use of nullFlavor t",,,No,Yes,Yes,No,Yes,Yes,No,No,1.0.5218,,,,,,
+ICH,D.10.7 ,D.10.7,Relevant Medical History and Concurrent Conditions of Parent,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.10.7.1.r ,D.10.7.1.r,Structured Information of Parent (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.10.7.1.r ,D.10.7.1.r.1a,MedDRA Version for Medical History,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.10.7.1.r ,D.10.7.1.r.1b ,Medical History (disease / surgical procedure / etc.) (MedDRA code),8,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.20
+2.16.840.1.113883.6.163",,,,,,
+ICH,D.10.7.1.r ,D.10.7.1.r.2 ,Start Date,-,Date/Time,"See Appendix II for further information.  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,D.10.7.1.r ,D.10.7.1.r.3 ,Continuing,-,Boolean,"false, true, nullFlavor: MSK, ASKU, NASK, UNK",Optional,Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.,,,No,Yes,Yes,No,Yes,Yes,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.10.7.1.r ,D.10.7.1.r.4 ,End Date,-,Date/Time,"See Appendix II for further information.  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,D.10.7.1.r ,D.10.7.1.r.5 ,Comments,2000,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.10.7 ,D.10.7.2 ,Text for Relevant Medical History and Concurrent Conditions of Parent,10000,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,D.10.8.r ,D.10.8.r,Relevant Past Drug History of Parent (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.10.8.r ,D.10.8.r.1 ,Name of Drug as Reported,250,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,D.10.8.r ,D.10.8.r.2a ,MPID Version Date/Number,10,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,D.10.8.r ,D.10.8.r.2b ,Medicinal Product Identifier (MPID),1000,AN,MPID,Optional,,,,No,No,No,No,No,No,No,No,TBD,,,,,,
+ICH,D.10.8.r ,D.10.8.r.3a ,PhPID Version Date/Number,10,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,D.10.8.r ,D.10.8.r.3b ,Pharmaceutical Product Identifier (PhPID),250,AN,PhPID,Optional,"Any given drug entry may have either MPID or PhPID, but NOT both.",,,No,No,No,No,No,No,No,No,TBD,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.10.8.r ,D.10.8.r.4 ,Start Date,-,Date/Time,"See Appendix II for further information.  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,D.10.8.r ,D.10.8.r.5 ,End Date,-,Date/Time,"See Appendix II for further information.  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,D.10.8.r ,D.10.8.r.6a ,MedDRA Version for Indication,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.10.8.r ,D.10.8.r.6b ,Indication (MedDRA code),8,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.6.163",,,,,,
+ICH,D.10.8.r ,D.10.8.r.7a ,MedDRA Version for Reaction,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,D.10.8.r ,D.10.8.r.7b ,Reactions (MedDRA code),8,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.6.163",,,,,,
+ICH,E.i ,E.i.1,Reaction/Event as Reported by the Primary Source,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,E.i ,E.i.1.1a ,Reaction / Event as Reported by the Primary Source in Native Language,250,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,E.i ,E.i.1.1b ,Reaction / Event as Reported by the Primary Source Language,3,A,"ISO 639-2/RA, alpha-3",Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,1.0.639.2,,,,,,
+ICH,E.i ,E.i.1.2 ,Reaction / Event as Reported by the Primary Source for Translation,250,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,E.i ,E.i.2.1a ,MedDRA Version for Reaction / Event,4,AN,N.N,Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,4.16 (036),-,-,-,-,-,-,-,-,-,,,,,,
+ICH,E.i ,E.i.2.1b ,Reaction / Event (MedDRA code),8,N,Numeric,Mandatory,,,"4.10 (027), 4.16 (036)",No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.6.163",,,,,,
+ICH,E.i ,E.i.3.1 ,Term Highlighted by the Reporter,1,N,"1=Yes, highlighted by the reporter, NOT serious  2=No, not highlighted by the reporter, NOT serious  3=Yes, highlighted by the reporter, SERIOUS  4=No, not highlighted by the reporter, SERIOUS",Optional,See E.i.3.2 for the 'seriousness' assessment of the highlighted term.,,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.3.989.2.1.1.10",,,,,,
+ICH,E.i ,E.1.3.2,Seriousness Criteria at Event Level,-,-,-,-,-,,4.4 (019),-,-,-,-,-,-,-,-,-,,,,,,
+ICH,E.i ,E.i.3.2a ,Results in Death,-,Boolean,true  nullFlavor: NI,Mandatory,,,,Yes,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,E.i ,E.i.3.2b ,Life Threatening,-,Boolean,true  nullFlavor: NI,Mandatory,,,,Yes,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,E.i ,E.i.3.2c ,Caused / Prolonged Hospitalisation,-,Boolean,true  nullFlavor: NI,Mandatory,,,,Yes,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,E.i ,E.i.3.2d ,Disabling / Incapacitating,-,Boolean,true  nullFlavor: NI,Mandatory,,,,Yes,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,E.i ,E.i.3.2e ,Congenital Anomaly / Birth Defect,-,Boolean,true  nullFlavor: NI,Mandatory,,,,Yes,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,E.i ,E.i.3.2f ,Other Medically Important Condition,-,Boolean,true  nullFlavor: NI,Mandatory,,,,Yes,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,E.i ,E.i.4 ,Date of Start of Reaction / Event,-,Date/Time,"See Appendix II for further information.  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,"4.5 (020), 4.9 (026)",No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,E.i ,E.i.5 ,Date of End of Reaction / Event,-,Date/Time,"See Appendix II for further information.  nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. ""CCYY"").  The date specified cannot refer to a future date.  Please see section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.",,4.5 (020),No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,E.i ,E.i.6a ,Duration of Reaction / Event (number),5,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,E.i ,E.i.6b ,Duration of Reaction / Event (unit),50,AN,Constrained UCUM codes,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,E.i ,E.i.7 ,Outcome of Reaction / Event at the Time of Last Observation,1,N,1=recovered/resolved 2=recovering/resolving 3=not recovered/not resolved/ongoing 4=recovered/resolved with sequelae 5=fatal 0=unknown,Mandatory,,,4.9 (026),No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.3.989.2.1.1.11",,,,,,
+ICH,E.i ,E.i.8 ,Medical Confirmation by Healthcare Professional,-,Boolean,"false, true ",Optional,"False' means the event is not confirmed, it does not mean the event did not occur.   If the event is reported by a healthcare professional, this is not transmitted.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,E.i ,E.i.9 ,Identification of the Country Where the Reaction / Event Occurred,2,A,ISO 3166-1 alpha-2,Optional,"A two character country code will be used in all instances.   The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union.   In this case, 'EU' will be accepted as the country code. ",,4.1 (009),No,No,No,No,No,No,No,No,1.0.3166.1.2.2,,,,,,
+ICH,F.r ,F.r,Results of Tests and Procedures Relevant to the Investigation of the Patient (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,2.16.840.1.113883.3.989.2.1.1.20,,,,,,
+ICH,F.r ,F.r.1 ,Test Date,-,Date/Time,See Appendix II for further information.  nullFlavor = UNK,Conditional-Mandatory,"Minimum precision required is the year (i.e. 'CCYY').  The date specified cannot refer to a future date.  If the test date is unknown, use NullFlavor =UNK.  Please see sectin 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted data.",,,No,No,Yes,No,No,No,No,No,-,,,,,,
+ICH,F.r ,F.r.2.1 ,Test Name (free text),250,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,F.r ,F.r.2.2a ,MedDRA Version for Test Name,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,F.r ,F.r.2.2b ,Test Name (MedDRA code),8,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.6.163,,,,,,
+ICH,G.k ,F.r.3,Test Result,-,-,-,-,"A test result is required for each F block.  When a numeric value cannot be used to describe the result, provisions are made to use a controlled vocabulary.  If results and units cannot be split, F.r.3.4 should be used.",,,-,-,-,-,-,-,-,-,2.16.840.1.113883.3.989.2.1.1.20,,,,,,
+ICH,F.r ,F.r.3.1 ,Test Result (code),1,N,1=Positive 2=Negative 3=Borderline 4=Inconclusive,Conditional-Mandatory,This data element can be used when a numeric value cannot describe the result.,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.12,,X-Error in E2B IG,,,,
+ICH,F.r ,F.r.3.2 ,Test Result (value / qualifier),50,N,"Numeric  nullFlavor: NINF, PINF",Conditional-Mandatory,"If results and units cannot be split, F.r.3.4 should be used.",,"4.6 (022), 4.7 (023) ",No,No,No,No,No,No,Yes,Yes,-,,,,,,
+ICH,F.r ,F.r.3.3 ,Test Result (unit),50,AN,UCUM,Conditional-Mandatory,Constrained UCUM is not provided for this unit.  Select most appropriate unit from UCUM codes. ,, ,No,No,No,No,No,No,No,No,2.16.840.1.113883.6.8,,,,,,
+ICH,F.r ,F.r.3.4,Result Unstructured Data (free text),2000,AN,Free Text,Conditional-Mandatory,,,"4.8 (026), 4.12 (032)",No,No,No,No,No,No,No,No,-,,,,,,
+ICH,F.r ,F.r.4 ,Normal Low Value,50,AN,Free Text,Optional,"The value will be transmitted as physical quantity (PQ) as separate amount and unit and following line indicates this value is normal low value:
+<valuexsi:type=""PQ"" value=""40"" unit=""mg/dl""/>
+<interpretationCode code=""L""codeSystem=""2.16.840.1.113883.5.83""/>",,4.19,No,No,No,No,No,No,No,No,2.16.840.1.113883.5.83,,,,,,
+ICH,F.r ,F.r.5 ,Normal High Value,50,AN,Free Text,Optional,"The value will be transmitted as physical quantity (PQ) as separate amount and unit and following line indicates this value is normal high value :
+<valuexsi:type=""PQ"" value=""80"" unit=""mg/dl""/>
+<interpretationCode code=""H""codeSystem=""2.16.840.1.113883.5.83""/>",,4.19,No,No,No,No,No,No,No,No,2.16.840.1.113883.5.83,,,,,,
+ICH,F.r ,F.r.6 ,Comments (free text),2000,AN,Free Text,Optional,,,4.12 (032),No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,F.r ,F.r.7 ,More Information Available,-,Boolean,"false, true",Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,G.k ,-,Drug(s) Information (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,2.16.840.1.113883.3.989.2.1.1.20,,,,,,
+ICH,G.k ,G.k.1 ,Characterisation of Drug Role,1,N,1=Suspect  2=Concomitant  3=Interacting  4=Drug Not Administered,Mandatory,"Each ICSR must contain at least one 'Suspect', 'Interacting', or 'Drug Not Administered'",,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.3.989.2.1.1.13",,,,,,
+ICH,G.k ,G.k.2,Drug Identification,-,-,-,-,-,,,-,-,-,-,-,-,-,-,2.16.840.1.113883.3.989.2.1.1.20,,,,,,
+ICH,G.k ,G.k.2.1.1a ,MPID Version Date / Number,10,AN,Free Text,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k ,G.k.2.1.1b ,Medicinal Product Identifier (MPID) ,1000,AN,MPID,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,TBD,,,,,,
+ICH,G.k ,G.k.2.1.2a,PhPID Version Date/Number,10,AN,Free Text,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k ,G.k.2.1.2b ,Pharmaceutical Product Identifier (PhPID),250,AN,PhPID,Conditional-Mandatory,"Any given drug entry may have either MPID or PhPID, but NOT both.",,,No,No,No,No,No,No,No,No,TBD,,,,,,
+ICH,G.k ,G.k.2.2 ,Medicinal Product Name as Reported by the Primary Source,250,AN,Free Text,Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.2.3.r ,G.k.2.3.r,Substance / Specified Substance Identifier and Strength (repeat as necessary),-,-,-,-,"If either of MPID or PhPID is not available, each active ingredient should be specified individually by repeating this section.",,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,G.k.2.3.r ,G.k.2.3.r.1 ,Substance / Specified Substance Name,250,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.2.3.r ,G.k.2.3.r.2a ,Substance/Specified Substance TermID Version Date/Number,10,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.2.3.r ,G.k.2.3.r.2b ,Substance/Specified Substance TermID,100,AN,SubstanceID,Optional,,,,No,No,No,No,No,No,No,No,TBD,,,,,,
+ICH,G.k.2.3.r ,G.k.2.3.r.3a ,Strength (number) ,10,N,Numeric,Optional,,,4.17,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.2.3.r ,G.k.2.3.r.3b ,Strength (unit),50,AN,Constrained UCUM codes,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,G.k ,G.k.2.4,Identification of the Country Where the Drug Was Obtained,2,A,"ISO 3166-1 alpha-2, EU ",Optional,"A two character country code will be used in all instances.   The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union.   In this case, 'EU' ",,,No,No,No,No,No,No,No,No,1.0.3166.1.2.2,,,,,,
+ICH,G.k ,G.k.2.5 ,Investigational Product Blinded,-,Boolean,true,Optional,"The value for this data element should be set to 'true' for ICSRs from clinical trials when the product status is still blinded at the time the ICSR is created.  Otherwise, this data element should not be transmitted.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,G.k ,G.k.3.1 ,Authorisation / Application Number,35,AN,Free Text,Optional,"The following notation will be used to represent G.k.3.1:
+<id extension=""authorisation / application number"" root=""2.16.840.1.113883.3.989.2.1.3.4""/>
+The root indicates the namespace of G.k.3.1, the actual authorisation/ application number is populated at id extension.",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.4,,,,,,
+ICH,G.k ,G.k.3.2 ,Country of Authorisation / Application,2,A,"ISO 3166-1 alpha-2, EU",Conditional-Mandatory,"A two character country code will be used in all instances. The country code EU exists in the ISO 3166 country code list as an exceptional reservation code to support any application that needs to represent the name European Union. In this case, ‘EU’ will be accepted as the country code.",,,No,No,No,No,No,No,No,No,1.0.3166.1.2.2,,,,,,
+ICH,G.k ,G.k.3.3 ,Name of Holder / Applicant,60,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r,Dosage and Relevant Information (repeat as necessary),-,-,-,-,-,,4.9 (026),-,-,-,-,-,-,-,-,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.1a ,Dose (number),8,N,Numeric,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.1b ,Dose (unit),50,AN,Constrained UCUM codes {DF},Conditional-Mandatory,"UCUM allows using non-unit expression for symbols not in UCUM.  In this case, {DF} can be used in XML message.",,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.2 ,Number of Units in the Interval,4,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.3 ,Definition of the Time Interval Unit,50,AN,"Constrained UCUM codes: {cyclical}, {asnecessary}, {total}",Conditional-Mandatory,"UCUM allows using non-unit expression for symbols not in UCUM.  In this case, {cyclical}, {asnecessary}, and {total} can be used in XML message.",,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.4,Date and Time of Start of Drug,-,Date/Time,"nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. 'CCYY').  The date specified cannot refer to a future date.  If the test date is unknown, use NullFlavor =UNK.  Please see sectin 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted data.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.5 ,Date and Time of Last Administration,-,Date/Time,"nullFlavor: MSK, ASKU, NASK",Optional,"Minimum precision required is the year (i.e. 'CCYY').  The date specified cannot refer to a future date.  If the test date is unknown, use NullFlavor =UNK.  Please see sectin 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted data.",,,No,Yes,No,No,Yes,Yes,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.6a ,Duration of Drug Administration (number),5,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.6b ,Duration of Drug Administration (unit),50,AN,Constrained UCUM codes,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.7 ,Batch / Lot Number,35,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.8 ,Dosage Text,2000,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.9.1 ,Pharmaceutical Dose Form (free text),60,AN,"Free text  nullFlavor: ASKU, NASK, UNK",Optional,Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.,,,No,No,Yes,No,Yes,Yes,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.9.2a ,Pharmaceutical Dose Form TermID Version Date/Number,10,AN,As per ISO IDMP.,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.9.2b,Pharmaceutical Dose Form TermID,100,AN,As per ISO IDMP.,Optional,,,,No,No,No,No,No,No,No,No,E2B(R3) (EDQM DF) - 2.16.840.1.113883.3.989.2.1.1.29,,,,,,
+ICH,G.k.4.r ,G.k.4.r.10.1 ,Route of Administration (free text),60,AN,"Free text  nullFlavor: ASKU, NASK, UNK",Optional,Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.,,,No,No,Yes,No,Yes,Yes,No,No,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.10.2a,Route of Administration TermID Version Date / Number,"4* E2B(R2)
+10* E2B(R3)",AN,"N.N* E2B(R2)
+Free Text E2B(R3)",Optional,"Until ISO IDMP TermID is available, use version number in the ICH E2B(R3) code list 14.",,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.10.2b ,Route of Administration TermID,"3* E2B(R2)
+100* E2B(R3)","N* E2B(R2) 
+AN* E2B(R3)","E2B(R2) - RoA*
+E2B(R3) - RoAID",Optional,,,,No,No,No,No,No,No,No,No,"E2B(R2) -2.16.840.1.113883.3.989.2.1.1.14
+E2B(R3) (EDQM RoA) - 2.16.840.1.113883.3.989.2.1.1.28",,,,,,
+ICH,G.k.4.r ,G.k.4.r.11.1 ,Parent Route of Administration (free text),60,AN,"Free text  nullFlavor: ASKU, NASK, UNK",Optional,Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.,,,No,No,Yes,No,Yes,Yes,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,G.k.4.r ,G.k.4.r.11.2a ,Parent Route of Administration TermID Version Date / Number,"4* E2B(R2)
+10* E2B(R3)",AN,"N.N* E2B(R2)
+Free Text E2B(R3)",Optional,"Until ISO IDMP TermID is available, use version number in the ICH E2B(R3) code list 14.",,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,G.k.4.r ,G.k.4.r.11.2b ,Parent Route of Administration TermID,"3* E2B(R2)
+100* E2B(R3)","N* E2B(R2) 
+AN* E2B(R3)","E2B(R2) - RoA*
+E2B(R3) - RoAID",Optional,,,,No,No,No,No,No,No,No,No,"E2B(R2) -2.16.840.1.113883.3.989.2.1.1.14
+E2B(R3) (EDQM RoA) - 2.16.840.1.113883.3.989.2.1.1.28",,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,G.k ,G.k.5a ,Cumulative Dose to First Reaction (number),10,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,G.k ,G.k.5b ,Cumulative Dose to First Reaction (unit),50,AN,Constrained UCUM codes: {DF},Conditional-Mandatory,"UCUM allows using non-unit expression for symbols not in UCUM.   In this case, {DF} can be used in XML message.",,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k ,G.k.6a ,Gestation Period at Time of Exposure (number),3,N,Numeric,Conditional-Mandatory,"The gestational age is expressed in terms of days, weeks, months, or trimester (G.k.6b).",,4.13 (033),No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,G.k ,G.k.6b ,Gestation Period at Time of Exposure (unit),50,AN,"UCUM codes for Month, Week, and Day: {Trimester}",Conditional-Mandatory,Units commonly used in clinical practice but not defined in UCUM can be trasmitted using curly braces like e.g. {trimester}.,,4.13 (033),No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.7.r ,G.k.7.r,Indication for Use in Case (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,G.k.7.r ,G.k.7.r.1 ,Indication as Reported by the Primary Source,250,AN,"Free text  nullFlavor: ASKU, NASK, UNK",Optional,Please see Section 3.3.6 for further guidance on the use of nullFlavor to describe missing or non-transmitted information.  Please use nullFlavor with original text attribute in the XML instance (See Appendix I (D) the Reference Instance).,,,No,No,Yes,No,Yes,Yes,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,G.k.7.r ,G.k.7.r.2a ,MedDRA Version for Indication,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,G.k.7.r ,G.k.7.r.2b ,Indication (MedDRA code),8,N,Numeric,Conditional-Mandatory,"if nullFlavor is used in G.k.7.r.1, select an appropriate MedDRA term to reflect that the indication is not available.",,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.6.163",,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,G.k ,G.k.8 ,Action(s) Taken with Drug,1,N,Actions taken codes:  1=Drug withdrawn  2=Dose reduced  3=Dose increased  4=Dose not changed  0=Unknown  9=Not applicable,Optional,,,4.9 (026),No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.15,,,,,,
+ICH,G.k.9.i ,G.k.9.i,Drug-reaction(s) / Event(s) Matrix (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,G.k.9.i,G.k.9.i.1 ,Reaction(s) / Event(s) Assessed,-,-,N/A,Optional,This is not a user entered element.,,,-,-,-,-,-,-,-,-,UUIDs,,,,,,
+ICH,G.k.9.i,G.k.9.i.2.r.1 ,Source of Assessment,60,AN,Free text  ,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.9.i,G.k.9.i.2.r.2,Method of Assessment,60,AN,Free text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.9.i,G.k.9.i.2.r.3 ,Result of Assessment,60,AN,Free text,Optional,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.9.i,G.k.9.i.3.1a ,Time Interval between Beginning of Drug Administration and Start of Reaction / Event (number),5,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.9.i,G.k.9.i.3.1b ,Time Interval between Beginning of Drug Administration and Start of Reaction / Event (unit),50,AN,Constrained UCUM codes,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.9.i,G.k.9.i.3.2a ,Time Interval between Last Dose of Drug and Start of Reaction / Event (number),5,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.9.i,G.k.9.i.3.2b ,Time Interval between Last Dose of Drug and Start of Reaction / Event (unit),50,AN,Constrained UCUM codes,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,-,,,,,,
+ICH,G.k.9.i,G.k.9.i.4 ,Did Reaction Recur on Re-administration?,1,N,"1=yes - yes (rechallenge was done, reaction reccurred)  2=yes - no (rechallenge was done, reaction did not recur)   3=yes - unk (rechallenge was done, outcome unknown)  4=no - n/a (no rechallenge was done, recurrance is not applicable)",Optional,"If the sender does not know whether a rechallenge was performed, this data element should not be transmitted.",,"4.9 (026), 4.16 (036)",No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.3.989.2.1.1.16",,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,G.k ,G.k.10.r ,Additional Information on Drug (coded) (repeat as necessary),2,N,1=Counterfeit  2=Overdose  3=Drug taken by the father  4=Drug taken beyon expiry date  5=Batch and lot tested and found within specifications  6=Batch and lot tested and found not within specifications  7=Medication error  8=Misuse  9=Abuse  10=Occupational exposure  11=Off label use,Optional,,,4.10 (027),No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.3.989.2.1.1.17",,,,,,
+ICH,G.k ,G.k.11 ,Additional Information on Drug (free text),2000,AN,Free Text,Optional,"If provided, this element needs to be separated and independent from any value selected in the code list for G.k.10.r",,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,H ,-,Narrative Case Summary and Further Information,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,H ,H.1 ,"Case Narrative Including Clinical Course, Therapeutic Measures, Outcome and Additional Relevant Information",100000,AN,Free Text,Required,Each ICSR must include a narrative.  This data element should not be confused with Reporter's or Sender's comments.,,4.10 (027),No,No,No,No,No,No,No,No,2.16.840.1.113883.5.4,,,,,,
+ICH,H ,H.2 ,Reporter's Comments,20000,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,H.3.r ,,Sender's Diagnosis (repeat as necessary),-,-,-,-,-,,4.10 (027),-,-,-,-,-,-,-,-,-,,,,,,
+ICH,H.3.r,H.3.r.1a ,MedDRA Version for Sender's Diagnosis / Syndrome and / or Reclassification of Reaction / Event,4,AN,N.N,Conditional-Mandatory,Only 1 MedDRA version is allowed per ICSR.   For MedDRA version 15.1 value allowed is '15.1'.,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,H.3.r,H.3.r.1b,Sender's Diagnosis / Syndrome and / or Reclassification of Reaction / Event (MedDRA code),8,N,Numeric,Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,"2.16.840.1.113883.3.989.2.1.1.19
+2.16.840.1.113883.6.163",,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,H ,H.4 ,Sender's Comments,20000,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,H.5.r ,-,Case Summary and Reporter’s Comments in Native Language (repeat as necessary),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+ICH,H.5.r,H.5.r.1a ,Case Summary and Reporter’s Comments Text,100000,AN,Free Text,Optional,,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.1.19,,,,,,
+ICH,H.5.r,H.5.r.1b ,Case Summary and Reporter’s Comments Language,3,A,"ISO 639-2/RA, alpha-3",Conditional-Mandatory,,,,No,No,No,No,No,No,No,No,1.0.639.2,,,,,,
+-,-,-,-,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,

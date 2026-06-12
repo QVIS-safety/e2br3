@@ -1,0 +1,1894 @@
+[
+  {
+    "id": "D.1",
+    "e2br3_code": "D.1",
+    "label": "Patient Identification",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "patient_initials",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.patient_initials is annotated under D.1 patient identification."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientInitials",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/pathOwnership.test.ts",
+      "evidence": "Frontend path ownership tests route patientInformation.patientInitials to patient-core."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.local.patientGivenName",
+    "e2br3_code": "D.local.patientGivenName",
+    "label": "Patient Given Name",
+    "section": "D",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "patient_given_name",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.patient_given_name exists as a D.1 patient-name component in the backend model."
+    },
+    "frontend": {
+      "status": "missing",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD renders patientInformation.patientInitials for D.1 but no separate given-name or family-name input was found."
+    },
+    "action": "Add a frontend field or intentionally remove/ignore the backend field if product scope only supports initials.",
+    "notes": "Backend inventory is covered; this is not a complete 1-1 frontend mapping. Local given/family split; the official single name element D.1 is mapped to patient_initials."
+  },
+  {
+    "id": "D.local.patientFamilyName",
+    "e2br3_code": "D.local.patientFamilyName",
+    "label": "Patient Family Name",
+    "section": "D",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "patient_family_name",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.patient_family_name exists as a D.1 patient-name component in the backend model."
+    },
+    "frontend": {
+      "status": "missing",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD renders patientInformation.patientInitials for D.1 but no separate given-name or family-name input was found."
+    },
+    "action": "Add a frontend field or intentionally remove/ignore the backend field if product scope only supports initials.",
+    "notes": "Backend inventory is covered; this is not a complete 1-1 frontend mapping. Local given/family split; the official single name element D.1 is mapped to patient_initials."
+  },
+  {
+    "id": "D.local.patientIdentifier.typeCode",
+    "e2br3_code": "D.local.patientIdentifier.typeCode",
+    "label": "Patient Identifier Type Code",
+    "section": "D",
+    "authority": "ICH",
+    "status": "conflict",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "PatientIdentifier",
+      "field": "identifier_type_code",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientIdentifier.identifier_type_code stores the D.1.1.x discriminator for GP, specialist, hospital, or investigation identifiers."
+    },
+    "frontend": {
+      "status": "conflict",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/patient.ts",
+      "evidence": "Frontend has four flattened fields mapped to identifier_type_code values 1-4: gpMedicalRecordNumber, specialistRecordNumber, hospitalRecordNumber, and investigationNumber."
+    },
+    "action": "Define a first-class repeated discriminator mapping schema before marking this complete.",
+    "notes": "Backend inventory is covered, but frontend is not a single 1-1 field path. Backend discriminator behind the D.1.1.1-D.1.1.4 fan-out; not itself an ICH data element."
+  },
+  {
+    "id": "D.local.patientIdentifier.value",
+    "e2br3_code": "D.local.patientIdentifier.value",
+    "label": "Patient Identifier Value",
+    "section": "D",
+    "authority": "ICH",
+    "status": "conflict",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "PatientIdentifier",
+      "field": "identifier_value",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientIdentifier.identifier_value stores the D.1.1.x identifier value selected by identifier_type_code."
+    },
+    "frontend": {
+      "status": "conflict",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
+      "evidence": "Persistence contract readback paths list four frontend homes for this backend value: gpMedicalRecordNumber, specialistRecordNumber, hospitalRecordNumber, and investigationNumber."
+    },
+    "action": "Define a first-class repeated discriminator mapping schema before marking this complete.",
+    "notes": "Backend inventory is covered, but frontend is not a single 1-1 field path. Backend discriminator behind the D.1.1.1-D.1.1.4 fan-out; not itself an ICH data element."
+  },
+  {
+    "id": "D.2.1",
+    "e2br3_code": "D.2.1",
+    "label": "Date of Birth",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "birth_date",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.birth_date is part of D.2 age/date fields."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientBirthDate",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/patientHistory.coordinator.test.ts",
+      "evidence": "Frontend input inventory extracts patientInformation.patientBirthDate from the case-form section source."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.2.2a",
+    "e2br3_code": "D.2.2a",
+    "label": "Age at Time of Onset Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "age_at_time_of_onset",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.age_at_time_of_onset stores D.2.2a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientAge.value",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.2.2a to patientInformation.patientAge.value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.2.2b",
+    "e2br3_code": "D.2.2b",
+    "label": "Age at Time of Onset Unit",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "age_unit",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.age_unit stores D.2.2b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientAge.unit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.2.2b to patientInformation.patientAge.unit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.2.2.1a",
+    "e2br3_code": "D.2.2.1a",
+    "label": "Gestation Period Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "gestation_period",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.gestation_period stores D.2.2.1a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "gestationPeriod.value",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.2.2.1a to patientInformation.gestationPeriod.value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.2.2.1b",
+    "e2br3_code": "D.2.2.1b",
+    "label": "Gestation Period Unit",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "gestation_period_unit",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.gestation_period_unit stores D.2.2.1b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "gestationPeriod.unit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.2.2.1b to patientInformation.gestationPeriod.unit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.2.3",
+    "e2br3_code": "D.2.3",
+    "label": "Patient Age Group",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "age_group",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.age_group stores D.2.3 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientAgeGroup",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.2.3 to patientInformation.patientAgeGroup."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.3",
+    "e2br3_code": "D.3",
+    "label": "Body Weight",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "weight_kg",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.weight_kg is annotated under D.3-5 physical fields."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientWeight.value",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/patientHistory.coordinator.test.ts",
+      "evidence": "Frontend input inventory extracts patientInformation.patientWeight.value from the case-form section source."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.4",
+    "e2br3_code": "D.4",
+    "label": "Height",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "height_cm",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.height_cm is annotated under D.3-5 physical fields."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientHeight.value",
+      "file": "../frontend/E2BR3-frontend/lib/types/e2br3.ts",
+      "evidence": "Frontend input inventory extracts patientInformation.patientHeight.value from the case-form section source."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.5",
+    "e2br3_code": "D.5",
+    "label": "Sex",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "sex",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.sex is annotated under D.3-5 physical fields."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientSex",
+      "file": "../frontend/E2BR3-frontend/components/case-form/CaseFormWizardNew.tsx",
+      "evidence": "CaseFormWizardNew reads patientInformation.patientSex for D.5 sex intake."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.6",
+    "e2br3_code": "D.6",
+    "label": "Last Menstrual Period Date",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "last_menstrual_period_date",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.last_menstrual_period_date stores D.6 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "lastMenstrualPeriodDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.6 to patientInformation.lastMenstrualPeriodDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.7.2",
+    "e2br3_code": "D.7.2",
+    "label": "Relevant Medical History Text",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "medical_history_text",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.medical_history_text stores D.7.2 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryText",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.7.2 to patientInformation.medicalHistoryText."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.7.3",
+    "e2br3_code": "D.7.3",
+    "label": "Concomitant Therapies",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "concomitant_therapy",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.concomitant_therapy stores D.7.3 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "concomitantTherapies",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.7.3 to patientInformation.concomitantTherapies."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.7.1.r.1a",
+    "e2br3_code": "D.7.1.r.1a",
+    "label": "Relevant Medical History MedDRA Version",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MedicalHistoryEpisode",
+      "field": "meddra_version",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "MedicalHistoryEpisode.meddra_version stores D.7.1.r.1a disease or surgical procedure MedDRA version values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryEpisodes.meddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.7.1.r.1a to patientInformation.medicalHistoryEpisodes[index].meddraVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.7.1.r.1b",
+    "e2br3_code": "D.7.1.r.1b",
+    "label": "Relevant Medical History MedDRA Code",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MedicalHistoryEpisode",
+      "field": "meddra_code",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "MedicalHistoryEpisode.meddra_code stores D.7.1.r.1b disease or surgical procedure MedDRA code values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryEpisodes.meddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.7.1.r.1b to patientInformation.medicalHistoryEpisodes[index].meddraCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.7.1.r.2",
+    "e2br3_code": "D.7.1.r.2",
+    "label": "Relevant Medical History Start Date",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MedicalHistoryEpisode",
+      "field": "start_date",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "MedicalHistoryEpisode.start_date stores D.7.1.r.2 medical history start date values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryEpisodes.startDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.7.1.r.2 to patientInformation.medicalHistoryEpisodes[index].startDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.7.1.r.3",
+    "e2br3_code": "D.7.1.r.3",
+    "label": "Relevant Medical History Continuing",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MedicalHistoryEpisode",
+      "field": "continuing",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "MedicalHistoryEpisode.continuing stores D.7.1.r.3 medical history continuing values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryEpisodes.continuing",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.7.1.r.3 to patientInformation.medicalHistoryEpisodes[index].continuing."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.7.1.r.4",
+    "e2br3_code": "D.7.1.r.4",
+    "label": "Relevant Medical History End Date",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MedicalHistoryEpisode",
+      "field": "end_date",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "MedicalHistoryEpisode.end_date stores D.7.1.r.4 medical history end date values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryEpisodes.endDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.7.1.r.4 to patientInformation.medicalHistoryEpisodes[index].endDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.7.1.r.5",
+    "e2br3_code": "D.7.1.r.5",
+    "label": "Relevant Medical History Comments",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MedicalHistoryEpisode",
+      "field": "comments",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "MedicalHistoryEpisode.comments stores D.7.1.r.5 medical history comment values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryEpisodes.comments",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.7.1.r.5 to patientInformation.medicalHistoryEpisodes[index].comments."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.7.1.r.6",
+    "e2br3_code": "D.7.1.r.6",
+    "label": "Relevant Medical History Family History",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MedicalHistoryEpisode",
+      "field": "family_history",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "MedicalHistoryEpisode.family_history stores D.7.1.r.6 family history values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "medicalHistoryEpisodes.familyHistory",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.7.1.r.6 to patientInformation.medicalHistoryEpisodes[index].familyHistory."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.1",
+    "e2br3_code": "D.8.r.1",
+    "label": "Past Drug History Name of Drug as Reported",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "drug_name",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.drug_name stores D.8.r.1 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.drugName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.1 to patientInformation.pastDrugHistory.drugName."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.1.KR.1a",
+    "e2br3_code": "D.8.r.1.KR.1a",
+    "label": "Past Drug History MFDS Medicinal Product Version",
+    "section": "D",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "mfds_medicinal_product_version",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.mfds_medicinal_product_version stores D.8.r.1.KR.1a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.mfdsMedicinalProductVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.1.KR.1a to patientInformation.pastDrugHistory.mfdsMedicinalProductVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.1.KR.1b",
+    "e2br3_code": "D.8.r.1.KR.1b",
+    "label": "Past Drug History MFDS Medicinal Product ID",
+    "section": "D",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "mfds_medicinal_product_id",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.mfds_medicinal_product_id stores D.8.r.1.KR.1b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.mfdsMedicinalProductId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.1.KR.1b to patientInformation.pastDrugHistory.mfdsMedicinalProductId."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.2a",
+    "e2br3_code": "D.8.r.2a",
+    "label": "Past Drug History MPID Version Date / Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "mpid_version",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.mpid_version stores D.8.r.2a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.mpidVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.2a to patientInformation.pastDrugHistory.mpidVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.2b",
+    "e2br3_code": "D.8.r.2b",
+    "label": "Past Drug History Medicinal Product Identifier MPID",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "mpid",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.mpid stores D.8.r.2b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.mpid",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.2b to patientInformation.pastDrugHistory.mpid."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.3a",
+    "e2br3_code": "D.8.r.3a",
+    "label": "Past Drug History PhPID Version Date / Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "phpid_version",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.phpid_version stores D.8.r.3a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.phpidVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.3a to patientInformation.pastDrugHistory.phpidVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.3b",
+    "e2br3_code": "D.8.r.3b",
+    "label": "Past Drug History Pharmaceutical Product Identifier PhPID",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "phpid",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.phpid stores D.8.r.3b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.phpid",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.3b to patientInformation.pastDrugHistory.phpid."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.4",
+    "e2br3_code": "D.8.r.4",
+    "label": "Past Drug History Start Date",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "start_date",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.start_date stores D.8.r.4 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.startDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.4 to patientInformation.pastDrugHistory.startDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.5",
+    "e2br3_code": "D.8.r.5",
+    "label": "Past Drug History End Date",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "end_date",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.end_date stores D.8.r.5 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.endDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.5 to patientInformation.pastDrugHistory.endDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.6a",
+    "e2br3_code": "D.8.r.6a",
+    "label": "Past Drug History Indication MedDRA Version",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "indication_meddra_version",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.indication_meddra_version stores D.8.r.6a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.indicationMeddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.6a to patientInformation.pastDrugHistory.indicationMeddraVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.6b",
+    "e2br3_code": "D.8.r.6b",
+    "label": "Past Drug History Indication MedDRA Code",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "indication_meddra_code",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.indication_meddra_code stores D.8.r.6b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.indicationMeddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.6b to patientInformation.pastDrugHistory.indicationMeddraCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.7a",
+    "e2br3_code": "D.8.r.7a",
+    "label": "Past Drug History Reaction MedDRA Version",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "reaction_meddra_version",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.reaction_meddra_version stores D.8.r.7a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.reactionMeddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.7a to patientInformation.pastDrugHistory.reactionMeddraVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.8.r.7b",
+    "e2br3_code": "D.8.r.7b",
+    "label": "Past Drug History Reaction MedDRA Code",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PastDrugHistory",
+      "field": "reaction_meddra_code",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PastDrugHistory.reaction_meddra_code stores D.8.r.7b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "pastDrugHistory.reactionMeddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
+      "evidence": "Frontend binds fieldNumber D.8.r.7b to patientInformation.pastDrugHistory.reactionMeddraCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.9.1",
+    "e2br3_code": "D.9.1",
+    "label": "Date of Death",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientDeathInformation",
+      "field": "date_of_death",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientDeathInformation.date_of_death stores D.9.1 date of death values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientDeath.dateOfDeath",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.9.1 to patientInformation.patientDeath.dateOfDeath."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.9.2.r.1a",
+    "e2br3_code": "D.9.2.r.1a",
+    "label": "Reported Cause of Death MedDRA Version",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ReportedCauseOfDeath",
+      "field": "meddra_version",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ReportedCauseOfDeath.meddra_version stores D.9.2.r.1a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientDeath.reportedCausesOfDeath.meddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.9.2.r.1a to patientInformation.patientDeath.reportedCausesOfDeath.meddraVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.9.2.r.1b",
+    "e2br3_code": "D.9.2.r.1b",
+    "label": "Reported Cause of Death MedDRA Code",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ReportedCauseOfDeath",
+      "field": "meddra_code",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ReportedCauseOfDeath.meddra_code stores D.9.2.r.1b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientDeath.reportedCausesOfDeath.meddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.9.2.r.1b to patientInformation.patientDeath.reportedCausesOfDeath.meddraCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.9.2.r.2",
+    "e2br3_code": "D.9.2.r.2",
+    "label": "Reported Cause of Death Free Text",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ReportedCauseOfDeath",
+      "field": "comments",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ReportedCauseOfDeath.comments stores D.9.2.r.2 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientDeath.reportedCausesOfDeath.causeText",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.9.2.r.2 to patientInformation.patientDeath.reportedCausesOfDeath.causeText."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.9.3",
+    "e2br3_code": "D.9.3",
+    "label": "Was Autopsy Done",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientDeathInformation",
+      "field": "autopsy_performed",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientDeathInformation.autopsy_performed stores D.9.3 autopsy performed values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientDeath.autopsyPerformed",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.9.3 to patientInformation.patientDeath.autopsyPerformed."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.9.4.r.1a",
+    "e2br3_code": "D.9.4.r.1a",
+    "label": "Autopsy-determined Cause of Death MedDRA Version",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "AutopsyCauseOfDeath",
+      "field": "meddra_version",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "AutopsyCauseOfDeath.meddra_version stores D.9.4.r.1a autopsy cause MedDRA version values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientDeath.autopsyCausesOfDeath.meddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.9.4.r.1a to patientInformation.patientDeath.autopsyCausesOfDeath[index].meddraVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.9.4.r.1b",
+    "e2br3_code": "D.9.4.r.1b",
+    "label": "Autopsy-determined Cause of Death MedDRA Code",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "AutopsyCauseOfDeath",
+      "field": "meddra_code",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "AutopsyCauseOfDeath.meddra_code stores D.9.4.r.1b autopsy cause MedDRA code values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientDeath.autopsyCausesOfDeath.meddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.9.4.r.1b to patientInformation.patientDeath.autopsyCausesOfDeath[index].meddraCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.9.4.r.2",
+    "e2br3_code": "D.9.4.r.2",
+    "label": "Autopsy-determined Cause of Death Free Text",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "AutopsyCauseOfDeath",
+      "field": "comments",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "AutopsyCauseOfDeath.comments stores D.9.4.r.2 autopsy cause free-text values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "patientDeath.autopsyCausesOfDeath.causeText",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.9.4.r.2 to patientInformation.patientDeath.autopsyCausesOfDeath[index].causeText."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.1",
+    "e2br3_code": "D.10.1",
+    "label": "Parent Identification",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "parent_identification",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.parent_identification stores D.10.1 parent identification values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentIdentification",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.1 to patientInformation.parentInformation.parentIdentification."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.2.1",
+    "e2br3_code": "D.10.2.1",
+    "label": "Parent Date of Birth",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "parent_birth_date",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.parent_birth_date stores D.10.2.1 parent birth date values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentBirthDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.2.1 to patientInformation.parentInformation.parentBirthDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.2.2a",
+    "e2br3_code": "D.10.2.2a",
+    "label": "Parent Age Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "parent_age",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.parent_age stores D.10.2.2a parent age number values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentAge.value",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.2.2a to patientInformation.parentInformation.parentAge.value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.2.2b",
+    "e2br3_code": "D.10.2.2b",
+    "label": "Parent Age Unit",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "parent_age_unit",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.parent_age_unit stores D.10.2.2b parent age unit values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentAge.unit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.2.2b to patientInformation.parentInformation.parentAge.unit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.3",
+    "e2br3_code": "D.10.3",
+    "label": "Parent Last Menstrual Period Date",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "last_menstrual_period_date",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.last_menstrual_period_date stores D.10.3 parent last menstrual period date values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentLastMenstrualPeriodDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.3 to patientInformation.parentInformation.parentLastMenstrualPeriodDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.4",
+    "e2br3_code": "D.10.4",
+    "label": "Parent Body Weight",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "weight_kg",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.weight_kg stores D.10.4 parent body weight values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentWeight.value",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.4 to patientInformation.parentInformation.parentWeight.value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.5",
+    "e2br3_code": "D.10.5",
+    "label": "Parent Height",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "height_cm",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.height_cm stores D.10.5 parent height values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentHeight.value",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.5 to patientInformation.parentInformation.parentHeight.value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.6",
+    "e2br3_code": "D.10.6",
+    "label": "Parent Sex",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "sex",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.sex stores D.10.6 parent sex values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.parentSex",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.6 to patientInformation.parentInformation.parentSex."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.7.1.r.1a",
+    "e2br3_code": "D.10.7.1.r.1a",
+    "label": "Parent Relevant Medical History MedDRA Version",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentMedicalHistory",
+      "field": "meddra_version",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentMedicalHistory.meddra_version stores D.10.7.1.r.1a parent medical history MedDRA version values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.medicalHistoryEpisodes.meddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.7.1.r.1a to patientInformation.parentInformation.medicalHistoryEpisodes[index].meddraVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.7.1.r.1b",
+    "e2br3_code": "D.10.7.1.r.1b",
+    "label": "Parent Relevant Medical History MedDRA Code",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentMedicalHistory",
+      "field": "meddra_code",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentMedicalHistory.meddra_code stores D.10.7.1.r.1b parent medical history MedDRA code values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.medicalHistoryEpisodes.meddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.7.1.r.1b to patientInformation.parentInformation.medicalHistoryEpisodes[index].meddraCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.7.1.r.2",
+    "e2br3_code": "D.10.7.1.r.2",
+    "label": "Parent Relevant Medical History Start Date",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentMedicalHistory",
+      "field": "start_date",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentMedicalHistory.start_date stores D.10.7.1.r.2 parent medical history start date values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.medicalHistoryEpisodes.startDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.7.1.r.2 to patientInformation.parentInformation.medicalHistoryEpisodes[index].startDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.7.1.r.3",
+    "e2br3_code": "D.10.7.1.r.3",
+    "label": "Parent Relevant Medical History Continuing",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentMedicalHistory",
+      "field": "continuing",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentMedicalHistory.continuing stores D.10.7.1.r.3 parent medical history continuing values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.medicalHistoryEpisodes.continuing",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.7.1.r.3 to patientInformation.parentInformation.medicalHistoryEpisodes[index].continuing."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.7.1.r.4",
+    "e2br3_code": "D.10.7.1.r.4",
+    "label": "Parent Relevant Medical History End Date",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentMedicalHistory",
+      "field": "end_date",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentMedicalHistory.end_date stores D.10.7.1.r.4 parent medical history end date values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.medicalHistoryEpisodes.endDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.7.1.r.4 to patientInformation.parentInformation.medicalHistoryEpisodes[index].endDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.7.1.r.5",
+    "e2br3_code": "D.10.7.1.r.5",
+    "label": "Parent Relevant Medical History Comments",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentMedicalHistory",
+      "field": "comments",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentMedicalHistory.comments stores D.10.7.1.r.5 parent medical history comment values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.medicalHistoryEpisodes.comments",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.7.1.r.5 to patientInformation.parentInformation.medicalHistoryEpisodes[index].comments."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.7.2",
+    "e2br3_code": "D.10.7.2",
+    "label": "Parent Relevant Medical History Text",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentInformation",
+      "field": "medical_history_text",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "ParentInformation.medical_history_text stores D.10.7.2 parent relevant medical history text values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.medicalHistoryText",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber D.10.7.2 to patientInformation.parentInformation.medicalHistoryText."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.1",
+    "e2br3_code": "D.10.8.r.1",
+    "label": "Parent Past Drug History Name of Drug as Reported",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "drug_name",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.drug_name stores D.10.8.r.1 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.drugName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.1 to patientInformation.parentInformation.pastDrugHistory.drugName."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.1.KR.1a",
+    "e2br3_code": "D.10.8.r.1.KR.1a",
+    "label": "Parent Past Drug History MFDS Medicinal Product Version",
+    "section": "D",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "mfds_medicinal_product_version",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.mfds_medicinal_product_version stores D.10.8.r.1.KR.1a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.mfdsMedicinalProductVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.1.KR.1a to patientInformation.parentInformation.pastDrugHistory.mfdsMedicinalProductVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.1.KR.1b",
+    "e2br3_code": "D.10.8.r.1.KR.1b",
+    "label": "Parent Past Drug History MFDS Medicinal Product ID",
+    "section": "D",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "mfds_medicinal_product_id",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.mfds_medicinal_product_id stores D.10.8.r.1.KR.1b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.mfdsMedicinalProductId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.1.KR.1b to patientInformation.parentInformation.pastDrugHistory.mfdsMedicinalProductId."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.2a",
+    "e2br3_code": "D.10.8.r.2a",
+    "label": "Parent Past Drug History MPID Version Date / Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "mpid_version",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.mpid_version stores D.10.8.r.2a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.mpidVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.2a to patientInformation.parentInformation.pastDrugHistory.mpidVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.2b",
+    "e2br3_code": "D.10.8.r.2b",
+    "label": "Parent Past Drug History Medicinal Product Identifier MPID",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "mpid",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.mpid stores D.10.8.r.2b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.mpid",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.2b to patientInformation.parentInformation.pastDrugHistory.mpid."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.3a",
+    "e2br3_code": "D.10.8.r.3a",
+    "label": "Parent Past Drug History PhPID Version Date / Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "phpid_version",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.phpid_version stores D.10.8.r.3a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.phpidVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.3a to patientInformation.parentInformation.pastDrugHistory.phpidVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.3b",
+    "e2br3_code": "D.10.8.r.3b",
+    "label": "Parent Past Drug History Pharmaceutical Product Identifier PhPID",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "phpid",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.phpid stores D.10.8.r.3b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.phpid",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.3b to patientInformation.parentInformation.pastDrugHistory.phpid."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.4",
+    "e2br3_code": "D.10.8.r.4",
+    "label": "Parent Past Drug History Start Date",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "start_date",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.start_date stores D.10.8.r.4 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.startDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.4 to patientInformation.parentInformation.pastDrugHistory.startDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.5",
+    "e2br3_code": "D.10.8.r.5",
+    "label": "Parent Past Drug History End Date",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "end_date",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.end_date stores D.10.8.r.5 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.endDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.5 to patientInformation.parentInformation.pastDrugHistory.endDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.6a",
+    "e2br3_code": "D.10.8.r.6a",
+    "label": "Parent Past Drug History Indication MedDRA Version",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "indication_meddra_version",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.indication_meddra_version stores D.10.8.r.6a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.indicationMeddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.6a to patientInformation.parentInformation.pastDrugHistory.indicationMeddraVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.6b",
+    "e2br3_code": "D.10.8.r.6b",
+    "label": "Parent Past Drug History Indication MedDRA Code",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "indication_meddra_code",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.indication_meddra_code stores D.10.8.r.6b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.indicationMeddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.6b to patientInformation.parentInformation.pastDrugHistory.indicationMeddraCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.7a",
+    "e2br3_code": "D.10.8.r.7a",
+    "label": "Parent Past Drug History Reaction MedDRA Version",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "reaction_meddra_version",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.reaction_meddra_version stores D.10.8.r.7a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.reactionMeddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.7a to patientInformation.parentInformation.pastDrugHistory.reactionMeddraVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.10.8.r.7b",
+    "e2br3_code": "D.10.8.r.7b",
+    "label": "Parent Past Drug History Reaction MedDRA Code",
+    "section": "D",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ParentPastDrugHistory",
+      "field": "reaction_meddra_code",
+      "file": "crates/libs/lib-core/src/model/parent_history.rs",
+      "evidence": "ParentPastDrugHistory.reaction_meddra_code stores D.10.8.r.7b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "parentInformation.pastDrugHistory.reactionMeddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Frontend binds fieldNumber D.10.8.r.7b to patientInformation.parentInformation.pastDrugHistory.reactionMeddraCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "FDA.D.11.r.1",
+    "e2br3_code": "FDA.D.11.r.1",
+    "label": "Patient Race Code",
+    "section": "D",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "race_code",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.race_code stores FDA.D.11.r values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "raceCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber FDA.D.11.r to patientInformation.raceCode."
+    },
+    "action": "",
+    "notes": "Renamed from FDA.D.11.r to match the FDA dictionary (Patient Race Code is FDA.D.11.r.1)."
+  },
+  {
+    "id": "FDA.D.12",
+    "e2br3_code": "FDA.D.12",
+    "label": "Patient Ethnicity Code",
+    "section": "D",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "PatientInformation",
+      "field": "ethnicity_code",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientInformation.ethnicity_code stores FDA.D.12 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "ethnicityCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "SectionD binds fieldNumber FDA.D.12 to patientInformation.ethnicityCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "D.1.1.1",
+    "e2br3_code": "D.1.1.1",
+    "label": "GP Medical Record Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "PatientIdentifier",
+      "field": "identifier_value",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientIdentifier.identifier_value is shared by the D.1.1.x discriminator rows, so this frontend field is not a separate backend BMC field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "gpMedicalRecordNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Strict frontend input inventory extracts patientInformation.gpMedicalRecordNumber from the case-form section source."
+    },
+    "action": "Keep the discriminator fan-out explicit or introduce a first-class repeated mapping schema for PatientIdentifier rows.",
+    "notes": "Frontend has a flattened D.1.1.x input; backend stores the value through shared PatientIdentifier.identifier_value plus identifier_type_code."
+  },
+  {
+    "id": "D.1.1.2",
+    "e2br3_code": "D.1.1.2",
+    "label": "Specialist Record Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "PatientIdentifier",
+      "field": "identifier_value",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientIdentifier.identifier_value is shared by the D.1.1.x discriminator rows, so this frontend field is not a separate backend BMC field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "specialistRecordNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Strict frontend input inventory extracts patientInformation.specialistRecordNumber from the case-form section source."
+    },
+    "action": "Keep the discriminator fan-out explicit or introduce a first-class repeated mapping schema for PatientIdentifier rows.",
+    "notes": "Frontend has a flattened D.1.1.x input; backend stores the value through shared PatientIdentifier.identifier_value plus identifier_type_code."
+  },
+  {
+    "id": "D.1.1.3",
+    "e2br3_code": "D.1.1.3",
+    "label": "Hospital Record Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "PatientIdentifier",
+      "field": "identifier_value",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientIdentifier.identifier_value is shared by the D.1.1.x discriminator rows, so this frontend field is not a separate backend BMC field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "hospitalRecordNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Strict frontend input inventory extracts patientInformation.hospitalRecordNumber from the case-form section source."
+    },
+    "action": "Keep the discriminator fan-out explicit or introduce a first-class repeated mapping schema for PatientIdentifier rows.",
+    "notes": "Frontend has a flattened D.1.1.x input; backend stores the value through shared PatientIdentifier.identifier_value plus identifier_type_code."
+  },
+  {
+    "id": "D.1.1.4",
+    "e2br3_code": "D.1.1.4",
+    "label": "Investigation Number",
+    "section": "D",
+    "authority": "ICH",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "PatientIdentifier",
+      "field": "identifier_value",
+      "file": "crates/libs/lib-core/src/model/patient.rs",
+      "evidence": "PatientIdentifier.identifier_value is shared by the D.1.1.x discriminator rows, so this frontend field is not a separate backend BMC field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "patientInformation",
+      "field": "investigationNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
+      "evidence": "Strict frontend input inventory extracts patientInformation.investigationNumber from the case-form section source."
+    },
+    "action": "Keep the discriminator fan-out explicit or introduce a first-class repeated mapping schema for PatientIdentifier rows.",
+    "notes": "Frontend has a flattened D.1.1.x input; backend stores the value through shared PatientIdentifier.identifier_value plus identifier_type_code."
+  }
+]

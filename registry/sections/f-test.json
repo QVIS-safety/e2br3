@@ -1,0 +1,290 @@
+[
+  {
+    "id": "F.r.1",
+    "e2br3_code": "F.r.1",
+    "label": "Test Date",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "test_date",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.test_date is annotated as F.r.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "testDate",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/tests.coordinator.test.ts",
+      "evidence": "Frontend tests coordinator asserts testResults row testDate readback."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "F.r.2.1",
+    "e2br3_code": "F.r.2.1",
+    "label": "Test Name",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "test_name",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.test_name is annotated as F.r.2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "testName",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/pathOwnership.test.ts",
+      "evidence": "Frontend path ownership tests route testResults[0].testName to test-results."
+    },
+    "action": "",
+    "notes": "Renamed from F.r.2 to match the ICH dictionary (F.r.2.1, test name free text)."
+  },
+  {
+    "id": "F.r.3.1",
+    "e2br3_code": "F.r.3.1",
+    "label": "Test Result Coded",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "test_result_code",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.test_result_code is annotated as F.r.3.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "testResultCode",
+      "file": "../frontend/E2BR3-frontend/lib/zod/sections/lb.ts",
+      "evidence": "Frontend LB schema tracks testResults[].testResultCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "F.r.3.2",
+    "e2br3_code": "F.r.3.2",
+    "label": "Test Result Value/Finding",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "test_result_value",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.test_result_value is annotated as F.r.3.2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "testResult",
+      "file": "../frontend/E2BR3-frontend/lib/validation/backendPathAliases.ts",
+      "evidence": "Frontend backend path aliases map testResultValue to testResult."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "F.r.3.3",
+    "e2br3_code": "F.r.3.3",
+    "label": "Test Result Unit",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "test_result_unit",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.test_result_unit is annotated as F.r.3.3."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "testUnit",
+      "file": "../frontend/E2BR3-frontend/lib/validation/backendPathAliases.ts",
+      "evidence": "Frontend backend path aliases map testResultUnit to testUnit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "F.r.2.2a",
+    "e2br3_code": "F.r.2.2a",
+    "label": "Test Name MedDRA Version",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "test_meddra_version",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.test_meddra_version stores F.r.2.1a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "testMeddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx",
+      "evidence": "SectionF binds fieldNumber F.r.2.2a to testResults[index].testMeddraVersion."
+    },
+    "action": "",
+    "notes": "Local UI labels the MedDRA test-name fields as F.r.2.2a/b while the backend model comments identify them as F.r.2.1. Renamed from F.r.2.1a to match the ICH dictionary; backend model comment still cites F.r.2.1."
+  },
+  {
+    "id": "F.r.2.2b",
+    "e2br3_code": "F.r.2.2b",
+    "label": "Test Name MedDRA Code",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "test_meddra_code",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.test_meddra_code stores F.r.2.1b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "testMeddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx",
+      "evidence": "SectionF binds fieldNumber F.r.2.2b to testResults[index].testMeddraCode."
+    },
+    "action": "",
+    "notes": "Local UI labels the MedDRA test-name fields as F.r.2.2a/b while the backend model comments identify them as F.r.2.1. Renamed from F.r.2.1b to match the ICH dictionary; backend model comment still cites F.r.2.1."
+  },
+  {
+    "id": "F.r.3.4",
+    "e2br3_code": "F.r.3.4",
+    "label": "Result Unstructured Data",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "result_unstructured",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.result_unstructured stores F.r.3.4 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "testResultUnstructured",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx",
+      "evidence": "SectionF binds fieldNumber F.r.3.4 to testResults[index].testResultUnstructured."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "F.r.4",
+    "e2br3_code": "F.r.4",
+    "label": "Normal Low Value",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "normal_low_value",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.normal_low_value stores F.r.4 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "lowRange",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx",
+      "evidence": "SectionF binds fieldNumber F.r.4 to testResults[index].lowRange."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "F.r.5",
+    "e2br3_code": "F.r.5",
+    "label": "Normal High Value",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "normal_high_value",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.normal_high_value stores F.r.5 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "highRange",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx",
+      "evidence": "SectionF binds fieldNumber F.r.5 to testResults[index].highRange."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "F.r.6",
+    "e2br3_code": "F.r.6",
+    "label": "Comments",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "comments",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.comments stores F.r.6 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "comments",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx",
+      "evidence": "SectionF binds fieldNumber F.r.6 to testResults[index].comments."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "F.r.7",
+    "e2br3_code": "F.r.7",
+    "label": "More Information Available",
+    "section": "F",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "TestResult",
+      "field": "more_info_available",
+      "file": "crates/libs/lib-core/src/model/test_result.rs",
+      "evidence": "TestResult.more_info_available stores F.r.7 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "testResults",
+      "field": "moreInformationAvailable",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx",
+      "evidence": "SectionF binds fieldNumber F.r.7 to testResults[index].moreInformationAvailable."
+    },
+    "action": "",
+    "notes": ""
+  }
+]

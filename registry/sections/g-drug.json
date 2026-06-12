@@ -1,0 +1,2828 @@
+[
+  {
+    "id": "G.k.1",
+    "e2br3_code": "G.k.1",
+    "label": "Drug Characterization",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "drug_characterization",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.drug_characterization is annotated as G.k.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugCharacterization",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG registers drugs.${index}.drugCharacterization."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.2",
+    "e2br3_code": "G.k.2.2",
+    "label": "Medicinal Product Name as Reported by Primary Source",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "medicinal_product",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.medicinal_product is annotated as G.k.2.2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "medicinalProduct",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG registers drugs.${index}.medicinalProduct."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.local.batchLotNumber",
+    "e2br3_code": "G.k.local.batchLotNumber",
+    "label": "Batch/Lot Number",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "batch_lot_number",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.batch_lot_number is annotated as G.k.3.4."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugBatchNumber",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/drugs.coordinator.test.ts",
+      "evidence": "Frontend input inventory extracts drugs.drugBatchNumber from the case-form section source."
+    },
+    "action": "",
+    "notes": "Drug-level batch/lot convenience field; the official per-dose element is G.k.4.r.7. Not an E2BR3 data element."
+  },
+  {
+    "id": "G.k.8",
+    "e2br3_code": "G.k.8",
+    "label": "Action Taken with Drug",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "action_taken",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.action_taken is annotated as G.k.7."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugActionTaken",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Frontend input inventory extracts drugs.drugActionTaken from the case-form section source."
+    },
+    "action": "",
+    "notes": "Renamed from G.k.7 to match the ICH dictionary (Action(s) Taken with Drug is G.k.8); backend model comment still cites G.k.7."
+  },
+  {
+    "id": "G.k.2.1.KR.1a",
+    "e2br3_code": "G.k.2.1.KR.1a",
+    "label": "Medicinal Product Version",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "mfds_mpid_version",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.mfds_mpid_version is the KR medicinal product version field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsMpidVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG registers drugs.${index}.mfdsMpidVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.1.KR.1b",
+    "e2br3_code": "G.k.2.1.KR.1b",
+    "label": "Medicinal Product ID",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "mfds_mpid",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.mfds_mpid is the KR medicinal product ID field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsMpid",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG registers drugs.${index}.mfdsMpid."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.3.r.1",
+    "e2br3_code": "G.k.2.3.r.1",
+    "label": "Substance Name",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugActiveSubstance",
+      "field": "substance_name",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugActiveSubstance.substance_name is annotated as G.k.2.3.r.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.activeSubstances",
+      "field": "substanceName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.3.r.1 to drugs[index].activeSubstances[subIndex].substanceName."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.3.r.2a",
+    "e2br3_code": "G.k.2.3.r.2a",
+    "label": "Substance TermID Version",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugActiveSubstance",
+      "field": "substance_termid_version",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugActiveSubstance.substance_termid_version stores G.k.2.3.r.2a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.activeSubstances",
+      "field": "substanceTermIdVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.3.r.2a to drugs[index].activeSubstances[subIndex].substanceTermIdVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.3.r.2b",
+    "e2br3_code": "G.k.2.3.r.2b",
+    "label": "Substance TermID",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugActiveSubstance",
+      "field": "substance_termid",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugActiveSubstance.substance_termid stores G.k.2.3.r.2b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.activeSubstances",
+      "field": "substanceTermId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.3.r.2b to drugs[index].activeSubstances[subIndex].substanceTermId."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.3.r.1.KR.1a",
+    "e2br3_code": "G.k.2.3.r.1.KR.1a",
+    "label": "Substance Version",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugActiveSubstance",
+      "field": "mfds_version",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugActiveSubstance.mfds_version stores the MFDS substance version field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.activeSubstances",
+      "field": "mfdsVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.3.r.1.KR.1a to drugs[index].activeSubstances[subIndex].mfdsVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.3.r.1.KR.1b",
+    "e2br3_code": "G.k.2.3.r.1.KR.1b",
+    "label": "Substance ID",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugActiveSubstance",
+      "field": "mfds_id",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugActiveSubstance.mfds_id stores the MFDS substance ID field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.activeSubstances",
+      "field": "mfdsId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.3.r.1.KR.1b to drugs[index].activeSubstances[subIndex].mfdsId."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.3.r.3a",
+    "e2br3_code": "G.k.2.3.r.3a",
+    "label": "Strength Value",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugActiveSubstance",
+      "field": "strength_value",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugActiveSubstance.strength_value stores G.k.2.3.r.3a strength values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.activeSubstances",
+      "field": "substanceStrengthValue",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.3.r.3a to drugs[index].activeSubstances[subIndex].substanceStrengthValue."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.3.r.3b",
+    "e2br3_code": "G.k.2.3.r.3b",
+    "label": "Strength Unit",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugActiveSubstance",
+      "field": "strength_unit",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugActiveSubstance.strength_unit stores G.k.2.3.r.3b strength units."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.activeSubstances",
+      "field": "substanceStrengthUnit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.3.r.3b to drugs[index].activeSubstances[subIndex].substanceStrengthUnit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.1a",
+    "e2br3_code": "G.k.4.r.1a",
+    "label": "Dose Value",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "dose_value",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.dose_value is annotated as G.k.4.r.1 dose value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "doseValue",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.1a to drugs[index].dosageInformation[doseIndex].doseValue."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.1b",
+    "e2br3_code": "G.k.4.r.1b",
+    "label": "Dose Unit",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "dose_unit",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.dose_unit is annotated as G.k.4.r.1 dose unit."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "doseUnit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.1b to drugs[index].dosageInformation[doseIndex].doseUnit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.2",
+    "e2br3_code": "G.k.4.r.2",
+    "label": "Number of Separate Dosages",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "number_of_units",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.number_of_units is annotated as G.k.4.r.2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "numberOfUnits",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.2 to drugs[index].dosageInformation[doseIndex].numberOfUnits."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.local.dosage.frequencyValue",
+    "e2br3_code": "G.k.local.dosage.frequencyValue",
+    "label": "Dose Frequency Value",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "frequency_value",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.frequency_value stores the numeric component paired with G.k.4.r.3."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "frequencyValue",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds drugs[index].dosageInformation[doseIndex].frequencyValue as a helper paired with G.k.4.r.3."
+    },
+    "action": "",
+    "notes": "Component row for the local split of G.k.4.r.3 frequency. Local frequency helper; the official frequency elements G.k.4.r.2 and G.k.4.r.3 are separately mapped."
+  },
+  {
+    "id": "G.k.4.r.3",
+    "e2br3_code": "G.k.4.r.3",
+    "label": "Dose Frequency Unit",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "frequency_unit",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.frequency_unit is annotated as G.k.4.r.3."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "frequencyUnit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.3 to drugs[index].dosageInformation[doseIndex].frequencyUnit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.4",
+    "e2br3_code": "G.k.4.r.4",
+    "label": "Date of Start of Drug",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "first_administration_date",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.first_administration_date is annotated as G.k.4.r.4."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "firstAdministrationDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.4 to drugs[index].dosageInformation[doseIndex].firstAdministrationDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.local.dosage.firstAdministrationTime",
+    "e2br3_code": "G.k.local.dosage.firstAdministrationTime",
+    "label": "Time of Start of Drug",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "first_administration_time",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.first_administration_time stores the time component for G.k.4.r.4."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.dosageInformation",
+      "field": "firstAdministrationTime",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG initializes firstAdministrationTime but does not render a direct input."
+    },
+    "action": "Add a visible first administration time input or intentionally suppress this component.",
+    "notes": "Component row for the local split of G.k.4.r.4 date/time. Time-of-day split of G.k.4.r.4 (date of start of drug), which is separately mapped."
+  },
+  {
+    "id": "G.k.4.r.5",
+    "e2br3_code": "G.k.4.r.5",
+    "label": "Date of Last Administration",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "last_administration_date",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.last_administration_date is annotated as G.k.4.r.5."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "lastAdministrationDate",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.5 to drugs[index].dosageInformation[doseIndex].lastAdministrationDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.local.dosage.lastAdministrationTime",
+    "e2br3_code": "G.k.local.dosage.lastAdministrationTime",
+    "label": "Time of Last Administration",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "last_administration_time",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.last_administration_time stores the time component for G.k.4.r.5."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.dosageInformation",
+      "field": "lastAdministrationTime",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG initializes lastAdministrationTime but does not render a direct input."
+    },
+    "action": "Add a visible last administration time input or intentionally suppress this component.",
+    "notes": "Component row for the local split of G.k.4.r.5 date/time. Time-of-day split of G.k.4.r.5 (date of last administration), which is separately mapped."
+  },
+  {
+    "id": "G.k.4.r.6a",
+    "e2br3_code": "G.k.4.r.6a",
+    "label": "Duration of Drug Administration Value",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "duration_value",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.duration_value is annotated as G.k.4.r.6."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "durationValue",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.6a to drugs[index].dosageInformation[doseIndex].durationValue."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.6b",
+    "e2br3_code": "G.k.4.r.6b",
+    "label": "Duration of Drug Administration Unit",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "duration_unit",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.duration_unit is annotated as G.k.4.r.6."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "durationUnit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.6b to drugs[index].dosageInformation[doseIndex].durationUnit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.local.dosage.continuing",
+    "e2br3_code": "G.k.local.dosage.continuing",
+    "label": "Continuing Administration",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "continuing",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.continuing stores the continuing administration helper value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "continuing",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds DG_CONT to drugs[index].dosageInformation[doseIndex].continuing."
+    },
+    "action": "",
+    "notes": "Component row for the local continuing helper paired with G.k.4.r.6 duration. Local continuing-administration flag; the official duration elements are G.k.4.r.6a/6b."
+  },
+  {
+    "id": "G.k.4.r.7",
+    "e2br3_code": "G.k.4.r.7",
+    "label": "Batch/Lot Number",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "batch_lot_number",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.batch_lot_number is annotated as G.k.4.r.7."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "batchNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.7 to drugs[index].dosageInformation[doseIndex].batchNumber."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.8",
+    "e2br3_code": "G.k.4.r.8",
+    "label": "Dosage Text",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "dosage_text",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.dosage_text is annotated as G.k.4.r.8."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "dosageText",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.8 to drugs[index].dosageInformation[doseIndex].dosageText."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.9.1",
+    "e2br3_code": "G.k.4.r.9.1",
+    "label": "Pharmaceutical Dose Form",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "dose_form",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.dose_form is annotated as G.k.4.r.9.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "doseForm",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.9.1 to drugs[index].dosageInformation[doseIndex].doseForm."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.9.2a",
+    "e2br3_code": "G.k.4.r.9.2a",
+    "label": "Pharmaceutical Dose Form TermID Version",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "dose_form_termid_version",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.dose_form_termid_version stores G.k.4.r.9.2a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "doseFormTermIdVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.9.2a to drugs[index].dosageInformation[doseIndex].doseFormTermIdVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.9.2b",
+    "e2br3_code": "G.k.4.r.9.2b",
+    "label": "Pharmaceutical Dose Form TermID",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "dose_form_termid",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.dose_form_termid stores G.k.4.r.9.2b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "doseFormTermId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.9.2b to drugs[index].dosageInformation[doseIndex].doseFormTermId."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.10.1",
+    "e2br3_code": "G.k.4.r.10.1",
+    "label": "Route of Administration",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "route_of_administration",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.route_of_administration is annotated as G.k.4.r.10."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "routeOfAdministration",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.10.1 to drugs[index].dosageInformation[doseIndex].routeOfAdministration."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.10.2a",
+    "e2br3_code": "G.k.4.r.10.2a",
+    "label": "Route of Administration TermID Version",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "route_termid_version",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.route_termid_version stores G.k.4.r.10.2a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "routeTermIdVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.10.2a to drugs[index].dosageInformation[doseIndex].routeTermIdVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.10.2b",
+    "e2br3_code": "G.k.4.r.10.2b",
+    "label": "Route of Administration TermID",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "route_termid",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.route_termid stores G.k.4.r.10.2b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "routeTermId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.10.2b to drugs[index].dosageInformation[doseIndex].routeTermId."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.11.1",
+    "e2br3_code": "G.k.4.r.11.1",
+    "label": "Parent Route of Administration",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "parent_route",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.parent_route is annotated as G.k.4.r.11."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "parentRouteOfAdministration",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.11.1 to drugs[index].dosageInformation[doseIndex].parentRouteOfAdministration."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.11.2a",
+    "e2br3_code": "G.k.4.r.11.2a",
+    "label": "Parent Route of Administration TermID Version",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "parent_route_termid_version",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.parent_route_termid_version stores G.k.4.r.11.2a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "parentRouteTermIdVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.11.2a to drugs[index].dosageInformation[doseIndex].parentRouteTermIdVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.4.r.11.2b",
+    "e2br3_code": "G.k.4.r.11.2b",
+    "label": "Parent Route of Administration TermID",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DosageInformation",
+      "field": "parent_route_termid",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DosageInformation.parent_route_termid stores G.k.4.r.11.2b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.dosageInformation",
+      "field": "parentRouteTermId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.4.r.11.2b to drugs[index].dosageInformation[doseIndex].parentRouteTermId."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.7.r.1",
+    "e2br3_code": "G.k.7.r.1",
+    "label": "Indication as Reported by the Primary Source",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugIndication",
+      "field": "indication_text",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugIndication.indication_text is annotated as G.k.6.r.1 in the model and rendered locally as G.k.7.r.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.indications",
+      "field": "indicationText",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.7.r.1 to drugs[index].indications[indicationIndex].indicationText."
+    },
+    "action": "",
+    "notes": "Local model comments use G.k.6.r while SectionG labels the indication subsection as G.k.7.r."
+  },
+  {
+    "id": "G.k.7.r.2a",
+    "e2br3_code": "G.k.7.r.2a",
+    "label": "Indication MedDRA Version",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugIndication",
+      "field": "indication_meddra_version",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugIndication.indication_meddra_version stores indication MedDRA version values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.indications",
+      "field": "indicationMeddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.7.r.2a to drugs[index].indications[indicationIndex].indicationMeddraVersion."
+    },
+    "action": "",
+    "notes": "Local model comments use G.k.6.r while SectionG labels the indication subsection as G.k.7.r."
+  },
+  {
+    "id": "G.k.7.r.2b",
+    "e2br3_code": "G.k.7.r.2b",
+    "label": "Indication MedDRA Code",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugIndication",
+      "field": "indication_meddra_code",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugIndication.indication_meddra_code stores indication MedDRA code values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.indications",
+      "field": "indicationMeddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.7.r.2b to drugs[index].indications[indicationIndex].indicationMeddraCode."
+    },
+    "action": "",
+    "notes": "Local model comments use G.k.6.r while SectionG labels the indication subsection as G.k.7.r."
+  },
+  {
+    "id": "FDA.G.k.local.deviceCharacteristic.code",
+    "e2br3_code": "FDA.G.k.local.deviceCharacteristic.code",
+    "label": "Device Characteristic Code",
+    "section": "G",
+    "authority": "FDA",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugDeviceCharacteristic",
+      "field": "code",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugDeviceCharacteristic.code stores the characteristic code for FDA Scenario 7 device rows."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.deviceCharacteristics",
+      "field": "code",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/drug-assessments.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add case-form inputs for device characteristic rows or keep these as backend/API-only derived rows.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract drugs.deviceCharacteristics.* inputs from SectionG. Generic device-characteristic structure; the official FDA device elements are mapped as FDA.G.k.12.r.* rows."
+  },
+  {
+    "id": "FDA.G.k.local.deviceCharacteristic.codeSystem",
+    "e2br3_code": "FDA.G.k.local.deviceCharacteristic.codeSystem",
+    "label": "Device Characteristic Code System",
+    "section": "G",
+    "authority": "FDA",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugDeviceCharacteristic",
+      "field": "code_system",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugDeviceCharacteristic.code_system stores the characteristic code system for FDA Scenario 7 device rows."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.deviceCharacteristics",
+      "field": "codeSystem",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/drug-assessments.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add case-form inputs for device characteristic rows or keep these as backend/API-only derived rows.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract drugs.deviceCharacteristics.* inputs from SectionG. Generic device-characteristic structure; the official FDA device elements are mapped as FDA.G.k.12.r.* rows."
+  },
+  {
+    "id": "FDA.G.k.local.deviceCharacteristic.codeDisplayName",
+    "e2br3_code": "FDA.G.k.local.deviceCharacteristic.codeDisplayName",
+    "label": "Device Characteristic Code Display Name",
+    "section": "G",
+    "authority": "FDA",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugDeviceCharacteristic",
+      "field": "code_display_name",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugDeviceCharacteristic.code_display_name stores the characteristic display name for FDA Scenario 7 device rows."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.deviceCharacteristics",
+      "field": "codeDisplayName",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/drug-assessments.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add case-form inputs for device characteristic rows or keep these as backend/API-only derived rows.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract drugs.deviceCharacteristics.* inputs from SectionG. Generic device-characteristic structure; the official FDA device elements are mapped as FDA.G.k.12.r.* rows."
+  },
+  {
+    "id": "FDA.G.k.local.deviceCharacteristic.valueType",
+    "e2br3_code": "FDA.G.k.local.deviceCharacteristic.valueType",
+    "label": "Device Characteristic Value Type",
+    "section": "G",
+    "authority": "FDA",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugDeviceCharacteristic",
+      "field": "value_type",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugDeviceCharacteristic.value_type stores the characteristic value type for FDA Scenario 7 device rows."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.deviceCharacteristics",
+      "field": "valueType",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/drug-assessments.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add case-form inputs for device characteristic rows or keep these as backend/API-only derived rows.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract drugs.deviceCharacteristics.* inputs from SectionG. Generic device-characteristic structure; the official FDA device elements are mapped as FDA.G.k.12.r.* rows."
+  },
+  {
+    "id": "FDA.G.k.local.deviceCharacteristic.valueValue",
+    "e2br3_code": "FDA.G.k.local.deviceCharacteristic.valueValue",
+    "label": "Device Characteristic Text Value",
+    "section": "G",
+    "authority": "FDA",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugDeviceCharacteristic",
+      "field": "value_value",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugDeviceCharacteristic.value_value stores the text value for FDA Scenario 7 device rows."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.deviceCharacteristics",
+      "field": "valueValue",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/drug-assessments.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add case-form inputs for device characteristic rows or keep these as backend/API-only derived rows.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract drugs.deviceCharacteristics.* inputs from SectionG. Generic device-characteristic structure; the official FDA device elements are mapped as FDA.G.k.12.r.* rows."
+  },
+  {
+    "id": "FDA.G.k.local.deviceCharacteristic.valueCode",
+    "e2br3_code": "FDA.G.k.local.deviceCharacteristic.valueCode",
+    "label": "Device Characteristic Value Code",
+    "section": "G",
+    "authority": "FDA",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugDeviceCharacteristic",
+      "field": "value_code",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugDeviceCharacteristic.value_code stores the coded value for FDA Scenario 7 device rows."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.deviceCharacteristics",
+      "field": "valueCode",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/drug-assessments.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add case-form inputs for device characteristic rows or keep these as backend/API-only derived rows.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract drugs.deviceCharacteristics.* inputs from SectionG. Generic device-characteristic structure; the official FDA device elements are mapped as FDA.G.k.12.r.* rows."
+  },
+  {
+    "id": "FDA.G.k.local.deviceCharacteristic.valueCodeSystem",
+    "e2br3_code": "FDA.G.k.local.deviceCharacteristic.valueCodeSystem",
+    "label": "Device Characteristic Value Code System",
+    "section": "G",
+    "authority": "FDA",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugDeviceCharacteristic",
+      "field": "value_code_system",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugDeviceCharacteristic.value_code_system stores the coded value system for FDA Scenario 7 device rows."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.deviceCharacteristics",
+      "field": "valueCodeSystem",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/drug-assessments.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add case-form inputs for device characteristic rows or keep these as backend/API-only derived rows.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract drugs.deviceCharacteristics.* inputs from SectionG. Generic device-characteristic structure; the official FDA device elements are mapped as FDA.G.k.12.r.* rows."
+  },
+  {
+    "id": "FDA.G.k.local.deviceCharacteristic.valueDisplayName",
+    "e2br3_code": "FDA.G.k.local.deviceCharacteristic.valueDisplayName",
+    "label": "Device Characteristic Value Display Name",
+    "section": "G",
+    "authority": "FDA",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugDeviceCharacteristic",
+      "field": "value_display_name",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugDeviceCharacteristic.value_display_name stores the coded value display name for FDA Scenario 7 device rows."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.deviceCharacteristics",
+      "field": "valueDisplayName",
+      "file": "../frontend/E2BR3-frontend/lib/api/endpoints/cases/subresources/drug-assessments.ts",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+    },
+    "action": "Add case-form inputs for device characteristic rows or keep these as backend/API-only derived rows.",
+    "notes": "Backend inventory is covered, but strict frontend inventory does not extract drugs.deviceCharacteristics.* inputs from SectionG. Generic device-characteristic structure; the official FDA device elements are mapped as FDA.G.k.12.r.* rows."
+  },
+  {
+    "id": "G.k.2.1.1a",
+    "e2br3_code": "G.k.2.1.1a",
+    "label": "MPID Version Date / Number",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "mpid_version",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.mpid_version stores G.k.2.1.1a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mpidVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.1.1a to drugs[index].mpidVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.1.1b",
+    "e2br3_code": "G.k.2.1.1b",
+    "label": "Medicinal Product Identifier",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "mpid",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.mpid stores G.k.2.1.1b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mpid",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.1.1b to drugs[index].mpid."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.1.2a",
+    "e2br3_code": "G.k.2.1.2a",
+    "label": "PhPID Version Date / Number",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "phpid_version",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.phpid_version stores G.k.2.1.2a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "phpidVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.1.2a to drugs[index].phpidVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.1.2b",
+    "e2br3_code": "G.k.2.1.2b",
+    "label": "Pharmaceutical Product Identifier",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "phpid",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.phpid stores G.k.2.1.2b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "phpid",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.1.2b to drugs[index].phpid."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.4",
+    "e2br3_code": "G.k.2.4",
+    "label": "Country Where the Drug Was Obtained",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "obtain_drug_country",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.obtain_drug_country stores the country where the drug was obtained."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "obtainDrugCountry",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.4 to drugs[index].obtainDrugCountry."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.2.5",
+    "e2br3_code": "G.k.2.5",
+    "label": "Investigational Product Blinded",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "investigational_product_blinded",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.investigational_product_blinded is annotated as G.k.2.5."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "investigationalProductBlinded",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.2.5 to drugs[index].investigationalProductBlinded."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.local.supplemental.brandName",
+    "e2br3_code": "G.k.local.supplemental.brandName",
+    "label": "Supplemental Brand Name",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "brand_name",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.brand_name stores the local supplemental brand-name field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugBrandName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds drugs[index].drugBrandName as a supplemental product detail."
+    },
+    "action": "",
+    "notes": "Local helper row; SectionG tooltip says this is not the canonical E2B G.k.2.4 field. Supplemental local field; official product naming is G.k.2.2 / G.k.2.3.r."
+  },
+  {
+    "id": "G.k.local.supplemental.genericName",
+    "e2br3_code": "G.k.local.supplemental.genericName",
+    "label": "Supplemental Generic Name",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "drug_generic_name",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.drug_generic_name stores the local supplemental generic-name field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugGenericName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds drugs[index].drugGenericName as a supplemental product detail."
+    },
+    "action": "",
+    "notes": "Local helper row; SectionG tooltip says this is not the canonical E2B G.k.2.5 field. Supplemental local field; official product naming is G.k.2.2 / G.k.2.3.r."
+  },
+  {
+    "id": "G.k.3.1",
+    "e2br3_code": "G.k.3.1",
+    "label": "Authorisation / Application Number",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "drug_authorization_number",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.drug_authorization_number stores G.k.3.1 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugAuthorizationNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.3.1 to drugs[index].drugAuthorizationNumber."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.3.2",
+    "e2br3_code": "G.k.3.2",
+    "label": "Country of Authorisation / Application",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "manufacturer_country",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.manufacturer_country stores local G.k.3.2 country of authorisation values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugAuthorizationCountry",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.3.2 to drugs[index].drugAuthorizationCountry."
+    },
+    "action": "",
+    "notes": "Backend field name is manufacturer_country, but frontend labels it country of authorisation/application."
+  },
+  {
+    "id": "G.k.3.3",
+    "e2br3_code": "G.k.3.3",
+    "label": "Name of Holder / Applicant",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "manufacturer_name",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.manufacturer_name stores local G.k.3.3 holder/applicant values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugAuthorizationHolder",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.3.3 to drugs[index].drugAuthorizationHolder."
+    },
+    "action": "",
+    "notes": "Backend field name is manufacturer_name, but frontend labels it holder/applicant."
+  },
+  {
+    "id": "G.k.5a",
+    "e2br3_code": "G.k.5a",
+    "label": "Cumulative Dose to First Reaction Value",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "cumulative_dose_first_reaction_value",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.cumulative_dose_first_reaction_value stores G.k.5a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "cumulativeDoseValue",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds drugs[index].cumulativeDoseValue for ICH.G.k.5a validation."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.5b",
+    "e2br3_code": "G.k.5b",
+    "label": "Cumulative Dose to First Reaction Unit",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "cumulative_dose_first_reaction_unit",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.cumulative_dose_first_reaction_unit stores G.k.5b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "cumulativeDoseUnit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds drugs[index].cumulativeDoseUnit for ICH.G.k.5b validation."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.6a",
+    "e2br3_code": "G.k.6a",
+    "label": "Gestation Period at Time of Exposure Value",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "gestation_period_exposure_value",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.gestation_period_exposure_value stores G.k.6a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "gestationPeriodExposureValue",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds drugs[index].gestationPeriodExposureValue for ICH.G.k.6a validation."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.6b",
+    "e2br3_code": "G.k.6b",
+    "label": "Gestation Period at Time of Exposure Unit",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "gestation_period_exposure_unit",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.gestation_period_exposure_unit stores G.k.6b values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "gestationPeriodExposureUnit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds drugs[index].gestationPeriodExposureUnit for ICH.G.k.6b validation."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.local.supplemental.dosageText",
+    "e2br3_code": "G.k.local.supplemental.dosageText",
+    "label": "Supplemental Drug Dosage Text",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "dosage_text",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.dosage_text stores the local app-level dosage text helper."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugDosageText",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds drugs[index].drugDosageText as a supplemental field."
+    },
+    "action": "",
+    "notes": "Structured dosage is captured under G.k.4.r DosageInformation rows. Supplemental local field; official dosage text is G.k.4.r.8."
+  },
+  {
+    "id": "G.k.local.rechallenge",
+    "e2br3_code": "G.k.local.rechallenge",
+    "label": "Drug Rechallenge / Readministration",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "rechallenge",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.rechallenge stores G.k.8 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugRechallengeAction",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.8 to drugs[index].drugRechallengeAction."
+    },
+    "action": "",
+    "notes": "Drug-level rechallenge convenience field; the official G.k.8 is Action Taken with Drug. Not an E2BR3 data element."
+  },
+  {
+    "id": "G.k.local.parentRoute",
+    "e2br3_code": "G.k.local.parentRoute",
+    "label": "Top-level Parent Route",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "parent_route",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.parent_route stores the top-level parent route field."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs",
+      "field": "parentRoute",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG renders dosage-level parent route fields but no direct top-level drugs[index].parentRoute input."
+    },
+    "action": "Add a top-level parentRoute input or intentionally remove/suppress this backend field.",
+    "notes": "Do not confuse with DosageInformation.parent_route, which is mapped under G.k.4.r.11.1. Drug-level convenience copy; the official parent route elements G.k.4.r.11.* are mapped on the dosage."
+  },
+  {
+    "id": "G.k.local.parentRouteTermId",
+    "e2br3_code": "G.k.local.parentRouteTermId",
+    "label": "Top-level Parent Route TermID",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "parent_route_termid",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.parent_route_termid stores the top-level parent route TermID field."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs",
+      "field": "parentRouteTermId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG renders dosage-level parent route TermID fields but no direct top-level drugs[index].parentRouteTermId input."
+    },
+    "action": "Add a top-level parentRouteTermId input or intentionally remove/suppress this backend field.",
+    "notes": "Do not confuse with DosageInformation.parent_route_termid, which is mapped under G.k.4.r.11.2b. Drug-level convenience copy; the official parent route elements G.k.4.r.11.* are mapped on the dosage."
+  },
+  {
+    "id": "G.k.local.parentRouteTermIdVersion",
+    "e2br3_code": "G.k.local.parentRouteTermIdVersion",
+    "label": "Top-level Parent Route TermID Version",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "parent_route_termid_version",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.parent_route_termid_version stores the top-level parent route TermID version field."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs",
+      "field": "parentRouteTermIdVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG renders dosage-level parent route TermID version fields but no direct top-level drugs[index].parentRouteTermIdVersion input."
+    },
+    "action": "Add a top-level parentRouteTermIdVersion input or intentionally remove/suppress this backend field.",
+    "notes": "Do not confuse with DosageInformation.parent_route_termid_version, which is mapped under G.k.4.r.11.2a. Drug-level convenience copy; the official parent route elements G.k.4.r.11.* are mapped on the dosage."
+  },
+  {
+    "id": "G.k.11",
+    "e2br3_code": "G.k.11",
+    "label": "Additional Information on Drug",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "drug_additional_information",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.drug_additional_information stores G.k.11 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugAdditionalInformation",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.11 to drugs[index].drugAdditionalInformation."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.local.parentDosageText",
+    "e2br3_code": "G.k.local.parentDosageText",
+    "label": "Parent Dosage Text",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "parent_dosage_text",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.parent_dosage_text stores top-level parent dosage text."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs",
+      "field": "parentDosageText",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG does not render a direct top-level drugs[index].parentDosageText input."
+    },
+    "action": "Add a top-level parentDosageText input or intentionally remove/suppress this backend field.",
+    "notes": "Local parent dosage text; no ICH element exists for parent dosage narrative (official G.k.11 is separately mapped)."
+  },
+  {
+    "id": "FDA.G.k.10a",
+    "e2br3_code": "FDA.G.k.10a",
+    "label": "Additional Information on Drug FDA Coded",
+    "section": "G",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "fda_additional_info_coded",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_additional_info_coded stores FDA.G.k.10a values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaAdditionalInfoCoded",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber FDA.G.k.10a to drugs[index].fdaAdditionalInfoCoded."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "FDA.G.k.10.1",
+    "e2br3_code": "FDA.G.k.10.1",
+    "label": "FDA Specialized Product Category",
+    "section": "G",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "fda_specialized_product_category",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_specialized_product_category stores FDA.G.k.10.1 values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaSpecializedProductCategory",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber FDA.G.k.10.1 to drugs[index].fdaSpecializedProductCategory."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "FDA.G.k.local.additionalInfoCodesJson",
+    "e2br3_code": "FDA.G.k.local.additionalInfoCodesJson",
+    "label": "Additional Information on Drug Code List",
+    "section": "G",
+    "authority": "FDA",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "drug_additional_info_codes_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.drug_additional_info_codes_json stores repeatable additional information codes."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugAdditionalInformationCodes",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG renders RepeatableFdaCodeList with fieldNumber G.k.10.r bound to drugs[index].drugAdditionalInformationCodes."
+    },
+    "action": "",
+    "notes": "Backend JSON carrier; the official element FDA.G.k.10a is separately mapped."
+  },
+  {
+    "id": "FDA.G.k.local.deviceInfoJson",
+    "e2br3_code": "FDA.G.k.local.deviceInfoJson",
+    "label": "FDA Device Information JSON",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json stores structured FDA device information."
+    },
+    "frontend": {
+      "status": "conflict",
+      "section": "drugs",
+      "field": "fdaDeviceInfo",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Frontend source exposes nested input controls, not a single aggregate input for this backend JSON carrier."
+    },
+    "action": "Keep the backend JSON carrier mapped here and map each concrete nested frontend input in separate conflict rows.",
+    "notes": "The backend has one FDA JSON carrier, while the frontend exposes many nested fdaDeviceInfo controls. Backend JSON carrier column, not an FDA data element; the concrete device elements are mapped as FDA.G.k.12.r.* rows."
+  },
+  {
+    "id": "G.k.local.recurrence.rechallengeAction",
+    "e2br3_code": "G.k.local.recurrence.rechallengeAction",
+    "label": "Structured Recurrence Rechallenge Action",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugRecurrenceInformation",
+      "field": "rechallenge_action",
+      "file": "crates/libs/lib-core/src/model/drug_recurrence.rs",
+      "evidence": "DrugRecurrenceInformation.rechallenge_action is annotated as G.k.8.r.1."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.recurrences",
+      "field": "rechallengeAction",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG renders the top-level G.k.8 drugRechallengeAction but no separate recurrence-table rechallengeAction input."
+    },
+    "action": "Clarify whether recurrence-table rechallengeAction should be separately editable or derived from G.k.8.",
+    "notes": "Local structured recurrence block; not an E2BR3 data element. Confirmed against the FDA regional dictionary (v1, 2026-06): FDA defines no repeatable rechallenge/recurrence equivalent either, so this entire G.k.local.recurrence.* block is local by design."
+  },
+  {
+    "id": "G.k.local.recurrence.meddraVersion",
+    "e2br3_code": "G.k.local.recurrence.meddraVersion",
+    "label": "Reaction Recurred MedDRA Version",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugRecurrenceInformation",
+      "field": "reaction_meddra_version",
+      "file": "crates/libs/lib-core/src/model/drug_recurrence.rs",
+      "evidence": "DrugRecurrenceInformation.reaction_meddra_version is annotated as G.k.8.r.2a."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.recurrences",
+      "field": "reactionMeddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG does not render a direct recurrence reactionMeddraVersion input."
+    },
+    "action": "Add a recurrence MedDRA version input or intentionally suppress this backend field.",
+    "notes": "Local structured recurrence block; not an E2BR3 data element."
+  },
+  {
+    "id": "G.k.local.recurrence.meddraCode",
+    "e2br3_code": "G.k.local.recurrence.meddraCode",
+    "label": "Reaction Recurred MedDRA Code",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugRecurrenceInformation",
+      "field": "reaction_meddra_code",
+      "file": "crates/libs/lib-core/src/model/drug_recurrence.rs",
+      "evidence": "DrugRecurrenceInformation.reaction_meddra_code is annotated as G.k.8.r.2b."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.recurrences",
+      "field": "reactionMeddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG does not render a direct recurrence reactionMeddraCode input."
+    },
+    "action": "Add a recurrence MedDRA code input or intentionally suppress this backend field.",
+    "notes": "Local structured recurrence block; not an E2BR3 data element."
+  },
+  {
+    "id": "G.k.local.recurrence.reactionRecurred",
+    "e2br3_code": "G.k.local.recurrence.reactionRecurred",
+    "label": "Did Reaction Recur on Readministration",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugRecurrenceInformation",
+      "field": "reaction_recurred",
+      "file": "crates/libs/lib-core/src/model/drug_recurrence.rs",
+      "evidence": "DrugRecurrenceInformation.reaction_recurred is annotated as G.k.8.r.3."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugRecurrence",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.8.r to drugs[index].drugRecurrence."
+    },
+    "action": "",
+    "notes": "Local drug-level recurrence flag; the official per drug-reaction element is G.k.9.i.4. Not an E2BR3 data element."
+  },
+  {
+    "id": "G.k.9.i.3.1a",
+    "e2br3_code": "G.k.9.i.3.1a",
+    "label": "Interval from Start of Administration to Reaction Value",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugReactionAssessment",
+      "field": "administration_start_interval_value",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "DrugReactionAssessment.administration_start_interval_value is annotated as G.k.9.i.3.1a."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.drugReactionAssessments",
+      "field": "administrationStartIntervalValue",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.9.i.3.1a to drugReactionAssessments[assessIndex].administrationStartIntervalValue."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.9.i.3.1b",
+    "e2br3_code": "G.k.9.i.3.1b",
+    "label": "Interval from Start of Administration to Reaction Unit",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugReactionAssessment",
+      "field": "administration_start_interval_unit",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "DrugReactionAssessment.administration_start_interval_unit is annotated as G.k.9.i.3.1b."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.drugReactionAssessments",
+      "field": "administrationStartIntervalUnit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.9.i.3.1b to drugReactionAssessments[assessIndex].administrationStartIntervalUnit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.9.i.3.2a",
+    "e2br3_code": "G.k.9.i.3.2a",
+    "label": "Interval from Last Dose to Reaction Value",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugReactionAssessment",
+      "field": "last_dose_interval_value",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "DrugReactionAssessment.last_dose_interval_value is annotated as G.k.9.i.3.2a."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.drugReactionAssessments",
+      "field": "lastDoseIntervalValue",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.9.i.3.2a to drugReactionAssessments[assessIndex].lastDoseIntervalValue."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.9.i.3.2b",
+    "e2br3_code": "G.k.9.i.3.2b",
+    "label": "Interval from Last Dose to Reaction Unit",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugReactionAssessment",
+      "field": "last_dose_interval_unit",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "DrugReactionAssessment.last_dose_interval_unit is annotated as G.k.9.i.3.2b."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.drugReactionAssessments",
+      "field": "lastDoseIntervalUnit",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.9.i.3.2b to drugReactionAssessments[assessIndex].lastDoseIntervalUnit."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.local.assessmentRecurrence.action",
+    "e2br3_code": "G.k.local.assessmentRecurrence.action",
+    "label": "Reaction Recurred on Readministration Action",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugReactionAssessment",
+      "field": "recurrence_action",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "DrugReactionAssessment.recurrence_action is annotated as G.k.9.i.4.r.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.drugReactionAssessments",
+      "field": "recurrenceAction",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.9.i.4 to drugReactionAssessments[assessIndex].recurrenceAction."
+    },
+    "action": "",
+    "notes": "Local assessment-level recurrence detail; not an E2BR3 data element."
+  },
+  {
+    "id": "G.k.local.assessmentRecurrence.meddraVersion",
+    "e2br3_code": "G.k.local.assessmentRecurrence.meddraVersion",
+    "label": "Assessment Recurrence MedDRA Version",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugReactionAssessment",
+      "field": "recurrence_meddra_version",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "DrugReactionAssessment.recurrence_meddra_version is annotated as G.k.9.i.4.r.2a."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.drugReactionAssessments",
+      "field": "recurrenceMeddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG does not render a direct recurrenceMeddraVersion input."
+    },
+    "action": "Add recurrence MedDRA version input to G.k.9 assessment UI or intentionally suppress this backend field.",
+    "notes": "Local assessment-level recurrence detail; not an E2BR3 data element."
+  },
+  {
+    "id": "G.k.local.assessmentRecurrence.meddraCode",
+    "e2br3_code": "G.k.local.assessmentRecurrence.meddraCode",
+    "label": "Assessment Recurrence MedDRA Code",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "DrugReactionAssessment",
+      "field": "recurrence_meddra_code",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "DrugReactionAssessment.recurrence_meddra_code is annotated as G.k.9.i.4.r.2b."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.drugReactionAssessments",
+      "field": "recurrenceMeddraCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG does not render a direct recurrenceMeddraCode input."
+    },
+    "action": "Add recurrence MedDRA code input to G.k.9 assessment UI or intentionally suppress this backend field.",
+    "notes": "Local assessment-level recurrence detail; not an E2BR3 data element."
+  },
+  {
+    "id": "G.k.9.i.4",
+    "e2br3_code": "G.k.9.i.4",
+    "label": "Assessment Reaction Recurred",
+    "section": "G",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "backend": {
+      "status": "mapped",
+      "model": "DrugReactionAssessment",
+      "field": "reaction_recurred",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "DrugReactionAssessment.reaction_recurred is annotated as G.k.9.i.4.r.3."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.drugReactionAssessments",
+      "field": "reactionRecurred",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG does not render a direct drugReactionAssessments[assessIndex].reactionRecurred input."
+    },
+    "action": "Clarify whether G.k.9 assessment reactionRecurred should be separate from recurrenceAction.",
+    "notes": "Renamed from G.k.9.i.4.r.3 to match the ICH dictionary (Did Reaction Recur on Re-administration)."
+  },
+  {
+    "id": "G.k.9.i.2.r.1",
+    "e2br3_code": "G.k.9.i.2.r.1",
+    "label": "Source of Assessment",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "RelatednessAssessment",
+      "field": "source_of_assessment",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "RelatednessAssessment.source_of_assessment is annotated as G.k.9.i.2.r.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.drugReactionAssessments",
+      "field": "sourceOfAssessment",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.9.i.2.r.1 to drugReactionAssessments[assessIndex].sourceOfAssessment."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.9.i.2.r.2",
+    "e2br3_code": "G.k.9.i.2.r.2",
+    "label": "Method of Assessment",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "RelatednessAssessment",
+      "field": "method_of_assessment",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "RelatednessAssessment.method_of_assessment is annotated as G.k.9.i.2.r.2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.drugReactionAssessments",
+      "field": "methodOfAssessment",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.9.i.2.r.2 to drugReactionAssessments[assessIndex].methodOfAssessment."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.9.i.2.r.3",
+    "e2br3_code": "G.k.9.i.2.r.3",
+    "label": "Result of Assessment",
+    "section": "G",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "RelatednessAssessment",
+      "field": "result_of_assessment",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "RelatednessAssessment.result_of_assessment is annotated as G.k.9.i.2.r.3."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs.drugReactionAssessments",
+      "field": "resultOfAssessment",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG binds fieldNumber G.k.9.i.2.r.3 to drugReactionAssessments[assessIndex].resultOfAssessment."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "G.k.9.i.2.r.3.KR.2",
+    "e2br3_code": "G.k.9.i.2.r.3.KR.2",
+    "label": "Additional KR Assessment Result Text",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "frontend_missing",
+    "backend": {
+      "status": "mapped",
+      "model": "RelatednessAssessment",
+      "field": "result_of_assessment_kr2",
+      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+      "evidence": "RelatednessAssessment.result_of_assessment_kr2 is annotated as MFDS.G.k.9.i.2.r.3.KR.2."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "drugs.drugReactionAssessments",
+      "field": "resultOfAssessmentKr2",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG does not render a direct resultOfAssessmentKr2 input."
+    },
+    "action": "Add the MFDS KR2 assessment result field or intentionally suppress this backend field.",
+    "notes": ""
+  },
+  {
+    "id": "FDA.G.k.12.r.5",
+    "e2br3_code": "FDA.G.k.12.r.5",
+    "label": "FDA Device Info CommonDeviceName",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.commonDeviceName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.commonDeviceName from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was commonDeviceName in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.4",
+    "e2br3_code": "FDA.G.k.12.r.4",
+    "label": "FDA Device Info DeviceBrandName",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.deviceBrandName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.deviceBrandName from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was deviceBrandName in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.9",
+    "e2br3_code": "FDA.G.k.12.r.9",
+    "label": "FDA Device Info DeviceLotNumber",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.deviceLotNumber",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.deviceLotNumber from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was deviceLotNumber in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.3.r",
+    "e2br3_code": "FDA.G.k.12.r.3.r",
+    "label": "FDA Device Info DeviceProblemCodes",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.deviceProblemCodes",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.deviceProblemCodes from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was deviceProblemCodes in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.6",
+    "e2br3_code": "FDA.G.k.12.r.6",
+    "label": "FDA Device Info DeviceProductCode",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.deviceProductCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.deviceProductCode from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was deviceProductCode in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.8",
+    "e2br3_code": "FDA.G.k.12.r.8",
+    "label": "FDA Device Info DeviceUsage",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.deviceUsage",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.deviceUsage from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was deviceUsage in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.2.r",
+    "e2br3_code": "FDA.G.k.12.r.2.r",
+    "label": "FDA Device Info FollowUpTypes",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.followUpTypes",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.followUpTypes from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was followUpTypes in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.1",
+    "e2br3_code": "FDA.G.k.12.r.1",
+    "label": "FDA Device Info Malfunction",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.malfunction",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.malfunction from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was malfunction in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.7.1b",
+    "e2br3_code": "FDA.G.k.12.r.7.1b",
+    "label": "FDA Device Info ManufacturerAddress",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.manufacturerAddress",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.manufacturerAddress from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was manufacturerAddress in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.7.1c",
+    "e2br3_code": "FDA.G.k.12.r.7.1c",
+    "label": "FDA Device Info ManufacturerCity",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.manufacturerCity",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.manufacturerCity from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was manufacturerCity in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.7.1e",
+    "e2br3_code": "FDA.G.k.12.r.7.1e",
+    "label": "FDA Device Info ManufacturerCountry",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.manufacturerCountry",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.manufacturerCountry from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was manufacturerCountry in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.7.1a",
+    "e2br3_code": "FDA.G.k.12.r.7.1a",
+    "label": "FDA Device Info ManufacturerName",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.manufacturerName",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.manufacturerName from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was manufacturerName in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.7.1d",
+    "e2br3_code": "FDA.G.k.12.r.7.1d",
+    "label": "FDA Device Info ManufacturerState",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.manufacturerState",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.manufacturerState from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was manufacturerState in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.10",
+    "e2br3_code": "FDA.G.k.12.r.10",
+    "label": "FDA Device Info OperatorOfDevice",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.operatorOfDevice",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.operatorOfDevice from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was operatorOfDevice in the JSON carrier)."
+  },
+  {
+    "id": "FDA.G.k.12.r.11.r",
+    "e2br3_code": "FDA.G.k.12.r.11.r",
+    "label": "FDA Device Info RemedialActions",
+    "section": "G",
+    "authority": "FDA",
+    "status": "conflict",
+    "backend": {
+      "status": "conflict",
+      "model": "DrugInformation",
+      "field": "fda_device_info_json",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_device_info_json is a single JSON carrier for multiple nested FDA device frontend inputs."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaDeviceInfo.remedialActions",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.fdaDeviceInfo.remedialActions from the case-form section source."
+    },
+    "action": "Keep this as an explicit JSON-carrier conflict until the backend exposes first-class BMC fields or the registry supports nested JSON schemas.",
+    "notes": "Frontend field is real, but it does not have a 1-1 backend BMC field because the backend stores the object in fda_device_info_json. Renamed to the official FDA regional device element; backend still stores this in the DrugInformation.fda_device_info_json carrier, hence the conflict status. (was remedialActions in the JSON carrier)."
+  },
+  {
+    "id": "G.k.KR.local.deviceInfo.causeInvestigationAssessments",
+    "e2br3_code": "G.k.KR.local.deviceInfo.causeInvestigationAssessments",
+    "label": "MFDS Device Info CauseInvestigationAssessments",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "DrugInformation",
+      "evidence": "No public DrugInformation BMC field currently maps frontend input drugs.mfdsDeviceInfo.causeInvestigationAssessments.",
+      "field": "mfds_device_info_causeInvestigationAssessments"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsDeviceInfo.causeInvestigationAssessments",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.causeInvestigationAssessments from the case-form section source."
+    },
+    "action": "Add a backend BMC field or JSON carrier for MFDS device information, then replace this backend_missing row with the concrete mapping.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
+  },
+  {
+    "id": "G.k.KR.local.deviceInfo.causeInvestigationConclusions",
+    "e2br3_code": "G.k.KR.local.deviceInfo.causeInvestigationConclusions",
+    "label": "MFDS Device Info CauseInvestigationConclusions",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "DrugInformation",
+      "evidence": "No public DrugInformation BMC field currently maps frontend input drugs.mfdsDeviceInfo.causeInvestigationConclusions.",
+      "field": "mfds_device_info_causeInvestigationConclusions"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsDeviceInfo.causeInvestigationConclusions",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.causeInvestigationConclusions from the case-form section source."
+    },
+    "action": "Add a backend BMC field or JSON carrier for MFDS device information, then replace this backend_missing row with the concrete mapping.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
+  },
+  {
+    "id": "G.k.KR.local.deviceInfo.causeInvestigationTypes",
+    "e2br3_code": "G.k.KR.local.deviceInfo.causeInvestigationTypes",
+    "label": "MFDS Device Info CauseInvestigationTypes",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "DrugInformation",
+      "evidence": "No public DrugInformation BMC field currently maps frontend input drugs.mfdsDeviceInfo.causeInvestigationTypes.",
+      "field": "mfds_device_info_causeInvestigationTypes"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsDeviceInfo.causeInvestigationTypes",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.causeInvestigationTypes from the case-form section source."
+    },
+    "action": "Add a backend BMC field or JSON carrier for MFDS device information, then replace this backend_missing row with the concrete mapping.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
+  },
+  {
+    "id": "G.k.KR.local.deviceInfo.componentCodes",
+    "e2br3_code": "G.k.KR.local.deviceInfo.componentCodes",
+    "label": "MFDS Device Info ComponentCodes",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "DrugInformation",
+      "evidence": "No public DrugInformation BMC field currently maps frontend input drugs.mfdsDeviceInfo.componentCodes.",
+      "field": "mfds_device_info_componentCodes"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsDeviceInfo.componentCodes",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.componentCodes from the case-form section source."
+    },
+    "action": "Add a backend BMC field or JSON carrier for MFDS device information, then replace this backend_missing row with the concrete mapping.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
+  },
+  {
+    "id": "G.k.KR.local.deviceInfo.healthImpactClinicalSigns",
+    "e2br3_code": "G.k.KR.local.deviceInfo.healthImpactClinicalSigns",
+    "label": "MFDS Device Info HealthImpactClinicalSigns",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "DrugInformation",
+      "evidence": "No public DrugInformation BMC field currently maps frontend input drugs.mfdsDeviceInfo.healthImpactClinicalSigns.",
+      "field": "mfds_device_info_healthImpactClinicalSigns"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsDeviceInfo.healthImpactClinicalSigns",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.healthImpactClinicalSigns from the case-form section source."
+    },
+    "action": "Add a backend BMC field or JSON carrier for MFDS device information, then replace this backend_missing row with the concrete mapping.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
+  },
+  {
+    "id": "G.k.KR.local.deviceInfo.healthImpactOutcomes",
+    "e2br3_code": "G.k.KR.local.deviceInfo.healthImpactOutcomes",
+    "label": "MFDS Device Info HealthImpactOutcomes",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "DrugInformation",
+      "evidence": "No public DrugInformation BMC field currently maps frontend input drugs.mfdsDeviceInfo.healthImpactOutcomes.",
+      "field": "mfds_device_info_healthImpactOutcomes"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsDeviceInfo.healthImpactOutcomes",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.healthImpactOutcomes from the case-form section source."
+    },
+    "action": "Add a backend BMC field or JSON carrier for MFDS device information, then replace this backend_missing row with the concrete mapping.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
+  },
+  {
+    "id": "G.k.KR.local.deviceInfo.implantDates",
+    "e2br3_code": "G.k.KR.local.deviceInfo.implantDates",
+    "label": "MFDS Device Info ImplantDates",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "DrugInformation",
+      "evidence": "No public DrugInformation BMC field currently maps frontend input drugs.mfdsDeviceInfo.implantDates.",
+      "field": "mfds_device_info_implantDates"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsDeviceInfo.implantDates",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.implantDates from the case-form section source."
+    },
+    "action": "Add a backend BMC field or JSON carrier for MFDS device information, then replace this backend_missing row with the concrete mapping.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
+  },
+  {
+    "id": "G.k.KR.local.deviceInfo.models",
+    "e2br3_code": "G.k.KR.local.deviceInfo.models",
+    "label": "MFDS Device Info Models",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "DrugInformation",
+      "evidence": "No public DrugInformation BMC field currently maps frontend input drugs.mfdsDeviceInfo.models.",
+      "field": "mfds_device_info_models"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsDeviceInfo.models",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.models from the case-form section source."
+    },
+    "action": "Add a backend BMC field or JSON carrier for MFDS device information, then replace this backend_missing row with the concrete mapping.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
+  },
+  {
+    "id": "G.k.KR.local.deviceInfo.problemCodes",
+    "e2br3_code": "G.k.KR.local.deviceInfo.problemCodes",
+    "label": "MFDS Device Info ProblemCodes",
+    "section": "G",
+    "authority": "MFDS",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "model": "DrugInformation",
+      "evidence": "No public DrugInformation BMC field currently maps frontend input drugs.mfdsDeviceInfo.problemCodes.",
+      "field": "mfds_device_info_problemCodes"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "mfdsDeviceInfo.problemCodes",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.mfdsDeviceInfo.problemCodes from the case-form section source."
+    },
+    "action": "Add a backend BMC field or JSON carrier for MFDS device information, then replace this backend_missing row with the concrete mapping.",
+    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Pending the official MFDS medical-device guideline; expected to receive an official KR device code when that source is imported."
+  },
+  {
+    "id": "G.k.local.drugAssessmentNotApplicable",
+    "e2br3_code": "G.k.local.drugAssessmentNotApplicable",
+    "label": "Drug Assessment Not Applicable UI Flag",
+    "section": "G",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "local_only": true,
+    "backend": {
+      "status": "not_applicable",
+      "evidence": "drugAssessmentNotApplicable is a frontend workflow/control field, not an E2BR3 BMC business field in the tracked backend inventory."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugAssessmentNotApplicable",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.drugAssessmentNotApplicable from the case-form section source."
+    },
+    "action": "",
+    "notes": "Classified explicitly so frontend inventory remains exhaustive without forcing a false backend BMC mapping. UI/technical control only; intentionally not an E2BR3 data element."
+  },
+  {
+    "id": "G.k.local.drugReactionAssessmentReactionId",
+    "e2br3_code": "G.k.local.drugReactionAssessmentReactionId",
+    "label": "Drug Reaction Assessment Reaction Selector",
+    "section": "G",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "local_only": true,
+    "backend": {
+      "status": "not_applicable",
+      "evidence": "drugReactionAssessments.reactionId is a frontend workflow/control field, not an E2BR3 BMC business field in the tracked backend inventory."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "drugReactionAssessments.reactionId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.drugReactionAssessments.reactionId from the case-form section source."
+    },
+    "action": "",
+    "notes": "Classified explicitly so frontend inventory remains exhaustive without forcing a false backend BMC mapping. UI/technical control only; intentionally not an E2BR3 data element."
+  },
+  {
+    "id": "G.k.local.sourceProductPresaveId",
+    "e2br3_code": "G.k.local.sourceProductPresaveId",
+    "label": "Source Product Presave Identifier",
+    "section": "G",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "local_only": true,
+    "backend": {
+      "status": "not_applicable",
+      "evidence": "sourceProductPresaveId is a frontend workflow/control field, not an E2BR3 BMC business field in the tracked backend inventory."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "drugs",
+      "field": "sourceProductPresaveId",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "Strict frontend input inventory extracts drugs.sourceProductPresaveId from the case-form section source."
+    },
+    "action": "",
+    "notes": "Classified explicitly so frontend inventory remains exhaustive without forcing a false backend BMC mapping. UI/technical control only; intentionally not an E2BR3 data element."
+  },
+  {
+    "id": "FDA.G.k.1.a",
+    "e2br3_code": "FDA.G.k.1.a",
+    "label": "FDA Other Characterisation of Drug Role",
+    "section": "G",
+    "authority": "FDA",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "missing",
+      "evidence": "No BMC field maps FDA.G.k.1.a; gap recorded from the FDA dictionary import (2026-06)."
+    },
+    "frontend": {
+      "status": "missing",
+      "evidence": "No case-form input maps FDA.G.k.1.a."
+    },
+    "action": "Decide whether to implement FDA.G.k.1.a (conditional-required for the FDA post-market profile when G.k.1 reports an Other characterisation).",
+    "notes": "Official FDA regional element (profiles.post_market = conditional_mandatory). Neither backend nor frontend implements it; the strict dictionary check only enforces mandatory elements, so this row records the gap explicitly."
+  }
+]

@@ -1,0 +1,220 @@
+[
+  {
+    "id": "H.1",
+    "e2br3_code": "H.1",
+    "label": "Case Narrative Including Clinical Course",
+    "section": "H",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "NarrativeInformation",
+      "field": "case_narrative",
+      "file": "crates/libs/lib-core/src/model/narrative.rs",
+      "evidence": "NarrativeInformation.case_narrative is annotated as H.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "narrative",
+      "field": "caseNarrative",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/pathOwnership.test.ts",
+      "evidence": "Frontend path ownership tests route narrative.caseNarrative to narrative."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "H.2",
+    "e2br3_code": "H.2",
+    "label": "Reporter's Comments",
+    "section": "H",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "NarrativeInformation",
+      "field": "reporter_comments",
+      "file": "crates/libs/lib-core/src/model/narrative.rs",
+      "evidence": "NarrativeInformation.reporter_comments is annotated as H.2."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "narrative",
+      "field": "reporterComments",
+      "file": "../frontend/E2BR3-frontend/components/presave/NarrativeForm.tsx",
+      "evidence": "NarrativeForm registers reporterComments and labels it H.2."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "H.3.r.1a",
+    "e2br3_code": "H.3.r.1a",
+    "label": "Sender's Diagnosis MedDRA Version",
+    "section": "H",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderDiagnosis",
+      "field": "diagnosis_meddra_version",
+      "file": "crates/libs/lib-core/src/model/narrative.rs",
+      "evidence": "SenderDiagnosis.diagnosis_meddra_version stores H.3.r.1a MedDRA version values."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "narrative.senderDiagnoses",
+      "field": "diagnosisMeddraVersion",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionH.tsx",
+      "evidence": "SectionH binds fieldNumber H.3.r.1a to narrative.senderDiagnoses[index].diagnosisMeddraVersion."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "H.3.r.1b",
+    "e2br3_code": "H.3.r.1b",
+    "label": "Sender's Diagnosis MedDRA Code",
+    "section": "H",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderDiagnosis",
+      "field": "diagnosis_meddra_code",
+      "file": "crates/libs/lib-core/src/model/narrative.rs",
+      "evidence": "SenderDiagnosis.diagnosis_meddra_code is annotated as H.3.r.1."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "narrative.senderDiagnoses",
+      "field": "diagnosisMeddraCode",
+      "file": "../frontend/E2BR3-frontend/components/presave/NarrativeForm.tsx",
+      "evidence": "NarrativeForm registers senderDiagnoses.${index}.diagnosisMeddraCode."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "H.4",
+    "e2br3_code": "H.4",
+    "label": "Sender's Comments",
+    "section": "H",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "NarrativeInformation",
+      "field": "sender_comments",
+      "file": "crates/libs/lib-core/src/model/narrative.rs",
+      "evidence": "NarrativeInformation.sender_comments is annotated as H.4."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "narrative",
+      "field": "senderComments",
+      "file": "../frontend/E2BR3-frontend/components/presave/NarrativeForm.tsx",
+      "evidence": "NarrativeForm registers senderComments and labels it H.4."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "H.additionalInformation",
+    "e2br3_code": "H.additionalInformation",
+    "label": "Additional Information",
+    "section": "H",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "NarrativeInformation",
+      "field": "additional_information",
+      "file": "crates/libs/lib-core/src/model/narrative.rs",
+      "evidence": "NarrativeInformation.additional_information stores additional narrative information."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "narrative",
+      "field": "additionalInformation",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionH.tsx",
+      "evidence": "SectionH imports and binds narrative.additionalInformation."
+    },
+    "action": "",
+    "notes": "Local model exposes this as additional narrative information rather than a numbered H field comment."
+  },
+  {
+    "id": "H.5.r.local.summaryType",
+    "e2br3_code": "H.5.r.local.summaryType",
+    "label": "Case Summary Type",
+    "section": "H",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "CaseSummaryInformation",
+      "field": "summary_type",
+      "file": "crates/libs/lib-core/src/model/narrative.rs",
+      "evidence": "CaseSummaryInformation.summary_type is annotated as H.5.r.1 case summary type."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "caseSummaryInformation",
+      "field": "summaryType",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionH.tsx",
+      "evidence": "SectionH renders case summary text and language fields but no summaryType input."
+    },
+    "action": "Add or intentionally suppress the case summary type field in the H section UI.",
+    "notes": "Frontend DTO/save plumbing contains summaryType, but the case section does not expose a direct input. Local discriminator for the repeatable H.5.r case summary block; not an E2BR3 data element."
+  },
+  {
+    "id": "H.5.r.1b",
+    "e2br3_code": "H.5.r.1b",
+    "label": "Case Summary Language",
+    "section": "H",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "CaseSummaryInformation",
+      "field": "language_code",
+      "file": "crates/libs/lib-core/src/model/narrative.rs",
+      "evidence": "CaseSummaryInformation.language_code is annotated as H.5.r.2 case summary language."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "caseSummaryInformation",
+      "field": "languageCode",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionH.tsx",
+      "evidence": "SectionH binds fieldNumber H.5.r.1b to caseSummaryInformation[index].languageCode."
+    },
+    "action": "",
+    "notes": "Local UI labels this field H.5.r.1b while the backend model comment identifies language_code as H.5.r.2. Renamed from H.5.r.2 to match the ICH dictionary (case summary language is H.5.r.1b); backend model comment still cites H.5.r.2."
+  },
+  {
+    "id": "H.5.r.1a",
+    "e2br3_code": "H.5.r.1a",
+    "label": "Case Summary Text",
+    "section": "H",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "CaseSummaryInformation",
+      "field": "summary_text",
+      "file": "crates/libs/lib-core/src/model/narrative.rs",
+      "evidence": "CaseSummaryInformation.summary_text is annotated as H.5.r.3."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "caseSummaryInformation",
+      "field": "summaryText",
+      "file": "../frontend/E2BR3-frontend/components/presave/NarrativeForm.tsx",
+      "evidence": "Frontend input inventory extracts caseSummaryInformation.summaryText from the case-form section source."
+    },
+    "action": "",
+    "notes": "Renamed from H.5.r.3 to match the ICH dictionary (case summary text is H.5.r.1a)."
+  }
+]

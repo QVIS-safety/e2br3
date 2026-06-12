@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "E2BR3 Field Dictionary File",
+  "type": "object",
+  "required": ["authority", "source", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "authority": {
+      "type": "string",
+      "enum": ["ICH", "FDA", "MFDS"]
+    },
+    "source": { "type": "string", "minLength": 1 },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "conformance": {
+      "type": "string",
+      "enum": ["mandatory", "conditional_mandatory", "optional", "required"]
+    },
+    "entry": {
+      "type": "object",
+      "required": ["code", "name", "section", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "name_kr": { "type": "string" },
+        "section": {
+          "type": "string",
+          "enum": ["N", "C", "D", "E", "F", "G", "H"]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["element", "group"]
+        },
+        "conformance": {
+          "type": "string",
+          "enum": ["mandatory", "conditional_mandatory", "optional", "required"]
+        },
+        "data_type": { "type": "string" },
+        "max_length": { "type": "string" },
+        "allowed_values": { "type": "string" },
+        "null_flavors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["NI", "MSK", "UNK", "NA", "ASKU", "NASK", "NINF", "PINF", "OTH"]
+          }
+        },
+        "oid": { "type": "string" },
+        "hl7_data_type": { "type": "string" },
+        "hl7_component": { "type": "string" },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "post_market": { "$ref": "#/$defs/conformance" },
+            "pre_market": { "$ref": "#/$defs/conformance" },
+            "vaers": { "$ref": "#/$defs/conformance" },
+            "mfds": { "$ref": "#/$defs/conformance" }
+          }
+        },
+        "xpath": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "if": { "properties": { "kind": { "const": "element" } } },
+      "then": { "required": ["code", "name", "section", "kind", "conformance"] }
+    }
+  }
+}

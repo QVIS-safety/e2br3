@@ -1,0 +1,12 @@
+{
+  "sections": [
+    "sections/n-message-header.json",
+    "sections/c-safety-report.json",
+    "sections/d-patient.json",
+    "sections/e-reaction.json",
+    "sections/f-test.json",
+    "sections/g-drug.json",
+    "sections/h-narrative.json"
+  ]
+}
+

@@ -1,0 +1,218 @@
+[
+  {
+    "id": "N.1.1",
+    "e2br3_code": "N.1.1",
+    "label": "Message Type",
+    "section": "N",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MessageHeader",
+      "field": "message_type",
+      "file": "crates/libs/lib-core/src/model/message_header.rs",
+      "evidence": "MessageHeader.message_type stores the message type value exported to /hl7:MCCI_IN200100UV01/hl7:name/@displayName."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "messageHeader",
+      "field": "messageType",
+      "file": "../frontend/E2BR3-frontend/lib/schemas/e2br3.ts",
+      "evidence": "Frontend E2BR3 schema defines messageHeader.messageType."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "N.1.2",
+    "e2br3_code": "N.1.2",
+    "label": "Batch Number",
+    "section": "N",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MessageHeader",
+      "field": "batch_number",
+      "file": "crates/libs/lib-core/src/model/message_header.rs",
+      "evidence": "MessageHeader.batch_number stores the batch number."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "messageHeader",
+      "field": "batchNumber",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/caseIdentification.coordinator.test.ts",
+      "evidence": "Frontend case identification coordinator tests write messageHeader.batchNumber."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "N.1.3",
+    "e2br3_code": "N.1.3",
+    "label": "Batch Sender Identifier",
+    "section": "N",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MessageHeader",
+      "field": "batch_sender_identifier",
+      "file": "crates/libs/lib-core/src/model/message_header.rs",
+      "evidence": "MessageHeader.batch_sender_identifier stores the batch sender identifier."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "messageHeader",
+      "field": "batchSenderIdentifier",
+      "file": "../frontend/E2BR3-frontend/node-tests/validation.matrix.full-parity.test.ts",
+      "evidence": "Frontend parity tests normalize messageHeader.batchSenderIdentifier."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "N.1.4",
+    "e2br3_code": "N.1.4",
+    "label": "Batch Receiver Identifier",
+    "section": "N",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MessageHeader",
+      "field": "batch_receiver_identifier",
+      "file": "crates/libs/lib-core/src/model/message_header.rs",
+      "evidence": "MessageHeader.batch_receiver_identifier stores the batch receiver identifier."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "messageHeader",
+      "field": "batchReceiverIdentifier",
+      "file": "../frontend/E2BR3-frontend/node-tests/validation.matrix.full-parity.test.ts",
+      "evidence": "Frontend parity tests normalize messageHeader.batchReceiverIdentifier."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "N.1.5",
+    "e2br3_code": "N.1.5",
+    "label": "Date of Batch Transmission",
+    "section": "N",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MessageHeader",
+      "field": "batch_transmission_date",
+      "file": "crates/libs/lib-core/src/model/message_header.rs",
+      "evidence": "MessageHeader.batch_transmission_date stores the batch transmission date."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "messageHeader",
+      "field": "batchTransmissionDate",
+      "file": "../frontend/E2BR3-frontend/node-tests/validation.matrix.full-parity.test.ts",
+      "evidence": "Frontend parity tests normalize messageHeader.batchTransmissionDate."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "N.2.r.1",
+    "e2br3_code": "N.2.r.1",
+    "label": "Message Identifier",
+    "section": "N",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MessageHeader",
+      "field": "message_number",
+      "file": "crates/libs/lib-core/src/model/message_header.rs",
+      "evidence": "MessageHeader.message_number stores the message identifier."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "messageHeader",
+      "field": "messageNumber",
+      "file": "../frontend/E2BR3-frontend/__tests__/case-save/pathOwnership.test.ts",
+      "evidence": "Frontend path ownership tests route messageHeader.messageNumber to message-header."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "N.2.r.2",
+    "e2br3_code": "N.2.r.2",
+    "label": "Message Sender Identifier",
+    "section": "N",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MessageHeader",
+      "field": "message_sender_identifier",
+      "file": "crates/libs/lib-core/src/model/message_header.rs",
+      "evidence": "MessageHeader.message_sender_identifier stores N.2.r.2; validation/case/sections/n.rs validates ICH.N.2.r.2.REQUIRED against this field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "messageHeader",
+      "field": "messageSenderIdentifier",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/pages/CI/save.ts",
+      "evidence": "Frontend case-identification save maps messageHeader.messageSenderIdentifier to the message header payload."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "N.2.r.3",
+    "e2br3_code": "N.2.r.3",
+    "label": "Message Receiver Identifier",
+    "section": "N",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MessageHeader",
+      "field": "message_receiver_identifier",
+      "file": "crates/libs/lib-core/src/model/message_header.rs",
+      "evidence": "MessageHeader.message_receiver_identifier stores N.2.r.3; validation/case/sections/n.rs validates ICH.N.2.r.3.REQUIRED against this field."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "messageHeader",
+      "field": "messageReceiverIdentifier",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/pages/CI/save.ts",
+      "evidence": "Frontend case-identification save maps messageHeader.messageReceiverIdentifier to the message header payload."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "N.2.r.4",
+    "e2br3_code": "N.2.r.4",
+    "label": "Date of Message Creation",
+    "section": "N",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "MessageHeader",
+      "field": "message_date",
+      "file": "crates/libs/lib-core/src/model/message_header.rs",
+      "evidence": "MessageHeader.message_date stores the message creation date exported to /hl7:MCCI_IN200100UV01/hl7:PORR_IN049016UV/hl7:creationTime/@value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "messageHeader",
+      "field": "messageDate",
+      "file": "../frontend/E2BR3-frontend/lib/case-save/pages/CI/save.ts",
+      "evidence": "Frontend case-identification save maps messageHeader.messageDate to the message header payload."
+    },
+    "action": "",
+    "notes": ""
+  }
+]

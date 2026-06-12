@@ -1,0 +1,447 @@
+{
+  "authority": "FDA",
+  "source": "sources/fda-core-regional-data-elements-v1.csv",
+  "entries": [
+    {
+      "code": "FDA.C.1.7.1",
+      "name": "Local Criteria Report Type",
+      "section": "C",
+      "kind": "element",
+      "conformance": "mandatory",
+      "data_type": "AN",
+      "max_length": "1",
+      "allowed_values": "<Observation><code>= C54588.  \n1=15-Day\n2=Non-Expedited AE\n4=5-Day \n5=30-Day\n6=7-Day",
+      "oid": "2.16.840.1.113883.3.26.1.1\n2.16.840.1.113883.3.989.5.1.2.2.1.1.1",
+      "hl7_data_type": "Coded With Equivalents (CE)",
+      "hl7_component": "code=Character String (ST)",
+      "profiles": {
+        "post_market": "mandatory",
+        "pre_market": "mandatory",
+        "vaers": "mandatory"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ'][investigationCharacteristic/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/investigationCharacteristic[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.1']/@code"
+    },
+    {
+      "code": "FDA.C.1.12",
+      "name": "Combination Product Report Indicator",
+      "section": "C",
+      "kind": "element",
+      "conformance": "mandatory",
+      "allowed_values": "<Observation><code>= C156384.  \nfalse, true, nullFlavor:NI",
+      "hl7_data_type": "Boolean (BL)",
+      "profiles": {
+        "post_market": "mandatory",
+        "pre_market": "mandatory",
+        "vaers": "mandatory"
+      },
+      "null_flavors": [
+        "NI"
+      ],
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ'][investigationCharacteristic/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.3']][1]/investigationCharacteristic[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL']/@value"
+    },
+    {
+      "code": "FDA.C.2.r.2.8",
+      "name": "Reporter's Email",
+      "section": "C",
+      "kind": "element",
+      "conformance": "mandatory",
+      "max_length": "100",
+      "allowed_values": "Free Text \nnullFlavor: MSK, ASKU, NASK",
+      "oid": "2.16.840.1.113883.3.989.2.1.1.22",
+      "hl7_data_type": "Telecommunication Address (TEL)",
+      "profiles": {
+        "post_market": "mandatory",
+        "pre_market": "mandatory",
+        "vaers": "mandatory"
+      },
+      "null_flavors": [
+        "MSK",
+        "ASKU",
+        "NASK"
+      ],
+      "xpath": "substring(/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/telecom[starts-with(@value,'mailto:')]/@value, 8)"
+    },
+    {
+      "code": "FDA.C.5.5a",
+      "name": "IND Number where AE Occurred",
+      "section": "C",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "max_length": "10",
+      "hl7_data_type": "Instance Identifier (II)",
+      "hl7_component": "extension=Character String (ST)",
+      "profiles": {
+        "pre_market": "conditional_mandatory"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][1]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/ id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.1']/@extension"
+    },
+    {
+      "code": "FDA.C.5.5b",
+      "name": "Pre-ANDA Number where AE Occurred",
+      "section": "C",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "max_length": "10",
+      "hl7_data_type": "Instance Identifier (II)",
+      "hl7_component": "extension=Character String (ST)",
+      "profiles": {
+        "pre_market": "conditional_mandatory"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][1]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/ id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.2']/@extension"
+    },
+    {
+      "code": "FDA.C.5.6.r",
+      "name": "IND number of cross reported IND",
+      "section": "C",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "max_length": "10",
+      "hl7_data_type": "Instance Identifier (II)",
+      "hl7_component": "extension=Character String (ST)",
+      "profiles": {
+        "pre_market": "conditional_mandatory"
+      },
+      "null_flavors": [
+        "NA"
+      ],
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][1]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/ id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.3']/@extension"
+    },
+    {
+      "code": "FDA.D.11.r.1",
+      "name": "Patient Race Code",
+      "section": "D",
+      "kind": "element",
+      "conformance": "mandatory",
+      "max_length": "10",
+      "allowed_values": "<Observation><code>= C17049.  \nC16352=African American\nC41259=American Indian or Alaska Native\nC41260=Asian\nC41219=Native Hawaiian or Other Pacific Islander\nC41261=White\nnullFlavor: UNK, MSK, OTH, NA",
+      "oid": "2.16.840.1.113883.3.26.1.1",
+      "hl7_data_type": "Coded With Equivalents (CE)",
+      "hl7_component": "code=Character String (ST)",
+      "profiles": {
+        "post_market": "mandatory",
+        "pre_market": "mandatory",
+        "vaers": "conditional_mandatory"
+      },
+      "null_flavors": [
+        "MSK",
+        "UNK",
+        "NA",
+        "OTH"
+      ],
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/raceCode[@codeSystem='2.16.840.1.113883.3.26.1.1'][r]/@code"
+    },
+    {
+      "code": "FDA.D.12",
+      "name": "Patient Ethnicity Code",
+      "section": "D",
+      "kind": "element",
+      "conformance": "mandatory",
+      "max_length": "10",
+      "allowed_values": "<Observation><code>= C16564.  \nC17459=Hispanic or Latino   \nC41222=Non Hispanic or Latino \nnullFlavor: UNK, MSK, NI, NA",
+      "oid": "2.16.840.1.113883.3.26.1.1",
+      "hl7_data_type": "Coded With Equivalents (CE)",
+      "hl7_component": "code=Character String (ST)",
+      "profiles": {
+        "post_market": "mandatory",
+        "pre_market": "mandatory",
+        "vaers": "conditional_mandatory"
+      },
+      "null_flavors": [
+        "NI",
+        "MSK",
+        "UNK",
+        "NA"
+      ],
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation/code[@code='C16564'][@codeSystem='2.16.840.1.113883.3.26.1.1']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.26.1.1'][1]/@code"
+    },
+    {
+      "code": "FDA.E.i.3.2h",
+      "name": "Required Intervention",
+      "section": "E",
+      "kind": "element",
+      "conformance": "mandatory",
+      "allowed_values": "true, nullFlavor: NI",
+      "oid": "2.16.840.1.113883.3.989.2.1.1.19\n2.16.840.1.113883.3.989.5.1.2.2.1.3",
+      "profiles": {
+        "post_market": "mandatory",
+        "pre_market": "mandatory"
+      },
+      "null_flavors": [
+        "NI"
+      ],
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='726'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.32.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value"
+    },
+    {
+      "code": "FDA.G.k.1.a",
+      "name": "FDA Other Characterisation of Drug Role",
+      "section": "G",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "max_length": "1",
+      "allowed_values": "1=Similar Device",
+      "oid": "2.16.840.1.113883.3.989.5.1.2.1.1.8",
+      "profiles": {
+        "post_market": "conditional_mandatory"
+      }
+    },
+    {
+      "code": "FDA.G.k.10a",
+      "name": "FDA Additional Information on Drug (coded)",
+      "section": "G",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "max_length": "2",
+      "allowed_values": "1=Test\n2=Reference\n3=Bulk ingredient\n4=Bulk Ingredient For Human Prescription Compounding\n5=Unapproved Drug Product Manufactured Exclusively for Private Label Distributer\nnullFlavor: NA",
+      "oid": "2.16.840.1.113883.3.989.5.1.2.1.1.7",
+      "profiles": {
+        "post_market": "optional",
+        "pre_market": "conditional_mandatory"
+      },
+      "null_flavors": [
+        "NA"
+      ]
+    },
+    {
+      "code": "FDA.G.k.10.1",
+      "name": "FDA Specialized Product Category",
+      "section": "G",
+      "kind": "element",
+      "conformance": "optional",
+      "max_length": "10",
+      "allowed_values": "<Observation><code>= C94031\nC102834=Type 1: Convenience Kit of Co-Package \nC102835=Type 2: Prefilled Drug Delivery Device/System (syringe, patch, etc.) \nC102836=Type 3: Prefilled Biologic Delivery Device/System (syringe, patch, etc.) \nC102837=Type 4: Device Coated/Impregnated/Otherwise Combined with Drug \nC102838=Type 5: Device Coated or Otherwise Combined with Biologic \nC102839=Type 6: Drug/Biologic Combination \nC102840=Type 7: Separate Products Requiring Cross Labeling \nC102841=Type 8: Possible Combination Based on Cross Labeling of Separate Products (Temporary Type) \nC102842=Type 9: Other Type of Part 3 Combination Product (e.g., Drug/Device/Biological Product)",
+      "oid": "2.16.840.1.113883.3.26.1.1",
+      "profiles": {
+        "post_market": "optional",
+        "vaers": "optional"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/\ncomponent[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/\nsubjectOf2[@typeCode='SBJ'][organizer[organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/\ncomponent[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode=’CSM’]/\ninstanceOfKind[@classCode=’INST’]/kindOfProduct[@classCode=’MMAT’][@determinerCode=’KIND’]/asManufacturedProduct[@classCode=’MANU’]/subjectOf[@typeCode=’SBJ’]/characteristic[@classCode=’OBS’][@moodCode=’EVN’][code[@code=C94031’][@codeSystem=’2.16.840.1.113883.3.26.1.1’]/value[@codeSystem=’2.16.840.1.113883.3.26.1.1’]/@code"
+    },
+    {
+      "code": "FDA.G.k.12.r.1",
+      "name": "Malfunction",
+      "section": "G",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "allowed_values": "<Observation><code>= C54026.  \ntrue, false",
+      "oid": "2.16.840.1.113883.3.26.1.1",
+      "profiles": {
+        "post_market": "conditional_mandatory",
+        "vaers": "conditional_mandatory"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[r]/partProduct/asManufacturedProduct[classCode=\"MANU\"]/subjectOf[typeCode=\"SBJ\"][characteristic/code[@code='9C54026'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.2']/characteristic[classCode=\"OBS\"][moodCode=\"EVN\"]/value[@xsi:type=\"BL\"/@value"
+    },
+    {
+      "code": "FDA.G.k.12.r.2.r",
+      "name": "If follow-up, what type?",
+      "section": "G",
+      "kind": "element",
+      "conformance": "optional",
+      "max_length": "1",
+      "allowed_values": "<Observation><code>= C54592. \n1=Correction\n2=Additional Informaton\n3=Response to FDA Request\n4= Device Evaluation",
+      "oid": "2.16.840.1.113883.3.26.1.1\n2.16.840.1.113883.3.989.5.1.2.1.1.5",
+      "profiles": {
+        "post_market": "optional",
+        "vaers": "optional"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode='PART'][r]/deviceOf[observation/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][r]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.5']/@code"
+    },
+    {
+      "code": "FDA.G.k.12.r.3.r",
+      "name": "Device Problem Code",
+      "section": "G",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "max_length": "7",
+      "allowed_values": "<Observation><code>= C54451.  \nFDA Device Problem Codelist\n(https://www.fda.gov/media/146825/download)",
+      "oid": "2.16.840.1.113883.3.26.1.1",
+      "profiles": {
+        "post_market": "conditional_mandatory",
+        "vaers": "conditional_mandatory"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[r]/partProduct/asManufacturedProduct[classCode=\"MANU\"]/subjectOf[typeCode=\"SBJ\"][characteristic/code[@code='C54451'][@codeSystem='2.16.840.1.113883.3.26.1.1']]/characteristic[@classCode=\"OBS\"][@moodCode=\"EVN\"]/value[@xsi:type=\"CE\"]/@code"
+    },
+    {
+      "code": "FDA.G.k.12.r.4",
+      "name": "Device Brand Name",
+      "section": "G",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "max_length": "80",
+      "allowed_values": "Free Text\nnullFlavor: NI",
+      "oid": "2.16.840.1.113883.3.26.1.1",
+      "profiles": {
+        "post_market": "conditional_mandatory",
+        "vaers": "conditional_mandatory"
+      },
+      "null_flavors": [
+        "NI"
+      ],
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/name/text()"
+    },
+    {
+      "code": "FDA.G.k.12.r.5",
+      "name": "Common Device Name",
+      "section": "G",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "max_length": "80",
+      "allowed_values": "Free Text\nnullFlavor: NI",
+      "oid": "2.16.840.1.113883.3.26.1.1",
+      "profiles": {
+        "post_market": "conditional_mandatory",
+        "vaers": "conditional_mandatory"
+      },
+      "null_flavors": [
+        "NI"
+      ],
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/code[@codeSystem=\"2.16.840.1.113883.3.26.1.1\"]/@displayName"
+    },
+    {
+      "code": "FDA.G.k.12.r.6",
+      "name": "Device Product Code",
+      "section": "G",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "max_length": "10",
+      "allowed_values": "FDA Device Component Code\n(https://www.fda.gov/media/146826/download)",
+      "oid": "2.16.840.1.113883.3.26.1.1",
+      "profiles": {
+        "post_market": "conditional_mandatory",
+        "vaers": "conditional_mandatory"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/code[@codeSystem=\"2.16.840.1.113883.3.989.5.1.2.2.1.2.4\"]/@code"
+    },
+    {
+      "code": "FDA.G.k.12.r.7",
+      "name": "Device Manufacturer",
+      "section": "G",
+      "kind": "group"
+    },
+    {
+      "code": "FDA.G.k.12.r.7.1a",
+      "name": "Device Manufacturer Name",
+      "section": "G",
+      "kind": "element",
+      "conformance": "optional",
+      "max_length": "100",
+      "allowed_values": "Free Text",
+      "profiles": {
+        "post_market": "optional",
+        "vaers": "optional"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/asManufacturedProduct[@classCode=\"MANU\"][r]/manufacturerOrganization[@classCode=\"ORG\"][@determinerCode=\"INSTANCE']/name/text()"
+    },
+    {
+      "code": "FDA.G.k.12.r.7.1b",
+      "name": "Device Manufacturer Address",
+      "section": "G",
+      "kind": "element",
+      "conformance": "optional",
+      "max_length": "100",
+      "allowed_values": "Free Text",
+      "profiles": {
+        "post_market": "optional",
+        "vaers": "optional"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/asManufacturedProduct[@classCode=\"MANU\"][r]/manufacturerOrganization[@classCode=\"ORG\"][@determinerCode=\"INSTANCE']/addr/streetAddressLine/text()"
+    },
+    {
+      "code": "FDA.G.k.12.r.7.1c",
+      "name": "Device Manufacturer City",
+      "section": "G",
+      "kind": "element",
+      "conformance": "optional",
+      "max_length": "35",
+      "allowed_values": "Free Text",
+      "profiles": {
+        "post_market": "optional",
+        "vaers": "optional"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/asManufacturedProduct[@classCode=\"MANU\"][r]/manufacturerOrganization[@classCode=\"ORG\"][@determinerCode=\"INSTANCE']/addr/city/text()"
+    },
+    {
+      "code": "FDA.G.k.12.r.7.1d",
+      "name": "Device Manufacturer State",
+      "section": "G",
+      "kind": "element",
+      "conformance": "optional",
+      "max_length": "40",
+      "allowed_values": "Free Text",
+      "profiles": {
+        "post_market": "optional",
+        "vaers": "optional"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/asManufacturedProduct[@classCode=\"MANU\"][r]/manufacturerOrganization[@classCode=\"ORG\"][@determinerCode=\"INSTANCE']/addr/state/text()"
+    },
+    {
+      "code": "FDA.G.k.12.r.7.1e",
+      "name": "Device Manufacturer Country",
+      "section": "G",
+      "kind": "element",
+      "conformance": "optional",
+      "max_length": "2",
+      "allowed_values": "ISO 3166-1 alpha-2, EU",
+      "profiles": {
+        "post_market": "optional",
+        "vaers": "optional"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/asManufacturedProduct[@classCode=\"MANU\"][r]/manufacturerOrganization[@classCode=\"ORG\"][@determinerCode=\"INSTANCE']/addr/country/text()"
+    },
+    {
+      "code": "FDA.G.k.12.r.8",
+      "name": "Device Usage",
+      "section": "G",
+      "kind": "element",
+      "conformance": "optional",
+      "max_length": "1",
+      "allowed_values": "<Observation><code>= C54595\n1=Initial Use of Device\n2=Reuse\n3=Unknown",
+      "oid": "2.16.840.1.113883.3.989.5.1.2.1.1.4",
+      "profiles": {
+        "post_market": "optional"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[r]/partProduct/asManufacturedProduct[classCode=\"MANU\"]/subjectOf[typeCode=\"SBJ\"][characteristic/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/characteristic[classCode=\"OBS\"][moodCode=\"EVN\"]/value[@xsi:type=\"CE\"]/[@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.4']/@code"
+    },
+    {
+      "code": "FDA.G.k.12.r.9",
+      "name": "Device Lot Number",
+      "section": "G",
+      "kind": "element",
+      "conformance": "optional",
+      "max_length": "100",
+      "allowed_values": "Free Text",
+      "profiles": {
+        "post_market": "optional"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='C102467'][@codeSystem='2.16.840.1.113883.3.26.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode='PART'][r]/partProduct/instanceOfKind[@classCode='INST']/productInstanceInstancedeviceInstance[@classCode='DEV'][@determinerCode='INSTANCE']/lotNumberText/text()"
+    },
+    {
+      "code": "FDA.G.k.12.r.10",
+      "name": "Operator of the Device",
+      "section": "G",
+      "kind": "element",
+      "conformance": "optional",
+      "max_length": "1",
+      "allowed_values": "1= Health Professional              \n2= Lay User/Patient                 \n3= Other",
+      "oid": "2.16.840.1.113883.3.989.5.1.2.1.1.6",
+      "profiles": {
+        "post_market": "optional"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode='PART'][r]/partProduct/asManufacturedProduct/subjectOf/approval/code[@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.6']/@code[observation[id]code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/performer[@typeCode='PRF']/assignedEntity[@classCode='ASSIGNED'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.6 ']/@code"
+    },
+    {
+      "code": "FDA.G.k.12.r.11.r",
+      "name": "Remedial Action Initiated",
+      "section": "G",
+      "kind": "element",
+      "conformance": "conditional_mandatory",
+      "max_length": "1",
+      "allowed_values": "<Observation><code>= C54594\n1-Recall\n2-Repair\n3-Replacement\n4-Relabeling\n5-Notification\n6-Inspection\n7-Patient Monitoring\n8-Modification or Adjustment\n9-Other",
+      "oid": "2.16.840.1.113883.3.989.5.1.2.1.1.3",
+      "profiles": {
+        "post_market": "conditional_mandatory",
+        "vaers": "conditional_mandatory"
+      },
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode='PART'][r]/deviceOf[observation/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][r]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.4']/@code\n/subjectOf[typeCode=\"SBJ\"]/ObservationEvent/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/ObservationEvent[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE']/[@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.4 ']/@code"
+    }
+  ]
+}
