@@ -10,7 +10,7 @@ fn default_xml_path() -> PathBuf {
 	std::env::var("E2BR3_IMPORT_XML_ICH")
 		.map(PathBuf::from)
 		.unwrap_or_else(|_| {
-			PathBuf::from("docs/refs/instances/FAERS2022Scenario2.xml")
+			PathBuf::from("docs/exporter/fda/FAERS2022Scenario2.xml")
 		})
 }
 

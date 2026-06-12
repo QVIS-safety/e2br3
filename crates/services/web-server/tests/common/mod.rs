@@ -76,13 +76,13 @@ pub async fn init_test_env() {
 	if std::env::var("E2BR3_EXAMPLES_DIR").is_err() {
 		let examples_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 			.join("../../..")
-			.join("docs/refs/instances");
+			.join("docs/exporter/fda");
 		std::env::set_var("E2BR3_EXAMPLES_DIR", examples_dir);
 	}
 	if std::env::var("E2BR3_XSD_PATH").is_err() {
 		let xsd_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 			.join("../../..")
-			.join("deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd");
+			.join("docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd");
 		std::env::set_var("E2BR3_XSD_PATH", xsd_path);
 	}
 }

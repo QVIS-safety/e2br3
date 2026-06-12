@@ -27,12 +27,12 @@ fn workspace_root() -> PathBuf {
 }
 
 fn examples_dir() -> PathBuf {
-	workspace_root().join("docs/refs/instances")
+	workspace_root().join("docs/exporter/fda")
 }
 
 fn xsd_path() -> PathBuf {
 	workspace_root()
-		.join("deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd")
+		.join("docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd")
 }
 
 fn build_multipart(xml: &[u8], filename: &str) -> (String, Vec<u8>) {

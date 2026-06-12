@@ -9,7 +9,7 @@ pub fn fixture(name: &str) -> Vec<u8> {
 		.and_then(|p| p.parent())
 		.expect("workspace root")
 		.to_path_buf();
-	std::fs::read(root.join("docs/refs/instances").join(name)).expect("read fixture")
+	std::fs::read(root.join("docs/exporter/fda").join(name)).expect("read fixture")
 }
 
 pub fn date(year: i32, month: u8, day: u8) -> Date {

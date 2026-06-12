@@ -366,8 +366,9 @@ fn default_xsd_candidates() -> Vec<PathBuf> {
 	let mut candidates = Vec::new();
 	if let Some(workspace_root) = workspace_root {
 		candidates.push(
-			workspace_root
-				.join("deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd"),
+			workspace_root.join(
+				"docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd",
+			),
 		);
 	}
 	candidates.push(PathBuf::from(

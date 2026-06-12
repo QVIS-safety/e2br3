@@ -20,7 +20,7 @@ fn patch_g_drug_updates_raw_xml() {
 		.and_then(|p| p.parent())
 		.expect("workspace root")
 		.to_path_buf();
-	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario1.xml"))
+	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 
 	let drug_id = Uuid::new_v4();
@@ -92,7 +92,7 @@ fn patch_g_drug_normalizes_characterization_for_causality() {
 		.and_then(|p| p.parent())
 		.expect("workspace root")
 		.to_path_buf();
-	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario1.xml"))
+	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 
 	let drug_id = Uuid::new_v4();
@@ -161,7 +161,7 @@ fn patch_g_drug_emits_relatedness_assessment_values() {
 		.and_then(|p| p.parent())
 		.expect("workspace root")
 		.to_path_buf();
-	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario1.xml"))
+	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 
 	let drug_id = Uuid::new_v4();

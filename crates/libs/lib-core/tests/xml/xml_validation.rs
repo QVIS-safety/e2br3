@@ -23,13 +23,13 @@ fn resolve_from_workspace(path: PathBuf) -> PathBuf {
 }
 
 fn examples_dir() -> PathBuf {
-	workspace_root().join("docs/refs/instances")
+	workspace_root().join("docs/exporter/fda")
 }
 
 fn test_validator_config() -> XmlValidatorConfig {
 	let xsd_path = default_xsd_path().or_else(|| {
 		Some(resolve_from_workspace(PathBuf::from(
-			"deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd",
+			"docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd",
 		)))
 	});
 	XmlValidatorConfig {

@@ -393,7 +393,7 @@ mod tests {
 			.expect("workspace root")
 			.to_path_buf();
 		let xml =
-			std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario6.xml"))
+			std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario6.xml"))
 				.expect("read sample xml");
 
 		let death = parse_patient_death(&xml)

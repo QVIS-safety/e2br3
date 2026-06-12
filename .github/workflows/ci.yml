@@ -145,8 +145,8 @@ jobs:
           SERVICE_TOKEN_DURATION_SEC: "1800"
           SERVICE_WEB_FOLDER: "web-folder/"
           E2BR3_SKIP_XML_VALIDATE: "0"
-          E2BR3_XSD_PATH: deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd
-          E2BR3_MFDS_EXAMPLES_DIR: docs/refs/instances
+          E2BR3_XSD_PATH: docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd
+          E2BR3_MFDS_EXAMPLES_DIR: docs/exporter/mfds
           E2BR3_MFDS_REQUIRE_VALIDATION_OK: "0"
         run: |
           cargo test -p lib-core --test xml xml_schema_business_ci

@@ -13,7 +13,7 @@ fn patch_c_section_updates_values() {
 		.and_then(|p| p.parent())
 		.expect("workspace root")
 		.to_path_buf();
-	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario1.xml"))
+	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 	let patch = CSafetyReportPatch {
 		report_unique_id: "SR-TEST-123",
@@ -89,7 +89,7 @@ fn patch_c_prefers_transmission_date_value_for_c1_2() {
 		.and_then(|p| p.parent())
 		.expect("workspace root")
 		.to_path_buf();
-	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario1.xml"))
+	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 	let patch = CSafetyReportPatch {
 		report_unique_id: "SR-TEST-124",

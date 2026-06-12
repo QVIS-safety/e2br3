@@ -251,8 +251,7 @@ async fn test_import_settings_update_enabled_c1_dates() -> Result<()> {
 		.and_then(|p| p.parent())
 		.expect("workspace root")
 		.to_path_buf();
-	let xml =
-		std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario6.xml"))?;
+	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario6.xml"))?;
 	let xml = String::from_utf8(xml)?.replace(
 		"US-APHARMA-8744554B",
 		&format!("US-TEST-{}", uuid::Uuid::new_v4()),
@@ -326,7 +325,7 @@ async fn test_import_settings_apply_default_sender_only_when_enabled() -> Result
 		.expect("workspace root")
 		.to_path_buf();
 	let source_xml =
-		std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario6.xml"))?;
+		std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario6.xml"))?;
 
 	let disabled_xml = String::from_utf8(source_xml.clone())?.replace(
 		"US-APHARMA-8744554B",

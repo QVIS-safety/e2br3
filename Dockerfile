@@ -17,7 +17,7 @@ WORKDIR /app
 # Copy everything (simpler approach)
 COPY Cargo.toml Cargo.lock ./
 COPY crates/ crates/
-COPY docs/refs/instances/ docs/refs/instances/
+COPY docs/exporter/ docs/exporter/
 
 # Build the application and operational helper binaries.
 RUN cargo build --release --package web-server --package terminology-loader
@@ -45,6 +45,8 @@ COPY --from=builder /app/target/release/terminology-loader /app/terminology-load
 
 # Copy web-folder if it exists (static files)
 COPY --chown=appuser:appuser web-folder/ /app/web-folder/
+COPY --chown=appuser:appuser docs/exporter/ /app/docs/exporter/
+COPY --chown=appuser:appuser docs/exporter/schema/ /app/schemas/
 
 # Set ownership
 RUN chown -R appuser:appuser /app

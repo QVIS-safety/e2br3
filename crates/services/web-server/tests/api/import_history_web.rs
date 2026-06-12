@@ -19,7 +19,7 @@ fn workspace_root() -> std::path::PathBuf {
 
 fn fixture_xml(filename: &str) -> Result<String> {
 	Ok(std::fs::read_to_string(
-		workspace_root().join("docs/refs/instances").join(filename),
+		workspace_root().join("docs/exporter/fda").join(filename),
 	)?)
 }
 

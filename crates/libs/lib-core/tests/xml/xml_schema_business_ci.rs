@@ -13,12 +13,12 @@ fn workspace_root() -> PathBuf {
 }
 
 fn sample_xml_path() -> PathBuf {
-	workspace_root().join("docs/refs/instances/FAERS2022Scenario2.xml")
+	workspace_root().join("docs/exporter/fda/FAERS2022Scenario2.xml")
 }
 
 fn xsd_path() -> PathBuf {
 	workspace_root()
-		.join("deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd")
+		.join("docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd")
 }
 
 #[test]

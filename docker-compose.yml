@@ -59,12 +59,12 @@ services:
       E2BR3_DEFAULT_MESSAGE_RECEIVER_FDA: "CDER"
       E2BR3_DEFAULT_MESSAGE_RECEIVER_ICH: "ICHTEST"
       E2BR3_DEFAULT_MESSAGE_RECEIVER_MFDS: "MFDS"
-      E2BR3_EXAMPLES_DIR: "/app/docs/refs/instances"
+      E2BR3_EXAMPLES_DIR: "/app/docs/exporter/fda"
       E2BR3_XSD_PATH: "/app/schemas/multicacheschemas/MCCI_IN200100UV01.xsd"
       # Prefer patching raw imported XML for single-section edits (keeps export valid while XML v2 generator matures).
       XML_V2_PATCH_C: "1"
     volumes:
-      - /Users/hyundonghoon/Documents/4_ICH_ICSR_Schema_Files:/app/schemas:ro
+      - ./docs/exporter/schema:/app/schemas:ro
     depends_on:
       postgres:
         condition: service_healthy

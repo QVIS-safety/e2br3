@@ -13,7 +13,7 @@ fn patch_e_reaction_updates_raw_xml() {
 		.and_then(|p| p.parent())
 		.expect("workspace root")
 		.to_path_buf();
-	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario1.xml"))
+	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 
 	let reaction = Reaction {
@@ -77,7 +77,7 @@ fn patch_e_reaction_uses_comp_nodes_for_sxpr_effective_time() {
 		.and_then(|p| p.parent())
 		.expect("workspace root")
 		.to_path_buf();
-	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario1.xml"))
+	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 
 	let start_date = time::Date::from_calendar_date(2024, Month::January, 2)

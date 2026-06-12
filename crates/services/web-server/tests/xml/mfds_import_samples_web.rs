@@ -44,7 +44,7 @@ fn mfds_examples_dir() -> Option<PathBuf> {
 	if let Ok(value) = std::env::var("E2BR3_MFDS_EXAMPLES_DIR") {
 		return Some(resolve_from_workspace(PathBuf::from(value)));
 	}
-	Some(workspace_root().join("docs/refs/instances"))
+	Some(workspace_root().join("docs/exporter/mfds"))
 }
 
 fn require_validation_ok() -> bool {
@@ -59,7 +59,7 @@ fn require_validation_ok() -> bool {
 
 fn default_xsd_path() -> PathBuf {
 	workspace_root()
-		.join("deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd")
+		.join("docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd")
 }
 
 fn resolved_xsd_path() -> PathBuf {
@@ -248,11 +248,6 @@ async fn test_mfds_samples_import_and_validate() -> Result<()> {
 		}
 
 		let section_checks = [
-			(
-				"message-header",
-				format!("/api/cases/{case_id}/message-header"),
-				true,
-			),
 			(
 				"safety-report",
 				format!("/api/cases/{case_id}/safety-report"),

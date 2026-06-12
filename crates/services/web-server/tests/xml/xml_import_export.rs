@@ -26,7 +26,7 @@ fn resolve_from_workspace(path: std::path::PathBuf) -> std::path::PathBuf {
 
 fn default_xsd_path() -> std::path::PathBuf {
 	workspace_root()
-		.join("deploy/ec2/schemas/multicacheschemas/MCCI_IN200100UV01.xsd")
+		.join("docs/exporter/schema/multicacheschemas/MCCI_IN200100UV01.xsd")
 }
 
 fn resolved_xsd_path() -> std::path::PathBuf {
@@ -38,7 +38,7 @@ fn resolved_xsd_path() -> std::path::PathBuf {
 
 fn fixture_xml(filename: &str) -> Result<String> {
 	Ok(std::fs::read_to_string(
-		workspace_root().join("docs/refs/instances").join(filename),
+		workspace_root().join("docs/exporter/fda").join(filename),
 	)?)
 }
 

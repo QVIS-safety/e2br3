@@ -9,7 +9,7 @@ fn import_h_narrative_basic() {
 		.and_then(|p| p.parent())
 		.expect("workspace root")
 		.to_path_buf();
-	let xml = std::fs::read(root.join("docs/refs/instances/FAERS2022Scenario1.xml"))
+	let xml = std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario1.xml"))
 		.expect("read sample xml");
 
 	let narrative = parse_h_narrative(&xml).expect("parse").unwrap();
