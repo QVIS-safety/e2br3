@@ -917,6 +917,34 @@ class DictionaryValidatorTests(unittest.TestCase):
         self.assertIn("rule for unknown code C.9.9", errors)
         self.assertNotIn("C.3.2", errors)
 
+    def test_dictionary_entries_accept_vocabulary(self):
+        entry = (
+            '{"code": "C.3.2", "name": "Sender", "section": "C", "kind": "element",'
+            ' "conformance": "mandatory", "vocabulary": "MedDRA"}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row())
+            self.write_dictionary(root, "ich-e2br3.json", self.ich_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertEqual([], result.errors)
+
+    def test_dictionary_vocabulary_must_be_a_known_value(self):
+        entry = (
+            '{"code": "C.3.2", "name": "Sender", "section": "C", "kind": "element",'
+            ' "conformance": "mandatory", "vocabulary": "MagicCodes"}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row())
+            self.write_dictionary(root, "ich-e2br3.json", self.ich_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertIn("invalid vocabulary 'MagicCodes'", "\n".join(result.errors))
+
     def test_dictionary_entries_no_longer_carry_rule_prose(self):
         entry = (
             '{"code": "C.3.2", "name": "Sender", "section": "C", "kind": "element",'

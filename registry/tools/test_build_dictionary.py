@@ -90,6 +90,60 @@ class ParseMfdsTests(unittest.TestCase):
         self.assertEqual("kr rule", rules["C.2.r.4.KR.1"])
 
 
+class VocabularyUsageTests(unittest.TestCase):
+    NULLFLAVOR_SHEET = [
+        ["일련번호", "Element ID", "항목명(국문)", "허용치", "OID", "주의사항"],
+        ["1", "C.1.7", "신속보고 여부", "NI", "oid", None],
+        ["2", "C.2.r.1.1", "원보고자의 직위", "MSK, ASKU, NASK, UNK", "oid", None],
+        ["3", "", "헤더 잡음", "ignored", None, None],
+    ]
+    MEDDRA_SHEET = [
+        ["일련번호", "Element ID", "항목명(국문)", "허용치", "OID"],
+        ["1", "D.7.1.r.1b", "과거 병력 MedDRA 코드", "MedDRA 코드 8자리", "2.16.840.1.113883.6.163"],
+    ]
+
+    def test_extract_nullflavor_usage_splits_comma_lists(self):
+        mapping = build_dictionary.extract_nullflavor_usage(self.NULLFLAVOR_SHEET)
+
+        self.assertEqual(["NI"], mapping["C.1.7"])
+        self.assertEqual(["MSK", "ASKU", "NASK", "UNK"], mapping["C.2.r.1.1"])
+        self.assertNotIn("", mapping)
+
+    def test_extract_vocabulary_usage_labels_each_code(self):
+        mapping = build_dictionary.extract_vocabulary_usage(self.MEDDRA_SHEET, "MedDRA")
+
+        self.assertEqual({"D.7.1.r.1b": "MedDRA"}, mapping)
+
+    def test_merge_nullflavors_unions_with_existing(self):
+        entries = [
+            {"code": "C.1.7", "name": "x", "section": "C", "kind": "element",
+             "conformance": "optional", "null_flavors": ["NI"]},
+            {"code": "C.2.r.1.1", "name": "y", "section": "C", "kind": "element", "conformance": "optional"},
+            {"code": "C.9.9", "name": "z", "section": "C", "kind": "element", "conformance": "optional"},
+        ]
+        mapping = build_dictionary.extract_nullflavor_usage(self.NULLFLAVOR_SHEET)
+
+        annotated = build_dictionary.merge_nullflavors(entries, mapping)
+
+        self.assertEqual(2, annotated)
+        self.assertEqual(["NI"], entries[0]["null_flavors"])
+        self.assertEqual(["MSK", "ASKU", "NASK", "UNK"], entries[1]["null_flavors"])
+        self.assertNotIn("null_flavors", entries[2])
+
+    def test_merge_vocabulary_sets_field_on_matching_entries(self):
+        entries = [
+            {"code": "D.7.1.r.1b", "name": "x", "section": "D", "kind": "element", "conformance": "optional"},
+            {"code": "C.1.2", "name": "y", "section": "C", "kind": "element", "conformance": "mandatory"},
+        ]
+        mapping = build_dictionary.extract_vocabulary_usage(self.MEDDRA_SHEET, "MedDRA")
+
+        annotated = build_dictionary.merge_vocabulary(entries, mapping)
+
+        self.assertEqual(1, annotated)
+        self.assertEqual("MedDRA", entries[0]["vocabulary"])
+        self.assertNotIn("vocabulary", entries[1])
+
+
 class MergeMfdsProfilesTests(unittest.TestCase):
     SHEET1 = [
         ["연번", "Element ID", "항목명\n(영문)", "항목명\n(국문)", "필수\n여부", "OID", "항목검증룰"],

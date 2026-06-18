@@ -39,6 +39,15 @@ ALLOWED_ROW_FIELDS = {
 }
 DICTIONARY_KINDS = {"element", "group"}
 DICTIONARY_CONFORMANCES = {"mandatory", "conditional_mandatory", "optional", "required"}
+DICTIONARY_VOCABULARIES = {
+    "MedDRA",
+    "WHODrug",
+    "ISO3166",
+    "ISO639",
+    "sex",
+    "UCUM",
+    "EDQM",
+}
 ALLOWED_DICTIONARY_ENTRY_FIELDS = {
     "code",
     "name",
@@ -55,6 +64,7 @@ ALLOWED_DICTIONARY_ENTRY_FIELDS = {
     "xpath",
     "hl7_data_type",
     "hl7_component",
+    "vocabulary",
     "notes",
 }
 BACKEND_MODELS = {
@@ -237,6 +247,13 @@ def validate_dictionary_entry(entry: Any, source: Path, result: ValidationResult
     if conformance is not None and conformance not in DICTIONARY_CONFORMANCES:
         result.add(
             f"{source}: entry {code}: invalid conformance {conformance!r}; expected one of {sorted(DICTIONARY_CONFORMANCES)}"
+        )
+
+    vocabulary = entry.get("vocabulary")
+    if vocabulary is not None and vocabulary not in DICTIONARY_VOCABULARIES:
+        result.add(
+            f"{source}: entry {code}: invalid vocabulary {vocabulary!r};"
+            f" expected one of {sorted(DICTIONARY_VOCABULARIES)}"
         )
 
     profiles = entry.get("profiles")

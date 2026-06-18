@@ -357,6 +357,53 @@ def parse_mfds_sheets(
     return entries
 
 
+def extract_nullflavor_usage(sheet_rows: list[list[Any]]) -> dict[str, list[str]]:
+    """Map element code -> allowed nullFlavor codes from the MFDS nullFlavor sheet."""
+    mapping: dict[str, list[str]] = {}
+    for row in rows_as_dicts(sheet_rows):
+        code = clean(row.get("ElementID"))
+        allowed = clean(row.get("허용치"))
+        if not CODE_PATTERN.match(code) or not allowed:
+            continue
+        flavors = [token for token in re.split(r"[,\s]+", allowed) if token in NULL_FLAVOR_LABELS]
+        if flavors:
+            mapping[code] = flavors
+    return mapping
+
+
+def extract_vocabulary_usage(sheet_rows: list[list[Any]], vocabulary: str) -> dict[str, str]:
+    """Map element code -> vocabulary name from an MFDS 'X 사용 항목' sheet."""
+    mapping: dict[str, str] = {}
+    for row in rows_as_dicts(sheet_rows):
+        code = clean(row.get("ElementID"))
+        if CODE_PATTERN.match(code):
+            mapping[code] = vocabulary
+    return mapping
+
+
+def merge_nullflavors(entries: list[dict[str, Any]], mapping: dict[str, list[str]]) -> int:
+    annotated = 0
+    for entry in entries:
+        flavors = mapping.get(entry["code"])
+        if not flavors or entry["kind"] != "element":
+            continue
+        existing = entry.get("null_flavors", [])
+        merged = existing + [f for f in flavors if f not in existing]
+        entry["null_flavors"] = merged
+        annotated += 1
+    return annotated
+
+
+def merge_vocabulary(entries: list[dict[str, Any]], mapping: dict[str, str]) -> int:
+    annotated = 0
+    for entry in entries:
+        vocabulary = mapping.get(entry["code"])
+        if vocabulary and entry["kind"] == "element":
+            entry["vocabulary"] = vocabulary
+            annotated += 1
+    return annotated
+
+
 def extract_mfds_rules(sheet1_rows: list[list[Any]]) -> dict[str, str]:
     """Pull the MFDS 항목검증룰 prose per element code (ICH and KR alike) from sheet 1."""
     rules: dict[str, str] = {}
@@ -418,9 +465,30 @@ def write_rules(name: str, authority: str, source: str, rules: dict[str, str]) -
     return path
 
 
+VOCABULARY_SHEETS = {
+    "4. MedDRA 사용 항목": "MedDRA",
+    "5. WHODrug, 식약처코드 사용 항목": "WHODrug",
+    "6-1. 국가코드 사용항목": "ISO3166",
+    "6-2. 언어코드 사용 항목": "ISO639",
+    "6-3. 성별코드 사용 항목": "sex",
+    "6-4. UCUM 사용 항목": "UCUM",
+    "6-5. EDQM 사용 항목": "EDQM",
+}
+
+
+def build_mfds_usage(mfds_path: Path) -> tuple[dict[str, list[str]], dict[str, str]]:
+    """Load the MFDS nullFlavor + vocabulary usage sheets into merge-ready maps."""
+    nullflavor = extract_nullflavor_usage(read_xlsx_rows(mfds_path, "3. nullflavor 사용 항목"))
+    vocabulary: dict[str, str] = {}
+    for sheet_name, vocab in VOCABULARY_SHEETS.items():
+        vocabulary.update(extract_vocabulary_usage(read_xlsx_rows(mfds_path, sheet_name), vocab))
+    return nullflavor, vocabulary
+
+
 def main() -> int:
     mfds_path = SOURCES_DIR / MFDS_SOURCE
     mfds_sheet1 = read_xlsx_rows(mfds_path, "1. 전체 항목검증 룰")
+    nullflavor_usage, vocabulary_usage = build_mfds_usage(mfds_path)
 
     ich_text = (SOURCES_DIR / ICH_SOURCE).read_text(encoding="utf-8")
     fda_text = (SOURCES_DIR / FDA_SOURCE).read_text(encoding="utf-8-sig")
@@ -430,12 +498,15 @@ def main() -> int:
     mfds_annotated = merge_mfds_profiles(ich_entries, mfds_sheet1)
     fda_annotated = merge_fda_profiles(ich_entries, fda_text)
     xpath_annotated = merge_xpath(ich_entries, xpath_map)
+    nf_annotated = merge_nullflavors(ich_entries, nullflavor_usage)
+    vocab_annotated = merge_vocabulary(ich_entries, vocabulary_usage)
     path = write_dictionary("ich-e2br3.json", "ICH", ICH_SOURCE, ich_entries)
     elements = sum(1 for entry in ich_entries if entry["kind"] == "element")
     print(
         f"wrote {path} ({elements} elements, {len(ich_entries) - elements} groups,"
         f" {mfds_annotated} with an MFDS profile, {fda_annotated} with FDA profiles,"
-        f" {xpath_annotated} with xpath)"
+        f" {xpath_annotated} with xpath, {nf_annotated} with MFDS nullFlavors,"
+        f" {vocab_annotated} with a vocabulary)"
     )
 
     mfds_entries = parse_mfds_sheets(
@@ -443,8 +514,13 @@ def main() -> int:
         read_xlsx_rows(mfds_path, "2. 신규 생성 항목"),
     )
     xpath_annotated = merge_xpath(mfds_entries, xpath_map)
+    merge_nullflavors(mfds_entries, nullflavor_usage)
+    mfds_vocab = merge_vocabulary(mfds_entries, vocabulary_usage)
     path = write_dictionary("mfds-regional.json", "MFDS", MFDS_SOURCE, mfds_entries)
-    print(f"wrote {path} ({len(mfds_entries)} KR extension elements, {xpath_annotated} with xpath)")
+    print(
+        f"wrote {path} ({len(mfds_entries)} KR extension elements,"
+        f" {xpath_annotated} with xpath, {mfds_vocab} with a vocabulary)"
+    )
 
     fda_entries = parse_fda_csv(fda_text)
     path = write_dictionary("fda-regional.json", "FDA", FDA_SOURCE, fda_entries)
