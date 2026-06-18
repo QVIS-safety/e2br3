@@ -50,7 +50,6 @@ permissions:
   id-token: write
 
 env:
-  AWS_REGION: ap-northeast-2
   RUNTIME_IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/e2br3-web-server
 
 jobs:
@@ -137,12 +136,12 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy via AWS Systems Manager
         env:
           IMAGE_REF: ${{ steps.image.outputs.image_ref }}
-          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_SSM_TARGET: ${{ secrets.AWS_SSM_TARGET }}
         run: |
           set -eu
