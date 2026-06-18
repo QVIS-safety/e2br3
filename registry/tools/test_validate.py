@@ -945,6 +945,34 @@ class DictionaryValidatorTests(unittest.TestCase):
 
         self.assertIn("invalid vocabulary 'MagicCodes'", "\n".join(result.errors))
 
+    def test_dictionary_entries_accept_fda_severity(self):
+        entry = (
+            '{"code": "C.3.2", "name": "Sender", "section": "C", "kind": "element",'
+            ' "conformance": "mandatory", "fda_severity": "rejection", "fda_error_id": "R0008"}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row())
+            self.write_dictionary(root, "ich-e2br3.json", self.ich_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertEqual([], result.errors)
+
+    def test_dictionary_fda_severity_must_be_valid(self):
+        entry = (
+            '{"code": "C.3.2", "name": "Sender", "section": "C", "kind": "element",'
+            ' "conformance": "mandatory", "fda_severity": "fatal"}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row())
+            self.write_dictionary(root, "ich-e2br3.json", self.ich_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertIn("invalid fda_severity 'fatal'", "\n".join(result.errors))
+
     def test_dictionary_entries_no_longer_carry_rule_prose(self):
         entry = (
             '{"code": "C.3.2", "name": "Sender", "section": "C", "kind": "element",'

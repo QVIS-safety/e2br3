@@ -208,6 +208,47 @@ class MergeFdaProfilesTests(unittest.TestCase):
         self.assertNotIn("profiles", entries[0])
 
 
+FDA_SEVERITY_SAMPLE = """Title row to skip,,,,,
+,,,,,
+DATA ELEMENT NUMBER,DATA ELEMENT NAME,BUSINESS RULE,"REJECTION, IF NOT MET","WARNING, IF NOT MET",ERROR ID,ERROR DESCRIPTION
+C.1.3,Batch Receiver,rule,ü,,R0008,C.1.3 must be 2 when ...
+FDA.C.1.12,Combination,rule,ü,,R0012,FDA.C.1.12 must be ...
+C.1.10.r,Linked,rule,,ü,W0001,C.1.10.r should be provided
+N.1.1,Type,rule,,,,
+"""
+
+
+class FdaSeverityTests(unittest.TestCase):
+    def test_extract_severity_classifies_rejection_and_warning(self):
+        mapping = build_dictionary.extract_fda_severity(FDA_SEVERITY_SAMPLE)
+
+        self.assertEqual(
+            {"severity": "rejection", "error_id": "R0008", "error_description": "C.1.3 must be 2 when ..."},
+            mapping["C.1.3"],
+        )
+        self.assertEqual("warning", mapping["C.1.10.r"]["severity"])
+        self.assertIn("FDA.C.1.12", mapping)
+
+    def test_extract_severity_skips_rows_without_a_mark(self):
+        mapping = build_dictionary.extract_fda_severity(FDA_SEVERITY_SAMPLE)
+
+        self.assertNotIn("N.1.1", mapping)
+
+    def test_merge_severity_annotates_ich_and_fda_entries(self):
+        entries = [
+            {"code": "C.1.3", "name": "x", "section": "C", "kind": "element", "conformance": "mandatory"},
+            {"code": "C.9.9", "name": "y", "section": "C", "kind": "element", "conformance": "optional"},
+        ]
+        mapping = build_dictionary.extract_fda_severity(FDA_SEVERITY_SAMPLE)
+
+        annotated = build_dictionary.merge_fda_severity(entries, mapping)
+
+        self.assertEqual(1, annotated)
+        self.assertEqual("rejection", entries[0]["fda_severity"])
+        self.assertEqual("R0008", entries[0]["fda_error_id"])
+        self.assertNotIn("fda_severity", entries[1])
+
+
 class ParseFdaCsvTests(unittest.TestCase):
     def setUp(self):
         self.entries = {e["code"]: e for e in build_dictionary.parse_fda_csv(FDA_SAMPLE)}

@@ -19,7 +19,9 @@
         "pre_market": "mandatory",
         "vaers": "mandatory"
       },
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ'][investigationCharacteristic/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/investigationCharacteristic[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.1']/@code"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ'][investigationCharacteristic/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/investigationCharacteristic[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.1']/@code",
+      "fda_severity": "rejection",
+      "fda_error_id": "R0012"
     },
     {
       "code": "FDA.C.1.12",
@@ -73,7 +75,9 @@
       "profiles": {
         "pre_market": "conditional_mandatory"
       },
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][1]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/ id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.1']/@extension"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][1]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/ id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.1']/@extension",
+      "fda_severity": "rejection",
+      "fda_error_id": "R0024"
     },
     {
       "code": "FDA.C.5.5b",
@@ -87,7 +91,9 @@
       "profiles": {
         "pre_market": "conditional_mandatory"
       },
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][1]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/ id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.2']/@extension"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][1]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/ id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.2']/@extension",
+      "fda_severity": "rejection",
+      "fda_error_id": "R0025"
     },
     {
       "code": "FDA.C.5.6.r",
@@ -104,7 +110,9 @@
       "null_flavors": [
         "NA"
       ],
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][1]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/ id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.3']/@extension"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][1]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/ id[@root='2.16.840.1.113883.3.989.5.1.2.2.1.2.3']/@extension",
+      "fda_severity": "rejection",
+      "fda_error_id": "R0026"
     },
     {
       "code": "FDA.D.11.r.1",
@@ -152,7 +160,9 @@
         "UNK",
         "NA"
       ],
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation/code[@code='C16564'][@codeSystem='2.16.840.1.113883.3.26.1.1']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.26.1.1'][1]/@code"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation/code[@code='C16564'][@codeSystem='2.16.840.1.113883.3.26.1.1']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.26.1.1'][1]/@code",
+      "fda_severity": "warning",
+      "fda_error_id": "W0004"
     },
     {
       "code": "FDA.E.i.3.2h",
@@ -182,7 +192,9 @@
       "oid": "2.16.840.1.113883.3.989.5.1.2.1.1.8",
       "profiles": {
         "post_market": "conditional_mandatory"
-      }
+      },
+      "fda_severity": "rejection",
+      "fda_error_id": "R0072"
     },
     {
       "code": "FDA.G.k.10a",
@@ -199,7 +211,9 @@
       },
       "null_flavors": [
         "NA"
-      ]
+      ],
+      "fda_severity": "warning",
+      "fda_error_id": "W0006"
     },
     {
       "code": "FDA.G.k.10.1",
@@ -228,7 +242,9 @@
         "post_market": "conditional_mandatory",
         "vaers": "conditional_mandatory"
       },
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[r]/partProduct/asManufacturedProduct[classCode=\"MANU\"]/subjectOf[typeCode=\"SBJ\"][characteristic/code[@code='9C54026'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.2']/characteristic[classCode=\"OBS\"][moodCode=\"EVN\"]/value[@xsi:type=\"BL\"/@value"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[r]/partProduct/asManufacturedProduct[classCode=\"MANU\"]/subjectOf[typeCode=\"SBJ\"][characteristic/code[@code='9C54026'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.2']/characteristic[classCode=\"OBS\"][moodCode=\"EVN\"]/value[@xsi:type=\"BL\"/@value",
+      "fda_severity": "rejection",
+      "fda_error_id": "R0092"
     },
     {
       "code": "FDA.G.k.12.r.2.r",
@@ -258,7 +274,9 @@
         "post_market": "conditional_mandatory",
         "vaers": "conditional_mandatory"
       },
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[r]/partProduct/asManufacturedProduct[classCode=\"MANU\"]/subjectOf[typeCode=\"SBJ\"][characteristic/code[@code='C54451'][@codeSystem='2.16.840.1.113883.3.26.1.1']]/characteristic[@classCode=\"OBS\"][@moodCode=\"EVN\"]/value[@xsi:type=\"CE\"]/@code"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[r]/partProduct/asManufacturedProduct[classCode=\"MANU\"]/subjectOf[typeCode=\"SBJ\"][characteristic/code[@code='C54451'][@codeSystem='2.16.840.1.113883.3.26.1.1']]/characteristic[@classCode=\"OBS\"][@moodCode=\"EVN\"]/value[@xsi:type=\"CE\"]/@code",
+      "fda_severity": "rejection",
+      "fda_error_id": "R0093"
     },
     {
       "code": "FDA.G.k.12.r.4",
@@ -276,7 +294,9 @@
       "null_flavors": [
         "NI"
       ],
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/name/text()"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/name/text()",
+      "fda_severity": "rejection",
+      "fda_error_id": "R0094"
     },
     {
       "code": "FDA.G.k.12.r.5",
@@ -294,7 +314,9 @@
       "null_flavors": [
         "NI"
       ],
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/code[@codeSystem=\"2.16.840.1.113883.3.26.1.1\"]/@displayName"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/code[@codeSystem=\"2.16.840.1.113883.3.26.1.1\"]/@displayName",
+      "fda_severity": "rejection",
+      "fda_error_id": "R0095"
     },
     {
       "code": "FDA.G.k.12.r.6",
@@ -309,7 +331,9 @@
         "post_market": "conditional_mandatory",
         "vaers": "conditional_mandatory"
       },
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/code[@codeSystem=\"2.16.840.1.113883.3.989.5.1.2.2.1.2.4\"]/@code"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode=\"PART\"][r]/partProduct[@classCode=\"DEV\"][@determinerCode=\"KIND\"]/code[@codeSystem=\"2.16.840.1.113883.3.989.5.1.2.2.1.2.4\"]/@code",
+      "fda_severity": "rejection",
+      "fda_error_id": "R0096"
     },
     {
       "code": "FDA.G.k.12.r.7",
@@ -441,7 +465,9 @@
         "post_market": "conditional_mandatory",
         "vaers": "conditional_mandatory"
       },
-      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode='PART'][r]/deviceOf[observation/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][r]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.4']/@code\n/subjectOf[typeCode=\"SBJ\"]/ObservationEvent/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/ObservationEvent[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE']/[@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.4 ']/@code"
+      "xpath": "/MCCI_IN200100UV01/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ']/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ']/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM']/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/part[@classCode='PART'][r]/deviceOf[observation/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][r]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.4']/@code\n/subjectOf[typeCode=\"SBJ\"]/ObservationEvent/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/ObservationEvent[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE']/[@codeSystem='2.16.840.1.113883.3.989.5.1.2.2.1.1.4 ']/@code",
+      "fda_severity": "warning",
+      "fda_error_id": "W0007"
     }
   ]
 }

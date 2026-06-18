@@ -20,6 +20,7 @@ DICTIONARY_DIR = ROOT / "dictionary"
 ICH_SOURCE = "ich-core-data-elements-v1.csv"
 MFDS_SOURCE = "mfds-safety-r3-business-rules.xlsx"
 FDA_SOURCE = "fda-core-regional-data-elements-v1.csv"
+FDA_SEVERITY_SOURCE = "fda-rejection-warning-rules.csv"
 XPATH_SOURCE = "mfds-icsr-element-xpath.csv"
 
 CODE_PATTERN = re.compile(r"^[NCDEFGH](\.|$)")
@@ -313,6 +314,55 @@ def extract_fda_rules(text: str) -> dict[str, str]:
     return rules
 
 
+def extract_fda_severity(text: str) -> dict[str, dict[str, str]]:
+    """Map element code -> {severity, error_id, error_description} from the FDA
+    rejection/warning rules table. Rows with neither mark are skipped."""
+    rows = list(csv.reader(io.StringIO(text.lstrip("﻿"))))
+    header_index = next(
+        index for index, row in enumerate(rows)
+        if "DATA ELEMENT NUMBER" in [clean(cell) for cell in row]
+    )
+    header = [clean(cell) for cell in rows[header_index]]
+    col = {name: header.index(name) for name in header if name}
+    rej_col = col["REJECTION, IF NOT MET"]
+    warn_col = col["WARNING, IF NOT MET"]
+    id_col = col.get("ERROR ID")
+    desc_col = col.get("ERROR DESCRIPTION")
+
+    mapping: dict[str, dict[str, str]] = {}
+    for row in rows[header_index + 1 :]:
+        def cell(index: int | None) -> str:
+            return clean(row[index]) if index is not None and index < len(row) else ""
+
+        code = cell(col["DATA ELEMENT NUMBER"])
+        if not (CODE_PATTERN.match(code) or code.startswith("FDA.")) or code in mapping:
+            continue
+        rejection = bool(cell(rej_col))
+        warning = bool(cell(warn_col))
+        if not (rejection or warning):
+            continue
+        entry = {"severity": "rejection" if rejection else "warning"}
+        if cell(id_col):
+            entry["error_id"] = cell(id_col)
+        if cell(desc_col):
+            entry["error_description"] = cell(desc_col)
+        mapping[code] = entry
+    return mapping
+
+
+def merge_fda_severity(entries: list[dict[str, Any]], mapping: dict[str, dict[str, str]]) -> int:
+    annotated = 0
+    for entry in entries:
+        severity = mapping.get(entry["code"])
+        if not severity or entry["kind"] != "element":
+            continue
+        entry["fda_severity"] = severity["severity"]
+        if "error_id" in severity:
+            entry["fda_error_id"] = severity["error_id"]
+        annotated += 1
+    return annotated
+
+
 def normalize_header(value: Any) -> str:
     return clean(value).replace("\n", "").replace(" ", "")
 
@@ -492,6 +542,7 @@ def main() -> int:
 
     ich_text = (SOURCES_DIR / ICH_SOURCE).read_text(encoding="utf-8")
     fda_text = (SOURCES_DIR / FDA_SOURCE).read_text(encoding="utf-8-sig")
+    fda_severity = extract_fda_severity((SOURCES_DIR / FDA_SEVERITY_SOURCE).read_text(encoding="utf-8-sig"))
     xpath_map = parse_xpath_csv((SOURCES_DIR / XPATH_SOURCE).read_text(encoding="utf-8-sig"))
 
     ich_entries = parse_ich_csv(ich_text)
@@ -500,13 +551,14 @@ def main() -> int:
     xpath_annotated = merge_xpath(ich_entries, xpath_map)
     nf_annotated = merge_nullflavors(ich_entries, nullflavor_usage)
     vocab_annotated = merge_vocabulary(ich_entries, vocabulary_usage)
+    sev_annotated = merge_fda_severity(ich_entries, fda_severity)
     path = write_dictionary("ich-e2br3.json", "ICH", ICH_SOURCE, ich_entries)
     elements = sum(1 for entry in ich_entries if entry["kind"] == "element")
     print(
         f"wrote {path} ({elements} elements, {len(ich_entries) - elements} groups,"
         f" {mfds_annotated} with an MFDS profile, {fda_annotated} with FDA profiles,"
         f" {xpath_annotated} with xpath, {nf_annotated} with MFDS nullFlavors,"
-        f" {vocab_annotated} with a vocabulary)"
+        f" {vocab_annotated} with a vocabulary, {sev_annotated} with FDA severity)"
     )
 
     mfds_entries = parse_mfds_sheets(
@@ -523,9 +575,13 @@ def main() -> int:
     )
 
     fda_entries = parse_fda_csv(fda_text)
+    fda_sev_annotated = merge_fda_severity(fda_entries, fda_severity)
     path = write_dictionary("fda-regional.json", "FDA", FDA_SOURCE, fda_entries)
     elements = sum(1 for entry in fda_entries if entry["kind"] == "element")
-    print(f"wrote {path} ({elements} elements, {len(fda_entries) - elements} groups)")
+    print(
+        f"wrote {path} ({elements} elements, {len(fda_entries) - elements} groups,"
+        f" {fda_sev_annotated} with FDA severity)"
+    )
 
     for name, authority, source, rules in (
         ("ich.json", "ICH", ICH_SOURCE, extract_ich_rules(ich_text)),

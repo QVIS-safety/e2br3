@@ -65,8 +65,11 @@ ALLOWED_DICTIONARY_ENTRY_FIELDS = {
     "hl7_data_type",
     "hl7_component",
     "vocabulary",
+    "fda_severity",
+    "fda_error_id",
     "notes",
 }
+FDA_SEVERITIES = {"rejection", "warning"}
 BACKEND_MODELS = {
     "SafetyReportIdentification": "crates/libs/lib-core/src/model/safety_report.rs",
     "SenderInformation": "crates/libs/lib-core/src/model/safety_report.rs",
@@ -247,6 +250,13 @@ def validate_dictionary_entry(entry: Any, source: Path, result: ValidationResult
     if conformance is not None and conformance not in DICTIONARY_CONFORMANCES:
         result.add(
             f"{source}: entry {code}: invalid conformance {conformance!r}; expected one of {sorted(DICTIONARY_CONFORMANCES)}"
+        )
+
+    severity = entry.get("fda_severity")
+    if severity is not None and severity not in FDA_SEVERITIES:
+        result.add(
+            f"{source}: entry {code}: invalid fda_severity {severity!r};"
+            f" expected one of {sorted(FDA_SEVERITIES)}"
         )
 
     vocabulary = entry.get("vocabulary")

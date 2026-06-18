@@ -69,6 +69,11 @@
           "type": "string",
           "enum": ["MedDRA", "WHODrug", "ISO3166", "ISO639", "sex", "UCUM", "EDQM"]
         },
+        "fda_severity": {
+          "type": "string",
+          "enum": ["rejection", "warning"]
+        },
+        "fda_error_id": { "type": "string" },
         "notes": { "type": "string" }
       },
       "if": { "properties": { "kind": { "const": "element" } } },
