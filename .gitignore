@@ -38,11 +38,6 @@ out/
 
 # Doc Files
 docs/
-!docs/
-docs/*
-!docs/reference-matrices/
-!docs/reference-matrices/**
-docs/workflows/cubesafety-admin/
 *.pdf
 *.docx
 *.xlsx

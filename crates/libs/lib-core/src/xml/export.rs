@@ -109,7 +109,7 @@ async fn export_case_xml_from_db(
 }
 
 fn base_export_skeleton() -> &'static str {
-	include_str!("../../../../../docs/exporter/fda/FAERS2022Scenario1.xml")
+	include_str!("fixtures/base_export_skeleton.xml")
 }
 
 fn apply_export_xml_options(xml: String, options: ExportXmlOptions) -> String {
