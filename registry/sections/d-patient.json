@@ -1816,8 +1816,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "Strict frontend input inventory extracts patientInformation.gpMedicalRecordNumber from the case-form section source."
     },
-    "action": "Keep the discriminator fan-out explicit or introduce a first-class repeated mapping schema for PatientIdentifier rows.",
-    "notes": "Frontend has a flattened D.1.1.x input; backend stores the value through shared PatientIdentifier.identifier_value plus identifier_type_code."
+    "action": "",
+    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned."
   },
   {
     "id": "D.1.1.2",
@@ -1840,8 +1840,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "Strict frontend input inventory extracts patientInformation.specialistRecordNumber from the case-form section source."
     },
-    "action": "Keep the discriminator fan-out explicit or introduce a first-class repeated mapping schema for PatientIdentifier rows.",
-    "notes": "Frontend has a flattened D.1.1.x input; backend stores the value through shared PatientIdentifier.identifier_value plus identifier_type_code."
+    "action": "",
+    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned."
   },
   {
     "id": "D.1.1.3",
@@ -1864,8 +1864,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "Strict frontend input inventory extracts patientInformation.hospitalRecordNumber from the case-form section source."
     },
-    "action": "Keep the discriminator fan-out explicit or introduce a first-class repeated mapping schema for PatientIdentifier rows.",
-    "notes": "Frontend has a flattened D.1.1.x input; backend stores the value through shared PatientIdentifier.identifier_value plus identifier_type_code."
+    "action": "",
+    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned."
   },
   {
     "id": "D.1.1.4",
@@ -1888,7 +1888,7 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
       "evidence": "Strict frontend input inventory extracts patientInformation.investigationNumber from the case-form section source."
     },
-    "action": "Keep the discriminator fan-out explicit or introduce a first-class repeated mapping schema for PatientIdentifier rows.",
-    "notes": "Frontend has a flattened D.1.1.x input; backend stores the value through shared PatientIdentifier.identifier_value plus identifier_type_code."
+    "action": "",
+    "notes": "ACCEPTED: D.1.1.1-4 are the source-typed variants of the repeatable D.1.1 'Patient Medical Record Number(s) and Source(s)' group. The backend faithfully stores them as repeatable PatientIdentifier rows discriminated by identifier_type_code (the E2B model uses repeating <id> with the source in root/assigningAuthority and the number in extension); the frontend flattens them into one named input per source for UX. This many-frontend-to-one-repeatable-backend shape is the correct representation, not a defect. Status stays 'conflict' per the registry taxonomy (one backend field <- many frontend inputs); no code change planned."
   }
 ]
