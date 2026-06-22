@@ -551,6 +551,37 @@ END $$"#,
 		)",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS access_blind_allowed BOOLEAN",
 		"ALTER TABLE users ADD COLUMN IF NOT EXISTS active_sender_identifier TEXT",
+		"CREATE TABLE IF NOT EXISTS user_organization_memberships (
+			user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+			active BOOLEAN NOT NULL DEFAULT true,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+			updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+			PRIMARY KEY (user_id, organization_id)
+		)",
+		"CREATE INDEX IF NOT EXISTS idx_user_organization_memberships_org
+			ON user_organization_memberships(organization_id)",
+		"INSERT INTO user_organization_memberships (
+			user_id,
+			organization_id,
+			active,
+			created_by,
+			updated_by
+		)
+		SELECT
+			u.id,
+			u.organization_id,
+			true,
+			COALESCE(u.created_by, '00000000-0000-0000-0000-000000000001'::UUID),
+			u.updated_by
+		FROM users u
+		WHERE u.organization_id <> '00000000-0000-0000-0000-000000000000'::UUID
+		ON CONFLICT (user_id, organization_id) DO NOTHING",
+		"GRANT SELECT, INSERT, UPDATE, DELETE ON user_organization_memberships TO e2br3_app_role",
+		"ALTER TABLE user_organization_memberships ENABLE ROW LEVEL SECURITY",
+		"ALTER TABLE user_organization_memberships FORCE ROW LEVEL SECURITY",
 		"ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS organization_id UUID",
 		"UPDATE audit_logs
 		 SET organization_id = COALESCE(
@@ -677,6 +708,9 @@ END $$"#,
 		"CREATE TRIGGER audit_permission_profiles AFTER INSERT OR UPDATE OR DELETE ON permission_profiles
 		 FOR EACH ROW EXECUTE FUNCTION audit_trigger_function()",
 		"DROP POLICY IF EXISTS users_org_isolation_select ON users",
+		"DROP POLICY IF EXISTS user_organization_memberships_read ON user_organization_memberships",
+		"DROP POLICY IF EXISTS user_organization_memberships_modify ON user_organization_memberships",
+		"DROP POLICY IF EXISTS orgs_select ON organizations",
 	] {
 		sqlx::query(sql).execute(&mut *tx).await?;
 	}
@@ -884,6 +918,44 @@ END $$"#,
 		 WITH CHECK (
 				 organization_id = current_organization_id()
 				 OR is_current_user_admin()
+		 )",
+	)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY user_organization_memberships_read ON user_organization_memberships
+		 FOR SELECT
+		 TO e2br3_app_role
+		 USING (
+		 	user_id = get_current_user_context()
+		 	OR is_current_user_admin()
+		 )",
+	)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY user_organization_memberships_modify ON user_organization_memberships
+		 FOR ALL
+		 TO e2br3_app_role
+		 USING (is_current_user_admin())
+		 WITH CHECK (is_current_user_admin())",
+	)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY orgs_select ON organizations
+		 FOR SELECT
+		 TO e2br3_app_role
+		 USING (
+		 	id = current_organization_id()
+		 	OR is_current_user_admin()
+		 	OR EXISTS (
+		 		SELECT 1
+		 		FROM user_organization_memberships membership
+		 		WHERE membership.organization_id = organizations.id
+		 		  AND membership.user_id = get_current_user_context()
+		 		  AND membership.active = true
+		 	)
 		 )",
 	)
 	.await?;

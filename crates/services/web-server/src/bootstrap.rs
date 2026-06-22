@@ -191,6 +191,7 @@ async fn sync_user(
 	match existing_user_id {
 		Some(user_id) => {
 			let user_u = UserForUpdate {
+				organization_id: None,
 				email: Some(email.to_string()),
 				username: Some(username.to_string()),
 				role: Some(role.to_string()),
@@ -312,7 +313,16 @@ async fn sync_user_organization(
 		)
 		.await;
 	match result {
-		Ok(_) => mm.dbx().commit_txn().await?,
+		Ok(_) => {
+			UserBmc::ensure_organization_membership(
+				ctx,
+				mm,
+				user_id,
+				organization_id,
+			)
+			.await?;
+			mm.dbx().commit_txn().await?
+		}
 		Err(err) => {
 			mm.dbx().rollback_txn().await?;
 			return Err(err.into());

@@ -105,10 +105,28 @@ pub struct UserView {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct OrganizationOptionView {
+	pub id: Uuid,
+	pub name: String,
+	#[serde(rename = "type")]
+	pub org_type: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CurrentUserProfileView {
 	pub user: UserView,
+	pub active_organization: OrganizationOptionView,
+	pub available_organizations: Vec<OrganizationOptionView>,
 	pub routing: lib_rest_core::RoutingProfile,
 	pub capabilities: UserCapabilities,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CurrentUserOrganizationSelectionView {
+	pub active_organization: OrganizationOptionView,
+	pub available_organizations: Vec<OrganizationOptionView>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -213,6 +231,12 @@ pub struct UserForUpdateAdminPayload {
 pub struct RoutingSelectionBody {
 	#[serde(default, alias = "sender_id")]
 	pub active_sender_identifier: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OrganizationSelectionBody {
+	#[serde(alias = "organizationId")]
+	pub organization_id: Uuid,
 }
 
 fn validate_username(username: &str) -> Result<()> {
@@ -595,6 +619,34 @@ fn user_view(user: User) -> UserView {
 	}
 }
 
+fn organization_option_view(organization: Organization) -> OrganizationOptionView {
+	OrganizationOptionView {
+		id: organization.id,
+		name: organization.name,
+		org_type: organization.org_type,
+	}
+}
+
+async fn current_user_organization_selection_view(
+	ctx: &Ctx,
+	mm: &ModelManager,
+) -> Result<CurrentUserOrganizationSelectionView> {
+	let active: Organization =
+		OrganizationBmc::get(ctx, mm, ctx.organization_id()).await?;
+	let mut available =
+		UserBmc::list_member_organizations(ctx, mm, ctx.user_id()).await?;
+	if available.is_empty() {
+		available.push(active.clone());
+	}
+	Ok(CurrentUserOrganizationSelectionView {
+		active_organization: organization_option_view(active),
+		available_organizations: available
+			.into_iter()
+			.map(organization_option_view)
+			.collect(),
+	})
+}
+
 /// POST /api/users
 /// Create a new user
 /// **Requires User.Create permission (admin only)**
@@ -793,6 +845,7 @@ pub async fn update_user(
 	let email = normalize_optional_email_input(data.email)?;
 	let username = normalize_optional_username_input(data.username)?;
 	let update = UserForUpdate {
+		organization_id: None,
 		email,
 		username,
 		role,
@@ -864,6 +917,8 @@ pub async fn get_current_user_profile(
 ) -> Result<(StatusCode, Json<DataRestResult<CurrentUserProfileView>>)> {
 	let ctx = ctx_w.0;
 	let entity: User = UserBmc::get(&ctx, &mm, ctx.user_id()).await?;
+	let organization_selection =
+		current_user_organization_selection_view(&ctx, &mm).await?;
 	let routing = routing_profile_for_user(&ctx, &mm).await?;
 	let capabilities = capabilities_for_subject(
 		ctx.permission_subject(),
@@ -875,11 +930,90 @@ pub async fn get_current_user_profile(
 		Json(DataRestResult {
 			data: CurrentUserProfileView {
 				user: user_view(entity),
+				active_organization: organization_selection.active_organization,
+				available_organizations: organization_selection
+					.available_organizations,
 				routing,
 				capabilities,
 			},
 		}),
 	))
+}
+
+pub async fn update_current_user_organization(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Json(params): Json<ParamsForUpdate<OrganizationSelectionBody>>,
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<CurrentUserOrganizationSelectionView>>,
+)> {
+	let ctx = ctx_w.0;
+	let next_organization_id = params.data.organization_id;
+	if next_organization_id.is_nil() {
+		return Err(Error::BadRequest {
+			message: "organization_id is required".to_string(),
+		});
+	}
+	let is_member = UserBmc::user_has_organization_membership(
+		&ctx,
+		&mm,
+		ctx.user_id(),
+		next_organization_id,
+	)
+	.await?;
+	if !is_member {
+		return Err(Error::AccessDenied {
+			required_role: "organization_membership".to_string(),
+		});
+	}
+	let update_ctx = Ctx::new(
+		ctx.user_id(),
+		ctx.organization_id(),
+		ROLE_SYSTEM_ADMIN.to_string(),
+	)
+	.map_err(|_| Error::BadRequest {
+		message: "valid organization update context required".to_string(),
+	})?
+	.with_compliance(
+		ctx.change_reason().map(ToString::to_string),
+		ctx.e_signature_id(),
+	);
+	UserBmc::update(
+		&update_ctx,
+		&mm,
+		ctx.user_id(),
+		UserForUpdate {
+			organization_id: Some(next_organization_id),
+			email: None,
+			username: None,
+			role: None,
+			comments: None,
+			other_information: None,
+			access_start_at: None,
+			access_end_at: None,
+			access_sender_ids: None,
+			access_product_ids: None,
+			access_study_ids: None,
+			access_blind_allowed: None,
+			active_sender_identifier: None,
+			active: None,
+			last_login_at: None,
+		},
+	)
+	.await?;
+	let selected_ctx =
+		Ctx::new(ctx.user_id(), next_organization_id, ctx.role().to_string())
+			.map_err(|_| Error::BadRequest {
+				message: "valid selected organization context required".to_string(),
+			})?
+			.with_compliance(
+				ctx.change_reason().map(ToString::to_string),
+				ctx.e_signature_id(),
+			);
+	let selection =
+		current_user_organization_selection_view(&selected_ctx, &mm).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: selection })))
 }
 
 pub async fn get_current_user_routing(
@@ -922,6 +1056,7 @@ pub async fn update_current_user_routing(
 		&mm,
 		ctx.user_id(),
 		UserForUpdate {
+			organization_id: None,
 			email: None,
 			username: None,
 			role: None,

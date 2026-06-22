@@ -42,6 +42,8 @@ mod submission_schema_guard_web;
 mod subresources_web;
 #[path = "api/terminology_contract_web.rs"]
 mod terminology_contract_web;
+#[path = "api/user_organization_membership_web.rs"]
+mod user_organization_membership_web;
 #[path = "api/validation_contract_web.rs"]
 mod validation_contract_web;
 #[path = "api/validation_rules_web.rs"]

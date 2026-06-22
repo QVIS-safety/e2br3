@@ -1,6 +1,7 @@
 use crate::ctx::{canonical_role, Ctx, ROLE_USER};
 use crate::model::base::base_uuid;
 use crate::model::base::{prep_fields_for_update, DbBmc};
+use crate::model::organization::Organization;
 use crate::model::store::{
 	set_full_context_dbx_or_rollback, set_full_context_from_ctx_dbx,
 };
@@ -123,6 +124,7 @@ pub struct UserForAuth {
 
 #[derive(Clone, Fields, Deserialize)]
 pub struct UserForUpdate {
+	pub organization_id: Option<Uuid>,
 	pub email: Option<String>,
 	pub username: Option<String>,
 	pub role: Option<String>,
@@ -316,6 +318,24 @@ impl UserBmc {
 				return Err(err);
 			}
 
+			if let Err(err) = Self::ensure_organization_membership(
+				ctx,
+				mm,
+				user_id,
+				organization_id,
+			)
+			.await
+			{
+				let _ = mm.dbx().rollback_txn().await;
+				if Self::is_retryable_write_error(&err)
+					&& attempt < USER_WRITE_MAX_ATTEMPTS
+				{
+					Self::backoff_after_retryable_error(attempt).await;
+					continue;
+				}
+				return Err(err);
+			}
+
 			match mm.dbx().commit_txn().await {
 				Ok(()) => return Ok(user_id),
 				Err(err) => {
@@ -332,6 +352,42 @@ impl UserBmc {
 			}
 		}
 		unreachable!("user create retry loop exhausted without returning")
+	}
+
+	pub async fn ensure_organization_membership(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		user_id: Uuid,
+		organization_id: Uuid,
+	) -> Result<()> {
+		if organization_id.is_nil() {
+			return Ok(());
+		}
+		mm.dbx()
+			.execute(
+				sqlx::query(
+					r#"
+					INSERT INTO user_organization_memberships (
+						user_id,
+						organization_id,
+						active,
+						created_by,
+						updated_by
+					)
+					VALUES ($1, $2, true, $3, $3)
+					ON CONFLICT (user_id, organization_id)
+					DO UPDATE SET
+						active = true,
+						updated_by = EXCLUDED.updated_by,
+						updated_at = NOW()
+					"#,
+				)
+				.bind(user_id)
+				.bind(organization_id)
+				.bind(ctx.user_id()),
+			)
+			.await?;
+		Ok(())
 	}
 
 	pub async fn get<E>(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<E>
@@ -385,6 +441,82 @@ impl UserBmc {
 			}
 		}
 		unreachable!("user update retry loop exhausted without returning")
+	}
+
+	pub async fn list_member_organizations(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		user_id: Uuid,
+	) -> Result<Vec<Organization>> {
+		let scoped_mm = mm.new_with_txn()?;
+		scoped_mm.dbx().begin_txn().await.map_err(Error::Dbx)?;
+		set_full_context_from_ctx_dbx(scoped_mm.dbx(), ctx).await?;
+		let organizations = scoped_mm
+			.dbx()
+			.fetch_all(
+				sqlx::query_as::<_, Organization>(
+					r#"
+					SELECT
+						o.id,
+						o.name,
+						o.org_type,
+						o.address,
+						o.city,
+						o.state,
+						o.postcode,
+						o.country_code,
+						o.contact_email,
+						o.contact_phone,
+						o.active,
+						o.created_at,
+						o.updated_at,
+						o.created_by,
+						o.updated_by
+					FROM user_organization_memberships membership
+					JOIN organizations o ON o.id = membership.organization_id
+					WHERE membership.user_id = $1
+					  AND membership.active = true
+					  AND o.active = true
+					ORDER BY o.name, o.id
+					"#,
+				)
+				.bind(user_id),
+			)
+			.await?;
+		scoped_mm.dbx().commit_txn().await.map_err(Error::Dbx)?;
+		Ok(organizations)
+	}
+
+	pub async fn user_has_organization_membership(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		user_id: Uuid,
+		organization_id: Uuid,
+	) -> Result<bool> {
+		let scoped_mm = mm.new_with_txn()?;
+		scoped_mm.dbx().begin_txn().await.map_err(Error::Dbx)?;
+		set_full_context_from_ctx_dbx(scoped_mm.dbx(), ctx).await?;
+		let membership = scoped_mm
+			.dbx()
+			.fetch_optional(
+				sqlx::query_as::<_, (Uuid,)>(
+					r#"
+					SELECT membership.organization_id
+					FROM user_organization_memberships membership
+					JOIN organizations o ON o.id = membership.organization_id
+					WHERE membership.user_id = $1
+					  AND membership.organization_id = $2
+					  AND membership.active = true
+					  AND o.active = true
+					LIMIT 1
+					"#,
+				)
+				.bind(user_id)
+				.bind(organization_id),
+			)
+			.await?;
+		scoped_mm.dbx().commit_txn().await.map_err(Error::Dbx)?;
+		Ok(membership.is_some())
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {

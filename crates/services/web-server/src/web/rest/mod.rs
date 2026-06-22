@@ -724,6 +724,10 @@ pub fn routes_users(mm: ModelManager) -> Router {
 				.put(user_rest::update_current_user_routing),
 		)
 		.route(
+			"/users/me/organization",
+			axum::routing::put(user_rest::update_current_user_organization),
+		)
+		.route(
 			"/users/me/password",
 			axum::routing::post(user_rest::set_my_password),
 		)

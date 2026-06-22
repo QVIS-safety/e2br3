@@ -414,6 +414,16 @@ pub async fn insert_user(
 	.bind(created_by)
 	.execute(&mut *tx)
 	.await?;
+	sqlx::query(
+		"INSERT INTO user_organization_memberships (user_id, organization_id, created_by, updated_by)
+		 VALUES ($1, $2, $3, $3)
+		 ON CONFLICT (user_id, organization_id) DO NOTHING",
+	)
+	.bind(user_id)
+	.bind(org_id)
+	.bind(created_by)
+	.execute(&mut *tx)
+	.await?;
 	tx.commit().await?;
 
 	Ok(SeedUser {
@@ -421,6 +431,28 @@ pub async fn insert_user(
 		email,
 		token_salt,
 	})
+}
+
+pub async fn insert_user_organization_membership(
+	mm: &ModelManager,
+	user_id: Uuid,
+	org_id: Uuid,
+) -> Result<()> {
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, system_user_id()).await?;
+	set_org_context(&mut tx, system_org_id(), ROLE_SYSTEM_ADMIN).await?;
+	sqlx::query(
+		"INSERT INTO user_organization_memberships (user_id, organization_id, created_by, updated_by)
+		 VALUES ($1, $2, $3, $3)
+		 ON CONFLICT (user_id, organization_id) DO NOTHING",
+	)
+	.bind(user_id)
+	.bind(org_id)
+	.bind(system_user_id())
+	.execute(&mut *tx)
+	.await?;
+	tx.commit().await?;
+	Ok(())
 }
 
 async fn insert_case(

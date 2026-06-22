@@ -79,6 +79,17 @@ CREATE TABLE IF NOT EXISTS users (
     )
 );
 
+CREATE TABLE IF NOT EXISTS user_organization_memberships (
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
+    PRIMARY KEY (user_id, organization_id)
+);
+
 CREATE TABLE IF NOT EXISTS app_settings (
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
     key text NOT NULL,
@@ -686,6 +697,8 @@ ALTER TABLE reporter_presaves
 
 CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_user_organization_memberships_org
+    ON user_organization_memberships(organization_id);
 CREATE INDEX idx_sender_presaves_org ON sender_presaves(organization_id);
 CREATE INDEX idx_sender_presave_gateways_parent ON sender_presave_gateways(sender_presave_id);
 CREATE INDEX idx_sender_presave_responsible_persons_parent ON sender_presave_responsible_persons(sender_presave_id);
@@ -712,6 +725,23 @@ ALTER TABLE users
 
 ALTER TABLE users
     DROP COLUMN IF EXISTS permission_profile_id;
+
+INSERT INTO user_organization_memberships (
+    user_id,
+    organization_id,
+    active,
+    created_by,
+    updated_by
+)
+SELECT
+    u.id,
+    u.organization_id,
+    true,
+    COALESCE(u.created_by, '00000000-0000-0000-0000-000000000001'::UUID),
+    u.updated_by
+FROM users u
+WHERE u.organization_id <> '00000000-0000-0000-0000-000000000000'::UUID
+ON CONFLICT (user_id, organization_id) DO NOTHING;
 
     -- ============================================================================
     -- 3. Safety Cases
@@ -2231,7 +2261,28 @@ CREATE POLICY users_org_isolation_modify ON users
     );
 
 -- ============================================================================
--- 9.14 Organizations Table RLS
+-- 9.14 User Organization Memberships Table RLS
+-- ============================================================================
+GRANT SELECT, INSERT, UPDATE, DELETE ON user_organization_memberships TO e2br3_app_role;
+ALTER TABLE user_organization_memberships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_organization_memberships FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY user_organization_memberships_read ON user_organization_memberships
+    FOR SELECT
+    TO e2br3_app_role
+    USING (
+        user_id = get_current_user_context()
+        OR is_current_user_admin()
+    );
+
+CREATE POLICY user_organization_memberships_modify ON user_organization_memberships
+    FOR ALL
+    TO e2br3_app_role
+    USING (is_current_user_admin())
+    WITH CHECK (is_current_user_admin());
+
+-- ============================================================================
+-- 9.15 Organizations Table RLS
 -- ============================================================================
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations FORCE ROW LEVEL SECURITY;
@@ -2242,6 +2293,13 @@ CREATE POLICY orgs_select ON organizations
     USING (
         id = current_organization_id()
         OR is_current_user_admin()
+        OR EXISTS (
+            SELECT 1
+            FROM user_organization_memberships membership
+            WHERE membership.organization_id = organizations.id
+              AND membership.user_id = get_current_user_context()
+              AND membership.active = true
+        )
     );
 
 -- Only admins can modify organizations
