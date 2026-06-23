@@ -4,7 +4,10 @@ use crate::model::case_identifiers::{
 	OtherCaseIdentifierBmc, OtherCaseIdentifierForCreate,
 	OtherCaseIdentifierForUpdate,
 };
-use crate::model::presave::{SenderPresaveBmc, SenderPresaveResponsiblePersonBmc};
+use crate::model::presave::{
+	ProductPresaveBmc, SenderPresave, SenderPresaveBmc,
+	SenderPresaveResponsiblePersonBmc,
+};
 use crate::model::receiver::{
 	ReceiverInformationBmc, ReceiverInformationForCreate,
 	ReceiverInformationForUpdate,
@@ -210,9 +213,12 @@ async fn import_c_2_sender_information(
 		)
 	});
 	let sender = if settings.apply_sender_info_to_imported_cases {
-		match default_sender_from_presave(ctx, mm, authority).await? {
+		match sender_from_product_linked_presave(ctx, mm, xml).await? {
 			Some(sender) => Some(sender),
-			None => c_helpers::parse_sender_information(xml, header)?,
+			None => match default_sender_from_presave(ctx, mm, authority).await? {
+				Some(sender) => Some(sender),
+				None => c_helpers::parse_sender_information(xml, header)?,
+			},
 		}
 	} else {
 		c_helpers::parse_sender_information(xml, header)?
@@ -305,6 +311,82 @@ async fn default_sender_from_presave(
 		return Ok(None);
 	};
 
+	sender_import_from_presave(ctx, mm, sender).await.map(Some)
+}
+
+async fn sender_from_product_linked_presave(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	xml: &[u8],
+) -> Result<Option<c_helpers::SenderImport>> {
+	let imported_product_keys = imported_product_sender_keys(xml)?;
+	if imported_product_keys.is_empty() {
+		return Ok(None);
+	}
+
+	let products = ProductPresaveBmc::list(ctx, mm, None)
+		.await
+		.map_err(Error::Model)?;
+	let Some(product) = products.into_iter().find(|product| {
+		!product.deleted
+			&& product.sender_presave_id.is_some()
+			&& [
+				product.product_id.as_deref(),
+				product.medicinal_product.as_deref(),
+				product.drug_authorization_number.as_deref(),
+				product.preapproval_ip_name.as_deref(),
+			]
+			.into_iter()
+			.flatten()
+			.any(|value| {
+				imported_product_keys.contains(&normalize_import_key(value))
+			})
+	}) else {
+		return Ok(None);
+	};
+	let Some(sender_id) = product.sender_presave_id else {
+		return Ok(None);
+	};
+	let sender = SenderPresaveBmc::get(ctx, mm, sender_id)
+		.await
+		.map_err(Error::Model)?;
+	if sender.deleted {
+		return Ok(None);
+	}
+	sender_import_from_presave(ctx, mm, sender).await.map(Some)
+}
+
+fn imported_product_sender_keys(xml: &[u8]) -> Result<Vec<String>> {
+	let mut keys = Vec::new();
+	for drug in crate::xml::import_sections::g_drug::parse_g_drugs(xml)? {
+		for value in [
+			Some(drug.medicinal_product.as_str()),
+			drug.brand_name.as_deref(),
+			drug.drug_authorization_number.as_deref(),
+			drug.mpid.as_deref(),
+			drug.phpid.as_deref(),
+		]
+		.into_iter()
+		.flatten()
+		{
+			let key = normalize_import_key(value);
+			if !key.is_empty() && !keys.contains(&key) {
+				keys.push(key);
+			}
+		}
+	}
+	Ok(keys)
+}
+
+fn normalize_import_key(value: &str) -> String {
+	value.trim().to_lowercase()
+}
+
+async fn sender_import_from_presave(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	sender: SenderPresave,
+) -> Result<c_helpers::SenderImport> {
 	let responsible_people =
 		SenderPresaveResponsiblePersonBmc::list_by_parent(ctx, mm, sender.id)
 			.await
@@ -318,7 +400,7 @@ async fn default_sender_from_presave(
 	let organization_name = sender.organization_name.unwrap_or(sender.name);
 	let sender_type = sender.sender_type.unwrap_or_else(|| "1".to_string());
 
-	Ok(Some(c_helpers::SenderImport {
+	Ok(c_helpers::SenderImport {
 		sender_type,
 		health_professional_type_kr1: None,
 		organization_name,
@@ -345,7 +427,7 @@ async fn default_sender_from_presave(
 		telephone: sender.telephone,
 		fax: sender.fax,
 		email: sender.email,
-	}))
+	})
 }
 
 async fn import_c_3_primary_sources(

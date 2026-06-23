@@ -405,3 +405,121 @@ async fn test_import_settings_apply_default_sender_only_when_enabled() -> Result
 
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn test_import_settings_apply_product_linked_sender_by_imported_product_id(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/presaves/senders",
+		json!({
+			"data": {
+				"authority": "fda",
+				"name": "Fallback default sender",
+				"sender_type": "2",
+				"organization_name": "Fallback Default Sender",
+				"email": "fallback-default@example.test",
+				"is_default": true
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/presaves/senders",
+		json!({
+			"data": {
+				"authority": "fda",
+				"name": "Product-linked sender",
+				"sender_type": "3",
+				"organization_name": "Product Linked Sender",
+				"email": "product-linked@example.test"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let linked_sender_id = body["data"]["id"]
+		.as_str()
+		.ok_or_else(|| format!("missing linked sender id in body {body:?}"))?;
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/presaves/products",
+		json!({
+			"data": {
+				"name": "Drug A product",
+				"sender_presave_id": linked_sender_id,
+				"product_id": "Drug A",
+				"medicinal_product": "Drug A"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		"/api/admin/settings",
+		json!({
+			"data": {
+				"apply_sender_info_to_imported_cases": true
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+
+	let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+		.parent()
+		.and_then(|p| p.parent())
+		.and_then(|p| p.parent())
+		.expect("workspace root")
+		.to_path_buf();
+	let source_xml =
+		std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario6.xml"))?;
+	let xml = String::from_utf8(source_xml)?.replace(
+		"US-APHARMA-8744554B",
+		&format!("US-PRODUCT-SENDER-{}", uuid::Uuid::new_v4()),
+	);
+	let (status, body) =
+		import_xml_fixture(&app, &cookie, "FAERS2022Scenario6.xml", xml.as_bytes())
+			.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let case_id = body["data"]["importedCases"][0]["caseId"]
+		.as_str()
+		.ok_or_else(|| format!("missing imported case id in body {body:?}"))?;
+	let case_id = uuid::Uuid::parse_str(case_id)?;
+
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, seed.admin.id).await?;
+	set_org_context(&mut tx, seed.org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	let sender =
+		sqlx::query_as::<_, (Option<String>, Option<String>, Option<String>)>(
+			"SELECT sender_type, organization_name, email
+		 FROM sender_information WHERE case_id = $1 LIMIT 1",
+		)
+		.bind(case_id)
+		.fetch_one(&mut *tx)
+		.await?;
+	tx.commit().await?;
+
+	assert_eq!(sender.0.as_deref(), Some("3"));
+	assert_eq!(sender.1.as_deref(), Some("Product Linked Sender"));
+	assert_eq!(sender.2.as_deref(), Some("product-linked@example.test"));
+
+	Ok(())
+}
