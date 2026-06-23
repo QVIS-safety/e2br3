@@ -1971,29 +1971,26 @@
     "notes": ""
   },
   {
-    "id": "G.k.local.assessmentRecurrence.action",
-    "e2br3_code": "G.k.local.assessmentRecurrence.action",
-    "label": "Reaction Recurred on Readministration Action",
+    "id": "G.k.local.reactionRecurredLegacy",
+    "e2br3_code": "G.k.local.reactionRecurredLegacy",
+    "label": "Legacy Reaction-Recurred Field (non-standard)",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "not_applicable",
     "local_only": true,
     "backend": {
       "status": "mapped",
       "model": "DrugReactionAssessment",
-      "field": "recurrence_action",
+      "field": "reaction_recurred",
       "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
-      "evidence": "DrugReactionAssessment.recurrence_action is annotated as G.k.9.i.4.r.1."
+      "evidence": "DrugReactionAssessment.reaction_recurred (values 1-3) is a non-standard field: its enum does not match the official G.k.9.i.4 (1-4) and no G.k.9.i.4.r.3 element exists in any dictionary or in the FDA/KR reference instances."
     },
     "frontend": {
-      "status": "mapped",
-      "section": "drugs.drugReactionAssessments",
-      "field": "recurrenceAction",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds fieldNumber G.k.9.i.4 to drugReactionAssessments[assessIndex].recurrenceAction."
+      "status": "not_applicable",
+      "evidence": "No frontend input; the official rechallenge value is captured by recurrenceAction (G.k.9.i.4)."
     },
-    "action": "",
-    "notes": "Local assessment-level recurrence detail; not an E2BR3 data element."
+    "action": "Backend cleanup candidate: remove reaction_recurred or fold into recurrence_action; not an E2BR3 element.",
+    "notes": "Phantom backend field retained only so the strict backend inventory stays complete. Superseded by the G.k.9.i.4 mapping on recurrence_action."
   },
   {
     "id": "G.k.local.assessmentRecurrence.meddraVersion",
@@ -2048,26 +2045,26 @@
   {
     "id": "G.k.9.i.4",
     "e2br3_code": "G.k.9.i.4",
-    "label": "Assessment Reaction Recurred",
+    "label": "Did Reaction Recur on Re-administration?",
     "section": "G",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "backend": {
       "status": "mapped",
       "model": "DrugReactionAssessment",
-      "field": "reaction_recurred",
+      "field": "recurrence_action",
       "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
-      "evidence": "DrugReactionAssessment.reaction_recurred is annotated as G.k.9.i.4.r.3."
+      "evidence": "DrugReactionAssessment.recurrence_action holds the official 1-4 enum (1=rechallenge done & recurred ... 4=no rechallenge/NA), matching the FDA reference instance observation code=31 / value codeSystem ...2.1.1.16 annotated G.k.9.i.4."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "drugs.drugReactionAssessments",
-      "field": "reactionRecurred",
+      "field": "recurrenceAction",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG does not render a direct drugReactionAssessments[assessIndex].reactionRecurred input."
+      "evidence": "SectionG renders the E2BRadioField labelled 'Did Reaction Recur on Re-administration?' fieldNumber G.k.9.i.4 with the 1-4 options, bound to drugReactionAssessments[assessIndex].recurrenceAction."
     },
-    "action": "Add a distinct frontend input for reaction_recurred (values 1-3), and relabel the existing recurrenceAction radio (currently mislabeled 'Did Reaction Recur on Re-administration?') to its true G.k.9.i.4.r.1 'Recurrence Action' meaning. Deferred 2026-06: frontend repo work.",
-    "notes": "Backend reaction_recurred (G.k.9.i.4.r.3 / dict G.k.9.i.4, values 1-3) has no frontend input. Note: the existing recurrenceAction radio in SectionG is mislabeled with this element's text but is actually backend recurrence_action (G.k.9.i.4.r.1, values 1-4); do not conflate the two."
+    "action": "",
+    "notes": "Re-pointed 2026-06 after evidence review: the official single 1-4 element G.k.9.i.4 is implemented by recurrence_action/recurrenceAction (values, label and FDA reference-instance representation all match). The backend field name says 'action' but functionally holds the official value; rename is optional cleanup, not required for correctness."
   },
   {
     "id": "G.k.9.i.2.r.1",
