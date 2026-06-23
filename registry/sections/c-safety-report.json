@@ -1822,12 +1822,13 @@
     "label": "Sender's (case) Safety Report Unique Identifier",
     "section": "C",
     "authority": "ICH",
-    "status": "backend_missing",
+    "status": "complete",
     "backend": {
-      "status": "missing",
-      "model": "SafetyReportIdentification",
-      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.safetyReportId.",
-      "field": "safety_report_id"
+      "status": "mapped",
+      "model": "Case",
+      "field": "safety_report_id",
+      "file": "crates/libs/lib-core/src/model/case.rs",
+      "evidence": "Case.safety_report_id is the case-level C.1.1 unique identifier (cases.safety_report_id, '-- C.1.1'); used by export/sections/c.rs report_unique_id and import extract_safety_report_id."
     },
     "frontend": {
       "status": "mapped",
@@ -1836,8 +1837,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
       "evidence": "Strict frontend input inventory extracts safetyReportIdentification.safetyReportId from the case-form section source."
     },
-    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
-    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Renamed from C.1@safetyReportId: this is the official mandatory C.1.1 element."
+    "action": "",
+    "notes": "Reclassified from backend_missing: the backend was already implemented but the registry pointed at the wrong model. Now mapped to Case.safety_report_id."
   },
   {
     "id": "C.local.reportYear",
@@ -1893,12 +1894,13 @@
     "label": "Linked Report Number",
     "section": "C",
     "authority": "ICH",
-    "status": "backend_missing",
+    "status": "complete",
     "backend": {
-      "status": "missing",
-      "model": "SafetyReportIdentification",
-      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.linkedReports.linkedReportNumber.",
-      "field": "linked_report_number"
+      "status": "mapped",
+      "model": "LinkedReportNumber",
+      "field": "linked_report_number",
+      "file": "crates/libs/lib-core/src/model/case_identifiers.rs",
+      "evidence": "LinkedReportNumber.linked_report_number is annotated as C.1.10.r."
     },
     "frontend": {
       "status": "mapped",
@@ -1907,8 +1909,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
       "evidence": "Strict frontend input inventory extracts safetyReportIdentification.linkedReports.linkedReportNumber from the case-form section source."
     },
-    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
-    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Renamed from C.1.10.r@linkedReportNumber: the repeatable linked-report identification number is C.1.10.r itself."
+    "action": "",
+    "notes": "Reclassified from backend_missing: the backend was already implemented but the registry pointed at the wrong model. Now mapped to LinkedReportNumber.linked_report_number."
   },
   {
     "id": "C.1.9.1.r.1",
@@ -1916,12 +1918,13 @@
     "label": "Other Case Identifier Source",
     "section": "C",
     "authority": "ICH",
-    "status": "backend_missing",
+    "status": "complete",
     "backend": {
-      "status": "missing",
-      "model": "SafetyReportIdentification",
-      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.otherCaseIdentifiers.source.",
-      "field": "other_case_identifier_source"
+      "status": "mapped",
+      "model": "OtherCaseIdentifier",
+      "field": "source_of_identifier",
+      "file": "crates/libs/lib-core/src/model/case_identifiers.rs",
+      "evidence": "OtherCaseIdentifier.source_of_identifier is annotated as C.1.9.1.r.1 (Source of the Case Identifier)."
     },
     "frontend": {
       "status": "mapped",
@@ -1930,8 +1933,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
       "evidence": "Strict frontend input inventory extracts safetyReportIdentification.otherCaseIdentifiers.source from the case-form section source."
     },
-    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
-    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Renamed from C.1.9.1.r@source to the official Source(s) of the Case Identifier element."
+    "action": "",
+    "notes": "Reclassified from backend_missing: the backend was already implemented but the registry pointed at the wrong model. Now mapped to OtherCaseIdentifier.source_of_identifier."
   },
   {
     "id": "C.1.9.1.r.2",
@@ -1939,12 +1942,13 @@
     "label": "Other Case Identifier Value",
     "section": "C",
     "authority": "ICH",
-    "status": "backend_missing",
+    "status": "complete",
     "backend": {
-      "status": "missing",
-      "model": "SafetyReportIdentification",
-      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.otherCaseIdentifiers.caseIdentifier.",
-      "field": "other_case_identifier"
+      "status": "mapped",
+      "model": "OtherCaseIdentifier",
+      "field": "case_identifier",
+      "file": "crates/libs/lib-core/src/model/case_identifiers.rs",
+      "evidence": "OtherCaseIdentifier.case_identifier is annotated as C.1.9.1.r.2 (Case Identifier)."
     },
     "frontend": {
       "status": "mapped",
@@ -1953,8 +1957,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
       "evidence": "Strict frontend input inventory extracts safetyReportIdentification.otherCaseIdentifiers.caseIdentifier from the case-form section source."
     },
-    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
-    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Renamed from C.1.9.1.r@caseIdentifier to the official Case Identifier(s) element."
+    "action": "",
+    "notes": "Reclassified from backend_missing: the backend was already implemented but the registry pointed at the wrong model. Now mapped to OtherCaseIdentifier.case_identifier."
   },
   {
     "id": "FDA.C.1.local.fdaReportType",

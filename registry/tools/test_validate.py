@@ -449,6 +449,19 @@ pub struct SafetyReportIdentification {
 
         self.assertEqual([], result.errors)
 
+    def test_repository_c1_case_identifier_children_have_complete_backend_inventory(self):
+        registry_root = Path(__file__).resolve().parents[1]
+
+        result = validate.validate_registry(
+            registry_root,
+            backend_models={
+                "OtherCaseIdentifier": "crates/libs/lib-core/src/model/case_identifiers.rs",
+                "LinkedReportNumber": "crates/libs/lib-core/src/model/case_identifiers.rs",
+            },
+        )
+
+        self.assertEqual([], result.errors)
+
     def test_repository_c1_c4_document_inventory_has_complete_backend_inventory(self):
         registry_root = Path(__file__).resolve().parents[1]
 
