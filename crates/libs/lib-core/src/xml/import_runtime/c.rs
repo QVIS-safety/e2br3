@@ -45,6 +45,7 @@ pub fn apply_c_safety_report_import_settings(
 	if settings.update_report_first_received_date {
 		report.date_first_received_from_source = import_date;
 	}
+	enforce_c1_date_order(report);
 }
 
 pub fn apply_default_values_to_imported_r2_case(
@@ -59,6 +60,18 @@ pub fn apply_default_values_to_imported_r2_case(
 	}
 	if report.first_sender_type.is_none() {
 		report.first_sender_type = Some("1".to_string());
+	}
+}
+
+fn enforce_c1_date_order(report: &mut CSafetyReportImport) {
+	if report.date_first_received_from_source
+		> report.date_of_most_recent_information
+	{
+		report.date_of_most_recent_information =
+			report.date_first_received_from_source;
+	}
+	if report.date_of_most_recent_information > report.transmission_date {
+		report.transmission_date = report.date_of_most_recent_information;
 	}
 }
 
@@ -901,4 +914,88 @@ async fn import_c_6_receiver_information(
 	}
 
 	Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use time::Month;
+
+	fn date(year: i32, month: Month, day: u8) -> Date {
+		Date::from_calendar_date(year, month, day).expect("valid test date")
+	}
+
+	fn report() -> CSafetyReportImport {
+		CSafetyReportImport {
+			transmission_date: date(2024, Month::January, 10),
+			report_type: "1".to_string(),
+			date_first_received_from_source: date(2024, Month::January, 5),
+			date_of_most_recent_information: date(2024, Month::January, 8),
+			fulfil_expedited_criteria: false,
+			additional_documents_available: None,
+			local_criteria_report_type: None,
+			combination_product_report_indicator: None,
+			worldwide_unique_id: None,
+			first_sender_type: None,
+			nullification_code: None,
+			nullification_reason: None,
+		}
+	}
+
+	#[test]
+	fn import_date_settings_keep_c1_dates_in_required_order() {
+		let import_date = date(2024, Month::February, 1);
+		let mut report = report();
+
+		apply_c_safety_report_import_settings(
+			&mut report,
+			&CImportSettings {
+				update_date_of_creation: false,
+				update_most_recent_info_date: false,
+				update_report_first_received_date: true,
+				apply_sender_info_to_imported_cases: false,
+				apply_default_values_to_imported_r2_cases: false,
+			},
+			import_date,
+		);
+
+		assert!(
+			report.date_first_received_from_source
+				<= report.date_of_most_recent_information,
+			"C.1.4 must not be after C.1.5"
+		);
+		assert!(
+			report.date_first_received_from_source <= report.transmission_date,
+			"C.1.4 must not be after C.1.2"
+		);
+		assert!(
+			report.date_of_most_recent_information <= report.transmission_date,
+			"C.1.5 must not be after C.1.2"
+		);
+		assert_eq!(report.date_first_received_from_source, import_date);
+	}
+
+	#[test]
+	fn import_most_recent_date_setting_keeps_transmission_date_after_it() {
+		let import_date = date(2024, Month::February, 1);
+		let mut report = report();
+
+		apply_c_safety_report_import_settings(
+			&mut report,
+			&CImportSettings {
+				update_date_of_creation: false,
+				update_most_recent_info_date: true,
+				update_report_first_received_date: false,
+				apply_sender_info_to_imported_cases: false,
+				apply_default_values_to_imported_r2_cases: false,
+			},
+			import_date,
+		);
+
+		assert_eq!(report.date_of_most_recent_information, import_date);
+		assert!(
+			report.date_of_most_recent_information <= report.transmission_date,
+			"C.1.5 must not be after C.1.2"
+		);
+	}
 }
