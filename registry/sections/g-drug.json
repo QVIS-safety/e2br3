@@ -2810,16 +2810,22 @@
     "label": "FDA Other Characterisation of Drug Role",
     "section": "G",
     "authority": "FDA",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
-      "status": "missing",
-      "evidence": "No BMC field maps FDA.G.k.1.a; gap recorded from the FDA dictionary import (2026-06)."
+      "status": "mapped",
+      "model": "DrugInformation",
+      "field": "fda_other_characterization",
+      "file": "crates/libs/lib-core/src/model/drug.rs",
+      "evidence": "DrugInformation.fda_other_characterization (VARCHAR(10), '1'=Similar Device) persists FDA.G.k.1.a via the drug INSERT/UPDATE binds."
     },
     "frontend": {
-      "status": "missing",
-      "evidence": "No case-form input maps FDA.G.k.1.a."
+      "status": "mapped",
+      "section": "drugs",
+      "field": "fdaOtherCharacterization",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
+      "evidence": "SectionG renders an FDA-gated E2BRadioField (fieldNumber FDA.G.k.1.a, option 1=Similar Device) bound to drugs[index].fdaOtherCharacterization."
     },
-    "action": "Decide whether to implement FDA.G.k.1.a (conditional-required for the FDA post-market profile when G.k.1 reports an Other characterisation).",
-    "notes": "Official FDA regional element (profiles.post_market = conditional_mandatory). Neither backend nor frontend implements it; the strict dictionary check only enforces mandatory elements, so this row records the gap explicitly."
+    "action": "",
+    "notes": "Implemented 2026-06: FDA Other Characterisation of Drug Role (post-market conditional-required when combination product + malfunction). Single coded value 1=Similar Device."
   }
 ]

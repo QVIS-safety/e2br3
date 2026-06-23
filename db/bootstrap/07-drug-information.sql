@@ -96,6 +96,9 @@ CREATE TABLE drug_information (
     -- FDA.G.k.12.r - Structured FDA device information payload
     fda_device_info_json JSONB,
 
+    -- FDA.G.k.1.a - FDA Other Characterisation of Drug Role (1 = Similar Device)
+    fda_other_characterization VARCHAR(10),
+
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

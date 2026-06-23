@@ -221,6 +221,7 @@ async fn import_drugs(
 				drug_additional_information: None,
 				fda_specialized_product_category,
 				fda_device_info_json,
+				fda_other_characterization: None,
 			},
 		)
 		.await?;

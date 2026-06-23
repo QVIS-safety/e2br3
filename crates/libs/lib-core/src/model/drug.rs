@@ -88,6 +88,9 @@ pub struct DrugInformation {
 	pub fda_specialized_product_category: Option<String>,
 	pub fda_device_info_json: Option<JsonValue>,
 
+	// FDA.G.k.1.a - FDA Other Characterisation of Drug Role (1 = Similar Device)
+	pub fda_other_characterization: Option<String>,
+
 	// Timestamps
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -132,6 +135,7 @@ pub struct DrugInformationForCreate {
 	pub drug_additional_information: Option<String>,
 	pub fda_specialized_product_category: Option<String>,
 	pub fda_device_info_json: Option<JsonValue>,
+	pub fda_other_characterization: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -169,6 +173,7 @@ pub struct DrugInformationForUpdate {
 	pub drug_additional_information: Option<String>,
 	pub fda_specialized_product_category: Option<String>,
 	pub fda_device_info_json: Option<JsonValue>,
+	pub fda_other_characterization: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -960,6 +965,7 @@ impl DrugInformationBmc {
 			     mfds_mpid_version, mfds_mpid, phpid, phpid_version, obtain_drug_country, parent_route, parent_route_termid,
 			     parent_route_termid_version, parent_dosage_text, fda_additional_info_coded,
 			     drug_additional_info_codes_json, drug_additional_information, fda_specialized_product_category, fda_device_info_json,
+			     fda_other_characterization,
 			     created_at, updated_at, created_by
 				 )
 				 VALUES (
@@ -971,7 +977,8 @@ impl DrugInformationBmc {
 				     $22, $23, $24, $25, $26, $27, $28,
 				     $29, $30, $31,
 				     $32, $33, $34, $35,
-				     now(), now(), $36
+				     $36,
+				     now(), now(), $37
 				 )
 				 RETURNING id",
 			Self::TABLE
@@ -1015,6 +1022,7 @@ impl DrugInformationBmc {
 					.bind(drug_c.drug_additional_information)
 					.bind(drug_c.fda_specialized_product_category)
 					.bind(drug_c.fda_device_info_json)
+					.bind(drug_c.fda_other_characterization)
 					.bind(ctx.user_id()),
 			)
 			.await?;
@@ -1090,8 +1098,9 @@ impl DrugInformationBmc {
 			     fda_specialized_product_category = COALESCE($32, fda_specialized_product_category),
 				     fda_device_info_json = COALESCE($33, fda_device_info_json),
 				     source_product_presave_id = COALESCE($34, source_product_presave_id),
+				     fda_other_characterization = COALESCE($35, fda_other_characterization),
 				     updated_at = now(),
-				     updated_by = $35
+				     updated_by = $36
 				 WHERE id = $1",
 			Self::TABLE
 		);
@@ -1133,6 +1142,7 @@ impl DrugInformationBmc {
 					.bind(drug_u.fda_specialized_product_category)
 					.bind(drug_u.fda_device_info_json)
 					.bind(drug_u.source_product_presave_id)
+					.bind(drug_u.fda_other_characterization)
 					.bind(ctx.user_id()),
 			)
 			.await?;
@@ -1275,8 +1285,9 @@ impl DrugInformationBmc {
 			     drug_additional_information = COALESCE($32, drug_additional_information),
 			     fda_specialized_product_category = COALESCE($33, fda_specialized_product_category),
 			     fda_device_info_json = COALESCE($34, fda_device_info_json),
+			     fda_other_characterization = COALESCE($35, fda_other_characterization),
 			     updated_at = now(),
-			     updated_by = $35
+			     updated_by = $36
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -1318,6 +1329,7 @@ impl DrugInformationBmc {
 					.bind(drug_u.drug_additional_information)
 					.bind(drug_u.fda_specialized_product_category)
 					.bind(drug_u.fda_device_info_json)
+					.bind(drug_u.fda_other_characterization)
 					.bind(ctx.user_id()),
 			)
 			.await?;
