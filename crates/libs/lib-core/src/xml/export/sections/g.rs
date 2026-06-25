@@ -936,6 +936,7 @@ mod tests {
 			drug_additional_information: None,
 			fda_specialized_product_category: None,
 			fda_device_info_json: None,
+			fda_other_characterization: None,
 			created_at: OffsetDateTime::now_utc(),
 			updated_at: OffsetDateTime::now_utc(),
 			created_by: Uuid::new_v4(),

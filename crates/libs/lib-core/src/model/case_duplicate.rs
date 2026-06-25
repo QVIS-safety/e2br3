@@ -175,114 +175,12 @@ pub fn matches_patient_signature(
 	false
 }
 
-/// Assess whether the duplicate-check key contains enough information to be
-/// considered "complete" and produce any warnings about missing fields.
-pub fn assess_duplicate_basis(key: &CaseDuplicateKey) -> DuplicateBasisAssessment {
-	let report_type = key
-		.report_type
-		.as_deref()
-		.map(str::trim)
-		.unwrap_or_default();
-	let reporter_present = has_meaningful_text(key.reporter_organization.as_deref());
-	let sponsor_study_present =
-		has_meaningful_text(key.sponsor_study_number.as_deref());
-	let patient_initials_present =
-		has_meaningful_text(key.patient_initials.as_deref());
-	let investigation_present =
-		has_meaningful_text(key.investigation_number.as_deref());
-	let age_present = has_meaningful_text(key.age_d2_2a.as_deref());
-	let sex_present = has_meaningful_text(key.sex_d5.as_deref());
-	let product_present = has_meaningful_text(key.dg_prd_key.as_deref());
-	let reaction_version_present =
-		has_meaningful_text(key.reaction_meddra_version.as_deref());
-	let reaction_code_present =
-		has_meaningful_text(key.reaction_meddra_code.as_deref());
-	let ae_start_present = key.ae_start_date.is_some();
-
-	let mut warnings = Vec::new();
-	let basis_complete = if report_type == "2" {
-		let complete = reporter_present
-			&& sponsor_study_present
-			&& investigation_present
-			&& product_present
-			&& reaction_version_present
-			&& reaction_code_present
-			&& ae_start_present;
-		if !complete {
-			warnings.push(
-				"study intake duplicate check is incomplete; resubmit with allow_duplicate_override=true after review".to_string(),
-			);
-		}
-		complete
-	} else {
-		let complete = patient_initials_present
-			&& age_present
-			&& sex_present
-			&& product_present
-			&& reaction_version_present
-			&& reaction_code_present
-			&& ae_start_present;
-		if !complete {
-			warnings.push(
-				"duplicate check basis is incomplete; resubmit with allow_duplicate_override=true after review".to_string(),
-			);
-		}
-		complete
-	};
-
-	if report_type == "2" && !reporter_present {
-		warnings.push(
-			"Reporter organization is missing from duplicate check input"
-				.to_string(),
-		);
-	}
-	if report_type == "2" && !sponsor_study_present {
-		warnings.push(
-			"Sponsor Study Number is missing from duplicate check input".to_string(),
-		);
-	}
-	if report_type == "2" && !investigation_present {
-		warnings.push(
-			"Investigation Number is missing from duplicate check input".to_string(),
-		);
-	}
-	if report_type != "2" && !patient_initials_present {
-		warnings.push(
-			"Patient Name or Initials is missing from duplicate check input"
-				.to_string(),
-		);
-	}
-	if report_type != "2" && !age_present {
-		warnings
-			.push("Patient age is missing from duplicate check input".to_string());
-	}
-	if report_type != "2" && !sex_present {
-		warnings
-			.push("Patient sex is missing from duplicate check input".to_string());
-	}
-	if !product_present {
-		warnings
-			.push("Product ID is missing from duplicate check input".to_string());
-	}
-	if !reaction_version_present {
-		warnings.push(
-			"Reaction MedDRA version is missing from duplicate check input"
-				.to_string(),
-		);
-	}
-	if !reaction_code_present {
-		warnings.push(
-			"Reaction MedDRA code is missing from duplicate check input".to_string(),
-		);
-	}
-	if !ae_start_present {
-		warnings
-			.push("AE start date is missing from duplicate check input".to_string());
-	}
-
+/// Optional matching fields narrow duplicate detection when supplied, but they
+/// do not make the intake gate incomplete when omitted.
+pub fn assess_duplicate_basis(_key: &CaseDuplicateKey) -> DuplicateBasisAssessment {
 	DuplicateBasisAssessment {
-		basis_complete,
-		warnings,
+		basis_complete: true,
+		warnings: Vec::new(),
 	}
 }
 
@@ -449,5 +347,35 @@ impl CaseDuplicateBmc {
 		matches.sort_by(|a, b| b.created_at.cmp(&a.created_at));
 		matches.truncate(20);
 		Ok(matches)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::{assess_duplicate_basis, CaseDuplicateKey};
+
+	fn duplicate_key(report_type: &str) -> CaseDuplicateKey {
+		CaseDuplicateKey {
+			report_type: Some(report_type.to_string()),
+			reporter_organization: None,
+			sponsor_study_number: None,
+			patient_initials: None,
+			investigation_number: None,
+			age_d2_2a: None,
+			sex_d5: None,
+			dg_prd_key: None,
+			reaction_meddra_version: None,
+			reaction_meddra_code: None,
+			ae_start_date: None,
+		}
+	}
+
+	#[test]
+	fn duplicate_basis_accepts_missing_optional_matching_fields() {
+		for report_type in ["1", "2", "3", "4"] {
+			let assessment = assess_duplicate_basis(&duplicate_key(report_type));
+			assert!(assessment.basis_complete, "{assessment:?}");
+			assert!(assessment.warnings.is_empty(), "{assessment:?}");
+		}
 	}
 }

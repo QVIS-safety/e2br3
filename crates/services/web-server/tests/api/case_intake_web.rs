@@ -327,7 +327,7 @@ async fn test_case_intake_duplicate_check_uses_patient_signature_over_product_mi
 
 #[serial]
 #[tokio::test]
-async fn test_case_intake_duplicate_check_surfaces_incomplete_basis_as_warning(
+async fn test_case_intake_duplicate_check_omits_optional_missing_field_warnings(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -345,25 +345,76 @@ async fn test_case_intake_duplicate_check_surfaces_incomplete_basis_as_warning(
 		post_json(&app, &cookie, "/api/cases/intake-check", check_body).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["duplicate"], false, "{body:?}");
-	assert_eq!(body["data"]["basis_complete"], false, "{body:?}");
-	assert!(!body["data"]["warnings"]
-		.as_array()
-		.ok_or("warnings should be array")?
-		.is_empty());
-	assert!(body["data"]["warnings"]
-		.as_array()
-		.map(|warnings| warnings.iter().any(|value| value
-			.as_str()
-			.unwrap_or_default()
-			.contains("Reaction MedDRA version is missing")))
-		.unwrap_or(false));
+	assert_eq!(body["data"]["basis_complete"], true, "{body:?}");
+	assert_eq!(
+		body["data"]["warnings"]
+			.as_array()
+			.ok_or("warnings should be array")?
+			.len(),
+		0,
+		"{body:?}"
+	);
 
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_case_from_intake_requires_override_when_duplicate_basis_is_incomplete(
+async fn test_case_intake_duplicate_check_accepts_minimum_required_fields(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let safety_report_id = format!("INTAKE-{}", Uuid::new_v4());
+	let check_body = json!({
+		"data": intake_data(&safety_report_id, 141, "1", json!({
+			"patient_initials": null,
+			"age_d2_2a": null,
+			"sex_d5": null,
+			"dg_prd_key": null,
+			"reaction_meddra_version": null,
+			"reaction_meddra_code": null,
+			"ae_start_date": null
+		}))
+	});
+	let (status, body) =
+		post_json(&app, &cookie, "/api/cases/intake-check", check_body).await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(body["data"]["duplicate"], false, "{body:?}");
+	assert_eq!(body["data"]["basis_complete"], true, "{body:?}");
+	assert_eq!(
+		body["data"]["warnings"]
+			.as_array()
+			.ok_or("warnings should be array")?
+			.len(),
+		0,
+		"{body:?}"
+	);
+
+	let create_body = json!({
+		"data": intake_data(&safety_report_id, 141, "1", json!({
+			"patient_initials": null,
+			"age_d2_2a": null,
+			"sex_d5": null,
+			"dg_prd_key": null,
+			"reaction_meddra_version": null,
+			"reaction_meddra_code": null,
+			"ae_start_date": null
+		}))
+	});
+	let (status, body) =
+		post_json(&app, &cookie, "/api/cases/from-intake", create_body).await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_from_intake_allows_missing_optional_duplicate_fields(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -382,11 +433,7 @@ async fn test_case_from_intake_requires_override_when_duplicate_basis_is_incompl
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/from-intake", intake_body.clone())
 			.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(body["error"]["data"]["detail"]
-		.as_str()
-		.unwrap_or_default()
-		.contains("duplicate check basis is incomplete"));
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
 
 	let override_body = json!({
 		"data": intake_data(&safety_report_id, 141, "1", json!({
@@ -405,7 +452,7 @@ async fn test_case_from_intake_requires_override_when_duplicate_basis_is_incompl
 
 #[serial]
 #[tokio::test]
-async fn test_case_intake_duplicate_check_treats_null_flavor_codes_as_missing(
+async fn test_case_intake_duplicate_check_accepts_null_flavor_codes_as_optional(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -423,21 +470,22 @@ async fn test_case_intake_duplicate_check_treats_null_flavor_codes_as_missing(
 	let (status, body) =
 		post_json(&app, &cookie, "/api/cases/intake-check", check_body).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["basis_complete"], false, "{body:?}");
-	assert!(body["data"]["warnings"]
-		.as_array()
-		.map(|warnings| warnings.iter().any(|value| value
-			.as_str()
-			.unwrap_or_default()
-			.contains("Reaction MedDRA version is missing")))
-		.unwrap_or(false));
+	assert_eq!(body["data"]["basis_complete"], true, "{body:?}");
+	assert_eq!(
+		body["data"]["warnings"]
+			.as_array()
+			.ok_or("warnings should be array")?
+			.len(),
+		0,
+		"{body:?}"
+	);
 
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_case_intake_duplicate_check_applies_report_type_required_matrix(
+async fn test_case_intake_duplicate_check_keeps_matching_fields_optional_by_report_type(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -461,14 +509,15 @@ async fn test_case_intake_duplicate_check_applies_report_type_required_matrix(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["basis_complete"], false, "{body:?}");
-	assert!(body["data"]["warnings"]
-		.as_array()
-		.map(|warnings| warnings.iter().any(|value| value
-			.as_str()
-			.unwrap_or_default()
-			.contains("Patient Name or Initials")))
-		.unwrap_or(false));
+	assert_eq!(body["data"]["basis_complete"], true, "{body:?}");
+	assert_eq!(
+		body["data"]["warnings"]
+			.as_array()
+			.ok_or("warnings should be array")?
+			.len(),
+		0,
+		"{body:?}"
+	);
 
 	let study_id = format!("INTAKE-{}", Uuid::new_v4());
 	let study_missing_investigation = json!({
@@ -486,14 +535,15 @@ async fn test_case_intake_duplicate_check_applies_report_type_required_matrix(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["basis_complete"], false, "{body:?}");
-	assert!(body["data"]["warnings"]
-		.as_array()
-		.map(|warnings| warnings.iter().any(|value| value
-			.as_str()
-			.unwrap_or_default()
-			.contains("Investigation Number")))
-		.unwrap_or(false));
+	assert_eq!(body["data"]["basis_complete"], true, "{body:?}");
+	assert_eq!(
+		body["data"]["warnings"]
+			.as_array()
+			.ok_or("warnings should be array")?
+			.len(),
+		0,
+		"{body:?}"
+	);
 
 	let unknown_id = format!("INTAKE-{}", Uuid::new_v4());
 	let unknown_complete = json!({
