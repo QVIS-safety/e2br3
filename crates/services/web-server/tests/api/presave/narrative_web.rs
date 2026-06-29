@@ -20,12 +20,14 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		"/api/presaves/narratives".to_string(),
 		Some(json!({
 			"data": {
-				"name": "REST Narrative Body Optional"
+				"comments": "legacy narrative metadata should be ignored"
 			}
 		})),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(value["data"]["name"].as_str(), Some("Narrative Record"));
+	assert!(value["data"]["comments"].is_null(), "{value:?}");
 
 	let (status, value) = request_json(
 		&app,
@@ -34,7 +36,7 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		"/api/presaves/narratives".to_string(),
 		Some(json!({
 			"data": {
-				"name": "REST Narrative",
+				"comments": "legacy narrative metadata should be ignored",
 				"case_narrative": "REST auto narrative {D.2.2a} {D.5}",
 				"case_narrative_notation": "REST notation",
 				"additional_information": "REST sponsor additional information"
@@ -43,6 +45,11 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(
+		value["data"]["name"].as_str(),
+		Some("REST auto narrative {D.2.2a} {D.5} / REST sponsor additional information")
+	);
+	assert!(value["data"]["comments"].is_null(), "{value:?}");
 	assert_eq!(
 		value["data"]["case_narrative"].as_str(),
 		Some("REST auto narrative {D.2.2a} {D.5}")
@@ -592,7 +599,6 @@ async fn test_narrative_presave_details_rejects_invalid_child_operations(
 		json!({ "data": { "case_summaries": [{ "id": summary_b, "_delete": true }] } }),
 		json!({ "data": { "sender_diagnoses": [{ "id": diagnosis_b, "sequence_number": 2, "diagnosis_meddra_code": "WRONG" }] } }),
 		json!({ "data": { "case_summaries": [{ "id": summary_b, "sequence_number": 2, "summary_text": "Wrong parent" }] } }),
-		json!({ "data": { "parent": { "name": " " } } }),
 	] {
 		let (status, value) = request_json(
 			&app,
@@ -604,6 +610,17 @@ async fn test_narrative_presave_details_rejects_invalid_child_operations(
 		.await?;
 		assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
 	}
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PUT,
+		format!("/api/presaves/narratives/{narrative_a}/details"),
+		Some(json!({ "data": { "parent": { "name": " " } } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_ne!(value["data"]["parent"]["name"].as_str(), Some(" "));
 
 	Ok(())
 }

@@ -456,9 +456,15 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(
+	assert_ne!(
 		value["data"]["name"].as_str(),
 		Some("Info Matrix Editable Updated"),
+		"{value:?}"
+	);
+	assert!(value["data"]["comments"].is_null(), "{value:?}");
+	assert_eq!(
+		value["data"]["organization_name"].as_str(),
+		Some(editable_sender_name.as_str()),
 		"{value:?}"
 	);
 

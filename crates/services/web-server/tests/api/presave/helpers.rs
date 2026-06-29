@@ -589,14 +589,15 @@ pub(super) async fn create_narrative_presave_with_authority_via_api(
 	cookie: &str,
 	_authority: &str,
 ) -> Result<Uuid> {
+	let suffix = Uuid::new_v4();
 	let value = post_json_created(
 		app,
 		cookie,
 		"/api/presaves/narratives".to_string(),
 		json!({
 			"data": {
-				"name": format!("REST Narrative Details {}", Uuid::new_v4()),
-				"case_narrative": "REST narrative details"
+				"name": format!("REST Narrative Details {suffix}"),
+				"case_narrative": format!("REST narrative details {suffix}")
 			}
 		}),
 	)

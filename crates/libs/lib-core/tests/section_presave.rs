@@ -778,7 +778,11 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let sender = SenderPresaveBmc::get(&ctx, &mm, sender_id).await?;
-	assert_eq!(sender.name, format!("Sender Presave {suffix}"));
+	assert_eq!(
+		sender.name,
+		format!("Sender Org Before {suffix} / sender@example.com")
+	);
+	assert!(sender.comments.is_none());
 	assert_eq!(
 		sender.organization_name.as_deref(),
 		Some(format!("Sender Org Before {suffix}").as_str())
@@ -807,7 +811,10 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let receiver = ReceiverPresaveBmc::get(&ctx, &mm, receiver_id).await?;
-	assert_eq!(receiver.name, format!("Receiver Presave {suffix}"));
+	assert_eq!(
+		receiver.name,
+		format!("Receiver Org {suffix} / CDER / Regulatory Authority")
+	);
 	assert_eq!(receiver.receiver_identifier.as_deref(), Some("CDER"));
 
 	let product_id = ProductPresaveBmc::create(
@@ -840,7 +847,15 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let product = ProductPresaveBmc::get(&ctx, &mm, product_id).await?;
-	assert_eq!(product.name, format!("Product Presave {suffix}"));
+	assert!(
+		product
+			.name
+			.starts_with(format!("PRODUCT-{suffix} / Medicinal Product ").as_str()),
+		"{}",
+		product.name
+	);
+	assert_eq!(product.name.len(), 80);
+	assert!(product.name.ends_with("..."));
 	assert_eq!(
 		product.medicinal_product.as_deref(),
 		Some(format!("Medicinal Product {suffix}").as_str())
@@ -870,7 +885,10 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let reporter = ReporterPresaveBmc::get(&ctx, &mm, reporter_id).await?;
-	assert_eq!(reporter.name, format!("Reporter Presave {suffix}"));
+	assert_eq!(
+		reporter.name,
+		format!("Reporter Org {suffix} / Casey Reporter")
+	);
 	assert_eq!(reporter.reporter_family_name.as_deref(), Some("Reporter"));
 
 	let study_id = StudyPresaveBmc::create(
@@ -891,7 +909,15 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let study = StudyPresaveBmc::get(&ctx, &mm, study_id).await?;
-	assert_eq!(study.name, format!("Study Presave {suffix}"));
+	assert!(
+		study
+			.name
+			.starts_with(format!("ST-001-{suffix} / Study Name ").as_str()),
+		"{}",
+		study.name
+	);
+	assert_eq!(study.name.len(), 80);
+	assert!(study.name.ends_with("..."));
 	assert_eq!(
 		study.sponsor_study_number.as_deref(),
 		Some(format!("ST-001-{suffix}").as_str())
@@ -921,7 +947,10 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let narrative = NarrativePresaveBmc::get(&ctx, &mm, narrative_id).await?;
-	assert_eq!(narrative.name, format!("Narrative Presave {suffix}"));
+	assert_eq!(
+		narrative.name,
+		"Case narrative text / Sponsor additional information / Reporter comments / Se..."
+	);
 	assert_eq!(
 		narrative.case_narrative.as_deref(),
 		Some("Case narrative text")
@@ -1326,23 +1355,24 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 		StudyPresaveBmc::create(&ctx, &mm, long_sponsor_number).await,
 		"sponsor_study_number` must be at most 50 characters",
 	);
-	expect_validation_error(
-		NarrativePresaveBmc::create(
-			&ctx,
-			&mm,
-			NarrativePresaveForCreate {
-				name: "   ".into(),
-				comments: None,
-				case_narrative: None,
-				case_narrative_notation: None,
-				additional_information: None,
-				reporter_comments: None,
-				sender_comments: None,
-			},
-		)
-		.await,
-		"name",
-	);
+	let narrative_id = NarrativePresaveBmc::create(
+		&ctx,
+		&mm,
+		NarrativePresaveForCreate {
+			name: "   ".into(),
+			comments: Some("legacy metadata comments are ignored".into()),
+			case_narrative: Some(format!("Minimal narrative {suffix}")),
+			case_narrative_notation: None,
+			additional_information: None,
+			reporter_comments: None,
+			sender_comments: None,
+		},
+	)
+	.await?;
+	let narrative = NarrativePresaveBmc::get(&ctx, &mm, narrative_id).await?;
+	assert_eq!(narrative.name, format!("Minimal narrative {suffix}"));
+	assert!(narrative.comments.is_none());
+	NarrativePresaveBmc::delete(&ctx, &mm, narrative_id).await?;
 
 	Ok(())
 }
@@ -1608,7 +1638,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 		NarrativePresaveForCreate {
 			name: format!("Duplicate Narrative Presave {suffix}"),
 			comments: None,
-			case_narrative: None,
+			case_narrative: Some(format!("Duplicate narrative body {suffix}")),
 			case_narrative_notation: None,
 			additional_information: None,
 			reporter_comments: None,
@@ -1623,7 +1653,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			NarrativePresaveForCreate {
 				name: format!(" duplicate narrative presave {suffix} "),
 				comments: None,
-				case_narrative: Some("Body is not part of identity".into()),
+				case_narrative: Some(format!(" duplicate narrative body {suffix} ")),
 				case_narrative_notation: None,
 				additional_information: None,
 				reporter_comments: None,

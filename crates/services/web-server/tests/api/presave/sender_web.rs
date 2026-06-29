@@ -277,7 +277,7 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 		}),
 	)
 	.await?;
-	assert_eq!(saved["data"]["parent"]["comments"], "updated by graph");
+	assert!(saved["data"]["parent"]["comments"].is_null(), "{saved:?}");
 	assert_eq!(saved["data"]["gateways"].as_array().unwrap().len(), 2);
 	assert_eq!(
 		saved["data"]["responsible_persons"]
@@ -293,9 +293,8 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 		format!("/api/presaves/senders/{sender_id}/details"),
 	)
 	.await?;
-	assert_eq!(
-		persisted["data"]["parent"]["comments"].as_str(),
-		Some("updated by graph"),
+	assert!(
+		persisted["data"]["parent"]["comments"].is_null(),
 		"{persisted:?}"
 	);
 	assert_eq!(

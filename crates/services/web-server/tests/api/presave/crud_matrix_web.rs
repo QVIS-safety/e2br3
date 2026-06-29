@@ -20,7 +20,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		"/api/presaves/senders".to_string(),
 		Some(json!({
 			"data": {
-				"name": "REST Sender",
+				"comments": "legacy sender metadata should be ignored",
 				"sender_type": "1",
 				"organization_name": "REST Sender Org",
 				"country_code": "US",
@@ -30,6 +30,11 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(
+		value["data"]["name"].as_str(),
+		Some("REST Sender Org / sender@example.com")
+	);
+	assert!(value["data"]["comments"].is_null(), "{value:?}");
 	let sender_id = data_id(&value)?;
 
 	let (status, value) = request_json(
@@ -73,7 +78,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		"/api/presaves/receivers".to_string(),
 		Some(json!({
 			"data": {
-				"name": "REST Receiver",
+				"comments": "legacy receiver metadata should be ignored",
 				"receiver_type": "Regulatory Authority",
 				"organization_name": "REST Receiver Org",
 				"receiver_identifier": "REST-RECEIVER"
@@ -82,6 +87,11 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(
+		value["data"]["name"].as_str(),
+		Some("REST Receiver Org / REST-RECEIVER / Regulatory Authority")
+	);
+	assert!(value["data"]["comments"].is_null(), "{value:?}");
 	let receiver_id = data_id(&value)?;
 
 	let (status, value) = request_json(
@@ -108,7 +118,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		"/api/presaves/products".to_string(),
 		Some(json!({
 		"data": {
-				"name": "REST Product Canonical",
+				"comments": "legacy product metadata should be ignored",
 				"sender_presave_id": sender_id,
 				"product_id": "REST-PRODUCT-CANONICAL",
 				"medicinal_product": "REST Product Canonical"
@@ -117,6 +127,11 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(
+		value["data"]["name"].as_str(),
+		Some("REST-PRODUCT-CANONICAL / REST Product Canonical")
+	);
+	assert!(value["data"]["comments"].is_null(), "{value:?}");
 	let product_id = data_id(&value)?;
 
 	let (status, value) = request_json(
@@ -144,7 +159,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		"/api/presaves/reporters".to_string(),
 		Some(json!({
 			"data": {
-				"name": "REST Reporter",
+				"comments": "legacy reporter metadata should be ignored",
 				"reporter_given_name": "Grace",
 				"reporter_family_name": "Hopper",
 				"organization": "REST Reporter Org",
@@ -155,6 +170,11 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(
+		value["data"]["name"].as_str(),
+		Some("REST Reporter Org / Grace Hopper")
+	);
+	assert!(value["data"]["comments"].is_null(), "{value:?}");
 	let reporter_id = data_id(&value)?;
 
 	for (uri, id) in [

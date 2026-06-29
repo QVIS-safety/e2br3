@@ -231,10 +231,7 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		}),
 	)
 	.await?;
-	assert_eq!(
-		saved["data"]["parent"]["comments"],
-		"updated by study graph"
-	);
+	assert!(saved["data"]["parent"]["comments"].is_null(), "{saved:?}");
 	assert_eq!(saved["data"]["registrations"].as_array().unwrap().len(), 2);
 	assert_eq!(saved["data"]["products"].as_array().unwrap().len(), 2);
 

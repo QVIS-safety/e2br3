@@ -17,6 +17,51 @@ pub struct PresaveListFilter {
 	pub deleted: Option<OpValsBool>,
 }
 
+fn clean_presave_text(value: Option<&str>) -> Option<String> {
+	value
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+		.map(str::to_string)
+}
+
+fn join_presave_name_parts(parts: &[Option<&str>]) -> String {
+	parts
+		.iter()
+		.filter_map(|value| clean_presave_text(*value))
+		.collect::<Vec<_>>()
+		.join(" / ")
+}
+
+fn join_person_name(
+	given_name: Option<&str>,
+	family_name: Option<&str>,
+) -> Option<String> {
+	let name = [given_name, family_name]
+		.iter()
+		.filter_map(|value| clean_presave_text(*value))
+		.collect::<Vec<_>>()
+		.join(" ");
+	if name.is_empty() {
+		None
+	} else {
+		Some(name)
+	}
+}
+
+fn generated_presave_name(label: &str, parts: &[Option<&str>]) -> String {
+	let name = join_presave_name_parts(parts);
+	let name = if name.is_empty() {
+		format!("{label} Record")
+	} else {
+		name
+	};
+	if name.len() > 80 {
+		format!("{}...", name.chars().take(77).collect::<String>())
+	} else {
+		name
+	}
+}
+
 macro_rules! impl_child_bmc {
 	(
 		$bmc:ident,
@@ -223,6 +268,7 @@ pub struct SenderPresave {
 
 #[derive(Deserialize)]
 pub struct SenderPresaveForCreate {
+	#[serde(default)]
 	pub name: String,
 	pub comments: Option<String>,
 	pub is_default: Option<bool>,
@@ -262,10 +308,14 @@ impl IntoOrgScopedCreate for SenderPresaveForCreate {
 	type Insert = SenderPresaveForInsert;
 
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
+		let name = generated_presave_name(
+			"Sender",
+			&[self.organization_name.as_deref(), self.email.as_deref()],
+		);
 		SenderPresaveForInsert {
 			organization_id,
-			name: self.name,
-			comments: self.comments,
+			name,
+			comments: None,
 			is_default: self.is_default,
 			sender_type: self.sender_type,
 			organization_name: self.organization_name,
@@ -359,8 +409,10 @@ impl SenderPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		data: SenderPresaveForUpdate,
+		mut data: SenderPresaveForUpdate,
 	) -> Result<()> {
+		data.name = None;
+		data.comments = None;
 		if data.deleted == Some(true) {
 			Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
 		} else {
@@ -373,6 +425,7 @@ impl SenderPresaveBmc {
 				.organization_name
 				.as_deref()
 				.or(current.organization_name.as_deref());
+			let email = data.email.as_deref().or(current.email.as_deref());
 			Self::validate_identity(sender_type, organization_name)?;
 			Self::ensure_unique_identity(
 				ctx,
@@ -382,6 +435,10 @@ impl SenderPresaveBmc {
 				organization_name,
 			)
 			.await?;
+			data.name = Some(generated_presave_name(
+				"Sender",
+				&[organization_name, email],
+			));
 		}
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
@@ -576,6 +633,7 @@ pub struct ReceiverPresave {
 
 #[derive(Deserialize)]
 pub struct ReceiverPresaveForCreate {
+	#[serde(default)]
 	pub name: String,
 	pub comments: Option<String>,
 	pub receiver_type: Option<String>,
@@ -617,10 +675,18 @@ impl IntoOrgScopedCreate for ReceiverPresaveForCreate {
 	type Insert = ReceiverPresaveForInsert;
 
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
+		let name = generated_presave_name(
+			"Receiver",
+			&[
+				self.organization_name.as_deref(),
+				self.receiver_identifier.as_deref(),
+				self.receiver_type.as_deref(),
+			],
+		);
 		ReceiverPresaveForInsert {
 			organization_id,
-			name: self.name,
-			comments: self.comments,
+			name,
+			comments: None,
 			receiver_type: self.receiver_type,
 			organization_name: self.organization_name,
 			receiver_identifier: self.receiver_identifier,
@@ -730,8 +796,10 @@ impl ReceiverPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		data: ReceiverPresaveForUpdate,
+		mut data: ReceiverPresaveForUpdate,
 	) -> Result<()> {
+		data.name = None;
+		data.comments = None;
 		if data.deleted == Some(true) {
 			Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
 		} else {
@@ -742,6 +810,11 @@ impl ReceiverPresaveBmc {
 				.organization_name
 				.as_deref()
 				.or(current.organization_name.as_deref());
+			let effective_receiver_type = receiver_type.or(current_receiver_type);
+			let receiver_identifier = data
+				.receiver_identifier
+				.as_deref()
+				.or(current.receiver_identifier.as_deref());
 			Self::validate_update_identity(
 				receiver_type,
 				current_receiver_type,
@@ -791,6 +864,14 @@ impl ReceiverPresaveBmc {
 			)?;
 			Self::ensure_unique_identity(ctx, mm, Some(id), organization_name)
 				.await?;
+			data.name = Some(generated_presave_name(
+				"Receiver",
+				&[
+					organization_name,
+					receiver_identifier,
+					effective_receiver_type,
+				],
+			));
 			base_uuid::update::<Self, _>(ctx, mm, id, data).await?;
 			Self::clear_not_applicable_day_counts(
 				ctx,
@@ -1105,6 +1186,7 @@ pub struct ProductPresave {
 
 #[derive(Deserialize)]
 pub struct ProductPresaveForCreate {
+	#[serde(default)]
 	pub name: String,
 	pub comments: Option<String>,
 	pub sender_presave_id: Option<Uuid>,
@@ -1160,10 +1242,19 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 	type Insert = ProductPresaveForInsert;
 
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
+		let name = generated_presave_name(
+			"Product",
+			&[
+				self.product_id.as_deref(),
+				self.medicinal_product.as_deref(),
+				self.brand_name.as_deref(),
+				self.preapproval_ip_name.as_deref(),
+			],
+		);
 		ProductPresaveForInsert {
 			organization_id,
-			name: self.name,
-			comments: self.comments,
+			name,
+			comments: None,
 			sender_presave_id: self.sender_presave_id,
 			product_id: self.product_id,
 			medicinal_product: self.medicinal_product,
@@ -1275,8 +1366,10 @@ impl ProductPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		data: ProductPresaveForUpdate,
+		mut data: ProductPresaveForUpdate,
 	) -> Result<()> {
+		data.name = None;
+		data.comments = None;
 		if data.deleted == Some(true) {
 			Self::ensure_not_referenced_by_studies(ctx, mm, id).await?;
 		} else {
@@ -1285,6 +1378,12 @@ impl ProductPresaveBmc {
 				data.sender_presave_id.or(current.sender_presave_id);
 			let product_id =
 				data.product_id.as_deref().or(current.product_id.as_deref());
+			let medicinal_product = data
+				.medicinal_product
+				.as_deref()
+				.or(current.medicinal_product.as_deref());
+			let brand_name =
+				data.brand_name.as_deref().or(current.brand_name.as_deref());
 			let preapproval_ip_name = data
 				.preapproval_ip_name
 				.as_deref()
@@ -1303,6 +1402,15 @@ impl ProductPresaveBmc {
 				preapproval_ip_name,
 			)
 			.await?;
+			data.name = Some(generated_presave_name(
+				"Product",
+				&[
+					product_id,
+					medicinal_product,
+					brand_name,
+					preapproval_ip_name,
+				],
+			));
 		}
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
@@ -1569,6 +1677,7 @@ pub struct ReporterPresave {
 
 #[derive(Deserialize)]
 pub struct ReporterPresaveForCreate {
+	#[serde(default)]
 	pub name: String,
 	pub comments: Option<String>,
 	pub reporter_title: Option<String>,
@@ -1612,10 +1721,18 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 	type Insert = ReporterPresaveForInsert;
 
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
+		let reporter_name = join_person_name(
+			self.reporter_given_name.as_deref(),
+			self.reporter_family_name.as_deref(),
+		);
+		let name = generated_presave_name(
+			"Reporter",
+			&[self.organization.as_deref(), reporter_name.as_deref()],
+		);
 		ReporterPresaveForInsert {
 			organization_id,
-			name: self.name,
-			comments: self.comments,
+			name,
+			comments: None,
 			reporter_title: self.reporter_title,
 			reporter_given_name: self.reporter_given_name,
 			reporter_middle_name: self.reporter_middle_name,
@@ -1715,8 +1832,10 @@ impl ReporterPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		data: ReporterPresaveForUpdate,
+		mut data: ReporterPresaveForUpdate,
 	) -> Result<()> {
+		data.name = None;
+		data.comments = None;
 		if data.deleted != Some(true) {
 			let current = Self::get(ctx, mm, id).await?;
 			let reporter_given_name = data
@@ -1731,6 +1850,10 @@ impl ReporterPresaveBmc {
 				.qualification
 				.as_deref()
 				.or(current.qualification.as_deref());
+			let reporter_family_name = data
+				.reporter_family_name
+				.as_deref()
+				.or(current.reporter_family_name.as_deref());
 			Self::validate_identity(
 				reporter_given_name,
 				organization,
@@ -1745,6 +1868,12 @@ impl ReporterPresaveBmc {
 				qualification,
 			)
 			.await?;
+			let reporter_name =
+				join_person_name(reporter_given_name, reporter_family_name);
+			data.name = Some(generated_presave_name(
+				"Reporter",
+				&[organization, reporter_name.as_deref()],
+			));
 		}
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await?;
 		Ok(())
@@ -1817,6 +1946,7 @@ pub struct StudyPresave {
 
 #[derive(Deserialize)]
 pub struct StudyPresaveForCreate {
+	#[serde(default)]
 	pub name: String,
 	pub comments: Option<String>,
 	pub product_presave_id: Option<Uuid>,
@@ -1848,10 +1978,17 @@ impl IntoOrgScopedCreate for StudyPresaveForCreate {
 	type Insert = StudyPresaveForInsert;
 
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
+		let name = generated_presave_name(
+			"Study",
+			&[
+				self.sponsor_study_number.as_deref(),
+				self.study_name.as_deref(),
+			],
+		);
 		StudyPresaveForInsert {
 			organization_id,
-			name: self.name,
-			comments: self.comments,
+			name,
+			comments: None,
 			product_presave_id: self.product_presave_id,
 			study_name: self.study_name,
 			study_name_notation: self.study_name_notation,
@@ -1977,8 +2114,10 @@ impl StudyPresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		data: StudyPresaveForUpdate,
+		mut data: StudyPresaveForUpdate,
 	) -> Result<()> {
+		data.name = None;
+		data.comments = None;
 		data.validate_fields()?;
 		if data.deleted != Some(true) {
 			let current = Self::get(ctx, mm, id).await?;
@@ -2008,6 +2147,10 @@ impl StudyPresaveBmc {
 				sponsor_study_number,
 			)
 			.await?;
+			data.name = Some(generated_presave_name(
+				"Study",
+				&[sponsor_study_number, study_name],
+			));
 		}
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
@@ -2298,6 +2441,7 @@ pub struct NarrativePresave {
 
 #[derive(Deserialize)]
 pub struct NarrativePresaveForCreate {
+	#[serde(default)]
 	pub name: String,
 	pub comments: Option<String>,
 	pub case_narrative: Option<String>,
@@ -2323,10 +2467,19 @@ impl IntoOrgScopedCreate for NarrativePresaveForCreate {
 	type Insert = NarrativePresaveForInsert;
 
 	fn into_insert(self, organization_id: Uuid) -> Self::Insert {
+		let name = generated_presave_name(
+			"Narrative",
+			&[
+				self.case_narrative.as_deref(),
+				self.additional_information.as_deref(),
+				self.reporter_comments.as_deref(),
+				self.sender_comments.as_deref(),
+			],
+		);
 		NarrativePresaveForInsert {
 			organization_id,
-			name: self.name,
-			comments: self.comments,
+			name,
+			comments: None,
 			case_narrative: self.case_narrative,
 			case_narrative_notation: self.case_narrative_notation,
 			additional_information: self.additional_information,
@@ -2360,9 +2513,17 @@ impl NarrativePresaveBmc {
 		mm: &ModelManager,
 		data: NarrativePresaveForCreate,
 	) -> Result<Uuid> {
-		Self::validate_identity(Some(data.name.as_str()))?;
-		Self::ensure_unique_identity(ctx, mm, None, Some(data.name.as_str()))
-			.await?;
+		let name = generated_presave_name(
+			"Narrative",
+			&[
+				data.case_narrative.as_deref(),
+				data.additional_information.as_deref(),
+				data.reporter_comments.as_deref(),
+				data.sender_comments.as_deref(),
+			],
+		);
+		Self::validate_identity(Some(name.as_str()))?;
+		Self::ensure_unique_identity(ctx, mm, None, Some(name.as_str())).await?;
 		base_uuid::create::<Self, _>(
 			ctx,
 			mm,
@@ -2397,13 +2558,41 @@ impl NarrativePresaveBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-		data: NarrativePresaveForUpdate,
+		mut data: NarrativePresaveForUpdate,
 	) -> Result<()> {
+		data.name = None;
+		data.comments = None;
 		if data.deleted != Some(true) {
 			let current = Self::get(ctx, mm, id).await?;
-			let name = data.name.as_deref().or(Some(current.name.as_str()));
-			Self::validate_identity(name)?;
-			Self::ensure_unique_identity(ctx, mm, Some(id), name).await?;
+			let case_narrative = data
+				.case_narrative
+				.as_deref()
+				.or(current.case_narrative.as_deref());
+			let additional_information = data
+				.additional_information
+				.as_deref()
+				.or(current.additional_information.as_deref());
+			let reporter_comments = data
+				.reporter_comments
+				.as_deref()
+				.or(current.reporter_comments.as_deref());
+			let sender_comments = data
+				.sender_comments
+				.as_deref()
+				.or(current.sender_comments.as_deref());
+			let name = generated_presave_name(
+				"Narrative",
+				&[
+					case_narrative,
+					additional_information,
+					reporter_comments,
+					sender_comments,
+				],
+			);
+			Self::validate_identity(Some(name.as_str()))?;
+			Self::ensure_unique_identity(ctx, mm, Some(id), Some(name.as_str()))
+				.await?;
+			data.name = Some(name);
 		}
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
