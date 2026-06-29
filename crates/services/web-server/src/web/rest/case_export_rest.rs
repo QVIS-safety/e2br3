@@ -44,6 +44,7 @@ pub struct BulkXmlExportInput {
 #[derive(Debug, Deserialize)]
 pub struct ExportCaseQuery {
 	pub authority: Option<String>,
+	pub include_notation: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -141,7 +142,11 @@ fn resolve_requested_export_authority(
 async fn export_xml_options(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
+	include_notation: Option<bool>,
 ) -> Result<ExportXmlOptions> {
+	if let Some(apply_comments) = include_notation {
+		return Ok(ExportXmlOptions { apply_comments });
+	}
 	let value = AdminSettingsBmc::get(ctx, mm, SETTINGS_KEY)
 		.await
 		.map_err(Error::Model)?;
@@ -189,9 +194,23 @@ pub async fn generate_validated_case_xml_for_authority(
 	case: lib_core::model::case::Case,
 	authority: RegulatoryAuthority,
 ) -> Result<(lib_core::model::case::Case, String)> {
+	generate_validated_case_xml_for_authority_with_notation(
+		ctx, mm, id, case, authority, None,
+	)
+	.await
+}
+
+async fn generate_validated_case_xml_for_authority_with_notation(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &lib_core::model::ModelManager,
+	id: Uuid,
+	case: lib_core::model::case::Case,
+	authority: RegulatoryAuthority,
+	include_notation: Option<bool>,
+) -> Result<(lib_core::model::case::Case, String)> {
 	let ctx_clone = ctx.clone();
 	let mm_clone = mm.clone();
-	let options = export_xml_options(ctx, mm).await?;
+	let options = export_xml_options(ctx, mm, include_notation).await?;
 	let xml = task::spawn_blocking(move || {
 		Handle::current().block_on(export_case_xml_with_options(
 			&ctx_clone, &mm_clone, id, options,
@@ -322,12 +341,13 @@ pub async fn export_case(
 	let authority = resolve_requested_export_authority(query.authority.as_deref())?;
 	let include_authority_suffix = true;
 	let file_name = export_file_name(&case, id, authority, include_authority_suffix);
-	let (case, xml) = match generate_validated_case_xml_for_authority(
+	let (case, xml) = match generate_validated_case_xml_for_authority_with_notation(
 		&ctx,
 		&mm,
 		id,
 		case.clone(),
 		authority,
+		query.include_notation,
 	)
 	.await
 	{

@@ -649,13 +649,15 @@ async fn test_xml_export_comments_setting_controls_comments() -> Result<()> {
 	let response = get_response(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/export/xml?authority=ich"),
+		&format!(
+			"/api/cases/{case_id}/export/xml?authority=ich&include_notation=true"
+		),
 	)
 	.await?;
 	assert_eq!(response.status(), StatusCode::OK);
 	let bytes = to_bytes(response.into_body(), usize::MAX).await?;
 	let xml = String::from_utf8(bytes.to_vec())?;
-	assert!(!xml.contains("<!-- element label -->"), "{xml}");
+	assert!(xml.contains("<!-- element label -->"), "{xml}");
 	assert!(xml.contains("<case>value</case>"), "{xml}");
 
 	let (status, body) = put_json(
@@ -673,13 +675,15 @@ async fn test_xml_export_comments_setting_controls_comments() -> Result<()> {
 	let response = get_response(
 		&app,
 		&cookie,
-		&format!("/api/cases/{case_id}/export/xml?authority=ich"),
+		&format!(
+			"/api/cases/{case_id}/export/xml?authority=ich&include_notation=false"
+		),
 	)
 	.await?;
 	assert_eq!(response.status(), StatusCode::OK);
 	let bytes = to_bytes(response.into_body(), usize::MAX).await?;
 	let xml = String::from_utf8(bytes.to_vec())?;
-	assert!(xml.contains("<!-- element label -->"), "{xml}");
+	assert!(!xml.contains("<!-- element label -->"), "{xml}");
 
 	Ok(())
 }
