@@ -151,12 +151,10 @@ async fn assert_audit_changed_field(
 
 fn product_presave_create(
 	_authority: RegulatoryAuthority,
-	name: String,
+	_name: String,
 	sender_presave_id: Uuid,
 ) -> ProductPresaveForCreate {
 	ProductPresaveForCreate {
-		name,
-		comments: None,
 		sender_presave_id: Some(sender_presave_id),
 		product_id: Some(format!("PRODUCT-{}", Uuid::new_v4())),
 		medicinal_product: Some("Authority Product".into()),
@@ -180,10 +178,8 @@ fn product_presave_create(
 	}
 }
 
-fn sender_presave_create(name: String) -> SenderPresaveForCreate {
+fn sender_presave_create(_name: String) -> SenderPresaveForCreate {
 	SenderPresaveForCreate {
-		name,
-		comments: None,
 		is_default: None,
 		sender_type: Some("1".into()),
 		organization_name: Some(format!("Sender Org {}", Uuid::new_v4())),
@@ -201,11 +197,9 @@ fn sender_presave_create(name: String) -> SenderPresaveForCreate {
 
 fn reporter_presave_create(
 	_authority: RegulatoryAuthority,
-	name: String,
+	_name: String,
 ) -> ReporterPresaveForCreate {
 	ReporterPresaveForCreate {
-		name,
-		comments: None,
 		reporter_title: None,
 		reporter_given_name: Some("Authority".into()),
 		reporter_middle_name: None,
@@ -225,11 +219,9 @@ fn reporter_presave_create(
 
 fn study_presave_create(
 	_authority: RegulatoryAuthority,
-	name: String,
+	_name: String,
 ) -> StudyPresaveForCreate {
 	StudyPresaveForCreate {
-		name,
-		comments: None,
 		product_presave_id: None,
 		study_name: Some("Authority Study".into()),
 		study_name_notation: None,
@@ -242,12 +234,10 @@ fn study_presave_create(
 }
 
 fn study_presave_create_for_product(
-	name: String,
+	_name: String,
 	product_presave_id: Uuid,
 ) -> StudyPresaveForCreate {
 	StudyPresaveForCreate {
-		name,
-		comments: None,
 		product_presave_id: Some(product_presave_id),
 		study_name: Some("Relationship Study".into()),
 		study_name_notation: None,
@@ -614,18 +604,17 @@ async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
 		.await?;
 	}
 
-	for (sender_id, org_id, label) in
+	for (sender_id, org_id, _label) in
 		[(sender_a_id, org_a_id, "A"), (sender_b_id, org_b_id, "B")]
 	{
 		sqlx::query(
 			"INSERT INTO sender_presaves (
-				id, organization_id, name, created_by, updated_by
+				id, organization_id, created_by, updated_by
 			)
-			VALUES ($1, $2, $3, $4, $4)",
+			VALUES ($1, $2, $3, $3)",
 		)
 		.bind(sender_id)
 		.bind(org_id)
-		.bind(format!("Presave FK Sender {label} {sender_id}"))
 		.bind(demo_user_id())
 		.execute(&mut *tx)
 		.await?;
@@ -633,13 +622,12 @@ async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
 
 	sqlx::query(
 		"INSERT INTO product_presaves (
-			id, organization_id, name, sender_presave_id, created_by, updated_by
+			id, organization_id, sender_presave_id, created_by, updated_by
 		)
-		VALUES ($1, $2, $3, $4, $5, $5)",
+		VALUES ($1, $2, $3, $4, $4)",
 	)
 	.bind(product_a_id)
 	.bind(org_a_id)
-	.bind(format!("Presave FK Product A {product_a_id}"))
 	.bind(sender_a_id)
 	.bind(demo_user_id())
 	.execute(&mut *tx)
@@ -647,13 +635,12 @@ async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
 
 	sqlx::query(
 		"INSERT INTO product_presaves (
-			id, organization_id, name, sender_presave_id, created_by, updated_by
+			id, organization_id, sender_presave_id, created_by, updated_by
 		)
-		VALUES ($1, $2, $3, $4, $5, $5)",
+		VALUES ($1, $2, $3, $4, $4)",
 	)
 	.bind(product_b_id)
 	.bind(org_b_id)
-	.bind(format!("Presave FK Product B {product_b_id}"))
 	.bind(sender_b_id)
 	.bind(demo_user_id())
 	.execute(&mut *tx)
@@ -661,13 +648,12 @@ async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
 
 	sqlx::query(
 		"INSERT INTO study_presaves (
-			id, organization_id, name, product_presave_id, created_by, updated_by
+			id, organization_id, product_presave_id, created_by, updated_by
 		)
-		VALUES ($1, $2, $3, $4, $5, $5)",
+		VALUES ($1, $2, $3, $4, $4)",
 	)
 	.bind(study_a_id)
 	.bind(org_a_id)
-	.bind(format!("Presave FK Study A {study_a_id}"))
 	.bind(product_a_id)
 	.bind(demo_user_id())
 	.execute(&mut *tx)
@@ -680,13 +666,12 @@ async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
 	set_org_context(&mut invalid_tx, org_a_id, "system_admin").await?;
 	let cross_org_product = sqlx::query(
 		"INSERT INTO product_presaves (
-			id, organization_id, name, sender_presave_id, created_by, updated_by
+			id, organization_id, sender_presave_id, created_by, updated_by
 		)
-		VALUES ($1, $2, $3, $4, $5, $5)",
+		VALUES ($1, $2, $3, $4, $4)",
 	)
 	.bind(Uuid::new_v4())
 	.bind(org_a_id)
-	.bind("Cross Org Product")
 	.bind(sender_b_id)
 	.bind(demo_user_id())
 	.execute(&mut *invalid_tx)
@@ -702,13 +687,12 @@ async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
 	set_org_context(&mut invalid_tx, org_a_id, "system_admin").await?;
 	let cross_org_study = sqlx::query(
 		"INSERT INTO study_presaves (
-			id, organization_id, name, product_presave_id, created_by, updated_by
+			id, organization_id, product_presave_id, created_by, updated_by
 		)
-		VALUES ($1, $2, $3, $4, $5, $5)",
+		VALUES ($1, $2, $3, $4, $4)",
 	)
 	.bind(Uuid::new_v4())
 	.bind(org_a_id)
-	.bind("Cross Org Study")
 	.bind(product_b_id)
 	.bind(demo_user_id())
 	.execute(&mut *invalid_tx)
@@ -760,8 +744,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		SenderPresaveForCreate {
-			name: format!("Sender Presave {suffix}"),
-			comments: Some("sender comment".into()),
 			is_default: Some(true),
 			sender_type: Some("1".into()),
 			organization_name: Some(format!("Sender Org Before {suffix}")),
@@ -779,11 +761,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	.await?;
 	let sender = SenderPresaveBmc::get(&ctx, &mm, sender_id).await?;
 	assert_eq!(
-		sender.name,
-		format!("Sender Org Before {suffix} / sender@example.com")
-	);
-	assert!(sender.comments.is_none());
-	assert_eq!(
 		sender.organization_name.as_deref(),
 		Some(format!("Sender Org Before {suffix}").as_str())
 	);
@@ -792,9 +769,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		ReceiverPresaveForCreate {
-			name: format!("Receiver Presave {suffix}"),
-			comments: None,
-			receiver_type: Some("agency".into()),
+			receiver_type: Some("Regulatory Authority".into()),
 			organization_name: Some(format!("Receiver Org {suffix}")),
 			receiver_identifier: Some("CDER".into()),
 			day_count_rule: Some("calendar".into()),
@@ -811,18 +786,12 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let receiver = ReceiverPresaveBmc::get(&ctx, &mm, receiver_id).await?;
-	assert_eq!(
-		receiver.name,
-		format!("Receiver Org {suffix} / CDER / Regulatory Authority")
-	);
 	assert_eq!(receiver.receiver_identifier.as_deref(), Some("CDER"));
 
 	let product_id = ProductPresaveBmc::create(
 		&ctx,
 		&mm,
 		ProductPresaveForCreate {
-			name: format!("Product Presave {suffix}"),
-			comments: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("PRODUCT-{suffix}")),
 			medicinal_product: Some(format!("Medicinal Product {suffix}")),
@@ -847,15 +816,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let product = ProductPresaveBmc::get(&ctx, &mm, product_id).await?;
-	assert!(
-		product
-			.name
-			.starts_with(format!("PRODUCT-{suffix} / Medicinal Product ").as_str()),
-		"{}",
-		product.name
-	);
-	assert_eq!(product.name.len(), 80);
-	assert!(product.name.ends_with("..."));
 	assert_eq!(
 		product.medicinal_product.as_deref(),
 		Some(format!("Medicinal Product {suffix}").as_str())
@@ -865,8 +825,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		ReporterPresaveForCreate {
-			name: format!("Reporter Presave {suffix}"),
-			comments: None,
 			reporter_title: Some("Dr".into()),
 			reporter_given_name: Some("Casey".into()),
 			reporter_middle_name: None,
@@ -885,18 +843,12 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let reporter = ReporterPresaveBmc::get(&ctx, &mm, reporter_id).await?;
-	assert_eq!(
-		reporter.name,
-		format!("Reporter Org {suffix} / Casey Reporter")
-	);
 	assert_eq!(reporter.reporter_family_name.as_deref(), Some("Reporter"));
 
 	let study_id = StudyPresaveBmc::create(
 		&ctx,
 		&mm,
 		StudyPresaveForCreate {
-			name: format!("Study Presave {suffix}"),
-			comments: None,
 			product_presave_id: Some(product_id),
 			study_name: Some(format!("Study Name {suffix}")),
 			study_name_notation: Some("Study Name Notation".into()),
@@ -909,15 +861,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let study = StudyPresaveBmc::get(&ctx, &mm, study_id).await?;
-	assert!(
-		study
-			.name
-			.starts_with(format!("ST-001-{suffix} / Study Name ").as_str()),
-		"{}",
-		study.name
-	);
-	assert_eq!(study.name.len(), 80);
-	assert!(study.name.ends_with("..."));
 	assert_eq!(
 		study.sponsor_study_number.as_deref(),
 		Some(format!("ST-001-{suffix}").as_str())
@@ -936,8 +879,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		NarrativePresaveForCreate {
-			name: format!("Narrative Presave {suffix}"),
-			comments: None,
 			case_narrative: Some("Case narrative text".into()),
 			case_narrative_notation: Some("Case narrative notation".into()),
 			additional_information: Some("Sponsor additional information".into()),
@@ -947,10 +888,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	let narrative = NarrativePresaveBmc::get(&ctx, &mm, narrative_id).await?;
-	assert_eq!(
-		narrative.name,
-		"Case narrative text / Sponsor additional information / Reporter comments / Se..."
-	);
 	assert_eq!(
 		narrative.case_narrative.as_deref(),
 		Some("Case narrative text")
@@ -1008,8 +945,6 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 		&ctx,
 		&mm,
 		SenderPresaveForCreate {
-			name: format!("Authorityless Sender {suffix}"),
-			comments: None,
 			is_default: None,
 			sender_type: Some("1".into()),
 			organization_name: Some(format!("Authorityless Sender Org {suffix}")),
@@ -1107,8 +1042,6 @@ async fn study_presave_registration_numbers_enforce_registration_number_max_leng
 		&ctx,
 		&mm,
 		SenderPresaveForCreate {
-			name: format!("Registration Length Sender {suffix}"),
-			comments: None,
 			is_default: None,
 			sender_type: Some("1".into()),
 			organization_name: Some(format!(
@@ -1200,8 +1133,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 		&ctx,
 		&mm,
 		SenderPresaveForCreate {
-			name: format!("Valid Sender Without Parent Person {suffix}"),
-			comments: None,
 			is_default: None,
 			sender_type: Some("1".into()),
 			organization_name: Some(format!("Valid Sender Org {suffix}")),
@@ -1226,8 +1157,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 			&ctx,
 			&mm,
 			ReceiverPresaveForCreate {
-				name: format!("Invalid Receiver Presave {suffix}"),
-				comments: None,
 				receiver_type: None,
 				organization_name: Some("Invalid Receiver Org".into()),
 				receiver_identifier: None,
@@ -1251,8 +1180,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 			&ctx,
 			&mm,
 			ProductPresaveForCreate {
-				name: format!("Invalid Product Presave {suffix}"),
-				comments: None,
 				sender_presave_id: None,
 				product_id: None,
 				medicinal_product: None,
@@ -1278,7 +1205,7 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 		.await,
 		"sender_presave_id and product_id or preapproval_ip_name",
 	);
-	for (label, reporter_given_name, organization, qualification) in [
+	for (_label, reporter_given_name, organization, qualification) in [
 		("given name", None, Some("Invalid Reporter Org"), Some("1")),
 		("organization", Some("Invalid"), None, Some("1")),
 		(
@@ -1293,8 +1220,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 				&ctx,
 				&mm,
 				ReporterPresaveForCreate {
-					name: format!("Invalid Reporter Presave {label} {suffix}"),
-					comments: None,
 					reporter_title: None,
 					reporter_given_name: reporter_given_name.map(str::to_string),
 					reporter_middle_name: None,
@@ -1320,8 +1245,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 			&ctx,
 			&mm,
 			StudyPresaveForCreate {
-				name: format!("Invalid Study Presave {suffix}"),
-				comments: None,
 				product_presave_id: None,
 				study_name: Some("Invalid Study".into()),
 				study_name_notation: None,
@@ -1359,8 +1282,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 		&ctx,
 		&mm,
 		NarrativePresaveForCreate {
-			name: "   ".into(),
-			comments: Some("legacy metadata comments are ignored".into()),
 			case_narrative: Some(format!("Minimal narrative {suffix}")),
 			case_narrative_notation: None,
 			additional_information: None,
@@ -1370,8 +1291,10 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 	)
 	.await?;
 	let narrative = NarrativePresaveBmc::get(&ctx, &mm, narrative_id).await?;
-	assert_eq!(narrative.name, format!("Minimal narrative {suffix}"));
-	assert!(narrative.comments.is_none());
+	assert_eq!(
+		narrative.case_narrative.as_deref(),
+		Some(format!("Minimal narrative {suffix}").as_str())
+	);
 	NarrativePresaveBmc::delete(&ctx, &mm, narrative_id).await?;
 
 	Ok(())
@@ -1390,8 +1313,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 		&ctx,
 		&mm,
 		SenderPresaveForCreate {
-			name: format!("Duplicate Sender Presave {suffix}"),
-			comments: None,
 			is_default: None,
 			sender_type: Some("1".into()),
 			organization_name: Some(format!("Duplicate Sender Org {suffix}")),
@@ -1412,8 +1333,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			&ctx,
 			&mm,
 			SenderPresaveForCreate {
-				name: format!("Duplicate Sender Presave Copy {suffix}"),
-				comments: None,
 				is_default: None,
 				sender_type: Some("1".into()),
 				organization_name: Some(format!(" duplicate sender org {suffix} ")),
@@ -1436,8 +1355,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 		&ctx,
 		&mm,
 		ReceiverPresaveForCreate {
-			name: format!("Duplicate Receiver Presave {suffix}"),
-			comments: None,
 			receiver_type: Some("Regulatory Authority".into()),
 			organization_name: Some(format!("Duplicate Receiver Org {suffix}")),
 			receiver_identifier: None,
@@ -1459,8 +1376,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			&ctx,
 			&mm,
 			ReceiverPresaveForCreate {
-				name: format!("Duplicate Receiver Presave Copy {suffix}"),
-				comments: None,
 				receiver_type: Some("Original Manufacturer".into()),
 				organization_name: Some(format!(
 					" duplicate receiver org {suffix} "
@@ -1486,8 +1401,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 		&ctx,
 		&mm,
 		ProductPresaveForCreate {
-			name: format!("Duplicate Product Presave {suffix}"),
-			comments: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("DUP-PRODUCT-{suffix}")),
 			medicinal_product: None,
@@ -1516,8 +1429,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			&ctx,
 			&mm,
 			ProductPresaveForCreate {
-				name: format!("Duplicate Product Presave Copy {suffix}"),
-				comments: None,
 				sender_presave_id: Some(sender_id),
 				product_id: Some(format!(" dup-product-{suffix} ")),
 				medicinal_product: None,
@@ -1548,8 +1459,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 		&ctx,
 		&mm,
 		ReporterPresaveForCreate {
-			name: format!("Duplicate Reporter Presave {suffix}"),
-			comments: None,
 			reporter_title: None,
 			reporter_given_name: Some("Robin".into()),
 			reporter_middle_name: None,
@@ -1572,8 +1481,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			&ctx,
 			&mm,
 			ReporterPresaveForCreate {
-				name: format!("Duplicate Reporter Presave Copy {suffix}"),
-				comments: None,
 				reporter_title: None,
 				reporter_given_name: Some(" robin ".into()),
 				reporter_middle_name: None,
@@ -1598,8 +1505,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 		&ctx,
 		&mm,
 		StudyPresaveForCreate {
-			name: format!("Duplicate Study Presave {suffix}"),
-			comments: None,
 			product_presave_id: Some(product_id),
 			study_name: Some("Duplicate Study".into()),
 			study_name_notation: None,
@@ -1616,8 +1521,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			&ctx,
 			&mm,
 			StudyPresaveForCreate {
-				name: format!("Duplicate Study Presave Copy {suffix}"),
-				comments: None,
 				product_presave_id: Some(product_id),
 				study_name: Some("Different Study".into()),
 				study_name_notation: None,
@@ -1636,8 +1539,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 		&ctx,
 		&mm,
 		NarrativePresaveForCreate {
-			name: format!("Duplicate Narrative Presave {suffix}"),
-			comments: None,
 			case_narrative: Some(format!("Duplicate narrative body {suffix}")),
 			case_narrative_notation: None,
 			additional_information: None,
@@ -1651,8 +1552,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			&ctx,
 			&mm,
 			NarrativePresaveForCreate {
-				name: format!(" duplicate narrative presave {suffix} "),
-				comments: None,
 				case_narrative: Some(format!(" duplicate narrative body {suffix} ")),
 				case_narrative_notation: None,
 				additional_information: None,
@@ -1763,14 +1662,13 @@ async fn section_presave_receiver_allows_legacy_type_update() -> Result<()> {
 
 		sqlx::query(
 			"INSERT INTO receiver_presaves (
-				id, organization_id, name, receiver_type, organization_name,
+				id, organization_id, receiver_type, organization_name,
 				created_by, updated_by
 			)
-			VALUES ($1, $2, $3, $4, $5, $6, $6)",
+			VALUES ($1, $2, $3, $4, $5, $5)",
 		)
 		.bind(receiver_id)
 		.bind(demo_org_id())
-		.bind(format!("Legacy Receiver Template {legacy_type} {suffix}"))
 		.bind(legacy_type)
 		.bind(format!("Legacy Receiver Org {legacy_type} {suffix}"))
 		.bind(demo_user_id())
@@ -1840,8 +1738,6 @@ async fn section_presave_receiver_delete_uses_receiver_name_not_template_name(
 		&ctx,
 		&mm,
 		ReceiverPresaveForCreate {
-			name: template_name.clone(),
-			comments: None,
 			receiver_type: Some("Regulatory Authority".into()),
 			organization_name: Some(receiver_org.clone()),
 			receiver_identifier: None,
@@ -1868,8 +1764,6 @@ async fn section_presave_receiver_delete_uses_receiver_name_not_template_name(
 	let product_id = ProductPresaveBmc::create(&ctx, &mm, product).await?;
 
 	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
-	let deleted_receiver = ReceiverPresaveBmc::get(&ctx, &mm, receiver_id).await?;
-	assert!(deleted_receiver.deleted);
 
 	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
 	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
@@ -1889,8 +1783,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		SenderPresaveForCreate {
-			name: format!("Child Sender Presave {suffix}"),
-			comments: None,
 			is_default: None,
 			sender_type: Some("1".into()),
 			organization_name: Some(format!("Child Sender Org {suffix}")),
@@ -1910,8 +1802,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		ReceiverPresaveForCreate {
-			name: format!("Child Receiver Presave {suffix}"),
-			comments: None,
 			receiver_type: Some("Regulatory Authority".into()),
 			organization_name: Some(format!("Child Receiver Org {suffix}")),
 			receiver_identifier: None,
@@ -1932,8 +1822,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		ProductPresaveForCreate {
-			name: format!("Child Product Presave {suffix}"),
-			comments: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("CHILD-PRODUCT-{suffix}")),
 			medicinal_product: Some("Child Product".into()),
@@ -1961,8 +1849,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		ProductPresaveForCreate {
-			name: format!("Child FDA Product Presave {suffix}"),
-			comments: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("CHILD-FDA-PRODUCT-{suffix}")),
 			medicinal_product: Some("Child FDA Product".into()),
@@ -1990,8 +1876,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		StudyPresaveForCreate {
-			name: format!("Child Study Presave {suffix}"),
-			comments: None,
 			product_presave_id: Some(product_id),
 			study_name: Some("Child Study".into()),
 			study_name_notation: None,
@@ -2007,9 +1891,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&ctx,
 		&mm,
 		NarrativePresaveForCreate {
-			name: format!("Child Narrative Presave {suffix}"),
-			comments: None,
-			case_narrative: Some("Child narrative".into()),
+			case_narrative: Some(format!("Child narrative {suffix}")),
 			case_narrative_notation: None,
 			additional_information: None,
 			reporter_comments: None,
@@ -2579,8 +2461,6 @@ async fn section_presave_field_audit_records_changed_column() -> Result<()> {
 		&ctx,
 		&mm,
 		SenderPresaveForCreate {
-			name: format!("Field Audit Sender {suffix}"),
-			comments: None,
 			is_default: None,
 			sender_type: Some("1".into()),
 			organization_name: Some(format!("Field Audit Sender Org {suffix}")),
@@ -2789,13 +2669,12 @@ async fn section_presave_child_audit_uses_parent_organization() -> Result<()> {
 
 	sqlx::query(
 		"INSERT INTO sender_presaves (
-			id, organization_id, name, created_by, updated_by
+			id, organization_id, created_by, updated_by
 		)
-		VALUES ($1, $2, $3, $4, $4)",
+		VALUES ($1, $2, $3, $3)",
 	)
 	.bind(sender_id)
 	.bind(parent_org_id)
-	.bind(format!("Audit Sender {sender_id}"))
 	.bind(demo_user_id())
 	.execute(&mut *tx)
 	.await?;
@@ -2815,13 +2694,12 @@ async fn section_presave_child_audit_uses_parent_organization() -> Result<()> {
 
 	sqlx::query(
 		"INSERT INTO study_presaves (
-			id, organization_id, name, created_by, updated_by
+			id, organization_id, created_by, updated_by
 		)
-		VALUES ($1, $2, $3, $4, $4)",
+		VALUES ($1, $2, $3, $3)",
 	)
 	.bind(study_id)
 	.bind(parent_org_id)
-	.bind(format!("Audit Study {study_id}"))
 	.bind(demo_user_id())
 	.execute(&mut *tx)
 	.await?;

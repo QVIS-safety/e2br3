@@ -4,7 +4,6 @@ use axum::http::{Method, StatusCode};
 use lib_auth::token::generate_web_token;
 use serde_json::json;
 use serial_test::serial;
-use uuid::Uuid;
 
 #[tokio::test]
 async fn test_reporter_presave_does_not_store_mfds_qualification_detail(
@@ -15,7 +14,6 @@ async fn test_reporter_presave_does_not_store_mfds_qualification_detail(
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
 
-	let reporter_name = format!("MFDS Reporter {}", Uuid::new_v4());
 	let (status, value) = request_json(
 		&app,
 		&admin_cookie,
@@ -23,7 +21,6 @@ async fn test_reporter_presave_does_not_store_mfds_qualification_detail(
 		"/api/presaves/reporters".to_string(),
 		Some(json!({
 			"data": {
-				"name": reporter_name,
 				"reporter_given_name": "Min",
 				"organization": "MFDS Reporter Org",
 				"country_code": "KR",
@@ -99,7 +96,6 @@ async fn test_reporter_presave_ignores_mfds_qualification_detail_input() -> Resu
 		"/api/presaves/reporters".to_string(),
 		Some(json!({
 			"data": {
-				"name": format!("MFDS Reporter Invalid {}", Uuid::new_v4()),
 				"reporter_given_name": "Min",
 				"organization": "MFDS Reporter Invalid Org",
 				"qualification": "1",

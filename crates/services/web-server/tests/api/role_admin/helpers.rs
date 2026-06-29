@@ -313,8 +313,6 @@ pub(super) async fn create_sender_presave(
 		Some(json!({
 			"data": {
 				"authority": "fda",
-				"name": name,
-				"comments": "Routing source-of-truth test sender",
 				"sender_type": "2",
 				"organization_name": name,
 				"person_given_name": "Safety",

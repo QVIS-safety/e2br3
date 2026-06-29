@@ -410,7 +410,7 @@ async fn sender_import_from_presave(
 		.find(|person| person.is_default)
 		.or_else(|| responsible_people.iter().find(|person| !person.deleted));
 
-	let organization_name = sender.organization_name.unwrap_or(sender.name);
+	let organization_name = sender.organization_name.unwrap_or_default();
 	let sender_type = sender.sender_type.unwrap_or_else(|| "1".to_string());
 
 	Ok(c_helpers::SenderImport {

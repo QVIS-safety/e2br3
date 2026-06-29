@@ -23,7 +23,6 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 		"/api/presaves/products".to_string(),
 		json!({
 			"data": {
-				"name": "Authorityless Union Product",
 				"sender_presave_id": sender_id,
 				"product_id": "UNION-PRODUCT",
 				"medicinal_product": "Union Product"
@@ -85,7 +84,6 @@ async fn product_presave_details_expose_effective_mfds_dg_fields() -> Result<()>
 		"/api/presaves/products".to_string(),
 		json!({
 			"data": {
-				"name": "Effective MFDS DG Product",
 				"sender_presave_id": sender_id,
 				"product_id": "EFFECTIVE-MFDS-PRODUCT",
 				"medicinal_product": "Effective MFDS Product",
@@ -156,7 +154,6 @@ async fn test_product_presave_rejects_missing_sender_or_identity() -> Result<()>
 		(
 			json!({
 				"data": {
-					"name": format!("Missing Product Sender {}", Uuid::new_v4()),
 					"product_id": format!("PRODUCT-{}", Uuid::new_v4())
 				}
 			}),
@@ -165,7 +162,6 @@ async fn test_product_presave_rejects_missing_sender_or_identity() -> Result<()>
 		(
 			json!({
 				"data": {
-					"name": format!("Missing Product Identity {}", Uuid::new_v4()),
 					"sender_presave_id": sender_id,
 					"product_id": " ",
 					"preapproval_ip_name": " "
@@ -248,7 +244,6 @@ async fn test_product_presave_rejects_duplicate_identity_under_same_sender(
 		(
 			json!({
 				"data": {
-					"name": format!("Duplicate Product ID {}", Uuid::new_v4()),
 					"sender_presave_id": sender_id,
 					"product_id": product_id_value.clone(),
 					"medicinal_product": "Duplicate Product ID"
@@ -259,7 +254,6 @@ async fn test_product_presave_rejects_duplicate_identity_under_same_sender(
 		(
 			json!({
 				"data": {
-					"name": format!("Duplicate IP Name {}", Uuid::new_v4()),
 					"sender_presave_id": sender_id,
 					"preapproval_ip_name": ip_name_value.clone(),
 					"medicinal_product": "Duplicate IP Name"

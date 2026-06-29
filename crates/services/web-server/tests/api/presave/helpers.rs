@@ -57,8 +57,6 @@ pub(super) async fn create_product_presave(
 		&ctx,
 		mm,
 		SenderPresaveForCreate {
-			name: format!("REST Product Sender {}", Uuid::new_v4()),
-			comments: None,
 			is_default: None,
 			sender_type: Some("1".into()),
 			organization_name: Some(format!(
@@ -81,8 +79,6 @@ pub(super) async fn create_product_presave(
 		&ctx,
 		mm,
 		ProductPresaveForCreate {
-			name: format!("REST Product {}", Uuid::new_v4()),
-			comments: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("REST-PRODUCT-{}", Uuid::new_v4())),
 			medicinal_product: Some("REST Product".into()),
@@ -199,7 +195,7 @@ pub(super) async fn create_named_sender_presave_via_api(
 	app: &Router,
 	cookie: &str,
 	_authority: &str,
-	name: String,
+	_name: String,
 	organization_name: &str,
 ) -> Result<Uuid> {
 	let value = post_json_created(
@@ -208,7 +204,6 @@ pub(super) async fn create_named_sender_presave_via_api(
 		"/api/presaves/senders".to_string(),
 		json!({
 			"data": {
-				"name": name,
 				"sender_type": "1",
 				"organization_name": organization_name,
 				"country_code": "US",
@@ -224,7 +219,7 @@ pub(super) async fn create_sender_presave_with_type_via_api(
 	app: &Router,
 	cookie: &str,
 	sender_type: &str,
-	name: String,
+	_name: String,
 	organization_name: &str,
 ) -> Result<Uuid> {
 	let value = post_json_created(
@@ -233,7 +228,6 @@ pub(super) async fn create_sender_presave_with_type_via_api(
 		"/api/presaves/senders".to_string(),
 		json!({
 			"data": {
-				"name": name,
 				"sender_type": sender_type,
 				"organization_name": organization_name
 			}
@@ -303,7 +297,6 @@ pub(super) async fn create_receiver_presave_via_api(
 		"/api/presaves/receivers".to_string(),
 		json!({
 			"data": {
-				"name": format!("REST Receiver Details {}", Uuid::new_v4()),
 				"receiver_type": "Regulatory Authority",
 				"organization_name": format!("REST Receiver Details Org {}", Uuid::new_v4()),
 				"receiver_identifier": format!("REC-{}", Uuid::new_v4())
@@ -356,7 +349,7 @@ pub(super) async fn create_named_product_presave_via_api(
 	app: &Router,
 	cookie: &str,
 	_authority: &str,
-	name: String,
+	_name: String,
 	medicinal_product: &str,
 ) -> Result<Uuid> {
 	let sender_id =
@@ -365,7 +358,7 @@ pub(super) async fn create_named_product_presave_via_api(
 		app,
 		cookie,
 		sender_id,
-		name,
+		_name,
 		medicinal_product,
 	)
 	.await
@@ -375,7 +368,7 @@ pub(super) async fn create_named_product_presave_for_sender_via_api(
 	app: &Router,
 	cookie: &str,
 	sender_id: Uuid,
-	name: String,
+	_name: String,
 	medicinal_product: &str,
 ) -> Result<Uuid> {
 	let value = post_json_created(
@@ -384,7 +377,6 @@ pub(super) async fn create_named_product_presave_for_sender_via_api(
 		"/api/presaves/products".to_string(),
 		json!({
 			"data": {
-				"name": name,
 				"sender_presave_id": sender_id,
 				"product_id": format!("REST-PRODUCT-{}", Uuid::new_v4()),
 				"medicinal_product": medicinal_product
@@ -408,7 +400,6 @@ pub(super) async fn create_product_presave_with_identity_for_sender_via_api(
 		"/api/presaves/products".to_string(),
 		json!({
 			"data": {
-				"name": format!("REST Product Identity {}", Uuid::new_v4()),
 				"sender_presave_id": sender_id,
 				"product_id": product_id,
 				"preapproval_ip_name": preapproval_ip_name,
@@ -466,7 +457,7 @@ pub(super) async fn create_named_study_presave_for_product_via_api(
 	cookie: &str,
 	product_id: Uuid,
 	_authority: &str,
-	name: String,
+	_name: String,
 	study_name: &str,
 ) -> Result<Uuid> {
 	let value = post_json_created(
@@ -475,7 +466,6 @@ pub(super) async fn create_named_study_presave_for_product_via_api(
 		"/api/presaves/studies".to_string(),
 		json!({
 			"data": {
-				"name": name,
 				"product_presave_id": product_id,
 				"study_name": study_name,
 				"sponsor_study_number": format!("STUDY-{}", Uuid::new_v4()),
@@ -563,7 +553,7 @@ pub(super) async fn create_study_reporter_via_api(
 pub(super) async fn create_named_reporter_presave_via_api(
 	app: &Router,
 	cookie: &str,
-	name: String,
+	_name: String,
 	organization: &str,
 ) -> Result<Uuid> {
 	let value = post_json_created(
@@ -572,7 +562,6 @@ pub(super) async fn create_named_reporter_presave_via_api(
 		"/api/presaves/reporters".to_string(),
 		json!({
 			"data": {
-				"name": name,
 				"reporter_given_name": "Reporter",
 				"organization": organization,
 				"qualification": "1",
@@ -596,7 +585,6 @@ pub(super) async fn create_narrative_presave_with_authority_via_api(
 		"/api/presaves/narratives".to_string(),
 		json!({
 			"data": {
-				"name": format!("REST Narrative Details {suffix}"),
 				"case_narrative": format!("REST narrative details {suffix}")
 			}
 		}),

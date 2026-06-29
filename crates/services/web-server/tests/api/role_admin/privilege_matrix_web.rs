@@ -353,8 +353,6 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		Some(json!({
 			"data": {
 				"authority": "fda",
-				"name": "Info Matrix Sender",
-				"comments": "Should require info edit",
 				"sender_type": "2",
 				"organization_name": "Info Matrix Sender",
 				"person_given_name": "Safety"
@@ -371,8 +369,7 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		format!("/api/presaves/senders/{editable_template_id}"),
 		Some(json!({
 			"data": {
-				"name": "Info Matrix Readonly Patch",
-				"comments": "Read-only info should not update templates"
+				"organization_name": "Info Matrix Readonly Patch"
 			}
 		})),
 	)
@@ -427,8 +424,6 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		Some(json!({
 			"data": {
 				"authority": "fda",
-				"name": format!("Info Matrix Sender {}", Uuid::new_v4().simple()),
-				"comments": "Info edit should allow creation",
 				"sender_type": "2",
 				"organization_name": "INFO-MATRIX-EDIT",
 				"person_given_name": "Safety"
@@ -446,8 +441,6 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		format!("/api/presaves/senders/{editable_template_id}"),
 		Some(json!({
 			"data": {
-				"name": "Info Matrix Editable Updated",
-				"comments": "Info edit should allow updates",
 				"sender_type": "2",
 				"organization_name": editable_sender_name,
 				"person_given_name": "Safety"
@@ -456,12 +449,8 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_ne!(
-		value["data"]["name"].as_str(),
-		Some("Info Matrix Editable Updated"),
-		"{value:?}"
-	);
-	assert!(value["data"]["comments"].is_null(), "{value:?}");
+	assert!(value["data"].get("name").is_none(), "{value:?}");
+	assert!(value["data"].get("comments").is_none(), "{value:?}");
 	assert_eq!(
 		value["data"]["organization_name"].as_str(),
 		Some(editable_sender_name.as_str()),

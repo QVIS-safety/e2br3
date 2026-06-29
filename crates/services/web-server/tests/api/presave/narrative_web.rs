@@ -20,14 +20,14 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		"/api/presaves/narratives".to_string(),
 		Some(json!({
 			"data": {
-				"comments": "legacy narrative metadata should be ignored"
+				"case_narrative": "REST minimal narrative"
 			}
 		})),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(value["data"]["name"].as_str(), Some("Narrative Record"));
-	assert!(value["data"]["comments"].is_null(), "{value:?}");
+	assert!(value["data"].get("name").is_none(), "{value:?}");
+	assert!(value["data"].get("comments").is_none(), "{value:?}");
 
 	let (status, value) = request_json(
 		&app,
@@ -36,7 +36,6 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 		"/api/presaves/narratives".to_string(),
 		Some(json!({
 			"data": {
-				"comments": "legacy narrative metadata should be ignored",
 				"case_narrative": "REST auto narrative {D.2.2a} {D.5}",
 				"case_narrative_notation": "REST notation",
 				"additional_information": "REST sponsor additional information"
@@ -45,11 +44,8 @@ async fn test_section_presave_narrative_rest_contract() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert_eq!(
-		value["data"]["name"].as_str(),
-		Some("REST auto narrative {D.2.2a} {D.5} / REST sponsor additional information")
-	);
-	assert!(value["data"]["comments"].is_null(), "{value:?}");
+	assert!(value["data"].get("name").is_none(), "{value:?}");
+	assert!(value["data"].get("comments").is_none(), "{value:?}");
 	assert_eq!(
 		value["data"]["case_narrative"].as_str(),
 		Some("REST auto narrative {D.2.2a} {D.5}")
@@ -476,7 +472,7 @@ async fn test_narrative_presave_details_requires_explicit_child_delete() -> Resu
 		&app,
 		&admin_cookie,
 		format!("/api/presaves/narratives/{narrative_id}/details"),
-		json!({ "data": { "parent": { "comments": "omit children" } } }),
+		json!({ "data": { "parent": { "case_narrative": "omit children" } } }),
 	)
 	.await?;
 	let after_omit = get_json_ok(
@@ -616,11 +612,12 @@ async fn test_narrative_presave_details_rejects_invalid_child_operations(
 		&admin_cookie,
 		Method::PUT,
 		format!("/api/presaves/narratives/{narrative_a}/details"),
-		Some(json!({ "data": { "parent": { "name": " " } } })),
+		Some(json!({ "data": { "parent": { "metadata_name": " " } } })),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_ne!(value["data"]["parent"]["name"].as_str(), Some(" "));
+	assert!(value["data"]["parent"].get("name").is_none(), "{value:?}");
+	assert!(value["data"]["parent"].get("comments").is_none(), "{value:?}");
 
 	Ok(())
 }

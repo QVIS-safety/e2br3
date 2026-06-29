@@ -17,7 +17,6 @@ async fn test_sender_presave_parent_does_not_store_person_or_department_fields(
 
 	let parent_without_given_name = json!({
 		"data": {
-			"name": format!("Sender Without Parent Given {}", Uuid::new_v4()),
 			"sender_type": "1",
 			"organization_name": format!("Sender Without Parent Given Org {}", Uuid::new_v4())
 		}
@@ -109,7 +108,6 @@ async fn test_sender_presave_rejects_duplicate_active_identity() -> Result<()> {
 		"/api/presaves/senders".to_string(),
 		Some(json!({
 			"data": {
-				"name": format!("Duplicate Sender {}", Uuid::new_v4()),
 				"sender_type": "1",
 				"organization_name": organization_name
 			}
@@ -249,7 +247,6 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 		json!({
 			"data": {
 				"parent": {
-					"comments": "updated by graph",
 					"organization_name_notation": "REST notation"
 				},
 				"gateways": [
@@ -277,7 +274,7 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 		}),
 	)
 	.await?;
-	assert!(saved["data"]["parent"]["comments"].is_null(), "{saved:?}");
+	assert!(saved["data"]["parent"].get("comments").is_none(), "{saved:?}");
 	assert_eq!(saved["data"]["gateways"].as_array().unwrap().len(), 2);
 	assert_eq!(
 		saved["data"]["responsible_persons"]
@@ -294,7 +291,7 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 	)
 	.await?;
 	assert!(
-		persisted["data"]["parent"]["comments"].is_null(),
+		persisted["data"]["parent"].get("comments").is_none(),
 		"{persisted:?}"
 	);
 	assert_eq!(
@@ -354,7 +351,7 @@ async fn test_sender_presave_details_rolls_back_parent_on_child_constraint_failu
 		format!("/api/presaves/senders/{sender_id}/details"),
 		Some(json!({
 			"data": {
-				"parent": { "comments": "must roll back" },
+				"parent": { "organization_name": "must roll back" },
 				"gateways": [{
 					"sequence_number": 1,
 					"gateway_authority": "ich",
@@ -372,9 +369,9 @@ async fn test_sender_presave_details_rolls_back_parent_on_child_constraint_failu
 		format!("/api/presaves/senders/{sender_id}/details"),
 	)
 	.await?;
-	assert_eq!(
-		persisted["data"]["parent"]["comments"].as_str(),
-		None,
+	assert_ne!(
+		persisted["data"]["parent"]["organization_name"].as_str(),
+		Some("must roll back"),
 		"{persisted:?}"
 	);
 	let gateways = persisted["data"]["gateways"].as_array().unwrap();
@@ -491,7 +488,7 @@ async fn test_sender_presave_details_requires_explicit_child_delete() -> Result<
 		&app,
 		&admin_cookie,
 		format!("/api/presaves/senders/{sender_id}/details"),
-		json!({ "data": { "parent": { "comments": "omit children" } } }),
+		json!({ "data": { "parent": { "organization_name": "omit children" } } }),
 	)
 	.await?;
 	let after_omit = get_json_ok(

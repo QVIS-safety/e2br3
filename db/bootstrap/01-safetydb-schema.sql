@@ -135,8 +135,6 @@ CREATE TABLE IF NOT EXISTS permission_profiles (
 CREATE TABLE IF NOT EXISTS sender_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    name VARCHAR(255) NOT NULL,
-    comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
     is_default BOOLEAN NOT NULL DEFAULT false,
     sender_type VARCHAR(50),
@@ -200,8 +198,6 @@ CREATE TABLE IF NOT EXISTS sender_presave_responsible_persons (
 CREATE TABLE IF NOT EXISTS receiver_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    name VARCHAR(255) NOT NULL,
-    comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
     receiver_type VARCHAR(50),
     organization_name VARCHAR(500),
@@ -240,8 +236,6 @@ CREATE TABLE IF NOT EXISTS receiver_presave_consignees (
 CREATE TABLE IF NOT EXISTS product_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    name VARCHAR(255) NOT NULL,
-    comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
     sender_presave_id UUID,
     product_id VARCHAR(255),
@@ -393,8 +387,6 @@ CREATE TABLE IF NOT EXISTS product_presave_mfds_device_items (
 CREATE TABLE IF NOT EXISTS reporter_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    name VARCHAR(255) NOT NULL,
-    comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
     reporter_title VARCHAR(100),
     reporter_given_name VARCHAR(200),
@@ -419,8 +411,6 @@ CREATE TABLE IF NOT EXISTS reporter_presaves (
 CREATE TABLE IF NOT EXISTS study_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    name VARCHAR(255) NOT NULL,
-    comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
     product_presave_id UUID,
     study_name VARCHAR(2000),
@@ -628,8 +618,6 @@ $$;
 CREATE TABLE IF NOT EXISTS narrative_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
-    name VARCHAR(255) NOT NULL,
-    comments TEXT,
     deleted BOOLEAN NOT NULL DEFAULT false,
     case_narrative TEXT,
     case_narrative_notation TEXT,

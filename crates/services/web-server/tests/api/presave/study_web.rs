@@ -200,7 +200,7 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		format!("/api/presaves/studies/{study_id}/details"),
 		json!({
 			"data": {
-				"parent": { "comments": "updated by study graph" },
+				"parent": { "study_name": "updated by study graph" },
 				"registrations": [
 					{
 						"id": registration_id,
@@ -231,7 +231,12 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		}),
 	)
 	.await?;
-	assert!(saved["data"]["parent"]["comments"].is_null(), "{saved:?}");
+	assert!(saved["data"]["parent"].get("comments").is_none(), "{saved:?}");
+	assert_eq!(
+		saved["data"]["parent"]["study_name"].as_str(),
+		Some("updated by study graph"),
+		"{saved:?}"
+	);
 	assert_eq!(saved["data"]["registrations"].as_array().unwrap().len(), 2);
 	assert_eq!(saved["data"]["products"].as_array().unwrap().len(), 2);
 
@@ -320,7 +325,7 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 		&app,
 		&admin_cookie,
 		format!("/api/presaves/studies/{study_id}/details"),
-		json!({ "data": { "parent": { "comments": "omit children" } } }),
+		json!({ "data": { "parent": { "study_name": "omit children" } } }),
 	)
 	.await?;
 	let after_omit = get_json_ok(
