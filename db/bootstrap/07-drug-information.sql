@@ -73,11 +73,6 @@ CREATE TABLE drug_information (
 
     -- G.k.9 - Additional Information (handled in primary_sources table with drug FK)
 
-    -- G.k.10 - Parent Route of Administration (free text)
-    parent_route VARCHAR(50),
-    parent_route_termid VARCHAR(50),
-    parent_route_termid_version VARCHAR(10),
-
     -- G.k.11 - Parent Dosage Information
     parent_dosage_text TEXT,
 

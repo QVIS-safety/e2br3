@@ -73,11 +73,6 @@ pub struct DrugInformation {
 	// G.k.8 - Rechallenge/Recurrence
 	pub rechallenge: Option<String>,
 
-	// G.k.10 - Parent Route
-	pub parent_route: Option<String>,
-	pub parent_route_termid: Option<String>,
-	pub parent_route_termid_version: Option<String>,
-
 	// G.k.11 - Parent Dosage
 	pub parent_dosage_text: Option<String>,
 
@@ -126,9 +121,6 @@ pub struct DrugInformationForCreate {
 	pub phpid: Option<String>,
 	pub phpid_version: Option<String>,
 	pub obtain_drug_country: Option<String>,
-	pub parent_route: Option<String>,
-	pub parent_route_termid: Option<String>,
-	pub parent_route_termid_version: Option<String>,
 	pub parent_dosage_text: Option<String>,
 	pub fda_additional_info_coded: Option<String>,
 	pub drug_additional_info_codes_json: Option<JsonValue>,
@@ -164,9 +156,6 @@ pub struct DrugInformationForUpdate {
 	pub phpid: Option<String>,
 	pub phpid_version: Option<String>,
 	pub obtain_drug_country: Option<String>,
-	pub parent_route: Option<String>,
-	pub parent_route_termid: Option<String>,
-	pub parent_route_termid_version: Option<String>,
 	pub parent_dosage_text: Option<String>,
 	pub fda_additional_info_coded: Option<String>,
 	pub drug_additional_info_codes_json: Option<JsonValue>,
@@ -962,8 +951,8 @@ impl DrugInformationBmc {
 				     batch_lot_number, cumulative_dose_first_reaction_value, cumulative_dose_first_reaction_unit,
 				     gestation_period_exposure_value, gestation_period_exposure_unit, dosage_text,
 			     action_taken, rechallenge, investigational_product_blinded, mpid, mpid_version,
-			     mfds_mpid_version, mfds_mpid, phpid, phpid_version, obtain_drug_country, parent_route, parent_route_termid,
-			     parent_route_termid_version, parent_dosage_text, fda_additional_info_coded,
+			     mfds_mpid_version, mfds_mpid, phpid, phpid_version, obtain_drug_country,
+			     parent_dosage_text, fda_additional_info_coded,
 			     drug_additional_info_codes_json, drug_additional_information, fda_specialized_product_category, fda_device_info_json,
 			     fda_other_characterization,
 			     created_at, updated_at, created_by
@@ -974,11 +963,11 @@ impl DrugInformationBmc {
 				     $11, $12, $13,
 				     $14, $15, $16,
 				     $17, $18, $19, $20, $21,
-				     $22, $23, $24, $25, $26, $27, $28,
-				     $29, $30, $31,
-				     $32, $33, $34, $35,
-				     $36,
-				     now(), now(), $37
+				     $22, $23, $24, $25, $26,
+				     $27, $28, $29,
+				     $30, $31, $32,
+				     $33,
+				     now(), now(), $34
 				 )
 				 RETURNING id",
 			Self::TABLE
@@ -1013,9 +1002,6 @@ impl DrugInformationBmc {
 					.bind(drug_c.phpid)
 					.bind(drug_c.phpid_version)
 					.bind(drug_c.obtain_drug_country)
-					.bind(drug_c.parent_route)
-					.bind(drug_c.parent_route_termid)
-					.bind(drug_c.parent_route_termid_version)
 					.bind(drug_c.parent_dosage_text)
 					.bind(drug_c.fda_additional_info_coded)
 					.bind(drug_c.drug_additional_info_codes_json)
@@ -1088,19 +1074,16 @@ impl DrugInformationBmc {
 			     phpid = COALESCE($22, phpid),
 			     phpid_version = COALESCE($23, phpid_version),
 			     obtain_drug_country = COALESCE($24, obtain_drug_country),
-			     parent_route = COALESCE($25, parent_route),
-			     parent_route_termid = COALESCE($26, parent_route_termid),
-			     parent_route_termid_version = COALESCE($27, parent_route_termid_version),
-			     parent_dosage_text = COALESCE($28, parent_dosage_text),
-			     fda_additional_info_coded = COALESCE($29, fda_additional_info_coded),
-			     drug_additional_info_codes_json = COALESCE($30, drug_additional_info_codes_json),
-			     drug_additional_information = COALESCE($31, drug_additional_information),
-			     fda_specialized_product_category = COALESCE($32, fda_specialized_product_category),
-				     fda_device_info_json = COALESCE($33, fda_device_info_json),
-				     source_product_presave_id = COALESCE($34, source_product_presave_id),
-				     fda_other_characterization = COALESCE($35, fda_other_characterization),
+			     parent_dosage_text = COALESCE($25, parent_dosage_text),
+			     fda_additional_info_coded = COALESCE($26, fda_additional_info_coded),
+			     drug_additional_info_codes_json = COALESCE($27, drug_additional_info_codes_json),
+			     drug_additional_information = COALESCE($28, drug_additional_information),
+			     fda_specialized_product_category = COALESCE($29, fda_specialized_product_category),
+				     fda_device_info_json = COALESCE($30, fda_device_info_json),
+				     source_product_presave_id = COALESCE($31, source_product_presave_id),
+				     fda_other_characterization = COALESCE($32, fda_other_characterization),
 				     updated_at = now(),
-				     updated_by = $36
+				     updated_by = $33
 				 WHERE id = $1",
 			Self::TABLE
 		);
@@ -1132,9 +1115,6 @@ impl DrugInformationBmc {
 					.bind(drug_u.phpid)
 					.bind(drug_u.phpid_version)
 					.bind(drug_u.obtain_drug_country)
-					.bind(drug_u.parent_route)
-					.bind(drug_u.parent_route_termid)
-					.bind(drug_u.parent_route_termid_version)
 					.bind(drug_u.parent_dosage_text)
 					.bind(drug_u.fda_additional_info_coded)
 					.bind(drug_u.drug_additional_info_codes_json)
@@ -1276,18 +1256,15 @@ impl DrugInformationBmc {
 			     phpid = COALESCE($23, phpid),
 			     phpid_version = COALESCE($24, phpid_version),
 			     obtain_drug_country = COALESCE($25, obtain_drug_country),
-			     parent_route = COALESCE($26, parent_route),
-			     parent_route_termid = COALESCE($27, parent_route_termid),
-			     parent_route_termid_version = COALESCE($28, parent_route_termid_version),
-			     parent_dosage_text = COALESCE($29, parent_dosage_text),
-			     fda_additional_info_coded = COALESCE($30, fda_additional_info_coded),
-			     drug_additional_info_codes_json = COALESCE($31, drug_additional_info_codes_json),
-			     drug_additional_information = COALESCE($32, drug_additional_information),
-			     fda_specialized_product_category = COALESCE($33, fda_specialized_product_category),
-			     fda_device_info_json = COALESCE($34, fda_device_info_json),
-			     fda_other_characterization = COALESCE($35, fda_other_characterization),
+			     parent_dosage_text = COALESCE($26, parent_dosage_text),
+			     fda_additional_info_coded = COALESCE($27, fda_additional_info_coded),
+			     drug_additional_info_codes_json = COALESCE($28, drug_additional_info_codes_json),
+			     drug_additional_information = COALESCE($29, drug_additional_information),
+			     fda_specialized_product_category = COALESCE($30, fda_specialized_product_category),
+			     fda_device_info_json = COALESCE($31, fda_device_info_json),
+			     fda_other_characterization = COALESCE($32, fda_other_characterization),
 			     updated_at = now(),
-			     updated_by = $36
+			     updated_by = $33
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -1320,9 +1297,6 @@ impl DrugInformationBmc {
 					.bind(drug_u.phpid)
 					.bind(drug_u.phpid_version)
 					.bind(drug_u.obtain_drug_country)
-					.bind(drug_u.parent_route)
-					.bind(drug_u.parent_route_termid)
-					.bind(drug_u.parent_route_termid_version)
 					.bind(drug_u.parent_dosage_text)
 					.bind(drug_u.fda_additional_info_coded)
 					.bind(drug_u.drug_additional_info_codes_json)

@@ -467,28 +467,6 @@ pub(crate) fn drug_fragment(
 		out.push_str(&xml_escape(code));
 		out.push_str("\"/></observation></outboundRelationship2>");
 	}
-	if drug.parent_route_termid.is_some() || drug.parent_route.is_some() {
-		out.push_str(
-			"<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"G.k.4.r.11\"/><value xsi:type=\"CE\"",
-		);
-		if let Some(code) = drug.parent_route_termid.as_deref() {
-			out.push_str(" code=\"");
-			out.push_str(&xml_escape(code));
-			out.push_str("\"");
-		}
-		if let Some(ver) = drug.parent_route_termid_version.as_deref() {
-			out.push_str(" codeSystemVersion=\"");
-			out.push_str(&xml_escape(ver));
-			out.push_str("\"");
-		}
-		out.push_str("><originalText>");
-		if let Some(text) = drug.parent_route.as_deref() {
-			out.push_str(&xml_escape(text));
-		}
-		out.push_str(
-			"</originalText></value></observation></outboundRelationship2>",
-		);
-	}
 	if let Some(text) = drug.parent_dosage_text.as_deref() {
 		out.push_str("<outboundRelationship2 typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"2\"/><value xsi:type=\"ED\">");
 		out.push_str(&xml_escape(text));
@@ -927,9 +905,6 @@ mod tests {
 			dosage_text: None,
 			action_taken: None,
 			rechallenge: None,
-			parent_route: None,
-			parent_route_termid: None,
-			parent_route_termid_version: None,
 			parent_dosage_text: None,
 			fda_additional_info_coded: None,
 			drug_additional_info_codes_json: None,

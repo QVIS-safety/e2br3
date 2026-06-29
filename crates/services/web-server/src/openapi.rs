@@ -1570,9 +1570,6 @@ struct DrugInformationDoc {
 	dosage_text: Option<String>,
 	action_taken: Option<String>,
 	rechallenge: Option<String>,
-	parent_route: Option<String>,
-	parent_route_termid: Option<String>,
-	parent_route_termid_version: Option<String>,
 	parent_dosage_text: Option<String>,
 	fda_additional_info_coded: Option<String>,
 	#[schema(value_type = Object)]
@@ -1625,9 +1622,6 @@ struct DrugInformationForUpdateDoc {
 	phpid: Option<String>,
 	phpid_version: Option<String>,
 	obtain_drug_country: Option<String>,
-	parent_route: Option<String>,
-	parent_route_termid: Option<String>,
-	parent_route_termid_version: Option<String>,
 	parent_dosage_text: Option<String>,
 	fda_additional_info_coded: Option<String>,
 	#[schema(value_type = Object)]

@@ -34,9 +34,6 @@ pub struct GDrugImport {
 	pub dosage_text: Option<String>,
 	pub action_taken: Option<String>,
 	pub rechallenge: Option<String>,
-	pub parent_route: Option<String>,
-	pub parent_route_termid: Option<String>,
-	pub parent_route_termid_version: Option<String>,
 	pub parent_dosage_text: Option<String>,
 	pub fda_additional_info_coded: Option<String>,
 	pub fda_specialized_product_category: Option<String>,
@@ -236,16 +233,8 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			first_text(&mut xpath, &node, GDrugPaths::DEVICE_LOT_NUMBER);
 		let fda_operator_of_device =
 			first_attr(&mut xpath, &node, GDrugPaths::DEVICE_OPERATOR_CODE);
-		let parent_route_termid_version = clamp_str(
-			first_attr(&mut xpath, &node, GDrugPaths::PARENT_ROUTE_TERMID_VERSION),
-			10,
-		);
-		let parent_route_termid =
-			first_attr(&mut xpath, &node, GDrugPaths::PARENT_ROUTE_TERMID);
 		let parent_dosage_text =
 			first_text(&mut xpath, &node, GDrugPaths::PARENT_DOSAGE_TEXT);
-		let parent_route =
-			first_text(&mut xpath, &node, GDrugPaths::PARENT_ROUTE_TEXT);
 
 		let subs = xpath
 			.findnodes(GDrugPaths::SUBSTANCE_NODE, Some(&node))
@@ -477,9 +466,6 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			dosage_text,
 			action_taken,
 			rechallenge,
-			parent_route,
-			parent_route_termid,
-			parent_route_termid_version,
 			parent_dosage_text,
 			fda_additional_info_coded,
 			fda_specialized_product_category,

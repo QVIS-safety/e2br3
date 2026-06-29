@@ -350,8 +350,7 @@ BEGIN
         manufacturer_name, manufacturer_country, batch_lot_number,
         cumulative_dose_first_reaction_value, cumulative_dose_first_reaction_unit,
         gestation_period_exposure_value, gestation_period_exposure_unit, dosage_text,
-        action_taken, rechallenge, parent_route, parent_route_termid, parent_route_termid_version,
-        parent_dosage_text, fda_additional_info_coded, drug_additional_info_codes_json,
+        action_taken, rechallenge, parent_dosage_text, fda_additional_info_coded, drug_additional_info_codes_json,
         fda_specialized_product_category, fda_device_info_json, drug_additional_information,
         created_by, updated_by, created_at, updated_at
     )
@@ -361,8 +360,7 @@ BEGIN
         'KR', 'Demozumab', 'demozumab', 'KR-DA-7781',
         'QVIS Biopharma', 'KR', 'LOT-2026-A1',
         100.0, 'mg', 0, '804', '50 mg orally once daily for 2 days',
-        '2', '1', 'Oral', '20000092', '27.1',
-        'Parent route not applicable; oral tablet.',
+        '2', '1', 'Parent route not applicable; oral tablet.',
         '1', '["3","7"]'::jsonb,
         'combination_product',
         '{"deviceModel":"DV-1000","deviceBrand":"QVIS Smart Pen","operatorType":"patient"}'::jsonb,
