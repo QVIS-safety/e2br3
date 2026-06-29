@@ -1846,13 +1846,14 @@
     "label": "Report Year",
     "section": "C",
     "authority": "ICH",
-    "status": "backend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
-      "status": "missing",
-      "model": "SafetyReportIdentification",
-      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.reportYear.",
-      "field": "report_year"
+      "status": "mapped",
+      "model": "Case",
+      "field": "report_year",
+      "file": "crates/libs/lib-core/src/model/case.rs",
+      "evidence": "Case.report_year holds this app-local value; persisted via the Case model."
     },
     "frontend": {
       "status": "mapped",
@@ -1861,8 +1862,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
       "evidence": "Strict frontend input inventory extracts safetyReportIdentification.reportYear from the case-form section source."
     },
-    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
-    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Local field feeding the report identifier composition; not an ICH data element."
+    "action": "",
+    "notes": "App-local non-E2B report year for local tracking (the frontend field is explicitly labelled 'Non-E2B', 4-digit year). Re-pointed from the wrong SafetyReportIdentification model to Case.report_year. No E2B counterpart (C.1.2/C.1.4 are full dates)."
   },
   {
     "id": "C.local.sourceDocumentName",
@@ -1870,13 +1871,14 @@
     "label": "Source Document Name",
     "section": "C",
     "authority": "ICH",
-    "status": "backend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
-      "status": "missing",
-      "model": "SafetyReportIdentification",
-      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.sourceDocumentName.",
-      "field": "source_document_name"
+      "status": "mapped",
+      "model": "Case",
+      "field": "source_document_name",
+      "file": "crates/libs/lib-core/src/model/case.rs",
+      "evidence": "Case.source_document_name holds this app-local value; persisted via the Case model."
     },
     "frontend": {
       "status": "mapped",
@@ -1885,8 +1887,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
       "evidence": "Strict frontend input inventory extracts safetyReportIdentification.sourceDocumentName from the case-form section source."
     },
-    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
-    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Report-level local field; the documents-held title is separately mapped as C.1.6.1.r.1."
+    "action": "",
+    "notes": "App-local parallel single-file upload stored on Case (source_document_name/base64/media_type). Re-pointed from the wrong SafetyReportIdentification model. The official Included Documents element (C.1.6.1.r.1 title / C.1.6.1.r.2 payload) is separately mapped via documentsHeldBySender; consider consolidating these two upload paths."
   },
   {
     "id": "C.1.10.r",
