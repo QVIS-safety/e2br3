@@ -1,6 +1,7 @@
 pub mod config;
 pub mod ctx;
 pub mod model;
+pub mod narrative_template;
 pub mod regulatory;
 pub mod report_due;
 pub mod serde;
