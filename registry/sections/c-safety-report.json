@@ -1966,13 +1966,14 @@
     "label": "FDA Report Type",
     "section": "C",
     "authority": "FDA",
-    "status": "backend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
-      "status": "missing",
-      "model": "SafetyReportIdentification",
-      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.fdaReportType.",
-      "field": "fda_report_type"
+      "status": "mapped",
+      "model": "Case",
+      "field": "fda_report_type",
+      "file": "crates/libs/lib-core/src/model/case.rs",
+      "evidence": "Case.fda_report_type holds this app-local report type; persisted via the Case model."
     },
     "frontend": {
       "status": "mapped",
@@ -1981,8 +1982,8 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
       "evidence": "Strict frontend input inventory extracts safetyReportIdentification.fdaReportType from the case-form section source."
     },
-    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
-    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Appears to duplicate FDA.C.1.7.1 (Local Criteria Report Type), which is already complete via localCriteriaReportType. Decide: remove this frontend input or merge it with FDA.C.1.7.1."
+    "action": "",
+    "notes": "App-local FDA report-type classification stored on Case.fda_report_type. Re-pointed from the wrong SafetyReportIdentification model. Not an official element (official FDA report type is FDA.C.1.7.1 Local Criteria Report Type, mapped separately); possible concept overlap to revisit."
   },
   {
     "id": "C.1.KR.mfdsReportType",
@@ -1990,13 +1991,14 @@
     "label": "MFDS Report Type",
     "section": "C",
     "authority": "MFDS",
-    "status": "backend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
-      "status": "missing",
-      "model": "SafetyReportIdentification",
-      "evidence": "No public SafetyReportIdentification BMC field currently maps frontend input safetyReportIdentification.mfdsReportType.",
-      "field": "mfds_report_type"
+      "status": "mapped",
+      "model": "Case",
+      "field": "mfds_report_type",
+      "file": "crates/libs/lib-core/src/model/case.rs",
+      "evidence": "Case.mfds_report_type holds this app-local report type; persisted via the Case model."
     },
     "frontend": {
       "status": "mapped",
@@ -2005,7 +2007,7 @@
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
       "evidence": "Strict frontend input inventory extracts safetyReportIdentification.mfdsReportType from the case-form section source."
     },
-    "action": "Add the backend BMC field and persistence/export mapping, or explicitly reclassify this frontend input as not applicable.",
-    "notes": "Added from strict frontend inventory coverage; backend implementation is not yet present in the tracked BMC model inventory. Not among the official KR extension elements in the MFDS business-rule workbook; confirm the official code when the MFDS dictionary source is expanded."
+    "action": "",
+    "notes": "App-local MFDS report-type classification stored on Case.mfds_report_type. Re-pointed from the wrong SafetyReportIdentification model. Not one of the 14 official MFDS KR extension elements; the .KR. token only satisfies the MFDS authority code rule."
   }
 ]
