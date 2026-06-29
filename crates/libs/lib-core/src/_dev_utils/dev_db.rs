@@ -233,13 +233,26 @@ END $$"#,
 		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS comments",
 		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS email",
 		"ALTER TABLE reporter_presaves DROP COLUMN IF EXISTS qualification_kr1",
+		"ALTER TABLE reporter_presaves ADD COLUMN IF NOT EXISTS reporter_name_null_flavor VARCHAR(4)",
+		"ALTER TABLE reporter_presaves ADD COLUMN IF NOT EXISTS reporter_address_null_flavor VARCHAR(4)",
+		"ALTER TABLE reporter_presaves ADD COLUMN IF NOT EXISTS qualification_null_flavor VARCHAR(4)",
 		"ALTER TABLE study_presaves DROP CONSTRAINT IF EXISTS study_presaves_authority_valid",
 		"ALTER TABLE study_presaves DROP COLUMN IF EXISTS authority",
-		"ALTER TABLE study_presaves DROP COLUMN IF EXISTS name",
-		"ALTER TABLE study_presaves DROP COLUMN IF EXISTS comments",
-		"ALTER TABLE study_presaves ADD COLUMN IF NOT EXISTS exclude_case_key_from_sync BOOLEAN",
-		"ALTER TABLE study_presaves ALTER COLUMN sponsor_study_number TYPE VARCHAR(50) USING LEFT(sponsor_study_number, 50)",
-		"ALTER TABLE study_presave_registration_numbers ALTER COLUMN registration_number TYPE VARCHAR(50) USING LEFT(registration_number, 50)",
+			"ALTER TABLE study_presaves DROP COLUMN IF EXISTS name",
+			"ALTER TABLE study_presaves DROP COLUMN IF EXISTS comments",
+			"ALTER TABLE study_presaves ADD COLUMN IF NOT EXISTS exclude_case_key_from_sync BOOLEAN",
+			"ALTER TABLE study_presaves ALTER COLUMN sponsor_study_number TYPE VARCHAR(50) USING LEFT(sponsor_study_number, 50)",
+			"ALTER TABLE study_presaves DROP CONSTRAINT IF EXISTS study_presaves_sponsor_study_number_kind_valid",
+			"UPDATE study_presaves
+			 SET sponsor_study_number_kind = NULL
+			 WHERE sponsor_study_number_kind IS NOT NULL
+			   AND sponsor_study_number_kind NOT IN ('STUDY_NO', 'PROTOCOL_NO')",
+			"ALTER TABLE study_presaves
+			 ADD CONSTRAINT study_presaves_sponsor_study_number_kind_valid CHECK (
+			 	sponsor_study_number_kind IS NULL
+			 	OR sponsor_study_number_kind IN ('STUDY_NO', 'PROTOCOL_NO')
+			 )",
+			"ALTER TABLE study_presave_registration_numbers ALTER COLUMN registration_number TYPE VARCHAR(50) USING LEFT(registration_number, 50)",
 		"CREATE TABLE IF NOT EXISTS study_presave_products (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,
@@ -595,10 +608,98 @@ END $$"#,
 		"GRANT SELECT, INSERT, UPDATE, DELETE ON user_organization_memberships TO e2br3_app_role",
 		"ALTER TABLE user_organization_memberships ENABLE ROW LEVEL SECURITY",
 		"ALTER TABLE user_organization_memberships FORCE ROW LEVEL SECURITY",
-		"ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS organization_id UUID",
-		"UPDATE audit_logs
-		 SET organization_id = COALESCE(
-		 	NULLIF(new_values->>'organization_id', '')::UUID,
+			"ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS organization_id UUID",
+			"CREATE OR REPLACE FUNCTION audit_log_organization_id(
+				p_table_name TEXT,
+				p_record_id UUID,
+				p_old_values JSONB,
+				p_new_values JSONB
+			)
+			RETURNS UUID
+			LANGUAGE plpgsql
+			SECURITY DEFINER
+			AS $$
+			DECLARE
+				v_values JSONB;
+				v_org_id UUID;
+				v_case_id UUID;
+				v_submission_id UUID;
+			BEGIN
+				IF p_table_name = 'organizations' THEN
+					RETURN p_record_id;
+				END IF;
+
+				v_values := COALESCE(p_new_values, p_old_values, '{}'::JSONB);
+				v_org_id := NULLIF(v_values->>'organization_id', '')::UUID;
+				IF v_org_id IS NOT NULL THEN
+					RETURN v_org_id;
+				END IF;
+
+				v_case_id := NULLIF(v_values->>'case_id', '')::UUID;
+				IF v_case_id IS NOT NULL THEN
+					SELECT c.organization_id INTO v_org_id
+					FROM cases c
+					WHERE c.id = v_case_id;
+					IF v_org_id IS NOT NULL THEN RETURN v_org_id; END IF;
+				END IF;
+
+				v_submission_id := NULLIF(v_values->>'submission_id', '')::UUID;
+				IF v_submission_id IS NOT NULL THEN
+					SELECT c.organization_id INTO v_org_id
+					FROM case_submissions cs
+					JOIN cases c ON c.id = cs.case_id
+					WHERE cs.id = v_submission_id;
+					IF v_org_id IS NOT NULL THEN RETURN v_org_id; END IF;
+				END IF;
+
+				IF p_table_name IN ('sender_presave_gateways', 'sender_presave_responsible_persons') THEN
+					SELECT p.organization_id INTO v_org_id
+					FROM sender_presaves p
+					WHERE p.id = NULLIF(v_values->>'sender_presave_id', '')::UUID;
+					IF v_org_id IS NOT NULL THEN RETURN v_org_id; END IF;
+				END IF;
+
+				IF p_table_name = 'receiver_presave_consignees' THEN
+					SELECT p.organization_id INTO v_org_id
+					FROM receiver_presaves p
+					WHERE p.id = NULLIF(v_values->>'receiver_presave_id', '')::UUID;
+					IF v_org_id IS NOT NULL THEN RETURN v_org_id; END IF;
+				END IF;
+
+				IF p_table_name IN (
+					'product_presave_substances',
+					'product_presave_mfds_device_items'
+				) THEN
+					SELECT p.organization_id INTO v_org_id
+					FROM product_presaves p
+					WHERE p.id = NULLIF(v_values->>'product_presave_id', '')::UUID;
+					IF v_org_id IS NOT NULL THEN RETURN v_org_id; END IF;
+				END IF;
+
+				IF p_table_name IN (
+					'study_presave_registration_numbers',
+					'study_presave_products',
+					'study_presave_reporters'
+				) THEN
+					SELECT p.organization_id INTO v_org_id
+					FROM study_presaves p
+					WHERE p.id = NULLIF(v_values->>'study_presave_id', '')::UUID;
+					IF v_org_id IS NOT NULL THEN RETURN v_org_id; END IF;
+				END IF;
+
+				IF p_table_name IN ('narrative_presave_sender_diagnoses', 'narrative_presave_case_summaries') THEN
+					SELECT p.organization_id INTO v_org_id
+					FROM narrative_presaves p
+					WHERE p.id = NULLIF(v_values->>'narrative_presave_id', '')::UUID;
+					IF v_org_id IS NOT NULL THEN RETURN v_org_id; END IF;
+				END IF;
+
+				RETURN COALESCE(current_organization_id(), '00000000-0000-0000-0000-000000000000'::UUID);
+			END;
+			$$",
+			"UPDATE audit_logs
+			 SET organization_id = COALESCE(
+			 	NULLIF(new_values->>'organization_id', '')::UUID,
 		 	NULLIF(old_values->>'organization_id', '')::UUID
 		 )
 		 WHERE organization_id IS NULL
@@ -1160,23 +1261,91 @@ END $$"#,
 	sqlx::query("DROP POLICY IF EXISTS meddra_terms_read ON meddra_terms")
 		.execute(&mut *tx)
 		.await?;
+	sqlx::query("DROP POLICY IF EXISTS meddra_terms_insert ON meddra_terms")
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query("DROP POLICY IF EXISTS meddra_terms_update ON meddra_terms")
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query("DROP POLICY IF EXISTS meddra_terms_delete ON meddra_terms")
+		.execute(&mut *tx)
+		.await?;
 	execute_ignoring_duplicate_policy(
 		&mut tx,
 		"CREATE POLICY meddra_terms_read ON meddra_terms
-		 FOR SELECT
-		 TO e2br3_app_role
+			 FOR SELECT
+			 TO e2br3_app_role
 		 USING (active = true OR is_current_user_admin())",
+	)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY meddra_terms_insert ON meddra_terms
+			 FOR INSERT
+			 TO e2br3_app_role
+			 WITH CHECK (is_current_user_admin())",
+	)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY meddra_terms_update ON meddra_terms
+			 FOR UPDATE
+			 TO e2br3_app_role
+			 USING (is_current_user_admin())
+			 WITH CHECK (is_current_user_admin())",
+	)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY meddra_terms_delete ON meddra_terms
+			 FOR DELETE
+			 TO e2br3_app_role
+			 USING (is_current_user_admin())",
 	)
 	.await?;
 	sqlx::query("DROP POLICY IF EXISTS whodrug_products_read ON whodrug_products")
 		.execute(&mut *tx)
 		.await?;
+	sqlx::query("DROP POLICY IF EXISTS whodrug_products_insert ON whodrug_products")
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query("DROP POLICY IF EXISTS whodrug_products_update ON whodrug_products")
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query("DROP POLICY IF EXISTS whodrug_products_delete ON whodrug_products")
+		.execute(&mut *tx)
+		.await?;
 	execute_ignoring_duplicate_policy(
 		&mut tx,
 		"CREATE POLICY whodrug_products_read ON whodrug_products
-		 FOR SELECT
-		 TO e2br3_app_role
+			 FOR SELECT
+			 TO e2br3_app_role
 		 USING (active = true OR is_current_user_admin())",
+	)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY whodrug_products_insert ON whodrug_products
+			 FOR INSERT
+			 TO e2br3_app_role
+			 WITH CHECK (is_current_user_admin())",
+	)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY whodrug_products_update ON whodrug_products
+			 FOR UPDATE
+			 TO e2br3_app_role
+			 USING (is_current_user_admin())
+			 WITH CHECK (is_current_user_admin())",
+	)
+	.await?;
+	execute_ignoring_duplicate_policy(
+		&mut tx,
+		"CREATE POLICY whodrug_products_delete ON whodrug_products
+			 FOR DELETE
+			 TO e2br3_app_role
+			 USING (is_current_user_admin())",
 	)
 	.await?;
 	for sql in dirty_trigger_compatibility_sql() {

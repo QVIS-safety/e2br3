@@ -1566,6 +1566,11 @@ pub struct ReporterPresave {
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
 	pub primary_source_regulatory: Option<String>,
+	// nullFlavor for name (C.2.r.1) and address/telephone (C.2.r.2): MSK/ASKU/NASK;
+	// for qualification (C.2.r.4): UNK.
+	pub reporter_name_null_flavor: Option<String>,
+	pub reporter_address_null_flavor: Option<String>,
+	pub qualification_null_flavor: Option<String>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -1588,6 +1593,9 @@ pub struct ReporterPresaveForCreate {
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
 	pub primary_source_regulatory: Option<String>,
+	pub reporter_name_null_flavor: Option<String>,
+	pub reporter_address_null_flavor: Option<String>,
+	pub qualification_null_flavor: Option<String>,
 }
 
 #[derive(Fields)]
@@ -1607,6 +1615,9 @@ struct ReporterPresaveForInsert {
 	country_code: Option<String>,
 	qualification: Option<String>,
 	primary_source_regulatory: Option<String>,
+	reporter_name_null_flavor: Option<String>,
+	reporter_address_null_flavor: Option<String>,
+	qualification_null_flavor: Option<String>,
 }
 
 impl IntoOrgScopedCreate for ReporterPresaveForCreate {
@@ -1629,6 +1640,9 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 			country_code: self.country_code,
 			qualification: self.qualification,
 			primary_source_regulatory: self.primary_source_regulatory,
+			reporter_name_null_flavor: self.reporter_name_null_flavor,
+			reporter_address_null_flavor: self.reporter_address_null_flavor,
+			qualification_null_flavor: self.qualification_null_flavor,
 		}
 	}
 }
@@ -1650,6 +1664,9 @@ pub struct ReporterPresaveForUpdate {
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
 	pub primary_source_regulatory: Option<String>,
+	pub reporter_name_null_flavor: Option<String>,
+	pub reporter_address_null_flavor: Option<String>,
+	pub qualification_null_flavor: Option<String>,
 }
 
 pub struct ReporterPresaveBmc;

@@ -402,6 +402,10 @@ CREATE TABLE IF NOT EXISTS reporter_presaves (
     country_code VARCHAR(2),
     qualification VARCHAR(50),
     primary_source_regulatory VARCHAR(50),
+    -- nullFlavor: name (C.2.r.1) / address+telephone (C.2.r.2) = MSK/ASKU/NASK; qualification (C.2.r.4) = UNK
+    reporter_name_null_flavor VARCHAR(4),
+    reporter_address_null_flavor VARCHAR(4),
+    qualification_null_flavor VARCHAR(4),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -681,7 +685,10 @@ ALTER TABLE sender_presave_responsible_persons
 
 ALTER TABLE reporter_presaves
     DROP COLUMN IF EXISTS email,
-    DROP COLUMN IF EXISTS qualification_kr1;
+    DROP COLUMN IF EXISTS qualification_kr1,
+    ADD COLUMN IF NOT EXISTS reporter_name_null_flavor VARCHAR(4),
+    ADD COLUMN IF NOT EXISTS reporter_address_null_flavor VARCHAR(4),
+    ADD COLUMN IF NOT EXISTS qualification_null_flavor VARCHAR(4);
 
 CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);
