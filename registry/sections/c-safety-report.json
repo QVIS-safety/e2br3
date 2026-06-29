@@ -1542,12 +1542,12 @@
     "notes": ""
   },
   {
-    "id": "C.3.receiver.1",
-    "e2br3_code": "C.3.receiver.1",
+    "id": "local.receiver.1",
+    "e2br3_code": "local.receiver.1",
     "label": "Receiver Organization",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1557,22 +1557,22 @@
       "evidence": "ReceiverInformation.organization_name stores the receiver singleton value saved by C.3.receiver.1."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverOrganization",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverOrganization (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
-    "id": "C.3.receiver.2",
-    "e2br3_code": "C.3.receiver.2",
+    "id": "local.receiver.2",
+    "e2br3_code": "local.receiver.2",
     "label": "Receiver Type",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1582,22 +1582,22 @@
       "evidence": "ReceiverInformation.receiver_type stores the receiver singleton value saved by C.3.receiver.2."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverType",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverType (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
-    "id": "C.3.receiver.3",
-    "e2br3_code": "C.3.receiver.3",
+    "id": "local.receiver.3",
+    "e2br3_code": "local.receiver.3",
     "label": "Receiver Department",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1607,22 +1607,22 @@
       "evidence": "ReceiverInformation.department stores the receiver singleton value saved by C.3.receiver.3."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverDepartment",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverDepartment (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
-    "id": "C.3.receiver.4",
-    "e2br3_code": "C.3.receiver.4",
+    "id": "local.receiver.4",
+    "e2br3_code": "local.receiver.4",
     "label": "Receiver Street Address",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1632,22 +1632,22 @@
       "evidence": "ReceiverInformation.street_address stores the receiver singleton value saved by C.3.receiver.4."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverStreet",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverStreet (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
-    "id": "C.3.receiver.5",
-    "e2br3_code": "C.3.receiver.5",
+    "id": "local.receiver.5",
+    "e2br3_code": "local.receiver.5",
     "label": "Receiver City",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1657,22 +1657,22 @@
       "evidence": "ReceiverInformation.city stores the receiver singleton value saved by C.3.receiver.5."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverCity",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverCity (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
-    "id": "C.3.receiver.6",
-    "e2br3_code": "C.3.receiver.6",
+    "id": "local.receiver.6",
+    "e2br3_code": "local.receiver.6",
     "label": "Receiver State/Province",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1682,22 +1682,22 @@
       "evidence": "ReceiverInformation.state_province stores the receiver singleton value saved by C.3.receiver.6."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverState",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverState (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
-    "id": "C.3.receiver.7",
-    "e2br3_code": "C.3.receiver.7",
+    "id": "local.receiver.7",
+    "e2br3_code": "local.receiver.7",
     "label": "Receiver Postcode",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1707,22 +1707,22 @@
       "evidence": "ReceiverInformation.postcode stores the receiver singleton value saved by C.3.receiver.7."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverPostcode",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverPostcode (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
-    "id": "C.3.receiver.country",
-    "e2br3_code": "C.3.receiver.country",
+    "id": "local.receiver.country",
+    "e2br3_code": "local.receiver.country",
     "label": "Receiver Country Code",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1732,22 +1732,22 @@
       "evidence": "ReceiverInformation.country_code stores the receiver singleton value saved by C.3.receiver.country."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverCountry",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverCountry (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
-    "id": "C.3.receiver.8",
-    "e2br3_code": "C.3.receiver.8",
+    "id": "local.receiver.8",
+    "e2br3_code": "local.receiver.8",
     "label": "Receiver Telephone",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1757,22 +1757,22 @@
       "evidence": "ReceiverInformation.telephone stores the receiver singleton value saved by C.3.receiver.8."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverTelephone",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverTelephone (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
-    "id": "C.3.receiver.9",
-    "e2br3_code": "C.3.receiver.9",
+    "id": "local.receiver.9",
+    "e2br3_code": "local.receiver.9",
     "label": "Receiver Fax",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1782,22 +1782,22 @@
       "evidence": "ReceiverInformation.fax stores the receiver singleton value saved by C.3.receiver.9."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverFax",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverFax (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
-    "id": "C.3.receiver.10",
-    "e2br3_code": "C.3.receiver.10",
+    "id": "local.receiver.10",
+    "e2br3_code": "local.receiver.10",
     "label": "Receiver Email",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1807,14 +1807,14 @@
       "evidence": "ReceiverInformation.email stores the receiver singleton value saved by C.3.receiver.10."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "safetyReportIdentification",
       "field": "receiverEmail",
       "file": "../frontend/E2BR3-frontend/lib/case-save/contracts.ts",
-      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key."
+      "evidence": "SectionC3.tsx registers safetyReportIdentification.receiverEmail (receiver block added in the frontend)."
     },
-    "action": "Add receiver input controls to the configured C section source or keep this as backend-only receiver metadata.",
-    "notes": "Backend inventory is covered, but strict frontend inventory does not extract receiver input controls from the configured case-form sections. Local receiver configuration block; not an E2BR3 data element."
+    "action": "",
+    "notes": "App-local receiver organisation/address metadata. Not a C.3 element: official C.3 is the Sender block (mapped via SenderInformation) and the E2B receiver is identified only at message level (N.1.4 / N.2.r.3). Renamed from C.3.receiver.* to local.receiver.* so the code no longer implies an official C.3 sub-element."
   },
   {
     "id": "C.1.1",

@@ -150,7 +150,7 @@
     "label": "Case Summary Type",
     "section": "H",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -160,13 +160,13 @@
       "evidence": "CaseSummaryInformation.summary_type is annotated as H.5.r.1 case summary type."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "caseSummaryInformation",
       "field": "summaryType",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionH.tsx",
-      "evidence": "SectionH renders case summary text and language fields but no summaryType input."
+      "evidence": "SectionH registers caseSummaryInformation.${index}.summaryType (added in the frontend; previously only DTO plumbing)."
     },
-    "action": "Add or intentionally suppress the case summary type field in the H section UI.",
+    "action": "",
     "notes": "Frontend DTO/save plumbing contains summaryType, but the case section does not expose a direct input. Local discriminator for the repeatable H.5.r case summary block; not an E2BR3 data element."
   },
   {
