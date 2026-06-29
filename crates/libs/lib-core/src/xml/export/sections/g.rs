@@ -682,51 +682,23 @@ fn drug_recurrence_fragment(assessment: &DrugReactionAssessment) -> String {
 		out.push_str(&xml_escape(&assessment.reaction_id.to_string()));
 		out.push_str("\"/></actReference></outboundRelationship1>");
 	}
-	if assessment.reaction_recurred.is_some()
-		|| assessment.recurrence_action.is_some()
-		|| assessment.recurrence_meddra_version.is_some()
-		|| assessment.recurrence_meddra_code.is_some()
-	{
+	// G.k.9.i.4 - Did Reaction Recur on Re-administration? (standard single observation,
+	// HL7 observation code 31). The recurrence answer uses the official 1-4 enum, which the
+	// backend stores in recurrence_action (matching the FDA reference instance value codes).
+	// The previously-emitted G.k.8.r.1 / G.k.8.r.2 sub-observations used codes that do not
+	// exist in the ICH/FDA/MFDS standards and have been removed.
+	if let Some(code) = assessment.recurrence_action.as_deref() {
 		out.push_str(
 			"<outboundRelationship2 typeCode=\"PERT\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"31\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/>",
 		);
-		out.push_str("<value xsi:type=\"CE\"");
-		if let Some(code) = assessment.reaction_recurred.as_deref() {
-			out.push_str(" code=\"");
-			out.push_str(&xml_escape(code));
-			out.push_str("\"");
-		}
-		out.push_str("/>");
+		out.push_str("<value xsi:type=\"CE\" code=\"");
+		out.push_str(&xml_escape(code));
+		out.push_str("\"/>");
 		out.push_str(
 			"<outboundRelationship1 typeCode=\"REFR\"><actReference classCode=\"ACT\" moodCode=\"EVN\"><id root=\"",
 		);
 		out.push_str(&xml_escape(&assessment.reaction_id.to_string()));
 		out.push_str("\"/></actReference></outboundRelationship1>");
-		if let Some(action) = assessment.recurrence_action.as_deref() {
-			out.push_str(
-				"<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"G.k.8.r.1\"/><value xsi:type=\"CE\" code=\"",
-			);
-			out.push_str(&xml_escape(action));
-			out.push_str("\"/></observation></outboundRelationship2>");
-		}
-		if assessment.recurrence_meddra_version.is_some()
-			|| assessment.recurrence_meddra_code.is_some()
-		{
-			out.push_str(
-				"<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"G.k.8.r.2\"/><value xsi:type=\"CE\" codeSystem=\"2.16.840.1.113883.6.163\"",
-			);
-			if let Some(version) = assessment.recurrence_meddra_version.as_deref() {
-				out.push_str(" codeSystemVersion=\"");
-				out.push_str(&xml_escape(version));
-				out.push_str("\"");
-			}
-			if let Some(code) = assessment.recurrence_meddra_code.as_deref() {
-				out.push_str(" code=\"");
-				out.push_str(&xml_escape(code));
-				out.push_str("\"");
-			}
-			out.push_str("/></observation></outboundRelationship2>");
-		}
 		out.push_str("</observation></outboundRelationship2>");
 	}
 	out
@@ -988,6 +960,42 @@ mod tests {
 		assert!(
 			!xml.contains("KR-SUB") && !xml.contains("KR-SV1"),
 			"MFDS substance values must wait for verified MFDS XML paths"
+		);
+	}
+
+	fn test_assessment() -> DrugReactionAssessment {
+		DrugReactionAssessment {
+			id: Uuid::new_v4(),
+			drug_id: Uuid::new_v4(),
+			reaction_id: Uuid::new_v4(),
+			administration_start_interval_value: None,
+			administration_start_interval_unit: None,
+			last_dose_interval_value: None,
+			last_dose_interval_unit: None,
+			recurrence_action: Some("1".to_string()),
+			recurrence_meddra_version: Some("27.0".to_string()),
+			recurrence_meddra_code: Some("10000001".to_string()),
+			reaction_recurred: Some("1".to_string()),
+			created_at: OffsetDateTime::now_utc(),
+			updated_at: OffsetDateTime::now_utc(),
+			created_by: Uuid::new_v4(),
+			updated_by: None,
+		}
+	}
+
+	#[test]
+	fn recurrence_export_emits_only_standard_code31_no_invented_codes() {
+		let xml = drug_recurrence_fragment(&test_assessment());
+
+		// The recurrence answer is carried by the standard G.k.9.i.4 observation (code 31).
+		assert!(
+			xml.contains("code=\"31\""),
+			"expected the standard recurrence observation (code 31)"
+		);
+		// G.k.8.r.1 / G.k.8.r.2 are not real ICH/FDA/MFDS codes and must not be emitted.
+		assert!(
+			!xml.contains("G.k.8.r"),
+			"non-standard recurrence codes G.k.8.r.* must not be exported: {xml}"
 		);
 	}
 }
