@@ -1,4 +1,4 @@
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
 use lib_core::model::acs::XML_EXPORT;
@@ -13,6 +13,7 @@ use lib_core::model::reaction::{Reaction, ReactionBmc};
 use lib_core::model::safety_report::{
 	PrimarySource, SafetyReportIdentification, SenderInformation,
 };
+use lib_core::model::store::set_full_context_from_ctx_dbx;
 use lib_core::model::{Error as ModelError, ModelManager};
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
@@ -27,6 +28,16 @@ const SETTINGS_KEY: &str = "system";
 struct CiomsSettings {
 	orientation: String,
 	data_ordering: String,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct CiomsExportOptions {
+	include_notation: bool,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ExportCiomsQuery {
+	pub include_notation: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
@@ -220,6 +231,7 @@ async fn load_cioms_settings(
 }
 
 async fn load_optional_by_case<T>(
+	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	table: &str,
 	case_id: Uuid,
@@ -227,14 +239,31 @@ async fn load_optional_by_case<T>(
 where
 	for<'r> T: sqlx::FromRow<'r, sqlx::postgres::PgRow> + Send + Unpin,
 {
+	mm.dbx().begin_txn().await?;
+	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err);
+	}
 	let sql = format!("SELECT * FROM {table} WHERE case_id = $1 LIMIT 1");
-	mm.dbx()
+	let result = mm
+		.dbx()
 		.fetch_optional(sqlx::query_as::<_, T>(&sql).bind(case_id))
 		.await
-		.map_err(ModelError::Dbx)
+		.map_err(ModelError::Dbx);
+	match result {
+		Ok(value) => {
+			mm.dbx().commit_txn().await?;
+			Ok(value)
+		}
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(err)
+		}
+	}
 }
 
 async fn load_list_by_case<T>(
+	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	table: &str,
 	case_id: Uuid,
@@ -242,15 +271,32 @@ async fn load_list_by_case<T>(
 where
 	for<'r> T: sqlx::FromRow<'r, sqlx::postgres::PgRow> + Send + Unpin,
 {
+	mm.dbx().begin_txn().await?;
+	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err);
+	}
 	let sql =
 		format!("SELECT * FROM {table} WHERE case_id = $1 ORDER BY sequence_number");
-	mm.dbx()
+	let result = mm
+		.dbx()
 		.fetch_all(sqlx::query_as::<_, T>(&sql).bind(case_id))
 		.await
-		.map_err(ModelError::Dbx)
+		.map_err(ModelError::Dbx);
+	match result {
+		Ok(value) => {
+			mm.dbx().commit_txn().await?;
+			Ok(value)
+		}
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(err)
+		}
+	}
 }
 
 async fn load_unordered_list_by_case<T>(
+	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	table: &str,
 	case_id: Uuid,
@@ -258,11 +304,27 @@ async fn load_unordered_list_by_case<T>(
 where
 	for<'r> T: sqlx::FromRow<'r, sqlx::postgres::PgRow> + Send + Unpin,
 {
+	mm.dbx().begin_txn().await?;
+	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err);
+	}
 	let sql = format!("SELECT * FROM {table} WHERE case_id = $1 ORDER BY id");
-	mm.dbx()
+	let result = mm
+		.dbx()
 		.fetch_all(sqlx::query_as::<_, T>(&sql).bind(case_id))
 		.await
-		.map_err(ModelError::Dbx)
+		.map_err(ModelError::Dbx);
+	match result {
+		Ok(value) => {
+			mm.dbx().commit_txn().await?;
+			Ok(value)
+		}
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(err)
+		}
+	}
 }
 
 async fn load_dosages_by_case(
@@ -310,6 +372,7 @@ async fn load_cioms_case_data(
 ) -> Result<CiomsCaseData> {
 	let case = CaseBmc::get(ctx, mm, case_id).await.map_err(Error::Model)?;
 	let report = load_optional_by_case::<SafetyReportIdentification>(
+		ctx,
 		mm,
 		"safety_report_identification",
 		case_id,
@@ -317,6 +380,7 @@ async fn load_cioms_case_data(
 	.await
 	.map_err(Error::Model)?;
 	let patient = load_optional_by_case::<PatientInformation>(
+		ctx,
 		mm,
 		"patient_information",
 		case_id,
@@ -324,6 +388,7 @@ async fn load_cioms_case_data(
 	.await
 	.map_err(Error::Model)?;
 	let narrative = load_optional_by_case::<NarrativeInformation>(
+		ctx,
 		mm,
 		"narrative_information",
 		case_id,
@@ -343,10 +408,11 @@ async fn load_cioms_case_data(
 		.await
 		.map_err(Error::Model)?;
 	let primary_sources =
-		load_list_by_case::<PrimarySource>(mm, "primary_sources", case_id)
+		load_list_by_case::<PrimarySource>(ctx, mm, "primary_sources", case_id)
 			.await
 			.map_err(Error::Model)?;
 	let senders = load_unordered_list_by_case::<SenderInformation>(
+		ctx,
 		mm,
 		"sender_information",
 		case_id,
@@ -704,10 +770,52 @@ fn render_missing_information_legend(canvas: &mut PdfCanvas, x: i32, y: i32) {
 	);
 }
 
+fn cioms_notation_text(narrative: Option<&NarrativeInformation>) -> String {
+	let Some(narrative) = narrative else {
+		return String::new();
+	};
+	join_present(
+		&[
+			narrative
+				.reporter_comments
+				.as_ref()
+				.map(|value| format!("Reporter: {value}")),
+			narrative
+				.sender_comments
+				.as_ref()
+				.map(|value| format!("Sender: {value}")),
+			narrative
+				.additional_information
+				.as_ref()
+				.map(|value| format!("Additional: {value}")),
+		],
+		" | ",
+	)
+}
+
+fn render_cioms_notation(
+	canvas: &mut PdfCanvas,
+	data: &CiomsCaseData,
+	options: CiomsExportOptions,
+	x: i32,
+	y: i32,
+) {
+	if !options.include_notation {
+		return;
+	}
+	let notation = cioms_notation_text(data.narrative.as_ref());
+	if notation.is_empty() {
+		return;
+	}
+	canvas.text(x, y + 14, 7, "CIOMS NOTATION");
+	canvas.text(x, y, 7, &notation);
+}
+
 fn render_landscape_cioms(
 	canvas: &mut PdfCanvas,
 	data: &CiomsCaseData,
 	settings: &CiomsSettings,
+	options: CiomsExportOptions,
 	width: i32,
 	height: i32,
 ) {
@@ -1057,12 +1165,14 @@ fn render_landscape_cioms(
 	);
 	render_reporter_footer(canvas, 34, 38, source);
 	render_missing_information_legend(canvas, 300, 38);
+	render_cioms_notation(canvas, data, options, 34, 26);
 }
 
 fn render_portrait_cioms(
 	canvas: &mut PdfCanvas,
 	data: &CiomsCaseData,
 	settings: &CiomsSettings,
+	options: CiomsExportOptions,
 	width: i32,
 	height: i32,
 ) {
@@ -1353,6 +1463,7 @@ fn render_portrait_cioms(
 	);
 	render_reporter_footer(canvas, 34, 38, source);
 	render_missing_information_legend(canvas, 300, 38);
+	render_cioms_notation(canvas, data, options, 34, 26);
 }
 
 fn ordered_cioms_case_data(
@@ -1375,6 +1486,14 @@ fn ordered_cioms_case_data(
 }
 
 fn build_cioms_pdf(data: &CiomsCaseData, settings: &CiomsSettings) -> Vec<u8> {
+	build_cioms_pdf_with_options(data, settings, CiomsExportOptions::default())
+}
+
+fn build_cioms_pdf_with_options(
+	data: &CiomsCaseData,
+	settings: &CiomsSettings,
+	options: CiomsExportOptions,
+) -> Vec<u8> {
 	let (width, height) = if settings.orientation == "Portrait" {
 		(595, 842)
 	} else {
@@ -1387,9 +1506,23 @@ fn build_cioms_pdf(data: &CiomsCaseData, settings: &CiomsSettings) -> Vec<u8> {
 	let mut canvas = PdfCanvas::new();
 	canvas.stream.push_str("0.8 w\n");
 	if settings.orientation == "Portrait" {
-		render_portrait_cioms(&mut canvas, &ordered, settings, width, height);
+		render_portrait_cioms(
+			&mut canvas,
+			&ordered,
+			settings,
+			options,
+			width,
+			height,
+		);
 	} else {
-		render_landscape_cioms(&mut canvas, &ordered, settings, width, height);
+		render_landscape_cioms(
+			&mut canvas,
+			&ordered,
+			settings,
+			options,
+			width,
+			height,
+		);
 	}
 	let stream = canvas.stream;
 	let obj1 = "<< /Type /Catalog /Pages 2 0 R >>";
@@ -1435,6 +1568,7 @@ pub async fn export_case_cioms_pdf(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
+	Query(query): Query<ExportCiomsQuery>,
 ) -> Result<Response> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, XML_EXPORT)?;
@@ -1442,7 +1576,13 @@ pub async fn export_case_cioms_pdf(
 	let case = CaseBmc::get(&ctx, &mm, id).await.map_err(Error::Model)?;
 	let settings = load_cioms_settings(&ctx, &mm).await?;
 	let data = load_cioms_case_data(&ctx, &mm, id).await?;
-	let pdf = build_cioms_pdf(&data, &settings);
+	let pdf = build_cioms_pdf_with_options(
+		&data,
+		&settings,
+		CiomsExportOptions {
+			include_notation: query.include_notation.unwrap_or(false),
+		},
+	);
 	let file_name = format!("{}-cioms.pdf", case.safety_report_id);
 
 	let mut response = (StatusCode::OK, pdf).into_response();
@@ -1884,6 +2024,64 @@ mod tests {
 		let text = String::from_utf8_lossy(&pdf);
 
 		assert!(!text.contains("Reporter: "));
+	}
+
+	#[test]
+	fn cioms_pdf_renders_narrative_notation_when_requested() {
+		let data = CiomsCaseData {
+			case_number: "SR-NOTATION".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: Some(NarrativeInformation {
+				id: test_uuid(),
+				case_id: test_uuid(),
+				source_narrative_presave_id: None,
+				case_narrative: "Narrative body".to_string(),
+				reporter_comments: Some("Reporter notation for CIOMS".to_string()),
+				sender_comments: Some("Sender notation for CIOMS".to_string()),
+				additional_information: Some(
+					"Additional notation for CIOMS".to_string(),
+				),
+				created_at: test_time(),
+				updated_at: test_time(),
+				created_by: test_uuid(),
+				updated_by: None,
+			}),
+		};
+
+		let without_notation =
+			String::from_utf8_lossy(&build_cioms_pdf(&data, &default_settings()))
+				.to_string();
+		assert!(!without_notation.contains("CIOMS NOTATION"));
+		assert!(!without_notation.contains("Reporter notation for CIOMS"));
+
+		let with_notation = String::from_utf8_lossy(&build_cioms_pdf_with_options(
+			&data,
+			&default_settings(),
+			CiomsExportOptions {
+				include_notation: true,
+			},
+		))
+		.to_string();
+		assert!(with_notation.contains("CIOMS NOTATION"), "{with_notation}");
+		assert!(
+			with_notation.contains("Reporter: Reporter notation for CIOMS"),
+			"{with_notation}"
+		);
+		assert!(
+			with_notation.contains("Sender: Sender notation for CIOMS"),
+			"{with_notation}"
+		);
+		assert!(
+			with_notation.contains("Additional: Additional notation for CIOMS"),
+			"{with_notation}"
+		);
 	}
 
 	#[test]

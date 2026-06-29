@@ -559,6 +559,57 @@ async fn test_cioms_pdf_export_renders_case_data_in_cioms_form() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_cioms_pdf_export_notation_query_controls_notation() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let safety_report_id = format!("SR-CIOMS-NOTATION-{}", Uuid::new_v4());
+	let case_id = insert_validated_raw_case(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		&safety_report_id,
+	)
+	.await?;
+	seed_cioms_case_data(&mm, seed.org_id, seed.admin.id, case_id).await?;
+
+	let response = get_response(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/cioms.pdf?include_notation=false"),
+	)
+	.await?;
+	assert_eq!(response.status(), StatusCode::OK);
+	let bytes = to_bytes(response.into_body(), usize::MAX).await?;
+	let pdf = String::from_utf8_lossy(&bytes);
+	assert!(!pdf.contains("CIOMS NOTATION"), "{pdf}");
+	assert!(
+		!pdf.contains("Reporter considered the reaction related."),
+		"{pdf}"
+	);
+
+	let response = get_response(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/export/cioms.pdf?include_notation=true"),
+	)
+	.await?;
+	assert_eq!(response.status(), StatusCode::OK);
+	let bytes = to_bytes(response.into_body(), usize::MAX).await?;
+	let pdf = String::from_utf8_lossy(&bytes);
+	assert!(pdf.contains("CIOMS NOTATION"), "{pdf}");
+	assert!(
+		pdf.contains("Reporter: Reporter considered the reaction related."),
+		"{pdf}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_cioms_pdf_export_portrait_setting_changes_layout() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
