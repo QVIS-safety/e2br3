@@ -2,6 +2,7 @@ use crate::ctx::Ctx;
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
 use crate::model::store::set_full_context_from_ctx_dbx;
+use crate::model::user::{User, UserBmc};
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::{Fields, HasSeaFields};
@@ -35,15 +36,8 @@ fn join_presave_name_parts(parts: &[Option<&str>]) -> String {
 fn narrative_presave_identity(
 	case_narrative: Option<&str>,
 	additional_information: Option<&str>,
-	reporter_comments: Option<&str>,
-	sender_comments: Option<&str>,
 ) -> Option<String> {
-	let parts = [
-		case_narrative,
-		additional_information,
-		reporter_comments,
-		sender_comments,
-	];
+	let parts = [case_narrative, additional_information];
 	let name = join_presave_name_parts(&parts);
 	if name.is_empty() {
 		None
@@ -221,6 +215,30 @@ fn relationship_conflict(message: &str) -> crate::model::Error {
 	}
 }
 
+/// Whether a user access-scope (stored as a JSON array of id strings, e.g.
+/// `["id1","id2"]`) contains the given presave id. Used by the in-use delete
+/// guards to block deleting a presave that is still granted to a user
+/// (Admin > User).
+fn id_scope_contains(scope_json: Option<&str>, id: Uuid) -> bool {
+	let target = id.to_string();
+	match scope_json.and_then(|raw| serde_json::from_str::<Vec<String>>(raw).ok()) {
+		Some(ids) => ids.iter().any(|item| item.trim() == target),
+		None => false,
+	}
+}
+
+/// True when any user in the organization grants access to `id` via the
+/// access-scope field selected by `pick`.
+async fn any_user_scope_contains(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	id: Uuid,
+	pick: impl Fn(&User) -> Option<&str>,
+) -> Result<bool> {
+	let users = UserBmc::list(ctx, mm, None, None).await?;
+	Ok(users.iter().any(|user| id_scope_contains(pick(user), id)))
+}
+
 fn validation_error(message: &str) -> crate::model::Error {
 	crate::model::Error::Validation {
 		message: message.to_string(),
@@ -390,6 +408,15 @@ impl SenderPresaveBmc {
 	) -> Result<()> {
 		if data.deleted == Some(true) {
 			Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
+			if any_user_scope_contains(ctx, mm, id, |u| {
+				u.access_sender_ids.as_deref()
+			})
+			.await?
+			{
+				return Err(relationship_conflict(
+					"sender presave is granted to users",
+				));
+			}
 		} else {
 			let current = Self::get(ctx, mm, id).await?;
 			let sender_type = data
@@ -415,6 +442,11 @@ impl SenderPresaveBmc {
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
 		Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
+		if any_user_scope_contains(ctx, mm, id, |u| u.access_sender_ids.as_deref())
+			.await?
+		{
+			return Err(relationship_conflict("sender presave is granted to users"));
+		}
 		base_uuid::delete::<Self>(ctx, mm, id).await
 	}
 
@@ -1286,6 +1318,15 @@ impl ProductPresaveBmc {
 	) -> Result<()> {
 		if data.deleted == Some(true) {
 			Self::ensure_not_referenced_by_studies(ctx, mm, id).await?;
+			if any_user_scope_contains(ctx, mm, id, |u| {
+				u.access_product_ids.as_deref()
+			})
+			.await?
+			{
+				return Err(relationship_conflict(
+					"product presave is granted to users",
+				));
+			}
 		} else {
 			let current = Self::get(ctx, mm, id).await?;
 			let sender_presave_id =
@@ -1316,6 +1357,13 @@ impl ProductPresaveBmc {
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
 		Self::ensure_not_referenced_by_studies(ctx, mm, id).await?;
+		if any_user_scope_contains(ctx, mm, id, |u| u.access_product_ids.as_deref())
+			.await?
+		{
+			return Err(relationship_conflict(
+				"product presave is granted to users",
+			));
+		}
 		base_uuid::delete::<Self>(ctx, mm, id).await
 	}
 
@@ -1992,6 +2040,14 @@ impl StudyPresaveBmc {
 		data: StudyPresaveForUpdate,
 	) -> Result<()> {
 		data.validate_fields()?;
+		if data.deleted == Some(true)
+			&& any_user_scope_contains(ctx, mm, id, |u| {
+				u.access_study_ids.as_deref()
+			})
+			.await?
+		{
+			return Err(relationship_conflict("study presave is granted to users"));
+		}
 		if data.deleted != Some(true) {
 			let current = Self::get(ctx, mm, id).await?;
 			let product_presave_id =
@@ -2025,6 +2081,11 @@ impl StudyPresaveBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		if any_user_scope_contains(ctx, mm, id, |u| u.access_study_ids.as_deref())
+			.await?
+		{
+			return Err(relationship_conflict("study presave is granted to users"));
+		}
 		base_uuid::delete::<Self>(ctx, mm, id).await
 	}
 
@@ -2298,8 +2359,6 @@ pub struct NarrativePresave {
 	pub case_narrative: Option<String>,
 	pub case_narrative_notation: Option<String>,
 	pub additional_information: Option<String>,
-	pub reporter_comments: Option<String>,
-	pub sender_comments: Option<String>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -2311,8 +2370,6 @@ pub struct NarrativePresaveForCreate {
 	pub case_narrative: Option<String>,
 	pub case_narrative_notation: Option<String>,
 	pub additional_information: Option<String>,
-	pub reporter_comments: Option<String>,
-	pub sender_comments: Option<String>,
 }
 
 #[derive(Fields)]
@@ -2321,8 +2378,6 @@ struct NarrativePresaveForInsert {
 	case_narrative: Option<String>,
 	case_narrative_notation: Option<String>,
 	additional_information: Option<String>,
-	reporter_comments: Option<String>,
-	sender_comments: Option<String>,
 }
 
 impl IntoOrgScopedCreate for NarrativePresaveForCreate {
@@ -2334,8 +2389,6 @@ impl IntoOrgScopedCreate for NarrativePresaveForCreate {
 			case_narrative: self.case_narrative,
 			case_narrative_notation: self.case_narrative_notation,
 			additional_information: self.additional_information,
-			reporter_comments: self.reporter_comments,
-			sender_comments: self.sender_comments,
 		}
 	}
 }
@@ -2346,8 +2399,6 @@ pub struct NarrativePresaveForUpdate {
 	pub case_narrative: Option<String>,
 	pub case_narrative_notation: Option<String>,
 	pub additional_information: Option<String>,
-	pub reporter_comments: Option<String>,
-	pub sender_comments: Option<String>,
 }
 
 pub struct NarrativePresaveBmc;
@@ -2365,8 +2416,6 @@ impl NarrativePresaveBmc {
 		let identity = narrative_presave_identity(
 			data.case_narrative.as_deref(),
 			data.additional_information.as_deref(),
-			data.reporter_comments.as_deref(),
-			data.sender_comments.as_deref(),
 		);
 		Self::validate_identity(identity.as_deref())?;
 		Self::ensure_unique_identity(ctx, mm, None, identity.as_deref()).await?;
@@ -2416,20 +2465,8 @@ impl NarrativePresaveBmc {
 				.additional_information
 				.as_deref()
 				.or(current.additional_information.as_deref());
-			let reporter_comments = data
-				.reporter_comments
-				.as_deref()
-				.or(current.reporter_comments.as_deref());
-			let sender_comments = data
-				.sender_comments
-				.as_deref()
-				.or(current.sender_comments.as_deref());
-			let identity = narrative_presave_identity(
-				case_narrative,
-				additional_information,
-				reporter_comments,
-				sender_comments,
-			);
+			let identity =
+				narrative_presave_identity(case_narrative, additional_information);
 			Self::validate_identity(identity.as_deref())?;
 			Self::ensure_unique_identity(ctx, mm, Some(id), identity.as_deref())
 				.await?;
@@ -2459,8 +2496,6 @@ impl NarrativePresaveBmc {
 			let row_identity = narrative_presave_identity(
 				row.case_narrative.as_deref(),
 				row.additional_information.as_deref(),
-				row.reporter_comments.as_deref(),
-				row.sender_comments.as_deref(),
 			);
 			!row.deleted
 				&& Some(row.id) != excluding_id
@@ -2474,85 +2509,34 @@ impl NarrativePresaveBmc {
 	}
 }
 
-#[derive(Debug, Clone, Fields, FromRow, Serialize)]
-pub struct NarrativePresaveSenderDiagnosis {
-	pub id: Uuid,
-	pub narrative_presave_id: Uuid,
-	pub sequence_number: i32,
-	pub diagnosis_meddra_version: Option<String>,
-	pub diagnosis_meddra_code: Option<String>,
-	pub deleted: bool,
-	pub created_at: OffsetDateTime,
-	pub updated_at: OffsetDateTime,
-	pub created_by: Uuid,
-	pub updated_by: Option<Uuid>,
+#[cfg(test)]
+mod presave_guard_tests {
+	use super::id_scope_contains;
+	use sqlx::types::Uuid;
+
+	#[test]
+	fn scope_contains_matches_json_array_membership() {
+		let id = Uuid::new_v4();
+		let other = Uuid::new_v4();
+		let json = format!("[\"{id}\",\"{other}\"]");
+		assert!(id_scope_contains(Some(&json), id));
+		assert!(id_scope_contains(Some(&json), other));
+	}
+
+	#[test]
+	fn scope_absent_or_empty_is_false() {
+		let id = Uuid::new_v4();
+		assert!(!id_scope_contains(None, id));
+		assert!(!id_scope_contains(Some("[]"), id));
+		assert!(!id_scope_contains(
+			Some(&format!("[\"{}\"]", Uuid::new_v4())),
+			id
+		));
+	}
+
+	#[test]
+	fn malformed_scope_is_false_not_panic() {
+		let id = Uuid::new_v4();
+		assert!(!id_scope_contains(Some("not json"), id));
+	}
 }
-
-#[derive(Fields, Deserialize)]
-pub struct NarrativePresaveSenderDiagnosisForCreate {
-	pub narrative_presave_id: Uuid,
-	pub sequence_number: i32,
-	pub diagnosis_meddra_version: Option<String>,
-	pub diagnosis_meddra_code: Option<String>,
-	pub deleted: Option<bool>,
-}
-
-#[derive(Default, Fields, Deserialize)]
-pub struct NarrativePresaveSenderDiagnosisForUpdate {
-	pub sequence_number: Option<i32>,
-	pub diagnosis_meddra_version: Option<String>,
-	pub diagnosis_meddra_code: Option<String>,
-	pub deleted: Option<bool>,
-}
-
-impl_child_bmc!(
-	NarrativePresaveSenderDiagnosisBmc,
-	NarrativePresaveSenderDiagnosis,
-	NarrativePresaveSenderDiagnosisForCreate,
-	NarrativePresaveSenderDiagnosisForUpdate,
-	"narrative_presave_sender_diagnoses",
-	"narrative_presave_id"
-);
-
-#[derive(Debug, Clone, Fields, FromRow, Serialize)]
-pub struct NarrativePresaveCaseSummary {
-	pub id: Uuid,
-	pub narrative_presave_id: Uuid,
-	pub sequence_number: i32,
-	pub summary_type: Option<String>,
-	pub language_code: Option<String>,
-	pub summary_text: Option<String>,
-	pub deleted: bool,
-	pub created_at: OffsetDateTime,
-	pub updated_at: OffsetDateTime,
-	pub created_by: Uuid,
-	pub updated_by: Option<Uuid>,
-}
-
-#[derive(Fields, Deserialize)]
-pub struct NarrativePresaveCaseSummaryForCreate {
-	pub narrative_presave_id: Uuid,
-	pub sequence_number: i32,
-	pub summary_type: Option<String>,
-	pub language_code: Option<String>,
-	pub summary_text: Option<String>,
-	pub deleted: Option<bool>,
-}
-
-#[derive(Default, Fields, Deserialize)]
-pub struct NarrativePresaveCaseSummaryForUpdate {
-	pub sequence_number: Option<i32>,
-	pub summary_type: Option<String>,
-	pub language_code: Option<String>,
-	pub summary_text: Option<String>,
-	pub deleted: Option<bool>,
-}
-
-impl_child_bmc!(
-	NarrativePresaveCaseSummaryBmc,
-	NarrativePresaveCaseSummary,
-	NarrativePresaveCaseSummaryForCreate,
-	NarrativePresaveCaseSummaryForUpdate,
-	"narrative_presave_case_summaries",
-	"narrative_presave_id"
-);
