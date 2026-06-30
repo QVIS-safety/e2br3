@@ -620,6 +620,9 @@ BEGIN
 END;
 $$;
 
+DROP TABLE IF EXISTS narrative_presave_sender_diagnoses;
+DROP TABLE IF EXISTS narrative_presave_case_summaries;
+
 CREATE TABLE IF NOT EXISTS narrative_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
@@ -627,43 +630,10 @@ CREATE TABLE IF NOT EXISTS narrative_presaves (
     case_narrative TEXT,
     case_narrative_notation TEXT,
     additional_information TEXT,
-    reporter_comments TEXT,
-    sender_comments TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
-);
-
-CREATE TABLE IF NOT EXISTS narrative_presave_sender_diagnoses (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    narrative_presave_id UUID NOT NULL REFERENCES narrative_presaves(id) ON DELETE CASCADE,
-    sequence_number INTEGER NOT NULL,
-    diagnosis_meddra_version VARCHAR(50),
-    diagnosis_meddra_code VARCHAR(100),
-    deleted BOOLEAN NOT NULL DEFAULT false,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT narrative_presave_sender_diagnoses_sequence_unique UNIQUE (narrative_presave_id, sequence_number)
-);
-
-CREATE TABLE IF NOT EXISTS narrative_presave_case_summaries (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    narrative_presave_id UUID NOT NULL REFERENCES narrative_presaves(id) ON DELETE CASCADE,
-    sequence_number INTEGER NOT NULL,
-    summary_type VARCHAR(100),
-    language_code VARCHAR(10),
-    summary_text TEXT,
-    deleted BOOLEAN NOT NULL DEFAULT false,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT narrative_presave_case_summaries_sequence_unique UNIQUE (narrative_presave_id, sequence_number)
 );
 
 ALTER TABLE narrative_presaves
@@ -672,11 +642,9 @@ ALTER TABLE narrative_presaves
 ALTER TABLE narrative_presaves
     ADD COLUMN IF NOT EXISTS additional_information TEXT;
 
-ALTER TABLE narrative_presave_sender_diagnoses
-    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
-
-ALTER TABLE narrative_presave_case_summaries
-    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE narrative_presaves
+    DROP COLUMN IF EXISTS reporter_comments,
+    DROP COLUMN IF EXISTS sender_comments;
 
 ALTER TABLE sender_presave_gateways
     ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
@@ -712,8 +680,6 @@ CREATE INDEX idx_study_presave_registration_numbers_parent ON study_presave_regi
 CREATE INDEX idx_study_presave_products_parent ON study_presave_products(study_presave_id);
 CREATE INDEX idx_study_presave_reporters_parent ON study_presave_reporters(study_presave_id);
 CREATE INDEX idx_narrative_presaves_org ON narrative_presaves(organization_id);
-CREATE INDEX idx_narrative_presave_sender_diagnoses_parent ON narrative_presave_sender_diagnoses(narrative_presave_id);
-CREATE INDEX idx_narrative_presave_case_summaries_parent ON narrative_presave_case_summaries(narrative_presave_id);
 
 -- Backward-compatible guard for already-created dev DBs.
 ALTER TABLE users
@@ -746,9 +712,6 @@ CREATE TABLE if NOT EXISTS cases (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
 
-    -- Case identification
-    safety_report_id VARCHAR(100) NOT NULL,  -- C.1.1
-    version INTEGER NOT NULL DEFAULT 1,      -- C.1.1.r.1
     dg_prd_key TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'draft',
     review_receivers_json TEXT,
@@ -787,13 +750,10 @@ CREATE TABLE if NOT EXISTS cases (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    -- Unique constraint: one active version per safety_report_id
-    CONSTRAINT unique_safety_report_version UNIQUE (safety_report_id, version),
     CONSTRAINT case_status_valid CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'deleted', 'archived', 'nullified'))
 );
 
 CREATE INDEX idx_cases_organization ON cases(organization_id);
-CREATE INDEX idx_cases_safety_report_id ON cases(safety_report_id);
 CREATE INDEX idx_cases_status ON cases(status);
 CREATE INDEX idx_cases_workflow_status ON cases(workflow_status);
 CREATE INDEX idx_cases_created_by ON cases(created_by);
@@ -1149,6 +1109,7 @@ CREATE TABLE if NOT EXISTS audit_logs (
     action VARCHAR(50) NOT NULL,
     user_id UUID NOT NULL REFERENCES users(id),
     reason_for_change TEXT,
+    change_category TEXT,
     e_signature_id UUID REFERENCES e_signatures(id),
     old_values JSONB,
     new_values JSONB,
@@ -1180,6 +1141,8 @@ CREATE UNIQUE INDEX idx_audit_logs_entry_hash ON audit_logs(entry_hash);
 
 ALTER TABLE audit_logs
     ADD COLUMN IF NOT EXISTS changed_fields JSONB;
+ALTER TABLE audit_logs
+    ADD COLUMN IF NOT EXISTS change_category TEXT;
 
 -- ============================================================================
 -- 6. System User and Foreign Key Constraints
@@ -1311,6 +1274,7 @@ $$;
 -- Compliance context setter for audit enrichment.
 CREATE OR REPLACE FUNCTION set_compliance_context(
     p_change_reason TEXT,
+    p_change_category TEXT,
     p_e_signature_id TEXT
 )
 RETURNS void
@@ -1321,6 +1285,11 @@ BEGIN
     PERFORM set_config(
         'app.change_reason',
         COALESCE(p_change_reason, ''),
+        true
+    );
+    PERFORM set_config(
+        'app.change_category',
+        COALESCE(p_change_category, ''),
         true
     );
     PERFORM set_config(
@@ -1344,6 +1313,22 @@ BEGIN
         RETURN NULL;
     END IF;
     RETURN v_reason;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_current_change_category()
+RETURNS TEXT
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_category TEXT;
+BEGIN
+    v_category := current_setting('app.change_category', true);
+    IF v_category IS NULL OR btrim(v_category) = '' THEN
+        RETURN NULL;
+    END IF;
+    RETURN v_category;
 END;
 $$;
 
@@ -1548,8 +1533,9 @@ GRANT USAGE ON SEQUENCE audit_logs_id_seq TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION set_current_user_context(UUID) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION get_current_user_context() TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION validate_user_context() TO e2br3_app_role;
-GRANT EXECUTE ON FUNCTION set_compliance_context(TEXT, TEXT) TO e2br3_app_role;
+GRANT EXECUTE ON FUNCTION set_compliance_context(TEXT, TEXT, TEXT) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION get_current_change_reason() TO e2br3_app_role;
+GRANT EXECUTE ON FUNCTION get_current_change_category() TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION get_current_esignature_id() TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION compute_audit_changed_fields(JSONB, JSONB, TEXT) TO e2br3_app_role;
 GRANT EXECUTE ON FUNCTION audit_user_display(UUID) TO e2br3_app_role;
@@ -2122,46 +2108,6 @@ CREATE POLICY narrative_presaves_org_isolation ON narrative_presaves
     )
     WITH CHECK (
         organization_id = current_organization_id() OR is_current_user_admin()
-    );
-
-ALTER TABLE narrative_presave_sender_diagnoses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE narrative_presave_sender_diagnoses FORCE ROW LEVEL SECURITY;
-CREATE POLICY narrative_presave_sender_diagnoses_via_parent ON narrative_presave_sender_diagnoses
-    FOR ALL
-    TO e2br3_app_role
-    USING (
-        EXISTS (
-            SELECT 1 FROM narrative_presaves p
-            WHERE p.id = narrative_presave_sender_diagnoses.narrative_presave_id
-            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM narrative_presaves p
-            WHERE p.id = narrative_presave_sender_diagnoses.narrative_presave_id
-            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    );
-
-ALTER TABLE narrative_presave_case_summaries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE narrative_presave_case_summaries FORCE ROW LEVEL SECURITY;
-CREATE POLICY narrative_presave_case_summaries_via_parent ON narrative_presave_case_summaries
-    FOR ALL
-    TO e2br3_app_role
-    USING (
-        EXISTS (
-            SELECT 1 FROM narrative_presaves p
-            WHERE p.id = narrative_presave_case_summaries.narrative_presave_id
-            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM narrative_presaves p
-            WHERE p.id = narrative_presave_case_summaries.narrative_presave_id
-            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
-        )
     );
 
 -- ============================================================================

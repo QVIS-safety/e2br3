@@ -176,11 +176,19 @@ pub async fn create_case_fixture(
 	set_user_context(&mut tx, user_id).await?;
 	set_org_context(&mut tx, org_id, DEMO_ROLE).await?;
 	sqlx::query(
-		"INSERT INTO cases (id, organization_id, safety_report_id, version, status, created_by, updated_by, submitted_by, submitted_at, created_at, updated_at)
-		 VALUES ($1, $2, $3, 1, 'draft', $4, $4, $4, NOW(), NOW(), NOW())",
+		"INSERT INTO cases (id, organization_id, status, created_by, updated_by, submitted_by, submitted_at, created_at, updated_at)
+		 VALUES ($1, $2, 'draft', $3, $3, $3, NOW(), NOW(), NOW())",
 	)
 	.bind(case_id)
 	.bind(org_id)
+	.bind(user_id)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"INSERT INTO safety_report_identification (case_id, safety_report_id, version, created_by, updated_by)
+		 VALUES ($1, $2, 1, $3, $3)",
+	)
+	.bind(case_id)
 	.bind(safety_report_id)
 	.bind(user_id)
 	.execute(&mut *tx)

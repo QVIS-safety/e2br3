@@ -70,6 +70,7 @@ pub async fn init_test_env() {
 	std::env::set_var("SERVICE_PWD_KEY", "ZmFrZV9rZXk");
 	std::env::set_var("SERVICE_TOKEN_KEY", "ZmFrZV9rZXk");
 	std::env::set_var("SERVICE_TOKEN_DURATION_SEC", "3600");
+	std::env::set_var("SERVICE_DB_MAX_CONNECTIONS", "5");
 	std::env::set_var("E2BR3_DEBUG_ERRORS", "1");
 
 	// Keep integration tests deterministic even when direnv isn't loaded.
@@ -464,13 +465,22 @@ async fn insert_case(
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, created_by).await?;
 	set_org_context(&mut tx, org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	let safety_report_id = format!("SR-TEST-{case_id}");
 	sqlx::query(
-		"INSERT INTO cases (id, organization_id, safety_report_id, created_by, updated_by)
-		 VALUES ($1, $2, $3, $4, $4)",
+		"INSERT INTO cases (id, organization_id, created_by, updated_by)
+		 VALUES ($1, $2, $3, $3)",
 	)
 	.bind(case_id)
 	.bind(org_id)
-	.bind(format!("SR-TEST-{case_id}"))
+	.bind(created_by)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"INSERT INTO safety_report_identification (case_id, safety_report_id, version, created_by, updated_by)
+		 VALUES ($1, $2, 1, $3, $3)",
+	)
+	.bind(case_id)
+	.bind(safety_report_id)
 	.bind(created_by)
 	.execute(&mut *tx)
 	.await?;

@@ -332,7 +332,6 @@ pub async fn create_case_from_intake(
 	let next_version = next_case_version(&ctx, &mm, &safety_report_id).await?;
 	let case_create = InternalCaseForCreate {
 		organization_id: ctx.organization_id(),
-		safety_report_id: safety_report_id.clone(),
 		dg_prd_key: data.dg_prd_key.clone(),
 		status: Some(data.status.unwrap_or_else(|| "draft".to_string())),
 		review_receivers_json: None,
@@ -343,7 +342,6 @@ pub async fn create_case_from_intake(
 		source_document_name: data.source_document_name.clone(),
 		source_document_base64: data.source_document_base64.clone(),
 		source_document_media_type: data.source_document_media_type.clone(),
-		version: Some(next_version),
 	};
 	validate_case_create_payload(&case_create)?;
 	let case_id = CaseBmc::create(&ctx, &mm, case_create).await?;
@@ -376,6 +374,8 @@ pub async fn create_case_from_intake(
 		&mm,
 		SafetyReportIdentificationForCreate {
 			case_id,
+			safety_report_id: Some(safety_report_id.clone()),
+			version: Some(next_version),
 			transmission_date: Some(transmission_date),
 			transmission_date_null_flavor: None,
 			report_type: Some(data.report_type),

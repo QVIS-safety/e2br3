@@ -2,7 +2,9 @@
 
 use crate::ctx::Ctx;
 use crate::model::base::DbBmc;
-use crate::model::store::set_full_context_dbx_or_rollback;
+use crate::model::store::{
+	set_full_context_dbx_or_rollback, set_full_context_from_ctx_dbx,
+};
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
@@ -159,35 +161,65 @@ impl ReceiverInformationBmc {
 	}
 
 	pub async fn get_by_case(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<ReceiverInformation> {
+		mm.dbx().begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+			mm.dbx().rollback_txn().await?;
+			return Err(err.into());
+		}
 		let sql = format!("SELECT * FROM {} WHERE case_id = $1", Self::TABLE);
-		let entity = mm
+		let entity = match mm
 			.dbx()
 			.fetch_optional(
 				sqlx::query_as::<_, ReceiverInformation>(&sql).bind(case_id),
 			)
-			.await?;
-		entity.ok_or(crate::model::Error::EntityUuidNotFound {
-			entity: Self::TABLE,
-			id: case_id,
-		})
+			.await
+		{
+			Ok(Some(entity)) => entity,
+			Ok(None) => {
+				mm.dbx().rollback_txn().await?;
+				return Err(crate::model::Error::EntityUuidNotFound {
+					entity: Self::TABLE,
+					id: case_id,
+				});
+			}
+			Err(err) => {
+				mm.dbx().rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		mm.dbx().commit_txn().await?;
+		Ok(entity)
 	}
 
 	pub async fn get_by_case_optional(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<Option<ReceiverInformation>> {
+		mm.dbx().begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+			mm.dbx().rollback_txn().await?;
+			return Err(err.into());
+		}
 		let sql = format!("SELECT * FROM {} WHERE case_id = $1", Self::TABLE);
-		let entity = mm
+		let entity = match mm
 			.dbx()
 			.fetch_optional(
 				sqlx::query_as::<_, ReceiverInformation>(&sql).bind(case_id),
 			)
-			.await?;
+			.await
+		{
+			Ok(entity) => entity,
+			Err(err) => {
+				mm.dbx().rollback_txn().await?;
+				return Err(err.into());
+			}
+		};
+		mm.dbx().commit_txn().await?;
 		Ok(entity)
 	}
 

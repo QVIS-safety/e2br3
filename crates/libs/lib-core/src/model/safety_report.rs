@@ -21,6 +21,10 @@ pub struct SafetyReportIdentification {
 	pub id: Uuid,
 	pub case_id: Uuid,
 
+	// C.1.1 - Sender's (case) Safety Report Unique Identifier (MANDATORY)
+	pub safety_report_id: Option<String>,
+	pub version: i32,
+
 	// C.1.2 - Date of Creation (MANDATORY)
 	pub transmission_date: Option<Date>,
 	pub transmission_date_null_flavor: Option<String>,
@@ -76,6 +80,8 @@ pub struct SafetyReportIdentification {
 #[derive(Deserialize)]
 pub struct SafetyReportIdentificationForCreate {
 	pub case_id: Uuid,
+	pub safety_report_id: Option<String>,
+	pub version: Option<i32>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
@@ -148,6 +154,8 @@ where
 
 #[derive(Deserialize)]
 pub struct SafetyReportIdentificationForUpdate {
+	pub safety_report_id: Option<String>,
+	pub version: Option<i32>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
@@ -596,8 +604,8 @@ impl SafetyReportIdentificationBmc {
 		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, transmission_date, transmission_date_null_flavor, report_type, date_first_received_from_source, date_first_received_from_source_null_flavor, date_of_most_recent_information, date_of_most_recent_information_null_flavor, fulfil_expedited_criteria, local_criteria_report_type, combination_product_report_indicator, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, now(), now(), $19)
+			"INSERT INTO {} (case_id, safety_report_id, version, transmission_date, transmission_date_null_flavor, report_type, date_first_received_from_source, date_first_received_from_source_null_flavor, date_of_most_recent_information, date_of_most_recent_information_null_flavor, fulfil_expedited_criteria, local_criteria_report_type, combination_product_report_indicator, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
+			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, now(), now(), $21)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -606,6 +614,8 @@ impl SafetyReportIdentificationBmc {
 			.fetch_one(
 				sqlx::query_as::<_, (Uuid,)>(&sql)
 					.bind(data.case_id)
+					.bind(data.safety_report_id)
+					.bind(data.version)
 					.bind(data.transmission_date)
 					.bind(data.transmission_date_null_flavor)
 					.bind(data.report_type)
@@ -726,25 +736,27 @@ impl SafetyReportIdentificationBmc {
 
 		let sql = format!(
 			"UPDATE {}
-			 SET transmission_date = CASE WHEN $3 IS NOT NULL THEN NULL ELSE COALESCE($2, transmission_date) END,
-			     transmission_date_null_flavor = CASE WHEN $2 IS NOT NULL THEN NULL ELSE COALESCE($3, transmission_date_null_flavor) END,
-			     report_type = CASE WHEN $4 THEN NULL ELSE COALESCE($5, report_type) END,
-			     date_first_received_from_source = CASE WHEN $7 IS NOT NULL THEN NULL ELSE COALESCE($6, date_first_received_from_source) END,
-			     date_first_received_from_source_null_flavor = CASE WHEN $6 IS NOT NULL THEN NULL ELSE COALESCE($7, date_first_received_from_source_null_flavor) END,
-			     date_of_most_recent_information = CASE WHEN $9 IS NOT NULL THEN NULL ELSE COALESCE($8, date_of_most_recent_information) END,
-			     date_of_most_recent_information_null_flavor = CASE WHEN $8 IS NOT NULL THEN NULL ELSE COALESCE($9, date_of_most_recent_information_null_flavor) END,
-			     fulfil_expedited_criteria = CASE WHEN $10 THEN NULL ELSE COALESCE($11, fulfil_expedited_criteria) END,
-			     local_criteria_report_type = CASE WHEN $12 THEN NULL ELSE COALESCE($13, local_criteria_report_type) END,
-			     combination_product_report_indicator = CASE WHEN $14 THEN NULL ELSE COALESCE($15, combination_product_report_indicator) END,
-			     worldwide_unique_id = COALESCE($16, worldwide_unique_id),
-			     first_sender_type = COALESCE($17, first_sender_type),
-			     additional_documents_available = COALESCE($18, additional_documents_available),
-			     other_case_identifiers_exist = COALESCE($19, other_case_identifiers_exist),
-			     nullification_code = COALESCE($20, nullification_code),
-			     nullification_reason = COALESCE($21, nullification_reason),
-			     receiver_organization = COALESCE($22, receiver_organization),
+			 SET safety_report_id = COALESCE($2, safety_report_id),
+			     version = COALESCE($3, version),
+			     transmission_date = CASE WHEN $5 IS NOT NULL THEN NULL ELSE COALESCE($4, transmission_date) END,
+			     transmission_date_null_flavor = CASE WHEN $4 IS NOT NULL THEN NULL ELSE COALESCE($5, transmission_date_null_flavor) END,
+			     report_type = CASE WHEN $6 THEN NULL ELSE COALESCE($7, report_type) END,
+			     date_first_received_from_source = CASE WHEN $9 IS NOT NULL THEN NULL ELSE COALESCE($8, date_first_received_from_source) END,
+			     date_first_received_from_source_null_flavor = CASE WHEN $8 IS NOT NULL THEN NULL ELSE COALESCE($9, date_first_received_from_source_null_flavor) END,
+			     date_of_most_recent_information = CASE WHEN $11 IS NOT NULL THEN NULL ELSE COALESCE($10, date_of_most_recent_information) END,
+			     date_of_most_recent_information_null_flavor = CASE WHEN $10 IS NOT NULL THEN NULL ELSE COALESCE($11, date_of_most_recent_information_null_flavor) END,
+			     fulfil_expedited_criteria = CASE WHEN $12 THEN NULL ELSE COALESCE($13, fulfil_expedited_criteria) END,
+			     local_criteria_report_type = CASE WHEN $14 THEN NULL ELSE COALESCE($15, local_criteria_report_type) END,
+			     combination_product_report_indicator = CASE WHEN $16 THEN NULL ELSE COALESCE($17, combination_product_report_indicator) END,
+			     worldwide_unique_id = COALESCE($18, worldwide_unique_id),
+			     first_sender_type = COALESCE($19, first_sender_type),
+			     additional_documents_available = COALESCE($20, additional_documents_available),
+			     other_case_identifiers_exist = COALESCE($21, other_case_identifiers_exist),
+			     nullification_code = COALESCE($22, nullification_code),
+			     nullification_reason = COALESCE($23, nullification_reason),
+			     receiver_organization = COALESCE($24, receiver_organization),
 			     updated_at = now(),
-			     updated_by = $23
+			     updated_by = $25
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -753,6 +765,8 @@ impl SafetyReportIdentificationBmc {
 			.execute(
 				sqlx::query(&sql)
 					.bind(case_id)
+					.bind(data.safety_report_id)
+					.bind(data.version)
 					.bind(data.transmission_date)
 					.bind(data.transmission_date_null_flavor)
 					.bind(clear_report_type)

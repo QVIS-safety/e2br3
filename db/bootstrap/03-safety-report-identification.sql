@@ -6,6 +6,10 @@ CREATE TABLE safety_report_identification (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
 
+    -- C.1.1 - Sender's (case) Safety Report Unique Identifier (MANDATORY)
+    safety_report_id VARCHAR(100) NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+
     -- C.1.2 - Date of Creation (MANDATORY)
     transmission_date DATE,
     transmission_date_null_flavor VARCHAR(4) CHECK (transmission_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
@@ -64,7 +68,10 @@ CREATE TABLE safety_report_identification (
 );
 
 CREATE INDEX idx_safety_report_id_case ON safety_report_identification(case_id);
+CREATE INDEX idx_safety_report_identification_report_id ON safety_report_identification(safety_report_id);
 CREATE INDEX idx_safety_report_id_worldwide ON safety_report_identification(worldwide_unique_id);
+CREATE UNIQUE INDEX idx_safety_report_identification_report_version
+    ON safety_report_identification(safety_report_id, version);
 
 -- ============================================================================
 -- SECTION C.3: Sender Information (MANDATORY fields)

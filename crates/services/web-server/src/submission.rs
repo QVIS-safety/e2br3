@@ -1089,7 +1089,7 @@ pub async fn list_submission_history(
 		.fetch_all(sqlx::query_as::<_, SubmissionHistoryRow>(
 			"SELECT cs.id AS submission_id,
 				        cs.case_id,
-				        c.safety_report_id AS case_number,
+				        sri.safety_report_id AS case_number,
 				        cs.gateway,
 				        cs.remote_submission_id,
 				        cs.status,
@@ -1099,6 +1099,7 @@ pub async fn list_submission_history(
 				        cs.submitted_at
 				   FROM case_submissions cs
 				   JOIN cases c ON c.id = cs.case_id
+				   JOIN safety_report_identification sri ON sri.case_id = c.id
 				   LEFT JOIN users u ON u.id = cs.submitted_by
 				  ORDER BY cs.submitted_at DESC
 				  LIMIT 200",
@@ -1356,6 +1357,7 @@ pub async fn create_submission(
 			set_compliance_context_dbx(
 				mm.dbx(),
 				ctx.change_reason(),
+				ctx.change_category(),
 				ctx.e_signature_id(),
 			)
 			.await
@@ -1434,9 +1436,14 @@ pub async fn create_submission(
 		ctx.role(),
 	)
 	.await?;
-	set_compliance_context_dbx(mm.dbx(), ctx.change_reason(), ctx.e_signature_id())
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	set_compliance_context_dbx(
+		mm.dbx(),
+		ctx.change_reason(),
+		ctx.change_category(),
+		ctx.e_signature_id(),
+	)
+	.await
+	.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 
 	let updated = mm
 		.dbx()
@@ -1739,9 +1746,14 @@ pub async fn apply_mock_ack(
 		ctx.role(),
 	)
 	.await?;
-	set_compliance_context_dbx(mm.dbx(), ctx.change_reason(), ctx.e_signature_id())
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	set_compliance_context_dbx(
+		mm.dbx(),
+		ctx.change_reason(),
+		ctx.change_category(),
+		ctx.e_signature_id(),
+	)
+	.await
+	.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 
 	let row = mm
 		.dbx()
@@ -1891,6 +1903,7 @@ pub async fn apply_gateway_ack_by_remote(
 	set_compliance_context_dbx(
 		mm.dbx(),
 		system_ctx.change_reason(),
+		system_ctx.change_category(),
 		system_ctx.e_signature_id(),
 	)
 	.await
@@ -2303,6 +2316,7 @@ async fn reconcile_one_submission(
 					set_compliance_context_dbx(
 						mm.dbx(),
 						system_ctx.change_reason(),
+						system_ctx.change_category(),
 						system_ctx.e_signature_id(),
 					)
 					.await
@@ -2415,6 +2429,7 @@ async fn reconcile_one_submission(
 					set_compliance_context_dbx(
 						mm.dbx(),
 						system_ctx.change_reason(),
+						system_ctx.change_category(),
 						system_ctx.e_signature_id(),
 					)
 					.await

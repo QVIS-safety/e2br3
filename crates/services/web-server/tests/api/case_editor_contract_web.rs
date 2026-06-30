@@ -120,6 +120,60 @@ async fn stale_validation_summary_count(
 	Ok(count)
 }
 
+#[tokio::test]
+#[serial]
+async fn c11_identity_is_not_stored_on_cases_table() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let case_id = create_case(&app, &cookie, "C11-SCHEMA").await?;
+	create_safety_report(&app, &cookie, &case_id, "1", false).await?;
+
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	let cases_column_count: (i64,) = mm
+		.dbx()
+		.fetch_one(sqlx::query_as(
+			"SELECT COUNT(*)::bigint
+				   FROM information_schema.columns
+				  WHERE table_name = 'cases'
+				    AND column_name = 'safety_report_id'",
+		))
+		.await?;
+	let section_row: (Option<String>, i32) = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as(
+				"SELECT safety_report_id, version
+				   FROM safety_report_identification
+				  WHERE case_id = $1",
+			)
+			.bind(Uuid::parse_str(&case_id)?),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+
+	assert_eq!(cases_column_count.0, 0);
+	assert!(
+		section_row
+			.0
+			.as_deref()
+			.is_some_and(|value| value.starts_with("C11-SCHEMA-")),
+		"{section_row:?}"
+	);
+	assert_eq!(section_row.1, 1);
+	Ok(())
+}
+
 async fn create_case(
 	app: &axum::Router,
 	cookie: &str,
@@ -439,6 +493,7 @@ async fn editor_ci_returns_ci_payload_only() -> Result<()> {
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
 	let case_id = create_case(&app, &cookie, "EDITOR-CI").await?;
+	create_safety_report(&app, &cookie, &case_id, "1", false).await?;
 
 	let (status, body) =
 		get_json(&app, &cookie, &format!("/api/cases/{case_id}/editor/CI")).await?;
@@ -449,6 +504,11 @@ async fn editor_ci_returns_ci_payload_only() -> Result<()> {
 	let safety_report = data
 		.get("safetyReportIdentification")
 		.ok_or("missing safetyReportIdentification")?;
+	assert_eq!(
+		safety_report["safety_report_id"].as_str(),
+		data["case"]["safety_report_id"].as_str(),
+		"{body}"
+	);
 	assert!(
 		data["receiverInfo"].is_null() || data["receiverInfo"].is_object(),
 		"{body}"

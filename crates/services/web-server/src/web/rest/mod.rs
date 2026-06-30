@@ -935,33 +935,6 @@ pub fn routes_section_presaves(mm: ModelManager) -> Router {
 				.patch(section_presave_rest::update_narrative_presave)
 				.delete(section_presave_rest::delete_narrative_presave),
 		)
-		.route(
-			"/presaves/narratives/{id}/details",
-			get(section_presave_rest::get_narrative_presave_details)
-				.put(section_presave_rest::update_narrative_presave_details),
-		)
-		.route(
-			"/presaves/narratives/{narrative_id}/sender-diagnoses",
-			get(section_presave_rest::list_narrative_sender_diagnoses)
-				.post(section_presave_rest::create_narrative_sender_diagnosis),
-		)
-		.route(
-			"/presaves/narratives/{narrative_id}/sender-diagnoses/{id}",
-			get(section_presave_rest::get_narrative_sender_diagnosis)
-				.patch(section_presave_rest::update_narrative_sender_diagnosis)
-				.delete(section_presave_rest::delete_narrative_sender_diagnosis),
-		)
-		.route(
-			"/presaves/narratives/{narrative_id}/case-summaries",
-			get(section_presave_rest::list_narrative_case_summaries)
-				.post(section_presave_rest::create_narrative_case_summary),
-		)
-		.route(
-			"/presaves/narratives/{narrative_id}/case-summaries/{id}",
-			get(section_presave_rest::get_narrative_case_summary)
-				.patch(section_presave_rest::update_narrative_case_summary)
-				.delete(section_presave_rest::delete_narrative_case_summary),
-		)
 		.with_state(mm)
 }
 

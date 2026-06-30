@@ -1654,6 +1654,8 @@ mod tests {
 		SafetyReportIdentification {
 			id: test_uuid(),
 			case_id: test_uuid(),
+			safety_report_id: Some("CASE-2026-0001".to_string()),
+			version: 1,
 			transmission_date: Some(
 				Date::from_calendar_date(2026, Month::May, 12).expect("valid date"),
 			),

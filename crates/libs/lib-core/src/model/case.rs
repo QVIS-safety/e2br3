@@ -6,7 +6,8 @@ use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
 use modql::filter::{
-	FilterNodes, ListOptions, OpValsString, OpValsValue, OrderBy, OrderBys,
+	FilterNodes, ListOptions, OpValString, OpValValue, OpValsString, OpValsValue,
+	OrderBy, OrderBys,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::{Date, OffsetDateTime};
@@ -63,7 +64,6 @@ pub struct Case {
 #[derive(Fields, Deserialize)]
 pub struct CaseForCreate {
 	pub organization_id: Uuid,
-	pub safety_report_id: String,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
 	pub review_receivers_json: Option<String>,
@@ -74,12 +74,10 @@ pub struct CaseForCreate {
 	pub source_document_name: Option<String>,
 	pub source_document_base64: Option<String>,
 	pub source_document_media_type: Option<String>,
-	pub version: Option<i32>,
 }
 
 #[derive(Fields, Deserialize, Default)]
 pub struct CaseForUpdate {
-	pub safety_report_id: Option<String>,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
 	pub review_receivers_json: Option<String>,
@@ -118,7 +116,7 @@ fn list_view_order_clause(order_bys: Option<&OrderBys>) -> &'static str {
 		OrderBy::Asc(field) => match field.as_str() {
 			"created_at" => "c.created_at ASC, c.id ASC",
 			"case_no" | "caseNo" | "safety_report_id" => {
-				"c.safety_report_id ASC, c.id ASC"
+				"s.safety_report_id ASC, c.id ASC"
 			}
 			"date_of_creation" | "dateOfCreation" => {
 				"COALESCE(s.transmission_date, c.created_at::date) ASC, c.id ASC"
@@ -129,7 +127,7 @@ fn list_view_order_clause(order_bys: Option<&OrderBys>) -> &'static str {
 		OrderBy::Desc(field) => match field.as_str() {
 			"created_at" => "c.created_at DESC, c.id DESC",
 			"case_no" | "caseNo" | "safety_report_id" => {
-				"c.safety_report_id DESC, c.id DESC"
+				"s.safety_report_id DESC, c.id DESC"
 			}
 			"date_of_creation" | "dateOfCreation" => {
 				"COALESCE(s.transmission_date, c.created_at::date) DESC, c.id DESC"
@@ -203,8 +201,7 @@ pub fn is_allowed_case_status_transition(from: &str, to: &str) -> bool {
 /// Returns true when an update touches fields beyond just `status`.
 /// Used to block edits on non-editable workflow states.
 pub fn update_touches_non_status_fields(case_u: &CaseForUpdate) -> bool {
-	case_u.safety_report_id.is_some()
-		|| case_u.dg_prd_key.is_some()
+	case_u.dg_prd_key.is_some()
 		|| case_u.review_receivers_json.is_some()
 		|| case_u.workflow_routes_json.is_some()
 		|| case_u.mfds_report_type.is_some()
@@ -244,6 +241,7 @@ pub struct CaseListViewRow {
 	pub case_no: String,
 	pub fu: i32,
 	pub date_of_creation: String,
+	pub date_of_most_recent_information: String,
 	pub dg_prd_key: String,
 	pub warn: String,
 	pub wf_status: String,
@@ -274,17 +272,142 @@ impl DbBmc for CaseBmc {
 	const TABLE: &'static str = "cases";
 }
 
+const CASE_SELECT: &str = r#"
+	SELECT
+		c.id,
+		c.organization_id,
+		COALESCE(s.safety_report_id, '') AS safety_report_id,
+		COALESCE(s.version, 1) AS version,
+		c.dg_prd_key,
+		c.status,
+		c.review_receivers_json,
+		c.workflow_routes_json,
+		c.workflow_status,
+		c.workflow_assigned_role,
+		c.workflow_assigned_user_id,
+		c.workflow_due_at,
+		c.workflow_description,
+		c.workflow_updated_at,
+		c.mfds_report_type,
+		c.fda_report_type,
+		c.report_year,
+		c.source_document_name,
+		c.source_document_base64,
+		c.source_document_media_type,
+		c.created_by,
+		c.updated_by,
+		c.submitted_by,
+		c.submitted_at,
+		c.raw_xml,
+		c.dirty_c,
+		c.dirty_d,
+		c.dirty_e,
+		c.dirty_f,
+		c.dirty_g,
+		c.dirty_h,
+		c.created_at,
+		c.updated_at
+	FROM cases c
+	LEFT JOIN safety_report_identification s ON s.case_id = c.id
+"#;
+
+fn first_string_eq(values: &OpValsString) -> Option<String> {
+	values.0.iter().find_map(|op| match op {
+		OpValString::Eq(value) => Some(value.clone()),
+		_ => None,
+	})
+}
+
+fn first_uuid_eq(values: &OpValsValue) -> Option<Uuid> {
+	values.0.iter().find_map(|op| match op {
+		OpValValue::Eq(value) => {
+			value.as_str().and_then(|value| Uuid::parse_str(value).ok())
+		}
+		_ => None,
+	})
+}
+
 impl CaseBmc {
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,
 		case_c: CaseForCreate,
 	) -> Result<Uuid> {
-		base_uuid::create::<Self, _>(ctx, mm, case_c).await
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let (id,) = dbx
+			.fetch_one(
+				sqlx::query_as::<_, (Uuid,)>(
+					"INSERT INTO cases (
+						organization_id,
+						dg_prd_key,
+						status,
+						review_receivers_json,
+						workflow_routes_json,
+						mfds_report_type,
+						fda_report_type,
+						report_year,
+						source_document_name,
+						source_document_base64,
+						source_document_media_type,
+						created_by,
+						updated_by,
+						created_at,
+						updated_at
+					)
+					VALUES ($1, $2, COALESCE($3, 'draft'), $4, $5, $6, $7, $8, $9, $10, $11, $12, $12, now(), now())
+					RETURNING id",
+				)
+				.bind(case_c.organization_id)
+				.bind(case_c.dg_prd_key)
+				.bind(case_c.status)
+				.bind(case_c.review_receivers_json)
+				.bind(case_c.workflow_routes_json)
+				.bind(case_c.mfds_report_type)
+				.bind(case_c.fda_report_type)
+				.bind(case_c.report_year)
+				.bind(case_c.source_document_name)
+				.bind(case_c.source_document_base64)
+				.bind(case_c.source_document_media_type)
+				.bind(ctx.user_id()),
+			)
+			.await?;
+		dbx.commit_txn().await?;
+		Ok(id)
 	}
 
 	pub async fn get(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<Case> {
-		base_uuid::get::<Self, _>(ctx, mm, id).await
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let sql = format!("{CASE_SELECT} WHERE c.id = $1");
+		let entity = dbx
+			.fetch_optional(sqlx::query_as::<_, Case>(&sql).bind(id))
+			.await?;
+		match entity {
+			Some(entity) => {
+				dbx.commit_txn().await?;
+				Ok(entity)
+			}
+			None => {
+				dbx.rollback_txn().await?;
+				Err(crate::model::Error::EntityUuidNotFound {
+					entity: Self::TABLE,
+					id,
+				})
+			}
+		}
 	}
 
 	pub async fn list(
@@ -293,7 +416,75 @@ impl CaseBmc {
 		filters: Option<Vec<CaseFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<Case>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut conditions: Vec<String> = Vec::new();
+		let mut organization_id: Option<Uuid> = None;
+		let mut safety_report_id: Option<String> = None;
+		let mut status: Option<String> = None;
+		if let Some(filters) = filters {
+			for filter in filters {
+				if organization_id.is_none() {
+					organization_id =
+						filter.organization_id.as_ref().and_then(first_uuid_eq);
+				}
+				if safety_report_id.is_none() {
+					safety_report_id =
+						filter.safety_report_id.as_ref().and_then(first_string_eq);
+				}
+				if status.is_none() {
+					status = filter.status.as_ref().and_then(first_string_eq);
+				}
+			}
+		}
+		if organization_id.is_some() {
+			conditions
+				.push(format!("c.organization_id = ${}", conditions.len() + 1));
+		}
+		if safety_report_id.is_some() {
+			conditions
+				.push(format!("s.safety_report_id = ${}", conditions.len() + 1));
+		}
+		if status.is_some() {
+			conditions.push(format!("c.status = ${}", conditions.len() + 1));
+		}
+		let mut sql = CASE_SELECT.to_string();
+		if !conditions.is_empty() {
+			sql.push_str(" WHERE ");
+			sql.push_str(&conditions.join(" AND "));
+		}
+		sql.push_str(" ORDER BY c.created_at DESC, c.id DESC");
+		if let Some(limit) = list_options.as_ref().and_then(|options| options.limit)
+		{
+			sql.push_str(&format!(" LIMIT {}", limit.clamp(0, 5000)));
+		} else {
+			sql.push_str(" LIMIT 1000");
+		}
+		if let Some(offset) =
+			list_options.as_ref().and_then(|options| options.offset)
+		{
+			sql.push_str(&format!(" OFFSET {}", offset.max(0)));
+		}
+
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let mut query = sqlx::query_as::<_, Case>(&sql);
+		if let Some(value) = organization_id {
+			query = query.bind(value);
+		}
+		if let Some(value) = safety_report_id {
+			query = query.bind(value);
+		}
+		if let Some(value) = status {
+			query = query.bind(value);
+		}
+		let entities = dbx.fetch_all(query).await?;
+		dbx.commit_txn().await?;
+		Ok(entities)
 	}
 
 	pub async fn update(
@@ -302,7 +493,73 @@ impl CaseBmc {
 		id: Uuid,
 		case_u: CaseForUpdate,
 	) -> Result<()> {
-		base_uuid::update::<Self, _>(ctx, mm, id, case_u).await
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let count = dbx
+			.execute(
+				sqlx::query(
+					"UPDATE cases
+					 SET dg_prd_key = COALESCE($2, dg_prd_key),
+					     status = COALESCE($3, status),
+					     review_receivers_json = COALESCE($4, review_receivers_json),
+					     workflow_routes_json = COALESCE($5, workflow_routes_json),
+					     mfds_report_type = COALESCE($6, mfds_report_type),
+					     fda_report_type = COALESCE($7, fda_report_type),
+					     report_year = COALESCE($8, report_year),
+					     source_document_name = COALESCE($9, source_document_name),
+					     source_document_base64 = COALESCE($10, source_document_base64),
+					     source_document_media_type = COALESCE($11, source_document_media_type),
+					     submitted_by = COALESCE($12, submitted_by),
+					     submitted_at = COALESCE($13, submitted_at),
+					     raw_xml = COALESCE($14, raw_xml),
+					     dirty_c = COALESCE($15, dirty_c),
+					     dirty_d = COALESCE($16, dirty_d),
+					     dirty_e = COALESCE($17, dirty_e),
+					     dirty_f = COALESCE($18, dirty_f),
+					     dirty_g = COALESCE($19, dirty_g),
+					     dirty_h = COALESCE($20, dirty_h),
+					     updated_at = now(),
+					     updated_by = $21
+					 WHERE id = $1",
+				)
+				.bind(id)
+				.bind(case_u.dg_prd_key)
+				.bind(case_u.status)
+				.bind(case_u.review_receivers_json)
+				.bind(case_u.workflow_routes_json)
+				.bind(case_u.mfds_report_type)
+				.bind(case_u.fda_report_type)
+				.bind(case_u.report_year)
+				.bind(case_u.source_document_name)
+				.bind(case_u.source_document_base64)
+				.bind(case_u.source_document_media_type)
+				.bind(case_u.submitted_by)
+				.bind(case_u.submitted_at)
+				.bind(case_u.raw_xml)
+				.bind(case_u.dirty_c)
+				.bind(case_u.dirty_d)
+				.bind(case_u.dirty_e)
+				.bind(case_u.dirty_f)
+				.bind(case_u.dirty_g)
+				.bind(case_u.dirty_h)
+				.bind(ctx.user_id()),
+			)
+			.await?;
+		if count == 0 {
+			dbx.rollback_txn().await?;
+			return Err(crate::model::Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
+		}
+		dbx.commit_txn().await?;
+		Ok(())
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
@@ -314,8 +571,8 @@ impl CaseBmc {
 	pub async fn list_link_options(dbx: &Dbx) -> Result<Vec<CaseLinkOption>> {
 		dbx.fetch_all(sqlx::query_as::<_, CaseLinkOption>(
 			"SELECT c.id AS case_id,
-			        c.safety_report_id,
-			        c.version,
+			        s.safety_report_id,
+			        s.version,
 			        s.transmission_date,
 			        c.created_at
 			   FROM cases c
@@ -340,9 +597,10 @@ impl CaseBmc {
 			r#"
 			SELECT row_number() OVER (ORDER BY {order_clause})::bigint AS no,
 			       c.id AS case_id,
-			       c.safety_report_id AS case_no,
-			       GREATEST(c.version - 1, 0) AS fu,
+			       s.safety_report_id AS case_no,
+			       GREATEST(s.version - 1, 0) AS fu,
 			       COALESCE(s.transmission_date::text, c.created_at::date::text) AS date_of_creation,
+			       COALESCE(s.date_of_most_recent_information::text, 'N/A') AS date_of_most_recent_information,
 			       COALESCE(NULLIF(c.dg_prd_key, ''), 'N/A') AS dg_prd_key,
 			       '0' AS warn,
 			       COALESCE(NULLIF(c.workflow_status, ''), c.status) AS wf_status,

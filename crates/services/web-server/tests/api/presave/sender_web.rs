@@ -169,7 +169,8 @@ async fn info_update_audit_reason_records_sender_presave_reason() -> Result<()> 
 	let reason = "Edited Data: Corrected sender organization";
 	let organization_name = format!("Audit Reason Sender Org {}", Uuid::new_v4());
 
-	request_json_ok_with_audit_reason(
+	let category = "Edited Data";
+	request_json_ok_with_audit_compliance(
 		&app,
 		&admin_cookie,
 		Method::PUT,
@@ -182,6 +183,7 @@ async fn info_update_audit_reason_records_sender_presave_reason() -> Result<()> 
 			}
 		}),
 		reason,
+		Some(category),
 	)
 	.await?;
 
@@ -189,11 +191,11 @@ async fn info_update_audit_reason_records_sender_presave_reason() -> Result<()> 
 	dbx.begin_txn().await?;
 	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
 		.await?;
-	let recorded_reason = dbx
+	let recorded_compliance = dbx
 		.fetch_optional(
-			sqlx::query_as::<_, (Option<String>,)>(
+			sqlx::query_as::<_, (Option<String>, Option<String>)>(
 				r#"
-				SELECT reason_for_change
+				SELECT reason_for_change, change_category
 				FROM audit_logs
 				WHERE table_name = 'sender_presaves'
 				  AND record_id = $1
@@ -208,10 +210,10 @@ async fn info_update_audit_reason_records_sender_presave_reason() -> Result<()> 
 		.await?;
 	dbx.rollback_txn().await?;
 
-	assert_eq!(
-		recorded_reason.and_then(|(value,)| value),
-		Some(reason.to_string())
-	);
+	let (recorded_reason, recorded_category) =
+		recorded_compliance.unwrap_or_default();
+	assert_eq!(recorded_reason, Some(reason.to_string()));
+	assert_eq!(recorded_category, Some(category.to_string()));
 
 	Ok(())
 }
@@ -274,7 +276,10 @@ async fn test_sender_presave_details_graph_load_and_save() -> Result<()> {
 		}),
 	)
 	.await?;
-	assert!(saved["data"]["parent"].get("comments").is_none(), "{saved:?}");
+	assert!(
+		saved["data"]["parent"].get("comments").is_none(),
+		"{saved:?}"
+	);
 	assert_eq!(saved["data"]["gateways"].as_array().unwrap().len(), 2);
 	assert_eq!(
 		saved["data"]["responsible_persons"]

@@ -366,6 +366,8 @@ pub async fn patch_editor_ci_page_projection(
 		editor_projection_context(requested_authorities.clone())?;
 
 	let mut update = SafetyReportIdentificationForUpdate {
+		safety_report_id: None,
+		version: None,
 		transmission_date: None,
 		transmission_date_null_flavor: None,
 		report_type: PatchValue::Missing,

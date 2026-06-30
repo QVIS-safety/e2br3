@@ -436,7 +436,7 @@ async fn test_case_from_intake_allows_missing_optional_duplicate_fields(
 	assert_eq!(status, StatusCode::CREATED, "{body:?}");
 
 	let override_body = json!({
-		"data": intake_data(&safety_report_id, 141, "1", json!({
+		"data": intake_data(&safety_report_id, 142, "1", json!({
 			"patient_initials": null,
 			"reaction_meddra_version": null,
 			"dg_prd_key": null,

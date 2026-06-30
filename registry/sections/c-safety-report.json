@@ -1825,10 +1825,10 @@
     "status": "complete",
     "backend": {
       "status": "mapped",
-      "model": "Case",
+      "model": "SafetyReportIdentification",
       "field": "safety_report_id",
-      "file": "crates/libs/lib-core/src/model/case.rs",
-      "evidence": "Case.safety_report_id is the case-level C.1.1 unique identifier (cases.safety_report_id, '-- C.1.1'); used by export/sections/c.rs report_unique_id and import extract_safety_report_id."
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "SafetyReportIdentification.safety_report_id is the canonical C.1.1 section field. The physical cases.safety_report_id column has been removed; Case reads expose safety_report_id as a joined projection for API compatibility."
     },
     "frontend": {
       "status": "mapped",
@@ -1838,7 +1838,7 @@
       "evidence": "Strict frontend input inventory extracts safetyReportIdentification.safetyReportId from the case-form section source."
     },
     "action": "",
-    "notes": "Reclassified from backend_missing: the backend was already implemented but the registry pointed at the wrong model. Now mapped to Case.safety_report_id."
+    "notes": "Canonical owner moved from Case.safety_report_id to SafetyReportIdentification.safety_report_id; cases no longer stores a physical safety_report_id column."
   },
   {
     "id": "C.local.reportYear",

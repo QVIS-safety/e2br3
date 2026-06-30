@@ -98,6 +98,7 @@ BEGIN
         NEW.action,
         NEW.user_id::TEXT,
         COALESCE(NEW.reason_for_change, ''),
+        COALESCE(NEW.change_category, ''),
         COALESCE(NEW.e_signature_id::TEXT, ''),
         COALESCE(NEW.old_values::TEXT, 'null'),
         COALESCE(NEW.new_values::TEXT, 'null'),
@@ -219,19 +220,6 @@ BEGIN
         END IF;
     END IF;
 
-    IF p_table_name IN (
-        'narrative_presave_sender_diagnoses',
-        'narrative_presave_case_summaries'
-    ) THEN
-        SELECT p.organization_id INTO v_org_id
-        FROM narrative_presaves p
-        WHERE p.id = NULLIF(v_values->>'narrative_presave_id', '')::UUID;
-
-        IF v_org_id IS NOT NULL THEN
-            RETURN v_org_id;
-        END IF;
-    END IF;
-
     RETURN COALESCE(
         current_organization_id(),
         '00000000-0000-0000-0000-000000000000'::UUID
@@ -256,7 +244,7 @@ BEGIN
 
     IF TG_OP = 'INSERT' THEN
         v_changed_fields := compute_audit_changed_fields(NULL, to_jsonb(NEW));
-        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.id,
@@ -264,6 +252,7 @@ BEGIN
             'CREATE',
             v_user_id,
             get_current_change_reason(),
+            get_current_change_category(),
             get_current_esignature_id(),
             NULL,
             to_jsonb(NEW)
@@ -282,7 +271,7 @@ BEGIN
         END IF;
 
         v_changed_fields := compute_audit_changed_fields(v_old_business, v_new_business);
-        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.id,
@@ -290,6 +279,7 @@ BEGIN
             'UPDATE',
             v_user_id,
             get_current_change_reason(),
+            get_current_change_category(),
             get_current_esignature_id(),
             to_jsonb(OLD),
             to_jsonb(NEW),
@@ -299,7 +289,7 @@ BEGIN
 
     ELSIF TG_OP = 'DELETE' THEN
         v_changed_fields := compute_audit_changed_fields(to_jsonb(OLD), NULL);
-        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             OLD.id,
@@ -307,6 +297,7 @@ BEGIN
             'DELETE',
             v_user_id,
             get_current_change_reason(),
+            get_current_change_category(),
             get_current_esignature_id(),
             to_jsonb(OLD),
             NULL,
@@ -338,7 +329,7 @@ BEGIN
 
     IF TG_OP = 'INSERT' THEN
         v_changed_fields := compute_audit_changed_fields(NULL, to_jsonb(NEW));
-        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.audit_id,
@@ -346,6 +337,7 @@ BEGIN
             'CREATE',
             v_user_id,
             get_current_change_reason(),
+            get_current_change_category(),
             get_current_esignature_id(),
             NULL,
             to_jsonb(NEW),
@@ -363,7 +355,7 @@ BEGIN
         END IF;
 
         v_changed_fields := compute_audit_changed_fields(v_old_business, v_new_business);
-        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.audit_id,
@@ -371,6 +363,7 @@ BEGIN
             'UPDATE',
             v_user_id,
             get_current_change_reason(),
+            get_current_change_category(),
             get_current_esignature_id(),
             to_jsonb(OLD),
             to_jsonb(NEW),
@@ -380,7 +373,7 @@ BEGIN
 
     ELSIF TG_OP = 'DELETE' THEN
         v_changed_fields := compute_audit_changed_fields(to_jsonb(OLD), NULL);
-        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             OLD.audit_id,
@@ -388,6 +381,7 @@ BEGIN
             'DELETE',
             v_user_id,
             get_current_change_reason(),
+            get_current_change_category(),
             get_current_esignature_id(),
             to_jsonb(OLD),
             NULL,
@@ -419,7 +413,7 @@ BEGIN
 
     IF TG_OP = 'INSERT' THEN
         v_changed_fields := compute_audit_changed_fields(NULL, to_jsonb(NEW));
-        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.submission_id,
@@ -427,6 +421,7 @@ BEGIN
             'CREATE',
             v_user_id,
             get_current_change_reason(),
+            get_current_change_category(),
             get_current_esignature_id(),
             NULL,
             to_jsonb(NEW),
@@ -442,7 +437,7 @@ BEGIN
         END IF;
 
         v_changed_fields := compute_audit_changed_fields(v_old_business, v_new_business);
-        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             NEW.submission_id,
@@ -450,6 +445,7 @@ BEGIN
             'UPDATE',
             v_user_id,
             get_current_change_reason(),
+            get_current_change_category(),
             get_current_esignature_id(),
             to_jsonb(OLD),
             to_jsonb(NEW),
@@ -459,7 +455,7 @@ BEGIN
 
     ELSIF TG_OP = 'DELETE' THEN
         v_changed_fields := compute_audit_changed_fields(to_jsonb(OLD), NULL);
-        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, old_values, new_values, changed_fields)
+        INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
         VALUES (
             TG_TABLE_NAME,
             OLD.submission_id,
@@ -467,6 +463,7 @@ BEGIN
             'DELETE',
             v_user_id,
             get_current_change_reason(),
+            get_current_change_category(),
             get_current_esignature_id(),
             to_jsonb(OLD),
             NULL,
@@ -600,12 +597,6 @@ CREATE TRIGGER audit_study_presave_reporters AFTER INSERT OR UPDATE OR DELETE ON
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_narrative_presaves AFTER INSERT OR UPDATE OR DELETE ON narrative_presaves
-    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
-
-CREATE TRIGGER audit_narrative_presave_sender_diagnoses AFTER INSERT OR UPDATE OR DELETE ON narrative_presave_sender_diagnoses
-    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
-
-CREATE TRIGGER audit_narrative_presave_case_summaries AFTER INSERT OR UPDATE OR DELETE ON narrative_presave_case_summaries
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_sender_diagnoses AFTER INSERT OR UPDATE OR DELETE ON sender_diagnoses
@@ -797,12 +788,6 @@ CREATE TRIGGER update_study_presave_reporters_updated_at BEFORE UPDATE ON study_
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_narrative_presaves_updated_at BEFORE UPDATE ON narrative_presaves
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_narrative_presave_sender_diagnoses_updated_at BEFORE UPDATE ON narrative_presave_sender_diagnoses
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_narrative_presave_case_summaries_updated_at BEFORE UPDATE ON narrative_presave_case_summaries
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================================

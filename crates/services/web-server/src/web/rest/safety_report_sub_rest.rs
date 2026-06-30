@@ -78,7 +78,6 @@ async fn mark_case_dirty_c(
 		mm,
 		case_id,
 		CaseForUpdate {
-			safety_report_id: None,
 			dg_prd_key: None,
 			status: None,
 			review_receivers_json: None,

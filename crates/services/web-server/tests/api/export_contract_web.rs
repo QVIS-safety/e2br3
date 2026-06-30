@@ -14,8 +14,7 @@ use lib_core::model::patient::{PatientInformationBmc, PatientInformationForCreat
 use lib_core::model::reaction::{ReactionBmc, ReactionForCreate};
 use lib_core::model::safety_report::{
 	PrimarySourceBmc, PrimarySourceForCreate, SafetyReportIdentificationBmc,
-	SafetyReportIdentificationForCreate, SenderInformationBmc,
-	SenderInformationForCreate,
+	SenderInformationBmc, SenderInformationForCreate,
 };
 use lib_core::model::store::{set_org_context, set_user_context};
 use rust_decimal::Decimal;
@@ -103,17 +102,29 @@ async fn insert_validated_raw_case(
 		"INSERT INTO cases (
 			id,
 				organization_id,
-				safety_report_id,
 				status,
 				raw_xml,
 				created_by,
 				updated_by
-			) VALUES ($1, $2, $3, 'validated', $4, $5, $5)",
+			) VALUES ($1, $2, 'validated', $3, $4, $4)",
 	)
 	.bind(case_id)
 	.bind(org_id)
-	.bind(safety_report_id)
 	.bind(br#"<?xml version="1.0" encoding="UTF-8"?><test/>"#.as_slice())
+	.bind(user_id)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"INSERT INTO safety_report_identification (
+			case_id,
+			safety_report_id,
+			version,
+			created_by,
+			updated_by
+		) VALUES ($1, $2, 1, $3, $3)",
+	)
+	.bind(case_id)
+	.bind(safety_report_id)
 	.bind(user_id)
 	.execute(&mut *tx)
 	.await?;
@@ -136,17 +147,29 @@ async fn insert_validated_raw_case_with_xml(
 		"INSERT INTO cases (
 			id,
 				organization_id,
-				safety_report_id,
 				status,
 				raw_xml,
 				created_by,
 				updated_by
-			) VALUES ($1, $2, $3, 'validated', $4, $5, $5)",
+			) VALUES ($1, $2, 'validated', $3, $4, $4)",
 	)
 	.bind(case_id)
 	.bind(org_id)
-	.bind(safety_report_id)
 	.bind(raw_xml)
+	.bind(user_id)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"INSERT INTO safety_report_identification (
+			case_id,
+			safety_report_id,
+			version,
+			created_by,
+			updated_by
+		) VALUES ($1, $2, 1, $3, $3)",
+	)
+	.bind(case_id)
+	.bind(safety_report_id)
 	.bind(user_id)
 	.execute(&mut *tx)
 	.await?;
@@ -159,16 +182,21 @@ async fn seed_cioms_case_data(
 	org_id: Uuid,
 	user_id: Uuid,
 	case_id: Uuid,
+	safety_report_id: &str,
 ) -> Result<()> {
 	let ctx = Ctx::new(user_id, org_id, ROLE_SPONSOR_ADMIN_CRO.to_string())?;
-	SafetyReportIdentificationBmc::create(
+	SafetyReportIdentificationBmc::update_by_case(
 		&ctx,
 		mm,
-		SafetyReportIdentificationForCreate {
-			case_id,
+		case_id,
+		lib_core::model::safety_report::SafetyReportIdentificationForUpdate {
+			safety_report_id: Some(safety_report_id.to_string()),
+			version: None,
 			transmission_date: Some(Date::from_calendar_date(2026, Month::May, 28)?),
 			transmission_date_null_flavor: None,
-			report_type: Some("1".to_string()),
+			report_type: lib_core::model::safety_report::PatchValue::Value(
+				"1".to_string(),
+			),
 			date_first_received_from_source: Some(Date::from_calendar_date(
 				2026,
 				Month::May,
@@ -181,9 +209,10 @@ async fn seed_cioms_case_data(
 				27,
 			)?),
 			date_of_most_recent_information_null_flavor: None,
-			fulfil_expedited_criteria: Some(true),
-			local_criteria_report_type: None,
-			combination_product_report_indicator: None,
+			fulfil_expedited_criteria:
+				lib_core::model::safety_report::PatchValue::Value(true),
+			local_criteria_report_type: Default::default(),
+			combination_product_report_indicator: Default::default(),
 			first_sender_type: Some("1".to_string()),
 			additional_documents_available: Some(false),
 			other_case_identifiers_exist: Some(false),
@@ -509,7 +538,14 @@ async fn test_cioms_pdf_export_renders_case_data_in_cioms_form() -> Result<()> {
 		&safety_report_id,
 	)
 	.await?;
-	seed_cioms_case_data(&mm, seed.org_id, seed.admin.id, case_id).await?;
+	seed_cioms_case_data(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		case_id,
+		&safety_report_id,
+	)
+	.await?;
 
 	let response = get_response(
 		&app,
@@ -573,7 +609,14 @@ async fn test_cioms_pdf_export_notation_query_controls_notation() -> Result<()> 
 		&safety_report_id,
 	)
 	.await?;
-	seed_cioms_case_data(&mm, seed.org_id, seed.admin.id, case_id).await?;
+	seed_cioms_case_data(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		case_id,
+		&safety_report_id,
+	)
+	.await?;
 
 	let response = get_response(
 		&app,
@@ -624,7 +667,14 @@ async fn test_cioms_pdf_export_portrait_setting_changes_layout() -> Result<()> {
 		&safety_report_id,
 	)
 	.await?;
-	seed_cioms_case_data(&mm, seed.org_id, seed.admin.id, case_id).await?;
+	seed_cioms_case_data(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		case_id,
+		&safety_report_id,
+	)
+	.await?;
 
 	let (status, body) = put_json(
 		&app,
@@ -881,13 +931,22 @@ async fn test_export_history_error_details_download_as_text() -> Result<()> {
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, seed.admin.id).await?;
 	set_org_context(&mut tx, seed.org_id, ROLE_SYSTEM_ADMIN).await?;
+	let safety_report_id = format!("SR-EXPORT-{case_id}");
 	sqlx::query(
-		"INSERT INTO cases (id, organization_id, safety_report_id, created_by, updated_by)
-		 VALUES ($1, $2, $3, $4, $4)",
+		"INSERT INTO cases (id, organization_id, created_by, updated_by)
+		 VALUES ($1, $2, $3, $3)",
 	)
 	.bind(case_id)
 	.bind(seed.org_id)
-	.bind(format!("SR-EXPORT-{case_id}"))
+	.bind(seed.admin.id)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"INSERT INTO safety_report_identification (case_id, safety_report_id, version, created_by, updated_by)
+		 VALUES ($1, $2, 1, $3, $3)",
+	)
+	.bind(case_id)
+	.bind(safety_report_id)
 	.bind(seed.admin.id)
 	.execute(&mut *tx)
 	.await?;
@@ -1054,11 +1113,19 @@ async fn test_case_scoped_export_history_only_returns_case_rows() -> Result<()> 
 	set_org_context(&mut tx, seed.org_id, ROLE_SYSTEM_ADMIN).await?;
 	for id in [case_id, other_case_id] {
 		sqlx::query(
-			"INSERT INTO cases (id, organization_id, safety_report_id, created_by, updated_by)
-			 VALUES ($1, $2, $3, $4, $4)",
+			"INSERT INTO cases (id, organization_id, created_by, updated_by)
+			 VALUES ($1, $2, $3, $3)",
 		)
 		.bind(id)
 		.bind(seed.org_id)
+		.bind(seed.admin.id)
+		.execute(&mut *tx)
+		.await?;
+		sqlx::query(
+			"INSERT INTO safety_report_identification (case_id, safety_report_id, version, created_by, updated_by)
+			 VALUES ($1, $2, 1, $3, $3)",
+		)
+		.bind(id)
 		.bind(format!("SR-EXPORT-{id}"))
 		.bind(seed.admin.id)
 		.execute(&mut *tx)

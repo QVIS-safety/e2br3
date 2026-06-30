@@ -430,6 +430,11 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 		"{row:?}"
 	);
 	assert_eq!(
+		row["dateOfMostRecentInformation"].as_str(),
+		Some("2026-05-01"),
+		"{row:?}"
+	);
+	assert_eq!(
 		row["manufacturer"].as_str(),
 		Some(manufacturer.as_str()),
 		"{row:?}"
@@ -1170,8 +1175,6 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 		"INSERT INTO cases (
 			id,
 			organization_id,
-			safety_report_id,
-			version,
 			status,
 			raw_xml,
 			dirty_c,
@@ -1182,14 +1185,21 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 			dirty_h,
 			created_by,
 			updated_by
-		) VALUES ($1, $2, $3, $4, $5, $6, false, false, false, false, false, false, $7, $7)",
+		) VALUES ($1, $2, $3, $4, false, false, false, false, false, false, $5, $5)",
 	)
 	.bind(case_id)
 	.bind(seed.org_id)
-	.bind(format!("SR-SHAPED-SAVE-{case_id}"))
-	.bind(1_i32)
 	.bind("draft")
 	.bind(b"<ichicsr/>".to_vec())
+	.bind(seed.admin.id)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"INSERT INTO safety_report_identification (case_id, safety_report_id, version, created_by, updated_by)
+		 VALUES ($1, $2, 1, $3, $3)",
+	)
+	.bind(case_id)
+	.bind(format!("SR-SHAPED-SAVE-{case_id}"))
 	.bind(seed.admin.id)
 	.execute(&mut *tx)
 	.await?;

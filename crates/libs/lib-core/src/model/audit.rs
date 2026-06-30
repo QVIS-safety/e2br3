@@ -48,6 +48,8 @@ pub struct AuditLog {
 	#[sqlx(default)]
 	pub reason_for_change: Option<String>,
 	#[sqlx(default)]
+	pub change_category: Option<String>,
+	#[sqlx(default)]
 	pub e_signature_id: Option<Uuid>,
 	#[sqlx(default)]
 	pub user_display: Option<String>,
@@ -71,6 +73,7 @@ pub struct AuditLogForCreate {
 	pub record_id: Uuid,
 	pub action: String,
 	pub reason_for_change: Option<String>,
+	pub change_category: Option<String>,
 	pub e_signature_id: Option<Uuid>,
 	pub changed_fields: Option<JsonValue>,
 	pub old_values: Option<JsonValue>,
@@ -108,6 +111,7 @@ enum AuditLogIden {
 	Action,
 	UserId,
 	ReasonForChange,
+	ChangeCategory,
 	ESignatureId,
 	ChangedFields,
 	OldValues,
@@ -258,7 +262,7 @@ impl AuditLogBmc {
 		.await?;
 		let user_id = ctx.user_id();
 		let organization_id = ctx.organization_id();
-		let sql = "INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, e_signature_id, changed_fields, old_values, new_values, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id";
+		let sql = "INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, changed_fields, old_values, new_values, ip_address, user_agent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id";
 
 		let (id,) = mm
 			.dbx()
@@ -270,6 +274,7 @@ impl AuditLogBmc {
 					.bind(audit_c.action)
 					.bind(user_id)
 					.bind(audit_c.reason_for_change)
+					.bind(audit_c.change_category)
 					.bind(audit_c.e_signature_id)
 					.bind(audit_c.changed_fields)
 					.bind(audit_c.old_values)
@@ -299,6 +304,7 @@ impl AuditLogBmc {
 				AuditLogIden::Action,
 				AuditLogIden::UserId,
 				AuditLogIden::ReasonForChange,
+				AuditLogIden::ChangeCategory,
 				AuditLogIden::ESignatureId,
 				AuditLogIden::ChangedFields,
 				AuditLogIden::OldValues,
@@ -466,6 +472,7 @@ impl AuditLogBmc {
 								action,
 								user_id::TEXT,
 								COALESCE(reason_for_change, ''),
+								COALESCE(change_category, ''),
 								COALESCE(e_signature_id::TEXT, ''),
 								COALESCE(old_values::TEXT, 'null'),
 								COALESCE(new_values::TEXT, 'null'),

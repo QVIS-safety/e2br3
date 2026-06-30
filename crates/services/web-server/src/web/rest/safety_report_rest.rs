@@ -8,7 +8,7 @@ use lib_core::model::acs::{
 };
 use lib_core::model::case::CaseBmc;
 use lib_core::model::safety_report::{
-	SafetyReportIdentification, SafetyReportIdentificationBmc,
+	PatchValue, SafetyReportIdentification, SafetyReportIdentificationBmc,
 	SafetyReportIdentificationForCreate, SafetyReportIdentificationForUpdate,
 };
 use lib_core::model::ModelManager;
@@ -21,6 +21,46 @@ use lib_rest_core::{
 use lib_web::middleware::mw_auth::CtxW;
 use serde::Deserialize;
 use uuid::Uuid;
+
+fn create_payload_to_update(
+	data: SafetyReportIdentificationForCreate,
+) -> SafetyReportIdentificationForUpdate {
+	SafetyReportIdentificationForUpdate {
+		safety_report_id: data.safety_report_id,
+		version: data.version,
+		transmission_date: data.transmission_date,
+		transmission_date_null_flavor: data.transmission_date_null_flavor,
+		report_type: data
+			.report_type
+			.map(PatchValue::Value)
+			.unwrap_or(PatchValue::Missing),
+		date_first_received_from_source: data.date_first_received_from_source,
+		date_first_received_from_source_null_flavor: data
+			.date_first_received_from_source_null_flavor,
+		date_of_most_recent_information: data.date_of_most_recent_information,
+		date_of_most_recent_information_null_flavor: data
+			.date_of_most_recent_information_null_flavor,
+		fulfil_expedited_criteria: data
+			.fulfil_expedited_criteria
+			.map(PatchValue::Value)
+			.unwrap_or(PatchValue::Missing),
+		local_criteria_report_type: data
+			.local_criteria_report_type
+			.map(PatchValue::Value)
+			.unwrap_or(PatchValue::Missing),
+		combination_product_report_indicator: data
+			.combination_product_report_indicator
+			.map(PatchValue::Value)
+			.unwrap_or(PatchValue::Missing),
+		worldwide_unique_id: data.worldwide_unique_id,
+		first_sender_type: data.first_sender_type,
+		additional_documents_available: data.additional_documents_available,
+		other_case_identifiers_exist: data.other_case_identifiers_exist,
+		nullification_code: data.nullification_code,
+		nullification_reason: data.nullification_reason,
+		receiver_organization: data.receiver_organization,
+	}
+}
 
 /// POST /api/cases/{case_id}/safety-report
 pub async fn create_safety_report_identification(
@@ -37,8 +77,18 @@ pub async fn create_safety_report_identification(
 	data.case_id = case_id;
 
 	match SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id).await {
-		Ok(entity) => {
-			return Ok((StatusCode::OK, Json(DataRestResult { data: entity })));
+		Ok(_) => {
+			SafetyReportIdentificationBmc::update_by_case(
+				&ctx,
+				&mm,
+				case_id,
+				create_payload_to_update(data),
+			)
+			.await?;
+			let entity =
+				SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id)
+					.await?;
+			return Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })));
 		}
 		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => {}
 		Err(err) => return Err(err.into()),

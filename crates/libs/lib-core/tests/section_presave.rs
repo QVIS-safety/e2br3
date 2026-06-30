@@ -5,11 +5,7 @@ use crate::common::{
 };
 use lib_core::_dev_utils;
 use lib_core::model::presave::{
-	NarrativePresaveBmc, NarrativePresaveCaseSummaryBmc,
-	NarrativePresaveCaseSummaryForCreate, NarrativePresaveCaseSummaryForUpdate,
-	NarrativePresaveForCreate, NarrativePresaveSenderDiagnosisBmc,
-	NarrativePresaveSenderDiagnosisForCreate,
-	NarrativePresaveSenderDiagnosisForUpdate, ProductPresaveBmc,
+	NarrativePresaveBmc, NarrativePresaveForCreate, ProductPresaveBmc,
 	ProductPresaveForCreate, ProductPresaveForUpdate,
 	ProductPresaveMfdsDeviceItemBmc, ProductPresaveMfdsDeviceItemForCreate,
 	ProductPresaveMfdsDeviceItemForUpdate, ProductPresaveSubstanceBmc,
@@ -54,8 +50,6 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"study_presave_products",
 	"study_presave_reporters",
 	"narrative_presaves",
-	"narrative_presave_sender_diagnoses",
-	"narrative_presave_case_summaries",
 ];
 
 fn is_foreign_key_violation(err: &SqlxError) -> bool {
@@ -213,6 +207,10 @@ fn reporter_presave_create(
 		telephone: None,
 		country_code: Some("KR".into()),
 		qualification: Some("1".into()),
+		qualification_kr1: None,
+		reporter_name_null_flavor: None,
+		reporter_address_null_flavor: None,
+		qualification_null_flavor: None,
 		primary_source_regulatory: None,
 	}
 }
@@ -407,14 +405,6 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 			"study_presave_reporters_via_parent",
 		),
 		("narrative_presaves", "narrative_presaves_org_isolation"),
-		(
-			"narrative_presave_sender_diagnoses",
-			"narrative_presave_sender_diagnoses_via_parent",
-		),
-		(
-			"narrative_presave_case_summaries",
-			"narrative_presave_case_summaries_via_parent",
-		),
 	];
 
 	let policy_rows: Vec<(String, String)> = sqlx::query_as(
@@ -840,6 +830,10 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			telephone: Some("051-111-2222".into()),
 			country_code: Some("KR".into()),
 			qualification: Some("1".into()),
+			qualification_kr1: None,
+			reporter_name_null_flavor: None,
+			reporter_address_null_flavor: None,
+			qualification_null_flavor: None,
 			primary_source_regulatory: Some("1".into()),
 		},
 	)
@@ -884,8 +878,6 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			case_narrative: Some("Case narrative text".into()),
 			case_narrative_notation: Some("Case narrative notation".into()),
 			additional_information: Some("Sponsor additional information".into()),
-			reporter_comments: Some("Reporter comments".into()),
-			sender_comments: Some("Sender comments".into()),
 		},
 	)
 	.await?;
@@ -1235,6 +1227,10 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 					telephone: None,
 					country_code: None,
 					qualification: qualification.map(str::to_string),
+					qualification_kr1: None,
+					reporter_name_null_flavor: None,
+					reporter_address_null_flavor: None,
+					qualification_null_flavor: None,
 					primary_source_regulatory: None,
 				},
 			)
@@ -1287,8 +1283,6 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 			case_narrative: Some(format!("Minimal narrative {suffix}")),
 			case_narrative_notation: None,
 			additional_information: None,
-			reporter_comments: None,
-			sender_comments: None,
 		},
 	)
 	.await?;
@@ -1474,6 +1468,10 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			telephone: None,
 			country_code: None,
 			qualification: Some("1".into()),
+			qualification_kr1: None,
+			reporter_name_null_flavor: None,
+			reporter_address_null_flavor: None,
+			qualification_null_flavor: None,
 			primary_source_regulatory: None,
 		},
 	)
@@ -1496,6 +1494,10 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				telephone: None,
 				country_code: None,
 				qualification: Some("1".into()),
+				qualification_kr1: None,
+				reporter_name_null_flavor: None,
+				reporter_address_null_flavor: None,
+				qualification_null_flavor: None,
 				primary_source_regulatory: None,
 			},
 		)
@@ -1544,8 +1546,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			case_narrative: Some(format!("Duplicate narrative body {suffix}")),
 			case_narrative_notation: None,
 			additional_information: None,
-			reporter_comments: None,
-			sender_comments: None,
 		},
 	)
 	.await?;
@@ -1557,8 +1557,6 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				case_narrative: Some(format!(" duplicate narrative body {suffix} ")),
 				case_narrative_notation: None,
 				additional_information: None,
-				reporter_comments: None,
-				sender_comments: None,
 			},
 		)
 		.await,
@@ -1896,8 +1894,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			case_narrative: Some(format!("Child narrative {suffix}")),
 			case_narrative_notation: None,
 			additional_information: None,
-			reporter_comments: None,
-			sender_comments: None,
 		},
 	)
 	.await?;
@@ -2261,96 +2257,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		study_product_id
 	);
 
-	let diagnosis_id = NarrativePresaveSenderDiagnosisBmc::create(
-		&ctx,
-		&mm,
-		NarrativePresaveSenderDiagnosisForCreate {
-			narrative_presave_id: narrative_id,
-			sequence_number: 1,
-			diagnosis_meddra_version: Some("26.1".into()),
-			diagnosis_meddra_code: Some("10000001".into()),
-			deleted: Some(false),
-		},
-	)
-	.await?;
-	NarrativePresaveSenderDiagnosisBmc::update(
-		&ctx,
-		&mm,
-		diagnosis_id,
-		NarrativePresaveSenderDiagnosisForUpdate {
-			diagnosis_meddra_code: Some("10000002".into()),
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
-	let diagnosis =
-		NarrativePresaveSenderDiagnosisBmc::get(&ctx, &mm, diagnosis_id).await?;
-	assert_eq!(diagnosis.narrative_presave_id, narrative_id);
-	assert_eq!(diagnosis.diagnosis_meddra_code.as_deref(), Some("10000002"));
-	assert!(diagnosis.deleted);
-	assert_audit_changed_field(
-		&mm,
-		"narrative_presave_sender_diagnoses",
-		diagnosis_id,
-		"diagnosis_meddra_code",
-		json!("10000001"),
-		json!("10000002"),
-	)
-	.await?;
-	assert_eq!(
-		NarrativePresaveSenderDiagnosisBmc::list_by_parent(&ctx, &mm, narrative_id)
-			.await?[0]
-			.id,
-		diagnosis_id
-	);
-
-	let summary_id = NarrativePresaveCaseSummaryBmc::create(
-		&ctx,
-		&mm,
-		NarrativePresaveCaseSummaryForCreate {
-			narrative_presave_id: narrative_id,
-			sequence_number: 2,
-			summary_type: Some("sender".into()),
-			language_code: Some("en".into()),
-			summary_text: Some("summary before".into()),
-			deleted: Some(false),
-		},
-	)
-	.await?;
-	NarrativePresaveCaseSummaryBmc::update(
-		&ctx,
-		&mm,
-		summary_id,
-		NarrativePresaveCaseSummaryForUpdate {
-			summary_text: Some("summary after".into()),
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
-	let summary = NarrativePresaveCaseSummaryBmc::get(&ctx, &mm, summary_id).await?;
-	assert_eq!(summary.narrative_presave_id, narrative_id);
-	assert_eq!(summary.summary_text.as_deref(), Some("summary after"));
-	assert!(summary.deleted);
-	assert_audit_changed_field(
-		&mm,
-		"narrative_presave_case_summaries",
-		summary_id,
-		"summary_text",
-		json!("summary before"),
-		json!("summary after"),
-	)
-	.await?;
-	assert_eq!(
-		NarrativePresaveCaseSummaryBmc::list_by_parent(&ctx, &mm, narrative_id)
-			.await?[0]
-			.id,
-		summary_id
-	);
-
-	NarrativePresaveCaseSummaryBmc::delete(&ctx, &mm, summary_id).await?;
-	NarrativePresaveSenderDiagnosisBmc::delete(&ctx, &mm, diagnosis_id).await?;
 	StudyPresaveProductBmc::delete(&ctx, &mm, study_product_id).await?;
 	StudyPresaveRegistrationNumberBmc::delete(&ctx, &mm, registration_id).await?;
 	ProductPresaveSubstanceBmc::delete(&ctx, &mm, substance_id).await?;

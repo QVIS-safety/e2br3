@@ -17,7 +17,10 @@
 /// * If `resolve` returns `None`, the original `{code}` token is left intact so
 ///   the author can see which value is missing.
 /// * An unclosed `{` (no matching `}`) is emitted literally.
-pub fn render_template(template: &str, resolve: impl Fn(&str) -> Option<String>) -> String {
+pub fn render_template(
+	template: &str,
+	resolve: impl Fn(&str) -> Option<String>,
+) -> String {
 	let mut out = String::with_capacity(template.len());
 	let mut rest = template;
 	while let Some(open) = rest.find('{') {
@@ -95,7 +98,10 @@ mod tests {
 	#[test]
 	fn unresolved_token_is_left_intact() {
 		let r = resolver(&[("D.5", "여성")]);
-		assert_eq!(render_template("{D.2.2a}세의 {D.5}", r), "{D.2.2a}세의 여성");
+		assert_eq!(
+			render_template("{D.2.2a}세의 {D.5}", r),
+			"{D.2.2a}세의 여성"
+		);
 	}
 
 	#[test]

@@ -24,7 +24,7 @@ async fn test_terminology_queries() -> Result<()> {
 		dbx,
 		demo_user_id(),
 		ctx.organization_id(),
-		ctx.role(),
+		"system_admin",
 	)
 	.await?;
 

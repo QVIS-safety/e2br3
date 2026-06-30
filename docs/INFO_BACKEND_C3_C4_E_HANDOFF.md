@@ -25,37 +25,29 @@ On save, a Change Confirmation popup collects a reason category
 (Input Error / New Data / Edited Data / Others) + free-text; that reason
 appears in the Audit Trail `Reason` column.
 
-### Current state — VERIFIED ALREADY DONE (do not re-implement)
-The original "no path to pass a user-entered reason" gap is **false**. End to end already works:
+### Current state — VERIFIED IMPLEMENTED
+The original "no path to pass a user-entered reason" gap is **false**. End to end works:
 - Reason path: auth middleware accepts `x-e2br3-reason-for-change` and stores it on `Ctx` — `crates/libs/lib-web/src/middleware/mw_auth.rs:42`.
+- Category path: auth middleware accepts `x-e2br3-change-category` and stores it on `Ctx`; DB context writes it to `app.change_category`.
 - Presave updates pass `Ctx` into `base_uuid::update`, which calls `set_full_context_from_ctx_dbx` before the UPDATE fires the trigger — `crates/libs/lib-core/src/model/base/base_uuid.rs:134`.
-- The DB trigger computes per-field `changed_fields` and writes `reason_for_change` into `audit_logs` — `db/bootstrap/10-triggers.sql:262` (and the other INSERTs at 246/272/289/...).
+- The DB trigger computes per-field `changed_fields` and writes `reason_for_change` + `change_category` into `audit_logs`.
 - Per-record audit read path exists: `AuditLogBmc::list_by_record` — `crates/libs/lib-core/src/model/audit.rs:357`.
-- Existing web test for INFO presave reason capture: `crates/services/web-server/tests/api/presave/sender_web.rs:157`.
+- Existing web test for INFO presave reason/category capture: `crates/services/web-server/tests/api/presave/sender_web.rs:157`.
 - `cargo test -p lib-core section_presave` → 14 passed.
-  (`cargo test -p web-server test_update_sender_presave_records_reason_for_change` did not compile due to **unrelated** pre-existing errors in `case_rest.rs` / `cioms_export_rest.rs` — not this feature.)
+- `cargo test -p web-server info_update_audit_reason_records_sender_presave_reason` → 1 targeted test passed.
 
-### Remaining real gap (the only one verified)
-Backend stores a **single `reason_for_change` string**, NOT a separate
-`change_category` enum/column. `change_category` does not exist anywhere in
-`crates/` or `db/`. So the spec's 4-way category (Input Error / New Data /
-Edited Data / Others) is not stored as a distinct field today.
+### Remaining frontend work
+The backend now stores category separately. The frontend should send:
+- `x-e2br3-change-category`: one of Input Error / New Data / Edited Data / Others.
+- `x-e2br3-reason-for-change`: the free-text reason.
 
-### Revised plan — confirm contract, then (optionally) add category
-1. **Confirm the UI contract**: does the frontend send category + free-text combined into one `x-e2br3-reason-for-change` string (e.g. `"Input Error: typo"`), or must they be stored separately? This is a product/UX decision.
-2. **If combined string is acceptable** → C3 is effectively complete; only the frontend needs to format `category: text` into the header and parse it back for display. No backend change.
-3. **If a distinct category is required** → add `change_category` to `audit_logs` (column) + populate it from a second header (e.g. `x-e2br3-change-category`) carried on `Ctx` alongside the existing reason, written by the same trigger path. Small additive change mirroring the existing `reason_for_change` plumbing.
-4. The Audit Trail read view (No/Date-Time/User/Item/Value/Notation/Reason) is served by `AuditLogBmc::list_by_record` + `changed_fields`; map those to the table columns in the frontend.
-
-### Files (only if category column is required)
-`audit_logs` schema (`db/bootstrap/`), `10-triggers.sql`, `mw_auth.rs` (second header → Ctx), `dev_db.rs`, tests.
+The Audit Trail read view (No/Date-Time/User/Item/Value/Notation/Reason) is served by `AuditLogBmc::list_by_record` + `changed_fields`; map `change_category` and `reason_for_change` as needed in the frontend.
 
 ### Verify (needs DB)
-Edit with header → `audit_logs` row has `reason_for_change` (already passing). If adding category: row also has `change_category`.
+Edit with both headers → `audit_logs` row has `reason_for_change` and `change_category`.
 
 ### Risk / size
-Small. Reason/diff/read all already work; the only possible work is one
-additive `change_category` column IF the UI requires a separate field.
+Small. Reason/diff/read all already work; category was added as an additive column/header path.
 Do NOT rebuild the audit/diff/read machinery.
 
 ---

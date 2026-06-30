@@ -26,7 +26,10 @@ pub enum ReportCategory {
 /// * `report_type_c1_3` - value of C.1.3 (`Some("2")` = report from study).
 /// * `is_serious` - true when any of E.i.3.2a-f seriousness criteria is true;
 ///   false when all are nullFlavor NI (non-serious).
-pub fn classify_report(report_type_c1_3: Option<&str>, is_serious: bool) -> ReportCategory {
+pub fn classify_report(
+	report_type_c1_3: Option<&str>,
+	is_serious: bool,
+) -> ReportCategory {
 	let solicited = report_type_c1_3 == Some("2");
 	match (solicited, is_serious) {
 		(false, false) => ReportCategory::NonSaeSpontaneous,
@@ -92,10 +95,7 @@ mod tests {
 			classify_report(Some("1"), false),
 			ReportCategory::NonSaeSpontaneous
 		);
-		assert_eq!(
-			classify_report(None, true),
-			ReportCategory::SaeSpontaneous
-		);
+		assert_eq!(classify_report(None, true), ReportCategory::SaeSpontaneous);
 		assert_eq!(
 			classify_report(Some("2"), false),
 			ReportCategory::NonSaeSolicited
@@ -126,7 +126,11 @@ mod tests {
 		};
 		// nsae_spontaneous is None (not applicable) -> no due date
 		assert_eq!(
-			report_due_date(date(2026, 6, 1), &tl, ReportCategory::NonSaeSpontaneous),
+			report_due_date(
+				date(2026, 6, 1),
+				&tl,
+				ReportCategory::NonSaeSpontaneous
+			),
 			None
 		);
 	}

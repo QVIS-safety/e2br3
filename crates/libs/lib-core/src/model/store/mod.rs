@@ -15,7 +15,10 @@ pub type Db = Pool<Postgres>;
 
 pub async fn new_db_pool() -> sqlx::Result<Db> {
 	// * See NOTE 1) below
-	let max_connections = if cfg!(test) { 1 } else { 5 };
+	let max_connections = std::env::var("SERVICE_DB_MAX_CONNECTIONS")
+		.ok()
+		.and_then(|value| value.parse::<u32>().ok())
+		.unwrap_or_else(|| if cfg!(test) { 1 } else { 5 });
 
 	PgPoolOptions::new()
 		.max_connections(max_connections)
@@ -113,16 +116,20 @@ fn canonical_db_role(role: &str) -> String {
 pub async fn set_compliance_context_dbx(
 	dbx: &dbx::Dbx,
 	change_reason: Option<&str>,
+	change_category: Option<&str>,
 	e_signature_id: Option<Uuid>,
 ) -> Result<(), Error> {
 	let reason = change_reason.unwrap_or("");
+	let category = change_category.unwrap_or("");
 	let sig = e_signature_id.map(|id| id.to_string()).unwrap_or_default();
 
 	let query = sqlx::query(
 		"SELECT set_config('app.change_reason', $1, true),
-		        set_config('app.e_signature_id', $2, true)",
+		        set_config('app.change_category', $2, true),
+		        set_config('app.e_signature_id', $3, true)",
 	)
 	.bind(reason)
+	.bind(category)
 	.bind(sig);
 	dbx.execute(query).await.map_err(|e| {
 		Error::Store(format!("Failed to set compliance context: {e}"))
@@ -152,8 +159,13 @@ pub async fn set_full_context_from_ctx_dbx(
 ) -> Result<(), Error> {
 	set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
 		.await?;
-	set_compliance_context_dbx(dbx, ctx.change_reason(), ctx.e_signature_id())
-		.await?;
+	set_compliance_context_dbx(
+		dbx,
+		ctx.change_reason(),
+		ctx.change_category(),
+		ctx.e_signature_id(),
+	)
+	.await?;
 	Ok(())
 }
 

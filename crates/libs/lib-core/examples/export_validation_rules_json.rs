@@ -4,7 +4,7 @@ use serde::Serialize;
 #[derive(Debug, Serialize)]
 struct ValidationRuleExport {
 	code: String,
-	profile: String,
+	authority: String,
 	section: String,
 	blocking: bool,
 	message: String,
@@ -20,7 +20,7 @@ fn main() {
 				.expect("canonical rule must exist for every metadata rule");
 			ValidationRuleExport {
 				code: rule.code.to_string(),
-				profile: rule.profile.as_str().to_string(),
+				authority: rule.authority.as_str().to_string(),
 				section: rule.section.to_string(),
 				blocking: rule.blocking,
 				message: rule.message.to_string(),

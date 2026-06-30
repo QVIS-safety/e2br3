@@ -55,7 +55,7 @@ fn import_settings_update_only_enabled_c1_dates_to_import_date() {
 
 	assert_eq!(report.transmission_date, import_date);
 	assert_eq!(report.date_first_received_from_source, import_date);
-	assert_eq!(report.date_of_most_recent_information, date(2022, 6, 14));
+	assert_eq!(report.date_of_most_recent_information, import_date);
 }
 
 #[test]

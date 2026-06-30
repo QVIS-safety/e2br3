@@ -117,18 +117,21 @@ pub(crate) fn collect_ich_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
+	let safety_report_id = validation_ctx
+		.safety_report
+		.as_ref()
+		.and_then(|report| report.safety_report_id.as_deref())
+		.unwrap_or(validation_ctx.case.safety_report_id.as_str());
 	let _ = push_issue_if_rule_invalid(
 		issues,
 		"ICH.C.1.1.REQUIRED",
 		"safetyReportIdentification.safetyReportId",
-		Some(validation_ctx.case.safety_report_id.as_str()),
+		Some(safety_report_id),
 		None,
 		RuleFacts::default(),
 	);
 
-	if validation_ctx.safety_report.is_none()
-		&& !has_text(Some(validation_ctx.case.safety_report_id.as_str()))
-	{
+	if validation_ctx.safety_report.is_none() && !has_text(Some(safety_report_id)) {
 		push_issue_by_code(issues, "ICH.C.1.REQUIRED", "safetyReportIdentification");
 	}
 

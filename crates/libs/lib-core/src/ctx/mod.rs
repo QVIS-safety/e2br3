@@ -33,6 +33,7 @@ pub struct Ctx {
 	organization_id: uuid::Uuid,
 	role: String,
 	change_reason: Option<String>,
+	change_category: Option<String>,
 	e_signature_id: Option<uuid::Uuid>,
 }
 
@@ -48,6 +49,7 @@ impl Ctx {
 				.expect("Invalid system org UUID"),
 			role: ROLE_SYSTEM_ADMIN.to_string(),
 			change_reason: None,
+			change_category: None,
 			e_signature_id: None,
 		}
 	}
@@ -75,6 +77,7 @@ impl Ctx {
 			organization_id,
 			role,
 			change_reason: None,
+			change_category: None,
 			e_signature_id: None,
 		})
 	}
@@ -102,6 +105,10 @@ impl Ctx {
 		self.change_reason.as_deref()
 	}
 
+	pub fn change_category(&self) -> Option<&str> {
+		self.change_category.as_deref()
+	}
+
 	pub fn e_signature_id(&self) -> Option<uuid::Uuid> {
 		self.e_signature_id
 	}
@@ -114,6 +121,12 @@ impl Ctx {
 		let mut next = self.clone();
 		next.change_reason = change_reason;
 		next.e_signature_id = e_signature_id;
+		next
+	}
+
+	pub fn with_change_category(&self, change_category: Option<String>) -> Self {
+		let mut next = self.clone();
+		next.change_category = change_category;
 		next
 	}
 

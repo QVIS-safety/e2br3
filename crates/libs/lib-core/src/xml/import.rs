@@ -47,14 +47,16 @@ pub async fn import_e2b_xml(
 
 	let parsed = parse_e2b_xml(&req.xml)?;
 	let safety_report_id_raw = shared::extract_safety_report_id(&req.xml)?;
-	let safety_report_id =
-		shared::clamp_str(Some(safety_report_id_raw), 100, "cases.safety_report_id")
-			.ok_or_else(|| Error::InvalidXml {
-				message: "ICH.C.1.REQUIRED: safety report identifier missing"
-					.to_string(),
-				line: None,
-				column: None,
-			})?;
+	let safety_report_id = shared::clamp_str(
+		Some(safety_report_id_raw),
+		100,
+		"safety_report_identification.safety_report_id",
+	)
+	.ok_or_else(|| Error::InvalidXml {
+		message: "ICH.C.1.REQUIRED: safety report identifier missing".to_string(),
+		line: None,
+		column: None,
+	})?;
 	let header_extract = shared::extract_message_header(&req.xml).ok();
 	let next_version = {
 		let dbx = mm.dbx();
@@ -70,7 +72,7 @@ pub async fn import_e2b_xml(
 			let _ = dbx.rollback_txn().await;
 			return Err(Error::Model(err));
 		}
-		let sql = "select max(version) from cases where safety_report_id = $1";
+		let sql = "select max(version) from safety_report_identification where safety_report_id = $1";
 		let max_version: (Option<i32>,) = dbx
 			.fetch_one(sqlx::query_as(sql).bind(&safety_report_id))
 			.await
@@ -84,7 +86,6 @@ pub async fn import_e2b_xml(
 		&mm,
 		CaseForCreate {
 			organization_id: ctx.organization_id(),
-			safety_report_id: safety_report_id.clone(),
 			dg_prd_key: None,
 			status: Some("draft".to_string()),
 			review_receivers_json: None,
@@ -95,7 +96,6 @@ pub async fn import_e2b_xml(
 			source_document_name: None,
 			source_document_base64: None,
 			source_document_media_type: None,
-			version: Some(next_version),
 		},
 	)
 	.await?;
@@ -176,6 +176,8 @@ pub async fn import_e2b_xml(
 		&mm,
 		&req.xml,
 		case_id,
+		&safety_report_id,
+		next_version,
 		header_extract.as_ref(),
 		&req.c_settings,
 	)
@@ -214,7 +216,6 @@ pub async fn import_e2b_xml(
 		case_id,
 		CaseForUpdate {
 			raw_xml: Some(req.xml.to_vec()),
-			safety_report_id: None,
 			dg_prd_key: None,
 			status: None,
 			review_receivers_json: None,

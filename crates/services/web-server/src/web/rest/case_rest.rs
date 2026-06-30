@@ -13,7 +13,6 @@ use lib_core::model::case::{
 	CaseForCreate as InternalCaseForCreate, CaseForUpdate as InternalCaseForUpdate,
 	CaseLinkOption, CaseListViewRow,
 };
-use lib_core::model::case_numbering::generate_case_number;
 use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SafetyReportIdentificationForCreate,
@@ -47,11 +46,6 @@ pub fn parse_authority_or_bad_request(value: &str) -> Result<RegulatoryAuthority
 }
 
 pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> {
-	if data.safety_report_id.trim().is_empty() {
-		return Err(Error::BadRequest {
-			message: "safety_report_id is required".to_string(),
-		});
-	}
 	validate_fda_report_type(data.fda_report_type.as_deref())?;
 
 	if let Some(status) = data.status.as_deref() {
@@ -73,13 +67,6 @@ pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> 
 // -- Private helpers
 
 fn validate_case_update_payload(data: &InternalCaseForUpdate) -> Result<()> {
-	if let Some(safety_report_id) = data.safety_report_id.as_deref() {
-		if safety_report_id.trim().is_empty() {
-			return Err(Error::BadRequest {
-				message: "safety_report_id cannot be empty".to_string(),
-			});
-		}
-	}
 	validate_fda_report_type(data.fda_report_type.as_deref())?;
 
 	if let Some(status) = data.status.as_deref() {
@@ -108,11 +95,9 @@ fn validate_fda_report_type(value: Option<&str>) -> Result<()> {
 fn to_internal_case_for_create(
 	ctx: &lib_core::ctx::Ctx,
 	data: PublicCaseForCreate,
-	version: i32,
 ) -> InternalCaseForCreate {
 	InternalCaseForCreate {
 		organization_id: ctx.organization_id(),
-		safety_report_id: data.safety_report_id.unwrap_or_default(),
 		dg_prd_key: data.dg_prd_key,
 		status: data.status,
 		review_receivers_json: data.review_receivers_json,
@@ -123,13 +108,11 @@ fn to_internal_case_for_create(
 		source_document_name: data.source_document_name,
 		source_document_base64: data.source_document_base64,
 		source_document_media_type: data.source_document_media_type,
-		version: Some(version),
 	}
 }
 
 fn to_internal_case_for_update(data: PublicCaseForUpdate) -> InternalCaseForUpdate {
 	InternalCaseForUpdate {
-		safety_report_id: data.safety_report_id,
 		dg_prd_key: data.dg_prd_key,
 		status: data.status,
 		review_receivers_json: data.review_receivers_json,
@@ -182,8 +165,7 @@ fn case_identity_or_scope_update_requires_reason(
 	current: &Case,
 	data: &InternalCaseForUpdate,
 ) -> bool {
-	optional_text_changed(&data.safety_report_id, Some(&current.safety_report_id))
-		|| optional_text_changed(&data.dg_prd_key, current.dg_prd_key.as_deref())
+	optional_text_changed(&data.dg_prd_key, current.dg_prd_key.as_deref())
 		|| optional_text_changed(
 			&data.review_receivers_json,
 			current.review_receivers_json.as_deref(),
@@ -227,7 +209,9 @@ async fn next_case_version(
 
 #[derive(Debug, Deserialize)]
 pub struct PublicCaseForCreate {
-	pub safety_report_id: Option<String>,
+	#[serde(rename = "safetyReportIdentification")]
+	pub safety_report_identification:
+		Option<PublicSafetyReportIdentificationForCaseCreate>,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
 	pub review_receivers_json: Option<String>,
@@ -242,7 +226,6 @@ pub struct PublicCaseForCreate {
 
 #[derive(Debug, Deserialize)]
 pub struct PublicCaseForUpdate {
-	pub safety_report_id: Option<String>,
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
 	pub review_receivers_json: Option<String>,
@@ -253,6 +236,12 @@ pub struct PublicCaseForUpdate {
 	pub source_document_name: Option<String>,
 	pub source_document_base64: Option<String>,
 	pub source_document_media_type: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicSafetyReportIdentificationForCaseCreate {
+	pub safety_report_id: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -297,9 +286,82 @@ pub struct CaseLifecycleResult {
 }
 
 #[derive(Debug, Serialize)]
+pub struct PublicCaseView {
+	pub id: Uuid,
+	pub organization_id: Uuid,
+	pub dg_prd_key: Option<String>,
+	pub status: String,
+	pub review_receivers_json: Option<String>,
+	pub workflow_routes_json: Option<String>,
+	pub workflow_status: String,
+	pub workflow_assigned_role: Option<String>,
+	pub workflow_assigned_user_id: Option<Uuid>,
+	pub workflow_due_at: Option<sqlx::types::time::OffsetDateTime>,
+	pub workflow_description: Option<String>,
+	pub workflow_updated_at: sqlx::types::time::OffsetDateTime,
+	pub mfds_report_type: Option<String>,
+	pub fda_report_type: Option<String>,
+	pub report_year: Option<String>,
+	pub source_document_name: Option<String>,
+	pub source_document_base64: Option<String>,
+	pub source_document_media_type: Option<String>,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+	pub submitted_by: Option<Uuid>,
+	pub submitted_at: Option<sqlx::types::time::OffsetDateTime>,
+	pub raw_xml: Option<Vec<u8>>,
+	pub dirty_c: bool,
+	pub dirty_d: bool,
+	pub dirty_e: bool,
+	pub dirty_f: bool,
+	pub dirty_g: bool,
+	pub dirty_h: bool,
+	pub created_at: sqlx::types::time::OffsetDateTime,
+	pub updated_at: sqlx::types::time::OffsetDateTime,
+}
+
+impl From<Case> for PublicCaseView {
+	fn from(case: Case) -> Self {
+		Self {
+			id: case.id,
+			organization_id: case.organization_id,
+			dg_prd_key: case.dg_prd_key,
+			status: case.status,
+			review_receivers_json: case.review_receivers_json,
+			workflow_routes_json: case.workflow_routes_json,
+			workflow_status: case.workflow_status,
+			workflow_assigned_role: case.workflow_assigned_role,
+			workflow_assigned_user_id: case.workflow_assigned_user_id,
+			workflow_due_at: case.workflow_due_at,
+			workflow_description: case.workflow_description,
+			workflow_updated_at: case.workflow_updated_at,
+			mfds_report_type: case.mfds_report_type,
+			fda_report_type: case.fda_report_type,
+			report_year: case.report_year,
+			source_document_name: case.source_document_name,
+			source_document_base64: case.source_document_base64,
+			source_document_media_type: case.source_document_media_type,
+			created_by: case.created_by,
+			updated_by: case.updated_by,
+			submitted_by: case.submitted_by,
+			submitted_at: case.submitted_at,
+			raw_xml: case.raw_xml,
+			dirty_c: case.dirty_c,
+			dirty_d: case.dirty_d,
+			dirty_e: case.dirty_e,
+			dirty_f: case.dirty_f,
+			dirty_g: case.dirty_g,
+			dirty_h: case.dirty_h,
+			created_at: case.created_at,
+			updated_at: case.updated_at,
+		}
+	}
+}
+
+#[derive(Debug, Serialize)]
 pub struct CaseReadResult {
 	#[serde(flatten)]
-	pub case: Case,
+	pub case: PublicCaseView,
 	pub qc_state: &'static str,
 	pub is_locked: bool,
 	pub can_act_on_workflow: bool,
@@ -314,10 +376,11 @@ pub async fn case_to_read_result(
 	case: Case,
 ) -> Result<CaseReadResult> {
 	let actionability = workflow_actionability_for_case(ctx, mm, &case).await?;
+	let status = case.status.clone();
 	Ok(CaseReadResult {
-		qc_state: qc_state_for_case_status(&case.status),
-		is_locked: case.status.eq_ignore_ascii_case("locked"),
-		case,
+		qc_state: qc_state_for_case_status(&status),
+		is_locked: status.eq_ignore_ascii_case("locked"),
+		case: case.into(),
 		can_act_on_workflow: actionability.can_act_on_workflow,
 		workflow_block_reason: actionability.workflow_block_reason,
 	})
@@ -330,61 +393,57 @@ pub async fn create_case_guarded(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Json(params): Json<ParamsForCreate<PublicCaseForCreate>>,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<Case>>)> {
+) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_CREATE)?;
 	let ParamsForCreate { data } = params;
-	let mut data = data;
-	let generated_case_number = if data
-		.safety_report_id
-		.as_deref()
+	let safety_report_id = data
+		.safety_report_identification
+		.as_ref()
+		.and_then(|value| value.safety_report_id.as_deref())
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
-		.is_none()
-	{
-		let generated = generate_case_number(&ctx, &mm)
-			.await
-			.map_err(Error::Model)?;
-		data.safety_report_id = Some(generated.safety_report_id.clone());
-		Some(generated)
-	} else {
-		None
-	};
-	let safety_report_id = data.safety_report_id.clone().unwrap_or_default();
+		.ok_or_else(|| Error::BadRequest {
+			message:
+				"safetyReportIdentification.safetyReportId is required".to_string(),
+		})?
+		.to_string();
 	let next_version = next_case_version(&ctx, &mm, &safety_report_id).await?;
-	let data = to_internal_case_for_create(&ctx, data, next_version);
+	let worldwide_unique_id = None;
+	let data = to_internal_case_for_create(&ctx, data);
 	validate_case_create_payload(&data)?;
 
 	let id = CaseBmc::create(&ctx, &mm, data).await?;
-	if let Some(generated) = generated_case_number {
-		SafetyReportIdentificationBmc::create(
-			&ctx,
-			&mm,
-			SafetyReportIdentificationForCreate {
-				case_id: id,
-				transmission_date: None,
-				transmission_date_null_flavor: None,
-				report_type: None,
-				date_first_received_from_source: None,
-				date_first_received_from_source_null_flavor: None,
-				date_of_most_recent_information: None,
-				date_of_most_recent_information_null_flavor: None,
-				fulfil_expedited_criteria: None,
-				local_criteria_report_type: None,
-				combination_product_report_indicator: None,
-				first_sender_type: None,
-				additional_documents_available: None,
-				other_case_identifiers_exist: None,
-				worldwide_unique_id: Some(generated.worldwide_unique_id),
-				nullification_code: None,
-				nullification_reason: None,
-				receiver_organization: None,
-			},
-		)
-		.await
-		.map_err(Error::Model)?;
-	}
+	SafetyReportIdentificationBmc::create(
+		&ctx,
+		&mm,
+		SafetyReportIdentificationForCreate {
+			case_id: id,
+			safety_report_id: Some(safety_report_id),
+			version: Some(next_version),
+			transmission_date: None,
+			transmission_date_null_flavor: None,
+			report_type: None,
+			date_first_received_from_source: None,
+			date_first_received_from_source_null_flavor: None,
+			date_of_most_recent_information: None,
+			date_of_most_recent_information_null_flavor: None,
+			fulfil_expedited_criteria: None,
+			local_criteria_report_type: None,
+			combination_product_report_indicator: None,
+			first_sender_type: None,
+			additional_documents_available: None,
+			other_case_identifiers_exist: None,
+			worldwide_unique_id,
+			nullification_code: None,
+			nullification_reason: None,
+			receiver_organization: None,
+		},
+	)
+	.await
+	.map_err(Error::Model)?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
+	let entity = case_to_read_result(&ctx, &mm, entity).await?;
 	Ok((
 		axum::http::StatusCode::CREATED,
 		Json(DataRestResult { data: entity }),
@@ -526,6 +585,14 @@ pub async fn update_case_guarded(
 		reason_for_change,
 		e_signature,
 	} = params;
+	let requested_safety_report_id = data.safety_report_id.clone();
+	if let Some(safety_report_id) = requested_safety_report_id.as_deref() {
+		if safety_report_id.trim().is_empty() {
+			return Err(Error::BadRequest {
+				message: "safety_report_id cannot be empty".to_string(),
+			});
+		}
+	}
 	let data = to_internal_case_for_update(data);
 	validate_case_update_payload(&data)?;
 	let current = CaseBmc::get(&ctx, &mm, id).await?;
@@ -563,7 +630,11 @@ pub async fn update_case_guarded(
 		})
 		.unwrap_or(false);
 	let requires_reason_for_identity_or_scope =
-		case_identity_or_scope_update_requires_reason(&current, &data);
+		case_identity_or_scope_update_requires_reason(&current, &data)
+			|| optional_text_changed(
+				&requested_safety_report_id,
+				Some(&current.safety_report_id),
+			);
 
 	let ctx_for_update = if requires_compliance {
 		let reason = required_reason_for_change(
@@ -601,6 +672,36 @@ pub async fn update_case_guarded(
 	};
 
 	CaseBmc::update(&ctx_for_update, &mm, id, data).await?;
+	if requested_safety_report_id.is_some() {
+		SafetyReportIdentificationBmc::update_by_case(
+			&ctx_for_update,
+			&mm,
+			id,
+			SafetyReportIdentificationForUpdate {
+				safety_report_id: requested_safety_report_id,
+				version: None,
+				transmission_date: None,
+				transmission_date_null_flavor: None,
+				report_type: Default::default(),
+				date_first_received_from_source: None,
+				date_first_received_from_source_null_flavor: None,
+				date_of_most_recent_information: None,
+				date_of_most_recent_information_null_flavor: None,
+				fulfil_expedited_criteria: Default::default(),
+				local_criteria_report_type: Default::default(),
+				combination_product_report_indicator: Default::default(),
+				worldwide_unique_id: None,
+				first_sender_type: None,
+				additional_documents_available: None,
+				other_case_identifiers_exist: None,
+				nullification_code: None,
+				nullification_reason: None,
+				receiver_organization: None,
+			},
+		)
+		.await
+		.map_err(Error::Model)?;
+	}
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, id).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
 

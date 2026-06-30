@@ -55,7 +55,7 @@ pub async fn generate_case_number(
 	let (count,) = match dbx
 		.fetch_one(
 			sqlx::query_as::<_, (i64,)>(
-				"SELECT COUNT(*) FROM cases WHERE safety_report_id LIKE $1",
+				"SELECT COUNT(*) FROM safety_report_identification WHERE safety_report_id LIKE $1",
 			)
 			.bind(format!("{identifier}%")),
 		)
@@ -96,7 +96,7 @@ async fn case_number_exists(
 	let (exists,) = match dbx
 		.fetch_one(
 			sqlx::query_as::<_, (bool,)>(
-				"SELECT EXISTS (SELECT 1 FROM cases WHERE safety_report_id = $1)",
+				"SELECT EXISTS (SELECT 1 FROM safety_report_identification WHERE safety_report_id = $1)",
 			)
 			.bind(safety_report_id),
 		)

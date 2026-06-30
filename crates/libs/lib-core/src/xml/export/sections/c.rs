@@ -259,7 +259,10 @@ pub fn export_c_safety_report_patch(
 		};
 
 	let patch = CSafetyReportPatch {
-		report_unique_id: &case.safety_report_id,
+		report_unique_id: report
+			.safety_report_id
+			.as_deref()
+			.unwrap_or(case.safety_report_id.as_str()),
 		transmission_date: report.transmission_date,
 		transmission_date_null_flavor: report
 			.transmission_date_null_flavor

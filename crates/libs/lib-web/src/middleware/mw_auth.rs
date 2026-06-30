@@ -44,22 +44,24 @@ pub async fn mw_ctx_resolver(
 		.get("x-e2br3-reason-for-change")
 		.and_then(|value| value.to_str().ok())
 		.and_then(decode_audit_reason_header)
-		.and_then(|value| {
-			let trimmed = value.trim().to_string();
-			if trimmed.is_empty() {
-				None
-			} else {
-				Some(trimmed)
-			}
-		});
+		.and_then(trim_non_empty);
+	let audit_category = req
+		.headers()
+		.get("x-e2br3-change-category")
+		.and_then(|value| value.to_str().ok())
+		.and_then(decode_audit_reason_header)
+		.and_then(trim_non_empty);
 
 	let ctx_ext_result = match ctx_resolve(mm, &cookies).await {
 		Ok(CtxW(ctx)) => {
-			let ctx = if let Some(reason) = audit_reason {
+			let mut ctx = if let Some(reason) = audit_reason {
 				ctx.with_compliance(Some(reason), ctx.e_signature_id())
 			} else {
 				ctx
 			};
+			if let Some(category) = audit_category {
+				ctx = ctx.with_change_category(Some(category));
+			}
 			Ok(CtxW(ctx))
 		}
 		Err(err) => Err(err),
@@ -76,6 +78,15 @@ pub async fn mw_ctx_resolver(
 	req.extensions_mut().insert(ctx_ext_result);
 
 	next.run(req).await
+}
+
+fn trim_non_empty(value: String) -> Option<String> {
+	let trimmed = value.trim().to_string();
+	if trimmed.is_empty() {
+		None
+	} else {
+		Some(trimmed)
+	}
 }
 
 fn decode_audit_reason_header(value: &str) -> Option<String> {

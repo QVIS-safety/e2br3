@@ -339,7 +339,11 @@ END $$"#,
 		"ALTER TABLE narrative_presaves DROP COLUMN IF EXISTS authority",
 		"ALTER TABLE narrative_presaves DROP COLUMN IF EXISTS name",
 		"ALTER TABLE narrative_presaves DROP COLUMN IF EXISTS comments",
+		"ALTER TABLE narrative_presaves DROP COLUMN IF EXISTS reporter_comments",
+		"ALTER TABLE narrative_presaves DROP COLUMN IF EXISTS sender_comments",
 		"ALTER TABLE narrative_presaves ADD COLUMN IF NOT EXISTS additional_information TEXT",
+		"DROP TABLE IF EXISTS narrative_presave_sender_diagnoses",
+		"DROP TABLE IF EXISTS narrative_presave_case_summaries",
 		"DELETE FROM sender_presave_gateways WHERE lower(gateway_authority) NOT IN ('fda', 'mfds')",
 		"ALTER TABLE sender_presave_gateways DROP CONSTRAINT IF EXISTS sender_presave_gateways_authority_valid",
 		"ALTER TABLE sender_presave_gateways DROP COLUMN IF EXISTS ema_sender_identifier",
@@ -499,6 +503,16 @@ END $$"#,
 		"ALTER TABLE safety_report_identification ADD COLUMN IF NOT EXISTS transmission_date_null_flavor VARCHAR(4)",
 		"ALTER TABLE safety_report_identification ADD COLUMN IF NOT EXISTS date_first_received_from_source_null_flavor VARCHAR(4)",
 		"ALTER TABLE safety_report_identification ADD COLUMN IF NOT EXISTS date_of_most_recent_information_null_flavor VARCHAR(4)",
+		"ALTER TABLE safety_report_identification ADD COLUMN IF NOT EXISTS safety_report_id VARCHAR(100)",
+		"ALTER TABLE safety_report_identification ADD COLUMN IF NOT EXISTS version INTEGER",
+		"UPDATE safety_report_identification SET version = 1 WHERE version IS NULL",
+		"ALTER TABLE safety_report_identification ALTER COLUMN version SET DEFAULT 1",
+		"ALTER TABLE safety_report_identification ALTER COLUMN version SET NOT NULL",
+		"ALTER TABLE safety_report_identification ALTER COLUMN safety_report_id SET NOT NULL",
+		"CREATE INDEX IF NOT EXISTS idx_safety_report_identification_report_id
+		 ON safety_report_identification(safety_report_id)",
+		"CREATE UNIQUE INDEX IF NOT EXISTS idx_safety_report_identification_report_version
+		 ON safety_report_identification(safety_report_id, version)",
 		"ALTER TABLE safety_report_identification ADD COLUMN IF NOT EXISTS local_criteria_report_type VARCHAR(10)",
 		"ALTER TABLE safety_report_identification ADD COLUMN IF NOT EXISTS combination_product_report_indicator VARCHAR(10)",
 		"ALTER TABLE safety_report_identification ADD COLUMN IF NOT EXISTS worldwide_unique_id VARCHAR(100)",
@@ -609,6 +623,165 @@ END $$"#,
 		"ALTER TABLE user_organization_memberships ENABLE ROW LEVEL SECURITY",
 		"ALTER TABLE user_organization_memberships FORCE ROW LEVEL SECURITY",
 			"ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS organization_id UUID",
+			"ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS change_category TEXT",
+			"CREATE OR REPLACE FUNCTION set_compliance_context(
+				p_change_reason TEXT,
+				p_change_category TEXT,
+				p_e_signature_id TEXT
+			)
+			RETURNS void
+			LANGUAGE plpgsql
+			SECURITY DEFINER
+			AS $$
+			BEGIN
+				PERFORM set_config('app.change_reason', COALESCE(p_change_reason, ''), true);
+				PERFORM set_config('app.change_category', COALESCE(p_change_category, ''), true);
+				PERFORM set_config('app.e_signature_id', COALESCE(p_e_signature_id, ''), true);
+			END;
+			$$",
+			"CREATE OR REPLACE FUNCTION get_current_change_category()
+			RETURNS TEXT
+			LANGUAGE plpgsql
+			STABLE
+			AS $$
+			DECLARE
+				v_category TEXT;
+			BEGIN
+				v_category := current_setting('app.change_category', true);
+				IF v_category IS NULL OR btrim(v_category) = '' THEN
+					RETURN NULL;
+				END IF;
+				RETURN v_category;
+			END;
+			$$",
+			"GRANT EXECUTE ON FUNCTION set_compliance_context(TEXT, TEXT, TEXT) TO e2br3_app_role",
+			"GRANT EXECUTE ON FUNCTION get_current_change_category() TO e2br3_app_role",
+			"CREATE OR REPLACE FUNCTION audit_logs_hash_chain_before_insert()
+			RETURNS TRIGGER
+			LANGUAGE plpgsql
+			SECURITY DEFINER
+			AS $$
+			DECLARE
+				v_prev_hash TEXT;
+				v_payload TEXT;
+			BEGIN
+				IF NEW.created_at IS NULL THEN
+					NEW.created_at := NOW();
+				END IF;
+
+				LOCK TABLE audit_logs IN SHARE ROW EXCLUSIVE MODE;
+
+				SELECT entry_hash
+				  INTO v_prev_hash
+				  FROM audit_logs
+				 ORDER BY id DESC
+				 LIMIT 1;
+
+				NEW.prev_hash := COALESCE(v_prev_hash, repeat('0', 64));
+
+				v_payload := concat_ws(
+					'|',
+					COALESCE(NEW.id::TEXT, ''),
+					NEW.prev_hash,
+					NEW.table_name,
+					NEW.record_id::TEXT,
+					NEW.action,
+					NEW.user_id::TEXT,
+					COALESCE(NEW.reason_for_change, ''),
+					COALESCE(NEW.change_category, ''),
+					COALESCE(NEW.e_signature_id::TEXT, ''),
+					COALESCE(NEW.old_values::TEXT, 'null'),
+					COALESCE(NEW.new_values::TEXT, 'null'),
+					COALESCE(NEW.changed_fields::TEXT, 'null'),
+					COALESCE(NEW.ip_address::TEXT, ''),
+					COALESCE(NEW.user_agent, ''),
+					to_char(NEW.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')
+				);
+
+				NEW.entry_hash := encode(digest(v_payload, 'sha256'), 'hex');
+				RETURN NEW;
+			END;
+			$$",
+			"CREATE OR REPLACE FUNCTION audit_trigger_function()
+			RETURNS TRIGGER
+			LANGUAGE plpgsql
+			SECURITY DEFINER
+			AS $$
+			DECLARE
+				v_user_id UUID;
+				v_old_business JSONB;
+				v_new_business JSONB;
+				v_changed_fields JSONB;
+			BEGIN
+				v_user_id := get_current_user_context();
+
+				IF TG_OP = 'INSERT' THEN
+					v_changed_fields := compute_audit_changed_fields(NULL, to_jsonb(NEW));
+					INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
+					VALUES (
+						TG_TABLE_NAME,
+						NEW.id,
+						audit_log_organization_id(TG_TABLE_NAME, NEW.id, NULL, to_jsonb(NEW)),
+						'CREATE',
+						v_user_id,
+						get_current_change_reason(),
+						get_current_change_category(),
+						get_current_esignature_id(),
+						NULL,
+						to_jsonb(NEW),
+						v_changed_fields
+					);
+					RETURN NEW;
+
+				ELSIF TG_OP = 'UPDATE' THEN
+					v_old_business := to_jsonb(OLD) - 'updated_at' - 'updated_by';
+					v_new_business := to_jsonb(NEW) - 'updated_at' - 'updated_by';
+					IF v_old_business = v_new_business THEN
+						RETURN NEW;
+					END IF;
+
+					v_changed_fields := compute_audit_changed_fields(v_old_business, v_new_business);
+					INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
+					VALUES (
+						TG_TABLE_NAME,
+						NEW.id,
+						audit_log_organization_id(TG_TABLE_NAME, NEW.id, to_jsonb(OLD), to_jsonb(NEW)),
+						'UPDATE',
+						v_user_id,
+						get_current_change_reason(),
+						get_current_change_category(),
+						get_current_esignature_id(),
+						to_jsonb(OLD),
+						to_jsonb(NEW),
+						v_changed_fields
+					);
+					RETURN NEW;
+
+				ELSIF TG_OP = 'DELETE' THEN
+					v_changed_fields := compute_audit_changed_fields(to_jsonb(OLD), NULL);
+					INSERT INTO audit_logs (table_name, record_id, organization_id, action, user_id, reason_for_change, change_category, e_signature_id, old_values, new_values, changed_fields)
+					VALUES (
+						TG_TABLE_NAME,
+						OLD.id,
+						audit_log_organization_id(TG_TABLE_NAME, OLD.id, to_jsonb(OLD), NULL),
+						'DELETE',
+						v_user_id,
+						get_current_change_reason(),
+						get_current_change_category(),
+						get_current_esignature_id(),
+						to_jsonb(OLD),
+						NULL,
+						v_changed_fields
+					);
+					RETURN OLD;
+				END IF;
+
+			EXCEPTION
+				WHEN OTHERS THEN
+					RAISE EXCEPTION 'Audit trail logging failed for table %.%: %. User context may not be set.',
+						TG_TABLE_SCHEMA, TG_TABLE_NAME, SQLERRM;
+			END;
+			$$",
 			"CREATE OR REPLACE FUNCTION audit_log_organization_id(
 				p_table_name TEXT,
 				p_record_id UUID,
@@ -684,13 +857,6 @@ END $$"#,
 					SELECT p.organization_id INTO v_org_id
 					FROM study_presaves p
 					WHERE p.id = NULLIF(v_values->>'study_presave_id', '')::UUID;
-					IF v_org_id IS NOT NULL THEN RETURN v_org_id; END IF;
-				END IF;
-
-				IF p_table_name IN ('narrative_presave_sender_diagnoses', 'narrative_presave_case_summaries') THEN
-					SELECT p.organization_id INTO v_org_id
-					FROM narrative_presaves p
-					WHERE p.id = NULLIF(v_values->>'narrative_presave_id', '')::UUID;
 					IF v_org_id IS NOT NULL THEN RETURN v_org_id; END IF;
 				END IF;
 

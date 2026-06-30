@@ -207,8 +207,8 @@ impl CaseDuplicateBmc {
 					r#"
 				SELECT
 				    c.id                                  AS case_id,
-				    c.safety_report_id,
-				    c.version,
+				    s.safety_report_id,
+				    s.version,
 				    c.status,
 				    c.created_at,
 				    c.dg_prd_key,

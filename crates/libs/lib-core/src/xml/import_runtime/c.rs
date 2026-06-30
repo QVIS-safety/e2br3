@@ -80,10 +80,22 @@ pub(crate) async fn import_section_c(
 	mm: &ModelManager,
 	xml: &[u8],
 	case_id: Uuid,
+	safety_report_id: &str,
+	version: i32,
 	header: Option<&shared::MessageHeaderExtract>,
 	settings: &CImportSettings,
 ) -> Result<()> {
-	import_c_1_safety_report(ctx, mm, xml, case_id, header, settings).await?;
+	import_c_1_safety_report(
+		ctx,
+		mm,
+		xml,
+		case_id,
+		safety_report_id,
+		version,
+		header,
+		settings,
+	)
+	.await?;
 	import_c_2_sender_information(ctx, mm, xml, case_id, header, settings).await?;
 	import_c_3_primary_sources(ctx, mm, xml, case_id).await?;
 	import_c_4_case_identifiers(ctx, mm, xml, case_id).await?;
@@ -99,6 +111,8 @@ async fn import_c_1_safety_report(
 	mm: &ModelManager,
 	xml: &[u8],
 	case_id: Uuid,
+	safety_report_id: &str,
+	version: i32,
 	header: Option<&shared::MessageHeaderExtract>,
 	settings: &CImportSettings,
 ) -> Result<()> {
@@ -130,6 +144,8 @@ async fn import_c_1_safety_report(
 			sqlx::query(
 				"INSERT INTO safety_report_identification (
 					case_id,
+					safety_report_id,
+					version,
 					transmission_date,
 					transmission_date_null_flavor,
 					report_type,
@@ -150,9 +166,11 @@ async fn import_c_1_safety_report(
 					updated_at,
 					created_by
 				) VALUES (
-					$1,$2,NULL,$3,$4,NULL,$5,NULL,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW(),NOW(),$15
+					$1,$2,$3,$4,NULL,$5,$6,NULL,$7,NULL,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW(),NOW(),$17
 				)
 				ON CONFLICT (case_id) DO UPDATE SET
+					safety_report_id = EXCLUDED.safety_report_id,
+					version = EXCLUDED.version,
 					transmission_date = EXCLUDED.transmission_date,
 					transmission_date_null_flavor = NULL,
 					report_type = EXCLUDED.report_type,
@@ -170,9 +188,11 @@ async fn import_c_1_safety_report(
 					nullification_reason = EXCLUDED.nullification_reason,
 					receiver_organization = EXCLUDED.receiver_organization,
 					updated_at = NOW(),
-					updated_by = $15",
+					updated_by = $17",
 			)
 			.bind(case_id)
+			.bind(safety_report_id)
+			.bind(version)
 			.bind(report.transmission_date)
 			.bind(report.report_type)
 			.bind(report.date_first_received_from_source)

@@ -153,21 +153,25 @@ pub(super) async fn put_json_ok(
 		.await
 }
 
-pub(super) async fn request_json_ok_with_audit_reason(
+pub(super) async fn request_json_ok_with_audit_compliance(
 	app: &Router,
 	cookie: &str,
 	method: Method,
 	uri: String,
 	body: Value,
 	reason: &str,
+	category: Option<&str>,
 ) -> Result<Value> {
-	let req = Request::builder()
+	let mut req = Request::builder()
 		.method(method)
 		.uri(uri)
 		.header("cookie", cookie)
 		.header("content-type", "application/json")
-		.header("x-e2br3-reason-for-change", reason)
-		.body(Body::from(body.to_string()))?;
+		.header("x-e2br3-reason-for-change", reason);
+	if let Some(category) = category {
+		req = req.header("x-e2br3-change-category", category);
+	}
+	let req = req.body(Body::from(body.to_string()))?;
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let bytes = to_bytes(res.into_body(), usize::MAX).await?;
@@ -571,114 +575,6 @@ pub(super) async fn create_named_reporter_presave_via_api(
 	)
 	.await?;
 	data_id(&value)
-}
-
-pub(super) async fn create_narrative_presave_with_authority_via_api(
-	app: &Router,
-	cookie: &str,
-	_authority: &str,
-) -> Result<Uuid> {
-	let suffix = Uuid::new_v4();
-	let value = post_json_created(
-		app,
-		cookie,
-		"/api/presaves/narratives".to_string(),
-		json!({
-			"data": {
-				"case_narrative": format!("REST narrative details {suffix}")
-			}
-		}),
-	)
-	.await?;
-	data_id(&value)
-}
-
-pub(super) async fn create_narrative_sender_diagnosis_with_code_via_api(
-	app: &Router,
-	cookie: &str,
-	narrative_id: Uuid,
-	sequence_number: i32,
-	code: &str,
-) -> Result<Uuid> {
-	let value = post_json_created(
-		app,
-		cookie,
-		format!("/api/presaves/narratives/{narrative_id}/sender-diagnoses"),
-		json!({
-			"data": {
-				"sequence_number": sequence_number,
-				"diagnosis_meddra_version": "26.1",
-				"diagnosis_meddra_code": code
-			}
-		}),
-	)
-	.await?;
-	data_id(&value)
-}
-
-pub(super) async fn create_narrative_case_summary_with_text_via_api(
-	app: &Router,
-	cookie: &str,
-	narrative_id: Uuid,
-	sequence_number: i32,
-	summary_text: &str,
-) -> Result<Uuid> {
-	let value = post_json_created(
-		app,
-		cookie,
-		format!("/api/presaves/narratives/{narrative_id}/case-summaries"),
-		json!({
-			"data": {
-				"sequence_number": sequence_number,
-				"summary_type": "sender",
-				"language_code": "en",
-				"summary_text": summary_text
-			}
-		}),
-	)
-	.await?;
-	data_id(&value)
-}
-
-pub(super) async fn create_narrative_presave_via_api(
-	app: &Router,
-	cookie: &str,
-) -> Result<Uuid> {
-	create_narrative_presave_with_authority_via_api(app, cookie, "ich").await
-}
-
-pub(super) async fn create_narrative_sender_diagnosis_via_api(
-	app: &Router,
-	cookie: &str,
-	narrative_id: Uuid,
-	sequence_number: i32,
-	code: &str,
-) -> Result<Uuid> {
-	create_narrative_sender_diagnosis_with_code_via_api(
-		app,
-		cookie,
-		narrative_id,
-		sequence_number,
-		code,
-	)
-	.await
-}
-
-pub(super) async fn create_narrative_case_summary_via_api(
-	app: &Router,
-	cookie: &str,
-	narrative_id: Uuid,
-	sequence_number: i32,
-	summary_text: &str,
-) -> Result<Uuid> {
-	create_narrative_case_summary_with_text_via_api(
-		app,
-		cookie,
-		narrative_id,
-		sequence_number,
-		summary_text,
-	)
-	.await
 }
 
 pub(super) async fn create_info_editor(

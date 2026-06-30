@@ -44,14 +44,14 @@ BEGIN
     PERFORM set_config('app.current_user_role', 'system_admin', true);
 
     INSERT INTO cases (
-        id, organization_id, safety_report_id, version, dg_prd_key, status,
+        id, organization_id, dg_prd_key, status,
         review_receivers_json, workflow_routes_json,
         report_year, source_document_name, source_document_media_type,
         created_by, updated_by, submitted_by, submitted_at,
         dirty_c, dirty_d, dirty_e, dirty_f, dirty_g, dirty_h, created_at, updated_at
     )
     VALUES (
-        v_case_id, v_org_id, 'DEMO-RICH-2026-0001', 1, 'PRD-DEMO-ALPHA', 'draft',
+        v_case_id, v_org_id, 'PRD-DEMO-ALPHA', 'draft',
         '["qa.lead@example.com","pv.manager@example.com"]',
         '[{"step":"draft","assignee":"demo.cro.admin@example.com"},{"step":"review","assignee":"qa.lead@example.com"}]',
         '2026', 'rich-demo-source.pdf', 'application/pdf',
@@ -104,7 +104,7 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO safety_report_identification (
-        id, case_id, transmission_date, report_type, date_first_received_from_source,
+        id, case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source,
         date_of_most_recent_information, fulfil_expedited_criteria,
         local_criteria_report_type, combination_product_report_indicator,
         worldwide_unique_id, first_sender_type, additional_documents_available,
@@ -112,7 +112,7 @@ BEGIN
         created_by, updated_by, created_at, updated_at
     )
     VALUES (
-        v_safety_ident_id, v_case_id, DATE '2026-04-10', '1', DATE '2026-04-07',
+        v_safety_ident_id, v_case_id, 'DEMO-RICH-2026-0001', 1, DATE '2026-04-10', '1', DATE '2026-04-07',
         DATE '2026-04-09', true, '1', true,
         'KR-QVIS-2026-0001', '1', true,
         'Food and Drug Administration', true,

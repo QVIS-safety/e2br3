@@ -231,7 +231,10 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		}),
 	)
 	.await?;
-	assert!(saved["data"]["parent"].get("comments").is_none(), "{saved:?}");
+	assert!(
+		saved["data"]["parent"].get("comments").is_none(),
+		"{saved:?}"
+	);
 	assert_eq!(
 		saved["data"]["parent"]["study_name"].as_str(),
 		Some("updated by study graph"),
