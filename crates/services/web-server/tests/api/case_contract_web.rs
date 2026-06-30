@@ -65,6 +65,24 @@ async fn put_json(
 	Ok((status, serde_json::from_slice::<Value>(&body)?))
 }
 
+async fn put_raw(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+	body: Value,
+) -> Result<(StatusCode, Vec<u8>)> {
+	let req = Request::builder()
+		.method("PUT")
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	Ok((status, body.to_vec()))
+}
+
 async fn delete_json(
 	app: &axum::Router,
 	cookie: &str,
@@ -133,9 +151,7 @@ async fn test_kr_device_characteristics_round_trip_via_api() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"organization_id": seed.org_id,
-				"safety_report_id": case_no,
-				"version": 1,
+				"safetyReportIdentification": {"safetyReportId": case_no},
 				"status": "draft"
 			}
 		}),
@@ -252,8 +268,8 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": case_no,
-				"dg_prd_key": "DG-12345",
+				"safetyReportIdentification": {"safetyReportId": case_no},
+				"dgPrdKey": "DG-12345",
 				"status": "draft"
 			}
 		}),
@@ -466,7 +482,7 @@ async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<(
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": case_no,
+				"safetyReportIdentification": {"safetyReportId": case_no},
 				"status": "draft"
 			}
 		}),
@@ -551,7 +567,7 @@ async fn test_case_list_view_warn_uses_cached_validation_summary() -> Result<()>
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": case_no,
+				"safetyReportIdentification": {"safetyReportId": case_no},
 				"status": "draft"
 			}
 		}),
@@ -733,7 +749,7 @@ async fn test_single_profile_validation_caches_each_profile() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": case_no,
+				"safetyReportIdentification": {"safetyReportId": case_no},
 				"status": "draft"
 			}
 		}),
@@ -811,7 +827,7 @@ async fn test_case_list_view_honors_limit_and_offset() -> Result<()> {
 			"/api/cases",
 			json!({
 				"data": {
-					"safety_report_id": format!("CASE-LIST-PAGED-{suffix}-{index}"),
+					"safetyReportIdentification": {"safetyReportId": format!("CASE-LIST-PAGED-{suffix}-{index}")},
 					"status": "draft"
 				}
 			}),
@@ -870,13 +886,13 @@ async fn test_case_list_view_honors_limit_and_offset() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_public_case_create_derives_org_and_version() -> Result<()> {
+async fn test_public_case_create_uses_nested_safety_report_identification(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
-	let attacker_org_id = Uuid::new_v4();
 
 	let (status, body) = post_json(
 		&app,
@@ -884,9 +900,7 @@ async fn test_public_case_create_derives_org_and_version() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"organization_id": attacker_org_id,
-				"version": 99,
-				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"safetyReportIdentification": {"safetyReportId": format!("SR-{}", Uuid::new_v4())},
 				"status": "draft"
 			}
 		}),
@@ -900,7 +914,8 @@ async fn test_public_case_create_derives_org_and_version() -> Result<()> {
 		Some(expected_org_id.as_str()),
 		"{body:?}"
 	);
-	assert_eq!(body["data"]["version"].as_i64(), Some(1), "{body:?}");
+	assert!(body["data"].get("version").is_none(), "{body:?}");
+	assert!(body["data"].get("safety_report_id").is_none(), "{body:?}");
 	Ok(())
 }
 
@@ -920,7 +935,7 @@ async fn test_public_case_update_ignores_system_managed_fields() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": report_id,
+				"safetyReportIdentification": {"safetyReportId": report_id},
 				"status": "draft"
 			}
 		}),
@@ -1022,7 +1037,7 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise(
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"safetyReportIdentification": {"safetyReportId": format!("SR-{}", Uuid::new_v4())},
 				"status": "draft"
 			}
 		}),
@@ -1081,7 +1096,7 @@ async fn test_case_save_updates_fda_report_type_public_field() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": format!("SR-FDA-{}", Uuid::new_v4()),
+				"safetyReportIdentification": {"safetyReportId": format!("SR-FDA-{}", Uuid::new_v4())},
 				"status": "draft"
 			}
 		}),
@@ -1141,8 +1156,8 @@ async fn test_case_save_updates_fda_report_type_public_field() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": format!("SR-FDA-BAD-{}", Uuid::new_v4()),
-				"fda_report_type": "9",
+				"safetyReportIdentification": {"safetyReportId": format!("SR-FDA-BAD-{}", Uuid::new_v4())},
+				"fdaReportType": "9",
 				"status": "draft"
 			}
 		}),
@@ -1239,7 +1254,7 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 
 #[serial]
 #[tokio::test]
-async fn test_case_identity_update_requires_reason_for_change() -> Result<()> {
+async fn test_public_case_update_rejects_legacy_safety_report_id() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -1252,7 +1267,7 @@ async fn test_case_identity_update_requires_reason_for_change() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"safetyReportIdentification": {"safetyReportId": format!("SR-{}", Uuid::new_v4())},
 				"status": "draft"
 			}
 		}),
@@ -1264,7 +1279,7 @@ async fn test_case_identity_update_requires_reason_for_change() -> Result<()> {
 		.ok_or("missing created case id")?
 		.to_string();
 
-	let (update_status, update_body) = put_json(
+	let (update_status, update_body) = put_raw(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}"),
@@ -1275,12 +1290,15 @@ async fn test_case_identity_update_requires_reason_for_change() -> Result<()> {
 		}),
 	)
 	.await?;
-	assert_eq!(update_status, StatusCode::BAD_REQUEST, "{update_body:?}");
+	let update_body = String::from_utf8_lossy(&update_body);
+	assert_eq!(
+		update_status,
+		StatusCode::UNPROCESSABLE_ENTITY,
+		"{update_body}"
+	);
 	assert!(
-		update_body.to_string().contains(
-			"reason_for_change is required for case identity/scope updates"
-		),
-		"{update_body:?}"
+		update_body.contains("unknown field `safety_report_id`"),
+		"{update_body}"
 	);
 
 	Ok(())
@@ -1288,7 +1306,8 @@ async fn test_case_identity_update_requires_reason_for_change() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_case_identity_update_records_reason_for_change() -> Result<()> {
+async fn test_public_case_update_rejects_legacy_safety_report_id_with_reason(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -1301,7 +1320,7 @@ async fn test_case_identity_update_records_reason_for_change() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"safetyReportIdentification": {"safetyReportId": format!("SR-{}", Uuid::new_v4())},
 				"status": "draft"
 			}
 		}),
@@ -1313,47 +1332,27 @@ async fn test_case_identity_update_records_reason_for_change() -> Result<()> {
 			.as_str()
 			.ok_or("missing created case id")?,
 	)?;
-	let next_safety_report_id = format!("SR-RENAMED-{}", Uuid::new_v4());
-
-	let (update_status, update_body) = put_json(
+	let (update_status, update_body) = put_raw(
 		&app,
 		&cookie,
 		&format!("/api/cases/{case_id}"),
 		json!({
 			"data": {
-				"safety_report_id": next_safety_report_id
+				"safety_report_id": format!("SR-RENAMED-{}", Uuid::new_v4())
 			},
 			"reason_for_change": "correct case identifier after source reconciliation"
 		}),
 	)
 	.await?;
-	assert_eq!(update_status, StatusCode::OK, "{update_body:?}");
-
-	let dbx = mm.dbx();
-	dbx.begin_txn().await?;
-	dbx.execute(sqlx::query("SET ROLE e2br3_auditor_role"))
-		.await?;
-	let reason = dbx
-		.fetch_optional(
-			sqlx::query_as::<_, (Option<String>,)>(
-				r#"
-				SELECT reason_for_change
-				FROM audit_logs
-				WHERE table_name = 'cases'
-				  AND record_id = $1
-				  AND action = 'UPDATE'
-				  AND changed_fields ? 'safety_report_id'
-				ORDER BY id DESC
-				LIMIT 1
-				"#,
-			)
-			.bind(case_id),
-		)
-		.await?;
-	dbx.rollback_txn().await?;
+	let update_body = String::from_utf8_lossy(&update_body);
 	assert_eq!(
-		reason.and_then(|(v,)| v).as_deref(),
-		Some("correct case identifier after source reconciliation")
+		update_status,
+		StatusCode::UNPROCESSABLE_ENTITY,
+		"{update_body}"
+	);
+	assert!(
+		update_body.contains("unknown field `safety_report_id`"),
+		"{update_body}"
 	);
 
 	Ok(())
@@ -1374,7 +1373,7 @@ async fn test_delete_case_requires_reason_for_change() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"safetyReportIdentification": {"safetyReportId": format!("SR-{}", Uuid::new_v4())},
 				"status": "draft"
 			}
 		}),
@@ -1425,7 +1424,7 @@ async fn test_delete_case_soft_deletes_and_keeps_case_visible() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": report_id,
+				"safetyReportIdentification": {"safetyReportId": report_id},
 				"status": "draft"
 			}
 		}),
@@ -1534,7 +1533,7 @@ async fn test_deleted_case_rejects_content_updates() -> Result<()> {
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"safetyReportIdentification": {"safetyReportId": format!("SR-{}", Uuid::new_v4())},
 				"status": "draft"
 			}
 		}),

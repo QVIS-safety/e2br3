@@ -22,8 +22,6 @@ pub struct Case {
 	pub organization_id: Uuid,
 
 	// E2B fields
-	pub safety_report_id: String,
-	pub version: i32,
 	pub dg_prd_key: Option<String>,
 	pub status: String,
 	pub review_receivers_json: Option<String>,
@@ -276,8 +274,6 @@ const CASE_SELECT: &str = r#"
 	SELECT
 		c.id,
 		c.organization_id,
-		COALESCE(s.safety_report_id, '') AS safety_report_id,
-		COALESCE(s.version, 1) AS version,
 		c.dg_prd_key,
 		c.status,
 		c.review_receivers_json,

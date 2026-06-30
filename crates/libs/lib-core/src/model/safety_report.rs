@@ -595,6 +595,37 @@ impl DbBmc for SafetyReportIdentificationBmc {
 }
 
 impl SafetyReportIdentificationBmc {
+	pub async fn max_version_by_safety_report_id(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		safety_report_id: &str,
+	) -> Result<i32> {
+		mm.dbx().begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+			let _ = mm.dbx().rollback_txn().await;
+			return Err(err);
+		}
+		let row = mm
+			.dbx()
+			.fetch_one(
+				sqlx::query_as::<_, (Option<i32>,)>(
+					"SELECT MAX(version) FROM safety_report_identification WHERE safety_report_id = $1",
+				)
+				.bind(safety_report_id),
+			)
+			.await;
+		match row {
+			Ok((value,)) => {
+				mm.dbx().commit_txn().await?;
+				Ok(value.unwrap_or(0))
+			}
+			Err(err) => {
+				let _ = mm.dbx().rollback_txn().await;
+				Err(err.into())
+			}
+		}
+	}
+
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,

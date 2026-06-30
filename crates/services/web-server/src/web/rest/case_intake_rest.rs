@@ -1,9 +1,7 @@
 use axum::extract::State;
 use axum::Json;
 use lib_core::model::acs::CASE_CREATE;
-use lib_core::model::case::{
-	CaseBmc, CaseFilter, CaseForCreate as InternalCaseForCreate,
-};
+use lib_core::model::case::{CaseBmc, CaseForCreate as InternalCaseForCreate};
 use lib_core::model::case_duplicate::{
 	assess_duplicate_basis, CaseDuplicateBmc, CaseDuplicateKey,
 	CaseIntakeDuplicateMatch, DuplicateBasisAssessment,
@@ -25,7 +23,6 @@ use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::Error;
 use lib_web::middleware::mw_auth::CtxW;
-use modql::filter::{ListOptions, OpValString, OpValsString};
 use serde::{Deserialize, Serialize};
 use time::Date;
 use uuid::Uuid;
@@ -216,29 +213,16 @@ async fn next_case_version(
 	mm: &ModelManager,
 	safety_report_id: &str,
 ) -> Result<i32> {
-	let max = CaseBmc::list(
-		ctx,
-		mm,
-		Some(vec![CaseFilter {
-			organization_id: None,
-			safety_report_id: Some(OpValsString::from(vec![OpValString::Eq(
-				safety_report_id.to_string(),
-			)])),
-			status: None,
-		}]),
-		Some(ListOptions {
-			limit: Some(100),
-			offset: None,
-			order_bys: Some("version".into()),
-		}),
+	Ok(
+		SafetyReportIdentificationBmc::max_version_by_safety_report_id(
+			ctx,
+			mm,
+			safety_report_id,
+		)
+		.await
+		.map_err(Error::Model)?
+			+ 1,
 	)
-	.await
-	.map_err(Into::<lib_rest_core::Error>::into)?
-	.into_iter()
-	.map(|case| case.version)
-	.max()
-	.unwrap_or(0);
-	Ok(max + 1)
 }
 
 // -- Handlers

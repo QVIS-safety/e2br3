@@ -3,7 +3,6 @@ use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
 use lib_core::model::acs::XML_EXPORT;
 use lib_core::model::admin_settings::AdminSettingsBmc;
-use lib_core::model::case::CaseBmc;
 use lib_core::model::drug::{
 	DosageInformation, DrugIndication, DrugInformation, DrugInformationBmc,
 };
@@ -370,7 +369,6 @@ async fn load_cioms_case_data(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<CiomsCaseData> {
-	let case = CaseBmc::get(ctx, mm, case_id).await.map_err(Error::Model)?;
 	let report = load_optional_by_case::<SafetyReportIdentification>(
 		ctx,
 		mm,
@@ -379,6 +377,11 @@ async fn load_cioms_case_data(
 	)
 	.await
 	.map_err(Error::Model)?;
+	let case_number = report
+		.as_ref()
+		.and_then(|report| report.safety_report_id.clone())
+		.filter(|value| !value.trim().is_empty())
+		.unwrap_or_else(|| case_id.to_string());
 	let patient = load_optional_by_case::<PatientInformation>(
 		ctx,
 		mm,
@@ -420,7 +423,7 @@ async fn load_cioms_case_data(
 	.await
 	.map_err(Error::Model)?;
 	Ok(CiomsCaseData {
-		case_number: case.safety_report_id,
+		case_number,
 		report,
 		patient,
 		reactions,
@@ -1573,7 +1576,6 @@ pub async fn export_case_cioms_pdf(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, XML_EXPORT)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
-	let case = CaseBmc::get(&ctx, &mm, id).await.map_err(Error::Model)?;
 	let settings = load_cioms_settings(&ctx, &mm).await?;
 	let data = load_cioms_case_data(&ctx, &mm, id).await?;
 	let pdf = build_cioms_pdf_with_options(
@@ -1583,7 +1585,7 @@ pub async fn export_case_cioms_pdf(
 			include_notation: query.include_notation.unwrap_or(false),
 		},
 	);
-	let file_name = format!("{}-cioms.pdf", case.safety_report_id);
+	let file_name = format!("{}-cioms.pdf", data.case_number);
 
 	let mut response = (StatusCode::OK, pdf).into_response();
 	response.headers_mut().insert(

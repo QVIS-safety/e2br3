@@ -5,6 +5,7 @@ use axum::Json;
 use lib_core::model::acs::{XML_EXPORT, XML_EXPORT_READ};
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::case::CaseBmc;
+use lib_core::model::safety_report::SafetyReportIdentificationBmc;
 use lib_core::model::xml_export_history::{
 	XmlExportHistoryBmc, XmlExportHistoryRecord,
 };
@@ -158,8 +159,20 @@ async fn export_xml_options(
 	Ok(ExportXmlOptions { apply_comments })
 }
 
+async fn safety_report_id_for_case(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &lib_core::model::ModelManager,
+	case_id: Uuid,
+) -> Result<String> {
+	Ok(SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id)
+		.await
+		.map_err(Error::Model)?
+		.safety_report_id
+		.unwrap_or_else(|| case_id.to_string()))
+}
+
 fn export_file_name(
-	case: &lib_core::model::case::Case,
+	safety_report_id: &str,
 	case_id: Uuid,
 	authority: RegulatoryAuthority,
 	include_authority_suffix: bool,
@@ -167,12 +180,12 @@ fn export_file_name(
 	if include_authority_suffix {
 		format!(
 			"{}-{}-{}.xml",
-			case.safety_report_id.as_str(),
+			safety_report_id,
 			case_id,
 			authority.as_str()
 		)
 	} else {
-		format!("{}-{}.xml", case.safety_report_id.as_str(), case_id)
+		format!("{}-{}.xml", safety_report_id, case_id)
 	}
 }
 
@@ -338,10 +351,12 @@ pub async fn export_case(
 	require_permission(&ctx, XML_EXPORT)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let case = CaseBmc::get(&ctx, &mm, id).await?;
+	let safety_report_id = safety_report_id_for_case(&ctx, &mm, id).await?;
 	let authority = resolve_requested_export_authority(query.authority.as_deref())?;
 	let include_authority_suffix = true;
-	let file_name = export_file_name(&case, id, authority, include_authority_suffix);
-	let (case, xml) = match generate_validated_case_xml_for_authority_with_notation(
+	let file_name =
+		export_file_name(&safety_report_id, id, authority, include_authority_suffix);
+	let (_case, xml) = match generate_validated_case_xml_for_authority_with_notation(
 		&ctx,
 		&mm,
 		id,
@@ -358,7 +373,7 @@ pub async fn export_case(
 				&ctx,
 				&mm,
 				id,
-				Some(case.safety_report_id.as_str()),
+				Some(safety_report_id.as_str()),
 				&file_name,
 				"error",
 				Some(error_message.as_str()),
@@ -376,7 +391,7 @@ pub async fn export_case(
 		&ctx,
 		&mm,
 		id,
-		Some(case.safety_report_id.as_str()),
+		Some(safety_report_id.as_str()),
 		&file_name,
 		"success",
 		None,
@@ -435,9 +450,12 @@ pub async fn export_cases_zip(
 		for case_id in unique_case_ids {
 			lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 			let case = CaseBmc::get(&ctx, &mm, case_id).await?;
+			let safety_report_id =
+				safety_report_id_for_case(&ctx, &mm, case_id).await?;
 			{
-				let file_name = export_file_name(&case, case_id, authority, true);
-				let (case, xml) = match generate_validated_case_xml_for_authority(
+				let file_name =
+					export_file_name(&safety_report_id, case_id, authority, true);
+				let (_case, xml) = match generate_validated_case_xml_for_authority(
 					&ctx,
 					&mm,
 					case_id,
@@ -453,7 +471,7 @@ pub async fn export_cases_zip(
 							&ctx,
 							&mm,
 							case_id,
-							Some(case.safety_report_id.as_str()),
+							Some(safety_report_id.as_str()),
 							&file_name,
 							"error",
 							Some(error_message.as_str()),
@@ -480,7 +498,7 @@ pub async fn export_cases_zip(
 					&ctx,
 					&mm,
 					case_id,
-					Some(case.safety_report_id.as_str()),
+					Some(safety_report_id.as_str()),
 					&file_name,
 					"success",
 					None,

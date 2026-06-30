@@ -121,7 +121,7 @@ pub(crate) fn collect_ich_issues(
 		.safety_report
 		.as_ref()
 		.and_then(|report| report.safety_report_id.as_deref())
-		.unwrap_or(validation_ctx.case.safety_report_id.as_str());
+		.unwrap_or("");
 	let _ = push_issue_if_rule_invalid(
 		issues,
 		"ICH.C.1.1.REQUIRED",

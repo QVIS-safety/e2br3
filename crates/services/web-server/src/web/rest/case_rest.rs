@@ -29,8 +29,8 @@ use lib_rest_core::{
 	workflow_actionability_for_case,
 };
 use lib_web::middleware::mw_auth::CtxW;
-use modql::filter::{ListOptions, OpValString, OpValsString};
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use uuid::Uuid;
 
 const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
@@ -180,36 +180,23 @@ async fn next_case_version(
 	mm: &ModelManager,
 	safety_report_id: &str,
 ) -> Result<i32> {
-	let max = CaseBmc::list(
-		ctx,
-		mm,
-		Some(vec![CaseFilter {
-			organization_id: None,
-			safety_report_id: Some(OpValsString::from(vec![OpValString::Eq(
-				safety_report_id.to_string(),
-			)])),
-			status: None,
-		}]),
-		Some(ListOptions {
-			limit: Some(100),
-			offset: None,
-			order_bys: Some("version".into()),
-		}),
+	Ok(
+		SafetyReportIdentificationBmc::max_version_by_safety_report_id(
+			ctx,
+			mm,
+			safety_report_id,
+		)
+		.await
+		.map_err(Error::Model)?
+			+ 1,
 	)
-	.await
-	.map_err(lib_rest_core::Error::from)?
-	.into_iter()
-	.map(|case: Case| case.version)
-	.max()
-	.unwrap_or(0);
-	Ok(max + 1)
 }
 
 // -- Types
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PublicCaseForCreate {
-	#[serde(rename = "safetyReportIdentification")]
 	pub safety_report_identification:
 		Option<PublicSafetyReportIdentificationForCaseCreate>,
 	pub dg_prd_key: Option<String>,
@@ -225,6 +212,7 @@ pub struct PublicCaseForCreate {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PublicCaseForUpdate {
 	pub dg_prd_key: Option<String>,
 	pub status: Option<String>,
@@ -283,6 +271,15 @@ pub struct CaseLifecycleResult {
 	pub safety_report_id: String,
 	pub current_case_id: Uuid,
 	pub items: Vec<CaseLifecycleItem>,
+}
+
+#[derive(Debug, FromRow)]
+struct CaseLifecycleRow {
+	case_id: Uuid,
+	version: i32,
+	status: String,
+	created_at: sqlx::types::time::OffsetDateTime,
+	updated_at: sqlx::types::time::OffsetDateTime,
 }
 
 #[derive(Debug, Serialize)]
@@ -404,8 +401,8 @@ pub async fn create_case_guarded(
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
 		.ok_or_else(|| Error::BadRequest {
-			message:
-				"safetyReportIdentification.safetyReportId is required".to_string(),
+			message: "safetyReportIdentification.safetyReportId is required"
+				.to_string(),
 		})?
 		.to_string();
 	let next_version = next_case_version(&ctx, &mm, &safety_report_id).await?;
@@ -784,45 +781,55 @@ pub async fn get_case_lifecycle(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
-	let case = CaseBmc::get(&ctx, &mm, id).await?;
-	let rows = CaseBmc::list(
-		&ctx,
-		&mm,
-		Some(vec![CaseFilter {
-			organization_id: None,
-			safety_report_id: Some(OpValsString::from(vec![OpValString::Eq(
-				case.safety_report_id.clone(),
-			)])),
-			status: None,
-		}]),
-		None,
-	)
+	let safety_report =
+		SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, id).await?;
+	let safety_report_id = safety_report.safety_report_id.unwrap_or_default();
+	let versions = lib_rest_core::with_rls_read(&mm, &ctx, |dbx| {
+		let safety_report_id = safety_report_id.clone();
+		Box::pin(async move {
+			dbx.fetch_all(
+				sqlx::query_as::<_, CaseLifecycleRow>(
+					r#"
+					SELECT c.id AS case_id,
+					       s.version,
+					       c.status,
+					       c.created_at,
+					       c.updated_at
+					  FROM cases c
+					  JOIN safety_report_identification s ON s.case_id = c.id
+					 WHERE s.safety_report_id = $1
+					 ORDER BY s.version ASC, c.created_at ASC, c.id ASC
+					"#,
+				)
+				.bind(safety_report_id),
+			)
+			.await
+			.map_err(|err| Error::Model(err.into()))
+		})
+	})
 	.await?;
-	let mut versions = Vec::new();
-	for row in rows {
-		if row.safety_report_id == case.safety_report_id
-			&& lib_rest_core::case_matches_user_scope(&ctx, &mm, row.id).await?
-		{
-			versions.push(row);
+	let mut items = Vec::new();
+	for row in versions {
+		if lib_rest_core::case_matches_user_scope(&ctx, &mm, row.case_id).await? {
+			items.push(row);
 		}
 	}
-	versions.sort_by(|a, b| a.version.cmp(&b.version));
-	let items = versions
+	let items = items
 		.into_iter()
 		.map(|row| CaseLifecycleItem {
-			case_id: row.id,
+			case_id: row.case_id,
 			version: row.version,
 			status: row.status,
 			created_at: row.created_at.to_string(),
 			updated_at: row.updated_at.to_string(),
-			is_current: row.id == id,
+			is_current: row.case_id == id,
 		})
 		.collect();
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(DataRestResult {
 			data: CaseLifecycleResult {
-				safety_report_id: case.safety_report_id,
+				safety_report_id,
 				current_case_id: id,
 				items,
 			},

@@ -186,7 +186,7 @@ async fn create_case(
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": safety_report_id,
+				"safetyReportIdentification": {"safetyReportId": safety_report_id},
 				"status": "draft"
 			}
 		}),
@@ -212,7 +212,7 @@ async fn create_case_for_editor(
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": safety_report_id,
+				"safetyReportIdentification": {"safetyReportId": safety_report_id},
 				"status": "draft"
 			}
 		}),
@@ -452,9 +452,9 @@ async fn editor_shell_returns_only_case_header_workflow_and_permissions(
 		"/api/cases",
 		json!({
 			"data": {
-				"safety_report_id": safety_report_id,
+				"safetyReportIdentification": {"safetyReportId": safety_report_id},
 				"status": "draft",
-				"dg_prd_key": "DG-EDITOR-SHELL"
+				"dgPrdKey": "DG-EDITOR-SHELL"
 			}
 		}),
 	)
@@ -504,11 +504,8 @@ async fn editor_ci_returns_ci_payload_only() -> Result<()> {
 	let safety_report = data
 		.get("safetyReportIdentification")
 		.ok_or("missing safetyReportIdentification")?;
-	assert_eq!(
-		safety_report["safety_report_id"].as_str(),
-		data["case"]["safety_report_id"].as_str(),
-		"{body}"
-	);
+	assert!(safety_report["safety_report_id"].is_string(), "{body}");
+	assert!(data["case"].get("safety_report_id").is_none(), "{body}");
 	assert!(
 		data["receiverInfo"].is_null() || data["receiverInfo"].is_object(),
 		"{body}"
@@ -2429,6 +2426,124 @@ async fn editor_repeatable_page_row_create_and_delete_routes_work_for_all_sectio
 		.await?;
 		assert_eq!(status, StatusCode::NO_CONTENT, "{section}: {body}");
 	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_editor_ae_soft_delete_returns_deleted_row_when_requested() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-AE-SOFT-DELETE").await?;
+
+	let mut created_ids = Vec::new();
+	for (sequence_number, label) in
+		[(1, "Soft-deleted reaction"), (2, "Active reaction")]
+	{
+		let (status, body) = post_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/reactions"),
+			json!({
+				"data": {
+					"case_id": case_id,
+					"sequence_number": sequence_number,
+					"primary_source_reaction": label
+				}
+			}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CREATED, "{body}");
+		created_ids.push(
+			body["data"]["id"]
+				.as_str()
+				.ok_or("missing created reaction id")?
+				.to_string(),
+		);
+	}
+	let deleted_row_id = created_ids
+		.first()
+		.ok_or("missing deleted reaction id")?
+		.to_string();
+
+	let (status, body) = delete_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{deleted_row_id}"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE?authorities=fda"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let active_rows = body["rows"]["rows"]
+		.as_array()
+		.ok_or("missing active AE rows array")?;
+	assert!(
+		!active_rows
+			.iter()
+			.any(|row| row["id"].as_str() == Some(deleted_row_id.as_str())),
+		"active AE projection should exclude soft-deleted row: {body}"
+	);
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!(
+			"/api/cases/{case_id}/editor/pages/AE?authorities=fda&include_deleted=true"
+		),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let rows = body["rows"]["rows"]
+		.as_array()
+		.ok_or("missing include-deleted AE rows array")?;
+	assert!(
+		rows.iter().any(|row| {
+			row["id"].as_str() == Some(deleted_row_id.as_str())
+				&& row["deleted"].as_bool() == Some(true)
+		}),
+		"include_deleted AE projection should include deleted row with deleted=true: {body}"
+	);
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!(
+			"/api/cases/{case_id}/editor/pages/AE/rows/{deleted_row_id}/restore"
+		),
+		json!({}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["reaction"]["deleted"].as_bool(), Some(false));
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE?authorities=fda"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let active_rows = body["rows"]["rows"]
+		.as_array()
+		.ok_or("missing restored active AE rows array")?;
+	assert!(
+		active_rows
+			.iter()
+			.any(|row| row["id"].as_str() == Some(deleted_row_id.as_str())),
+		"active AE projection should include restored row: {body}"
+	);
 
 	Ok(())
 }

@@ -5,7 +5,7 @@ use crate::web::rest::case_editor_dto::{
 	CaseEditorPageProjectionResponse, CaseEditorRowDetailResponse,
 	CaseEditorShellDto,
 };
-use crate::web::rest::case_rest::case_to_read_result;
+use crate::web::rest::case_rest::{case_to_read_result, PublicCaseView};
 use crate::web::rest::case_validation_rest::refresh_case_validation_cache;
 use axum::extract::{Path, Query, State};
 use axum::Json;
@@ -204,7 +204,7 @@ async fn load_editor_ci_data(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Value> {
-	let case = CaseBmc::get(ctx, mm, case_id).await?;
+	let case = PublicCaseView::from(CaseBmc::get(ctx, mm, case_id).await?);
 	let safety_report_identification =
 		match SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await {
 			Ok(entity) => Some(entity),

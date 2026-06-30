@@ -241,7 +241,7 @@ fn ensure_primary_source_author_nodes(
 
 pub fn export_c_safety_report_patch(
 	raw_xml: &[u8],
-	case: &Case,
+	_case: &Case,
 	report: &SafetyReportIdentification,
 	header: Option<&MessageHeader>,
 	sender: Option<&SenderInformation>,
@@ -259,10 +259,7 @@ pub fn export_c_safety_report_patch(
 		};
 
 	let patch = CSafetyReportPatch {
-		report_unique_id: report
-			.safety_report_id
-			.as_deref()
-			.unwrap_or(case.safety_report_id.as_str()),
+		report_unique_id: report.safety_report_id.as_deref().unwrap_or(""),
 		transmission_date: report.transmission_date,
 		transmission_date_null_flavor: report
 			.transmission_date_null_flavor
