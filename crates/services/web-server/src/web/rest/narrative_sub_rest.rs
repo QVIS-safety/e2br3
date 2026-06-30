@@ -3,7 +3,6 @@
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
-use lib_core::narrative_template::{render_template, template_tokens};
 use lib_core::model::acs::{
 	CASE_SUMMARY_CREATE, CASE_SUMMARY_DELETE, CASE_SUMMARY_LIST, CASE_SUMMARY_READ,
 	CASE_SUMMARY_UPDATE, NARRATIVE_READ, SENDER_DIAGNOSIS_CREATE,
@@ -18,6 +17,7 @@ use lib_core::model::narrative::{
 };
 use lib_core::model::patient::{PatientInformation, PatientInformationBmc};
 use lib_core::model::{self, ModelManager};
+use lib_core::narrative_template::{render_template, template_tokens};
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_case_write_allowed, require_permission, Result};
@@ -269,6 +269,30 @@ pub async fn delete_sender_diagnosis(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/narrative/sender-diagnoses/{id}/restore
+pub async fn restore_sender_diagnosis(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<SenderDiagnosis>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SENDER_DIAGNOSIS_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = SenderDiagnosisBmc::get(&ctx, &mm, id).await?;
+	ensure_narrative_scope(
+		&ctx,
+		&mm,
+		case_id,
+		entity.narrative_id,
+		id,
+		"sender_diagnoses",
+	)
+	.await?;
+	SenderDiagnosisBmc::restore(&ctx, &mm, id).await?;
+	let entity = SenderDiagnosisBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Case Summary Information (H.5.r)
 
 /// POST /api/cases/{case_id}/narrative/summaries
@@ -394,4 +418,28 @@ pub async fn delete_case_summary_information(
 	.await?;
 	CaseSummaryInformationBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
+}
+
+/// POST /api/cases/{case_id}/narrative/summaries/{id}/restore
+pub async fn restore_case_summary_information(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<CaseSummaryInformation>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_SUMMARY_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = CaseSummaryInformationBmc::get(&ctx, &mm, id).await?;
+	ensure_narrative_scope(
+		&ctx,
+		&mm,
+		case_id,
+		entity.narrative_id,
+		id,
+		"case_summary_information",
+	)
+	.await?;
+	CaseSummaryInformationBmc::restore(&ctx, &mm, id).await?;
+	let entity = CaseSummaryInformationBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }

@@ -39,6 +39,7 @@ CREATE TABLE sender_diagnoses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     narrative_id UUID NOT NULL REFERENCES narrative_information(id) ON DELETE CASCADE,
     sequence_number INTEGER NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- H.3.r.1 - Diagnosis/Syndrome (MedDRA coded)
     diagnosis_meddra_version VARCHAR(10),
@@ -48,12 +49,11 @@ CREATE TABLE sender_diagnoses (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_diagnosis_sequence UNIQUE (narrative_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_sender_diagnoses ON sender_diagnoses(narrative_id);
+CREATE UNIQUE INDEX idx_sender_diagnoses_active_sequence_unique ON sender_diagnoses(narrative_id, sequence_number) WHERE deleted = false;
 
 -- ============================================================================
 -- H.5.r: Case Summary and Further Information
@@ -63,6 +63,7 @@ CREATE TABLE case_summary_information (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     narrative_id UUID NOT NULL REFERENCES narrative_information(id) ON DELETE CASCADE,
     sequence_number INTEGER NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Local compatibility field; hidden from the reference-aligned NR UI
     summary_type VARCHAR(2),  -- E2B(R3) code list
@@ -77,9 +78,8 @@ CREATE TABLE case_summary_information (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_case_summary_sequence UNIQUE (narrative_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_case_summary ON case_summary_information(narrative_id);
+CREATE UNIQUE INDEX idx_case_summary_information_active_sequence_unique ON case_summary_information(narrative_id, sequence_number) WHERE deleted = false;

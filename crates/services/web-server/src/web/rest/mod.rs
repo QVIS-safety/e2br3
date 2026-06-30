@@ -541,6 +541,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(narrative_sub_rest::update_sender_diagnosis)
 			.delete(narrative_sub_rest::delete_sender_diagnosis),
 	)
+	.route(
+		"/cases/{case_id}/narrative/sender-diagnoses/{id}/restore",
+		post(narrative_sub_rest::restore_sender_diagnosis),
+	)
 	// Case Summary Information (collection per narrative) - H.5.r
 	.route(
 		"/cases/{case_id}/narrative/summaries",
@@ -552,6 +556,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(narrative_sub_rest::get_case_summary_information)
 			.put(narrative_sub_rest::update_case_summary_information)
 			.delete(narrative_sub_rest::delete_case_summary_information),
+	)
+	.route(
+		"/cases/{case_id}/narrative/summaries/{id}/restore",
+		post(narrative_sub_rest::restore_case_summary_information),
 	)
 	// Message Header (singleton per case)
 	.route(

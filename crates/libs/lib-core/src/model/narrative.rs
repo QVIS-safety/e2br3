@@ -7,7 +7,7 @@ use crate::model::store::set_full_context_dbx_or_rollback;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
-use modql::filter::{FilterNodes, ListOptions, OpValsValue};
+use modql::filter::{FilterNodes, ListOptions, OpValBool, OpValsBool, OpValsValue};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
@@ -68,6 +68,7 @@ pub struct SenderDiagnosis {
 	pub id: Uuid,
 	pub narrative_id: Uuid,
 	pub sequence_number: i32,
+	pub deleted: bool,
 
 	// H.3.r.1 - Diagnosis/Syndrome (MedDRA coded)
 	pub diagnosis_meddra_version: Option<String>,
@@ -99,6 +100,7 @@ pub struct SenderDiagnosisFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub narrative_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- CaseSummaryInformation
@@ -108,6 +110,7 @@ pub struct CaseSummaryInformation {
 	pub id: Uuid,
 	pub narrative_id: Uuid,
 	pub sequence_number: i32,
+	pub deleted: bool,
 
 	// H.5.r.1 - Case Summary Type
 	pub summary_type: Option<String>,
@@ -146,6 +149,7 @@ pub struct CaseSummaryInformationFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub narrative_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- BMCs
@@ -344,7 +348,12 @@ impl SenderDiagnosisBmc {
 		filters: Option<Vec<SenderDiagnosisFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<SenderDiagnosis>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(SenderDiagnosisFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -361,7 +370,15 @@ impl SenderDiagnosisBmc {
 		mm: &ModelManager,
 		id: Uuid,
 	) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(
+		ctx: &crate::ctx::Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -393,7 +410,12 @@ impl CaseSummaryInformationBmc {
 		filters: Option<Vec<CaseSummaryInformationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<CaseSummaryInformation>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(CaseSummaryInformationFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -410,6 +432,14 @@ impl CaseSummaryInformationBmc {
 		mm: &ModelManager,
 		id: Uuid,
 	) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(
+		ctx: &crate::ctx::Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
