@@ -165,6 +165,7 @@ pub struct CaseEditorAeListRowDto {
 pub struct CaseEditorLbListRowDto {
 	pub id: Uuid,
 	pub sequence_number: i32,
+	pub deleted: bool,
 	pub test_name: String,
 	pub test_date: Option<String>,
 	pub result_value: Option<String>,
@@ -176,6 +177,7 @@ pub struct CaseEditorLbListRowDto {
 pub struct CaseEditorDgListRowDto {
 	pub id: Uuid,
 	pub sequence_number: i32,
+	pub deleted: bool,
 	pub drug_role: String,
 	pub dg_prd_key: Option<String>,
 	pub medicinal_product: String,

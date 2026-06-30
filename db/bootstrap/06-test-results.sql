@@ -42,13 +42,16 @@ CREATE TABLE test_results (
     -- F.r.7 - More Information Available
     more_info_available BOOLEAN,
 
+    deleted BOOLEAN NOT NULL DEFAULT false,
+
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_test_result_sequence UNIQUE (case_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_test_results_case ON test_results(case_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_test_results_active_sequence_unique
+    ON test_results(case_id, sequence_number)
+    WHERE deleted = false;

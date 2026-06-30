@@ -2550,6 +2550,244 @@ async fn test_editor_ae_soft_delete_returns_deleted_row_when_requested() -> Resu
 
 #[serial]
 #[tokio::test]
+async fn test_editor_lb_soft_delete_returns_deleted_row_when_requested() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-LB-SOFT-DELETE").await?;
+
+	let mut created_ids = Vec::new();
+	for (sequence_number, label) in [(1, "Soft-deleted lab"), (2, "Active lab")] {
+		let (status, body) = post_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/test-results"),
+			json!({
+				"data": {
+					"case_id": case_id,
+					"sequence_number": sequence_number,
+					"test_name": label,
+					"test_result_value": "42",
+					"test_result_unit": "U/L"
+				}
+			}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CREATED, "{body}");
+		created_ids.push(
+			body["data"]["id"]
+				.as_str()
+				.ok_or("missing created test result id")?
+				.to_string(),
+		);
+	}
+	let deleted_row_id = created_ids
+		.first()
+		.ok_or("missing deleted test result id")?
+		.to_string();
+
+	let (status, body) = delete_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/LB/rows/{deleted_row_id}"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/LB?authorities=fda"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let active_rows = body["rows"]["rows"]
+		.as_array()
+		.ok_or("missing active LB rows array")?;
+	assert!(
+		!active_rows
+			.iter()
+			.any(|row| row["id"].as_str() == Some(deleted_row_id.as_str())),
+		"active LB projection should exclude soft-deleted row: {body}"
+	);
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!(
+			"/api/cases/{case_id}/editor/pages/LB?authorities=fda&include_deleted=true"
+		),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let rows = body["rows"]["rows"]
+		.as_array()
+		.ok_or("missing include-deleted LB rows array")?;
+	assert!(
+		rows.iter().any(|row| {
+			row["id"].as_str() == Some(deleted_row_id.as_str())
+				&& row["deleted"].as_bool() == Some(true)
+		}),
+		"include_deleted LB projection should include deleted row with deleted=true: {body}"
+	);
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!(
+			"/api/cases/{case_id}/editor/pages/LB/rows/{deleted_row_id}/restore"
+		),
+		json!({}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["testResult"]["deleted"].as_bool(), Some(false));
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/LB?authorities=fda"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let active_rows = body["rows"]["rows"]
+		.as_array()
+		.ok_or("missing restored active LB rows array")?;
+	assert!(
+		active_rows
+			.iter()
+			.any(|row| row["id"].as_str() == Some(deleted_row_id.as_str())),
+		"active LB projection should include restored row: {body}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_editor_dg_soft_delete_returns_deleted_row_when_requested() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-DG-SOFT-DELETE").await?;
+
+	let mut created_ids = Vec::new();
+	for (sequence_number, label) in
+		[(1, "Soft-deleted product"), (2, "Active product")]
+	{
+		let (status, body) = post_json(
+			&app,
+			&cookie,
+			&format!("/api/cases/{case_id}/drugs"),
+			json!({
+				"data": {
+					"case_id": case_id,
+					"sequence_number": sequence_number,
+					"drug_characterization": "1",
+					"medicinal_product": label,
+					"action_taken": "1"
+				}
+			}),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CREATED, "{body}");
+		created_ids.push(
+			body["data"]["id"]
+				.as_str()
+				.ok_or("missing created drug id")?
+				.to_string(),
+		);
+	}
+	let deleted_row_id = created_ids
+		.first()
+		.ok_or("missing deleted drug id")?
+		.to_string();
+
+	let (status, body) = delete_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/DG/rows/{deleted_row_id}"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/DG?authorities=fda"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let active_rows = body["rows"]["rows"]
+		.as_array()
+		.ok_or("missing active DG rows array")?;
+	assert!(
+		!active_rows
+			.iter()
+			.any(|row| row["id"].as_str() == Some(deleted_row_id.as_str())),
+		"active DG projection should exclude soft-deleted row: {body}"
+	);
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!(
+			"/api/cases/{case_id}/editor/pages/DG?authorities=fda&include_deleted=true"
+		),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let rows = body["rows"]["rows"]
+		.as_array()
+		.ok_or("missing include-deleted DG rows array")?;
+	assert!(
+		rows.iter().any(|row| {
+			row["id"].as_str() == Some(deleted_row_id.as_str())
+				&& row["deleted"].as_bool() == Some(true)
+		}),
+		"include_deleted DG projection should include deleted row with deleted=true: {body}"
+	);
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		&format!(
+			"/api/cases/{case_id}/editor/pages/DG/rows/{deleted_row_id}/restore"
+		),
+		json!({}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["drug"]["deleted"].as_bool(), Some(false));
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/DG?authorities=fda"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let active_rows = body["rows"]["rows"]
+		.as_array()
+		.ok_or("missing restored active DG rows array")?;
+	assert!(
+		active_rows
+			.iter()
+			.any(|row| row["id"].as_str() == Some(deleted_row_id.as_str())),
+		"active DG projection should include restored row: {body}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn editor_repeatable_page_row_create_and_delete_mark_validation_cache_stale(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;

@@ -28,7 +28,7 @@ pub(crate) async fn load_drug_export_bundle(
 		.dbx()
 		.fetch_all(
 			sqlx::query_as::<_, DrugInformation>(
-				"SELECT * FROM drug_information WHERE case_id = $1 ORDER BY sequence_number",
+				"SELECT * FROM drug_information WHERE case_id = $1 AND deleted = false ORDER BY sequence_number",
 			)
 			.bind(case_id),
 		)

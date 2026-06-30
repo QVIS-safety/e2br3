@@ -24,7 +24,7 @@ async fn fetch_test_results(
 	mm.dbx()
 		.fetch_all(
 			sqlx::query_as::<_, TestResult>(
-				"SELECT * FROM test_results WHERE case_id = $1 ORDER BY sequence_number",
+				"SELECT * FROM test_results WHERE case_id = $1 AND deleted = false ORDER BY sequence_number",
 			)
 			.bind(case_id),
 		)

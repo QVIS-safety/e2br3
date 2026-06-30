@@ -52,6 +52,8 @@ pub struct TestResult {
 	// F.r.7 - More Information Available
 	pub more_info_available: Option<bool>,
 
+	pub deleted: bool,
+
 	// Timestamps
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -165,7 +167,10 @@ impl TestResultBmc {
 	}
 
 	pub async fn get(_ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<TestResult> {
-		let sql = format!("SELECT * FROM {} WHERE id = $1", Self::TABLE);
+		let sql = format!(
+			"SELECT * FROM {} WHERE id = $1 AND deleted = false",
+			Self::TABLE
+		);
 		let test = mm
 			.dbx()
 			.fetch_optional(sqlx::query_as::<_, TestResult>(&sql).bind(id))
@@ -249,6 +254,15 @@ impl TestResultBmc {
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<Vec<TestResult>> {
+		Self::list_by_case_with_deleted(ctx, mm, case_id, false).await
+	}
+
+	pub async fn list_by_case_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+		include_deleted: bool,
+	) -> Result<Vec<TestResult>> {
 		mm.dbx().begin_txn().await?;
 		set_full_context_dbx_or_rollback(
 			mm.dbx(),
@@ -257,9 +271,15 @@ impl TestResultBmc {
 			ctx.role(),
 		)
 		.await?;
+		let deleted_filter = if include_deleted {
+			""
+		} else {
+			" AND deleted = false"
+		};
 		let sql = format!(
-			"SELECT * FROM {} WHERE case_id = $1 ORDER BY sequence_number",
-			Self::TABLE
+			"SELECT * FROM {} WHERE case_id = $1{} ORDER BY sequence_number",
+			Self::TABLE,
+			deleted_filter
 		);
 		let result = mm
 			.dbx()
@@ -283,6 +303,16 @@ impl TestResultBmc {
 		case_id: Uuid,
 		id: Uuid,
 	) -> Result<TestResult> {
+		Self::get_in_case_with_deleted(ctx, mm, case_id, id, false).await
+	}
+
+	pub async fn get_in_case_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+		id: Uuid,
+		include_deleted: bool,
+	) -> Result<TestResult> {
 		mm.dbx().begin_txn().await?;
 		set_full_context_dbx_or_rollback(
 			mm.dbx(),
@@ -291,9 +321,15 @@ impl TestResultBmc {
 			ctx.role(),
 		)
 		.await?;
+		let deleted_filter = if include_deleted {
+			""
+		} else {
+			" AND deleted = false"
+		};
 		let sql = format!(
-			"SELECT * FROM {} WHERE id = $1 AND case_id = $2",
-			Self::TABLE
+			"SELECT * FROM {} WHERE id = $1 AND case_id = $2{}",
+			Self::TABLE,
+			deleted_filter
 		);
 		let result = mm
 			.dbx()
@@ -390,6 +426,19 @@ impl TestResultBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		Self::set_deleted(ctx, mm, id, true).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		Self::set_deleted(ctx, mm, id, false).await
+	}
+
+	async fn set_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		deleted: bool,
+	) -> Result<()> {
 		mm.dbx().begin_txn().await?;
 		set_full_context_dbx_or_rollback(
 			mm.dbx(),
@@ -399,8 +448,14 @@ impl TestResultBmc {
 		)
 		.await?;
 
-		let sql = format!("DELETE FROM {} WHERE id = $1", Self::TABLE);
-		let result = mm.dbx().execute(sqlx::query(&sql).bind(id)).await?;
+		let sql = format!(
+			"UPDATE {} SET deleted = $2, updated_at = now(), updated_by = $3 WHERE id = $1",
+			Self::TABLE
+		);
+		let result = mm
+			.dbx()
+			.execute(sqlx::query(&sql).bind(id).bind(deleted).bind(ctx.user_id()))
+			.await?;
 		if result == 0 {
 			mm.dbx().rollback_txn().await?;
 			return Err(crate::model::Error::EntityUuidNotFound {
@@ -418,6 +473,25 @@ impl TestResultBmc {
 		case_id: Uuid,
 		id: Uuid,
 	) -> Result<()> {
+		Self::set_deleted_in_case(ctx, mm, case_id, id, true).await
+	}
+
+	pub async fn restore_in_case(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+		id: Uuid,
+	) -> Result<()> {
+		Self::set_deleted_in_case(ctx, mm, case_id, id, false).await
+	}
+
+	async fn set_deleted_in_case(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+		id: Uuid,
+		deleted: bool,
+	) -> Result<()> {
 		mm.dbx().begin_txn().await?;
 		set_full_context_dbx_or_rollback(
 			mm.dbx(),
@@ -427,11 +501,19 @@ impl TestResultBmc {
 		)
 		.await?;
 
-		let sql =
-			format!("DELETE FROM {} WHERE id = $1 AND case_id = $2", Self::TABLE);
+		let sql = format!(
+			"UPDATE {} SET deleted = $3, updated_at = now(), updated_by = $4 WHERE id = $1 AND case_id = $2",
+			Self::TABLE
+		);
 		let result = mm
 			.dbx()
-			.execute(sqlx::query(&sql).bind(id).bind(case_id))
+			.execute(
+				sqlx::query(&sql)
+					.bind(id)
+					.bind(case_id)
+					.bind(deleted)
+					.bind(ctx.user_id()),
+			)
 			.await?;
 		if result == 0 {
 			mm.dbx().rollback_txn().await?;

@@ -24,7 +24,7 @@ async fn fetch_reactions(
 	mm.dbx()
 		.fetch_all(
 			sqlx::query_as::<_, Reaction>(
-				"SELECT * FROM reactions WHERE case_id = $1 ORDER BY sequence_number",
+				"SELECT * FROM reactions WHERE case_id = $1 AND deleted = false ORDER BY sequence_number",
 			)
 			.bind(case_id),
 		)

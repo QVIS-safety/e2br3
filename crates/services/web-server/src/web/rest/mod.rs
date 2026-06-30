@@ -153,6 +153,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 				.delete(case_editor_rest::delete_editor_lb_page_row),
 		)
 		.route(
+			"/cases/{case_id}/editor/pages/LB/rows/{row_id}/restore",
+			axum::routing::post(case_editor_rest::restore_editor_lb_page_row),
+		)
+		.route(
 			"/cases/{case_id}/editor/pages/DG",
 			get(case_editor_rest::get_editor_dg_page_projection),
 		)
@@ -165,6 +169,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			get(case_editor_rest::get_editor_dg_page_row)
 				.patch(case_editor_rest::patch_editor_dg_page_row)
 				.delete(case_editor_rest::delete_editor_dg_page_row),
+		)
+		.route(
+			"/cases/{case_id}/editor/pages/DG/rows/{row_id}/restore",
+			axum::routing::post(case_editor_rest::restore_editor_dg_page_row),
 		)
 		.route(
 			"/cases/{case_id}/editor/RP",
@@ -357,6 +365,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(drug_rest::update_drug_information)
 			.delete(drug_rest::delete_drug_information),
 	)
+	.route(
+		"/cases/{case_id}/drugs/{id}/restore",
+		axum::routing::post(drug_rest::restore_drug_information),
+	)
 	// Drug Active Substances (collection per drug) - G.k.2.3.r
 	.route(
 		"/cases/{case_id}/drugs/{drug_id}/active-substances",
@@ -452,6 +464,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(test_result_rest::get_test_result)
 			.put(test_result_rest::update_test_result)
 			.delete(test_result_rest::delete_test_result),
+	)
+	.route(
+		"/cases/{case_id}/test-results/{id}/restore",
+		axum::routing::post(test_result_rest::restore_test_result),
 	)
 	// Narrative (singleton per case)
 	.route(

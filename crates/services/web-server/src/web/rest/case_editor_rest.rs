@@ -2131,21 +2131,23 @@ async fn load_editor_ae_list_rows(
 	case_id: Uuid,
 	include_deleted: bool,
 ) -> Result<Vec<CaseEditorAeListRowDto>> {
-	Ok(ReactionBmc::list_by_case_with_deleted(ctx, mm, case_id, include_deleted)
-		.await?
-		.into_iter()
-		.map(|reaction| CaseEditorAeListRowDto {
-			id: reaction.id,
-			sequence_number: reaction.sequence_number,
-			deleted: reaction.deleted,
-			reaction_primary_source_native: reaction.primary_source_reaction,
-			reaction_primary_source_translation: reaction
-				.primary_source_reaction_translation,
-			meddra_version: reaction.reaction_meddra_version,
-			meddra_code: reaction.reaction_meddra_code,
-			seriousness: reaction.serious,
-		})
-		.collect())
+	Ok(
+		ReactionBmc::list_by_case_with_deleted(ctx, mm, case_id, include_deleted)
+			.await?
+			.into_iter()
+			.map(|reaction| CaseEditorAeListRowDto {
+				id: reaction.id,
+				sequence_number: reaction.sequence_number,
+				deleted: reaction.deleted,
+				reaction_primary_source_native: reaction.primary_source_reaction,
+				reaction_primary_source_translation: reaction
+					.primary_source_reaction_translation,
+				meddra_version: reaction.reaction_meddra_version,
+				meddra_code: reaction.reaction_meddra_code,
+				seriousness: reaction.serious,
+			})
+			.collect(),
+	)
 }
 
 pub async fn list_editor_ae(
@@ -2424,19 +2426,23 @@ async fn load_editor_lb_list_rows(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
+	include_deleted: bool,
 ) -> Result<Vec<CaseEditorLbListRowDto>> {
-	Ok(TestResultBmc::list_by_case(ctx, mm, case_id)
-		.await?
-		.into_iter()
-		.map(|test| CaseEditorLbListRowDto {
-			id: test.id,
-			sequence_number: test.sequence_number,
-			test_name: test.test_name,
-			test_date: test.test_date.map(|date| date.to_string()),
-			result_value: test.test_result_value,
-			result_unit: test.test_result_unit,
-		})
-		.collect())
+	Ok(
+		TestResultBmc::list_by_case_with_deleted(ctx, mm, case_id, include_deleted)
+			.await?
+			.into_iter()
+			.map(|test| CaseEditorLbListRowDto {
+				id: test.id,
+				sequence_number: test.sequence_number,
+				deleted: test.deleted,
+				test_name: test.test_name,
+				test_date: test.test_date.map(|date| date.to_string()),
+				result_value: test.test_result_value,
+				result_unit: test.test_result_unit,
+			})
+			.collect(),
+	)
 }
 
 pub async fn list_editor_lb(
@@ -2452,7 +2458,7 @@ pub async fn list_editor_lb(
 	require_permission(&ctx, TEST_RESULT_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let rows = load_editor_lb_list_rows(&ctx, &mm, case_id).await?;
+	let rows = load_editor_lb_list_rows(&ctx, &mm, case_id, false).await?;
 
 	Ok((
 		axum::http::StatusCode::OK,
@@ -2474,7 +2480,13 @@ pub async fn get_editor_lb_page_projection(
 	require_permission(&ctx, TEST_RESULT_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let rows = load_editor_lb_list_rows(&ctx, &mm, case_id).await?;
+	let rows = load_editor_lb_list_rows(
+		&ctx,
+		&mm,
+		case_id,
+		query.include_deleted.unwrap_or(false),
+	)
+	.await?;
 	let projection = repeatable_page_projection_response(
 		case_id,
 		"LB",
@@ -2670,24 +2682,49 @@ pub async fn delete_editor_lb_page_row(
 	Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
+pub async fn restore_editor_lb_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, TEST_RESULT_UPDATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	TestResultBmc::get_in_case_with_deleted(&ctx, &mm, case_id, row_id, true)
+		.await?;
+	TestResultBmc::restore_in_case(&ctx, &mm, case_id, row_id).await?;
+	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
+	let response =
+		build_editor_lb_page_row_response(&ctx, &mm, case_id, row_id, None).await?;
+	Ok((axum::http::StatusCode::OK, Json(response)))
+}
+
 async fn load_editor_dg_list_rows(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
+	include_deleted: bool,
 ) -> Result<Vec<CaseEditorDgListRowDto>> {
-	Ok(DrugInformationBmc::list_by_case(ctx, mm, case_id)
-		.await?
-		.into_iter()
-		.map(|drug| CaseEditorDgListRowDto {
-			id: drug.id,
-			sequence_number: drug.sequence_number,
-			drug_role: drug.drug_characterization,
-			dg_prd_key: drug.source_product_presave_id.map(|id| id.to_string()),
-			medicinal_product: drug.medicinal_product,
-			action_taken: drug.action_taken,
-			warning_count: 0,
-		})
-		.collect())
+	Ok(DrugInformationBmc::list_by_case_with_deleted(
+		ctx,
+		mm,
+		case_id,
+		include_deleted,
+	)
+	.await?
+	.into_iter()
+	.map(|drug| CaseEditorDgListRowDto {
+		id: drug.id,
+		sequence_number: drug.sequence_number,
+		deleted: drug.deleted,
+		drug_role: drug.drug_characterization,
+		dg_prd_key: drug.source_product_presave_id.map(|id| id.to_string()),
+		medicinal_product: drug.medicinal_product,
+		action_taken: drug.action_taken,
+		warning_count: 0,
+	})
+	.collect())
 }
 
 pub async fn list_editor_dg(
@@ -2703,7 +2740,7 @@ pub async fn list_editor_dg(
 	require_permission(&ctx, DRUG_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let rows = load_editor_dg_list_rows(&ctx, &mm, case_id).await?;
+	let rows = load_editor_dg_list_rows(&ctx, &mm, case_id, false).await?;
 
 	Ok((
 		axum::http::StatusCode::OK,
@@ -2725,7 +2762,13 @@ pub async fn get_editor_dg_page_projection(
 	require_permission(&ctx, DRUG_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let rows = load_editor_dg_list_rows(&ctx, &mm, case_id).await?;
+	let rows = load_editor_dg_list_rows(
+		&ctx,
+		&mm,
+		case_id,
+		query.include_deleted.unwrap_or(false),
+	)
+	.await?;
 	let projection = repeatable_page_projection_response(
 		case_id,
 		"DG",
@@ -3028,6 +3071,24 @@ pub async fn delete_editor_dg_page_row(
 	DrugInformationBmc::delete(&ctx, &mm, row_id).await?;
 	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
 	Ok(axum::http::StatusCode::NO_CONTENT)
+}
+
+pub async fn restore_editor_dg_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DRUG_UPDATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	DrugInformationBmc::get_in_case_with_deleted(&ctx, &mm, case_id, row_id, true)
+		.await?;
+	DrugInformationBmc::restore_in_case(&ctx, &mm, case_id, row_id).await?;
+	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
+	let response =
+		build_editor_dg_page_row_response(&ctx, &mm, case_id, row_id, None).await?;
+	Ok((axum::http::StatusCode::OK, Json(response)))
 }
 
 async fn load_editor_dh_list_rows(

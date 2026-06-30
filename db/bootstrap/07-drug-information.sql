@@ -94,19 +94,22 @@ CREATE TABLE drug_information (
     -- FDA.G.k.1.a - FDA Other Characterisation of Drug Role (1 = Similar Device)
     fda_other_characterization VARCHAR(10),
 
+    deleted BOOLEAN NOT NULL DEFAULT false,
+
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_drug_sequence UNIQUE (case_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_drug_info_case ON drug_information(case_id);
 CREATE INDEX idx_drug_info_source_presave ON drug_information(source_product_presave_id);
 CREATE INDEX idx_drug_info_mpid ON drug_information(mpid);
 CREATE INDEX idx_drug_info_mfds_mpid ON drug_information(mfds_mpid);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_drug_information_active_sequence_unique
+    ON drug_information(case_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- G.k.2.3.r: Active Substance(s) (Repeating)
