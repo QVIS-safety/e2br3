@@ -19,6 +19,7 @@ use sea_query::{Iden, IntoIden, TableRef};
 pub enum CommonIden {
 	Id,
 	OwnerId,
+	Deleted,
 }
 
 #[derive(Iden)]

@@ -6,7 +6,7 @@
 
 use crate::ctx::Ctx;
 use crate::model::base::{
-	prep_fields_for_create, prep_fields_for_update, CommonIden, DbBmc,
+	prep_fields_for_create, prep_fields_for_update, CommonIden, DbBmc, TimestampIden,
 };
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::ModelManager;
@@ -249,6 +249,70 @@ where
 }
 
 // endregion: --- Delete
+
+// region:    --- Soft Delete
+
+pub async fn set_deleted<MC>(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	id: Uuid,
+	deleted: bool,
+) -> Result<()>
+where
+	MC: DbBmc,
+{
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+
+	if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+		dbx.rollback_txn().await?;
+		return Err(err);
+	}
+
+	let mut query = Query::update();
+	query
+		.table(MC::table_ref())
+		.value(CommonIden::Deleted, deleted)
+		.value(TimestampIden::UpdatedAt, Expr::cust("now()"))
+		.value(TimestampIden::UpdatedBy, ctx.user_id())
+		.and_where(Expr::col(CommonIden::Id).eq(id));
+
+	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
+	let count = match dbx.execute(sqlx::query_with(&sql, values)).await {
+		Ok(count) => count,
+		Err(err) => {
+			dbx.rollback_txn().await?;
+			return Err(err.into());
+		}
+	};
+
+	if count == 0 {
+		dbx.rollback_txn().await?;
+		return Err(crate::model::Error::EntityUuidNotFound {
+			entity: MC::TABLE,
+			id,
+		});
+	}
+
+	dbx.commit_txn().await?;
+	Ok(())
+}
+
+pub async fn soft_delete<MC>(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()>
+where
+	MC: DbBmc,
+{
+	set_deleted::<MC>(ctx, mm, id, true).await
+}
+
+pub async fn restore<MC>(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()>
+where
+	MC: DbBmc,
+{
+	set_deleted::<MC>(ctx, mm, id, false).await
+}
+
+// endregion: --- Soft Delete
 
 // region:    --- List
 
