@@ -210,6 +210,30 @@ pub async fn delete_patient_identifier(
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
+/// POST /api/cases/{case_id}/patient/identifiers/{id}/restore
+pub async fn restore_patient_identifier(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<PatientIdentifier>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PATIENT_IDENTIFIER_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
+	ensure_patient_scope(
+		&ctx,
+		&mm,
+		case_id,
+		entity.patient_id,
+		id,
+		"patient_identifiers",
+	)
+	.await?;
+	PatientIdentifierBmc::restore(&ctx, &mm, id).await?;
+	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Medical History Episodes (D.7.1.r)
 
 /// POST /api/cases/{case_id}/patient/medical-history
@@ -329,6 +353,30 @@ pub async fn delete_medical_history_episode(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/patient/medical-history/{id}/restore
+pub async fn restore_medical_history_episode(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<MedicalHistoryEpisode>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, MEDICAL_HISTORY_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
+	ensure_patient_scope(
+		&ctx,
+		&mm,
+		case_id,
+		entity.patient_id,
+		id,
+		"medical_history_episodes",
+	)
+	.await?;
+	MedicalHistoryEpisodeBmc::restore(&ctx, &mm, id).await?;
+	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Past Drug History (D.8.r)
 
 /// POST /api/cases/{case_id}/patient/past-drugs
@@ -446,6 +494,30 @@ pub async fn delete_past_drug_history(
 	.await?;
 	PastDrugHistoryBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
+}
+
+/// POST /api/cases/{case_id}/patient/past-drugs/{id}/restore
+pub async fn restore_past_drug_history(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<PastDrugHistory>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PAST_DRUG_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
+	ensure_patient_scope(
+		&ctx,
+		&mm,
+		case_id,
+		entity.patient_id,
+		id,
+		"past_drug_history",
+	)
+	.await?;
+	PastDrugHistoryBmc::restore(&ctx, &mm, id).await?;
+	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
 // -- Patient Death Information (D.9)
@@ -683,6 +755,29 @@ pub async fn delete_reported_cause_of_death(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/patient/death-info/{death_info_id}/reported-causes/{id}/restore
+pub async fn restore_reported_cause_of_death(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<ReportedCauseOfDeath>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DEATH_CAUSE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = ReportedCauseOfDeathBmc::get(&ctx, &mm, id).await?;
+	if entity.death_info_id != death_info_id {
+		return Err(model::Error::EntityUuidNotFound {
+			entity: "reported_causes_of_death",
+			id,
+		}
+		.into());
+	}
+	ensure_death_info_case(&ctx, &mm, case_id, death_info_id).await?;
+	ReportedCauseOfDeathBmc::restore(&ctx, &mm, id).await?;
+	let entity = ReportedCauseOfDeathBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Autopsy Cause of Death (D.9.4.r)
 
 /// POST /api/cases/{case_id}/patient/death-info/{death_info_id}/autopsy-causes
@@ -797,6 +892,29 @@ pub async fn delete_autopsy_cause_of_death(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/patient/death-info/{death_info_id}/autopsy-causes/{id}/restore
+pub async fn restore_autopsy_cause_of_death(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, death_info_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<AutopsyCauseOfDeath>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DEATH_CAUSE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = AutopsyCauseOfDeathBmc::get(&ctx, &mm, id).await?;
+	if entity.death_info_id != death_info_id {
+		return Err(model::Error::EntityUuidNotFound {
+			entity: "autopsy_causes_of_death",
+			id,
+		}
+		.into());
+	}
+	ensure_death_info_case(&ctx, &mm, case_id, death_info_id).await?;
+	AutopsyCauseOfDeathBmc::restore(&ctx, &mm, id).await?;
+	let entity = AutopsyCauseOfDeathBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Parent Information (D.10)
 
 /// POST /api/cases/{case_id}/patient/parents
@@ -834,6 +952,7 @@ pub async fn list_parent_information(
 		patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
 			patient_id.to_string()
 		))])),
+		..Default::default()
 	};
 	let entities = ParentInformationBmc::list(
 		&ctx,
@@ -913,4 +1032,28 @@ pub async fn delete_parent_information(
 	.await?;
 	ParentInformationBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
+}
+
+/// POST /api/cases/{case_id}/patient/parents/{id}/restore
+pub async fn restore_parent_information(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<ParentInformation>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PARENT_INFORMATION_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
+	ensure_patient_scope(
+		&ctx,
+		&mm,
+		case_id,
+		entity.patient_id,
+		id,
+		"parent_information",
+	)
+	.await?;
+	ParentInformationBmc::restore(&ctx, &mm, id).await?;
+	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }

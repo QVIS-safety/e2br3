@@ -9,7 +9,7 @@ use crate::model::store::set_full_context_dbx_or_rollback;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
-use modql::filter::{FilterNodes, ListOptions, OpValsValue};
+use modql::filter::{FilterNodes, ListOptions, OpValBool, OpValsBool, OpValsValue};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::{Date, OffsetDateTime};
 use sqlx::types::Uuid;
@@ -43,6 +43,8 @@ pub struct ParentMedicalHistory {
 
 	// D.10.7.1.r.5 - Comments
 	pub comments: Option<String>,
+
+	pub deleted: bool,
 
 	// Timestamps
 	pub created_at: OffsetDateTime,
@@ -85,6 +87,7 @@ pub struct ParentMedicalHistoryFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub parent_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- ParentPastDrugHistory
@@ -125,6 +128,8 @@ pub struct ParentPastDrugHistory {
 	// D.10.8.r.7a/b - Reaction (MedDRA)
 	pub reaction_meddra_version: Option<String>,
 	pub reaction_meddra_code: Option<String>,
+
+	pub deleted: bool,
 
 	// Timestamps
 	pub created_at: OffsetDateTime,
@@ -178,6 +183,7 @@ pub struct ParentPastDrugHistoryFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub parent_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- BMCs
@@ -210,7 +216,12 @@ impl ParentMedicalHistoryBmc {
 		filters: Option<Vec<ParentMedicalHistoryFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<ParentMedicalHistory>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(ParentMedicalHistoryFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -223,7 +234,11 @@ impl ParentMedicalHistoryBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -255,7 +270,12 @@ impl ParentPastDrugHistoryBmc {
 		filters: Option<Vec<ParentPastDrugHistoryFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<ParentPastDrugHistory>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(ParentPastDrugHistoryFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -333,6 +353,10 @@ impl ParentPastDrugHistoryBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }

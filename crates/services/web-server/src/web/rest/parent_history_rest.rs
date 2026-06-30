@@ -190,6 +190,24 @@ pub async fn delete_parent_medical_history(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/patient/parent/{parent_id}/medical-history/{id}/restore
+pub async fn restore_parent_medical_history(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<ParentMedicalHistory>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PARENT_MEDICAL_HISTORY_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = ParentMedicalHistoryBmc::get(&ctx, &mm, id).await?;
+	ensure_parent_scope(parent_id, entity.parent_id, id, "parent_medical_history")?;
+	ensure_parent_case(&ctx, &mm, case_id, parent_id).await?;
+	ParentMedicalHistoryBmc::restore(&ctx, &mm, id).await?;
+	let entity = ParentMedicalHistoryBmc::get(&ctx, &mm, id).await?;
+
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Parent Past Drug History (D.10.8.r)
 
 /// POST /api/cases/{case_id}/patient/parent/{parent_id}/past-drugs
@@ -334,4 +352,27 @@ pub async fn delete_parent_past_drug_history(
 	ParentPastDrugHistoryBmc::delete(&ctx, &mm, id).await?;
 
 	Ok(StatusCode::NO_CONTENT)
+}
+
+/// POST /api/cases/{case_id}/patient/parent/{parent_id}/past-drugs/{id}/restore
+pub async fn restore_parent_past_drug_history(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, parent_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<ParentPastDrugHistory>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PARENT_PAST_DRUG_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = ParentPastDrugHistoryBmc::get(&ctx, &mm, id).await?;
+	ensure_parent_scope(
+		parent_id,
+		entity.parent_id,
+		id,
+		"parent_past_drug_history",
+	)?;
+	ensure_parent_case(&ctx, &mm, case_id, parent_id).await?;
+	ParentPastDrugHistoryBmc::restore(&ctx, &mm, id).await?;
+	let entity = ParentPastDrugHistoryBmc::get(&ctx, &mm, id).await?;
+
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }

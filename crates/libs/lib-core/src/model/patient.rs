@@ -8,7 +8,9 @@ use crate::model::store::set_full_context_dbx_or_rollback;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
-use modql::filter::{FilterNodes, ListOptions, OpValsString, OpValsValue};
+use modql::filter::{
+	FilterNodes, ListOptions, OpValBool, OpValsBool, OpValsString, OpValsValue,
+};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::{Date, OffsetDateTime};
@@ -150,6 +152,7 @@ pub struct PatientIdentifier {
 	pub sequence_number: i32,
 	pub identifier_type_code: String,
 	pub identifier_value: String,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -175,6 +178,7 @@ pub struct PatientIdentifierFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub patient_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- MedicalHistoryEpisode
@@ -197,6 +201,7 @@ pub struct MedicalHistoryEpisode {
 	pub end_date_null_flavor: Option<String>,
 	pub comments: Option<String>,
 	pub family_history: Option<bool>,
+	pub deleted: bool,
 
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -239,6 +244,7 @@ pub struct MedicalHistoryEpisodeFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub patient_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- PastDrugHistory
@@ -276,6 +282,7 @@ pub struct PastDrugHistory {
 	// D.8.r.7 - Reaction(s)
 	pub reaction_meddra_version: Option<String>,
 	pub reaction_meddra_code: Option<String>,
+	pub deleted: bool,
 
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -346,6 +353,7 @@ pub struct PastDrugHistoryFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub patient_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- PatientDeathInformation
@@ -407,6 +415,7 @@ pub struct ReportedCauseOfDeath {
 	pub meddra_version: Option<String>,
 	pub meddra_code: Option<String>,
 	pub comments: Option<String>,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -434,6 +443,7 @@ pub struct ReportedCauseOfDeathFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub death_info_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- AutopsyCauseOfDeath
@@ -446,6 +456,7 @@ pub struct AutopsyCauseOfDeath {
 	pub meddra_version: Option<String>,
 	pub meddra_code: Option<String>,
 	pub comments: Option<String>,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -473,6 +484,7 @@ pub struct AutopsyCauseOfDeathFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub death_info_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- ParentInformation
@@ -494,6 +506,7 @@ pub struct ParentInformation {
 	pub height_cm: Option<Decimal>,
 	pub sex: Option<String>,
 	pub medical_history_text: Option<String>,
+	pub deleted: bool,
 
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -554,6 +567,7 @@ pub struct ParentInformationForUpdate {
 pub struct ParentInformationFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub patient_id: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- BMCs
@@ -984,7 +998,12 @@ impl PatientIdentifierBmc {
 		filters: Option<Vec<PatientIdentifierFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<PatientIdentifier>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(PatientIdentifierFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -997,7 +1016,11 @@ impl PatientIdentifierBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1029,7 +1052,12 @@ impl MedicalHistoryEpisodeBmc {
 		filters: Option<Vec<MedicalHistoryEpisodeFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<MedicalHistoryEpisode>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(MedicalHistoryEpisodeFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1042,7 +1070,11 @@ impl MedicalHistoryEpisodeBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1074,7 +1106,12 @@ impl PastDrugHistoryBmc {
 		filters: Option<Vec<PastDrugHistoryFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<PastDrugHistory>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(PastDrugHistoryFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1152,7 +1189,11 @@ impl PastDrugHistoryBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1275,7 +1316,12 @@ impl ReportedCauseOfDeathBmc {
 		filters: Option<Vec<ReportedCauseOfDeathFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<ReportedCauseOfDeath>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(ReportedCauseOfDeathFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1288,7 +1334,11 @@ impl ReportedCauseOfDeathBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1320,7 +1370,12 @@ impl AutopsyCauseOfDeathBmc {
 		filters: Option<Vec<AutopsyCauseOfDeathFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<AutopsyCauseOfDeath>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(AutopsyCauseOfDeathFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1333,7 +1388,11 @@ impl AutopsyCauseOfDeathBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1365,7 +1424,12 @@ impl ParentInformationBmc {
 		filters: Option<Vec<ParentInformationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<ParentInformation>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(ParentInformationFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1459,6 +1523,10 @@ impl ParentInformationBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }

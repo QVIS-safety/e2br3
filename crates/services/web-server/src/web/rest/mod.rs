@@ -266,6 +266,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(patient_sub_rest::update_patient_identifier)
 			.delete(patient_sub_rest::delete_patient_identifier),
 	)
+	.route(
+		"/cases/{case_id}/patient/identifiers/{id}/restore",
+		axum::routing::post(patient_sub_rest::restore_patient_identifier),
+	)
 	// Medical History Episodes (collection per patient) - D.7.1.r
 	.route(
 		"/cases/{case_id}/patient/medical-history",
@@ -278,6 +282,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(patient_sub_rest::update_medical_history_episode)
 			.delete(patient_sub_rest::delete_medical_history_episode),
 	)
+	.route(
+		"/cases/{case_id}/patient/medical-history/{id}/restore",
+		axum::routing::post(patient_sub_rest::restore_medical_history_episode),
+	)
 	// Past Drug History (collection per patient) - D.8.r
 	.route(
 		"/cases/{case_id}/patient/past-drugs",
@@ -289,6 +297,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(patient_sub_rest::get_past_drug_history)
 			.put(patient_sub_rest::update_past_drug_history)
 			.delete(patient_sub_rest::delete_past_drug_history),
+	)
+	.route(
+		"/cases/{case_id}/patient/past-drugs/{id}/restore",
+		axum::routing::post(patient_sub_rest::restore_past_drug_history),
 	)
 	// Patient Death Information (collection per patient) - D.9
 	.route(
@@ -314,6 +326,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(patient_sub_rest::update_reported_cause_of_death)
 			.delete(patient_sub_rest::delete_reported_cause_of_death),
 	)
+	.route(
+		"/cases/{case_id}/patient/death-info/{death_info_id}/reported-causes/{id}/restore",
+		axum::routing::post(patient_sub_rest::restore_reported_cause_of_death),
+	)
 	// Autopsy Causes of Death (collection per death info) - D.9.4.r
 	.route(
 		"/cases/{case_id}/patient/death-info/{death_info_id}/autopsy-causes",
@@ -326,6 +342,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(patient_sub_rest::update_autopsy_cause_of_death)
 			.delete(patient_sub_rest::delete_autopsy_cause_of_death),
 	)
+	.route(
+		"/cases/{case_id}/patient/death-info/{death_info_id}/autopsy-causes/{id}/restore",
+		axum::routing::post(patient_sub_rest::restore_autopsy_cause_of_death),
+	)
 	// Parent Information (collection per patient) - D.10
 	.route(
 		"/cases/{case_id}/patient/parents",
@@ -337,6 +357,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(patient_sub_rest::get_parent_information)
 			.put(patient_sub_rest::update_parent_information)
 			.delete(patient_sub_rest::delete_parent_information),
+	)
+	.route(
+		"/cases/{case_id}/patient/parents/{id}/restore",
+		axum::routing::post(patient_sub_rest::restore_parent_information),
 	)
 	// Reactions (collection per case)
 	.route(
@@ -676,6 +700,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(parent_history_rest::update_parent_medical_history)
 			.delete(parent_history_rest::delete_parent_medical_history),
 	)
+	.route(
+		"/cases/{case_id}/patient/parent/{parent_id}/medical-history/{id}/restore",
+		axum::routing::post(parent_history_rest::restore_parent_medical_history),
+	)
 	// Parent Past Drug History (collection per parent) - D.10.8.r
 	.route(
 		"/cases/{case_id}/patient/parent/{parent_id}/past-drugs",
@@ -687,6 +715,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(parent_history_rest::get_parent_past_drug_history)
 			.put(parent_history_rest::update_parent_past_drug_history)
 			.delete(parent_history_rest::delete_parent_past_drug_history),
+	)
+	.route(
+		"/cases/{case_id}/patient/parent/{parent_id}/past-drugs/{id}/restore",
+		axum::routing::post(parent_history_rest::restore_parent_past_drug_history),
 	)
 	// Case Versions (read-only collection per case)
 	.route(

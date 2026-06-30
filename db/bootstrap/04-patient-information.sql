@@ -78,17 +78,19 @@ CREATE TABLE patient_identifiers (
     -- D.1.1.x - Patient Medical Record Number(s) and Source(s) of the Record Number
     identifier_type_code VARCHAR(1) NOT NULL, -- 1=GP, 2=Specialist, 3=Hospital, 4=Investigation
     identifier_value VARCHAR(100) NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_patient_identifier_sequence UNIQUE (patient_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_patient_identifiers_patient ON patient_identifiers(patient_id);
+CREATE UNIQUE INDEX idx_patient_identifiers_active_sequence_unique
+    ON patient_identifiers(patient_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- D.7.1.r: Medical History Episodes (Repeating)
@@ -119,17 +121,19 @@ CREATE TABLE medical_history_episodes (
 
     -- D.7.1.r.6 - Family History
     family_history BOOLEAN,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_med_history_sequence UNIQUE (patient_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_med_history_patient ON medical_history_episodes(patient_id);
+CREATE UNIQUE INDEX idx_medical_history_episodes_active_sequence_unique
+    ON medical_history_episodes(patient_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- D.8.r: Past Drug History (Repeating)
@@ -171,17 +175,19 @@ CREATE TABLE past_drug_history (
     -- D.8.r.7 - Reaction(s) (MedDRA coded)
     reaction_meddra_version VARCHAR(10),
     reaction_meddra_code VARCHAR(20),
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_past_drug_sequence UNIQUE (patient_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_past_drug_patient ON past_drug_history(patient_id);
+CREATE UNIQUE INDEX idx_past_drug_history_active_sequence_unique
+    ON past_drug_history(patient_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- D.9: Death Information
@@ -217,15 +223,18 @@ CREATE TABLE reported_causes_of_death (
     meddra_version VARCHAR(10),
     meddra_code VARCHAR(20),
     comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_reported_death_cause UNIQUE (death_info_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
+
+CREATE UNIQUE INDEX idx_reported_causes_of_death_active_sequence_unique
+    ON reported_causes_of_death(death_info_id, sequence_number)
+    WHERE deleted = false;
 
 -- D.9.4.r: Autopsy-determined Cause(s) of Death (Repeating, MedDRA coded)
 CREATE TABLE autopsy_causes_of_death (
@@ -235,15 +244,18 @@ CREATE TABLE autopsy_causes_of_death (
     meddra_version VARCHAR(10),
     meddra_code VARCHAR(20),
     comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_autopsy_death_cause UNIQUE (death_info_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
+
+CREATE UNIQUE INDEX idx_autopsy_causes_of_death_active_sequence_unique
+    ON autopsy_causes_of_death(death_info_id, sequence_number)
+    WHERE deleted = false;
 
 CREATE INDEX idx_death_info_patient ON patient_death_information(patient_id);
 
@@ -282,17 +294,19 @@ CREATE TABLE parent_information (
 
     -- D.10.7.2 - Text for Relevant Parent Medical History
     medical_history_text TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_parent_per_patient UNIQUE (patient_id)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_parent_info_patient ON parent_information(patient_id);
+CREATE UNIQUE INDEX idx_parent_information_active_patient_unique
+    ON parent_information(patient_id)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- D.10.7.1.r: Parent Medical History Episodes (Repeating)
@@ -322,17 +336,19 @@ CREATE TABLE parent_medical_history (
 
     -- D.10.7.1.r.5 - Comments
     comments TEXT,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_parent_med_history_sequence UNIQUE (parent_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_parent_med_history_parent ON parent_medical_history(parent_id);
+CREATE UNIQUE INDEX idx_parent_medical_history_active_sequence_unique
+    ON parent_medical_history(parent_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- D.10.8.r: Parent Past Drug History (Repeating)
@@ -376,14 +392,16 @@ CREATE TABLE parent_past_drug_history (
 
     -- D.10.8.r.7b - Reaction (MedDRA code)
     reaction_meddra_code VARCHAR(20),
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_parent_past_drug_sequence UNIQUE (parent_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_parent_past_drug_parent ON parent_past_drug_history(parent_id);
+CREATE UNIQUE INDEX idx_parent_past_drug_history_active_sequence_unique
+    ON parent_past_drug_history(parent_id, sequence_number)
+    WHERE deleted = false;
