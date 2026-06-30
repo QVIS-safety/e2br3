@@ -4,6 +4,7 @@ use crate::common::{
 	demo_ctx, demo_org_id, demo_user_id, reset_role, set_auditor_role, Result,
 };
 use lib_core::_dev_utils;
+use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO};
 use lib_core::model::presave::{
 	NarrativePresaveBmc, NarrativePresaveForCreate, ProductPresaveBmc,
 	ProductPresaveForCreate, ProductPresaveForUpdate,
@@ -96,6 +97,32 @@ fn expect_conflict_error<T>(result: lib_core::model::Result<T>, expected: &str) 
 		}
 		Ok(_) => panic!("expected Conflict error containing {expected:?}, got Ok"),
 	}
+}
+
+fn sponsor_ctx(org_id: Uuid, role: &str) -> Ctx {
+	Ctx::new(demo_user_id(), org_id, role.to_string())
+		.expect("failed to create sponsor context")
+}
+
+async fn create_acl_test_org(mm: &ModelManager, label: &str) -> Result<Uuid> {
+	let org_id = Uuid::new_v4();
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, demo_user_id()).await?;
+	set_org_context(&mut tx, demo_org_id(), "system_admin").await?;
+	sqlx::query(
+		"INSERT INTO organizations (
+			id, name, org_type, active, created_by, created_at, updated_at
+		) VALUES (
+			$1, $2, 'sponsor', true, $3, NOW(), NOW()
+		)",
+	)
+	.bind(org_id)
+	.bind(format!("ACL Test Org {label} {org_id}"))
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await?;
+	tx.commit().await?;
+	Ok(org_id)
 }
 
 async fn latest_audit_changed_fields(
@@ -245,6 +272,152 @@ fn study_presave_create_for_product(
 		edc_sync: None,
 		exclude_case_key_from_sync: None,
 	}
+}
+
+#[serial]
+#[tokio::test]
+async fn sponsor_company_sender_presave_limited_to_one_active_record() -> Result<()>
+{
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let org_id = create_acl_test_org(&mm, "company-sender-limit").await?;
+	let ctx = sponsor_ctx(org_id, ROLE_SPONSOR_ADMIN_COMPANY);
+
+	let first_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create("Company Sender First".into()),
+	)
+	.await?;
+
+	expect_conflict_error(
+		SenderPresaveBmc::create(
+			&ctx,
+			&mm,
+			sender_presave_create("Company Sender Second".into()),
+		)
+		.await,
+		"pharmaceutical company sponsor administrators can register only one active sender presave",
+	);
+
+	SenderPresaveBmc::update(
+		&ctx,
+		&mm,
+		first_id,
+		SenderPresaveForUpdate {
+			deleted: Some(true),
+			..Default::default()
+		},
+	)
+	.await?;
+
+	SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create("Company Sender Replacement".into()),
+	)
+	.await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn sponsor_cro_sender_presave_allows_multiple_active_records() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let org_id = create_acl_test_org(&mm, "cro-sender-limit").await?;
+	let ctx = sponsor_ctx(org_id, ROLE_SPONSOR_ADMIN_CRO);
+
+	SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create("CRO Sender First".into()),
+	)
+	.await?;
+	SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create("CRO Sender Second".into()),
+	)
+	.await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn sponsor_company_cannot_set_product_presave_sender() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let org_id = create_acl_test_org(&mm, "company-product-sender").await?;
+	let cro_ctx = sponsor_ctx(org_id, ROLE_SPONSOR_ADMIN_CRO);
+	let company_ctx = sponsor_ctx(org_id, ROLE_SPONSOR_ADMIN_COMPANY);
+
+	let first_sender_id = SenderPresaveBmc::create(
+		&cro_ctx,
+		&mm,
+		sender_presave_create("Product Sender First".into()),
+	)
+	.await?;
+	let second_sender_id = SenderPresaveBmc::create(
+		&cro_ctx,
+		&mm,
+		sender_presave_create("Product Sender Second".into()),
+	)
+	.await?;
+
+	expect_conflict_error(
+		ProductPresaveBmc::create(
+			&company_ctx,
+			&mm,
+			product_presave_create(
+				RegulatoryAuthority::Fda,
+				"Company Product Create".into(),
+				first_sender_id,
+			),
+		)
+		.await,
+		"only CRO sponsor administrators can set product sender presaves",
+	);
+
+	let product_id = ProductPresaveBmc::create(
+		&cro_ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Fda,
+			"CRO Product Create".into(),
+			first_sender_id,
+		),
+	)
+	.await?;
+
+	ProductPresaveBmc::update(
+		&company_ctx,
+		&mm,
+		product_id,
+		ProductPresaveForUpdate {
+			medicinal_product: Some("Company Product Text Edit".into()),
+			..Default::default()
+		},
+	)
+	.await?;
+
+	expect_conflict_error(
+		ProductPresaveBmc::update(
+			&company_ctx,
+			&mm,
+			product_id,
+			ProductPresaveForUpdate {
+				sender_presave_id: Some(second_sender_id),
+				..Default::default()
+			},
+		)
+		.await,
+		"only CRO sponsor administrators can set product sender presaves",
+	);
+
+	Ok(())
 }
 
 #[serial]

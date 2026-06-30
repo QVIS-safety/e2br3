@@ -358,6 +358,7 @@ impl SenderPresaveBmc {
 		mm: &ModelManager,
 		data: SenderPresaveForCreate,
 	) -> Result<Uuid> {
+		Self::ensure_sender_count_allowed(ctx, mm).await?;
 		Self::validate_identity(
 			data.sender_type.as_deref(),
 			data.organization_name.as_deref(),
@@ -459,6 +460,28 @@ impl SenderPresaveBmc {
 				&& normalized_text(organization_name).is_some(),
 			"sender presave requires sender_type and organization_name",
 		)
+	}
+
+	async fn ensure_sender_count_allowed(
+		ctx: &Ctx,
+		mm: &ModelManager,
+	) -> Result<()> {
+		if !ctx.is_company_sponsor_admin() {
+			return Ok(());
+		}
+
+		let active_sender_count = Self::list(ctx, mm, None)
+			.await?
+			.into_iter()
+			.filter(|row| !row.deleted)
+			.count();
+		if active_sender_count >= 1 {
+			return Err(relationship_conflict(
+				"pharmaceutical company sponsor administrators can register only one active sender presave",
+			));
+		}
+
+		Ok(())
 	}
 
 	async fn ensure_unique_identity(
@@ -1266,6 +1289,7 @@ impl ProductPresaveBmc {
 		mm: &ModelManager,
 		data: ProductPresaveForCreate,
 	) -> Result<Uuid> {
+		Self::ensure_sender_assignment_allowed(ctx, data.sender_presave_id)?;
 		Self::validate_identity(
 			data.sender_presave_id,
 			data.product_id.as_deref(),
@@ -1316,6 +1340,7 @@ impl ProductPresaveBmc {
 		id: Uuid,
 		data: ProductPresaveForUpdate,
 	) -> Result<()> {
+		Self::ensure_sender_assignment_allowed(ctx, data.sender_presave_id)?;
 		if data.deleted == Some(true) {
 			Self::ensure_not_referenced_by_studies(ctx, mm, id).await?;
 			if any_user_scope_contains(ctx, mm, id, |u| {
@@ -1378,6 +1403,19 @@ impl ProductPresaveBmc {
 					|| normalized_text(preapproval_ip_name).is_some()),
 			"product presave requires sender_presave_id and product_id or preapproval_ip_name",
 		)
+	}
+
+	fn ensure_sender_assignment_allowed(
+		ctx: &Ctx,
+		sender_presave_id: Option<Uuid>,
+	) -> Result<()> {
+		if sender_presave_id.is_some() && !ctx.is_cro_sponsor_admin() {
+			return Err(relationship_conflict(
+				"only CRO sponsor administrators can set product sender presaves",
+			));
+		}
+
+		Ok(())
 	}
 
 	async fn ensure_unique_identity(
