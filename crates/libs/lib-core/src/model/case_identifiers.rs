@@ -8,7 +8,7 @@ use crate::model::modql_utils::uuid_to_sea_value;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
-use modql::filter::{FilterNodes, ListOptions, OpValsValue};
+use modql::filter::{FilterNodes, ListOptions, OpValBool, OpValsBool, OpValsValue};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
@@ -28,6 +28,8 @@ pub struct OtherCaseIdentifier {
 
 	// C.1.9.1.r.2 - Case Identifier
 	pub case_identifier: String,
+
+	pub deleted: bool,
 
 	// Timestamps
 	pub created_at: OffsetDateTime,
@@ -55,6 +57,7 @@ pub struct OtherCaseIdentifierFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub case_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- LinkedReportNumber
@@ -68,6 +71,8 @@ pub struct LinkedReportNumber {
 
 	// C.1.10.r - Linked Report Number
 	pub linked_report_number: String,
+
+	pub deleted: bool,
 
 	// Timestamps
 	pub created_at: OffsetDateTime,
@@ -93,6 +98,7 @@ pub struct LinkedReportNumberFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub case_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- BMCs
@@ -125,7 +131,12 @@ impl OtherCaseIdentifierBmc {
 		filters: Option<Vec<OtherCaseIdentifierFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<OtherCaseIdentifier>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(OtherCaseIdentifierFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -138,7 +149,11 @@ impl OtherCaseIdentifierBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -170,7 +185,12 @@ impl LinkedReportNumberBmc {
 		filters: Option<Vec<LinkedReportNumberFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<LinkedReportNumber>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(LinkedReportNumberFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -183,6 +203,10 @@ impl LinkedReportNumberBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }

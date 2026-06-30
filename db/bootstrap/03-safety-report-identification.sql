@@ -133,17 +133,20 @@ CREATE TABLE literature_references (
     media_type VARCHAR(100),
     representation VARCHAR(10),
     compression VARCHAR(10),
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 
-    CONSTRAINT unique_lit_ref_sequence UNIQUE (case_id, sequence_number)
 );
 
 CREATE INDEX idx_literature_refs_case ON literature_references(case_id);
+CREATE UNIQUE INDEX idx_literature_references_active_sequence_unique
+    ON literature_references(case_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- SECTION C.1.6.1.r: Documents Held by Sender (Repeating)
@@ -158,17 +161,20 @@ CREATE TABLE documents_held_by_sender (
     representation VARCHAR(10),
     compression VARCHAR(10),
     sequence_number INTEGER NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 
-    CONSTRAINT unique_documents_held_sequence UNIQUE (case_id, sequence_number)
 );
 
 CREATE INDEX idx_documents_held_by_sender_case ON documents_held_by_sender(case_id);
+CREATE UNIQUE INDEX idx_documents_held_by_sender_active_sequence_unique
+    ON documents_held_by_sender(case_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- SECTION C.5: Study Information
@@ -208,30 +214,38 @@ CREATE TABLE study_registration_numbers (
     registration_number VARCHAR(50) NOT NULL,
     country_code VARCHAR(2),  -- ISO 3166-1 alpha-2
     sequence_number INTEGER NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 
-    CONSTRAINT unique_study_reg_num UNIQUE (study_information_id, sequence_number)
 );
+
+CREATE UNIQUE INDEX idx_study_registration_numbers_active_sequence_unique
+    ON study_registration_numbers(study_information_id, sequence_number)
+    WHERE deleted = false;
 
 CREATE TABLE study_fda_cross_reported_inds (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     study_information_id UUID NOT NULL REFERENCES study_information(id) ON DELETE CASCADE,
     ind_number VARCHAR(10) NOT NULL,
     sequence_number INTEGER NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 
-    CONSTRAINT unique_study_fda_cross_reported_ind UNIQUE (study_information_id, sequence_number)
 );
+
+CREATE UNIQUE INDEX idx_study_fda_cross_reported_inds_active_sequence_unique
+    ON study_fda_cross_reported_inds(study_information_id, sequence_number)
+    WHERE deleted = false;
 
 CREATE INDEX idx_study_info_case ON study_information(case_id);
 CREATE INDEX idx_study_info_source_presave ON study_information(source_study_presave_id);
@@ -278,18 +292,21 @@ CREATE TABLE primary_sources (
     -- C.2.r.5 - Primary Source for Regulatory Purposes (MANDATORY)
     primary_source_regulatory VARCHAR(1) CHECK (primary_source_regulatory IN ('1', '2')),
     -- 1=Yes, 2=No
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 
-    CONSTRAINT unique_primary_source_sequence UNIQUE (case_id, sequence_number)
 );
 
 CREATE INDEX idx_primary_sources_case ON primary_sources(case_id);
 CREATE INDEX idx_primary_sources_source_presave ON primary_sources(source_reporter_presave_id);
+CREATE UNIQUE INDEX idx_primary_sources_active_sequence_unique
+    ON primary_sources(case_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- SECTION A: Receiver Information
@@ -361,17 +378,20 @@ CREATE TABLE other_case_identifiers (
 
     -- C.1.9.1.r.2 - Case Identifier
     case_identifier VARCHAR(100) NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 
-    CONSTRAINT unique_other_identifier_sequence UNIQUE (case_id, sequence_number)
 );
 
 CREATE INDEX idx_other_case_identifiers_case ON other_case_identifiers(case_id);
+CREATE UNIQUE INDEX idx_other_case_identifiers_active_sequence_unique
+    ON other_case_identifiers(case_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- C.1.10.r: Linked Report Numbers (Repeating)
@@ -385,14 +405,17 @@ CREATE TABLE linked_report_numbers (
 
     -- C.1.10.r - Linked Report Number
     linked_report_number VARCHAR(100) NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 
-    CONSTRAINT unique_linked_report_sequence UNIQUE (case_id, sequence_number)
 );
 
 CREATE INDEX idx_linked_report_numbers_case ON linked_report_numbers(case_id);
+CREATE UNIQUE INDEX idx_linked_report_numbers_active_sequence_unique
+    ON linked_report_numbers(case_id, sequence_number)
+    WHERE deleted = false;

@@ -8,7 +8,7 @@ use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
-use modql::filter::{FilterNodes, ListOptions, OpValsValue};
+use modql::filter::{FilterNodes, ListOptions, OpValBool, OpValsBool, OpValsValue};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::{Date, OffsetDateTime};
 use sqlx::types::Uuid;
@@ -316,6 +316,8 @@ pub struct PrimarySource {
 	// C.2.r.5 - Primary Source for Regulatory Purposes (MANDATORY)
 	pub primary_source_regulatory: Option<String>,
 
+	pub deleted: bool,
+
 	// Timestamps
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -372,6 +374,7 @@ pub struct PrimarySourceFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub case_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- LiteratureReference
@@ -386,6 +389,7 @@ pub struct LiteratureReference {
 	pub media_type: Option<String>,
 	pub representation: Option<String>,
 	pub compression: Option<String>,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -418,6 +422,7 @@ pub struct LiteratureReferenceFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub case_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- DocumentsHeldBySender
@@ -432,6 +437,7 @@ pub struct DocumentsHeldBySender {
 	pub representation: Option<String>,
 	pub compression: Option<String>,
 	pub sequence_number: i32,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -464,6 +470,7 @@ pub struct DocumentsHeldBySenderFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub case_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 // -- StudyInformation
 
@@ -525,6 +532,7 @@ pub struct StudyRegistrationNumber {
 	pub registration_number: String,
 	pub country_code: Option<String>,
 	pub sequence_number: i32,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -551,6 +559,7 @@ pub struct StudyRegistrationNumberFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub study_information_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- StudyFdaCrossReportedInd
@@ -561,6 +570,7 @@ pub struct StudyFdaCrossReportedInd {
 	pub study_information_id: Uuid,
 	pub ind_number: String,
 	pub sequence_number: i32,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -585,6 +595,7 @@ pub struct StudyFdaCrossReportedIndFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub study_information_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- BMCs (Business Model Controllers)
@@ -949,7 +960,12 @@ impl PrimarySourceBmc {
 		filters: Option<Vec<PrimarySourceFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<PrimarySource>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(PrimarySourceFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -962,7 +978,11 @@ impl PrimarySourceBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -994,7 +1014,12 @@ impl LiteratureReferenceBmc {
 		filters: Option<Vec<LiteratureReferenceFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<LiteratureReference>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(LiteratureReferenceFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1007,7 +1032,11 @@ impl LiteratureReferenceBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1039,7 +1068,12 @@ impl DocumentsHeldBySenderBmc {
 		filters: Option<Vec<DocumentsHeldBySenderFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DocumentsHeldBySender>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(DocumentsHeldBySenderFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1052,7 +1086,11 @@ impl DocumentsHeldBySenderBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1129,7 +1167,12 @@ impl StudyRegistrationNumberBmc {
 		filters: Option<Vec<StudyRegistrationNumberFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<StudyRegistrationNumber>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(StudyRegistrationNumberFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1142,7 +1185,11 @@ impl StudyRegistrationNumberBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1174,7 +1221,12 @@ impl StudyFdaCrossReportedIndBmc {
 		filters: Option<Vec<StudyFdaCrossReportedIndFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<StudyFdaCrossReportedInd>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(StudyFdaCrossReportedIndFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1187,6 +1239,10 @@ impl StudyFdaCrossReportedIndBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }

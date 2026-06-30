@@ -545,6 +545,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(safety_report_sub_rest::update_primary_source)
 			.delete(safety_report_sub_rest::delete_primary_source),
 	)
+	.route(
+		"/cases/{case_id}/safety-report/primary-sources/{id}/restore",
+		axum::routing::post(safety_report_sub_rest::restore_primary_source),
+	)
 	// Literature References (collection per case) - C.4.r
 	.route(
 		"/cases/{case_id}/safety-report/documents",
@@ -558,6 +562,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.delete(safety_report_sub_rest::delete_documents_held_by_sender),
 	)
 	.route(
+		"/cases/{case_id}/safety-report/documents/{id}/restore",
+		axum::routing::post(safety_report_sub_rest::restore_documents_held_by_sender),
+	)
+	.route(
 		"/cases/{case_id}/safety-report/literature",
 		get(safety_report_sub_rest::list_literature_references)
 			.post(safety_report_sub_rest::create_literature_reference),
@@ -567,6 +575,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(safety_report_sub_rest::get_literature_reference)
 			.put(safety_report_sub_rest::update_literature_reference)
 			.delete(safety_report_sub_rest::delete_literature_reference),
+	)
+	.route(
+		"/cases/{case_id}/safety-report/literature/{id}/restore",
+		axum::routing::post(safety_report_sub_rest::restore_literature_reference),
 	)
 	// Study Information (collection per case) - C.5
 	.route(
@@ -592,6 +604,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(safety_report_sub_rest::update_study_registration_number)
 			.delete(safety_report_sub_rest::delete_study_registration_number),
 	)
+	.route(
+		"/cases/{case_id}/safety-report/studies/{study_id}/registrations/{id}/restore",
+		axum::routing::post(safety_report_sub_rest::restore_study_registration_number),
+	)
 	// Study FDA Cross-Reported INDs (collection per study) - FDA.C.5.6.r
 	.route(
 		"/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds",
@@ -603,6 +619,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(safety_report_sub_rest::get_study_fda_cross_reported_ind)
 			.put(safety_report_sub_rest::update_study_fda_cross_reported_ind)
 			.delete(safety_report_sub_rest::delete_study_fda_cross_reported_ind),
+	)
+	.route(
+		"/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds/{id}/restore",
+		axum::routing::post(safety_report_sub_rest::restore_study_fda_cross_reported_ind),
 	)
 	// Receiver (singleton per case) - Section A
 	.route(
@@ -624,6 +644,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(case_identifiers_rest::update_other_case_identifier)
 			.delete(case_identifiers_rest::delete_other_case_identifier),
 	)
+	.route(
+		"/cases/{case_id}/other-identifiers/{id}/restore",
+		axum::routing::post(case_identifiers_rest::restore_other_case_identifier),
+	)
 	// Linked Report Numbers (collection per case) - C.1.10.r
 	.route(
 		"/cases/{case_id}/linked-reports",
@@ -635,6 +659,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(case_identifiers_rest::get_linked_report_number)
 			.put(case_identifiers_rest::update_linked_report_number)
 			.delete(case_identifiers_rest::delete_linked_report_number),
+	)
+	.route(
+		"/cases/{case_id}/linked-reports/{id}/restore",
+		axum::routing::post(case_identifiers_rest::restore_linked_report_number),
 	)
 	// Parent Medical History (collection per parent) - D.10.7.1.r
 	.route(

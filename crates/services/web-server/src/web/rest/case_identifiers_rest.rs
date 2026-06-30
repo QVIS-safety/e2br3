@@ -145,6 +145,30 @@ pub async fn delete_other_case_identifier(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/other-identifiers/{id}/restore
+pub async fn restore_other_case_identifier(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<OtherCaseIdentifier>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_IDENTIFIER_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	let entity = OtherCaseIdentifierBmc::get(&ctx, &mm, id).await?;
+	if entity.case_id != case_id {
+		return Err(lib_core::model::Error::EntityUuidNotFound {
+			entity: "other_case_identifiers",
+			id,
+		}
+		.into());
+	}
+	OtherCaseIdentifierBmc::restore(&ctx, &mm, id).await?;
+	let entity = OtherCaseIdentifierBmc::get(&ctx, &mm, id).await?;
+
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Linked Report Numbers (C.1.10.r)
 
 /// POST /api/cases/{case_id}/linked-reports
@@ -266,4 +290,28 @@ pub async fn delete_linked_report_number(
 	LinkedReportNumberBmc::delete(&ctx, &mm, id).await?;
 
 	Ok(StatusCode::NO_CONTENT)
+}
+
+/// POST /api/cases/{case_id}/linked-reports/{id}/restore
+pub async fn restore_linked_report_number(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<LinkedReportNumber>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_IDENTIFIER_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	let entity = LinkedReportNumberBmc::get(&ctx, &mm, id).await?;
+	if entity.case_id != case_id {
+		return Err(lib_core::model::Error::EntityUuidNotFound {
+			entity: "linked_report_numbers",
+			id,
+		}
+		.into());
+	}
+	LinkedReportNumberBmc::restore(&ctx, &mm, id).await?;
+	let entity = LinkedReportNumberBmc::get(&ctx, &mm, id).await?;
+
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }

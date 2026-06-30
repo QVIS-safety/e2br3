@@ -415,6 +415,24 @@ pub async fn delete_primary_source(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/safety-report/primary-sources/{id}/restore
+pub async fn restore_primary_source(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<PrimarySource>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, PRIMARY_SOURCE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = PrimarySourceBmc::get(&ctx, &mm, id).await?;
+	ensure_case_scope(case_id, entity.case_id, id, "primary_sources")?;
+	PrimarySourceBmc::restore(&ctx, &mm, id).await?;
+	normalize_primary_source_flags(&ctx, &mm, case_id, Some(id)).await?;
+	mark_case_dirty_c(&ctx, &mm, case_id).await?;
+	let entity = PrimarySourceBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Literature References (C.4.r)
 
 /// POST /api/cases/{case_id}/safety-report/documents
@@ -506,6 +524,22 @@ pub async fn delete_documents_held_by_sender(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/safety-report/documents/{id}/restore
+pub async fn restore_documents_held_by_sender(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<DocumentsHeldBySender>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = DocumentsHeldBySenderBmc::get(&ctx, &mm, id).await?;
+	ensure_case_scope(case_id, entity.case_id, id, "documents_held_by_sender")?;
+	DocumentsHeldBySenderBmc::restore(&ctx, &mm, id).await?;
+	let entity = DocumentsHeldBySenderBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 /// POST /api/cases/{case_id}/safety-report/literature
 pub async fn create_literature_reference(
 	State(mm): State<ModelManager>,
@@ -593,6 +627,22 @@ pub async fn delete_literature_reference(
 	ensure_case_scope(case_id, entity.case_id, id, "literature_references")?;
 	LiteratureReferenceBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
+}
+
+/// POST /api/cases/{case_id}/safety-report/literature/{id}/restore
+pub async fn restore_literature_reference(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<LiteratureReference>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, LITERATURE_REFERENCE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = LiteratureReferenceBmc::get(&ctx, &mm, id).await?;
+	ensure_case_scope(case_id, entity.case_id, id, "literature_references")?;
+	LiteratureReferenceBmc::restore(&ctx, &mm, id).await?;
+	let entity = LiteratureReferenceBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
 // -- Study Information (C.5)
@@ -804,6 +854,29 @@ pub async fn delete_study_registration_number(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/safety-report/studies/{study_id}/registrations/{id}/restore
+pub async fn restore_study_registration_number(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, study_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<StudyRegistrationNumber>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, STUDY_REGISTRATION_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = StudyRegistrationNumberBmc::get(&ctx, &mm, id).await?;
+	if entity.study_information_id != study_id {
+		return Err(model::Error::EntityUuidNotFound {
+			entity: "study_registration_numbers",
+			id,
+		}
+		.into());
+	}
+	ensure_study_case(&ctx, &mm, case_id, study_id).await?;
+	StudyRegistrationNumberBmc::restore(&ctx, &mm, id).await?;
+	let entity = StudyRegistrationNumberBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Study FDA Cross-Reported INDs (FDA.C.5.6.r)
 
 /// POST /api/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds
@@ -919,4 +992,27 @@ pub async fn delete_study_fda_cross_reported_ind(
 	ensure_study_case(&ctx, &mm, case_id, study_id).await?;
 	StudyFdaCrossReportedIndBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
+}
+
+/// POST /api/cases/{case_id}/safety-report/studies/{study_id}/fda-cross-reported-inds/{id}/restore
+pub async fn restore_study_fda_cross_reported_ind(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, study_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<StudyFdaCrossReportedInd>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, STUDY_REGISTRATION_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = StudyFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	if entity.study_information_id != study_id {
+		return Err(model::Error::EntityUuidNotFound {
+			entity: "study_fda_cross_reported_inds",
+			id,
+		}
+		.into());
+	}
+	ensure_study_case(&ctx, &mm, case_id, study_id).await?;
+	StudyFdaCrossReportedIndBmc::restore(&ctx, &mm, id).await?;
+	let entity = StudyFdaCrossReportedIndBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
