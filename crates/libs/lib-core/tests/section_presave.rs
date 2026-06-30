@@ -292,9 +292,11 @@ async fn reporter_presaves_do_not_store_case_only_reporter_fields() -> Result<()
 		!columns.iter().any(|column| column == "email"),
 		"reporter_presaves.email is case-only and must not be a reporter presave column"
 	);
+	// qualification_kr1 (C.2.r.4.KR.1 Other Health Professional Type) IS a reusable
+	// reporter attribute per the UI spec, so it is intentionally a presave column.
 	assert!(
-		!columns.iter().any(|column| column == "qualification_kr1"),
-		"reporter_presaves.qualification_kr1 is case-only and must not be a reporter presave column"
+		columns.iter().any(|column| column == "qualification_kr1"),
+		"reporter_presaves.qualification_kr1 (C.2.r.4.KR.1) must exist as a reporter presave column"
 	);
 
 	Ok(())

@@ -401,6 +401,7 @@ CREATE TABLE IF NOT EXISTS reporter_presaves (
     telephone VARCHAR(50),
     country_code VARCHAR(2),
     qualification VARCHAR(50),
+    qualification_kr1 VARCHAR(50),  -- MFDS.C.2.r.4.KR.1 Other health professional type
     primary_source_regulatory VARCHAR(50),
     -- nullFlavor: name (C.2.r.1) / address+telephone (C.2.r.2) = MSK/ASKU/NASK; qualification (C.2.r.4) = UNK
     reporter_name_null_flavor VARCHAR(4),
@@ -685,7 +686,7 @@ ALTER TABLE sender_presave_responsible_persons
 
 ALTER TABLE reporter_presaves
     DROP COLUMN IF EXISTS email,
-    DROP COLUMN IF EXISTS qualification_kr1,
+    ADD COLUMN IF NOT EXISTS qualification_kr1 VARCHAR(50),
     ADD COLUMN IF NOT EXISTS reporter_name_null_flavor VARCHAR(4),
     ADD COLUMN IF NOT EXISTS reporter_address_null_flavor VARCHAR(4),
     ADD COLUMN IF NOT EXISTS qualification_null_flavor VARCHAR(4);

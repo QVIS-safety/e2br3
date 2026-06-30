@@ -1565,6 +1565,8 @@ pub struct ReporterPresave {
 	pub telephone: Option<String>,
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
+	// MFDS.C.2.r.4.KR.1 - Other health professional type
+	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 	// nullFlavor for name (C.2.r.1) and address/telephone (C.2.r.2): MSK/ASKU/NASK;
 	// for qualification (C.2.r.4): UNK.
@@ -1592,6 +1594,8 @@ pub struct ReporterPresaveForCreate {
 	pub telephone: Option<String>,
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
+	// MFDS.C.2.r.4.KR.1 - Other health professional type
+	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 	pub reporter_name_null_flavor: Option<String>,
 	pub reporter_address_null_flavor: Option<String>,
@@ -1614,6 +1618,7 @@ struct ReporterPresaveForInsert {
 	telephone: Option<String>,
 	country_code: Option<String>,
 	qualification: Option<String>,
+	qualification_kr1: Option<String>,
 	primary_source_regulatory: Option<String>,
 	reporter_name_null_flavor: Option<String>,
 	reporter_address_null_flavor: Option<String>,
@@ -1639,6 +1644,7 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 			telephone: self.telephone,
 			country_code: self.country_code,
 			qualification: self.qualification,
+			qualification_kr1: self.qualification_kr1,
 			primary_source_regulatory: self.primary_source_regulatory,
 			reporter_name_null_flavor: self.reporter_name_null_flavor,
 			reporter_address_null_flavor: self.reporter_address_null_flavor,
@@ -1663,6 +1669,8 @@ pub struct ReporterPresaveForUpdate {
 	pub telephone: Option<String>,
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
+	// MFDS.C.2.r.4.KR.1 - Other health professional type
+	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 	pub reporter_name_null_flavor: Option<String>,
 	pub reporter_address_null_flavor: Option<String>,
