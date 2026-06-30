@@ -22,3 +22,20 @@ generate_case_rest_fns! {
 	PermDelete: REACTION_DELETE,
 	PermList: REACTION_LIST
 }
+
+pub async fn restore_reaction(
+	State(mm): State<ModelManager>,
+	ctx_w: lib_web::middleware::mw_auth::CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<lib_core::model::reaction::Reaction>>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, REACTION_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	ReactionBmc::get_in_case_with_deleted(&ctx, &mm, case_id, id, true).await?;
+	ReactionBmc::restore_in_case(&ctx, &mm, case_id, id).await?;
+	let entity = ReactionBmc::get_in_case(&ctx, &mm, case_id, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}

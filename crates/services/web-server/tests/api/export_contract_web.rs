@@ -281,6 +281,7 @@ async fn seed_cioms_case_data(
 			criteria_other_medically_important: Some(false),
 			criteria_other_medically_important_null_flavor: None,
 			required_intervention: None,
+			required_intervention_null_flavor: None,
 			included_in_ema_ime_list: None,
 			expectedness: None,
 			severity: None,
@@ -310,6 +311,7 @@ async fn seed_cioms_case_data(
 			outcome: Some("2".to_string()),
 			medical_confirmation: Some(true),
 			country_code: Some("KR".to_string()),
+			deleted: Some(false),
 		},
 	)
 	.await?;

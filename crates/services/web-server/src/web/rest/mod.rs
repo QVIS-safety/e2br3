@@ -135,6 +135,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 				.delete(case_editor_rest::delete_editor_ae_page_row),
 		)
 		.route(
+			"/cases/{case_id}/editor/pages/AE/rows/{row_id}/restore",
+			axum::routing::post(case_editor_rest::restore_editor_ae_page_row),
+		)
+		.route(
 			"/cases/{case_id}/editor/pages/LB",
 			get(case_editor_rest::get_editor_lb_page_projection),
 		)
@@ -336,6 +340,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(reaction_rest::get_reaction)
 			.put(reaction_rest::update_reaction)
 			.delete(reaction_rest::delete_reaction),
+	)
+	.route(
+		"/cases/{case_id}/reactions/{id}/restore",
+		axum::routing::post(reaction_rest::restore_reaction),
 	)
 	// Drugs (collection per case)
 	.route(

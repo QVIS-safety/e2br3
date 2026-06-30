@@ -152,6 +152,7 @@ impl<'de> Deserialize<'de> for CaseEditorFieldPatch {
 pub struct CaseEditorAeListRowDto {
 	pub id: Uuid,
 	pub sequence_number: i32,
+	pub deleted: bool,
 	pub reaction_primary_source_native: String,
 	pub reaction_primary_source_translation: Option<String>,
 	pub meddra_version: Option<String>,

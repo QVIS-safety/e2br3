@@ -53,6 +53,7 @@ pub struct Reaction {
 	pub criteria_other_medically_important_null_flavor: Option<String>,
 	// FDA.E.i.3.2h - Required Intervention (FDA)
 	pub required_intervention: Option<String>,
+	pub required_intervention_null_flavor: Option<String>,
 
 	pub included_in_ema_ime_list: Option<bool>,
 	pub expectedness: Option<String>,
@@ -92,6 +93,8 @@ pub struct Reaction {
 	// E.i.9 - Country
 	pub country_code: Option<String>,
 
+	pub deleted: bool,
+
 	// Timestamps
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -123,6 +126,7 @@ pub struct ReactionForCreate {
 	pub criteria_other_medically_important: Option<bool>,
 	pub criteria_other_medically_important_null_flavor: Option<String>,
 	pub required_intervention: Option<String>,
+	pub required_intervention_null_flavor: Option<String>,
 	pub included_in_ema_ime_list: Option<bool>,
 	pub expectedness: Option<String>,
 	pub severity: Option<String>,
@@ -160,6 +164,7 @@ pub struct ReactionForCreate {
 	pub outcome: Option<String>,
 	pub medical_confirmation: Option<bool>,
 	pub country_code: Option<String>,
+	pub deleted: Option<bool>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -184,6 +189,7 @@ pub struct ReactionForUpdate {
 	pub criteria_other_medically_important: Option<bool>,
 	pub criteria_other_medically_important_null_flavor: Option<String>,
 	pub required_intervention: Option<String>,
+	pub required_intervention_null_flavor: Option<String>,
 	pub included_in_ema_ime_list: Option<bool>,
 	pub expectedness: Option<String>,
 	pub severity: Option<String>,
@@ -221,6 +227,7 @@ pub struct ReactionForUpdate {
 	pub outcome: Option<String>,
 	pub medical_confirmation: Option<bool>,
 	pub country_code: Option<String>,
+	pub deleted: Option<bool>,
 }
 
 #[derive(FilterNodes, Deserialize, Default)]
@@ -272,7 +279,7 @@ impl ReactionBmc {
 			 mfds_device_action_notification, mfds_device_action_label_change,
 			 mfds_device_action_other, start_date,
 			 start_date_null_flavor, end_date, end_date_null_flavor, duration_value, duration_unit,
-			 outcome, medical_confirmation, country_code, created_at, updated_at, created_by
+			 outcome, medical_confirmation, country_code, required_intervention_null_flavor, created_at, updated_at, created_by
 			)
 			 VALUES (
 			 $1, $2, $3, $4,
@@ -289,7 +296,7 @@ impl ReactionBmc {
 			 $37, $38, $39,
 			 $40, $41, $42,
 			 $43, $44, $45, $46, $47,
-			 $48, $49, $50, $51, now(), now(), $52
+			 $48, $49, $50, $51, $52, now(), now(), $53
 			)
 			 RETURNING id",
 			Self::TABLE
@@ -349,6 +356,7 @@ impl ReactionBmc {
 					.bind(reaction_c.outcome)
 					.bind(reaction_c.medical_confirmation)
 					.bind(reaction_c.country_code)
+					.bind(reaction_c.required_intervention_null_flavor)
 					.bind(ctx.user_id()),
 			)
 			.await?;
@@ -436,8 +444,10 @@ impl ReactionBmc {
 			     outcome = COALESCE($48, outcome),
 			     medical_confirmation = COALESCE($49, medical_confirmation),
 			     country_code = COALESCE($50, country_code),
+			     required_intervention_null_flavor = COALESCE($51, required_intervention_null_flavor),
+			     deleted = COALESCE($52, deleted),
 			     updated_at = now(),
-			     updated_by = $51
+			     updated_by = $53
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -495,6 +505,8 @@ impl ReactionBmc {
 					.bind(reaction_u.outcome)
 					.bind(reaction_u.medical_confirmation)
 					.bind(reaction_u.country_code)
+					.bind(reaction_u.required_intervention_null_flavor)
+					.bind(reaction_u.deleted)
 					.bind(ctx.user_id()),
 			)
 			.await?;
@@ -514,6 +526,15 @@ impl ReactionBmc {
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<Vec<Reaction>> {
+		Self::list_by_case_with_deleted(ctx, mm, case_id, false).await
+	}
+
+	pub async fn list_by_case_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+		include_deleted: bool,
+	) -> Result<Vec<Reaction>> {
 		mm.dbx().begin_txn().await?;
 		set_full_context_dbx_or_rollback(
 			mm.dbx(),
@@ -522,9 +543,15 @@ impl ReactionBmc {
 			ctx.role(),
 		)
 		.await?;
+		let deleted_filter = if include_deleted {
+			""
+		} else {
+			" AND deleted = false"
+		};
 		let sql = format!(
-			"SELECT * FROM {} WHERE case_id = $1 ORDER BY sequence_number",
-			Self::TABLE
+			"SELECT * FROM {} WHERE case_id = $1{} ORDER BY sequence_number",
+			Self::TABLE,
+			deleted_filter
 		);
 		let result = mm
 			.dbx()
@@ -548,6 +575,16 @@ impl ReactionBmc {
 		case_id: Uuid,
 		id: Uuid,
 	) -> Result<Reaction> {
+		Self::get_in_case_with_deleted(ctx, mm, case_id, id, false).await
+	}
+
+	pub async fn get_in_case_with_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+		id: Uuid,
+		include_deleted: bool,
+	) -> Result<Reaction> {
 		mm.dbx().begin_txn().await?;
 		set_full_context_dbx_or_rollback(
 			mm.dbx(),
@@ -556,9 +593,15 @@ impl ReactionBmc {
 			ctx.role(),
 		)
 		.await?;
+		let deleted_filter = if include_deleted {
+			""
+		} else {
+			" AND deleted = false"
+		};
 		let sql = format!(
-			"SELECT * FROM {} WHERE id = $1 AND case_id = $2",
-			Self::TABLE
+			"SELECT * FROM {} WHERE id = $1 AND case_id = $2{}",
+			Self::TABLE,
+			deleted_filter
 		);
 		let result = mm
 			.dbx()
@@ -652,8 +695,10 @@ impl ReactionBmc {
 			     outcome = COALESCE($49, outcome),
 			     medical_confirmation = COALESCE($50, medical_confirmation),
 			     country_code = COALESCE($51, country_code),
+			     required_intervention_null_flavor = COALESCE($52, required_intervention_null_flavor),
+			     deleted = COALESCE($53, deleted),
 			     updated_at = now(),
-			     updated_by = $52
+			     updated_by = $54
 			 WHERE id = $1 AND case_id = $2",
 			Self::TABLE
 		);
@@ -712,6 +757,8 @@ impl ReactionBmc {
 					.bind(reaction_u.outcome)
 					.bind(reaction_u.medical_confirmation)
 					.bind(reaction_u.country_code)
+					.bind(reaction_u.required_intervention_null_flavor)
+					.bind(reaction_u.deleted)
 					.bind(ctx.user_id()),
 			)
 			.await?;
@@ -727,6 +774,19 @@ impl ReactionBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		Self::set_deleted(ctx, mm, id, true).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		Self::set_deleted(ctx, mm, id, false).await
+	}
+
+	async fn set_deleted(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		deleted: bool,
+	) -> Result<()> {
 		mm.dbx().begin_txn().await?;
 		set_full_context_dbx_or_rollback(
 			mm.dbx(),
@@ -736,8 +796,14 @@ impl ReactionBmc {
 		)
 		.await?;
 
-		let sql = format!("DELETE FROM {} WHERE id = $1", Self::TABLE);
-		let result = mm.dbx().execute(sqlx::query(&sql).bind(id)).await?;
+		let sql = format!(
+			"UPDATE {} SET deleted = $2, updated_at = now(), updated_by = $3 WHERE id = $1",
+			Self::TABLE
+		);
+		let result = mm
+			.dbx()
+			.execute(sqlx::query(&sql).bind(id).bind(deleted).bind(ctx.user_id()))
+			.await?;
 		if result == 0 {
 			mm.dbx().rollback_txn().await?;
 			return Err(crate::model::Error::EntityUuidNotFound {
@@ -755,6 +821,25 @@ impl ReactionBmc {
 		case_id: Uuid,
 		id: Uuid,
 	) -> Result<()> {
+		Self::set_deleted_in_case(ctx, mm, case_id, id, true).await
+	}
+
+	pub async fn restore_in_case(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+		id: Uuid,
+	) -> Result<()> {
+		Self::set_deleted_in_case(ctx, mm, case_id, id, false).await
+	}
+
+	async fn set_deleted_in_case(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		case_id: Uuid,
+		id: Uuid,
+		deleted: bool,
+	) -> Result<()> {
 		mm.dbx().begin_txn().await?;
 		set_full_context_dbx_or_rollback(
 			mm.dbx(),
@@ -764,11 +849,19 @@ impl ReactionBmc {
 		)
 		.await?;
 
-		let sql =
-			format!("DELETE FROM {} WHERE id = $1 AND case_id = $2", Self::TABLE);
+		let sql = format!(
+			"UPDATE {} SET deleted = $3, updated_at = now(), updated_by = $4 WHERE id = $1 AND case_id = $2",
+			Self::TABLE
+		);
 		let result = mm
 			.dbx()
-			.execute(sqlx::query(&sql).bind(id).bind(case_id))
+			.execute(
+				sqlx::query(&sql)
+					.bind(id)
+					.bind(case_id)
+					.bind(deleted)
+					.bind(ctx.user_id()),
+			)
 			.await?;
 		if result == 0 {
 			mm.dbx().rollback_txn().await?;

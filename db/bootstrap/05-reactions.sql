@@ -41,6 +41,7 @@ CREATE TABLE reactions (
 
     -- FDA.E.i.3.2h - Required Intervention (FDA)
     required_intervention VARCHAR(10),
+    required_intervention_null_flavor VARCHAR(4) CHECK (required_intervention_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- Reference AE common metadata
     included_in_ema_ime_list BOOLEAN,
@@ -92,14 +93,17 @@ CREATE TABLE reactions (
     end_date_null_flavor VARCHAR(4) CHECK (end_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
     outcome_null_flavor VARCHAR(4) CHECK (outcome_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
+    deleted BOOLEAN NOT NULL DEFAULT false,
+
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_reaction_sequence UNIQUE (case_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_reactions_case ON reactions(case_id);
 CREATE INDEX idx_reactions_meddra ON reactions(reaction_meddra_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reactions_active_sequence_unique
+    ON reactions(case_id, sequence_number)
+    WHERE deleted = false;

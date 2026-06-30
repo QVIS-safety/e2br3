@@ -120,6 +120,7 @@ fn direct_section_response(
 #[derive(Debug, Deserialize)]
 pub struct CaseEditorPageProjectionQuery {
 	authorities: Option<String>,
+	include_deleted: Option<bool>,
 }
 
 fn query_authorities_csv(
@@ -2128,13 +2129,15 @@ async fn load_editor_ae_list_rows(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
+	include_deleted: bool,
 ) -> Result<Vec<CaseEditorAeListRowDto>> {
-	Ok(ReactionBmc::list_by_case(ctx, mm, case_id)
+	Ok(ReactionBmc::list_by_case_with_deleted(ctx, mm, case_id, include_deleted)
 		.await?
 		.into_iter()
 		.map(|reaction| CaseEditorAeListRowDto {
 			id: reaction.id,
 			sequence_number: reaction.sequence_number,
+			deleted: reaction.deleted,
 			reaction_primary_source_native: reaction.primary_source_reaction,
 			reaction_primary_source_translation: reaction
 				.primary_source_reaction_translation,
@@ -2158,7 +2161,7 @@ pub async fn list_editor_ae(
 	require_permission(&ctx, REACTION_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let rows = load_editor_ae_list_rows(&ctx, &mm, case_id).await?;
+	let rows = load_editor_ae_list_rows(&ctx, &mm, case_id, false).await?;
 
 	Ok((
 		axum::http::StatusCode::OK,
@@ -2180,7 +2183,13 @@ pub async fn get_editor_ae_page_projection(
 	require_permission(&ctx, REACTION_LIST)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
 
-	let rows = load_editor_ae_list_rows(&ctx, &mm, case_id).await?;
+	let rows = load_editor_ae_list_rows(
+		&ctx,
+		&mm,
+		case_id,
+		query.include_deleted.unwrap_or(false),
+	)
+	.await?;
 	let projection = repeatable_page_projection_response(
 		case_id,
 		"AE",
@@ -2392,6 +2401,23 @@ pub async fn delete_editor_ae_page_row(
 	ReactionBmc::delete(&ctx, &mm, row_id).await?;
 	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
 	Ok(axum::http::StatusCode::NO_CONTENT)
+}
+
+pub async fn restore_editor_ae_page_row(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
+) -> Result<(axum::http::StatusCode, Json<Value>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, REACTION_UPDATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+
+	ReactionBmc::get_in_case_with_deleted(&ctx, &mm, case_id, row_id, true).await?;
+	ReactionBmc::restore_in_case(&ctx, &mm, case_id, row_id).await?;
+	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
+	let response =
+		build_editor_ae_page_row_response(&ctx, &mm, case_id, row_id, None).await?;
+	Ok((axum::http::StatusCode::OK, Json(response)))
 }
 
 async fn load_editor_lb_list_rows(

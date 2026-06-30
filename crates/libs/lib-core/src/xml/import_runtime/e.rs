@@ -56,6 +56,7 @@ pub(crate) async fn import_section_e(
 					.criteria_other_medically_important_null_flavor
 					.clone(),
 				required_intervention: reaction.required_intervention.clone(),
+				required_intervention_null_flavor: None,
 				included_in_ema_ime_list: reaction.included_in_ema_ime_list,
 				expectedness: reaction.expectedness.clone(),
 				severity: reaction.severity.clone(),
@@ -99,6 +100,7 @@ pub(crate) async fn import_section_e(
 				outcome: reaction.outcome.clone(),
 				medical_confirmation: reaction.medical_confirmation,
 				country_code: reaction.country_code.clone(),
+				deleted: Some(false),
 			},
 		)
 		.await?;

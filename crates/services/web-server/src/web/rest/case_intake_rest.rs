@@ -504,6 +504,7 @@ pub async fn create_case_from_intake(
 				criteria_other_medically_important: None,
 				criteria_other_medically_important_null_flavor: None,
 				required_intervention: None,
+				required_intervention_null_flavor: None,
 				included_in_ema_ime_list: None,
 				expectedness: None,
 				severity: None,
@@ -533,6 +534,7 @@ pub async fn create_case_from_intake(
 				outcome: None,
 				medical_confirmation: None,
 				country_code: None,
+				deleted: Some(false),
 			},
 		)
 		.await?;
