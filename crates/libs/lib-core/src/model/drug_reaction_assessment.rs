@@ -8,7 +8,7 @@ use crate::model::store::set_full_context_dbx_or_rollback;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
-use modql::filter::{FilterNodes, ListOptions, OpValsValue};
+use modql::filter::{FilterNodes, ListOptions, OpValBool, OpValsBool, OpValsValue};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
@@ -105,6 +105,8 @@ pub struct RelatednessAssessment {
 	// MFDS.G.k.9.i.2.r.3.KR.2 - Additional KR assessment result text
 	pub result_of_assessment_kr2: Option<String>,
 
+	pub deleted: bool,
+
 	// Timestamps
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -135,6 +137,7 @@ pub struct RelatednessAssessmentFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub drug_reaction_assessment_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- BMCs
@@ -405,7 +408,12 @@ impl RelatednessAssessmentBmc {
 		filters: Option<Vec<RelatednessAssessmentFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<RelatednessAssessment>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(RelatednessAssessmentFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -418,6 +426,10 @@ impl RelatednessAssessmentBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }

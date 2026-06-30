@@ -8,7 +8,7 @@ use crate::model::store::set_full_context_dbx_or_rollback;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
-use modql::filter::{FilterNodes, ListOptions, OpValsValue};
+use modql::filter::{FilterNodes, ListOptions, OpValBool, OpValsBool, OpValsValue};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value as JsonValue};
@@ -341,6 +341,7 @@ fn characteristic_text_entry(
 		value_code: None,
 		value_code_system: None,
 		value_display_name: None,
+		deleted: false,
 		created_at: OffsetDateTime::UNIX_EPOCH,
 		updated_at: OffsetDateTime::UNIX_EPOCH,
 		created_by: Uuid::nil(),
@@ -366,6 +367,7 @@ fn characteristic_code_entry(
 		value_code: Some(value_code),
 		value_code_system: None,
 		value_display_name: None,
+		deleted: false,
 		created_at: OffsetDateTime::UNIX_EPOCH,
 		updated_at: OffsetDateTime::UNIX_EPOCH,
 		created_by: Uuid::nil(),
@@ -391,6 +393,7 @@ fn characteristic_boolean_entry(
 		value_code: None,
 		value_code_system: None,
 		value_display_name: None,
+		deleted: false,
 		created_at: OffsetDateTime::UNIX_EPOCH,
 		updated_at: OffsetDateTime::UNIX_EPOCH,
 		created_by: Uuid::nil(),
@@ -643,6 +646,7 @@ pub struct DrugActiveSubstance {
 	// G.k.2.3.r.3 - Strength
 	pub strength_value: Option<Decimal>,
 	pub strength_unit: Option<String>,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -678,6 +682,7 @@ pub struct DrugActiveSubstanceFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub drug_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- DosageInformation
@@ -734,6 +739,7 @@ pub struct DosageInformation {
 	pub parent_route_termid_version: Option<String>,
 	pub first_administration_date_null_flavor: Option<String>,
 	pub last_administration_date_null_flavor: Option<String>,
+	pub deleted: bool,
 
 	// Timestamps
 	pub created_at: OffsetDateTime,
@@ -823,6 +829,7 @@ pub struct DosageInformationFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub drug_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- DrugIndication
@@ -839,6 +846,7 @@ pub struct DrugIndication {
 	// G.k.6.r.2 - Indication (MedDRA coded)
 	pub indication_meddra_version: Option<String>,
 	pub indication_meddra_code: Option<String>,
+	pub deleted: bool,
 
 	// Timestamps
 	pub created_at: OffsetDateTime,
@@ -868,6 +876,7 @@ pub struct DrugIndicationFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub drug_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 #[derive(Fields, Deserialize)]
@@ -901,6 +910,7 @@ pub struct DrugDeviceCharacteristicFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub drug_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- DrugDeviceCharacteristic (FDA Scenario 7)
@@ -918,6 +928,7 @@ pub struct DrugDeviceCharacteristic {
 	pub value_code: Option<String>,
 	pub value_code_system: Option<String>,
 	pub value_display_name: Option<String>,
+	pub deleted: bool,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
 	pub created_by: Uuid,
@@ -1484,7 +1495,12 @@ impl DrugActiveSubstanceBmc {
 		filters: Option<Vec<DrugActiveSubstanceFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugActiveSubstance>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(DrugActiveSubstanceFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1497,7 +1513,11 @@ impl DrugActiveSubstanceBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1529,7 +1549,12 @@ impl DosageInformationBmc {
 		filters: Option<Vec<DosageInformationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DosageInformation>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(DosageInformationFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1542,7 +1567,11 @@ impl DosageInformationBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1574,7 +1603,12 @@ impl DrugIndicationBmc {
 		filters: Option<Vec<DrugIndicationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugIndication>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(DrugIndicationFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1587,7 +1621,11 @@ impl DrugIndicationBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }
 
@@ -1621,7 +1659,12 @@ impl DrugDeviceCharacteristicBmc {
 		filters: Option<Vec<DrugDeviceCharacteristicFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugDeviceCharacteristic>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(DrugDeviceCharacteristicFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -1634,6 +1677,10 @@ impl DrugDeviceCharacteristicBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }

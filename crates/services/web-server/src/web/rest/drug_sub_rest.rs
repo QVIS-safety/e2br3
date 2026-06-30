@@ -140,6 +140,22 @@ pub async fn delete_drug_active_substance(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/drugs/{drug_id}/active-substances/{id}/restore
+pub async fn restore_drug_active_substance(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<DrugActiveSubstance>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DRUG_SUBSTANCE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = DrugActiveSubstanceBmc::get(&ctx, &mm, id).await?;
+	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_active_substances")?;
+	DrugActiveSubstanceBmc::restore(&ctx, &mm, id).await?;
+	let entity = DrugActiveSubstanceBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Dosage Information (G.k.4.r)
 
 /// POST /api/cases/{case_id}/drugs/{drug_id}/dosages
@@ -233,6 +249,22 @@ pub async fn delete_dosage_information(
 	Ok(StatusCode::NO_CONTENT)
 }
 
+/// POST /api/cases/{case_id}/drugs/{drug_id}/dosages/{id}/restore
+pub async fn restore_dosage_information(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<DosageInformation>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DRUG_DOSAGE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = DosageInformationBmc::get(&ctx, &mm, id).await?;
+	ensure_drug_scope(drug_id, entity.drug_id, id, "dosage_information")?;
+	DosageInformationBmc::restore(&ctx, &mm, id).await?;
+	let entity = DosageInformationBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 // -- Drug Indications (G.k.6.r)
 
 /// POST /api/cases/{case_id}/drugs/{drug_id}/indications
@@ -324,6 +356,22 @@ pub async fn delete_drug_indication(
 	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_indications")?;
 	DrugIndicationBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
+}
+
+/// POST /api/cases/{case_id}/drugs/{drug_id}/indications/{id}/restore
+pub async fn restore_drug_indication(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<DrugIndication>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DRUG_INDICATION_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = DrugIndicationBmc::get(&ctx, &mm, id).await?;
+	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_indications")?;
+	DrugIndicationBmc::restore(&ctx, &mm, id).await?;
+	let entity = DrugIndicationBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }
 
 // -- Drug Device Characteristics (FDA device authority)
@@ -420,4 +468,20 @@ pub async fn delete_drug_device_characteristic(
 	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_device_characteristics")?;
 	DrugDeviceCharacteristicBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
+}
+
+/// POST /api/cases/{case_id}/drugs/{drug_id}/device-characteristics/{id}/restore
+pub async fn restore_drug_device_characteristic(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<DrugDeviceCharacteristic>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DRUG_DEVICE_CHARACTERISTIC_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = DrugDeviceCharacteristicBmc::get(&ctx, &mm, id).await?;
+	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_device_characteristics")?;
+	DrugDeviceCharacteristicBmc::restore(&ctx, &mm, id).await?;
+	let entity = DrugDeviceCharacteristicBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
 }

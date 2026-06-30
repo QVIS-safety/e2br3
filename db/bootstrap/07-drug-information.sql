@@ -134,17 +134,19 @@ CREATE TABLE drug_active_substances (
     -- G.k.2.3.r.3 - Strength (value + unit)
     strength_value DECIMAL(15,5),
     strength_unit VARCHAR(50),
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_substance_sequence UNIQUE (drug_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_active_substances_drug ON drug_active_substances(drug_id);
+CREATE UNIQUE INDEX idx_drug_active_substances_active_sequence_unique
+    ON drug_active_substances(drug_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- G.k.4.r: Dosage and Relevant Information (Repeating)
@@ -203,17 +205,19 @@ CREATE TABLE dosage_information (
     -- Null Flavor Support (E2B(R3) compliant: NI, UNK, ASKU, NASK, MSK)
     first_administration_date_null_flavor VARCHAR(4) CHECK (first_administration_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
     last_administration_date_null_flavor VARCHAR(4) CHECK (last_administration_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_dosage_sequence UNIQUE (drug_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_dosage_info_drug ON dosage_information(drug_id);
+CREATE UNIQUE INDEX idx_dosage_information_active_sequence_unique
+    ON dosage_information(drug_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- G.k.6.r: Drug Indication(s) (Repeating, MedDRA coded)
@@ -230,17 +234,19 @@ CREATE TABLE drug_indications (
     -- G.k.6.r.2 - Indication (MedDRA coded)
     indication_meddra_version VARCHAR(10),
     indication_meddra_code VARCHAR(20),
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_indication_sequence UNIQUE (drug_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_drug_indications_drug ON drug_indications(drug_id);
+CREATE UNIQUE INDEX idx_drug_indications_active_sequence_unique
+    ON drug_indications(drug_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- FDA Scenario 7: Device/Product Characteristics (Repeating)
@@ -259,16 +265,18 @@ CREATE TABLE drug_device_characteristics (
     value_code VARCHAR(50),
     value_code_system VARCHAR(200),
     value_display_name VARCHAR(200),
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_drug_device_characteristic_sequence UNIQUE (drug_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_drug_device_characteristics_drug ON drug_device_characteristics(drug_id);
+CREATE UNIQUE INDEX idx_drug_device_characteristics_active_sequence_unique
+    ON drug_device_characteristics(drug_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- G.k.8.r: Drug Recurrence Information (Repeating)
@@ -293,17 +301,19 @@ CREATE TABLE drug_recurrence_information (
     -- G.k.8.r.3 - Did Reaction Recur on Readministration
     reaction_recurred VARCHAR(1) CHECK (reaction_recurred IN ('1', '2', '3')),
     -- 1=Yes, 2=No, 3=Unknown
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_drug_recurrence_sequence UNIQUE (drug_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_drug_recurrence_drug ON drug_recurrence_information(drug_id);
+CREATE UNIQUE INDEX idx_drug_recurrence_information_active_sequence_unique
+    ON drug_recurrence_information(drug_id, sequence_number)
+    WHERE deleted = false;
 
 -- ============================================================================
 -- G.k.9.i: Drug-Reaction Assessment (Causality)
@@ -370,14 +380,16 @@ CREATE TABLE relatedness_assessments (
     result_of_assessment VARCHAR(50),
     -- MFDS.G.k.9.i.2.r.3.KR.2 - Additional KR assessment result text
     result_of_assessment_kr2 VARCHAR(2000),
+    deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields (standardized UUID-based)
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
-
-    CONSTRAINT unique_relatedness_sequence UNIQUE (drug_reaction_assessment_id, sequence_number)
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_relatedness_assessments_parent ON relatedness_assessments(drug_reaction_assessment_id);
+CREATE UNIQUE INDEX idx_relatedness_assessments_active_sequence_unique
+    ON relatedness_assessments(drug_reaction_assessment_id, sequence_number)
+    WHERE deleted = false;

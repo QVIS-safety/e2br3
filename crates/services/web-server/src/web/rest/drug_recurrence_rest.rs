@@ -123,3 +123,21 @@ pub async fn delete_drug_recurrence(
 
 	Ok(StatusCode::NO_CONTENT)
 }
+
+/// POST /api/cases/{case_id}/drugs/{drug_id}/recurrences/{id}/restore
+/// Restore recurrence information
+pub async fn restore_drug_recurrence(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, _drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<DrugRecurrenceInformation>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, DRUG_RECURRENCE_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	tracing::debug!("{:<12} - rest restore_drug_recurrence id={}", "HANDLER", id);
+
+	DrugRecurrenceInformationBmc::restore(&ctx, &mm, id).await?;
+	let entity = DrugRecurrenceInformationBmc::get(&ctx, &mm, id).await?;
+
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}

@@ -7,7 +7,7 @@ use crate::model::modql_utils::uuid_to_sea_value;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
-use modql::filter::{FilterNodes, ListOptions, OpValsValue};
+use modql::filter::{FilterNodes, ListOptions, OpValBool, OpValsBool, OpValsValue};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
@@ -33,6 +33,8 @@ pub struct DrugRecurrenceInformation {
 
 	// G.k.8.r.3 - Did Reaction Recur on Readministration
 	pub reaction_recurred: Option<String>, // 1-3
+
+	pub deleted: bool,
 
 	// Timestamps
 	pub created_at: OffsetDateTime,
@@ -64,6 +66,7 @@ pub struct DrugRecurrenceInformationFilter {
 	#[modql(to_sea_value_fn = "uuid_to_sea_value")]
 	pub drug_id: Option<OpValsValue>,
 	pub sequence_number: Option<OpValsValue>,
+	pub deleted: Option<OpValsBool>,
 }
 
 // -- BMC
@@ -96,7 +99,12 @@ impl DrugRecurrenceInformationBmc {
 		filters: Option<Vec<DrugRecurrenceInformationFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugRecurrenceInformation>> {
-		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+		let mut filters = filters.unwrap_or_default();
+		filters.push(DrugRecurrenceInformationFilter {
+			deleted: Some(OpValBool::Eq(false).into()),
+			..Default::default()
+		});
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
 	pub async fn update(
@@ -114,7 +122,7 @@ impl DrugRecurrenceInformationBmc {
 		drug_id: Uuid,
 	) -> Result<Vec<DrugRecurrenceInformation>> {
 		let sql = format!(
-			"SELECT * FROM {} WHERE drug_id = $1 ORDER BY sequence_number ASC",
+			"SELECT * FROM {} WHERE drug_id = $1 AND deleted = false ORDER BY sequence_number ASC",
 			Self::TABLE
 		);
 		let entities = mm
@@ -127,6 +135,10 @@ impl DrugRecurrenceInformationBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		base_uuid::soft_delete::<Self>(ctx, mm, id).await
+	}
+
+	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::restore::<Self>(ctx, mm, id).await
 	}
 }

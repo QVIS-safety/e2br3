@@ -106,3 +106,17 @@ pub async fn delete_relatedness_assessment(
 	RelatednessAssessmentBmc::delete(&ctx, &mm, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
+
+/// POST /api/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{assessment_id}/relatedness/{id}/restore
+pub async fn restore_relatedness_assessment(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, _drug_id, _assessment_id, id)): Path<(Uuid, Uuid, Uuid, Uuid)>,
+) -> Result<(StatusCode, Json<DataRestResult<RelatednessAssessment>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, RELATEDNESS_ASSESSMENT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	RelatednessAssessmentBmc::restore(&ctx, &mm, id).await?;
+	let entity = RelatednessAssessmentBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}

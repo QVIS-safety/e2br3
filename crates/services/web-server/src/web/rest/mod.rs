@@ -405,6 +405,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(drug_sub_rest::update_drug_active_substance)
 			.delete(drug_sub_rest::delete_drug_active_substance),
 	)
+	.route(
+		"/cases/{case_id}/drugs/{drug_id}/active-substances/{id}/restore",
+		axum::routing::post(drug_sub_rest::restore_drug_active_substance),
+	)
 	// Dosage Information (collection per drug) - G.k.4.r
 	.route(
 		"/cases/{case_id}/drugs/{drug_id}/dosages",
@@ -416,6 +420,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(drug_sub_rest::get_dosage_information)
 			.put(drug_sub_rest::update_dosage_information)
 			.delete(drug_sub_rest::delete_dosage_information),
+	)
+	.route(
+		"/cases/{case_id}/drugs/{drug_id}/dosages/{id}/restore",
+		axum::routing::post(drug_sub_rest::restore_dosage_information),
 	)
 	// Drug Indications (collection per drug) - G.k.6.r
 	.route(
@@ -429,6 +437,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(drug_sub_rest::update_drug_indication)
 			.delete(drug_sub_rest::delete_drug_indication),
 	)
+	.route(
+		"/cases/{case_id}/drugs/{drug_id}/indications/{id}/restore",
+		axum::routing::post(drug_sub_rest::restore_drug_indication),
+	)
 	// Drug Device Characteristics (collection per drug) - FDA G.k.1.a / G.k.12.*
 	.route(
 		"/cases/{case_id}/drugs/{drug_id}/device-characteristics",
@@ -440,6 +452,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(drug_sub_rest::get_drug_device_characteristic)
 			.put(drug_sub_rest::update_drug_device_characteristic)
 			.delete(drug_sub_rest::delete_drug_device_characteristic),
+	)
+	.route(
+		"/cases/{case_id}/drugs/{drug_id}/device-characteristics/{id}/restore",
+		axum::routing::post(drug_sub_rest::restore_drug_device_characteristic),
 	)
 	// Drug-Reaction Assessments (collection per drug) - G.k.9.i
 	.route(
@@ -465,6 +481,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.put(relatedness_assessment_rest::update_relatedness_assessment)
 			.delete(relatedness_assessment_rest::delete_relatedness_assessment),
 	)
+	.route(
+		"/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{assessment_id}/relatedness/{id}/restore",
+		axum::routing::post(relatedness_assessment_rest::restore_relatedness_assessment),
+	)
 	// Drug Recurrences (collection per drug) - G.k.8.r
 	.route(
 		"/cases/{case_id}/drugs/{drug_id}/recurrences",
@@ -476,6 +496,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		get(drug_recurrence_rest::get_drug_recurrence)
 			.put(drug_recurrence_rest::update_drug_recurrence)
 			.delete(drug_recurrence_rest::delete_drug_recurrence),
+	)
+	.route(
+		"/cases/{case_id}/drugs/{drug_id}/recurrences/{id}/restore",
+		axum::routing::post(drug_recurrence_rest::restore_drug_recurrence),
 	)
 	// Test Results (collection per case)
 	.route(
