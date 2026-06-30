@@ -105,6 +105,7 @@ pub fn router() -> Router {
 		get_case_receiver,
 		get_case_safety_report,
 		get_case_narrative,
+		preview_case_narrative,
 		list_case_versions,
 		validate_case,
 		list_case_xml_export_history,
@@ -1952,6 +1953,23 @@ struct NarrativeInformationForUpdateDoc {
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct NarrativePreviewRequestDoc {
+	template: String,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct NarrativePreviewTokenDoc {
+	code: String,
+	resolved: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+struct NarrativePreviewResponseDoc {
+	rendered: String,
+	tokens: Vec<NarrativePreviewTokenDoc>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 struct ESignatureInputDoc {
 	meaning: String,
 	#[schema(format = Password)]
@@ -3513,6 +3531,19 @@ fn get_case_safety_report() {}
 	responses((status = 200, description = "Narrative", body = NarrativeInformationResponse))
 )]
 fn get_case_narrative() {}
+
+#[utoipa::path(
+	post,
+	path = "/api/cases/{case_id}/narrative/preview",
+	tag = "case-subresources",
+	security(
+		("auth_token" = [])
+	),
+	params(("case_id" = String, Path, description = "Case ID")),
+	request_body = NarrativePreviewRequestDoc,
+	responses((status = 200, description = "Rendered narrative preview", body = NarrativePreviewResponseDoc))
+)]
+fn preview_case_narrative() {}
 
 #[utoipa::path(
 	get,

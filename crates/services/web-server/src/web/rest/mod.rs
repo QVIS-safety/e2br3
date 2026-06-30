@@ -40,7 +40,7 @@ pub mod submission_rest;
 pub mod terminology_rest;
 pub mod validation_rules_rest;
 
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 use lib_core::model::ModelManager;
 use lib_web::handlers::handlers_rest::rest_collection_item_routes;
@@ -476,6 +476,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 			.post(narrative_rest::create_narrative_information)
 			.put(narrative_rest::update_narrative_information)
 			.delete(narrative_rest::delete_narrative_information),
+	)
+	.route(
+		"/cases/{case_id}/narrative/preview",
+		post(narrative_sub_rest::preview_narrative_template),
 	)
 	// Sender Diagnoses (collection per narrative) - H.3.r
 	.route(

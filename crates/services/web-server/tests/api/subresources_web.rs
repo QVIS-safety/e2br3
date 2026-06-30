@@ -116,6 +116,33 @@ async fn create_patient(app: &Router, cookie: &str, case_id: Uuid) -> Result<Uui
 	extract_id(&body)
 }
 
+async fn create_patient_with_narrative_preview_values(
+	app: &Router,
+	cookie: &str,
+	case_id: Uuid,
+) -> Result<Uuid> {
+	let body = json!({
+		"data": {
+			"case_id": case_id,
+			"patient_initials": "CD",
+			"age_at_time_of_onset": 30,
+			"sex": "2"
+		}
+	});
+	let (status, body) =
+		post_json(app, cookie, format!("/api/cases/{case_id}/patient"), body)
+			.await?;
+	if status != StatusCode::CREATED {
+		return Err(format!(
+			"create patient for narrative preview status {} body {}",
+			status,
+			String::from_utf8_lossy(&body)
+		)
+		.into());
+	}
+	extract_id(&body)
+}
+
 async fn create_narrative(
 	app: &Router,
 	cookie: &str,
@@ -1176,6 +1203,41 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 	assert_eq!(value["data"]["value_type"], "CE");
 	assert_eq!(value["data"]["value_code"], "1");
 	assert_eq!(value["data"]["value_code_system"], "FDA");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_narrative_preview_resolves_patient_tokens() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_patient_with_narrative_preview_values(&app, &cookie, case_id).await?;
+
+	let body = json!({
+		"template": "{D.2.2a}세의 {D.5} 환자 {UNKNOWN.CODE}"
+	});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/narrative/preview"),
+		body,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["rendered"], "30세의 여성 환자 {UNKNOWN.CODE}");
+	assert_eq!(value["data"]["tokens"][0]["code"], "D.2.2a");
+	assert_eq!(value["data"]["tokens"][0]["resolved"], true);
+	assert_eq!(value["data"]["tokens"][1]["code"], "D.5");
+	assert_eq!(value["data"]["tokens"][1]["resolved"], true);
+	assert_eq!(value["data"]["tokens"][2]["code"], "UNKNOWN.CODE");
+	assert_eq!(value["data"]["tokens"][2]["resolved"], false);
 
 	Ok(())
 }
