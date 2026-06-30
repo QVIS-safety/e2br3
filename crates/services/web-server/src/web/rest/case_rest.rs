@@ -577,7 +577,7 @@ pub async fn update_case_guarded(
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
 	Json(params): Json<PublicCaseUpdateRequest>,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<Case>>)> {
+) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_UPDATE)?;
 	let PublicCaseUpdateRequest {
@@ -585,14 +585,6 @@ pub async fn update_case_guarded(
 		reason_for_change,
 		e_signature,
 	} = params;
-	let requested_safety_report_id = data.safety_report_id.clone();
-	if let Some(safety_report_id) = requested_safety_report_id.as_deref() {
-		if safety_report_id.trim().is_empty() {
-			return Err(Error::BadRequest {
-				message: "safety_report_id cannot be empty".to_string(),
-			});
-		}
-	}
 	let data = to_internal_case_for_update(data);
 	validate_case_update_payload(&data)?;
 	let current = CaseBmc::get(&ctx, &mm, id).await?;
@@ -630,11 +622,7 @@ pub async fn update_case_guarded(
 		})
 		.unwrap_or(false);
 	let requires_reason_for_identity_or_scope =
-		case_identity_or_scope_update_requires_reason(&current, &data)
-			|| optional_text_changed(
-				&requested_safety_report_id,
-				Some(&current.safety_report_id),
-			);
+		case_identity_or_scope_update_requires_reason(&current, &data);
 
 	let ctx_for_update = if requires_compliance {
 		let reason = required_reason_for_change(
@@ -672,38 +660,9 @@ pub async fn update_case_guarded(
 	};
 
 	CaseBmc::update(&ctx_for_update, &mm, id, data).await?;
-	if requested_safety_report_id.is_some() {
-		SafetyReportIdentificationBmc::update_by_case(
-			&ctx_for_update,
-			&mm,
-			id,
-			SafetyReportIdentificationForUpdate {
-				safety_report_id: requested_safety_report_id,
-				version: None,
-				transmission_date: None,
-				transmission_date_null_flavor: None,
-				report_type: Default::default(),
-				date_first_received_from_source: None,
-				date_first_received_from_source_null_flavor: None,
-				date_of_most_recent_information: None,
-				date_of_most_recent_information_null_flavor: None,
-				fulfil_expedited_criteria: Default::default(),
-				local_criteria_report_type: Default::default(),
-				combination_product_report_indicator: Default::default(),
-				worldwide_unique_id: None,
-				first_sender_type: None,
-				additional_documents_available: None,
-				other_case_identifiers_exist: None,
-				nullification_code: None,
-				nullification_reason: None,
-				receiver_organization: None,
-			},
-		)
-		.await
-		.map_err(Error::Model)?;
-	}
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, id).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
+	let entity = case_to_read_result(&ctx, &mm, entity).await?;
 
 	Ok((
 		axum::http::StatusCode::OK,
@@ -717,7 +676,7 @@ pub async fn delete_case(
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
 	payload: Option<Json<PublicCaseDeleteRequest>>,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<Case>>)> {
+) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_DELETE)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
@@ -745,6 +704,7 @@ pub async fn delete_case(
 	.await?;
 	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, id).await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
+	let entity = case_to_read_result(&ctx, &mm, entity).await?;
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(DataRestResult { data: entity }),
@@ -757,7 +717,7 @@ pub async fn mark_case_validated_by_validator(
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
 	headers: axum::http::HeaderMap,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<Case>>)> {
+) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)> {
 	let ctx = ctx_w.0;
 	if !ctx.is_system_admin() {
 		return Err(Error::BadRequest {
@@ -805,6 +765,7 @@ pub async fn mark_case_validated_by_validator(
 	)
 	.await?;
 	let entity = CaseBmc::get(&ctx, &mm, id).await?;
+	let entity = case_to_read_result(&ctx, &mm, entity).await?;
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(DataRestResult { data: entity }),
