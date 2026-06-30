@@ -43,7 +43,7 @@ pub(crate) async fn load_drug_export_bundle(
 		mm.dbx()
 			.fetch_all(
 				sqlx::query_as::<_, DrugActiveSubstance>(
-					"SELECT * FROM drug_active_substances WHERE drug_id = ANY($1) ORDER BY sequence_number",
+					"SELECT * FROM drug_active_substances WHERE drug_id = ANY($1) AND deleted = false ORDER BY sequence_number",
 				)
 				.bind(&drug_ids),
 			)
@@ -58,7 +58,7 @@ pub(crate) async fn load_drug_export_bundle(
 		mm.dbx()
 			.fetch_all(
 				sqlx::query_as::<_, DosageInformation>(
-					"SELECT * FROM dosage_information WHERE drug_id = ANY($1) ORDER BY sequence_number",
+					"SELECT * FROM dosage_information WHERE drug_id = ANY($1) AND deleted = false ORDER BY sequence_number",
 				)
 				.bind(&drug_ids),
 			)
@@ -73,7 +73,7 @@ pub(crate) async fn load_drug_export_bundle(
 		mm.dbx()
 			.fetch_all(
 				sqlx::query_as::<_, DrugIndication>(
-					"SELECT * FROM drug_indications WHERE drug_id = ANY($1) ORDER BY sequence_number",
+					"SELECT * FROM drug_indications WHERE drug_id = ANY($1) AND deleted = false ORDER BY sequence_number",
 				)
 				.bind(&drug_ids),
 			)
@@ -88,7 +88,7 @@ pub(crate) async fn load_drug_export_bundle(
 		mm.dbx()
 			.fetch_all(
 				sqlx::query_as::<_, DrugDeviceCharacteristic>(
-					"SELECT * FROM drug_device_characteristics WHERE drug_id = ANY($1) ORDER BY sequence_number",
+					"SELECT * FROM drug_device_characteristics WHERE drug_id = ANY($1) AND deleted = false ORDER BY sequence_number",
 				)
 				.bind(&drug_ids),
 			)
@@ -142,7 +142,7 @@ pub(crate) async fn load_drug_export_bundle(
 		mm.dbx()
 			.fetch_all(
 				sqlx::query_as::<_, DrugReactionAssessment>(
-					"SELECT * FROM drug_reaction_assessments WHERE drug_id = ANY($1)",
+					"SELECT * FROM drug_reaction_assessments WHERE drug_id = ANY($1) AND deleted = false",
 				)
 				.bind(&drug_ids),
 			)
@@ -157,7 +157,7 @@ pub(crate) async fn load_drug_export_bundle(
 		mm.dbx()
 			.fetch_all(
 				sqlx::query_as::<_, RelatednessAssessment>(
-					"SELECT * FROM relatedness_assessments WHERE drug_reaction_assessment_id = ANY($1) ORDER BY sequence_number",
+					"SELECT * FROM relatedness_assessments WHERE drug_reaction_assessment_id = ANY($1) AND deleted = false ORDER BY sequence_number",
 				)
 				.bind(&assessment_ids),
 			)

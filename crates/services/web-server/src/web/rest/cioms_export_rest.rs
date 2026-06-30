@@ -275,8 +275,9 @@ where
 		let _ = mm.dbx().rollback_txn().await;
 		return Err(err);
 	}
-	let sql =
-		format!("SELECT * FROM {table} WHERE case_id = $1 ORDER BY sequence_number");
+	let sql = format!(
+		"SELECT * FROM {table} WHERE case_id = $1 AND deleted = false ORDER BY sequence_number"
+	);
 	let result = mm
 		.dbx()
 		.fetch_all(sqlx::query_as::<_, T>(&sql).bind(case_id))
@@ -337,6 +338,8 @@ async fn load_dosages_by_case(
 				 FROM dosage_information
 				 JOIN drug_information ON drug_information.id = dosage_information.drug_id
 				 WHERE drug_information.case_id = $1
+				   AND drug_information.deleted = false
+				   AND dosage_information.deleted = false
 				 ORDER BY drug_information.sequence_number, dosage_information.sequence_number",
 			)
 			.bind(case_id),
@@ -356,6 +359,8 @@ async fn load_indications_by_case(
 				 FROM drug_indications
 				 JOIN drug_information ON drug_information.id = drug_indications.drug_id
 				 WHERE drug_information.case_id = $1
+				   AND drug_information.deleted = false
+				   AND drug_indications.deleted = false
 				 ORDER BY drug_information.sequence_number, drug_indications.sequence_number",
 			)
 			.bind(case_id),

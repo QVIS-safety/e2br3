@@ -64,8 +64,8 @@ async fn fetch_reported_causes(
 	};
 	mm.dbx()
 		.fetch_all(
-			sqlx::query_as::<_, ReportedCauseOfDeath>(
-				"SELECT * FROM reported_causes_of_death WHERE death_info_id = $1 ORDER BY sequence_number",
+				sqlx::query_as::<_, ReportedCauseOfDeath>(
+				"SELECT * FROM reported_causes_of_death WHERE death_info_id = $1 AND deleted = false ORDER BY sequence_number",
 			)
 			.bind(death_info_id),
 		)
@@ -83,8 +83,8 @@ async fn fetch_autopsy_causes(
 	};
 	mm.dbx()
 		.fetch_all(
-			sqlx::query_as::<_, AutopsyCauseOfDeath>(
-				"SELECT * FROM autopsy_causes_of_death WHERE death_info_id = $1 ORDER BY sequence_number",
+				sqlx::query_as::<_, AutopsyCauseOfDeath>(
+				"SELECT * FROM autopsy_causes_of_death WHERE death_info_id = $1 AND deleted = false ORDER BY sequence_number",
 			)
 			.bind(death_info_id),
 		)

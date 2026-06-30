@@ -482,7 +482,7 @@ async fn fetch_study_registrations(
 	mm: &ModelManager,
 	study_information_id: sqlx::types::Uuid,
 ) -> Result<Vec<StudyRegistrationNumber>> {
-	let sql = "SELECT * FROM study_registration_numbers WHERE study_information_id = $1 ORDER BY sequence_number";
+	let sql = "SELECT * FROM study_registration_numbers WHERE study_information_id = $1 AND deleted = false ORDER BY sequence_number";
 	mm.dbx()
 		.fetch_all(
 			sqlx::query_as::<_, StudyRegistrationNumber>(sql)

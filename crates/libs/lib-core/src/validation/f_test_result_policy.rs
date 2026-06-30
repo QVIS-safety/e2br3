@@ -25,6 +25,7 @@ mod tests {
 			id: Uuid::new_v4(),
 			case_id: Uuid::new_v4(),
 			sequence_number: 1,
+			deleted: false,
 			test_date: None,
 			test_date_null_flavor: None,
 			test_name: "".to_string(),

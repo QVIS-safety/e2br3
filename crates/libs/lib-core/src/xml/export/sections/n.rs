@@ -162,7 +162,7 @@ pub(crate) async fn fetch_primary_source(
 	mm: &ModelManager,
 	case_id: sqlx::types::Uuid,
 ) -> Result<Option<PrimarySource>> {
-	let sql = "SELECT * FROM primary_sources WHERE case_id = $1 ORDER BY sequence_number LIMIT 1";
+	let sql = "SELECT * FROM primary_sources WHERE case_id = $1 AND deleted = false ORDER BY sequence_number LIMIT 1";
 	mm.dbx()
 		.fetch_optional(sqlx::query_as::<_, PrimarySource>(sql).bind(case_id))
 		.await
