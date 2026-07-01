@@ -242,6 +242,77 @@ async fn create_safety_report(
 
 #[serial]
 #[tokio::test]
+async fn safety_report_preserves_c1_boolean_null_flavors() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+
+	let body = json!({
+		"data": {
+			"case_id": case_id,
+			"safety_report_id": format!("SR-NF-{}", Uuid::new_v4()),
+			"transmission_date": "20260630010101",
+			"report_type": "1",
+			"date_first_received_from_source": [2026, 6, 30],
+			"date_of_most_recent_information": [2026, 6, 30],
+			"fulfil_expedited_criteria": null,
+			"fulfil_expedited_criteria_null_flavor": "NI",
+			"other_case_identifiers_exist": null,
+			"other_case_identifiers_exist_null_flavor": "NI"
+		}
+	});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/safety-report"),
+		body,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+
+	let value: Value = serde_json::from_slice(&body)?;
+	assert!(value["data"]["fulfil_expedited_criteria"].is_null());
+	assert_eq!(value["data"]["fulfil_expedited_criteria_null_flavor"], "NI");
+	assert!(value["data"]["other_case_identifiers_exist"].is_null());
+	assert_eq!(
+		value["data"]["other_case_identifiers_exist_null_flavor"],
+		"NI"
+	);
+
+	let update = json!({
+		"data": {
+			"fulfil_expedited_criteria": true,
+			"other_case_identifiers_exist": true
+		}
+	});
+	let (status, body) = put_json_with_audit_reason(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/safety-report"),
+		update,
+		"set boolean values",
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["fulfil_expedited_criteria"], true);
+	assert!(value["data"]["fulfil_expedited_criteria_null_flavor"].is_null());
+	assert_eq!(value["data"]["other_case_identifiers_exist"], true);
+	assert!(value["data"]["other_case_identifiers_exist_null_flavor"].is_null());
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_narrative_rejects_legacy_additional_fields() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

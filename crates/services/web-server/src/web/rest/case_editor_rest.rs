@@ -347,6 +347,42 @@ fn patch_bool_value(
 	Ok(PatchValue::Value(value))
 }
 
+fn patch_optional_string_value(
+	field_name: &str,
+	patch: &CaseEditorFieldPatch,
+) -> Result<Option<String>> {
+	let Some(value) = patch.value.as_ref() else {
+		return Ok(None);
+	};
+	if value.is_null() {
+		return Ok(None);
+	}
+	let Some(value) = value.as_str() else {
+		return Err(Error::BadRequest {
+			message: format!("{field_name} must be a string or null"),
+		});
+	};
+	Ok(Some(value.trim().to_string()))
+}
+
+fn patch_optional_bool_value(
+	field_name: &str,
+	patch: &CaseEditorFieldPatch,
+) -> Result<Option<bool>> {
+	let Some(value) = patch.value.as_ref() else {
+		return Ok(None);
+	};
+	if value.is_null() {
+		return Ok(None);
+	}
+	let Some(value) = value.as_bool() else {
+		return Err(Error::BadRequest {
+			message: format!("{field_name} must be a boolean or null"),
+		});
+	};
+	Ok(Some(value))
+}
+
 /// PATCH /api/cases/{case_id}/editor/pages/CI
 pub async fn patch_editor_ci_page_projection(
 	State(mm): State<ModelManager>,
@@ -377,12 +413,14 @@ pub async fn patch_editor_ci_page_projection(
 		date_of_most_recent_information: None,
 		date_of_most_recent_information_null_flavor: None,
 		fulfil_expedited_criteria: PatchValue::Missing,
+		fulfil_expedited_criteria_null_flavor: None,
 		local_criteria_report_type: PatchValue::Missing,
 		combination_product_report_indicator: PatchValue::Missing,
 		worldwide_unique_id: None,
 		first_sender_type: None,
 		additional_documents_available: None,
 		other_case_identifiers_exist: None,
+		other_case_identifiers_exist_null_flavor: None,
 		nullification_code: None,
 		nullification_reason: None,
 		receiver_organization: None,
@@ -396,6 +434,10 @@ pub async fn patch_editor_ci_page_projection(
 			"fulfilExpeditedCriteria" => {
 				update.fulfil_expedited_criteria = patch_bool_value(field, patch)?;
 			}
+			"fulfilExpeditedCriteriaNullFlavor" => {
+				update.fulfil_expedited_criteria_null_flavor =
+					patch_optional_string_value(field, patch)?;
+			}
 			"localCriteriaReportType" => {
 				update.local_criteria_report_type =
 					patch_string_value(field, patch)?;
@@ -403,6 +445,14 @@ pub async fn patch_editor_ci_page_projection(
 			"combinationProductReportIndicator" => {
 				update.combination_product_report_indicator =
 					patch_string_value(field, patch)?;
+			}
+			"otherCaseIdentifiersExist" => {
+				update.other_case_identifiers_exist =
+					patch_optional_bool_value(field, patch)?;
+			}
+			"otherCaseIdentifiersExistNullFlavor" => {
+				update.other_case_identifiers_exist_null_flavor =
+					patch_optional_string_value(field, patch)?;
 			}
 			_ => {
 				return Err(Error::BadRequest {
@@ -819,9 +869,12 @@ async fn apply_direct_page_changes_patch(
 				("reporterGivenName", "reporterGivenName"),
 				("reporterMiddleName", "reporterMiddleName"),
 				("reporterFamilyName", "reporterFamilyName"),
+				("reporterNameNullFlavor", "reporterNameNullFlavor"),
 				("reporterOrganization", "reporterOrganization"),
 				("reporterCountry", "reporterCountry"),
+				("reporterAddressNullFlavor", "reporterAddressNullFlavor"),
 				("qualification", "qualification"),
+				("qualificationNullFlavor", "qualificationNullFlavor"),
 				("qualificationKr1", "qualificationKr1"),
 			],
 		)?,
@@ -949,6 +1002,10 @@ async fn apply_rp_page_rows_patch(
 			source,
 			&["reporterFamilyName", "reporter_family_name"],
 		),
+		reporter_name_null_flavor: string_field(
+			source,
+			&["reporterNameNullFlavor", "reporter_name_null_flavor"],
+		),
 		organization: string_field(
 			source,
 			&["reporterOrganization", "organization"],
@@ -959,9 +1016,17 @@ async fn apply_rp_page_rows_patch(
 		state: string_field(source, &["reporterState", "state"]),
 		postcode: string_field(source, &["reporterPostcode", "postcode"]),
 		telephone: string_field(source, &["reporterTelephone", "telephone"]),
+		reporter_address_null_flavor: string_field(
+			source,
+			&["reporterAddressNullFlavor", "reporter_address_null_flavor"],
+		),
 		country_code: string_field(source, &["reporterCountry", "country_code"]),
 		email: string_field(source, &["reporterEmail", "email"]),
 		qualification: string_field(source, &["qualification"]),
+		qualification_null_flavor: string_field(
+			source,
+			&["qualificationNullFlavor", "qualification_null_flavor"],
+		),
 		qualification_kr1: string_field(
 			source,
 			&["qualificationKr1", "qualification_kr1"],
@@ -992,6 +1057,7 @@ async fn apply_rp_page_rows_patch(
 				reporter_given_name: update.reporter_given_name,
 				reporter_middle_name: update.reporter_middle_name,
 				reporter_family_name: update.reporter_family_name,
+				reporter_name_null_flavor: update.reporter_name_null_flavor,
 				organization: update.organization,
 				department: update.department,
 				street: update.street,
@@ -999,9 +1065,11 @@ async fn apply_rp_page_rows_patch(
 				state: update.state,
 				postcode: update.postcode,
 				telephone: update.telephone,
+				reporter_address_null_flavor: update.reporter_address_null_flavor,
 				country_code: update.country_code,
 				email: update.email,
 				qualification: update.qualification,
+				qualification_null_flavor: update.qualification_null_flavor,
 				qualification_kr1: update.qualification_kr1,
 				primary_source_regulatory: update.primary_source_regulatory,
 			},
@@ -1330,7 +1398,15 @@ async fn apply_dm_page_rows_patch(
 			&["sexNullFlavor", "sex_null_flavor"],
 		),
 		race_code: string_field(patient, &["raceCode", "race_code"]),
+		race_code_null_flavor: string_field(
+			patient,
+			&["raceCodeNullFlavor", "race_code_null_flavor"],
+		),
 		ethnicity_code: string_field(patient, &["ethnicityCode", "ethnicity_code"]),
+		ethnicity_code_null_flavor: string_field(
+			patient,
+			&["ethnicityCodeNullFlavor", "ethnicity_code_null_flavor"],
+		),
 		last_menstrual_period_date: None,
 		last_menstrual_period_date_null_flavor: string_field(
 			patient,
@@ -1374,7 +1450,9 @@ async fn apply_dm_page_rows_patch(
 					sex: update.sex,
 					sex_null_flavor: update.sex_null_flavor,
 					race_code: update.race_code,
+					race_code_null_flavor: update.race_code_null_flavor,
 					ethnicity_code: update.ethnicity_code,
+					ethnicity_code_null_flavor: update.ethnicity_code_null_flavor,
 					last_menstrual_period_date: None,
 					last_menstrual_period_date_null_flavor: update
 						.last_menstrual_period_date_null_flavor,

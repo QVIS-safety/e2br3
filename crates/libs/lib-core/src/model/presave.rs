@@ -1,4 +1,5 @@
 use crate::ctx::Ctx;
+use crate::e2b::null_flavor::NullFlavor;
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
 use crate::model::store::set_full_context_from_ctx_dbx;
@@ -242,6 +243,26 @@ async fn any_user_scope_contains(
 fn validation_error(message: &str) -> crate::model::Error {
 	crate::model::Error::Validation {
 		message: message.to_string(),
+	}
+}
+
+fn validate_null_flavor_set(
+	field: &str,
+	value: Option<&str>,
+	allowed: &[NullFlavor],
+) -> Result<()> {
+	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
+		return Ok(());
+	};
+	let parsed: NullFlavor = value
+		.parse()
+		.map_err(|err| validation_error(&format!("{field}: {err}")))?;
+	if parsed.is_one_of(allowed) {
+		Ok(())
+	} else {
+		Err(validation_error(&format!(
+			"{field}: nullFlavor {parsed} is not allowed"
+		)))
 	}
 }
 
@@ -1775,6 +1796,11 @@ impl ReporterPresaveBmc {
 		mm: &ModelManager,
 		data: ReporterPresaveForCreate,
 	) -> Result<Uuid> {
+		Self::validate_null_flavors(
+			data.reporter_name_null_flavor.as_deref(),
+			data.reporter_address_null_flavor.as_deref(),
+			data.qualification_null_flavor.as_deref(),
+		)?;
 		Self::validate_identity(
 			data.reporter_given_name.as_deref(),
 			data.organization.as_deref(),
@@ -1825,6 +1851,11 @@ impl ReporterPresaveBmc {
 		id: Uuid,
 		data: ReporterPresaveForUpdate,
 	) -> Result<()> {
+		Self::validate_null_flavors(
+			data.reporter_name_null_flavor.as_deref(),
+			data.reporter_address_null_flavor.as_deref(),
+			data.qualification_null_flavor.as_deref(),
+		)?;
 		if data.deleted != Some(true) {
 			let current = Self::get(ctx, mm, id).await?;
 			let reporter_given_name = data
@@ -1872,6 +1903,32 @@ impl ReporterPresaveBmc {
 				&& normalized_text(organization).is_some()
 				&& normalized_text(qualification).is_some(),
 			"reporter presave requires reporter_given_name, organization, and qualification",
+		)
+	}
+
+	fn validate_null_flavors(
+		reporter_name_null_flavor: Option<&str>,
+		reporter_address_null_flavor: Option<&str>,
+		qualification_null_flavor: Option<&str>,
+	) -> Result<()> {
+		const NAME_ADDRESS_ALLOWED: &[NullFlavor] =
+			&[NullFlavor::MSK, NullFlavor::ASKU, NullFlavor::NASK];
+		const QUALIFICATION_ALLOWED: &[NullFlavor] = &[NullFlavor::UNK];
+
+		validate_null_flavor_set(
+			"reporter_name_null_flavor",
+			reporter_name_null_flavor,
+			NAME_ADDRESS_ALLOWED,
+		)?;
+		validate_null_flavor_set(
+			"reporter_address_null_flavor",
+			reporter_address_null_flavor,
+			NAME_ADDRESS_ALLOWED,
+		)?;
+		validate_null_flavor_set(
+			"qualification_null_flavor",
+			qualification_null_flavor,
+			QUALIFICATION_ALLOWED,
 		)
 	}
 

@@ -277,10 +277,6 @@ pub(super) fn fmt_date(date: Date) -> String {
 	format!("{:04}{:02}{:02}", year, month, day)
 }
 
-pub(super) fn fmt_date_time_fallback(date: Date) -> String {
-	format!("{}000000", fmt_date(date))
-}
-
 pub(super) fn fmt_offset_datetime(dt: OffsetDateTime) -> String {
 	let dt = dt.to_offset(UtcOffset::UTC);
 	format!(

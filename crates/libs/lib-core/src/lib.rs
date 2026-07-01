@@ -1,5 +1,6 @@
 pub mod config;
 pub mod ctx;
+pub mod e2b;
 pub mod model;
 pub mod narrative_template;
 pub mod regulatory;

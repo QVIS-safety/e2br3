@@ -739,6 +739,25 @@ pub(crate) fn collect_mfds_issues(
 			},
 			RuleFacts::default(),
 		);
+		// G.k.9.i.2.r.3.KR.1 allowed values: WHO-UMC result must be 1..6 or the
+		// NA nullFlavor token. Only enforced when the method is WHO-UMC (1).
+		if method_is_who_umc {
+			if let Some(result_code) =
+				r.result_of_assessment.as_deref().map(str::trim)
+			{
+				if !result_code.is_empty()
+					&& !matches!(
+						result_code,
+						"1" | "2" | "3" | "4" | "5" | "6" | "NA"
+					) {
+					push_issue_by_code(
+						issues,
+						"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
+						path_for("resultOfAssessment"),
+					);
+				}
+			}
+		}
 		let _ = push_issue_if_conditioned_value_invalid(
 			issues,
 			"MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",

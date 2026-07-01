@@ -29,6 +29,10 @@ fn is_later_than(
 	matches!((value, other), (Some(value), Some(other)) if value > other)
 }
 
+fn e2b_datetime_date(value: Option<&str>) -> Option<sqlx::types::time::Date> {
+	value.and_then(crate::serde::flex_date::e2b_datetime_date)
+}
+
 pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	authority: RegulatoryAuthority,
@@ -136,17 +140,18 @@ pub(crate) fn collect_ich_issues(
 	}
 
 	if let Some(report) = validation_ctx.safety_report.as_ref() {
-		let transmission_date =
-			report.transmission_date.map(|value| value.to_string());
+		let transmission_date = report.transmission_date.as_deref();
 		let _ = push_issue_if_rule_invalid(
 			issues,
 			"ICH.C.1.2.REQUIRED",
 			"safetyReportIdentification.transmissionDate",
-			transmission_date.as_deref(),
+			transmission_date,
 			report.transmission_date_null_flavor.as_deref(),
 			RuleFacts::default(),
 		);
-		if is_future_date(report.transmission_date) {
+		let transmission_date_for_compare =
+			e2b_datetime_date(report.transmission_date.as_deref());
+		if is_future_date(transmission_date_for_compare) {
 			push_issue_by_code(
 				issues,
 				"ICH.C.1.2.FUTURE_DATE.FORBIDDEN",
@@ -203,7 +208,7 @@ pub(crate) fn collect_ich_issues(
 		}
 		if is_later_than(
 			report.date_first_received_from_source,
-			report.transmission_date,
+			transmission_date_for_compare,
 		) {
 			push_issue_by_code(
 				issues,
@@ -223,7 +228,7 @@ pub(crate) fn collect_ich_issues(
 		}
 		if is_later_than(
 			report.date_of_most_recent_information,
-			report.transmission_date,
+			transmission_date_for_compare,
 		) {
 			push_issue_by_code(
 				issues,
@@ -238,7 +243,7 @@ pub(crate) fn collect_ich_issues(
 			report
 				.fulfil_expedited_criteria
 				.map(|value| if value { "1" } else { "2" }),
-			None,
+			report.fulfil_expedited_criteria_null_flavor.as_deref(),
 			RuleFacts::default(),
 		);
 		if has_text(report.nullification_code.as_deref())

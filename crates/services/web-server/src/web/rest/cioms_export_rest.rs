@@ -459,6 +459,13 @@ fn date_text(value: Option<Date>) -> String {
 	value.map(|value| value.to_string()).unwrap_or_default()
 }
 
+fn e2b_datetime_date_text(value: Option<&str>) -> String {
+	value
+		.and_then(lib_core::serde::flex_date::e2b_datetime_date)
+		.map(|value| value.to_string())
+		.unwrap_or_default()
+}
+
 fn decimal_text(value: Option<Decimal>) -> String {
 	value
 		.map(|value| value.normalize().to_string())
@@ -1156,7 +1163,7 @@ fn render_landscape_cioms(
 		110,
 		template.manufacturer_information.h,
 		"DATE OF THIS REPORT",
-		&date_text(report.and_then(|r| r.transmission_date)),
+		&e2b_datetime_date_text(report.and_then(|r| r.transmission_date.as_deref())),
 		16,
 		1,
 	);
@@ -1454,7 +1461,7 @@ fn render_portrait_cioms(
 		175,
 		40,
 		"DATE OF THIS REPORT",
-		&date_text(report.and_then(|r| r.transmission_date)),
+		&e2b_datetime_date_text(report.and_then(|r| r.transmission_date.as_deref())),
 		24,
 		1,
 	);
@@ -1675,12 +1682,14 @@ mod tests {
 			date_of_most_recent_information: None,
 			date_of_most_recent_information_null_flavor: None,
 			fulfil_expedited_criteria: None,
+			fulfil_expedited_criteria_null_flavor: None,
 			local_criteria_report_type: None,
 			combination_product_report_indicator: None,
 			worldwide_unique_id: None,
 			first_sender_type: None,
 			additional_documents_available: None,
 			other_case_identifiers_exist: None,
+			other_case_identifiers_exist_null_flavor: None,
 			nullification_code: None,
 			nullification_reason: None,
 			receiver_organization: None,
@@ -1700,6 +1709,7 @@ mod tests {
 			reporter_given_name: Some("Mina".to_string()),
 			reporter_middle_name: None,
 			reporter_family_name: Some("Kim".to_string()),
+			reporter_name_null_flavor: None,
 			organization: Some("Seoul General Hospital".to_string()),
 			department: None,
 			street: None,
@@ -1707,9 +1717,11 @@ mod tests {
 			state: None,
 			postcode: None,
 			telephone: None,
+			reporter_address_null_flavor: None,
 			country_code: Some("KR".to_string()),
 			email: None,
 			qualification: None,
+			qualification_null_flavor: None,
 			qualification_kr1: None,
 			primary_source_regulatory: None,
 			source_reporter_presave_id: None,
@@ -1964,6 +1976,7 @@ mod tests {
 				reporter_given_name: Some("Mina".to_string()),
 				reporter_middle_name: Some("J".to_string()),
 				reporter_family_name: Some("Kim".to_string()),
+				reporter_name_null_flavor: None,
 				organization: Some("Seoul General Hospital".to_string()),
 				department: None,
 				street: None,
@@ -1971,9 +1984,11 @@ mod tests {
 				state: None,
 				postcode: None,
 				telephone: None,
+				reporter_address_null_flavor: None,
 				country_code: Some("KR".to_string()),
 				email: None,
 				qualification: None,
+				qualification_null_flavor: None,
 				qualification_kr1: None,
 				primary_source_regulatory: None,
 				source_reporter_presave_id: None,

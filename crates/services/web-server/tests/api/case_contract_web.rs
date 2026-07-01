@@ -1055,8 +1055,7 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise(
 		&format!("/api/cases/{case_id}"),
 		json!({
 			"data": {
-				"report_year": "2026",
-				"source_document_name": "manual-source.pdf"
+				"report_year": "2026"
 			}
 		}),
 	)
@@ -1066,11 +1065,6 @@ async fn test_manual_case_save_updates_public_fields_without_import_noise(
 	assert_eq!(
 		update_body["data"]["report_year"].as_str(),
 		Some("2026"),
-		"{update_body:?}"
-	);
-	assert_eq!(
-		update_body["data"]["source_document_name"].as_str(),
-		Some("manual-source.pdf"),
 		"{update_body:?}"
 	);
 	let response_text = update_body.to_string().to_ascii_lowercase();
@@ -1226,8 +1220,7 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 		&format!("/api/cases/{case_id}"),
 		json!({
 			"data": {
-				"report_year": "2026",
-				"source_document_name": "source-followup.pdf"
+				"report_year": "2026"
 			}
 		}),
 	)
@@ -1237,11 +1230,6 @@ async fn test_imported_case_save_updates_public_fields_without_import_noise(
 	assert_eq!(
 		update_body["data"]["report_year"].as_str(),
 		Some("2026"),
-		"{update_body:?}"
-	);
-	assert_eq!(
-		update_body["data"]["source_document_name"].as_str(),
-		Some("source-followup.pdf"),
 		"{update_body:?}"
 	);
 	let rendered = update_body.to_string().to_ascii_lowercase();

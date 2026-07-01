@@ -39,6 +39,7 @@ DECLARE
     v_literature_ref_id UUID := 'd2000000-0000-0000-0000-000000000021';
     v_other_case_identifier_id UUID := 'd2000000-0000-0000-0000-000000000022';
     v_linked_report_id UUID := 'd2000000-0000-0000-0000-000000000023';
+    v_source_document_id UUID := 'd2000000-0000-0000-0000-000000000024';
 BEGIN
     PERFORM set_config('app.current_user_id', v_user_id::text, true);
     PERFORM set_config('app.current_user_role', 'system_admin', true);
@@ -46,7 +47,7 @@ BEGIN
     INSERT INTO cases (
         id, organization_id, dg_prd_key, status,
         review_receivers_json, workflow_routes_json,
-        report_year, source_document_name, source_document_media_type,
+        report_year,
         created_by, updated_by, submitted_by, submitted_at,
         dirty_c, dirty_d, dirty_e, dirty_f, dirty_g, dirty_h, created_at, updated_at
     )
@@ -54,9 +55,19 @@ BEGIN
         v_case_id, v_org_id, 'PRD-DEMO-ALPHA', 'draft',
         '["qa.lead@example.com","pv.manager@example.com"]',
         '[{"step":"draft","assignee":"demo.cro.admin@example.com"},{"step":"review","assignee":"qa.lead@example.com"}]',
-        '2026', 'rich-demo-source.pdf', 'application/pdf',
+        '2026',
         v_user_id, v_user_id, NULL, NULL,
         false, false, false, false, false, false, NOW(), NOW()
+    )
+    ON CONFLICT (id) DO NOTHING;
+
+    INSERT INTO source_documents (
+        id, case_id, source_document_name, source_document_media_type,
+        sequence_number, created_by, updated_by, created_at, updated_at
+    )
+    VALUES (
+        v_source_document_id, v_case_id, 'rich-demo-source.pdf', 'application/pdf',
+        1, v_user_id, v_user_id, NOW(), NOW()
     )
     ON CONFLICT (id) DO NOTHING;
 

@@ -260,7 +260,7 @@ pub fn export_c_safety_report_patch(
 
 	let patch = CSafetyReportPatch {
 		report_unique_id: report.safety_report_id.as_deref().unwrap_or(""),
-		transmission_date: report.transmission_date,
+		transmission_date: report.transmission_date.as_deref(),
 		transmission_date_null_flavor: report
 			.transmission_date_null_flavor
 			.as_deref(),

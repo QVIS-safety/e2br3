@@ -11,7 +11,7 @@ CREATE TABLE safety_report_identification (
     version INTEGER NOT NULL DEFAULT 1,
 
     -- C.1.2 - Date of Creation (MANDATORY)
-    transmission_date DATE,
+    transmission_date VARCHAR(20) CHECK (transmission_date IS NULL OR transmission_date ~ '^[0-9]{14}([+-][0-9]{4})?$'),
     transmission_date_null_flavor VARCHAR(4) CHECK (transmission_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.3 - Type of Report (MANDATORY - E2B(R3) codes)
@@ -28,6 +28,7 @@ CREATE TABLE safety_report_identification (
 
     -- C.1.7 - Fulfils Expedited Criteria (MANDATORY)
     fulfil_expedited_criteria BOOLEAN,
+    fulfil_expedited_criteria_null_flavor VARCHAR(4) CHECK (fulfil_expedited_criteria_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- FDA.C.1.7.1 - Local Criteria Report Type (FDA)
     local_criteria_report_type VARCHAR(10),
@@ -46,6 +47,7 @@ CREATE TABLE safety_report_identification (
 
     -- C.1.9.1 - Other Case Identifiers in Previous Transmissions
     other_case_identifiers_exist BOOLEAN,
+    other_case_identifiers_exist_null_flavor VARCHAR(4) CHECK (other_case_identifiers_exist_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.10.r - Linked Report Numbers (handled in separate table)
 
@@ -267,6 +269,7 @@ CREATE TABLE primary_sources (
     reporter_given_name VARCHAR(60),
     reporter_middle_name VARCHAR(60),
     reporter_family_name VARCHAR(60),
+    reporter_name_null_flavor VARCHAR(4),
 
     -- C.2.r.2 - Reporter's Address and Contact
     organization VARCHAR(60),
@@ -276,6 +279,7 @@ CREATE TABLE primary_sources (
     state VARCHAR(40),
     postcode VARCHAR(15),
     telephone VARCHAR(33),
+    reporter_address_null_flavor VARCHAR(4),
 
     -- C.2.r.3 - Country Code
     country_code VARCHAR(2),  -- ISO 3166-1 alpha-2
@@ -285,6 +289,7 @@ CREATE TABLE primary_sources (
 
     -- C.2.r.4 - Qualification (MANDATORY within primary source - E2B(R3) codes)
     qualification VARCHAR(1) CHECK (qualification IN ('1', '2', '3', '4', '5')),
+    qualification_null_flavor VARCHAR(4),
     -- 1=Physician, 2=Pharmacist, 3=Other health professional, 4=Lawyer, 5=Consumer
     -- MFDS.C.2.r.4.KR.1 - Other health professional type (KR extension)
     qualification_kr1 VARCHAR(1) CHECK (qualification_kr1 IN ('1', '2')),

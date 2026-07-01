@@ -15,7 +15,10 @@ use lib_core::model::acs::{
 	STUDY_REGISTRATION_CREATE, STUDY_REGISTRATION_DELETE, STUDY_REGISTRATION_LIST,
 	STUDY_REGISTRATION_READ, STUDY_REGISTRATION_UPDATE,
 };
-use lib_core::model::case::{CaseBmc, CaseForUpdate};
+use lib_core::model::case::{
+	CaseBmc, CaseForUpdate, SourceDocument, SourceDocumentBmc, SourceDocumentFilter,
+	SourceDocumentForCreate, SourceDocumentForUpdate,
+};
 use lib_core::model::safety_report::{
 	DocumentsHeldBySender, DocumentsHeldBySenderBmc, DocumentsHeldBySenderFilter,
 	DocumentsHeldBySenderForCreate, DocumentsHeldBySenderForUpdate,
@@ -85,9 +88,6 @@ async fn mark_case_dirty_c(
 			mfds_report_type: None,
 			fda_report_type: None,
 			report_year: None,
-			source_document_name: None,
-			source_document_base64: None,
-			source_document_media_type: None,
 			submitted_by: None,
 			submitted_at: None,
 			raw_xml: None,
@@ -131,6 +131,7 @@ fn primary_source_flag_update(value: &str) -> PrimarySourceForUpdate {
 		reporter_given_name: None,
 		reporter_middle_name: None,
 		reporter_family_name: None,
+		reporter_name_null_flavor: None,
 		organization: None,
 		department: None,
 		street: None,
@@ -138,9 +139,11 @@ fn primary_source_flag_update(value: &str) -> PrimarySourceForUpdate {
 		state: None,
 		postcode: None,
 		telephone: None,
+		reporter_address_null_flavor: None,
 		country_code: None,
 		email: None,
 		qualification: None,
+		qualification_null_flavor: None,
 		qualification_kr1: None,
 		primary_source_regulatory: Some(value.to_string()),
 	}
@@ -434,6 +437,84 @@ pub async fn restore_primary_source(
 }
 
 // -- Literature References (C.4.r)
+
+/// POST /api/cases/{case_id}/source-documents
+pub async fn create_source_document(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(params): Json<ParamsForCreate<SourceDocumentForCreate>>,
+) -> Result<(StatusCode, Json<DataRestResult<SourceDocument>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let ParamsForCreate { data } = params;
+	let mut data = data;
+	data.case_id = case_id;
+
+	let id = SourceDocumentBmc::create(&ctx, &mm, data).await?;
+	mark_case_dirty_c(&ctx, &mm, case_id).await?;
+	let entity = SourceDocumentBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+}
+
+/// GET /api/cases/{case_id}/source-documents
+pub async fn list_source_documents(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<DataRestResult<Vec<SourceDocument>>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SAFETY_REPORT_READ)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+	let filter = SourceDocumentFilter {
+		case_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
+			case_id.to_string()
+		))])),
+	};
+	let entities = SourceDocumentBmc::list(
+		&ctx,
+		&mm,
+		Some(vec![filter]),
+		Some(ListOptions::default()),
+	)
+	.await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+}
+
+/// PUT /api/cases/{case_id}/source-documents/{id}
+pub async fn update_source_document(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+	Json(params): Json<ParamsForUpdate<SourceDocumentForUpdate>>,
+) -> Result<(StatusCode, Json<DataRestResult<SourceDocument>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = SourceDocumentBmc::get(&ctx, &mm, id).await?;
+	ensure_case_scope(case_id, entity.case_id, id, "source_documents")?;
+	SourceDocumentBmc::update(&ctx, &mm, id, params.data).await?;
+	mark_case_dirty_c(&ctx, &mm, case_id).await?;
+	let entity = SourceDocumentBmc::get(&ctx, &mm, id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
+/// DELETE /api/cases/{case_id}/source-documents/{id}
+pub async fn delete_source_document(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path((case_id, id)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, SAFETY_REPORT_UPDATE)?;
+	require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let entity = SourceDocumentBmc::get(&ctx, &mm, id).await?;
+	ensure_case_scope(case_id, entity.case_id, id, "source_documents")?;
+	SourceDocumentBmc::delete(&ctx, &mm, id).await?;
+	mark_case_dirty_c(&ctx, &mm, case_id).await?;
+	Ok(StatusCode::NO_CONTENT)
+}
 
 /// POST /api/cases/{case_id}/safety-report/documents
 pub async fn create_documents_held_by_sender(

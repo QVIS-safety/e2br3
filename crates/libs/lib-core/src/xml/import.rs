@@ -93,9 +93,6 @@ pub async fn import_e2b_xml(
 			mfds_report_type: None,
 			fda_report_type: None,
 			report_year: None,
-			source_document_name: None,
-			source_document_base64: None,
-			source_document_media_type: None,
 		},
 	)
 	.await?;
@@ -223,9 +220,6 @@ pub async fn import_e2b_xml(
 			mfds_report_type: None,
 			fda_report_type: None,
 			report_year: None,
-			source_document_name: None,
-			source_document_base64: None,
-			source_document_media_type: None,
 			submitted_by: None,
 			submitted_at: None,
 			dirty_c: Some(false),

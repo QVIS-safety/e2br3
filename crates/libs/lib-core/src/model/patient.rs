@@ -48,7 +48,9 @@ pub struct PatientInformation {
 
 	// FDA.D.11 / FDA.D.12 - Race / Ethnicity (FDA)
 	pub race_code: Option<String>,
+	pub race_code_null_flavor: Option<String>,
 	pub ethnicity_code: Option<String>,
+	pub ethnicity_code_null_flavor: Option<String>,
 
 	// D.6 - Last Menstrual Period
 	pub last_menstrual_period_date: Option<Date>,
@@ -90,7 +92,9 @@ pub struct PatientInformationForCreate {
 	pub sex: Option<String>,
 	pub sex_null_flavor: Option<String>,
 	pub race_code: Option<String>,
+	pub race_code_null_flavor: Option<String>,
 	pub ethnicity_code: Option<String>,
+	pub ethnicity_code_null_flavor: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
@@ -124,7 +128,9 @@ pub struct PatientInformationForUpdate {
 	pub sex: Option<String>,
 	pub sex_null_flavor: Option<String>,
 	pub race_code: Option<String>,
+	pub race_code_null_flavor: Option<String>,
 	pub ethnicity_code: Option<String>,
+	pub ethnicity_code_null_flavor: Option<String>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
@@ -612,7 +618,9 @@ impl PatientInformationBmc {
 				sex,
 				sex_null_flavor,
 				race_code,
+				race_code_null_flavor,
 				ethnicity_code,
+				ethnicity_code_null_flavor,
 				last_menstrual_period_date,
 				last_menstrual_period_date_null_flavor,
 				medical_history_text,
@@ -623,7 +631,7 @@ impl PatientInformationBmc {
 			)
 			 VALUES (
 			 	$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
-			 	$16, $17, $18, $19, $20, $21, $22, $23, now(), now(), $24
+			 	$16, $17, $18, $19, $20, $21, $22, $23, $24, $25, now(), now(), $26
 			 )
 			 RETURNING id",
 			Self::TABLE
@@ -650,7 +658,9 @@ impl PatientInformationBmc {
 					.bind(data.sex)
 					.bind(data.sex_null_flavor)
 					.bind(data.race_code)
+					.bind(data.race_code_null_flavor)
 					.bind(data.ethnicity_code)
+					.bind(data.ethnicity_code_null_flavor)
 					.bind(data.last_menstrual_period_date)
 					.bind(data.last_menstrual_period_date_null_flavor)
 					.bind(data.medical_history_text)
@@ -741,14 +751,16 @@ impl PatientInformationBmc {
 			     height_cm = COALESCE($15, height_cm),
 			     sex = CASE WHEN $17 IS NOT NULL THEN NULL ELSE COALESCE($16, sex) END,
 			     sex_null_flavor = CASE WHEN $16 IS NOT NULL THEN NULL ELSE COALESCE($17, sex_null_flavor) END,
-			     race_code = COALESCE($18, race_code),
-			     ethnicity_code = COALESCE($19, ethnicity_code),
-			     last_menstrual_period_date = CASE WHEN $21 IS NOT NULL THEN NULL ELSE COALESCE($20, last_menstrual_period_date) END,
-			     last_menstrual_period_date_null_flavor = CASE WHEN $20 IS NOT NULL THEN NULL ELSE COALESCE($21, last_menstrual_period_date_null_flavor) END,
-			     medical_history_text = COALESCE($22, medical_history_text),
-			     concomitant_therapy = COALESCE($23, concomitant_therapy),
+			     race_code = CASE WHEN $19 IS NOT NULL THEN NULL ELSE COALESCE($18, race_code) END,
+			     race_code_null_flavor = CASE WHEN $18 IS NOT NULL THEN NULL ELSE COALESCE($19, race_code_null_flavor) END,
+			     ethnicity_code = CASE WHEN $21 IS NOT NULL THEN NULL ELSE COALESCE($20, ethnicity_code) END,
+			     ethnicity_code_null_flavor = CASE WHEN $20 IS NOT NULL THEN NULL ELSE COALESCE($21, ethnicity_code_null_flavor) END,
+			     last_menstrual_period_date = CASE WHEN $23 IS NOT NULL THEN NULL ELSE COALESCE($22, last_menstrual_period_date) END,
+			     last_menstrual_period_date_null_flavor = CASE WHEN $22 IS NOT NULL THEN NULL ELSE COALESCE($23, last_menstrual_period_date_null_flavor) END,
+			     medical_history_text = COALESCE($24, medical_history_text),
+			     concomitant_therapy = COALESCE($25, concomitant_therapy),
 			     updated_at = now(),
-			     updated_by = $24
+			     updated_by = $26
 			 WHERE id = $1",
 			Self::TABLE
 		);
@@ -774,7 +786,9 @@ impl PatientInformationBmc {
 					.bind(data.sex)
 					.bind(data.sex_null_flavor)
 					.bind(data.race_code)
+					.bind(data.race_code_null_flavor)
 					.bind(data.ethnicity_code)
+					.bind(data.ethnicity_code_null_flavor)
 					.bind(data.last_menstrual_period_date)
 					.bind(data.last_menstrual_period_date_null_flavor)
 					.bind(data.medical_history_text)
@@ -890,14 +904,16 @@ impl PatientInformationBmc {
 			     height_cm = COALESCE($15, height_cm),
 			     sex = CASE WHEN $17 IS NOT NULL THEN NULL ELSE COALESCE($16, sex) END,
 			     sex_null_flavor = CASE WHEN $16 IS NOT NULL THEN NULL ELSE COALESCE($17, sex_null_flavor) END,
-			     race_code = COALESCE($18, race_code),
-			     ethnicity_code = COALESCE($19, ethnicity_code),
-			     last_menstrual_period_date = CASE WHEN $21 IS NOT NULL THEN NULL ELSE COALESCE($20, last_menstrual_period_date) END,
-			     last_menstrual_period_date_null_flavor = CASE WHEN $20 IS NOT NULL THEN NULL ELSE COALESCE($21, last_menstrual_period_date_null_flavor) END,
-			     medical_history_text = COALESCE($22, medical_history_text),
-			     concomitant_therapy = COALESCE($23, concomitant_therapy),
+			     race_code = CASE WHEN $19 IS NOT NULL THEN NULL ELSE COALESCE($18, race_code) END,
+			     race_code_null_flavor = CASE WHEN $18 IS NOT NULL THEN NULL ELSE COALESCE($19, race_code_null_flavor) END,
+			     ethnicity_code = CASE WHEN $21 IS NOT NULL THEN NULL ELSE COALESCE($20, ethnicity_code) END,
+			     ethnicity_code_null_flavor = CASE WHEN $20 IS NOT NULL THEN NULL ELSE COALESCE($21, ethnicity_code_null_flavor) END,
+			     last_menstrual_period_date = CASE WHEN $23 IS NOT NULL THEN NULL ELSE COALESCE($22, last_menstrual_period_date) END,
+			     last_menstrual_period_date_null_flavor = CASE WHEN $22 IS NOT NULL THEN NULL ELSE COALESCE($23, last_menstrual_period_date_null_flavor) END,
+			     medical_history_text = COALESCE($24, medical_history_text),
+			     concomitant_therapy = COALESCE($25, concomitant_therapy),
 			     updated_at = now(),
-			     updated_by = $24
+			     updated_by = $26
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -923,7 +939,9 @@ impl PatientInformationBmc {
 					.bind(data.sex)
 					.bind(data.sex_null_flavor)
 					.bind(data.race_code)
+					.bind(data.race_code_null_flavor)
 					.bind(data.ethnicity_code)
+					.bind(data.ethnicity_code_null_flavor)
 					.bind(data.last_menstrual_period_date)
 					.bind(data.last_menstrual_period_date_null_flavor)
 					.bind(data.medical_history_text)

@@ -44,6 +44,8 @@ fn create_payload_to_update(
 			.fulfil_expedited_criteria
 			.map(PatchValue::Value)
 			.unwrap_or(PatchValue::Missing),
+		fulfil_expedited_criteria_null_flavor: data
+			.fulfil_expedited_criteria_null_flavor,
 		local_criteria_report_type: data
 			.local_criteria_report_type
 			.map(PatchValue::Value)
@@ -56,6 +58,8 @@ fn create_payload_to_update(
 		first_sender_type: data.first_sender_type,
 		additional_documents_available: data.additional_documents_available,
 		other_case_identifiers_exist: data.other_case_identifiers_exist,
+		other_case_identifiers_exist_null_flavor: data
+			.other_case_identifiers_exist_null_flavor,
 		nullification_code: data.nullification_code,
 		nullification_reason: data.nullification_reason,
 		receiver_organization: data.receiver_organization,

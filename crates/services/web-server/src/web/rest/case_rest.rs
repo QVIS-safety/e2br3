@@ -105,9 +105,6 @@ fn to_internal_case_for_create(
 		mfds_report_type: data.mfds_report_type,
 		fda_report_type: data.fda_report_type,
 		report_year: data.report_year,
-		source_document_name: data.source_document_name,
-		source_document_base64: data.source_document_base64,
-		source_document_media_type: data.source_document_media_type,
 	}
 }
 
@@ -120,9 +117,6 @@ fn to_internal_case_for_update(data: PublicCaseForUpdate) -> InternalCaseForUpda
 		mfds_report_type: data.mfds_report_type,
 		fda_report_type: data.fda_report_type,
 		report_year: data.report_year,
-		source_document_name: data.source_document_name,
-		source_document_base64: data.source_document_base64,
-		source_document_media_type: data.source_document_media_type,
 		..Default::default()
 	}
 }
@@ -206,9 +200,6 @@ pub struct PublicCaseForCreate {
 	pub mfds_report_type: Option<String>,
 	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
-	pub source_document_name: Option<String>,
-	pub source_document_base64: Option<String>,
-	pub source_document_media_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -221,9 +212,6 @@ pub struct PublicCaseForUpdate {
 	pub mfds_report_type: Option<String>,
 	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
-	pub source_document_name: Option<String>,
-	pub source_document_base64: Option<String>,
-	pub source_document_media_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -299,9 +287,6 @@ pub struct PublicCaseView {
 	pub mfds_report_type: Option<String>,
 	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
-	pub source_document_name: Option<String>,
-	pub source_document_base64: Option<String>,
-	pub source_document_media_type: Option<String>,
 	pub created_by: Uuid,
 	pub updated_by: Option<Uuid>,
 	pub submitted_by: Option<Uuid>,
@@ -335,9 +320,6 @@ impl From<Case> for PublicCaseView {
 			mfds_report_type: case.mfds_report_type,
 			fda_report_type: case.fda_report_type,
 			report_year: case.report_year,
-			source_document_name: case.source_document_name,
-			source_document_base64: case.source_document_base64,
-			source_document_media_type: case.source_document_media_type,
 			created_by: case.created_by,
 			updated_by: case.updated_by,
 			submitted_by: case.submitted_by,
@@ -426,11 +408,13 @@ pub async fn create_case_guarded(
 			date_of_most_recent_information: None,
 			date_of_most_recent_information_null_flavor: None,
 			fulfil_expedited_criteria: None,
+			fulfil_expedited_criteria_null_flavor: None,
 			local_criteria_report_type: None,
 			combination_product_report_indicator: None,
 			first_sender_type: None,
 			additional_documents_available: None,
 			other_case_identifiers_exist: None,
+			other_case_identifiers_exist_null_flavor: None,
 			worldwide_unique_id,
 			nullification_code: None,
 			nullification_reason: None,

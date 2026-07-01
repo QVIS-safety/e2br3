@@ -37,7 +37,9 @@ CREATE TABLE patient_information (
 
     -- FDA.D.11 / FDA.D.12 - Race / Ethnicity (FDA)
     race_code VARCHAR(10),
+    race_code_null_flavor VARCHAR(4) CHECK (race_code_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
     ethnicity_code VARCHAR(10),
+    ethnicity_code_null_flavor VARCHAR(4) CHECK (ethnicity_code_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- D.6 - Last Menstrual Period Date
     last_menstrual_period_date DATE,

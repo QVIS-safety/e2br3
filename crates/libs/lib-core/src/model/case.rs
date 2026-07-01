@@ -10,7 +10,7 @@ use modql::filter::{
 	OrderBy, OrderBys,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::types::time::{Date, OffsetDateTime};
+use sqlx::types::time::OffsetDateTime;
 use sqlx::types::Uuid;
 use sqlx::FromRow;
 
@@ -35,9 +35,6 @@ pub struct Case {
 	pub mfds_report_type: Option<String>,
 	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
-	pub source_document_name: Option<String>,
-	pub source_document_base64: Option<String>,
-	pub source_document_media_type: Option<String>,
 
 	// Workflow
 	pub created_by: Uuid,
@@ -69,9 +66,6 @@ pub struct CaseForCreate {
 	pub mfds_report_type: Option<String>,
 	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
-	pub source_document_name: Option<String>,
-	pub source_document_base64: Option<String>,
-	pub source_document_media_type: Option<String>,
 }
 
 #[derive(Fields, Deserialize, Default)]
@@ -83,9 +77,6 @@ pub struct CaseForUpdate {
 	pub mfds_report_type: Option<String>,
 	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
-	pub source_document_name: Option<String>,
-	pub source_document_base64: Option<String>,
-	pub source_document_media_type: Option<String>,
 	pub submitted_by: Option<Uuid>,
 	pub submitted_at: Option<OffsetDateTime>,
 	pub raw_xml: Option<Vec<u8>>,
@@ -104,6 +95,42 @@ pub struct CaseFilter {
 	pub status: Option<OpValsString>,
 }
 
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct SourceDocument {
+	pub id: Uuid,
+	pub case_id: Uuid,
+	pub source_document_name: Option<String>,
+	pub source_document_base64: Option<String>,
+	pub source_document_media_type: Option<String>,
+	pub sequence_number: i32,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct SourceDocumentForCreate {
+	pub case_id: Uuid,
+	pub source_document_name: Option<String>,
+	pub source_document_base64: Option<String>,
+	pub source_document_media_type: Option<String>,
+	pub sequence_number: i32,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct SourceDocumentForUpdate {
+	pub source_document_name: Option<String>,
+	pub source_document_base64: Option<String>,
+	pub source_document_media_type: Option<String>,
+	pub sequence_number: Option<i32>,
+}
+
+#[derive(FilterNodes, Default)]
+pub struct SourceDocumentFilter {
+	pub case_id: Option<OpValsValue>,
+}
+
 fn list_view_order_clause(order_bys: Option<&OrderBys>) -> &'static str {
 	let Some(order_by) = order_bys.and_then(|values| values.into_iter().next())
 	else {
@@ -117,7 +144,7 @@ fn list_view_order_clause(order_bys: Option<&OrderBys>) -> &'static str {
 				"s.safety_report_id ASC, c.id ASC"
 			}
 			"date_of_creation" | "dateOfCreation" => {
-				"COALESCE(s.transmission_date, c.created_at::date) ASC, c.id ASC"
+				"COALESCE(s.transmission_date, to_char(c.created_at AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS')) ASC, c.id ASC"
 			}
 			"dg_prd_key" | "dgPrdKey" => "c.dg_prd_key ASC NULLS LAST, c.id ASC",
 			_ => "c.created_at DESC, c.id DESC",
@@ -128,7 +155,7 @@ fn list_view_order_clause(order_bys: Option<&OrderBys>) -> &'static str {
 				"s.safety_report_id DESC, c.id DESC"
 			}
 			"date_of_creation" | "dateOfCreation" => {
-				"COALESCE(s.transmission_date, c.created_at::date) DESC, c.id DESC"
+				"COALESCE(s.transmission_date, to_char(c.created_at AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS')) DESC, c.id DESC"
 			}
 			"dg_prd_key" | "dgPrdKey" => "c.dg_prd_key DESC NULLS LAST, c.id DESC",
 			_ => "c.created_at DESC, c.id DESC",
@@ -205,9 +232,6 @@ pub fn update_touches_non_status_fields(case_u: &CaseForUpdate) -> bool {
 		|| case_u.mfds_report_type.is_some()
 		|| case_u.fda_report_type.is_some()
 		|| case_u.report_year.is_some()
-		|| case_u.source_document_name.is_some()
-		|| case_u.source_document_base64.is_some()
-		|| case_u.source_document_media_type.is_some()
 		|| case_u.submitted_by.is_some()
 		|| case_u.submitted_at.is_some()
 		|| case_u.raw_xml.is_some()
@@ -227,7 +251,7 @@ pub struct CaseLinkOption {
 	pub case_id: Uuid,
 	pub safety_report_id: String,
 	pub version: i32,
-	pub transmission_date: Option<Date>,
+	pub transmission_date: Option<String>,
 	pub created_at: OffsetDateTime,
 }
 
@@ -287,9 +311,6 @@ const CASE_SELECT: &str = r#"
 		c.mfds_report_type,
 		c.fda_report_type,
 		c.report_year,
-		c.source_document_name,
-		c.source_document_base64,
-		c.source_document_media_type,
 		c.created_by,
 		c.updated_by,
 		c.submitted_by,
@@ -349,15 +370,12 @@ impl CaseBmc {
 						mfds_report_type,
 						fda_report_type,
 						report_year,
-						source_document_name,
-						source_document_base64,
-						source_document_media_type,
 						created_by,
 						updated_by,
 						created_at,
 						updated_at
 					)
-					VALUES ($1, $2, COALESCE($3, 'draft'), $4, $5, $6, $7, $8, $9, $10, $11, $12, $12, now(), now())
+					VALUES ($1, $2, COALESCE($3, 'draft'), $4, $5, $6, $7, $8, $9, $9, now(), now())
 					RETURNING id",
 				)
 				.bind(case_c.organization_id)
@@ -368,9 +386,6 @@ impl CaseBmc {
 				.bind(case_c.mfds_report_type)
 				.bind(case_c.fda_report_type)
 				.bind(case_c.report_year)
-				.bind(case_c.source_document_name)
-				.bind(case_c.source_document_base64)
-				.bind(case_c.source_document_media_type)
 				.bind(ctx.user_id()),
 			)
 			.await?;
@@ -508,20 +523,17 @@ impl CaseBmc {
 					     mfds_report_type = COALESCE($6, mfds_report_type),
 					     fda_report_type = COALESCE($7, fda_report_type),
 					     report_year = COALESCE($8, report_year),
-					     source_document_name = COALESCE($9, source_document_name),
-					     source_document_base64 = COALESCE($10, source_document_base64),
-					     source_document_media_type = COALESCE($11, source_document_media_type),
-					     submitted_by = COALESCE($12, submitted_by),
-					     submitted_at = COALESCE($13, submitted_at),
-					     raw_xml = COALESCE($14, raw_xml),
-					     dirty_c = COALESCE($15, dirty_c),
-					     dirty_d = COALESCE($16, dirty_d),
-					     dirty_e = COALESCE($17, dirty_e),
-					     dirty_f = COALESCE($18, dirty_f),
-					     dirty_g = COALESCE($19, dirty_g),
-					     dirty_h = COALESCE($20, dirty_h),
+					     submitted_by = COALESCE($9, submitted_by),
+					     submitted_at = COALESCE($10, submitted_at),
+					     raw_xml = COALESCE($11, raw_xml),
+					     dirty_c = COALESCE($12, dirty_c),
+					     dirty_d = COALESCE($13, dirty_d),
+					     dirty_e = COALESCE($14, dirty_e),
+					     dirty_f = COALESCE($15, dirty_f),
+					     dirty_g = COALESCE($16, dirty_g),
+					     dirty_h = COALESCE($17, dirty_h),
 					     updated_at = now(),
-					     updated_by = $21
+					     updated_by = $18
 					 WHERE id = $1",
 				)
 				.bind(id)
@@ -532,9 +544,6 @@ impl CaseBmc {
 				.bind(case_u.mfds_report_type)
 				.bind(case_u.fda_report_type)
 				.bind(case_u.report_year)
-				.bind(case_u.source_document_name)
-				.bind(case_u.source_document_base64)
-				.bind(case_u.source_document_media_type)
 				.bind(case_u.submitted_by)
 				.bind(case_u.submitted_at)
 				.bind(case_u.raw_xml)
@@ -595,7 +604,7 @@ impl CaseBmc {
 			       c.id AS case_id,
 			       s.safety_report_id AS case_no,
 			       GREATEST(s.version - 1, 0) AS fu,
-			       COALESCE(s.transmission_date::text, c.created_at::date::text) AS date_of_creation,
+			       COALESCE(s.transmission_date, to_char(c.created_at AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS')) AS date_of_creation,
 			       COALESCE(s.date_of_most_recent_information::text, 'N/A') AS date_of_most_recent_information,
 			       COALESCE(NULLIF(c.dg_prd_key, ''), 'N/A') AS dg_prd_key,
 			       '0' AS warn,
@@ -693,6 +702,51 @@ impl CaseBmc {
 		dbx.fetch_all(sqlx::query_as::<_, CaseListViewRow>(&sql))
 			.await
 			.map_err(crate::model::Error::from)
+	}
+}
+
+pub struct SourceDocumentBmc;
+impl DbBmc for SourceDocumentBmc {
+	const TABLE: &'static str = "source_documents";
+}
+
+impl SourceDocumentBmc {
+	pub async fn create(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		data: SourceDocumentForCreate,
+	) -> Result<Uuid> {
+		base_uuid::create::<Self, _>(ctx, mm, data).await
+	}
+
+	pub async fn get(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<SourceDocument> {
+		base_uuid::get::<Self, _>(ctx, mm, id).await
+	}
+
+	pub async fn list(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		filters: Option<Vec<SourceDocumentFilter>>,
+		list_options: Option<ListOptions>,
+	) -> Result<Vec<SourceDocument>> {
+		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+	}
+
+	pub async fn update(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+		data: SourceDocumentForUpdate,
+	) -> Result<()> {
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+	}
+
+	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+		base_uuid::delete::<Self>(ctx, mm, id).await
 	}
 }
 

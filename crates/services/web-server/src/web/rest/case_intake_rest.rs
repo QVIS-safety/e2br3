@@ -88,9 +88,6 @@ pub struct CaseFromIntakeInput {
 	pub mfds_report_type: Option<String>,
 	pub fda_report_type: Option<String>,
 	pub report_year: Option<String>,
-	pub source_document_name: Option<String>,
-	pub source_document_base64: Option<String>,
-	pub source_document_media_type: Option<String>,
 	pub reporter_organization: Option<String>,
 	pub sponsor_study_number: Option<String>,
 	pub patient_initials: Option<String>,
@@ -323,9 +320,6 @@ pub async fn create_case_from_intake(
 		mfds_report_type: data.mfds_report_type.clone(),
 		fda_report_type: data.fda_report_type.clone(),
 		report_year: data.report_year.clone(),
-		source_document_name: data.source_document_name.clone(),
-		source_document_base64: data.source_document_base64.clone(),
-		source_document_media_type: data.source_document_media_type.clone(),
 	};
 	validate_case_create_payload(&case_create)?;
 	let case_id = CaseBmc::create(&ctx, &mm, case_create).await?;
@@ -360,7 +354,7 @@ pub async fn create_case_from_intake(
 			case_id,
 			safety_report_id: Some(safety_report_id.clone()),
 			version: Some(next_version),
-			transmission_date: Some(transmission_date),
+			transmission_date: Some(format_e2b_datetime(transmission_date)),
 			transmission_date_null_flavor: None,
 			report_type: Some(data.report_type),
 			date_first_received_from_source: Some(date_first_received_from_source),
@@ -370,11 +364,13 @@ pub async fn create_case_from_intake(
 			),
 			date_of_most_recent_information_null_flavor: None,
 			fulfil_expedited_criteria: Some(false),
+			fulfil_expedited_criteria_null_flavor: None,
 			local_criteria_report_type: None,
 			combination_product_report_indicator: None,
 			first_sender_type: None,
 			additional_documents_available: None,
 			other_case_identifiers_exist: None,
+			other_case_identifiers_exist_null_flavor: None,
 			worldwide_unique_id: generated_case_number
 				.as_ref()
 				.map(|generated| generated.worldwide_unique_id.clone()),
@@ -438,7 +434,9 @@ pub async fn create_case_from_intake(
 				sex: non_empty(data.sex_d5.as_deref()),
 				sex_null_flavor: None,
 				race_code: None,
+				race_code_null_flavor: None,
 				ethnicity_code: None,
+				ethnicity_code_null_flavor: None,
 				last_menstrual_period_date: None,
 				last_menstrual_period_date_null_flavor: None,
 				medical_history_text: None,
@@ -550,4 +548,13 @@ pub async fn create_case_from_intake(
 			},
 		}),
 	))
+}
+
+fn format_e2b_datetime(date: Date) -> String {
+	format!(
+		"{:04}{:02}{:02}000000",
+		date.year(),
+		u8::from(date.month()),
+		date.day()
+	)
 }

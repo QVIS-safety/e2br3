@@ -58,7 +58,7 @@ pub fn patch_c_safety_report(
 					.or_else(|| {
 						patch.transmission_date_time.map(fmt_offset_datetime)
 					})
-					.unwrap_or_else(|| fmt_date_time_fallback(transmission_date)),
+					.unwrap_or_else(|| transmission_date.to_string()),
 			),
 		);
 	} else if let Some(null_flavor) = patch.transmission_date_null_flavor {

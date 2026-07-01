@@ -10,7 +10,7 @@ use time::Month;
 
 #[derive(Debug)]
 pub struct CSafetyReportImport {
-	pub transmission_date: Date,
+	pub transmission_date: String,
 	pub report_type: String,
 	pub date_first_received_from_source: Date,
 	pub date_of_most_recent_information: Date,
@@ -49,7 +49,10 @@ pub fn parse_c_safety_report(xml: &[u8]) -> Result<Option<CSafetyReportImport>> 
 	let transmission_raw =
 		first_value_root(&mut xpath, CSafetyReportPaths::DATE_OF_CREATION);
 	let transmission_date = transmission_raw
-		.and_then(parse_date)
+		.as_deref()
+		.and_then(normalize_datetime)
+		.unwrap_or_else(|| format_datetime(time::OffsetDateTime::now_utc().date()));
+	let transmission_date_for_defaults = parse_date(transmission_date.clone())
 		.unwrap_or_else(|| time::OffsetDateTime::now_utc().date());
 
 	let report_type = normalize_code(
@@ -65,12 +68,12 @@ pub fn parse_c_safety_report(xml: &[u8]) -> Result<Option<CSafetyReportImport>> 
 	let date_first_received_from_source =
 		first_value_root(&mut xpath, CSafetyReportPaths::DATE_FIRST_RECEIVED)
 			.and_then(parse_date)
-			.unwrap_or(transmission_date);
+			.unwrap_or(transmission_date_for_defaults);
 
 	let date_of_most_recent_information =
 		first_value_root(&mut xpath, CSafetyReportPaths::DATE_MOST_RECENT)
 			.and_then(parse_date)
-			.unwrap_or(transmission_date);
+			.unwrap_or(transmission_date_for_defaults);
 
 	let fulfil_expedited_criteria = parse_bool_value(first_value_root(
 		&mut xpath,
@@ -186,6 +189,28 @@ fn parse_date(value: String) -> Option<Date> {
 	let d: u8 = digits[6..8].parse().ok()?;
 	let month = Month::try_from(m).ok()?;
 	Date::from_calendar_date(y, month, d).ok()
+}
+
+fn normalize_datetime(value: &str) -> Option<String> {
+	let digits: String = value.chars().filter(|c| c.is_ascii_digit()).collect();
+	if digits.len() < 8 {
+		return None;
+	}
+	let date = parse_date(digits.clone())?;
+	if digits.len() >= 14 {
+		Some(digits[..14].to_string())
+	} else {
+		Some(format_datetime(date))
+	}
+}
+
+fn format_datetime(date: Date) -> String {
+	format!(
+		"{:04}{:02}{:02}000000",
+		date.year(),
+		u8::from(date.month()),
+		date.day()
+	)
 }
 
 #[cfg(test)]

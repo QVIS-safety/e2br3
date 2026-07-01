@@ -75,7 +75,7 @@ pub fn patch_f_test_results(raw_xml: &[u8], tests: &[TestResult]) -> Result<Stri
 	let mut ordered: Vec<&TestResult> = tests.iter().collect();
 	ordered.sort_by_key(|test| test.sequence_number);
 	for test in ordered {
-		let fragment = test_result_fragment(test);
+		let fragment = test_result_fragment(test)?;
 		append_fragment_child(
 			&mut doc,
 			&parser,

@@ -174,15 +174,48 @@ async fn test_admin_can_delete_user() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
 
 	let app = web_server::app(mm);
 	let req = Request::builder()
 		.method("DELETE")
 		.uri(format!("/api/users/{}", seed.viewer.id))
-		.header("cookie", cookie_header(&token.to_string()))
+		.header("cookie", cookie.as_str())
 		.body(Body::empty())?;
-	let res = app.oneshot(req).await?;
+	let res = app.clone().oneshot(req).await?;
 	assert_eq!(res.status(), StatusCode::NO_CONTENT);
+
+	let get_req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/users/{}", seed.viewer.id))
+		.header("cookie", cookie.as_str())
+		.body(Body::empty())?;
+	let get_res = app.clone().oneshot(get_req).await?;
+	assert_eq!(get_res.status(), StatusCode::OK);
+	let get_bytes = to_bytes(get_res.into_body(), usize::MAX).await?;
+	let deleted_user: serde_json::Value = serde_json::from_slice(&get_bytes)?;
+	assert_eq!(
+		deleted_user["data"]["active"].as_bool(),
+		Some(false),
+		"deleted user should be retained as inactive: {deleted_user}"
+	);
+
+	let restore_body = json!({ "data": { "active": true } });
+	let restore_req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.viewer.id))
+		.header("cookie", cookie.as_str())
+		.header("content-type", "application/json")
+		.body(Body::from(restore_body.to_string()))?;
+	let restore_res = app.clone().oneshot(restore_req).await?;
+	assert_eq!(restore_res.status(), StatusCode::OK);
+	let restore_bytes = to_bytes(restore_res.into_body(), usize::MAX).await?;
+	let restored_user: serde_json::Value = serde_json::from_slice(&restore_bytes)?;
+	assert_eq!(
+		restored_user["data"]["active"].as_bool(),
+		Some(true),
+		"restored user should be active again: {restored_user}"
+	);
 	Ok(())
 }
 

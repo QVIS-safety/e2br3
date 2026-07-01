@@ -1,5 +1,6 @@
 // Section F importer (Tests and Procedures) - FDA mapping.
 
+use crate::e2b::null_flavor::E2bNullFlavorValue;
 use crate::xml::error::Error;
 use crate::xml::mapping::fda::f_test_result::FTestResultPaths;
 use crate::xml::Result;
@@ -74,12 +75,23 @@ pub fn parse_f_test_results(xml: &[u8]) -> Result<Vec<FTestResultImport>> {
 			first_attr(&mut xpath, &node, FTestResultPaths::TEST_MEDDRA_VERSION),
 			10,
 		);
-		let test_date = first_attr(&mut xpath, &node, FTestResultPaths::TEST_DATE)
-			.and_then(parse_date);
-		let test_date_null_flavor = if test_date.is_some() {
-			None
-		} else {
-			first_attr(&mut xpath, &node, FTestResultPaths::TEST_DATE_NULL_FLAVOR)
+		let raw_test_date =
+			first_attr(&mut xpath, &node, FTestResultPaths::TEST_DATE);
+		let raw_test_date_null_flavor =
+			first_attr(&mut xpath, &node, FTestResultPaths::TEST_DATE_NULL_FLAVOR);
+		let test_date_value = raw_test_date.and_then(parse_date);
+		let test_date_field = E2bNullFlavorValue::from_parts(
+			test_date_value,
+			raw_test_date_null_flavor.as_deref(),
+		)
+		.map_err(|err| Error::InvalidXml {
+			message: format!("Invalid F.r.1 test date nullFlavor: {err}"),
+			line: None,
+			column: None,
+		})?;
+		let (test_date, test_date_null_flavor) = match test_date_field {
+			Some(field) => field.into_parts(),
+			None => (None, None),
 		};
 		let test_result_code =
 			first_attr(&mut xpath, &node, FTestResultPaths::RESULT_CODE);

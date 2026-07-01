@@ -725,9 +725,6 @@ CREATE TABLE if NOT EXISTS cases (
     fda_report_type VARCHAR(20),
     mfds_report_type TEXT,
     report_year VARCHAR(10),
-    source_document_name TEXT,
-    source_document_base64 TEXT,
-    source_document_media_type TEXT,
 
     -- Workflow tracking
     created_by UUID NOT NULL REFERENCES users(id),
@@ -757,6 +754,22 @@ CREATE INDEX idx_cases_organization ON cases(organization_id);
 CREATE INDEX idx_cases_status ON cases(status);
 CREATE INDEX idx_cases_workflow_status ON cases(workflow_status);
 CREATE INDEX idx_cases_created_by ON cases(created_by);
+
+CREATE TABLE source_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+    source_document_name TEXT,
+    source_document_base64 TEXT,
+    source_document_media_type TEXT,
+    sequence_number INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+    CONSTRAINT unique_source_document_sequence UNIQUE (case_id, sequence_number)
+);
+
+CREATE INDEX idx_source_documents_case ON source_documents(case_id);
 
 CREATE TABLE IF NOT EXISTS case_validation_summaries (
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,

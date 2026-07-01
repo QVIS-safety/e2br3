@@ -1198,6 +1198,87 @@ async fn authorityless_union_fields_are_allowed() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn reporter_presave_accepts_field_specific_null_flavors() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	let id = ReporterPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReporterPresaveForCreate {
+			reporter_title: None,
+			reporter_given_name: Some(format!("Reporter {suffix}")),
+			reporter_middle_name: None,
+			reporter_family_name: None,
+			organization: Some(format!("Reporter Org {suffix}")),
+			department: None,
+			street: None,
+			city: None,
+			state: None,
+			postcode: None,
+			telephone: None,
+			country_code: None,
+			qualification: Some("1".into()),
+			qualification_kr1: None,
+			primary_source_regulatory: None,
+			reporter_name_null_flavor: Some("MSK".into()),
+			reporter_address_null_flavor: Some("ASKU".into()),
+			qualification_null_flavor: Some("UNK".into()),
+		},
+	)
+	.await?;
+
+	let saved = ReporterPresaveBmc::get(&ctx, &mm, id).await?;
+	assert_eq!(saved.reporter_name_null_flavor.as_deref(), Some("MSK"));
+	assert_eq!(saved.reporter_address_null_flavor.as_deref(), Some("ASKU"));
+	assert_eq!(saved.qualification_null_flavor.as_deref(), Some("UNK"));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn reporter_presave_rejects_invalid_field_specific_null_flavors() -> Result<()>
+{
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let suffix = Uuid::new_v4();
+
+	expect_validation_error(
+		ReporterPresaveBmc::create(
+			&ctx,
+			&mm,
+			ReporterPresaveForCreate {
+				reporter_title: None,
+				reporter_given_name: Some(format!("Reporter {suffix}")),
+				reporter_middle_name: None,
+				reporter_family_name: None,
+				organization: Some(format!("Reporter Org {suffix}")),
+				department: None,
+				street: None,
+				city: None,
+				state: None,
+				postcode: None,
+				telephone: None,
+				country_code: None,
+				qualification: Some("1".into()),
+				qualification_kr1: None,
+				primary_source_regulatory: None,
+				reporter_name_null_flavor: Some("UNK".into()),
+				reporter_address_null_flavor: Some("MSK".into()),
+				qualification_null_flavor: Some("MSK".into()),
+			},
+		)
+		.await,
+		"reporter_name_null_flavor",
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn study_presave_registration_numbers_enforce_registration_number_max_length(
 ) -> Result<()> {
 	_dev_utils::init_dev().await;

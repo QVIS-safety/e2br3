@@ -71,10 +71,31 @@ fn import_f_section_parses_test_date_null_flavor() {
 	assert_eq!(first.more_info_available, None);
 }
 
+#[test]
+fn import_f_section_rejects_test_date_value_and_null_flavor_together() {
+	let xml = scenario6_with_first_test_date_value_and_null_flavor();
+
+	let err = parse_f_test_results(xml.as_bytes()).unwrap_err();
+	assert!(
+		err.to_string()
+			.contains("value and nullFlavor cannot both be present"),
+		"unexpected error: {err}"
+	);
+}
+
 fn scenario6_with_first_test_date_null_flavor() -> String {
 	let xml = String::from_utf8(fixture("FAERS2022Scenario6.xml")).expect("utf-8");
 	let original = "<originalText>Calcium Level</originalText>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<!--  F.r.2.1 Test Name (free text) #1 -->\n\t\t\t\t\t\t\t\t\t\t\t\t\t</code>\n\t\t\t\t\t\t\t\t\t\t\t\t\t<effectiveTime value=\"20090101\"/>";
 	let replacement = "<originalText>Calcium Level</originalText>\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t<!--  F.r.2.1 Test Name (free text) #1 -->\n\t\t\t\t\t\t\t\t\t\t\t\t\t</code>\n\t\t\t\t\t\t\t\t\t\t\t\t\t<effectiveTime nullFlavor=\"UNK\"/>";
+	let updated = xml.replacen(original, replacement, 1);
+	assert_ne!(updated, xml, "fixture patch should replace one F.r.1 date");
+	updated
+}
+
+fn scenario6_with_first_test_date_value_and_null_flavor() -> String {
+	let xml = String::from_utf8(fixture("FAERS2022Scenario6.xml")).expect("utf-8");
+	let original = "<effectiveTime value=\"20090101\"/>";
+	let replacement = "<effectiveTime value=\"20090101\" nullFlavor=\"UNK\"/>";
 	let updated = xml.replacen(original, replacement, 1);
 	assert_ne!(updated, xml, "fixture patch should replace one F.r.1 date");
 	updated

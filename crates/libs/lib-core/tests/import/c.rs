@@ -14,7 +14,7 @@ fn import_c_section_all_fields_from_scenario6() {
 		.expect("parse")
 		.expect("section C should exist");
 
-	assert_eq!(report.transmission_date, date(2014, 6, 14));
+	assert_eq!(report.transmission_date, "20140614000000");
 	assert_eq!(report.report_type, "1");
 	assert_eq!(report.date_first_received_from_source, date(2022, 6, 14));
 	assert_eq!(report.date_of_most_recent_information, date(2022, 6, 14));
@@ -53,7 +53,7 @@ fn import_settings_update_only_enabled_c1_dates_to_import_date() {
 		import_date,
 	);
 
-	assert_eq!(report.transmission_date, import_date);
+	assert_eq!(report.transmission_date, "20260517000000");
 	assert_eq!(report.date_first_received_from_source, import_date);
 	assert_eq!(report.date_of_most_recent_information, import_date);
 }
@@ -61,7 +61,7 @@ fn import_settings_update_only_enabled_c1_dates_to_import_date() {
 #[test]
 fn import_settings_apply_r2_defaults_only_when_enabled() {
 	let mut report = CSafetyReportImport {
-		transmission_date: date(2026, 5, 17),
+		transmission_date: "20260517000000".to_string(),
 		report_type: "1".to_string(),
 		date_first_received_from_source: date(2026, 5, 17),
 		date_of_most_recent_information: date(2026, 5, 17),

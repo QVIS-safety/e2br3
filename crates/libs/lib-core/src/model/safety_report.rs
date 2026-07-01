@@ -1,6 +1,7 @@
 // Section C - Safety Report Identification
 
 use crate::ctx::{Ctx, SYSTEM_USER_ID};
+use crate::e2b::null_flavor::NullFlavor;
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
 use crate::model::modql_utils::uuid_to_sea_value;
@@ -14,6 +15,32 @@ use sqlx::types::time::{Date, OffsetDateTime};
 use sqlx::types::Uuid;
 use sqlx::FromRow;
 
+fn validation_error(message: &str) -> crate::model::Error {
+	crate::model::Error::Validation {
+		message: message.to_string(),
+	}
+}
+
+fn validate_primary_source_null_flavor_set(
+	field: &str,
+	value: Option<&str>,
+	allowed: &[NullFlavor],
+) -> Result<()> {
+	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
+		return Ok(());
+	};
+	let parsed: NullFlavor = value
+		.parse()
+		.map_err(|err| validation_error(&format!("{field}: {err}")))?;
+	if parsed.is_one_of(allowed) {
+		Ok(())
+	} else {
+		Err(validation_error(&format!(
+			"{field}: nullFlavor {parsed} is not allowed"
+		)))
+	}
+}
+
 // -- SafetyReportIdentification
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -26,7 +53,7 @@ pub struct SafetyReportIdentification {
 	pub version: i32,
 
 	// C.1.2 - Date of Creation (MANDATORY)
-	pub transmission_date: Option<Date>,
+	pub transmission_date: Option<String>,
 	pub transmission_date_null_flavor: Option<String>,
 
 	// C.1.3 - Type of Report (MANDATORY)
@@ -42,6 +69,7 @@ pub struct SafetyReportIdentification {
 
 	// C.1.7 - Fulfils Expedited Criteria (MANDATORY)
 	pub fulfil_expedited_criteria: Option<bool>,
+	pub fulfil_expedited_criteria_null_flavor: Option<String>,
 
 	// FDA.C.1.7.1 - Local Criteria Report Type (FDA)
 	pub local_criteria_report_type: Option<String>,
@@ -60,6 +88,7 @@ pub struct SafetyReportIdentification {
 
 	// C.1.9.1 - Other Case Identifiers in Previous Transmissions
 	pub other_case_identifiers_exist: Option<bool>,
+	pub other_case_identifiers_exist_null_flavor: Option<String>,
 
 	// C.1.11.1 - Nullification/Amendment Code
 	pub nullification_code: Option<String>,
@@ -84,9 +113,9 @@ pub struct SafetyReportIdentificationForCreate {
 	pub version: Option<i32>,
 	#[serde(
 		default,
-		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+		deserialize_with = "crate::serde::flex_date::deserialize_option_e2b_datetime"
 	)]
-	pub transmission_date: Option<Date>,
+	pub transmission_date: Option<String>,
 	pub transmission_date_null_flavor: Option<String>,
 	pub report_type: Option<String>,
 	#[serde(
@@ -102,11 +131,13 @@ pub struct SafetyReportIdentificationForCreate {
 	pub date_of_most_recent_information: Option<Date>,
 	pub date_of_most_recent_information_null_flavor: Option<String>,
 	pub fulfil_expedited_criteria: Option<bool>,
+	pub fulfil_expedited_criteria_null_flavor: Option<String>,
 	pub local_criteria_report_type: Option<String>,
 	pub combination_product_report_indicator: Option<String>,
 	pub first_sender_type: Option<String>,
 	pub additional_documents_available: Option<bool>,
 	pub other_case_identifiers_exist: Option<bool>,
+	pub other_case_identifiers_exist_null_flavor: Option<String>,
 	pub worldwide_unique_id: Option<String>,
 	pub nullification_code: Option<String>,
 	pub nullification_reason: Option<String>,
@@ -158,9 +189,9 @@ pub struct SafetyReportIdentificationForUpdate {
 	pub version: Option<i32>,
 	#[serde(
 		default,
-		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+		deserialize_with = "crate::serde::flex_date::deserialize_option_e2b_datetime"
 	)]
-	pub transmission_date: Option<Date>,
+	pub transmission_date: Option<String>,
 	pub transmission_date_null_flavor: Option<String>,
 	#[serde(default, deserialize_with = "deserialize_patch_value")]
 	pub report_type: PatchValue<String>,
@@ -178,6 +209,7 @@ pub struct SafetyReportIdentificationForUpdate {
 	pub date_of_most_recent_information_null_flavor: Option<String>,
 	#[serde(default, deserialize_with = "deserialize_patch_value")]
 	pub fulfil_expedited_criteria: PatchValue<bool>,
+	pub fulfil_expedited_criteria_null_flavor: Option<String>,
 	#[serde(default, deserialize_with = "deserialize_patch_value")]
 	pub local_criteria_report_type: PatchValue<String>,
 	#[serde(default, deserialize_with = "deserialize_patch_value")]
@@ -186,6 +218,7 @@ pub struct SafetyReportIdentificationForUpdate {
 	pub first_sender_type: Option<String>,
 	pub additional_documents_available: Option<bool>,
 	pub other_case_identifiers_exist: Option<bool>,
+	pub other_case_identifiers_exist_null_flavor: Option<String>,
 	pub nullification_code: Option<String>,
 	pub nullification_reason: Option<String>,
 	pub receiver_organization: Option<String>,
@@ -294,6 +327,7 @@ pub struct PrimarySource {
 	pub reporter_given_name: Option<String>,
 	pub reporter_middle_name: Option<String>,
 	pub reporter_family_name: Option<String>,
+	pub reporter_name_null_flavor: Option<String>,
 
 	// C.2.r.2 - Reporter's Address
 	pub organization: Option<String>,
@@ -303,6 +337,7 @@ pub struct PrimarySource {
 	pub state: Option<String>,
 	pub postcode: Option<String>,
 	pub telephone: Option<String>,
+	pub reporter_address_null_flavor: Option<String>,
 
 	// C.2.r.3 - Country Code
 	pub country_code: Option<String>,
@@ -310,6 +345,7 @@ pub struct PrimarySource {
 
 	// C.2.r.4 - Qualification (MANDATORY within primary source)
 	pub qualification: Option<String>,
+	pub qualification_null_flavor: Option<String>,
 	// MFDS.C.2.r.4.KR.1 - Other health professional type
 	pub qualification_kr1: Option<String>,
 
@@ -334,6 +370,7 @@ pub struct PrimarySourceForCreate {
 	pub reporter_given_name: Option<String>,
 	pub reporter_middle_name: Option<String>,
 	pub reporter_family_name: Option<String>,
+	pub reporter_name_null_flavor: Option<String>,
 	pub organization: Option<String>,
 	pub department: Option<String>,
 	pub street: Option<String>,
@@ -341,9 +378,11 @@ pub struct PrimarySourceForCreate {
 	pub state: Option<String>,
 	pub postcode: Option<String>,
 	pub telephone: Option<String>,
+	pub reporter_address_null_flavor: Option<String>,
 	pub country_code: Option<String>,
 	pub email: Option<String>,
 	pub qualification: Option<String>,
+	pub qualification_null_flavor: Option<String>,
 	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 }
@@ -355,6 +394,7 @@ pub struct PrimarySourceForUpdate {
 	pub reporter_given_name: Option<String>,
 	pub reporter_middle_name: Option<String>,
 	pub reporter_family_name: Option<String>,
+	pub reporter_name_null_flavor: Option<String>,
 	pub organization: Option<String>,
 	pub department: Option<String>,
 	pub street: Option<String>,
@@ -362,9 +402,11 @@ pub struct PrimarySourceForUpdate {
 	pub state: Option<String>,
 	pub postcode: Option<String>,
 	pub telephone: Option<String>,
+	pub reporter_address_null_flavor: Option<String>,
 	pub country_code: Option<String>,
 	pub email: Option<String>,
 	pub qualification: Option<String>,
+	pub qualification_null_flavor: Option<String>,
 	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
 }
@@ -646,8 +688,8 @@ impl SafetyReportIdentificationBmc {
 		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, safety_report_id, version, transmission_date, transmission_date_null_flavor, report_type, date_first_received_from_source, date_first_received_from_source_null_flavor, date_of_most_recent_information, date_of_most_recent_information_null_flavor, fulfil_expedited_criteria, local_criteria_report_type, combination_product_report_indicator, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
-			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, now(), now(), $21)
+			"INSERT INTO {} (case_id, safety_report_id, version, transmission_date, transmission_date_null_flavor, report_type, date_first_received_from_source, date_first_received_from_source_null_flavor, date_of_most_recent_information, date_of_most_recent_information_null_flavor, fulfil_expedited_criteria, fulfil_expedited_criteria_null_flavor, local_criteria_report_type, combination_product_report_indicator, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, other_case_identifiers_exist_null_flavor, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
+			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, now(), now(), $23)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -666,12 +708,14 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.date_of_most_recent_information)
 					.bind(data.date_of_most_recent_information_null_flavor)
 					.bind(data.fulfil_expedited_criteria)
+					.bind(data.fulfil_expedited_criteria_null_flavor)
 					.bind(data.local_criteria_report_type)
 					.bind(data.combination_product_report_indicator)
 					.bind(data.worldwide_unique_id)
 					.bind(data.first_sender_type)
 					.bind(data.additional_documents_available)
 					.bind(data.other_case_identifiers_exist)
+					.bind(data.other_case_identifiers_exist_null_flavor)
 					.bind(data.nullification_code)
 					.bind(data.nullification_reason)
 					.bind(data.receiver_organization)
@@ -787,18 +831,20 @@ impl SafetyReportIdentificationBmc {
 			     date_first_received_from_source_null_flavor = CASE WHEN $8 IS NOT NULL THEN NULL ELSE COALESCE($9, date_first_received_from_source_null_flavor) END,
 			     date_of_most_recent_information = CASE WHEN $11 IS NOT NULL THEN NULL ELSE COALESCE($10, date_of_most_recent_information) END,
 			     date_of_most_recent_information_null_flavor = CASE WHEN $10 IS NOT NULL THEN NULL ELSE COALESCE($11, date_of_most_recent_information_null_flavor) END,
-			     fulfil_expedited_criteria = CASE WHEN $12 THEN NULL ELSE COALESCE($13, fulfil_expedited_criteria) END,
-			     local_criteria_report_type = CASE WHEN $14 THEN NULL ELSE COALESCE($15, local_criteria_report_type) END,
-			     combination_product_report_indicator = CASE WHEN $16 THEN NULL ELSE COALESCE($17, combination_product_report_indicator) END,
-			     worldwide_unique_id = COALESCE($18, worldwide_unique_id),
-			     first_sender_type = COALESCE($19, first_sender_type),
-			     additional_documents_available = COALESCE($20, additional_documents_available),
-			     other_case_identifiers_exist = COALESCE($21, other_case_identifiers_exist),
-			     nullification_code = COALESCE($22, nullification_code),
-			     nullification_reason = COALESCE($23, nullification_reason),
-			     receiver_organization = COALESCE($24, receiver_organization),
+			     fulfil_expedited_criteria = CASE WHEN $12 OR $14 IS NOT NULL THEN NULL ELSE COALESCE($13, fulfil_expedited_criteria) END,
+			     fulfil_expedited_criteria_null_flavor = CASE WHEN $13 IS NOT NULL THEN NULL ELSE COALESCE($14, fulfil_expedited_criteria_null_flavor) END,
+			     local_criteria_report_type = CASE WHEN $15 THEN NULL ELSE COALESCE($16, local_criteria_report_type) END,
+			     combination_product_report_indicator = CASE WHEN $17 THEN NULL ELSE COALESCE($18, combination_product_report_indicator) END,
+			     worldwide_unique_id = COALESCE($19, worldwide_unique_id),
+			     first_sender_type = COALESCE($20, first_sender_type),
+			     additional_documents_available = COALESCE($21, additional_documents_available),
+			     other_case_identifiers_exist = CASE WHEN $23 IS NOT NULL THEN NULL ELSE COALESCE($22, other_case_identifiers_exist) END,
+			     other_case_identifiers_exist_null_flavor = CASE WHEN $22 IS NOT NULL THEN NULL ELSE COALESCE($23, other_case_identifiers_exist_null_flavor) END,
+			     nullification_code = COALESCE($24, nullification_code),
+			     nullification_reason = COALESCE($25, nullification_reason),
+			     receiver_organization = COALESCE($26, receiver_organization),
 			     updated_at = now(),
-			     updated_by = $25
+			     updated_by = $27
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -819,6 +865,7 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.date_of_most_recent_information_null_flavor)
 					.bind(clear_fulfil_expedited_criteria)
 					.bind(fulfil_expedited_criteria)
+					.bind(data.fulfil_expedited_criteria_null_flavor)
 					.bind(clear_local_criteria_report_type)
 					.bind(local_criteria_report_type)
 					.bind(clear_combination_product_report_indicator)
@@ -827,6 +874,7 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.first_sender_type)
 					.bind(data.additional_documents_available)
 					.bind(data.other_case_identifiers_exist)
+					.bind(data.other_case_identifiers_exist_null_flavor)
 					.bind(data.nullification_code)
 					.bind(data.nullification_reason)
 					.bind(data.receiver_organization)
@@ -943,6 +991,11 @@ impl PrimarySourceBmc {
 		mm: &ModelManager,
 		data: PrimarySourceForCreate,
 	) -> Result<Uuid> {
+		Self::validate_null_flavors(
+			data.reporter_name_null_flavor.as_deref(),
+			data.reporter_address_null_flavor.as_deref(),
+			data.qualification_null_flavor.as_deref(),
+		)?;
 		base_uuid::create::<Self, _>(ctx, mm, data).await
 	}
 
@@ -974,6 +1027,11 @@ impl PrimarySourceBmc {
 		id: Uuid,
 		data: PrimarySourceForUpdate,
 	) -> Result<()> {
+		Self::validate_null_flavors(
+			data.reporter_name_null_flavor.as_deref(),
+			data.reporter_address_null_flavor.as_deref(),
+			data.qualification_null_flavor.as_deref(),
+		)?;
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
 
@@ -983,6 +1041,32 @@ impl PrimarySourceBmc {
 
 	pub async fn restore(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
 		base_uuid::restore::<Self>(ctx, mm, id).await
+	}
+
+	fn validate_null_flavors(
+		reporter_name_null_flavor: Option<&str>,
+		reporter_address_null_flavor: Option<&str>,
+		qualification_null_flavor: Option<&str>,
+	) -> Result<()> {
+		const NAME_ADDRESS_ALLOWED: &[NullFlavor] =
+			&[NullFlavor::MSK, NullFlavor::ASKU, NullFlavor::NASK];
+		const QUALIFICATION_ALLOWED: &[NullFlavor] = &[NullFlavor::UNK];
+
+		validate_primary_source_null_flavor_set(
+			"reporter_name_null_flavor",
+			reporter_name_null_flavor,
+			NAME_ADDRESS_ALLOWED,
+		)?;
+		validate_primary_source_null_flavor_set(
+			"reporter_address_null_flavor",
+			reporter_address_null_flavor,
+			NAME_ADDRESS_ALLOWED,
+		)?;
+		validate_primary_source_null_flavor_set(
+			"qualification_null_flavor",
+			qualification_null_flavor,
+			QUALIFICATION_ALLOWED,
+		)
 	}
 }
 

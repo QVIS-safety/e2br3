@@ -37,7 +37,7 @@ pub fn apply_c_safety_report_import_settings(
 	import_date: Date,
 ) {
 	if settings.update_date_of_creation {
-		report.transmission_date = import_date;
+		report.transmission_date = format_e2b_datetime(import_date);
 	}
 	if settings.update_most_recent_info_date {
 		report.date_of_most_recent_information = import_date;
@@ -70,9 +70,24 @@ fn enforce_c1_date_order(report: &mut CSafetyReportImport) {
 		report.date_of_most_recent_information =
 			report.date_first_received_from_source;
 	}
-	if report.date_of_most_recent_information > report.transmission_date {
-		report.transmission_date = report.date_of_most_recent_information;
+	if report.date_of_most_recent_information > transmission_date_as_date(report) {
+		report.transmission_date =
+			format_e2b_datetime(report.date_of_most_recent_information);
 	}
+}
+
+fn transmission_date_as_date(report: &CSafetyReportImport) -> Date {
+	crate::serde::flex_date::e2b_datetime_date(&report.transmission_date)
+		.unwrap_or(report.date_of_most_recent_information)
+}
+
+fn format_e2b_datetime(date: Date) -> String {
+	format!(
+		"{:04}{:02}{:02}000000",
+		date.year(),
+		u8::from(date.month()),
+		date.day()
+	)
 }
 
 pub(crate) async fn import_section_c(
@@ -501,6 +516,7 @@ async fn import_c_3_primary_sources(
 					reporter_given_name: primary.reporter_given_name.clone(),
 					reporter_middle_name: primary.reporter_middle_name.clone(),
 					reporter_family_name: primary.reporter_family_name.clone(),
+					reporter_name_null_flavor: None,
 					organization: primary.organization.clone(),
 					department: primary.department.clone(),
 					street: primary.street.clone(),
@@ -508,9 +524,11 @@ async fn import_c_3_primary_sources(
 					state: primary.state.clone(),
 					postcode: primary.postcode.clone(),
 					telephone: primary.telephone.clone(),
+					reporter_address_null_flavor: None,
 					country_code: primary.country_code.clone(),
 					email: primary.email.clone(),
 					qualification: primary.qualification.clone(),
+					qualification_null_flavor: None,
 					qualification_kr1: None,
 					primary_source_regulatory: primary.primary_source_regulatory.clone(),
 				},
@@ -528,6 +546,7 @@ async fn import_c_3_primary_sources(
 				reporter_given_name: primary.reporter_given_name,
 				reporter_middle_name: primary.reporter_middle_name,
 				reporter_family_name: primary.reporter_family_name,
+				reporter_name_null_flavor: None,
 				organization: primary.organization,
 				department: primary.department,
 				street: primary.street,
@@ -535,9 +554,11 @@ async fn import_c_3_primary_sources(
 				state: primary.state,
 				postcode: primary.postcode,
 				telephone: primary.telephone,
+				reporter_address_null_flavor: None,
 				country_code: primary.country_code,
 				email: primary.email,
 				qualification: primary.qualification,
+				qualification_null_flavor: None,
 				qualification_kr1: None,
 				primary_source_regulatory: primary.primary_source_regulatory,
 			},
@@ -947,7 +968,7 @@ mod tests {
 
 	fn report() -> CSafetyReportImport {
 		CSafetyReportImport {
-			transmission_date: date(2024, Month::January, 10),
+			transmission_date: "20240110000000".to_string(),
 			report_type: "1".to_string(),
 			date_first_received_from_source: date(2024, Month::January, 5),
 			date_of_most_recent_information: date(2024, Month::January, 8),
@@ -985,11 +1006,13 @@ mod tests {
 			"C.1.4 must not be after C.1.5"
 		);
 		assert!(
-			report.date_first_received_from_source <= report.transmission_date,
+			report.date_first_received_from_source
+				<= transmission_date_as_date(&report),
 			"C.1.4 must not be after C.1.2"
 		);
 		assert!(
-			report.date_of_most_recent_information <= report.transmission_date,
+			report.date_of_most_recent_information
+				<= transmission_date_as_date(&report),
 			"C.1.5 must not be after C.1.2"
 		);
 		assert_eq!(report.date_first_received_from_source, import_date);
@@ -1014,7 +1037,8 @@ mod tests {
 
 		assert_eq!(report.date_of_most_recent_information, import_date);
 		assert!(
-			report.date_of_most_recent_information <= report.transmission_date,
+			report.date_of_most_recent_information
+				<= transmission_date_as_date(&report),
 			"C.1.5 must not be after C.1.2"
 		);
 	}

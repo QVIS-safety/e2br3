@@ -1,4 +1,5 @@
 use super::*;
+use crate::e2b::null_flavor::E2bNullFlavorValue;
 
 pub(crate) async fn export_patch(
 	mm: &ModelManager,
@@ -41,13 +42,13 @@ pub fn export_f_test_results_xml(results: &[TestResult]) -> Result<String> {
 
 	let mut items_xml = String::new();
 	for result in ordered {
-		items_xml.push_str(&test_result_fragment(result));
+		items_xml.push_str(&test_result_fragment(result)?);
 	}
 	let xml = base_f_test_result_skeleton().replace("{TESTS}", &items_xml);
 	Ok(xml)
 }
 
-pub(crate) fn test_result_fragment(result: &TestResult) -> String {
+pub(crate) fn test_result_fragment(result: &TestResult) -> Result<String> {
 	let mut out = String::new();
 	out.push_str("<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\">");
 	out.push_str(
@@ -72,15 +73,7 @@ pub(crate) fn test_result_fragment(result: &TestResult) -> String {
 	out.push_str(&xml_escape(&result.test_name));
 	out.push_str("</originalText>");
 	out.push_str("</code>");
-	if let Some(date) = result.test_date {
-		out.push_str("<effectiveTime value=\"");
-		out.push_str(&fmt_date(date));
-		out.push_str("\"/>");
-	} else if let Some(null_flavor) = result.test_date_null_flavor.as_deref() {
-		out.push_str("<effectiveTime nullFlavor=\"");
-		out.push_str(&xml_escape(null_flavor));
-		out.push_str("\"/>");
-	}
+	out.push_str(&test_date_effective_time(result)?);
 	if let Some(code) = result.test_result_code.as_deref() {
 		out.push_str("<interpretationCode code=\"");
 		out.push_str(&xml_escape(code));
@@ -134,7 +127,30 @@ pub(crate) fn test_result_fragment(result: &TestResult) -> String {
 		out.push_str("\"/></observation></outboundRelationship2>");
 	}
 	out.push_str("</observation></component></organizer></subjectOf2>");
-	out
+	Ok(out)
+}
+
+fn test_date_effective_time(result: &TestResult) -> Result<String> {
+	let field = E2bNullFlavorValue::from_parts(
+		result.test_date,
+		result.test_date_null_flavor.as_deref(),
+	)
+	.map_err(|err| Error::InvalidXml {
+		message: format!("Invalid F.r.1 test date nullFlavor: {err}"),
+		line: None,
+		column: None,
+	})?;
+
+	match field {
+		Some(E2bNullFlavorValue::Value { value }) => {
+			Ok(format!("<effectiveTime value=\"{}\"/>", fmt_date(value)))
+		}
+		Some(E2bNullFlavorValue::NullFlavor { null_flavor }) => Ok(format!(
+			"<effectiveTime nullFlavor=\"{}\"/>",
+			xml_escape(null_flavor.as_str())
+		)),
+		None => Ok(String::new()),
+	}
 }
 
 fn fmt_date(date: Date) -> String {

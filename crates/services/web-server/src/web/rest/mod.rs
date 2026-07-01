@@ -40,7 +40,7 @@ pub mod submission_rest;
 pub mod terminology_rest;
 pub mod validation_rules_rest;
 
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 use axum::Router;
 use lib_core::model::ModelManager;
 use lib_web::handlers::handlers_rest::rest_collection_item_routes;
@@ -604,6 +604,17 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 	.route(
 		"/cases/{case_id}/safety-report/primary-sources/{id}/restore",
 		axum::routing::post(safety_report_sub_rest::restore_primary_source),
+	)
+	// App-local source documents (SRC_DOC/SRC_FILE)
+	.route(
+		"/cases/{case_id}/source-documents",
+		get(safety_report_sub_rest::list_source_documents)
+			.post(safety_report_sub_rest::create_source_document),
+	)
+	.route(
+		"/cases/{case_id}/source-documents/{id}",
+		put(safety_report_sub_rest::update_source_document)
+			.delete(safety_report_sub_rest::delete_source_document),
 	)
 	// Literature References (collection per case) - C.4.r
 	.route(

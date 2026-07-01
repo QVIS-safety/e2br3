@@ -682,7 +682,9 @@ async fn import_patient_information(
 				sex: patient.sex.clone(),
 				sex_null_flavor: patient.sex_null_flavor.clone(),
 				race_code: patient.race_code.clone(),
+				race_code_null_flavor: None,
 				ethnicity_code: patient.ethnicity_code.clone(),
+				ethnicity_code_null_flavor: None,
 				last_menstrual_period_date: patient.last_menstrual_period_date,
 				last_menstrual_period_date_null_flavor: patient
 					.last_menstrual_period_date_null_flavor
@@ -718,7 +720,9 @@ async fn import_patient_information(
 				sex: patient.sex,
 				sex_null_flavor: patient.sex_null_flavor,
 				race_code: patient.race_code,
+				race_code_null_flavor: None,
 				ethnicity_code: patient.ethnicity_code,
+				ethnicity_code_null_flavor: None,
 				last_menstrual_period_date: patient.last_menstrual_period_date,
 				last_menstrual_period_date_null_flavor: patient
 					.last_menstrual_period_date_null_flavor,
