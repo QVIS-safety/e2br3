@@ -271,3 +271,13 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm terminol
 `/opt/e2br3/terminology`.
 
 Remove uploaded source files after the load has been verified according to your retention policy.
+
+Load ISO 3166-1 alpha-2 countries into the same database used by the terminology endpoints:
+
+```sh
+cd /opt/e2br3
+./deploy/ec2/load-iso-countries.sh
+```
+
+The script reads `SERVICE_DB_URL` from `.env.prod`, downloads the DataHub/Core country-list CSV, and
+upserts `iso_countries`. Existing country rows missing from the source are marked inactive.
