@@ -342,6 +342,104 @@ fn base_icrs_skeleton() -> &'static str {
 </MCCI_IN200100UV01>"
 }
 
+pub(crate) async fn apply_literature_section(
+	doc: &mut Document,
+	parser: &Parser,
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+	xpath: &mut Context,
+) -> Result<()> {
+	let references = fetch_literature_references(mm, case_id).await?;
+	if references.is_empty() {
+		return Ok(());
+	}
+
+	remove_nodes(
+		xpath,
+		"//hl7:investigationEvent/hl7:reference[hl7:document/hl7:code[@code='2' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.27']]",
+	);
+
+	let mut fragment = String::new();
+	for item in references {
+		let reference_text = item.reference_text.trim();
+		let bibliographic = if reference_text.is_empty() {
+			if let Some(null_flavor) = item.reference_text_null_flavor.as_deref() {
+				format!(
+					"<bibliographicDesignationText nullFlavor=\"{}\"/>",
+					xml_escape(null_flavor)
+				)
+			} else {
+				"<bibliographicDesignationText/>".to_string()
+			}
+		} else {
+			format!(
+				"<bibliographicDesignationText>{}</bibliographicDesignationText>",
+				xml_escape(reference_text)
+			)
+		};
+		let attachment = item
+			.document_base64
+			.as_deref()
+			.filter(|v| !v.trim().is_empty())
+			.map(|document| {
+				let media_type = item
+					.media_type
+					.as_deref()
+					.filter(|v| !v.trim().is_empty())
+					.unwrap_or("application/octet-stream");
+				let representation = item
+					.representation
+					.as_deref()
+					.filter(|v| !v.trim().is_empty())
+					.unwrap_or("B64");
+				let compression = item
+					.compression
+					.as_deref()
+					.filter(|v| !v.trim().is_empty())
+					.map(|value| format!(" compression=\"{}\"", xml_escape(value)))
+					.unwrap_or_default();
+				format!(
+					"<text mediaType=\"{}\" representation=\"{}\"{}>{}</text>",
+					xml_escape(media_type),
+					xml_escape(representation),
+					compression,
+					xml_escape(document)
+				)
+			})
+			.unwrap_or_default();
+		fragment.push_str(&format!(
+			"<reference typeCode=\"REFR\"><document classCode=\"DOC\" moodCode=\"EVN\"><code code=\"2\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.27\"/>{}{}</document></reference>",
+			bibliographic,
+			attachment
+		));
+	}
+
+	let xml = doc.to_string();
+	if let Some(injected) = inject_fragment_in_investigation_event(&xml, &fragment) {
+		let new_doc =
+			parser
+				.parse_string(&injected)
+				.map_err(|err| Error::InvalidXml {
+					message: format!(
+						"XML parse error after literature injection: {err}"
+					),
+					line: None,
+					column: None,
+				})?;
+		*doc = new_doc;
+		*xpath = Context::new(doc).map_err(|_| Error::InvalidXml {
+			message: "Failed to initialize XPath context after literature injection"
+				.to_string(),
+			line: None,
+			column: None,
+		})?;
+		let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+		let _ = xpath
+			.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
+	}
+	Ok(())
+}
+
 pub(crate) async fn apply_study_section(
 	doc: &mut Document,
 	parser: &Parser,
@@ -384,32 +482,49 @@ pub(crate) async fn apply_study_section(
 		.sponsor_study_number
 		.as_deref()
 		.filter(|s| !s.trim().is_empty())
-		.unwrap_or("CT-00-00");
+		.unwrap_or("");
 	let study_name = study
 		.study_name
 		.as_deref()
 		.filter(|s| !s.trim().is_empty())
-		.unwrap_or("Study");
+		.unwrap_or("");
 
 	let mut auth_xml = String::new();
 	for reg in &registrations {
-		if reg.registration_number.trim().is_empty() {
+		if reg.registration_number.trim().is_empty()
+			&& reg.registration_number_null_flavor.is_none()
+		{
 			continue;
 		}
-		let country_xml = reg
-			.country_code
-			.as_deref()
-			.filter(|v| !v.trim().is_empty())
-			.map(|code| {
+		let country_xml = match (
+			reg.country_code.as_deref().filter(|v| !v.trim().is_empty()),
+			reg.country_code_null_flavor.as_deref(),
+		) {
+			(Some(code), _) => format!(
+				"<author typeCode=\"AUT\"><territorialAuthority classCode=\"TERR\"><governingPlace classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code code=\"{}\" codeSystem=\"1.0.3166.1.2.2\"/></governingPlace></territorialAuthority></author>",
+				xml_escape(code)
+			),
+			(None, Some(null_flavor)) => format!(
+				"<author typeCode=\"AUT\"><territorialAuthority classCode=\"TERR\"><governingPlace classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code nullFlavor=\"{}\" codeSystem=\"1.0.3166.1.2.2\"/></governingPlace></territorialAuthority></author>",
+				xml_escape(null_flavor)
+			),
+			(None, None) => String::new(),
+		};
+		let id_xml =
+			if reg.registration_number.trim().is_empty() {
 				format!(
-					"<author typeCode=\"AUT\"><territorialAuthority classCode=\"TERR\"><governingPlace classCode=\"COUNTRY\" determinerCode=\"INSTANCE\"><code code=\"{}\" codeSystem=\"1.0.3166.1.2.2\"/></governingPlace></territorialAuthority></author>",
-					xml_escape(code)
-				)
-			})
-			.unwrap_or_default();
+				"<id nullFlavor=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.6\"/>",
+				xml_escape(reg.registration_number_null_flavor.as_deref().unwrap_or("ASKU"))
+			)
+			} else {
+				format!(
+				"<id extension=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.6\"/>",
+				xml_escape(&reg.registration_number)
+			)
+			};
 		auth_xml.push_str(&format!(
-			"<authorization typeCode=\"AUTH\"><studyRegistration classCode=\"ACT\" moodCode=\"EVN\"><id extension=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.6\"/>{}</studyRegistration></authorization>",
-			xml_escape(&reg.registration_number),
+			"<authorization typeCode=\"AUTH\"><studyRegistration classCode=\"ACT\" moodCode=\"EVN\">{}{}</studyRegistration></authorization>",
+			id_xml,
 			country_xml
 		));
 	}
@@ -427,11 +542,36 @@ pub(crate) async fn apply_study_section(
 		));
 	}
 
+	let sponsor_id_xml = if sponsor_study_number.is_empty() {
+		format!(
+			"<id nullFlavor=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.5\"/>",
+			xml_escape(
+				study
+					.sponsor_study_number_null_flavor
+					.as_deref()
+					.unwrap_or("ASKU")
+			)
+		)
+	} else {
+		format!(
+			"<id extension=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.5\"/>",
+			xml_escape(sponsor_study_number)
+		)
+	};
+	let title_xml = if study_name.is_empty() {
+		if let Some(null_flavor) = study.study_name_null_flavor.as_deref() {
+			format!("<title nullFlavor=\"{}\"/>", xml_escape(null_flavor))
+		} else {
+			"<title/>".to_string()
+		}
+	} else {
+		format!("<title>{}</title>", xml_escape(study_name))
+	};
 	let fragment = format!(
-		"<subjectOf1 typeCode=\"SBJ\"><researchStudy classCode=\"CLNTRL\" moodCode=\"EVN\"><id extension=\"{}\" root=\"2.16.840.1.113883.3.989.2.1.3.5\"/><code code=\"{}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.8\" codeSystemVersion=\"1.0\"/><title>{}</title>{}</researchStudy></subjectOf1>",
-		xml_escape(sponsor_study_number),
+		"<subjectOf1 typeCode=\"SBJ\"><researchStudy classCode=\"CLNTRL\" moodCode=\"EVN\">{}<code code=\"{}\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.8\" codeSystemVersion=\"1.0\"/>{}{}</researchStudy></subjectOf1>",
+		sponsor_id_xml,
 		xml_escape(study_type),
-		xml_escape(study_name),
+		title_xml,
 		auth_xml
 	);
 	let xml = doc.to_string();
@@ -469,6 +609,17 @@ async fn fetch_study_information(
 		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
 }
 
+async fn fetch_literature_references(
+	mm: &ModelManager,
+	case_id: sqlx::types::Uuid,
+) -> Result<Vec<LiteratureReference>> {
+	let sql = "SELECT * FROM literature_references WHERE case_id = $1 AND deleted = false ORDER BY sequence_number";
+	mm.dbx()
+		.fetch_all(sqlx::query_as::<_, LiteratureReference>(sql).bind(case_id))
+		.await
+		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
+}
+
 async fn fetch_study_registrations(
 	mm: &ModelManager,
 	study_information_id: sqlx::types::Uuid,
@@ -495,6 +646,25 @@ fn inject_study_fragment_in_primary_role(
 		.find("<subjectOf2")
 		.map(|idx| body_start + idx)
 		.unwrap_or(primary_end);
+	let mut out = String::with_capacity(xml.len() + fragment.len() + 8);
+	out.push_str(&xml[..insert_at]);
+	out.push_str(fragment);
+	out.push_str(&xml[insert_at..]);
+	Some(out)
+}
+
+fn inject_fragment_in_investigation_event(
+	xml: &str,
+	fragment: &str,
+) -> Option<String> {
+	let start = xml.find("<investigationEvent")?;
+	let end = xml[start..].find("</investigationEvent>")? + start;
+	let body_start = xml[start..].find('>')? + start + 1;
+	let body = &xml[body_start..end];
+	let insert_at = body
+		.find("<component")
+		.map(|idx| body_start + idx)
+		.unwrap_or(end);
 	let mut out = String::with_capacity(xml.len() + fragment.len() + 8);
 	out.push_str(&xml[..insert_at]);
 	out.push_str(fragment);

@@ -1,4 +1,5 @@
 use super::*;
+use crate::xml::export::sections::c::apply_literature_section;
 use crate::xml::export::sections::c::apply_primary_source_section;
 use crate::xml::export::sections::c::apply_study_section;
 use crate::xml::export::sections::h::{
@@ -46,6 +47,7 @@ pub(crate) async fn apply_section_postprocess(
 	apply_section_n(&mut doc, &parser, mm, case_id, &mut xpath).await?;
 	apply_patient_section(ctx, &mut doc, &parser, mm, case_id, &mut xpath).await?;
 	apply_primary_source_section(&mut doc, &parser, mm, case_id, &mut xpath).await?;
+	apply_literature_section(&mut doc, &parser, mm, case_id, &mut xpath).await?;
 	apply_study_section(&mut doc, &parser, mm, case_id, &mut xpath).await?;
 	apply_sender_diagnosis_section(ctx, &mut doc, &parser, mm, case_id, &mut xpath)
 		.await?;

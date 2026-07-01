@@ -6,6 +6,7 @@ use crate::model::narrative::NarrativeInformationBmc;
 use crate::model::patient::{PatientDeathInformation, PatientInformationBmc};
 use crate::model::reaction::Reaction;
 use crate::model::receiver::ReceiverInformation;
+use crate::model::safety_report::LiteratureReference;
 use crate::model::safety_report::PrimarySource;
 use crate::model::safety_report::SafetyReportIdentificationBmc;
 use crate::model::safety_report::SenderInformation;
