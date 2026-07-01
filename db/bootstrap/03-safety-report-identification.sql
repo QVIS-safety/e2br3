@@ -127,6 +127,7 @@ CREATE TABLE literature_references (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
     reference_text TEXT NOT NULL,  -- C.4.r
+    reference_text_null_flavor VARCHAR(4) CHECK (reference_text_null_flavor IN ('ASKU', 'NASK')),
     sequence_number INTEGER NOT NULL,  -- For ordering
     document_base64 TEXT, -- C.4.r.2 Included Documents (base64)
     media_type VARCHAR(100),
@@ -186,9 +187,11 @@ CREATE TABLE study_information (
 
     -- C.5.1 - Study Name
     study_name VARCHAR(2000),
+    study_name_null_flavor VARCHAR(4) CHECK (study_name_null_flavor IN ('ASKU', 'NASK')),
 
     -- C.5.2 - Sponsor Study Number
     sponsor_study_number VARCHAR(50),
+    sponsor_study_number_null_flavor VARCHAR(4) CHECK (sponsor_study_number_null_flavor IN ('ASKU', 'NASK')),
 
     -- C.5.3 - Study Type Reaction
     study_type_reaction VARCHAR(2),  -- E2B(R3) code list
@@ -211,7 +214,9 @@ CREATE TABLE study_registration_numbers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     study_information_id UUID NOT NULL REFERENCES study_information(id) ON DELETE CASCADE,
     registration_number VARCHAR(50) NOT NULL,
+    registration_number_null_flavor VARCHAR(4) CHECK (registration_number_null_flavor IN ('ASKU', 'NASK')),
     country_code VARCHAR(2),  -- ISO 3166-1 alpha-2
+    country_code_null_flavor VARCHAR(4) CHECK (country_code_null_flavor IN ('ASKU', 'NASK')),
     sequence_number INTEGER NOT NULL,
     deleted BOOLEAN NOT NULL DEFAULT false,
 

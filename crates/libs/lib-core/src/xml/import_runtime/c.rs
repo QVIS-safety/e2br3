@@ -255,10 +255,13 @@ async fn import_c_2_sender_information(
 		)
 	});
 	let sender = if settings.apply_sender_info_to_imported_cases {
+		let xml_sender = c_helpers::parse_sender_information(xml, header)
+			.ok()
+			.flatten();
 		match sender_from_product_linked_presave(ctx, mm, xml).await? {
-			Some(sender) => Some(sender),
+			Some(sender) => Some(merge_sender_import(sender, xml_sender)),
 			None => match default_sender_from_presave(ctx, mm, authority).await? {
-				Some(sender) => Some(sender),
+				Some(sender) => Some(merge_sender_import(sender, xml_sender)),
 				None => c_helpers::parse_sender_information(xml, header)?,
 			},
 		}
@@ -338,6 +341,83 @@ async fn import_c_2_sender_information(
 	.await;
 
 	Ok(())
+}
+
+fn merge_sender_import(
+	presave: c_helpers::SenderImport,
+	xml: Option<c_helpers::SenderImport>,
+) -> c_helpers::SenderImport {
+	let Some(xml) = xml else {
+		return presave;
+	};
+
+	c_helpers::SenderImport {
+		sender_type: prefer_required_presave_value(
+			presave.sender_type,
+			xml.sender_type,
+		),
+		health_professional_type_kr1: prefer_optional_presave_value(
+			presave.health_professional_type_kr1,
+			xml.health_professional_type_kr1,
+		),
+		organization_name: prefer_required_presave_value(
+			presave.organization_name,
+			xml.organization_name,
+		),
+		department: prefer_optional_presave_value(
+			presave.department,
+			xml.department,
+		),
+		street_address: prefer_optional_presave_value(
+			presave.street_address,
+			xml.street_address,
+		),
+		city: prefer_optional_presave_value(presave.city, xml.city),
+		state: prefer_optional_presave_value(presave.state, xml.state),
+		postcode: prefer_optional_presave_value(presave.postcode, xml.postcode),
+		country_code: prefer_optional_presave_value(
+			presave.country_code,
+			xml.country_code,
+		),
+		person_title: prefer_optional_presave_value(
+			presave.person_title,
+			xml.person_title,
+		),
+		person_given_name: prefer_optional_presave_value(
+			presave.person_given_name,
+			xml.person_given_name,
+		),
+		person_middle_name: prefer_optional_presave_value(
+			presave.person_middle_name,
+			xml.person_middle_name,
+		),
+		person_family_name: prefer_optional_presave_value(
+			presave.person_family_name,
+			xml.person_family_name,
+		),
+		telephone: prefer_optional_presave_value(presave.telephone, xml.telephone),
+		fax: prefer_optional_presave_value(presave.fax, xml.fax),
+		email: prefer_optional_presave_value(presave.email, xml.email),
+	}
+}
+
+fn prefer_required_presave_value(presave: String, xml: String) -> String {
+	if presave.trim().is_empty() {
+		xml
+	} else {
+		presave
+	}
+}
+
+fn prefer_optional_presave_value(
+	presave: Option<String>,
+	xml: Option<String>,
+) -> Option<String> {
+	match presave {
+		Some(value) if value.trim().is_empty() => xml,
+		Some(value) => Some(value),
+		None => xml,
+	}
 }
 
 async fn default_sender_from_presave(
@@ -736,6 +816,7 @@ async fn import_c_4_literature_references(
 				id,
 				LiteratureReferenceForUpdate {
 					reference_text: Some(entry.reference_text),
+					reference_text_null_flavor: entry.reference_text_null_flavor,
 					sequence_number: Some(seq),
 					document_base64: entry.document_base64,
 					media_type: entry.media_type,
@@ -751,6 +832,7 @@ async fn import_c_4_literature_references(
 				LiteratureReferenceForCreate {
 					case_id,
 					reference_text: entry.reference_text,
+					reference_text_null_flavor: entry.reference_text_null_flavor,
 					sequence_number: seq,
 					document_base64: entry.document_base64,
 					media_type: entry.media_type,
@@ -785,27 +867,33 @@ async fn import_c_5_study_information(
 		.fetch_one(
 			sqlx::query_as::<_, (Uuid,)>(
 				"INSERT INTO study_information (
-					case_id,
-					study_name,
-					sponsor_study_number,
-					study_type_reaction,
-					study_type_reaction_kr1,
-					created_at,
-					updated_at,
-					created_by
-				) VALUES ($1,$2,$3,$4,NULL,NOW(),NOW(),$5)
-				ON CONFLICT (case_id) DO UPDATE SET
-					study_name = EXCLUDED.study_name,
-					sponsor_study_number = EXCLUDED.sponsor_study_number,
-					study_type_reaction = EXCLUDED.study_type_reaction,
-					study_type_reaction_kr1 = EXCLUDED.study_type_reaction_kr1,
-					updated_at = NOW(),
-					updated_by = $5
-				RETURNING id",
+						case_id,
+						study_name,
+						study_name_null_flavor,
+						sponsor_study_number,
+						sponsor_study_number_null_flavor,
+						study_type_reaction,
+						study_type_reaction_kr1,
+						created_at,
+						updated_at,
+						created_by
+					) VALUES ($1,$2,$3,$4,$5,$6,NULL,NOW(),NOW(),$7)
+					ON CONFLICT (case_id) DO UPDATE SET
+						study_name = EXCLUDED.study_name,
+						study_name_null_flavor = EXCLUDED.study_name_null_flavor,
+						sponsor_study_number = EXCLUDED.sponsor_study_number,
+						sponsor_study_number_null_flavor = EXCLUDED.sponsor_study_number_null_flavor,
+						study_type_reaction = EXCLUDED.study_type_reaction,
+						study_type_reaction_kr1 = EXCLUDED.study_type_reaction_kr1,
+						updated_at = NOW(),
+						updated_by = $7
+					RETURNING id",
 			)
 			.bind(case_id)
 			.bind(study.study_name)
+			.bind(study.study_name_null_flavor)
 			.bind(study.sponsor_study_number)
+			.bind(study.sponsor_study_number_null_flavor)
 			.bind(study.study_type_reaction)
 			.bind(ctx.user_id()),
 		)
@@ -843,18 +931,22 @@ async fn import_c_5_study_information(
 			.execute(
 				sqlx::query(
 					"INSERT INTO study_registration_numbers (
-						study_information_id,
-						registration_number,
-						country_code,
-						sequence_number,
-						created_at,
-						updated_at,
-						created_by
-					) VALUES ($1,$2,$3,$4,NOW(),NOW(),$5)",
+							study_information_id,
+							registration_number,
+							registration_number_null_flavor,
+							country_code,
+							country_code_null_flavor,
+							sequence_number,
+							created_at,
+							updated_at,
+							created_by
+						) VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW(),$7)",
 				)
 				.bind(study_id)
 				.bind(reg.registration_number)
+				.bind(reg.registration_number_null_flavor)
 				.bind(reg.country_code)
+				.bind(reg.country_code_null_flavor)
 				.bind((idx + 1) as i32)
 				.bind(ctx.user_id()),
 			)

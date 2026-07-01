@@ -357,8 +357,11 @@ async fn test_import_settings_apply_default_sender_only_when_enabled() -> Result
 		.await?;
 	tx.commit().await?;
 	assert_eq!(disabled_sender.0.as_deref(), Some("1"));
-	assert_eq!(disabled_sender.1.as_deref(), Some("Reporting"));
-	assert_eq!(disabled_sender.2.as_deref(), Some("abc@gmail.com"));
+	assert_eq!(disabled_sender.1.as_deref(), Some("Big Pharma"));
+	assert_eq!(
+		disabled_sender.2.as_deref(),
+		Some("emailAddress@company.com")
+	);
 
 	let (status, body) = put_json(
 		&app,
@@ -389,19 +392,33 @@ async fn test_import_settings_apply_default_sender_only_when_enabled() -> Result
 	let mut tx = mm.dbx().db().begin().await?;
 	set_user_context(&mut tx, seed.admin.id).await?;
 	set_org_context(&mut tx, seed.org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
-	let sender =
-		sqlx::query_as::<_, (Option<String>, Option<String>, Option<String>)>(
-			"SELECT sender_type, organization_name, email
+	let sender = sqlx::query_as::<
+		_,
+		(
+			Option<String>,
+			Option<String>,
+			Option<String>,
+			Option<String>,
+			Option<String>,
+			Option<String>,
+			Option<String>,
+		),
+	>(
+		"SELECT sender_type, organization_name, email, person_title, person_given_name, person_family_name, fax
 		 FROM sender_information WHERE case_id = $1 LIMIT 1",
-		)
-		.bind(case_id)
-		.fetch_one(&mut *tx)
-		.await?;
+	)
+	.bind(case_id)
+	.fetch_one(&mut *tx)
+	.await?;
 	tx.commit().await?;
 
 	assert_eq!(sender.0.as_deref(), Some("2"));
 	assert_eq!(sender.1.as_deref(), Some("Admin Default Sender"));
 	assert_eq!(sender.2.as_deref(), Some("default-sender@example.test"));
+	assert_eq!(sender.3.as_deref(), Some("Mr"));
+	assert_eq!(sender.4.as_deref(), Some("Charles"));
+	assert_eq!(sender.5.as_deref(), Some("Conner"));
+	assert_eq!(sender.6.as_deref(), Some("6109991122"));
 
 	Ok(())
 }

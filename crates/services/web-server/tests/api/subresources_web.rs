@@ -1602,13 +1602,14 @@ async fn test_safety_report_subresources_endpoints_ok() -> Result<()> {
 	assert_eq!(status, StatusCode::CREATED);
 
 	let body = json!({"data": {
-		"case_id": case_id,
-		"sequence_number": 1,
-		"reference_text": "Smith J. Case literature 2026.",
-		"document_base64": "cGRm",
-		"media_type": "application/pdf",
-		"representation": "B64",
-		"compression": "DF"
+			"case_id": case_id,
+			"sequence_number": 1,
+			"reference_text": "Smith J. Case literature 2026.",
+			"reference_text_null_flavor": "ASKU",
+			"document_base64": "cGRm",
+			"media_type": "application/pdf",
+			"representation": "B64",
+			"compression": "DF"
 	}});
 	let (status, body) = post_json(
 		&app,
@@ -1623,6 +1624,7 @@ async fn test_safety_report_subresources_endpoints_ok() -> Result<()> {
 		value["data"]["reference_text"],
 		"Smith J. Case literature 2026."
 	);
+	assert_eq!(value["data"]["reference_text_null_flavor"], "ASKU");
 	assert_eq!(value["data"]["document_base64"], "cGRm");
 	assert_eq!(value["data"]["media_type"], "application/pdf");
 	assert_eq!(value["data"]["representation"], "B64");
@@ -1631,7 +1633,9 @@ async fn test_safety_report_subresources_endpoints_ok() -> Result<()> {
 	let body = json!({"data": {
 		"case_id": case_id,
 		"study_name": "Study",
+		"study_name_null_flavor": "NASK",
 		"sponsor_study_number": "S-1",
+		"sponsor_study_number_null_flavor": "ASKU",
 		"fda_ind_number_occurred": "1234567890",
 		"fda_pre_anda_number_occurred": "9876543210"
 	}});
@@ -1644,12 +1648,21 @@ async fn test_safety_report_subresources_endpoints_ok() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
 	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["study_name_null_flavor"], "NASK");
+	assert_eq!(value["data"]["sponsor_study_number_null_flavor"], "ASKU");
 	assert_eq!(value["data"]["fda_ind_number_occurred"], "1234567890");
 	assert_eq!(value["data"]["fda_pre_anda_number_occurred"], "9876543210");
 	let study_id = extract_id(&body)?;
 
-	let body = json!({"data": {"study_information_id": study_id, "registration_number": "REG-1", "sequence_number": 1}});
-	let (status, _) = post_json(
+	let body = json!({"data": {
+		"study_information_id": study_id,
+		"registration_number": "REG-1",
+		"registration_number_null_flavor": "ASKU",
+		"country_code": "KR",
+		"country_code_null_flavor": "NASK",
+		"sequence_number": 1
+	}});
+	let (status, body) = post_json(
 		&app,
 		&cookie,
 		format!(
@@ -1659,6 +1672,9 @@ async fn test_safety_report_subresources_endpoints_ok() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["registration_number_null_flavor"], "ASKU");
+	assert_eq!(value["data"]["country_code_null_flavor"], "NASK");
 
 	let body = json!({"data": {"study_information_id": study_id, "ind_number": "IND-123", "sequence_number": 1}});
 	let (status, body) = post_json(

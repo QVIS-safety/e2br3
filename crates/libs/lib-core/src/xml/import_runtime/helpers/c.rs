@@ -60,6 +60,7 @@ pub(crate) struct LinkedReportImport {
 #[derive(Debug)]
 pub(crate) struct LiteratureImport {
 	pub(crate) reference_text: String,
+	pub(crate) reference_text_null_flavor: Option<String>,
 	pub(crate) document_base64: Option<String>,
 	pub(crate) media_type: Option<String>,
 	pub(crate) representation: Option<String>,
@@ -78,7 +79,9 @@ pub(crate) struct DocumentHeldImport {
 #[derive(Debug)]
 pub(crate) struct StudyImport {
 	pub(crate) study_name: Option<String>,
+	pub(crate) study_name_null_flavor: Option<String>,
 	pub(crate) sponsor_study_number: Option<String>,
+	pub(crate) sponsor_study_number_null_flavor: Option<String>,
 	pub(crate) study_type_reaction: Option<String>,
 	pub(crate) registrations: Vec<StudyRegistrationImport>,
 }
@@ -86,7 +89,9 @@ pub(crate) struct StudyImport {
 #[derive(Debug)]
 pub(crate) struct StudyRegistrationImport {
 	pub(crate) registration_number: String,
+	pub(crate) registration_number_null_flavor: Option<String>,
 	pub(crate) country_code: Option<String>,
+	pub(crate) country_code_null_flavor: Option<String>,
 }
 
 pub(crate) fn parse_sender_information(
@@ -112,8 +117,22 @@ pub(crate) fn parse_sender_information(
 		column: None,
 	})?;
 	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
+	let sender_node = xpath
+		.findnodes(
+			"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity[hl7:code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']]",
+			None,
+		)
+		.ok()
+		.and_then(|nodes| nodes.into_iter().next());
 
-	let sender_type = normalize_code(
+	let sender_type_raw = if let Some(node) = sender_node.as_ref() {
+		first_attr(
+			&mut xpath,
+			node,
+			"./hl7:code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']",
+			"code",
+		)
+	} else {
 		first_value_root(
 			&mut xpath,
 			"//hl7:sender/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:code/@code",
@@ -123,7 +142,10 @@ pub(crate) fn parse_sender_information(
 				&mut xpath,
 				"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:code/@code",
 			)
-		}),
+		})
+	};
+	let sender_type = normalize_code(
+		sender_type_raw,
 		&["1", "2", "3", "4", "5", "6", "7"],
 		"sender_information.sender_type",
 	)
@@ -133,11 +155,27 @@ pub(crate) fn parse_sender_information(
 		column: None,
 	})?;
 
-	let organization_name = first_text_root(
+	let organization_name = sender_node
+		.as_ref()
+		.and_then(|node| {
+			first_text(
+				&mut xpath,
+				node,
+				"./hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name",
+			)
+		})
+		.or_else(|| {
+			sender_node.as_ref().and_then(|node| {
+				first_text(&mut xpath, node, "./hl7:representedOrganization/hl7:name")
+			})
+		})
+		.or_else(|| {
+			first_text_root(
 		&mut xpath,
 		"//hl7:sender/hl7:device/hl7:asAgent/hl7:representedOrganization/hl7:name",
-	)
-	.or_else(|| {
+		)
+		})
+		.or_else(|| {
 		first_text_root(
 			&mut xpath,
 			"//hl7:assignedEntity/hl7:representedOrganization/hl7:name",
@@ -153,59 +191,168 @@ pub(crate) fn parse_sender_information(
 	Ok(Some(SenderImport {
 		sender_type,
 		health_professional_type_kr1: normalize_code(
-			first_value_root(
-				&mut xpath,
-				&format!(
-					"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:subjectOf2/hl7:observation[hl7:code[@code='{KR_C_3_1_1}']]/hl7:value/@code"
-				),
-			),
+			if let Some(node) = sender_node.as_ref() {
+				first_attr(
+					&mut xpath,
+					node,
+					&format!("./hl7:subjectOf2/hl7:observation[hl7:code[@code='{KR_C_3_1_1}']]/hl7:value"),
+					"code",
+				)
+			} else {
+				first_value_root(
+					&mut xpath,
+					&format!(
+						"//hl7:investigationEvent/hl7:subjectOf1/hl7:controlActEvent/hl7:author/hl7:assignedEntity/hl7:subjectOf2/hl7:observation[hl7:code[@code='{KR_C_3_1_1}']]/hl7:value/@code"
+					),
+				)
+			},
 			&["1", "2", "3", "4"],
 			"sender_information.health_professional_type_kr1",
 		),
 		organization_name,
-		department: first_text_root(
-			&mut xpath,
-			"//hl7:assignedEntity/hl7:representedOrganization/hl7:desc",
-		),
-		street_address: first_text_root(
-			&mut xpath,
-			"//hl7:assignedEntity/hl7:addr/hl7:streetAddressLine",
-		),
-		city: first_text_root(&mut xpath, "//hl7:assignedEntity/hl7:addr/hl7:city"),
-		state: first_text_root(
-			&mut xpath,
-			"//hl7:assignedEntity/hl7:addr/hl7:state",
-		),
-		postcode: first_text_root(
-			&mut xpath,
-			"//hl7:assignedEntity/hl7:addr/hl7:postalCode",
-		),
+		department: sender_node
+			.as_ref()
+			.and_then(|node| {
+				first_text(
+					&mut xpath,
+					node,
+					"./hl7:representedOrganization/hl7:name",
+				)
+			})
+			.or_else(|| {
+				first_text_root(
+					&mut xpath,
+					"//hl7:assignedEntity/hl7:representedOrganization/hl7:desc",
+				)
+			}),
+		street_address: sender_node
+			.as_ref()
+			.and_then(|node| {
+				first_text(&mut xpath, node, "./hl7:addr/hl7:streetAddressLine")
+			})
+			.or_else(|| {
+				first_text_root(
+					&mut xpath,
+					"//hl7:assignedEntity/hl7:addr/hl7:streetAddressLine",
+				)
+			}),
+		city: sender_node
+			.as_ref()
+			.and_then(|node| first_text(&mut xpath, node, "./hl7:addr/hl7:city"))
+			.or_else(|| {
+				first_text_root(&mut xpath, "//hl7:assignedEntity/hl7:addr/hl7:city")
+			}),
+		state: sender_node
+			.as_ref()
+			.and_then(|node| first_text(&mut xpath, node, "./hl7:addr/hl7:state"))
+			.or_else(|| {
+				first_text_root(
+					&mut xpath,
+					"//hl7:assignedEntity/hl7:addr/hl7:state",
+				)
+			}),
+		postcode: sender_node
+			.as_ref()
+			.and_then(|node| {
+				first_text(&mut xpath, node, "./hl7:addr/hl7:postalCode")
+			})
+			.or_else(|| {
+				first_text_root(
+					&mut xpath,
+					"//hl7:assignedEntity/hl7:addr/hl7:postalCode",
+				)
+			}),
 		country_code: normalize_iso2(
-			first_value_root(
-				&mut xpath,
-				"//hl7:assignedEntity/hl7:addr/hl7:country/@code",
-			),
+			if let Some(node) = sender_node.as_ref() {
+				first_attr(
+					&mut xpath,
+					node,
+					"./hl7:assignedPerson/hl7:asLocatedEntity/hl7:location/hl7:code",
+					"code",
+				)
+				.or_else(|| {
+					first_attr(&mut xpath, node, "./hl7:addr/hl7:country", "code")
+				})
+			} else {
+				first_value_root(
+					&mut xpath,
+					"//hl7:assignedEntity/hl7:addr/hl7:country/@code",
+				)
+			},
 			"sender_information.country_code",
 		),
-		person_title: first_text_root(
-			&mut xpath,
-			"//hl7:assignedEntity/hl7:assignedPerson/hl7:name/hl7:prefix",
-		),
-		person_given_name: first_text_root(
-			&mut xpath,
-			"//hl7:assignedEntity/hl7:assignedPerson/hl7:name/hl7:given",
-		),
-		person_middle_name: first_text_root(
-			&mut xpath,
-			"//hl7:assignedEntity/hl7:assignedPerson/hl7:name/hl7:given[2]",
-		),
-		person_family_name: first_text_root(
-			&mut xpath,
-			"//hl7:assignedEntity/hl7:assignedPerson/hl7:name/hl7:family",
-		),
-		telephone: telecom_first(&mut xpath, "tel:"),
-		fax: telecom_first(&mut xpath, "fax:"),
-		email: telecom_first(&mut xpath, "mailto:"),
+		person_title: sender_node
+			.as_ref()
+			.and_then(|node| {
+				first_text(
+					&mut xpath,
+					node,
+					"./hl7:assignedPerson/hl7:name/hl7:prefix",
+				)
+			})
+			.or_else(|| {
+				first_text_root(
+					&mut xpath,
+					"//hl7:assignedEntity/hl7:assignedPerson/hl7:name/hl7:prefix",
+				)
+			}),
+		person_given_name: sender_node
+			.as_ref()
+			.and_then(|node| {
+				first_text(
+					&mut xpath,
+					node,
+					"./hl7:assignedPerson/hl7:name/hl7:given",
+				)
+			})
+			.or_else(|| {
+				first_text_root(
+					&mut xpath,
+					"//hl7:assignedEntity/hl7:assignedPerson/hl7:name/hl7:given",
+				)
+			}),
+		person_middle_name: sender_node
+			.as_ref()
+			.and_then(|node| {
+				first_text(
+					&mut xpath,
+					node,
+					"./hl7:assignedPerson/hl7:name/hl7:given[2]",
+				)
+			})
+			.or_else(|| {
+				first_text_root(
+					&mut xpath,
+					"//hl7:assignedEntity/hl7:assignedPerson/hl7:name/hl7:given[2]",
+				)
+			}),
+		person_family_name: sender_node
+			.as_ref()
+			.and_then(|node| {
+				first_text(
+					&mut xpath,
+					node,
+					"./hl7:assignedPerson/hl7:name/hl7:family",
+				)
+			})
+			.or_else(|| {
+				first_text_root(
+					&mut xpath,
+					"//hl7:assignedEntity/hl7:assignedPerson/hl7:name/hl7:family",
+				)
+			}),
+		telephone: sender_node
+			.as_ref()
+			.and_then(|node| telecom_first_in_node(&mut xpath, node, "tel:"))
+			.or_else(|| telecom_first(&mut xpath, "tel:")),
+		fax: sender_node
+			.as_ref()
+			.and_then(|node| telecom_first_in_node(&mut xpath, node, "fax:"))
+			.or_else(|| telecom_first(&mut xpath, "fax:")),
+		email: sender_node
+			.as_ref()
+			.and_then(|node| telecom_first_in_node(&mut xpath, node, "mailto:"))
+			.or_else(|| telecom_first(&mut xpath, "mailto:")),
 	}))
 }
 
@@ -261,13 +408,20 @@ pub(crate) fn parse_primary_sources(xml: &[u8]) -> Result<Vec<PrimarySourceImpor
 			&node,
 			".//hl7:assignedPerson/hl7:name/hl7:family",
 		);
-		let organization = first_text(
+		let nested_organization = first_text(
 			&mut xpath,
 			&node,
 			".//hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name",
 		);
-		let department =
+		let direct_organization =
 			first_text(&mut xpath, &node, ".//hl7:representedOrganization/hl7:name");
+		let organization =
+			nested_organization.clone().or(direct_organization.clone());
+		let department = if nested_organization.is_some() {
+			direct_organization
+		} else {
+			None
+		};
 		let street = first_text(
 			&mut xpath,
 			&node,
@@ -296,26 +450,46 @@ pub(crate) fn parse_primary_sources(xml: &[u8]) -> Result<Vec<PrimarySourceImpor
 			),
 			"primary_sources.country_code",
 		);
+		let qualification_raw = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code",
+			"code",
+		);
 		let qualification = normalize_code(
-			first_attr(
-				&mut xpath,
-				&node,
-				".//hl7:assignedPerson/hl7:asQualifiedEntity/hl7:code",
-				"code",
-			),
+			qualification_raw.clone(),
 			&["1", "2", "3", "4", "5"],
 			"primary_sources.qualification",
 		)
 		.or(Some("1".to_string()));
-		let primary_source_regulatory =
+		let primary_source_regulatory_raw =
 			first_attr(&mut xpath, &node, "../hl7:priorityNumber", "value")
-				.filter(|value| !value.trim().is_empty())
-				.or(Some("2".to_string()));
+				.filter(|value| !value.trim().is_empty());
+		let primary_source_regulatory = primary_source_regulatory_raw
+			.clone()
+			.or(Some("2".to_string()));
 
-		if reporter_given_name.is_none()
-			&& reporter_family_name.is_none()
-			&& organization.is_none()
-		{
+		let has_importable_content = [
+			reporter_title.as_ref(),
+			reporter_given_name.as_ref(),
+			reporter_middle_name.as_ref(),
+			reporter_family_name.as_ref(),
+			organization.as_ref(),
+			department.as_ref(),
+			street.as_ref(),
+			city.as_ref(),
+			state.as_ref(),
+			postcode.as_ref(),
+			telephone.as_ref(),
+			country_code.as_ref(),
+			email.as_ref(),
+			qualification_raw.as_ref(),
+			primary_source_regulatory_raw.as_ref(),
+		]
+		.into_iter()
+		.any(|value| value.is_some());
+
+		if !has_importable_content {
 			continue;
 		}
 
@@ -339,6 +513,79 @@ pub(crate) fn parse_primary_sources(xml: &[u8]) -> Result<Vec<PrimarySourceImpor
 	}
 
 	Ok(items)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::parse_primary_sources;
+
+	fn primary_source_xml(body: &str) -> String {
+		format!(
+			r#"<?xml version="1.0" encoding="utf-8"?>
+<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3">
+  <PORR_IN049016UV>
+    <controlActProcess>
+      <subject>
+        <investigationEvent>
+          <outboundRelationship typeCode="SPRT">
+            <priorityNumber value="1"/>
+            <relatedInvestigation>
+              <code code="2"/>
+              <subjectOf2>
+                <controlActEvent>
+                  <author>
+                    <assignedEntity>
+                      {body}
+                    </assignedEntity>
+                  </author>
+                </controlActEvent>
+              </subjectOf2>
+            </relatedInvestigation>
+          </outboundRelationship>
+        </investigationEvent>
+      </subject>
+    </controlActProcess>
+  </PORR_IN049016UV>
+</MCCI_IN200100UV01>"#
+		)
+	}
+
+	#[test]
+	fn primary_source_import_reads_direct_represented_organization_name() {
+		let xml = primary_source_xml(
+			r#"<representedOrganization>
+  <name>Direct Reporter Org</name>
+</representedOrganization>"#,
+		);
+
+		let primary_sources = parse_primary_sources(xml.as_bytes()).expect("parse");
+
+		assert_eq!(primary_sources.len(), 1);
+		assert_eq!(
+			primary_sources[0].organization.as_deref(),
+			Some("Direct Reporter Org")
+		);
+	}
+
+	#[test]
+	fn primary_source_import_keeps_rows_with_contact_data_only() {
+		let xml = primary_source_xml(
+			r#"<addr>
+  <streetAddressLine>13 Elm St.</streetAddressLine>
+  <city>Metropolis</city>
+</addr>
+<telecom value="mailto:reporter@example.test"/>"#,
+		);
+
+		let primary_sources = parse_primary_sources(xml.as_bytes()).expect("parse");
+
+		assert_eq!(primary_sources.len(), 1);
+		assert_eq!(primary_sources[0].street.as_deref(), Some("13 Elm St."));
+		assert_eq!(
+			primary_sources[0].email.as_deref(),
+			Some("reporter@example.test")
+		);
+	}
 }
 
 pub(crate) fn parse_other_case_identifiers(
@@ -533,9 +780,19 @@ pub(crate) fn parse_literature_references(
 
 	let mut items = Vec::new();
 	for (idx, node) in nodes.into_iter().enumerate() {
+		let reference_text_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			"hl7:bibliographicDesignationText",
+			"nullFlavor",
+		)
+		.or_else(|| first_attr(&mut xpath, &node, "hl7:title", "nullFlavor"));
 		let reference_text =
 			first_text(&mut xpath, &node, "hl7:bibliographicDesignationText")
 				.or_else(|| first_text(&mut xpath, &node, "hl7:title"))
+				.or_else(|| {
+					reference_text_null_flavor.as_ref().map(|_| String::new())
+				})
 				.ok_or_else(|| Error::InvalidXml {
 					message: format!(
 						"ICH.C.4.r.REQUIRED: literature reference text missing for sequence {}",
@@ -551,6 +808,7 @@ pub(crate) fn parse_literature_references(
 		let compression = first_attr(&mut xpath, &node, "hl7:text", "compression");
 		items.push(LiteratureImport {
 			reference_text,
+			reference_text_null_flavor,
 			document_base64,
 			media_type,
 			representation,
@@ -593,7 +851,11 @@ pub(crate) fn parse_study_information(xml: &[u8]) -> Result<Option<StudyImport>>
 	};
 
 	let study_name = first_text(&mut xpath, node, "hl7:title");
+	let study_name_null_flavor =
+		first_attr(&mut xpath, node, "hl7:title", "nullFlavor");
 	let sponsor_study_number = first_attr(&mut xpath, node, "hl7:id", "extension");
+	let sponsor_study_number_null_flavor =
+		first_attr(&mut xpath, node, "hl7:id", "nullFlavor");
 	let study_type_reaction = first_attr(&mut xpath, node, "hl7:code", "code");
 
 	let reg_nodes = xpath
@@ -607,7 +869,13 @@ pub(crate) fn parse_study_information(xml: &[u8]) -> Result<Option<StudyImport>>
 	for reg in reg_nodes {
 		let registration_number =
 			first_attr(&mut xpath, &reg, "hl7:id", "extension");
-		let Some(registration_number) = registration_number else {
+		let registration_number_null_flavor =
+			first_attr(&mut xpath, &reg, "hl7:id", "nullFlavor");
+		let Some(registration_number) = registration_number.or_else(|| {
+			registration_number_null_flavor
+				.as_ref()
+				.map(|_| String::new())
+		}) else {
 			continue;
 		};
 		let country_code = first_attr(
@@ -616,18 +884,28 @@ pub(crate) fn parse_study_information(xml: &[u8]) -> Result<Option<StudyImport>>
 			"hl7:author/hl7:territorialAuthority/hl7:governingPlace/hl7:code",
 			"code",
 		);
+		let country_code_null_flavor = first_attr(
+			&mut xpath,
+			&reg,
+			"hl7:author/hl7:territorialAuthority/hl7:governingPlace/hl7:code",
+			"nullFlavor",
+		);
 		registrations.push(StudyRegistrationImport {
 			registration_number,
+			registration_number_null_flavor,
 			country_code: normalize_iso2(
 				country_code,
 				"study_registration.country_code",
 			),
+			country_code_null_flavor,
 		});
 	}
 
 	Ok(Some(StudyImport {
 		study_name,
+		study_name_null_flavor,
 		sponsor_study_number,
+		sponsor_study_number_null_flavor,
 		study_type_reaction,
 		registrations,
 	}))

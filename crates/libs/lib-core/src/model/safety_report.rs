@@ -419,6 +419,7 @@ pub struct LiteratureReference {
 	pub id: Uuid,
 	pub case_id: Uuid,
 	pub reference_text: String,
+	pub reference_text_null_flavor: Option<String>,
 	pub sequence_number: i32,
 	pub document_base64: Option<String>,
 	pub media_type: Option<String>,
@@ -435,6 +436,7 @@ pub struct LiteratureReference {
 pub struct LiteratureReferenceForCreate {
 	pub case_id: Uuid,
 	pub reference_text: String,
+	pub reference_text_null_flavor: Option<String>,
 	pub sequence_number: i32,
 	pub document_base64: Option<String>,
 	pub media_type: Option<String>,
@@ -445,6 +447,7 @@ pub struct LiteratureReferenceForCreate {
 #[derive(Fields, Deserialize)]
 pub struct LiteratureReferenceForUpdate {
 	pub reference_text: Option<String>,
+	pub reference_text_null_flavor: Option<String>,
 	pub sequence_number: Option<i32>,
 	pub document_base64: Option<String>,
 	pub media_type: Option<String>,
@@ -516,7 +519,9 @@ pub struct StudyInformation {
 	pub source_study_presave_id: Option<Uuid>,
 
 	pub study_name: Option<String>,
+	pub study_name_null_flavor: Option<String>,
 	pub sponsor_study_number: Option<String>,
+	pub sponsor_study_number_null_flavor: Option<String>,
 	pub study_type_reaction: Option<String>,
 	// MFDS.C.5.4.KR.1 - Other studies type
 	pub study_type_reaction_kr1: Option<String>,
@@ -534,7 +539,9 @@ pub struct StudyInformationForCreate {
 	pub case_id: Uuid,
 	pub source_study_presave_id: Option<Uuid>,
 	pub study_name: Option<String>,
+	pub study_name_null_flavor: Option<String>,
 	pub sponsor_study_number: Option<String>,
+	pub sponsor_study_number_null_flavor: Option<String>,
 	pub study_type_reaction: Option<String>,
 	pub study_type_reaction_kr1: Option<String>,
 	pub fda_ind_number_occurred: Option<String>,
@@ -545,7 +552,9 @@ pub struct StudyInformationForCreate {
 pub struct StudyInformationForUpdate {
 	pub source_study_presave_id: Option<Uuid>,
 	pub study_name: Option<String>,
+	pub study_name_null_flavor: Option<String>,
 	pub sponsor_study_number: Option<String>,
+	pub sponsor_study_number_null_flavor: Option<String>,
 	pub study_type_reaction: Option<String>,
 	pub study_type_reaction_kr1: Option<String>,
 	pub fda_ind_number_occurred: Option<String>,
@@ -565,7 +574,9 @@ pub struct StudyRegistrationNumber {
 	pub id: Uuid,
 	pub study_information_id: Uuid,
 	pub registration_number: String,
+	pub registration_number_null_flavor: Option<String>,
 	pub country_code: Option<String>,
+	pub country_code_null_flavor: Option<String>,
 	pub sequence_number: i32,
 	pub deleted: bool,
 	pub created_at: OffsetDateTime,
@@ -578,14 +589,18 @@ pub struct StudyRegistrationNumber {
 pub struct StudyRegistrationNumberForCreate {
 	pub study_information_id: Uuid,
 	pub registration_number: String,
+	pub registration_number_null_flavor: Option<String>,
 	pub country_code: Option<String>,
+	pub country_code_null_flavor: Option<String>,
 	pub sequence_number: i32,
 }
 
 #[derive(Fields, Deserialize)]
 pub struct StudyRegistrationNumberForUpdate {
 	pub registration_number: Option<String>,
+	pub registration_number_null_flavor: Option<String>,
 	pub country_code: Option<String>,
+	pub country_code_null_flavor: Option<String>,
 	pub sequence_number: Option<i32>,
 }
 

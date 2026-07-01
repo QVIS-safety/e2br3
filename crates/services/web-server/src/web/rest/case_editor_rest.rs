@@ -1235,6 +1235,10 @@ async fn apply_lr_page_rows_patch(
 			reference,
 			&["referenceText", "reference_text"],
 		),
+		reference_text_null_flavor: string_field(
+			reference,
+			&["referenceTextNullFlavor", "reference_text_null_flavor"],
+		),
 		sequence_number: i32_field(
 			reference,
 			&["sequenceNumber", "sequence_number"],
@@ -1256,6 +1260,7 @@ async fn apply_lr_page_rows_patch(
 			LiteratureReferenceForCreate {
 				case_id,
 				reference_text,
+				reference_text_null_flavor: update.reference_text_null_flavor,
 				sequence_number: update.sequence_number.unwrap_or(1),
 				document_base64: update.document_base64,
 				media_type: update.media_type,
@@ -1289,9 +1294,20 @@ async fn apply_si_page_rows_patch(
 			&["sourceStudyPresaveId", "source_study_presave_id"],
 		),
 		study_name: string_field(study, &["studyName", "study_name"]),
+		study_name_null_flavor: string_field(
+			study,
+			&["studyNameNullFlavor", "study_name_null_flavor"],
+		),
 		sponsor_study_number: string_field(
 			study,
 			&["sponsorStudyNumber", "sponsor_study_number"],
+		),
+		sponsor_study_number_null_flavor: string_field(
+			study,
+			&[
+				"sponsorStudyNumberNullFlavor",
+				"sponsor_study_number_null_flavor",
+			],
 		),
 		study_type_reaction: string_field(
 			study,
@@ -1320,7 +1336,10 @@ async fn apply_si_page_rows_patch(
 				case_id,
 				source_study_presave_id: update.source_study_presave_id,
 				study_name: update.study_name,
+				study_name_null_flavor: update.study_name_null_flavor,
 				sponsor_study_number: update.sponsor_study_number,
+				sponsor_study_number_null_flavor: update
+					.sponsor_study_number_null_flavor,
 				study_type_reaction: update.study_type_reaction,
 				study_type_reaction_kr1: update.study_type_reaction_kr1,
 				fda_ind_number_occurred: update.fda_ind_number_occurred,
