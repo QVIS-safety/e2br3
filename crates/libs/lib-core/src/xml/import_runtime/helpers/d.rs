@@ -34,6 +34,7 @@ pub(crate) struct PatientImport {
 	pub(crate) last_menstrual_period_date: Option<Date>,
 	pub(crate) last_menstrual_period_date_null_flavor: Option<String>,
 	pub(crate) medical_history_text: Option<String>,
+	pub(crate) medical_history_text_null_flavor: Option<String>,
 	pub(crate) concomitant_therapy: Option<bool>,
 }
 
@@ -49,6 +50,7 @@ pub(crate) struct MedicalHistoryImport {
 	pub(crate) meddra_code: Option<String>,
 	pub(crate) start_date: Option<Date>,
 	pub(crate) continuing: Option<bool>,
+	pub(crate) continuing_null_flavor: Option<String>,
 	pub(crate) end_date: Option<Date>,
 	pub(crate) comments: Option<String>,
 	pub(crate) family_history: Option<bool>,
@@ -76,6 +78,7 @@ pub(crate) struct DeathImport {
 	pub(crate) date_of_death: Option<Date>,
 	pub(crate) date_of_death_null_flavor: Option<String>,
 	pub(crate) autopsy_performed: Option<bool>,
+	pub(crate) autopsy_performed_null_flavor: Option<String>,
 	pub(crate) reported_causes: Vec<DeathCauseImport>,
 	pub(crate) autopsy_causes: Vec<DeathCauseImport>,
 }
@@ -214,6 +217,12 @@ pub(crate) fn parse_medical_history(
 			"hl7:inboundRelationship/hl7:observation[hl7:code[@code='13']]/hl7:value",
 			"value",
 		);
+		let continuing_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			"hl7:inboundRelationship/hl7:observation[hl7:code[@code='13']]/hl7:value",
+			"nullFlavor",
+		);
 		let comments = first_text(
 			&mut xpath,
 			&node,
@@ -230,6 +239,7 @@ pub(crate) fn parse_medical_history(
 			meddra_code,
 			start_date,
 			continuing,
+			continuing_null_flavor,
 			end_date,
 			comments,
 			family_history,
@@ -413,6 +423,10 @@ pub(crate) fn parse_patient_death(xml: &[u8]) -> Result<Option<DeathImport>> {
 		&mut xpath,
 		"//hl7:observation[hl7:code[@code='5']]/hl7:value/@value",
 	));
+	let autopsy_performed_null_flavor = first_value_root(
+		&mut xpath,
+		"//hl7:observation[hl7:code[@code='5']]/hl7:value/@nullFlavor",
+	);
 
 	let mut reported_causes = Vec::new();
 	let reported_nodes = xpath
@@ -466,6 +480,7 @@ pub(crate) fn parse_patient_death(xml: &[u8]) -> Result<Option<DeathImport>> {
 	if date_of_death.is_none()
 		&& date_of_death_null_flavor.is_none()
 		&& autopsy_performed.is_none()
+		&& autopsy_performed_null_flavor.is_none()
 		&& reported_causes.is_empty()
 		&& autopsy_causes.is_empty()
 	{
@@ -476,6 +491,7 @@ pub(crate) fn parse_patient_death(xml: &[u8]) -> Result<Option<DeathImport>> {
 		date_of_death,
 		date_of_death_null_flavor,
 		autopsy_performed,
+		autopsy_performed_null_flavor,
 		reported_causes,
 		autopsy_causes,
 	}))
@@ -642,6 +658,7 @@ pub(crate) fn parse_parent_information(xml: &[u8]) -> Result<Option<ParentImport
 			meddra_code,
 			start_date,
 			continuing,
+			continuing_null_flavor: None,
 			end_date,
 			comments,
 			family_history,

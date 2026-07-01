@@ -132,6 +132,90 @@ async fn create_patient(app: &Router, cookie: &str, case_id: Uuid) -> Result<Uui
 	extract_id(&body)
 }
 
+#[serial]
+#[tokio::test]
+async fn patient_physical_fields_preserve_null_flavors_and_ucum_units() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+
+	let body = json!({
+		"data": {
+			"case_id": case_id,
+			"age_at_time_of_onset": 7,
+			"age_unit": "10.a",
+			"gestation_period": 2,
+			"gestation_period_unit": "{Trimester}",
+			"weight_kg_null_flavor": "NI",
+			"height_cm_null_flavor": "UNK"
+		}
+	});
+	let (status, body) =
+		post_json(&app, &cookie, format!("/api/cases/{case_id}/patient"), body)
+			.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"create patient body {}",
+		String::from_utf8_lossy(&body)
+	);
+	let payload: Value = serde_json::from_slice(&body)?;
+	assert_eq!(payload["data"]["age_unit"], "10.a");
+	assert_eq!(payload["data"]["gestation_period_unit"], "{Trimester}");
+	assert_eq!(payload["data"]["weight_kg"], Value::Null);
+	assert_eq!(payload["data"]["height_cm"], Value::Null);
+	assert_eq!(payload["data"]["weight_kg_null_flavor"], "NI");
+	assert_eq!(payload["data"]["height_cm_null_flavor"], "UNK");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn parent_information_preserves_dob_null_flavor_and_decade_unit() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let patient_id = create_patient(&app, &cookie, case_id).await?;
+
+	let body = json!({
+		"data": {
+			"patient_id": patient_id,
+			"parent_birth_date_null_flavor": "UNK",
+			"parent_age": 4,
+			"parent_age_unit": "10.a"
+		}
+	});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/patient/parents"),
+		body,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"create parent body {}",
+		String::from_utf8_lossy(&body)
+	);
+	let payload: Value = serde_json::from_slice(&body)?;
+	assert_eq!(payload["data"]["parent_birth_date"], Value::Null);
+	assert_eq!(payload["data"]["parent_birth_date_null_flavor"], "UNK");
+	assert_eq!(payload["data"]["parent_age"], "4.00");
+	assert_eq!(payload["data"]["parent_age_unit"], "10.a");
+
+	Ok(())
+}
+
 async fn create_patient_with_narrative_preview_values(
 	app: &Router,
 	cookie: &str,
@@ -1086,9 +1170,19 @@ async fn test_patient_subresources_endpoints_ok() -> Result<()> {
 	let body = json!({"data": {
 		"parent_id": parent_id,
 		"sequence_number": 1,
-		"drug_name": "Parent Test",
+		"drug_name_null_flavor": "NA",
 		"mfds_medicinal_product_version": "MFDS-V1",
-		"mfds_medicinal_product_id": "MFDS-ID"
+		"mfds_medicinal_product_id": "MFDS-ID",
+		"mpid_version": "MPID-V1",
+		"mpid": "MPID-123",
+		"phpid_version": "PHPID-V1",
+		"phpid": "PHPID-123",
+		"start_date_null_flavor": "ASKU",
+		"end_date_null_flavor": "NA",
+		"indication_meddra_version": "27.1",
+		"indication_meddra_code": "10012345",
+		"reaction_meddra_version": "27.1",
+		"reaction_meddra_code": "10054321"
 	}});
 	let (status, body) = post_json(
 		&app,
@@ -1099,8 +1193,20 @@ async fn test_patient_subresources_endpoints_ok() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::CREATED);
 	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["drug_name"], Value::Null);
+	assert_eq!(value["data"]["drug_name_null_flavor"], "NA");
 	assert_eq!(value["data"]["mfds_medicinal_product_version"], "MFDS-V1");
 	assert_eq!(value["data"]["mfds_medicinal_product_id"], "MFDS-ID");
+	assert_eq!(value["data"]["mpid_version"], "MPID-V1");
+	assert_eq!(value["data"]["mpid"], "MPID-123");
+	assert_eq!(value["data"]["phpid_version"], "PHPID-V1");
+	assert_eq!(value["data"]["phpid"], "PHPID-123");
+	assert_eq!(value["data"]["start_date_null_flavor"], "ASKU");
+	assert_eq!(value["data"]["end_date_null_flavor"], "NA");
+	assert_eq!(value["data"]["indication_meddra_version"], "27.1");
+	assert_eq!(value["data"]["indication_meddra_code"], "10012345");
+	assert_eq!(value["data"]["reaction_meddra_version"], "27.1");
+	assert_eq!(value["data"]["reaction_meddra_code"], "10054321");
 
 	Ok(())
 }

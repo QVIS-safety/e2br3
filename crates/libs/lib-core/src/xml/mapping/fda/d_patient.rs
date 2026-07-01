@@ -67,6 +67,8 @@ impl DPatientPaths {
 	// D.7.2 Medical history text
 	pub const MEDICAL_HISTORY_TEXT: &'static str =
 		"//hl7:subjectOf2/hl7:organizer[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/hl7:component/hl7:observation[hl7:code[@code='18' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value";
+	pub const MEDICAL_HISTORY_TEXT_NULL_FLAVOR: &'static str =
+		"//hl7:subjectOf2/hl7:organizer[hl7:code[@code='1' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.20']]/hl7:component/hl7:observation[hl7:code[@code='18' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/hl7:value/@nullFlavor";
 
 	// D.7.3 Concomitant therapy
 	pub const CONCOMITANT_THERAPY_VALUE: &'static str =

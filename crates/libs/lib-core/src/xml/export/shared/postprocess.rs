@@ -292,10 +292,30 @@ async fn apply_patient_section(
 	}
 	if let Some(v) = patient.medical_history_text.as_deref() {
 		ensure_patient_history_text(xpath, doc, parser)?;
+		remove_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]/hl7:value",
+			"nullFlavor",
+		);
 		set_text_first(
 			xpath,
 			"//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]/hl7:value",
 			v,
+		);
+	} else if let Some(null_flavor) =
+		patient.medical_history_text_null_flavor.as_deref()
+	{
+		ensure_patient_history_text(xpath, doc, parser)?;
+		set_text_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]/hl7:value",
+			"",
+		);
+		set_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:organizer[hl7:code[@code='1']]/hl7:component/hl7:observation[hl7:code[@code='18']]/hl7:value",
+			"nullFlavor",
+			null_flavor,
 		);
 	}
 	apply_medical_history_section(doc, parser, xpath, &medical_history)?;
@@ -721,12 +741,21 @@ fn apply_medical_history_section(
 			episode.end_date,
 			episode.end_date_null_flavor.as_deref(),
 		);
-		let continuing = episode.continuing.map(|value| {
+		let continuing = if let Some(null_flavor) =
+			episode.continuing_null_flavor.as_deref()
+		{
 			format!(
-				"<inboundRelationship typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"13\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" value=\"{}\"/></observation></inboundRelationship>",
-				if value { "true" } else { "false" }
+				"<inboundRelationship typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"13\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" nullFlavor=\"{}\"/></observation></inboundRelationship>",
+				xml_escape(null_flavor)
 			)
-		}).unwrap_or_default();
+		} else {
+			episode.continuing.map(|value| {
+				format!(
+					"<inboundRelationship typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"13\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value xsi:type=\"BL\" value=\"{}\"/></observation></inboundRelationship>",
+					if value { "true" } else { "false" }
+				)
+			}).unwrap_or_default()
+		};
 		let comments = episode.comments.as_deref().map(|value| {
 			format!(
 				"<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"10\" codeSystem=\"2.16.840.1.113883.3.989.2.1.1.19\"/><value>{}</value></observation></outboundRelationship2>",

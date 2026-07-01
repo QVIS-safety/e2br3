@@ -144,10 +144,28 @@ pub struct ParentPastDrugHistoryForCreate {
 	pub sequence_number: i32,
 	pub drug_name: Option<String>,
 	pub drug_name_null_flavor: Option<String>,
+	pub mpid: Option<String>,
+	pub mpid_version: Option<String>,
 	pub mfds_medicinal_product_version: Option<String>,
 	pub mfds_medicinal_product_id: Option<String>,
+	pub phpid: Option<String>,
+	pub phpid_version: Option<String>,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub start_date: Option<Date>,
 	pub start_date_null_flavor: Option<String>,
+	#[serde(
+		default,
+		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
+	)]
+	pub end_date: Option<Date>,
 	pub end_date_null_flavor: Option<String>,
+	pub indication_meddra_version: Option<String>,
+	pub indication_meddra_code: Option<String>,
+	pub reaction_meddra_version: Option<String>,
+	pub reaction_meddra_code: Option<String>,
 }
 
 #[derive(Fields, Deserialize)]

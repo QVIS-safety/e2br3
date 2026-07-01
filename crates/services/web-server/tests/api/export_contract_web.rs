@@ -240,7 +240,9 @@ async fn seed_cioms_case_data(
 			gestation_period_unit: None,
 			age_group: None,
 			weight_kg: None,
+			weight_kg_null_flavor: None,
 			height_cm: None,
+			height_cm_null_flavor: None,
 			sex: Some("1".to_string()),
 			sex_null_flavor: None,
 			race_code: None,
@@ -252,6 +254,7 @@ async fn seed_cioms_case_data(
 			medical_history_text: Some(
 				"Hypertension; shellfish allergy".to_string(),
 			),
+			medical_history_text_null_flavor: None,
 			concomitant_therapy: Some(true),
 		},
 	)

@@ -121,6 +121,7 @@ async fn import_medical_history(
 					start_date: entry.start_date,
 					start_date_null_flavor: None,
 					continuing: entry.continuing,
+					continuing_null_flavor: entry.continuing_null_flavor.clone(),
 					end_date: entry.end_date,
 					end_date_null_flavor: None,
 					comments: entry.comments,
@@ -137,6 +138,7 @@ async fn import_medical_history(
 					sequence_number: seq,
 					meddra_code: entry.meddra_code.clone(),
 					start_date_null_flavor: None,
+					continuing_null_flavor: entry.continuing_null_flavor.clone(),
 					end_date_null_flavor: None,
 				},
 			)
@@ -151,6 +153,7 @@ async fn import_medical_history(
 					start_date: entry.start_date,
 					start_date_null_flavor: None,
 					continuing: entry.continuing,
+					continuing_null_flavor: entry.continuing_null_flavor,
 					end_date: entry.end_date,
 					end_date_null_flavor: None,
 					comments: entry.comments,
@@ -273,6 +276,9 @@ async fn import_patient_death(
 				date_of_death: death.date_of_death,
 				date_of_death_null_flavor: death.date_of_death_null_flavor.clone(),
 				autopsy_performed: death.autopsy_performed,
+				autopsy_performed_null_flavor: death
+					.autopsy_performed_null_flavor
+					.clone(),
 			},
 		)
 		.await?
@@ -286,6 +292,7 @@ async fn import_patient_death(
 			date_of_death: death.date_of_death,
 			date_of_death_null_flavor: death.date_of_death_null_flavor,
 			autopsy_performed: death.autopsy_performed,
+			autopsy_performed_null_flavor: death.autopsy_performed_null_flavor,
 		},
 	)
 	.await;
@@ -562,14 +569,26 @@ async fn import_parent_information(
 					sequence_number: seq,
 					drug_name,
 					drug_name_null_flavor: None,
+					mpid: entry.mpid.clone(),
+					mpid_version: entry.mpid_version.clone(),
 					mfds_medicinal_product_version: entry
 						.mfds_medicinal_product_version
 						.clone(),
 					mfds_medicinal_product_id: entry
 						.mfds_medicinal_product_id
 						.clone(),
+					phpid: entry.phpid.clone(),
+					phpid_version: entry.phpid_version.clone(),
+					start_date: entry.start_date,
 					start_date_null_flavor: None,
+					end_date: entry.end_date,
 					end_date_null_flavor: None,
+					indication_meddra_version: entry
+						.indication_meddra_version
+						.clone(),
+					indication_meddra_code: entry.indication_meddra_code.clone(),
+					reaction_meddra_version: entry.reaction_meddra_version.clone(),
+					reaction_meddra_code: entry.reaction_meddra_code.clone(),
 				},
 			)
 			.await?;
@@ -638,6 +657,8 @@ async fn import_patient_information(
 		last_menstrual_period_date_null_flavor: patient
 			.last_menstrual_period_date_null_flavor,
 		medical_history_text: patient.medical_history_text,
+		medical_history_text_null_flavor: patient
+			.medical_history_text_null_flavor,
 		concomitant_therapy: patient.concomitant_therapy,
 	}) else {
 		return Ok(None);
@@ -680,7 +701,9 @@ async fn import_patient_information(
 				gestation_period_unit: patient.gestation_period_unit.clone(),
 				age_group: patient.age_group.clone(),
 				weight_kg: patient.weight_kg,
+				weight_kg_null_flavor: None,
 				height_cm: patient.height_cm,
+				height_cm_null_flavor: None,
 				sex: patient.sex.clone(),
 				sex_null_flavor: patient.sex_null_flavor.clone(),
 				race_code: patient.race_code.clone(),
@@ -693,8 +716,11 @@ async fn import_patient_information(
 				last_menstrual_period_date_null_flavor: patient
 					.last_menstrual_period_date_null_flavor
 					.clone(),
-				medical_history_text: patient.medical_history_text.clone(),
-				concomitant_therapy: patient.concomitant_therapy,
+					medical_history_text: patient.medical_history_text.clone(),
+					medical_history_text_null_flavor: patient
+						.medical_history_text_null_flavor
+						.clone(),
+					concomitant_therapy: patient.concomitant_therapy,
 			},
 		)
 		.await?
@@ -720,7 +746,9 @@ async fn import_patient_information(
 				gestation_period_unit: patient.gestation_period_unit,
 				age_group: patient.age_group,
 				weight_kg: patient.weight_kg,
+				weight_kg_null_flavor: None,
 				height_cm: patient.height_cm,
+				height_cm_null_flavor: None,
 				sex: patient.sex,
 				sex_null_flavor: patient.sex_null_flavor,
 				race_code: patient.race_code,
@@ -731,6 +759,8 @@ async fn import_patient_information(
 				last_menstrual_period_date_null_flavor: patient
 					.last_menstrual_period_date_null_flavor,
 				medical_history_text: patient.medical_history_text,
+				medical_history_text_null_flavor: patient
+					.medical_history_text_null_flavor,
 				concomitant_therapy: patient.concomitant_therapy,
 			},
 		)

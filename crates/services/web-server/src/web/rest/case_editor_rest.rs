@@ -1415,7 +1415,15 @@ async fn apply_dm_page_rows_patch(
 		),
 		age_group: string_field(patient, &["ageGroup", "age_group"]),
 		weight_kg: None,
+		weight_kg_null_flavor: string_field(
+			patient,
+			&["weightKgNullFlavor", "weight_kg_null_flavor"],
+		),
 		height_cm: None,
+		height_cm_null_flavor: string_field(
+			patient,
+			&["heightCmNullFlavor", "height_cm_null_flavor"],
+		),
 		sex: string_field(patient, &["sex"]),
 		sex_null_flavor: string_field(
 			patient,
@@ -1442,6 +1450,13 @@ async fn apply_dm_page_rows_patch(
 		medical_history_text: string_field(
 			patient,
 			&["medicalHistoryText", "medical_history_text"],
+		),
+		medical_history_text_null_flavor: string_field(
+			patient,
+			&[
+				"medicalHistoryTextNullFlavor",
+				"medical_history_text_null_flavor",
+			],
 		),
 		concomitant_therapy: None,
 	};
@@ -1470,7 +1485,9 @@ async fn apply_dm_page_rows_patch(
 					gestation_period_unit: update.gestation_period_unit,
 					age_group: update.age_group,
 					weight_kg: None,
+					weight_kg_null_flavor: update.weight_kg_null_flavor,
 					height_cm: None,
+					height_cm_null_flavor: update.height_cm_null_flavor,
 					sex: update.sex,
 					sex_null_flavor: update.sex_null_flavor,
 					race_code: update.race_code,
@@ -1481,6 +1498,8 @@ async fn apply_dm_page_rows_patch(
 					last_menstrual_period_date_null_flavor: update
 						.last_menstrual_period_date_null_flavor,
 					medical_history_text: update.medical_history_text,
+					medical_history_text_null_flavor: update
+						.medical_history_text_null_flavor,
 					concomitant_therapy: None,
 				},
 			)

@@ -34,6 +34,7 @@ pub struct DPatientImport {
 	pub last_menstrual_period_date: Option<Date>,
 	pub last_menstrual_period_date_null_flavor: Option<String>,
 	pub medical_history_text: Option<String>,
+	pub medical_history_text_null_flavor: Option<String>,
 	pub concomitant_therapy: Option<bool>,
 }
 
@@ -110,6 +111,8 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 		first_value_root(&mut xpath, DPatientPaths::ETHNICITY_CODE_NULL_FLAVOR);
 	let medical_history_text =
 		first_text_root(&mut xpath, DPatientPaths::MEDICAL_HISTORY_TEXT);
+	let medical_history_text_null_flavor =
+		first_value_root(&mut xpath, DPatientPaths::MEDICAL_HISTORY_TEXT_NULL_FLAVOR);
 	let concomitant_therapy = parse_bool_value(first_value_root(
 		&mut xpath,
 		DPatientPaths::CONCOMITANT_THERAPY_VALUE,
@@ -158,6 +161,7 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 		last_menstrual_period_date,
 		last_menstrual_period_date_null_flavor,
 		medical_history_text,
+		medical_history_text_null_flavor,
 		concomitant_therapy,
 	}))
 }

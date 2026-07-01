@@ -427,7 +427,9 @@ pub async fn create_case_from_intake(
 				gestation_period_unit: None,
 				age_group: None,
 				weight_kg: None,
+				weight_kg_null_flavor: None,
 				height_cm: None,
+				height_cm_null_flavor: None,
 				sex: non_empty(data.sex_d5.as_deref()),
 				sex_null_flavor: None,
 				race_code: None,
@@ -437,6 +439,7 @@ pub async fn create_case_from_intake(
 				last_menstrual_period_date: None,
 				last_menstrual_period_date_null_flavor: None,
 				medical_history_text: None,
+				medical_history_text_null_flavor: None,
 				concomitant_therapy: None,
 			},
 		)

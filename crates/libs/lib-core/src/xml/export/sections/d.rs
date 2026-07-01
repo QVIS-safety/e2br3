@@ -132,6 +132,8 @@ pub fn export_d_patient_patch(
 		height_cm: height_cm.as_deref(),
 		date_of_death: death_info.and_then(|death| death.date_of_death),
 		autopsy_performed: death_info.and_then(|death| death.autopsy_performed),
+		autopsy_performed_null_flavor: death_info
+			.and_then(|death| death.autopsy_performed_null_flavor.as_deref()),
 		reported_causes: &reported_cause_patches,
 		autopsy_causes: &autopsy_cause_patches,
 	};

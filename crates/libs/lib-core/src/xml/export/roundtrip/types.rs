@@ -52,6 +52,7 @@ pub struct DPatientPatch<'a> {
 	pub height_cm: Option<&'a str>,
 	pub date_of_death: Option<Date>,
 	pub autopsy_performed: Option<bool>,
+	pub autopsy_performed_null_flavor: Option<&'a str>,
 	pub reported_causes: &'a [DPatientDeathCausePatch<'a>],
 	pub autopsy_causes: &'a [DPatientDeathCausePatch<'a>],
 }

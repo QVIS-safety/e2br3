@@ -16,11 +16,11 @@ CREATE TABLE patient_information (
 
     -- D.2.2 - Age Information
     age_at_time_of_onset DECIMAL(5,2),
-    age_unit VARCHAR(3),  -- E2B(R3) codes: 800-805 (year/month/week/day/hour/decade)
+    age_unit VARCHAR(10),  -- UCUM: 10.a/a/mo/wk/d/h (decade/year/month/week/day/hour)
 
     -- D.2.2.1 - Gestation Period (for fetal cases)
     gestation_period DECIMAL(5,2),
-    gestation_period_unit VARCHAR(3),  -- 802, 803, 804 (month, week, day)
+    gestation_period_unit VARCHAR(20),  -- UCUM: mo, wk, d, {Trimester}
 
     -- D.2.3 - Patient Age Group (E2B(R3) codes)
     age_group VARCHAR(1) CHECK (age_group IN ('1', '2', '3', '4', '5', '6')),
@@ -28,9 +28,11 @@ CREATE TABLE patient_information (
 
     -- D.3 - Body Weight (kg)
     weight_kg DECIMAL(6,2),
+    weight_kg_null_flavor VARCHAR(4) CHECK (weight_kg_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- D.4 - Height (cm)
     height_cm DECIMAL(6,2),
+    height_cm_null_flavor VARCHAR(4) CHECK (height_cm_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- D.5 - Sex (E2B(R3) codes)
     sex VARCHAR(1) CHECK (sex IN ('0', '1', '2')),  -- 0=Unknown, 1=Male, 2=Female
@@ -47,6 +49,7 @@ CREATE TABLE patient_information (
 
     -- D.7.2 - Text for Relevant Medical History
     medical_history_text TEXT,  -- Max 10000 chars
+    medical_history_text_null_flavor VARCHAR(4) CHECK (medical_history_text_null_flavor IN ('MSK', 'UNK', 'ASKU', 'NASK')),
 
     -- D.7.3 - Concomitant Therapies
     concomitant_therapy BOOLEAN,
@@ -113,6 +116,7 @@ CREATE TABLE medical_history_episodes (
 
     -- D.7.1.r.3 - Continuing
     continuing BOOLEAN,
+    continuing_null_flavor VARCHAR(4) CHECK (continuing_null_flavor IN ('MSK', 'UNK', 'ASKU', 'NASK')),
 
     -- D.7.1.r.4 - End Date
     end_date DATE,
@@ -205,6 +209,7 @@ CREATE TABLE patient_death_information (
 
     -- D.9.3 - Autopsy
     autopsy_performed BOOLEAN,
+    autopsy_performed_null_flavor VARCHAR(4) CHECK (autopsy_performed_null_flavor IN ('MSK', 'UNK', 'ASKU', 'NASK')),
 
     -- D.9.4 - Autopsy Determined Cause of Death (handled in repeating table)
 
@@ -279,7 +284,7 @@ CREATE TABLE parent_information (
     -- D.10.2 - Parent Age
     parent_age DECIMAL(5,2),
     parent_age_null_flavor VARCHAR(4) CHECK (parent_age_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
-    parent_age_unit VARCHAR(3),  -- 800-804 (no hour unit for parents)
+    parent_age_unit VARCHAR(10),  -- UCUM: 10.a/a/mo/wk/d (no hour unit for parents)
 
     -- D.10.3 - Last Menstrual Period Date
     last_menstrual_period_date DATE,
@@ -363,7 +368,7 @@ CREATE TABLE parent_past_drug_history (
 
     -- D.10.8.r.1 - Drug Name
     drug_name VARCHAR(500),
-    drug_name_null_flavor VARCHAR(4) CHECK (drug_name_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
+    drug_name_null_flavor VARCHAR(4) CHECK (drug_name_null_flavor IN ('UNK', 'ASKU', 'NASK', 'MSK', 'NA')),
 
     -- D.10.8.r.2 - MPID (Medicinal Product ID)
     mpid VARCHAR(100),
@@ -377,11 +382,11 @@ CREATE TABLE parent_past_drug_history (
 
     -- D.10.8.r.4 - Start Date
     start_date DATE,
-    start_date_null_flavor VARCHAR(4) CHECK (start_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
+    start_date_null_flavor VARCHAR(4) CHECK (start_date_null_flavor IN ('ASKU', 'NASK', 'MSK')),
 
     -- D.10.8.r.5 - End Date
     end_date DATE,
-    end_date_null_flavor VARCHAR(4) CHECK (end_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
+    end_date_null_flavor VARCHAR(4) CHECK (end_date_null_flavor IN ('ASKU', 'NASK', 'MSK')),
 
     -- D.10.8.r.6a - MedDRA Version for Indication
     indication_meddra_version VARCHAR(10),
