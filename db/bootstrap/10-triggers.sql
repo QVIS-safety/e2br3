@@ -1574,7 +1574,7 @@ ALTER TABLE iso_countries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE iso_countries FORCE ROW LEVEL SECURITY;
 CREATE POLICY iso_countries_read ON iso_countries
     FOR SELECT TO e2br3_app_role
-    USING (is_current_user_admin());
+    USING (active = true OR is_current_user_admin());
 CREATE POLICY iso_countries_insert ON iso_countries
     FOR INSERT TO e2br3_app_role
     WITH CHECK (is_current_user_admin());
