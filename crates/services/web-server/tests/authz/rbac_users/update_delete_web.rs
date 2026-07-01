@@ -134,6 +134,40 @@ async fn test_sponsor_admin_cannot_assign_sponsor_admin_role() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_sponsor_admin_cannot_update_existing_sponsor_admin_user() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+
+	let app = web_server::app(mm);
+	let body = json!({
+		"data": {
+			"comments": "attempted sponsor admin edit"
+		}
+	});
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.admin.id))
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	let status = res.status();
+	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
+	let json: serde_json::Value = serde_json::from_slice(&body)?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	assert!(
+		json.to_string()
+			.contains("can only be changed by a System Administrator"),
+		"{json:?}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_update_user_rejects_sponsor_admin_role_for_wrong_org_type(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;

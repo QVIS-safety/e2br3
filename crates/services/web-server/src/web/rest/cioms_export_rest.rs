@@ -764,6 +764,77 @@ fn render_checkbox(
 	canvas.text(x + 12, y + 1, 7, label);
 }
 
+fn is_basic_data_ordering(settings: &CiomsSettings) -> bool {
+	settings.data_ordering.eq_ignore_ascii_case("Basic")
+}
+
+fn render_basic_repeated_items_table(
+	canvas: &mut PdfCanvas,
+	data: &CiomsCaseData,
+	x: i32,
+	y: i32,
+	w: i32,
+) {
+	let mut rows = Vec::new();
+	for reaction in &data.reactions {
+		rows.push(format!(
+			"Reaction | {} | {}",
+			reaction.sequence_number, reaction.primary_source_reaction
+		));
+	}
+	for drug in &data.drugs {
+		rows.push(format!(
+			"Drug | {} | {}",
+			drug.sequence_number,
+			drug_name(Some(drug))
+		));
+	}
+	for dosage in &data.dosages {
+		rows.push(format!(
+			"Dosage | {} | {}",
+			dosage.sequence_number,
+			dosage
+				.dosage_text
+				.as_deref()
+				.or(dosage.route_of_administration.as_deref())
+				.unwrap_or("")
+		));
+	}
+	for indication in &data.indications {
+		rows.push(format!(
+			"Indication | {} | {}",
+			indication.sequence_number,
+			indication.indication_text.as_deref().unwrap_or("")
+		));
+	}
+	for source in &data.primary_sources {
+		rows.push(format!(
+			"Primary source | {} | {}",
+			source.sequence_number,
+			reporter_name(Some(source))
+		));
+	}
+	for (idx, sender) in data.senders.iter().enumerate() {
+		rows.push(format!(
+			"Sender | {} | {}",
+			idx + 1,
+			sender.organization_name.as_deref().unwrap_or("")
+		));
+	}
+	if rows.is_empty() {
+		return;
+	}
+
+	let row_count = rows.len().min(12);
+	let h = 22 + (row_count as i32 * 12);
+	canvas.rect(x, y, w, h);
+	canvas.text(x + 4, y + h - 12, 7, "BASIC REPEATED ITEM TABLE");
+	canvas.line(x, y + h - 18, x + w, y + h - 18);
+	for (idx, row) in rows.into_iter().take(row_count).enumerate() {
+		canvas.wrapped_text(x + 4, y + h - 30 - (idx as i32 * 12), 7, 90, 1, &row);
+	}
+}
+
 fn render_reporter_footer(
 	canvas: &mut PdfCanvas,
 	x: i32,
@@ -1180,6 +1251,9 @@ fn render_landscape_cioms(
 	);
 	render_reporter_footer(canvas, 34, 38, source);
 	render_missing_information_legend(canvas, 300, 38);
+	if is_basic_data_ordering(settings) {
+		render_basic_repeated_items_table(canvas, data, 34, 56, width - 68);
+	}
 	render_cioms_notation(canvas, data, options, 34, 26);
 }
 
@@ -1478,6 +1552,9 @@ fn render_portrait_cioms(
 	);
 	render_reporter_footer(canvas, 34, 38, source);
 	render_missing_information_legend(canvas, 300, 38);
+	if is_basic_data_ordering(settings) {
+		render_basic_repeated_items_table(canvas, data, 34, 56, width - 68);
+	}
 	render_cioms_notation(canvas, data, options, 34, 26);
 }
 
@@ -2588,6 +2665,68 @@ mod tests {
 		let text = String::from_utf8_lossy(&pdf);
 
 		assert!(text.contains("Data ordering: Basic"));
+	}
+
+	#[test]
+	fn cioms_pdf_basic_ordering_renders_repeated_items_as_table() {
+		let drug_id = test_uuid();
+		let mut second_reaction = reaction_with_country("KR");
+		second_reaction.sequence_number = 2;
+		second_reaction.primary_source_reaction = "Nausea".to_string();
+		let mut older_dosage = dosage_with_route(drug_id, "Older route");
+		older_dosage.sequence_number = 1;
+		let mut latest_dosage = dosage_with_route(drug_id, "Latest route");
+		latest_dosage.sequence_number = 2;
+		let data = CiomsCaseData {
+			case_number: "SR-BASIC-TABLE".to_string(),
+			report: None,
+			patient: None,
+			reactions: vec![reaction_with_country("JP"), second_reaction],
+			drugs: vec![suspect_drug(drug_id)],
+			dosages: vec![older_dosage, latest_dosage],
+			indications: vec![
+				DrugIndication {
+					id: test_uuid(),
+					drug_id,
+					sequence_number: 1,
+					indication_text: Some("Older indication".to_string()),
+					indication_meddra_version: None,
+					indication_meddra_code: None,
+					deleted: false,
+					created_at: test_time(),
+					updated_at: test_time(),
+					created_by: test_uuid(),
+					updated_by: None,
+				},
+				DrugIndication {
+					id: other_test_uuid(),
+					drug_id,
+					sequence_number: 2,
+					indication_text: Some("Latest indication".to_string()),
+					indication_meddra_version: None,
+					indication_meddra_code: None,
+					deleted: false,
+					created_at: test_time(),
+					updated_at: test_time(),
+					created_by: test_uuid(),
+					updated_by: None,
+				},
+			],
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &basic_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("BASIC REPEATED ITEM TABLE"));
+		assert!(text.contains("Headache"));
+		assert!(text.contains("Nausea"));
+		assert!(text.contains("Older route"));
+		assert!(text.contains("Latest route"));
+		assert!(text.contains("Older indication"));
+		assert!(text.contains("Latest indication"));
 	}
 
 	#[test]

@@ -82,6 +82,13 @@ async fn test_permission_profiles_are_scoped_by_organization_for_sponsor_admins(
 		profiles.iter().all(|profile| profile["name"] != org2_name),
 		"org1 sponsor admin should not see org2 custom profile: {rows:?}"
 	);
+	assert!(
+		profiles
+			.iter()
+			.all(|profile| profile["id"] != ROLE_SPONSOR_ADMIN_CRO
+				&& profile["id"] != ROLE_SPONSOR_ADMIN_COMPANY),
+		"Sponsor Administrator built-in roles should not be exposed: {rows:?}"
+	);
 
 	Ok(())
 }

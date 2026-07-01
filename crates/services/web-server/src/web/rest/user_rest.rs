@@ -471,15 +471,31 @@ fn sponsor_admin_role_error() -> Error {
 	}
 }
 
+fn is_sponsor_admin_role(role: &str) -> bool {
+	matches!(role, ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY)
+}
+
+fn sponsor_admin_mutation_error() -> Error {
+	Error::BadRequest {
+		message:
+			"Sponsor Administrator users can only be changed by a System Administrator"
+				.to_string(),
+	}
+}
+
+fn sponsor_admin_singleton_error() -> Error {
+	Error::BadRequest {
+		message:
+			"Only one Sponsor Administrator can be assigned for an organization"
+				.to_string(),
+	}
+}
+
 fn validate_sponsor_admin_assignment_authority(
 	ctx: &Ctx,
 	role: Option<&str>,
 ) -> Result<()> {
-	if matches!(
-		role,
-		Some(ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY)
-	) && !ctx.is_system_admin()
-	{
+	if role.is_some_and(is_sponsor_admin_role) && !ctx.is_system_admin() {
 		return Err(Error::BadRequest {
 			message: "Sponsor Administrator roles can only be assigned by a System Administrator".to_string(),
 		});
@@ -505,7 +521,7 @@ async fn validate_sponsor_admin_role_for_org(
 	let Some(role) = role else {
 		return Ok(());
 	};
-	if !matches!(role, ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY) {
+	if !is_sponsor_admin_role(role) {
 		return Ok(());
 	}
 	let organization: Organization =
@@ -515,6 +531,58 @@ async fn validate_sponsor_admin_role_for_org(
 		| (ROLE_SPONSOR_ADMIN_COMPANY, Some(ORG_TYPE_PHARMACEUTICAL_COMPANY)) => Ok(()),
 		_ => Err(sponsor_admin_role_error()),
 	}
+}
+
+fn validate_existing_sponsor_admin_mutation(ctx: &Ctx, user: &User) -> Result<()> {
+	if is_sponsor_admin_role(&user.role) && !ctx.is_system_admin() {
+		return Err(sponsor_admin_mutation_error());
+	}
+	Ok(())
+}
+
+async fn validate_single_sponsor_admin_for_org(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	organization_id: Uuid,
+	role: Option<&str>,
+	exclude_user_id: Option<Uuid>,
+) -> Result<()> {
+	let Some(role) = role else {
+		return Ok(());
+	};
+	if !is_sponsor_admin_role(role) {
+		return Ok(());
+	}
+
+	let count = lib_rest_core::with_rls_read(mm, ctx, |dbx| {
+		Box::pin(async move {
+			dbx.fetch_one(
+				sqlx::query_as::<_, (i64,)>(
+					r#"
+				SELECT COUNT(*)
+				FROM users
+				WHERE organization_id = $1
+				  AND active = true
+				  AND role IN ($2, $3)
+				  AND ($4::uuid IS NULL OR id <> $4)
+				"#,
+				)
+				.bind(organization_id)
+				.bind(ROLE_SPONSOR_ADMIN_CRO)
+				.bind(ROLE_SPONSOR_ADMIN_COMPANY)
+				.bind(exclude_user_id),
+			)
+			.await
+			.map_err(|err| Error::Model(err.into()))
+		})
+	})
+	.await?
+	.0;
+
+	if count > 0 {
+		return Err(sponsor_admin_singleton_error());
+	}
+	Ok(())
 }
 
 fn initial_password(pwd_clear: Option<String>) -> String {
@@ -709,6 +777,14 @@ pub async fn create_user(
 		role.as_deref(),
 	)
 	.await?;
+	validate_single_sponsor_admin_for_org(
+		&db_ctx,
+		&mm,
+		organization_id,
+		role.as_deref(),
+		None,
+	)
+	.await?;
 	let email = normalize_email_input(data.email)?;
 	let username = normalize_optional_username_input(data.username)?
 		.filter(|value| !value.is_empty())
@@ -848,15 +924,24 @@ pub async fn update_user(
 		return Err(sender_scope_assignment_forbidden());
 	}
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
+	let existing: User = UserBmc::get(&db_ctx, &mm, id).await?;
+	validate_existing_sponsor_admin_mutation(&ctx, &existing)?;
 	let role = normalize_user_role(data.role);
 	if role.is_some() {
 		validate_sponsor_admin_assignment_authority(&ctx, role.as_deref())?;
-		let existing: User = UserBmc::get(&db_ctx, &mm, id).await?;
 		validate_sponsor_admin_role_for_org(
 			&db_ctx,
 			&mm,
 			existing.organization_id,
 			role.as_deref(),
+		)
+		.await?;
+		validate_single_sponsor_admin_for_org(
+			&db_ctx,
+			&mm,
+			existing.organization_id,
+			role.as_deref(),
+			Some(id),
 		)
 		.await?;
 	}
@@ -908,6 +993,8 @@ pub async fn delete_user(
 		});
 	}
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
+	let existing: User = UserBmc::get(&db_ctx, &mm, id).await?;
+	validate_existing_sponsor_admin_mutation(&ctx, &existing)?;
 	UserBmc::update(
 		&db_ctx,
 		&mm,

@@ -5,9 +5,6 @@ use lib_core::ctx::{
 	Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::AdminMenuPrivilege;
-use lib_core::model::organization::{
-	Organization, OrganizationBmc, ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY,
-};
 use lib_core::model::permission_profile::{
 	DbPermissionProfileRow, PermissionProfileBmc, PermissionProfileCreateData,
 	PermissionProfileUpdateData,
@@ -231,71 +228,26 @@ fn full_menu_privileges() -> Vec<AdminMenuPrivilege> {
 }
 
 fn built_in_roles() -> Vec<PermissionProfileRow> {
-	vec![
-		build_role_row(
-			ROLE_SYSTEM_ADMIN.to_string(),
-			"System Administrator".to_string(),
-			Some(
-				"Platform-level role for provisioning and internal operations."
-					.to_string(),
-			),
-			Vec::new(),
-			true,
-			true,
-			false,
-			false,
+	vec![build_role_row(
+		ROLE_SYSTEM_ADMIN.to_string(),
+		"System Administrator".to_string(),
+		Some(
+			"Platform-level role for provisioning and internal operations."
+				.to_string(),
 		),
-		build_role_row(
-			ROLE_SPONSOR_ADMIN_CRO.to_string(),
-			"Sponsor Administrator (CRO)".to_string(),
-			Some(
-				"Fixed in-database sponsor permission profile for CRO operations.".to_string(),
-			),
-			full_menu_privileges(),
-			true,
-			true,
-			false,
-			true,
-		),
-		build_role_row(
-			ROLE_SPONSOR_ADMIN_COMPANY.to_string(),
-			"Sponsor Administrator (Pharmaceutical Company)".to_string(),
-			Some(
-				"Fixed in-database sponsor permission profile for sponsor-company operations."
-					.to_string(),
-			),
-			full_menu_privileges(),
-			true,
-			true,
-			false,
-			true,
-		),
-	]
+		Vec::new(),
+		true,
+		true,
+		false,
+		false,
+	)]
 }
 
 async fn visible_built_in_roles(
-	ctx: &Ctx,
-	mm: &ModelManager,
+	_ctx: &Ctx,
+	_mm: &ModelManager,
 ) -> Result<Vec<PermissionProfileRow>> {
-	let mut rows = built_in_roles();
-	if ctx.is_system_admin() {
-		return Ok(rows);
-	}
-
-	let organization: Organization =
-		OrganizationBmc::get(ctx, mm, ctx.organization_id())
-			.await
-			.map_err(Error::Model)?;
-	rows.retain(|row| match row.id.as_str() {
-		ROLE_SPONSOR_ADMIN_CRO => {
-			organization.org_type.as_deref() == Some(ORG_TYPE_CRO)
-		}
-		ROLE_SPONSOR_ADMIN_COMPANY => {
-			organization.org_type.as_deref() == Some(ORG_TYPE_PHARMACEUTICAL_COMPANY)
-		}
-		_ => true,
-	});
-	Ok(rows)
+	Ok(built_in_roles())
 }
 
 fn row_to_api(row: DbPermissionProfileRow) -> PermissionProfileRow {
