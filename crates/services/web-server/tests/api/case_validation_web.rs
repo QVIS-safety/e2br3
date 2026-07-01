@@ -161,7 +161,8 @@ async fn create_primary_source(
 			"case_id": case_id,
 			"sequence_number": 1,
 			"qualification": "1",
-			"email": "reporter@example.com"
+			"email": "reporter@example.com",
+			"primary_source_regulatory": "1"
 		}
 	});
 	let req = Request::builder()
@@ -190,7 +191,8 @@ async fn create_primary_source(
 	let update = json!({
 		"data": {
 			"qualification": "1",
-			"email": "reporter@example.com"
+			"email": "reporter@example.com",
+			"primary_source_regulatory": "1"
 		}
 	});
 	let req = Request::builder()
@@ -212,6 +214,31 @@ async fn create_primary_source(
 		)
 		.into());
 	}
+	Ok(())
+}
+
+async fn force_all_primary_sources_non_primary(
+	mm: &lib_core::model::ModelManager,
+	user_id: Uuid,
+	org_id: Uuid,
+	case_id: Uuid,
+) -> Result<()> {
+	mm.dbx().begin_txn().await?;
+	if let Err(err) =
+		set_full_context_dbx(mm.dbx(), user_id, org_id, ROLE_SPONSOR_ADMIN_CRO).await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"UPDATE primary_sources SET primary_source_regulatory = '2' WHERE case_id = $1",
+			)
+			.bind(case_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
 	Ok(())
 }
 
@@ -1045,6 +1072,41 @@ async fn test_mfds_sender_type_3_with_kr1_is_valid_for_sender_rule() -> Result<(
 			})
 			.unwrap_or(false),
 		"did not expect MFDS sender KR issue, body={body}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_primary_source_without_regulatory_primary_emits_warning() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	seed_rule_clean_case(&app, &cookie, case_id).await?;
+	force_all_primary_sources_non_primary(&mm, seed.admin.id, seed.org_id, case_id)
+		.await?;
+
+	let (status, body) =
+		get_validation(&app, &cookie, &format!("/api/cases/{case_id}/validation"))
+			.await?;
+
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let issues = body["data"]["issues"].as_array().ok_or("missing issues")?;
+	assert!(
+		issues.iter().any(|issue| {
+			issue["code"] == "ICH.C.2.r.5.REQUIRED"
+				&& issue["blocking"] == false
+				&& issue["path"]
+					== "primarySources.0.primarySourceForRegulatoryPurposes"
+				&& issue["field_path"]
+					== "primarySources.0.primarySourceForRegulatoryPurposes"
+		}),
+		"expected non-blocking C.2.r.5 primary source warning, body={body}"
 	);
 	Ok(())
 }

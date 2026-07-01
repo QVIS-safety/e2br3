@@ -451,6 +451,14 @@ pub const VALIDATION_RULES: &[
 		message: "[C.2.r.4] is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.C.2.r.5.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "reporter",
+		blocking: false,
+		message:
+			"[C.2.r.5] one primary source for regulatory purposes should be selected.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.C.3.1.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "sender",
