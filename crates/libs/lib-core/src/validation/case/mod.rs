@@ -43,12 +43,12 @@ pub async fn validate_case_for_authorities(
 	let needs_mfds = authorities.iter().any(|p| p.requires_mfds_context());
 
 	let fda_ctx: Option<FdaValidationContext> = if needs_fda {
-		Some(load_fda_validation_context(mm, case_id).await?)
+		Some(load_fda_validation_context(ctx, mm, case_id).await?)
 	} else {
 		None
 	};
 	let mfds_ctx: Option<MfdsValidationContext> = if needs_mfds {
-		Some(load_mfds_validation_context(mm, case_id).await?)
+		Some(load_mfds_validation_context(ctx, mm, case_id).await?)
 	} else {
 		None
 	};
@@ -56,6 +56,7 @@ pub async fn validate_case_for_authorities(
 	let mut reports = Vec::with_capacity(authorities.len());
 	for &authority in authorities {
 		let issues = sections::collect_section_issues(
+			ctx,
 			authority,
 			mm,
 			&validation_ctx,

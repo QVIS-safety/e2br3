@@ -311,6 +311,7 @@ pub async fn transition_case_workflow(
 	);
 
 	CaseWorkflowEventBmc::record_transition(
+		&ctx,
 		&mm,
 		ctx.user_id(),
 		WorkflowTransitionRecord {
@@ -424,6 +425,7 @@ pub async fn assign_case_workflow(
 	);
 
 	CaseWorkflowEventBmc::record_assignment(
+		&ctx,
 		&mm,
 		ctx.user_id(),
 		WorkflowAssignRecord {
@@ -468,7 +470,7 @@ pub async fn list_case_workflow_events(
 	require_permission(&ctx, CASE_READ)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 
-	let rows = CaseWorkflowEventBmc::list_by_case(&mm, id)
+	let rows = CaseWorkflowEventBmc::list_by_case(&ctx, &mm, id)
 		.await
 		.map_err(Error::Model)?;
 	let mut data = Vec::with_capacity(rows.len());

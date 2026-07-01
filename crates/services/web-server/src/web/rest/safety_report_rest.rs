@@ -6,7 +6,7 @@ use lib_core::model::acs::{
 	SAFETY_REPORT_CREATE, SAFETY_REPORT_DELETE, SAFETY_REPORT_READ,
 	SAFETY_REPORT_UPDATE,
 };
-use lib_core::model::case::CaseBmc;
+use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::safety_report::{
 	PatchValue, SafetyReportIdentification, SafetyReportIdentificationBmc,
 	SafetyReportIdentificationForCreate, SafetyReportIdentificationForUpdate,
@@ -29,17 +29,12 @@ fn create_payload_to_update(
 		safety_report_id: data.safety_report_id,
 		version: data.version,
 		transmission_date: data.transmission_date,
-		transmission_date_null_flavor: data.transmission_date_null_flavor,
 		report_type: data
 			.report_type
 			.map(PatchValue::Value)
 			.unwrap_or(PatchValue::Missing),
 		date_first_received_from_source: data.date_first_received_from_source,
-		date_first_received_from_source_null_flavor: data
-			.date_first_received_from_source_null_flavor,
 		date_of_most_recent_information: data.date_of_most_recent_information,
-		date_of_most_recent_information_null_flavor: data
-			.date_of_most_recent_information_null_flavor,
 		fulfil_expedited_criteria: data
 			.fulfil_expedited_criteria
 			.map(PatchValue::Value)
@@ -89,6 +84,8 @@ pub async fn create_safety_report_identification(
 				create_payload_to_update(data),
 			)
 			.await?;
+			CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id)
+				.await?;
 			let entity =
 				SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id)
 					.await?;
@@ -100,6 +97,8 @@ pub async fn create_safety_report_identification(
 
 	match SafetyReportIdentificationBmc::create(&ctx, &mm, data).await {
 		Ok(_) => {
+			CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id)
+				.await?;
 			let entity =
 				SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id)
 					.await?;
@@ -192,6 +191,7 @@ pub async fn update_safety_report_identification(
 		data,
 	)
 	.await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
 	let entity =
 		SafetyReportIdentificationBmc::get_by_case(&ctx, &mm, case_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
@@ -207,6 +207,7 @@ pub async fn delete_safety_report_identification(
 	require_permission(&ctx, SAFETY_REPORT_DELETE)?;
 	require_case_write_allowed(&ctx, &mm, case_id).await?;
 	SafetyReportIdentificationBmc::delete_by_case(&ctx, &mm, case_id).await?;
+	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, case_id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 
@@ -218,21 +219,15 @@ pub struct SafetyReportUpdateRequest {
 }
 
 async fn requires_nullification_compliance(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	case_id: Uuid,
+	_ctx: &lib_core::ctx::Ctx,
+	_mm: &ModelManager,
+	_case_id: Uuid,
 	data: &SafetyReportIdentificationForUpdate,
 ) -> Result<bool> {
-	let marks_nullified = data
+	Ok(data
 		.nullification_code
 		.as_deref()
 		.map(str::trim)
 		.map(|value| value == "1")
-		.unwrap_or(false);
-	if !marks_nullified {
-		return Ok(false);
-	}
-	let case = CaseBmc::get(ctx, mm, case_id).await?;
-	let status = case.status.trim().to_ascii_lowercase();
-	Ok(status != "nullified")
+		.unwrap_or(false))
 }

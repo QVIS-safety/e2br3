@@ -6,6 +6,7 @@ pub(crate) mod g;
 pub(crate) mod h;
 pub(crate) mod n;
 
+use crate::ctx::Ctx;
 use crate::model::{ModelManager, Result};
 use crate::validation::{
 	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority,
@@ -13,6 +14,7 @@ use crate::validation::{
 };
 
 pub(crate) async fn collect_section_issues(
+	ctx: &Ctx,
 	authority: RegulatoryAuthority,
 	mm: &ModelManager,
 	validation_ctx: &ValidationContext,
@@ -24,6 +26,7 @@ pub(crate) async fn collect_section_issues(
 		&mut issues,
 		authority,
 		mm,
+		ctx,
 		validation_ctx,
 		fda_ctx,
 		mfds_ctx,
@@ -36,6 +39,7 @@ pub(crate) async fn collect_section_issues(
 		&mut issues,
 		authority,
 		mm,
+		ctx,
 		validation_ctx,
 		fda_ctx,
 		mfds_ctx,

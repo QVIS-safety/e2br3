@@ -209,10 +209,18 @@ impl NarrativeInformationBmc {
 	}
 
 	pub async fn get_by_case(
-		_ctx: &crate::ctx::Ctx,
+		ctx: &crate::ctx::Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<NarrativeInformation> {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
 		let sql = format!("SELECT * FROM {} WHERE case_id = $1", Self::TABLE);
 		let narrative = mm
 			.dbx()
@@ -220,17 +228,34 @@ impl NarrativeInformationBmc {
 				sqlx::query_as::<_, NarrativeInformation>(&sql).bind(case_id),
 			)
 			.await?;
-		narrative.ok_or(crate::model::Error::EntityUuidNotFound {
-			entity: Self::TABLE,
-			id: case_id,
-		})
+		match narrative {
+			Some(narrative) => {
+				mm.dbx().commit_txn().await?;
+				Ok(narrative)
+			}
+			None => {
+				mm.dbx().rollback_txn().await?;
+				Err(crate::model::Error::EntityUuidNotFound {
+					entity: Self::TABLE,
+					id: case_id,
+				})
+			}
+		}
 	}
 
 	pub async fn get_by_case_optional(
-		_ctx: &crate::ctx::Ctx,
+		ctx: &crate::ctx::Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<Option<NarrativeInformation>> {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
 		let sql = format!("SELECT * FROM {} WHERE case_id = $1", Self::TABLE);
 		let narrative = mm
 			.dbx()
@@ -238,6 +263,7 @@ impl NarrativeInformationBmc {
 				sqlx::query_as::<_, NarrativeInformation>(&sql).bind(case_id),
 			)
 			.await?;
+		mm.dbx().commit_txn().await?;
 		Ok(narrative)
 	}
 

@@ -2,6 +2,7 @@ use crate::ctx::{canonical_role, Ctx};
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
 use crate::model::store::dbx::Dbx;
+use crate::model::store::set_full_context_dbx_or_rollback;
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
@@ -819,10 +820,20 @@ pub struct CaseWorkflowEventBmc;
 impl CaseWorkflowEventBmc {
 	/// Atomically update the case workflow status and insert an audit event.
 	pub async fn record_transition(
+		ctx: &Ctx,
 		mm: &ModelManager,
 		actor_user_id: Uuid,
 		r: WorkflowTransitionRecord,
 	) -> Result<()> {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
+
 		mm.dbx()
 			.execute(
 				sqlx::query(
@@ -880,15 +891,26 @@ impl CaseWorkflowEventBmc {
 			.await
 			.map_err(|e| crate::model::Error::Store(e.to_string()))?;
 
+		mm.dbx().commit_txn().await?;
 		Ok(())
 	}
 
 	/// Atomically update the case workflow assignment and insert an audit event.
 	pub async fn record_assignment(
+		ctx: &Ctx,
 		mm: &ModelManager,
 		actor_user_id: Uuid,
 		r: WorkflowAssignRecord,
 	) -> Result<()> {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
+
 		mm.dbx()
 			.execute(
 				sqlx::query(
@@ -944,14 +966,24 @@ impl CaseWorkflowEventBmc {
 			.await
 			.map_err(|e| crate::model::Error::Store(e.to_string()))?;
 
+		mm.dbx().commit_txn().await?;
 		Ok(())
 	}
 
 	/// List all workflow events for a case, newest first.
 	pub async fn list_by_case(
+		ctx: &Ctx,
 		mm: &ModelManager,
 		case_id: Uuid,
 	) -> Result<Vec<CaseWorkflowEventRow>> {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
 		let rows = mm
 			.dbx()
 			.fetch_all(
@@ -971,6 +1003,7 @@ impl CaseWorkflowEventBmc {
 			)
 			.await
 			.map_err(|e| crate::model::Error::Store(e.to_string()))?;
+		mm.dbx().commit_txn().await?;
 		Ok(rows)
 	}
 }

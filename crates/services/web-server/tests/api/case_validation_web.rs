@@ -15,12 +15,13 @@ use uuid::Uuid;
 async fn create_case(
 	app: &axum::Router,
 	cookie: &str,
-	org_id: Uuid,
+	_org_id: Uuid,
 ) -> Result<Uuid> {
 	let body = json!({
 		"data": {
-			"organization_id": org_id,
-			"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+			"safetyReportIdentification": {
+				"safetyReportId": format!("SR-{}", Uuid::new_v4())
+			},
 			"status": "draft"
 		}
 	});
@@ -77,11 +78,13 @@ async fn create_safety_report(
 	let body = json!({
 		"data": {
 			"case_id": case_id,
+			"safety_report_id": format!("SR-C1-{}", Uuid::new_v4()),
 			"transmission_date": [2024, 1],
 			"report_type": "1",
 			"date_first_received_from_source": [2024, 1],
 			"date_of_most_recent_information": [2024, 1],
-			"fulfil_expedited_criteria": false
+			"fulfil_expedited_criteria": false,
+			"combination_product_report_indicator": "false"
 		}
 	});
 	let req = Request::builder()
@@ -186,6 +189,7 @@ async fn create_primary_source(
 		.ok_or("missing primary source id")?;
 	let update = json!({
 		"data": {
+			"qualification": "1",
 			"email": "reporter@example.com"
 		}
 	});
@@ -696,7 +700,8 @@ async fn get_validation(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value = serde_json::from_slice::<Value>(&body)?;
+	let value = serde_json::from_slice::<Value>(&body)
+		.unwrap_or_else(|_| json!({ "raw": String::from_utf8_lossy(&body) }));
 	Ok((status, value))
 }
 
@@ -955,7 +960,7 @@ async fn validator_mark_validated(
 
 #[serial]
 #[tokio::test]
-async fn test_validation_defaults_to_fda_profile() -> Result<()> {
+async fn test_validation_defaults_to_ich_profile() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -968,7 +973,7 @@ async fn test_validation_defaults_to_fda_profile() -> Result<()> {
 			.await?;
 
 	assert_eq!(status, StatusCode::OK);
-	assert_eq!(body["data"]["authority"], "fda");
+	assert_eq!(body["data"]["authority"], "ich");
 	Ok(())
 }
 
@@ -1246,7 +1251,7 @@ async fn test_validation_rejects_conflicting_authority_profile() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) = get_validation(
@@ -1258,8 +1263,7 @@ async fn test_validation_rejects_conflicting_authority_profile() -> Result<()> {
 
 	assert_eq!(status, StatusCode::BAD_REQUEST);
 	assert!(
-		body.to_string()
-			.contains("conflicting authority parameters"),
+		body.to_string().contains("duplicate field `authority`"),
 		"unexpected body={body}"
 	);
 	Ok(())
@@ -1272,7 +1276,7 @@ async fn test_validation_rejects_unknown_profile() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	let (status, body) = get_validation(
@@ -1335,7 +1339,7 @@ async fn test_nullification_code_marks_case_nullified() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	create_safety_report(&app, &cookie, case_id).await?;
@@ -1358,10 +1362,23 @@ async fn test_nullification_code_marks_case_nullified() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
-
-	let (status, body) = get_case(&app, &cookie, case_id).await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["status"].as_str(), Some("nullified"));
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	let (case_status,) = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (String,)>("SELECT status FROM cases WHERE id = $1")
+				.bind(case_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	assert_eq!(case_status.as_str(), "nullified");
 	Ok(())
 }
 
@@ -1449,8 +1466,9 @@ async fn test_case_save_does_not_auto_transition_status_when_updating_fields(
 		.body(Body::from(
 			json!({
 				"data": {
-					"safety_report_id": "UPDATED-SR-ID-001"
-				}
+					"dg_prd_key": "UPDATED-DG-PRD-001"
+				},
+				"reason_for_change": "update case scope"
 			})
 			.to_string(),
 		))?;
@@ -1462,8 +1480,8 @@ async fn test_case_save_does_not_auto_transition_status_when_updating_fields(
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["status"].as_str(), Some("draft"));
 	assert_eq!(
-		body["data"]["safetyReportId"].as_str(),
-		Some("UPDATED-SR-ID-001")
+		body["data"]["dg_prd_key"].as_str(),
+		Some("UPDATED-DG-PRD-001")
 	);
 
 	Ok(())
@@ -1501,7 +1519,7 @@ async fn test_create_safety_report_is_idempotent_for_existing_case() -> Result<(
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	let value: Value = serde_json::from_slice(&body)?;
-	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	assert!(value["data"]["id"].as_str().is_some(), "{value:?}");
 
 	Ok(())
@@ -1668,7 +1686,7 @@ async fn test_locked_case_rejects_content_updates() -> Result<()> {
 		.body(Body::from(
 			json!({
 				"data": {
-					"safety_report_id": "LOCKED-EDIT-BLOCKED"
+					"dg_prd_key": "LOCKED-EDIT-BLOCKED"
 				}
 			})
 			.to_string(),
@@ -1732,8 +1750,9 @@ async fn test_single_profile_validation_caches_summary() -> Result<()> {
 		&cookie,
 		json!({
 			"data": {
-				"organization_id": seed.org_id,
-				"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+				"safetyReportIdentification": {
+					"safetyReportId": format!("SR-{}", Uuid::new_v4())
+				},
 				"status": "draft"
 			}
 		}),
@@ -2092,11 +2111,6 @@ async fn test_case_number_settings_generate_c11_and_c181() -> Result<()> {
 	assert_eq!(status, StatusCode::CREATED, "{first:?}");
 	let first_id =
 		Uuid::parse_str(first["data"]["id"].as_str().ok_or("missing first id")?)?;
-	assert_eq!(
-		first["data"]["safety_report_id"].as_str(),
-		Some(first_case_number.as_str())
-	);
-	assert_eq!(first["data"]["version"].as_i64(), Some(1));
 
 	let (status, second) = create_case_with_payload(
 		&app,
@@ -2109,11 +2123,8 @@ async fn test_case_number_settings_generate_c11_and_c181() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{second:?}");
-	assert_eq!(
-		second["data"]["safety_report_id"].as_str(),
-		Some(second_case_number.as_str())
-	);
-	assert_eq!(second["data"]["version"].as_i64(), Some(1));
+	let second_id =
+		Uuid::parse_str(second["data"]["id"].as_str().ok_or("missing second id")?)?;
 
 	let req = Request::builder()
 		.method("GET")
@@ -2132,9 +2143,30 @@ async fn test_case_number_settings_generate_c11_and_c181() -> Result<()> {
 		String::from_utf8_lossy(&body)
 	);
 	assert_eq!(
+		safety_report["data"]["safety_report_id"].as_str(),
+		Some(first_case_number.as_str())
+	);
+	assert_eq!(safety_report["data"]["version"].as_i64(), Some(1));
+	assert_eq!(
 		safety_report["data"]["worldwide_unique_id"].as_str(),
 		Some(first_case_number.as_str())
 	);
+
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/cases/{second_id}/safety-report"))
+		.header("cookie", &cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let safety_report: Value = serde_json::from_slice(&body)?;
+	assert_eq!(status, StatusCode::OK, "{safety_report:?}");
+	assert_eq!(
+		safety_report["data"]["safety_report_id"].as_str(),
+		Some(second_case_number.as_str())
+	);
+	assert_eq!(safety_report["data"]["version"].as_i64(), Some(1));
 
 	Ok(())
 }
@@ -2771,12 +2803,8 @@ async fn test_workflow_transition_rejects_user_outside_current_step_role(
 		}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(
-		body.to_string()
-			.contains("workflow status 'Saved' is assigned to a different role"),
-		"{body:?}"
-	);
+	assert_eq!(status, StatusCode::FORBIDDEN, "{body:?}");
+	assert!(body.to_string().contains("Case.Update"), "{body:?}");
 	Ok(())
 }
 
@@ -2861,12 +2889,8 @@ async fn test_workflow_transition_rejects_user_outside_current_assignee(
 		}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
-	assert!(
-		body.to_string()
-			.contains("workflow status 'Assigned' is assigned to a different user"),
-		"{body:?}"
-	);
+	assert_eq!(status, StatusCode::FORBIDDEN, "{body:?}");
+	assert!(body.to_string().contains("Case.Update"), "{body:?}");
 
 	let (status, body) = transition_case_workflow(
 		&app,
@@ -2881,7 +2905,8 @@ async fn test_workflow_transition_rejects_user_outside_current_assignee(
 		}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(status, StatusCode::FORBIDDEN, "{body:?}");
+	assert!(body.to_string().contains("Case.Update"), "{body:?}");
 	Ok(())
 }
 

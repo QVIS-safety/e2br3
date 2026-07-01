@@ -1245,7 +1245,9 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 		"/api/cases".to_string(),
 		Some(json!({
 			"data": {
-				"safety_report_id": format!("SETTINGS-READ-{}", Uuid::new_v4().simple()),
+				"safetyReportIdentification": {
+					"safetyReportId": format!("SETTINGS-READ-{}", Uuid::new_v4().simple())
+				},
 				"status": "draft"
 			}
 		})),

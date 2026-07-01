@@ -6,7 +6,6 @@ use crate::web::rest::case_editor_dto::{
 	CaseEditorShellDto,
 };
 use crate::web::rest::case_rest::{case_to_read_result, PublicCaseView};
-use crate::web::rest::case_validation_rest::refresh_case_validation_cache;
 use axum::extract::{Path, Query, State};
 use axum::Json;
 use lib_core::model::acs::{
@@ -30,6 +29,8 @@ use lib_core::model::case_identifiers::{
 	LinkedReportNumberBmc, LinkedReportNumberFilter, OtherCaseIdentifierBmc,
 	OtherCaseIdentifierFilter,
 };
+use lib_core::model::case_validation_report_cache::CaseValidationReportCacheBmc;
+use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::drug::{
 	DosageInformationBmc, DosageInformationFilter, DrugActiveSubstanceBmc,
 	DrugActiveSubstanceFilter, DrugIndicationBmc, DrugIndicationFilter,
@@ -189,14 +190,15 @@ fn insert_editor_json_context(
 	Ok(())
 }
 
-async fn refresh_editor_validation_cache(
+async fn mark_editor_validation_cache_stale(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 	requested_authorities: Option<String>,
 ) -> Result<()> {
-	let authorities = editor_projection_context(requested_authorities)?;
-	refresh_case_validation_cache(ctx, mm, case_id, &authorities).await?;
+	editor_projection_context(requested_authorities)?;
+	CaseValidationSummaryBmc::mark_stale_for_case(ctx, mm, case_id).await?;
+	CaseValidationReportCacheBmc::mark_stale_for_case(ctx, mm, case_id).await?;
 	Ok(())
 }
 
@@ -399,19 +401,14 @@ pub async fn patch_editor_ci_page_projection(
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let requested_authorities =
 		validate_request_projection_context(request.authorities.as_deref())?;
-	let refresh_authorities =
-		editor_projection_context(requested_authorities.clone())?;
 
 	let mut update = SafetyReportIdentificationForUpdate {
 		safety_report_id: None,
 		version: None,
 		transmission_date: None,
-		transmission_date_null_flavor: None,
 		report_type: PatchValue::Missing,
 		date_first_received_from_source: None,
-		date_first_received_from_source_null_flavor: None,
 		date_of_most_recent_information: None,
-		date_of_most_recent_information_null_flavor: None,
 		fulfil_expedited_criteria: PatchValue::Missing,
 		fulfil_expedited_criteria_null_flavor: None,
 		local_criteria_report_type: PatchValue::Missing,
@@ -471,8 +468,13 @@ pub async fn patch_editor_ci_page_projection(
 	if !request.changes.is_empty() {
 		SafetyReportIdentificationBmc::update_by_case(&ctx, &mm, case_id, update)
 			.await?;
-		refresh_case_validation_cache(&ctx, &mm, case_id, &refresh_authorities)
-			.await?;
+		mark_editor_validation_cache_stale(
+			&ctx,
+			&mm,
+			case_id,
+			requested_authorities.clone(),
+		)
+		.await?;
 	}
 	let projection = direct_page_projection_response(
 		&ctx,
@@ -574,8 +576,6 @@ async fn patch_direct_page_projection(
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let requested_authorities =
 		validate_request_projection_context(request.authorities.as_deref())?;
-	let refresh_authorities =
-		editor_projection_context(requested_authorities.clone())?;
 
 	if !request.changes.is_empty() {
 		apply_direct_page_changes_patch(
@@ -594,8 +594,13 @@ async fn patch_direct_page_projection(
 	}
 
 	if !request.changes.is_empty() || !request.rows.is_empty() {
-		refresh_case_validation_cache(&ctx, &mm, case_id, &refresh_authorities)
-			.await?;
+		mark_editor_validation_cache_stale(
+			&ctx,
+			&mm,
+			case_id,
+			requested_authorities.clone(),
+		)
+		.await?;
 	}
 
 	let data = match page_id {
@@ -2380,7 +2385,7 @@ pub async fn create_editor_ae_page_row(
 	);
 	let create = parse_row_model::<ReactionForCreate>("AE", "reaction", value)?;
 	let row_id = ReactionBmc::create(&ctx, &mm, create).await?;
-	refresh_editor_validation_cache(
+	mark_editor_validation_cache_stale(
 		&ctx,
 		&mm,
 		case_id,
@@ -2451,7 +2456,7 @@ pub async fn patch_editor_ae_page_row(
 	);
 	let update = parse_row_model::<ReactionForUpdate>("AE", "reaction", value)?;
 	ReactionBmc::update(&ctx, &mm, row_id, update).await?;
-	refresh_editor_validation_cache(
+	mark_editor_validation_cache_stale(
 		&ctx,
 		&mm,
 		case_id,
@@ -2480,7 +2485,7 @@ pub async fn delete_editor_ae_page_row(
 
 	ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	ReactionBmc::delete(&ctx, &mm, row_id).await?;
-	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
+	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
 	Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
@@ -2495,7 +2500,7 @@ pub async fn restore_editor_ae_page_row(
 
 	ReactionBmc::get_in_case_with_deleted(&ctx, &mm, case_id, row_id, true).await?;
 	ReactionBmc::restore_in_case(&ctx, &mm, case_id, row_id).await?;
-	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
+	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
 	let response =
 		build_editor_ae_page_row_response(&ctx, &mm, case_id, row_id, None).await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -2669,7 +2674,7 @@ pub async fn create_editor_lb_page_row(
 	);
 	let create = parse_row_model::<TestResultForCreate>("LB", "testResult", value)?;
 	let row_id = TestResultBmc::create(&ctx, &mm, create).await?;
-	refresh_editor_validation_cache(
+	mark_editor_validation_cache_stale(
 		&ctx,
 		&mm,
 		case_id,
@@ -2728,7 +2733,7 @@ pub async fn patch_editor_lb_page_row(
 	);
 	let update = parse_row_model::<TestResultForUpdate>("LB", "testResult", value)?;
 	TestResultBmc::update(&ctx, &mm, row_id, update).await?;
-	refresh_editor_validation_cache(
+	mark_editor_validation_cache_stale(
 		&ctx,
 		&mm,
 		case_id,
@@ -2757,7 +2762,7 @@ pub async fn delete_editor_lb_page_row(
 
 	TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	TestResultBmc::delete(&ctx, &mm, row_id).await?;
-	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
+	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
 	Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
@@ -2773,7 +2778,7 @@ pub async fn restore_editor_lb_page_row(
 	TestResultBmc::get_in_case_with_deleted(&ctx, &mm, case_id, row_id, true)
 		.await?;
 	TestResultBmc::restore_in_case(&ctx, &mm, case_id, row_id).await?;
-	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
+	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
 	let response =
 		build_editor_lb_page_row_response(&ctx, &mm, case_id, row_id, None).await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -3058,7 +3063,7 @@ pub async fn create_editor_dg_page_row(
 	);
 	let create = parse_row_model::<DrugInformationForCreate>("DG", "drug", value)?;
 	let row_id = DrugInformationBmc::create(&ctx, &mm, create).await?;
-	refresh_editor_validation_cache(
+	mark_editor_validation_cache_stale(
 		&ctx,
 		&mm,
 		case_id,
@@ -3119,7 +3124,7 @@ pub async fn patch_editor_dg_page_row(
 	);
 	let update = parse_row_model::<DrugInformationForUpdate>("DG", "drug", value)?;
 	DrugInformationBmc::update(&ctx, &mm, row_id, update).await?;
-	refresh_editor_validation_cache(
+	mark_editor_validation_cache_stale(
 		&ctx,
 		&mm,
 		case_id,
@@ -3148,7 +3153,7 @@ pub async fn delete_editor_dg_page_row(
 
 	DrugInformationBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
 	DrugInformationBmc::delete(&ctx, &mm, row_id).await?;
-	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
+	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
 	Ok(axum::http::StatusCode::NO_CONTENT)
 }
 
@@ -3164,7 +3169,7 @@ pub async fn restore_editor_dg_page_row(
 	DrugInformationBmc::get_in_case_with_deleted(&ctx, &mm, case_id, row_id, true)
 		.await?;
 	DrugInformationBmc::restore_in_case(&ctx, &mm, case_id, row_id).await?;
-	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
+	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
 	let response =
 		build_editor_dg_page_row_response(&ctx, &mm, case_id, row_id, None).await?;
 	Ok((axum::http::StatusCode::OK, Json(response)))
@@ -3377,7 +3382,7 @@ pub async fn create_editor_dh_page_row(
 	let create =
 		parse_row_model::<PastDrugHistoryForCreate>("DH", "pastDrugHistory", value)?;
 	let row_id = PastDrugHistoryBmc::create(&ctx, &mm, create).await?;
-	refresh_editor_validation_cache(
+	mark_editor_validation_cache_stale(
 		&ctx,
 		&mm,
 		case_id,
@@ -3432,7 +3437,7 @@ pub async fn patch_editor_dh_page_row(
 	let update =
 		parse_row_model::<PastDrugHistoryForUpdate>("DH", "pastDrugHistory", value)?;
 	PastDrugHistoryBmc::update(&ctx, &mm, row_id, update).await?;
-	refresh_editor_validation_cache(
+	mark_editor_validation_cache_stale(
 		&ctx,
 		&mm,
 		case_id,
@@ -3461,6 +3466,6 @@ pub async fn delete_editor_dh_page_row(
 
 	load_editor_dh_row_detail(&ctx, &mm, case_id, row_id).await?;
 	PastDrugHistoryBmc::delete(&ctx, &mm, row_id).await?;
-	refresh_editor_validation_cache(&ctx, &mm, case_id, None).await?;
+	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
 	Ok(axum::http::StatusCode::NO_CONTENT)
 }

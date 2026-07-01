@@ -61,14 +61,6 @@ pub fn patch_c_safety_report(
 					.unwrap_or_else(|| transmission_date.to_string()),
 			),
 		);
-	} else if let Some(null_flavor) = patch.transmission_date_null_flavor {
-		remove_attr_first(&mut xpath, transmission_time_path, "value");
-		set_attr_first(
-			&mut xpath,
-			transmission_time_path,
-			"nullFlavor",
-			null_flavor,
-		);
 	}
 
 	// C.1.4 Date First Received
@@ -82,9 +74,6 @@ pub fn patch_c_safety_report(
 			"value",
 			&fmt_date(date_first_received),
 		);
-	} else if let Some(null_flavor) = patch.date_first_received_null_flavor {
-		remove_attr_first(&mut xpath, first_received_path, "value");
-		set_attr_first(&mut xpath, first_received_path, "nullFlavor", null_flavor);
 	}
 
 	// C.1.5 Date Most Recent
@@ -98,9 +87,6 @@ pub fn patch_c_safety_report(
 			"value",
 			&fmt_date(date_most_recent),
 		);
-	} else if let Some(null_flavor) = patch.date_most_recent_null_flavor {
-		remove_attr_first(&mut xpath, most_recent_path, "value");
-		set_attr_first(&mut xpath, most_recent_path, "nullFlavor", null_flavor);
 	}
 
 	// C.1.7 Expedited criteria

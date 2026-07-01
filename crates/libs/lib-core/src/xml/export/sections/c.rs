@@ -261,20 +261,11 @@ pub fn export_c_safety_report_patch(
 	let patch = CSafetyReportPatch {
 		report_unique_id: report.safety_report_id.as_deref().unwrap_or(""),
 		transmission_date: report.transmission_date.as_deref(),
-		transmission_date_null_flavor: report
-			.transmission_date_null_flavor
-			.as_deref(),
 		transmission_date_value: header.map(|h| h.message_date.as_str()),
 		transmission_date_time: header.and_then(|h| h.batch_transmission_date),
 		report_type: report.report_type.as_deref().unwrap_or(""),
 		date_first_received: report.date_first_received_from_source,
-		date_first_received_null_flavor: report
-			.date_first_received_from_source_null_flavor
-			.as_deref(),
 		date_most_recent: report.date_of_most_recent_information,
-		date_most_recent_null_flavor: report
-			.date_of_most_recent_information_null_flavor
-			.as_deref(),
 		fulfil_expedited: report.fulfil_expedited_criteria.unwrap_or(false),
 		additional_documents_available: report.additional_documents_available,
 		worldwide_unique_id: report.worldwide_unique_id.as_deref(),

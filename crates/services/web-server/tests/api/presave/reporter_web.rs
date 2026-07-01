@@ -6,8 +6,8 @@ use serde_json::json;
 use serial_test::serial;
 
 #[tokio::test]
-async fn test_reporter_presave_does_not_store_mfds_qualification_detail(
-) -> Result<()> {
+async fn test_reporter_presave_round_trips_mfds_qualification_detail() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -33,10 +33,7 @@ async fn test_reporter_presave_does_not_store_mfds_qualification_detail(
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	let reporter_id = data_id(&value)?;
-	assert!(
-		value["data"].get("qualification_kr1").is_none(),
-		"reporter presave response must not expose case-only qualification_kr1: {value:?}"
-	);
+	assert_eq!(value["data"]["qualification_kr1"].as_str(), Some("1"));
 
 	let (status, value) = request_json(
 		&app,
@@ -51,10 +48,7 @@ async fn test_reporter_presave_does_not_store_mfds_qualification_detail(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert!(
-		value["data"].get("qualification_kr1").is_none(),
-		"reporter presave patch response must not expose case-only qualification_kr1: {value:?}"
-	);
+	assert_eq!(value["data"]["qualification_kr1"].as_str(), Some("2"));
 
 	let (status, value) = request_json(
 		&app,
@@ -71,17 +65,14 @@ async fn test_reporter_presave_does_not_store_mfds_qualification_detail(
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(value["data"]["qualification"].as_str(), Some("1"));
-	assert!(
-		value["data"].get("qualification_kr1").is_none(),
-		"reporter presave clear response must not expose case-only qualification_kr1: {value:?}"
-	);
+	assert_eq!(value["data"]["qualification_kr1"].as_str(), Some(""));
 
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_reporter_presave_ignores_mfds_qualification_detail_input() -> Result<()>
+async fn test_reporter_presave_accepts_mfds_qualification_detail_input() -> Result<()>
 {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -105,10 +96,7 @@ async fn test_reporter_presave_ignores_mfds_qualification_detail_input() -> Resu
 	)
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
-	assert!(
-		value["data"].get("qualification_kr1").is_none(),
-		"reporter presave should ignore case-only qualification_kr1 input: {value:?}"
-	);
+	assert_eq!(value["data"]["qualification_kr1"].as_str(), Some("1"));
 
 	Ok(())
 }

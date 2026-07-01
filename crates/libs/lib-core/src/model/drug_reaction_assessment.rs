@@ -208,22 +208,11 @@ impl DrugReactionAssessmentBmc {
 	}
 
 	pub async fn get(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
 	) -> Result<DrugReactionAssessment> {
-		let sql = format!("SELECT * FROM {} WHERE id = $1", Self::TABLE);
-		let entity = mm
-			.dbx()
-			.fetch_optional(
-				sqlx::query_as::<_, DrugReactionAssessment>(&sql).bind(id),
-			)
-			.await?
-			.ok_or(crate::model::Error::EntityUuidNotFound {
-				entity: Self::TABLE,
-				id,
-			})?;
-		Ok(entity)
+		base_uuid::get::<Self, _>(ctx, mm, id).await
 	}
 
 	pub async fn list(
@@ -236,33 +225,31 @@ impl DrugReactionAssessmentBmc {
 	}
 
 	pub async fn list_by_drug(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		drug_id: Uuid,
 	) -> Result<Vec<DrugReactionAssessment>> {
-		let sql = format!("SELECT * FROM {} WHERE drug_id = $1", Self::TABLE);
-		let entities = mm
-			.dbx()
-			.fetch_all(
-				sqlx::query_as::<_, DrugReactionAssessment>(&sql).bind(drug_id),
-			)
-			.await?;
-		Ok(entities)
+		let filter = DrugReactionAssessmentFilter {
+			drug_id: Some(OpValsValue::from(vec![modql::filter::OpValValue::Eq(
+				serde_json::json!(drug_id),
+			)])),
+			..Default::default()
+		};
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(vec![filter]), None).await
 	}
 
 	pub async fn list_by_reaction(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		reaction_id: Uuid,
 	) -> Result<Vec<DrugReactionAssessment>> {
-		let sql = format!("SELECT * FROM {} WHERE reaction_id = $1", Self::TABLE);
-		let entities = mm
-			.dbx()
-			.fetch_all(
-				sqlx::query_as::<_, DrugReactionAssessment>(&sql).bind(reaction_id),
-			)
-			.await?;
-		Ok(entities)
+		let filter = DrugReactionAssessmentFilter {
+			reaction_id: Some(OpValsValue::from(vec![
+				modql::filter::OpValValue::Eq(serde_json::json!(reaction_id)),
+			])),
+			..Default::default()
+		};
+		base_uuid::list::<Self, _, _>(ctx, mm, Some(vec![filter]), None).await
 	}
 
 	pub async fn get_by_drug_and_reaction(

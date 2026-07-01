@@ -1,3 +1,4 @@
+use crate::ctx::Ctx;
 use crate::model::{ModelManager, Result};
 use crate::validation::{
 	has_any_primary_source_content, has_text, is_fda_ind_message_receiver,
@@ -37,6 +38,7 @@ pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	authority: RegulatoryAuthority,
 	mm: &ModelManager,
+	ctx: &Ctx,
 	validation_ctx: &ValidationContext,
 	fda_ctx: Option<&FdaValidationContext>,
 	mfds_ctx: Option<&MfdsValidationContext>,
@@ -46,7 +48,7 @@ pub(crate) async fn collect(
 		RegulatoryAuthority::Ich => {}
 		RegulatoryAuthority::Fda => {
 			if let Some(fda_ctx) = fda_ctx {
-				collect_fda_issues(mm, validation_ctx, fda_ctx, issues).await?;
+				collect_fda_issues(ctx, mm, validation_ctx, fda_ctx, issues).await?;
 			}
 		}
 		RegulatoryAuthority::Mfds => {
@@ -146,7 +148,7 @@ pub(crate) fn collect_ich_issues(
 			"ICH.C.1.2.REQUIRED",
 			"safetyReportIdentification.transmissionDate",
 			transmission_date,
-			report.transmission_date_null_flavor.as_deref(),
+			None,
 			RuleFacts::default(),
 		);
 		let transmission_date_for_compare =
@@ -174,9 +176,7 @@ pub(crate) fn collect_ich_issues(
 			"ICH.C.1.4.REQUIRED",
 			"safetyReportIdentification.dateFirstReceivedFromSource",
 			date_first_received.as_deref(),
-			report
-				.date_first_received_from_source_null_flavor
-				.as_deref(),
+			None,
 			RuleFacts::default(),
 		);
 		if is_future_date(report.date_first_received_from_source) {
@@ -194,9 +194,7 @@ pub(crate) fn collect_ich_issues(
 			"ICH.C.1.5.REQUIRED",
 			"safetyReportIdentification.dateOfMostRecentInformation",
 			date_most_recent.as_deref(),
-			report
-				.date_of_most_recent_information_null_flavor
-				.as_deref(),
+			None,
 			RuleFacts::default(),
 		);
 		if is_future_date(report.date_of_most_recent_information) {
@@ -454,6 +452,7 @@ fn push_missing_safety_report_field_issues(issues: &mut Vec<ValidationIssue>) {
 }
 
 pub(crate) async fn collect_fda_issues(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	validation_ctx: &ValidationContext,
 	fda_ctx: &FdaValidationContext,
@@ -547,7 +546,7 @@ pub(crate) async fn collect_fda_issues(
 
 	if has_ind_number {
 		let has_cross_reported = if let Some(study) = fda_ctx.studies.first() {
-			list_study_registrations(mm, study.id)
+			list_study_registrations(ctx, mm, study.id)
 				.await?
 				.iter()
 				.any(|reg| !reg.registration_number.trim().is_empty())

@@ -193,7 +193,6 @@ async fn seed_cioms_case_data(
 			safety_report_id: Some(safety_report_id.to_string()),
 			version: None,
 			transmission_date: Some("20260528000000".to_string()),
-			transmission_date_null_flavor: None,
 			report_type: lib_core::model::safety_report::PatchValue::Value(
 				"1".to_string(),
 			),
@@ -202,13 +201,11 @@ async fn seed_cioms_case_data(
 				Month::May,
 				20,
 			)?),
-			date_first_received_from_source_null_flavor: None,
 			date_of_most_recent_information: Some(Date::from_calendar_date(
 				2026,
 				Month::May,
 				27,
 			)?),
-			date_of_most_recent_information_null_flavor: None,
 			fulfil_expedited_criteria:
 				lib_core::model::safety_report::PatchValue::Value(true),
 			fulfil_expedited_criteria_null_flavor: None,

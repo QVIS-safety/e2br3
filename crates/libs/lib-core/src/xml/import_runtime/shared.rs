@@ -359,7 +359,7 @@ pub(crate) fn extract_safety_report_id(xml: &[u8]) -> Result<String> {
 
 	let candidates = xpath
 		.findvalues(
-			"//hl7:id[@root='2.16.840.1.113883.3.989.2.1.3.1']/@extension",
+			"//hl7:investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/hl7:id[@root='2.16.840.1.113883.3.989.2.1.3.1']/@extension",
 			None,
 		)
 		.map_err(|_| Error::InvalidXml {
@@ -382,7 +382,30 @@ pub(crate) fn extract_safety_report_id(xml: &[u8]) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+	use super::extract_safety_report_id;
 	use crate::xml::import_runtime::helpers::d::parse_patient_death;
+
+	#[test]
+	fn extract_safety_report_id_prefers_investigation_event_c_1_1() {
+		let xml = br#"
+			<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3">
+				<PORR_IN049016UV>
+					<id root="2.16.840.1.113883.3.989.2.1.3.1" extension="MESSAGE-ID"/>
+					<controlActProcess>
+						<subject>
+							<investigationEvent classCode="INVSTG" moodCode="EVN">
+								<id root="2.16.840.1.113883.3.989.2.1.3.1" extension="CASE-C-1-1"/>
+							</investigationEvent>
+						</subject>
+					</controlActProcess>
+				</PORR_IN049016UV>
+			</MCCI_IN200100UV01>
+		"#;
+
+		let extracted = extract_safety_report_id(xml).expect("extract C.1.1");
+
+		assert_eq!(extracted, "CASE-C-1-1");
+	}
 
 	#[test]
 	fn parse_patient_death_reads_reported_and_autopsy_comments() {

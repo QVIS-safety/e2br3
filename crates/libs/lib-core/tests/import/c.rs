@@ -14,7 +14,7 @@ fn import_c_section_all_fields_from_scenario6() {
 		.expect("parse")
 		.expect("section C should exist");
 
-	assert_eq!(report.transmission_date, "20140614000000");
+	assert_eq!(report.transmission_date, "20140614151617");
 	assert_eq!(report.report_type, "1");
 	assert_eq!(report.date_first_received_from_source, date(2022, 6, 14));
 	assert_eq!(report.date_of_most_recent_information, date(2022, 6, 14));

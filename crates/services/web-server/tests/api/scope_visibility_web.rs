@@ -223,9 +223,11 @@ async fn create_case(
 		"/api/cases".to_string(),
 		Some(json!({
 			"data": {
-				"safety_report_id": safety_report_id,
+				"safetyReportIdentification": {
+					"safetyReportId": safety_report_id
+				},
 				"status": "draft",
-				"dg_prd_key": dg_prd_key
+				"dgPrdKey": dg_prd_key
 			}
 		})),
 	)

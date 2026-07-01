@@ -203,13 +203,14 @@ async fn create_case(
 async fn create_case_with_profile(
 	app: &axum::Router,
 	cookie: &str,
-	org_id: Uuid,
+	_org_id: Uuid,
 	_appendix: &str,
 ) -> Result<Uuid> {
 	let body = json!({
 		"data": {
-			"organization_id": org_id,
-			"safety_report_id": format!("SUB-{}", Uuid::new_v4()),
+			"safetyReportIdentification": {
+				"safetyReportId": format!("SUB-{}", Uuid::new_v4())
+			},
 			"status": "draft"
 		}
 	});

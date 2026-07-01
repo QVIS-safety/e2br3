@@ -12,7 +12,6 @@ CREATE TABLE safety_report_identification (
 
     -- C.1.2 - Date of Creation (MANDATORY)
     transmission_date VARCHAR(20) CHECK (transmission_date IS NULL OR transmission_date ~ '^[0-9]{14}([+-][0-9]{4})?$'),
-    transmission_date_null_flavor VARCHAR(4) CHECK (transmission_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.3 - Type of Report (MANDATORY - E2B(R3) codes)
     report_type VARCHAR(1) CHECK (report_type IS NULL OR report_type IN ('1', '2', '3', '4')),
@@ -20,11 +19,9 @@ CREATE TABLE safety_report_identification (
 
     -- C.1.4 - Date Report Was First Received from Source (MANDATORY)
     date_first_received_from_source DATE,
-    date_first_received_from_source_null_flavor VARCHAR(4) CHECK (date_first_received_from_source_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.5 - Date of Most Recent Information (MANDATORY)
     date_of_most_recent_information DATE,
-    date_of_most_recent_information_null_flavor VARCHAR(4) CHECK (date_of_most_recent_information_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.7 - Fulfils Expedited Criteria (MANDATORY)
     fulfil_expedited_criteria BOOLEAN,

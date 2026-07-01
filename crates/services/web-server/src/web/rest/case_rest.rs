@@ -13,6 +13,7 @@ use lib_core::model::case::{
 	CaseForCreate as InternalCaseForCreate, CaseForUpdate as InternalCaseForUpdate,
 	CaseLinkOption, CaseListViewRow,
 };
+use lib_core::model::case_numbering::generate_case_number;
 use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SafetyReportIdentificationForCreate,
@@ -376,19 +377,35 @@ pub async fn create_case_guarded(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_CREATE)?;
 	let ParamsForCreate { data } = params;
-	let safety_report_id = data
+	let provided_safety_report_id = data
 		.safety_report_identification
 		.as_ref()
 		.and_then(|value| value.safety_report_id.as_deref())
 		.map(str::trim)
 		.filter(|value| !value.is_empty())
+		.map(ToOwned::to_owned);
+	let generated_case_number = if provided_safety_report_id.is_none() {
+		Some(
+			generate_case_number(&ctx, &mm)
+				.await
+				.map_err(Error::Model)?,
+		)
+	} else {
+		None
+	};
+	let safety_report_id = provided_safety_report_id
+		.or_else(|| {
+			generated_case_number
+				.as_ref()
+				.map(|value| value.safety_report_id.clone())
+		})
 		.ok_or_else(|| Error::BadRequest {
 			message: "safetyReportIdentification.safetyReportId is required"
 				.to_string(),
-		})?
-		.to_string();
+		})?;
 	let next_version = next_case_version(&ctx, &mm, &safety_report_id).await?;
-	let worldwide_unique_id = None;
+	let worldwide_unique_id =
+		generated_case_number.map(|value| value.worldwide_unique_id);
 	let data = to_internal_case_for_create(&ctx, data);
 	validate_case_create_payload(&data)?;
 
@@ -405,12 +422,9 @@ pub async fn create_case_guarded(
 			safety_report_id: Some(safety_report_id),
 			version: Some(next_version),
 			transmission_date: Some(creation_timestamp),
-			transmission_date_null_flavor: None,
 			report_type: None,
 			date_first_received_from_source: None,
-			date_first_received_from_source_null_flavor: None,
 			date_of_most_recent_information: None,
-			date_of_most_recent_information_null_flavor: None,
 			fulfil_expedited_criteria: None,
 			fulfil_expedited_criteria_null_flavor: None,
 			local_criteria_report_type: None,
@@ -704,14 +718,6 @@ pub async fn mark_case_validated_by_validator(
 	headers: axum::http::HeaderMap,
 ) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)> {
 	let ctx = ctx_w.0;
-	if !ctx.is_system_admin() {
-		return Err(Error::BadRequest {
-			message:
-				"only validator service/system administrator can mark case validated"
-					.to_string(),
-		});
-	}
-
 	let required_token =
 		std::env::var("E2BR3_VALIDATOR_TOKEN").map_err(|_| Error::BadRequest {
 			message: "validator token is not configured".to_string(),
@@ -725,6 +731,8 @@ pub async fn mark_case_validated_by_validator(
 			message: "invalid validator token".to_string(),
 		});
 	}
+	require_permission(&ctx, CASE_UPDATE)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, id).await?;
 
 	let report =
 		validate_case_for_authority(&ctx, &mm, id, RegulatoryAuthority::Fda).await?;

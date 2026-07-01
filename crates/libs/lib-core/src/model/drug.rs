@@ -1031,23 +1031,43 @@ impl DrugInformationBmc {
 	}
 
 	pub async fn get(
-		_ctx: &Ctx,
+		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
 	) -> Result<DrugInformation> {
+		mm.dbx().begin_txn().await?;
+		set_full_context_dbx_or_rollback(
+			mm.dbx(),
+			ctx.user_id(),
+			ctx.organization_id(),
+			ctx.role(),
+		)
+		.await?;
 		let sql = format!(
 			"SELECT * FROM {} WHERE id = $1 AND deleted = false",
 			Self::TABLE
 		);
-		let drug = mm
+		let result = mm
 			.dbx()
 			.fetch_optional(sqlx::query_as::<_, DrugInformation>(&sql).bind(id))
-			.await?
-			.ok_or(crate::model::Error::EntityUuidNotFound {
-				entity: Self::TABLE,
-				id,
-			})?;
-		Ok(drug)
+			.await;
+		match result {
+			Ok(Some(drug)) => {
+				mm.dbx().commit_txn().await?;
+				Ok(drug)
+			}
+			Ok(None) => {
+				mm.dbx().rollback_txn().await?;
+				Err(crate::model::Error::EntityUuidNotFound {
+					entity: Self::TABLE,
+					id,
+				})
+			}
+			Err(err) => {
+				let _ = mm.dbx().rollback_txn().await;
+				Err(err.into())
+			}
+		}
 	}
 
 	pub async fn update(

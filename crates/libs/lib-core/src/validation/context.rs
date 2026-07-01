@@ -5,23 +5,28 @@ use crate::model::drug::{
 	DosageInformation, DrugActiveSubstance, DrugIndication, DrugInformation,
 };
 use crate::model::drug_reaction_assessment::DrugReactionAssessment;
-use crate::model::message_header::MessageHeader;
+use crate::model::message_header::{MessageHeader, MessageHeaderBmc};
 use crate::model::narrative::{
-	CaseSummaryInformation, NarrativeInformation, SenderDiagnosis,
+	CaseSummaryInformation, NarrativeInformation, NarrativeInformationBmc,
+	SenderDiagnosis,
 };
 use crate::model::parent_history::{ParentMedicalHistory, ParentPastDrugHistory};
 use crate::model::patient::{
 	AutopsyCauseOfDeath, MedicalHistoryEpisode, ParentInformation, PastDrugHistory,
 	PatientDeathInformation, PatientIdentifier, PatientInformation,
-	ReportedCauseOfDeath,
+	PatientInformationBmc, ReportedCauseOfDeath,
 };
 use crate::model::reaction::Reaction;
 use crate::model::safety_report::{
-	DocumentsHeldBySender, PrimarySource, SafetyReportIdentification,
-	SenderInformation, StudyInformation,
+	DocumentsHeldBySender, PrimarySource, PrimarySourceBmc, PrimarySourceFilter,
+	SafetyReportIdentification, SafetyReportIdentificationBmc, SenderInformation,
+	SenderInformationBmc, SenderInformationFilter, StudyInformation,
 };
+use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::test_result::TestResult;
 use crate::model::{ModelManager, Result};
+use modql::filter::{OpValValue, OpValsValue};
+use serde_json::json;
 use sqlx::types::Uuid;
 
 #[derive(Debug, Clone)]
@@ -61,13 +66,14 @@ pub async fn load_base_validation_context(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<ValidationContext> {
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 	let (case, safety_report, message_header, sender, patient, narrative) = tokio::try_join!(
 		CaseBmc::get(ctx, mm, case_id),
-		get_safety_report_optional(mm, case_id),
-		get_message_header_optional(mm, case_id),
-		get_sender_optional(mm, case_id),
-		get_patient_optional(mm, case_id),
-		get_narrative_optional(mm, case_id),
+		get_safety_report_optional(ctx, mm, case_id),
+		get_message_header_optional(ctx, mm, case_id),
+		get_sender_optional(ctx, mm, case_id),
+		get_patient_optional(ctx, mm, case_id),
+		get_narrative_optional(ctx, mm, case_id),
 	)?;
 
 	let (sender_diagnoses, case_summaries) = tokio::try_join!(
@@ -101,7 +107,7 @@ pub async fn load_base_validation_context(
 		tests,
 		drugs,
 	) = tokio::try_join!(
-		list_primary_sources(mm, case_id),
+		list_primary_sources(ctx, mm, case_id),
 		list_documents_held_by_sender(mm, case_id),
 		list_other_case_identifiers(mm, case_id),
 		list_studies(mm, case_id),
@@ -151,61 +157,65 @@ pub async fn load_base_validation_context(
 }
 
 async fn get_safety_report_optional(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Option<SafetyReportIdentification>> {
-	let sql = "SELECT * FROM safety_report_identification WHERE case_id = $1";
-	mm.dbx()
-		.fetch_optional(
-			sqlx::query_as::<_, SafetyReportIdentification>(sql).bind(case_id),
-		)
-		.await
-		.map_err(Into::into)
+	match SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(value) => Ok(Some(value)),
+		Err(crate::model::Error::EntityUuidNotFound { .. }) => Ok(None),
+		Err(err) => Err(err),
+	}
 }
 
 async fn get_message_header_optional(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Option<MessageHeader>> {
-	let sql = "SELECT * FROM message_headers WHERE case_id = $1";
-	mm.dbx()
-		.fetch_optional(sqlx::query_as::<_, MessageHeader>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+	match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(value) => Ok(Some(value)),
+		Err(crate::model::Error::EntityUuidNotFound { .. }) => Ok(None),
+		Err(err) => Err(err),
+	}
 }
 
 async fn get_patient_optional(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Option<PatientInformation>> {
-	let sql = "SELECT * FROM patient_information WHERE case_id = $1";
-	mm.dbx()
-		.fetch_optional(sqlx::query_as::<_, PatientInformation>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+	match PatientInformationBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(value) => Ok(Some(value)),
+		Err(crate::model::Error::EntityUuidNotFound { .. }) => Ok(None),
+		Err(err) => Err(err),
+	}
 }
 
 async fn get_narrative_optional(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Option<NarrativeInformation>> {
-	let sql = "SELECT * FROM narrative_information WHERE case_id = $1";
-	mm.dbx()
-		.fetch_optional(sqlx::query_as::<_, NarrativeInformation>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+	match NarrativeInformationBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(value) => Ok(Some(value)),
+		Err(crate::model::Error::EntityUuidNotFound { .. }) => Ok(None),
+		Err(err) => Err(err),
+	}
 }
 
 async fn list_primary_sources(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Vec<PrimarySource>> {
-	let sql =
-		"SELECT * FROM primary_sources WHERE case_id = $1 ORDER BY sequence_number";
-	mm.dbx()
-		.fetch_all(sqlx::query_as::<_, PrimarySource>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+	let filter = PrimarySourceFilter {
+		case_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(case_id))])),
+		..Default::default()
+	};
+	let mut rows = PrimarySourceBmc::list(ctx, mm, Some(vec![filter]), None).await?;
+	rows.sort_by_key(|row| row.sequence_number);
+	Ok(rows)
 }
 
 async fn list_other_case_identifiers(
@@ -470,12 +480,19 @@ async fn list_studies(
 }
 
 async fn get_sender_optional(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Option<SenderInformation>> {
-	let sql = "SELECT * FROM sender_information WHERE case_id = $1 ORDER BY created_at LIMIT 1";
-	mm.dbx()
-		.fetch_optional(sqlx::query_as::<_, SenderInformation>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+	let mut senders = SenderInformationBmc::list(
+		ctx,
+		mm,
+		Some(vec![SenderInformationFilter {
+			case_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(case_id))])),
+		}]),
+		None,
+	)
+	.await?;
+	senders.sort_by_key(|sender| sender.created_at);
+	Ok(senders.into_iter().next())
 }

@@ -1,5 +1,7 @@
+use crate::ctx::Ctx;
 use crate::model::drug::DrugActiveSubstance;
 use crate::model::safety_report::{SenderInformation, StudyInformation};
+use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::{ModelManager, Result};
 use sqlx::types::Uuid;
 
@@ -42,20 +44,22 @@ pub struct MfdsValidationContext {
 }
 
 pub async fn load_mfds_validation_context(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<MfdsValidationContext> {
 	Ok(MfdsValidationContext {
-		senders: list_senders_by_case(mm, case_id).await?,
-		studies: list_studies_by_case(mm, case_id).await?,
-		active_substances: list_active_substances_by_case(mm, case_id).await?,
-		relatedness: list_relatedness_by_case(mm, case_id).await?,
-		past_drugs: list_past_drugs_by_case(mm, case_id).await?,
-		parent_past_drugs: list_parent_past_drugs_by_case(mm, case_id).await?,
+		senders: list_senders_by_case(ctx, mm, case_id).await?,
+		studies: list_studies_by_case(ctx, mm, case_id).await?,
+		active_substances: list_active_substances_by_case(ctx, mm, case_id).await?,
+		relatedness: list_relatedness_by_case(ctx, mm, case_id).await?,
+		past_drugs: list_past_drugs_by_case(ctx, mm, case_id).await?,
+		parent_past_drugs: list_parent_past_drugs_by_case(ctx, mm, case_id).await?,
 	})
 }
 
 async fn list_active_substances_by_case(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Vec<DrugActiveSubstance>> {
@@ -66,13 +70,18 @@ JOIN drug_information di ON di.id = das.drug_id
 WHERE di.case_id = $1
 ORDER BY di.sequence_number, das.sequence_number
 "#;
-	mm.dbx()
+	mm.dbx().begin_txn().await?;
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+	let rows = mm
+		.dbx()
 		.fetch_all(sqlx::query_as::<_, DrugActiveSubstance>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(rows)
 }
 
 async fn list_relatedness_by_case(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Vec<RelatednessWithDrug>> {
@@ -89,13 +98,18 @@ JOIN drug_information di ON di.id = dra.drug_id
 WHERE di.case_id = $1
 ORDER BY di.sequence_number, ra.sequence_number
 "#;
-	mm.dbx()
+	mm.dbx().begin_txn().await?;
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+	let rows = mm
+		.dbx()
 		.fetch_all(sqlx::query_as::<_, RelatednessWithDrug>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(rows)
 }
 
 async fn list_past_drugs_by_case(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Vec<PastDrugByCase>> {
@@ -109,13 +123,18 @@ JOIN patient_information pi ON pi.id = pdh.patient_id
 WHERE pi.case_id = $1
 ORDER BY pdh.sequence_number
 "#;
-	mm.dbx()
+	mm.dbx().begin_txn().await?;
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+	let rows = mm
+		.dbx()
 		.fetch_all(sqlx::query_as::<_, PastDrugByCase>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(rows)
 }
 
 async fn list_parent_past_drugs_by_case(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Vec<ParentPastDrugByCase>> {
@@ -132,32 +151,46 @@ JOIN patient_information pi ON pi.id = parent.patient_id
 WHERE pi.case_id = $1
 ORDER BY parent.created_at, pph.sequence_number
 "#;
-	mm.dbx()
+	mm.dbx().begin_txn().await?;
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+	let rows = mm
+		.dbx()
 		.fetch_all(sqlx::query_as::<_, ParentPastDrugByCase>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(rows)
 }
 
 async fn list_senders_by_case(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Vec<SenderInformation>> {
 	let sql =
 		"SELECT * FROM sender_information WHERE case_id = $1 ORDER BY created_at";
-	mm.dbx()
+	mm.dbx().begin_txn().await?;
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+	let rows = mm
+		.dbx()
 		.fetch_all(sqlx::query_as::<_, SenderInformation>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(rows)
 }
 
 async fn list_studies_by_case(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Vec<StudyInformation>> {
 	let sql =
 		"SELECT * FROM study_information WHERE case_id = $1 ORDER BY created_at, id";
-	mm.dbx()
+	mm.dbx().begin_txn().await?;
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+	let rows = mm
+		.dbx()
 		.fetch_all(sqlx::query_as::<_, StudyInformation>(sql).bind(case_id))
-		.await
-		.map_err(Into::into)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(rows)
 }

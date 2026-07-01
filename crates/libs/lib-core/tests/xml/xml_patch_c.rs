@@ -18,18 +18,15 @@ fn patch_c_section_updates_values() {
 	let patch = CSafetyReportPatch {
 		report_unique_id: "SR-TEST-123",
 		transmission_date: Some("20240115"),
-		transmission_date_null_flavor: None,
 		transmission_date_value: None,
 		transmission_date_time: None,
 		report_type: "1",
 		date_first_received: Some(
 			Date::from_calendar_date(2024, Month::January, 10).unwrap(),
 		),
-		date_first_received_null_flavor: None,
 		date_most_recent: Some(
 			Date::from_calendar_date(2024, Month::January, 15).unwrap(),
 		),
-		date_most_recent_null_flavor: None,
 		fulfil_expedited: true,
 		additional_documents_available: None,
 		worldwide_unique_id: Some("WW-TEST-999"),
@@ -92,18 +89,15 @@ fn patch_c_prefers_transmission_date_value_for_c1_2() {
 	let patch = CSafetyReportPatch {
 		report_unique_id: "SR-TEST-124",
 		transmission_date: Some("20240115"),
-		transmission_date_null_flavor: None,
 		transmission_date_value: Some("20240102030405"),
 		transmission_date_time: None,
 		report_type: "1",
 		date_first_received: Some(
 			Date::from_calendar_date(2024, Month::January, 10).unwrap(),
 		),
-		date_first_received_null_flavor: None,
 		date_most_recent: Some(
 			Date::from_calendar_date(2024, Month::January, 15).unwrap(),
 		),
-		date_most_recent_null_flavor: None,
 		fulfil_expedited: true,
 		additional_documents_available: None,
 		worldwide_unique_id: None,
@@ -166,18 +160,15 @@ fn patch_c_keeps_investigation_event_order_when_adding_components() {
 	let patch = CSafetyReportPatch {
 		report_unique_id: "CASE-1",
 		transmission_date: Some("20240115"),
-		transmission_date_null_flavor: None,
 		transmission_date_value: None,
 		transmission_date_time: None,
 		report_type: "1",
 		date_first_received: Some(
 			Date::from_calendar_date(2024, Month::January, 10).unwrap(),
 		),
-		date_first_received_null_flavor: None,
 		date_most_recent: Some(
 			Date::from_calendar_date(2024, Month::January, 15).unwrap(),
 		),
-		date_most_recent_null_flavor: None,
 		fulfil_expedited: true,
 		additional_documents_available: None,
 		worldwide_unique_id: None,
@@ -260,18 +251,15 @@ fn patch_c_keeps_order_when_adding_local_criteria_component() {
 	let patch = CSafetyReportPatch {
 		report_unique_id: "CASE-2",
 		transmission_date: Some("20240115"),
-		transmission_date_null_flavor: None,
 		transmission_date_value: None,
 		transmission_date_time: None,
 		report_type: "2",
 		date_first_received: Some(
 			Date::from_calendar_date(2024, Month::January, 10).unwrap(),
 		),
-		date_first_received_null_flavor: None,
 		date_most_recent: Some(
 			Date::from_calendar_date(2024, Month::January, 15).unwrap(),
 		),
-		date_most_recent_null_flavor: None,
 		fulfil_expedited: true,
 		additional_documents_available: None,
 		worldwide_unique_id: None,
@@ -362,18 +350,15 @@ fn patch_c_exports_sender_health_professional_type_kr1() {
 	let patch = CSafetyReportPatch {
 		report_unique_id: "CASE-3",
 		transmission_date: Some("20240115"),
-		transmission_date_null_flavor: None,
 		transmission_date_value: None,
 		transmission_date_time: None,
 		report_type: "2",
 		date_first_received: Some(
 			Date::from_calendar_date(2024, Month::January, 10).unwrap(),
 		),
-		date_first_received_null_flavor: None,
 		date_most_recent: Some(
 			Date::from_calendar_date(2024, Month::January, 15).unwrap(),
 		),
-		date_most_recent_null_flavor: None,
 		fulfil_expedited: true,
 		additional_documents_available: None,
 		worldwide_unique_id: None,

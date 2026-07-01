@@ -162,12 +162,9 @@ async fn import_c_1_safety_report(
 					safety_report_id,
 					version,
 					transmission_date,
-					transmission_date_null_flavor,
 					report_type,
 					date_first_received_from_source,
-					date_first_received_from_source_null_flavor,
 					date_of_most_recent_information,
-					date_of_most_recent_information_null_flavor,
 					fulfil_expedited_criteria,
 					local_criteria_report_type,
 					combination_product_report_indicator,
@@ -181,18 +178,15 @@ async fn import_c_1_safety_report(
 					updated_at,
 					created_by
 				) VALUES (
-					$1,$2,$3,$4,NULL,$5,$6,NULL,$7,NULL,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW(),NOW(),$17
+					$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW(),NOW(),$17
 				)
 				ON CONFLICT (case_id) DO UPDATE SET
 					safety_report_id = EXCLUDED.safety_report_id,
 					version = EXCLUDED.version,
 					transmission_date = EXCLUDED.transmission_date,
-					transmission_date_null_flavor = NULL,
 					report_type = EXCLUDED.report_type,
 					date_first_received_from_source = EXCLUDED.date_first_received_from_source,
-					date_first_received_from_source_null_flavor = NULL,
 					date_of_most_recent_information = EXCLUDED.date_of_most_recent_information,
-					date_of_most_recent_information_null_flavor = NULL,
 					fulfil_expedited_criteria = EXCLUDED.fulfil_expedited_criteria,
 					local_criteria_report_type = EXCLUDED.local_criteria_report_type,
 					combination_product_report_indicator = EXCLUDED.combination_product_report_indicator,

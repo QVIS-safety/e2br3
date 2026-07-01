@@ -1772,15 +1772,18 @@ async fn test_primary_source_supports_regional_rp_fields() -> Result<()> {
 	create_safety_report(&app, &cookie, case_id).await?;
 
 	let body = json!({"data": {
-		"case_id": case_id,
-		"sequence_number": 1,
-		"reporter_given_name": "Mina",
-		"organization": "Seoul General Hospital",
-		"country_code": "KR",
-		"email": "mina.initial@example.test",
-		"qualification": "3",
-		"qualification_kr1": "1",
-		"primary_source_regulatory": "1"
+			"case_id": case_id,
+			"sequence_number": 1,
+			"reporter_given_name": "Mina",
+			"reporter_name_null_flavor": "MSK",
+			"organization": "Seoul General Hospital",
+			"reporter_address_null_flavor": "ASKU",
+			"country_code": "KR",
+			"email": "mina.initial@example.test",
+			"qualification": "3",
+			"qualification_null_flavor": "UNK",
+			"qualification_kr1": "1",
+			"primary_source_regulatory": "1"
 	}});
 	let (status, body) = post_json(
 		&app,
@@ -1797,10 +1800,13 @@ async fn test_primary_source_supports_regional_rp_fields() -> Result<()> {
 	);
 	let value: Value = serde_json::from_slice(&body)?;
 	assert_eq!(value["data"]["reporter_given_name"], "Mina");
+	assert_eq!(value["data"]["reporter_name_null_flavor"], "MSK");
 	assert_eq!(value["data"]["organization"], "Seoul General Hospital");
+	assert_eq!(value["data"]["reporter_address_null_flavor"], "ASKU");
 	assert_eq!(value["data"]["country_code"], "KR");
 	assert_eq!(value["data"]["email"], "mina.initial@example.test");
 	assert_eq!(value["data"]["qualification"], "3");
+	assert_eq!(value["data"]["qualification_null_flavor"], "UNK");
 	assert_eq!(value["data"]["qualification_kr1"], "1");
 	assert_eq!(value["data"]["primary_source_regulatory"], "1");
 	let primary_source_id = extract_id(&body)?;
@@ -1830,7 +1836,10 @@ async fn test_primary_source_supports_regional_rp_fields() -> Result<()> {
 
 	let body = json!({"data": {
 		"email": "mina.updated@example.test",
+		"reporter_name_null_flavor": "NASK",
+		"reporter_address_null_flavor": "MSK",
 		"qualification_kr1": "2",
+		"qualification_null_flavor": "UNK",
 		"primary_source_regulatory": "2"
 	}});
 	let (status, body) = put_json_with_audit_reason(
@@ -1846,8 +1855,31 @@ async fn test_primary_source_supports_regional_rp_fields() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
 	let value: Value = serde_json::from_slice(&body)?;
 	assert_eq!(value["data"]["email"], "mina.updated@example.test");
+	assert_eq!(value["data"]["reporter_name_null_flavor"], "NASK");
+	assert_eq!(value["data"]["reporter_address_null_flavor"], "MSK");
 	assert_eq!(value["data"]["qualification_kr1"], "2");
+	assert_eq!(value["data"]["qualification_null_flavor"], "UNK");
 	assert_eq!(value["data"]["primary_source_regulatory"], "2");
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/safety-report/primary-sources"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+	let value: Value = serde_json::from_slice(&body)?;
+	let sources = value["data"]
+		.as_array()
+		.ok_or("missing primary source list")?;
+	let primary_source_id_str = primary_source_id.to_string();
+	let saved = sources
+		.iter()
+		.find(|source| source["id"].as_str() == Some(primary_source_id_str.as_str()))
+		.ok_or("missing saved primary source")?;
+	assert_eq!(saved["reporter_name_null_flavor"], "NASK");
+	assert_eq!(saved["reporter_address_null_flavor"], "MSK");
+	assert_eq!(saved["qualification_null_flavor"], "UNK");
 
 	Ok(())
 }

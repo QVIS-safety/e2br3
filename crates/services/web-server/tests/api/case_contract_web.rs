@@ -1637,3 +1637,63 @@ async fn test_deleted_case_rejects_content_updates() -> Result<()> {
 
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn safety_report_rejects_c1_date_null_flavor_fields() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (create_status, create_body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safetyReportIdentification": {
+					"safetyReportId": format!("SR-C1-NF-{}", Uuid::new_v4())
+				},
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(create_status, StatusCode::CREATED, "{create_body:?}");
+	let case_id = create_body["data"]["id"]
+		.as_str()
+		.ok_or("missing created case id")?
+		.to_string();
+
+	let (update_status, update_body) = put_raw(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/safety-report"),
+		json!({
+			"data": {
+				"transmission_date_null_flavor": "NI",
+				"date_first_received_from_source_null_flavor": "NI",
+				"date_of_most_recent_information_null_flavor": "NI"
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(
+		update_status,
+		StatusCode::UNPROCESSABLE_ENTITY,
+		"{}",
+		String::from_utf8_lossy(&update_body)
+	);
+	let body_text = String::from_utf8_lossy(&update_body);
+	assert!(
+		body_text.contains("transmission_date_null_flavor")
+			|| body_text.contains("unknown field"),
+		"{}",
+		body_text
+	);
+
+	Ok(())
+}

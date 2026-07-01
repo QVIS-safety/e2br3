@@ -1,3 +1,4 @@
+use crate::ctx::Ctx;
 use crate::model::drug::DrugDeviceCharacteristic;
 use crate::model::{ModelManager, Result};
 use crate::validation::{
@@ -57,6 +58,7 @@ pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	authority: RegulatoryAuthority,
 	mm: &ModelManager,
+	ctx: &Ctx,
 	validation_ctx: &ValidationContext,
 	fda_ctx: Option<&FdaValidationContext>,
 	mfds_ctx: Option<&MfdsValidationContext>,
@@ -66,7 +68,7 @@ pub(crate) async fn collect(
 	match authority {
 		RegulatoryAuthority::Ich => {}
 		RegulatoryAuthority::Fda => {
-			collect_fda_issues(mm, validation_ctx, issues).await?
+			collect_fda_issues(ctx, mm, validation_ctx, issues).await?
 		}
 		RegulatoryAuthority::Mfds => {
 			if let Some(mfds_ctx) = mfds_ctx {
@@ -400,6 +402,7 @@ pub(crate) fn collect_ich_issues(
 }
 
 pub(crate) async fn collect_fda_issues(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
@@ -421,7 +424,7 @@ pub(crate) async fn collect_fda_issues(
 	let mut has_invalid_gk1a = false;
 
 	for drug in &validation_ctx.drugs {
-		let chars = list_drug_characteristics(mm, drug.id).await?;
+		let chars = list_drug_characteristics(ctx, mm, drug.id).await?;
 		let malfunction_this_drug = chars.iter().any(|ch| {
 			characteristic_code_matches(ch.code.as_deref(), "FDA.G.k.12.r.1")
 				&& is_truthy_characteristic(ch)
