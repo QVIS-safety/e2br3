@@ -53,12 +53,23 @@ cat > "${BIN_DIR}/psql" <<'SH'
 #!/usr/bin/env sh
 set -eu
 printf 'URL=%s\n' "$1" >> "${PSQL_LOG}"
+sql_file=""
 i=0
 for arg in "$@"; do
   i=$((i + 1))
   printf 'ARG_%02d=%s\n' "${i}" "${arg}" >> "${PSQL_LOG}"
+  if [ "${arg}" = "-f" ]; then
+    shift
+    sql_file="${1:-}"
+    break
+  fi
+  shift || true
 done
-cat >> "${PSQL_LOG}"
+if [ -n "${sql_file}" ]; then
+  cat "${sql_file}" >> "${PSQL_LOG}"
+else
+  cat >> "${PSQL_LOG}"
+fi
 SH
 chmod +x "${BIN_DIR}/psql"
 
@@ -77,6 +88,7 @@ grep -F "INSERT INTO iso_countries (code, name, active)" "${PSQL_LOG}" >/dev/nul
 grep -F "ON CONFLICT (code)" "${PSQL_LOG}" >/dev/null
 grep -F "UPDATE iso_countries AS country" "${PSQL_LOG}" >/dev/null
 grep -F "source_url=https://datahub.io/core/country-list/_r/-/data.csv" "${PSQL_LOG}" >/dev/null
+grep -F "\\copy staging_iso_countries(name, code) FROM '" "${PSQL_LOG}" >/dev/null
 grep -F "Loaded ISO countries from :source_url" "${PSQL_LOG}" >/dev/null
 
 if PATH="${BIN_DIR}:${PATH}" \

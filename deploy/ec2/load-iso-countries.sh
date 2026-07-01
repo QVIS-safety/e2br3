@@ -68,13 +68,13 @@ fi
 
 TMP_DIR=$(mktemp -d)
 CSV_FILE="${TMP_DIR}/iso-countries.csv"
+SQL_FILE="${TMP_DIR}/load-iso-countries.sql"
 trap 'rm -rf "${TMP_DIR}"' EXIT INT TERM
 
 echo "Downloading ISO country CSV: ${SOURCE_URL}"
 curl -fsSL -o "${CSV_FILE}" "${SOURCE_URL}"
 
-echo "Loading ISO countries into iso_countries..."
-psql "${SERVICE_DB_URL}" -v ON_ERROR_STOP=1 -v csv_file="${CSV_FILE}" -v source_url="${SOURCE_URL}" <<'SQL'
+cat > "${SQL_FILE}" <<'SQL'
 BEGIN;
 
 SELECT set_current_user_context('00000000-0000-0000-0000-000000000001'::uuid);
@@ -84,9 +84,12 @@ CREATE TEMP TABLE staging_iso_countries (
   name text NOT NULL,
   code text NOT NULL
 ) ON COMMIT DROP;
+SQL
 
-\copy staging_iso_countries(name, code) FROM :'csv_file' WITH (FORMAT csv, HEADER true)
+printf "\\copy staging_iso_countries(name, code) FROM '%s' WITH (FORMAT csv, HEADER true)\n\n" \
+  "$(printf "%s" "${CSV_FILE}" | sed "s/'/''/g")" >> "${SQL_FILE}"
 
+cat >> "${SQL_FILE}" <<'SQL'
 WITH normalized AS (
   SELECT DISTINCT ON (upper(trim(code)))
     upper(trim(code)) AS code,
@@ -134,5 +137,8 @@ COMMIT;
 
 \echo Loaded ISO countries from :source_url
 SQL
+
+echo "Loading ISO countries into iso_countries..."
+psql "${SERVICE_DB_URL}" -v ON_ERROR_STOP=1 -v source_url="${SOURCE_URL}" -f "${SQL_FILE}"
 
 echo "ISO country load complete."
