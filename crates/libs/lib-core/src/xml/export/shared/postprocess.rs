@@ -178,6 +178,39 @@ async fn apply_patient_section(
 			"code",
 			v,
 		);
+		remove_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C17049']]/hl7:value",
+			"nullFlavor",
+		);
+	} else if let Some(null_flavor) = patient.race_code_null_flavor.as_deref() {
+		set_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C17049']]/hl7:value",
+			"xsi:type",
+			"CE",
+		);
+		remove_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C17049']]/hl7:value",
+			"code",
+		);
+		remove_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C17049']]/hl7:value",
+			"displayName",
+		);
+		remove_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C17049']]/hl7:value",
+			"codeSystem",
+		);
+		set_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C17049']]/hl7:value",
+			"nullFlavor",
+			null_flavor,
+		);
 	}
 	if let Some(v) = patient.ethnicity_code.as_deref() {
 		set_attr_first(
@@ -191,6 +224,39 @@ async fn apply_patient_section(
 			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C16564']]/hl7:value",
 			"code",
 			v,
+		);
+		remove_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C16564']]/hl7:value",
+			"nullFlavor",
+		);
+	} else if let Some(null_flavor) = patient.ethnicity_code_null_flavor.as_deref() {
+		set_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C16564']]/hl7:value",
+			"xsi:type",
+			"CE",
+		);
+		remove_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C16564']]/hl7:value",
+			"code",
+		);
+		remove_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C16564']]/hl7:value",
+			"displayName",
+		);
+		remove_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C16564']]/hl7:value",
+			"codeSystem",
+		);
+		set_attr_first(
+			xpath,
+			"//hl7:primaryRole/hl7:subjectOf2/hl7:observation[hl7:code[@code='C16564']]/hl7:value",
+			"nullFlavor",
+			null_flavor,
 		);
 	}
 	if let Some(v) = patient.last_menstrual_period_date {

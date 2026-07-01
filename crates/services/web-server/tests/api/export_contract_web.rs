@@ -247,7 +247,9 @@ async fn seed_cioms_case_data(
 			sex: Some("1".to_string()),
 			sex_null_flavor: None,
 			race_code: None,
+			race_code_null_flavor: None,
 			ethnicity_code: None,
+			ethnicity_code_null_flavor: None,
 			last_menstrual_period_date: None,
 			last_menstrual_period_date_null_flavor: None,
 			medical_history_text: Some(

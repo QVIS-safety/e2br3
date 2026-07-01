@@ -28,7 +28,9 @@ pub struct DPatientImport {
 	pub weight_kg: Option<Decimal>,
 	pub height_cm: Option<Decimal>,
 	pub race_code: Option<String>,
+	pub race_code_null_flavor: Option<String>,
 	pub ethnicity_code: Option<String>,
+	pub ethnicity_code_null_flavor: Option<String>,
 	pub last_menstrual_period_date: Option<Date>,
 	pub last_menstrual_period_date_null_flavor: Option<String>,
 	pub medical_history_text: Option<String>,
@@ -101,7 +103,11 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 	let last_menstrual_period_date_null_flavor =
 		first_value_root(&mut xpath, DPatientPaths::LMP_DATE_NULL_FLAVOR);
 	let race_code = first_value_root(&mut xpath, DPatientPaths::RACE_CODE);
+	let race_code_null_flavor =
+		first_value_root(&mut xpath, DPatientPaths::RACE_CODE_NULL_FLAVOR);
 	let ethnicity_code = first_value_root(&mut xpath, DPatientPaths::ETHNICITY_CODE);
+	let ethnicity_code_null_flavor =
+		first_value_root(&mut xpath, DPatientPaths::ETHNICITY_CODE_NULL_FLAVOR);
 	let medical_history_text =
 		first_text_root(&mut xpath, DPatientPaths::MEDICAL_HISTORY_TEXT);
 	let concomitant_therapy = parse_bool_value(first_value_root(
@@ -122,6 +128,8 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 		&& age_at_time_of_onset_null_flavor.is_none()
 		&& sex_null_flavor.is_none()
 		&& last_menstrual_period_date_null_flavor.is_none()
+		&& race_code_null_flavor.is_none()
+		&& ethnicity_code_null_flavor.is_none()
 	{
 		return Ok(None);
 	}
@@ -144,7 +152,9 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 		weight_kg,
 		height_cm,
 		race_code,
+		race_code_null_flavor,
 		ethnicity_code,
+		ethnicity_code_null_flavor,
 		last_menstrual_period_date,
 		last_menstrual_period_date_null_flavor,
 		medical_history_text,

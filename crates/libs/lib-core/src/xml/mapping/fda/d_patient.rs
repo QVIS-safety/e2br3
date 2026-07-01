@@ -49,10 +49,14 @@ impl DPatientPaths {
 	// FDA.D.11 Race
 	pub const RACE_CODE: &'static str =
 		"//hl7:subjectOf2/hl7:observation[hl7:code[@code='C17049' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value/@code";
+	pub const RACE_CODE_NULL_FLAVOR: &'static str =
+		"//hl7:subjectOf2/hl7:observation[hl7:code[@code='C17049' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value/@nullFlavor";
 
 	// FDA.D.12 Ethnicity
 	pub const ETHNICITY_CODE: &'static str =
 		"//hl7:subjectOf2/hl7:observation[hl7:code[@code='C16564' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value/@code";
+	pub const ETHNICITY_CODE_NULL_FLAVOR: &'static str =
+		"//hl7:subjectOf2/hl7:observation[hl7:code[@code='C16564' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value/@nullFlavor";
 
 	// D.6 Last Menstrual Period
 	pub const LMP_DATE: &'static str =
