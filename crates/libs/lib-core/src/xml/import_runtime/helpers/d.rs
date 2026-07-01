@@ -41,7 +41,8 @@ pub(crate) struct PatientImport {
 #[derive(Debug)]
 pub(crate) struct PatientIdentifierImport {
 	pub(crate) identifier_type_code: String,
-	pub(crate) identifier_value: String,
+	pub(crate) identifier_value: Option<String>,
+	pub(crate) identifier_value_null_flavor: Option<String>,
 }
 
 #[derive(Debug)]
@@ -147,12 +148,23 @@ pub(crate) fn parse_patient_identifiers(
 			"patient_identifiers.identifier_type_code",
 		);
 		let identifier_value = first_attr(&mut xpath, &node, "hl7:id", "extension");
+		let identifier_value_null_flavor =
+			first_attr(&mut xpath, &node, "hl7:id", "nullFlavor");
 		if let (Some(identifier_type_code), Some(identifier_value)) =
-			(identifier_type_code, identifier_value)
+			(identifier_type_code.clone(), identifier_value)
 		{
 			items.push(PatientIdentifierImport {
 				identifier_type_code,
-				identifier_value,
+				identifier_value: Some(identifier_value),
+				identifier_value_null_flavor: None,
+			});
+		} else if let (Some(identifier_type_code), Some(identifier_value_null_flavor)) =
+			(identifier_type_code, identifier_value_null_flavor)
+		{
+			items.push(PatientIdentifierImport {
+				identifier_type_code,
+				identifier_value: None,
+				identifier_value_null_flavor: Some(identifier_value_null_flavor),
 			});
 		}
 	}

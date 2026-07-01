@@ -148,7 +148,11 @@ pub(crate) fn collect_ich_issues(
 	if report_type_is_study {
 		let has_study_number = validation_ctx.patient_identifiers.iter().any(|id| {
 			id.identifier_type_code.trim() == "4"
-				&& !id.identifier_value.trim().is_empty()
+				&& id
+					.identifier_value
+					.as_deref()
+					.map(|value| !value.trim().is_empty())
+					.unwrap_or(false)
 		});
 		if !has_study_number {
 			push_issue_by_code(

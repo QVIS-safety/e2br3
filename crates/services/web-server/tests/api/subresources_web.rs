@@ -1178,7 +1178,7 @@ async fn test_patient_subresources_endpoints_ok() -> Result<()> {
 		"phpid_version": "PHPID-V1",
 		"phpid": "PHPID-123",
 		"start_date_null_flavor": "ASKU",
-		"end_date_null_flavor": "NA",
+			"end_date_null_flavor": "NASK",
 		"indication_meddra_version": "27.1",
 		"indication_meddra_code": "10012345",
 		"reaction_meddra_version": "27.1",
@@ -1202,7 +1202,7 @@ async fn test_patient_subresources_endpoints_ok() -> Result<()> {
 	assert_eq!(value["data"]["phpid_version"], "PHPID-V1");
 	assert_eq!(value["data"]["phpid"], "PHPID-123");
 	assert_eq!(value["data"]["start_date_null_flavor"], "ASKU");
-	assert_eq!(value["data"]["end_date_null_flavor"], "NA");
+	assert_eq!(value["data"]["end_date_null_flavor"], "NASK");
 	assert_eq!(value["data"]["indication_meddra_version"], "27.1");
 	assert_eq!(value["data"]["indication_meddra_code"], "10012345");
 	assert_eq!(value["data"]["reaction_meddra_version"], "27.1");

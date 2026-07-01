@@ -135,13 +135,20 @@ pub fn patch_d_patient(raw_xml: &[u8], patch: &DPatientPatch) -> Result<String> 
 		&mut xpath,
 		"//hl7:primaryRole/hl7:subjectOf2[hl7:observation/hl7:code[@code='5' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]",
 	);
-	if patch.autopsy_performed.is_some() || !patch.autopsy_causes.is_empty() {
+	if patch.autopsy_performed.is_some()
+		|| patch.autopsy_performed_null_flavor.is_some()
+		|| !patch.autopsy_causes.is_empty()
+	{
 		append_fragment_child(
 			&mut doc,
 			&parser,
 			&mut xpath,
 			"//hl7:primaryRole",
-			&autopsy_fragment(patch.autopsy_performed, patch.autopsy_causes),
+			&autopsy_fragment(
+				patch.autopsy_performed,
+				patch.autopsy_performed_null_flavor,
+				patch.autopsy_causes,
+			),
 		)?;
 	}
 
@@ -177,6 +184,7 @@ fn reported_cause_fragment(cause: &DPatientDeathCausePatch<'_>) -> String {
 
 fn autopsy_fragment(
 	autopsy_performed: Option<bool>,
+	autopsy_performed_null_flavor: Option<&str>,
 	causes: &[DPatientDeathCausePatch<'_>],
 ) -> String {
 	let mut out = String::from(
@@ -185,7 +193,11 @@ fn autopsy_fragment(
 	match autopsy_performed {
 		Some(true) => out.push_str(" value=\"true\""),
 		Some(false) => out.push_str(" value=\"false\""),
-		None => out.push_str(" nullFlavor=\"NI\""),
+		None => {
+			out.push_str(" nullFlavor=\"");
+			out.push_str(&xml_escape(autopsy_performed_null_flavor.unwrap_or("NI")));
+			out.push('"');
+		}
 	}
 	out.push_str("/>");
 	for cause in causes {

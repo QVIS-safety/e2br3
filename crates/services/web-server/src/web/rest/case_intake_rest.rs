@@ -454,7 +454,8 @@ pub async fn create_case_from_intake(
 					patient_id,
 					sequence_number: 1,
 					identifier_type_code: "4".to_string(),
-					identifier_value: investigation_number,
+					identifier_value: Some(investigation_number),
+					identifier_value_null_flavor: None,
 				},
 			)
 			.await?;

@@ -82,7 +82,8 @@ CREATE TABLE patient_identifiers (
 
     -- D.1.1.x - Patient Medical Record Number(s) and Source(s) of the Record Number
     identifier_type_code VARCHAR(1) NOT NULL, -- 1=GP, 2=Specialist, 3=Hospital, 4=Investigation
-    identifier_value VARCHAR(100) NOT NULL,
+    identifier_value VARCHAR(100),
+    identifier_value_null_flavor VARCHAR(4) CHECK (identifier_value_null_flavor IN ('MSK')),
     deleted BOOLEAN NOT NULL DEFAULT false,
 
     -- Audit fields

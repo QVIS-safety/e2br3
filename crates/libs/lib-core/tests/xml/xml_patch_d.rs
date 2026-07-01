@@ -27,6 +27,7 @@ fn patch_d_section_updates_values() {
 		height_cm: Some("168"),
 		date_of_death: None,
 		autopsy_performed: None,
+		autopsy_performed_null_flavor: None,
 		reported_causes: &[],
 		autopsy_causes: &[],
 	};
@@ -119,6 +120,7 @@ fn patch_d_section_updates_death_cause_comments() {
 		height_cm: None,
 		date_of_death: None,
 		autopsy_performed: Some(true),
+		autopsy_performed_null_flavor: None,
 		reported_causes: &reported,
 		autopsy_causes: &autopsy,
 	};

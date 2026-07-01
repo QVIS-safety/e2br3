@@ -68,7 +68,8 @@ async fn import_patient_identifiers(
 				id,
 				PatientIdentifierForUpdate {
 					identifier_type_code: Some(entry.identifier_type_code),
-					identifier_value: Some(entry.identifier_value),
+					identifier_value: entry.identifier_value,
+					identifier_value_null_flavor: entry.identifier_value_null_flavor,
 				},
 			)
 			.await;
@@ -81,6 +82,7 @@ async fn import_patient_identifiers(
 					sequence_number: seq,
 					identifier_type_code: entry.identifier_type_code,
 					identifier_value: entry.identifier_value,
+					identifier_value_null_flavor: entry.identifier_value_null_flavor,
 				},
 			)
 			.await?;
@@ -657,8 +659,7 @@ async fn import_patient_information(
 		last_menstrual_period_date_null_flavor: patient
 			.last_menstrual_period_date_null_flavor,
 		medical_history_text: patient.medical_history_text,
-		medical_history_text_null_flavor: patient
-			.medical_history_text_null_flavor,
+		medical_history_text_null_flavor: patient.medical_history_text_null_flavor,
 		concomitant_therapy: patient.concomitant_therapy,
 	}) else {
 		return Ok(None);
@@ -716,11 +717,11 @@ async fn import_patient_information(
 				last_menstrual_period_date_null_flavor: patient
 					.last_menstrual_period_date_null_flavor
 					.clone(),
-					medical_history_text: patient.medical_history_text.clone(),
-					medical_history_text_null_flavor: patient
-						.medical_history_text_null_flavor
-						.clone(),
-					concomitant_therapy: patient.concomitant_therapy,
+				medical_history_text: patient.medical_history_text.clone(),
+				medical_history_text_null_flavor: patient
+					.medical_history_text_null_flavor
+					.clone(),
+				concomitant_therapy: patient.concomitant_therapy,
 			},
 		)
 		.await?

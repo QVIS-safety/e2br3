@@ -380,15 +380,17 @@ async fn apply_patient_section(
 
 	for ident in &identifiers {
 		ensure_patient_identifier(xpath, doc, parser, &ident.identifier_type_code)?;
-		set_attr_first(
-			xpath,
-			&format!(
-				"//hl7:primaryRole/hl7:player1/hl7:asIdentifiedEntity[hl7:code[@code='{}']]/hl7:id",
-				ident.identifier_type_code
-			),
-			"extension",
-			&ident.identifier_value,
+		let id_xpath = format!(
+			"//hl7:primaryRole/hl7:player1/hl7:asIdentifiedEntity[hl7:code[@code='{}']]/hl7:id",
+			ident.identifier_type_code
 		);
+		if let Some(null_flavor) = ident.identifier_value_null_flavor.as_deref() {
+			remove_attr_first(xpath, &id_xpath, "extension");
+			set_attr_first(xpath, &id_xpath, "nullFlavor", null_flavor);
+		} else if let Some(value) = ident.identifier_value.as_deref() {
+			remove_attr_first(xpath, &id_xpath, "nullFlavor");
+			set_attr_first(xpath, &id_xpath, "extension", value);
+		}
 	}
 
 	if let Some(parent) = parent {

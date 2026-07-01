@@ -83,6 +83,7 @@ mod tests {
 			last_menstrual_period_date: None,
 			last_menstrual_period_date_null_flavor: None,
 			medical_history_text: None,
+			medical_history_text_null_flavor: None,
 			concomitant_therapy: None,
 			created_at: OffsetDateTime::now_utc(),
 			updated_at: OffsetDateTime::now_utc(),
