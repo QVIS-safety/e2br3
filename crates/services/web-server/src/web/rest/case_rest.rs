@@ -30,7 +30,7 @@ use lib_rest_core::{
 };
 use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
+use sqlx::{types::time::OffsetDateTime, FromRow};
 use uuid::Uuid;
 
 const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
@@ -393,6 +393,10 @@ pub async fn create_case_guarded(
 	validate_case_create_payload(&data)?;
 
 	let id = CaseBmc::create(&ctx, &mm, data).await?;
+	let creation_timestamp =
+		crate::web::rest::case_export_rest::format_message_timestamp_utc_pub(
+			OffsetDateTime::now_utc(),
+		);
 	SafetyReportIdentificationBmc::create(
 		&ctx,
 		&mm,
@@ -400,7 +404,7 @@ pub async fn create_case_guarded(
 			case_id: id,
 			safety_report_id: Some(safety_report_id),
 			version: Some(next_version),
-			transmission_date: None,
+			transmission_date: Some(creation_timestamp),
 			transmission_date_null_flavor: None,
 			report_type: None,
 			date_first_received_from_source: None,

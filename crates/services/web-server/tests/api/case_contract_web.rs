@@ -8,8 +8,22 @@ use lib_core::model::store::{
 };
 use serde_json::{json, Value};
 use serial_test::serial;
+use sqlx::types::time::OffsetDateTime;
+use time::Duration;
 use tower::ServiceExt;
 use uuid::Uuid;
+
+fn format_e2b_timestamp_utc(value: OffsetDateTime) -> String {
+	format!(
+		"{:04}{:02}{:02}{:02}{:02}{:02}",
+		value.year(),
+		u8::from(value.month()),
+		value.day(),
+		value.hour(),
+		value.minute(),
+		value.second()
+	)
+}
 
 async fn post_json(
 	app: &axum::Router,
@@ -131,6 +145,66 @@ async fn get_raw(
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	Ok((status, body.to_vec()))
+}
+
+#[serial]
+#[tokio::test]
+async fn create_case_defaults_c1_2_to_backend_creation_timestamp() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let lower_bound =
+		format_e2b_timestamp_utc(OffsetDateTime::now_utc() - Duration::seconds(2));
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safetyReportIdentification": {
+					"safetyReportId": format!("SR-C1-DEFAULT-{}", Uuid::new_v4())
+				},
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	let upper_bound =
+		format_e2b_timestamp_utc(OffsetDateTime::now_utc() + Duration::seconds(2));
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let case_id =
+		Uuid::parse_str(body["data"]["id"].as_str().ok_or("missing case id")?)?;
+
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	let (transmission_date,) = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (String,)>(
+				"SELECT transmission_date
+				   FROM safety_report_identification
+				  WHERE case_id = $1",
+			)
+			.bind(case_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+
+	assert_eq!(transmission_date.len(), 14);
+	assert!(
+		transmission_date >= lower_bound && transmission_date <= upper_bound,
+		"transmission_date {transmission_date} not within {lower_bound}..={upper_bound}"
+	);
+	Ok(())
 }
 
 #[serial]
