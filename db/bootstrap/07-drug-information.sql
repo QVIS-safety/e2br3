@@ -183,6 +183,7 @@ CREATE TABLE dosage_information (
 
     -- G.k.4.r.7 - Batch/Lot Number
     batch_lot_number VARCHAR(200),
+    batch_lot_number_null_flavor VARCHAR(4) CHECK (batch_lot_number_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK', 'NA')),
 
     -- G.k.4.r.8 - Dosage Text
     dosage_text TEXT,
@@ -230,6 +231,7 @@ CREATE TABLE drug_indications (
 
     -- G.k.6.r.1 - Indication (free text)
     indication_text VARCHAR(500),
+    indication_text_null_flavor VARCHAR(4) CHECK (indication_text_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK', 'NA')),
 
     -- G.k.6.r.2 - Indication (MedDRA coded)
     indication_meddra_version VARCHAR(10),

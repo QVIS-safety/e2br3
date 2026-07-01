@@ -719,6 +719,7 @@ pub struct DosageInformation {
 
 	// G.k.4.r.7 - Batch/Lot Number
 	pub batch_lot_number: Option<String>,
+	pub batch_lot_number_null_flavor: Option<String>,
 
 	// G.k.4.r.8 - Dosage Text
 	pub dosage_text: Option<String>,
@@ -773,6 +774,7 @@ pub struct DosageInformationForCreate {
 	pub duration_unit: Option<String>,
 	pub continuing: Option<bool>,
 	pub batch_lot_number: Option<String>,
+	pub batch_lot_number_null_flavor: Option<String>,
 	pub dosage_text: Option<String>,
 	pub dose_form: Option<String>,
 	pub dose_form_termid: Option<String>,
@@ -810,6 +812,7 @@ pub struct DosageInformationForUpdate {
 	pub duration_unit: Option<String>,
 	pub continuing: Option<bool>,
 	pub batch_lot_number: Option<String>,
+	pub batch_lot_number_null_flavor: Option<String>,
 	pub dosage_text: Option<String>,
 	pub dose_form: Option<String>,
 	pub dose_form_termid: Option<String>,
@@ -842,6 +845,7 @@ pub struct DrugIndication {
 
 	// G.k.6.r.1 - Indication (free text)
 	pub indication_text: Option<String>,
+	pub indication_text_null_flavor: Option<String>,
 
 	// G.k.6.r.2 - Indication (MedDRA coded)
 	pub indication_meddra_version: Option<String>,
@@ -860,6 +864,7 @@ pub struct DrugIndicationForCreate {
 	pub drug_id: Uuid,
 	pub sequence_number: i32,
 	pub indication_text: Option<String>,
+	pub indication_text_null_flavor: Option<String>,
 	pub indication_meddra_version: Option<String>,
 	pub indication_meddra_code: Option<String>,
 }
@@ -867,6 +872,7 @@ pub struct DrugIndicationForCreate {
 #[derive(Fields, Deserialize)]
 pub struct DrugIndicationForUpdate {
 	pub indication_text: Option<String>,
+	pub indication_text_null_flavor: Option<String>,
 	pub indication_meddra_version: Option<String>,
 	pub indication_meddra_code: Option<String>,
 }

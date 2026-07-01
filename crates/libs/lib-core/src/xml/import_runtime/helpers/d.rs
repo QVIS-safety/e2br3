@@ -158,8 +158,10 @@ pub(crate) fn parse_patient_identifiers(
 				identifier_value: Some(identifier_value),
 				identifier_value_null_flavor: None,
 			});
-		} else if let (Some(identifier_type_code), Some(identifier_value_null_flavor)) =
-			(identifier_type_code, identifier_value_null_flavor)
+		} else if let (
+			Some(identifier_type_code),
+			Some(identifier_value_null_flavor),
+		) = (identifier_type_code, identifier_value_null_flavor)
 		{
 			items.push(PatientIdentifierImport {
 				identifier_type_code,

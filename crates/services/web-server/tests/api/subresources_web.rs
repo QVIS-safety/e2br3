@@ -1429,6 +1429,28 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 
 	let body = json!({"data": {
 		"drug_id": drug_id,
+		"sequence_number": 2,
+		"batch_lot_number_null_flavor": "ASKU"
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}/dosages"),
+		body,
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"{}",
+		String::from_utf8_lossy(&body)
+	);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["batch_lot_number"], Value::Null);
+	assert_eq!(value["data"]["batch_lot_number_null_flavor"], "ASKU");
+
+	let body = json!({"data": {
+		"drug_id": drug_id,
 		"sequence_number": 1,
 		"indication_text": "test",
 		"indication_meddra_version": "27.1",
@@ -1446,6 +1468,23 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 	assert_eq!(value["data"]["indication_text"], "test");
 	assert_eq!(value["data"]["indication_meddra_version"], "27.1");
 	assert_eq!(value["data"]["indication_meddra_code"], "10000001");
+
+	let body = json!({"data": {
+		"drug_id": drug_id,
+		"sequence_number": 2,
+		"indication_text_null_flavor": "NASK"
+	}});
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{case_id}/drugs/{drug_id}/indications"),
+		body,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["indication_text"], Value::Null);
+	assert_eq!(value["data"]["indication_text_null_flavor"], "NASK");
 
 	let body = json!({"data": {
 		"drug_id": drug_id,
