@@ -1650,6 +1650,13 @@ mod tests {
 		}
 	}
 
+	fn basic_settings() -> CiomsSettings {
+		CiomsSettings {
+			orientation: "Landscape".to_string(),
+			data_ordering: "Basic".to_string(),
+		}
+	}
+
 	fn portrait_settings() -> CiomsSettings {
 		CiomsSettings {
 			orientation: "Portrait".to_string(),
@@ -1670,9 +1677,7 @@ mod tests {
 			case_id: test_uuid(),
 			safety_report_id: Some("CASE-2026-0001".to_string()),
 			version: 1,
-			transmission_date: Some(
-				Date::from_calendar_date(2026, Month::May, 12).expect("valid date"),
-			),
+			transmission_date: Some("20260512".to_string()),
 			transmission_date_null_flavor: None,
 			report_type: Some("1".to_string()),
 			date_first_received_from_source: Some(
@@ -1725,6 +1730,7 @@ mod tests {
 			qualification_kr1: None,
 			primary_source_regulatory: None,
 			source_reporter_presave_id: None,
+			deleted: false,
 			created_at: test_time(),
 			updated_at: test_time(),
 			created_by: test_uuid(),
@@ -1768,6 +1774,7 @@ mod tests {
 			fda_device_info_json: None,
 			fda_other_characterization: None,
 			source_product_presave_id: None,
+			deleted: false,
 			created_at: test_time(),
 			updated_at: test_time(),
 			created_by: test_uuid(),
@@ -1820,6 +1827,7 @@ mod tests {
 			fda_device_info_json: None,
 			fda_other_characterization: None,
 			source_product_presave_id: None,
+			deleted: false,
 			created_at: test_time(),
 			updated_at: test_time(),
 			created_by: test_uuid(),
@@ -1857,6 +1865,7 @@ mod tests {
 			parent_route_termid_version: None,
 			first_administration_date_null_flavor: None,
 			last_administration_date_null_flavor: None,
+			deleted: false,
 			created_at: test_time(),
 			updated_at: test_time(),
 			created_by: test_uuid(),
@@ -1889,6 +1898,7 @@ mod tests {
 			criteria_other_medically_important: false,
 			criteria_other_medically_important_null_flavor: None,
 			required_intervention: None,
+			required_intervention_null_flavor: None,
 			start_date: None,
 			start_date_null_flavor: None,
 			end_date: None,
@@ -1918,6 +1928,7 @@ mod tests {
 			mfds_device_action_label_change: None,
 			mfds_device_action_other: None,
 			country_code: Some(country_code.to_string()),
+			deleted: false,
 			created_at: test_time(),
 			updated_at: test_time(),
 			created_by: test_uuid(),
@@ -1992,6 +2003,7 @@ mod tests {
 				qualification_kr1: None,
 				primary_source_regulatory: None,
 				source_reporter_presave_id: None,
+				deleted: false,
 				created_at: test_time(),
 				updated_at: test_time(),
 				created_by: test_uuid(),
@@ -2145,6 +2157,7 @@ mod tests {
 				fda_device_info_json: None,
 				fda_other_characterization: None,
 				source_product_presave_id: None,
+				deleted: false,
 				created_at: test_time(),
 				updated_at: test_time(),
 				created_by: test_uuid(),
@@ -2185,6 +2198,7 @@ mod tests {
 				parent_route_termid_version: None,
 				first_administration_date_null_flavor: None,
 				last_administration_date_null_flavor: None,
+				deleted: false,
 				created_at: test_time(),
 				updated_at: test_time(),
 				created_by: test_uuid(),
@@ -2197,6 +2211,7 @@ mod tests {
 				indication_text: Some("Bacterial sinusitis".to_string()),
 				indication_meddra_version: None,
 				indication_meddra_code: None,
+				deleted: false,
 				created_at: test_time(),
 				updated_at: test_time(),
 				created_by: test_uuid(),
@@ -2259,6 +2274,7 @@ mod tests {
 				fda_device_info_json: None,
 				fda_other_characterization: None,
 				source_product_presave_id: None,
+				deleted: false,
 				created_at: test_time(),
 				updated_at: test_time(),
 				created_by: test_uuid(),
@@ -2294,6 +2310,7 @@ mod tests {
 					parent_route_termid_version: None,
 					first_administration_date_null_flavor: None,
 					last_administration_date_null_flavor: None,
+					deleted: false,
 					created_at: test_time(),
 					updated_at: test_time(),
 					created_by: test_uuid(),
@@ -2328,6 +2345,7 @@ mod tests {
 					parent_route_termid_version: None,
 					first_administration_date_null_flavor: None,
 					last_administration_date_null_flavor: None,
+					deleted: false,
 					created_at: test_time(),
 					updated_at: test_time(),
 					created_by: test_uuid(),
@@ -2342,6 +2360,7 @@ mod tests {
 					indication_text: Some("Older child indication".to_string()),
 					indication_meddra_version: None,
 					indication_meddra_code: None,
+					deleted: false,
 					created_at: test_time(),
 					updated_at: test_time(),
 					created_by: test_uuid(),
@@ -2354,6 +2373,7 @@ mod tests {
 					indication_text: Some("Latest child indication".to_string()),
 					indication_meddra_version: None,
 					indication_meddra_code: None,
+					deleted: false,
 					created_at: test_time(),
 					updated_at: test_time(),
 					created_by: test_uuid(),
@@ -2392,6 +2412,7 @@ mod tests {
 				indication_text: Some("Bacterial sinusitis".to_string()),
 				indication_meddra_version: None,
 				indication_meddra_code: None,
+				deleted: false,
 				created_at: test_time(),
 				updated_at: test_time(),
 				created_by: test_uuid(),
@@ -2546,6 +2567,27 @@ mod tests {
 		let text = String::from_utf8_lossy(&pdf);
 
 		assert!(text.contains("Data ordering: Latest data will appear first"));
+	}
+
+	#[test]
+	fn cioms_pdf_renders_basic_data_ordering_setting() {
+		let data = CiomsCaseData {
+			case_number: "SR-BASIC-ORDERING".to_string(),
+			report: None,
+			patient: None,
+			reactions: Vec::new(),
+			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &basic_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("Data ordering: Basic"));
 	}
 
 	#[test]

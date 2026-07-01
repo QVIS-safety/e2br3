@@ -94,7 +94,6 @@ async fn test_admin_can_update_user() -> Result<()> {
 	let app = web_server::app(mm);
 	let body = json!({
 		"data": {
-			"role": ROLE_SPONSOR_ADMIN_CRO,
 			"active": false
 		}
 	});
@@ -106,6 +105,30 @@ async fn test_admin_can_update_user() -> Result<()> {
 		.body(Body::from(body.to_string()))?;
 	let res = app.oneshot(req).await?;
 	assert_eq!(res.status(), StatusCode::OK);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_sponsor_admin_cannot_assign_sponsor_admin_role() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+
+	let app = web_server::app(mm);
+	let body = json!({
+		"data": {
+			"role": ROLE_SPONSOR_ADMIN_CRO
+		}
+	});
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.viewer.id))
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 	Ok(())
 }
 

@@ -471,6 +471,22 @@ fn sponsor_admin_role_error() -> Error {
 	}
 }
 
+fn validate_sponsor_admin_assignment_authority(
+	ctx: &Ctx,
+	role: Option<&str>,
+) -> Result<()> {
+	if matches!(
+		role,
+		Some(ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY)
+	) && !ctx.is_system_admin()
+	{
+		return Err(Error::BadRequest {
+			message: "Sponsor Administrator roles can only be assigned by a System Administrator".to_string(),
+		});
+	}
+	Ok(())
+}
+
 fn validate_create_role_selection(role: Option<&str>) -> Result<()> {
 	match role {
 		Some(ROLE_USER) | None => Err(Error::BadRequest {
@@ -685,6 +701,7 @@ pub async fn create_user(
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let role = normalize_user_role(data.role);
 	validate_create_role_selection(role.as_deref())?;
+	validate_sponsor_admin_assignment_authority(&ctx, role.as_deref())?;
 	validate_sponsor_admin_role_for_org(
 		&db_ctx,
 		&mm,
@@ -833,6 +850,7 @@ pub async fn update_user(
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let role = normalize_user_role(data.role);
 	if role.is_some() {
+		validate_sponsor_admin_assignment_authority(&ctx, role.as_deref())?;
 		let existing: User = UserBmc::get(&db_ctx, &mm, id).await?;
 		validate_sponsor_admin_role_for_org(
 			&db_ctx,
@@ -890,7 +908,29 @@ pub async fn delete_user(
 		});
 	}
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
-	UserBmc::delete(&db_ctx, &mm, id).await?;
+	UserBmc::update(
+		&db_ctx,
+		&mm,
+		id,
+		UserForUpdate {
+			organization_id: None,
+			email: None,
+			username: None,
+			role: None,
+			comments: None,
+			other_information: None,
+			access_start_at: None,
+			access_end_at: None,
+			access_sender_ids: None,
+			access_product_ids: None,
+			access_study_ids: None,
+			access_blind_allowed: None,
+			active_sender_identifier: None,
+			active: Some(false),
+			last_login_at: None,
+		},
+	)
+	.await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 
