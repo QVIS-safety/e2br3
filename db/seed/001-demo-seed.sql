@@ -235,7 +235,7 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO safety_report_identification (id, case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, receiver_organization, created_by, created_at, updated_at)
-    VALUES (v_safety_ident_id, v_case_id, 'SR-001', 1, CURRENT_DATE, '1', CURRENT_DATE, CURRENT_DATE, TRUE, 'Demo Receiver', v_user_id, NOW(), NOW())
+    VALUES (v_safety_ident_id, v_case_id, 'SR-001', 1, to_char(CURRENT_DATE::timestamp, 'YYYYMMDDHH24MISS'), '1', CURRENT_DATE, CURRENT_DATE, TRUE, 'Demo Receiver', v_user_id, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO sender_information (id, case_id, sender_type, organization_name, created_by, created_at, updated_at)

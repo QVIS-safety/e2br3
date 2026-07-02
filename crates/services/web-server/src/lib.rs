@@ -5,7 +5,7 @@ pub mod openapi;
 pub mod submission;
 pub mod web;
 
-use axum::middleware;
+use axum::{http::StatusCode, middleware, routing::get};
 use axum::Router;
 use lib_core::model::ModelManager;
 use lib_web::middleware::mw_auth::mw_ctx_resolver;
@@ -23,6 +23,7 @@ pub fn app(mm: ModelManager) -> Router {
 	let routes_login = web::routes_login::routes(mm.clone());
 
 	Router::new()
+		.route("/health", get(health))
 		.merge(openapi::router())
 		.nest("/auth/v1", routes_login)
 		.nest("/api", routes_rest)
@@ -32,4 +33,8 @@ pub fn app(mm: ModelManager) -> Router {
 		.layer(CookieManagerLayer::new())
 		.layer(middleware::from_fn(mw_req_stamp_resolver))
 		.fallback_service(routes_static::serve_dir(&config::web_config().WEB_FOLDER))
+}
+
+async fn health() -> StatusCode {
+	StatusCode::NO_CONTENT
 }

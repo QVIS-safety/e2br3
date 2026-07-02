@@ -123,7 +123,7 @@ BEGIN
         created_by, updated_by, created_at, updated_at
     )
     VALUES (
-        v_safety_ident_id, v_case_id, 'DEMO-RICH-2026-0001', 1, DATE '2026-04-10', '1', DATE '2026-04-07',
+        v_safety_ident_id, v_case_id, 'DEMO-RICH-2026-0001', 1, '20260410000000', '1', DATE '2026-04-07',
         DATE '2026-04-09', true, '1', true,
         'KR-QVIS-2026-0001', '1', true,
         'Food and Drug Administration', true,

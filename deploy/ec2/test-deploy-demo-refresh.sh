@@ -42,9 +42,17 @@ printf 'init-rds RESET_DB=%s RESET_PRESERVE_TERMINOLOGY=%s INCLUDE_SEED=%s DATAB
 SH
   chmod +x "${APP_DIR}/init-rds.sh"
 
+  cat > "${APP_DIR}/load-iso-countries.sh" <<'SH'
+#!/usr/bin/env sh
+set -eu
+printf 'load-iso-countries APP_DIR=%s ENV_FILE=%s\n' "${APP_DIR:-}" "${ENV_FILE:-}" >> "${DEPLOY_LOG}"
+SH
+  chmod +x "${APP_DIR}/load-iso-countries.sh"
+
   INIT_RDS_SCRIPT="${APP_DIR}/init-rds.sh"
   TERMINOLOGY_MANIFEST_SCRIPT="${APP_DIR}/run-terminology-manifest.sh"
-  export INIT_RDS_SCRIPT TERMINOLOGY_MANIFEST_SCRIPT
+  ISO_COUNTRIES_SCRIPT="${APP_DIR}/load-iso-countries.sh"
+  export INIT_RDS_SCRIPT TERMINOLOGY_MANIFEST_SCRIPT ISO_COUNTRIES_SCRIPT
 }
 
 APP_DIR="${TMP_DIR}/app-success"
@@ -78,10 +86,11 @@ INCLUDE_SEED=1 \
 HEALTHCHECK_URL="" \
 sh "${SCRIPT}"
 
-cat > "${TMP_DIR}/expected.log" <<'LOG'
+cat > "${TMP_DIR}/expected.log" <<LOG
 docker pull ghcr.io/example/e2br3-web-server:abc123
 docker compose --env-file .env.prod -f docker-compose.prod.yml stop app
 init-rds RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 DATABASE_URL=postgres://app_user:pwd@example/app_db ROOT_DATABASE_URL=postgres://root:pwd@example/postgres
+load-iso-countries APP_DIR=${APP_DIR} ENV_FILE=.env.prod
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d app
 docker image prune -f
 LOG
@@ -95,6 +104,54 @@ fi
 grep -F "IMAGE_REF=ghcr.io/example/e2br3-web-server:abc123" "${APP_DIR}/.env.prod" >/dev/null
 
 echo "deploy demo refresh test passed"
+
+APP_DIR="${TMP_DIR}/app-ghcr-login-fail"
+DEPLOY_LOG="${TMP_DIR}/deploy-ghcr-login-fail.log"
+create_app "${APP_DIR}"
+cat >> "${APP_DIR}/.env.prod" <<'ENV'
+GHCR_USERNAME=stale-user
+GHCR_TOKEN=stale-token
+ENV
+
+cat > "${BIN_DIR}/docker" <<'SH'
+#!/usr/bin/env sh
+set -eu
+printf 'docker %s\n' "$*" >> "${DEPLOY_LOG}"
+if [ "${1:-}" = "login" ]; then
+  exit 1
+fi
+SH
+chmod +x "${BIN_DIR}/docker"
+
+PATH="${BIN_DIR}:${PATH}" \
+DEPLOY_LOG="${DEPLOY_LOG}" \
+APP_DIR="${APP_DIR}" \
+COMPOSE_FILE=docker-compose.prod.yml \
+ENV_FILE=.env.prod \
+IMAGE_REF=ghcr.io/example/e2br3-web-server:abc123 \
+RESET_DB=0 \
+HEALTHCHECK_URL="" \
+sh "${SCRIPT}"
+
+cat > "${TMP_DIR}/expected-ghcr-login-fail.log" <<LOG
+docker login ghcr.io -u stale-user --password-stdin
+docker pull ghcr.io/example/e2br3-web-server:abc123
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d app
+docker image prune -f
+LOG
+
+if ! cmp -s "${TMP_DIR}/expected-ghcr-login-fail.log" "${DEPLOY_LOG}"; then
+  echo "stale GHCR login should not block a pullable image"
+  diff -u "${TMP_DIR}/expected-ghcr-login-fail.log" "${DEPLOY_LOG}" || true
+  exit 1
+fi
+
+cat > "${BIN_DIR}/docker" <<'SH'
+#!/usr/bin/env sh
+set -eu
+printf 'docker %s\n' "$*" >> "${DEPLOY_LOG}"
+SH
+chmod +x "${BIN_DIR}/docker"
 
 APP_DIR="${TMP_DIR}/app-requested-reset"
 DEPLOY_LOG="${TMP_DIR}/deploy-requested-reset.log"
@@ -124,10 +181,11 @@ INCLUDE_SEED=1 \
 HEALTHCHECK_URL="" \
 sh "${SCRIPT}"
 
-cat > "${TMP_DIR}/expected-requested-reset.log" <<'LOG'
+cat > "${TMP_DIR}/expected-requested-reset.log" <<LOG
 docker pull ghcr.io/example/e2br3-web-server:abc123
 docker compose --env-file .env.prod -f docker-compose.prod.yml stop app
 init-rds RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 DATABASE_URL=postgres://app_user:pwd@example/app_db ROOT_DATABASE_URL=postgres://root:pwd@example/postgres
+load-iso-countries APP_DIR=${APP_DIR} ENV_FILE=.env.prod
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d app
 docker image prune -f
 LOG
@@ -165,12 +223,13 @@ RELOAD_TERMINOLOGY=1 \
 HEALTHCHECK_URL="" \
 sh "${SCRIPT}"
 
-cat > "${TMP_DIR}/expected-reload-terminology.log" <<'LOG'
+cat > "${TMP_DIR}/expected-reload-terminology.log" <<LOG
 docker pull ghcr.io/example/e2br3-web-server:abc123
 terminology preflight
 docker compose --env-file .env.prod -f docker-compose.prod.yml stop app
 init-rds RESET_DB=1 RESET_PRESERVE_TERMINOLOGY=1 INCLUDE_SEED=1 DATABASE_URL=postgres://app_user:pwd@example/app_db ROOT_DATABASE_URL=postgres://root:pwd@example/postgres
 terminology manifest
+load-iso-countries APP_DIR=${APP_DIR} ENV_FILE=.env.prod
 docker compose --env-file .env.prod -f docker-compose.prod.yml up -d app
 docker image prune -f
 LOG
@@ -275,6 +334,16 @@ cat >> "${APP_DIR}/.env.prod" <<'ENV'
 IMAGE_REF=ghcr.io/example/e2br3-web-server:old
 ENV
 
+cat > "${BIN_DIR}/docker" <<'SH'
+#!/usr/bin/env sh
+set -eu
+case " $* " in
+  *" up -d app "*) printf 'docker IMAGE_REF=%s %s\n' "${IMAGE_REF:-}" "$*" >> "${DEPLOY_LOG}" ;;
+  *) printf 'docker %s\n' "$*" >> "${DEPLOY_LOG}" ;;
+esac
+SH
+chmod +x "${BIN_DIR}/docker"
+
 cat > "${BIN_DIR}/curl" <<'SH'
 #!/usr/bin/env sh
 set -eu
@@ -305,11 +374,12 @@ fi
 
 grep -Fx "IMAGE_REF=ghcr.io/example/e2br3-web-server:old" "${APP_DIR}/.env.prod" >/dev/null
 grep -F "docker pull ghcr.io/example/e2br3-web-server:new" "${DEPLOY_LOG}" >/dev/null
-up_count=$(grep -F "docker compose --env-file .env.prod -f docker-compose.prod.yml up -d app" "${DEPLOY_LOG}" | wc -l | tr -d ' ')
+up_count=$(grep -F "compose --env-file .env.prod -f docker-compose.prod.yml up -d app" "${DEPLOY_LOG}" | wc -l | tr -d ' ')
 if [ "${up_count}" -ne 2 ]; then
   echo "deploy should attempt rollback by starting app with restored IMAGE_REF"
   cat "${DEPLOY_LOG}"
   exit 1
 fi
+grep -F "docker IMAGE_REF=ghcr.io/example/e2br3-web-server:old compose --env-file .env.prod -f docker-compose.prod.yml up -d app" "${DEPLOY_LOG}" >/dev/null
 
 echo "deploy healthcheck rollback test passed"
