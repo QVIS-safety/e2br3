@@ -19,6 +19,8 @@ pub fn routes(mm: ModelManager) -> Router {
 		.merge(rest::routes_section_presaves(mm.clone()))
 		// Terminology search
 		.merge(rest::routes_terminology(mm.clone()))
+		// Export/Submission query field catalog
+		.merge(rest::routes_case_query(mm.clone()))
 		// XML import/validate
 		.merge(rest::routes_import(mm.clone()))
 		// Audit logs

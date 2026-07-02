@@ -4,6 +4,7 @@ pub mod case_editor_dto;
 pub mod case_editor_rest;
 pub mod case_export_rest;
 pub mod case_intake_rest;
+pub mod case_query_catalog_rest;
 pub mod case_rest;
 pub mod case_validation_rest;
 pub mod case_workflow_rest;
@@ -1116,6 +1117,16 @@ pub fn routes_terminology(mm: ModelManager) -> Router {
 		.route(
 			"/terminology/ucum-units",
 			get(terminology_rest::list_ucum_units),
+		)
+		.with_state(mm)
+}
+
+/// Routes for /api/case-query
+pub fn routes_case_query(mm: ModelManager) -> Router {
+	Router::new()
+		.route(
+			"/case-query/catalog",
+			get(case_query_catalog_rest::get_case_query_catalog),
 		)
 		.with_state(mm)
 }
