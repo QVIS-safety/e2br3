@@ -35,9 +35,11 @@ CREATE TABLE safety_report_identification (
 
     -- C.1.8.1 - Worldwide Unique Case Identification
     worldwide_unique_id VARCHAR(100),
+    worldwide_unique_id_null_flavor VARCHAR(4) CHECK (worldwide_unique_id_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.8.2 - First Sender of This Case
     first_sender_type VARCHAR(1) CHECK (first_sender_type IN ('1', '2')),
+    first_sender_type_null_flavor VARCHAR(4) CHECK (first_sender_type_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.6.1 - Are Additional Documents Available?
     additional_documents_available BOOLEAN,
@@ -235,7 +237,8 @@ CREATE UNIQUE INDEX idx_study_registration_numbers_active_sequence_unique
 CREATE TABLE study_fda_cross_reported_inds (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     study_information_id UUID NOT NULL REFERENCES study_information(id) ON DELETE CASCADE,
-    ind_number VARCHAR(10) NOT NULL,
+    ind_number VARCHAR(10),
+    ind_number_null_flavor VARCHAR(4) CHECK (ind_number_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK', 'NA')),
     sequence_number INTEGER NOT NULL,
     deleted BOOLEAN NOT NULL DEFAULT false,
 

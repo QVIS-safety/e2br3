@@ -365,12 +365,14 @@ pub async fn create_case_from_intake(
 			local_criteria_report_type: None,
 			combination_product_report_indicator: None,
 			first_sender_type: None,
+			first_sender_type_null_flavor: None,
 			additional_documents_available: None,
 			other_case_identifiers_exist: None,
 			other_case_identifiers_exist_null_flavor: None,
 			worldwide_unique_id: generated_case_number
 				.as_ref()
 				.map(|generated| generated.worldwide_unique_id.clone()),
+			worldwide_unique_id_null_flavor: None,
 			nullification_code: None,
 			nullification_reason: None,
 			receiver_organization: None,
