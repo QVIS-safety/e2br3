@@ -95,6 +95,7 @@ pub mod case_duplicate; // Duplicate matching logic and LATERAL JOIN scan query
 
 // Import Audit
 pub mod xml_import_history; // XML import audit trail
+pub mod xml_import_decision; // XML import skip/follow-up/new decision logic
 
 // Utilities
 pub mod modql_utils;
