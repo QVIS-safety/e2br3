@@ -976,6 +976,7 @@ struct UserDoc {
 #[serde(rename_all = "camelCase")]
 struct RoutingSenderOptionDoc {
 	sender_identifier: String,
+	sender_organization: Option<String>,
 	case_count: i64,
 }
 

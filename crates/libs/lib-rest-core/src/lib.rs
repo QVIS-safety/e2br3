@@ -355,6 +355,7 @@ struct CaseScopeRow {
 #[serde(rename_all = "camelCase")]
 pub struct RoutingSenderOption {
 	pub sender_identifier: String,
+	pub sender_organization: Option<String>,
 	pub case_count: i64,
 	#[serde(skip)]
 	scope_identifiers: Vec<String>,
@@ -522,6 +523,7 @@ async fn load_sender_options_for_org(
 	Ok(rows
 		.into_iter()
 		.map(|row| RoutingSenderOption {
+			sender_organization: row.scope_identifiers.first().cloned(),
 			sender_identifier: row.sender_identifier,
 			case_count: row.case_count,
 			scope_identifiers: row.scope_identifiers,
