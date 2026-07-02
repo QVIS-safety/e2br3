@@ -285,7 +285,42 @@ INSERT INTO e2b_code_lists (list_name, code, display_name, sort_order) VALUES
 ('route_of_administration', '064', 'Transplacental', 64),
 ('route_of_administration', '065', 'Unknown', 65),
 ('route_of_administration', '066', 'Urethral', 66),
-('route_of_administration', '067', 'Vaginal', 67);
+('route_of_administration', '067', 'Vaginal', 67),
+
+-- FDA Additional Information on Drug, coded (FDA.G.k.10a)
+('fda_g_k_10a_additional_info', '1', 'Test', 1),
+('fda_g_k_10a_additional_info', '2', 'Reference', 2),
+('fda_g_k_10a_additional_info', '3', 'Bulk ingredient', 3),
+('fda_g_k_10a_additional_info', '4', 'Bulk Ingredient For Human Prescription Compounding', 4),
+('fda_g_k_10a_additional_info', '5', 'Unapproved Drug Product Manufactured Exclusively for Private Label Distributer', 5),
+
+-- FDA Specialized Product Category (FDA.G.k.10.1)
+('fda_g_k_10_1_specialized_product_category', 'C102834', 'Type 1: Convenience Kit of Co-Package', 1),
+('fda_g_k_10_1_specialized_product_category', 'C102835', 'Type 2: Prefilled Drug Delivery Device/System (syringe, patch, etc.)', 2),
+('fda_g_k_10_1_specialized_product_category', 'C102836', 'Type 3: Prefilled Biologic Delivery Device/System (syringe, patch, etc.)', 3),
+('fda_g_k_10_1_specialized_product_category', 'C102837', 'Type 4: Device Coated/Impregnated/Otherwise Combined with Drug', 4),
+('fda_g_k_10_1_specialized_product_category', 'C102838', 'Type 5: Device Coated or Otherwise Combined with Biologic', 5),
+('fda_g_k_10_1_specialized_product_category', 'C102839', 'Type 6: Drug/Biologic Combination', 6),
+('fda_g_k_10_1_specialized_product_category', 'C102840', 'Type 7: Separate Products Requiring Cross Labeling', 7),
+('fda_g_k_10_1_specialized_product_category', 'C102841', 'Type 8: Possible Combination Based on Cross Labeling of Separate Products (Temporary Type)', 8),
+('fda_g_k_10_1_specialized_product_category', 'C102842', 'Type 9: Other Type of Part 3 Combination Product (e.g., Drug/Device/Biological Product)', 9),
+
+-- FDA Device Follow-up Type (FDA.G.k.12.r.2.r)
+('fda_g_k_12_r_2_r_follow_up_type', '1', 'Correction', 1),
+('fda_g_k_12_r_2_r_follow_up_type', '2', 'Additional Information', 2),
+('fda_g_k_12_r_2_r_follow_up_type', '3', 'Response to FDA Request', 3),
+('fda_g_k_12_r_2_r_follow_up_type', '4', 'Device Evaluation', 4),
+
+-- FDA Remedial Action Initiated (FDA.G.k.12.r.11.r)
+('fda_g_k_12_r_11_remedial_action', '1', 'Recall', 1),
+('fda_g_k_12_r_11_remedial_action', '2', 'Repair', 2),
+('fda_g_k_12_r_11_remedial_action', '3', 'Replacement', 3),
+('fda_g_k_12_r_11_remedial_action', '4', 'Relabeling', 4),
+('fda_g_k_12_r_11_remedial_action', '5', 'Notification', 5),
+('fda_g_k_12_r_11_remedial_action', '6', 'Inspection', 6),
+('fda_g_k_12_r_11_remedial_action', '7', 'Patient Monitoring', 7),
+('fda_g_k_12_r_11_remedial_action', '8', 'Modification or Adjustment', 8),
+('fda_g_k_12_r_11_remedial_action', '9', 'Other', 9);
 
 -- ============================================================================
 -- UCUM Units Reference Table
