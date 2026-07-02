@@ -231,7 +231,10 @@ pub async fn search_fda_hierarchical_code(
 	ctx_w: CtxW,
 	_perm: RequirePermission<TerminologyReadPerm>,
 	Query(params): Query<FdaHierarchicalCodeSearchParams>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<FdaHierarchicalCodeList>>>)> {
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<Vec<FdaHierarchicalCodeList>>>,
+)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, TERMINOLOGY_READ)?;
 

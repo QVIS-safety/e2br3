@@ -42,9 +42,7 @@ impl DataType {
 	pub fn operators(self) -> &'static [Operator] {
 		use Operator::*;
 		match self {
-			DataType::Text => {
-				&[Equal, NotEqual, Like, NotLike, Null, NotNull, In]
-			}
+			DataType::Text => &[Equal, NotEqual, Like, NotLike, Null, NotNull, In],
 			DataType::Integer | DataType::Decimal => {
 				&[Equal, NotEqual, Range, Null, NotNull, In]
 			}
@@ -136,9 +134,7 @@ const fn item(
 const fn data_type_operators(data_type: DataType) -> &'static [Operator] {
 	use Operator::*;
 	match data_type {
-		DataType::Text => {
-			&[Equal, NotEqual, Like, NotLike, Null, NotNull, In]
-		}
+		DataType::Text => &[Equal, NotEqual, Like, NotLike, Null, NotNull, In],
 		DataType::Integer | DataType::Decimal => {
 			&[Equal, NotEqual, Range, Null, NotNull, In]
 		}
@@ -162,7 +158,13 @@ const CASE_ITEMS: &[CatalogItem] = &[
 		"workflow_status",
 		CaseColumn,
 	),
-	item("created_at", "Date of Creation", Date, "created_at", CaseColumn),
+	item(
+		"created_at",
+		"Date of Creation",
+		Date,
+		"created_at",
+		CaseColumn,
+	),
 ];
 
 // -- CI: C.1 Case identification (safety_report_identification, one-to-one).
@@ -559,18 +561,66 @@ const NR_ITEMS: &[CatalogItem] = &[
 
 /// The full field catalog, ordered by page.
 pub const CATALOG: &[CatalogPage] = &[
-	CatalogPage { id: "CASE", label: "Case", items: CASE_ITEMS },
-	CatalogPage { id: "CI", label: "Case Identification (C.1)", items: CI_ITEMS },
-	CatalogPage { id: "RP", label: "Reporter (C.2)", items: RP_ITEMS },
-	CatalogPage { id: "SD", label: "Sender (C.3)", items: SD_ITEMS },
-	CatalogPage { id: "LR", label: "Literature (C.4)", items: LR_ITEMS },
-	CatalogPage { id: "SI", label: "Study (C.5)", items: SI_ITEMS },
-	CatalogPage { id: "DM", label: "Patient (D)", items: DM_ITEMS },
-	CatalogPage { id: "DH", label: "Past Drug History (D.8)", items: DH_ITEMS },
-	CatalogPage { id: "AE", label: "Reaction / Event (E)", items: AE_ITEMS },
-	CatalogPage { id: "LB", label: "Test Results (F)", items: LB_ITEMS },
-	CatalogPage { id: "DG", label: "Drug (G)", items: DG_ITEMS },
-	CatalogPage { id: "NR", label: "Narrative (H)", items: NR_ITEMS },
+	CatalogPage {
+		id: "CASE",
+		label: "Case",
+		items: CASE_ITEMS,
+	},
+	CatalogPage {
+		id: "CI",
+		label: "Case Identification (C.1)",
+		items: CI_ITEMS,
+	},
+	CatalogPage {
+		id: "RP",
+		label: "Reporter (C.2)",
+		items: RP_ITEMS,
+	},
+	CatalogPage {
+		id: "SD",
+		label: "Sender (C.3)",
+		items: SD_ITEMS,
+	},
+	CatalogPage {
+		id: "LR",
+		label: "Literature (C.4)",
+		items: LR_ITEMS,
+	},
+	CatalogPage {
+		id: "SI",
+		label: "Study (C.5)",
+		items: SI_ITEMS,
+	},
+	CatalogPage {
+		id: "DM",
+		label: "Patient (D)",
+		items: DM_ITEMS,
+	},
+	CatalogPage {
+		id: "DH",
+		label: "Past Drug History (D.8)",
+		items: DH_ITEMS,
+	},
+	CatalogPage {
+		id: "AE",
+		label: "Reaction / Event (E)",
+		items: AE_ITEMS,
+	},
+	CatalogPage {
+		id: "LB",
+		label: "Test Results (F)",
+		items: LB_ITEMS,
+	},
+	CatalogPage {
+		id: "DG",
+		label: "Drug (G)",
+		items: DG_ITEMS,
+	},
+	CatalogPage {
+		id: "NR",
+		label: "Narrative (H)",
+		items: NR_ITEMS,
+	},
 ];
 
 /// Returns the catalog.
@@ -579,10 +629,7 @@ pub fn catalog() -> &'static [CatalogPage] {
 }
 
 /// Looks up an item by page id and item id (used by the query builder in 2.2).
-pub fn find_item(
-	page_id: &str,
-	item_id: &str,
-) -> Option<&'static CatalogItem> {
+pub fn find_item(page_id: &str, item_id: &str) -> Option<&'static CatalogItem> {
 	CATALOG
 		.iter()
 		.find(|page| page.id == page_id)?
@@ -676,7 +723,9 @@ mod tests {
 		assert!(first_page["items"].is_array());
 		// Operators serialize as a non-empty array of camelCase strings.
 		let first_item = &first_page["items"][0];
-		assert!(first_item["operators"].as_array().is_some_and(|a| !a.is_empty()));
+		assert!(first_item["operators"]
+			.as_array()
+			.is_some_and(|a| !a.is_empty()));
 		assert!(first_item["dataType"].is_string());
 	}
 }
