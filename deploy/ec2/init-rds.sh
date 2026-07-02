@@ -125,6 +125,27 @@ dump_terminology_tables() {
     "${SQL_EXEC_URL}"
 }
 
+set_terminology_user_triggers() {
+  trigger_state="$1"
+  psql "${SQL_EXEC_URL}" -v ON_ERROR_STOP=1 <<SQL
+ALTER TABLE IF EXISTS public.meddra_terms ${trigger_state} TRIGGER USER;
+ALTER TABLE IF EXISTS public.whodrug_products ${trigger_state} TRIGGER USER;
+ALTER TABLE IF EXISTS public.terminology_releases ${trigger_state} TRIGGER USER;
+SQL
+}
+
+restore_terminology_tables() {
+  echo "Restoring preserved terminology tables"
+  set_terminology_user_triggers DISABLE
+  if psql "${SQL_EXEC_URL}" -v ON_ERROR_STOP=1 -f "${TERMINOLOGY_DUMP_FILE}"; then
+    set_terminology_user_triggers ENABLE
+  else
+    status=$?
+    set_terminology_user_triggers ENABLE || true
+    return "${status}"
+  fi
+}
+
 cleanup() {
   if [ -n "${TERMINOLOGY_DUMP_FILE}" ]; then
     rm -rf "$(dirname "${TERMINOLOGY_DUMP_FILE}")"
@@ -180,8 +201,7 @@ if [ "${RESET_DB}" = "1" ] && [ "${RESET_PRESERVE_TERMINOLOGY}" = "1" ] && [ -n 
   apply_sql_group "bootstrap"
   apply_sql_group "migrations"
 
-  echo "Restoring preserved terminology tables"
-  psql "${SQL_EXEC_URL}" -v ON_ERROR_STOP=1 -f "${TERMINOLOGY_DUMP_FILE}"
+  restore_terminology_tables
 
   if [ "${INCLUDE_SEED}" = "1" ]; then
     apply_sql_group "seed"

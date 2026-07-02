@@ -155,6 +155,7 @@ jobs:
             '[
               "set -eu",
               "cd /opt/e2br3",
+              "git pull --ff-only",
               "set -a",
               ". ./.env.prod",
               "set +a",
