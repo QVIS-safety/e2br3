@@ -35,9 +35,22 @@ pub struct ValidatedCondition {
 /// Validation failure for a single condition.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum QueryValidationError {
-	UnknownField { page: String, item: String },
-	OperatorNotAllowed { page: String, item: String, operator: Operator },
-	WrongValueCount { page: String, item: String, operator: Operator, expected: &'static str, got: usize },
+	UnknownField {
+		page: String,
+		item: String,
+	},
+	OperatorNotAllowed {
+		page: String,
+		item: String,
+		operator: Operator,
+	},
+	WrongValueCount {
+		page: String,
+		item: String,
+		operator: Operator,
+		expected: &'static str,
+		got: usize,
+	},
 }
 
 impl fmt::Display for QueryValidationError {
@@ -46,10 +59,20 @@ impl fmt::Display for QueryValidationError {
 			QueryValidationError::UnknownField { page, item } => {
 				write!(f, "unknown query field {page}.{item}")
 			}
-			QueryValidationError::OperatorNotAllowed { page, item, operator } => {
+			QueryValidationError::OperatorNotAllowed {
+				page,
+				item,
+				operator,
+			} => {
 				write!(f, "operator {operator:?} not allowed for {page}.{item}")
 			}
-			QueryValidationError::WrongValueCount { page, item, operator, expected, got } => {
+			QueryValidationError::WrongValueCount {
+				page,
+				item,
+				operator,
+				expected,
+				got,
+			} => {
 				write!(
 					f,
 					"operator {operator:?} on {page}.{item} expects {expected} value(s), got {got}"
@@ -149,6 +172,54 @@ pub fn build_where(conditions: &[ValidatedCondition]) -> (String, Vec<String>) {
 	(predicates.join(" AND "), binds)
 }
 
+/// The two report-scope toggles from the query builder (spec issue 9-2).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ReportFilters {
+	/// Keep only the latest follow-up (highest version) per safety report.
+	pub last_fu: bool,
+	/// Keep only cases with no accepted acknowledgement in submission history.
+	pub no_ack_accept: bool,
+}
+
+/// A case is the latest report when no newer version shares its safety report id.
+const LAST_FU_SQL: &str =
+	"NOT EXISTS (SELECT 1 FROM safety_report_identification s_self \
+JOIN safety_report_identification s_newer \
+ON s_newer.safety_report_id = s_self.safety_report_id \
+AND s_newer.version > s_self.version \
+WHERE s_self.case_id = c.id)";
+
+/// A case has no ACK.ACCEPT history when no successful acknowledgement exists for
+/// any of its submissions.
+const NO_ACK_ACCEPT_SQL: &str = "NOT EXISTS (SELECT 1 FROM submission_acks sa \
+JOIN case_submissions cs ON cs.id = sa.submission_id \
+WHERE cs.case_id = c.id AND sa.success = TRUE)";
+
+/// Static predicates (no binds) for the enabled report filters.
+pub fn report_filter_predicates(filters: &ReportFilters) -> Vec<&'static str> {
+	let mut predicates = Vec::new();
+	if filters.last_fu {
+		predicates.push(LAST_FU_SQL);
+	}
+	if filters.no_ack_accept {
+		predicates.push(NO_ACK_ACCEPT_SQL);
+	}
+	predicates
+}
+
+/// Combines the condition `WHERE` clause with any report-filter predicates into
+/// a single clause. Report predicates carry no binds, so placeholders in
+/// `where_sql` are unaffected.
+pub fn combine_where(where_sql: &str, filters: &ReportFilters) -> String {
+	let mut clauses = vec![where_sql.to_string()];
+	clauses.extend(
+		report_filter_predicates(filters)
+			.into_iter()
+			.map(str::to_string),
+	);
+	clauses.join(" AND ")
+}
+
 /// Renders the column expression and a value-placeholder generator for a data
 /// type. Text-like types cast the column to text; numeric/date cast the bound
 /// value to the column type.
@@ -168,7 +239,7 @@ fn build_predicate(
 		DataType::Date => (format!("{prefix}.{column}"), "::date"),
 	};
 
-	let mut next_placeholder = |binds: &mut Vec<String>, value: &str| -> String {
+	let next_placeholder = |binds: &mut Vec<String>, value: &str| -> String {
 		binds.push(value.to_string());
 		format!("${}{}", binds.len(), val_cast)
 	};
@@ -217,7 +288,12 @@ fn build_predicate(
 mod tests {
 	use super::*;
 
-	fn raw(page: &str, item: &str, operator: Operator, values: &[&str]) -> RawCondition {
+	fn raw(
+		page: &str,
+		item: &str,
+		operator: Operator,
+		values: &[&str],
+	) -> RawCondition {
 		RawCondition {
 			page: page.to_string(),
 			item: item.to_string(),
@@ -235,9 +311,13 @@ mod tests {
 
 	#[test]
 	fn case_column_equal() {
-		let conditions =
-			validate_conditions(&[raw("CASE", "dg_prd_key", Operator::Equal, &["ABC"])])
-				.unwrap();
+		let conditions = validate_conditions(&[raw(
+			"CASE",
+			"dg_prd_key",
+			Operator::Equal,
+			&["ABC"],
+		)])
+		.unwrap();
 		let (sql, binds) = build_where(&conditions);
 		assert_eq!(sql, "c.dg_prd_key::text = $1");
 		assert_eq!(binds, vec!["ABC".to_string()]);
@@ -330,25 +410,80 @@ mod tests {
 
 	#[test]
 	fn unknown_field_rejected() {
-		let err = validate_conditions(&[raw("CASE", "nope", Operator::Equal, &["x"])])
-			.unwrap_err();
+		let err =
+			validate_conditions(&[raw("CASE", "nope", Operator::Equal, &["x"])])
+				.unwrap_err();
 		assert!(matches!(err, QueryValidationError::UnknownField { .. }));
 	}
 
 	#[test]
 	fn operator_not_allowed_rejected() {
 		// Range is invalid for a Text field.
-		let err =
-			validate_conditions(&[raw("CASE", "dg_prd_key", Operator::Range, &["a", "b"])])
-				.unwrap_err();
-		assert!(matches!(err, QueryValidationError::OperatorNotAllowed { .. }));
+		let err = validate_conditions(&[raw(
+			"CASE",
+			"dg_prd_key",
+			Operator::Range,
+			&["a", "b"],
+		)])
+		.unwrap_err();
+		assert!(matches!(
+			err,
+			QueryValidationError::OperatorNotAllowed { .. }
+		));
 	}
 
 	#[test]
 	fn wrong_value_count_rejected() {
-		let err =
-			validate_conditions(&[raw("DM", "age_at_time_of_onset", Operator::Range, &["1"])])
-				.unwrap_err();
+		let err = validate_conditions(&[raw(
+			"DM",
+			"age_at_time_of_onset",
+			Operator::Range,
+			&["1"],
+		)])
+		.unwrap_err();
 		assert!(matches!(err, QueryValidationError::WrongValueCount { .. }));
+	}
+
+	#[test]
+	fn no_report_filters_produce_no_predicates() {
+		let filters = ReportFilters::default();
+		assert!(report_filter_predicates(&filters).is_empty());
+		assert_eq!(combine_where("TRUE", &filters), "TRUE");
+	}
+
+	#[test]
+	fn last_fu_filter_added() {
+		let filters = ReportFilters {
+			last_fu: true,
+			no_ack_accept: false,
+		};
+		let combined = combine_where("c.dg_prd_key::text = $1", &filters);
+		assert!(combined.starts_with("c.dg_prd_key::text = $1 AND "));
+		assert!(combined.contains("s_newer.version > s_self.version"));
+		assert!(!combined.contains("submission_acks"));
+	}
+
+	#[test]
+	fn no_ack_accept_filter_added() {
+		let filters = ReportFilters {
+			last_fu: false,
+			no_ack_accept: true,
+		};
+		let combined = combine_where("TRUE", &filters);
+		assert!(combined.contains("submission_acks"));
+		assert!(combined.contains("sa.success = TRUE"));
+	}
+
+	#[test]
+	fn both_report_filters_combine() {
+		let filters = ReportFilters {
+			last_fu: true,
+			no_ack_accept: true,
+		};
+		let predicates = report_filter_predicates(&filters);
+		assert_eq!(predicates.len(), 2);
+		let combined = combine_where("TRUE", &filters);
+		assert!(combined.contains("s_newer.version > s_self.version"));
+		assert!(combined.contains("submission_acks"));
 	}
 }

@@ -1128,6 +1128,7 @@ pub fn routes_case_query(mm: ModelManager) -> Router {
 			"/case-query/catalog",
 			get(case_query_catalog_rest::get_case_query_catalog),
 		)
+		.route("/cases/query", post(case_query_catalog_rest::search_cases))
 		.route(
 			"/case-query/search",
 			post(case_query_catalog_rest::search_cases),

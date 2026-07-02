@@ -1,7 +1,7 @@
 //! REST endpoints for the Export/Submission dynamic query (Phase 2, 2.1/2.2).
 //!
 //! - `GET  /api/case-query/catalog` returns the queryable pages/items.
-//! - `POST /api/case-query/search` runs a catalog-validated condition query and
+//! - `POST /api/cases/query` runs a catalog-validated condition query and
 //!   returns the matching case ids (scoped to the caller).
 //!
 //! Server-only routing detail (`FieldSource`) is never serialized to the client.
@@ -11,7 +11,7 @@ use axum::http::StatusCode;
 use axum::Json;
 use lib_core::model::acs::CASE_LIST;
 use lib_core::model::case_query::{
-	build_where, validate_conditions, RawCondition,
+	build_where, combine_where, validate_conditions, RawCondition, ReportFilters,
 };
 use lib_core::model::case_query_catalog::{catalog, CatalogPage};
 use lib_core::model::ModelManager;
@@ -39,6 +39,10 @@ pub async fn get_case_query_catalog(
 pub struct CaseQueryRequest {
 	#[serde(default)]
 	pub conditions: Vec<RawCondition>,
+	#[serde(default)]
+	pub report_type_last: bool,
+	#[serde(default)]
+	pub no_ack_accept_history: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -53,7 +57,7 @@ struct CaseIdRow {
 	id: Uuid,
 }
 
-/// POST /api/case-query/search
+/// POST /api/cases/query
 pub async fn search_cases(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
@@ -62,9 +66,17 @@ pub async fn search_cases(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_LIST)?;
 
-	let conditions = validate_conditions(&request.conditions)
-		.map_err(|err| Error::BadRequest { message: err.to_string() })?;
+	let conditions = validate_conditions(&request.conditions).map_err(|err| {
+		Error::BadRequest {
+			message: err.to_string(),
+		}
+	})?;
 	let (where_sql, binds) = build_where(&conditions);
+	let filters = ReportFilters {
+		last_fu: request.report_type_last,
+		no_ack_accept: request.no_ack_accept_history,
+	};
+	let where_sql = combine_where(&where_sql, &filters);
 
 	let sql = format!(
 		"SELECT c.id FROM cases c WHERE {where_sql} \
@@ -97,6 +109,8 @@ pub async fn search_cases(
 	let total = case_ids.len();
 	Ok((
 		StatusCode::OK,
-		Json(DataRestResult { data: CaseQueryResult { case_ids, total } }),
+		Json(DataRestResult {
+			data: CaseQueryResult { case_ids, total },
+		}),
 	))
 }
