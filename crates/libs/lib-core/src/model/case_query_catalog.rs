@@ -349,13 +349,228 @@ const DG_ITEMS: &[CatalogItem] = &[
 	),
 ];
 
+// -- RP: C.2 Primary source(s) / reporter (primary_sources, one-to-many).
+const RP_ITEMS: &[CatalogItem] = &[
+	item(
+		"reporter_family_name",
+		"Reporter Family Name (C.2.r.1.4)",
+		Text,
+		"reporter_family_name",
+		OneToMany("primary_sources"),
+	),
+	item(
+		"reporter_given_name",
+		"Reporter Given Name (C.2.r.1.2)",
+		Text,
+		"reporter_given_name",
+		OneToMany("primary_sources"),
+	),
+	item(
+		"organization",
+		"Reporter Organisation (C.2.r.2.1)",
+		Text,
+		"organization",
+		OneToMany("primary_sources"),
+	),
+	item(
+		"country_code",
+		"Reporter Country (C.2.r.3)",
+		Code,
+		"country_code",
+		OneToMany("primary_sources"),
+	),
+];
+
+// -- SD: C.3 Sender (sender_information, one-to-many).
+const SD_ITEMS: &[CatalogItem] = &[
+	item(
+		"organization_name",
+		"Sender Organisation (C.3.2)",
+		Text,
+		"organization_name",
+		OneToMany("sender_information"),
+	),
+	item(
+		"person_family_name",
+		"Sender Person Family Name (C.3.3.4)",
+		Text,
+		"person_family_name",
+		OneToMany("sender_information"),
+	),
+	item(
+		"country_code",
+		"Sender Country (C.3.4.6)",
+		Code,
+		"country_code",
+		OneToMany("sender_information"),
+	),
+];
+
+// -- LR: C.4 Literature reference(s) (literature_references, one-to-many).
+const LR_ITEMS: &[CatalogItem] = &[item(
+	"reference_text",
+	"Literature Reference (C.4.r.1)",
+	Text,
+	"reference_text",
+	OneToMany("literature_references"),
+)];
+
+// -- SI: C.5 Study identification (study_information, one-to-many).
+const SI_ITEMS: &[CatalogItem] = &[
+	item(
+		"study_name",
+		"Study Name (C.5.3)",
+		Text,
+		"study_name",
+		OneToMany("study_information"),
+	),
+	item(
+		"sponsor_study_number",
+		"Sponsor Study Number (C.5.2)",
+		Text,
+		"sponsor_study_number",
+		OneToMany("study_information"),
+	),
+	item(
+		"study_type_reaction",
+		"Study Type (C.5.4)",
+		Code,
+		"study_type_reaction",
+		OneToMany("study_information"),
+	),
+	item(
+		"registration_number",
+		"Study Registration Number (C.5.1.r.1)",
+		Text,
+		"registration_number",
+		OneToMany("study_information"),
+	),
+];
+
+// -- DH: D.8 Past drug history (past_drug_history, one-to-many).
+const DH_ITEMS: &[CatalogItem] = &[
+	item(
+		"drug_name",
+		"Past Drug Name (D.8.r.1)",
+		Text,
+		"drug_name",
+		OneToMany("past_drug_history"),
+	),
+	item(
+		"mpid",
+		"Past Drug MPID (D.8.r.2b)",
+		Code,
+		"mpid",
+		OneToMany("past_drug_history"),
+	),
+	item(
+		"indication_meddra_code",
+		"Past Drug Indication MedDRA (D.8.r.6b)",
+		Code,
+		"indication_meddra_code",
+		OneToMany("past_drug_history"),
+	),
+	item(
+		"reaction_meddra_code",
+		"Past Drug Reaction MedDRA (D.8.r.7b)",
+		Code,
+		"reaction_meddra_code",
+		OneToMany("past_drug_history"),
+	),
+	item(
+		"start_date",
+		"Past Drug Start Date (D.8.r.4)",
+		Date,
+		"start_date",
+		OneToMany("past_drug_history"),
+	),
+];
+
+// -- LB: F Test results (test_results, one-to-many).
+const LB_ITEMS: &[CatalogItem] = &[
+	item(
+		"test_name",
+		"Test Name (F.r.2.1)",
+		Text,
+		"test_name",
+		OneToMany("test_results"),
+	),
+	item(
+		"test_meddra_code",
+		"Test MedDRA Code (F.r.2.2b)",
+		Code,
+		"test_meddra_code",
+		OneToMany("test_results"),
+	),
+	item(
+		"test_result_code",
+		"Test Result Code (F.r.3.2)",
+		Code,
+		"test_result_code",
+		OneToMany("test_results"),
+	),
+	item(
+		"test_result_value",
+		"Test Result Value (F.r.3.3)",
+		Text,
+		"test_result_value",
+		OneToMany("test_results"),
+	),
+	item(
+		"test_date",
+		"Test Date (F.r.1)",
+		Date,
+		"test_date",
+		OneToMany("test_results"),
+	),
+];
+
+// -- NR: H Narrative (narrative_information, one-to-one).
+const NR_ITEMS: &[CatalogItem] = &[
+	item(
+		"case_narrative",
+		"Case Narrative (H.1)",
+		Text,
+		"case_narrative",
+		OneToOne("narrative_information"),
+	),
+	item(
+		"reporter_comments",
+		"Reporter Comments (H.2)",
+		Text,
+		"reporter_comments",
+		OneToOne("narrative_information"),
+	),
+	item(
+		"sender_comments",
+		"Sender Comments (H.4)",
+		Text,
+		"sender_comments",
+		OneToOne("narrative_information"),
+	),
+	item(
+		"additional_information",
+		"Additional Information",
+		Text,
+		"additional_information",
+		OneToOne("narrative_information"),
+	),
+];
+
 /// The full field catalog, ordered by page.
 pub const CATALOG: &[CatalogPage] = &[
 	CatalogPage { id: "CASE", label: "Case", items: CASE_ITEMS },
 	CatalogPage { id: "CI", label: "Case Identification (C.1)", items: CI_ITEMS },
+	CatalogPage { id: "RP", label: "Reporter (C.2)", items: RP_ITEMS },
+	CatalogPage { id: "SD", label: "Sender (C.3)", items: SD_ITEMS },
+	CatalogPage { id: "LR", label: "Literature (C.4)", items: LR_ITEMS },
+	CatalogPage { id: "SI", label: "Study (C.5)", items: SI_ITEMS },
 	CatalogPage { id: "DM", label: "Patient (D)", items: DM_ITEMS },
+	CatalogPage { id: "DH", label: "Past Drug History (D.8)", items: DH_ITEMS },
 	CatalogPage { id: "AE", label: "Reaction / Event (E)", items: AE_ITEMS },
+	CatalogPage { id: "LB", label: "Test Results (F)", items: LB_ITEMS },
 	CatalogPage { id: "DG", label: "Drug (G)", items: DG_ITEMS },
+	CatalogPage { id: "NR", label: "Narrative (H)", items: NR_ITEMS },
 ];
 
 /// Returns the catalog.
