@@ -62,7 +62,8 @@ pub fn decide_xml_import(
 		);
 	}
 
-	if let Some(duplicate) = duplicate_matches.iter().max_by_key(|case| case.version) {
+	if let Some(duplicate) = duplicate_matches.iter().max_by_key(|case| case.version)
+	{
 		return decision_from_existing(
 			incoming,
 			duplicate.case_id,
@@ -77,7 +78,9 @@ pub fn decide_xml_import(
 		matched_case_id: None,
 		matched_case_number: None,
 		matched_case_version: None,
-		message: Some("No matching prior case found; import as new case.".to_string()),
+		message: Some(
+			"No matching prior case found; import as new case.".to_string(),
+		),
 	}
 }
 
@@ -88,11 +91,12 @@ fn decision_from_existing(
 	version: i32,
 	existing_most_recent: Option<Date>,
 ) -> XmlImportDecision {
-	let action = if existing_most_recent == Some(incoming.date_of_most_recent_information) {
-		XmlImportDecisionAction::Skip
-	} else {
-		XmlImportDecisionAction::FollowUp
-	};
+	let action =
+		if existing_most_recent == Some(incoming.date_of_most_recent_information) {
+			XmlImportDecisionAction::Skip
+		} else {
+			XmlImportDecisionAction::FollowUp
+		};
 	let message = match action {
 		XmlImportDecisionAction::Skip => {
 			"Existing case has the same C.1.1 and C.1.2; import skipped."
