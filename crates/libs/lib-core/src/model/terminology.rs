@@ -123,6 +123,18 @@ pub struct UcumUnit {
 	pub active: bool,
 }
 
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct FdaHierarchicalCodeList {
+	pub id: i64,
+	pub list_name: String,
+	pub ncit_concept_code: String,
+	pub level1_term: String,
+	pub level2_term: Option<String>,
+	pub level3_term: Option<String>,
+	pub fda_code: String,
+	pub imdrf_code: String,
+}
+
 // -- BMCs
 
 pub struct MeddraTermBmc;
@@ -252,5 +264,36 @@ impl UcumUnitBmc {
 			.fetch_all(sqlx::query_as::<_, UcumUnit>(&sql))
 			.await?;
 		Ok(units)
+	}
+}
+
+pub struct FdaHierarchicalCodeListBmc;
+impl DbBmc for FdaHierarchicalCodeListBmc {
+	const TABLE: &'static str = "fda_hierarchical_code_lists";
+}
+
+impl FdaHierarchicalCodeListBmc {
+	pub async fn search(
+		_ctx: &Ctx,
+		mm: &ModelManager,
+		list_name: &str,
+		query: &str,
+		limit: i64,
+	) -> Result<Vec<FdaHierarchicalCodeList>> {
+		let search_pattern = format!("%{query}%");
+		let sql = format!(
+			"SELECT * FROM {} WHERE list_name = $1 AND (level1_term ILIKE $2 OR level2_term ILIKE $2 OR level3_term ILIKE $2) ORDER BY level1_term, level2_term, level3_term LIMIT $3",
+			Self::TABLE
+		);
+		let rows = mm
+			.dbx()
+			.fetch_all(
+				sqlx::query_as::<_, FdaHierarchicalCodeList>(&sql)
+					.bind(list_name)
+					.bind(&search_pattern)
+					.bind(limit),
+			)
+			.await?;
+		Ok(rows)
 	}
 }
