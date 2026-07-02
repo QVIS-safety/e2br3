@@ -540,6 +540,52 @@ async fn test_case_list_view_projects_reference_grid_fields() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_case_list_view_handles_case_without_safety_report_row() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let case_id = Uuid::new_v4();
+
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, seed.admin.id).await?;
+	set_org_context(&mut tx, seed.org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	sqlx::query(
+		"INSERT INTO cases (id, organization_id, status, created_by, updated_by)
+		 VALUES ($1, $2, 'draft', $3, $3)",
+	)
+	.bind(case_id)
+	.bind(seed.org_id)
+	.bind(seed.admin.id)
+	.execute(&mut *tx)
+	.await?;
+	tx.commit().await?;
+
+	let (status, raw_body) = get_raw(&app, &cookie, "/api/cases/list-view").await?;
+	assert_eq!(
+		status,
+		StatusCode::OK,
+		"{}",
+		String::from_utf8_lossy(&raw_body)
+	);
+	let body: Value = serde_json::from_slice(&raw_body)?;
+	let items = body["data"]["items"]
+		.as_array()
+		.ok_or("missing list-view items")?;
+	let case_id_string = case_id.to_string();
+	let row = items
+		.iter()
+		.find(|item| item["caseId"].as_str() == Some(case_id_string.as_str()))
+		.ok_or("missing orphan case row")?;
+
+	assert_eq!(row["caseNo"].as_str(), Some(case_id_string.as_str()));
+	assert_eq!(row["fu"].as_i64(), Some(0));
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_list_view_warn_matches_validation_failure_count() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

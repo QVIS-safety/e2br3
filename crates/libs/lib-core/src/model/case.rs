@@ -603,8 +603,8 @@ impl CaseBmc {
 			r#"
 			SELECT row_number() OVER (ORDER BY {order_clause})::bigint AS no,
 			       c.id AS case_id,
-			       s.safety_report_id AS case_no,
-			       GREATEST(s.version - 1, 0) AS fu,
+			       COALESCE(NULLIF(s.safety_report_id, ''), c.id::text) AS case_no,
+			       GREATEST(COALESCE(s.version, 1) - 1, 0) AS fu,
 			       COALESCE(s.transmission_date, to_char(c.created_at AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS')) AS date_of_creation,
 			       COALESCE(s.date_of_most_recent_information::text, 'N/A') AS date_of_most_recent_information,
 			       COALESCE(NULLIF(c.dg_prd_key, ''), 'N/A') AS dg_prd_key,
