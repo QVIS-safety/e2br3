@@ -1,7 +1,8 @@
 use crate::common::{demo_ctx, demo_user_id, init_test_mm, unique_suffix, Result};
 use lib_core::model::store::set_full_context_dbx_or_rollback;
 use lib_core::model::terminology::{
-	E2bCodeListBmc, IsoCountryBmc, MeddraTermBmc, UcumUnitBmc, WhodrugProductBmc,
+	E2bCodeListBmc, FdaHierarchicalCodeListBmc, IsoCountryBmc, MeddraTermBmc,
+	UcumUnitBmc, WhodrugProductBmc,
 };
 use serial_test::serial;
 
@@ -116,6 +117,41 @@ async fn test_terminology_queries() -> Result<()> {
 	assert!(ucum_units.iter().any(|u| u.code == "mmol/L"));
 
 	dbx.rollback_txn().await?;
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_fda_hierarchical_code_list_search() -> Result<()> {
+	let mm = init_test_mm().await;
+	let ctx = demo_ctx();
+
+	// Seeded by db/bootstrap/11-fda-device-codes.sql — real Device Problem Code data.
+	let results = FdaHierarchicalCodeListBmc::search(
+		&ctx,
+		&mm,
+		"device_problem_code",
+		"Biocompatibility",
+		10,
+	)
+	.await?;
+
+	assert!(results.iter().any(|r| r.fda_code == "2886"
+		&& r.imdrf_code == "IMDRF:A010101"
+		&& r.level1_term == "Patient Device Interaction Problem"
+		&& r.level2_term.as_deref() == Some("Patient-Device Incompatibility")
+		&& r.level3_term.as_deref() == Some("Biocompatibility")));
+
+	let no_match = FdaHierarchicalCodeListBmc::search(
+		&ctx,
+		&mm,
+		"device_problem_code",
+		"ZzNoSuchTermZz",
+		10,
+	)
+	.await?;
+	assert!(no_match.is_empty());
 
 	Ok(())
 }
