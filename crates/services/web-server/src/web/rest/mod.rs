@@ -1110,6 +1110,10 @@ pub fn routes_terminology(mm: ModelManager) -> Router {
 			get(terminology_rest::get_code_list),
 		)
 		.route(
+			"/terminology/fda-code-search",
+			get(terminology_rest::search_fda_hierarchical_code),
+		)
+		.route(
 			"/terminology/ucum-units",
 			get(terminology_rest::list_ucum_units),
 		)

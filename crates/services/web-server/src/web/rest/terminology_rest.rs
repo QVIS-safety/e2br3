@@ -8,7 +8,8 @@ use lib_core::model::acs::{
 	TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT, TERMINOLOGY_READ,
 };
 use lib_core::model::terminology::{
-	E2bCodeList, E2bCodeListBmc, IsoCountry, IsoCountryBmc, MeddraTerm,
+	E2bCodeList, E2bCodeListBmc, FdaHierarchicalCodeList,
+	FdaHierarchicalCodeListBmc, IsoCountry, IsoCountryBmc, MeddraTerm,
 	MeddraTermBmc, UcumUnit, UcumUnitBmc, WhodrugProduct, WhodrugProductBmc,
 };
 use lib_core::model::terminology_import::{self, TerminologyReleaseRow};
@@ -43,6 +44,14 @@ fn default_limit() -> i64 {
 #[derive(Deserialize)]
 pub struct CodeListParams {
 	pub list_name: String,
+}
+
+#[derive(Deserialize)]
+pub struct FdaHierarchicalCodeSearchParams {
+	pub list_name: String,
+	pub q: String,
+	#[serde(default = "default_limit")]
+	pub limit: i64,
 }
 
 #[derive(Deserialize)]
@@ -214,6 +223,32 @@ pub async fn get_code_list(
 	let codes =
 		E2bCodeListBmc::get_by_list_name(&ctx, &mm, &params.list_name).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: codes })))
+}
+
+/// GET /api/terminology/fda-code-search?list_name={name}&q={term}&limit={count}
+pub async fn search_fda_hierarchical_code(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	_perm: RequirePermission<TerminologyReadPerm>,
+	Query(params): Query<FdaHierarchicalCodeSearchParams>,
+) -> Result<(StatusCode, Json<DataRestResult<Vec<FdaHierarchicalCodeList>>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, TERMINOLOGY_READ)?;
+
+	if params.q.trim().chars().count() < 2 {
+		return Ok((StatusCode::OK, Json(DataRestResult { data: vec![] })));
+	}
+
+	let rows = FdaHierarchicalCodeListBmc::search(
+		&ctx,
+		&mm,
+		&params.list_name,
+		params.q.trim(),
+		params.limit,
+	)
+	.await?;
+
+	Ok((StatusCode::OK, Json(DataRestResult { data: rows })))
 }
 
 /// GET /api/terminology/ucum-units
