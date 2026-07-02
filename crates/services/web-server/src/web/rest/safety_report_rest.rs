@@ -50,9 +50,7 @@ fn create_payload_to_update(
 			.map(PatchValue::Value)
 			.unwrap_or(PatchValue::Missing),
 		worldwide_unique_id: data.worldwide_unique_id,
-		worldwide_unique_id_null_flavor: data.worldwide_unique_id_null_flavor,
 		first_sender_type: data.first_sender_type,
-		first_sender_type_null_flavor: data.first_sender_type_null_flavor,
 		additional_documents_available: data.additional_documents_available,
 		other_case_identifiers_exist: data.other_case_identifiers_exist,
 		other_case_identifiers_exist_null_flavor: data

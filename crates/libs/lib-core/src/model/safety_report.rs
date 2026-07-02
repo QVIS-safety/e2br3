@@ -76,11 +76,9 @@ pub struct SafetyReportIdentification {
 
 	// C.1.8.1 - Worldwide Unique Case Identification
 	pub worldwide_unique_id: Option<String>,
-	pub worldwide_unique_id_null_flavor: Option<String>,
 
 	// C.1.8.2 - First Sender of This Case
 	pub first_sender_type: Option<String>,
-	pub first_sender_type_null_flavor: Option<String>,
 
 	// C.1.6.1 - Are Additional Documents Available?
 	pub additional_documents_available: Option<bool>,
@@ -132,12 +130,10 @@ pub struct SafetyReportIdentificationForCreate {
 	pub local_criteria_report_type: Option<String>,
 	pub combination_product_report_indicator: Option<String>,
 	pub first_sender_type: Option<String>,
-	pub first_sender_type_null_flavor: Option<String>,
 	pub additional_documents_available: Option<bool>,
 	pub other_case_identifiers_exist: Option<bool>,
 	pub other_case_identifiers_exist_null_flavor: Option<String>,
 	pub worldwide_unique_id: Option<String>,
-	pub worldwide_unique_id_null_flavor: Option<String>,
 	pub nullification_code: Option<String>,
 	pub nullification_reason: Option<String>,
 	pub receiver_organization: Option<String>,
@@ -212,9 +208,7 @@ pub struct SafetyReportIdentificationForUpdate {
 	#[serde(default, deserialize_with = "deserialize_patch_value")]
 	pub combination_product_report_indicator: PatchValue<String>,
 	pub worldwide_unique_id: Option<String>,
-	pub worldwide_unique_id_null_flavor: Option<String>,
 	pub first_sender_type: Option<String>,
-	pub first_sender_type_null_flavor: Option<String>,
 	pub additional_documents_available: Option<bool>,
 	pub other_case_identifiers_exist: Option<bool>,
 	pub other_case_identifiers_exist_null_flavor: Option<String>,
@@ -705,8 +699,8 @@ impl SafetyReportIdentificationBmc {
 		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, fulfil_expedited_criteria_null_flavor, local_criteria_report_type, combination_product_report_indicator, worldwide_unique_id, worldwide_unique_id_null_flavor, first_sender_type, first_sender_type_null_flavor, additional_documents_available, other_case_identifiers_exist, other_case_identifiers_exist_null_flavor, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
-			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, now(), now(), $22)
+			"INSERT INTO {} (case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, fulfil_expedited_criteria_null_flavor, local_criteria_report_type, combination_product_report_indicator, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, other_case_identifiers_exist_null_flavor, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
+			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, now(), now(), $19)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -726,9 +720,7 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.local_criteria_report_type)
 					.bind(data.combination_product_report_indicator)
 					.bind(data.worldwide_unique_id)
-					.bind(data.worldwide_unique_id_null_flavor)
 					.bind(data.first_sender_type)
-					.bind(data.first_sender_type_null_flavor)
 					.bind(data.additional_documents_available)
 					.bind(data.other_case_identifiers_exist)
 					.bind(data.other_case_identifiers_exist_null_flavor)
@@ -857,17 +849,15 @@ impl SafetyReportIdentificationBmc {
 			     local_criteria_report_type = CASE WHEN $12 THEN NULL ELSE COALESCE($13, local_criteria_report_type) END,
 			     combination_product_report_indicator = CASE WHEN $14 THEN NULL ELSE COALESCE($15, combination_product_report_indicator) END,
 			     worldwide_unique_id = COALESCE($16, worldwide_unique_id),
-			     worldwide_unique_id_null_flavor = COALESCE($17, worldwide_unique_id_null_flavor),
-			     first_sender_type = COALESCE($18, first_sender_type),
-			     first_sender_type_null_flavor = COALESCE($19, first_sender_type_null_flavor),
-			     additional_documents_available = COALESCE($20, additional_documents_available),
-			     other_case_identifiers_exist = CASE WHEN $22 IS NOT NULL THEN NULL ELSE COALESCE($21, other_case_identifiers_exist) END,
-			     other_case_identifiers_exist_null_flavor = CASE WHEN $21 IS NOT NULL THEN NULL ELSE COALESCE($22, other_case_identifiers_exist_null_flavor) END,
-			     nullification_code = COALESCE($23, nullification_code),
-			     nullification_reason = COALESCE($24, nullification_reason),
-			     receiver_organization = COALESCE($25, receiver_organization),
+			     first_sender_type = COALESCE($17, first_sender_type),
+			     additional_documents_available = COALESCE($18, additional_documents_available),
+			     other_case_identifiers_exist = CASE WHEN $20 IS NOT NULL THEN NULL ELSE COALESCE($19, other_case_identifiers_exist) END,
+			     other_case_identifiers_exist_null_flavor = CASE WHEN $19 IS NOT NULL THEN NULL ELSE COALESCE($20, other_case_identifiers_exist_null_flavor) END,
+			     nullification_code = COALESCE($21, nullification_code),
+			     nullification_reason = COALESCE($22, nullification_reason),
+			     receiver_organization = COALESCE($23, receiver_organization),
 			     updated_at = now(),
-			     updated_by = $26
+			     updated_by = $24
 			 WHERE case_id = $1",
 			Self::TABLE
 		);
@@ -891,9 +881,7 @@ impl SafetyReportIdentificationBmc {
 					.bind(clear_combination_product_report_indicator)
 					.bind(combination_product_report_indicator)
 					.bind(data.worldwide_unique_id)
-					.bind(data.worldwide_unique_id_null_flavor)
 					.bind(data.first_sender_type)
-					.bind(data.first_sender_type_null_flavor)
 					.bind(data.additional_documents_available)
 					.bind(data.other_case_identifiers_exist)
 					.bind(data.other_case_identifiers_exist_null_flavor)

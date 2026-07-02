@@ -35,11 +35,9 @@ CREATE TABLE safety_report_identification (
 
     -- C.1.8.1 - Worldwide Unique Case Identification
     worldwide_unique_id VARCHAR(100),
-    worldwide_unique_id_null_flavor VARCHAR(4) CHECK (worldwide_unique_id_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.8.2 - First Sender of This Case
     first_sender_type VARCHAR(1) CHECK (first_sender_type IN ('1', '2')),
-    first_sender_type_null_flavor VARCHAR(4) CHECK (first_sender_type_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- C.1.6.1 - Are Additional Documents Available?
     additional_documents_available BOOLEAN,
