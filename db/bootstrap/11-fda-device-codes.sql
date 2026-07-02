@@ -512,3 +512,6 @@ VALUES
 ('device_problem_code', 'C217073', 'Material Integrity Problem', 'Failure to Degrade', NULL, '4084', 'IMDRF:A0416'),
 ('device_problem_code', 'C217072', 'Activation, Positioning or Separation Problem', 'Activation Problem', 'Unexpected Deactivation', '4086', 'IMDRF:A150106'),
 ('device_problem_code', 'C217071', 'Electrical /Electronic Property Problem', 'Impedance Problem', 'Unstable Impedance', '4085', 'IMDRF:A072203');
+
+-- Ensure application role has access to all tables created after initial grants.
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO e2br3_app_role;
