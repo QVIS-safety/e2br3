@@ -276,7 +276,7 @@ where
 		return Err(err);
 	}
 	let sql = format!(
-		"SELECT * FROM {table} WHERE case_id = $1 AND deleted = false ORDER BY sequence_number"
+		"SELECT * FROM {table} WHERE case_id = $1 AND deleted IS NOT TRUE ORDER BY sequence_number"
 	);
 	let result = mm
 		.dbx()
@@ -328,45 +328,79 @@ where
 }
 
 async fn load_dosages_by_case(
+	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> lib_core::model::Result<Vec<DosageInformation>> {
-	mm.dbx()
+	mm.dbx().begin_txn().await?;
+	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err);
+	}
+	let result = mm
+		.dbx()
 		.fetch_all(
 			sqlx::query_as::<_, DosageInformation>(
 				"SELECT dosage_information.*
 				 FROM dosage_information
 				 JOIN drug_information ON drug_information.id = dosage_information.drug_id
 				 WHERE drug_information.case_id = $1
-				   AND drug_information.deleted = false
-				   AND dosage_information.deleted = false
+				   AND drug_information.deleted IS NOT TRUE
+				   AND dosage_information.deleted IS NOT TRUE
 				 ORDER BY drug_information.sequence_number, dosage_information.sequence_number",
 			)
 			.bind(case_id),
 		)
 		.await
-		.map_err(ModelError::Dbx)
+		.map_err(ModelError::Dbx);
+	match result {
+		Ok(value) => {
+			mm.dbx().commit_txn().await?;
+			Ok(value)
+		}
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(err)
+		}
+	}
 }
 
 async fn load_indications_by_case(
+	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> lib_core::model::Result<Vec<DrugIndication>> {
-	mm.dbx()
+	mm.dbx().begin_txn().await?;
+	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err);
+	}
+	let result = mm
+		.dbx()
 		.fetch_all(
 			sqlx::query_as::<_, DrugIndication>(
 				"SELECT drug_indications.*
 				 FROM drug_indications
 				 JOIN drug_information ON drug_information.id = drug_indications.drug_id
 				 WHERE drug_information.case_id = $1
-				   AND drug_information.deleted = false
-				   AND drug_indications.deleted = false
+				   AND drug_information.deleted IS NOT TRUE
+				   AND drug_indications.deleted IS NOT TRUE
 				 ORDER BY drug_information.sequence_number, drug_indications.sequence_number",
 			)
 			.bind(case_id),
 		)
 		.await
-		.map_err(ModelError::Dbx)
+		.map_err(ModelError::Dbx);
+	match result {
+		Ok(value) => {
+			mm.dbx().commit_txn().await?;
+			Ok(value)
+		}
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(err)
+		}
+	}
 }
 
 async fn load_cioms_case_data(
@@ -409,10 +443,10 @@ async fn load_cioms_case_data(
 	let drugs = DrugInformationBmc::list_by_case(ctx, mm, case_id)
 		.await
 		.map_err(Error::Model)?;
-	let dosages = load_dosages_by_case(mm, case_id)
+	let dosages = load_dosages_by_case(ctx, mm, case_id)
 		.await
 		.map_err(Error::Model)?;
-	let indications = load_indications_by_case(mm, case_id)
+	let indications = load_indications_by_case(ctx, mm, case_id)
 		.await
 		.map_err(Error::Model)?;
 	let primary_sources =
@@ -730,6 +764,27 @@ impl PdfCanvas {
 		for (idx, line) in lines.into_iter().take(max_lines).enumerate() {
 			self.text(x, y - (idx as i32 * (size + 3)), size, &line);
 		}
+	}
+
+	fn save_state(&mut self) {
+		self.stream.push_str("q\n");
+	}
+
+	fn restore_state(&mut self) {
+		self.stream.push_str("Q\n");
+	}
+
+	fn transform(
+		&mut self,
+		scale_x: f32,
+		scale_y: f32,
+		translate_x: f32,
+		translate_y: f32,
+	) {
+		let _ = writeln!(
+			self.stream,
+			"{scale_x:.4} 0 0 {scale_y:.4} {translate_x:.4} {translate_y:.4} cm"
+		);
 	}
 }
 
@@ -1257,6 +1312,35 @@ fn render_landscape_cioms(
 	render_cioms_notation(canvas, data, options, 34, 26);
 }
 
+fn render_landscape_cioms_on_portrait_page(
+	canvas: &mut PdfCanvas,
+	data: &CiomsCaseData,
+	settings: &CiomsSettings,
+	options: CiomsExportOptions,
+	page_width: i32,
+	page_height: i32,
+) {
+	let logical_width = CIOMS_LANDSCAPE_TEMPLATE.page_width as f32;
+	let logical_height = CIOMS_LANDSCAPE_TEMPLATE.page_height as f32;
+	let scale =
+		(page_width as f32 / logical_width).min(page_height as f32 / logical_height);
+	let translated_x = ((page_width as f32) - logical_width * scale) / 2.0;
+	let translated_y = ((page_height as f32) - logical_height * scale) / 2.0;
+
+	canvas.save_state();
+	canvas.transform(scale, scale, translated_x, translated_y);
+	render_landscape_cioms(
+		canvas,
+		data,
+		settings,
+		options,
+		CIOMS_LANDSCAPE_TEMPLATE.page_width,
+		CIOMS_LANDSCAPE_TEMPLATE.page_height,
+	);
+	canvas.restore_state();
+}
+
+#[allow(dead_code)]
 fn render_portrait_cioms(
 	canvas: &mut PdfCanvas,
 	data: &CiomsCaseData,
@@ -1598,7 +1682,7 @@ fn build_cioms_pdf_with_options(
 	let mut canvas = PdfCanvas::new();
 	canvas.stream.push_str("0.8 w\n");
 	if settings.orientation == "Portrait" {
-		render_portrait_cioms(
+		render_landscape_cioms_on_portrait_page(
 			&mut canvas,
 			&ordered,
 			settings,
@@ -2477,6 +2561,56 @@ mod tests {
 	}
 
 	#[test]
+	fn cioms_portrait_pdf_uses_same_official_form_as_landscape() {
+		let drug_id = test_uuid();
+		let data = CiomsCaseData {
+			case_number: "SR-PORTRAIT-SAME-FORM".to_string(),
+			report: Some(safety_report_identification()),
+			patient: None,
+			reactions: vec![reaction_with_country("JP")],
+			drugs: vec![suspect_drug_with_rechallenge(drug_id, "1")],
+			dosages: vec![dosage_with_route(drug_id, "Oral")],
+			indications: vec![DrugIndication {
+				id: test_uuid(),
+				drug_id,
+				sequence_number: 1,
+				indication_text: Some("Bacterial sinusitis".to_string()),
+				indication_text_null_flavor: None,
+				indication_meddra_version: None,
+				indication_meddra_code: None,
+				deleted: false,
+				created_at: test_time(),
+				updated_at: test_time(),
+				created_by: test_uuid(),
+				updated_by: None,
+			}],
+			primary_sources: vec![primary_source()],
+			senders: Vec::new(),
+			narrative: None,
+		};
+
+		let pdf = build_cioms_pdf(&data, &portrait_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("/MediaBox [0 0 595 842]"), "{text}");
+		assert!(
+			text.contains("8-12 CHECK ALL APPROPRIATE TO ADVERSE")
+				&& text.contains("REACTION"),
+			"{text}"
+		);
+		assert!(
+			text.contains("16. ROUTE\\(S\\) OF") && text.contains("ADMINISTRATION"),
+			"{text}"
+		);
+		assert!(text.contains("19. THERAPY DURATION"), "{text}");
+		assert!(
+			text.contains("21. DID REACTION") && text.contains("REAPPEAR AFTER"),
+			"{text}"
+		);
+		assert!(!text.contains("18. THERAPY DATES / 19. DURATION"), "{text}");
+	}
+
+	#[test]
 	fn cioms_portrait_pdf_renders_suspect_drug_indication() {
 		let drug_id = test_uuid();
 		let data = CiomsCaseData {
@@ -2553,7 +2687,8 @@ mod tests {
 		let pdf = build_cioms_pdf(&data, &portrait_settings());
 		let text = String::from_utf8_lossy(&pdf);
 
-		assert!(text.contains("21. REAPPEAR"));
+		assert!(text.contains("21. DID REACTION"));
+		assert!(text.contains("REAPPEAR AFTER"));
 		assert!(text.contains("Yes"));
 	}
 
@@ -2603,7 +2738,8 @@ mod tests {
 
 		assert!(text.contains("24c. DATE RECEIVED"));
 		assert!(text.contains("2026-05-11"));
-		assert!(text.contains("DATE OF THIS REPORT"));
+		assert!(text.contains("DATE OF THIS"));
+		assert!(text.contains("REPORT"));
 		assert!(text.contains("2026-05-12"));
 		assert!(text.contains("25a. REPORT TYPE"));
 		assert!(text.contains("Spontaneous report"));
