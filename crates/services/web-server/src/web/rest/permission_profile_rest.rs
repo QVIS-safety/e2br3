@@ -172,6 +172,7 @@ fn normalize_admin_privileges(
 		if !matches!(
 			menu_key.as_str(),
 			"home_workflow"
+				| "home_notice"
 				| "case" | "info"
 				| "import" | "export_submission"
 				| "submission"

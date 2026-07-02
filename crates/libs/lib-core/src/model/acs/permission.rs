@@ -59,6 +59,7 @@ pub enum Resource {
 	Organization,
 	AuditLog,
 	Settings,
+	DashboardNotice,
 
 	// Terminology
 	Terminology,
@@ -515,6 +516,10 @@ pub const SETTINGS_READ: Permission =
 	Permission::new(Resource::Settings, Action::Read);
 pub const SETTINGS_UPDATE: Permission =
 	Permission::new(Resource::Settings, Action::Update);
+pub const DASHBOARD_NOTICE_READ: Permission =
+	Permission::new(Resource::DashboardNotice, Action::Read);
+pub const DASHBOARD_NOTICE_UPDATE: Permission =
+	Permission::new(Resource::DashboardNotice, Action::Update);
 
 // Terminology permissions
 pub const TERMINOLOGY_READ: Permission =
@@ -739,6 +744,8 @@ fn admin_permissions() -> &'static [Permission] {
 		// Settings
 		SETTINGS_READ,
 		SETTINGS_UPDATE,
+		DASHBOARD_NOTICE_READ,
+		DASHBOARD_NOTICE_UPDATE,
 		// Terminology
 		TERMINOLOGY_READ,
 		TERMINOLOGY_IMPORT,
@@ -752,7 +759,12 @@ fn admin_permissions() -> &'static [Permission] {
 }
 
 fn system_admin_permissions() -> &'static [Permission] {
-	&[SETTINGS_READ, SETTINGS_UPDATE]
+	&[
+		SETTINGS_READ,
+		SETTINGS_UPDATE,
+		DASHBOARD_NOTICE_READ,
+		DASHBOARD_NOTICE_UPDATE,
+	]
 }
 
 /// Returns operational edit permissions used by permission profiles.
@@ -1026,6 +1038,17 @@ fn permissions_for_menu_key(
 		"home_workflow" => {
 			if can_read {
 				push_unique(&mut permissions, &[CASE_READ, CASE_LIST]);
+			}
+		}
+		"home_notice" => {
+			if can_read {
+				push_unique(&mut permissions, &[DASHBOARD_NOTICE_READ]);
+			}
+			if can_edit || can_review || can_lock {
+				push_unique(
+					&mut permissions,
+					&[DASHBOARD_NOTICE_READ, DASHBOARD_NOTICE_UPDATE],
+				);
 			}
 		}
 		"case" => {
@@ -1355,6 +1378,33 @@ mod tests {
 		assert!(permissions.contains(&CASE_READ));
 		assert!(permissions.contains(&CASE_LIST));
 		assert!(!permissions.contains(&CASE_UPDATE));
+	}
+
+	#[test]
+	fn test_home_notice_privileges_expand_to_notice_permissions_only() {
+		let read_permissions =
+			permissions_for_menu_privileges(&[AdminMenuPrivilege {
+				menu_key: "home_notice".to_string(),
+				can_read: true,
+				can_edit: false,
+				can_review: false,
+				can_lock: false,
+			}]);
+		assert!(read_permissions.contains(&DASHBOARD_NOTICE_READ));
+		assert!(!read_permissions.contains(&DASHBOARD_NOTICE_UPDATE));
+		assert!(!read_permissions.contains(&SETTINGS_UPDATE));
+
+		let edit_permissions =
+			permissions_for_menu_privileges(&[AdminMenuPrivilege {
+				menu_key: "home_notice".to_string(),
+				can_read: true,
+				can_edit: true,
+				can_review: false,
+				can_lock: false,
+			}]);
+		assert!(edit_permissions.contains(&DASHBOARD_NOTICE_READ));
+		assert!(edit_permissions.contains(&DASHBOARD_NOTICE_UPDATE));
+		assert!(!edit_permissions.contains(&SETTINGS_UPDATE));
 	}
 
 	#[test]

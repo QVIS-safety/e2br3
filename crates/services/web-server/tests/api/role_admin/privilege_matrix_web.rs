@@ -13,11 +13,12 @@ use lib_core::ctx::{
 	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::{
-	has_permission, CASE_APPROVE, CASE_CREATE, CASE_UPDATE, PRESAVE_TEMPLATE_CREATE,
-	PRESAVE_TEMPLATE_DELETE, PRESAVE_TEMPLATE_LIST, PRESAVE_TEMPLATE_READ,
-	PRESAVE_TEMPLATE_UPDATE, SETTINGS_READ, SETTINGS_UPDATE, TERMINOLOGY_APPROVE,
-	TERMINOLOGY_IMPORT, USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE,
-	XML_EXPORT, XML_EXPORT_READ, XML_IMPORT, XML_IMPORT_READ,
+	has_permission, CASE_APPROVE, CASE_CREATE, CASE_UPDATE, DASHBOARD_NOTICE_READ,
+	DASHBOARD_NOTICE_UPDATE, PRESAVE_TEMPLATE_CREATE, PRESAVE_TEMPLATE_DELETE,
+	PRESAVE_TEMPLATE_LIST, PRESAVE_TEMPLATE_READ, PRESAVE_TEMPLATE_UPDATE,
+	SETTINGS_READ, SETTINGS_UPDATE, TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT,
+	USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE, XML_EXPORT,
+	XML_EXPORT_READ, XML_IMPORT, XML_IMPORT_READ,
 };
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
@@ -57,6 +58,13 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 			"can_read": true,
 			"can_edit": false,
 			"can_review": true,
+			"can_lock": false
+		},
+		{
+			"menu_key": "home_notice",
+			"can_read": true,
+			"can_edit": true,
+			"can_review": false,
 			"can_lock": false
 		},
 		{
@@ -112,6 +120,7 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 		.ok_or("persisted role privileges should be an array")?;
 	for (menu_key, can_read, can_edit, can_review, can_lock) in [
 		("home_workflow", true, false, true, false),
+		("home_notice", true, true, false, false),
 		("case", true, true, true, true),
 		("info", true, true, false, false),
 		("import", true, true, false, false),
@@ -125,13 +134,9 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 		assert_eq!(row["can_review"].as_bool(), Some(can_review), "{menu_key}");
 		assert_eq!(row["can_lock"].as_bool(), Some(can_lock), "{menu_key}");
 	}
-	for menu_key in [
-		"home_notice",
-		"report_due_mail",
-		"monitoring",
-		"sync",
-		"sync_mapping",
-	] {
+	assert!(has_permission(&profile_id, DASHBOARD_NOTICE_READ));
+	assert!(has_permission(&profile_id, DASHBOARD_NOTICE_UPDATE));
+	for menu_key in ["report_due_mail", "monitoring", "sync", "sync_mapping"] {
 		let invalid_privileges = json!([
 			{
 				"menu_key": menu_key,
@@ -157,6 +162,64 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 			"unexpected unsupported privilege body for {menu_key}: {value:?}"
 		);
 	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_home_notice_matrix_privileges_surface_in_current_user_capabilities(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let profile_id = format!("qa_home_notice_{}", Uuid::new_v4().simple());
+	let profile_id =
+		create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
+	let (_custom_user_id, custom_cookie) =
+		custom_role_user(&mm, seed.org_id, &profile_id).await?;
+
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("homeNotice", "read", false),
+			("homeNotice", "update", false),
+		],
+	)
+	.await?;
+
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&profile_id,
+		json!([
+			{
+				"menu_key": "home_notice",
+				"can_read": true,
+				"can_edit": true,
+				"can_review": false,
+				"can_lock": false
+			}
+		]),
+	)
+	.await?;
+
+	assert_profile_capabilities(
+		&app,
+		&custom_cookie,
+		&[
+			("homeNotice", "read", true),
+			("homeNotice", "update", true),
+			("settings", "update", false),
+		],
+	)
+	.await?;
+	assert!(has_permission(&profile_id, DASHBOARD_NOTICE_READ));
+	assert!(has_permission(&profile_id, DASHBOARD_NOTICE_UPDATE));
+	assert!(!has_permission(&profile_id, SETTINGS_UPDATE));
 
 	Ok(())
 }

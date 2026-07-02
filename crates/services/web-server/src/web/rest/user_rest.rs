@@ -9,10 +9,11 @@ use lib_core::ctx::{
 };
 use lib_core::model::acs::{
 	has_permission, CASE_APPROVE, CASE_CREATE, CASE_DELETE, CASE_LIST, CASE_READ,
-	CASE_UPDATE, NARRATIVE_CREATE, NARRATIVE_DELETE, NARRATIVE_LIST, NARRATIVE_READ,
-	NARRATIVE_UPDATE, PRESAVE_TEMPLATE_CREATE, PRESAVE_TEMPLATE_DELETE,
-	PRESAVE_TEMPLATE_LIST, PRESAVE_TEMPLATE_READ, PRESAVE_TEMPLATE_UPDATE,
-	RECEIVER_CREATE, RECEIVER_DELETE, RECEIVER_LIST, RECEIVER_READ, RECEIVER_UPDATE,
+	CASE_UPDATE, DASHBOARD_NOTICE_READ, DASHBOARD_NOTICE_UPDATE, NARRATIVE_CREATE,
+	NARRATIVE_DELETE, NARRATIVE_LIST, NARRATIVE_READ, NARRATIVE_UPDATE,
+	PRESAVE_TEMPLATE_CREATE, PRESAVE_TEMPLATE_DELETE, PRESAVE_TEMPLATE_LIST,
+	PRESAVE_TEMPLATE_READ, PRESAVE_TEMPLATE_UPDATE, RECEIVER_CREATE,
+	RECEIVER_DELETE, RECEIVER_LIST, RECEIVER_READ, RECEIVER_UPDATE,
 	SENDER_INFORMATION_CREATE, SENDER_INFORMATION_DELETE, SENDER_INFORMATION_LIST,
 	SENDER_INFORMATION_READ, SENDER_INFORMATION_UPDATE, SETTINGS_READ,
 	SETTINGS_UPDATE, STUDY_INFORMATION_CREATE, STUDY_INFORMATION_DELETE,
@@ -173,6 +174,13 @@ pub struct AdminCapabilities {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct HomeNoticeCapabilities {
+	pub read: bool,
+	pub update: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserCapabilities {
 	pub case: CaseCapabilities,
 	pub info: ModuleCrudCapabilities,
@@ -183,6 +191,7 @@ pub struct UserCapabilities {
 	pub users: ModuleCrudCapabilities,
 	pub roles: ModuleCrudCapabilities,
 	pub settings: AdminCapabilities,
+	pub home_notice: HomeNoticeCapabilities,
 }
 
 #[derive(Debug, Deserialize)]
@@ -456,6 +465,11 @@ fn capabilities_for_subject(
 		settings: AdminCapabilities {
 			read: is_admin_capable || has_permission(subject, SETTINGS_READ),
 			update: is_admin_capable || has_permission(subject, SETTINGS_UPDATE),
+		},
+		home_notice: HomeNoticeCapabilities {
+			read: is_admin_capable || has_permission(subject, DASHBOARD_NOTICE_READ),
+			update: is_admin_capable
+				|| has_permission(subject, DASHBOARD_NOTICE_UPDATE),
 		},
 	}
 }

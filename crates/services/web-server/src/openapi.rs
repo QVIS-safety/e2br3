@@ -1059,6 +1059,15 @@ struct AdminCapabilitiesDoc {
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
+struct HomeNoticeCapabilitiesDoc {
+	/// Permission to read HOME notices.
+	read: bool,
+	/// Permission to create, update, or delete HOME notices.
+	update: bool,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 struct UserCapabilitiesDoc {
 	case: CaseCapabilitiesDoc,
 	info: ModuleCrudCapabilitiesDoc,
@@ -1069,6 +1078,7 @@ struct UserCapabilitiesDoc {
 	users: ModuleCrudCapabilitiesDoc,
 	roles: ModuleCrudCapabilitiesDoc,
 	settings: AdminCapabilitiesDoc,
+	home_notice: HomeNoticeCapabilitiesDoc,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]

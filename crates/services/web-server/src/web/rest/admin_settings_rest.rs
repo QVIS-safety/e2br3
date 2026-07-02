@@ -5,7 +5,9 @@ use lib_core::ctx::{
 	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
 	ROLE_USER,
 };
-use lib_core::model::acs::{SETTINGS_READ, SETTINGS_UPDATE};
+use lib_core::model::acs::{
+	DASHBOARD_NOTICE_UPDATE, SETTINGS_READ, SETTINGS_UPDATE,
+};
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::ModelManager;
 use lib_rest_core::{require_permission, Error, Result};
@@ -503,7 +505,7 @@ pub async fn update_admin_notices(
 	>,
 ) -> Result<(StatusCode, Json<AdminNoticesPayload>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, SETTINGS_UPDATE)?;
+	require_permission(&ctx, DASHBOARD_NOTICE_UPDATE)?;
 	let writer = current_user_email(&ctx, &mm, ctx.user_id()).await?;
 	let notices = normalize_notices(payload.data.notices, writer);
 	let values = notices
