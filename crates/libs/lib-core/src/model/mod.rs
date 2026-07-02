@@ -28,6 +28,7 @@ pub mod store;
 // E2B(R3) SafetyDB Core Models
 pub mod case;
 pub mod case_numbering;
+pub mod case_query;
 pub mod case_query_catalog;
 pub mod case_validation_report_cache;
 pub mod case_validation_summary;

@@ -9,7 +9,7 @@
 //! (CI, DM, AE, DG). Remaining pages (RP, SD, LR, SI, DH, LB, NR) follow the
 //! same pattern.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Value type of a queryable item. Determines which operators are valid.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -24,7 +24,7 @@ pub enum DataType {
 }
 
 /// Condition operators available in the query builder.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Operator {
 	Equal,
