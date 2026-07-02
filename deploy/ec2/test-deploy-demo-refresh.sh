@@ -55,6 +55,40 @@ SH
   export INIT_RDS_SCRIPT TERMINOLOGY_MANIFEST_SCRIPT ISO_COUNTRIES_SCRIPT
 }
 
+if command -v bash >/dev/null 2>&1; then
+  APP_DIR="${TMP_DIR}/app-relative-env-file"
+  DEPLOY_LOG="${TMP_DIR}/deploy-relative-env-file.log"
+  create_app "${APP_DIR}"
+
+  cat > "${APP_DIR}/run-terminology-manifest.sh" <<'SH'
+#!/usr/bin/env sh
+set -eu
+if [ "${CHECK_ONLY:-}" != "1" ]; then
+  printf 'terminology manifest\n' >> "${DEPLOY_LOG}"
+fi
+SH
+  chmod +x "${APP_DIR}/run-terminology-manifest.sh"
+
+  cat > "${BIN_DIR}/docker" <<'SH'
+#!/usr/bin/env sh
+set -eu
+printf 'docker %s\n' "$*" >> "${DEPLOY_LOG}"
+SH
+  chmod +x "${BIN_DIR}/docker"
+
+  PATH="${BIN_DIR}:${PATH}" \
+  DEPLOY_LOG="${DEPLOY_LOG}" \
+  APP_DIR="${APP_DIR}" \
+  COMPOSE_FILE=docker-compose.prod.yml \
+  ENV_FILE=.env.prod \
+  IMAGE_REF=ghcr.io/example/e2br3-web-server:abc123 \
+  RESET_DB=0 \
+  HEALTHCHECK_URL="" \
+  bash --posix "${SCRIPT}"
+
+  grep -F "docker pull ghcr.io/example/e2br3-web-server:abc123" "${DEPLOY_LOG}" >/dev/null
+fi
+
 APP_DIR="${TMP_DIR}/app-success"
 DEPLOY_LOG="${TMP_DIR}/deploy-success.log"
 create_app "${APP_DIR}"
