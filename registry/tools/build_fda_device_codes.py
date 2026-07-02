@@ -46,6 +46,12 @@ INSERT INTO fda_hierarchical_code_lists
 VALUES
 """
 
+FOOTER = """
+
+-- Ensure application role has access to all tables created after initial grants.
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO e2br3_app_role;
+"""
+
 
 def sql_str(value: str | None) -> str:
     """Render a Python string (or None) as a SQL literal."""
@@ -118,7 +124,7 @@ def build_sql(source_text: str) -> str:
             + ")"
         )
 
-    return HEADER + ",\n".join(value_lines) + ";\n"
+    return HEADER + ",\n".join(value_lines) + ";\n" + FOOTER
 
 
 def main() -> None:
