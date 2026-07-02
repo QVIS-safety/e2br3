@@ -724,44 +724,11 @@ impl PdfCanvas {
 		max_lines: usize,
 		value: &str,
 	) {
-		let mut line = String::new();
-		let mut lines = Vec::new();
-		for word in value.split_whitespace() {
-			if word.chars().count() > max_chars
-				&& word.chars().all(|ch| ch.is_ascii_alphabetic())
-			{
-				if !line.is_empty() {
-					lines.push(line);
-					line = String::new();
-				}
-				for ch in word.chars() {
-					line.push(ch);
-					if line.chars().count() == max_chars {
-						lines.push(line);
-						line = String::new();
-					}
-				}
-				continue;
-			}
-			let next_len = if line.is_empty() {
-				word.len()
-			} else {
-				line.len() + 1 + word.len()
-			};
-			if next_len > max_chars && !line.is_empty() {
-				lines.push(line);
-				line = word.to_string();
-			} else {
-				if !line.is_empty() {
-					line.push(' ');
-				}
-				line.push_str(word);
-			}
-		}
-		if !line.is_empty() {
-			lines.push(line);
-		}
-		for (idx, line) in lines.into_iter().take(max_lines).enumerate() {
+		for (idx, line) in wrap_pdf_text(value, max_chars)
+			.into_iter()
+			.take(max_lines)
+			.enumerate()
+		{
 			self.text(x, y - (idx as i32 * (size + 3)), size, &line);
 		}
 	}
@@ -786,6 +753,59 @@ impl PdfCanvas {
 			"{scale_x:.4} 0 0 {scale_y:.4} {translate_x:.4} {translate_y:.4} cm"
 		);
 	}
+}
+
+fn wrap_pdf_text(value: &str, max_chars: usize) -> Vec<String> {
+	let mut line = String::new();
+	let mut lines = Vec::new();
+	for word in value.split_whitespace() {
+		if word.chars().count() > max_chars
+			&& word.chars().all(|ch| ch.is_ascii_alphabetic())
+		{
+			if !line.is_empty() {
+				lines.push(line);
+				line = String::new();
+			}
+			for ch in word.chars() {
+				line.push(ch);
+				if line.chars().count() == max_chars {
+					lines.push(line);
+					line = String::new();
+				}
+			}
+			continue;
+		}
+		let next_len = if line.is_empty() {
+			word.len()
+		} else {
+			line.len() + 1 + word.len()
+		};
+		if next_len > max_chars && !line.is_empty() {
+			lines.push(line);
+			line = word.to_string();
+		} else {
+			if !line.is_empty() {
+				line.push(' ');
+			}
+			line.push_str(word);
+		}
+	}
+	if !line.is_empty() {
+		lines.push(line);
+	}
+	lines
+}
+
+fn overflow_pdf_text(
+	value: &str,
+	max_chars: usize,
+	max_lines: usize,
+) -> Option<String> {
+	let lines = wrap_pdf_text(value, max_chars);
+	if lines.len() <= max_lines {
+		return None;
+	}
+	Some(lines[max_lines..].join(" "))
 }
 
 fn render_box(
@@ -1340,6 +1360,93 @@ fn render_landscape_cioms_on_portrait_page(
 	canvas.restore_state();
 }
 
+fn collect_cioms_overflow(
+	data: &CiomsCaseData,
+	settings: &CiomsSettings,
+	options: CiomsExportOptions,
+) -> Vec<(String, String)> {
+	let form = CiomsFormData::from_case_data(data, settings);
+	let patient = data.patient.as_ref();
+	let sender = data.senders.first();
+	let mut overflow = Vec::new();
+	let mut push_overflow =
+		|label: &str, value: &str, max_chars: usize, max_lines: usize| {
+			if let Some(text) = overflow_pdf_text(value, max_chars, max_lines) {
+				overflow.push((label.to_string(), text));
+			}
+		};
+
+	push_overflow(
+		"7 + 13 DESCRIBE REACTION(S)",
+		&form.reaction_description,
+		118,
+		8,
+	);
+	push_overflow(
+		"22. CONCOMITANT DRUG(S) AND DATES OF ADMINISTRATION",
+		&concomitant_drugs_text(data),
+		56,
+		3,
+	);
+	push_overflow(
+		"23. OTHER RELEVANT HISTORY",
+		patient
+			.and_then(|patient| patient.medical_history_text.as_deref())
+			.unwrap_or(""),
+		58,
+		3,
+	);
+	push_overflow(
+		"24a. NAME AND ADDRESS OF MANUFACTURER",
+		&sender_address(sender),
+		42,
+		4,
+	);
+	push_overflow("24b. MFR CONTROL NO.", &data.case_number, 20, 2);
+	if options.include_notation {
+		push_overflow(
+			"CIOMS NOTATION",
+			&cioms_notation_text(data.narrative.as_ref()),
+			90,
+			1,
+		);
+	}
+
+	overflow
+}
+
+fn render_cioms_continuation_page(
+	canvas: &mut PdfCanvas,
+	case_number: &str,
+	overflow: &[(String, String)],
+	width: i32,
+	height: i32,
+) {
+	canvas.stream.push_str("0.8 w\n");
+	canvas.text(28, height - 32, 14, "CIOMS CONTINUATION");
+	canvas.text(
+		28,
+		height - 48,
+		8,
+		&format!("MFR CONTROL NO.: {case_number}"),
+	);
+	let mut y = height - 74;
+	for (label, value) in overflow {
+		if y < 58 {
+			break;
+		}
+		canvas.text(28, y, 8, label);
+		y -= 13;
+		let max_chars = if width >= 800 { 118 } else { 82 };
+		let max_lines = ((y - 34).max(0) as usize / 12).min(8);
+		for line in wrap_pdf_text(value, max_chars).into_iter().take(max_lines) {
+			canvas.text(34, y, 8, &line);
+			y -= 12;
+		}
+		y -= 8;
+	}
+}
+
 #[allow(dead_code)]
 fn render_portrait_cioms(
 	canvas: &mut PdfCanvas,
@@ -1700,25 +1807,50 @@ fn build_cioms_pdf_with_options(
 			height,
 		);
 	}
-	let stream = canvas.stream;
+	let first_stream = canvas.stream;
+	let overflow = collect_cioms_overflow(&ordered, settings, options);
+	let continuation_stream = if overflow.is_empty() {
+		None
+	} else {
+		let mut continuation = PdfCanvas::new();
+		render_cioms_continuation_page(
+			&mut continuation,
+			&ordered.case_number,
+			&overflow,
+			width,
+			height,
+		);
+		Some(continuation.stream)
+	};
+
 	let obj1 = "<< /Type /Catalog /Pages 2 0 R >>";
-	let obj2 = "<< /Type /Pages /Kids [3 0 R] /Count 1 >>";
+	let page_count = if continuation_stream.is_some() { 2 } else { 1 };
+	let page_kids = if continuation_stream.is_some() {
+		"[3 0 R 6 0 R]"
+	} else {
+		"[3 0 R]"
+	};
+	let obj2 = format!("<< /Type /Pages /Kids {page_kids} /Count {page_count} >>");
 	let obj3 = format!(
 		"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>"
 	);
 	let obj4 = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
 	let obj5 = format!(
 		"<< /Length {} >>\nstream\n{}endstream",
-		stream.len(),
-		stream
+		first_stream.len(),
+		first_stream
 	);
-	let objects = [
-		obj1.to_string(),
-		obj2.to_string(),
-		obj3,
-		obj4.to_string(),
-		obj5,
-	];
+	let mut objects = vec![obj1.to_string(), obj2, obj3, obj4.to_string(), obj5];
+	if let Some(stream) = continuation_stream {
+		objects.push(format!(
+			"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] /Resources << /Font << /F1 4 0 R >> >> /Contents 7 0 R >>"
+		));
+		objects.push(format!(
+			"<< /Length {} >>\nstream\n{}endstream",
+			stream.len(),
+			stream
+		));
+	}
 
 	let mut pdf = String::from("%PDF-1.4\n");
 	let mut offsets = Vec::with_capacity(objects.len());
@@ -2271,6 +2403,44 @@ mod tests {
 			with_notation.contains("Additional: Additional notation for CIOMS"),
 			"{with_notation}"
 		);
+	}
+
+	#[test]
+	fn cioms_pdf_adds_continuation_page_for_long_reaction_text() {
+		let mut narrative_words = vec!["clinical detail"; 90].join(" ");
+		narrative_words.push_str(" final overflow marker");
+		let data = CiomsCaseData {
+			case_number: "SR-CONTINUATION".to_string(),
+			report: None,
+			patient: None,
+			reactions: vec![reaction_with_country("KR")],
+			drugs: Vec::new(),
+			dosages: Vec::new(),
+			indications: Vec::new(),
+			primary_sources: Vec::new(),
+			senders: Vec::new(),
+			narrative: Some(NarrativeInformation {
+				id: test_uuid(),
+				case_id: test_uuid(),
+				source_narrative_presave_id: None,
+				case_narrative: narrative_words,
+				reporter_comments: None,
+				sender_comments: None,
+				additional_information: None,
+				created_at: test_time(),
+				updated_at: test_time(),
+				created_by: test_uuid(),
+				updated_by: None,
+			}),
+		};
+
+		let pdf = build_cioms_pdf(&data, &default_settings());
+		let text = String::from_utf8_lossy(&pdf);
+
+		assert!(text.contains("/Count 2"), "{text}");
+		assert!(text.contains("CIOMS CONTINUATION"), "{text}");
+		assert!(text.contains("7 + 13 DESCRIBE REACTION\\(S\\)"), "{text}");
+		assert!(text.contains("final overflow marker"), "{text}");
 	}
 
 	#[test]
