@@ -1,0 +1,45 @@
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                   1)  `Name`으로  Label 수정           
+                                                                                                   2)  하나의   항목으로     변경            
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                   1)  System Administrator 및       
+                                                                                                       Sponsor Administrator(CRO),  
+                                                                                                       Sponsor Administrator        
+                                                                                                                                    
+                                                                                                       (Pharmaceutical Company)는    
+                                                                                                       삭제  필요.  System              
+                                                                                                       Administrator 만 설정 가능        
+                                                                                                                                    
+                                                                                                   2)  System Administrator가 설정한    
+                                                                                                       Sponsor Administrator(CRO),  
+                                                                                                       Sponsor Administrator        
+                                                                                                       (Pharmaceutical Company)     
+                                                                                                                                    
+                                                                                                       User는 변경   불가하도록     설정      
+   삭                                                                                                                                
+                                                                                                       필요                           
+   제                                                                                                                                
+                                                                                                   3)  System Administrator 는       
+                                                                                                       Sponsor Administrator(CRO),  
+  전체   항목:  항목별로                                                                                                                    
+                                                                                                       Sponsor Administrator        
+  Audit Trail 확인 가                                                                                                                  
+                                                                                                       (Pharmaceutical Company)를    
+  능하도록    수정   필요                                                                                                                   
+                                                                                                       한명만   지정   가능                
+                                                                                                     1)  Table의 Label과  현재  창에      
+                                                                                                         서  Label이 다름,  `Start      
+                                                            1)  Dropdown/별도   팝업창에                                                  
+  기타:  현재  User 화면   상 등록   가능하나,    실제  User에게   알림                                                     date`, `End date`로 수정      
+                                                                서 선택   후 화면에    표시되                                                 
+  메일  등  가지   않으며   User 추가된   계정으로     접속  불가                                                       2)  Date 설정  시  User 생성되지      
+                                                                는 방식으로     수정  필요                                                   
+                                                                                                         않음                         
+                                                            2)  Blind 항목 추가                                                         

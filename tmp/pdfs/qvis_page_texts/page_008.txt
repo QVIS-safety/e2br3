@@ -1,0 +1,41 @@
+                                                                                                                                    
+                                                                                           참고                                      
+                                                                                         Import History, Export/Submit              
+                                                                                                                                    
+                                                                                         History의 Read 권한에는    해당   페이              
+                          이하  메뉴   별 의견   반영  필요,  이외의    항목은   유지                                                                  
+                                                                                         지  내의  다운로드     등 상호작용     권한              
+                                                                                         을  포함                                      
+                                                                    1)  Notice: Read(Notice를 볼 수                                    
+                                                                                                                                    
+                                                                        있는   권한), Edit(Notice를 볼                                    
+                                                                        수  있는  권한)                                                  
+                                                                    2)  My  To Do: Read(설정된  WF                                     
+                                                                        에  따른  사례를    볼 수  있는   권                                   
+                                                                                                                                    
+                                                                        한)                                                          
+                                                                    1)  Case: Read(Case 페이지를   볼  수  있는  권한),  Edit(Case            
+                                                                        페이지    내 Case 입력/수정    권한)                                  
+                                                                    2)  Workflow: Read(Case 페이지   내 Case 별  Workflow 상              
+                                                                        태를   볼 수  있는  권한,  컬럼으로     표시)                             
+                                                                                                                                    
+                                                                    3)  QC: Edit(Case 별 QC를  체크할   수  있는  권한)                       
+                                                                    4)  Lock: Edit(Case 별 Lock를 체크할   수 있는   권한)                    
+                                                                                                                                    
+                                                                    1)  CASE INFO.를  INFO로  수정                                      
+                                                                                                                                    
+                                                                    2)  [하위  메뉴]  Case Info: Read(INFO 페이지를   볼  수 있는               
+                                                                        권한),  Edit(INFO 페이지  내  정보를   입력/수정    권한)                  
+                                                                                                                                    
+        유지                                                   1)  DATA를  IMPORT 로  수정                                                
+                                                             2)  [하위  메뉴]  Import Files: Edit(Import Files 를 볼 수 있으며, Data를         
+                                                                 Import 할 수 있는   권한)                                                
+                                                                                                                                    
+                                                             3)  [하위  메뉴]  Import History: Read(Import History를 볼 수 있는 권한)          
+                                                                                                                                    
+                                                             1)  SUBMISSION을   EXPORT/SUBMISSION으로    수정                            
+                                                             2)  [하위  메뉴]  Export/Submit: Edit(Export/Submit 를 볼 수 있으며,             
+                                                                                                                                    
+                                                                 Case를 Export/Submit 할 수  있는  권한)                                   
+                                                             3)  [하위  메뉴]  Export/Submit History: Read(Export/Submit History를       
+                                                                 볼 수  있는  권한)                                                       

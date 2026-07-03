@@ -178,9 +178,8 @@ fn normalize_admin_privileges(
 				| "import" | "export_submission"
 				| "submission"
 				| "export" | "user"
-				| "users"
-				| "audit" | "data"
-				| "terminology"
+				| "users" | "audit"
+				| "data" | "terminology"
 				| "admin" | "settings"
 				| "roles"
 		) {

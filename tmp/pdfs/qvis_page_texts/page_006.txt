@@ -1,0 +1,41 @@
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                 참고                                                
+                                                                                본  페이지의    설정과    관계  없이   관리자는                     
+ Default로                                                                       Safety Database 관리를  위해   접근  가능                    
+                                                                                                                                    
+ System                                                                         하며,  이를   User Manual에 명시   필요                      
+                         삭제                                                                                                         
+ Administrator가                                                                                                                     
+ 부여한   Sponsor                                                                                                                      
+ Administrator만                                                                                                                     
+ 뜨도록   설정                                                                                                                           
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+  삭제.  Default Role로                                                                                                                
+  System Administrator                                                                                                              
+  및 Sponsor                                                                                                                         
+                                                                                                                                    
+  Administrator만 제공                                                                                                                 
+                                                                                                                                    
+                                                                                                                                    
+  삭제                                                                                                                                
+                                                                                           1)  작동하지    않음                           
+                                                                                                                                    
+                                                                                           2)  Audit Trail 표시용이  맞                  
+                                                                                               을지  확인   필요                          
+                                                                                                                                    
+                                                                                                                                    

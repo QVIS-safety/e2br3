@@ -1467,12 +1467,16 @@ mod tests {
 			.contains(&PRESAVE_TEMPLATE_CREATE));
 
 		// import: read history vs edit files.
-		assert!(expand("import", true, false, false, false).contains(&XML_IMPORT_READ));
+		assert!(
+			expand("import", true, false, false, false).contains(&XML_IMPORT_READ)
+		);
 		assert!(!expand("import", true, false, false, false).contains(&XML_IMPORT));
 		assert!(expand("import", false, true, false, false).contains(&XML_IMPORT));
 
 		// export/submission: read vs export.
-		assert!(expand("export", true, false, false, false).contains(&XML_EXPORT_READ));
+		assert!(
+			expand("export", true, false, false, false).contains(&XML_EXPORT_READ)
+		);
 		assert!(!expand("export", true, false, false, false).contains(&XML_EXPORT));
 		assert!(expand("export", false, true, false, false).contains(&XML_EXPORT));
 
@@ -1502,7 +1506,10 @@ mod tests {
 		assert!(read.contains(&TERMINOLOGY_READ));
 		assert!(!read.contains(&TERMINOLOGY_IMPORT));
 		let edit = expand("data", false, true, false, false);
-		assert!(edit.contains(&TERMINOLOGY_IMPORT) && edit.contains(&TERMINOLOGY_APPROVE));
+		assert!(
+			edit.contains(&TERMINOLOGY_IMPORT)
+				&& edit.contains(&TERMINOLOGY_APPROVE)
+		);
 
 		// admin: any check grants the full admin permission set.
 		let admin = expand("admin", true, false, false, false);

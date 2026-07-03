@@ -13,10 +13,9 @@ use lib_core::ctx::{
 	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::{
-	has_permission, AUDIT_LIST, AUDIT_READ, CASE_LIST, CASE_READ, CASE_APPROVE,
-	CASE_CREATE, CASE_UPDATE, DASHBOARD_NOTICE_READ,
-	DASHBOARD_NOTICE_UPDATE, EMAIL_NOTIFICATION_SEND, PRESAVE_TEMPLATE_CREATE,
-	PRESAVE_TEMPLATE_DELETE,
+	has_permission, AUDIT_LIST, AUDIT_READ, CASE_APPROVE, CASE_CREATE, CASE_LIST,
+	CASE_READ, CASE_UPDATE, DASHBOARD_NOTICE_READ, DASHBOARD_NOTICE_UPDATE,
+	EMAIL_NOTIFICATION_SEND, PRESAVE_TEMPLATE_CREATE, PRESAVE_TEMPLATE_DELETE,
 	PRESAVE_TEMPLATE_LIST, PRESAVE_TEMPLATE_READ, PRESAVE_TEMPLATE_UPDATE,
 	SETTINGS_READ, SETTINGS_UPDATE, TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT,
 	USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE, XML_EXPORT,
@@ -1522,8 +1521,8 @@ async fn test_home_workflow_matrix_privileges_grant_effective_case_list_access(
 // access (GET /api/audit-logs is guarded by AUDIT_LIST).
 #[serial]
 #[tokio::test]
-async fn test_audit_matrix_privileges_grant_effective_audit_log_access(
-) -> Result<()> {
+async fn test_audit_matrix_privileges_grant_effective_audit_log_access() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -1549,13 +1548,8 @@ async fn test_audit_matrix_privileges_grant_effective_audit_log_access(
 
 	// Unchecked: no audit access.
 	assert!(!has_permission(&none_id, AUDIT_LIST));
-	assert_get_status(
-		&app,
-		&none_cookie,
-		"/api/audit-logs",
-		StatusCode::FORBIDDEN,
-	)
-	.await?;
+	assert_get_status(&app, &none_cookie, "/api/audit-logs", StatusCode::FORBIDDEN)
+		.await?;
 
 	// audit read grants AUDIT_READ + AUDIT_LIST.
 	update_role_privileges(
@@ -1614,8 +1608,7 @@ async fn test_organization_management_requires_system_admin() -> Result<()> {
 // no endpoint enforces the permission yet.
 #[serial]
 #[tokio::test]
-async fn test_home_email_matrix_privilege_persists_and_grants_send(
-) -> Result<()> {
+async fn test_home_email_matrix_privilege_persists_and_grants_send() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;

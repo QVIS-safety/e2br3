@@ -1335,8 +1335,14 @@ END $$"#,
 		"CREATE POLICY user_organization_memberships_modify ON user_organization_memberships
 		 FOR ALL
 		 TO e2br3_app_role
-		 USING (is_current_user_admin())
-		 WITH CHECK (is_current_user_admin())",
+		 USING (
+		 	organization_id = current_organization_id()
+		 	OR is_current_user_admin()
+		 )
+		 WITH CHECK (
+		 	organization_id = current_organization_id()
+		 	OR is_current_user_admin()
+		 )",
 	)
 	.await?;
 	execute_ignoring_duplicate_policy(

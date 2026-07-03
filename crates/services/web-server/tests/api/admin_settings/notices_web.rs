@@ -155,8 +155,7 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 async fn test_dashboard_notices_readable_by_non_admin_viewer() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let admin_token =
-		generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());

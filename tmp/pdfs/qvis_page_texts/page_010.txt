@@ -1,0 +1,41 @@
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                           Data  Ordering:   Primary  data  will appear  first                                                      
+                                                                                                                                    
+                                                                                             복되어     입력되는       항목의      경우,        
+                                                                                                                                    
+                                                                                             첫번째     행으로      입력된     Data를         
+                                                                                             상단에     출력하고,       두번째     행부         
+                                                                                                                                    
+                                                                                             터는    Report  하단의      Continued       
+                                                                                                                                    
+                           Report  하단                                                        Table  생성하여       표시                   
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                            Data  Ordering:   Basic                                                                                 
+                                                                                                                                    
+                                                                              반복    입력되는       항목을                                  
+                                                                                                                                    
+                                                                              하나의     Table로    표시                                  
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
+                                                                                                                                    
