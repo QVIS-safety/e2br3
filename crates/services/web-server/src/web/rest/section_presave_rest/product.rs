@@ -14,7 +14,7 @@ pub async fn create_product_presave(
 		ProductPresaveBmc::delete(&ctx, &mm, id).await?;
 		return Err(err);
 	}
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_product_presaves(
@@ -25,7 +25,7 @@ pub async fn list_product_presaves(
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
 	let entities = ProductPresaveBmc::list(&ctx, &mm, None).await?;
 	let entities = filter_product_presaves_for_scope(&ctx, &mm, entities).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_product_presave(
@@ -37,7 +37,7 @@ pub async fn get_product_presave(
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let entity = ProductPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &entity).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_product_presave(
@@ -77,7 +77,7 @@ pub async fn update_product_presave(
 	ProductPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = ProductPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &entity).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_product_presave(
@@ -193,7 +193,7 @@ pub async fn get_product_presave_details(
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let details = load_product_presave_details(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &details.parent).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: details })))
+	Ok(rest_ok(details))
 }
 
 pub async fn update_product_presave_details(
@@ -240,7 +240,7 @@ pub async fn update_product_presave_details(
 
 	let details = load_product_presave_details(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &details.parent).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: details })))
+	Ok(rest_ok(details))
 }
 
 async fn apply_product_presave_details(
@@ -460,7 +460,7 @@ pub async fn create_product_substance(
 		ProductPresaveSubstanceBmc::create(&ctx, &mm, data.into_core(product_id))
 			.await?;
 	let entity = ProductPresaveSubstanceBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_product_substances(
@@ -476,7 +476,7 @@ pub async fn list_product_substances(
 	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
 	let entities =
 		ProductPresaveSubstanceBmc::list_by_parent(&ctx, &mm, product_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_product_substance(
@@ -494,7 +494,7 @@ pub async fn get_product_substance(
 		"product_presave_substances",
 	)?;
 	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_product_substance(
@@ -516,7 +516,7 @@ pub async fn update_product_substance(
 	let ParamsForUpdate { data } = params;
 	ProductPresaveSubstanceBmc::update(&ctx, &mm, id, data).await?;
 	let entity = ProductPresaveSubstanceBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_product_substance(

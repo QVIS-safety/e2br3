@@ -10,7 +10,7 @@ pub async fn create_reporter_presave(
 	let ParamsForCreate { data } = params;
 	let id = ReporterPresaveBmc::create(&ctx, &mm, data).await?;
 	let entity = ReporterPresaveBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_reporter_presaves(
@@ -20,7 +20,7 @@ pub async fn list_reporter_presaves(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
 	let entities = ReporterPresaveBmc::list(&ctx, &mm, None).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_reporter_presave(
@@ -31,7 +31,7 @@ pub async fn get_reporter_presave(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let entity = ReporterPresaveBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_reporter_presave(
@@ -48,7 +48,7 @@ pub async fn update_reporter_presave(
 	}
 	ReporterPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = ReporterPresaveBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_reporter_presave(

@@ -81,7 +81,7 @@ pub async fn create_study_presave(
 		StudyPresaveBmc::delete(&ctx, &mm, id).await?;
 		return Err(err);
 	}
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_study_presaves(
@@ -92,7 +92,7 @@ pub async fn list_study_presaves(
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
 	let entities = StudyPresaveBmc::list(&ctx, &mm, None).await?;
 	let entities = filter_study_presaves_for_scope(&ctx, &mm, entities).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_study_presave(
@@ -104,7 +104,7 @@ pub async fn get_study_presave(
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let entity = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &entity).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_study_presave(
@@ -137,7 +137,7 @@ pub async fn update_study_presave(
 	StudyPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &entity).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_study_presave(
@@ -332,7 +332,7 @@ pub async fn get_study_presave_details(
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let details = load_study_presave_details(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &details.parent).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: details })))
+	Ok(rest_ok(details))
 }
 
 pub async fn update_study_presave_details(
@@ -369,7 +369,7 @@ pub async fn update_study_presave_details(
 
 	let details = load_study_presave_details(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &details.parent).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: details })))
+	Ok(rest_ok(details))
 }
 
 async fn apply_study_presave_details(
@@ -798,7 +798,7 @@ pub async fn create_study_registration_number(
 	let data = data.into_core(study_id);
 	let id = StudyPresaveRegistrationNumberBmc::create(&ctx, &mm, data).await?;
 	let entity = StudyPresaveRegistrationNumberBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_study_registration_numbers(
@@ -815,7 +815,7 @@ pub async fn list_study_registration_numbers(
 	let entities =
 		StudyPresaveRegistrationNumberBmc::list_by_parent(&ctx, &mm, study_id)
 			.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_study_registration_number(
@@ -836,7 +836,7 @@ pub async fn get_study_registration_number(
 		"study_presave_registration_numbers",
 	)?;
 	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_study_registration_number(
@@ -861,7 +861,7 @@ pub async fn update_study_registration_number(
 	let ParamsForUpdate { data } = params;
 	StudyPresaveRegistrationNumberBmc::update(&ctx, &mm, id, data).await?;
 	let entity = StudyPresaveRegistrationNumberBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_study_registration_number(
@@ -905,7 +905,7 @@ pub async fn create_study_product(
 	let data = data.into_core(study_id);
 	let id = StudyPresaveProductBmc::create(&ctx, &mm, data).await?;
 	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_study_products(
@@ -918,7 +918,7 @@ pub async fn list_study_products(
 	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let entities =
 		StudyPresaveProductBmc::list_by_parent(&ctx, &mm, study_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_study_product(
@@ -936,7 +936,7 @@ pub async fn get_study_product(
 		"study_presave_products",
 	)?;
 	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_study_product(
@@ -958,7 +958,7 @@ pub async fn update_study_product(
 	let ParamsForUpdate { data } = params;
 	StudyPresaveProductBmc::update(&ctx, &mm, id, data).await?;
 	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_study_product(
@@ -1002,7 +1002,7 @@ pub async fn create_study_reporter(
 	let data = data.into_core(study_id);
 	let id = StudyPresaveReporterBmc::create(&ctx, &mm, data).await?;
 	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_study_reporters(
@@ -1015,7 +1015,7 @@ pub async fn list_study_reporters(
 	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
 	let entities =
 		StudyPresaveReporterBmc::list_by_parent(&ctx, &mm, study_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_study_reporter(
@@ -1033,7 +1033,7 @@ pub async fn get_study_reporter(
 		"study_presave_reporters",
 	)?;
 	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_study_reporter(
@@ -1055,7 +1055,7 @@ pub async fn update_study_reporter(
 	let ParamsForUpdate { data } = params;
 	StudyPresaveReporterBmc::update(&ctx, &mm, id, data).await?;
 	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_study_reporter(

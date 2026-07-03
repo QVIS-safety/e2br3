@@ -46,11 +46,6 @@ pub async fn init_test() -> ModelManager {
 	mm.clone()
 }
 
-pub async fn ensure_dev_schema_compatibility(
-) -> Result<(), Box<dyn std::error::Error>> {
-	dev_db::ensure_dev_schema_compatibility().await
-}
-
 // NOTE: Test seed/clean helpers for user/agent/conv have been removed
 // as those models were replaced with the E2B(R3) SafetyDB models.
 // Add new test helpers here as needed for User, Organization, Case, etc.

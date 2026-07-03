@@ -23,26 +23,13 @@ async fn load_editor_lb_list_rows(
 	)
 }
 
-pub async fn list_editor_lb(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-) -> Result<(
-	axum::http::StatusCode,
-	Json<CaseEditorListResponse<CaseEditorLbListRowDto>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
-	require_permission(&ctx, TEST_RESULT_LIST)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-
-	let rows = load_editor_lb_list_rows(&ctx, &mm, case_id, false).await?;
-
-	Ok((
-		axum::http::StatusCode::OK,
-		Json(CaseEditorListResponse { case_id, rows }),
-	))
-}
+repeatable_list_handler!(
+	list_editor_lb,
+	CaseEditorLbListRowDto,
+	TEST_RESULT_LIST,
+	load_editor_lb_list_rows,
+	include_deleted,
+);
 
 pub async fn get_editor_lb_page_projection(
 	State(mm): State<ModelManager>,
@@ -97,27 +84,11 @@ pub async fn get_editor_lb(
 	))
 }
 
-pub async fn get_editor_lb_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-	Query(query): Query<CaseEditorPageProjectionQuery>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
-	require_permission(&ctx, TEST_RESULT_READ)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-
-	let response = build_editor_lb_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
-		row_id,
-		query_authorities_csv(&query)?,
-	)
-	.await?;
-	Ok((axum::http::StatusCode::OK, Json(response)))
-}
+repeatable_page_row_read_handler!(
+	get_editor_lb_page_row,
+	[CASE_READ, TEST_RESULT_READ],
+	build_editor_lb_page_row_response,
+);
 
 async fn build_editor_lb_page_row_response(
 	ctx: &lib_core::ctx::Ctx,
@@ -127,153 +98,63 @@ async fn build_editor_lb_page_row_response(
 	authorities: Option<String>,
 ) -> Result<Value> {
 	let test_result = TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	let mut response = Map::new();
-	response.insert("caseId".to_string(), json!(case_id));
-	response.insert("section".to_string(), json!("LB"));
-	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, authorities)?;
-	response.insert("data".to_string(), json!({ "testResult": test_result }));
-	Ok(Value::Object(response))
-}
-
-pub async fn create_editor_lb_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-	Json(request): Json<CaseEditorPagePatchRequest>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, TEST_RESULT_CREATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_authorities =
-		validate_request_projection_context(request.authorities.as_deref())?;
-
-	let row = required_row_object("LB", &request.rows, "testResult")?;
-	let value = row_model_value(
-		row,
-		&[
-			("test_name", &["testName"][..]),
-			("test_result_value", &["resultValue"][..]),
-			("test_result_unit", &["resultUnit"][..]),
-			("sequence_number", &["sequenceNumber"][..]),
-		],
-		&[
-			("case_id", json!(case_id)),
-			(
-				"sequence_number",
-				json!(i32_field(row, &["sequenceNumber", "sequence_number"])
-					.unwrap_or(1)),
-			),
-		],
-	);
-	let create = parse_row_model::<TestResultForCreate>("LB", "testResult", value)?;
-	let row_id = TestResultBmc::create(&ctx, &mm, create).await?;
-	mark_editor_validation_cache_stale(
-		&ctx,
-		&mm,
+	editor_page_row_response(
 		case_id,
-		requested_authorities.clone(),
-	)
-	.await?;
-	let response = build_editor_lb_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
+		"LB",
 		row_id,
-		requested_authorities,
+		authorities,
+		json!({ "testResult": test_result }),
 	)
-	.await?;
-	Ok((axum::http::StatusCode::CREATED, Json(response)))
 }
 
-pub async fn patch_editor_lb_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-	Json(request): Json<CaseEditorPagePatchRequest>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, TEST_RESULT_UPDATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_authorities =
-		validate_request_projection_context(request.authorities.as_deref())?;
+repeatable_page_row_create_handler!(
+	create_editor_lb_page_row,
+	section: "LB",
+	row_key: "testResult",
+	permission: TEST_RESULT_CREATE,
+	bmc: TestResultBmc,
+	model: TestResultForCreate,
+	aliases: &[
+		("test_name", &["testName"][..]),
+		("test_result_value", &["resultValue"][..]),
+		("test_result_unit", &["resultUnit"][..]),
+		("sequence_number", &["sequenceNumber"][..]),
+	],
+	extras: |case_id, row| [
+		("case_id", json!(case_id)),
+		(
+			"sequence_number",
+			json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+		),
+	],
+	build_response: build_editor_lb_page_row_response,
+);
 
-	TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	let synthesized_rows;
-	let rows = if !request.changes.is_empty() {
-		synthesized_rows = row_payload_from_changes(
-			"LB",
-			"testResult",
-			&request.changes,
-			&[
-				("testName", "testName"),
-				("resultValue", "resultValue"),
-				("resultUnit", "resultUnit"),
-			],
-		)?;
-		&synthesized_rows
-	} else {
-		&request.rows
-	};
-	let row = required_row_object("LB", rows, "testResult")?;
-	let value = row_model_value(
-		row,
-		&[
-			("test_name", &["testName"][..]),
-			("test_result_value", &["resultValue"][..]),
-			("test_result_unit", &["resultUnit"][..]),
-		],
-		&[],
-	);
-	let update = parse_row_model::<TestResultForUpdate>("LB", "testResult", value)?;
-	TestResultBmc::update(&ctx, &mm, row_id, update).await?;
-	mark_editor_validation_cache_stale(
-		&ctx,
-		&mm,
-		case_id,
-		requested_authorities.clone(),
-	)
-	.await?;
-	let response = build_editor_lb_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
-		row_id,
-		requested_authorities,
-	)
-	.await?;
-	Ok((axum::http::StatusCode::OK, Json(response)))
-}
+repeatable_page_row_patch_handler!(
+	patch_editor_lb_page_row,
+	section: "LB",
+	row_key: "testResult",
+	permission: TEST_RESULT_UPDATE,
+	bmc: TestResultBmc,
+	model: TestResultForUpdate,
+	changes: &[
+		("testName", "testName"),
+		("resultValue", "resultValue"),
+		("resultUnit", "resultUnit"),
+	],
+	aliases: &[
+		("test_name", &["testName"][..]),
+		("test_result_value", &["resultValue"][..]),
+		("test_result_unit", &["resultUnit"][..]),
+	],
+	build_response: build_editor_lb_page_row_response,
+);
 
-pub async fn delete_editor_lb_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-) -> Result<axum::http::StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, TEST_RESULT_DELETE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-
-	TestResultBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	TestResultBmc::delete(&ctx, &mm, row_id).await?;
-	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
-	Ok(axum::http::StatusCode::NO_CONTENT)
-}
-
-pub async fn restore_editor_lb_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, TEST_RESULT_UPDATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-
-	TestResultBmc::get_in_case_with_deleted(&ctx, &mm, case_id, row_id, true)
-		.await?;
-	TestResultBmc::restore_in_case(&ctx, &mm, case_id, row_id).await?;
-	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
-	let response =
-		build_editor_lb_page_row_response(&ctx, &mm, case_id, row_id, None).await?;
-	Ok((axum::http::StatusCode::OK, Json(response)))
-}
+repeatable_page_row_delete_restore_handlers!(
+	delete: delete_editor_lb_page_row,
+	restore: restore_editor_lb_page_row,
+	bmc: TestResultBmc,
+	delete_permission: TEST_RESULT_DELETE,
+	update_permission: TEST_RESULT_UPDATE,
+	build_response: build_editor_lb_page_row_response,
+);

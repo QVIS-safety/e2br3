@@ -14,7 +14,7 @@ pub async fn create_sender_presave(
 		SenderPresaveBmc::delete(&ctx, &mm, id).await?;
 		return Err(err);
 	}
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_sender_presaves(
@@ -25,7 +25,7 @@ pub async fn list_sender_presaves(
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
 	let entities = SenderPresaveBmc::list(&ctx, &mm, None).await?;
 	let entities = filter_sender_presaves_for_scope(&ctx, &mm, entities).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_sender_presave(
@@ -37,7 +37,7 @@ pub async fn get_sender_presave(
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let entity = SenderPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_sender_presave_scope(&ctx, &mm, &entity).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_sender_presave(
@@ -72,7 +72,7 @@ pub async fn update_sender_presave(
 	SenderPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = SenderPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_sender_presave_scope(&ctx, &mm, &entity).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_sender_presave(
@@ -250,7 +250,7 @@ pub async fn get_sender_presave_details(
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let details = load_sender_presave_details(&ctx, &mm, id).await?;
 	ensure_sender_presave_scope(&ctx, &mm, &details.parent).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: details })))
+	Ok(rest_ok(details))
 }
 
 pub async fn update_sender_presave_details(
@@ -291,7 +291,7 @@ pub async fn update_sender_presave_details(
 
 	let details = load_sender_presave_details(&ctx, &mm, id).await?;
 	ensure_sender_presave_scope(&ctx, &mm, &details.parent).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: details })))
+	Ok(rest_ok(details))
 }
 
 async fn apply_sender_presave_details(
@@ -726,7 +726,7 @@ pub async fn create_sender_gateway_from_path(
 	let id = SenderPresaveGatewayBmc::create(&ctx, &mm, data.into_core(sender_id))
 		.await?;
 	let entity = SenderPresaveGatewayBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_sender_gateways(
@@ -739,7 +739,7 @@ pub async fn list_sender_gateways(
 	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	let entities =
 		SenderPresaveGatewayBmc::list_by_parent(&ctx, &mm, sender_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_sender_gateway(
@@ -757,7 +757,7 @@ pub async fn get_sender_gateway(
 		"sender_presave_gateways",
 	)?;
 	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_sender_gateway(
@@ -783,7 +783,7 @@ pub async fn update_sender_gateway(
 	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	SenderPresaveGatewayBmc::update(&ctx, &mm, id, data).await?;
 	let entity = SenderPresaveGatewayBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_sender_gateway(
@@ -864,7 +864,7 @@ pub async fn create_sender_responsible_person(
 	)
 	.await?;
 	let entity = SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_sender_responsible_persons(
@@ -881,7 +881,7 @@ pub async fn list_sender_responsible_persons(
 	let entities =
 		SenderPresaveResponsiblePersonBmc::list_by_parent(&ctx, &mm, sender_id)
 			.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_sender_responsible_person(
@@ -902,7 +902,7 @@ pub async fn get_sender_responsible_person(
 		"sender_presave_responsible_persons",
 	)?;
 	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_sender_responsible_person(
@@ -931,7 +931,7 @@ pub async fn update_sender_responsible_person(
 	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
 	SenderPresaveResponsiblePersonBmc::update(&ctx, &mm, id, data).await?;
 	let entity = SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_sender_responsible_person(

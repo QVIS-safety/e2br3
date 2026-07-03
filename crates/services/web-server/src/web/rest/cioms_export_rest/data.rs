@@ -1,5 +1,26 @@
 use super::*;
 
+#[derive(Clone, Copy)]
+enum CiomsCaseTable {
+	SafetyReportIdentification,
+	PatientInformation,
+	NarrativeInformation,
+	PrimarySources,
+	SenderInformation,
+}
+
+impl CiomsCaseTable {
+	fn as_str(self) -> &'static str {
+		match self {
+			Self::SafetyReportIdentification => "safety_report_identification",
+			Self::PatientInformation => "patient_information",
+			Self::NarrativeInformation => "narrative_information",
+			Self::PrimarySources => "primary_sources",
+			Self::SenderInformation => "sender_information",
+		}
+	}
+}
+
 pub(super) async fn load_cioms_settings(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -31,178 +52,126 @@ pub(super) async fn load_cioms_settings(
 	})
 }
 
-pub(super) async fn load_optional_by_case<T>(
+async fn load_optional_by_case<T>(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
-	table: &str,
+	table: CiomsCaseTable,
 	case_id: Uuid,
-) -> lib_core::model::Result<Option<T>>
+) -> Result<Option<T>>
 where
 	for<'r> T: sqlx::FromRow<'r, sqlx::postgres::PgRow> + Send + Unpin,
 {
-	mm.dbx().begin_txn().await?;
-	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
-		let _ = mm.dbx().rollback_txn().await;
-		return Err(err);
-	}
+	let table = table.as_str();
 	let sql = format!("SELECT * FROM {table} WHERE case_id = $1 LIMIT 1");
-	let result = mm
-		.dbx()
-		.fetch_optional(sqlx::query_as::<_, T>(&sql).bind(case_id))
-		.await
-		.map_err(ModelError::Dbx);
-	match result {
-		Ok(value) => {
-			mm.dbx().commit_txn().await?;
-			Ok(value)
-		}
-		Err(err) => {
-			let _ = mm.dbx().rollback_txn().await;
-			Err(err)
-		}
-	}
+	lib_rest_core::with_rls_read(mm, ctx, |dbx| {
+		Box::pin(async move {
+			dbx.fetch_optional(sqlx::query_as::<_, T>(&sql).bind(case_id))
+				.await
+				.map_err(ModelError::Dbx)
+				.map_err(Error::Model)
+		})
+	})
+	.await
 }
 
-pub(super) async fn load_list_by_case<T>(
+async fn load_list_by_case<T>(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
-	table: &str,
+	table: CiomsCaseTable,
 	case_id: Uuid,
-) -> lib_core::model::Result<Vec<T>>
+) -> Result<Vec<T>>
 where
 	for<'r> T: sqlx::FromRow<'r, sqlx::postgres::PgRow> + Send + Unpin,
 {
-	mm.dbx().begin_txn().await?;
-	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
-		let _ = mm.dbx().rollback_txn().await;
-		return Err(err);
-	}
+	let table = table.as_str();
 	let sql = format!(
 		"SELECT * FROM {table} WHERE case_id = $1 AND deleted IS NOT TRUE ORDER BY sequence_number"
 	);
-	let result = mm
-		.dbx()
-		.fetch_all(sqlx::query_as::<_, T>(&sql).bind(case_id))
-		.await
-		.map_err(ModelError::Dbx);
-	match result {
-		Ok(value) => {
-			mm.dbx().commit_txn().await?;
-			Ok(value)
-		}
-		Err(err) => {
-			let _ = mm.dbx().rollback_txn().await;
-			Err(err)
-		}
-	}
+	lib_rest_core::with_rls_read(mm, ctx, |dbx| {
+		Box::pin(async move {
+			dbx.fetch_all(sqlx::query_as::<_, T>(&sql).bind(case_id))
+				.await
+				.map_err(ModelError::Dbx)
+				.map_err(Error::Model)
+		})
+	})
+	.await
 }
 
-pub(super) async fn load_unordered_list_by_case<T>(
+async fn load_unordered_list_by_case<T>(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
-	table: &str,
+	table: CiomsCaseTable,
 	case_id: Uuid,
-) -> lib_core::model::Result<Vec<T>>
+) -> Result<Vec<T>>
 where
 	for<'r> T: sqlx::FromRow<'r, sqlx::postgres::PgRow> + Send + Unpin,
 {
-	mm.dbx().begin_txn().await?;
-	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
-		let _ = mm.dbx().rollback_txn().await;
-		return Err(err);
-	}
+	let table = table.as_str();
 	let sql = format!("SELECT * FROM {table} WHERE case_id = $1 ORDER BY id");
-	let result = mm
-		.dbx()
-		.fetch_all(sqlx::query_as::<_, T>(&sql).bind(case_id))
-		.await
-		.map_err(ModelError::Dbx);
-	match result {
-		Ok(value) => {
-			mm.dbx().commit_txn().await?;
-			Ok(value)
-		}
-		Err(err) => {
-			let _ = mm.dbx().rollback_txn().await;
-			Err(err)
-		}
-	}
+	lib_rest_core::with_rls_read(mm, ctx, |dbx| {
+		Box::pin(async move {
+			dbx.fetch_all(sqlx::query_as::<_, T>(&sql).bind(case_id))
+				.await
+				.map_err(ModelError::Dbx)
+				.map_err(Error::Model)
+		})
+	})
+	.await
 }
 
 pub(super) async fn load_dosages_by_case(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
-) -> lib_core::model::Result<Vec<DosageInformation>> {
-	mm.dbx().begin_txn().await?;
-	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
-		let _ = mm.dbx().rollback_txn().await;
-		return Err(err);
-	}
-	let result = mm
-		.dbx()
-		.fetch_all(
-			sqlx::query_as::<_, DosageInformation>(
-				"SELECT dosage_information.*
+) -> Result<Vec<DosageInformation>> {
+	lib_rest_core::with_rls_read(mm, ctx, |dbx| {
+		Box::pin(async move {
+			dbx.fetch_all(
+				sqlx::query_as::<_, DosageInformation>(
+					"SELECT dosage_information.*
 				 FROM dosage_information
 				 JOIN drug_information ON drug_information.id = dosage_information.drug_id
 				 WHERE drug_information.case_id = $1
 				   AND drug_information.deleted IS NOT TRUE
 				   AND dosage_information.deleted IS NOT TRUE
 				 ORDER BY drug_information.sequence_number, dosage_information.sequence_number",
+				)
+				.bind(case_id),
 			)
-			.bind(case_id),
-		)
-		.await
-		.map_err(ModelError::Dbx);
-	match result {
-		Ok(value) => {
-			mm.dbx().commit_txn().await?;
-			Ok(value)
-		}
-		Err(err) => {
-			let _ = mm.dbx().rollback_txn().await;
-			Err(err)
-		}
-	}
+			.await
+			.map_err(ModelError::Dbx)
+			.map_err(Error::Model)
+		})
+	})
+	.await
 }
 
 pub(super) async fn load_indications_by_case(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
-) -> lib_core::model::Result<Vec<DrugIndication>> {
-	mm.dbx().begin_txn().await?;
-	if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
-		let _ = mm.dbx().rollback_txn().await;
-		return Err(err);
-	}
-	let result = mm
-		.dbx()
-		.fetch_all(
-			sqlx::query_as::<_, DrugIndication>(
-				"SELECT drug_indications.*
+) -> Result<Vec<DrugIndication>> {
+	lib_rest_core::with_rls_read(mm, ctx, |dbx| {
+		Box::pin(async move {
+			dbx.fetch_all(
+				sqlx::query_as::<_, DrugIndication>(
+					"SELECT drug_indications.*
 				 FROM drug_indications
 				 JOIN drug_information ON drug_information.id = drug_indications.drug_id
 				 WHERE drug_information.case_id = $1
 				   AND drug_information.deleted IS NOT TRUE
 				   AND drug_indications.deleted IS NOT TRUE
 				 ORDER BY drug_information.sequence_number, drug_indications.sequence_number",
+				)
+				.bind(case_id),
 			)
-			.bind(case_id),
-		)
-		.await
-		.map_err(ModelError::Dbx);
-	match result {
-		Ok(value) => {
-			mm.dbx().commit_txn().await?;
-			Ok(value)
-		}
-		Err(err) => {
-			let _ = mm.dbx().rollback_txn().await;
-			Err(err)
-		}
-	}
+			.await
+			.map_err(ModelError::Dbx)
+			.map_err(Error::Model)
+		})
+	})
+	.await
 }
 
 pub(super) async fn load_cioms_case_data(
@@ -213,11 +182,10 @@ pub(super) async fn load_cioms_case_data(
 	let report = load_optional_by_case::<SafetyReportIdentification>(
 		ctx,
 		mm,
-		"safety_report_identification",
+		CiomsCaseTable::SafetyReportIdentification,
 		case_id,
 	)
-	.await
-	.map_err(Error::Model)?;
+	.await?;
 	let case_number = report
 		.as_ref()
 		.and_then(|report| report.safety_report_id.clone())
@@ -226,43 +194,39 @@ pub(super) async fn load_cioms_case_data(
 	let patient = load_optional_by_case::<PatientInformation>(
 		ctx,
 		mm,
-		"patient_information",
+		CiomsCaseTable::PatientInformation,
 		case_id,
 	)
-	.await
-	.map_err(Error::Model)?;
+	.await?;
 	let narrative = load_optional_by_case::<NarrativeInformation>(
 		ctx,
 		mm,
-		"narrative_information",
+		CiomsCaseTable::NarrativeInformation,
 		case_id,
 	)
-	.await
-	.map_err(Error::Model)?;
+	.await?;
 	let reactions = ReactionBmc::list_by_case(ctx, mm, case_id)
 		.await
 		.map_err(Error::Model)?;
 	let drugs = DrugInformationBmc::list_by_case(ctx, mm, case_id)
 		.await
 		.map_err(Error::Model)?;
-	let dosages = load_dosages_by_case(ctx, mm, case_id)
-		.await
-		.map_err(Error::Model)?;
-	let indications = load_indications_by_case(ctx, mm, case_id)
-		.await
-		.map_err(Error::Model)?;
-	let primary_sources =
-		load_list_by_case::<PrimarySource>(ctx, mm, "primary_sources", case_id)
-			.await
-			.map_err(Error::Model)?;
+	let dosages = load_dosages_by_case(ctx, mm, case_id).await?;
+	let indications = load_indications_by_case(ctx, mm, case_id).await?;
+	let primary_sources = load_list_by_case::<PrimarySource>(
+		ctx,
+		mm,
+		CiomsCaseTable::PrimarySources,
+		case_id,
+	)
+	.await?;
 	let senders = load_unordered_list_by_case::<SenderInformation>(
 		ctx,
 		mm,
-		"sender_information",
+		CiomsCaseTable::SenderInformation,
 		case_id,
 	)
-	.await
-	.map_err(Error::Model)?;
+	.await?;
 	Ok(CiomsCaseData {
 		case_number,
 		report,

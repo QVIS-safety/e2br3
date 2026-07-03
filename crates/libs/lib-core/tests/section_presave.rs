@@ -443,9 +443,6 @@ async fn section_presave_tables_exist() -> Result<()> {
 #[tokio::test]
 async fn reporter_presaves_do_not_store_case_only_reporter_fields() -> Result<()> {
 	_dev_utils::init_dev().await;
-	_dev_utils::ensure_dev_schema_compatibility()
-		.await
-		.expect("ensure_dev_schema_compatibility failed");
 	let mm = ModelManager::new().await?;
 
 	let columns: Vec<String> = sqlx::query_scalar(
@@ -475,9 +472,6 @@ async fn reporter_presaves_do_not_store_case_only_reporter_fields() -> Result<()
 async fn submission_receiver_options_schema_exists_without_receiver_presave_routes(
 ) -> Result<()> {
 	_dev_utils::init_dev().await;
-	_dev_utils::ensure_dev_schema_compatibility()
-		.await
-		.expect("ensure_dev_schema_compatibility failed");
 	let mm = ModelManager::new().await?;
 
 	let submission_options_exists: bool = sqlx::query_scalar(

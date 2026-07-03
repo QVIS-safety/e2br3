@@ -10,7 +10,7 @@ pub async fn create_narrative_presave(
 	let ParamsForCreate { data } = params;
 	let id = NarrativePresaveBmc::create(&ctx, &mm, data).await?;
 	let entity = NarrativePresaveBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_narrative_presaves(
@@ -20,7 +20,7 @@ pub async fn list_narrative_presaves(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
 	let entities = NarrativePresaveBmc::list(&ctx, &mm, None).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_narrative_presave(
@@ -31,7 +31,7 @@ pub async fn get_narrative_presave(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let entity = NarrativePresaveBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_narrative_presave(
@@ -48,7 +48,7 @@ pub async fn update_narrative_presave(
 	}
 	NarrativePresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = NarrativePresaveBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_narrative_presave(

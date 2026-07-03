@@ -10,7 +10,7 @@ pub async fn create_receiver_presave(
 	let ParamsForCreate { data } = params;
 	let id = ReceiverPresaveBmc::create(&ctx, &mm, data).await?;
 	let entity = ReceiverPresaveBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_receiver_presaves(
@@ -20,7 +20,7 @@ pub async fn list_receiver_presaves(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
 	let entities = ReceiverPresaveBmc::list(&ctx, &mm, None).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_receiver_presave(
@@ -31,7 +31,7 @@ pub async fn get_receiver_presave(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let entity = ReceiverPresaveBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_receiver_presave(
@@ -48,7 +48,7 @@ pub async fn update_receiver_presave(
 	}
 	ReceiverPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = ReceiverPresaveBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_receiver_presave(
@@ -132,7 +132,7 @@ pub async fn get_receiver_presave_details(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
 	let details = load_receiver_presave_details(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: details })))
+	Ok(rest_ok(details))
 }
 
 pub async fn update_receiver_presave_details(
@@ -151,7 +151,7 @@ pub async fn update_receiver_presave_details(
 	apply_receiver_presave_details(&ctx, &mm, id, data).await?;
 
 	let details = load_receiver_presave_details(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: details })))
+	Ok(rest_ok(details))
 }
 
 async fn apply_receiver_presave_details(
@@ -370,7 +370,7 @@ pub async fn create_receiver_consignee(
 		ReceiverPresaveConsigneeBmc::create(&ctx, &mm, data.into_core(receiver_id))
 			.await?;
 	let entity = ReceiverPresaveConsigneeBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
+	Ok(rest_created(entity))
 }
 
 pub async fn list_receiver_consignees(
@@ -385,7 +385,7 @@ pub async fn list_receiver_consignees(
 	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
 	let entities =
 		ReceiverPresaveConsigneeBmc::list_by_parent(&ctx, &mm, receiver_id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
+	Ok(rest_ok(entities))
 }
 
 pub async fn get_receiver_consignee(
@@ -402,7 +402,7 @@ pub async fn get_receiver_consignee(
 		id,
 		"receiver_presave_consignees",
 	)?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn update_receiver_consignee(
@@ -423,7 +423,7 @@ pub async fn update_receiver_consignee(
 	let ParamsForUpdate { data } = params;
 	ReceiverPresaveConsigneeBmc::update(&ctx, &mm, id, data).await?;
 	let entity = ReceiverPresaveConsigneeBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+	Ok(rest_ok(entity))
 }
 
 pub async fn delete_receiver_consignee(

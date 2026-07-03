@@ -269,88 +269,6 @@ CREATE TABLE IF NOT EXISTS product_presaves (
         ON DELETE SET NULL (sender_presave_id)
 );
 
-ALTER TABLE product_presaves
-    ADD COLUMN IF NOT EXISTS original_manufacturer VARCHAR(500);
-
-ALTER TABLE sender_presave_responsible_persons
-    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
-
-DO $$
-DECLARE
-    has_sender_department BOOLEAN;
-    has_sender_person_given_name BOOLEAN;
-BEGIN
-    SELECT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'sender_presaves'
-          AND column_name = 'department'
-    ) INTO has_sender_department;
-
-    SELECT EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_name = 'sender_presaves'
-          AND column_name = 'person_given_name'
-    ) INTO has_sender_person_given_name;
-
-    IF has_sender_department OR has_sender_person_given_name THEN
-        EXECUTE format($sql$
-            INSERT INTO sender_presave_responsible_persons (
-                sender_presave_id,
-                sequence_number,
-                department,
-                person_given_name,
-                is_default,
-                deleted,
-                created_by,
-                updated_by
-            )
-            SELECT
-                p.id,
-                COALESCE((
-                    SELECT MAX(r.sequence_number) + 1
-                    FROM sender_presave_responsible_persons r
-                    WHERE r.sender_presave_id = p.id
-                ), 1),
-                %s,
-                %s,
-                NOT EXISTS (
-                    SELECT 1
-                    FROM sender_presave_responsible_persons r
-                    WHERE r.sender_presave_id = p.id
-                      AND r.is_default
-                      AND NOT r.deleted
-                ),
-                false,
-                p.created_by,
-                COALESCE(p.updated_by, p.created_by)
-            FROM sender_presaves p
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM sender_presave_responsible_persons r
-                WHERE r.sender_presave_id = p.id
-                  AND NOT r.deleted
-                  AND (r.department IS NOT NULL OR r.person_given_name IS NOT NULL)
-            )
-              AND (%s)
-        $sql$,
-            CASE WHEN has_sender_department THEN 'p.department' ELSE 'NULL::VARCHAR(500)' END,
-            CASE WHEN has_sender_person_given_name THEN 'p.person_given_name' ELSE 'NULL::VARCHAR(200)' END,
-            concat_ws(
-                ' OR ',
-                CASE WHEN has_sender_department THEN 'p.department IS NOT NULL' END,
-                CASE WHEN has_sender_person_given_name THEN 'p.person_given_name IS NOT NULL' END
-            )
-        );
-    END IF;
-END $$;
-
-ALTER TABLE sender_presaves
-    DROP COLUMN IF EXISTS person_given_name;
-
-ALTER TABLE sender_presaves
-    DROP COLUMN IF EXISTS department;
 
 CREATE TABLE IF NOT EXISTS product_presave_substances (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -370,8 +288,6 @@ CREATE TABLE IF NOT EXISTS product_presave_substances (
 
     CONSTRAINT product_presave_substances_sequence_unique UNIQUE (product_presave_id, sequence_number)
 );
-
-DROP TABLE IF EXISTS product_presave_mfds_device_items CASCADE;
 
 CREATE TABLE IF NOT EXISTS reporter_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -444,39 +360,6 @@ CREATE TABLE IF NOT EXISTS study_presave_registration_numbers (
     CONSTRAINT study_presave_registration_numbers_sequence_unique UNIQUE (study_presave_id, sequence_number)
 );
 
-ALTER TABLE study_presaves
-    ADD COLUMN IF NOT EXISTS study_name_notation TEXT,
-    ADD COLUMN IF NOT EXISTS sponsor_study_number_kind VARCHAR(50),
-    ADD COLUMN IF NOT EXISTS exclude_case_key_from_sync BOOLEAN;
-
-ALTER TABLE study_presaves
-    ALTER COLUMN sponsor_study_number TYPE VARCHAR(50) USING LEFT(sponsor_study_number, 50);
-
-ALTER TABLE study_presaves
-    DROP COLUMN IF EXISTS study_type_reaction_kr1,
-    DROP COLUMN IF EXISTS mfds_study_number,
-    DROP COLUMN IF EXISTS mfds_protocol_number,
-    DROP COLUMN IF EXISTS fda_ind_number_occurred,
-    DROP COLUMN IF EXISTS fda_pre_anda_number_occurred;
-
-ALTER TABLE study_presaves
-    DROP CONSTRAINT IF EXISTS study_presaves_sponsor_study_number_kind_valid;
-UPDATE study_presaves
-SET sponsor_study_number_kind = NULL
-WHERE sponsor_study_number_kind IS NOT NULL
-    AND sponsor_study_number_kind NOT IN ('STUDY_NO', 'PROTOCOL_NO');
-ALTER TABLE study_presaves
-    ADD CONSTRAINT study_presaves_sponsor_study_number_kind_valid CHECK (
-        sponsor_study_number_kind IS NULL
-        OR sponsor_study_number_kind IN ('STUDY_NO', 'PROTOCOL_NO')
-    );
-
-ALTER TABLE study_presave_registration_numbers
-    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
-
-ALTER TABLE study_presave_registration_numbers
-    ALTER COLUMN registration_number TYPE VARCHAR(50) USING LEFT(registration_number, 50);
-
 CREATE TABLE IF NOT EXISTS study_presave_products (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,
@@ -509,109 +392,6 @@ CREATE TABLE IF NOT EXISTS study_presave_reporters (
     CONSTRAINT study_presave_reporters_sequence_unique UNIQUE (study_presave_id, sequence_number)
 );
 
-DROP TABLE IF EXISTS study_presave_fda_cross_reported_inds CASCADE;
-
--- Compatibility for databases that created section presave tables before the
--- same-organization composite FK constraints were added.
-DO $$
-DECLARE
-    v_constraint_name TEXT;
-BEGIN
-    FOR v_constraint_name IN
-        SELECT c.conname
-        FROM pg_constraint c
-        JOIN pg_attribute a
-            ON a.attrelid = c.conrelid
-            AND a.attnum = c.conkey[1]
-        WHERE c.contype = 'f'
-            AND c.conrelid = 'product_presaves'::regclass
-            AND c.confrelid = 'sender_presaves'::regclass
-            AND array_length(c.conkey, 1) = 1
-            AND a.attname = 'sender_presave_id'
-    LOOP
-        EXECUTE format('ALTER TABLE product_presaves DROP CONSTRAINT %I', v_constraint_name);
-    END LOOP;
-
-    FOR v_constraint_name IN
-        SELECT c.conname
-        FROM pg_constraint c
-        JOIN pg_attribute a
-            ON a.attrelid = c.conrelid
-            AND a.attnum = c.conkey[1]
-        WHERE c.contype = 'f'
-            AND c.conrelid = 'study_presaves'::regclass
-            AND c.confrelid = 'product_presaves'::regclass
-            AND array_length(c.conkey, 1) = 1
-            AND a.attname = 'product_presave_id'
-    LOOP
-        EXECUTE format('ALTER TABLE study_presaves DROP CONSTRAINT %I', v_constraint_name);
-    END LOOP;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conrelid = 'sender_presaves'::regclass
-            AND conname = 'sender_presaves_id_organization_unique'
-    ) THEN
-        ALTER TABLE sender_presaves
-            ADD CONSTRAINT sender_presaves_id_organization_unique
-            UNIQUE (id, organization_id);
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conrelid = 'product_presaves'::regclass
-            AND conname = 'product_presaves_id_organization_unique'
-    ) THEN
-        ALTER TABLE product_presaves
-            ADD CONSTRAINT product_presaves_id_organization_unique
-            UNIQUE (id, organization_id);
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conrelid = 'product_presaves'::regclass
-            AND conname = 'product_presaves_sender_org_fk'
-    ) THEN
-        UPDATE product_presaves p
-        SET sender_presave_id = NULL
-        FROM sender_presaves s
-        WHERE p.sender_presave_id = s.id
-            AND p.organization_id <> s.organization_id;
-
-        ALTER TABLE product_presaves
-            ADD CONSTRAINT product_presaves_sender_org_fk
-            FOREIGN KEY (sender_presave_id, organization_id)
-            REFERENCES sender_presaves(id, organization_id)
-            ON DELETE SET NULL (sender_presave_id);
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pg_constraint
-        WHERE conrelid = 'study_presaves'::regclass
-            AND conname = 'study_presaves_product_org_fk'
-    ) THEN
-        UPDATE study_presaves s
-        SET product_presave_id = NULL
-        FROM product_presaves p
-        WHERE s.product_presave_id = p.id
-            AND s.organization_id <> p.organization_id;
-
-        ALTER TABLE study_presaves
-            ADD CONSTRAINT study_presaves_product_org_fk
-            FOREIGN KEY (product_presave_id, organization_id)
-            REFERENCES product_presaves(id, organization_id)
-            ON DELETE SET NULL (product_presave_id);
-    END IF;
-END;
-$$;
-
-DROP TABLE IF EXISTS narrative_presave_sender_diagnoses;
-DROP TABLE IF EXISTS narrative_presave_case_summaries;
-
 CREATE TABLE IF NOT EXISTS narrative_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
@@ -624,29 +404,6 @@ CREATE TABLE IF NOT EXISTS narrative_presaves (
     created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 );
-
-ALTER TABLE narrative_presaves
-    ADD COLUMN IF NOT EXISTS case_narrative_notation TEXT;
-
-ALTER TABLE narrative_presaves
-    ADD COLUMN IF NOT EXISTS additional_information TEXT;
-
-ALTER TABLE narrative_presaves
-    DROP COLUMN IF EXISTS reporter_comments,
-    DROP COLUMN IF EXISTS sender_comments;
-
-ALTER TABLE sender_presave_gateways
-    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
-
-ALTER TABLE sender_presave_responsible_persons
-    ADD COLUMN IF NOT EXISTS deleted BOOLEAN NOT NULL DEFAULT false;
-
-ALTER TABLE reporter_presaves
-    DROP COLUMN IF EXISTS email,
-    ADD COLUMN IF NOT EXISTS qualification_kr1 VARCHAR(50),
-    ADD COLUMN IF NOT EXISTS reporter_name_null_flavor VARCHAR(4),
-    ADD COLUMN IF NOT EXISTS reporter_address_null_flavor VARCHAR(4),
-    ADD COLUMN IF NOT EXISTS qualification_null_flavor VARCHAR(4);
 
 CREATE INDEX idx_users_organization ON users(organization_id);
 CREATE INDEX idx_users_email ON users(email);
@@ -667,13 +424,6 @@ CREATE INDEX idx_study_presave_registration_numbers_parent ON study_presave_regi
 CREATE INDEX idx_study_presave_products_parent ON study_presave_products(study_presave_id);
 CREATE INDEX idx_study_presave_reporters_parent ON study_presave_reporters(study_presave_id);
 CREATE INDEX idx_narrative_presaves_org ON narrative_presaves(organization_id);
-
--- Backward-compatible guard for already-created dev DBs.
-ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false;
-
-ALTER TABLE users
-    DROP COLUMN IF EXISTS permission_profile_id;
 
 INSERT INTO user_organization_memberships (
     user_id,
@@ -1138,11 +888,6 @@ CREATE INDEX idx_audit_logs_esignature ON audit_logs(e_signature_id);
 CREATE INDEX idx_audit_logs_changed_fields ON audit_logs USING GIN (changed_fields);
 CREATE INDEX idx_audit_logs_prev_hash ON audit_logs(prev_hash);
 CREATE UNIQUE INDEX idx_audit_logs_entry_hash ON audit_logs(entry_hash);
-
-ALTER TABLE audit_logs
-    ADD COLUMN IF NOT EXISTS changed_fields JSONB;
-ALTER TABLE audit_logs
-    ADD COLUMN IF NOT EXISTS change_category TEXT;
 
 -- ============================================================================
 -- 6. System User and Foreign Key Constraints
@@ -2200,8 +1945,14 @@ CREATE POLICY user_organization_memberships_read ON user_organization_membership
 CREATE POLICY user_organization_memberships_modify ON user_organization_memberships
     FOR ALL
     TO e2br3_app_role
-    USING (is_current_user_admin())
-    WITH CHECK (is_current_user_admin());
+    USING (
+        organization_id = current_organization_id()
+        OR is_current_user_admin()
+    )
+    WITH CHECK (
+        organization_id = current_organization_id()
+        OR is_current_user_admin()
+    );
 
 -- ============================================================================
 -- 9.15 Organizations Table RLS

@@ -91,9 +91,6 @@ pub async fn init_test_env() {
 pub async fn init_test_mm() -> Result<ModelManager> {
 	init_test_env().await;
 	_dev_utils::init_dev().await;
-	_dev_utils::ensure_dev_schema_compatibility()
-		.await
-		.map_err(|err| format!("{err}"))?;
 	reset_test_dynamic_roles();
 	let mm = ModelManager::new().await?;
 	mm.dbx()

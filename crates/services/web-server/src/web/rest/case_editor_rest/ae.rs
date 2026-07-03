@@ -25,26 +25,13 @@ async fn load_editor_ae_list_rows(
 	)
 }
 
-pub async fn list_editor_ae(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-) -> Result<(
-	axum::http::StatusCode,
-	Json<CaseEditorListResponse<CaseEditorAeListRowDto>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
-	require_permission(&ctx, REACTION_LIST)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-
-	let rows = load_editor_ae_list_rows(&ctx, &mm, case_id, false).await?;
-
-	Ok((
-		axum::http::StatusCode::OK,
-		Json(CaseEditorListResponse { case_id, rows }),
-	))
-}
+repeatable_list_handler!(
+	list_editor_ae,
+	CaseEditorAeListRowDto,
+	REACTION_LIST,
+	load_editor_ae_list_rows,
+	include_deleted,
+);
 
 pub async fn get_editor_ae_page_projection(
 	State(mm): State<ModelManager>,
@@ -98,27 +85,11 @@ pub async fn get_editor_ae(
 	))
 }
 
-pub async fn get_editor_ae_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-	Query(query): Query<CaseEditorPageProjectionQuery>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
-	require_permission(&ctx, REACTION_READ)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-
-	let response = build_editor_ae_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
-		row_id,
-		query_authorities_csv(&query)?,
-	)
-	.await?;
-	Ok((axum::http::StatusCode::OK, Json(response)))
-}
+repeatable_page_row_read_handler!(
+	get_editor_ae_page_row,
+	[CASE_READ, REACTION_READ],
+	build_editor_ae_page_row_response,
+);
 
 async fn build_editor_ae_page_row_response(
 	ctx: &lib_core::ctx::Ctx,
@@ -128,171 +99,76 @@ async fn build_editor_ae_page_row_response(
 	authorities: Option<String>,
 ) -> Result<Value> {
 	let reaction = ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	let mut response = Map::new();
-	response.insert("caseId".to_string(), json!(case_id));
-	response.insert("section".to_string(), json!("AE"));
-	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, authorities)?;
-	response.insert("data".to_string(), json!({ "reaction": reaction }));
-	Ok(Value::Object(response))
-}
-
-pub async fn create_editor_ae_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-	Json(request): Json<CaseEditorPagePatchRequest>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, REACTION_CREATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_authorities =
-		validate_request_projection_context(request.authorities.as_deref())?;
-
-	let row = required_row_object("AE", &request.rows, "reaction")?;
-	let value = row_model_value(
-		row,
-		&[
-			(
-				"primary_source_reaction",
-				&["reactionPrimarySourceNative"][..],
-			),
-			(
-				"primary_source_reaction_translation",
-				&["reactionPrimarySourceTranslation"][..],
-			),
-			("reaction_meddra_version", &["meddraVersion"][..]),
-			("reaction_meddra_code", &["meddraCode"][..]),
-			("sequence_number", &["sequenceNumber"][..]),
-		],
-		&[
-			("case_id", json!(case_id)),
-			(
-				"sequence_number",
-				json!(i32_field(row, &["sequenceNumber", "sequence_number"])
-					.unwrap_or(1)),
-			),
-		],
-	);
-	let create = parse_row_model::<ReactionForCreate>("AE", "reaction", value)?;
-	let row_id = ReactionBmc::create(&ctx, &mm, create).await?;
-	mark_editor_validation_cache_stale(
-		&ctx,
-		&mm,
+	editor_page_row_response(
 		case_id,
-		requested_authorities.clone(),
-	)
-	.await?;
-	let response = build_editor_ae_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
+		"AE",
 		row_id,
-		requested_authorities,
+		authorities,
+		json!({ "reaction": reaction }),
 	)
-	.await?;
-	Ok((axum::http::StatusCode::CREATED, Json(response)))
 }
 
-pub async fn patch_editor_ae_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-	Json(request): Json<CaseEditorPagePatchRequest>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, REACTION_UPDATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_authorities =
-		validate_request_projection_context(request.authorities.as_deref())?;
+repeatable_page_row_create_handler!(
+	create_editor_ae_page_row,
+	section: "AE",
+	row_key: "reaction",
+	permission: REACTION_CREATE,
+	bmc: ReactionBmc,
+	model: ReactionForCreate,
+	aliases: &[
+		("primary_source_reaction", &["reactionPrimarySourceNative"][..]),
+		(
+			"primary_source_reaction_translation",
+			&["reactionPrimarySourceTranslation"][..],
+		),
+		("reaction_meddra_version", &["meddraVersion"][..]),
+		("reaction_meddra_code", &["meddraCode"][..]),
+		("sequence_number", &["sequenceNumber"][..]),
+	],
+	extras: |case_id, row| [
+		("case_id", json!(case_id)),
+		(
+			"sequence_number",
+			json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+		),
+	],
+	build_response: build_editor_ae_page_row_response,
+);
 
-	ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	let synthesized_rows;
-	let rows = if !request.changes.is_empty() {
-		synthesized_rows = row_payload_from_changes(
-			"AE",
-			"reaction",
-			&request.changes,
-			&[
-				("reactionPrimarySourceNative", "reactionPrimarySourceNative"),
-				(
-					"reactionPrimarySourceTranslation",
-					"reactionPrimarySourceTranslation",
-				),
-				("meddraVersion", "meddraVersion"),
-				("meddraCode", "meddraCode"),
-				("outcome", "outcome"),
-			],
-		)?;
-		&synthesized_rows
-	} else {
-		&request.rows
-	};
-	let row = required_row_object("AE", rows, "reaction")?;
-	let value = row_model_value(
-		row,
-		&[
-			(
-				"primary_source_reaction",
-				&["reactionPrimarySourceNative"][..],
-			),
-			(
-				"primary_source_reaction_translation",
-				&["reactionPrimarySourceTranslation"][..],
-			),
-			("reaction_meddra_version", &["meddraVersion"][..]),
-			("reaction_meddra_code", &["meddraCode"][..]),
-		],
-		&[],
-	);
-	let update = parse_row_model::<ReactionForUpdate>("AE", "reaction", value)?;
-	ReactionBmc::update(&ctx, &mm, row_id, update).await?;
-	mark_editor_validation_cache_stale(
-		&ctx,
-		&mm,
-		case_id,
-		requested_authorities.clone(),
-	)
-	.await?;
-	let response = build_editor_ae_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
-		row_id,
-		requested_authorities,
-	)
-	.await?;
-	Ok((axum::http::StatusCode::OK, Json(response)))
-}
+repeatable_page_row_patch_handler!(
+	patch_editor_ae_page_row,
+	section: "AE",
+	row_key: "reaction",
+	permission: REACTION_UPDATE,
+	bmc: ReactionBmc,
+	model: ReactionForUpdate,
+	changes: &[
+		("reactionPrimarySourceNative", "reactionPrimarySourceNative"),
+		(
+			"reactionPrimarySourceTranslation",
+			"reactionPrimarySourceTranslation",
+		),
+		("meddraVersion", "meddraVersion"),
+		("meddraCode", "meddraCode"),
+		("outcome", "outcome"),
+	],
+	aliases: &[
+		("primary_source_reaction", &["reactionPrimarySourceNative"][..]),
+		(
+			"primary_source_reaction_translation",
+			&["reactionPrimarySourceTranslation"][..],
+		),
+		("reaction_meddra_version", &["meddraVersion"][..]),
+		("reaction_meddra_code", &["meddraCode"][..]),
+	],
+	build_response: build_editor_ae_page_row_response,
+);
 
-pub async fn delete_editor_ae_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-) -> Result<axum::http::StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, REACTION_DELETE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-
-	ReactionBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	ReactionBmc::delete(&ctx, &mm, row_id).await?;
-	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
-	Ok(axum::http::StatusCode::NO_CONTENT)
-}
-
-pub async fn restore_editor_ae_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, REACTION_UPDATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-
-	ReactionBmc::get_in_case_with_deleted(&ctx, &mm, case_id, row_id, true).await?;
-	ReactionBmc::restore_in_case(&ctx, &mm, case_id, row_id).await?;
-	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
-	let response =
-		build_editor_ae_page_row_response(&ctx, &mm, case_id, row_id, None).await?;
-	Ok((axum::http::StatusCode::OK, Json(response)))
-}
+repeatable_page_row_delete_restore_handlers!(
+	delete: delete_editor_ae_page_row,
+	restore: restore_editor_ae_page_row,
+	bmc: ReactionBmc,
+	delete_permission: REACTION_DELETE,
+	update_permission: REACTION_UPDATE,
+	build_response: build_editor_ae_page_row_response,
+);

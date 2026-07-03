@@ -38,26 +38,12 @@ async fn load_editor_dh_list_rows(
 	.collect())
 }
 
-pub async fn list_editor_dh(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-) -> Result<(
-	axum::http::StatusCode,
-	Json<CaseEditorListResponse<CaseEditorDhListRowDto>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
-	require_permission(&ctx, PAST_DRUG_LIST)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-
-	let rows = load_editor_dh_list_rows(&ctx, &mm, case_id).await?;
-
-	Ok((
-		axum::http::StatusCode::OK,
-		Json(CaseEditorListResponse { case_id, rows }),
-	))
-}
+repeatable_list_handler!(
+	list_editor_dh,
+	CaseEditorDhListRowDto,
+	PAST_DRUG_LIST,
+	load_editor_dh_list_rows,
+);
 
 pub async fn get_editor_dh_page_projection(
 	State(mm): State<ModelManager>,
@@ -165,132 +151,78 @@ async fn build_editor_dh_page_row_response(
 	authorities: Option<String>,
 ) -> Result<Value> {
 	let history = load_editor_dh_row_detail(ctx, mm, case_id, row_id).await?;
-	let mut response = Map::new();
-	response.insert("caseId".to_string(), json!(case_id));
-	response.insert("section".to_string(), json!("DH"));
-	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, authorities)?;
-	response.insert("data".to_string(), json!({ "pastDrugHistory": history }));
-	Ok(Value::Object(response))
+	editor_page_row_response(
+		case_id,
+		"DH",
+		row_id,
+		authorities,
+		json!({ "pastDrugHistory": history }),
+	)
 }
 
-pub async fn create_editor_dh_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-	Json(request): Json<CaseEditorPagePatchRequest>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PAST_DRUG_CREATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_authorities =
-		validate_request_projection_context(request.authorities.as_deref())?;
-
+async fn editor_dh_create_extras(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row: &serde_json::Map<String, Value>,
+) -> Result<Vec<(&'static str, Value)>> {
 	let patient = PatientInformationBmc::get_by_case(&ctx, &mm, case_id).await?;
-	let row = required_row_object("DH", &request.rows, "pastDrugHistory")?;
-	let value = row_model_value(
-		row,
-		&[
-			("drug_name", &["drugName"][..]),
-			("indication_meddra_code", &["indication"][..]),
-			("sequence_number", &["sequenceNumber"][..]),
-		],
-		&[
-			("patient_id", json!(patient.id)),
-			(
-				"sequence_number",
-				json!(i32_field(row, &["sequenceNumber", "sequence_number"])
-					.unwrap_or(1)),
+	Ok(vec![
+		("patient_id", json!(patient.id)),
+		(
+			"sequence_number",
+			json!(
+				i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)
 			),
-		],
-	);
-	let create =
-		parse_row_model::<PastDrugHistoryForCreate>("DH", "pastDrugHistory", value)?;
-	let row_id = PastDrugHistoryBmc::create(&ctx, &mm, create).await?;
-	mark_editor_validation_cache_stale(
-		&ctx,
-		&mm,
-		case_id,
-		requested_authorities.clone(),
-	)
-	.await?;
-	let response = build_editor_dh_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
-		row_id,
-		requested_authorities,
-	)
-	.await?;
-	Ok((axum::http::StatusCode::CREATED, Json(response)))
+		),
+	])
 }
 
-pub async fn patch_editor_dh_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-	Json(request): Json<CaseEditorPagePatchRequest>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PAST_DRUG_UPDATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_authorities =
-		validate_request_projection_context(request.authorities.as_deref())?;
-
+async fn verify_editor_dh_page_row(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	row_id: Uuid,
+) -> Result<()> {
 	load_editor_dh_row_detail(&ctx, &mm, case_id, row_id).await?;
-	let synthesized_rows;
-	let rows = if !request.changes.is_empty() {
-		synthesized_rows = row_payload_from_changes(
-			"DH",
-			"pastDrugHistory",
-			&request.changes,
-			&[("drugName", "drugName"), ("indication", "indication")],
-		)?;
-		&synthesized_rows
-	} else {
-		&request.rows
-	};
-	let row = required_row_object("DH", rows, "pastDrugHistory")?;
-	let value = row_model_value(
-		row,
-		&[
-			("drug_name", &["drugName"][..]),
-			("indication_meddra_code", &["indication"][..]),
-		],
-		&[],
-	);
-	let update =
-		parse_row_model::<PastDrugHistoryForUpdate>("DH", "pastDrugHistory", value)?;
-	PastDrugHistoryBmc::update(&ctx, &mm, row_id, update).await?;
-	mark_editor_validation_cache_stale(
-		&ctx,
-		&mm,
-		case_id,
-		requested_authorities.clone(),
-	)
-	.await?;
-	let response = build_editor_dh_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
-		row_id,
-		requested_authorities,
-	)
-	.await?;
-	Ok((axum::http::StatusCode::OK, Json(response)))
+	Ok(())
 }
 
-pub async fn delete_editor_dh_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-) -> Result<axum::http::StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PAST_DRUG_DELETE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+repeatable_page_row_create_handler!(
+	create_editor_dh_page_row,
+	section: "DH",
+	row_key: "pastDrugHistory",
+	permission: PAST_DRUG_CREATE,
+	bmc: PastDrugHistoryBmc,
+	model: PastDrugHistoryForCreate,
+	aliases: &[
+		("drug_name", &["drugName"][..]),
+		("indication_meddra_code", &["indication"][..]),
+		("sequence_number", &["sequenceNumber"][..]),
+	],
+	extras_fn: editor_dh_create_extras,
+	build_response: build_editor_dh_page_row_response,
+);
 
-	load_editor_dh_row_detail(&ctx, &mm, case_id, row_id).await?;
-	PastDrugHistoryBmc::delete(&ctx, &mm, row_id).await?;
-	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
-	Ok(axum::http::StatusCode::NO_CONTENT)
-}
+repeatable_page_row_patch_handler!(
+	patch_editor_dh_page_row,
+	section: "DH",
+	row_key: "pastDrugHistory",
+	permission: PAST_DRUG_UPDATE,
+	bmc: PastDrugHistoryBmc,
+	model: PastDrugHistoryForUpdate,
+	verify: verify_editor_dh_page_row,
+	changes: &[("drugName", "drugName"), ("indication", "indication")],
+	aliases: &[
+		("drug_name", &["drugName"][..]),
+		("indication_meddra_code", &["indication"][..]),
+	],
+	build_response: build_editor_dh_page_row_response,
+);
+
+repeatable_page_row_delete_handler!(
+	delete_editor_dh_page_row,
+	permission: PAST_DRUG_DELETE,
+	bmc: PastDrugHistoryBmc,
+	verify: verify_editor_dh_page_row,
+);

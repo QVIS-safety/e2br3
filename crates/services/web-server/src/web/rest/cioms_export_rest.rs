@@ -12,7 +12,6 @@ use lib_core::model::reaction::{Reaction, ReactionBmc};
 use lib_core::model::safety_report::{
 	PrimarySource, SafetyReportIdentification, SenderInformation,
 };
-use lib_core::model::store::set_full_context_from_ctx_dbx;
 use lib_core::model::{Error as ModelError, ModelManager};
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;

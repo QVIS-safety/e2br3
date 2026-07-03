@@ -142,6 +142,18 @@ pub(super) fn presave_case_link_conflict(message: &str) -> Error {
 	.into()
 }
 
+pub(super) fn rest_ok<T: Serialize>(
+	data: T,
+) -> (StatusCode, Json<DataRestResult<T>>) {
+	(StatusCode::OK, Json(DataRestResult { data }))
+}
+
+pub(super) fn rest_created<T: Serialize>(
+	data: T,
+) -> (StatusCode, Json<DataRestResult<T>>) {
+	(StatusCode::CREATED, Json(DataRestResult { data }))
+}
+
 pub(super) async fn presave_scope_assigned_to_users(
 	mm: &ModelManager,
 	organization_id: Uuid,

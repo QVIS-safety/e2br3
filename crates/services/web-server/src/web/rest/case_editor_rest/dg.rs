@@ -27,26 +27,13 @@ async fn load_editor_dg_list_rows(
 	.collect())
 }
 
-pub async fn list_editor_dg(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-) -> Result<(
-	axum::http::StatusCode,
-	Json<CaseEditorListResponse<CaseEditorDgListRowDto>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
-	require_permission(&ctx, DRUG_LIST)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-
-	let rows = load_editor_dg_list_rows(&ctx, &mm, case_id, false).await?;
-
-	Ok((
-		axum::http::StatusCode::OK,
-		Json(CaseEditorListResponse { case_id, rows }),
-	))
-}
+repeatable_list_handler!(
+	list_editor_dg,
+	CaseEditorDgListRowDto,
+	DRUG_LIST,
+	load_editor_dg_list_rows,
+	include_deleted,
+);
 
 pub async fn get_editor_dg_page_projection(
 	State(mm): State<ModelManager>,
@@ -197,32 +184,19 @@ pub async fn get_editor_dg(
 	))
 }
 
-pub async fn get_editor_dg_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-	Query(query): Query<CaseEditorPageProjectionQuery>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_READ)?;
-	require_permission(&ctx, DRUG_READ)?;
-	require_permission(&ctx, DRUG_SUBSTANCE_LIST)?;
-	require_permission(&ctx, DRUG_DOSAGE_LIST)?;
-	require_permission(&ctx, DRUG_INDICATION_LIST)?;
-	require_permission(&ctx, DRUG_REACTION_ASSESSMENT_LIST)?;
-	require_permission(&ctx, DRUG_RECURRENCE_LIST)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-
-	let response = build_editor_dg_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
-		row_id,
-		query_authorities_csv(&query)?,
-	)
-	.await?;
-	Ok((axum::http::StatusCode::OK, Json(response)))
-}
+repeatable_page_row_read_handler!(
+	get_editor_dg_page_row,
+	[
+		CASE_READ,
+		DRUG_READ,
+		DRUG_SUBSTANCE_LIST,
+		DRUG_DOSAGE_LIST,
+		DRUG_INDICATION_LIST,
+		DRUG_REACTION_ASSESSMENT_LIST,
+		DRUG_RECURRENCE_LIST,
+	],
+	build_editor_dg_page_row_response,
+);
 
 async fn build_editor_dg_page_row_response(
 	ctx: &lib_core::ctx::Ctx,
@@ -232,161 +206,73 @@ async fn build_editor_dg_page_row_response(
 	authorities: Option<String>,
 ) -> Result<Value> {
 	let drug = load_editor_dg_row_detail(&ctx, &mm, case_id, row_id).await?;
-	let mut response = Map::new();
-	response.insert("caseId".to_string(), json!(case_id));
-	response.insert("section".to_string(), json!("DG"));
-	response.insert("rowId".to_string(), json!(row_id));
-	insert_editor_json_context(&mut response, authorities)?;
-	response.insert("data".to_string(), json!({ "drug": drug }));
-	Ok(Value::Object(response))
-}
-
-pub async fn create_editor_dg_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-	Json(request): Json<CaseEditorPagePatchRequest>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_CREATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_authorities =
-		validate_request_projection_context(request.authorities.as_deref())?;
-
-	let row = required_row_object("DG", &request.rows, "drug")?;
-	let value = row_model_value(
-		row,
-		&[
-			("source_product_presave_id", &["sourceProductPresaveId"][..]),
-			("medicinal_product", &["medicinalProduct"][..]),
-			("drug_characterization", &["drugRole"][..]),
-			("action_taken", &["actionTaken"][..]),
-			("sequence_number", &["sequenceNumber"][..]),
-		],
-		&[
-			("case_id", json!(case_id)),
-			(
-				"sequence_number",
-				json!(i32_field(row, &["sequenceNumber", "sequence_number"])
-					.unwrap_or(1)),
-			),
-			(
-				"drug_characterization",
-				json!(string_field(row, &["drugRole", "drug_characterization"])
-					.unwrap_or_else(|| "1".to_string())),
-			),
-		],
-	);
-	let create = parse_row_model::<DrugInformationForCreate>("DG", "drug", value)?;
-	let row_id = DrugInformationBmc::create(&ctx, &mm, create).await?;
-	mark_editor_validation_cache_stale(
-		&ctx,
-		&mm,
+	editor_page_row_response(
 		case_id,
-		requested_authorities.clone(),
-	)
-	.await?;
-	let response = build_editor_dg_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
+		"DG",
 		row_id,
-		requested_authorities,
+		authorities,
+		json!({ "drug": drug }),
 	)
-	.await?;
-	Ok((axum::http::StatusCode::CREATED, Json(response)))
 }
 
-pub async fn patch_editor_dg_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-	Json(request): Json<CaseEditorPagePatchRequest>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_UPDATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let requested_authorities =
-		validate_request_projection_context(request.authorities.as_deref())?;
+repeatable_page_row_create_handler!(
+	create_editor_dg_page_row,
+	section: "DG",
+	row_key: "drug",
+	permission: DRUG_CREATE,
+	bmc: DrugInformationBmc,
+	model: DrugInformationForCreate,
+	aliases: &[
+		("source_product_presave_id", &["sourceProductPresaveId"][..]),
+		("medicinal_product", &["medicinalProduct"][..]),
+		("drug_characterization", &["drugRole"][..]),
+		("action_taken", &["actionTaken"][..]),
+		("sequence_number", &["sequenceNumber"][..]),
+	],
+	extras: |case_id, row| [
+		("case_id", json!(case_id)),
+		(
+			"sequence_number",
+			json!(i32_field(row, &["sequenceNumber", "sequence_number"]).unwrap_or(1)),
+		),
+		(
+			"drug_characterization",
+			json!(
+				string_field(row, &["drugRole", "drug_characterization"])
+					.unwrap_or_else(|| "1".to_string())
+			),
+		),
+	],
+	build_response: build_editor_dg_page_row_response,
+);
 
-	DrugInformationBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	let synthesized_rows;
-	let rows = if !request.changes.is_empty() {
-		synthesized_rows = row_payload_from_changes(
-			"DG",
-			"drug",
-			&request.changes,
-			&[
-				("medicinalProduct", "medicinalProduct"),
-				("drugCharacterization", "drugRole"),
-				("drugRole", "drugRole"),
-				("actionTaken", "actionTaken"),
-			],
-		)?;
-		&synthesized_rows
-	} else {
-		&request.rows
-	};
-	let row = required_row_object("DG", rows, "drug")?;
-	let value = row_model_value(
-		row,
-		&[
-			("source_product_presave_id", &["sourceProductPresaveId"][..]),
-			("medicinal_product", &["medicinalProduct"][..]),
-			("drug_characterization", &["drugRole"][..]),
-			("action_taken", &["actionTaken"][..]),
-		],
-		&[],
-	);
-	let update = parse_row_model::<DrugInformationForUpdate>("DG", "drug", value)?;
-	DrugInformationBmc::update(&ctx, &mm, row_id, update).await?;
-	mark_editor_validation_cache_stale(
-		&ctx,
-		&mm,
-		case_id,
-		requested_authorities.clone(),
-	)
-	.await?;
-	let response = build_editor_dg_page_row_response(
-		&ctx,
-		&mm,
-		case_id,
-		row_id,
-		requested_authorities,
-	)
-	.await?;
-	Ok((axum::http::StatusCode::OK, Json(response)))
-}
+repeatable_page_row_patch_handler!(
+	patch_editor_dg_page_row,
+	section: "DG",
+	row_key: "drug",
+	permission: DRUG_UPDATE,
+	bmc: DrugInformationBmc,
+	model: DrugInformationForUpdate,
+	changes: &[
+		("medicinalProduct", "medicinalProduct"),
+		("drugCharacterization", "drugRole"),
+		("drugRole", "drugRole"),
+		("actionTaken", "actionTaken"),
+	],
+	aliases: &[
+		("source_product_presave_id", &["sourceProductPresaveId"][..]),
+		("medicinal_product", &["medicinalProduct"][..]),
+		("drug_characterization", &["drugRole"][..]),
+		("action_taken", &["actionTaken"][..]),
+	],
+	build_response: build_editor_dg_page_row_response,
+);
 
-pub async fn delete_editor_dg_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-) -> Result<axum::http::StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DELETE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-
-	DrugInformationBmc::get_in_case(&ctx, &mm, case_id, row_id).await?;
-	DrugInformationBmc::delete(&ctx, &mm, row_id).await?;
-	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
-	Ok(axum::http::StatusCode::NO_CONTENT)
-}
-
-pub async fn restore_editor_dg_page_row(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, row_id)): Path<(Uuid, Uuid)>,
-) -> Result<(axum::http::StatusCode, Json<Value>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_UPDATE)?;
-	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
-
-	DrugInformationBmc::get_in_case_with_deleted(&ctx, &mm, case_id, row_id, true)
-		.await?;
-	DrugInformationBmc::restore_in_case(&ctx, &mm, case_id, row_id).await?;
-	mark_editor_validation_cache_stale(&ctx, &mm, case_id, None).await?;
-	let response =
-		build_editor_dg_page_row_response(&ctx, &mm, case_id, row_id, None).await?;
-	Ok((axum::http::StatusCode::OK, Json(response)))
-}
+repeatable_page_row_delete_restore_handlers!(
+	delete: delete_editor_dg_page_row,
+	restore: restore_editor_dg_page_row,
+	bmc: DrugInformationBmc,
+	delete_permission: DRUG_DELETE,
+	update_permission: DRUG_UPDATE,
+	build_response: build_editor_dg_page_row_response,
+);

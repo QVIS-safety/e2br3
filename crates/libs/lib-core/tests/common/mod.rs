@@ -5,7 +5,6 @@ use lib_core::model::store::{
 };
 use lib_core::model::ModelManager;
 use sqlx::types::Uuid;
-use tokio::sync::OnceCell;
 
 pub type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -75,14 +74,6 @@ async fn ensure_demo_seed(mm: &ModelManager) -> Result<()> {
 #[allow(dead_code)]
 pub async fn init_test_mm() -> ModelManager {
 	_dev_utils::init_dev().await;
-	static COMPAT: OnceCell<()> = OnceCell::const_new();
-	COMPAT
-		.get_or_init(|| async {
-			_dev_utils::ensure_dev_schema_compatibility()
-				.await
-				.expect("ensure_dev_schema_compatibility failed in test setup");
-		})
-		.await;
 	let mm = ModelManager::new().await.unwrap();
 	ensure_demo_seed(&mm)
 		.await
