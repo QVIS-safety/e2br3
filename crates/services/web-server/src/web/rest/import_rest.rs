@@ -6,14 +6,24 @@ use axum::Json;
 use lib_core::ctx::Ctx;
 use lib_core::model::acs::{XML_IMPORT, XML_IMPORT_READ};
 use lib_core::model::admin_settings::AdminSettingsBmc;
+use lib_core::model::case_duplicate::{CaseDuplicateBmc, CaseDuplicateKey};
+use lib_core::model::store::set_full_context_dbx;
+use lib_core::model::xml_import_decision::{
+	decide_xml_import, XmlImportDecision, XmlImportDecisionAction,
+	XmlImportDuplicateMatch, XmlImportExistingCase, XmlImportIncomingKey,
+};
 use lib_core::model::xml_import_history::XmlImportHistoryBmc;
 use lib_core::model::ModelManager;
 use lib_core::validation::xml::{
 	should_skip_xml_validation, validate_e2b_xml_basic,
 };
+use lib_core::xml::import_sections::{
+	c_safety_report::parse_c_safety_report, d_patient::parse_d_patient,
+	e_reaction::parse_e_reactions, g_drug::parse_g_drugs,
+};
 use lib_core::xml::{
-	import_e2b_xml, validate_e2b_xml, CImportSettings, XmlImportRequest,
-	XmlValidationReport,
+	extract_safety_report_id_from_xml, import_e2b_xml, validate_e2b_xml,
+	CImportSettings, XmlImportRequest, XmlValidationReport,
 };
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -22,6 +32,7 @@ use lib_web::middleware::mw_permission::{
 	RequirePermission, XmlImport as XmlImportPerm,
 };
 use serde::Serialize;
+use sqlx::FromRow;
 use std::io::{Cursor, Read};
 use time::format_description::well_known::Rfc3339;
 use tracing::warn;
@@ -35,6 +46,7 @@ const SETTINGS_KEY: &str = "system";
 struct UploadedImportPayload {
 	bytes: Vec<u8>,
 	filename: Option<String>,
+	product_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -45,6 +57,11 @@ pub struct ImportedCaseSummary {
 	message: Option<String>,
 	case_id: Option<String>,
 	case_version: Option<i64>,
+	decision: Option<&'static str>,
+	source_file_name: Option<String>,
+	matched_case_id: Option<String>,
+	matched_case_number: Option<String>,
+	matched_case_version: Option<i32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -78,11 +95,20 @@ pub struct XmlImportHistoryList {
 	items: Vec<XmlImportHistoryRecord>,
 }
 
+#[derive(Debug, FromRow)]
+struct SameSafetyReportRow {
+	case_id: Uuid,
+	safety_report_id: String,
+	version: i32,
+	date_of_most_recent_information: Option<time::Date>,
+}
+
 async fn read_xml_multipart(
 	mut multipart: Multipart,
 ) -> Result<UploadedImportPayload> {
 	let mut file_bytes: Option<Vec<u8>> = None;
 	let mut filename: Option<String> = None;
+	let mut product_id: Option<String> = None;
 
 	while let Some(field) =
 		multipart
@@ -100,13 +126,26 @@ async fn read_xml_multipart(
 			);
 			continue;
 		}
+		if matches!(name.as_deref(), Some("productId") | Some("product_id")) {
+			let text = field.text().await.map_err(|err| Error::BadRequest {
+				message: format!("multipart productId read error: {err}"),
+			})?;
+			let trimmed = text.trim();
+			if !trimmed.is_empty() {
+				product_id = Some(trimmed.to_string());
+			}
+		}
 	}
 
 	let bytes = file_bytes.ok_or_else(|| Error::BadRequest {
 		message: "missing xml file field".to_string(),
 	})?;
 
-	Ok(UploadedImportPayload { bytes, filename })
+	Ok(UploadedImportPayload {
+		bytes,
+		filename,
+		product_id,
+	})
 }
 
 async fn read_field_limited(
@@ -241,6 +280,7 @@ async fn import_single_xml(
 	uploaded_file_name: &str,
 	filename: String,
 	c_settings: CImportSettings,
+	decision: XmlImportDecision,
 ) -> ImportedCaseSummary {
 	let import_result = import_e2b_xml(
 		ctx,
@@ -283,6 +323,11 @@ async fn import_single_xml(
 				message: Some("Successfully imported".to_string()),
 				case_id: result.case_id,
 				case_version: result.case_version,
+				decision: Some(decision_label(decision.action)),
+				source_file_name: Some(filename),
+				matched_case_id: decision.matched_case_id.map(|id| id.to_string()),
+				matched_case_number: decision.matched_case_number,
+				matched_case_version: decision.matched_case_version,
 			}
 		}
 		Err(err) => {
@@ -302,14 +347,206 @@ async fn import_single_xml(
 				warn!("failed to record xml import history: {history_err}");
 			}
 			ImportedCaseSummary {
-				case_number: filename,
+				case_number: filename.clone(),
 				status: "error",
 				message: Some(message),
 				case_id: None,
 				case_version: None,
+				decision: Some("error"),
+				source_file_name: Some(filename),
+				matched_case_id: decision.matched_case_id.map(|id| id.to_string()),
+				matched_case_number: decision.matched_case_number,
+				matched_case_version: decision.matched_case_version,
 			}
 		}
 	}
+}
+
+fn decision_label(action: XmlImportDecisionAction) -> &'static str {
+	match action {
+		XmlImportDecisionAction::New => "new",
+		XmlImportDecisionAction::FollowUp => "followUp",
+		XmlImportDecisionAction::Skip => "skip",
+		XmlImportDecisionAction::Error => "error",
+	}
+}
+
+fn summary_for_skipped_decision(
+	_uploaded_file_name: &str,
+	source_file_name: &str,
+	decision: XmlImportDecision,
+) -> ImportedCaseSummary {
+	ImportedCaseSummary {
+		case_number: decision
+			.matched_case_number
+			.clone()
+			.unwrap_or_else(|| source_file_name.to_string()),
+		status: "skipped",
+		message: decision.message.clone(),
+		case_id: None,
+		case_version: None,
+		decision: Some("skip"),
+		source_file_name: Some(source_file_name.to_string()),
+		matched_case_id: decision.matched_case_id.map(|id| id.to_string()),
+		matched_case_number: decision.matched_case_number,
+		matched_case_version: decision.matched_case_version,
+	}
+}
+
+fn summary_for_decision_error(
+	source_file_name: &str,
+	message: String,
+) -> ImportedCaseSummary {
+	ImportedCaseSummary {
+		case_number: source_file_name.to_string(),
+		status: "error",
+		message: Some(message),
+		case_id: None,
+		case_version: None,
+		decision: Some("error"),
+		source_file_name: Some(source_file_name.to_string()),
+		matched_case_id: None,
+		matched_case_number: None,
+		matched_case_version: None,
+	}
+}
+
+fn decimal_string(value: Option<rust_decimal::Decimal>) -> Option<String> {
+	value.map(|value| value.normalize().to_string())
+}
+
+fn duplicate_key_from_xml(
+	xml: &[u8],
+	product_id: Option<&str>,
+) -> Result<(XmlImportIncomingKey, CaseDuplicateKey)> {
+	let safety_report_id =
+		extract_safety_report_id_from_xml(xml).map_err(Error::Xml)?;
+	let c_report =
+		parse_c_safety_report(xml)
+			.map_err(Error::Xml)?
+			.ok_or_else(|| Error::BadRequest {
+				message: "C.1 safety report section missing".to_string(),
+			})?;
+	let patient = parse_d_patient(xml).map_err(Error::Xml)?;
+	let reactions = parse_e_reactions(xml).map_err(Error::Xml)?;
+	let drugs = parse_g_drugs(xml).map_err(Error::Xml)?;
+	let first_reaction = reactions.first();
+	let first_drug = drugs.first();
+	let dg_prd_key = product_id
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+		.map(ToOwned::to_owned)
+		.or_else(|| first_drug.map(|drug| drug.medicinal_product.clone()));
+
+	Ok((
+		XmlImportIncomingKey {
+			safety_report_id,
+			date_of_most_recent_information: c_report
+				.date_of_most_recent_information,
+		},
+		CaseDuplicateKey {
+			report_type: Some(c_report.report_type),
+			reporter_organization: None,
+			sponsor_study_number: None,
+			patient_initials: patient
+				.as_ref()
+				.and_then(|patient| patient.patient_initials.clone()),
+			investigation_number: None,
+			age_d2_2a: patient
+				.as_ref()
+				.and_then(|patient| decimal_string(patient.age_at_time_of_onset)),
+			sex_d5: patient.as_ref().and_then(|patient| patient.sex.clone()),
+			dg_prd_key,
+			reaction_meddra_version: first_reaction
+				.and_then(|reaction| reaction.reaction_meddra_version.clone()),
+			reaction_meddra_code: first_reaction
+				.and_then(|reaction| reaction.reaction_meddra_code.clone()),
+			ae_start_date: first_reaction.and_then(|reaction| reaction.start_date),
+		},
+	))
+}
+
+async fn list_same_safety_report_cases(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	safety_report_id: &str,
+) -> Result<Vec<XmlImportExistingCase>> {
+	let scoped = mm.new_with_txn().map_err(Error::Model)?;
+	let dbx = scoped.dbx();
+	dbx.begin_txn()
+		.await
+		.map_err(lib_core::model::Error::from)
+		.map_err(Error::Model)?;
+	if let Err(err) =
+		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
+			.await
+	{
+		let _ = dbx.rollback_txn().await;
+		return Err(Error::Model(err));
+	}
+	let rows = dbx
+		.fetch_all(
+			sqlx::query_as::<_, SameSafetyReportRow>(
+				r#"
+				SELECT c.id AS case_id,
+				       s.safety_report_id,
+				       s.version,
+				       s.date_of_most_recent_information
+				  FROM safety_report_identification s
+				  JOIN cases c ON c.id = s.case_id
+				 WHERE s.safety_report_id = $1
+				   AND c.organization_id = $2
+				 ORDER BY s.version DESC
+				"#,
+			)
+			.bind(safety_report_id)
+			.bind(ctx.organization_id()),
+		)
+		.await
+		.map_err(lib_core::model::Error::from)
+		.map_err(Error::Model)?;
+	dbx.commit_txn()
+		.await
+		.map_err(lib_core::model::Error::from)
+		.map_err(Error::Model)?;
+	Ok(rows
+		.into_iter()
+		.map(|row| XmlImportExistingCase {
+			case_id: row.case_id,
+			safety_report_id: row.safety_report_id,
+			version: row.version,
+			date_of_most_recent_information: row.date_of_most_recent_information,
+		})
+		.collect())
+}
+
+async fn decide_import_entry(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	xml: &[u8],
+	product_id: Option<&str>,
+) -> Result<XmlImportDecision> {
+	let (incoming, duplicate_key) = duplicate_key_from_xml(xml, product_id)?;
+	let same_report_cases =
+		list_same_safety_report_cases(ctx, mm, &incoming.safety_report_id).await?;
+	let duplicate_matches =
+		CaseDuplicateBmc::list_potential_matches(ctx, mm, &duplicate_key)
+			.await
+			.map_err(Error::Model)?;
+	let duplicate_matches = duplicate_matches
+		.into_iter()
+		.map(|item| XmlImportDuplicateMatch {
+			case_id: item.case_id,
+			safety_report_id: item.safety_report_id,
+			version: item.version,
+			date_of_most_recent_information: item.date_of_most_recent_information,
+		})
+		.collect::<Vec<_>>();
+	Ok(decide_xml_import(
+		&incoming,
+		&same_report_cases,
+		&duplicate_matches,
+	))
 }
 
 async fn load_import_settings(
@@ -494,6 +731,62 @@ pub async fn import_xml(
 		.unwrap_or_else(|| "import.xml".to_string());
 
 	for (entry_name, xml) in entries {
+		let decision = match decide_import_entry(
+			&ctx,
+			&mm,
+			&xml,
+			payload.product_id.as_deref(),
+		)
+		.await
+		{
+			Ok(decision) => decision,
+			Err(err) => {
+				let message = err.to_string();
+				if let Err(history_err) = record_import_history(
+					&ctx,
+					&mm,
+					&uploaded_file_name,
+					&entry_name,
+					None,
+					None,
+					"error",
+					Some(&message),
+				)
+				.await
+				{
+					warn!(
+						"failed to record xml import decision error: {history_err}"
+					);
+				}
+				imported_cases
+					.push(summary_for_decision_error(&entry_name, message));
+				continue;
+			}
+		};
+
+		if decision.action == XmlImportDecisionAction::Skip {
+			if let Err(history_err) = record_import_history(
+				&ctx,
+				&mm,
+				&uploaded_file_name,
+				&entry_name,
+				decision.matched_case_id,
+				decision.matched_case_number.as_deref(),
+				"skipped",
+				decision.message.as_deref(),
+			)
+			.await
+			{
+				warn!("failed to record skipped xml import history: {history_err}");
+			}
+			imported_cases.push(summary_for_skipped_decision(
+				&uploaded_file_name,
+				&entry_name,
+				decision,
+			));
+			continue;
+		}
+
 		imported_cases.push(
 			import_single_xml(
 				&ctx,
@@ -502,6 +795,7 @@ pub async fn import_xml(
 				&uploaded_file_name,
 				entry_name,
 				c_settings,
+				decision,
 			)
 			.await,
 		);
@@ -517,4 +811,37 @@ pub async fn import_xml(
 	};
 
 	Ok((StatusCode::OK, Json(DataRestResult { data: result })))
+}
+
+#[cfg(test)]
+mod tests {
+	use super::summary_for_skipped_decision;
+	use lib_core::model::xml_import_decision::{
+		XmlImportDecision, XmlImportDecisionAction,
+	};
+	use uuid::Uuid;
+
+	#[test]
+	fn skipped_decision_summary_exposes_skip_without_case_id() {
+		let matched_case_id = Uuid::from_u128(1);
+		let summary = summary_for_skipped_decision(
+			"batch.zip",
+			"case.xml",
+			XmlImportDecision {
+				action: XmlImportDecisionAction::Skip,
+				matched_case_id: Some(matched_case_id),
+				matched_case_number: Some("CASE-1".to_string()),
+				matched_case_version: Some(2),
+				message: Some("same C.1.1/C.1.2".to_string()),
+			},
+		);
+
+		assert_eq!(summary.case_number, "CASE-1");
+		assert_eq!(summary.status, "skipped");
+		assert_eq!(summary.decision, Some("skip"));
+		assert_eq!(summary.source_file_name.as_deref(), Some("case.xml"));
+		assert_eq!(summary.case_id, None);
+		assert_eq!(summary.matched_case_id, Some(matched_case_id.to_string()));
+		assert_eq!(summary.matched_case_version, Some(2));
+	}
 }

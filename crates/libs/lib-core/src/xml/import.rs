@@ -30,6 +30,10 @@ pub struct XmlImportRequest {
 	pub c_settings: CImportSettings,
 }
 
+pub fn extract_safety_report_id_from_xml(xml: &[u8]) -> Result<String> {
+	shared::extract_safety_report_id(xml)
+}
+
 pub async fn import_e2b_xml(
 	ctx: &Ctx,
 	mm: &ModelManager,
