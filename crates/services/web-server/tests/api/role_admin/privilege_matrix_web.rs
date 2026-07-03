@@ -13,7 +13,8 @@ use lib_core::ctx::{
 	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::{
-	has_permission, CASE_APPROVE, CASE_CREATE, CASE_UPDATE, DASHBOARD_NOTICE_READ,
+	has_permission, AUDIT_LIST, AUDIT_READ, CASE_LIST, CASE_READ, CASE_APPROVE,
+	CASE_CREATE, CASE_UPDATE, DASHBOARD_NOTICE_READ,
 	DASHBOARD_NOTICE_UPDATE, PRESAVE_TEMPLATE_CREATE, PRESAVE_TEMPLATE_DELETE,
 	PRESAVE_TEMPLATE_LIST, PRESAVE_TEMPLATE_READ, PRESAVE_TEMPLATE_UPDATE,
 	SETTINGS_READ, SETTINGS_UPDATE, TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT,
@@ -1437,6 +1438,139 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 		StatusCode::FORBIDDEN,
 		"settings.can_edit must not create users through POST /api/users: {value:?}"
 	);
+
+	Ok(())
+}
+
+// Gap coverage: home_workflow read privilege must grant effective case-list
+// access (GET /api/cases/list-view is guarded by CASE_LIST).
+#[serial]
+#[tokio::test]
+async fn test_home_workflow_matrix_privileges_grant_effective_case_list_access(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let none_id = create_empty_custom_role_with_generated_id(
+		&app,
+		&admin_cookie,
+		&format!("qa_hw_none_{}", Uuid::new_v4().simple()),
+	)
+	.await?;
+	let read_id = create_empty_custom_role_with_generated_id(
+		&app,
+		&admin_cookie,
+		&format!("qa_hw_read_{}", Uuid::new_v4().simple()),
+	)
+	.await?;
+	let (_none_user, none_cookie) =
+		custom_role_user(&mm, seed.org_id, &none_id).await?;
+	let (_read_user, read_cookie) =
+		custom_role_user(&mm, seed.org_id, &read_id).await?;
+
+	// Unchecked: no case access.
+	assert!(!has_permission(&none_id, CASE_LIST));
+	assert_get_status(
+		&app,
+		&none_cookie,
+		"/api/cases/list-view",
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
+
+	// home_workflow read grants case view + list, but not write.
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&read_id,
+		json!([{
+			"menu_key": "home_workflow",
+			"can_read": true,
+			"can_edit": false,
+			"can_review": false,
+			"can_lock": false
+		}]),
+	)
+	.await?;
+	assert!(has_permission(&read_id, CASE_READ));
+	assert!(has_permission(&read_id, CASE_LIST));
+	assert!(!has_permission(&read_id, CASE_CREATE));
+	assert_get_not_status(
+		&app,
+		&read_cookie,
+		"/api/cases/list-view",
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
+
+	Ok(())
+}
+
+// Gap coverage: audit read (or review) privilege must grant effective audit-log
+// access (GET /api/audit-logs is guarded by AUDIT_LIST).
+#[serial]
+#[tokio::test]
+async fn test_audit_matrix_privileges_grant_effective_audit_log_access(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let none_id = create_empty_custom_role_with_generated_id(
+		&app,
+		&admin_cookie,
+		&format!("qa_audit_none_{}", Uuid::new_v4().simple()),
+	)
+	.await?;
+	let read_id = create_empty_custom_role_with_generated_id(
+		&app,
+		&admin_cookie,
+		&format!("qa_audit_read_{}", Uuid::new_v4().simple()),
+	)
+	.await?;
+	let (_none_user, none_cookie) =
+		custom_role_user(&mm, seed.org_id, &none_id).await?;
+	let (_read_user, read_cookie) =
+		custom_role_user(&mm, seed.org_id, &read_id).await?;
+
+	// Unchecked: no audit access.
+	assert!(!has_permission(&none_id, AUDIT_LIST));
+	assert_get_status(
+		&app,
+		&none_cookie,
+		"/api/audit-logs",
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
+
+	// audit read grants AUDIT_READ + AUDIT_LIST.
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&read_id,
+		json!([{
+			"menu_key": "audit",
+			"can_read": true,
+			"can_edit": false,
+			"can_review": false,
+			"can_lock": false
+		}]),
+	)
+	.await?;
+	assert!(has_permission(&read_id, AUDIT_READ));
+	assert!(has_permission(&read_id, AUDIT_LIST));
+	assert_get_not_status(
+		&app,
+		&read_cookie,
+		"/api/audit-logs",
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
 
 	Ok(())
 }

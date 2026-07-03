@@ -1407,6 +1407,104 @@ mod tests {
 		assert!(!edit_permissions.contains(&SETTINGS_UPDATE));
 	}
 
+	// Exhaustive matrix: every role-and-privilege menu key expands to exactly the
+	// permissions its checkboxes imply, and a read-only check never leaks the
+	// edit/write permissions. Guards the "check a permission -> it works as
+	// checked" contract for the whole privilege matrix.
+	#[test]
+	fn test_menu_key_matrix_grants_and_isolates_all_keys() {
+		fn expand(
+			menu_key: &str,
+			can_read: bool,
+			can_edit: bool,
+			can_review: bool,
+			can_lock: bool,
+		) -> Vec<Permission> {
+			permissions_for_menu_privileges(&[AdminMenuPrivilege {
+				menu_key: menu_key.to_string(),
+				can_read,
+				can_edit,
+				can_review,
+				can_lock,
+			}])
+		}
+
+		// home_workflow: read grants case view only, never write.
+		let p = expand("home_workflow", true, false, false, false);
+		assert!(p.contains(&CASE_READ) && p.contains(&CASE_LIST));
+		assert!(!p.contains(&CASE_CREATE) && !p.contains(&CASE_UPDATE));
+
+		// case: read = viewer, edit = write, review/lock = approve.
+		let read = expand("case", true, false, false, false);
+		assert!(read.contains(&CASE_READ));
+		assert!(!read.contains(&CASE_CREATE));
+		let edit = expand("case", true, true, false, false);
+		assert!(edit.contains(&CASE_CREATE) && edit.contains(&CASE_UPDATE));
+		assert!(expand("case", false, false, true, false).contains(&CASE_APPROVE));
+
+		// info: read vs edit on presave/section templates.
+		let read = expand("info", true, false, false, false);
+		assert!(read.contains(&PRESAVE_TEMPLATE_READ));
+		assert!(!read.contains(&PRESAVE_TEMPLATE_CREATE));
+		assert!(expand("info", true, true, false, false)
+			.contains(&PRESAVE_TEMPLATE_CREATE));
+
+		// import: read history vs edit files.
+		assert!(expand("import", true, false, false, false).contains(&XML_IMPORT_READ));
+		assert!(!expand("import", true, false, false, false).contains(&XML_IMPORT));
+		assert!(expand("import", false, true, false, false).contains(&XML_IMPORT));
+
+		// export/submission: read vs export.
+		assert!(expand("export", true, false, false, false).contains(&XML_EXPORT_READ));
+		assert!(!expand("export", true, false, false, false).contains(&XML_EXPORT));
+		assert!(expand("export", false, true, false, false).contains(&XML_EXPORT));
+
+		// users: read list vs manage.
+		let read = expand("users", true, false, false, false);
+		assert!(read.contains(&USER_READ) && read.contains(&USER_LIST));
+		assert!(!read.contains(&USER_CREATE));
+		let edit = expand("users", false, true, false, false);
+		assert!(
+			edit.contains(&USER_CREATE)
+				&& edit.contains(&USER_UPDATE)
+				&& edit.contains(&USER_DELETE)
+		);
+
+		// organizations: read vs manage.
+		let read = expand("organizations", true, false, false, false);
+		assert!(read.contains(&ORG_READ) && read.contains(&ORG_LIST));
+		assert!(!read.contains(&ORG_CREATE));
+		let edit = expand("organizations", false, true, false, false);
+		assert!(
+			edit.contains(&ORG_CREATE)
+				&& edit.contains(&ORG_UPDATE)
+				&& edit.contains(&ORG_DELETE)
+		);
+
+		// audit: granted on read OR review; edit-only grants nothing.
+		assert!(expand("audit", true, false, false, false).contains(&AUDIT_READ));
+		assert!(expand("audit", false, false, true, false).contains(&AUDIT_LIST));
+		assert!(!expand("audit", false, true, false, false).contains(&AUDIT_READ));
+
+		// data/terminology: read vs import/approve.
+		let read = expand("data", true, false, false, false);
+		assert!(read.contains(&TERMINOLOGY_READ));
+		assert!(!read.contains(&TERMINOLOGY_IMPORT));
+		let edit = expand("data", false, true, false, false);
+		assert!(edit.contains(&TERMINOLOGY_IMPORT) && edit.contains(&TERMINOLOGY_APPROVE));
+
+		// admin: any check grants the full admin permission set.
+		let admin = expand("admin", true, false, false, false);
+		assert!(admin.contains(&SETTINGS_UPDATE) && admin.contains(&USER_CREATE));
+
+		// roles: only edit/review/lock grant admin; read alone grants nothing.
+		assert!(!expand("roles", true, false, false, false).contains(&USER_CREATE));
+		assert!(expand("roles", false, true, false, false).contains(&USER_CREATE));
+
+		// Unknown menu keys expand to nothing.
+		assert!(expand("does_not_exist", true, true, true, true).is_empty());
+	}
+
 	#[test]
 	fn test_settings_read_does_not_expand_to_admin_permissions() {
 		let read_permissions =
