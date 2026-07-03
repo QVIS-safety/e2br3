@@ -147,3 +147,54 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 
 	Ok(())
 }
+
+// Locks the read-permission contract: dashboard notices are shown on the home
+// dashboard to all authenticated users, so reading them via the runtime settings
+// endpoint must NOT be gated behind admin access or notice-edit permission.
+#[tokio::test]
+async fn test_dashboard_notices_readable_by_non_admin_viewer() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token =
+		generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm.clone());
+
+	// Admin publishes a notice.
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PUT,
+		"/api/admin/notices",
+		Some(json!({
+			"data": {
+				"notices": [{
+					"id": "notice-1",
+					"title": "Reboot window",
+					"body": "Nightly reboot at 02:00.",
+					"effective_date": "2026-06-01",
+					"expire_date": "2026-06-02"
+				}]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	// A non-admin viewer can read the notice from the runtime settings endpoint.
+	let (status, value) = request_json(
+		&app,
+		&viewer_cookie,
+		Method::GET,
+		"/api/settings/runtime",
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["notices"][0]["title"], "Reboot window");
+
+	Ok(())
+}
