@@ -1130,14 +1130,9 @@ fn permissions_for_menu_key(
 				);
 			}
 		}
-		"organization" | "organizations" => {
-			if can_read {
-				push_unique(&mut permissions, &[ORG_READ, ORG_LIST]);
-			}
-			if can_edit {
-				push_unique(&mut permissions, &[ORG_CREATE, ORG_UPDATE, ORG_DELETE]);
-			}
-		}
+		// Organization management is system-admin only (org endpoints use
+		// require_system_admin), so it is intentionally NOT a profile-matrix
+		// privilege. No arm here means the org menu key grants nothing.
 		"audit" => {
 			if can_read || can_review {
 				push_unique(&mut permissions, &[AUDIT_READ, AUDIT_LIST]);
@@ -1470,16 +1465,10 @@ mod tests {
 				&& edit.contains(&USER_DELETE)
 		);
 
-		// organizations: read vs manage.
-		let read = expand("organizations", true, false, false, false);
-		assert!(read.contains(&ORG_READ) && read.contains(&ORG_LIST));
-		assert!(!read.contains(&ORG_CREATE));
-		let edit = expand("organizations", false, true, false, false);
-		assert!(
-			edit.contains(&ORG_CREATE)
-				&& edit.contains(&ORG_UPDATE)
-				&& edit.contains(&ORG_DELETE)
-		);
+		// organizations is NOT a profile-matrix privilege (org management is
+		// system-admin only), so the menu key grants nothing.
+		assert!(expand("organizations", true, true, true, true).is_empty());
+		assert!(expand("organization", true, true, true, true).is_empty());
 
 		// audit: granted on read OR review; edit-only grants nothing.
 		assert!(expand("audit", true, false, false, false).contains(&AUDIT_READ));

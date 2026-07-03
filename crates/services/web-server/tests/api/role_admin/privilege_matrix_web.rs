@@ -137,7 +137,15 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	}
 	assert!(has_permission(&profile_id, DASHBOARD_NOTICE_READ));
 	assert!(has_permission(&profile_id, DASHBOARD_NOTICE_UPDATE));
-	for menu_key in ["report_due_mail", "monitoring", "sync", "sync_mapping"] {
+	for menu_key in [
+		"report_due_mail",
+		"monitoring",
+		"sync",
+		"sync_mapping",
+		// Organization management is system-admin only, not a matrix privilege.
+		"organization",
+		"organizations",
+	] {
 		let invalid_privileges = json!([
 			{
 				"menu_key": menu_key,
@@ -1568,6 +1576,30 @@ async fn test_audit_matrix_privileges_grant_effective_audit_log_access(
 		&app,
 		&read_cookie,
 		"/api/audit-logs",
+		StatusCode::FORBIDDEN,
+	)
+	.await?;
+
+	Ok(())
+}
+
+// Organization management is system-admin only (require_system_admin), and is
+// intentionally not a profile-matrix privilege. A sponsor admin must be denied
+// listing organizations. Locks the "org = system-admin only" contract.
+#[serial]
+#[tokio::test]
+async fn test_organization_management_requires_system_admin() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+
+	// seed.admin is a sponsor admin (ROLE_SPONSOR_ADMIN_CRO), not a system admin.
+	assert_get_status(
+		&app,
+		&admin_cookie,
+		"/api/organizations",
 		StatusCode::FORBIDDEN,
 	)
 	.await?;
