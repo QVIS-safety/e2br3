@@ -13,7 +13,6 @@ mod lb;
 mod shell;
 
 pub use ae::*;
-pub use common::CaseEditorPageProjectionQuery;
 pub use dg::*;
 pub use dh::*;
 pub use direct::*;
