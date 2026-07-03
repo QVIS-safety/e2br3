@@ -15,7 +15,8 @@ use lib_core::ctx::{
 use lib_core::model::acs::{
 	has_permission, AUDIT_LIST, AUDIT_READ, CASE_LIST, CASE_READ, CASE_APPROVE,
 	CASE_CREATE, CASE_UPDATE, DASHBOARD_NOTICE_READ,
-	DASHBOARD_NOTICE_UPDATE, PRESAVE_TEMPLATE_CREATE, PRESAVE_TEMPLATE_DELETE,
+	DASHBOARD_NOTICE_UPDATE, EMAIL_NOTIFICATION_SEND, PRESAVE_TEMPLATE_CREATE,
+	PRESAVE_TEMPLATE_DELETE,
 	PRESAVE_TEMPLATE_LIST, PRESAVE_TEMPLATE_READ, PRESAVE_TEMPLATE_UPDATE,
 	SETTINGS_READ, SETTINGS_UPDATE, TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT,
 	USER_CREATE, USER_DELETE, USER_LIST, USER_READ, USER_UPDATE, XML_EXPORT,
@@ -1603,6 +1604,48 @@ async fn test_organization_management_requires_system_admin() -> Result<()> {
 		StatusCode::FORBIDDEN,
 	)
 	.await?;
+
+	Ok(())
+}
+
+// The frontend exposes a "home_email" (E-mail / Send) checkbox. The backend
+// must accept it (not reject as unknown) and grant the reserved e-mail send
+// permission so the checkbox persists. The e-mail feature itself is pending, so
+// no endpoint enforces the permission yet.
+#[serial]
+#[tokio::test]
+async fn test_home_email_matrix_privilege_persists_and_grants_send(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let profile_id = create_empty_custom_role_with_generated_id(
+		&app,
+		&admin_cookie,
+		&format!("qa_email_{}", Uuid::new_v4().simple()),
+	)
+	.await?;
+	assert!(!has_permission(&profile_id, EMAIL_NOTIFICATION_SEND));
+
+	// home_email is accepted (200, not BAD_REQUEST) and its Send checkbox grants
+	// the reserved permission.
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&profile_id,
+		json!([{
+			"menu_key": "home_email",
+			"can_read": false,
+			"can_edit": true,
+			"can_review": false,
+			"can_lock": false
+		}]),
+	)
+	.await?;
+	assert!(has_permission(&profile_id, EMAIL_NOTIFICATION_SEND));
 
 	Ok(())
 }

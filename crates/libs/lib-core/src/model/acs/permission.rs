@@ -60,6 +60,9 @@ pub enum Resource {
 	AuditLog,
 	Settings,
 	DashboardNotice,
+	// Home E-mail notifications (feature pending; permission reserved so the
+	// role-and-privilege "home_email" checkbox persists and grants correctly).
+	EmailNotification,
 
 	// Terminology
 	Terminology,
@@ -84,6 +87,7 @@ pub enum Action {
 	Export,
 	Import,
 	Approve,
+	Send,
 }
 
 // endregion: --- Action Enum
@@ -520,6 +524,10 @@ pub const DASHBOARD_NOTICE_READ: Permission =
 	Permission::new(Resource::DashboardNotice, Action::Read);
 pub const DASHBOARD_NOTICE_UPDATE: Permission =
 	Permission::new(Resource::DashboardNotice, Action::Update);
+/// Reserved for the pending Home e-mail notification feature. Grantable via the
+/// `home_email` role-and-privilege menu key; no endpoint enforces it yet.
+pub const EMAIL_NOTIFICATION_SEND: Permission =
+	Permission::new(Resource::EmailNotification, Action::Send);
 
 // Terminology permissions
 pub const TERMINOLOGY_READ: Permission =
@@ -1051,6 +1059,14 @@ fn permissions_for_menu_key(
 				);
 			}
 		}
+		// Home e-mail notifications: the UI exposes a single "Send" checkbox
+		// bound to can_edit. Feature is pending; the permission is reserved so
+		// the checkbox persists and grants correctly once e-mail ships.
+		"home_email" => {
+			if can_edit || can_review || can_lock {
+				push_unique(&mut permissions, &[EMAIL_NOTIFICATION_SEND]);
+			}
+		}
 		"case" => {
 			if can_read {
 				push_unique(&mut permissions, viewer_permissions());
@@ -1428,6 +1444,12 @@ mod tests {
 		let p = expand("home_workflow", true, false, false, false);
 		assert!(p.contains(&CASE_READ) && p.contains(&CASE_LIST));
 		assert!(!p.contains(&CASE_CREATE) && !p.contains(&CASE_UPDATE));
+
+		// home_email: single "Send" checkbox bound to can_edit (feature pending).
+		assert!(expand("home_email", false, true, false, false)
+			.contains(&EMAIL_NOTIFICATION_SEND));
+		assert!(!expand("home_email", true, false, false, false)
+			.contains(&EMAIL_NOTIFICATION_SEND));
 
 		// case: read = viewer, edit = write, review/lock = approve.
 		let read = expand("case", true, false, false, false);

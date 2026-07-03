@@ -173,6 +173,7 @@ fn normalize_admin_privileges(
 			menu_key.as_str(),
 			"home_workflow"
 				| "home_notice"
+				| "home_email"
 				| "case" | "info"
 				| "import" | "export_submission"
 				| "submission"
