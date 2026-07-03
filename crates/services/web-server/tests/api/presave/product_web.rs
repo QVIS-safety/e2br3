@@ -36,32 +36,19 @@ async fn test_canonical_product_presave_is_authorityless_union_record() -> Resul
 	);
 	let product_id = data_id(&created)?;
 
-	let saved = put_json_ok(
+	let saved = get_json_ok(
 		&app,
 		&admin_cookie,
 		format!("/api/presaves/products/{product_id}/details"),
-		json!({
-			"data": {
-				"mfds_device_items": [
-					{
-						"sequence_number": 1,
-						"code": "KR_DVC_MFR",
-						"value_value": "MFDS-CHILD"
-					}
-				]
-			}
-		}),
 	)
 	.await?;
 	assert!(saved["data"]["parent"]
 		.get("unknown_extra_product_code")
 		.is_none());
 	assert_eq!(
-		saved["data"]["mfds_device_items"]
-			.as_array()
-			.ok_or("missing MFDS device rows")?
-			.len(),
-		1
+		saved["data"].get("mfds_device_items"),
+		None,
+		"Product Presave details must not expose MFDS device rows"
 	);
 
 	Ok(())
@@ -355,7 +342,7 @@ async fn test_product_presave_details_graph_load_and_save() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn product_presave_details_round_trips_mfds_device_items_and_hides_old_source_fields(
+async fn product_presave_details_hides_old_source_fields_and_excludes_mfds_device_items(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -374,19 +361,7 @@ async fn product_presave_details_round_trips_mfds_device_items_and_hides_old_sou
 				"parent": {
 					"mfds_mpid": "KR-MPID",
 					"mfds_mpid_version": "KR-V1"
-				},
-				"mfds_device_items": [
-					{
-						"sequence_number": 1,
-						"code": "KR_DVC_MFR",
-						"value_value": "KR Maker"
-					},
-					{
-						"sequence_number": 2,
-						"code": "KR_DVC_PROBC",
-						"value_code": "PROB-1"
-					}
-				]
+				}
 			}
 		}),
 	)
@@ -404,18 +379,10 @@ async fn product_presave_details_round_trips_mfds_device_items_and_hides_old_sou
 	assert!(saved["data"]["parent"]
 		.get("unknown_extra_foreign_e2b_product_code")
 		.is_none());
-	assert_eq!(saved["data"]["mfds_device_items"][0]["code"], "KR_DVC_MFR");
 	assert_eq!(
-		saved["data"]["mfds_device_items"][0]["value_value"],
-		"KR Maker"
-	);
-	assert_eq!(
-		saved["data"]["mfds_device_items"][1]["code"],
-		"KR_DVC_PROBC"
-	);
-	assert_eq!(
-		saved["data"]["mfds_device_items"][1]["value_code"],
-		"PROB-1"
+		saved["data"].get("mfds_device_items"),
+		None,
+		"Product Presave details must not expose MFDS device rows"
 	);
 
 	let loaded = get_json_ok(
@@ -425,11 +392,9 @@ async fn product_presave_details_round_trips_mfds_device_items_and_hides_old_sou
 	)
 	.await?;
 	assert_eq!(
-		loaded["data"]["mfds_device_items"]
-			.as_array()
-			.unwrap()
-			.len(),
-		2
+		loaded["data"].get("mfds_device_items"),
+		None,
+		"Product Presave details must not expose MFDS device rows"
 	);
 	assert!(loaded["data"]["parent"]
 		.get("unknown_extra_product_code")

@@ -8,9 +8,7 @@ use lib_core::model::acs::{
 use lib_core::model::presave::{
 	NarrativePresave, NarrativePresaveBmc, NarrativePresaveForCreate,
 	NarrativePresaveForUpdate, ProductPresave, ProductPresaveBmc,
-	ProductPresaveForCreate, ProductPresaveForUpdate, ProductPresaveMfdsDeviceItem,
-	ProductPresaveMfdsDeviceItemBmc, ProductPresaveMfdsDeviceItemForCreate,
-	ProductPresaveMfdsDeviceItemForUpdate, ProductPresaveSubstance,
+	ProductPresaveForCreate, ProductPresaveForUpdate, ProductPresaveSubstance,
 	ProductPresaveSubstanceBmc, ProductPresaveSubstanceForCreate,
 	ProductPresaveSubstanceForUpdate, ReceiverPresave, ReceiverPresaveBmc,
 	ReceiverPresaveConsignee, ReceiverPresaveConsigneeBmc,
@@ -2030,14 +2028,12 @@ pub async fn delete_product_presave(
 pub struct ProductPresaveDetails {
 	pub parent: ProductPresave,
 	pub substances: Vec<ProductPresaveSubstance>,
-	pub mfds_device_items: Vec<ProductPresaveMfdsDeviceItem>,
 }
 
 #[derive(Deserialize)]
 pub struct ProductPresaveDetailsForUpdate {
 	pub parent: Option<ProductPresaveForUpdate>,
 	pub substances: Option<Vec<ProductSubstanceDetailsForUpdate>>,
-	pub mfds_device_items: Option<Vec<ProductMfdsDeviceItemDetailsForUpdate>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2089,47 +2085,6 @@ impl ProductSubstanceDetailsForUpdate {
 			mfds_id: self.mfds_id,
 			strength_value: self.strength_value,
 			strength_unit: self.strength_unit,
-		})
-	}
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ProductMfdsDeviceItemDetailsForUpdate {
-	pub id: Option<Uuid>,
-	#[serde(default, rename = "_delete")]
-	pub delete: bool,
-	pub sequence_number: Option<i32>,
-	pub code: Option<String>,
-	pub value_code: Option<String>,
-	pub value_value: Option<String>,
-}
-
-impl ProductMfdsDeviceItemDetailsForUpdate {
-	fn into_update(self) -> ProductPresaveMfdsDeviceItemForUpdate {
-		ProductPresaveMfdsDeviceItemForUpdate {
-			sequence_number: self.sequence_number,
-			code: self.code,
-			value_code: self.value_code,
-			value_value: self.value_value,
-		}
-	}
-
-	fn into_create(
-		self,
-		product_presave_id: Uuid,
-	) -> Result<ProductPresaveMfdsDeviceItemForCreate> {
-		Ok(ProductPresaveMfdsDeviceItemForCreate {
-			product_presave_id,
-			sequence_number: self.sequence_number.ok_or_else(|| {
-				Error::BadRequest {
-					message:
-						"product MFDS device item details create requires sequence_number"
-							.to_string(),
-				}
-			})?,
-			code: self.code,
-			value_code: self.value_code,
-			value_value: self.value_value,
 		})
 	}
 }
@@ -2232,11 +2187,6 @@ async fn apply_product_presave_details_inner(
 			upsert_product_substance_detail(ctx, mm, id, substance).await?;
 		}
 	}
-	if let Some(items) = data.mfds_device_items {
-		for item in items {
-			upsert_product_mfds_device_item_detail(ctx, mm, id, item).await?;
-		}
-	}
 	Ok(())
 }
 
@@ -2247,13 +2197,7 @@ async fn load_product_presave_details(
 ) -> Result<ProductPresaveDetails> {
 	let parent = ProductPresaveBmc::get(ctx, mm, id).await?;
 	let substances = ProductPresaveSubstanceBmc::list_by_parent(ctx, mm, id).await?;
-	let mfds_device_items =
-		ProductPresaveMfdsDeviceItemBmc::list_by_parent(ctx, mm, id).await?;
-	Ok(ProductPresaveDetails {
-		parent,
-		substances,
-		mfds_device_items,
-	})
+	Ok(ProductPresaveDetails { parent, substances })
 }
 
 fn require_product_detail_operation_permissions(
@@ -2265,25 +2209,13 @@ fn require_product_detail_operation_permissions(
 		.as_deref()
 		.unwrap_or_default()
 		.iter()
-		.any(|item| item.id.is_none() && !item.delete)
-		|| data
-			.mfds_device_items
-			.as_deref()
-			.unwrap_or_default()
-			.iter()
-			.any(|item| item.id.is_none() && !item.delete);
+		.any(|item| item.id.is_none() && !item.delete);
 	let deletes_child = data
 		.substances
 		.as_deref()
 		.unwrap_or_default()
 		.iter()
-		.any(|item| item.delete)
-		|| data
-			.mfds_device_items
-			.as_deref()
-			.unwrap_or_default()
-			.iter()
-			.any(|item| item.delete);
+		.any(|item| item.delete);
 	let deletes_parent = data
 		.parent
 		.as_ref()
@@ -2307,12 +2239,6 @@ async fn preflight_product_presave_details(
 	if let Some(substances) = &data.substances {
 		for substance in substances {
 			preflight_product_substance_detail(ctx, mm, product_id, substance)
-				.await?;
-		}
-	}
-	if let Some(items) = &data.mfds_device_items {
-		for item in items {
-			preflight_product_mfds_device_item_detail(ctx, mm, product_id, item)
 				.await?;
 		}
 	}
@@ -2357,48 +2283,6 @@ fn validate_product_substance_detail_create(
 	Ok(())
 }
 
-async fn preflight_product_mfds_device_item_detail(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	product_id: Uuid,
-	item: &ProductMfdsDeviceItemDetailsForUpdate,
-) -> Result<()> {
-	if item.delete && item.id.is_none() {
-		return Err(Error::BadRequest {
-			message: "product MFDS device item delete requires id".to_string(),
-		});
-	}
-	if let Some(id) = item.id {
-		let entity = ProductPresaveMfdsDeviceItemBmc::get(ctx, mm, id).await?;
-		ensure_detail_parent_scope(
-			product_id,
-			entity.product_presave_id,
-			id,
-			"product",
-			"product_presave_mfds_device_items",
-		)?;
-		if !item.delete {
-			let _ = (ctx, mm, product_id);
-		}
-	} else if !item.delete {
-		validate_product_mfds_device_item_detail_create(item)?;
-	}
-	Ok(())
-}
-
-fn validate_product_mfds_device_item_detail_create(
-	item: &ProductMfdsDeviceItemDetailsForUpdate,
-) -> Result<()> {
-	if item.sequence_number.is_none() {
-		return Err(Error::BadRequest {
-			message:
-				"product MFDS device item details create requires sequence_number"
-					.to_string(),
-		});
-	}
-	Ok(())
-}
-
 async fn upsert_product_substance_detail(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -2430,43 +2314,6 @@ async fn upsert_product_substance_detail(
 			ctx,
 			mm,
 			substance.into_create(product_id)?,
-		)
-		.await?;
-	}
-	Ok(())
-}
-
-async fn upsert_product_mfds_device_item_detail(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &ModelManager,
-	product_id: Uuid,
-	item: ProductMfdsDeviceItemDetailsForUpdate,
-) -> Result<()> {
-	if item.delete && item.id.is_none() {
-		return Err(Error::BadRequest {
-			message: "product MFDS device item delete requires id".to_string(),
-		});
-	}
-	if let Some(id) = item.id {
-		let entity = ProductPresaveMfdsDeviceItemBmc::get(ctx, mm, id).await?;
-		ensure_detail_parent_scope(
-			product_id,
-			entity.product_presave_id,
-			id,
-			"product",
-			"product_presave_mfds_device_items",
-		)?;
-		if item.delete {
-			ProductPresaveMfdsDeviceItemBmc::delete(ctx, mm, id).await?;
-		} else {
-			ProductPresaveMfdsDeviceItemBmc::update(ctx, mm, id, item.into_update())
-				.await?;
-		}
-	} else {
-		ProductPresaveMfdsDeviceItemBmc::create(
-			ctx,
-			mm,
-			item.into_create(product_id)?,
 		)
 		.await?;
 	}

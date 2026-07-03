@@ -7,9 +7,7 @@ use lib_core::_dev_utils;
 use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO};
 use lib_core::model::presave::{
 	NarrativePresaveBmc, NarrativePresaveForCreate, ProductPresaveBmc,
-	ProductPresaveForCreate, ProductPresaveForUpdate,
-	ProductPresaveMfdsDeviceItemBmc, ProductPresaveMfdsDeviceItemForCreate,
-	ProductPresaveMfdsDeviceItemForUpdate, ProductPresaveSubstanceBmc,
+	ProductPresaveForCreate, ProductPresaveForUpdate, ProductPresaveSubstanceBmc,
 	ProductPresaveSubstanceForCreate, ProductPresaveSubstanceForUpdate,
 	ReceiverPresaveBmc, ReceiverPresaveConsigneeBmc,
 	ReceiverPresaveConsigneeForCreate, ReceiverPresaveConsigneeForUpdate,
@@ -44,7 +42,6 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"receiver_presave_consignees",
 	"product_presaves",
 	"product_presave_substances",
-	"product_presave_mfds_device_items",
 	"reporter_presaves",
 	"study_presaves",
 	"study_presave_registration_numbers",
@@ -558,10 +555,6 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 		(
 			"product_presave_substances",
 			"product_presave_substances_via_parent",
-		),
-		(
-			"product_presave_mfds_device_items",
-			"product_presave_mfds_device_items_via_parent",
 		),
 		("reporter_presaves", "reporter_presaves_org_isolation"),
 		("study_presaves", "study_presaves_org_isolation"),
@@ -2357,68 +2350,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		substance_id
 	);
 
-	let maker_id = ProductPresaveMfdsDeviceItemBmc::create(
-		&ctx,
-		&mm,
-		ProductPresaveMfdsDeviceItemForCreate {
-			product_presave_id: product_id,
-			sequence_number: 1,
-			code: Some("KR_DVC_MFR".into()),
-			value_code: None,
-			value_value: Some("KR Maker".into()),
-		},
-	)
-	.await?;
-	let problem_id = ProductPresaveMfdsDeviceItemBmc::create(
-		&ctx,
-		&mm,
-		ProductPresaveMfdsDeviceItemForCreate {
-			product_presave_id: product_id,
-			sequence_number: 2,
-			code: Some("KR_DVC_PROBC".into()),
-			value_code: Some("PROB-1".into()),
-			value_value: None,
-		},
-	)
-	.await?;
-	ProductPresaveMfdsDeviceItemBmc::update(
-		&ctx,
-		&mm,
-		problem_id,
-		ProductPresaveMfdsDeviceItemForUpdate {
-			sequence_number: Some(3),
-			code: Some("KR_DVC_PROBC".into()),
-			value_code: Some("PROB-2".into()),
-			value_value: None,
-		},
-	)
-	.await?;
-	let device_items =
-		ProductPresaveMfdsDeviceItemBmc::list_by_parent(&ctx, &mm, product_id)
-			.await?;
-	assert_eq!(device_items.len(), 2);
-	assert_eq!(device_items[0].id, maker_id);
-	assert_eq!(device_items[0].code.as_deref(), Some("KR_DVC_MFR"));
-	assert_eq!(device_items[0].value_value.as_deref(), Some("KR Maker"));
-	assert_eq!(device_items[1].id, problem_id);
-	assert_eq!(device_items[1].sequence_number, 3);
-	assert_eq!(device_items[1].value_code.as_deref(), Some("PROB-2"));
-	assert_audit_changed_field(
-		&mm,
-		"product_presave_mfds_device_items",
-		problem_id,
-		"value_code",
-		json!("PROB-1"),
-		json!("PROB-2"),
-	)
-	.await?;
-	ProductPresaveMfdsDeviceItemBmc::delete(&ctx, &mm, maker_id).await?;
-	let device_items =
-		ProductPresaveMfdsDeviceItemBmc::list_by_parent(&ctx, &mm, product_id)
-			.await?;
-	assert_eq!(device_items.len(), 1);
-	assert_eq!(device_items[0].id, problem_id);
-
 	let registration_id = StudyPresaveRegistrationNumberBmc::create(
 		&ctx,
 		&mm,
@@ -2524,91 +2455,6 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	ReceiverPresaveBmc::delete(&ctx, &mm, receiver_id).await?;
 	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
 
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn product_presave_mfds_device_items_round_trip() -> Result<()> {
-	_dev_utils::init_dev().await;
-	let mm = ModelManager::new().await?;
-	let ctx = demo_ctx();
-	let sender_id = SenderPresaveBmc::create(
-		&ctx,
-		&mm,
-		sender_presave_create(format!("Device Item Sender {}", Uuid::new_v4())),
-	)
-	.await?;
-	let product_id = ProductPresaveBmc::create(
-		&ctx,
-		&mm,
-		product_presave_create(
-			RegulatoryAuthority::Mfds,
-			format!("Device Item Product {}", Uuid::new_v4()),
-			sender_id,
-		),
-	)
-	.await?;
-
-	let maker_id = ProductPresaveMfdsDeviceItemBmc::create(
-		&ctx,
-		&mm,
-		ProductPresaveMfdsDeviceItemForCreate {
-			product_presave_id: product_id,
-			sequence_number: 1,
-			code: Some("KR_DVC_MFR".into()),
-			value_code: None,
-			value_value: Some("KR Maker".into()),
-		},
-	)
-	.await?;
-	let problem_id = ProductPresaveMfdsDeviceItemBmc::create(
-		&ctx,
-		&mm,
-		ProductPresaveMfdsDeviceItemForCreate {
-			product_presave_id: product_id,
-			sequence_number: 2,
-			code: Some("KR_DVC_PROBC".into()),
-			value_code: Some("PROB-1".into()),
-			value_value: None,
-		},
-	)
-	.await?;
-
-	ProductPresaveMfdsDeviceItemBmc::update(
-		&ctx,
-		&mm,
-		problem_id,
-		ProductPresaveMfdsDeviceItemForUpdate {
-			sequence_number: Some(3),
-			code: Some("KR_DVC_PROBC".into()),
-			value_code: Some("PROB-2".into()),
-			value_value: None,
-		},
-	)
-	.await?;
-
-	let rows =
-		ProductPresaveMfdsDeviceItemBmc::list_by_parent(&ctx, &mm, product_id)
-			.await?;
-	assert_eq!(rows.len(), 2);
-	assert_eq!(rows[0].id, maker_id);
-	assert_eq!(rows[0].code.as_deref(), Some("KR_DVC_MFR"));
-	assert_eq!(rows[0].value_value.as_deref(), Some("KR Maker"));
-	assert_eq!(rows[1].id, problem_id);
-	assert_eq!(rows[1].sequence_number, 3);
-	assert_eq!(rows[1].value_code.as_deref(), Some("PROB-2"));
-
-	ProductPresaveMfdsDeviceItemBmc::delete(&ctx, &mm, maker_id).await?;
-	let rows =
-		ProductPresaveMfdsDeviceItemBmc::list_by_parent(&ctx, &mm, product_id)
-			.await?;
-	assert_eq!(rows.len(), 1);
-	assert_eq!(rows[0].id, problem_id);
-
-	ProductPresaveMfdsDeviceItemBmc::delete(&ctx, &mm, problem_id).await?;
-	ProductPresaveBmc::delete(&ctx, &mm, product_id).await?;
-	SenderPresaveBmc::delete(&ctx, &mm, sender_id).await?;
 	Ok(())
 }
 

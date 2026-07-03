@@ -960,10 +960,7 @@ END $$"#,
 					IF v_org_id IS NOT NULL THEN RETURN v_org_id; END IF;
 				END IF;
 
-				IF p_table_name IN (
-					'product_presave_substances',
-					'product_presave_mfds_device_items'
-				) THEN
+				IF p_table_name = 'product_presave_substances' THEN
 					SELECT p.organization_id INTO v_org_id
 					FROM product_presaves p
 					WHERE p.id = NULLIF(v_values->>'product_presave_id', '')::UUID;

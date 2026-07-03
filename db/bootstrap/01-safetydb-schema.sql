@@ -371,18 +371,7 @@ CREATE TABLE IF NOT EXISTS product_presave_substances (
     CONSTRAINT product_presave_substances_sequence_unique UNIQUE (product_presave_id, sequence_number)
 );
 
-CREATE TABLE IF NOT EXISTS product_presave_mfds_device_items (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    product_presave_id UUID NOT NULL REFERENCES product_presaves(id) ON DELETE CASCADE,
-    sequence_number INTEGER NOT NULL DEFAULT 1,
-    code VARCHAR(50),
-    value_code VARCHAR(255),
-    value_value TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
-);
+DROP TABLE IF EXISTS product_presave_mfds_device_items CASCADE;
 
 CREATE TABLE IF NOT EXISTS reporter_presaves (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -671,8 +660,6 @@ CREATE INDEX idx_receiver_presave_consignees_parent ON receiver_presave_consigne
 CREATE INDEX idx_product_presaves_org ON product_presaves(organization_id);
 CREATE INDEX idx_product_presaves_sender ON product_presaves(sender_presave_id);
 CREATE INDEX idx_product_presave_substances_parent ON product_presave_substances(product_presave_id);
-CREATE INDEX IF NOT EXISTS idx_product_presave_mfds_device_items_product_presave_id
-    ON product_presave_mfds_device_items(product_presave_id);
 CREATE INDEX idx_reporter_presaves_org ON reporter_presaves(organization_id);
 CREATE INDEX idx_study_presaves_org ON study_presaves(organization_id);
 CREATE INDEX idx_study_presaves_product ON study_presaves(product_presave_id);
@@ -2003,26 +1990,6 @@ CREATE POLICY product_presave_substances_via_parent ON product_presave_substance
         EXISTS (
             SELECT 1 FROM product_presaves p
             WHERE p.id = product_presave_substances.product_presave_id
-            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    );
-
-ALTER TABLE product_presave_mfds_device_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE product_presave_mfds_device_items FORCE ROW LEVEL SECURITY;
-CREATE POLICY product_presave_mfds_device_items_via_parent ON product_presave_mfds_device_items
-    FOR ALL
-    TO e2br3_app_role
-    USING (
-        EXISTS (
-            SELECT 1 FROM product_presaves p
-            WHERE p.id = product_presave_mfds_device_items.product_presave_id
-            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM product_presaves p
-            WHERE p.id = product_presave_mfds_device_items.product_presave_id
             AND (p.organization_id = current_organization_id() OR is_current_user_admin())
         )
     );
