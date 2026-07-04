@@ -29,7 +29,6 @@ pub struct ValidationRuleDto {
 	pub phases: Vec<String>,
 	pub message: String,
 	pub condition: String,
-	pub export_directive: Option<String>,
 }
 
 /// GET /api/validation/rules
@@ -102,7 +101,6 @@ pub async fn list_validation_rules(
 				.collect(),
 			message: rule.message.to_string(),
 			condition: rule.condition.as_str().to_string(),
-			export_directive: rule.export_directive.map(|d| d.as_str().to_string()),
 		})
 		.collect();
 

@@ -22,6 +22,7 @@ impl Default for ExportXmlOptions {
 }
 
 pub(crate) mod mode;
+pub mod policy;
 pub mod roundtrip;
 pub mod sections;
 pub(crate) mod shared;

@@ -33,7 +33,6 @@ impl RuleCategory {
 pub enum ValidationPhase {
 	Import,
 	CaseValidate,
-	Export,
 }
 
 impl ValidationPhase {
@@ -41,7 +40,6 @@ impl ValidationPhase {
 		match self {
 			Self::Import => "import",
 			Self::CaseValidate => "case_validate",
-			Self::Export => "export",
 		}
 	}
 }
@@ -1479,14 +1477,6 @@ pub const VALIDATION_RULES: &[
 		message: "ISO country code must be 2 uppercase letters.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.XML.DOCUMENT.TEXT.COMPRESSION.FORBIDDEN",
-		authority: RegulatoryAuthority::Ich,
-		section: "xml",
-		blocking: false,
-		message:
-			"Document text compression attribute must be removed for export compatibility.",
-	},
-	ValidationRuleMetadata {
 		code: "ICH.XML.DOSE_QUANTITY.VALUE_UNIT.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "xml",
@@ -1499,13 +1489,6 @@ pub const VALIDATION_RULES: &[
 		section: "xml",
 		blocking: true,
 		message: "effectiveTime with width must include low/high.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.GK11.EMPTY.PRUNE",
-		authority: RegulatoryAuthority::Ich,
-		section: "xml",
-		blocking: false,
-		message: "Empty G.k.11 relationships should be pruned during export.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.INV_CHAR_BL.NULLFLAVOR.FORBIDDEN",
@@ -1560,14 +1543,6 @@ pub const VALIDATION_RULES: &[
 		message: "MedDRA code requires codeSystemVersion.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.XML.OPTIONAL.PATH.EMPTY.PRUNE",
-		authority: RegulatoryAuthority::Ich,
-		section: "xml",
-		blocking: false,
-		message:
-			"Optional-path nodes without real data should be pruned during export.",
-	},
-	ValidationRuleMetadata {
 		code: "ICH.XML.PERIOD.VALUE_UNIT.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "xml",
@@ -1589,39 +1564,11 @@ pub const VALIDATION_RULES: &[
 		message: "PIVL_TS period must include value and unit.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.XML.PLACEHOLDER.CODESYSTEMVERSION.PRUNE",
-		authority: RegulatoryAuthority::Ich,
-		section: "xml",
-		blocking: false,
-		message: "Known placeholder codeSystemVersion attributes should be removed during export.",
-	},
-	ValidationRuleMetadata {
 		code: "ICH.XML.PLACEHOLDER.VALUE.FORBIDDEN",
 		authority: RegulatoryAuthority::Ich,
 		section: "xml",
 		blocking: true,
 		message: "Placeholder values are not allowed in XML content or attributes.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.PLACEHOLDER.VALUE.PRUNE",
-		authority: RegulatoryAuthority::Ich,
-		section: "xml",
-		blocking: false,
-		message: "Known placeholder value nodes should be pruned during export.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.RACE.EMPTY.PRUNE",
-		authority: RegulatoryAuthority::Ich,
-		section: "xml",
-		blocking: false,
-		message: "Empty race nodes should be pruned during export.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.RACE.NI.PRUNE",
-		authority: RegulatoryAuthority::Ich,
-		section: "xml",
-		blocking: false,
-		message: "Race NI placeholder nodes should be pruned during export.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.ROOT.ITSVERSION.REQUIRED",
@@ -1637,22 +1584,6 @@ pub const VALIDATION_RULES: &[
 		blocking: true,
 		message:
 			"Root xsi:schemaLocation must be present and reference the expected root schema.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.STRUCTURAL.EMPTY.PRUNE",
-		authority: RegulatoryAuthority::Ich,
-		section: "xml",
-		blocking: false,
-		message:
-			"Empty structural wrapper nodes should be pruned during export.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.SUMMARY.LANGUAGE.JA.FORBIDDEN",
-		authority: RegulatoryAuthority::Ich,
-		section: "xml",
-		blocking: false,
-		message:
-			"Summary language=JA attribute must be removed for export compatibility.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.XML.SXPR_TS.COMP.REQUIRED",
@@ -1726,14 +1657,6 @@ pub const VALIDATION_RULES: &[
 		section: "xml",
 		blocking: true,
 		message: "text/originalText is empty; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.XML.XSI_TYPE.NORMALIZE",
-		authority: RegulatoryAuthority::Ich,
-		section: "xml",
-		blocking: false,
-		message:
-			"Promote non-namespaced type attribute to xsi:type for export compatibility.",
 	},
 	ValidationRuleMetadata {
 		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
@@ -1879,78 +1802,6 @@ pub const VALIDATION_RULES: &[
 			"MFDS foreign-use products must provide WHO MPID/KR product coding.",
 	},
 ];
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExportDirective {
-	OutcomeDefaultCode3,
-	RequiredInterventionNullFlavorNi,
-	DrugRoleDefaultConcomitant,
-	ClearNullFlavorWhenValuePresent,
-	NormalizeInvalidCodeToNullFlavorNi,
-	NormalizeTypeAttributeToXsiType,
-	RemoveDocumentTextCompression,
-	RemoveSummaryLanguageJa,
-	RemovePlaceholderValueNodes,
-	RemovePlaceholderCodeSystemVersion,
-	RemoveRaceNiNodes,
-	RemoveRaceEmptyNodes,
-	RemoveEmptyGk11Relationships,
-	RemoveOptionalPathEmptyNodes,
-	RemoveEmptyStructuralNodes,
-}
-
-impl ExportDirective {
-	pub fn as_str(self) -> &'static str {
-		match self {
-			Self::OutcomeDefaultCode3 => "outcome_default_code_3",
-			Self::RequiredInterventionNullFlavorNi => {
-				"required_intervention_null_flavor_ni"
-			}
-			Self::DrugRoleDefaultConcomitant => "drug_role_default_concomitant",
-			Self::ClearNullFlavorWhenValuePresent => {
-				"clear_null_flavor_when_value_present"
-			}
-			Self::NormalizeInvalidCodeToNullFlavorNi => {
-				"normalize_invalid_code_to_null_flavor_ni"
-			}
-			Self::NormalizeTypeAttributeToXsiType => {
-				"normalize_type_attribute_to_xsi_type"
-			}
-			Self::RemoveDocumentTextCompression => {
-				"remove_document_text_compression"
-			}
-			Self::RemoveSummaryLanguageJa => "remove_summary_language_ja",
-			Self::RemovePlaceholderValueNodes => "remove_placeholder_value_nodes",
-			Self::RemovePlaceholderCodeSystemVersion => {
-				"remove_placeholder_code_system_version"
-			}
-			Self::RemoveRaceNiNodes => "remove_race_ni_nodes",
-			Self::RemoveRaceEmptyNodes => "remove_race_empty_nodes",
-			Self::RemoveEmptyGk11Relationships => "remove_empty_gk11_relationships",
-			Self::RemoveOptionalPathEmptyNodes => "remove_optional_path_empty_nodes",
-			Self::RemoveEmptyStructuralNodes => "remove_empty_structural_nodes",
-		}
-	}
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExportNormalizeKind {
-	AsciiDigitsLen(usize),
-	AsciiUpperLen(usize),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ExportNormalizationSpec {
-	pub xpath: &'static str,
-	pub attribute: &'static str,
-	pub kind: ExportNormalizeKind,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ExportAttributeStripSpec {
-	pub xpath: &'static str,
-	pub attribute: &'static str,
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuleCondition {
@@ -2125,15 +1976,9 @@ pub struct CanonicalRule<'a> {
 	pub severity: RuleSeverity,
 	pub message: &'a str,
 	pub condition: RuleCondition,
-	pub export_directive: Option<ExportDirective>,
 }
 
-const PHASES_IMPORT_AND_EXPORT: &[ValidationPhase] =
-	&[ValidationPhase::Import, ValidationPhase::Export];
-const PHASES_CASE_VALIDATE_AND_EXPORT: &[ValidationPhase] =
-	&[ValidationPhase::CaseValidate, ValidationPhase::Export];
 const PHASES_CASE_VALIDATE: &[ValidationPhase] = &[ValidationPhase::CaseValidate];
-const PHASES_EXPORT_ONLY: &[ValidationPhase] = &[ValidationPhase::Export];
 const PHASES_IMPORT_ONLY: &[ValidationPhase] = &[ValidationPhase::Import];
 
 #[derive(Debug, Clone, Copy)]
@@ -2790,48 +2635,6 @@ const REQUIRED_PRESENCE_BINDINGS: &[PresencePolicyBinding] = &[
 	},
 ];
 
-fn export_directive_for_code(code: &str) -> Option<ExportDirective> {
-	match code {
-		"FDA.E.i.3.2h.REQUIRED" => {
-			Some(ExportDirective::RequiredInterventionNullFlavorNi)
-		}
-		"FDA.C.1.7.1.REQUIRED" | "FDA.C.1.12.REQUIRED" => {
-			Some(ExportDirective::ClearNullFlavorWhenValuePresent)
-		}
-		"ICH.XML.MEDDRA.CODE.FORMAT.REQUIRED"
-		| "ICH.XML.COUNTRY.CODE.FORMAT.REQUIRED" => {
-			Some(ExportDirective::NormalizeInvalidCodeToNullFlavorNi)
-		}
-		"ICH.XML.XSI_TYPE.NORMALIZE" => {
-			Some(ExportDirective::NormalizeTypeAttributeToXsiType)
-		}
-		"ICH.XML.DOCUMENT.TEXT.COMPRESSION.FORBIDDEN" => {
-			Some(ExportDirective::RemoveDocumentTextCompression)
-		}
-		"ICH.XML.SUMMARY.LANGUAGE.JA.FORBIDDEN" => {
-			Some(ExportDirective::RemoveSummaryLanguageJa)
-		}
-		"ICH.XML.PLACEHOLDER.VALUE.PRUNE" => {
-			Some(ExportDirective::RemovePlaceholderValueNodes)
-		}
-		"ICH.XML.PLACEHOLDER.CODESYSTEMVERSION.PRUNE" => {
-			Some(ExportDirective::RemovePlaceholderCodeSystemVersion)
-		}
-		"ICH.XML.RACE.NI.PRUNE" => Some(ExportDirective::RemoveRaceNiNodes),
-		"ICH.XML.RACE.EMPTY.PRUNE" => Some(ExportDirective::RemoveRaceEmptyNodes),
-		"ICH.XML.GK11.EMPTY.PRUNE" => {
-			Some(ExportDirective::RemoveEmptyGk11Relationships)
-		}
-		"ICH.XML.OPTIONAL.PATH.EMPTY.PRUNE" => {
-			Some(ExportDirective::RemoveOptionalPathEmptyNodes)
-		}
-		"ICH.XML.STRUCTURAL.EMPTY.PRUNE" => {
-			Some(ExportDirective::RemoveEmptyStructuralNodes)
-		}
-		_ => None,
-	}
-}
-
 fn condition_for_code(code: &str) -> RuleCondition {
 	CONDITION_BINDINGS
 		.iter()
@@ -2841,9 +2644,8 @@ fn condition_for_code(code: &str) -> RuleCondition {
 }
 
 fn to_canonical_rule<'a>(rule: &'a ValidationRuleMetadata) -> CanonicalRule<'a> {
-	let export_directive = export_directive_for_code(rule.code);
 	let category = category_for_rule(rule);
-	let phases = phases_for_rule(rule, export_directive);
+	let phases = phases_for_rule(rule);
 	let severity = severity_for_rule(rule);
 	CanonicalRule {
 		code: rule.code,
@@ -2855,7 +2657,6 @@ fn to_canonical_rule<'a>(rule: &'a ValidationRuleMetadata) -> CanonicalRule<'a> 
 		severity,
 		message: rule.message,
 		condition: condition_for_code(rule.code),
-		export_directive,
 	}
 }
 
@@ -2867,33 +2668,11 @@ fn category_for_rule(rule: &ValidationRuleMetadata) -> RuleCategory {
 	}
 }
 
-fn phases_for_rule(
-	rule: &ValidationRuleMetadata,
-	export_directive: Option<ExportDirective>,
-) -> &'static [ValidationPhase] {
-	if export_directive.is_some() {
-		if is_export_only_rule(rule.code) {
-			return PHASES_EXPORT_ONLY;
-		}
-		if is_xml_structure_rule(rule) {
-			return PHASES_IMPORT_AND_EXPORT;
-		}
-		return PHASES_CASE_VALIDATE_AND_EXPORT;
-	}
+fn phases_for_rule(rule: &ValidationRuleMetadata) -> &'static [ValidationPhase] {
 	if is_xml_structure_rule(rule) {
 		return PHASES_IMPORT_ONLY;
 	}
 	PHASES_CASE_VALIDATE
-}
-
-fn is_export_only_rule(code: &str) -> bool {
-	code.contains(".PRUNE")
-		|| code.contains(".NORMALIZE")
-		|| matches!(
-			code,
-			"ICH.XML.DOCUMENT.TEXT.COMPRESSION.FORBIDDEN"
-				| "ICH.XML.SUMMARY.LANGUAGE.JA.FORBIDDEN"
-		)
 }
 
 fn is_xml_structure_rule(rule: &ValidationRuleMetadata) -> bool {
@@ -3026,10 +2805,6 @@ pub fn canonical_rules_version(authority: Option<RegulatoryAuthority>) -> String
 		hash = fnv1a_update(hash, rule.message.as_bytes());
 		hash = fnv1a_update(hash, b"|");
 		hash = fnv1a_update(hash, rule.condition.as_str().as_bytes());
-		hash = fnv1a_update(hash, b"|");
-		if let Some(d) = rule.export_directive {
-			hash = fnv1a_update(hash, d.as_str().as_bytes());
-		}
 		hash = fnv1a_update(hash, b";");
 	}
 
@@ -3234,96 +3009,6 @@ pub fn is_rule_presence_valid(code: &str, present: bool, _facts: RuleFacts) -> b
 	}
 }
 
-pub fn should_clear_null_flavor_on_value(code: &str) -> bool {
-	has_export_directive(code, ExportDirective::ClearNullFlavorWhenValuePresent)
-}
-
-pub fn export_directive_for_rule(code: &str) -> Option<ExportDirective> {
-	find_canonical_rule(code).and_then(|rule| rule.export_directive)
-}
-
-pub fn has_export_directive(code: &str, directive: ExportDirective) -> bool {
-	export_directive_for_rule(code) == Some(directive)
-}
-
-pub fn export_normalization_spec_for_rule(
-	code: &str,
-) -> Option<ExportNormalizationSpec> {
-	match code {
-		"ICH.XML.MEDDRA.CODE.FORMAT.REQUIRED" => Some(ExportNormalizationSpec {
-			xpath: "//hl7:value[@codeSystem='2.16.840.1.113883.6.163']",
-			attribute: "code",
-			kind: ExportNormalizeKind::AsciiDigitsLen(8),
-		}),
-		"ICH.XML.COUNTRY.CODE.FORMAT.REQUIRED" => Some(ExportNormalizationSpec {
-			xpath: "//hl7:code[@codeSystem='1.0.3166.1.2.2']",
-			attribute: "code",
-			kind: ExportNormalizeKind::AsciiUpperLen(2),
-		}),
-		_ => None,
-	}
-}
-
-pub fn export_xpath_for_rule(code: &str) -> Option<&'static str> {
-	match code {
-		"ICH.XML.RACE.NI.PRUNE" => Some("//hl7:observation[hl7:code[@code='C17049' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value[@code='NI']"),
-		"ICH.XML.RACE.EMPTY.PRUNE" => Some("//hl7:observation[hl7:code[@code='C17049' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value[not(@code) or @nullFlavor]"),
-		"ICH.XML.GK11.EMPTY.PRUNE" => Some("//hl7:outboundRelationship2[hl7:observation/hl7:code[@code='2'] and (not(hl7:observation/hl7:value) or normalize-space(hl7:observation/hl7:value)='')]"),
-		"ICH.XML.DOCUMENT.TEXT.COMPRESSION.FORBIDDEN" => {
-			Some("//hl7:document/hl7:text[@compression]")
-		}
-		"ICH.XML.SUMMARY.LANGUAGE.JA.FORBIDDEN" => Some(
-			"//hl7:component/hl7:observationEvent[hl7:code[@code='36']]/hl7:value[@language='JA']",
-		),
-		"FDA.E.i.3.2h.REQUIRED" => Some("//hl7:observation[hl7:code[@code='7']]/hl7:value"),
-		_ => None,
-	}
-}
-
-pub fn export_xpaths_for_rule(code: &str) -> &'static [&'static str] {
-	match code {
-		"ICH.XML.PLACEHOLDER.VALUE.PRUNE" => &[
-			"//hl7:observation/hl7:value[@code='G.k.10.r']",
-			"//hl7:investigationCharacteristic[hl7:code[@code='3' and @codeSystem='2.16.840.1.113883.3.989.2.1.1.23']]/hl7:value[@code='C.1.11.1']",
-			"//hl7:observation/hl7:value[@code='D.2.3']",
-			"//hl7:observation/hl7:value[@unit='D.2.2.1b']",
-		],
-		"ICH.XML.STRUCTURAL.EMPTY.PRUNE" => &[
-			"//hl7:outboundRelationship2",
-			"//hl7:component",
-			"//hl7:component1",
-			"//hl7:subjectOf2",
-			"//hl7:observation",
-			"//hl7:organizer",
-		],
-		_ => &[],
-	}
-}
-
-pub fn export_attribute_strip_spec_for_rule(
-	code: &str,
-) -> Option<ExportAttributeStripSpec> {
-	match code {
-		"ICH.XML.PLACEHOLDER.CODESYSTEMVERSION.PRUNE" => {
-			Some(ExportAttributeStripSpec {
-				xpath: "//hl7:observation/hl7:value[@codeSystemVersion='D.8.r.6a' or @codeSystemVersion='D.8.r.7a' or @codeSystemVersion='D.9.2.r.1a' or @codeSystemVersion='D.9.4.r.1a']",
-				attribute: "codeSystemVersion",
-			})
-		}
-		"ICH.XML.DOCUMENT.TEXT.COMPRESSION.FORBIDDEN" => {
-			Some(ExportAttributeStripSpec {
-				xpath: "//hl7:document/hl7:text[@compression]",
-				attribute: "compression",
-			})
-		}
-		"ICH.XML.SUMMARY.LANGUAGE.JA.FORBIDDEN" => Some(ExportAttributeStripSpec {
-			xpath: "//hl7:component/hl7:observationEvent[hl7:code[@code='36']]/hl7:value[@language='JA']",
-			attribute: "language",
-		}),
-		_ => None,
-	}
-}
-
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -3365,36 +3050,27 @@ mod tests {
 	}
 
 	#[test]
-	fn export_only_rules_do_not_apply_to_import_phase() {
-		let import_rule = find_canonical_rule_for_phase(
+	fn export_only_rules_are_not_validation_rules() {
+		let export_only_codes = [
 			"ICH.XML.STRUCTURAL.EMPTY.PRUNE",
-			ValidationPhase::Import,
-		);
-		let export_rule = find_canonical_rule_for_phase(
-			"ICH.XML.STRUCTURAL.EMPTY.PRUNE",
-			ValidationPhase::Export,
-		);
-		assert!(import_rule.is_none());
-		assert!(export_rule.is_some());
-	}
-
-	#[test]
-	fn migrated_export_directives_are_available() {
-		assert_eq!(
-			find_canonical_rule("ICH.E.i.7.REQUIRED")
-				.and_then(|rule| rule.export_directive),
-			None
-		);
-		assert_eq!(
-			find_canonical_rule("FDA.E.i.3.2h.REQUIRED")
-				.and_then(|rule| rule.export_directive),
-			Some(ExportDirective::RequiredInterventionNullFlavorNi)
-		);
-		assert_eq!(
-			find_canonical_rule("FDA.C.1.7.1.REQUIRED")
-				.and_then(|rule| rule.export_directive),
-			Some(ExportDirective::ClearNullFlavorWhenValuePresent)
-		);
+			"ICH.XML.OPTIONAL.PATH.EMPTY.PRUNE",
+			"ICH.XML.PLACEHOLDER.VALUE.PRUNE",
+			"ICH.XML.PLACEHOLDER.CODESYSTEMVERSION.PRUNE",
+			"ICH.XML.RACE.NI.PRUNE",
+			"ICH.XML.RACE.EMPTY.PRUNE",
+			"ICH.XML.GK11.EMPTY.PRUNE",
+			"ICH.XML.XSI_TYPE.NORMALIZE",
+		];
+		let validation_codes: HashSet<_> = canonical_rules_all()
+			.into_iter()
+			.map(|rule| rule.code)
+			.collect();
+		for code in export_only_codes {
+			assert!(
+				!validation_codes.contains(code),
+				"export-only policy code should not be a validation rule: {code}"
+			);
+		}
 	}
 
 	#[test]
@@ -3817,12 +3493,5 @@ mod tests {
 			false,
 			RuleFacts::default()
 		));
-	}
-
-	#[test]
-	fn exporter_null_flavor_clear_directive_is_catalog_driven() {
-		assert!(should_clear_null_flavor_on_value("FDA.C.1.7.1.REQUIRED"));
-		assert!(should_clear_null_flavor_on_value("FDA.C.1.12.REQUIRED"));
-		assert!(!should_clear_null_flavor_on_value("ICH.E.i.7.REQUIRED"));
 	}
 }

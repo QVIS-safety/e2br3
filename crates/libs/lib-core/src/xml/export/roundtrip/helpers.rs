@@ -260,7 +260,7 @@ pub(super) fn reorder_investigation_event_children(xpath: &mut Context) {
 	}
 }
 
-pub(super) fn clear_null_flavor_if_catalog_directive(
+pub(super) fn clear_null_flavor_if_export_policy(
 	xpath: &mut Context,
 	rule_code: &str,
 	path: &str,

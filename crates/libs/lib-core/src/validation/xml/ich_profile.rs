@@ -1,7 +1,7 @@
 use crate::validation::{
-	export_normalization_spec_for_rule, AttrNullFlavorPairRuleSpec,
-	AttrOrNullFlavorRequiredRuleSpec, AttrOrTextOrNullRequiredRuleSpec,
-	AttrPrefixRuleSpec, CodeOrCodeSystemOrTextOrNullRequiredRuleSpec,
+	AttrNullFlavorPairRuleSpec, AttrOrNullFlavorRequiredRuleSpec,
+	AttrOrTextOrNullRequiredRuleSpec, AttrPrefixRuleSpec,
+	CodeOrCodeSystemOrTextOrNullRequiredRuleSpec,
 	CodeOrCodeSystemOrTextRequiredForbiddenRuleSpec, NormalizedCodeRuleSpec,
 	RequiredAttrsRuleSpec, RequiredChildRuleSpec, RuleFacts,
 	SupportedXsiTypesRuleSpec, TextNullFlavorPairRuleSpec,
@@ -14,6 +14,7 @@ use crate::validation::{
 	ICH_STRUCTURAL_REQUIRED_CHILD_RULES, ICH_STRUCTURAL_WHEN_ATTR_EQUALS_RULES,
 	ICH_STRUCTURAL_WHEN_CHILD_PRESENT_RULES,
 };
+use crate::xml::export::policy::export_normalization_spec_for_rule;
 use crate::xml::types::XmlValidationError;
 use libxml::tree::Node;
 use libxml::xpath::Context;

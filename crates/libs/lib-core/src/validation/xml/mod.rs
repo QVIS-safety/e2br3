@@ -1,4 +1,3 @@
-pub mod export_rules;
 mod fda_profile;
 mod ich_profile;
 mod sections;
@@ -6,10 +5,10 @@ pub(crate) mod shared_specs;
 
 use crate::validation::{
 	find_canonical_rule_for_phase, is_rule_condition_satisfied,
-	is_rule_presence_valid, is_rule_value_valid, ExportNormalizationSpec,
-	ExportNormalizeKind, RuleFacts, ValidationPhase,
+	is_rule_presence_valid, is_rule_value_valid, RuleFacts, ValidationPhase,
 };
 use crate::xml::error::Error;
+use crate::xml::export::policy::{ExportNormalizationSpec, ExportNormalizeKind};
 use crate::xml::types::{XmlValidationError, XmlValidationReport};
 use crate::xml::Result;
 use libxml::parser::Parser;

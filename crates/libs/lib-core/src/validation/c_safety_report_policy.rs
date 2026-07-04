@@ -1,7 +1,6 @@
 // Shared Section C policy used by exporter + case validators.
-use super::{
-	is_rule_condition_satisfied, should_clear_null_flavor_on_value, RuleFacts,
-};
+use super::{is_rule_condition_satisfied, RuleFacts};
+use crate::xml::export::policy::should_clear_null_flavor_on_value;
 
 pub fn has_report_type(value: &str) -> bool {
 	!value.trim().is_empty()
@@ -71,7 +70,7 @@ mod tests {
 	}
 
 	#[test]
-	fn c_section_null_flavor_clear_policy_tracks_catalog() {
+	fn c_section_null_flavor_clear_policy_tracks_export_policy() {
 		assert!(should_clear_local_criteria_null_flavor_on_value());
 		assert!(should_clear_combination_product_null_flavor_on_value());
 	}

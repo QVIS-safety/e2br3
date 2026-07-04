@@ -1,6 +1,8 @@
 // Shared Section E policy used by exporter + case validators.
 // Keep behavior in one place to avoid drift when FDA submission behavior changes.
-use super::{has_export_directive, ExportDirective};
+use crate::xml::export::policy::{
+	has_export_policy_directive, ExportPolicyDirective,
+};
 
 pub const DEFAULT_OUTCOME_DISPLAY: &str = "not recovered/not resolved/ongoing";
 
@@ -27,9 +29,9 @@ pub fn outcome_display_name(code: &str) -> &'static str {
 }
 
 pub fn should_emit_required_intervention_null_flavor_ni() -> bool {
-	has_export_directive(
+	has_export_policy_directive(
 		"FDA.E.i.3.2h.REQUIRED",
-		ExportDirective::RequiredInterventionNullFlavorNi,
+		ExportPolicyDirective::RequiredInterventionNullFlavorNi,
 	)
 }
 
@@ -61,7 +63,7 @@ mod tests {
 	}
 
 	#[test]
-	fn required_intervention_policy_tracks_catalog_directive() {
+	fn required_intervention_policy_tracks_export_policy() {
 		assert!(should_emit_required_intervention_null_flavor_ni());
 		assert!(should_case_validator_require_required_intervention());
 	}

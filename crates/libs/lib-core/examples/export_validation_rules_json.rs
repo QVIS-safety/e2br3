@@ -9,7 +9,6 @@ struct ValidationRuleExport {
 	blocking: bool,
 	message: String,
 	condition: String,
-	export_directive: Option<String>,
 }
 
 fn main() {
@@ -25,9 +24,6 @@ fn main() {
 				blocking: rule.blocking,
 				message: rule.message.to_string(),
 				condition: canonical.condition.as_str().to_string(),
-				export_directive: canonical
-					.export_directive
-					.map(|directive| directive.as_str().to_string()),
 			}
 		})
 		.collect();
