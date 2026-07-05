@@ -156,6 +156,69 @@ pub fn should_clear_null_flavor_on_value(code: &str) -> bool {
 	)
 }
 
+pub const DEFAULT_OUTCOME_DISPLAY: &str = "not recovered/not resolved/ongoing";
+
+pub fn normalize_outcome_code(value: Option<&str>) -> Option<&'static str> {
+	match value.map(str::trim).filter(|v| !v.is_empty()) {
+		Some("1") => Some("1"),
+		Some("2") => Some("2"),
+		Some("3") => Some("3"),
+		Some("4") => Some("4"),
+		Some("5") => Some("5"),
+		_ => None,
+	}
+}
+
+pub fn outcome_display_name(code: &str) -> &'static str {
+	match code {
+		"1" => "recovered/resolved",
+		"2" => "recovering/resolving",
+		"3" => "not recovered/not resolved/ongoing",
+		"4" => "recovered/resolved with sequelae",
+		"5" => "fatal",
+		_ => DEFAULT_OUTCOME_DISPLAY,
+	}
+}
+
+pub fn should_emit_required_intervention_null_flavor_ni() -> bool {
+	has_export_policy_directive(
+		EXPORT_RULE_FDA_REQUIRED_INTERVENTION,
+		ExportPolicyDirective::RequiredInterventionNullFlavorNi,
+	)
+}
+
+pub fn should_case_validation_require_required_intervention() -> bool {
+	true
+}
+
+pub fn has_drug_characterization(value: &str) -> bool {
+	!value.trim().is_empty()
+}
+
+pub fn has_medicinal_product(value: &str) -> bool {
+	!value.trim().is_empty()
+}
+
+pub fn normalize_drug_characterization(value: &str) -> Option<&'static str> {
+	match value.trim() {
+		"1" => Some("1"),
+		"2" => Some("2"),
+		"3" => Some("3"),
+		"4" => Some("4"),
+		_ => None,
+	}
+}
+
+pub fn drug_characterization_display_name(code: &str) -> &'static str {
+	match code {
+		"1" => "Suspect",
+		"2" => "Concomitant",
+		"3" => "Interacting",
+		"4" => "Drug Not Administered",
+		_ => "Concomitant",
+	}
+}
+
 pub fn export_normalization_spec_for_rule(
 	code: &str,
 ) -> Option<ExportNormalizationSpec> {
@@ -256,5 +319,24 @@ mod tests {
 			"ICH.XML.MEDDRA.CODE.FORMAT.REQUIRED"
 		)
 		.is_some());
+	}
+
+	#[test]
+	fn reaction_outcome_policy_rejects_missing_or_invalid() {
+		assert_eq!(normalize_outcome_code(None), None);
+		assert_eq!(normalize_outcome_code(Some("")), None);
+		assert_eq!(normalize_outcome_code(Some("99")), None);
+		assert_eq!(normalize_outcome_code(Some("5")), Some("5"));
+		assert_eq!(outcome_display_name("3"), DEFAULT_OUTCOME_DISPLAY);
+		assert!(should_emit_required_intervention_null_flavor_ni());
+		assert!(should_case_validation_require_required_intervention());
+	}
+
+	#[test]
+	fn drug_characterization_policy_rejects_missing_or_invalid() {
+		assert_eq!(normalize_drug_characterization(""), None);
+		assert_eq!(normalize_drug_characterization("99"), None);
+		assert_eq!(normalize_drug_characterization("1"), Some("1"));
+		assert_eq!(drug_characterization_display_name("2"), "Concomitant");
 	}
 }

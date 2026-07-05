@@ -33,7 +33,7 @@ async fn fetch_reactions(
 		.map_err(Error::from)
 }
 
-use crate::validation::{
+use crate::xml::export::policy::{
 	normalize_outcome_code, outcome_display_name,
 	should_emit_required_intervention_null_flavor_ni,
 };

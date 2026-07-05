@@ -14,16 +14,13 @@ use lib_core::model::xml_import_decision::{
 };
 use lib_core::model::xml_import_history::XmlImportHistoryBmc;
 use lib_core::model::ModelManager;
-use lib_core::validation::xml::{
-	should_skip_xml_validation, validate_e2b_xml_basic,
-};
 use lib_core::xml::import_sections::{
 	c_safety_report::parse_c_safety_report, d_patient::parse_d_patient,
 	e_reaction::parse_e_reactions, g_drug::parse_g_drugs,
 };
 use lib_core::xml::{
-	extract_safety_report_id_from_xml, import_e2b_xml, validate_e2b_xml,
-	CImportSettings, XmlImportRequest, XmlValidationReport,
+	extract_safety_report_id_from_xml, import_e2b_xml_unvalidated, CImportSettings,
+	XmlImportRequest, XmlValidationReport,
 };
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
@@ -37,6 +34,9 @@ use std::io::{Cursor, Read};
 use time::format_description::well_known::Rfc3339;
 use tracing::warn;
 use uuid::Uuid;
+use validator::xml::{
+	should_skip_xml_validation, validate_e2b_xml, validate_e2b_xml_basic,
+};
 use zip::ZipArchive;
 
 const MAX_XML_UPLOAD_BYTES: usize = 50 * 1024 * 1024;
@@ -282,7 +282,78 @@ async fn import_single_xml(
 	c_settings: CImportSettings,
 	decision: XmlImportDecision,
 ) -> ImportedCaseSummary {
-	let import_result = import_e2b_xml(
+	let validation_report = if should_skip_xml_validation() {
+		validate_e2b_xml_basic(&xml, None)
+	} else {
+		validate_e2b_xml(&xml, None)
+	};
+	match validation_report {
+		Ok(report) if report.ok => {}
+		Ok(report) => {
+			let message = report
+				.errors
+				.first()
+				.map(|error| error.message.clone())
+				.unwrap_or_else(|| "XML validation failed".to_string());
+			if let Err(history_err) = record_import_history(
+				ctx,
+				mm,
+				uploaded_file_name,
+				&filename,
+				None,
+				None,
+				"error",
+				Some(&message),
+			)
+			.await
+			{
+				warn!("failed to record xml import validation error: {history_err}");
+			}
+			return ImportedCaseSummary {
+				case_number: filename.clone(),
+				status: "error",
+				message: Some(message),
+				case_id: None,
+				case_version: None,
+				decision: Some("error"),
+				source_file_name: Some(filename),
+				matched_case_id: decision.matched_case_id.map(|id| id.to_string()),
+				matched_case_number: decision.matched_case_number,
+				matched_case_version: decision.matched_case_version,
+			};
+		}
+		Err(err) => {
+			let message = err.to_string();
+			if let Err(history_err) = record_import_history(
+				ctx,
+				mm,
+				uploaded_file_name,
+				&filename,
+				None,
+				None,
+				"error",
+				Some(&message),
+			)
+			.await
+			{
+				warn!("failed to record xml import validation error: {history_err}");
+			}
+			return ImportedCaseSummary {
+				case_number: filename.clone(),
+				status: "error",
+				message: Some(message),
+				case_id: None,
+				case_version: None,
+				decision: Some("error"),
+				source_file_name: Some(filename),
+				matched_case_id: decision.matched_case_id.map(|id| id.to_string()),
+				matched_case_number: decision.matched_case_number,
+				matched_case_version: decision.matched_case_version,
+			};
+		}
+	}
+
+	let import_result = import_e2b_xml_unvalidated(
 		ctx,
 		mm,
 		XmlImportRequest {

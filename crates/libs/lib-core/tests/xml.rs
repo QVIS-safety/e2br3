@@ -18,7 +18,3 @@ mod xml_patch_c;
 mod xml_patch_d;
 #[path = "xml/xml_patch_h.rs"]
 mod xml_patch_h;
-#[path = "xml/xml_schema_business_ci.rs"]
-mod xml_schema_business_ci;
-#[path = "xml/xml_validation.rs"]
-mod xml_validation;

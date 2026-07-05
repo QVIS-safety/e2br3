@@ -11,6 +11,7 @@ members = [
     "crates/libs/lib-auth",       # e.g., for pwd, token.
     "crates/libs/lib-core",       # e.g., model, ctx, config.
     "crates/libs/lib-web",        # e.g., logging, common middleware etc
+    "crates/libs/validator",      # validation engine
 
     # -- Application Services
     "crates/services/web-server",

@@ -4,14 +4,14 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use lib_core::model::acs::CASE_READ;
 use lib_core::model::ModelManager;
-use lib_core::validation::{
-	canonical_rules_all, canonical_rules_for_authority, canonical_rules_version,
-	RegulatoryAuthority,
-};
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
+use validator::{
+	canonical_rules_all, canonical_rules_for_authority, canonical_rules_version,
+	RegulatoryAuthority,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct ValidationRulesQuery {

@@ -5,13 +5,13 @@ use axum::Router;
 use lib_auth::token::generate_web_token;
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
-use lib_core::validation::find_canonical_rule;
 use serde_json::{json, Value};
 use sqlx::types::Uuid as SqlxUuid;
 use std::collections::BTreeSet;
 use tokio::time::{sleep, Duration};
 use tower::ServiceExt;
 use uuid::Uuid;
+use validator::find_canonical_rule;
 
 fn parse_json_or_raw(body: &[u8]) -> Result<Value> {
 	let raw = String::from_utf8_lossy(body).trim().to_string();

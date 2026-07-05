@@ -10,6 +10,7 @@ lib-rest-core = { path = "../../libs/lib-rest-core"}
 lib-auth = { path = "../../libs/lib-auth"}
 lib-core = { path = "../../libs/lib-core"}
 lib-web = { path = "../../libs/lib-web"}
+validator = { path = "../../libs/validator"}
 # -- Async
 tokio = { version = "1", features = ["full"] }
 # -- Json

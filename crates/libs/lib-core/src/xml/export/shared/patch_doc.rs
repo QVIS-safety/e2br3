@@ -1,4 +1,3 @@
-use crate::validation::{is_rule_condition_satisfied, RuleFacts};
 use crate::xml::export::policy::{
 	export_attribute_strip_spec_for_rule, export_normalization_spec_for_rule,
 	export_xpath_for_rule, export_xpaths_for_rule, has_export_policy_directive,
@@ -347,13 +346,7 @@ fn required_intervention_rule_applies(value_node: &Node) -> bool {
 		.map(reaction_has_other_medically_important_true)
 		.unwrap_or(false);
 
-	is_rule_condition_satisfied(
-		EXPORT_RULE_FDA_REQUIRED_INTERVENTION,
-		RuleFacts {
-			fda_reaction_other_medically_important: Some(other_medically_important),
-			..RuleFacts::default()
-		},
-	)
+	other_medically_important
 }
 
 fn reaction_has_other_medically_important_true(reaction_obs: &Node) -> bool {
