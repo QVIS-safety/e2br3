@@ -937,6 +937,43 @@ macro_rules! repeatable_page_row_delete_restore_handlers {
 	};
 }
 
+macro_rules! direct_page_projection_handler {
+	(
+		$fn_name:ident,
+		$section:literal,
+		$loader:ident,
+		[$($perm:path),* $(,)?]
+		$(,)?
+	) => {
+		pub async fn $fn_name(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			Path(case_id): Path<Uuid>,
+			Query(query): Query<CaseEditorPageProjectionQuery>,
+		) -> Result<(
+			axum::http::StatusCode,
+			Json<CaseEditorPageProjectionResponse>,
+		)> {
+			let ctx = ctx_w.0;
+			require_permission(&ctx, CASE_READ)?;
+			$( require_permission(&ctx, $perm)?; )*
+			lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
+
+			let projection = direct_page_projection_response(
+				&ctx,
+				&mm,
+				case_id,
+				$section,
+				query_authorities_csv(&query)?,
+				$loader(&ctx, &mm, case_id).await?,
+			)
+			.await?;
+			Ok((axum::http::StatusCode::OK, Json(projection)))
+		}
+	};
+}
+
+pub(super) use direct_page_projection_handler;
 pub(super) use repeatable_list_handler;
 pub(super) use repeatable_page_row_create_handler;
 pub(super) use repeatable_page_row_delete_handler;
