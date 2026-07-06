@@ -1,0 +1,25 @@
+[package]
+name = "validator"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+doctest = false
+
+[lints]
+workspace = true
+
+[dependencies]
+lib-core = { path = "../lib-core" }
+modql = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { workspace = true }
+time = { workspace = true }
+tokio = { version = "1", features = ["full"] }
+uuid = { version = "1", features = ["v4", "fast-rng", "serde"] }
+quick-xml = "0.31"
+libxml = "0.3"
+
+[dev-dependencies]
+serial_test = "3"

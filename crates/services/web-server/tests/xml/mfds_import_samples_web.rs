@@ -8,12 +8,12 @@ use lib_core::xml::import_sections::e_reaction::parse_e_reactions;
 use lib_core::xml::import_sections::f_test_result::parse_f_test_results;
 use lib_core::xml::import_sections::g_drug::parse_g_drugs;
 use lib_core::xml::import_sections::h_narrative::parse_h_narrative;
-use lib_core::xml::validate_e2b_xml;
 use serde_json::Value;
 use serial_test::serial;
 use std::fs;
 use std::path::{Path, PathBuf};
 use tower::ServiceExt;
+use validator::xml::validate_e2b_xml;
 
 fn workspace_root() -> PathBuf {
 	PathBuf::from(env!("CARGO_MANIFEST_DIR"))

@@ -32,6 +32,8 @@ DECLARE
     v_sender_diag_id UUID := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc';
     v_case_summary_id UUID := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd';
     v_literature_ref_id UUID := 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+    v_mfds_receiver_presave_id UUID := 'dddddddd-dddd-dddd-dddd-000000000001';
+    v_fda_receiver_presave_id UUID := 'dddddddd-dddd-dddd-dddd-000000000002';
 BEGIN
     -- Use system user for initial inserts (demo user doesn't exist yet)
     PERFORM set_config('app.current_user_id', '00000000-0000-0000-0000-000000000001', true);
@@ -199,6 +201,134 @@ BEGIN
 
     -- Switch context to demo user for remaining demo data
     PERFORM set_config('app.current_user_id', v_user_id::text, true);
+
+    INSERT INTO receiver_presaves (
+        id,
+        organization_id,
+        receiver_type,
+        organization_name,
+        receiver_identifier,
+        description,
+        created_by,
+        created_at,
+        updated_at
+    )
+    VALUES
+        (
+            v_mfds_receiver_presave_id,
+            v_org_id,
+            '2',
+            'MFDS',
+            'MFDS',
+            'Seeded MFDS receiver route parent',
+            v_user_id,
+            NOW(),
+            NOW()
+        ),
+        (
+            v_fda_receiver_presave_id,
+            v_org_id,
+            '2',
+            'FDA',
+            'FDA',
+            'Seeded FDA receiver route parent',
+            v_user_id,
+            NOW(),
+            NOW()
+        )
+    ON CONFLICT (id) DO UPDATE
+    SET
+        organization_id = EXCLUDED.organization_id,
+        receiver_type = EXCLUDED.receiver_type,
+        organization_name = EXCLUDED.organization_name,
+        receiver_identifier = EXCLUDED.receiver_identifier,
+        description = EXCLUDED.description,
+        deleted = false,
+        updated_by = v_user_id,
+        updated_at = NOW();
+
+    WITH route_seed (
+        receiver_name,
+        sequence_number,
+        authority,
+        receiver_label,
+        batch_receiver_identifier,
+        message_receiver_identifier,
+        condition_field_code,
+        condition_value_code,
+        condition_value_label
+    ) AS (
+        VALUES
+            ('MFDS', 1, 'mfds', 'MFDS(CT)', 'MFDS_CT', 'CT', 'MFDS_REPORT_TYPE', '1', '임상시험계획의 승인을 받은 자'),
+            ('MFDS', 2, 'mfds', 'MFDS(CU)', 'MFDS_CU', 'CU', 'MFDS_REPORT_TYPE', '2', '임상시험용의약품의 치료목적 사용승인을 받은 자'),
+            ('MFDS', 3, 'mfds', 'MFDS(KR)', 'MFDS', 'KR', 'MFDS_REPORT_TYPE', '3', '시판 후 이상사례 국내보고'),
+            ('MFDS', 4, 'mfds', 'MFDS(FR)', 'MFDS_FR', 'FR', 'MFDS_REPORT_TYPE', '4', '시판 후 이상사례 국외보고'),
+            ('MFDS', 5, 'mfds', 'MFDS(CF)', 'MFDS_CT', 'CT', 'MFDS_REPORT_TYPE', '5', '임상시험계획의 승인을 받은 자 (국외)'),
+            ('FDA', 1, 'fda', 'FDA(CDER IND)', 'ZZFDA_PREMKT', 'CDER_IND', 'FDA_REPORT_TYPE', '1', 'CDER IND'),
+            ('FDA', 2, 'fda', 'FDA(CDER IND-exempt BA/BE)', 'ZZFDA_PREMKT', 'CDER_IND_EXEMPT_BA_BE', 'FDA_REPORT_TYPE', '2', 'CDER IND-exempt BA/BE'),
+            ('FDA', 3, 'fda', 'FDA(CBER IND)', 'ZZFDA_PREMKT', 'CBER_IND', 'FDA_REPORT_TYPE', '3', 'CBER IND'),
+            ('FDA', 4, 'fda', 'FDA(Postmarket)', 'ZZFDA', 'CDER', 'FDA_REPORT_TYPE', '4', 'Postmarket')
+    ),
+    receiver_parent AS (
+        SELECT DISTINCT ON (route_seed.receiver_name)
+            route_seed.receiver_name,
+            receiver_presaves.id
+        FROM route_seed
+        JOIN receiver_presaves
+            ON receiver_presaves.organization_id = v_org_id
+            AND receiver_presaves.organization_name = route_seed.receiver_name
+            AND receiver_presaves.deleted = false
+        ORDER BY
+            route_seed.receiver_name,
+            receiver_presaves.created_at,
+            receiver_presaves.id
+    )
+    INSERT INTO receiver_presave_routes (
+        receiver_presave_id,
+        sequence_number,
+        authority,
+        receiver_label,
+        batch_receiver_identifier,
+        message_receiver_identifier,
+        condition_page,
+        condition_field_code,
+        condition_operator,
+        condition_value_code,
+        condition_value_label,
+        created_by,
+        created_at,
+        updated_at
+    )
+    SELECT
+        receiver_parent.id,
+        route_seed.sequence_number,
+        route_seed.authority,
+        route_seed.receiver_label,
+        route_seed.batch_receiver_identifier,
+        route_seed.message_receiver_identifier,
+        'CI',
+        route_seed.condition_field_code,
+        'Equal',
+        route_seed.condition_value_code,
+        route_seed.condition_value_label,
+        v_user_id,
+        NOW(),
+        NOW()
+    FROM route_seed
+    JOIN receiver_parent
+        ON receiver_parent.receiver_name = route_seed.receiver_name
+    ON CONFLICT (receiver_presave_id, authority, receiver_label) DO UPDATE
+    SET
+        sequence_number = EXCLUDED.sequence_number,
+        batch_receiver_identifier = EXCLUDED.batch_receiver_identifier,
+        message_receiver_identifier = EXCLUDED.message_receiver_identifier,
+        condition_page = EXCLUDED.condition_page,
+        condition_field_code = EXCLUDED.condition_field_code,
+        condition_operator = EXCLUDED.condition_operator,
+        condition_value_code = EXCLUDED.condition_value_code,
+        condition_value_label = EXCLUDED.condition_value_label,
+        updated_by = v_user_id,
+        updated_at = NOW();
 
     INSERT INTO cases (id, organization_id, status, created_by, updated_by, submitted_by, submitted_at, created_at, updated_at)
     VALUES (v_case_id, v_org_id, 'draft', v_user_id, v_user_id, v_user_id, NOW(), NOW(), NOW())

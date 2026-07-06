@@ -1,8 +1,7 @@
-use crate::validation::{
+use crate::xml::export::policy::{
 	export_attribute_strip_spec_for_rule, export_normalization_spec_for_rule,
-	export_xpath_for_rule, export_xpaths_for_rule, has_export_directive,
-	is_rule_condition_satisfied, ExportDirective, ExportNormalizeKind, RuleFacts,
-	EXPORT_NORMALIZE_INVALID_CODE_RULES,
+	export_xpath_for_rule, export_xpaths_for_rule, has_export_policy_directive,
+	ExportNormalizeKind, ExportPolicyDirective, EXPORT_NORMALIZE_INVALID_CODE_RULES,
 	EXPORT_RULE_DOCUMENT_TEXT_COMPRESSION_FORBIDDEN,
 	EXPORT_RULE_FDA_REQUIRED_INTERVENTION, EXPORT_RULE_GK11_EMPTY_PRUNE,
 	EXPORT_RULE_OPTIONAL_PATH_EMPTY_PRUNE,
@@ -21,9 +20,9 @@ pub(crate) fn postprocess_export_doc(doc: &mut Document, xpath: &mut Context) {
 
 fn normalize_export_values(xpath: &mut Context) {
 	for rule_code in EXPORT_NORMALIZE_INVALID_CODE_RULES {
-		if !has_export_directive(
+		if !has_export_policy_directive(
 			rule_code,
-			ExportDirective::NormalizeInvalidCodeToNullFlavorNi,
+			ExportPolicyDirective::NormalizeInvalidCodeToNullFlavorNi,
 		) {
 			continue;
 		}
@@ -78,9 +77,9 @@ fn matches_normalization_kind(value: &str, kind: ExportNormalizeKind) -> bool {
 }
 
 fn prune_optional_nodes(_doc: &mut Document, xpath: &mut Context) {
-	if has_export_directive(
+	if has_export_policy_directive(
 		EXPORT_RULE_OPTIONAL_PATH_EMPTY_PRUNE,
-		ExportDirective::RemoveOptionalPathEmptyNodes,
+		ExportPolicyDirective::RemoveOptionalPathEmptyNodes,
 	) {
 		let optional_paths = include_str!("../../fda_optional_paths.txt");
 		for raw in optional_paths
@@ -112,27 +111,27 @@ fn prune_optional_nodes(_doc: &mut Document, xpath: &mut Context) {
 	}
 
 	prune_placeholder_nodes(xpath);
-	if has_export_directive(
+	if has_export_policy_directive(
 		EXPORT_RULE_STRUCTURAL_EMPTY_PRUNE,
-		ExportDirective::RemoveEmptyStructuralNodes,
+		ExportPolicyDirective::RemoveEmptyStructuralNodes,
 	) {
 		prune_empty_structural_nodes(xpath);
 	}
 }
 
 fn prune_placeholder_nodes(xpath: &mut Context) {
-	if has_export_directive(
+	if has_export_policy_directive(
 		EXPORT_RULE_PLACEHOLDER_VALUE_PRUNE,
-		ExportDirective::RemovePlaceholderValueNodes,
+		ExportPolicyDirective::RemovePlaceholderValueNodes,
 	) {
 		for path in export_xpaths_for_rule(EXPORT_RULE_PLACEHOLDER_VALUE_PRUNE) {
 			unlink_nodes(xpath, path, true);
 		}
 	}
 
-	if has_export_directive(
+	if has_export_policy_directive(
 		EXPORT_RULE_PLACEHOLDER_CODESYSTEMVERSION_PRUNE,
-		ExportDirective::RemovePlaceholderCodeSystemVersion,
+		ExportPolicyDirective::RemovePlaceholderCodeSystemVersion,
 	) {
 		if let Some(spec) = export_attribute_strip_spec_for_rule(
 			EXPORT_RULE_PLACEHOLDER_CODESYSTEMVERSION_PRUNE,
@@ -141,35 +140,35 @@ fn prune_placeholder_nodes(xpath: &mut Context) {
 		}
 	}
 
-	if has_export_directive(
+	if has_export_policy_directive(
 		EXPORT_RULE_RACE_NI_PRUNE,
-		ExportDirective::RemoveRaceNiNodes,
+		ExportPolicyDirective::RemoveRaceNiNodes,
 	) {
 		if let Some(path) = export_xpath_for_rule(EXPORT_RULE_RACE_NI_PRUNE) {
 			unlink_nodes(xpath, path, true);
 		}
 	}
-	if has_export_directive(
+	if has_export_policy_directive(
 		EXPORT_RULE_RACE_EMPTY_PRUNE,
-		ExportDirective::RemoveRaceEmptyNodes,
+		ExportPolicyDirective::RemoveRaceEmptyNodes,
 	) {
 		if let Some(path) = export_xpath_for_rule(EXPORT_RULE_RACE_EMPTY_PRUNE) {
 			unlink_nodes(xpath, path, true);
 		}
 	}
 
-	if has_export_directive(
+	if has_export_policy_directive(
 		EXPORT_RULE_GK11_EMPTY_PRUNE,
-		ExportDirective::RemoveEmptyGk11Relationships,
+		ExportPolicyDirective::RemoveEmptyGk11Relationships,
 	) {
 		if let Some(path) = export_xpath_for_rule(EXPORT_RULE_GK11_EMPTY_PRUNE) {
 			unlink_nodes(xpath, path, false);
 		}
 	}
 
-	if has_export_directive(
+	if has_export_policy_directive(
 		EXPORT_RULE_DOCUMENT_TEXT_COMPRESSION_FORBIDDEN,
-		ExportDirective::RemoveDocumentTextCompression,
+		ExportPolicyDirective::RemoveDocumentTextCompression,
 	) {
 		if let Some(spec) = export_attribute_strip_spec_for_rule(
 			EXPORT_RULE_DOCUMENT_TEXT_COMPRESSION_FORBIDDEN,
@@ -178,9 +177,9 @@ fn prune_placeholder_nodes(xpath: &mut Context) {
 		}
 	}
 
-	if has_export_directive(
+	if has_export_policy_directive(
 		EXPORT_RULE_SUMMARY_LANGUAGE_JA_FORBIDDEN,
-		ExportDirective::RemoveSummaryLanguageJa,
+		ExportPolicyDirective::RemoveSummaryLanguageJa,
 	) {
 		if let Some(spec) = export_attribute_strip_spec_for_rule(
 			EXPORT_RULE_SUMMARY_LANGUAGE_JA_FORBIDDEN,
@@ -189,9 +188,9 @@ fn prune_placeholder_nodes(xpath: &mut Context) {
 		}
 	}
 
-	if has_export_directive(
+	if has_export_policy_directive(
 		EXPORT_RULE_FDA_REQUIRED_INTERVENTION,
-		ExportDirective::RequiredInterventionNullFlavorNi,
+		ExportPolicyDirective::RequiredInterventionNullFlavorNi,
 	) {
 		if let Some(path) =
 			export_xpath_for_rule(EXPORT_RULE_FDA_REQUIRED_INTERVENTION)
@@ -347,13 +346,7 @@ fn required_intervention_rule_applies(value_node: &Node) -> bool {
 		.map(reaction_has_other_medically_important_true)
 		.unwrap_or(false);
 
-	is_rule_condition_satisfied(
-		EXPORT_RULE_FDA_REQUIRED_INTERVENTION,
-		RuleFacts {
-			fda_reaction_other_medically_important: Some(other_medically_important),
-			..RuleFacts::default()
-		},
-	)
+	other_medically_important
 }
 
 fn reaction_has_other_medically_important_true(reaction_obs: &Node) -> bool {

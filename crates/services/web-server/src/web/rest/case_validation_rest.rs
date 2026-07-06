@@ -7,15 +7,15 @@ use lib_core::model::case_validation_report_cache::CaseValidationReportCacheBmc;
 use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::ModelManager;
-use lib_core::validation::{
-	infer_regulatory_authority_from_receivers, validate_case_for_authorities,
-	validate_case_for_authority, CaseValidationReport, RegulatoryAuthority,
-};
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use validator::{
+	infer_regulatory_authority_from_receivers, validate_case_for_authorities,
+	validate_case_for_authority, CaseValidationReport, RegulatoryAuthority,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct ValidationQuery {

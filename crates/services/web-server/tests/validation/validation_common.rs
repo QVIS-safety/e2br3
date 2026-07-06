@@ -5,13 +5,13 @@ use axum::Router;
 use lib_auth::token::generate_web_token;
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
-use lib_core::validation::find_canonical_rule;
 use serde_json::{json, Value};
 use sqlx::types::Uuid as SqlxUuid;
 use std::collections::BTreeSet;
 use tokio::time::{sleep, Duration};
 use tower::ServiceExt;
 use uuid::Uuid;
+use validator::find_canonical_rule;
 
 fn parse_json_or_raw(body: &[u8]) -> Result<Value> {
 	let raw = String::from_utf8_lossy(body).trim().to_string();
@@ -1225,27 +1225,13 @@ fn is_banner_capable_field_path(path: &str) -> bool {
 
 fn section_source(section_letter: char) -> &'static str {
 	match section_letter {
-		'C' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/c.rs"
-		),
-		'D' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/d.rs"
-		),
-		'E' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/e.rs"
-		),
-		'F' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/f.rs"
-		),
-		'G' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/g.rs"
-		),
-		'H' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/h.rs"
-		),
-		'N' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/n.rs"
-		),
+		'C' => include_str!("../../../../libs/validator/src/case/sections/c.rs"),
+		'D' => include_str!("../../../../libs/validator/src/case/sections/d.rs"),
+		'E' => include_str!("../../../../libs/validator/src/case/sections/e.rs"),
+		'F' => include_str!("../../../../libs/validator/src/case/sections/f.rs"),
+		'G' => include_str!("../../../../libs/validator/src/case/sections/g.rs"),
+		'H' => include_str!("../../../../libs/validator/src/case/sections/h.rs"),
+		'N' => include_str!("../../../../libs/validator/src/case/sections/n.rs"),
 		_ => panic!("unsupported section {section_letter}"),
 	}
 }

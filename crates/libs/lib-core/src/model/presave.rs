@@ -1164,6 +1164,64 @@ impl_child_bmc!(
 );
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct ReceiverPresaveRoute {
+	pub id: Uuid,
+	pub receiver_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub authority: String,
+	pub receiver_label: String,
+	pub batch_receiver_identifier: Option<String>,
+	pub message_receiver_identifier: String,
+	pub condition_page: String,
+	pub condition_field_code: String,
+	pub condition_operator: String,
+	pub condition_value_code: String,
+	pub condition_value_label: String,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct ReceiverPresaveRouteForCreate {
+	pub receiver_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub authority: String,
+	pub receiver_label: String,
+	pub batch_receiver_identifier: Option<String>,
+	pub message_receiver_identifier: String,
+	pub condition_page: String,
+	pub condition_field_code: String,
+	pub condition_operator: String,
+	pub condition_value_code: String,
+	pub condition_value_label: String,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct ReceiverPresaveRouteForUpdate {
+	pub sequence_number: Option<i32>,
+	pub authority: Option<String>,
+	pub receiver_label: Option<String>,
+	pub batch_receiver_identifier: Option<String>,
+	pub message_receiver_identifier: Option<String>,
+	pub condition_page: Option<String>,
+	pub condition_field_code: Option<String>,
+	pub condition_operator: Option<String>,
+	pub condition_value_code: Option<String>,
+	pub condition_value_label: Option<String>,
+}
+
+impl_child_bmc!(
+	ReceiverPresaveRouteBmc,
+	ReceiverPresaveRoute,
+	ReceiverPresaveRouteForCreate,
+	ReceiverPresaveRouteForUpdate,
+	"receiver_presave_routes",
+	"receiver_presave_id"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct ProductPresave {
 	pub id: Uuid,
 	pub organization_id: Uuid,

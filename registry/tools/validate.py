@@ -110,6 +110,7 @@ BACKEND_MODELS = {
 IGNORED_BACKEND_FIELDS = {
     "id",
     "case_id",
+    "deleted",
     "drug_id",
     "reaction_id",
     "patient_id",
@@ -133,6 +134,7 @@ IGNORED_BACKEND_FIELDS = {
     "source_product_presave_id",
     "source_narrative_presave_id",
     "source_patient_presave_id",
+    "version",
 }
 
 

@@ -6,7 +6,6 @@ use crate::model::message_header::{
 };
 use crate::model::store::set_full_context_dbx;
 use crate::model::{self, ModelManager};
-use crate::validation::xml::validate_e2b_xml;
 use crate::xml::error::Error;
 use crate::xml::import_runtime::{c, d, e, f, g, h, shared};
 use crate::xml::types::XmlImportResult;
@@ -39,16 +38,15 @@ pub async fn import_e2b_xml(
 	mm: &ModelManager,
 	req: XmlImportRequest,
 ) -> Result<XmlImportResult> {
-	let mm = mm.new_with_txn()?;
-	if !req.skip_validation {
-		let report = validate_e2b_xml(&req.xml, None)?;
-		if !report.ok {
-			return Err(Error::XsdValidationFailed {
-				errors: report.errors,
-			});
-		}
-	}
+	import_e2b_xml_unvalidated(ctx, mm, req).await
+}
 
+pub async fn import_e2b_xml_unvalidated(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	req: XmlImportRequest,
+) -> Result<XmlImportResult> {
+	let mm = mm.new_with_txn()?;
 	let parsed = parse_e2b_xml(&req.xml)?;
 	let safety_report_id_raw = shared::extract_safety_report_id(&req.xml)?;
 	let safety_report_id = shared::clamp_str(

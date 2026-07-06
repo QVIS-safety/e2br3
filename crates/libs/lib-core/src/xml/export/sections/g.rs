@@ -41,7 +41,7 @@ use crate::model::drug::{
 use crate::model::drug_reaction_assessment::{
 	DrugReactionAssessment, RelatednessAssessment,
 };
-use crate::validation::{
+use crate::xml::export::policy::{
 	drug_characterization_display_name, normalize_drug_characterization,
 };
 use sqlx::types::time::{Date, Time};

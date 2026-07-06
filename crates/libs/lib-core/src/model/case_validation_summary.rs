@@ -1,7 +1,7 @@
 use crate::ctx::Ctx;
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::{Error, ModelManager, Result};
-use crate::validation::CaseValidationReport;
+use crate::validation_report::CaseValidationReport;
 use sqlx::types::{time::OffsetDateTime, Uuid};
 use sqlx::FromRow;
 use std::collections::HashMap;
