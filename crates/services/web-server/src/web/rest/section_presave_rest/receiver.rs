@@ -197,16 +197,20 @@ impl ReceiverRouteDetailsForUpdate {
 				}
 			})?,
 			batch_receiver_identifier: self.batch_receiver_identifier,
-			message_receiver_identifier: self.message_receiver_identifier.ok_or_else(
-				|| Error::BadRequest {
+			message_receiver_identifier: self
+				.message_receiver_identifier
+				.ok_or_else(|| {
+					Error::BadRequest {
 					message:
 						"receiver route details create requires message_receiver_identifier"
 							.to_string(),
-				},
-			)?,
-			condition_page: self.condition_page.ok_or_else(|| Error::BadRequest {
-				message: "receiver route details create requires condition_page"
-					.to_string(),
+				}
+				})?,
+			condition_page: self.condition_page.ok_or_else(|| {
+				Error::BadRequest {
+					message: "receiver route details create requires condition_page"
+						.to_string(),
+				}
 			})?,
 			condition_field_code: self.condition_field_code.ok_or_else(|| {
 				Error::BadRequest {
@@ -534,7 +538,10 @@ fn validate_receiver_route_detail_create(
 		(route.condition_field_code.is_some(), "condition_field_code"),
 		(route.condition_operator.is_some(), "condition_operator"),
 		(route.condition_value_code.is_some(), "condition_value_code"),
-		(route.condition_value_label.is_some(), "condition_value_label"),
+		(
+			route.condition_value_label.is_some(),
+			"condition_value_label",
+		),
 	];
 	for (present, field) in required {
 		if !present {
