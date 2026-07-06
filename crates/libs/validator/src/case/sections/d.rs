@@ -1,3 +1,4 @@
+use super::rule_table::{eval_companions, CompanionRule};
 use crate::{
 	has_patient_initials, has_text, is_mfds_domestic_receiver,
 	is_mfds_foreign_postmarket_receiver, push_issue_by_code,
@@ -5,6 +6,233 @@ use crate::{
 	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority, RuleFacts,
 	ValidationContext, ValidationIssue,
 };
+use lib_core::model::parent_history::{ParentMedicalHistory, ParentPastDrugHistory};
+use lib_core::model::patient::{
+	AutopsyCauseOfDeath, MedicalHistoryEpisode, ParentInformation, PastDrugHistory,
+	ReportedCauseOfDeath,
+};
+
+const D_MEDICAL_HISTORY_COMPANIONS: &[CompanionRule<MedicalHistoryEpisode>] = &[
+	CompanionRule {
+		code: "ICH.D.7.1.r.1a.REQUIRED",
+		path: |idx| format!("patientInformation.medicalHistory.{idx}.meddraVersion"),
+		trigger: |episode| has_text(episode.meddra_code.as_deref()),
+		required: |episode| has_text(episode.meddra_version.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.7.1.r.1b.REQUIRED",
+		path: |idx| format!("patientInformation.medicalHistory.{idx}.meddraCode"),
+		trigger: |episode| has_text(episode.meddra_version.as_deref()),
+		required: |episode| has_text(episode.meddra_code.as_deref()),
+	},
+];
+
+const D_PAST_DRUG_COMPANIONS: &[CompanionRule<PastDrugHistory>] = &[
+	CompanionRule {
+		code: "ICH.D.8.r.2a.REQUIRED",
+		path: |idx| format!("patientInformation.pastDrugs.{idx}.mpidVersion"),
+		trigger: |drug| has_text(drug.mpid.as_deref()),
+		required: |drug| has_text(drug.mpid_version.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.8.r.3a.REQUIRED",
+		path: |idx| format!("patientInformation.pastDrugs.{idx}.phpidVersion"),
+		trigger: |drug| has_text(drug.phpid.as_deref()),
+		required: |drug| has_text(drug.phpid_version.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.8.r.6a.REQUIRED",
+		path: |idx| {
+			format!("patientInformation.pastDrugs.{idx}.indicationMeddraVersion")
+		},
+		trigger: |drug| has_text(drug.indication_meddra_code.as_deref()),
+		required: |drug| has_text(drug.indication_meddra_version.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.8.r.6b.REQUIRED",
+		path: |idx| {
+			format!("patientInformation.pastDrugs.{idx}.indicationMeddraCode")
+		},
+		trigger: |drug| has_text(drug.indication_meddra_version.as_deref()),
+		required: |drug| has_text(drug.indication_meddra_code.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.8.r.7a.REQUIRED",
+		path: |idx| {
+			format!("patientInformation.pastDrugs.{idx}.reactionMeddraVersion")
+		},
+		trigger: |drug| has_text(drug.reaction_meddra_code.as_deref()),
+		required: |drug| has_text(drug.reaction_meddra_version.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.8.r.7b.REQUIRED",
+		path: |idx| format!("patientInformation.pastDrugs.{idx}.reactionMeddraCode"),
+		trigger: |drug| has_text(drug.reaction_meddra_version.as_deref()),
+		required: |drug| has_text(drug.reaction_meddra_code.as_deref()),
+	},
+];
+
+const D_REPORTED_CAUSE_COMPANIONS: &[CompanionRule<ReportedCauseOfDeath>] = &[
+	CompanionRule {
+		code: "ICH.D.9.2.r.1a.REQUIRED",
+		path: |idx| {
+			format!("patientInformation.death.reportedCauses.{idx}.meddraVersion")
+		},
+		trigger: |cause| has_text(cause.meddra_code.as_deref()),
+		required: |cause| has_text(cause.meddra_version.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.9.2.r.1b.REQUIRED",
+		path: |idx| {
+			format!("patientInformation.death.reportedCauses.{idx}.meddraCode")
+		},
+		trigger: |cause| has_text(cause.meddra_version.as_deref()),
+		required: |cause| has_text(cause.meddra_code.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.9.2.r.2.REQUIRED",
+		path: |idx| {
+			format!("patientInformation.death.reportedCauses.{idx}.comments")
+		},
+		trigger: |cause| {
+			has_text(cause.meddra_code.as_deref())
+				|| has_text(cause.meddra_version.as_deref())
+		},
+		required: |cause| has_text(cause.comments.as_deref()),
+	},
+];
+
+const D_AUTOPSY_CAUSE_COMPANIONS: &[CompanionRule<AutopsyCauseOfDeath>] = &[
+	CompanionRule {
+		code: "ICH.D.9.4.r.1a.REQUIRED",
+		path: |idx| {
+			format!("patientInformation.death.autopsyCauses.{idx}.meddraVersion")
+		},
+		trigger: |cause| has_text(cause.meddra_code.as_deref()),
+		required: |cause| has_text(cause.meddra_version.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.9.4.r.1b.REQUIRED",
+		path: |idx| {
+			format!("patientInformation.death.autopsyCauses.{idx}.meddraCode")
+		},
+		trigger: |cause| has_text(cause.meddra_version.as_deref()),
+		required: |cause| has_text(cause.meddra_code.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.9.4.r.2.REQUIRED",
+		path: |idx| format!("patientInformation.death.autopsyCauses.{idx}.comments"),
+		trigger: |cause| {
+			has_text(cause.meddra_code.as_deref())
+				|| has_text(cause.meddra_version.as_deref())
+		},
+		required: |cause| has_text(cause.comments.as_deref()),
+	},
+];
+
+const D_PARENT_COMPANIONS: &[CompanionRule<ParentInformation>] = &[
+	CompanionRule {
+		code: "ICH.D.10.2.2a.REQUIRED",
+		path: |idx| format!("patientInformation.parents.{idx}.parentAge"),
+		trigger: |parent| has_text(parent.parent_age_unit.as_deref()),
+		required: |parent| parent.parent_age.is_some(),
+	},
+	CompanionRule {
+		code: "ICH.D.10.2.2b.REQUIRED",
+		path: |idx| format!("patientInformation.parents.{idx}.parentAgeUnit"),
+		trigger: |parent| parent.parent_age.is_some(),
+		required: |parent| has_text(parent.parent_age_unit.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.D.10.6.REQUIRED",
+		path: |idx| format!("patientInformation.parents.{idx}.sex"),
+		trigger: |parent| {
+			has_text(parent.parent_identification.as_deref())
+				|| parent.parent_birth_date.is_some()
+				|| parent.parent_age.is_some()
+				|| has_text(parent.parent_age_unit.as_deref())
+				|| parent.last_menstrual_period_date.is_some()
+				|| parent.weight_kg.is_some()
+				|| parent.height_cm.is_some()
+				|| has_text(parent.medical_history_text.as_deref())
+		},
+		required: |parent| has_text(parent.sex.as_deref()),
+	},
+];
+
+const D_PARENT_MEDICAL_HISTORY_COMPANIONS: &[CompanionRule<ParentMedicalHistory>] =
+	&[
+		CompanionRule {
+			code: "ICH.D.10.7.1.r.1a.REQUIRED",
+			path: |idx| {
+				format!("patientInformation.parents.0.medicalHistory.{idx}.meddraVersion")
+			},
+			trigger: |episode| has_text(episode.meddra_code.as_deref()),
+			required: |episode| has_text(episode.meddra_version.as_deref()),
+		},
+		CompanionRule {
+			code: "ICH.D.10.7.1.r.1b.REQUIRED",
+			path: |idx| {
+				format!(
+					"patientInformation.parents.0.medicalHistory.{idx}.meddraCode"
+				)
+			},
+			trigger: |episode| has_text(episode.meddra_version.as_deref()),
+			required: |episode| has_text(episode.meddra_code.as_deref()),
+		},
+	];
+
+const D_PARENT_PAST_DRUG_COMPANIONS: &[CompanionRule<ParentPastDrugHistory>] =
+	&[
+		CompanionRule {
+			code: "ICH.D.10.8.r.2a.REQUIRED",
+			path: |idx| {
+				format!("patientInformation.parents.0.pastDrugs.{idx}.mpidVersion")
+			},
+			trigger: |drug| has_text(drug.mpid.as_deref()),
+			required: |drug| has_text(drug.mpid_version.as_deref()),
+		},
+		CompanionRule {
+			code: "ICH.D.10.8.r.3a.REQUIRED",
+			path: |idx| {
+				format!("patientInformation.parents.0.pastDrugs.{idx}.phpidVersion")
+			},
+			trigger: |drug| has_text(drug.phpid.as_deref()),
+			required: |drug| has_text(drug.phpid_version.as_deref()),
+		},
+		CompanionRule {
+			code: "ICH.D.10.8.r.6a.REQUIRED",
+			path: |idx| {
+				format!("patientInformation.parents.0.pastDrugs.{idx}.indicationMeddraVersion")
+			},
+			trigger: |drug| has_text(drug.indication_meddra_code.as_deref()),
+			required: |drug| has_text(drug.indication_meddra_version.as_deref()),
+		},
+		CompanionRule {
+			code: "ICH.D.10.8.r.6b.REQUIRED",
+			path: |idx| {
+				format!("patientInformation.parents.0.pastDrugs.{idx}.indicationMeddraCode")
+			},
+			trigger: |drug| has_text(drug.indication_meddra_version.as_deref()),
+			required: |drug| has_text(drug.indication_meddra_code.as_deref()),
+		},
+		CompanionRule {
+			code: "ICH.D.10.8.r.7a.REQUIRED",
+			path: |idx| {
+				format!("patientInformation.parents.0.pastDrugs.{idx}.reactionMeddraVersion")
+			},
+			trigger: |drug| has_text(drug.reaction_meddra_code.as_deref()),
+			required: |drug| has_text(drug.reaction_meddra_version.as_deref()),
+		},
+		CompanionRule {
+			code: "ICH.D.10.8.r.7b.REQUIRED",
+			path: |idx| {
+				format!("patientInformation.parents.0.pastDrugs.{idx}.reactionMeddraCode")
+			},
+			trigger: |drug| has_text(drug.reaction_meddra_version.as_deref()),
+			required: |drug| has_text(drug.reaction_meddra_code.as_deref()),
+		},
+	];
 
 fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
 	let Some(value) = value else {
@@ -206,27 +434,16 @@ pub(crate) fn collect_ich_issues(
 		}
 	}
 
+	eval_companions(
+		issues,
+		&validation_ctx.medical_history,
+		D_MEDICAL_HISTORY_COMPANIONS,
+	);
 	validation_ctx
 		.medical_history
 		.iter()
 		.enumerate()
 		.for_each(|(idx, episode)| {
-			let meddra_code_present = has_text(episode.meddra_code.as_deref());
-			let meddra_version_present = has_text(episode.meddra_version.as_deref());
-			if meddra_code_present && !meddra_version_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.7.1.r.1a.REQUIRED",
-					format!("patientInformation.medicalHistory.{idx}.meddraVersion"),
-				);
-			}
-			if meddra_version_present && !meddra_code_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.7.1.r.1b.REQUIRED",
-					format!("patientInformation.medicalHistory.{idx}.meddraCode"),
-				);
-			}
 			if is_future_date(episode.start_date) || is_future_date(episode.end_date)
 			{
 				push_issue_by_code(
@@ -239,71 +456,12 @@ pub(crate) fn collect_ich_issues(
 			}
 		});
 
+	eval_companions(issues, &validation_ctx.past_drugs, D_PAST_DRUG_COMPANIONS);
 	validation_ctx
 		.past_drugs
 		.iter()
 		.enumerate()
 		.for_each(|(idx, past_drug)| {
-			if has_text(past_drug.mpid.as_deref())
-				&& !has_text(past_drug.mpid_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.8.r.2a.REQUIRED",
-					format!("patientInformation.pastDrugs.{idx}.mpidVersion"),
-				);
-			}
-			if has_text(past_drug.phpid.as_deref())
-				&& !has_text(past_drug.phpid_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.8.r.3a.REQUIRED",
-					format!("patientInformation.pastDrugs.{idx}.phpidVersion"),
-				);
-			}
-			let indication_code_present =
-				has_text(past_drug.indication_meddra_code.as_deref());
-			let indication_version_present =
-				has_text(past_drug.indication_meddra_version.as_deref());
-			if indication_code_present && !indication_version_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.8.r.6a.REQUIRED",
-					format!(
-						"patientInformation.pastDrugs.{idx}.indicationMeddraVersion"
-					),
-				);
-			}
-			if indication_version_present && !indication_code_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.8.r.6b.REQUIRED",
-					format!(
-						"patientInformation.pastDrugs.{idx}.indicationMeddraCode"
-					),
-				);
-			}
-			let reaction_code_present =
-				has_text(past_drug.reaction_meddra_code.as_deref());
-			let reaction_version_present =
-				has_text(past_drug.reaction_meddra_version.as_deref());
-			if reaction_code_present && !reaction_version_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.8.r.7a.REQUIRED",
-					format!(
-						"patientInformation.pastDrugs.{idx}.reactionMeddraVersion"
-					),
-				);
-			}
-			if reaction_version_present && !reaction_code_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.8.r.7b.REQUIRED",
-					format!("patientInformation.pastDrugs.{idx}.reactionMeddraCode"),
-				);
-			}
 			if has_text(past_drug.mpid.as_deref())
 				&& has_text(past_drug.phpid.as_deref())
 			{
@@ -315,41 +473,11 @@ pub(crate) fn collect_ich_issues(
 			}
 		});
 
-	validation_ctx
-		.reported_causes_of_death
-		.iter()
-		.enumerate()
-		.for_each(|(idx, cause)| {
-			let meddra_code_present = has_text(cause.meddra_code.as_deref());
-			let meddra_version_present = has_text(cause.meddra_version.as_deref());
-			if meddra_code_present && !meddra_version_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.9.2.r.1a.REQUIRED",
-					format!("patientInformation.death.reportedCauses.{idx}.meddraVersion"),
-				);
-			}
-			if meddra_version_present && !meddra_code_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.9.2.r.1b.REQUIRED",
-					format!(
-						"patientInformation.death.reportedCauses.{idx}.meddraCode"
-					),
-				);
-			}
-			if (meddra_code_present || meddra_version_present)
-				&& !has_text(cause.comments.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.9.2.r.2.REQUIRED",
-					format!(
-						"patientInformation.death.reportedCauses.{idx}.comments"
-					),
-				);
-			}
-		});
+	eval_companions(
+		issues,
+		&validation_ctx.reported_causes_of_death,
+		D_REPORTED_CAUSE_COMPANIONS,
+	);
 
 	if let Some(death_info) = validation_ctx.death_info.as_ref() {
 		if death_info.date_of_death.is_some()
@@ -363,168 +491,30 @@ pub(crate) fn collect_ich_issues(
 		}
 	}
 
-	validation_ctx
-		.autopsy_causes_of_death
-		.iter()
-		.enumerate()
-		.for_each(|(idx, cause)| {
-			let meddra_code_present = has_text(cause.meddra_code.as_deref());
-			let meddra_version_present = has_text(cause.meddra_version.as_deref());
-			if meddra_code_present && !meddra_version_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.9.4.r.1a.REQUIRED",
-					format!(
-						"patientInformation.death.autopsyCauses.{idx}.meddraVersion"
-					),
-				);
-			}
-			if meddra_version_present && !meddra_code_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.9.4.r.1b.REQUIRED",
-					format!(
-						"patientInformation.death.autopsyCauses.{idx}.meddraCode"
-					),
-				);
-			}
-			if (meddra_code_present || meddra_version_present)
-				&& !has_text(cause.comments.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.9.4.r.2.REQUIRED",
-					format!("patientInformation.death.autopsyCauses.{idx}.comments"),
-				);
-			}
-		});
+	eval_companions(
+		issues,
+		&validation_ctx.autopsy_causes_of_death,
+		D_AUTOPSY_CAUSE_COMPANIONS,
+	);
 
-	validation_ctx
-		.parents
-		.iter()
-		.enumerate()
-		.for_each(|(idx, parent)| {
-			let parent_age_present = parent.parent_age.is_some();
-			let parent_age_unit_present =
-				has_text(parent.parent_age_unit.as_deref());
-			if parent_age_unit_present && !parent_age_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.2.2a.REQUIRED",
-					format!("patientInformation.parents.{idx}.parentAge"),
-				);
-			}
-			if parent_age_present && !parent_age_unit_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.2.2b.REQUIRED",
-					format!("patientInformation.parents.{idx}.parentAgeUnit"),
-				);
-			}
-			let parent_has_payload =
-				has_text(parent.parent_identification.as_deref())
-					|| parent.parent_birth_date.is_some()
-					|| parent_age_present
-					|| parent_age_unit_present
-					|| parent.last_menstrual_period_date.is_some()
-					|| parent.weight_kg.is_some()
-					|| parent.height_cm.is_some()
-					|| has_text(parent.medical_history_text.as_deref());
-			if parent_has_payload && !has_text(parent.sex.as_deref()) {
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.6.REQUIRED",
-					format!("patientInformation.parents.{idx}.sex"),
-				);
-			}
-		});
+	eval_companions(issues, &validation_ctx.parents, D_PARENT_COMPANIONS);
 
-	validation_ctx
-		.parent_medical_history
-		.iter()
-		.enumerate()
-		.for_each(|(idx, episode)| {
-			let meddra_code_present = has_text(episode.meddra_code.as_deref());
-			let meddra_version_present = has_text(episode.meddra_version.as_deref());
-			if meddra_code_present && !meddra_version_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.7.1.r.1a.REQUIRED",
-					format!("patientInformation.parents.0.medicalHistory.{idx}.meddraVersion"),
-				);
-			}
-			if meddra_version_present && !meddra_code_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.7.1.r.1b.REQUIRED",
-					format!("patientInformation.parents.0.medicalHistory.{idx}.meddraCode"),
-				);
-			}
-		});
+	eval_companions(
+		issues,
+		&validation_ctx.parent_medical_history,
+		D_PARENT_MEDICAL_HISTORY_COMPANIONS,
+	);
 
+	eval_companions(
+		issues,
+		&validation_ctx.parent_past_drugs,
+		D_PARENT_PAST_DRUG_COMPANIONS,
+	);
 	validation_ctx
 		.parent_past_drugs
 		.iter()
 		.enumerate()
 		.for_each(|(idx, past_drug)| {
-			if has_text(past_drug.mpid.as_deref())
-				&& !has_text(past_drug.mpid_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.8.r.2a.REQUIRED",
-					format!(
-						"patientInformation.parents.0.pastDrugs.{idx}.mpidVersion"
-					),
-				);
-			}
-			if has_text(past_drug.phpid.as_deref())
-				&& !has_text(past_drug.phpid_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.8.r.3a.REQUIRED",
-					format!(
-						"patientInformation.parents.0.pastDrugs.{idx}.phpidVersion"
-					),
-				);
-			}
-			let indication_code_present =
-				has_text(past_drug.indication_meddra_code.as_deref());
-			let indication_version_present =
-				has_text(past_drug.indication_meddra_version.as_deref());
-			if indication_code_present && !indication_version_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.8.r.6a.REQUIRED",
-					format!("patientInformation.parents.0.pastDrugs.{idx}.indicationMeddraVersion"),
-				);
-			}
-			if indication_version_present && !indication_code_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.8.r.6b.REQUIRED",
-					format!("patientInformation.parents.0.pastDrugs.{idx}.indicationMeddraCode"),
-				);
-			}
-			let reaction_code_present =
-				has_text(past_drug.reaction_meddra_code.as_deref());
-			let reaction_version_present =
-				has_text(past_drug.reaction_meddra_version.as_deref());
-			if reaction_code_present && !reaction_version_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.8.r.7a.REQUIRED",
-					format!("patientInformation.parents.0.pastDrugs.{idx}.reactionMeddraVersion"),
-				);
-			}
-			if reaction_version_present && !reaction_code_present {
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.8.r.7b.REQUIRED",
-					format!("patientInformation.parents.0.pastDrugs.{idx}.reactionMeddraCode"),
-				);
-			}
 			if has_text(past_drug.mpid.as_deref())
 				&& has_text(past_drug.phpid.as_deref())
 			{
@@ -683,4 +673,229 @@ pub(crate) fn collect_mfds_issues(
 			RuleFacts::default(),
 		);
 	});
+}
+
+#[cfg(test)]
+mod golden_companion_tests {
+	//! Characterization tests for the MedDRA code⇔version companion rules in
+	//! `collect_ich_issues` (D.7.1.r.1a / D.7.1.r.1b on medical history). They
+	//! freeze current behavior (code + path) before the table-driven refactor.
+	//! Cross-field date rules (`*.FUTURE_DATE`) stay out of scope and inline.
+	use super::*;
+	use crate::model::case::Case;
+	use crate::model::patient::MedicalHistoryEpisode;
+	use sqlx::types::time::OffsetDateTime;
+	use sqlx::types::Uuid;
+
+	const MEDHIST_CODES: &[&str] =
+		&["ICH.D.7.1.r.1a.REQUIRED", "ICH.D.7.1.r.1b.REQUIRED"];
+
+	fn dummy_case() -> Case {
+		Case {
+			id: Uuid::nil(),
+			organization_id: Uuid::nil(),
+			dg_prd_key: None,
+			status: String::new(),
+			review_receivers_json: None,
+			workflow_routes_json: None,
+			workflow_status: String::new(),
+			workflow_assigned_role: None,
+			workflow_assigned_user_id: None,
+			workflow_due_at: None,
+			workflow_description: None,
+			workflow_updated_at: OffsetDateTime::UNIX_EPOCH,
+			mfds_report_type: None,
+			fda_report_type: None,
+			report_year: None,
+			created_by: Uuid::nil(),
+			updated_by: None,
+			submitted_by: None,
+			submitted_at: None,
+			raw_xml: None,
+			dirty_c: false,
+			dirty_d: false,
+			dirty_e: false,
+			dirty_f: false,
+			dirty_g: false,
+			dirty_h: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+		}
+	}
+
+	fn empty_ctx() -> ValidationContext {
+		ValidationContext {
+			case: dummy_case(),
+			safety_report: None,
+			message_header: None,
+			sender: None,
+			patient: None,
+			narrative: None,
+			sender_diagnoses: Vec::new(),
+			case_summaries: Vec::new(),
+			medical_history: Vec::new(),
+			past_drugs: Vec::new(),
+			death_info: None,
+			reported_causes_of_death: Vec::new(),
+			autopsy_causes_of_death: Vec::new(),
+			parents: Vec::new(),
+			parent_medical_history: Vec::new(),
+			parent_past_drugs: Vec::new(),
+			primary_sources: Vec::new(),
+			documents_held_by_sender: Vec::new(),
+			other_case_identifiers: Vec::new(),
+			studies: Vec::new(),
+			reactions: Vec::new(),
+			tests: Vec::new(),
+			drugs: Vec::new(),
+			active_substances: Vec::new(),
+			indications: Vec::new(),
+			dosages: Vec::new(),
+			drug_reaction_assessments: Vec::new(),
+			patient_identifiers: Vec::new(),
+		}
+	}
+
+	fn medhist(
+		meddra_code: Option<&str>,
+		meddra_version: Option<&str>,
+	) -> MedicalHistoryEpisode {
+		MedicalHistoryEpisode {
+			id: Uuid::nil(),
+			patient_id: Uuid::nil(),
+			sequence_number: 0,
+			meddra_version: meddra_version.map(str::to_string),
+			meddra_code: meddra_code.map(str::to_string),
+			start_date: None,
+			start_date_null_flavor: None,
+			continuing: None,
+			continuing_null_flavor: None,
+			end_date: None,
+			end_date_null_flavor: None,
+			comments: None,
+			family_history: None,
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn medhist_codes(episode: MedicalHistoryEpisode) -> Vec<(String, String)> {
+		let mut ctx = empty_ctx();
+		ctx.medical_history = vec![episode];
+		let mut issues = Vec::new();
+		collect_ich_issues(&ctx, &mut issues);
+		let mut out: Vec<(String, String)> = issues
+			.into_iter()
+			.filter(|issue| MEDHIST_CODES.contains(&issue.code.as_str()))
+			.map(|issue| (issue.code, issue.path))
+			.collect();
+		out.sort();
+		out
+	}
+
+	#[test]
+	fn code_without_version_flags_1a() {
+		assert_eq!(
+			medhist_codes(medhist(Some("10000001"), None)),
+			vec![(
+				"ICH.D.7.1.r.1a.REQUIRED".to_string(),
+				"patientInformation.medicalHistory.0.meddraVersion".to_string()
+			)]
+		);
+	}
+
+	#[test]
+	fn version_without_code_flags_1b() {
+		assert_eq!(
+			medhist_codes(medhist(None, Some("27.0"))),
+			vec![(
+				"ICH.D.7.1.r.1b.REQUIRED".to_string(),
+				"patientInformation.medicalHistory.0.meddraCode".to_string()
+			)]
+		);
+	}
+
+	#[test]
+	fn both_present_is_silent() {
+		assert_eq!(
+			medhist_codes(medhist(Some("10000001"), Some("27.0"))),
+			Vec::new()
+		);
+	}
+
+	#[test]
+	fn both_absent_is_silent() {
+		assert_eq!(medhist_codes(medhist(None, None)), Vec::new());
+	}
+
+	const REPORTED_CAUSE_CODES: &[&str] = &[
+		"ICH.D.9.2.r.1a.REQUIRED",
+		"ICH.D.9.2.r.1b.REQUIRED",
+		"ICH.D.9.2.r.2.REQUIRED",
+	];
+
+	fn reported_cause(
+		meddra_code: Option<&str>,
+		meddra_version: Option<&str>,
+		comments: Option<&str>,
+	) -> ReportedCauseOfDeath {
+		ReportedCauseOfDeath {
+			id: Uuid::nil(),
+			death_info_id: Uuid::nil(),
+			sequence_number: 0,
+			meddra_version: meddra_version.map(str::to_string),
+			meddra_code: meddra_code.map(str::to_string),
+			comments: comments.map(str::to_string),
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn reported_cause_codes(cause: ReportedCauseOfDeath) -> Vec<(String, String)> {
+		let mut ctx = empty_ctx();
+		ctx.reported_causes_of_death = vec![cause];
+		let mut issues = Vec::new();
+		collect_ich_issues(&ctx, &mut issues);
+		let mut out: Vec<(String, String)> = issues
+			.into_iter()
+			.filter(|issue| REPORTED_CAUSE_CODES.contains(&issue.code.as_str()))
+			.map(|issue| (issue.code, issue.path))
+			.collect();
+		out.sort();
+		out
+	}
+
+	#[test]
+	fn reported_cause_present_without_comment_flags_or_trigger_rule() {
+		// code + version present, comment missing -> only the OR-trigger D.9.2.r.2.
+		assert_eq!(
+			reported_cause_codes(reported_cause(
+				Some("10000001"),
+				Some("27.0"),
+				None
+			)),
+			vec![(
+				"ICH.D.9.2.r.2.REQUIRED".to_string(),
+				"patientInformation.death.reportedCauses.0.comments".to_string()
+			)]
+		);
+	}
+
+	#[test]
+	fn reported_cause_fully_populated_is_silent() {
+		assert_eq!(
+			reported_cause_codes(reported_cause(
+				Some("10000001"),
+				Some("27.0"),
+				Some("fatal")
+			)),
+			Vec::new()
+		);
+	}
 }
