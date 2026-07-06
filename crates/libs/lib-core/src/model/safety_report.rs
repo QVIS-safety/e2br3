@@ -700,7 +700,7 @@ impl SafetyReportIdentificationBmc {
 
 		let sql = format!(
 			"INSERT INTO {} (case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, fulfil_expedited_criteria_null_flavor, local_criteria_report_type, combination_product_report_indicator, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, other_case_identifiers_exist_null_flavor, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
-			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, now(), now(), $19)
+			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, now(), now(), $20)
 			 RETURNING id",
 			Self::TABLE
 		);
