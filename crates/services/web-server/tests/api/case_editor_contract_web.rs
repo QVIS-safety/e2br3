@@ -1326,6 +1326,9 @@ async fn editor_sd_page_patch_accepts_batch_receiver_identifier_change() -> Resu
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-SD-BATCH", &["ich"]).await?;
 
+	// message_number is globally unique; use a fresh value to avoid colliding
+	// with seed data (db/seed/001-demo-seed.sql uses "MSG-001").
+	let message_number = format!("MSG-{}", Uuid::new_v4());
 	let (status, body) = post_json(
 		&app,
 		&cookie,
@@ -1333,7 +1336,7 @@ async fn editor_sd_page_patch_accepts_batch_receiver_identifier_change() -> Resu
 		json!({
 			"data": {
 				"case_id": case_id,
-				"message_number": "MSG-001",
+				"message_number": message_number,
 				"message_sender_identifier": "SENDER",
 				"message_receiver_identifier": "OLD-RECEIVER",
 				"message_date": "20260603120000"

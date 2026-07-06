@@ -1227,11 +1227,20 @@ async fn load_editor_sd_data(
 	)
 	.await?;
 	let sender = sender_information.first().cloned();
+	// The SD page patch writes message-header routing fields
+	// (messageReceiverIdentifier / batchReceiverIdentifier), so the projection
+	// must load the message header back for the edit to round-trip.
+	let message_header = match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(entity) => Some(entity),
+		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => None,
+		Err(err) => return Err(err.into()),
+	};
 
 	Ok(json!({
 		"safetyReportIdentification": safety_report_identification,
 		"senderInformation": sender_information,
 		"sender": sender,
+		"messageHeader": message_header,
 	}))
 }
 
