@@ -409,17 +409,42 @@ mod tests {
 
 	#[test]
 	fn parse_patient_death_reads_reported_and_autopsy_comments() {
-		let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-			.parent()
-			.and_then(|p| p.parent())
-			.and_then(|p| p.parent())
-			.expect("workspace root")
-			.to_path_buf();
-		let xml =
-			std::fs::read(root.join("docs/exporter/fda/FAERS2022Scenario6.xml"))
-				.expect("read sample xml");
+		let xml = br#"
+			<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3">
+				<PORR_IN049016UV>
+					<controlActProcess>
+						<subject>
+							<investigationEvent>
+								<subjectOf2>
+									<observation>
+										<code code="32"/>
+										<value code="10042984" codeSystemVersion="27.1">
+											<originalText>Progressive multifocal leukoencephalopathy</originalText>
+										</value>
+									</observation>
+								</subjectOf2>
+								<subjectOf2>
+									<observation>
+										<code code="5"/>
+										<value value="true"/>
+										<outboundRelationship2>
+											<observation>
+												<code code="8"/>
+												<value code="10011906" codeSystemVersion="27.1">
+													<originalText>What we learned during the autopsy</originalText>
+												</value>
+											</observation>
+										</outboundRelationship2>
+									</observation>
+								</subjectOf2>
+							</investigationEvent>
+						</subject>
+					</controlActProcess>
+				</PORR_IN049016UV>
+			</MCCI_IN200100UV01>
+		"#;
 
-		let death = parse_patient_death(&xml)
+		let death = parse_patient_death(xml)
 			.expect("parse death")
 			.expect("death block");
 		assert_eq!(
