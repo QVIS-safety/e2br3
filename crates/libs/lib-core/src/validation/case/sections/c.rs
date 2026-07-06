@@ -9,7 +9,7 @@ use crate::validation::{
 };
 use crate::model::case_identifiers::OtherCaseIdentifier;
 use crate::model::safety_report::{
-	DocumentsHeldBySender, SafetyReportIdentification,
+	DocumentsHeldBySender, SafetyReportIdentification, StudyInformation,
 };
 use std::borrow::Cow;
 
@@ -213,14 +213,18 @@ const C_VALUE_RULES: &[CaseValueRule] = &[
 ];
 
 /// Same idea as [`CaseValueRule`] for a *repeated* field. `path` receives the
-/// item index to build the `collection.{idx}.field` path.
+/// item index to build the `collection.{idx}.field` path; `facts` supplies the
+/// per-item [`RuleFacts`] that gate conditional rules (e.g. study-only rules).
 struct IndexedRule<T> {
 	code: &'static str,
 	path: fn(usize) -> String,
 	value: for<'a> fn(&'a T) -> RuleValue<'a>,
+	facts: fn(&T) -> RuleFacts,
 }
 
 /// Evaluates every rule against every item, tagging issues with the item index.
+/// `push_issue_if_rule_invalid` itself skips rules whose condition (per the
+/// supplied facts) is not satisfied, so conditional rules are handled uniformly.
 fn eval_indexed<T>(
 	issues: &mut Vec<ValidationIssue>,
 	items: &[T],
@@ -235,9 +239,20 @@ fn eval_indexed<T>(
 				(rule.path)(idx),
 				value.as_deref(),
 				null_flavor,
-				RuleFacts::default(),
+				(rule.facts)(item),
 			);
 		}
+	}
+}
+
+fn no_facts<T>(_: &T) -> RuleFacts {
+	RuleFacts::default()
+}
+
+fn study_facts(_: &StudyInformation) -> RuleFacts {
+	RuleFacts {
+		ich_report_type_is_study: Some(true),
+		..RuleFacts::default()
 	}
 }
 
@@ -245,6 +260,7 @@ const C_DOCUMENT_RULES: &[IndexedRule<DocumentsHeldBySender>] = &[IndexedRule {
 	code: "ICH.C.1.6.1.r.1.REQUIRED",
 	path: |idx| format!("documentsHeldBySender.{idx}.documentDescription"),
 	value: |document| RuleValue::borrowed(document.title.as_deref(), None),
+	facts: no_facts,
 }];
 
 const C_OTHER_IDENTIFIER_RULES: &[IndexedRule<OtherCaseIdentifier>] = &[
@@ -254,6 +270,7 @@ const C_OTHER_IDENTIFIER_RULES: &[IndexedRule<OtherCaseIdentifier>] = &[
 		value: |identifier| {
 			RuleValue::borrowed(Some(identifier.source_of_identifier.as_str()), None)
 		},
+		facts: no_facts,
 	},
 	IndexedRule {
 		code: "ICH.C.1.9.1.r.2.REQUIRED",
@@ -261,6 +278,27 @@ const C_OTHER_IDENTIFIER_RULES: &[IndexedRule<OtherCaseIdentifier>] = &[
 		value: |identifier| {
 			RuleValue::borrowed(Some(identifier.case_identifier.as_str()), None)
 		},
+		facts: no_facts,
+	},
+];
+
+/// Study-only rules (C.1.3 report type = 2). Reached only inside the
+/// `report_type_is_study` gate, so `study_facts` hard-codes the satisfied
+/// condition, matching the previous hand-coded behavior.
+const C_STUDY_RULES: &[IndexedRule<StudyInformation>] = &[
+	IndexedRule {
+		code: "ICH.C.5.4.REQUIRED",
+		path: |idx| format!("studyInformation.{idx}.studyTypeReaction"),
+		value: |study| RuleValue::borrowed(study.study_type_reaction.as_deref(), None),
+		facts: study_facts,
+	},
+	IndexedRule {
+		code: "ICH.C.5.3.REQUIRED",
+		path: |idx| format!("studyInformation.{idx}.sponsorStudyNumber"),
+		value: |study| {
+			RuleValue::borrowed(study.sponsor_study_number.as_deref(), None)
+		},
+		facts: study_facts,
 	},
 ];
 
@@ -393,39 +431,7 @@ pub(crate) fn collect_ich_issues(
 		.map(|report| report.report_type.as_deref().map(str::trim) == Some("2"))
 		.unwrap_or(false);
 	if report_type_is_study {
-		validation_ctx
-			.studies
-			.iter()
-			.enumerate()
-			.for_each(|(idx, study)| {
-				let _ = push_issue_if_conditioned_value_invalid(
-					issues,
-					"ICH.C.5.4.REQUIRED",
-					"ICH.C.5.4.REQUIRED",
-					"ICH.C.5.4.REQUIRED",
-					format!("studyInformation.{idx}.studyTypeReaction"),
-					study.study_type_reaction.as_deref(),
-					None,
-					RuleFacts {
-						ich_report_type_is_study: Some(true),
-						..RuleFacts::default()
-					},
-					RuleFacts::default(),
-				);
-				if study
-					.sponsor_study_number
-					.as_deref()
-					.map(str::trim)
-					.unwrap_or("")
-					.is_empty()
-				{
-					push_issue_by_code(
-						issues,
-						"ICH.C.5.3.REQUIRED",
-						format!("studyInformation.{idx}.sponsorStudyNumber"),
-					);
-				}
-			});
+		eval_indexed(issues, &validation_ctx.studies, C_STUDY_RULES);
 
 		let has_reporter_org = validation_ctx.primary_sources.iter().any(|s| {
 			!s.organization
@@ -774,7 +780,7 @@ mod golden_c1_value_tests {
 	use crate::model::case::Case;
 	use crate::model::case_identifiers::OtherCaseIdentifier;
 	use crate::model::safety_report::{
-		DocumentsHeldBySender, SafetyReportIdentification,
+		DocumentsHeldBySender, SafetyReportIdentification, StudyInformation,
 	};
 	use sqlx::types::time::{Date, OffsetDateTime};
 	use sqlx::types::Uuid;
@@ -793,6 +799,9 @@ mod golden_c1_value_tests {
 		"ICH.C.1.9.1.r.1.REQUIRED",
 		"ICH.C.1.9.1.r.2.REQUIRED",
 	];
+
+	const STUDY_CODES: &[&str] =
+		&["ICH.C.5.3.REQUIRED", "ICH.C.5.4.REQUIRED"];
 
 	fn dummy_case() -> Case {
 		Case {
@@ -958,6 +967,35 @@ mod golden_c1_value_tests {
 		}
 	}
 
+	fn study(
+		study_type_reaction: Option<&str>,
+		sponsor_study_number: Option<&str>,
+	) -> StudyInformation {
+		StudyInformation {
+			id: Uuid::nil(),
+			case_id: Uuid::nil(),
+			source_study_presave_id: None,
+			study_name: None,
+			study_name_null_flavor: None,
+			sponsor_study_number: sponsor_study_number.map(str::to_string),
+			sponsor_study_number_null_flavor: None,
+			study_type_reaction: study_type_reaction.map(str::to_string),
+			study_type_reaction_kr1: None,
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn study_report() -> SafetyReportIdentification {
+		let mut report = base_report();
+		report.report_type = Some("2".to_string());
+		report
+	}
+
 	#[test]
 	fn all_missing_flags_every_value_rule() {
 		assert_eq!(
@@ -1057,5 +1095,41 @@ mod golden_c1_value_tests {
 				),
 			]
 		);
+	}
+
+	#[test]
+	fn study_rules_flag_missing_fields_when_study_report() {
+		let mut ctx = ctx_with(study_report());
+		ctx.studies = vec![study(None, None)];
+		assert_eq!(
+			filtered(&ctx, STUDY_CODES),
+			vec![
+				issue(
+					"ICH.C.5.3.REQUIRED",
+					"studyInformation.0.sponsorStudyNumber",
+					true
+				),
+				issue(
+					"ICH.C.5.4.REQUIRED",
+					"studyInformation.0.studyTypeReaction",
+					true
+				),
+			]
+		);
+	}
+
+	#[test]
+	fn study_rules_silent_when_not_study_report() {
+		// report_type != "2" gates the whole study block off.
+		let mut ctx = ctx_with(base_report());
+		ctx.studies = vec![study(None, None)];
+		assert_eq!(filtered(&ctx, STUDY_CODES), Vec::new());
+	}
+
+	#[test]
+	fn study_rules_pass_when_fields_present() {
+		let mut ctx = ctx_with(study_report());
+		ctx.studies = vec![study(Some("1"), Some("SPONSOR-1"))];
+		assert_eq!(filtered(&ctx, STUDY_CODES), Vec::new());
 	}
 }
