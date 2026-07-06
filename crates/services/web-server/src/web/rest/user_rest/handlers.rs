@@ -38,6 +38,12 @@ pub async fn create_user(
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let role = normalize_user_role(data.role);
 	validate_create_role_selection(role.as_deref())?;
+	let email = normalize_email_input(data.email)?;
+	let username = normalize_optional_username_input(data.username)?
+		.filter(|value| !value.is_empty())
+		.unwrap_or_else(|| email.split('@').next().unwrap_or("user").to_string());
+	validate_username(&username)?;
+	validate_permission_profile_role_for_org(&db_ctx, &mm, role.as_deref()).await?;
 	validate_sponsor_admin_assignment_authority(&ctx, role.as_deref())?;
 	validate_sponsor_admin_role_for_org(
 		&db_ctx,
@@ -54,11 +60,6 @@ pub async fn create_user(
 		None,
 	)
 	.await?;
-	let email = normalize_email_input(data.email)?;
-	let username = normalize_optional_username_input(data.username)?
-		.filter(|value| !value.is_empty())
-		.unwrap_or_else(|| email.split('@').next().unwrap_or("user").to_string());
-	validate_username(&username)?;
 	let create = UserForCreate {
 		organization_id,
 		email,
@@ -192,6 +193,9 @@ pub async fn update_user(
 	validate_existing_sponsor_admin_mutation(&ctx, &existing)?;
 	let role = normalize_user_role(data.role);
 	if role.is_some() {
+		validate_update_role_selection(role.as_deref())?;
+		validate_permission_profile_role_for_org(&db_ctx, &mm, role.as_deref())
+			.await?;
 		validate_sponsor_admin_assignment_authority(&ctx, role.as_deref())?;
 		validate_sponsor_admin_role_for_org(
 			&db_ctx,

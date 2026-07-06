@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS users (
     pwd_salt UUID NOT NULL DEFAULT gen_random_uuid(),
     token_salt UUID NOT NULL DEFAULT gen_random_uuid(),
 
-    role VARCHAR(50) NOT NULL DEFAULT 'user',
+    role VARCHAR(50) NOT NULL,
     comments TEXT,
     other_information TEXT,
     access_start_at TIMESTAMPTZ,

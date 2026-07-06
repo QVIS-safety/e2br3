@@ -157,10 +157,50 @@ pub(super) fn validate_sponsor_admin_assignment_authority(
 pub(super) fn validate_create_role_selection(role: Option<&str>) -> Result<()> {
 	match role {
 		Some(ROLE_USER) | None => Err(Error::BadRequest {
-			message: "role selection is required".to_string(),
+			message: "permission profile selection is required".to_string(),
 		}),
 		_ => Ok(()),
 	}
+}
+
+pub(super) fn validate_update_role_selection(role: Option<&str>) -> Result<()> {
+	match role {
+		Some(ROLE_USER) => Err(Error::BadRequest {
+			message: "permission profile selection is required".to_string(),
+		}),
+		_ => Ok(()),
+	}
+}
+
+pub(super) async fn validate_permission_profile_role_for_org(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	role: Option<&str>,
+) -> Result<()> {
+	let Some(role) = role else {
+		return Ok(());
+	};
+	if matches!(
+		role,
+		ROLE_SYSTEM_ADMIN | ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
+	) {
+		return Ok(());
+	}
+	let profile_id = Uuid::parse_str(role).map_err(|_| Error::BadRequest {
+		message: "permission profile must be registered before creating users"
+			.to_string(),
+	})?;
+	let exists =
+		PermissionProfileBmc::active_custom_exists_in_org(ctx, mm, profile_id)
+			.await
+			.map_err(Error::Model)?;
+	if !exists {
+		return Err(Error::BadRequest {
+			message: "permission profile must be registered before creating users"
+				.to_string(),
+		});
+	}
+	Ok(())
 }
 
 pub(super) async fn validate_sponsor_admin_role_for_org(
