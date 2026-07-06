@@ -682,8 +682,8 @@ mod golden_companion_tests {
 	//! freeze current behavior (code + path) before the table-driven refactor.
 	//! Cross-field date rules (`*.FUTURE_DATE`) stay out of scope and inline.
 	use super::*;
-	use crate::model::case::Case;
-	use crate::model::patient::MedicalHistoryEpisode;
+	use lib_core::model::case::Case;
+	use lib_core::model::patient::MedicalHistoryEpisode;
 	use sqlx::types::time::OffsetDateTime;
 	use sqlx::types::Uuid;
 

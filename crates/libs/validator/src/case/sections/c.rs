@@ -700,9 +700,9 @@ mod golden_c1_value_tests {
 	//! block), cross-field date rules (`*.FUTURE_DATE`, `*.AFTER_*`), and the
 	//! known C.1.7 nullFlavor drift — which is *preserved*, not fixed, here.
 	use super::*;
-	use crate::model::case::Case;
-	use crate::model::case_identifiers::OtherCaseIdentifier;
-	use crate::model::safety_report::{
+	use lib_core::model::case::Case;
+	use lib_core::model::case_identifiers::OtherCaseIdentifier;
+	use lib_core::model::safety_report::{
 		DocumentsHeldBySender, SafetyReportIdentification, StudyInformation,
 	};
 	use sqlx::types::time::{Date, OffsetDateTime};
