@@ -5,6 +5,7 @@ pub(crate) mod f;
 pub(crate) mod g;
 pub(crate) mod h;
 pub(crate) mod n;
+pub(crate) mod rule_table;
 
 use crate::ctx::Ctx;
 use crate::model::{ModelManager, Result};
