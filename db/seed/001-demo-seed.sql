@@ -205,7 +205,6 @@ BEGIN
     INSERT INTO receiver_presaves (
         id,
         organization_id,
-        name,
         receiver_type,
         organization_name,
         receiver_identifier,
@@ -218,7 +217,6 @@ BEGIN
         (
             v_mfds_receiver_presave_id,
             v_org_id,
-            'MFDS',
             '2',
             'MFDS',
             'MFDS',
@@ -230,7 +228,6 @@ BEGIN
         (
             v_fda_receiver_presave_id,
             v_org_id,
-            'FDA',
             '2',
             'FDA',
             'FDA',
@@ -242,7 +239,6 @@ BEGIN
     ON CONFLICT (id) DO UPDATE
     SET
         organization_id = EXCLUDED.organization_id,
-        name = EXCLUDED.name,
         receiver_type = EXCLUDED.receiver_type,
         organization_name = EXCLUDED.organization_name,
         receiver_identifier = EXCLUDED.receiver_identifier,
@@ -280,17 +276,10 @@ BEGIN
         FROM route_seed
         JOIN receiver_presaves
             ON receiver_presaves.organization_id = v_org_id
-            AND (
-                receiver_presaves.organization_name = route_seed.receiver_name
-                OR receiver_presaves.name = route_seed.receiver_name
-            )
+            AND receiver_presaves.organization_name = route_seed.receiver_name
             AND receiver_presaves.deleted = false
         ORDER BY
             route_seed.receiver_name,
-            CASE
-                WHEN receiver_presaves.organization_name = route_seed.receiver_name THEN 0
-                ELSE 1
-            END,
             receiver_presaves.created_at,
             receiver_presaves.id
     )
