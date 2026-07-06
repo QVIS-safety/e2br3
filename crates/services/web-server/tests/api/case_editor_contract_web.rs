@@ -421,7 +421,8 @@ async fn limited_cookie(
 	org_id: Uuid,
 	permissions: Vec<Permission>,
 ) -> Result<String> {
-	let limited_role = format!("editor_direct_limited_{}", Uuid::new_v4());
+	// Custom dynamic roles are stored as UUIDs (see user_role_valid check constraint).
+	let limited_role = Uuid::new_v4().to_string();
 	upsert_dynamic_role_permissions(&limited_role, permissions);
 	let limited_user = insert_user(
 		mm,
@@ -3129,7 +3130,8 @@ async fn editor_dg_detail_returns_one_drug_with_nested_children() -> Result<()> 
 async fn editor_dg_detail_requires_child_list_permissions() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let limited_role = format!("dg_detail_limited_{}", Uuid::new_v4());
+	// Custom dynamic roles are stored as UUIDs (see user_role_valid check constraint).
+	let limited_role = Uuid::new_v4().to_string();
 	upsert_dynamic_role_permissions(
 		&limited_role,
 		vec![
