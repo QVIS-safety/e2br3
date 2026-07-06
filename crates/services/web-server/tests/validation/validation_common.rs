@@ -1225,27 +1225,13 @@ fn is_banner_capable_field_path(path: &str) -> bool {
 
 fn section_source(section_letter: char) -> &'static str {
 	match section_letter {
-		'C' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/c.rs"
-		),
-		'D' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/d.rs"
-		),
-		'E' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/e.rs"
-		),
-		'F' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/f.rs"
-		),
-		'G' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/g.rs"
-		),
-		'H' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/h.rs"
-		),
-		'N' => include_str!(
-			"../../../../libs/lib-core/src/validation/case/sections/n.rs"
-		),
+		'C' => include_str!("../../../../libs/validator/src/case/sections/c.rs"),
+		'D' => include_str!("../../../../libs/validator/src/case/sections/d.rs"),
+		'E' => include_str!("../../../../libs/validator/src/case/sections/e.rs"),
+		'F' => include_str!("../../../../libs/validator/src/case/sections/f.rs"),
+		'G' => include_str!("../../../../libs/validator/src/case/sections/g.rs"),
+		'H' => include_str!("../../../../libs/validator/src/case/sections/h.rs"),
+		'N' => include_str!("../../../../libs/validator/src/case/sections/n.rs"),
 		_ => panic!("unsupported section {section_letter}"),
 	}
 }
