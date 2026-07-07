@@ -3028,28 +3028,60 @@ mod tests {
 		null_flavors: Vec<String>,
 	}
 
-	fn ich_dictionary() -> Dictionary {
-		serde_json::from_str(include_str!(
-			"../../../../registry/dictionary/ich-e2br3.json"
-		))
-		.expect("ICH dictionary should parse")
+	fn dictionary_from_json(source: &str) -> Dictionary {
+		serde_json::from_str(source).expect("dictionary should parse")
 	}
 
-	fn ich_required_dictionary_codes() -> Vec<(String, Vec<String>)> {
-		ich_dictionary()
+	fn required_dictionary_codes(
+		dictionary: Dictionary,
+		authority_prefix: &str,
+	) -> Vec<(String, Vec<String>)> {
+		dictionary
 			.entries
 			.into_iter()
 			.filter(|entry| {
 				entry.kind == "element"
 					&& matches!(
 						entry.conformance.as_deref(),
-						Some("mandatory" | "required")
+						Some("mandatory" | "required" | "conditional_mandatory")
 					)
 			})
 			.map(|entry| {
-				(format!("ICH.{}.REQUIRED", entry.code), entry.null_flavors)
+				let code = if entry.code.starts_with(authority_prefix) {
+					entry.code
+				} else {
+					format!("{authority_prefix}{}", entry.code)
+				};
+				(format!("{code}.REQUIRED"), entry.null_flavors)
 			})
 			.collect()
+	}
+
+	fn ich_required_dictionary_codes() -> Vec<(String, Vec<String>)> {
+		required_dictionary_codes(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/ich-e2br3.json"
+			)),
+			"ICH.",
+		)
+	}
+
+	fn fda_required_dictionary_codes() -> Vec<(String, Vec<String>)> {
+		required_dictionary_codes(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/fda-regional.json"
+			)),
+			"FDA.",
+		)
+	}
+
+	fn mfds_required_dictionary_codes() -> Vec<(String, Vec<String>)> {
+		required_dictionary_codes(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/mfds-regional.json"
+			)),
+			"MFDS.",
+		)
 	}
 
 	fn value_policy_for_code(code: &str) -> Option<ValuePolicy> {
@@ -3060,50 +3092,102 @@ mod tests {
 	}
 
 	#[test]
-	fn ich_dictionary_required_rules_are_catalog_backed() {
-		let expected_missing = [
-			"ICH.N.1.1.REQUIRED",
-			"ICH.N.2.r.1.REQUIRED",
-			"ICH.N.2.r.4.REQUIRED",
-			"ICH.C.1.6.1.REQUIRED",
-			"ICH.C.1.8.1.REQUIRED",
-			"ICH.C.1.8.2.REQUIRED",
-			"ICH.C.1.9.1.REQUIRED",
-			"ICH.E.i.3.2a.REQUIRED",
-			"ICH.E.i.3.2b.REQUIRED",
-			"ICH.E.i.3.2c.REQUIRED",
-			"ICH.E.i.3.2d.REQUIRED",
-			"ICH.E.i.3.2e.REQUIRED",
-			"ICH.E.i.3.2f.REQUIRED",
+	fn dictionary_required_rules_are_catalog_backed() {
+		let cases = [
+			(
+				"ICH",
+				ich_required_dictionary_codes(),
+				vec![
+					"ICH.N.1.1.REQUIRED",
+					"ICH.N.2.r.1.REQUIRED",
+					"ICH.N.2.r.4.REQUIRED",
+					"ICH.C.1.6.1.REQUIRED",
+					"ICH.C.1.8.1.REQUIRED",
+					"ICH.C.1.8.2.REQUIRED",
+					"ICH.C.1.9.1.REQUIRED",
+					"ICH.C.2.r.2.5.REQUIRED",
+					"ICH.C.2.r.3.REQUIRED",
+					"ICH.D.7.2.REQUIRED",
+					"ICH.D.8.r.1.REQUIRED",
+					"ICH.D.8.r.2b.REQUIRED",
+					"ICH.D.8.r.3b.REQUIRED",
+					"ICH.E.i.3.2a.REQUIRED",
+					"ICH.E.i.3.2b.REQUIRED",
+					"ICH.E.i.3.2c.REQUIRED",
+					"ICH.E.i.3.2d.REQUIRED",
+					"ICH.E.i.3.2e.REQUIRED",
+					"ICH.E.i.3.2f.REQUIRED",
+					"ICH.G.k.2.1.1b.REQUIRED",
+					"ICH.G.k.2.1.2b.REQUIRED",
+					"ICH.G.k.3.2.REQUIRED",
+					"ICH.G.k.4.r.2.REQUIRED",
+				],
+			),
+			(
+				"FDA",
+				fda_required_dictionary_codes(),
+				vec![
+					"FDA.C.2.r.2.8.REQUIRED",
+					"FDA.D.11.r.1.REQUIRED",
+					"FDA.G.k.1.a.REQUIRED",
+					"FDA.G.k.12.r.1.REQUIRED",
+					"FDA.G.k.12.r.3.r.REQUIRED",
+					"FDA.G.k.12.r.4.REQUIRED",
+					"FDA.G.k.12.r.5.REQUIRED",
+					"FDA.G.k.12.r.6.REQUIRED",
+					"FDA.G.k.12.r.11.r.REQUIRED",
+				],
+			),
+			("MFDS", mfds_required_dictionary_codes(), Vec::new()),
 		];
-		let missing = ich_required_dictionary_codes()
-			.into_iter()
-			.map(|(code, _)| code)
-			.filter(|code| find_canonical_rule(code).is_none())
-			.collect::<Vec<_>>();
 
-		assert_eq!(
-			missing, expected_missing,
-			"ICH dictionary required catalog gap changed"
-		);
+		for (authority, codes, expected_missing) in cases {
+			let missing = codes
+				.into_iter()
+				.map(|(code, _)| code)
+				.filter(|code| find_canonical_rule(code).is_none())
+				.collect::<Vec<_>>();
+
+			assert_eq!(
+				missing, expected_missing,
+				"{authority} dictionary required catalog gap changed"
+			);
+		}
+	}
+
+	fn policy_allows_null_flavor(policy: ValuePolicy) -> bool {
+		matches!(
+			policy,
+			ValuePolicy::NonEmptyOrNullFlavor
+				| ValuePolicy::FdaRaceCodeOrNullFlavor
+				| ValuePolicy::FdaEthnicityCodeOrNullFlavor
+				| ValuePolicy::FdaGk10aCodeOrNa
+				| ValuePolicy::FdaBooleanStringOrNullFlavor
+		)
 	}
 
 	#[test]
-	fn ich_dictionary_null_flavor_required_rules_use_null_flavor_policy() {
+	fn dictionary_null_flavor_required_rules_use_null_flavor_policy() {
+		let expected_invalid = vec![
+			("ICH.D.9.3.REQUIRED".to_string(), ValuePolicy::NonEmpty),
+			("ICH.F.r.1.REQUIRED".to_string(), ValuePolicy::NonEmpty),
+		];
 		let invalid = ich_required_dictionary_codes()
+			.into_iter()
+			.chain(fda_required_dictionary_codes())
+			.chain(mfds_required_dictionary_codes())
 			.into_iter()
 			.filter(|(_, null_flavors)| !null_flavors.is_empty())
 			.filter(|(code, _)| find_canonical_rule(code).is_some())
 			.filter_map(|(code, _)| {
 				let policy = value_policy_for_code(&code)?;
-				(policy != ValuePolicy::NonEmptyOrNullFlavor)
-					.then_some((code, policy))
+				(!policy_allows_null_flavor(policy)).then_some((code, policy))
 			})
 			.collect::<Vec<_>>();
 
-		assert!(
-			invalid.is_empty(),
-			"ICH dictionary nullFlavor required rules with non-nullFlavor policy: {invalid:?}"
+		assert_eq!(
+			invalid, expected_invalid,
+			"dictionary nullFlavor required policy gap changed"
 		);
 	}
 
