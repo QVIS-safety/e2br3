@@ -636,7 +636,7 @@ mod golden_c1_value_tests {
 	//! table-driven refactor can be proven to change nothing. Deliberately
 	//! excluded from scope: C.1.1 (fires outside the `if let Some(report)`
 	//! block), cross-field date rules (`*.FUTURE_DATE`, `*.AFTER_*`), and the
-	//! known C.1.7 nullFlavor drift — which is *preserved*, not fixed, here.
+	//! C.1.7 nullFlavor parity with the dictionary.
 	use super::*;
 	use lib_core::model::case::Case;
 	use lib_core::model::case_identifiers::OtherCaseIdentifier;
@@ -905,18 +905,14 @@ mod golden_c1_value_tests {
 	}
 
 	#[test]
-	fn c1_7_nullflavor_only_is_still_flagged_drift_preserved() {
-		// Catalog policy for C.1.7 is `NonEmpty`, which ignores nullFlavor, so a
-		// nullFlavor-only value is still treated as missing. This is a known
-		// drift vs the dictionary (null_flavors: [NI]); it must be *preserved*
-		// by the refactor and fixed separately.
+	fn c1_7_nullflavor_only_satisfies_required_value() {
 		let mut report = base_report();
 		report.fulfil_expedited_criteria = None;
 		report.fulfil_expedited_criteria_null_flavor = Some("NI".to_string());
 		let snap = snapshot(report);
 		assert!(
-			snap.iter().any(|(code, _, _)| code == "ICH.C.1.7.REQUIRED"),
-			"expected C.1.7 to remain flagged with nullFlavor-only, got {snap:?}"
+			!snap.iter().any(|(code, _, _)| code == "ICH.C.1.7.REQUIRED"),
+			"expected C.1.7 nullFlavor-only to satisfy required value, got {snap:?}"
 		);
 	}
 

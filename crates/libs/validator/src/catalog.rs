@@ -2221,7 +2221,7 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.1.7.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.1.9.1.r.1.REQUIRED",
