@@ -1,8 +1,8 @@
 use super::rule_table::{eval_companions, CompanionRule};
 use crate::{
-	has_patient_initials, has_text, is_mfds_domestic_receiver,
-	is_mfds_foreign_postmarket_receiver, push_issue_by_code,
-	push_issue_if_conditioned_value_invalid, should_require_patient_initials,
+	has_text, is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
+	push_issue_by_code, push_issue_if_conditioned_value_invalid,
+	push_issue_if_rule_invalid, should_require_patient_initials,
 	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority, RuleFacts,
 	ValidationContext, ValidationIssue,
 };
@@ -333,13 +333,14 @@ pub(crate) fn collect_ich_issues(
 		}
 
 		if let Some(patient) = validation_ctx.patient.as_ref() {
-			if should_require_patient_initials(patient)
-				&& !has_patient_initials(patient)
-			{
-				push_issue_by_code(
+			if should_require_patient_initials(patient) {
+				let _ = push_issue_if_rule_invalid(
 					issues,
 					"ICH.D.1.REQUIRED",
 					"patientInformation.patientInitials",
+					patient.patient_initials.as_deref(),
+					patient.patient_initials_null_flavor.as_deref(),
+					RuleFacts::default(),
 				);
 			}
 		}
@@ -676,7 +677,9 @@ mod golden_companion_tests {
 	use lib_core::model::parent_history::{
 		ParentMedicalHistory, ParentPastDrugHistory,
 	};
-	use lib_core::model::patient::{MedicalHistoryEpisode, ParentInformation};
+	use lib_core::model::patient::{
+		MedicalHistoryEpisode, ParentInformation, PatientInformation,
+	};
 	use sqlx::types::time::OffsetDateTime;
 	use sqlx::types::Uuid;
 
@@ -747,6 +750,56 @@ mod golden_companion_tests {
 			drug_reaction_assessments: Vec::new(),
 			patient_identifiers: Vec::new(),
 		}
+	}
+
+	fn patient_with_initials_null_flavor() -> PatientInformation {
+		PatientInformation {
+			id: Uuid::nil(),
+			case_id: Uuid::nil(),
+			patient_initials: None,
+			patient_given_name: Some("Jane".to_string()),
+			patient_family_name: None,
+			birth_date: None,
+			age_at_time_of_onset: None,
+			age_unit: None,
+			gestation_period: None,
+			gestation_period_unit: None,
+			age_group: None,
+			weight_kg: None,
+			weight_kg_null_flavor: None,
+			height_cm: None,
+			height_cm_null_flavor: None,
+			sex: None,
+			patient_initials_null_flavor: Some("UNK".to_string()),
+			birth_date_null_flavor: None,
+			age_at_time_of_onset_null_flavor: None,
+			sex_null_flavor: None,
+			race_code: None,
+			race_code_null_flavor: None,
+			ethnicity_code: None,
+			ethnicity_code_null_flavor: None,
+			last_menstrual_period_date: None,
+			last_menstrual_period_date_null_flavor: None,
+			medical_history_text: None,
+			medical_history_text_null_flavor: None,
+			concomitant_therapy: None,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn d1_codes(patient: PatientInformation) -> Vec<(String, String)> {
+		let mut ctx = empty_ctx();
+		ctx.patient = Some(patient);
+		let mut issues = Vec::new();
+		collect_ich_issues(&ctx, &mut issues);
+		issues
+			.into_iter()
+			.filter(|issue| issue.code == "ICH.D.1.REQUIRED")
+			.map(|issue| (issue.code, issue.path))
+			.collect()
 	}
 
 	fn medhist(
@@ -880,6 +933,11 @@ mod golden_companion_tests {
 				"patientInformation.medicalHistory.0.meddraVersion".to_string()
 			)]
 		);
+	}
+
+	#[test]
+	fn patient_initials_nullflavor_only_satisfies_required_value() {
+		assert_eq!(d1_codes(patient_with_initials_null_flavor()), Vec::new());
 	}
 
 	#[test]

@@ -371,7 +371,7 @@ pub(crate) fn collect_ich_issues(
 				"ICH.C.2.r.4.REQUIRED",
 				format!("primarySources.{idx}.qualification"),
 				source.qualification.as_deref(),
-				None,
+				source.qualification_null_flavor.as_deref(),
 				RuleFacts::default(),
 			);
 		});
@@ -641,7 +641,8 @@ mod golden_c1_value_tests {
 	use lib_core::model::case::Case;
 	use lib_core::model::case_identifiers::OtherCaseIdentifier;
 	use lib_core::model::safety_report::{
-		DocumentsHeldBySender, SafetyReportIdentification, StudyInformation,
+		DocumentsHeldBySender, PrimarySource, SafetyReportIdentification,
+		StudyInformation,
 	};
 	use sqlx::types::time::{Date, OffsetDateTime};
 	use sqlx::types::Uuid;
@@ -812,6 +813,39 @@ mod golden_c1_value_tests {
 		}
 	}
 
+	fn primary_source_with_qualification_null_flavor() -> PrimarySource {
+		PrimarySource {
+			id: Uuid::nil(),
+			case_id: Uuid::nil(),
+			source_reporter_presave_id: None,
+			sequence_number: 0,
+			reporter_title: None,
+			reporter_given_name: None,
+			reporter_middle_name: None,
+			reporter_family_name: None,
+			reporter_name_null_flavor: None,
+			organization: Some("Reporter Org".to_string()),
+			department: None,
+			street: None,
+			city: None,
+			state: None,
+			postcode: None,
+			telephone: None,
+			reporter_address_null_flavor: None,
+			country_code: None,
+			email: None,
+			qualification: None,
+			qualification_null_flavor: Some("UNK".to_string()),
+			qualification_kr1: None,
+			primary_source_regulatory: Some("1".to_string()),
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
 	fn other_identifier(source: &str, case_identifier: &str) -> OtherCaseIdentifier {
 		OtherCaseIdentifier {
 			id: Uuid::nil(),
@@ -951,6 +985,13 @@ mod golden_c1_value_tests {
 				),
 			]
 		);
+	}
+
+	#[test]
+	fn reporter_qualification_nullflavor_only_satisfies_required_value() {
+		let mut ctx = ctx_with(base_report());
+		ctx.primary_sources = vec![primary_source_with_qualification_null_flavor()];
+		assert_eq!(filtered(&ctx, &["ICH.C.2.r.4.REQUIRED"]), Vec::new());
 	}
 
 	#[test]

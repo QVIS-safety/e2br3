@@ -2134,7 +2134,7 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 	},
 ];
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ValuePolicy {
 	NonEmpty,
 	NonEmptyOrNullFlavor,
@@ -2233,7 +2233,7 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.2.r.4.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.3.1.REQUIRED",
@@ -2257,7 +2257,7 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "ICH.D.1.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.D.1.1.4.REQUIRED",
@@ -3013,6 +3013,99 @@ pub fn is_rule_presence_valid(code: &str, present: bool, _facts: RuleFacts) -> b
 mod tests {
 	use super::*;
 	use std::collections::HashSet;
+
+	#[derive(Debug, serde::Deserialize)]
+	struct Dictionary {
+		entries: Vec<DictionaryEntry>,
+	}
+
+	#[derive(Debug, serde::Deserialize)]
+	struct DictionaryEntry {
+		code: String,
+		kind: String,
+		conformance: Option<String>,
+		#[serde(default)]
+		null_flavors: Vec<String>,
+	}
+
+	fn ich_dictionary() -> Dictionary {
+		serde_json::from_str(include_str!(
+			"../../../../registry/dictionary/ich-e2br3.json"
+		))
+		.expect("ICH dictionary should parse")
+	}
+
+	fn ich_required_dictionary_codes() -> Vec<(String, Vec<String>)> {
+		ich_dictionary()
+			.entries
+			.into_iter()
+			.filter(|entry| {
+				entry.kind == "element"
+					&& matches!(
+						entry.conformance.as_deref(),
+						Some("mandatory" | "required")
+					)
+			})
+			.map(|entry| {
+				(format!("ICH.{}.REQUIRED", entry.code), entry.null_flavors)
+			})
+			.collect()
+	}
+
+	fn value_policy_for_code(code: &str) -> Option<ValuePolicy> {
+		VALUE_POLICY_BINDINGS
+			.iter()
+			.find(|binding| binding.code == code)
+			.map(|binding| binding.policy)
+	}
+
+	#[test]
+	fn ich_dictionary_required_rules_are_catalog_backed() {
+		let expected_missing = [
+			"ICH.N.1.1.REQUIRED",
+			"ICH.N.2.r.1.REQUIRED",
+			"ICH.N.2.r.4.REQUIRED",
+			"ICH.C.1.6.1.REQUIRED",
+			"ICH.C.1.8.1.REQUIRED",
+			"ICH.C.1.8.2.REQUIRED",
+			"ICH.C.1.9.1.REQUIRED",
+			"ICH.E.i.3.2a.REQUIRED",
+			"ICH.E.i.3.2b.REQUIRED",
+			"ICH.E.i.3.2c.REQUIRED",
+			"ICH.E.i.3.2d.REQUIRED",
+			"ICH.E.i.3.2e.REQUIRED",
+			"ICH.E.i.3.2f.REQUIRED",
+		];
+		let missing = ich_required_dictionary_codes()
+			.into_iter()
+			.map(|(code, _)| code)
+			.filter(|code| find_canonical_rule(code).is_none())
+			.collect::<Vec<_>>();
+
+		assert_eq!(
+			missing, expected_missing,
+			"ICH dictionary required catalog gap changed"
+		);
+	}
+
+	#[test]
+	fn ich_dictionary_null_flavor_required_rules_use_null_flavor_policy() {
+		let invalid = ich_required_dictionary_codes()
+			.into_iter()
+			.filter(|(_, null_flavors)| !null_flavors.is_empty())
+			.filter(|(code, _)| find_canonical_rule(code).is_some())
+			.filter_map(|(code, _)| {
+				let policy = value_policy_for_code(&code)?;
+				(policy != ValuePolicy::NonEmptyOrNullFlavor)
+					.then_some((code, policy))
+			})
+			.collect::<Vec<_>>();
+
+		assert!(
+			invalid.is_empty(),
+			"ICH dictionary nullFlavor required rules with non-nullFlavor policy: {invalid:?}"
+		);
+	}
 
 	#[test]
 	fn canonical_lookup_covers_validation_rules() {
