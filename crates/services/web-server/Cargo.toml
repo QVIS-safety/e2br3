@@ -22,7 +22,6 @@ axum = { workspace = true, features = ["multipart"] }
 tower-http = { workspace = true }
 tower-cookies = { workspace = true }
 utoipa = { version = "5", features = ["axum_extras"] }
-utoipa-swagger-ui = { version = "9", features = ["axum", "vendored"] }
 # -- Tracing
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

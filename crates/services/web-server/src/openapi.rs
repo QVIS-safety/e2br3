@@ -1,13 +1,9 @@
 use axum::Router;
 use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
 use utoipa::{Modify, OpenApi, ToSchema};
-use utoipa_swagger_ui::SwaggerUi;
 
 pub fn router() -> Router {
-	Router::new().merge(
-		SwaggerUi::new("/swagger-ui")
-			.url("/api-docs/openapi.json", ApiDoc::openapi()),
-	)
+	Router::new()
 }
 
 #[derive(OpenApi)]
