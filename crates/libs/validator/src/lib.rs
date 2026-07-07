@@ -70,8 +70,7 @@ pub fn push_issue_by_code(
 	if let Some(rule) =
 		find_canonical_rule_for_phase(code, ValidationPhase::CaseValidate)
 	{
-		let field_path =
-			case::sections::resolve_validation_field_path(code, Some(&path));
+		let field_path = case::sections::resolve_validation_field_path(Some(&path));
 		let subsection =
 			case::sections::resolve_validation_subsection(code, Some(&path));
 		issues.push(ValidationIssue {
@@ -84,8 +83,7 @@ pub fn push_issue_by_code(
 			blocking: rule.blocking,
 		});
 	} else {
-		let field_path =
-			case::sections::resolve_validation_field_path(code, Some(&path));
+		let field_path = case::sections::resolve_validation_field_path(Some(&path));
 		let subsection =
 			case::sections::resolve_validation_subsection(code, Some(&path));
 		issues.push(ValidationIssue {

@@ -55,10 +55,7 @@ pub(crate) fn normalize_validation_field_path(path: &str) -> String {
 	path.replace("[]", ".0")
 }
 
-pub(crate) fn resolve_validation_field_path(
-	_code: &str,
-	path: Option<&str>,
-) -> Option<String> {
+pub(crate) fn resolve_validation_field_path(path: Option<&str>) -> Option<String> {
 	path.map(normalize_validation_field_path)
 }
 
@@ -209,19 +206,15 @@ mod tests {
 
 	#[test]
 	fn resolves_field_path_from_the_issue_path_only() {
+		assert_eq!(resolve_validation_field_path(None), None);
 		assert_eq!(
-			resolve_validation_field_path("ICH.C.1.1.REQUIRED", None),
-			None
-		);
-		assert_eq!(
-			resolve_validation_field_path(
-				"ICH.C.3.2.REQUIRED",
-				Some("senderInformation.organizationName"),
-			),
+			resolve_validation_field_path(Some(
+				"senderInformation.organizationName"
+			)),
 			Some("senderInformation.organizationName".to_string())
 		);
 		assert_eq!(
-			resolve_validation_field_path("ICH.N.REQUIRED", Some("messageHeader[]")),
+			resolve_validation_field_path(Some("messageHeader[]")),
 			Some("messageHeader.0".to_string())
 		);
 	}
@@ -229,17 +222,15 @@ mod tests {
 	#[test]
 	fn preserves_concrete_indexed_issue_paths_as_field_paths() {
 		assert_eq!(
-			resolve_validation_field_path(
-				"ICH.D.7.1.r.1a.REQUIRED",
-				Some("patientInformation.medicalHistory.1.meddraVersion"),
-			),
+			resolve_validation_field_path(Some(
+				"patientInformation.medicalHistory.1.meddraVersion",
+			)),
 			Some("patientInformation.medicalHistory.1.meddraVersion".to_string())
 		);
 		assert_eq!(
-			resolve_validation_field_path(
-				"ICH.D.10.8.r.2a.REQUIRED",
-				Some("patientInformation.parents.1.pastDrugs.0.mpidVersion"),
-			),
+			resolve_validation_field_path(Some(
+				"patientInformation.parents.1.pastDrugs.0.mpidVersion",
+			)),
 			Some("patientInformation.parents.1.pastDrugs.0.mpidVersion".to_string())
 		);
 	}
