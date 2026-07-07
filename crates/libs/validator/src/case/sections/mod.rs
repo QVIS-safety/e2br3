@@ -55,6 +55,12 @@ pub(crate) fn normalize_validation_field_path(path: &str) -> String {
 	path.replace("[]", ".0")
 }
 
+fn has_concrete_index(path: &str) -> bool {
+	path.split('.').any(|segment| {
+		!segment.is_empty() && segment.chars().all(|ch| ch.is_ascii_digit())
+	})
+}
+
 pub(crate) fn canonical_field_path_for_rule(code: &str) -> Option<&'static str> {
 	c::field_path_for_rule(code)
 		.or_else(|| d::field_path_for_rule(code))
@@ -69,9 +75,17 @@ pub(crate) fn resolve_validation_field_path(
 	code: &str,
 	path: Option<&str>,
 ) -> Option<String> {
+	let normalized_path = path.map(normalize_validation_field_path);
+	if normalized_path
+		.as_deref()
+		.map(has_concrete_index)
+		.unwrap_or(false)
+	{
+		return normalized_path;
+	}
 	canonical_field_path_for_rule(code)
 		.map(str::to_string)
-		.or_else(|| path.map(normalize_validation_field_path))
+		.or(normalized_path)
 }
 
 pub(crate) fn resolve_validation_subsection(
@@ -235,6 +249,24 @@ mod tests {
 				Some("senderInformation.organizationName"),
 			),
 			Some("safetyReportIdentification.senderOrganization".to_string())
+		);
+	}
+
+	#[test]
+	fn preserves_concrete_indexed_issue_paths_as_field_paths() {
+		assert_eq!(
+			resolve_validation_field_path(
+				"ICH.D.7.1.r.1a.REQUIRED",
+				Some("patientInformation.medicalHistory.1.meddraVersion"),
+			),
+			Some("patientInformation.medicalHistory.1.meddraVersion".to_string())
+		);
+		assert_eq!(
+			resolve_validation_field_path(
+				"ICH.D.10.8.r.2a.REQUIRED",
+				Some("patientInformation.parents.1.pastDrugs.0.mpidVersion"),
+			),
+			Some("patientInformation.parents.1.pastDrugs.0.mpidVersion".to_string())
 		);
 	}
 
