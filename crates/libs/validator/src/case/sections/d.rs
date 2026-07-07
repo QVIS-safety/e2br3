@@ -11,6 +11,8 @@ use lib_core::model::patient::{
 	AutopsyCauseOfDeath, MedicalHistoryEpisode, ParentInformation, PastDrugHistory,
 	ReportedCauseOfDeath,
 };
+use sqlx::types::Uuid;
+use std::collections::HashMap;
 
 const D_MEDICAL_HISTORY_COMPANIONS: &[CompanionRule<MedicalHistoryEpisode>] = &[
 	CompanionRule {
@@ -160,79 +162,129 @@ const D_PARENT_COMPANIONS: &[CompanionRule<ParentInformation>] = &[
 	},
 ];
 
-const D_PARENT_MEDICAL_HISTORY_COMPANIONS: &[CompanionRule<ParentMedicalHistory>] =
-	&[
-		CompanionRule {
-			code: "ICH.D.10.7.1.r.1a.REQUIRED",
-			path: |idx| {
-				format!("patientInformation.parents.0.medicalHistory.{idx}.meddraVersion")
-			},
-			trigger: |episode| has_text(episode.meddra_code.as_deref()),
-			required: |episode| has_text(episode.meddra_version.as_deref()),
-		},
-		CompanionRule {
-			code: "ICH.D.10.7.1.r.1b.REQUIRED",
-			path: |idx| {
-				format!(
-					"patientInformation.parents.0.medicalHistory.{idx}.meddraCode"
-				)
-			},
-			trigger: |episode| has_text(episode.meddra_version.as_deref()),
-			required: |episode| has_text(episode.meddra_code.as_deref()),
-		},
-	];
+struct ParentCompanionRule<T> {
+	code: &'static str,
+	path: fn(usize, usize) -> String,
+	trigger: fn(&T) -> bool,
+	required: fn(&T) -> bool,
+}
 
-const D_PARENT_PAST_DRUG_COMPANIONS: &[CompanionRule<ParentPastDrugHistory>] =
-	&[
-		CompanionRule {
-			code: "ICH.D.10.8.r.2a.REQUIRED",
-			path: |idx| {
-				format!("patientInformation.parents.0.pastDrugs.{idx}.mpidVersion")
-			},
-			trigger: |drug| has_text(drug.mpid.as_deref()),
-			required: |drug| has_text(drug.mpid_version.as_deref()),
+const D_PARENT_MEDICAL_HISTORY_PARENT_COMPANIONS: &[ParentCompanionRule<
+	ParentMedicalHistory,
+>] = &[
+	ParentCompanionRule {
+		code: "ICH.D.10.7.1.r.1a.REQUIRED",
+		path: |parent_idx, idx| {
+			format!("patientInformation.parents.{parent_idx}.medicalHistory.{idx}.meddraVersion")
 		},
-		CompanionRule {
-			code: "ICH.D.10.8.r.3a.REQUIRED",
-			path: |idx| {
-				format!("patientInformation.parents.0.pastDrugs.{idx}.phpidVersion")
-			},
-			trigger: |drug| has_text(drug.phpid.as_deref()),
-			required: |drug| has_text(drug.phpid_version.as_deref()),
+		trigger: |episode| has_text(episode.meddra_code.as_deref()),
+		required: |episode| has_text(episode.meddra_version.as_deref()),
+	},
+	ParentCompanionRule {
+		code: "ICH.D.10.7.1.r.1b.REQUIRED",
+		path: |parent_idx, idx| {
+			format!("patientInformation.parents.{parent_idx}.medicalHistory.{idx}.meddraCode")
 		},
-		CompanionRule {
-			code: "ICH.D.10.8.r.6a.REQUIRED",
-			path: |idx| {
-				format!("patientInformation.parents.0.pastDrugs.{idx}.indicationMeddraVersion")
-			},
-			trigger: |drug| has_text(drug.indication_meddra_code.as_deref()),
-			required: |drug| has_text(drug.indication_meddra_version.as_deref()),
+		trigger: |episode| has_text(episode.meddra_version.as_deref()),
+		required: |episode| has_text(episode.meddra_code.as_deref()),
+	},
+];
+
+const D_PARENT_PAST_DRUG_PARENT_COMPANIONS: &[ParentCompanionRule<
+	ParentPastDrugHistory,
+>] = &[
+	ParentCompanionRule {
+		code: "ICH.D.10.8.r.2a.REQUIRED",
+		path: |parent_idx, idx| {
+			format!("patientInformation.parents.{parent_idx}.pastDrugs.{idx}.mpidVersion")
 		},
-		CompanionRule {
-			code: "ICH.D.10.8.r.6b.REQUIRED",
-			path: |idx| {
-				format!("patientInformation.parents.0.pastDrugs.{idx}.indicationMeddraCode")
-			},
-			trigger: |drug| has_text(drug.indication_meddra_version.as_deref()),
-			required: |drug| has_text(drug.indication_meddra_code.as_deref()),
+		trigger: |drug| has_text(drug.mpid.as_deref()),
+		required: |drug| has_text(drug.mpid_version.as_deref()),
+	},
+	ParentCompanionRule {
+		code: "ICH.D.10.8.r.3a.REQUIRED",
+		path: |parent_idx, idx| {
+			format!("patientInformation.parents.{parent_idx}.pastDrugs.{idx}.phpidVersion")
 		},
-		CompanionRule {
-			code: "ICH.D.10.8.r.7a.REQUIRED",
-			path: |idx| {
-				format!("patientInformation.parents.0.pastDrugs.{idx}.reactionMeddraVersion")
-			},
-			trigger: |drug| has_text(drug.reaction_meddra_code.as_deref()),
-			required: |drug| has_text(drug.reaction_meddra_version.as_deref()),
+		trigger: |drug| has_text(drug.phpid.as_deref()),
+		required: |drug| has_text(drug.phpid_version.as_deref()),
+	},
+	ParentCompanionRule {
+		code: "ICH.D.10.8.r.6a.REQUIRED",
+		path: |parent_idx, idx| {
+			format!("patientInformation.parents.{parent_idx}.pastDrugs.{idx}.indicationMeddraVersion")
 		},
-		CompanionRule {
-			code: "ICH.D.10.8.r.7b.REQUIRED",
-			path: |idx| {
-				format!("patientInformation.parents.0.pastDrugs.{idx}.reactionMeddraCode")
-			},
-			trigger: |drug| has_text(drug.reaction_meddra_version.as_deref()),
-			required: |drug| has_text(drug.reaction_meddra_code.as_deref()),
+		trigger: |drug| has_text(drug.indication_meddra_code.as_deref()),
+		required: |drug| has_text(drug.indication_meddra_version.as_deref()),
+	},
+	ParentCompanionRule {
+		code: "ICH.D.10.8.r.6b.REQUIRED",
+		path: |parent_idx, idx| {
+			format!("patientInformation.parents.{parent_idx}.pastDrugs.{idx}.indicationMeddraCode")
 		},
-	];
+		trigger: |drug| has_text(drug.indication_meddra_version.as_deref()),
+		required: |drug| has_text(drug.indication_meddra_code.as_deref()),
+	},
+	ParentCompanionRule {
+		code: "ICH.D.10.8.r.7a.REQUIRED",
+		path: |parent_idx, idx| {
+			format!("patientInformation.parents.{parent_idx}.pastDrugs.{idx}.reactionMeddraVersion")
+		},
+		trigger: |drug| has_text(drug.reaction_meddra_code.as_deref()),
+		required: |drug| has_text(drug.reaction_meddra_version.as_deref()),
+	},
+	ParentCompanionRule {
+		code: "ICH.D.10.8.r.7b.REQUIRED",
+		path: |parent_idx, idx| {
+			format!("patientInformation.parents.{parent_idx}.pastDrugs.{idx}.reactionMeddraCode")
+		},
+		trigger: |drug| has_text(drug.reaction_meddra_version.as_deref()),
+		required: |drug| has_text(drug.reaction_meddra_code.as_deref()),
+	},
+];
+
+fn index_from_sequence(sequence_number: i32, fallback_idx: usize) -> usize {
+	sequence_number
+		.checked_sub(1)
+		.and_then(|value| usize::try_from(value).ok())
+		.unwrap_or(fallback_idx)
+}
+
+fn parent_index_by_id(parents: &[ParentInformation]) -> HashMap<Uuid, usize> {
+	parents
+		.iter()
+		.enumerate()
+		.map(|(idx, parent)| (parent.id, idx))
+		.collect()
+}
+
+fn eval_parent_companions<T>(
+	issues: &mut Vec<ValidationIssue>,
+	parents: &[ParentInformation],
+	items: &[T],
+	parent_id: fn(&T) -> Uuid,
+	item_idx: fn(&T, usize) -> usize,
+	rules: &[ParentCompanionRule<T>],
+) {
+	let parent_indices = parent_index_by_id(parents);
+	let mut fallback_idx_by_parent = HashMap::<Uuid, usize>::new();
+	for item in items {
+		let parent_id = parent_id(item);
+		let fallback_idx = fallback_idx_by_parent.entry(parent_id).or_insert(0);
+		let item_idx = item_idx(item, *fallback_idx);
+		*fallback_idx += 1;
+		let parent_idx = parent_indices.get(&parent_id).copied().unwrap_or(0);
+		for rule in rules {
+			if (rule.trigger)(item) && !(rule.required)(item) {
+				push_issue_by_code(
+					issues,
+					rule.code,
+					(rule.path)(parent_idx, item_idx),
+				);
+			}
+		}
+	}
+}
 
 fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
 	let Some(value) = value else {
@@ -499,30 +551,48 @@ pub(crate) fn collect_ich_issues(
 
 	eval_companions(issues, &validation_ctx.parents, D_PARENT_COMPANIONS);
 
-	eval_companions(
+	eval_parent_companions(
 		issues,
+		&validation_ctx.parents,
 		&validation_ctx.parent_medical_history,
-		D_PARENT_MEDICAL_HISTORY_COMPANIONS,
+		|episode| episode.parent_id,
+		|episode, fallback_idx| {
+			index_from_sequence(episode.sequence_number, fallback_idx)
+		},
+		D_PARENT_MEDICAL_HISTORY_PARENT_COMPANIONS,
 	);
 
-	eval_companions(
+	eval_parent_companions(
 		issues,
+		&validation_ctx.parents,
 		&validation_ctx.parent_past_drugs,
-		D_PARENT_PAST_DRUG_COMPANIONS,
+		|drug| drug.parent_id,
+		|drug, fallback_idx| index_from_sequence(drug.sequence_number, fallback_idx),
+		D_PARENT_PAST_DRUG_PARENT_COMPANIONS,
 	);
+	let parent_indices = parent_index_by_id(&validation_ctx.parents);
+	let mut fallback_idx_by_parent = HashMap::<Uuid, usize>::new();
 	validation_ctx
 		.parent_past_drugs
 		.iter()
-		.enumerate()
-		.for_each(|(idx, past_drug)| {
+		.for_each(|past_drug| {
+			let fallback_idx = fallback_idx_by_parent
+				.entry(past_drug.parent_id)
+				.or_insert(0);
+			let past_idx =
+				index_from_sequence(past_drug.sequence_number, *fallback_idx);
+			*fallback_idx += 1;
+			let parent_idx = parent_indices
+				.get(&past_drug.parent_id)
+				.copied()
+				.unwrap_or(0);
 			if has_text(past_drug.mpid.as_deref())
 				&& has_text(past_drug.phpid.as_deref())
 			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
-					format!("patientInformation.parents.0.pastDrugs.{idx}.mpid"),
+				let path = format!(
+					"patientInformation.parents.{parent_idx}.pastDrugs.{past_idx}.mpid"
 				);
+				push_issue_by_code(issues, "ICH.D.10.8.MPID_PHPID.EXCLUSIVE", path);
 			}
 		});
 }
@@ -683,7 +753,10 @@ mod golden_companion_tests {
 	//! Cross-field date rules (`*.FUTURE_DATE`) stay out of scope and inline.
 	use super::*;
 	use lib_core::model::case::Case;
-	use lib_core::model::patient::MedicalHistoryEpisode;
+	use lib_core::model::parent_history::{
+		ParentMedicalHistory, ParentPastDrugHistory,
+	};
+	use lib_core::model::patient::{MedicalHistoryEpisode, ParentInformation};
 	use sqlx::types::time::OffsetDateTime;
 	use sqlx::types::Uuid;
 
@@ -782,6 +855,88 @@ mod golden_companion_tests {
 		}
 	}
 
+	fn parent(id: Uuid) -> ParentInformation {
+		ParentInformation {
+			id,
+			patient_id: Uuid::nil(),
+			parent_identification: None,
+			parent_birth_date: None,
+			parent_birth_date_null_flavor: None,
+			parent_age: None,
+			parent_age_null_flavor: None,
+			parent_age_unit: None,
+			last_menstrual_period_date: None,
+			last_menstrual_period_date_null_flavor: None,
+			weight_kg: None,
+			height_cm: None,
+			sex: None,
+			medical_history_text: None,
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn parent_medhist(
+		parent_id: Uuid,
+		meddra_code: Option<&str>,
+		meddra_version: Option<&str>,
+	) -> ParentMedicalHistory {
+		ParentMedicalHistory {
+			id: Uuid::nil(),
+			parent_id,
+			sequence_number: 1,
+			meddra_version: meddra_version.map(str::to_string),
+			meddra_code: meddra_code.map(str::to_string),
+			start_date: None,
+			start_date_null_flavor: None,
+			continuing: None,
+			end_date: None,
+			end_date_null_flavor: None,
+			comments: None,
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn parent_past_drug(
+		parent_id: Uuid,
+		mpid: Option<&str>,
+		mpid_version: Option<&str>,
+	) -> ParentPastDrugHistory {
+		ParentPastDrugHistory {
+			id: Uuid::nil(),
+			parent_id,
+			sequence_number: 1,
+			drug_name: None,
+			drug_name_null_flavor: None,
+			mpid: mpid.map(str::to_string),
+			mpid_version: mpid_version.map(str::to_string),
+			mfds_medicinal_product_version: None,
+			mfds_medicinal_product_id: None,
+			phpid: None,
+			phpid_version: None,
+			start_date: None,
+			start_date_null_flavor: None,
+			end_date: None,
+			end_date_null_flavor: None,
+			indication_meddra_version: None,
+			indication_meddra_code: None,
+			reaction_meddra_version: None,
+			reaction_meddra_code: None,
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
 	fn medhist_codes(episode: MedicalHistoryEpisode) -> Vec<(String, String)> {
 		let mut ctx = empty_ctx();
 		ctx.medical_history = vec![episode];
@@ -829,6 +984,60 @@ mod golden_companion_tests {
 	#[test]
 	fn both_absent_is_silent() {
 		assert_eq!(medhist_codes(medhist(None, None)), Vec::new());
+	}
+
+	#[test]
+	fn parent_child_companion_paths_use_the_owning_parent_index() {
+		let first_parent_id = Uuid::from_u128(1);
+		let second_parent_id = Uuid::from_u128(2);
+		let mut ctx = empty_ctx();
+		ctx.parents = vec![parent(first_parent_id), parent(second_parent_id)];
+		ctx.parent_medical_history =
+			vec![parent_medhist(second_parent_id, Some("10000001"), None)];
+		let mut exclusive_parent_past_drug =
+			parent_past_drug(second_parent_id, Some("MPID"), Some("1"));
+		exclusive_parent_past_drug.sequence_number = 2;
+		exclusive_parent_past_drug.phpid = Some("PHPID".to_string());
+		ctx.parent_past_drugs = vec![
+			parent_past_drug(second_parent_id, Some("MPID"), None),
+			exclusive_parent_past_drug,
+		];
+
+		let mut issues = Vec::new();
+		collect_ich_issues(&ctx, &mut issues);
+		let mut out: Vec<(String, String)> = issues
+			.into_iter()
+			.filter(|issue| {
+				matches!(
+					issue.code.as_str(),
+					"ICH.D.10.7.1.r.1a.REQUIRED"
+						| "ICH.D.10.8.r.2a.REQUIRED"
+						| "ICH.D.10.8.MPID_PHPID.EXCLUSIVE"
+				)
+			})
+			.map(|issue| (issue.code, issue.path))
+			.collect();
+		out.sort();
+
+		assert_eq!(
+			out,
+			vec![
+				(
+					"ICH.D.10.7.1.r.1a.REQUIRED".to_string(),
+					"patientInformation.parents.1.medicalHistory.0.meddraVersion"
+						.to_string()
+				),
+				(
+					"ICH.D.10.8.MPID_PHPID.EXCLUSIVE".to_string(),
+					"patientInformation.parents.1.pastDrugs.1.mpid".to_string()
+				),
+				(
+					"ICH.D.10.8.r.2a.REQUIRED".to_string(),
+					"patientInformation.parents.1.pastDrugs.0.mpidVersion"
+						.to_string()
+				),
+			]
+		);
 	}
 
 	const REPORTED_CAUSE_CODES: &[&str] = &[
