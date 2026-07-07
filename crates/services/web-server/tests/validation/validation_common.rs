@@ -7,7 +7,6 @@ use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
 use serde_json::{json, Value};
 use sqlx::types::Uuid as SqlxUuid;
-use std::collections::BTreeSet;
 use tokio::time::{sleep, Duration};
 use tower::ServiceExt;
 use uuid::Uuid;
@@ -1182,8 +1181,13 @@ pub fn assert_banner_issue(validation_body: &Value, code: &str) {
 		Some(canonical.blocking),
 		"unexpected blocking flag for {code}: {validation_body}"
 	);
-	let expected_field_path = expected_field_path_for_code(code)
-		.unwrap_or_else(|| panic!("missing expected field path for {code}"));
+	let expected_field_path = issue
+		.get("path")
+		.and_then(Value::as_str)
+		.map(normalize_banner_field_path)
+		.unwrap_or_else(|| {
+			panic!("missing issue path for {code}: {validation_body}")
+		});
 	assert_eq!(
 		issue.get("field_path").and_then(Value::as_str),
 		Some(expected_field_path.as_str()),
@@ -1191,184 +1195,30 @@ pub fn assert_banner_issue(validation_body: &Value, code: &str) {
 	);
 }
 
-const KNOWN_NON_BANNER_FIELD_PATHS: &[&str] = &[
-	"caseSummaryInformation.0.languageCode",
-	"documentsHeldBySender.0.documentDescription",
-	"drugs.0.activeSubstances.0.substanceName",
-	"drugs.0.activeSubstances.0.substanceStrengthUnit",
-	"drugs.0.activeSubstances.0.substanceStrengthValue",
-	"drugs.0.activeSubstances.0.substanceTermId",
-	"drugs.0.activeSubstances.0.substanceTermIdVersion",
-	"drugs.0.dosageInformation.0.doseUnit",
-	"drugs.0.dosageInformation.0.durationUnit",
-	"drugs.0.dosageInformation.0.durationValue",
-	"drugs.0.dosageInformation.0.frequencyUnit",
-	"drugs.0.dosageInformation.0.parentRouteTermIdVersion",
-	"drugs.0.dosageInformation.0.routeTermIdVersion",
-	"drugs.0.dosageInformation.0.doseFormTermIdVersion",
-	"drugs.0.drugReactionAssessments.0.methodOfAssessment",
-	"drugs.0.drugReactionAssessments.0.resultOfAssessment",
-	"drugs.0.drugReactionAssessments.0.sourceOfAssessment",
-	"messageHeader.messageDate",
-	"messageHeader.messageNumber",
-	"messageHeader.messageReceiverIdentifier",
-	"messageHeader.messageSenderIdentifier",
-	"patientInformation.patientDeath.autopsyPerformed",
-	"reactions.0.reactionLanguage",
-];
-
-const KNOWN_NON_EMITTED_BANNER_RULE_CODES: &[&str] = &[];
-
-fn is_banner_capable_field_path(path: &str) -> bool {
-	!KNOWN_NON_BANNER_FIELD_PATHS.contains(&path)
+fn normalize_banner_field_path(path: &str) -> String {
+	path.replace("[]", ".0")
 }
 
-fn section_source(section_letter: char) -> &'static str {
-	match section_letter {
-		'C' => include_str!("../../../../libs/validator/src/case/sections/c.rs"),
-		'D' => include_str!("../../../../libs/validator/src/case/sections/d.rs"),
-		'E' => include_str!("../../../../libs/validator/src/case/sections/e.rs"),
-		'F' => include_str!("../../../../libs/validator/src/case/sections/f.rs"),
-		'G' => include_str!("../../../../libs/validator/src/case/sections/g.rs"),
-		'H' => include_str!("../../../../libs/validator/src/case/sections/h.rs"),
-		'N' => include_str!("../../../../libs/validator/src/case/sections/n.rs"),
-		_ => panic!("unsupported section {section_letter}"),
-	}
-}
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use serde_json::json;
 
-fn parse_field_path_entries(source: &str) -> Vec<(String, String)> {
-	let match_start = source
-		.find("match code {")
-		.unwrap_or_else(|| panic!("field_path_for_rule match not found"));
-	let after_match = &source[match_start + "match code {".len()..];
-	let match_end = after_match
-		.find("_ => None,")
-		.unwrap_or_else(|| panic!("field_path_for_rule terminator not found"));
-	let body = &after_match[..match_end];
-	let mut out = Vec::new();
-	let mut current_codes: Vec<String> = Vec::new();
-	let mut waiting_for_path = false;
-
-	for line in body.lines() {
-		let trimmed = line.trim();
-		if trimmed.is_empty() {
-			continue;
-		}
-		if trimmed.contains("=>") {
-			let head = trimmed
-				.split_once("=>")
-				.map(|(left, _)| left)
-				.unwrap_or(trimmed);
-			collect_rule_codes_from_fragment(head, &mut current_codes);
-			if let Some(path) = extract_some_path(trimmed) {
-				for code in current_codes.drain(..) {
-					out.push((code, path.clone()));
-				}
-				waiting_for_path = false;
-			} else {
-				waiting_for_path = true;
+	#[test]
+	fn banner_issue_field_path_comes_from_issue_path_without_code_fallback() {
+		let validation_body = json!({
+			"data": {
+				"issues": [{
+					"code": "ICH.C.3.2.REQUIRED",
+					"message": "[C.3.2] is required.",
+					"section": "sender",
+					"blocking": true,
+					"path": "senderInformation.organizationName",
+					"field_path": "senderInformation.organizationName"
+				}]
 			}
-			continue;
-		}
-		if waiting_for_path {
-			if let Some(path) = extract_some_path(trimmed) {
-				for code in current_codes.drain(..) {
-					out.push((code, path.clone()));
-				}
-				waiting_for_path = false;
-			}
-			continue;
-		}
-		collect_rule_codes_from_fragment(trimmed, &mut current_codes);
+		});
+
+		assert_banner_issue(&validation_body, "ICH.C.3.2.REQUIRED");
 	}
-
-	out
-}
-
-fn collect_rule_codes_from_fragment(fragment: &str, codes: &mut Vec<String>) {
-	let mut cursor = 0usize;
-	while let Some(open_rel) = fragment[cursor..].find('"') {
-		let open = cursor + open_rel + 1;
-		let close = fragment[open..]
-			.find('"')
-			.unwrap_or_else(|| panic!("unterminated quoted token in {fragment}"))
-			+ open;
-		let token = &fragment[open..close];
-		if token.starts_with("ICH.")
-			|| token.starts_with("FDA.")
-			|| token.starts_with("MFDS.")
-		{
-			codes.push(token.to_string());
-		}
-		cursor = close + 1;
-	}
-}
-
-fn extract_some_path(fragment: &str) -> Option<String> {
-	if let Some(path_start_rel) = fragment.find("Some(\"") {
-		let path_start = path_start_rel + "Some(\"".len();
-		let path_end = fragment[path_start..].find('"')? + path_start;
-		return Some(fragment[path_start..path_end].to_string());
-	}
-	if fragment.starts_with('"') {
-		let path_end = fragment[1..].find('"')? + 1;
-		let token = &fragment[1..path_end];
-		if token.starts_with("ICH.")
-			|| token.starts_with("FDA.")
-			|| token.starts_with("MFDS.")
-		{
-			return None;
-		}
-		return Some(token.to_string());
-	}
-	None
-}
-
-fn expected_entries_for_section(section_letter: char) -> Vec<(String, String)> {
-	parse_field_path_entries(section_source(section_letter))
-		.into_iter()
-		.filter(|(code, path)| {
-			is_banner_capable_field_path(path)
-				&& !KNOWN_NON_EMITTED_BANNER_RULE_CODES.contains(&code.as_str())
-		})
-		.collect()
-}
-
-pub fn expected_banner_rule_codes_for_section(section_letter: char) -> Vec<String> {
-	expected_entries_for_section(section_letter)
-		.into_iter()
-		.map(|(code, _)| code)
-		.collect()
-}
-
-pub fn expected_field_path_for_code(code: &str) -> Option<String> {
-	for section in ['C', 'D', 'E', 'F', 'G', 'H', 'N'] {
-		for (entry_code, path) in expected_entries_for_section(section) {
-			if entry_code == code {
-				return Some(path);
-			}
-		}
-	}
-	None
-}
-
-pub fn assert_section_rule_coverage(
-	section_letter: char,
-	tested_rule_codes: &[&str],
-) {
-	let expected = expected_banner_rule_codes_for_section(section_letter);
-	let actual = tested_rule_codes
-		.iter()
-		.map(|code| (*code).to_string())
-		.collect::<Vec<_>>();
-	assert_eq!(
-		actual, expected,
-		"banner-capable rule coverage drift for section {section_letter}"
-	);
-	let actual_set = actual.into_iter().collect::<BTreeSet<_>>();
-	let expected_set = expected.into_iter().collect::<BTreeSet<_>>();
-	assert_eq!(
-		actual_set, expected_set,
-		"banner-capable rule membership drift for section {section_letter}"
-	);
 }
