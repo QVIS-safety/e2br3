@@ -7,11 +7,13 @@ use crate::validation::{
 	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority, RuleFacts,
 	ValidationContext, ValidationIssue,
 };
+use super::rule_table::{
+	eval_indexed, eval_value, no_facts, IndexedRule, RuleValue, ValueRule,
+};
 use crate::model::case_identifiers::OtherCaseIdentifier;
 use crate::model::safety_report::{
 	DocumentsHeldBySender, SafetyReportIdentification, StudyInformation,
 };
-use std::borrow::Cow;
 
 fn is_six_digit_numeric(value: Option<&str>) -> bool {
 	value
@@ -127,58 +129,20 @@ pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
 	}
 }
 
-/// A value pulled from the safety report plus its optional nullFlavor. `Cow`
-/// lets string fields borrow directly while date fields carry an owned
-/// `to_string()` — sidestepping the temporary-`&str` lifetime problem.
-enum RuleValue<'a> {
-	Text {
-		value: Option<Cow<'a, str>>,
-		null_flavor: Option<&'a str>,
-	},
-}
-
-impl<'a> RuleValue<'a> {
-	fn borrowed(value: Option<&'a str>, null_flavor: Option<&'a str>) -> Self {
-		RuleValue::Text {
-			value: value.map(Cow::Borrowed),
-			null_flavor,
-		}
-	}
-
-	fn owned(value: Option<String>, null_flavor: Option<&'a str>) -> Self {
-		RuleValue::Text {
-			value: value.map(Cow::Owned),
-			null_flavor,
-		}
-	}
-}
-
-/// Declarative one-to-one presence/value rule: a catalog code, its issue path,
-/// and how to extract the value from the safety report. Evaluation reuses the
-/// existing catalog engine (`push_issue_if_rule_invalid` + `ValuePolicy`), so
-/// this table changes *structure*, not behavior. Cross-field date rules
-/// (`*.FUTURE_DATE`, `*.AFTER_*`) and C.1.1's outside-`if let` semantics are
-/// intentionally left inline.
-struct CaseValueRule {
-	code: &'static str,
-	path: &'static str,
-	value: for<'a> fn(&'a SafetyReportIdentification) -> RuleValue<'a>,
-}
-
-const C_VALUE_RULES: &[CaseValueRule] = &[
-	CaseValueRule {
+const C_VALUE_RULES: &[ValueRule<SafetyReportIdentification>] = &[
+	ValueRule {
 		code: "ICH.C.1.2.REQUIRED",
 		path: "safetyReportIdentification.transmissionDate",
 		value: |report| {
 			RuleValue::borrowed(report.transmission_date.as_deref(), None)
 		},
 	},
-	CaseValueRule {
+	ValueRule {
 		code: "ICH.C.1.3.REQUIRED",
 		path: "safetyReportIdentification.reportType",
 		value: |report| RuleValue::borrowed(report.report_type.as_deref(), None),
 	},
-	CaseValueRule {
+	ValueRule {
 		code: "ICH.C.1.4.REQUIRED",
 		path: "safetyReportIdentification.dateFirstReceivedFromSource",
 		value: |report| {
@@ -188,7 +152,7 @@ const C_VALUE_RULES: &[CaseValueRule] = &[
 			)
 		},
 	},
-	CaseValueRule {
+	ValueRule {
 		code: "ICH.C.1.5.REQUIRED",
 		path: "safetyReportIdentification.dateOfMostRecentInformation",
 		value: |report| {
@@ -198,7 +162,7 @@ const C_VALUE_RULES: &[CaseValueRule] = &[
 			)
 		},
 	},
-	CaseValueRule {
+	ValueRule {
 		code: "ICH.C.1.7.REQUIRED",
 		path: "safetyReportIdentification.fulfilExpeditedCriteria",
 		value: |report| {
@@ -211,43 +175,6 @@ const C_VALUE_RULES: &[CaseValueRule] = &[
 		},
 	},
 ];
-
-/// Same idea as [`CaseValueRule`] for a *repeated* field. `path` receives the
-/// item index to build the `collection.{idx}.field` path; `facts` supplies the
-/// per-item [`RuleFacts`] that gate conditional rules (e.g. study-only rules).
-struct IndexedRule<T> {
-	code: &'static str,
-	path: fn(usize) -> String,
-	value: for<'a> fn(&'a T) -> RuleValue<'a>,
-	facts: fn(&T) -> RuleFacts,
-}
-
-/// Evaluates every rule against every item, tagging issues with the item index.
-/// `push_issue_if_rule_invalid` itself skips rules whose condition (per the
-/// supplied facts) is not satisfied, so conditional rules are handled uniformly.
-fn eval_indexed<T>(
-	issues: &mut Vec<ValidationIssue>,
-	items: &[T],
-	rules: &[IndexedRule<T>],
-) {
-	for (idx, item) in items.iter().enumerate() {
-		for rule in rules {
-			let RuleValue::Text { value, null_flavor } = (rule.value)(item);
-			let _ = push_issue_if_rule_invalid(
-				issues,
-				rule.code,
-				(rule.path)(idx),
-				value.as_deref(),
-				null_flavor,
-				(rule.facts)(item),
-			);
-		}
-	}
-}
-
-fn no_facts<T>(_: &T) -> RuleFacts {
-	RuleFacts::default()
-}
 
 fn study_facts(_: &StudyInformation) -> RuleFacts {
 	RuleFacts {
@@ -328,17 +255,7 @@ pub(crate) fn collect_ich_issues(
 		// One-to-one presence/value rules (C.1.2/1.3/1.4/1.5/1.7) are declared
 		// in `C_VALUE_RULES` and evaluated by this single loop. The cross-field
 		// date rules below (`*.FUTURE_DATE`, `*.AFTER_*`) stay explicit.
-		for rule in C_VALUE_RULES {
-			let RuleValue::Text { value, null_flavor } = (rule.value)(report);
-			let _ = push_issue_if_rule_invalid(
-				issues,
-				rule.code,
-				rule.path,
-				value.as_deref(),
-				null_flavor,
-				RuleFacts::default(),
-			);
-		}
+		eval_value(issues, report, C_VALUE_RULES);
 		let transmission_date_for_compare =
 			e2b_datetime_date(report.transmission_date.as_deref());
 		if is_future_date(transmission_date_for_compare) {
