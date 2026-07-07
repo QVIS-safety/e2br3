@@ -74,19 +74,3 @@ pub(crate) fn collect_ich_issues(
 		);
 	}
 }
-
-pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
-	match code {
-		"ICH.N.REQUIRED" | "ICH.N.1.2.REQUIRED" => {
-			Some("messageHeader.messageNumber")
-		}
-		"ICH.N.1.3.REQUIRED" | "ICH.N.2.r.2.REQUIRED" => {
-			Some("messageHeader.messageSenderIdentifier")
-		}
-		"ICH.N.1.4.REQUIRED" | "ICH.N.2.r.3.REQUIRED" => {
-			Some("messageHeader.messageReceiverIdentifier")
-		}
-		"ICH.N.1.5.REQUIRED" => Some("messageHeader.batchTransmissionDate"),
-		_ => None,
-	}
-}

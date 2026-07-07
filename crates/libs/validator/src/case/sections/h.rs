@@ -76,17 +76,3 @@ pub(crate) fn collect_ich_issues(
 			}
 		});
 }
-
-pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
-	match code {
-		"ICH.H.1.REQUIRED" => Some("narrative.caseNarrative"),
-		"ICH.H.3.r.1a.REQUIRED" => {
-			Some("narrative.senderDiagnoses.0.diagnosisMeddraVersion")
-		}
-		"ICH.H.3.r.1b.REQUIRED" => {
-			Some("narrative.senderDiagnoses.0.diagnosisMeddraCode")
-		}
-		"ICH.H.5.r.1b.REQUIRED" => Some("caseSummaryInformation.0.languageCode"),
-		_ => None,
-	}
-}

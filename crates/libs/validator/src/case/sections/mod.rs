@@ -55,37 +55,11 @@ pub(crate) fn normalize_validation_field_path(path: &str) -> String {
 	path.replace("[]", ".0")
 }
 
-fn has_concrete_index(path: &str) -> bool {
-	path.split('.').any(|segment| {
-		!segment.is_empty() && segment.chars().all(|ch| ch.is_ascii_digit())
-	})
-}
-
-pub(crate) fn canonical_field_path_for_rule(code: &str) -> Option<&'static str> {
-	c::field_path_for_rule(code)
-		.or_else(|| d::field_path_for_rule(code))
-		.or_else(|| e::field_path_for_rule(code))
-		.or_else(|| f::field_path_for_rule(code))
-		.or_else(|| g::field_path_for_rule(code))
-		.or_else(|| h::field_path_for_rule(code))
-		.or_else(|| n::field_path_for_rule(code))
-}
-
 pub(crate) fn resolve_validation_field_path(
-	code: &str,
+	_code: &str,
 	path: Option<&str>,
 ) -> Option<String> {
-	let normalized_path = path.map(normalize_validation_field_path);
-	if normalized_path
-		.as_deref()
-		.map(has_concrete_index)
-		.unwrap_or(false)
-	{
-		return normalized_path;
-	}
-	canonical_field_path_for_rule(code)
-		.map(str::to_string)
-		.or(normalized_path)
+	path.map(normalize_validation_field_path)
 }
 
 pub(crate) fn resolve_validation_subsection(
@@ -234,21 +208,21 @@ mod tests {
 	}
 
 	#[test]
-	fn resolves_canonical_field_path_from_section_owners() {
+	fn resolves_field_path_from_the_issue_path_only() {
 		assert_eq!(
 			resolve_validation_field_path("ICH.C.1.1.REQUIRED", None),
-			Some("safetyReportIdentification.safetyReportId".to_string())
-		);
-		assert_eq!(
-			canonical_field_path_for_rule("ICH.N.REQUIRED"),
-			Some("messageHeader.messageNumber")
+			None
 		);
 		assert_eq!(
 			resolve_validation_field_path(
 				"ICH.C.3.2.REQUIRED",
 				Some("senderInformation.organizationName"),
 			),
-			Some("safetyReportIdentification.senderOrganization".to_string())
+			Some("senderInformation.organizationName".to_string())
+		);
+		assert_eq!(
+			resolve_validation_field_path("ICH.N.REQUIRED", Some("messageHeader[]")),
+			Some("messageHeader.0".to_string())
 		);
 	}
 

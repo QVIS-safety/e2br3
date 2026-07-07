@@ -125,21 +125,3 @@ pub(crate) fn collect_ich_issues(
 			}
 		});
 }
-
-pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
-	match code {
-		"ICH.F.r.1.REQUIRED" | "ICH.F.r.1.FUTURE_DATE.FORBIDDEN" => {
-			Some("testResults.0.testDate")
-		}
-		"ICH.F.r.2.REQUIRED" | "ICH.F.r.2.1.REQUIRED" => {
-			Some("testResults.0.testName")
-		}
-		"ICH.F.r.2.2a.REQUIRED" => Some("testResults.0.testMeddraVersion"),
-		"ICH.F.r.2.2b.REQUIRED" => Some("testResults.0.testMeddraCode"),
-		"ICH.F.r.3.1.REQUIRED" => Some("testResults.0.testResultCode"),
-		"ICH.F.r.3.2.REQUIRED" => Some("testResults.0.testResult"),
-		"ICH.F.r.3.3.REQUIRED" => Some("testResults.0.testUnit"),
-		"ICH.F.r.3.4.REQUIRED" => Some("testResults.0.testResultUnstructured"),
-		_ => None,
-	}
-}

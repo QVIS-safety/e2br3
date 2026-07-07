@@ -67,68 +67,6 @@ pub(crate) async fn collect(
 	Ok(())
 }
 
-pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
-	match code {
-		"ICH.C.1.REQUIRED" | "ICH.C.1.1.REQUIRED" => {
-			Some("safetyReportIdentification.safetyReportId")
-		}
-		"ICH.C.1.2.REQUIRED" => Some("safetyReportIdentification.transmissionDate"),
-		"ICH.C.1.2.FUTURE_DATE.FORBIDDEN" => {
-			Some("safetyReportIdentification.transmissionDate")
-		}
-		"ICH.C.1.3.REQUIRED" => Some("safetyReportIdentification.reportType"),
-		"ICH.C.1.4.REQUIRED" => {
-			Some("safetyReportIdentification.dateFirstReceivedFromSource")
-		}
-		"ICH.C.1.4.FUTURE_DATE.FORBIDDEN" => {
-			Some("safetyReportIdentification.dateFirstReceivedFromSource")
-		}
-		"ICH.C.1.4.AFTER_C.1.2.FORBIDDEN" | "ICH.C.1.4.AFTER_C.1.5.FORBIDDEN" => {
-			Some("safetyReportIdentification.dateFirstReceivedFromSource")
-		}
-		"ICH.C.1.5.REQUIRED" => {
-			Some("safetyReportIdentification.dateOfMostRecentInformation")
-		}
-		"ICH.C.1.5.FUTURE_DATE.FORBIDDEN" => {
-			Some("safetyReportIdentification.dateOfMostRecentInformation")
-		}
-		"ICH.C.1.5.AFTER_C.1.2.FORBIDDEN" => {
-			Some("safetyReportIdentification.dateOfMostRecentInformation")
-		}
-		"ICH.C.1.7.REQUIRED" => {
-			Some("safetyReportIdentification.fulfilExpeditedCriteria")
-		}
-		"ICH.C.1.9.1.r.1.REQUIRED" => {
-			Some("safetyReportIdentification.otherCaseIdentifiers.0.source")
-		}
-		"ICH.C.1.11.2.REQUIRED" => {
-			Some("safetyReportIdentification.nullificationReason")
-		}
-		"ICH.C.3.1.REQUIRED" => Some("safetyReportIdentification.senderType"),
-		"MFDS.C.3.1.KR.1.REQUIRED" => {
-			Some("safetyReportIdentification.senderHealthProfessionalTypeKr1")
-		}
-		"ICH.C.3.2.REQUIRED" => {
-			Some("safetyReportIdentification.senderOrganization")
-		}
-		"ICH.C.2.r.4.REQUIRED" => Some("primarySources.0.qualification"),
-		"ICH.C.2.r.5.REQUIRED" => {
-			Some("primarySources.0.primarySourceForRegulatoryPurposes")
-		}
-		"ICH.C.2.r.2.1.REQUIRED" => Some("primarySources.0.reporterOrganization"),
-		"ICH.C.5.3.REQUIRED" => Some("studyInformation.0.sponsorStudyNumber"),
-		"ICH.C.5.4.REQUIRED" => Some("studyInformation.studyTypeReaction"),
-		"FDA.C.1.7.1.REQUIRED" => {
-			Some("safetyReportIdentification.localCriteriaReportType")
-		}
-		"FDA.C.1.12.RECOMMENDED" | "FDA.C.1.12.REQUIRED" => {
-			Some("safetyReportIdentification.combinationProductReportIndicator")
-		}
-		"FDA.C.2.r.2.EMAIL.REQUIRED" => Some("primarySources.0.reporterEmail"),
-		_ => None,
-	}
-}
-
 const C_VALUE_RULES: &[ValueRule<SafetyReportIdentification>] = &[
 	ValueRule {
 		code: "ICH.C.1.2.REQUIRED",

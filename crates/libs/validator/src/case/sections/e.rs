@@ -186,21 +186,3 @@ pub(crate) fn collect_fda_issues(
 			});
 	}
 }
-
-pub(crate) fn field_path_for_rule(code: &str) -> Option<&'static str> {
-	match code {
-		"ICH.E.i.3.2.CRITERIA.REQUIRED" | "ICH.E.i.3.2.NI.ONLY" => {
-			Some("reactions.0.seriousnessCriteria")
-		}
-		"ICH.E.i.1.1a.REQUIRED" => Some("reactions.0.primarySourceReaction"),
-		"ICH.E.i.1.1b.REQUIRED" => Some("reactions.0.reactionLanguage"),
-		"ICH.E.i.2.1a.REQUIRED" => Some("reactions.0.reactionMeddraVersionLLT"),
-		"ICH.E.i.2.1b.REQUIRED" => Some("reactions.0.reactionMeddraCodeLLT"),
-		"ICH.E.i.4-5.FUTURE_DATE.FORBIDDEN" => Some("reactions.0.reactionDateRange"),
-		"ICH.E.i.6a.REQUIRED" => Some("reactions.0.reactionDuration.value"),
-		"ICH.E.i.6b.REQUIRED" => Some("reactions.0.reactionDuration.unit"),
-		"ICH.E.i.7.REQUIRED" => Some("reactions.0.reactionOutcome"),
-		"FDA.E.i.3.2h.REQUIRED" => Some("reactions.0.requiredIntervention"),
-		_ => None,
-	}
-}
