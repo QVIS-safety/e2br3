@@ -266,7 +266,7 @@ pub async fn patch_editor_ci_page_projection(
 	if !request.changes.is_empty() {
 		SafetyReportIdentificationBmc::update_by_case(&ctx, &mm, case_id, update)
 			.await?;
-		mark_editor_validation_cache_stale(
+		refresh_editor_validation_cache(
 			&ctx,
 			&mm,
 			case_id,
@@ -392,7 +392,7 @@ async fn patch_direct_page_projection(
 	}
 
 	if !request.changes.is_empty() || !request.rows.is_empty() {
-		mark_editor_validation_cache_stale(
+		refresh_editor_validation_cache(
 			&ctx,
 			&mm,
 			case_id,

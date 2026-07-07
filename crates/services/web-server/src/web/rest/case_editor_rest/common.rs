@@ -179,6 +179,28 @@ pub(super) fn insert_editor_json_context(
 	Ok(())
 }
 
+/// After an editor save, invalidate the case's cached validation for every
+/// authority and immediately recompute the ones the editor is working with, so
+/// the read-only `/validation/cache` endpoint reflects the edit right away.
+pub(super) async fn refresh_editor_validation_cache(
+	ctx: &lib_core::ctx::Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	requested_authorities: Option<String>,
+) -> Result<()> {
+	let authorities = editor_projection_context(requested_authorities)?;
+	CaseValidationSummaryBmc::mark_stale_for_case(ctx, mm, case_id).await?;
+	CaseValidationReportCacheBmc::mark_stale_for_case(ctx, mm, case_id).await?;
+	crate::web::rest::case_validation_rest::refresh_case_validation_cache(
+		ctx, mm, case_id, &authorities,
+	)
+	.await?;
+	Ok(())
+}
+
+/// Invalidate the case's cached validation for every authority without
+/// recomputing. Used by structural row create/delete/restore, where the
+/// caller is not fetching a fresh report immediately.
 pub(super) async fn mark_editor_validation_cache_stale(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -743,7 +765,7 @@ macro_rules! repeatable_page_row_patch_handler {
 			let value = row_model_value(row, $aliases, &[]);
 			let update = parse_row_model::<$model>($section, $row_key, value)?;
 			$bmc::update(&ctx, &mm, row_id, update).await?;
-			mark_editor_validation_cache_stale(
+			refresh_editor_validation_cache(
 				&ctx,
 				&mm,
 				case_id,
@@ -796,7 +818,7 @@ macro_rules! repeatable_page_row_patch_handler {
 			let value = row_model_value(row, $aliases, &[]);
 			let update = parse_row_model::<$model>($section, $row_key, value)?;
 			$bmc::update(&ctx, &mm, row_id, update).await?;
-			mark_editor_validation_cache_stale(
+			refresh_editor_validation_cache(
 				&ctx,
 				&mm,
 				case_id,
