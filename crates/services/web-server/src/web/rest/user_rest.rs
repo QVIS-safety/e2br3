@@ -27,6 +27,7 @@ use lib_core::model::acs::{
 use lib_core::model::organization::{
 	Organization, OrganizationBmc, ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY,
 };
+use lib_core::model::permission_profile::PermissionProfileBmc;
 use lib_core::model::user::{
 	User, UserBmc, UserFilter, UserForCreate, UserForUpdate,
 };

@@ -8,8 +8,8 @@ use crate::model::drug_reaction_assessment::{
 use crate::model::narrative::NarrativeInformation;
 use crate::model::reaction::Reaction;
 use crate::model::test_result::TestResult;
-use crate::validation::should_clear_null_flavor_on_value;
 use crate::xml::error::Error;
+use crate::xml::export::policy::should_clear_null_flavor_on_value;
 use crate::xml::export::sections::e::reaction_fragment;
 use crate::xml::export::sections::f::test_result_fragment;
 use crate::xml::export::sections::g::{

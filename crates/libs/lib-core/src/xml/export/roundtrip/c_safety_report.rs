@@ -171,7 +171,7 @@ pub fn patch_c_safety_report(
 			"code",
 			code,
 		);
-		clear_null_flavor_if_catalog_directive(
+		clear_null_flavor_if_export_policy(
 			&mut xpath,
 			"FDA.C.1.7.1.REQUIRED",
 			"//hl7:component/hl7:observationEvent[hl7:code[@code='C54588' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value",
@@ -200,7 +200,7 @@ pub fn patch_c_safety_report(
 			"value",
 			normalized,
 		);
-		clear_null_flavor_if_catalog_directive(
+		clear_null_flavor_if_export_policy(
 			&mut xpath,
 			"FDA.C.1.12.REQUIRED",
 			"//hl7:component/hl7:observationEvent[hl7:code[@code='C156384' and @codeSystem='2.16.840.1.113883.3.26.1.1']]/hl7:value",

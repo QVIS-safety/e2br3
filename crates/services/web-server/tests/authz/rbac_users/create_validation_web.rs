@@ -9,7 +9,7 @@ use axum::body::{to_bytes, Body};
 use axum::http::{header, Request, StatusCode};
 use lib_auth::token::generate_web_token;
 use lib_core::ctx::{
-	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
+	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN, ROLE_USER,
 };
 use serde_json::json;
 use serial_test::serial;
@@ -81,6 +81,34 @@ async fn test_admin_create_user_rejects_plain_user_role() -> Result<()> {
 	let req = Request::builder()
 		.method("POST")
 		.uri("/api/users")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	let status = res.status();
+	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
+	let json: serde_json::Value = serde_json::from_slice(&body)?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_admin_update_user_rejects_plain_user_role() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+
+	let app = web_server::app(mm);
+	let body = json!({
+		"data": {
+			"role": ROLE_USER
+		}
+	});
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.viewer.id))
 		.header("cookie", cookie_header(&token.to_string()))
 		.header("content-type", "application/json")
 		.body(Body::from(body.to_string()))?;
@@ -198,6 +226,44 @@ async fn test_admin_create_user_rejects_missing_role() -> Result<()> {
 	let json: serde_json::Value = serde_json::from_slice(&body)?;
 
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_admin_create_user_rejects_role_when_org_has_no_permission_profile(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+
+	let app = web_server::app(mm);
+	let suffix = Uuid::new_v4();
+	let body = json!({
+		"data": {
+			"organization_id": seed.org_id,
+			"email": format!("rbac-admin-create-no-profile-{suffix}@example.com"),
+			"username": format!("rbac_admin_create_no_profile_{suffix}"),
+			"role": Uuid::new_v4().to_string()
+		}
+	});
+	let req = Request::builder()
+		.method("POST")
+		.uri("/api/users")
+		.header("cookie", cookie_header(&token.to_string()))
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.oneshot(req).await?;
+	let status = res.status();
+	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
+	let json: serde_json::Value = serde_json::from_slice(&body)?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	assert!(
+		json.to_string()
+			.contains("permission profile must be registered"),
+		"{json:?}"
+	);
 	Ok(())
 }
 

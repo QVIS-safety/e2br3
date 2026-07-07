@@ -266,7 +266,7 @@ pub async fn patch_editor_ci_page_projection(
 	if !request.changes.is_empty() {
 		SafetyReportIdentificationBmc::update_by_case(&ctx, &mm, case_id, update)
 			.await?;
-		mark_editor_validation_cache_stale(
+		refresh_editor_validation_cache(
 			&ctx,
 			&mm,
 			case_id,
@@ -392,7 +392,7 @@ async fn patch_direct_page_projection(
 	}
 
 	if !request.changes.is_empty() || !request.rows.is_empty() {
-		mark_editor_validation_cache_stale(
+		refresh_editor_validation_cache(
 			&ctx,
 			&mm,
 			case_id,
@@ -1227,11 +1227,20 @@ async fn load_editor_sd_data(
 	)
 	.await?;
 	let sender = sender_information.first().cloned();
+	// The SD page patch writes message-header routing fields
+	// (messageReceiverIdentifier / batchReceiverIdentifier), so the projection
+	// must load the message header back for the edit to round-trip.
+	let message_header = match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(entity) => Some(entity),
+		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => None,
+		Err(err) => return Err(err.into()),
+	};
 
 	Ok(json!({
 		"safetyReportIdentification": safety_report_identification,
 		"senderInformation": sender_information,
 		"sender": sender,
+		"messageHeader": message_header,
 	}))
 }
 

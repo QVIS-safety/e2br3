@@ -7,6 +7,54 @@ use serial_test::serial;
 
 #[serial]
 #[tokio::test]
+async fn section_presave_receiver_details_contract_includes_routes() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let receiver_id =
+		create_receiver_presave_via_api(&app, &admin_cookie, "fda").await?;
+
+	let value = put_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/receivers/{receiver_id}/details"),
+		json!({
+			"data": {
+				"children": {
+					"routes": [{
+						"sequence_number": 1,
+						"authority": "fda",
+						"receiver_label": "FDA(CBER IND)",
+						"batch_receiver_identifier": "CBER_IND",
+						"message_receiver_identifier": "CBER_IND",
+						"condition_page": "CI",
+						"condition_field_code": "FDA_REPORT_TYPE",
+						"condition_operator": "Equal",
+						"condition_value_code": "3",
+						"condition_value_label": "CBER IND"
+					}]
+				}
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(
+		value["data"]["children"]["routes"][0]["receiver_label"],
+		"FDA(CBER IND)"
+	);
+	assert_eq!(
+		value["data"]["children"]["routes"][0]["condition_value_code"],
+		"3"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_receiver_presave_details_graph_load_save_noop_delete_and_invalid(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;

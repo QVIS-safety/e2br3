@@ -187,6 +187,46 @@ impl PermissionProfileBmc {
 		Ok(count)
 	}
 
+	pub async fn active_custom_exists_in_org(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<bool> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let exists = match dbx
+			.fetch_one(
+				sqlx::query_as::<_, (bool,)>(
+					r#"
+					SELECT EXISTS (
+						SELECT 1
+						FROM permission_profiles
+						WHERE id = $1
+						  AND organization_id = $2
+						  AND active = true
+						  AND built_in = false
+					)
+					"#,
+				)
+				.bind(id)
+				.bind(ctx.organization_id()),
+			)
+			.await
+		{
+			Ok((exists,)) => exists,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(crate::model::Error::Store(err.to_string()));
+			}
+		};
+		dbx.commit_txn().await?;
+		Ok(exists)
+	}
+
 	pub async fn create(
 		ctx: &Ctx,
 		mm: &ModelManager,

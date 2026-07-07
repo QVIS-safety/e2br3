@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS users (
     pwd_salt UUID NOT NULL DEFAULT gen_random_uuid(),
     token_salt UUID NOT NULL DEFAULT gen_random_uuid(),
 
-    role VARCHAR(50) NOT NULL DEFAULT 'user',
+    role VARCHAR(50) NOT NULL,
     comments TEXT,
     other_information TEXT,
     access_start_at TIMESTAMPTZ,
@@ -231,6 +231,30 @@ CREATE TABLE IF NOT EXISTS receiver_presave_consignees (
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
     CONSTRAINT receiver_presave_consignees_sequence_unique UNIQUE (receiver_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS receiver_presave_routes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    receiver_presave_id UUID NOT NULL REFERENCES receiver_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    authority VARCHAR(16) NOT NULL,
+    receiver_label VARCHAR(255) NOT NULL,
+    batch_receiver_identifier VARCHAR(60),
+    message_receiver_identifier VARCHAR(60) NOT NULL,
+    condition_page VARCHAR(32) NOT NULL,
+    condition_field_code VARCHAR(64) NOT NULL,
+    condition_operator VARCHAR(32) NOT NULL,
+    condition_value_code VARCHAR(32) NOT NULL,
+    condition_value_label VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT receiver_presave_routes_sequence_unique UNIQUE (receiver_presave_id, sequence_number),
+    CONSTRAINT receiver_presave_routes_authority_receiver_label_unique UNIQUE (receiver_presave_id, authority, receiver_label),
+    CONSTRAINT receiver_presave_routes_authority_check CHECK (authority IN ('fda', 'mfds')),
+    CONSTRAINT receiver_presave_routes_condition_operator_check CHECK (condition_operator = 'Equal')
 );
 
 CREATE TABLE IF NOT EXISTS product_presaves (
@@ -414,6 +438,8 @@ CREATE INDEX idx_sender_presave_gateways_parent ON sender_presave_gateways(sende
 CREATE INDEX idx_sender_presave_responsible_persons_parent ON sender_presave_responsible_persons(sender_presave_id);
 CREATE INDEX idx_receiver_presaves_org ON receiver_presaves(organization_id);
 CREATE INDEX idx_receiver_presave_consignees_parent ON receiver_presave_consignees(receiver_presave_id);
+CREATE INDEX idx_receiver_presave_routes_parent ON receiver_presave_routes(receiver_presave_id);
+CREATE INDEX idx_receiver_presave_routes_authority ON receiver_presave_routes(authority);
 CREATE INDEX idx_product_presaves_org ON product_presaves(organization_id);
 CREATE INDEX idx_product_presaves_sender ON product_presaves(sender_presave_id);
 CREATE INDEX idx_product_presave_substances_parent ON product_presave_substances(product_presave_id);
@@ -1703,6 +1729,26 @@ CREATE POLICY receiver_presave_consignees_via_parent ON receiver_presave_consign
         EXISTS (
             SELECT 1 FROM receiver_presaves p
             WHERE p.id = receiver_presave_consignees.receiver_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE receiver_presave_routes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE receiver_presave_routes FORCE ROW LEVEL SECURITY;
+CREATE POLICY receiver_presave_routes_via_parent ON receiver_presave_routes
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM receiver_presaves p
+            WHERE p.id = receiver_presave_routes.receiver_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM receiver_presaves p
+            WHERE p.id = receiver_presave_routes.receiver_presave_id
             AND (p.organization_id = current_organization_id() OR is_current_user_admin())
         )
     );

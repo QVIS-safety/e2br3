@@ -20,7 +20,6 @@ use lib_core::model::safety_report::{
 };
 use lib_core::model::ModelManager;
 use lib_core::regulatory::RegulatoryAuthority;
-use lib_core::validation::validate_case_for_authority;
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
@@ -33,6 +32,7 @@ use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 use sqlx::{types::time::OffsetDateTime, FromRow};
 use uuid::Uuid;
+use validator::validate_case_for_authority;
 
 const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
 	"system validation: validator mark-validated endpoint";

@@ -2,15 +2,15 @@ use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
 use lib_auth::token::generate_web_token;
-use lib_core::xml::{
-	validate_e2b_xml, validate_e2b_xml_business, XmlValidatorConfig,
-};
 use serde_json::Value;
 use serial_test::serial;
 use std::fs;
 use std::path::PathBuf;
 use tower::ServiceExt;
 use uuid::Uuid;
+use validator::xml::{
+	validate_e2b_xml, validate_e2b_xml_business, XmlValidatorConfig,
+};
 
 #[derive(Clone, Copy)]
 struct RoundtripFixture {
