@@ -2353,7 +2353,7 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "ICH.D.9.3.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.D.9.4.r.1a.REQUIRED",
@@ -2389,7 +2389,7 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "ICH.F.r.1.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.F.r.2.1.REQUIRED",
@@ -3168,10 +3168,7 @@ mod tests {
 
 	#[test]
 	fn dictionary_null_flavor_required_rules_use_null_flavor_policy() {
-		let expected_invalid = vec![
-			("ICH.D.9.3.REQUIRED".to_string(), ValuePolicy::NonEmpty),
-			("ICH.F.r.1.REQUIRED".to_string(), ValuePolicy::NonEmpty),
-		];
+		let expected_invalid = Vec::new();
 		let invalid = ich_required_dictionary_codes()
 			.into_iter()
 			.chain(fda_required_dictionary_codes())
