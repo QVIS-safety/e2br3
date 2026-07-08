@@ -1,9 +1,12 @@
+use super::rule_table::{
+	eval_companions, eval_indexed, CompanionRule, IndexedRule, RuleValue,
+};
 use crate::{
 	has_text, push_issue_by_code, push_issue_if_conditioned_value_invalid,
-	push_issue_if_rule_invalid,
 	should_case_validation_require_required_intervention, FdaValidationContext,
 	RegulatoryAuthority, RuleFacts, ValidationContext, ValidationIssue,
 };
+use lib_core::model::reaction::Reaction;
 
 fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
 	let Some(value) = value else {
@@ -12,6 +15,61 @@ fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
 	let today = sqlx::types::time::OffsetDateTime::now_utc().date();
 	value > today
 }
+
+const E_REACTION_VALUE_RULES: &[IndexedRule<Reaction>] = &[
+	IndexedRule {
+		code: "ICH.E.i.1.1a.REQUIRED",
+		path: |idx| format!("reactions.{idx}.primarySourceReaction"),
+		value: |reaction| {
+			RuleValue::borrowed(
+				Some(reaction.primary_source_reaction.as_str()),
+				None,
+			)
+		},
+		facts: |_| RuleFacts::default(),
+	},
+	IndexedRule {
+		code: "ICH.E.i.7.REQUIRED",
+		path: |idx| format!("reactions.{idx}.reactionOutcome"),
+		value: |reaction| RuleValue::borrowed(reaction.outcome.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+];
+
+const E_REACTION_COMPANION_RULES: &[CompanionRule<Reaction>] = &[
+	CompanionRule {
+		code: "ICH.E.i.2.1a.REQUIRED",
+		path: |idx| format!("reactions.{idx}.reactionMeddraVersion"),
+		trigger: |reaction| has_text(reaction.reaction_meddra_code.as_deref()),
+		required: |reaction| has_text(reaction.reaction_meddra_version.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.E.i.2.1b.REQUIRED",
+		path: |idx| format!("reactions.{idx}.reactionMeddraCode"),
+		trigger: |_| true,
+		required: |reaction| has_text(reaction.reaction_meddra_code.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.E.i.6a.REQUIRED",
+		path: |idx| format!("reactions.{idx}.durationValue"),
+		trigger: |reaction| has_text(reaction.duration_unit.as_deref()),
+		required: |reaction| reaction.duration_value.is_some(),
+	},
+	CompanionRule {
+		code: "ICH.E.i.6b.REQUIRED",
+		path: |idx| format!("reactions.{idx}.durationUnit"),
+		trigger: |reaction| reaction.duration_value.is_some(),
+		required: |reaction| has_text(reaction.duration_unit.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.E.i.1.1b.REQUIRED",
+		path: |idx| format!("reactions.{idx}.reactionLanguage"),
+		trigger: |reaction| {
+			has_text(Some(reaction.primary_source_reaction.as_str()))
+		},
+		required: |reaction| has_text(reaction.reaction_language.as_deref()),
+	},
+];
 
 pub(crate) fn collect(
 	issues: &mut Vec<ValidationIssue>,
@@ -43,69 +101,18 @@ pub(crate) fn collect_ich_issues(
 		);
 	}
 
+	eval_indexed(issues, &validation_ctx.reactions, E_REACTION_VALUE_RULES);
+	eval_companions(
+		issues,
+		&validation_ctx.reactions,
+		E_REACTION_COMPANION_RULES,
+	);
+
 	validation_ctx
 		.reactions
 		.iter()
 		.enumerate()
 		.for_each(|(idx, reaction)| {
-			let _ = push_issue_if_rule_invalid(
-				issues,
-				"ICH.E.i.1.1a.REQUIRED",
-				format!("reactions.{idx}.primarySourceReaction"),
-				Some(reaction.primary_source_reaction.as_str()),
-				None,
-				RuleFacts::default(),
-			);
-			let _ = push_issue_if_rule_invalid(
-				issues,
-				"ICH.E.i.7.REQUIRED",
-				format!("reactions.{idx}.reactionOutcome"),
-				reaction.outcome.as_deref(),
-				None,
-				RuleFacts::default(),
-			);
-			if has_text(reaction.reaction_meddra_code.as_deref())
-				&& !has_text(reaction.reaction_meddra_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.E.i.2.1a.REQUIRED",
-					format!("reactions.{idx}.reactionMeddraVersion"),
-				);
-			}
-			if !has_text(reaction.reaction_meddra_code.as_deref()) {
-				push_issue_by_code(
-					issues,
-					"ICH.E.i.2.1b.REQUIRED",
-					format!("reactions.{idx}.reactionMeddraCode"),
-				);
-			}
-			let duration_value_present = reaction.duration_value.is_some();
-			let duration_unit_present = has_text(reaction.duration_unit.as_deref());
-			if duration_unit_present && !duration_value_present {
-				push_issue_by_code(
-					issues,
-					"ICH.E.i.6a.REQUIRED",
-					format!("reactions.{idx}.durationValue"),
-				);
-			}
-			if duration_value_present && !duration_unit_present {
-				push_issue_by_code(
-					issues,
-					"ICH.E.i.6b.REQUIRED",
-					format!("reactions.{idx}.durationUnit"),
-				);
-			}
-			if has_text(Some(reaction.primary_source_reaction.as_str())) {
-				let _ = push_issue_if_rule_invalid(
-					issues,
-					"ICH.E.i.1.1b.REQUIRED",
-					format!("reactions.{idx}.reactionLanguage"),
-					reaction.reaction_language.as_deref(),
-					None,
-					RuleFacts::default(),
-				);
-			}
 			if is_future_date(reaction.start_date)
 				|| is_future_date(reaction.end_date)
 			{
