@@ -3769,7 +3769,7 @@ pub fn is_rule_presence_valid(code: &str, present: bool, _facts: RuleFacts) -> b
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use std::collections::{BTreeMap, HashSet};
+	use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 	#[derive(Debug, serde::Deserialize)]
 	struct Dictionary {
@@ -3864,6 +3864,85 @@ mod tests {
 		})
 		.collect()
 	}
+
+	fn ich_non_conditional_required_dictionary_codes() -> Vec<String> {
+		dictionary_from_json(include_str!(
+			"../../../../registry/dictionary/ich-e2br3.json"
+		))
+		.entries
+		.into_iter()
+		.filter(|entry| {
+			entry.kind == "element"
+				&& matches!(
+					entry.conformance.as_deref(),
+					Some("mandatory" | "required")
+				)
+		})
+		.map(|entry| format!("ICH.{}.REQUIRED", entry.code))
+		.collect()
+	}
+
+	const CLASSIFIED_ICH_CATALOG_REQUIRED_EXTRAS: &[&str] = &[
+		"ICH.C.1.REQUIRED",
+		"ICH.C.2.r.1.ID.NULLFLAVOR.REQUIRED",
+		"ICH.C.2.r.1.ID.ROOT_3_6.NULLFLAVOR.REQUIRED",
+		"ICH.C.2.r.2.1.REQUIRED",
+		"ICH.C.2.r.2.NAME.NULLFLAVOR.REQUIRED",
+		"ICH.C.2.r.3.ORG_NAME.NULLFLAVOR.REQUIRED",
+		"ICH.C.5.3.REQUIRED",
+		"ICH.C.5.TITLE.NULLFLAVOR.REQUIRED",
+		"ICH.D.1.1.4.REQUIRED",
+		"ICH.D.10.6.REQUIRED",
+		"ICH.D.10.8.r.2a.REQUIRED",
+		"ICH.D.10.8.r.3a.REQUIRED",
+		"ICH.D.2.BIRTHTIME.NULLFLAVOR.REQUIRED",
+		"ICH.D.9.2.r.2.REQUIRED",
+		"ICH.D.EFFECTIVETIME.LOW_HIGH.NULLFLAVOR.REQUIRED",
+		"ICH.D.PARENT.BIRTHTIME.NULLFLAVOR.REQUIRED",
+		"ICH.D.PARENT.NAME.NULLFLAVOR.REQUIRED",
+		"ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.REQUIRED",
+		"ICH.E.i.1.1a.REQUIRED",
+		"ICH.E.i.1.2.NULLFLAVOR.REQUIRED",
+		"ICH.E.i.2.NULLFLAVOR.REQUIRED",
+		"ICH.E.i.3.2.CRITERIA.REQUIRED",
+		"ICH.E.i.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
+		"ICH.E.i.7.NULLFLAVOR.REQUIRED",
+		"ICH.E.i.9.COUNTRY.NULLFLAVOR.REQUIRED",
+		"ICH.F.r.2.1.REQUIRED",
+		"ICH.F.r.2.REQUIRED",
+		"ICH.G.k.2.3.NAME.NULLFLAVOR.REQUIRED",
+		"ICH.G.k.2.3.r.1.REQUIRED",
+		"ICH.G.k.2.3.r.2a.REQUIRED",
+		"ICH.G.k.2.3.r.3b.REQUIRED",
+		"ICH.G.k.4.r.10.2a.REQUIRED",
+		"ICH.G.k.4.r.10.NULLFLAVOR.REQUIRED",
+		"ICH.G.k.4.r.11.2a.REQUIRED",
+		"ICH.G.k.4.r.11.NULLFLAVOR.REQUIRED",
+		"ICH.G.k.4.r.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
+		"ICH.G.k.4.r.9.2a.REQUIRED",
+		"ICH.G.k.9.i.2.ID.NULLFLAVOR.REQUIRED",
+		"ICH.N.REQUIRED",
+		"ICH.XML.BL.NULLFLAVOR.REQUIRED",
+		"ICH.XML.CODE.NULLFLAVOR.REQUIRED",
+		"ICH.XML.COUNTRY.CODE.FORMAT.REQUIRED",
+		"ICH.XML.DOSE_QUANTITY.VALUE_UNIT.REQUIRED",
+		"ICH.XML.INV_CHAR_BL.NULLFLAVOR.REQUIRED",
+		"ICH.XML.LOW_HIGH.NULLFLAVOR.REQUIRED",
+		"ICH.XML.MEDDRA.CODE.FORMAT.REQUIRED",
+		"ICH.XML.MEDDRA.VERSION.REQUIRED",
+		"ICH.XML.PERIOD.VALUE_UNIT.REQUIRED",
+		"ICH.XML.PIVL_TS.PERIOD.REQUIRED",
+		"ICH.XML.PIVL_TS.PERIOD.VALUE_UNIT.REQUIRED",
+		"ICH.XML.ROOT.ITSVERSION.REQUIRED",
+		"ICH.XML.ROOT.SCHEMALOCATION.REQUIRED",
+		"ICH.XML.SXPR_TS.COMP.REQUIRED",
+		"ICH.XML.TELECOM.FORMAT.REQUIRED",
+		"ICH.XML.TELECOM.NULLFLAVOR.REQUIRED",
+		"ICH.XML.TESTRESULT.IVL_PQ.COMPONENT.REQUIRED",
+		"ICH.XML.TESTRESULT.IVL_PQ.VALUE_UNIT.REQUIRED",
+		"ICH.XML.TESTRESULT.PQ.VALUE_UNIT.REQUIRED",
+		"ICH.XML.TEXT.NULLFLAVOR.REQUIRED",
+	];
 
 	fn fda_required_dictionary_codes() -> Vec<(String, Vec<String>)> {
 		required_dictionary_codes(
@@ -3961,6 +4040,51 @@ mod tests {
 			mismatches,
 			Vec::<(String, String, Option<String>)>::new(),
 			"ICH conditional mandatory condition_text catalog drift changed"
+		);
+	}
+
+	#[test]
+	fn ich_non_conditional_required_dictionary_rules_are_unconditional() {
+		let conditioned = ich_non_conditional_required_dictionary_codes()
+			.into_iter()
+			.filter_map(|code| {
+				let rule = find_canonical_rule(&code)?;
+				(rule.condition != RuleCondition::Always)
+					.then_some((code, rule.condition.as_str().to_string()))
+			})
+			.collect::<Vec<_>>();
+
+		assert_eq!(
+			conditioned,
+			Vec::<(String, String)>::new(),
+			"ICH mandatory/required dictionary rules must not carry catalog conditions"
+		);
+	}
+
+	#[test]
+	fn ich_catalog_required_extras_are_explicitly_classified() {
+		let dictionary_required = ich_required_dictionary_codes()
+			.into_iter()
+			.map(|(code, _)| code)
+			.collect::<BTreeSet<_>>();
+		let catalog_required = VALIDATION_RULES
+			.iter()
+			.map(|rule| rule.code)
+			.filter(|code| code.starts_with("ICH.") && code.ends_with(".REQUIRED"))
+			.map(str::to_string)
+			.collect::<BTreeSet<_>>();
+		let actual_extras = catalog_required
+			.difference(&dictionary_required)
+			.cloned()
+			.collect::<BTreeSet<_>>();
+		let expected_extras = CLASSIFIED_ICH_CATALOG_REQUIRED_EXTRAS
+			.iter()
+			.map(|code| (*code).to_string())
+			.collect::<BTreeSet<_>>();
+
+		assert_eq!(
+			actual_extras, expected_extras,
+			"ICH catalog REQUIRED extras must be reviewed and explicitly classified"
 		);
 	}
 
