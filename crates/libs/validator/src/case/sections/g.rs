@@ -115,24 +115,6 @@ pub(crate) fn collect_ich_issues(
 					format!("drugs.{idx}.medicinalProduct"),
 				);
 			}
-			if has_text(drug.mpid.as_deref())
-				&& !has_text(drug.mpid_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.2.1.1a.REQUIRED",
-					format!("drugs.{idx}.mpidVersion"),
-				);
-			}
-			if has_text(drug.phpid.as_deref())
-				&& !has_text(drug.phpid_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.2.1.2a.REQUIRED",
-					format!("drugs.{idx}.phpidVersion"),
-				);
-			}
 			let cumulative_value_present =
 				drug.cumulative_dose_first_reaction_value.is_some();
 			let cumulative_unit_present =

@@ -719,22 +719,6 @@ pub const VALIDATION_RULES: &[
 			"[D.8.r.2b/D.8.r.3b] Any given past drug entry may have either MPID or PhPID, but not both.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.D.8.r.2a.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "patient",
-		blocking: true,
-		message:
-			"[D.8.r.2a] Past drug MPID version is required when [D.8.r.2b] MPID is populated.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.8.r.3a.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "patient",
-		blocking: true,
-		message:
-			"[D.8.r.3a] Past drug PhPID version is required when [D.8.r.3b] PhPID is populated.",
-	},
-	ValidationRuleMetadata {
 		code: "ICH.D.8.r.6a.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "patient",
@@ -1105,22 +1089,6 @@ pub const VALIDATION_RULES: &[
 		section: "drugs",
 		blocking: true,
 		message: "[G.k.1] is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.2.1.1a.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "drugs",
-		blocking: true,
-		message:
-			"[G.k.2.1.1a] MPID version is required when [G.k.2.1.1b] MPID is populated.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.2.1.2a.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "drugs",
-		blocking: true,
-		message:
-			"[G.k.2.1.2a] PhPID version is required when [G.k.2.1.2b] PhPID is populated.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.2.REQUIRED",
@@ -1708,13 +1676,6 @@ pub const VALIDATION_RULES: &[
 		message: "[C.1.9.1] is required.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.C.2.r.2.5.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "reporter",
-		blocking: true,
-		message: "[C.2.r.2.5] is required.",
-	},
-	ValidationRuleMetadata {
 		code: "ICH.C.2.r.3.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "reporter",
@@ -1734,20 +1695,6 @@ pub const VALIDATION_RULES: &[
 		section: "patient",
 		blocking: true,
 		message: "[D.8.r.1] is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.8.r.2b.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "patient",
-		blocking: true,
-		message: "[D.8.r.2b] is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.D.8.r.3b.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "patient",
-		blocking: true,
-		message: "[D.8.r.3b] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.3.2a.REQUIRED",
@@ -1792,32 +1739,11 @@ pub const VALIDATION_RULES: &[
 		message: "[E.i.3.2f] is required.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.G.k.2.1.1b.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "drugs",
-		blocking: true,
-		message: "[G.k.2.1.1b] is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.2.1.2b.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "drugs",
-		blocking: true,
-		message: "[G.k.2.1.2b] is required.",
-	},
-	ValidationRuleMetadata {
 		code: "ICH.G.k.3.2.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
 		blocking: true,
 		message: "[G.k.3.2] is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.4.r.2.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "drugs",
-		blocking: true,
-		message: "[G.k.4.r.2] is required.",
 	},
 	ValidationRuleMetadata {
 		code: "FDA.C.2.r.2.8.REQUIRED",
@@ -2501,10 +2427,6 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
-		code: "ICH.C.2.r.2.5.REQUIRED",
-		policy: ValuePolicy::NonEmptyOrNullFlavor,
-	},
-	ValuePolicyBinding {
 		code: "ICH.C.2.r.3.REQUIRED",
 		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
@@ -2579,14 +2501,6 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
 		code: "ICH.D.8.r.1.REQUIRED",
 		policy: ValuePolicy::NonEmptyOrNullFlavor,
-	},
-	ValuePolicyBinding {
-		code: "ICH.D.8.r.2a.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.D.8.r.3a.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
 		code: "ICH.D.8.r.6a.REQUIRED",
@@ -2706,14 +2620,6 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	},
 	ValuePolicyBinding {
 		code: "ICH.G.k.1.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.G.k.2.1.1a.REQUIRED",
-		policy: ValuePolicy::NonEmpty,
-	},
-	ValuePolicyBinding {
-		code: "ICH.G.k.2.1.2a.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
@@ -2981,22 +2887,16 @@ fn is_dictionary_required_metadata_only(code: &str) -> bool {
 			| "ICH.C.1.8.1.REQUIRED"
 			| "ICH.C.1.8.2.REQUIRED"
 			| "ICH.C.1.9.1.REQUIRED"
-			| "ICH.C.2.r.2.5.REQUIRED"
 			| "ICH.C.2.r.3.REQUIRED"
 			| "ICH.D.7.2.REQUIRED"
 			| "ICH.D.8.r.1.REQUIRED"
-			| "ICH.D.8.r.2b.REQUIRED"
-			| "ICH.D.8.r.3b.REQUIRED"
 			| "ICH.E.i.3.2a.REQUIRED"
 			| "ICH.E.i.3.2b.REQUIRED"
 			| "ICH.E.i.3.2c.REQUIRED"
 			| "ICH.E.i.3.2d.REQUIRED"
 			| "ICH.E.i.3.2e.REQUIRED"
 			| "ICH.E.i.3.2f.REQUIRED"
-			| "ICH.G.k.2.1.1b.REQUIRED"
-			| "ICH.G.k.2.1.2b.REQUIRED"
 			| "ICH.G.k.3.2.REQUIRED"
-			| "ICH.G.k.4.r.2.REQUIRED"
 			| "FDA.C.2.r.2.8.REQUIRED"
 			| "FDA.D.11.r.1.REQUIRED"
 			| "FDA.G.k.1.a.REQUIRED"

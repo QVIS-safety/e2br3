@@ -31,18 +31,6 @@ const D_MEDICAL_HISTORY_COMPANIONS: &[CompanionRule<MedicalHistoryEpisode>] = &[
 
 const D_PAST_DRUG_COMPANIONS: &[CompanionRule<PastDrugHistory>] = &[
 	CompanionRule {
-		code: "ICH.D.8.r.2a.REQUIRED",
-		path: |idx| format!("patientInformation.pastDrugs.{idx}.mpidVersion"),
-		trigger: |drug| has_text(drug.mpid.as_deref()),
-		required: |drug| has_text(drug.mpid_version.as_deref()),
-	},
-	CompanionRule {
-		code: "ICH.D.8.r.3a.REQUIRED",
-		path: |idx| format!("patientInformation.pastDrugs.{idx}.phpidVersion"),
-		trigger: |drug| has_text(drug.phpid.as_deref()),
-		required: |drug| has_text(drug.phpid_version.as_deref()),
-	},
-	CompanionRule {
 		code: "ICH.D.8.r.6a.REQUIRED",
 		path: |idx| {
 			format!("patientInformation.pastDrugs.{idx}.indicationMeddraVersion")

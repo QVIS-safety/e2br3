@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -986,6 +987,40 @@ class DictionaryValidatorTests(unittest.TestCase):
             result = validate.validate_registry(root, validate_backend_inventory=False)
 
         self.assertEqual([], result.errors)
+
+    def test_ich_pdf_optional_conformance_corrections_are_applied(self):
+        dictionary_path = (
+            Path(__file__).resolve().parents[1]
+            / "dictionary"
+            / "ich-e2br3.json"
+        )
+        entries = {
+            entry["code"]: entry
+            for entry in json.loads(dictionary_path.read_text(encoding="utf-8"))[
+                "entries"
+            ]
+        }
+        optional_in_ich_pdf = {
+            "C.2.r.2.5",
+            "D.8.r.2a",
+            "D.8.r.2b",
+            "D.8.r.3a",
+            "D.8.r.3b",
+            "G.k.2.1.1a",
+            "G.k.2.1.1b",
+            "G.k.2.1.2a",
+            "G.k.2.1.2b",
+            "G.k.4.r.2",
+        }
+
+        self.assertEqual(
+            {},
+            {
+                code: entries[code]["conformance"]
+                for code in sorted(optional_in_ich_pdf)
+                if entries[code]["conformance"] != "optional"
+            },
+        )
 
     def test_dictionary_fda_severity_must_be_valid(self):
         entry = (
