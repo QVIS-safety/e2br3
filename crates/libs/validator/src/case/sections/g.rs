@@ -1,3 +1,6 @@
+use super::rule_table::{
+	eval_companions, eval_indexed, CompanionRule, IndexedRule, RuleValue,
+};
 use crate::{
 	has_text, is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
 	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
@@ -7,7 +10,11 @@ use crate::{
 	ValidationIssue,
 };
 use lib_core::ctx::Ctx;
-use lib_core::model::drug::DrugDeviceCharacteristic;
+use lib_core::model::drug::{
+	DosageInformation, DrugActiveSubstance, DrugDeviceCharacteristic,
+	DrugIndication, DrugInformation,
+};
+use lib_core::model::drug_reaction_assessment::DrugReactionAssessment;
 use lib_core::model::{ModelManager, Result};
 
 fn normalize_code(raw: Option<&str>) -> String {
@@ -54,6 +61,198 @@ fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
 	value > today
 }
 
+const G_DRUG_VALUE_RULES: &[IndexedRule<DrugInformation>] = &[
+	IndexedRule {
+		code: "ICH.G.k.1.REQUIRED",
+		path: |idx| format!("drugs.{idx}.drugCharacterization"),
+		value: |drug| {
+			RuleValue::borrowed(Some(drug.drug_characterization.as_str()), None)
+		},
+		facts: |_| RuleFacts::default(),
+	},
+	IndexedRule {
+		code: "ICH.G.k.2.2.REQUIRED",
+		path: |idx| format!("drugs.{idx}.medicinalProduct"),
+		value: |drug| {
+			RuleValue::borrowed(Some(drug.medicinal_product.as_str()), None)
+		},
+		facts: |_| RuleFacts::default(),
+	},
+];
+
+const G_DRUG_COMPANION_RULES: &[CompanionRule<DrugInformation>] = &[
+	CompanionRule {
+		code: "ICH.G.k.5a.REQUIRED",
+		path: |idx| format!("drugs.{idx}.cumulativeDoseFirstReactionValue"),
+		trigger: |drug| {
+			has_text(drug.cumulative_dose_first_reaction_unit.as_deref())
+		},
+		required: |drug| drug.cumulative_dose_first_reaction_value.is_some(),
+	},
+	CompanionRule {
+		code: "ICH.G.k.5b.REQUIRED",
+		path: |idx| format!("drugs.{idx}.cumulativeDoseFirstReactionUnit"),
+		trigger: |drug| drug.cumulative_dose_first_reaction_value.is_some(),
+		required: |drug| {
+			has_text(drug.cumulative_dose_first_reaction_unit.as_deref())
+		},
+	},
+	CompanionRule {
+		code: "ICH.G.k.6a.REQUIRED",
+		path: |idx| format!("drugs.{idx}.gestationPeriodExposureValue"),
+		trigger: |drug| has_text(drug.gestation_period_exposure_unit.as_deref()),
+		required: |drug| drug.gestation_period_exposure_value.is_some(),
+	},
+	CompanionRule {
+		code: "ICH.G.k.6b.REQUIRED",
+		path: |idx| format!("drugs.{idx}.gestationPeriodExposureUnit"),
+		trigger: |drug| drug.gestation_period_exposure_value.is_some(),
+		required: |drug| has_text(drug.gestation_period_exposure_unit.as_deref()),
+	},
+];
+
+const G_ACTIVE_SUBSTANCE_COMPANION_RULES: &[CompanionRule<DrugActiveSubstance>] = &[
+	CompanionRule {
+		code: "ICH.G.k.2.3.r.1.REQUIRED",
+		path: |idx| format!("drugs.0.activeSubstances.{idx}.substanceName"),
+		trigger: |_| true,
+		required: |substance| {
+			has_text(substance.substance_termid.as_deref())
+				|| has_text(substance.substance_name.as_deref())
+		},
+	},
+	CompanionRule {
+		code: "ICH.G.k.2.3.r.2a.REQUIRED",
+		path: |idx| format!("drugs.0.activeSubstances.{idx}.substanceTermIdVersion"),
+		trigger: |substance| has_text(substance.substance_termid.as_deref()),
+		required: |substance| {
+			has_text(substance.substance_termid_version.as_deref())
+		},
+	},
+	CompanionRule {
+		code: "ICH.G.k.2.3.r.3b.REQUIRED",
+		path: |idx| format!("drugs.0.activeSubstances.{idx}.strengthUnit"),
+		trigger: |substance| substance.strength_value.is_some(),
+		required: |substance| has_text(substance.strength_unit.as_deref()),
+	},
+];
+
+const G_DOSAGE_COMPANION_RULES: &[CompanionRule<DosageInformation>] = &[
+	CompanionRule {
+		code: "ICH.G.k.4.r.1b.REQUIRED",
+		path: |idx| format!("drugs.0.dosages.{idx}.doseUnit"),
+		trigger: |dosage| dosage.dose_value.is_some(),
+		required: |dosage| has_text(dosage.dose_unit.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.G.k.4.r.3.REQUIRED",
+		path: |idx| format!("drugs.0.dosages.{idx}.frequencyUnit"),
+		trigger: |dosage| dosage.frequency_value.is_some(),
+		required: |dosage| has_text(dosage.frequency_unit.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.G.k.4.r.6a.REQUIRED",
+		path: |idx| format!("drugs.0.dosages.{idx}.durationValue"),
+		trigger: |dosage| has_text(dosage.duration_unit.as_deref()),
+		required: |dosage| dosage.duration_value.is_some(),
+	},
+	CompanionRule {
+		code: "ICH.G.k.4.r.6b.REQUIRED",
+		path: |idx| format!("drugs.0.dosages.{idx}.durationUnit"),
+		trigger: |dosage| dosage.duration_value.is_some(),
+		required: |dosage| has_text(dosage.duration_unit.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.G.k.4.r.9.2a.REQUIRED",
+		path: |idx| format!("drugs.0.dosages.{idx}.doseFormTermIdVersion"),
+		trigger: |dosage| has_text(dosage.dose_form_termid.as_deref()),
+		required: |dosage| has_text(dosage.dose_form_termid_version.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.G.k.4.r.10.2a.REQUIRED",
+		path: |idx| format!("drugs.0.dosages.{idx}.routeTermIdVersion"),
+		trigger: |dosage| has_text(dosage.route_of_administration.as_deref()),
+		required: |dosage| has_text(dosage.route_termid_version.as_deref()),
+	},
+	CompanionRule {
+		code: "ICH.G.k.4.r.11.2a.REQUIRED",
+		path: |idx| format!("drugs.0.dosages.{idx}.parentRouteTermIdVersion"),
+		trigger: |dosage| has_text(dosage.parent_route_termid.as_deref()),
+		required: |dosage| has_text(dosage.parent_route_termid_version.as_deref()),
+	},
+];
+
+const G_INDICATION_COMPANION_RULES: &[CompanionRule<DrugIndication>] = &[
+	CompanionRule {
+		code: "ICH.G.k.7.r.2a.REQUIRED",
+		path: |idx| format!("drugs.0.indications.{idx}.indicationMeddraVersion"),
+		trigger: |indication| has_text(indication.indication_meddra_code.as_deref()),
+		required: |indication| {
+			has_text(indication.indication_meddra_version.as_deref())
+		},
+	},
+	CompanionRule {
+		code: "ICH.G.k.7.r.2b.REQUIRED",
+		path: |idx| format!("drugs.0.indications.{idx}.indicationMeddraCode"),
+		trigger: |indication| {
+			has_text(indication.indication_meddra_version.as_deref())
+		},
+		required: |indication| {
+			has_text(indication.indication_meddra_code.as_deref())
+		},
+	},
+];
+
+const G_REACTION_ASSESSMENT_COMPANION_RULES: &[CompanionRule<
+	DrugReactionAssessment,
+>] =
+	&[
+		CompanionRule {
+			code: "ICH.G.k.9.i.3.1a.REQUIRED",
+			path: |idx| {
+				format!("drugs.0.reactionAssessments.{idx}.administrationStartIntervalValue")
+			},
+			trigger: |assessment| {
+				has_text(assessment.administration_start_interval_unit.as_deref())
+			},
+			required: |assessment| {
+				assessment.administration_start_interval_value.is_some()
+			},
+		},
+		CompanionRule {
+			code: "ICH.G.k.9.i.3.1b.REQUIRED",
+			path: |idx| {
+				format!("drugs.0.reactionAssessments.{idx}.administrationStartIntervalUnit")
+			},
+			trigger: |assessment| {
+				assessment.administration_start_interval_value.is_some()
+			},
+			required: |assessment| {
+				has_text(assessment.administration_start_interval_unit.as_deref())
+			},
+		},
+		CompanionRule {
+			code: "ICH.G.k.9.i.3.2a.REQUIRED",
+			path: |idx| {
+				format!("drugs.0.reactionAssessments.{idx}.lastDoseIntervalValue")
+			},
+			trigger: |assessment| {
+				has_text(assessment.last_dose_interval_unit.as_deref())
+			},
+			required: |assessment| assessment.last_dose_interval_value.is_some(),
+		},
+		CompanionRule {
+			code: "ICH.G.k.9.i.3.2b.REQUIRED",
+			path: |idx| {
+				format!("drugs.0.reactionAssessments.{idx}.lastDoseIntervalUnit")
+			},
+			trigger: |assessment| assessment.last_dose_interval_value.is_some(),
+			required: |assessment| {
+				has_text(assessment.last_dose_interval_unit.as_deref())
+			},
+		},
+	];
+
 pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	authority: RegulatoryAuthority,
@@ -96,162 +295,20 @@ pub(crate) fn collect_ich_issues(
 		);
 	}
 
-	validation_ctx
-		.drugs
-		.iter()
-		.enumerate()
-		.for_each(|(idx, drug)| {
-			if drug.drug_characterization.trim().is_empty() {
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.1.REQUIRED",
-					format!("drugs.{idx}.drugCharacterization"),
-				);
-			}
-			if drug.medicinal_product.trim().is_empty() {
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.2.2.REQUIRED",
-					format!("drugs.{idx}.medicinalProduct"),
-				);
-			}
-			let cumulative_value_present =
-				drug.cumulative_dose_first_reaction_value.is_some();
-			let cumulative_unit_present =
-				has_text(drug.cumulative_dose_first_reaction_unit.as_deref());
-			if cumulative_unit_present && !cumulative_value_present {
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.5a.REQUIRED",
-					format!("drugs.{idx}.cumulativeDoseFirstReactionValue"),
-				);
-			}
-			if cumulative_value_present && !cumulative_unit_present {
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.5b.REQUIRED",
-					format!("drugs.{idx}.cumulativeDoseFirstReactionUnit"),
-				);
-			}
-			let gestation_value_present =
-				drug.gestation_period_exposure_value.is_some();
-			let gestation_unit_present =
-				has_text(drug.gestation_period_exposure_unit.as_deref());
-			if gestation_unit_present && !gestation_value_present {
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.6a.REQUIRED",
-					format!("drugs.{idx}.gestationPeriodExposureValue"),
-				);
-			}
-			if gestation_value_present && !gestation_unit_present {
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.6b.REQUIRED",
-					format!("drugs.{idx}.gestationPeriodExposureUnit"),
-				);
-			}
-		});
+	eval_indexed(issues, &validation_ctx.drugs, G_DRUG_VALUE_RULES);
+	eval_companions(issues, &validation_ctx.drugs, G_DRUG_COMPANION_RULES);
+	eval_companions(
+		issues,
+		&validation_ctx.active_substances,
+		G_ACTIVE_SUBSTANCE_COMPANION_RULES,
+	);
 
-	validation_ctx
-		.active_substances
-		.iter()
-		.enumerate()
-		.for_each(|(idx, substance)| {
-			if !has_text(substance.substance_termid.as_deref())
-				&& !has_text(substance.substance_name.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.2.3.r.1.REQUIRED",
-					format!("drugs.0.activeSubstances.{idx}.substanceName"),
-				);
-			}
-			if has_text(substance.substance_termid.as_deref())
-				&& !has_text(substance.substance_termid_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.2.3.r.2a.REQUIRED",
-					format!("drugs.0.activeSubstances.{idx}.substanceTermIdVersion"),
-				);
-			}
-			if substance.strength_value.is_some()
-				&& !has_text(substance.strength_unit.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.2.3.r.3b.REQUIRED",
-					format!("drugs.0.activeSubstances.{idx}.strengthUnit"),
-				);
-			}
-		});
-
+	eval_companions(issues, &validation_ctx.dosages, G_DOSAGE_COMPANION_RULES);
 	validation_ctx
 		.dosages
 		.iter()
 		.enumerate()
 		.for_each(|(idx, dosage)| {
-			if dosage.dose_value.is_some() && !has_text(dosage.dose_unit.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.4.r.1b.REQUIRED",
-					format!("drugs.0.dosages.{idx}.doseUnit"),
-				);
-			}
-			if dosage.frequency_value.is_some()
-				&& !has_text(dosage.frequency_unit.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.4.r.3.REQUIRED",
-					format!("drugs.0.dosages.{idx}.frequencyUnit"),
-				);
-			}
-			let duration_value_present = dosage.duration_value.is_some();
-			let duration_unit_present = has_text(dosage.duration_unit.as_deref());
-			if duration_unit_present && !duration_value_present {
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.4.r.6a.REQUIRED",
-					format!("drugs.0.dosages.{idx}.durationValue"),
-				);
-			}
-			if duration_value_present && !duration_unit_present {
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.4.r.6b.REQUIRED",
-					format!("drugs.0.dosages.{idx}.durationUnit"),
-				);
-			}
-			if has_text(dosage.dose_form_termid.as_deref())
-				&& !has_text(dosage.dose_form_termid_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.4.r.9.2a.REQUIRED",
-					format!("drugs.0.dosages.{idx}.doseFormTermIdVersion"),
-				);
-			}
-			if has_text(dosage.route_of_administration.as_deref())
-				&& !has_text(dosage.route_termid_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.4.r.10.2a.REQUIRED",
-					format!("drugs.0.dosages.{idx}.routeTermIdVersion"),
-				);
-			}
-			if has_text(dosage.parent_route_termid.as_deref())
-				&& !has_text(dosage.parent_route_termid_version.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.4.r.11.2a.REQUIRED",
-					format!("drugs.0.dosages.{idx}.parentRouteTermIdVersion"),
-				);
-			}
 			if is_future_date(dosage.first_administration_date)
 				|| is_future_date(dosage.last_administration_date)
 			{
@@ -263,53 +320,16 @@ pub(crate) fn collect_ich_issues(
 			}
 		});
 
-	validation_ctx
-		.indications
-		.iter()
-		.enumerate()
-		.for_each(|(idx, indication)| {
-			let meddra_code_present =
-				has_text(indication.indication_meddra_code.as_deref());
-			let meddra_version_present =
-				has_text(indication.indication_meddra_version.as_deref());
-			if meddra_code_present && !meddra_version_present {
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.7.r.2a.REQUIRED",
-					format!("drugs.0.indications.{idx}.indicationMeddraVersion"),
-				);
-			}
-			if meddra_version_present && !meddra_code_present {
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.7.r.2b.REQUIRED",
-					format!("drugs.0.indications.{idx}.indicationMeddraCode"),
-				);
-			}
-		});
-
-	validation_ctx
-		.drug_reaction_assessments
-		.iter()
-		.enumerate()
-		.for_each(|(idx, assessment)| {
-			let admin_value_present = assessment.administration_start_interval_value.is_some();
-			let admin_unit_present = has_text(assessment.administration_start_interval_unit.as_deref());
-			if admin_unit_present && !admin_value_present {
-				push_issue_by_code(issues, "ICH.G.k.9.i.3.1a.REQUIRED", format!("drugs.0.reactionAssessments.{idx}.administrationStartIntervalValue"));
-			}
-			if admin_value_present && !admin_unit_present {
-				push_issue_by_code(issues, "ICH.G.k.9.i.3.1b.REQUIRED", format!("drugs.0.reactionAssessments.{idx}.administrationStartIntervalUnit"));
-			}
-			let last_dose_value_present = assessment.last_dose_interval_value.is_some();
-			let last_dose_unit_present = has_text(assessment.last_dose_interval_unit.as_deref());
-			if last_dose_unit_present && !last_dose_value_present {
-				push_issue_by_code(issues, "ICH.G.k.9.i.3.2a.REQUIRED", format!("drugs.0.reactionAssessments.{idx}.lastDoseIntervalValue"));
-			}
-			if last_dose_value_present && !last_dose_unit_present {
-				push_issue_by_code(issues, "ICH.G.k.9.i.3.2b.REQUIRED", format!("drugs.0.reactionAssessments.{idx}.lastDoseIntervalUnit"));
-			}
-		});
+	eval_companions(
+		issues,
+		&validation_ctx.indications,
+		G_INDICATION_COMPANION_RULES,
+	);
+	eval_companions(
+		issues,
+		&validation_ctx.drug_reaction_assessments,
+		G_REACTION_ASSESSMENT_COMPANION_RULES,
+	);
 }
 
 pub(crate) async fn collect_fda_issues(
@@ -704,4 +724,306 @@ pub(crate) fn collect_mfds_issues(
 			);
 		}
 	});
+}
+
+#[cfg(test)]
+mod golden_g_required_tests {
+	use super::*;
+	use lib_core::model::case::Case;
+	use sqlx::types::time::OffsetDateTime;
+	use sqlx::types::Uuid;
+
+	fn dummy_case() -> Case {
+		Case {
+			id: Uuid::nil(),
+			organization_id: Uuid::nil(),
+			dg_prd_key: None,
+			status: String::new(),
+			review_receivers_json: None,
+			workflow_routes_json: None,
+			workflow_status: String::new(),
+			workflow_assigned_role: None,
+			workflow_assigned_user_id: None,
+			workflow_due_at: None,
+			workflow_description: None,
+			workflow_updated_at: OffsetDateTime::UNIX_EPOCH,
+			mfds_report_type: None,
+			fda_report_type: None,
+			report_year: None,
+			created_by: Uuid::nil(),
+			updated_by: None,
+			submitted_by: None,
+			submitted_at: None,
+			raw_xml: None,
+			dirty_c: false,
+			dirty_d: false,
+			dirty_e: false,
+			dirty_f: false,
+			dirty_g: false,
+			dirty_h: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+		}
+	}
+
+	fn empty_ctx() -> ValidationContext {
+		ValidationContext {
+			case: dummy_case(),
+			safety_report: None,
+			message_header: None,
+			sender: None,
+			patient: None,
+			narrative: None,
+			sender_diagnoses: Vec::new(),
+			case_summaries: Vec::new(),
+			medical_history: Vec::new(),
+			past_drugs: Vec::new(),
+			death_info: None,
+			reported_causes_of_death: Vec::new(),
+			autopsy_causes_of_death: Vec::new(),
+			parents: Vec::new(),
+			parent_medical_history: Vec::new(),
+			parent_past_drugs: Vec::new(),
+			primary_sources: Vec::new(),
+			documents_held_by_sender: Vec::new(),
+			other_case_identifiers: Vec::new(),
+			studies: Vec::new(),
+			reactions: Vec::new(),
+			tests: Vec::new(),
+			drugs: Vec::new(),
+			active_substances: Vec::new(),
+			indications: Vec::new(),
+			dosages: Vec::new(),
+			drug_reaction_assessments: Vec::new(),
+			patient_identifiers: Vec::new(),
+		}
+	}
+
+	fn drug() -> DrugInformation {
+		DrugInformation {
+			id: Uuid::nil(),
+			case_id: Uuid::nil(),
+			source_product_presave_id: None,
+			sequence_number: 1,
+			drug_characterization: String::new(),
+			medicinal_product: String::new(),
+			mpid: None,
+			mpid_version: None,
+			mfds_mpid_version: None,
+			mfds_mpid: None,
+			phpid: None,
+			phpid_version: None,
+			investigational_product_blinded: None,
+			obtain_drug_country: None,
+			brand_name: None,
+			drug_generic_name: None,
+			drug_authorization_number: None,
+			manufacturer_name: None,
+			manufacturer_country: None,
+			batch_lot_number: None,
+			cumulative_dose_first_reaction_value: None,
+			cumulative_dose_first_reaction_unit: None,
+			gestation_period_exposure_value: None,
+			gestation_period_exposure_unit: None,
+			dosage_text: None,
+			action_taken: None,
+			rechallenge: None,
+			parent_dosage_text: None,
+			fda_additional_info_coded: None,
+			drug_additional_info_codes_json: None,
+			drug_additional_information: None,
+			fda_specialized_product_category: None,
+			fda_device_info_json: None,
+			fda_other_characterization: None,
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn substance() -> DrugActiveSubstance {
+		DrugActiveSubstance {
+			id: Uuid::nil(),
+			drug_id: Uuid::nil(),
+			sequence_number: 1,
+			substance_name: None,
+			substance_termid: None,
+			substance_termid_version: None,
+			mfds_version: None,
+			mfds_id: None,
+			strength_value: None,
+			strength_unit: None,
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn dosage() -> DosageInformation {
+		DosageInformation {
+			id: Uuid::nil(),
+			drug_id: Uuid::nil(),
+			sequence_number: 1,
+			dose_value: None,
+			dose_unit: None,
+			number_of_units: None,
+			frequency_value: None,
+			frequency_unit: None,
+			first_administration_date: None,
+			first_administration_time: None,
+			last_administration_date: None,
+			last_administration_time: None,
+			duration_value: None,
+			duration_unit: None,
+			continuing: None,
+			batch_lot_number: None,
+			batch_lot_number_null_flavor: None,
+			dosage_text: None,
+			dose_form: None,
+			dose_form_termid: None,
+			dose_form_termid_version: None,
+			route_of_administration: None,
+			route_termid: None,
+			route_termid_version: None,
+			parent_route: None,
+			parent_route_termid: None,
+			parent_route_termid_version: None,
+			first_administration_date_null_flavor: None,
+			last_administration_date_null_flavor: None,
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn indication() -> DrugIndication {
+		DrugIndication {
+			id: Uuid::nil(),
+			drug_id: Uuid::nil(),
+			sequence_number: 1,
+			indication_text: None,
+			indication_text_null_flavor: None,
+			indication_meddra_version: None,
+			indication_meddra_code: None,
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn assessment() -> DrugReactionAssessment {
+		DrugReactionAssessment {
+			id: Uuid::nil(),
+			drug_id: Uuid::nil(),
+			reaction_id: Uuid::nil(),
+			administration_start_interval_value: None,
+			administration_start_interval_unit: None,
+			last_dose_interval_value: None,
+			last_dose_interval_unit: None,
+			recurrence_action: None,
+			recurrence_meddra_version: None,
+			recurrence_meddra_code: None,
+			reaction_recurred: None,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	fn codes_for(ctx: &ValidationContext) -> Vec<String> {
+		let mut issues = Vec::new();
+		collect_ich_issues(ctx, &mut issues);
+		issues.into_iter().map(|issue| issue.code).collect()
+	}
+
+	#[test]
+	fn empty_drug_collection_flags_placeholder_drug_rules() {
+		assert_eq!(
+			codes_for(&empty_ctx()),
+			vec![
+				"ICH.G.k.1.REQUIRED".to_string(),
+				"ICH.G.k.2.2.REQUIRED".to_string(),
+			]
+		);
+	}
+
+	#[test]
+	fn drug_required_and_pair_rules_are_preserved() {
+		let mut ctx = empty_ctx();
+		let mut drug = drug();
+		drug.cumulative_dose_first_reaction_unit = Some("mg".to_string());
+		drug.gestation_period_exposure_value = Some("1".parse().unwrap());
+		ctx.drugs.push(drug);
+
+		assert_eq!(
+			codes_for(&ctx),
+			vec![
+				"ICH.G.k.1.REQUIRED".to_string(),
+				"ICH.G.k.2.2.REQUIRED".to_string(),
+				"ICH.G.k.5a.REQUIRED".to_string(),
+				"ICH.G.k.6b.REQUIRED".to_string(),
+			]
+		);
+	}
+
+	#[test]
+	fn nested_collection_companion_rules_are_preserved() {
+		let mut ctx = empty_ctx();
+		let mut substance = substance();
+		substance.substance_termid = Some("SUB123".to_string());
+		substance.strength_value = Some("1".parse().unwrap());
+		ctx.active_substances.push(substance);
+
+		let mut dosage = dosage();
+		dosage.dose_value = Some("1".parse().unwrap());
+		dosage.duration_unit = Some("d".to_string());
+		dosage.route_of_administration = Some("030".to_string());
+		ctx.dosages.push(dosage);
+
+		assert_eq!(
+			codes_for(&ctx),
+			vec![
+				"ICH.G.k.1.REQUIRED".to_string(),
+				"ICH.G.k.2.2.REQUIRED".to_string(),
+				"ICH.G.k.2.3.r.2a.REQUIRED".to_string(),
+				"ICH.G.k.2.3.r.3b.REQUIRED".to_string(),
+				"ICH.G.k.4.r.1b.REQUIRED".to_string(),
+				"ICH.G.k.4.r.6a.REQUIRED".to_string(),
+				"ICH.G.k.4.r.10.2a.REQUIRED".to_string(),
+			]
+		);
+	}
+
+	#[test]
+	fn indication_and_reaction_assessment_pair_rules_are_preserved() {
+		let mut ctx = empty_ctx();
+		let mut indication = indication();
+		indication.indication_meddra_version = Some("26.1".to_string());
+		ctx.indications.push(indication);
+
+		let mut assessment = assessment();
+		assessment.administration_start_interval_value = Some("1".parse().unwrap());
+		assessment.last_dose_interval_unit = Some("d".to_string());
+		ctx.drug_reaction_assessments.push(assessment);
+
+		assert_eq!(
+			codes_for(&ctx),
+			vec![
+				"ICH.G.k.1.REQUIRED".to_string(),
+				"ICH.G.k.2.2.REQUIRED".to_string(),
+				"ICH.G.k.7.r.2b.REQUIRED".to_string(),
+				"ICH.G.k.9.i.3.1b.REQUIRED".to_string(),
+				"ICH.G.k.9.i.3.2a.REQUIRED".to_string(),
+			]
+		);
+	}
 }
