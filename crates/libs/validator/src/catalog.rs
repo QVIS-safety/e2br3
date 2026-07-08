@@ -1659,6 +1659,230 @@ pub const VALIDATION_RULES: &[
 		message: "text/originalText is empty; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.N.1.1.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[N.1.1] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.N.2.r.1.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[N.2.r.1] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.N.2.r.4.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[N.2.r.4] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.6.1.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[C.1.6.1] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.8.1.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[C.1.8.1] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.8.2.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[C.1.8.2] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.1.9.1.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[C.1.9.1] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.2.r.2.5.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "reporter",
+		blocking: true,
+		message: "[C.2.r.2.5] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.C.2.r.3.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "reporter",
+		blocking: true,
+		message: "[C.2.r.3] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.7.2.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.7.2] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.8.r.1.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.8.r.1] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.8.r.2b.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.8.r.2b] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.8.r.3b.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.8.r.3b] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.3.2a.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "[E.i.3.2a] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.3.2b.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "[E.i.3.2b] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.3.2c.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "[E.i.3.2c] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.3.2d.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "[E.i.3.2d] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.3.2e.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "[E.i.3.2e] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.E.i.3.2f.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "reactions",
+		blocking: true,
+		message: "[E.i.3.2f] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.2.1.1b.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "drugs",
+		blocking: true,
+		message: "[G.k.2.1.1b] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.2.1.2b.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "drugs",
+		blocking: true,
+		message: "[G.k.2.1.2b] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.3.2.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "drugs",
+		blocking: true,
+		message: "[G.k.3.2] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.G.k.4.r.2.REQUIRED",
+		authority: RegulatoryAuthority::Ich,
+		section: "drugs",
+		blocking: true,
+		message: "[G.k.4.r.2] is required.",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.C.2.r.2.8.REQUIRED",
+		authority: RegulatoryAuthority::Fda,
+		section: "reporter",
+		blocking: true,
+		message: "FDA requires [C.2.r.2.8].",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.D.11.r.1.REQUIRED",
+		authority: RegulatoryAuthority::Fda,
+		section: "patient",
+		blocking: true,
+		message: "FDA requires [D.11.r.1].",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.k.1.a.REQUIRED",
+		authority: RegulatoryAuthority::Fda,
+		section: "drugs",
+		blocking: true,
+		message: "FDA requires [G.k.1.a].",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.k.12.r.1.REQUIRED",
+		authority: RegulatoryAuthority::Fda,
+		section: "drugs",
+		blocking: true,
+		message: "FDA requires [G.k.12.r.1].",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.k.12.r.3.r.REQUIRED",
+		authority: RegulatoryAuthority::Fda,
+		section: "drugs",
+		blocking: true,
+		message: "FDA requires [G.k.12.r.3.r].",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.k.12.r.4.REQUIRED",
+		authority: RegulatoryAuthority::Fda,
+		section: "drugs",
+		blocking: true,
+		message: "FDA requires [G.k.12.r.4].",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.k.12.r.5.REQUIRED",
+		authority: RegulatoryAuthority::Fda,
+		section: "drugs",
+		blocking: true,
+		message: "FDA requires [G.k.12.r.5].",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.k.12.r.6.REQUIRED",
+		authority: RegulatoryAuthority::Fda,
+		section: "drugs",
+		blocking: true,
+		message: "FDA requires [G.k.12.r.6].",
+	},
+	ValidationRuleMetadata {
+		code: "FDA.G.k.12.r.11.r.REQUIRED",
+		authority: RegulatoryAuthority::Fda,
+		section: "drugs",
+		blocking: true,
+		message: "FDA requires [G.k.12.r.11.r].",
+	},
+	ValidationRuleMetadata {
 		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
 		authority: RegulatoryAuthority::Mfds,
 		section: "reporter",
@@ -1980,6 +2204,7 @@ pub struct CanonicalRule<'a> {
 
 const PHASES_CASE_VALIDATE: &[ValidationPhase] = &[ValidationPhase::CaseValidate];
 const PHASES_IMPORT_ONLY: &[ValidationPhase] = &[ValidationPhase::Import];
+const PHASES_METADATA_ONLY: &[ValidationPhase] = &[];
 
 #[derive(Debug, Clone, Copy)]
 struct ConditionBinding {
@@ -2669,10 +2894,51 @@ fn category_for_rule(rule: &ValidationRuleMetadata) -> RuleCategory {
 }
 
 fn phases_for_rule(rule: &ValidationRuleMetadata) -> &'static [ValidationPhase] {
+	if is_dictionary_required_metadata_only(rule.code) {
+		return PHASES_METADATA_ONLY;
+	}
 	if is_xml_structure_rule(rule) {
 		return PHASES_IMPORT_ONLY;
 	}
 	PHASES_CASE_VALIDATE
+}
+
+fn is_dictionary_required_metadata_only(code: &str) -> bool {
+	matches!(
+		code,
+		"ICH.N.1.1.REQUIRED"
+			| "ICH.N.2.r.1.REQUIRED"
+			| "ICH.N.2.r.4.REQUIRED"
+			| "ICH.C.1.6.1.REQUIRED"
+			| "ICH.C.1.8.1.REQUIRED"
+			| "ICH.C.1.8.2.REQUIRED"
+			| "ICH.C.1.9.1.REQUIRED"
+			| "ICH.C.2.r.2.5.REQUIRED"
+			| "ICH.C.2.r.3.REQUIRED"
+			| "ICH.D.7.2.REQUIRED"
+			| "ICH.D.8.r.1.REQUIRED"
+			| "ICH.D.8.r.2b.REQUIRED"
+			| "ICH.D.8.r.3b.REQUIRED"
+			| "ICH.E.i.3.2a.REQUIRED"
+			| "ICH.E.i.3.2b.REQUIRED"
+			| "ICH.E.i.3.2c.REQUIRED"
+			| "ICH.E.i.3.2d.REQUIRED"
+			| "ICH.E.i.3.2e.REQUIRED"
+			| "ICH.E.i.3.2f.REQUIRED"
+			| "ICH.G.k.2.1.1b.REQUIRED"
+			| "ICH.G.k.2.1.2b.REQUIRED"
+			| "ICH.G.k.3.2.REQUIRED"
+			| "ICH.G.k.4.r.2.REQUIRED"
+			| "FDA.C.2.r.2.8.REQUIRED"
+			| "FDA.D.11.r.1.REQUIRED"
+			| "FDA.G.k.1.a.REQUIRED"
+			| "FDA.G.k.12.r.1.REQUIRED"
+			| "FDA.G.k.12.r.3.r.REQUIRED"
+			| "FDA.G.k.12.r.4.REQUIRED"
+			| "FDA.G.k.12.r.5.REQUIRED"
+			| "FDA.G.k.12.r.6.REQUIRED"
+			| "FDA.G.k.12.r.11.r.REQUIRED"
+	)
 }
 
 fn is_xml_structure_rule(rule: &ValidationRuleMetadata) -> bool {
@@ -3094,50 +3360,8 @@ mod tests {
 	#[test]
 	fn dictionary_required_rules_are_catalog_backed() {
 		let cases = [
-			(
-				"ICH",
-				ich_required_dictionary_codes(),
-				vec![
-					"ICH.N.1.1.REQUIRED",
-					"ICH.N.2.r.1.REQUIRED",
-					"ICH.N.2.r.4.REQUIRED",
-					"ICH.C.1.6.1.REQUIRED",
-					"ICH.C.1.8.1.REQUIRED",
-					"ICH.C.1.8.2.REQUIRED",
-					"ICH.C.1.9.1.REQUIRED",
-					"ICH.C.2.r.2.5.REQUIRED",
-					"ICH.C.2.r.3.REQUIRED",
-					"ICH.D.7.2.REQUIRED",
-					"ICH.D.8.r.1.REQUIRED",
-					"ICH.D.8.r.2b.REQUIRED",
-					"ICH.D.8.r.3b.REQUIRED",
-					"ICH.E.i.3.2a.REQUIRED",
-					"ICH.E.i.3.2b.REQUIRED",
-					"ICH.E.i.3.2c.REQUIRED",
-					"ICH.E.i.3.2d.REQUIRED",
-					"ICH.E.i.3.2e.REQUIRED",
-					"ICH.E.i.3.2f.REQUIRED",
-					"ICH.G.k.2.1.1b.REQUIRED",
-					"ICH.G.k.2.1.2b.REQUIRED",
-					"ICH.G.k.3.2.REQUIRED",
-					"ICH.G.k.4.r.2.REQUIRED",
-				],
-			),
-			(
-				"FDA",
-				fda_required_dictionary_codes(),
-				vec![
-					"FDA.C.2.r.2.8.REQUIRED",
-					"FDA.D.11.r.1.REQUIRED",
-					"FDA.G.k.1.a.REQUIRED",
-					"FDA.G.k.12.r.1.REQUIRED",
-					"FDA.G.k.12.r.3.r.REQUIRED",
-					"FDA.G.k.12.r.4.REQUIRED",
-					"FDA.G.k.12.r.5.REQUIRED",
-					"FDA.G.k.12.r.6.REQUIRED",
-					"FDA.G.k.12.r.11.r.REQUIRED",
-				],
-			),
+			("ICH", ich_required_dictionary_codes(), Vec::<String>::new()),
+			("FDA", fda_required_dictionary_codes(), Vec::<String>::new()),
 			("MFDS", mfds_required_dictionary_codes(), Vec::new()),
 		];
 
