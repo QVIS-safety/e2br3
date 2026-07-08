@@ -1956,6 +1956,7 @@ pub const VALIDATION_RULES: &[
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuleCondition {
 	Always,
+	IchDictionaryCondition,
 	IchCaseHistoryTrueMissingPriorIds,
 	IchMedicalHistoryMissingD72Text,
 	IchReportTypeIsStudy,
@@ -1995,6 +1996,7 @@ impl RuleCondition {
 	pub fn as_str(self) -> &'static str {
 		match self {
 			Self::Always => "always",
+			Self::IchDictionaryCondition => "ich_dictionary_condition",
 			Self::IchCaseHistoryTrueMissingPriorIds => {
 				"ich_case_history_true_missing_prior_ids"
 			}
@@ -2138,6 +2140,12 @@ struct ConditionBinding {
 	condition: RuleCondition,
 }
 
+#[derive(Debug, Clone, Copy)]
+struct ConditionTextBinding {
+	code: &'static str,
+	condition_text: &'static str,
+}
+
 const CONDITION_BINDINGS: &[ConditionBinding] = &[
 	ConditionBinding {
 		code: "FDA.C.1.7.1.REQUIRED",
@@ -2212,6 +2220,250 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 		condition: RuleCondition::IchTestPayloadPresent,
 	},
 	ConditionBinding {
+		code: "ICH.C.1.6.1.r.1.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.C.1.9.1.r.1.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.C.1.9.1.r.2.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.C.1.11.2.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.C.2.r.3.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.C.2.r.5.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.C.3.2.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.2.2a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.2.2b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.2.2.1a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.2.2.1b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.7.1.r.1a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.7.1.r.1b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.7.2.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.8.r.1.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.8.r.6a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.8.r.6b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.8.r.7a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.8.r.7b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.9.2.r.1a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.9.2.r.1b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.9.3.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.9.4.r.1a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.9.4.r.1b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.9.4.r.2.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.10.2.2a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.10.2.2b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.10.7.1.r.1a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.10.7.1.r.1b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.10.8.r.6a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.10.8.r.6b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.10.8.r.7a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.D.10.8.r.7b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.E.i.1.1b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.E.i.6a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.E.i.6b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.F.r.1.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.F.r.2.2a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.F.r.2.2b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.F.r.3.1.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.F.r.3.2.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.F.r.3.3.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.F.r.3.4.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.3.2.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.4.r.1b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.4.r.3.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.4.r.6a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.4.r.6b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.5a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.5b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.6a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.6b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.7.r.2a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.7.r.2b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.9.i.3.1a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.9.i.3.1b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.9.i.3.2a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.G.k.9.i.3.2b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.H.3.r.1a.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.H.3.r.1b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
+		code: "ICH.H.5.r.1b.REQUIRED",
+		condition: RuleCondition::IchDictionaryCondition,
+	},
+	ConditionBinding {
 		code: "MFDS.C.2.r.4.KR.1.REQUIRED",
 		condition: RuleCondition::MfdsPrimarySourceQualificationIsThree,
 	},
@@ -2282,6 +2534,269 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 	ConditionBinding {
 		code: "MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
 		condition: RuleCondition::MfdsDrugForeignNonKr,
+	},
+];
+
+const ICH_CONDITIONAL_TEXT_BINDINGS: &[ConditionTextBinding] = &[
+	ConditionTextBinding {
+		code: "ICH.C.1.6.1.r.1.REQUIRED",
+		condition_text: "Optional, but required if C.1.6.1 is ‘true’.",
+	},
+	ConditionTextBinding {
+		code: "ICH.C.1.9.1.r.1.REQUIRED",
+		condition_text: "Optional, but required if C.1.9.1=‘true’.",
+	},
+	ConditionTextBinding {
+		code: "ICH.C.1.9.1.r.2.REQUIRED",
+		condition_text: "Optional, but required if C.1.9.1= ‘true’.",
+	},
+	ConditionTextBinding {
+		code: "ICH.C.1.11.2.REQUIRED",
+		condition_text: "Optional, but required when C.1.11.1 is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.C.2.r.3.REQUIRED",
+		condition_text: "Optional, but required if C.2.r.5 = 1.",
+	},
+	ConditionTextBinding {
+		code: "ICH.C.2.r.5.REQUIRED",
+		condition_text: "Required for one and only one instance of this element.",
+	},
+	ConditionTextBinding {
+		code: "ICH.C.3.2.REQUIRED",
+		condition_text:
+			"Required if the ‘Sender Type’ (C.3.1) is not coded as 7 (Patient / Consumer).",
+	},
+	ConditionTextBinding {
+		code: "ICH.C.5.4.REQUIRED",
+		condition_text: "Optional, but required if C.1.3=2 (Report from study).",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.2.2a.REQUIRED",
+		condition_text: "Optional, but required if D.2.2b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.2.2b.REQUIRED",
+		condition_text: "Optional, but required if D.2.2a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.2.2.1a.REQUIRED",
+		condition_text: "Optional, but required if D.2.2.1b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.2.2.1b.REQUIRED",
+		condition_text: "Optional, but required if D.2.2.1a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.7.1.r.1a.REQUIRED",
+		condition_text: "Optional, but required if D.7.1.r.1b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.7.1.r.1b.REQUIRED",
+		condition_text: "Optional, but required if D.7.1.r.1a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.7.2.REQUIRED",
+		condition_text: "Optional, but required if Section D.7.1 is null.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.8.r.1.REQUIRED",
+		condition_text:
+			"Optional, but required by the schema if any data element in section D.8.r is used.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.8.r.6a.REQUIRED",
+		condition_text: "Optional, but required if D.8.r.6b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.8.r.6b.REQUIRED",
+		condition_text: "Optional, but required if D.8.r.6a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.8.r.7a.REQUIRED",
+		condition_text: "Optional, but required if D.8.r.7b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.8.r.7b.REQUIRED",
+		condition_text: "Optional, but required if D.8.r.7a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.9.2.r.1a.REQUIRED",
+		condition_text: "Optional, but required if D.9.2.r.1b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.9.2.r.1b.REQUIRED",
+		condition_text: "Optional, but required if D.9.2.r.1a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.9.3.REQUIRED",
+		condition_text: "Optional, but required if D.9.1 is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.9.4.r.1a.REQUIRED",
+		condition_text: "Optional, but required if D.9.4.r.1b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.9.4.r.1b.REQUIRED",
+		condition_text: "Optional, but required if D.9.4.r.1a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.9.4.r.2.REQUIRED",
+		condition_text: "Optional, but required if D.9.4.r.1 is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.10.2.2a.REQUIRED",
+		condition_text: "Optional, but required if D.10.2.2b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.10.2.2b.REQUIRED",
+		condition_text: "Optional, but required if D.10.2.2a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.10.7.1.r.1a.REQUIRED",
+		condition_text:
+			"Optional, but required if D.10.7.1.r.1b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.10.7.1.r.1b.REQUIRED",
+		condition_text:
+			"Optional, but required if D.10.7.1.r.1a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.10.8.r.6a.REQUIRED",
+		condition_text: "Optional, but required if D.10.8.r.6b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.10.8.r.6b.REQUIRED",
+		condition_text: "Optional, but required if D.10.8.r.6a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.10.8.r.7a.REQUIRED",
+		condition_text: "Optional, but required if D.10.8.r.7b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.D.10.8.r.7b.REQUIRED",
+		condition_text: "Optional, but required if D.10.8.r.7a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.E.i.1.1b.REQUIRED",
+		condition_text: "Optional, but required if E.i.1.1a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.E.i.6a.REQUIRED",
+		condition_text: "Optional, but required if E.i.6b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.E.i.6b.REQUIRED",
+		condition_text: "Optional, but required if E.i.6a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.F.r.1.REQUIRED",
+		condition_text: "Optional, but required if F.r.2 is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.F.r.2.2a.REQUIRED",
+		condition_text: "Optional, but required when F.r.2.2b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.F.r.2.2b.REQUIRED",
+		condition_text:
+			"Optional, but required if F.r.1 is populated and F.r.2.2b is not populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.F.r.3.1.REQUIRED",
+		condition_text:
+			"Optional, but required if F.r.2 is populated, and neither F.r.3.2 nor F.r.3.4 is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.F.r.3.2.REQUIRED",
+		condition_text:
+			"Optional, but required if F.r.2 is populated, and F.r.3.1 and F.r.3.4 is not populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.F.r.3.3.REQUIRED",
+		condition_text: "Optional, but required if F.r.3.2 is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.F.r.3.4.REQUIRED",
+		condition_text:
+			"Optional, but required if F.r.2 is populated, and F.r.3 is not populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.3.2.REQUIRED",
+		condition_text: "Optional, but required if G.k.3.1 is provided.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.4.r.1b.REQUIRED",
+		condition_text: "Optional, but required if G.k.4.r.1a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.4.r.3.REQUIRED",
+		condition_text: "Optional, but required if G.k.4.r.2 is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.4.r.6a.REQUIRED",
+		condition_text: "Optional, but required if G.k.4.r.6b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.4.r.6b.REQUIRED",
+		condition_text: "Optional, but required if G.k.4.r.6a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.5a.REQUIRED",
+		condition_text: "Optional, but required if G.k.5b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.5b.REQUIRED",
+		condition_text: "Optional, but required if G.k.5a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.6a.REQUIRED",
+		condition_text: "Optional, but required if G.k.6b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.6b.REQUIRED",
+		condition_text: "Optional, but required if G.k.6a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.7.r.2a.REQUIRED",
+		condition_text: "Optional, but required if G.k.7.r.2b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.7.r.2b.REQUIRED",
+		condition_text: "Optional, but required if G.k.7.r.2a is provided.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.9.i.3.1a.REQUIRED",
+		condition_text:
+			"Optional, but required if G.k.9.i.3.1b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.9.i.3.1b.REQUIRED",
+		condition_text:
+			"Optional, but required if G.k.9.i.3.1a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.9.i.3.2a.REQUIRED",
+		condition_text:
+			"Optional, but required if G.k.9.i.3.2b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.G.k.9.i.3.2b.REQUIRED",
+		condition_text:
+			"Optional, but required if G.k.9.i.3.2a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.H.3.r.1a.REQUIRED",
+		condition_text: "Optional, but required if H.3.r.1b is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.H.3.r.1b.REQUIRED",
+		condition_text: "Optional, but required if H.3.r.1a is populated.",
+	},
+	ConditionTextBinding {
+		code: "ICH.H.5.r.1b.REQUIRED",
+		condition_text: "Required if H.5.r.1a is populated.",
 	},
 ];
 
@@ -2842,6 +3357,13 @@ fn condition_for_code(code: &str) -> RuleCondition {
 		.unwrap_or(RuleCondition::Always)
 }
 
+pub fn condition_text_for_code(code: &str) -> Option<&'static str> {
+	ICH_CONDITIONAL_TEXT_BINDINGS
+		.iter()
+		.find(|binding| binding.code == code)
+		.map(|binding| binding.condition_text)
+}
+
 fn to_canonical_rule<'a>(rule: &'a ValidationRuleMetadata) -> CanonicalRule<'a> {
 	let category = category_for_rule(rule);
 	let phases = phases_for_rule(rule);
@@ -3051,6 +3573,7 @@ pub fn is_rule_condition_satisfied(code: &str, facts: RuleFacts) -> bool {
 	};
 	match rule.condition {
 		RuleCondition::Always => true,
+		RuleCondition::IchDictionaryCondition => true,
 		RuleCondition::IchCaseHistoryTrueMissingPriorIds => facts
 			.ich_case_history_true_missing_prior_ids
 			.unwrap_or(false),
@@ -3258,6 +3781,7 @@ mod tests {
 		code: String,
 		kind: String,
 		conformance: Option<String>,
+		condition_text: Option<String>,
 		#[serde(default)]
 		null_flavors: Vec<String>,
 	}
@@ -3320,6 +3844,27 @@ mod tests {
 		counts
 	}
 
+	fn ich_conditional_dictionary_codes() -> Vec<(String, String)> {
+		dictionary_from_json(include_str!(
+			"../../../../registry/dictionary/ich-e2br3.json"
+		))
+		.entries
+		.into_iter()
+		.filter(|entry| {
+			entry.kind == "element"
+				&& entry.conformance.as_deref() == Some("conditional_mandatory")
+		})
+		.map(|entry| {
+			(
+				format!("ICH.{}.REQUIRED", entry.code),
+				entry.condition_text.expect(
+					"ICH conditional mandatory entries carry condition_text",
+				),
+			)
+		})
+		.collect()
+	}
+
 	fn fda_required_dictionary_codes() -> Vec<(String, Vec<String>)> {
 		required_dictionary_codes(
 			dictionary_from_json(include_str!(
@@ -3376,6 +3921,46 @@ mod tests {
 			missing,
 			Vec::<String>::new(),
 			"ICH dictionary required catalog gap changed"
+		);
+	}
+
+	#[test]
+	fn ich_conditional_dictionary_rules_are_catalog_conditioned() {
+		let always = ich_conditional_dictionary_codes()
+			.into_iter()
+			.map(|(code, _)| code)
+			.filter(|code| {
+				find_canonical_rule(code)
+					.map(|rule| rule.condition == RuleCondition::Always)
+					.unwrap_or(true)
+			})
+			.collect::<Vec<_>>();
+
+		assert_eq!(
+			always,
+			Vec::<String>::new(),
+			"ICH conditional mandatory catalog rules must not be unconditional"
+		);
+	}
+
+	#[test]
+	fn ich_conditional_dictionary_condition_text_matches_catalog() {
+		let mismatches = ich_conditional_dictionary_codes()
+			.into_iter()
+			.filter_map(|(code, dictionary_text)| {
+				let catalog_text = condition_text_for_code(&code);
+				(catalog_text != Some(dictionary_text.as_str())).then_some((
+					code,
+					dictionary_text,
+					catalog_text.map(str::to_string),
+				))
+			})
+			.collect::<Vec<_>>();
+
+		assert_eq!(
+			mismatches,
+			Vec::<(String, String, Option<String>)>::new(),
+			"ICH conditional mandatory condition_text catalog drift changed"
 		);
 	}
 
