@@ -3246,7 +3246,7 @@ pub fn is_rule_presence_valid(code: &str, present: bool, _facts: RuleFacts) -> b
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use std::collections::HashSet;
+	use std::collections::{BTreeMap, HashSet};
 
 	#[derive(Debug, serde::Deserialize)]
 	struct Dictionary {
@@ -3300,6 +3300,26 @@ mod tests {
 		)
 	}
 
+	fn ich_required_dictionary_conformance_counts() -> BTreeMap<String, usize> {
+		let dictionary = dictionary_from_json(include_str!(
+			"../../../../registry/dictionary/ich-e2br3.json"
+		));
+		let mut counts = BTreeMap::new();
+		for entry in dictionary.entries {
+			if entry.kind == "element" {
+				if let Some(conformance) = entry.conformance {
+					if matches!(
+						conformance.as_str(),
+						"mandatory" | "required" | "conditional_mandatory"
+					) {
+						*counts.entry(conformance).or_insert(0) += 1;
+					}
+				}
+			}
+		}
+		counts
+	}
+
 	fn fda_required_dictionary_codes() -> Vec<(String, Vec<String>)> {
 		required_dictionary_codes(
 			dictionary_from_json(include_str!(
@@ -3323,6 +3343,40 @@ mod tests {
 			.iter()
 			.find(|binding| binding.code == code)
 			.map(|binding| binding.policy)
+	}
+
+	#[test]
+	fn ich_dictionary_required_candidate_inventory_is_stable() {
+		let counts = ich_required_dictionary_conformance_counts();
+		assert_eq!(
+			counts,
+			BTreeMap::from([
+				("conditional_mandatory".to_string(), 62),
+				("mandatory".to_string(), 32),
+				("required".to_string(), 2),
+			]),
+			"ICH dictionary required candidate inventory changed"
+		);
+		assert_eq!(
+			ich_required_dictionary_codes().len(),
+			96,
+			"ICH dictionary required candidate count changed"
+		);
+	}
+
+	#[test]
+	fn ich_dictionary_required_candidates_are_catalog_backed() {
+		let missing = ich_required_dictionary_codes()
+			.into_iter()
+			.map(|(code, _)| code)
+			.filter(|code| find_canonical_rule(code).is_none())
+			.collect::<Vec<_>>();
+
+		assert_eq!(
+			missing,
+			Vec::<String>::new(),
+			"ICH dictionary required catalog gap changed"
+		);
 	}
 
 	#[test]
