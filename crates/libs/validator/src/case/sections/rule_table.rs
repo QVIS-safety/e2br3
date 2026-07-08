@@ -16,6 +16,8 @@ use crate::{
 	push_issue_by_code, push_issue_if_rule_invalid, RuleFacts, ValidationIssue,
 };
 use std::borrow::Cow;
+use std::collections::HashMap;
+use std::hash::Hash;
 
 /// A value pulled from a model plus its optional nullFlavor. `Cow` lets string
 /// fields borrow directly while computed values (e.g. a date `to_string()`)
@@ -138,6 +140,51 @@ pub(crate) fn eval_companions<T>(
 		for rule in rules {
 			if (rule.trigger)(item) && !(rule.required)(item) {
 				push_issue_by_code(issues, rule.code, (rule.path)(idx));
+			}
+		}
+	}
+}
+
+/// Companion rules for a child collection nested under a parent collection.
+/// The evaluator maps each child to its owning parent index and still preserves
+/// the child's own display index for paths like `parents.{p}.pastDrugs.{i}`.
+pub(crate) struct NestedCompanionRule<T> {
+	pub code: &'static str,
+	pub path: fn(usize, usize) -> String,
+	pub trigger: fn(&T) -> bool,
+	pub required: fn(&T) -> bool,
+}
+
+pub(crate) fn eval_nested_companions<P, T, K>(
+	issues: &mut Vec<ValidationIssue>,
+	parents: &[P],
+	items: &[T],
+	parent_key: fn(&P) -> K,
+	item_parent_key: fn(&T) -> K,
+	item_idx: fn(&T, usize) -> usize,
+	rules: &[NestedCompanionRule<T>],
+) where
+	K: Copy + Eq + Hash,
+{
+	let parent_indices = parents
+		.iter()
+		.enumerate()
+		.map(|(idx, parent)| (parent_key(parent), idx))
+		.collect::<HashMap<_, _>>();
+	let mut fallback_idx_by_parent = HashMap::<K, usize>::new();
+	for item in items {
+		let parent_key = item_parent_key(item);
+		let fallback_idx = fallback_idx_by_parent.entry(parent_key).or_insert(0);
+		let item_idx = item_idx(item, *fallback_idx);
+		*fallback_idx += 1;
+		let parent_idx = parent_indices.get(&parent_key).copied().unwrap_or(0);
+		for rule in rules {
+			if (rule.trigger)(item) && !(rule.required)(item) {
+				push_issue_by_code(
+					issues,
+					rule.code,
+					(rule.path)(parent_idx, item_idx),
+				);
 			}
 		}
 	}
