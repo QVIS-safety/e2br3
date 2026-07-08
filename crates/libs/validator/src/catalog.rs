@@ -2401,7 +2401,19 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::SixDigitsNumeric,
 	},
 	ValuePolicyBinding {
+		code: "FDA.C.2.r.2.8.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "FDA.C.5.6.r.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
 		code: "FDA.D.11.REQUIRED",
+		policy: ValuePolicy::FdaRaceCodeOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "FDA.D.11.r.1.REQUIRED",
 		policy: ValuePolicy::FdaRaceCodeOrNullFlavor,
 	},
 	ValuePolicyBinding {
@@ -2415,6 +2427,14 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
 		code: "FDA.G.k.10a.REQUIRED",
 		policy: ValuePolicy::FdaGk10aCodeOrNa,
+	},
+	ValuePolicyBinding {
+		code: "FDA.G.k.12.r.4.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "FDA.G.k.12.r.5.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.1.1.REQUIRED",
@@ -2449,6 +2469,10 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
+		code: "ICH.C.1.9.1.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
 		code: "ICH.C.1.9.1.r.1.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
@@ -2475,6 +2499,14 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
 		code: "ICH.C.2.r.2.1.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.2.r.2.5.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "ICH.C.2.r.3.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.C.5.3.REQUIRED",
@@ -2539,6 +2571,14 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
 		code: "ICH.D.7.1.r.1b.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.7.2.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "ICH.D.8.r.1.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.D.8.r.2a.REQUIRED",
@@ -2609,6 +2649,30 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmpty,
 	},
 	ValuePolicyBinding {
+		code: "ICH.E.i.3.2a.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "ICH.E.i.3.2b.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "ICH.E.i.3.2c.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "ICH.E.i.3.2d.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "ICH.E.i.3.2e.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "ICH.E.i.3.2f.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
+	},
+	ValuePolicyBinding {
 		code: "ICH.E.i.7.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},
@@ -2635,6 +2699,10 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
 		code: "ICH.F.r.3.3.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
+		code: "ICH.F.r.3.2.REQUIRED",
+		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
 		code: "ICH.G.k.1.REQUIRED",
@@ -3409,6 +3477,26 @@ mod tests {
 		assert_eq!(
 			invalid, expected_invalid,
 			"dictionary nullFlavor required policy gap changed"
+		);
+	}
+
+	#[test]
+	fn dictionary_null_flavor_required_rules_have_value_policy_bindings() {
+		let expected_missing = Vec::<String>::new();
+		let missing = ich_required_dictionary_codes()
+			.into_iter()
+			.chain(fda_required_dictionary_codes())
+			.chain(mfds_required_dictionary_codes())
+			.into_iter()
+			.filter(|(_, null_flavors)| !null_flavors.is_empty())
+			.filter(|(code, _)| find_canonical_rule(code).is_some())
+			.map(|(code, _)| code)
+			.filter(|code| value_policy_for_code(code).is_none())
+			.collect::<Vec<_>>();
+
+		assert_eq!(
+			missing, expected_missing,
+			"dictionary nullFlavor required policy bindings missing"
 		);
 	}
 
