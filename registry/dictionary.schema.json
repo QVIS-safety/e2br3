@@ -74,6 +74,7 @@
           "enum": ["rejection", "warning"]
         },
         "fda_error_id": { "type": "string" },
+        "condition_text": { "type": "string" },
         "notes": { "type": "string" }
       },
       "if": { "properties": { "kind": { "const": "element" } } },

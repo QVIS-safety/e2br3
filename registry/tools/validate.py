@@ -67,6 +67,7 @@ ALLOWED_DICTIONARY_ENTRY_FIELDS = {
     "vocabulary",
     "fda_severity",
     "fda_error_id",
+    "condition_text",
     "notes",
 }
 FDA_SEVERITIES = {"rejection", "warning"}

@@ -972,6 +972,21 @@ class DictionaryValidatorTests(unittest.TestCase):
 
         self.assertEqual([], result.errors)
 
+    def test_dictionary_entries_accept_condition_text(self):
+        entry = (
+            '{"code": "C.5.4", "name": "Study Type", "section": "C", "kind": "element",'
+            ' "conformance": "conditional_mandatory",'
+            ' "condition_text": "Optional, but required if C.1.3=2 (Report from study)."}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row())
+            self.write_dictionary(root, "ich-e2br3.json", self.ich_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertEqual([], result.errors)
+
     def test_dictionary_fda_severity_must_be_valid(self):
         entry = (
             '{"code": "C.3.2", "name": "Sender", "section": "C", "kind": "element",'

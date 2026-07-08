@@ -290,7 +290,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/reference[@typeCode='REFR'][document/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.27']][r]/document[@classCode='DOC'][@moodCode='EVN']/title/text()",
       "hl7_data_type": "Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0009"
+      "fda_error_id": "R0009",
+      "condition_text": "Optional, but required if C.1.6.1 is ‘true’."
     },
     {
       "code": "C.1.6.1.r.2",
@@ -404,7 +405,8 @@
       "hl7_data_type": "Instance Identifier (II)",
       "hl7_component": "assigningAuthorityNa me=Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0017"
+      "fda_error_id": "R0017",
+      "condition_text": "Optional, but required if C.1.9.1=‘true’."
     },
     {
       "code": "C.1.9.1.r.2",
@@ -423,7 +425,8 @@
       "hl7_data_type": "Instance Identifier (II)",
       "hl7_component": "extension=Character String(ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0018"
+      "fda_error_id": "R0018",
+      "condition_text": "Optional, but required if C.1.9.1= ‘true’."
     },
     {
       "code": "C.1.10.r",
@@ -469,7 +472,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ'][investigationCharacteristic/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.23']][1]/investigationCharacteristic[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE']/originalText/text()",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "originalText = Encapsulated Data (ED)",
-      "fda_severity": "rejection"
+      "fda_severity": "rejection",
+      "condition_text": "Optional, but required when C.1.11.1 is populated."
     },
     {
       "code": "C.2.r",
@@ -740,7 +744,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "ISO3166",
       "fda_severity": "rejection",
-      "fda_error_id": "R0019"
+      "fda_error_id": "R0019",
+      "condition_text": "Optional, but required if C.2.r.5 = 1."
     },
     {
       "code": "C.2.r.4",
@@ -780,7 +785,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/priorityNumber/@value",
       "hl7_data_type": "Real Number (REAL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0021"
+      "fda_error_id": "R0021",
+      "condition_text": "Required for one and only one instance of this element."
     },
     {
       "code": "C.3",
@@ -821,7 +827,8 @@
       "hl7_data_type": "Organization Name (ON)",
       "hl7_component": "name=Entity Name Part (ENXP)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0022"
+      "fda_error_id": "R0022",
+      "condition_text": "Required if the ‘Sender Type’ (C.3.1) is not coded as 7 (Patient / Consumer)."
     },
     {
       "code": "C.3.3",
@@ -1226,7 +1233,8 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0023"
+      "fda_error_id": "R0023",
+      "condition_text": "Optional, but required if C.1.3=2 (Report from study)."
     },
     {
       "code": "D.",
@@ -1379,7 +1387,8 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0029"
+      "fda_error_id": "R0029",
+      "condition_text": "Optional, but required if D.2.2b is populated."
     },
     {
       "code": "D.2.2b",
@@ -1398,7 +1407,8 @@
       "hl7_component": "unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0030"
+      "fda_error_id": "R0030",
+      "condition_text": "Optional, but required if D.2.2a is populated."
     },
     {
       "code": "D.2.2.1a",
@@ -1417,7 +1427,8 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0031"
+      "fda_error_id": "R0031",
+      "condition_text": "Optional, but required if D.2.2.1b is populated."
     },
     {
       "code": "D.2.2.1b",
@@ -1436,7 +1447,8 @@
       "hl7_component": "unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0032"
+      "fda_error_id": "R0032",
+      "condition_text": "Optional, but required if D.2.2.1a is populated."
     },
     {
       "code": "D.2.3",
@@ -1553,7 +1565,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0033"
+      "fda_error_id": "R0033",
+      "condition_text": "Optional, but required if D.7.1.r.1b is populated."
     },
     {
       "code": "D.7.1.r.1b",
@@ -1573,7 +1586,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0034"
+      "fda_error_id": "R0034",
+      "condition_text": "Optional, but required if D.7.1.r.1a is populated."
     },
     {
       "code": "D.7.1.r.2",
@@ -1689,7 +1703,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@code='18'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ED'][1]/text()",
       "hl7_data_type": "Encapsulated Data (ED)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0035"
+      "fda_error_id": "R0035",
+      "condition_text": "Optional, but required if Section D.7.1 is null."
     },
     {
       "code": "D.7.3",
@@ -1733,7 +1748,8 @@
       "hl7_data_type": "Entity Name (EN)",
       "hl7_component": "name=Entity Name Part (ENXP)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0036"
+      "fda_error_id": "R0036",
+      "condition_text": "Optional, but required by the schema if any data element in section D.8.r is used."
     },
     {
       "code": "D.8.r.2a",
@@ -1858,7 +1874,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0037"
+      "fda_error_id": "R0037",
+      "condition_text": "Optional, but required if D.8.r.6b is populated."
     },
     {
       "code": "D.8.r.6b",
@@ -1878,7 +1895,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0038"
+      "fda_error_id": "R0038",
+      "condition_text": "Optional, but required if D.8.r.6a is populated."
     },
     {
       "code": "D.8.r.7a",
@@ -1897,7 +1915,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0039"
+      "fda_error_id": "R0039",
+      "condition_text": "Optional, but required if D.8.r.7b is populated."
     },
     {
       "code": "D.8.r.7b",
@@ -1917,7 +1936,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0040"
+      "fda_error_id": "R0040",
+      "condition_text": "Optional, but required if D.8.r.7a is populated."
     },
     {
       "code": "D.9",
@@ -1971,7 +1991,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0042"
+      "fda_error_id": "R0042",
+      "condition_text": "Optional, but required if D.9.2.r.1b is populated."
     },
     {
       "code": "D.9.2.r.1b",
@@ -1991,7 +2012,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0043"
+      "fda_error_id": "R0043",
+      "condition_text": "Optional, but required if D.9.2.r.1a is populated."
     },
     {
       "code": "D.9.2.r.2",
@@ -2033,7 +2055,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation/code[@code='5'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0045"
+      "fda_error_id": "R0045",
+      "condition_text": "Optional, but required if D.9.1 is populated."
     },
     {
       "code": "D.9.4.r",
@@ -2059,7 +2082,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0046"
+      "fda_error_id": "R0046",
+      "condition_text": "Optional, but required if D.9.4.r.1b is populated."
     },
     {
       "code": "D.9.4.r.1b",
@@ -2079,7 +2103,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0047"
+      "fda_error_id": "R0047",
+      "condition_text": "Optional, but required if D.9.4.r.1a is populated."
     },
     {
       "code": "D.9.4.r.2",
@@ -2098,7 +2123,8 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "originalText = Encapsulated Data (ED)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0048"
+      "fda_error_id": "R0048",
+      "condition_text": "Optional, but required if D.9.4.r.1 is populated."
     },
     {
       "code": "D.10",
@@ -2171,7 +2197,8 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0049"
+      "fda_error_id": "R0049",
+      "condition_text": "Optional, but required if D.10.2.2b is populated."
     },
     {
       "code": "D.10.2.2b",
@@ -2190,7 +2217,8 @@
       "hl7_component": "unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0050"
+      "fda_error_id": "R0050",
+      "condition_text": "Optional, but required if D.10.2.2a is populated."
     },
     {
       "code": "D.10.3",
@@ -2302,7 +2330,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0052"
+      "fda_error_id": "R0052",
+      "condition_text": "Optional, but required if D.10.7.1.r.1b is populated."
     },
     {
       "code": "D.10.7.1.r.1b",
@@ -2322,7 +2351,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0053"
+      "fda_error_id": "R0053",
+      "condition_text": "Optional, but required if D.10.7.1.r.1a is populated."
     },
     {
       "code": "D.10.7.1.r.2",
@@ -2563,7 +2593,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0054"
+      "fda_error_id": "R0054",
+      "condition_text": "Optional, but required if D.10.8.r.6b is populated."
     },
     {
       "code": "D.10.8.r.6b",
@@ -2583,7 +2614,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0055"
+      "fda_error_id": "R0055",
+      "condition_text": "Optional, but required if D.10.8.r.6a is populated."
     },
     {
       "code": "D.10.8.r.7a",
@@ -2602,7 +2634,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0056"
+      "fda_error_id": "R0056",
+      "condition_text": "Optional, but required if D.10.8.r.7b is populated."
     },
     {
       "code": "D.10.8.r.7b",
@@ -2622,7 +2655,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0057"
+      "fda_error_id": "R0057",
+      "condition_text": "Optional, but required if D.10.8.r.7a is populated."
     },
     {
       "code": "E.i.1",
@@ -2664,7 +2698,8 @@
       "hl7_component": "originalText/language\n=Coded Simple Value (CS)",
       "vocabulary": "ISO639",
       "fda_severity": "rejection",
-      "fda_error_id": "R0058"
+      "fda_error_id": "R0058",
+      "condition_text": "Optional, but required if E.i.1.1a is populated."
     },
     {
       "code": "E.i.1.2",
@@ -2904,7 +2939,8 @@
       "hl7_data_type": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nHL7 Data Type: Interval of Point in Time (IVL<TS>)",
       "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nwidth/value=Real Number (REAL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0059"
+      "fda_error_id": "R0059",
+      "condition_text": "Optional, but required if E.i.6b is populated."
     },
     {
       "code": "E.i.6b",
@@ -2923,7 +2959,8 @@
       "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear \n  width/unit=Coded \nSimple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0060"
+      "fda_error_id": "R0060",
+      "condition_text": "Optional, but required if E.i.6a is populated."
     },
     {
       "code": "E.i.7",
@@ -3000,7 +3037,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='3'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/effectiveTime/@value",
       "hl7_data_type": "Point in Time (TS)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0061"
+      "fda_error_id": "R0061",
+      "condition_text": "Optional, but required if F.r.2 is populated."
     },
     {
       "code": "F.r.2.1",
@@ -3037,7 +3075,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0063"
+      "fda_error_id": "R0063",
+      "condition_text": "Optional, but required when F.r.2.2b is populated."
     },
     {
       "code": "F.r.2.2b",
@@ -3057,7 +3096,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0064"
+      "fda_error_id": "R0064",
+      "condition_text": "Optional, but required if F.r.1 is populated and F.r.2.2b is not populated."
     },
     {
       "code": "F.r.3",
@@ -3083,7 +3123,8 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0065"
+      "fda_error_id": "R0065",
+      "condition_text": "Optional, but required if F.r.2 is populated, and neither F.r.3.2 nor F.r.3.4 is populated."
     },
     {
       "code": "F.r.3.2",
@@ -3105,7 +3146,8 @@
       "hl7_data_type": "Interval of Physical Quantity (IVL<PQ>)",
       "hl7_component": "1.EQ\ncenter=Physical Quantity (PQ)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0066"
+      "fda_error_id": "R0066",
+      "condition_text": "Optional, but required if F.r.2 is populated, and F.r.3.1 and F.r.3.4 is not populated."
     },
     {
       "code": "F.r.3.3",
@@ -3125,7 +3167,8 @@
       "hl7_component": "1. EQ\ncenter/value/unit=Phy sical Quantity (PQ)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0067"
+      "fda_error_id": "R0067",
+      "condition_text": "Optional, but required if F.r.3.2 is populated."
     },
     {
       "code": "F.r.3.4",
@@ -3142,7 +3185,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='3'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ED'][1]/text()",
       "hl7_data_type": "Encapsulated Data (ED)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0068"
+      "fda_error_id": "R0068",
+      "condition_text": "Optional, but required if F.r.2 is populated, and F.r.3 is not populated."
     },
     {
       "code": "F.r.4",
@@ -3488,7 +3532,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "ISO3166",
       "fda_severity": "rejection",
-      "fda_error_id": "R0074"
+      "fda_error_id": "R0074",
+      "condition_text": "Optional, but required if G.k.3.1 is provided."
     },
     {
       "code": "G.k.3.3",
@@ -3546,14 +3591,15 @@
       "hl7_component": "unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0075"
+      "fda_error_id": "R0075",
+      "condition_text": "Optional, but required if G.k.4.r.1a is populated."
     },
     {
       "code": "G.k.4.r.2",
       "name": "Number of Units in the Interval",
       "section": "G",
       "kind": "element",
-      "conformance": "conditional_mandatory",
+      "conformance": "optional",
       "data_type": "N",
       "max_length": "4",
       "allowed_values": "Numeric",
@@ -3581,7 +3627,8 @@
       "hl7_component": "period/unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0076"
+      "fda_error_id": "R0076",
+      "condition_text": "Optional, but required if G.k.4.r.2 is populated."
     },
     {
       "code": "G.k.4.r.4",
@@ -3639,7 +3686,8 @@
       "hl7_data_type": "1. When more than two values in the following data elements appear \n \n   1) G.k.4.r.2、\nG.k.4.r.3 \n   2) G.k.4.r.4 \n   3) G.k.4.r.5 \n   4) G.k.4.r.6a、\nG.k.4.r.6b \n \nThe first comp element with data type SXPR\n \nParenthetic Set Expression of Time (SXPR_TS)   \n[Intervale of Point in Time (IVL_TS)]",
       "hl7_component": "width/value=Real Number (REAL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0077"
+      "fda_error_id": "R0077",
+      "condition_text": "Optional, but required if G.k.4.r.6b is populated."
     },
     {
       "code": "G.k.4.r.6b",
@@ -3658,7 +3706,8 @@
       "hl7_component": "width/unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0078"
+      "fda_error_id": "R0078",
+      "condition_text": "Optional, but required if G.k.4.r.6a is populated."
     },
     {
       "code": "G.k.4.r.7",
@@ -3876,7 +3925,8 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0079"
+      "fda_error_id": "R0079",
+      "condition_text": "Optional, but required if G.k.5b is populated."
     },
     {
       "code": "G.k.5b",
@@ -3895,7 +3945,8 @@
       "hl7_component": "unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0080"
+      "fda_error_id": "R0080",
+      "condition_text": "Optional, but required if G.k.5a is populated."
     },
     {
       "code": "G.k.6a",
@@ -3914,7 +3965,8 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0081"
+      "fda_error_id": "R0081",
+      "condition_text": "Optional, but required if G.k.6b is populated."
     },
     {
       "code": "G.k.6b",
@@ -3933,7 +3985,8 @@
       "hl7_component": "unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0082"
+      "fda_error_id": "R0082",
+      "condition_text": "Optional, but required if G.k.6a is populated."
     },
     {
       "code": "G.k.7.r",
@@ -3981,7 +4034,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0083"
+      "fda_error_id": "R0083",
+      "condition_text": "Optional, but required if G.k.7.r.2b is populated."
     },
     {
       "code": "G.k.7.r.2b",
@@ -4001,7 +4055,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0084"
+      "fda_error_id": "R0084",
+      "condition_text": "Optional, but required if G.k.7.r.2a is provided."
     },
     {
       "code": "G.k.8",
@@ -4111,7 +4166,8 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0088"
+      "fda_error_id": "R0088",
+      "condition_text": "Optional, but required if G.k.9.i.3.1b is populated."
     },
     {
       "code": "G.k.9.i.3.1b",
@@ -4130,7 +4186,8 @@
       "hl7_component": "unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0089"
+      "fda_error_id": "R0089",
+      "condition_text": "Optional, but required if G.k.9.i.3.1a is populated."
     },
     {
       "code": "G.k.9.i.3.2a",
@@ -4148,7 +4205,8 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0090"
+      "fda_error_id": "R0090",
+      "condition_text": "Optional, but required if G.k.9.i.3.2b is populated."
     },
     {
       "code": "G.k.9.i.3.2b",
@@ -4167,7 +4225,8 @@
       "hl7_component": "unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0091"
+      "fda_error_id": "R0091",
+      "condition_text": "Optional, but required if G.k.9.i.3.2a is populated."
     },
     {
       "code": "G.k.9.i.4",
@@ -4281,7 +4340,8 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0097"
+      "fda_error_id": "R0097",
+      "condition_text": "Optional, but required if H.3.r.1b is populated."
     },
     {
       "code": "H.3.r.1b",
@@ -4301,7 +4361,8 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
-      "fda_error_id": "R0098"
+      "fda_error_id": "R0098",
+      "condition_text": "Optional, but required if H.3.r.1a is populated."
     },
     {
       "code": "H.4",
@@ -4360,7 +4421,8 @@
       "hl7_component": "language=Coded Simple Value (CS)",
       "vocabulary": "ISO639",
       "fda_severity": "rejection",
-      "fda_error_id": "R0099"
+      "fda_error_id": "R0099",
+      "condition_text": "Required if H.5.r.1a is populated."
     }
   ]
 }

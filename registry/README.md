@@ -53,13 +53,28 @@ elements; the dictionaries define which elements exist at all.
   (`sources/fda-core-regional-data-elements-v1.csv`). Entries carry per-profile
   conformance (`profiles.post_market` / `pre_market` / `vaers`) and HL7 XPaths.
 
-Entries carry structural, machine-consumed facts only: conformance, profiles,
-data types, allowed values, nullFlavors, OIDs, HL7 data types, and XPaths
-(ICH/MFDS XPaths come from `sources/mfds-icsr-element-xpath.csv`). Long
-business-rule prose lives in `dictionary/rules/{ich,mfds,fda}.json` instead —
-one `{code: rule}` map per authority, including each authority's rules for
-shared ICH elements. The validator checks that every rule key references an
-existing dictionary element.
+Known source correction: `dictionary/ich-e2br3.json` records `G.k.4.r.2` as
+`optional` even though `sources/ich-core-data-elements-v1.csv` currently lists
+it as `Conditional-Mandatory`. The ICH E2B(R3) Implementation Guide PDF and the
+FDA combined core/regional table both state `G.k.4.r.2` is optional; `G.k.4.r.3`
+is the conditional field required when `G.k.4.r.2` is populated. Preserve this
+dictionary override if the source CSV is regenerated.
+
+ICH `conditional_mandatory` entries may carry `condition_text` copied from the
+ICH E2B(R3) Implementation Guide PDF `Conformance` row. The source CSV does not
+consistently include these conditions in `ICH BUSINESS RULE`. Current PDF drift
+candidates where the dictionary/source CSV says `conditional_mandatory` but the
+PDF conformance row is `optional`: `C.2.r.2.5`, `D.8.r.2a`, `D.8.r.2b`,
+`D.8.r.3a`, `D.8.r.3b`, `G.k.2.1.1a`, `G.k.2.1.1b`, `G.k.2.1.2a`,
+`G.k.2.1.2b`.
+
+Entries carry structural, machine-consumed facts: conformance, conditional
+conformance text, profiles, data types, allowed values, nullFlavors, OIDs, HL7
+data types, and XPaths (ICH/MFDS XPaths come from
+`sources/mfds-icsr-element-xpath.csv`). Long business-rule prose lives in
+`dictionary/rules/{ich,mfds,fda}.json` instead — one `{code: rule}` map per
+authority, including each authority's rules for shared ICH elements. The
+validator checks that every rule key references an existing dictionary element.
 
 Dictionary files are validated for shape on every `validate.py` run. Codes must
 be unique across all dictionary files.
