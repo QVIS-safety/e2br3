@@ -30,7 +30,9 @@ use lib_rest_core::{
 };
 use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use sqlx::{types::time::OffsetDateTime, FromRow};
+use time::Duration;
 use uuid::Uuid;
 use validator::validate_case_for_authority;
 
@@ -91,6 +93,138 @@ fn validate_fda_report_type(value: Option<&str>) -> Result<()> {
 	Err(Error::BadRequest {
 		message: "fda_report_type must be one of: 1, 2, 3, 4".to_string(),
 	})
+}
+
+async fn normalize_review_receivers_for_update(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	case_id: Uuid,
+	data: &mut InternalCaseForUpdate,
+) -> Result<()> {
+	let Some(raw) = data.review_receivers_json.as_deref() else {
+		return Ok(());
+	};
+	let mut value: Value =
+		serde_json::from_str(raw).map_err(|err| Error::BadRequest {
+			message: format!("review_receivers_json must be valid JSON: {err}"),
+		})?;
+
+	let report = SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id)
+		.await
+		.map_err(Error::Model)?;
+	let c15 = report.date_of_most_recent_information.ok_or_else(|| {
+		Error::BadRequest {
+			message: "C.1.5 date_of_most_recent_information is required to calculate review receiver reportDueDate".to_string(),
+		}
+	})?;
+
+	match &mut value {
+		Value::Array(rows) => {
+			normalize_review_receiver_rows(rows, c15)?;
+		}
+		Value::Object(object) => {
+			let rows = object
+				.get_mut("reviewReceivers")
+				.and_then(Value::as_array_mut)
+				.ok_or_else(|| Error::BadRequest {
+					message: "review_receivers_json must be an array or contain reviewReceivers array".to_string(),
+				})?;
+			normalize_review_receiver_rows(rows, c15)?;
+		}
+		_ => {
+			return Err(Error::BadRequest {
+				message: "review_receivers_json must be an array or object"
+					.to_string(),
+			});
+		}
+	}
+
+	data.review_receivers_json = Some(serde_json::to_string(&value).map_err(
+		|err| Error::BadRequest {
+			message: format!("failed to serialize review_receivers_json: {err}"),
+		},
+	)?);
+	Ok(())
+}
+
+fn normalize_review_receiver_rows(
+	rows: &mut [Value],
+	c15: time::Date,
+) -> Result<()> {
+	for (idx, row) in rows.iter_mut().enumerate() {
+		let Some(object) = row.as_object_mut() else {
+			return Err(Error::BadRequest {
+				message: format!("review receiver row {idx} must be an object"),
+			});
+		};
+		normalize_review_receiver_row(idx, object, c15)?;
+	}
+	Ok(())
+}
+
+fn normalize_review_receiver_row(
+	idx: usize,
+	object: &mut Map<String, Value>,
+	c15: time::Date,
+) -> Result<()> {
+	let receiver =
+		text_field(object, &["receiver", "receiverName", "receiver_name"]);
+	if receiver.is_none() {
+		return Err(Error::BadRequest {
+			message: format!("review receiver row {idx} receiver is required"),
+		});
+	}
+	let report_due = integer_field(object, &["reportDue", "report_due"])
+		.ok_or_else(|| Error::BadRequest {
+			message: format!("review receiver row {idx} reportDue is required"),
+		})?;
+	if report_due < 0 {
+		return Err(Error::BadRequest {
+			message: format!(
+				"review receiver row {idx} reportDue must be non-negative"
+			),
+		});
+	}
+	if text_field(object, &["reportDueDate", "report_due_date"]).is_some() {
+		return Ok(());
+	}
+	let due_date = c15.checked_add(Duration::days(report_due)).ok_or_else(|| {
+		Error::BadRequest {
+			message: format!(
+				"review receiver row {idx} reportDueDate calculation overflowed"
+			),
+		}
+	})?;
+	object.insert(
+		"reportDueDate".to_string(),
+		Value::String(format_date(due_date)),
+	);
+	Ok(())
+}
+
+fn text_field<'a>(object: &'a Map<String, Value>, keys: &[&str]) -> Option<&'a str> {
+	keys.iter()
+		.find_map(|key| object.get(*key).and_then(Value::as_str))
+		.map(str::trim)
+		.filter(|value| !value.is_empty())
+}
+
+fn integer_field(object: &Map<String, Value>, keys: &[&str]) -> Option<i64> {
+	keys.iter().find_map(|key| {
+		let value = object.get(*key)?;
+		value
+			.as_i64()
+			.or_else(|| value.as_str()?.trim().parse::<i64>().ok())
+	})
+}
+
+fn format_date(date: time::Date) -> String {
+	format!(
+		"{:04}-{:02}-{:02}",
+		date.year(),
+		u8::from(date.month()),
+		date.day()
+	)
 }
 
 fn to_internal_case_for_create(
@@ -584,9 +718,10 @@ pub async fn update_case_guarded(
 		reason_for_change,
 		e_signature,
 	} = params;
-	let data = to_internal_case_for_update(data);
+	let mut data = to_internal_case_for_update(data);
 	validate_case_update_payload(&data)?;
 	let current = CaseBmc::get(&ctx, &mm, id).await?;
+	normalize_review_receivers_for_update(&ctx, &mm, id, &mut data).await?;
 	let requested_status = data.status.clone();
 	if update_touches_non_status_fields(&data) {
 		if let Some(reason) =

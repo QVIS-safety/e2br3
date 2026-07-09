@@ -783,6 +783,10 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		axum::routing::post(submission_rest::submit_case_to_mfds),
 	)
 	.route(
+		"/cases/{id}/submission-receiver",
+		put(submission_rest::apply_submission_receiver_selection),
+	)
+	.route(
 		"/cases/{id}/submissions",
 		get(submission_rest::list_case_submissions),
 	)

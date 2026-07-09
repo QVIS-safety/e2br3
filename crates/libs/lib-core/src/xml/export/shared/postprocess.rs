@@ -44,7 +44,7 @@ pub(crate) async fn apply_section_postprocess(
 	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 	let _ =
 		xpath.register_namespace("xsi", "http://www.w3.org/2001/XMLSchema-instance");
-	apply_section_n(&mut doc, &parser, mm, case_id, &mut xpath).await?;
+	apply_section_n(ctx, &mut doc, &parser, mm, case_id, &mut xpath).await?;
 	apply_patient_section(ctx, &mut doc, &parser, mm, case_id, &mut xpath).await?;
 	apply_primary_source_section(&mut doc, &parser, mm, case_id, &mut xpath).await?;
 	apply_literature_section(&mut doc, &parser, mm, case_id, &mut xpath).await?;
