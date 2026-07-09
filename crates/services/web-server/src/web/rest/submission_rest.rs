@@ -6,11 +6,15 @@ use axum::http::{HeaderMap, HeaderValue};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use lib_core::model::acs::{XML_EXPORT, XML_EXPORT_READ};
+use lib_core::model::message_header::{
+	MessageHeader, MessageHeaderBmc, MessageHeaderForUpdate,
+};
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::submission_receiver_option::{
 	SubmissionReceiverOption, SubmissionReceiverOptionBmc,
 };
 use lib_core::model::ModelManager;
+use lib_rest_core::rest_params::ParamsForUpdate;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{require_permission, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
@@ -45,6 +49,14 @@ pub struct SubmissionHistoryList {
 #[derive(Debug, Serialize)]
 pub struct SubmissionReceiverOptionList {
 	pub items: Vec<SubmissionReceiverOption>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SubmissionReceiverSelectionInput {
+	pub authority: String,
+	pub receiver_label: String,
+	pub batch_receiver_identifier: String,
+	pub message_receiver_identifier: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -202,6 +214,71 @@ pub async fn list_receiver_options(
 	))
 }
 
+/// PUT /api/cases/{id}/submission-receiver
+pub async fn apply_submission_receiver_selection(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(case_id): Path<Uuid>,
+	Json(params): Json<ParamsForUpdate<SubmissionReceiverSelectionInput>>,
+) -> Result<(StatusCode, Json<DataRestResult<MessageHeader>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, XML_EXPORT)?;
+	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
+	let ParamsForUpdate { data } = params;
+
+	let authority = data.authority.trim().to_ascii_lowercase();
+	if !matches!(authority.as_str(), "fda" | "mfds") {
+		return Err(Error::BadRequest {
+			message: format!("unsupported receiver authority: {}", data.authority),
+		});
+	}
+	let receiver_label =
+		require_non_empty("receiver_label", data.receiver_label.as_str())?;
+	let batch_receiver_identifier = require_non_empty(
+		"batch_receiver_identifier",
+		data.batch_receiver_identifier.as_str(),
+	)?;
+	let message_receiver_identifier = require_non_empty(
+		"message_receiver_identifier",
+		data.message_receiver_identifier.as_str(),
+	)?;
+
+	let options =
+		SubmissionReceiverOptionBmc::list_by_authority(&ctx, &mm, &authority)
+			.await?;
+	let matched = options.iter().any(|option| {
+		option.receiver_label == receiver_label
+			&& option.batch_receiver_identifier == batch_receiver_identifier
+			&& option.message_receiver_identifier == message_receiver_identifier
+	});
+	if !matched {
+		return Err(Error::BadRequest {
+			message: "selected receiver identifiers do not match a configured submission receiver option".to_string(),
+		});
+	}
+
+	MessageHeaderBmc::update_by_case(
+		&ctx,
+		&mm,
+		case_id,
+		MessageHeaderForUpdate {
+			batch_number: None,
+			batch_sender_identifier: None,
+			batch_receiver_identifier: Some(batch_receiver_identifier.to_string()),
+			batch_transmission_date: None,
+			message_number: None,
+			message_sender_identifier: None,
+			message_receiver_identifier: Some(
+				message_receiver_identifier.to_string(),
+			),
+			message_date: None,
+		},
+	)
+	.await?;
+	let entity = MessageHeaderBmc::get_by_case(&ctx, &mm, case_id).await?;
+	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+}
+
 /// GET /api/submissions/{id}
 pub async fn get_case_submission(
 	State(_mm): State<ModelManager>,
@@ -217,6 +294,16 @@ pub async fn get_case_submission(
 	)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &_mm, record.case_id).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: record })))
+}
+
+fn require_non_empty<'a>(field: &str, value: &'a str) -> Result<&'a str> {
+	let trimmed = value.trim();
+	if trimmed.is_empty() {
+		return Err(Error::BadRequest {
+			message: format!("{field} is required"),
+		});
+	}
+	Ok(trimmed)
 }
 
 /// GET /api/submissions/{id}/events

@@ -209,6 +209,142 @@ async fn create_case_defaults_c1_2_to_backend_creation_timestamp() -> Result<()>
 
 #[serial]
 #[tokio::test]
+async fn update_case_rejects_review_receiver_without_receiver_name() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safetyReportIdentification": {
+					"safetyReportId": format!("SR-RE-MISSING-{}", Uuid::new_v4())
+				},
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let case_id = body["data"]["id"].as_str().ok_or("missing case id")?;
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {
+				"review_receivers_json": serde_json::to_string(&json!([
+					{
+						"reportDue": 7,
+						"reportDueDate": "2026-07-08"
+					}
+				]))?
+			},
+			"reason_for_change": "update review receiver"
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body:?}");
+	assert!(
+		body["error"]["data"]["detail"]
+			.as_str()
+			.unwrap_or_default()
+			.contains("receiver"),
+		"{body:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn update_case_review_receiver_defaults_report_due_date_from_c1_5(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		"/api/cases",
+		json!({
+			"data": {
+				"safetyReportIdentification": {
+					"safetyReportId": format!("SR-RE-DUE-{}", Uuid::new_v4())
+				},
+				"status": "draft"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{body:?}");
+	let case_id =
+		Uuid::parse_str(body["data"]["id"].as_str().ok_or("missing case id")?)?;
+
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(
+		mm.dbx(),
+		seed.admin.id,
+		seed.org_id,
+		ROLE_SPONSOR_ADMIN_CRO,
+	)
+	.await?;
+	mm.dbx()
+		.execute(
+			sqlx::query(
+				"UPDATE safety_report_identification
+				 SET date_of_most_recent_information = DATE '2026-07-01'
+				 WHERE case_id = $1",
+			)
+			.bind(case_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}"),
+		json!({
+			"data": {
+				"review_receivers_json": serde_json::to_string(&json!({
+					"reviewReceivers": [
+						{
+							"receiver": "MFDS(KR)",
+							"reportDue": 7
+						}
+					]
+				}))?
+			},
+			"reason_for_change": "update review receiver"
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	let raw = body["data"]["review_receivers_json"]
+		.as_str()
+		.ok_or("missing review_receivers_json")?;
+	let saved: Value = serde_json::from_str(raw)?;
+	assert_eq!(
+		saved["reviewReceivers"][0]["reportDueDate"].as_str(),
+		Some("2026-07-08"),
+		"{saved:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_kr_device_characteristics_round_trip_via_api() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

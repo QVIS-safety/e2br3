@@ -15,7 +15,7 @@ pub(crate) async fn export_patch(
 		.await
 		.map_err(Error::from)?;
 	let sender = fetch_sender_information(mm, case_id).await?;
-	let header = fetch_message_header(mm, case_id).await?;
+	let header = fetch_message_header(ctx, mm, case_id).await?;
 	export_c_safety_report_patch(
 		raw_xml,
 		case,
@@ -35,7 +35,7 @@ pub(crate) async fn export_build(
 		.await
 		.map_err(Error::from)?;
 	let sender = fetch_sender_information(mm, case_id).await?;
-	let header = fetch_message_header(mm, case_id).await?;
+	let header = fetch_message_header(ctx, mm, case_id).await?;
 	export_c_safety_report_xml(case, &report, header.as_ref(), sender.as_ref())
 }
 

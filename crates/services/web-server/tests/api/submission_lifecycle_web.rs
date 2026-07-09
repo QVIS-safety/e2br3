@@ -89,6 +89,25 @@ async fn post_json_with_headers(
 	Ok((status, value))
 }
 
+async fn put_json(
+	app: &axum::Router,
+	cookie: &str,
+	uri: &str,
+	body: Value,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("PUT")
+		.uri(uri)
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = parse_json_or_raw(&body);
+	Ok((status, value))
+}
+
 async fn get_json(
 	app: &axum::Router,
 	cookie: &str,
@@ -886,6 +905,67 @@ async fn test_submission_receiver_options_list_defaults_by_authority() -> Result
 			"missing MFDS receiver option {receiver_label}: {mfds_items:?}"
 		);
 	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_submission_receiver_selection_updates_message_header_n_identifiers(
+) -> Result<()> {
+	clear_esg_env();
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	let case_id = create_case(&app, &cookie, seed.org_id).await?;
+	create_message_header(&app, &cookie, case_id).await?;
+
+	let (status, body) = put_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/submission-receiver"),
+		json!({
+			"data": {
+				"authority": "mfds",
+				"receiver_label": "MFDS(KR)",
+				"batch_receiver_identifier": "MFDS",
+				"message_receiver_identifier": "KR"
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body:?}");
+	assert_eq!(
+		body["data"]["batch_receiver_identifier"].as_str(),
+		Some("MFDS"),
+		"{body:?}"
+	);
+	assert_eq!(
+		body["data"]["message_receiver_identifier"].as_str(),
+		Some("KR"),
+		"{body:?}"
+	);
+
+	let (header_status, header) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/message-header"),
+	)
+	.await?;
+	assert_eq!(header_status, StatusCode::OK, "{header:?}");
+	assert_eq!(
+		header["data"]["batch_receiver_identifier"].as_str(),
+		Some("MFDS"),
+		"{header:?}"
+	);
+	assert_eq!(
+		header["data"]["message_receiver_identifier"].as_str(),
+		Some("KR"),
+		"{header:?}"
+	);
 
 	Ok(())
 }

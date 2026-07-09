@@ -1,13 +1,15 @@
 use super::*;
+use crate::model::message_header::MessageHeaderBmc;
 
 pub(crate) async fn apply_section_n(
+	ctx: &Ctx,
 	doc: &mut Document,
 	parser: &Parser,
 	mm: &ModelManager,
 	case_id: sqlx::types::Uuid,
 	xpath: &mut Context,
 ) -> Result<()> {
-	let header = fetch_message_header(mm, case_id).await?;
+	let header = fetch_message_header(ctx, mm, case_id).await?;
 	let Some(header) = header else {
 		return Ok(());
 	};
@@ -65,7 +67,11 @@ pub(crate) async fn apply_section_n(
 		.batch_receiver_identifier
 		.as_deref()
 		.filter(|val| !val.trim().is_empty())
-		.unwrap_or(&header.message_receiver_identifier);
+		.ok_or_else(|| Error::InvalidXml {
+			message: "message_headers.batch_receiver_identifier is required for section N export".to_string(),
+			line: None,
+			column: None,
+		})?;
 	tracing::debug!(
 		batch_receiver,
 		"XML export: applying batch receiver identifier"
@@ -148,14 +154,15 @@ pub(crate) async fn apply_section_n(
 }
 
 pub(crate) async fn fetch_message_header(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: sqlx::types::Uuid,
 ) -> Result<Option<MessageHeader>> {
-	let sql = "SELECT * FROM message_headers WHERE case_id = $1 LIMIT 1";
-	mm.dbx()
-		.fetch_optional(sqlx::query_as::<_, MessageHeader>(sql).bind(case_id))
-		.await
-		.map_err(|e| Error::Model(crate::model::Error::Store(format!("{e}"))))
+	match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
+		Ok(header) => Ok(Some(header)),
+		Err(crate::model::Error::EntityUuidNotFound { .. }) => Ok(None),
+		Err(err) => Err(Error::Model(err)),
+	}
 }
 
 pub(crate) async fn fetch_primary_source(
