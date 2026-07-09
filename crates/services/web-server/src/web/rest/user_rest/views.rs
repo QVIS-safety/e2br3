@@ -41,6 +41,20 @@ pub(super) fn user_view(user: User) -> UserView {
 	}
 }
 
+pub(super) fn workflow_user_option_view(
+	user: WorkflowUserOption,
+) -> WorkflowUserOptionView {
+	WorkflowUserOptionView {
+		id: user.id,
+		email: user.email.clone(),
+		display_name: if user.username.trim().is_empty() {
+			user.email
+		} else {
+			user.username
+		},
+	}
+}
+
 pub(super) fn organization_option_view(
 	organization: Organization,
 ) -> OrganizationOptionView {

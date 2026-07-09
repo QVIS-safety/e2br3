@@ -10,10 +10,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::model::acs::CASE_LIST;
+use lib_core::model::case::{CaseBmc, CaseListViewRow};
 use lib_core::model::case_query::{
 	build_where, combine_where, validate_conditions, RawCondition, ReportFilters,
 };
 use lib_core::model::case_query_catalog::{catalog, CatalogPage};
+use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{
@@ -49,6 +51,7 @@ pub struct CaseQueryRequest {
 #[serde(rename_all = "camelCase")]
 pub struct CaseQueryResult {
 	pub case_ids: Vec<Uuid>,
+	pub items: Vec<CaseListViewRow>,
 	pub total: usize,
 }
 
@@ -107,10 +110,33 @@ pub async fn search_cases(
 	}
 
 	let total = case_ids.len();
+	let mut items = with_rls_read(&mm, &ctx, |dbx| {
+		let case_ids = case_ids.clone();
+		Box::pin(async move {
+			CaseBmc::list_view_rows_by_ids(dbx, &case_ids)
+				.await
+				.map_err(Error::from)
+		})
+	})
+	.await?;
+	let cached_totals =
+		CaseValidationSummaryBmc::cached_totals_by_case(&ctx, &mm, &case_ids)
+			.await?;
+	for item in &mut items {
+		item.warn = cached_totals
+			.get(&item.case_id)
+			.copied()
+			.unwrap_or(0)
+			.to_string();
+	}
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
-			data: CaseQueryResult { case_ids, total },
+			data: CaseQueryResult {
+				case_ids,
+				items,
+				total,
+			},
 		}),
 	))
 }

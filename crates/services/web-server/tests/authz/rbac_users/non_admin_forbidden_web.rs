@@ -128,6 +128,42 @@ async fn test_non_admin_cannot_list_users() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_non_admin_can_list_lightweight_workflow_user_options() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_all_roles(&mm).await?;
+	let app = web_server::app(mm);
+	let token = generate_web_token(&seed.user.email, seed.user.token_salt)?;
+
+	let req = Request::builder()
+		.method("GET")
+		.uri("/api/users/workflow-options?limit=25")
+		.header("cookie", cookie_header(&token.to_string()))
+		.body(Body::empty())?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let json: serde_json::Value = serde_json::from_slice(&body)?;
+	let users = json["data"]
+		.as_array()
+		.ok_or("expected workflow user option array")?;
+	let expected_user_id = seed.user.id.to_string();
+	assert!(
+		users
+			.iter()
+			.any(|user| user["id"].as_str() == Some(expected_user_id.as_str())),
+		"expected current org user in workflow options: {json:?}"
+	);
+	assert!(
+		users.iter().all(|user| user.get("comments").is_none()
+			&& user.get("scope").is_none()
+			&& user.get("roleMeta").is_none()),
+		"workflow options should stay lightweight: {json:?}"
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_non_admin_cannot_get_user() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_all_roles(&mm).await?;

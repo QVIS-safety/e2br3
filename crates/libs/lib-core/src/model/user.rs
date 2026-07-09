@@ -122,6 +122,13 @@ pub struct UserForAuth {
 	pub token_salt: Uuid,
 }
 
+#[derive(Debug, Clone, FromRow, Serialize)]
+pub struct WorkflowUserOption {
+	pub id: Uuid,
+	pub email: String,
+	pub username: String,
+}
+
 #[derive(Clone, Fields, Deserialize)]
 pub struct UserForUpdate {
 	pub organization_id: Option<Uuid>,
@@ -404,6 +411,29 @@ impl UserBmc {
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<User>> {
 		base_uuid::list::<Self, _, _>(ctx, mm, filters, list_options).await
+	}
+
+	pub async fn list_workflow_options(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		limit: i64,
+	) -> Result<Vec<WorkflowUserOption>> {
+		let limit = limit.clamp(1, 500);
+		mm.dbx()
+			.fetch_all(
+				sqlx::query_as::<_, WorkflowUserOption>(
+					"SELECT id, email, username
+					   FROM users
+					  WHERE organization_id = $1
+					    AND active = TRUE
+					  ORDER BY lower(email), id
+					  LIMIT $2",
+				)
+				.bind(ctx.organization_id())
+				.bind(limit),
+			)
+			.await
+			.map_err(Error::from)
 	}
 
 	pub async fn update(

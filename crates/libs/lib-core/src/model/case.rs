@@ -164,6 +164,122 @@ fn list_view_order_clause(order_bys: Option<&OrderBys>) -> &'static str {
 	}
 }
 
+fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
+	format!(
+		r#"
+		SELECT row_number() OVER (ORDER BY {order_clause})::bigint AS no,
+		       c.id AS case_id,
+		       COALESCE(NULLIF(s.safety_report_id, ''), c.id::text) AS case_no,
+		       GREATEST(COALESCE(s.version, 1) - 1, 0) AS fu,
+		       COALESCE(s.transmission_date, to_char(c.created_at AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS')) AS date_of_creation,
+		       COALESCE(s.date_of_most_recent_information::text, 'N/A') AS date_of_most_recent_information,
+		       COALESCE(NULLIF(c.dg_prd_key, ''), 'N/A') AS dg_prd_key,
+		       '0' AS warn,
+		       COALESCE(NULLIF(c.workflow_status, ''), c.status) AS wf_status,
+		       COALESCE((
+		       	SELECT cs.status
+		       	  FROM case_submissions cs
+		       	 WHERE cs.case_id = c.id
+		       	 ORDER BY cs.submitted_at DESC
+		       	 LIMIT 1
+		       ), 'No') AS submission,
+		       CASE
+		       	WHEN EXISTS (
+		       		SELECT 1
+		       		  FROM reactions r
+		       		 WHERE r.case_id = c.id
+		       		   AND COALESCE(r.serious, false) = true
+		       	)
+		       	THEN 'Yes'
+		       	ELSE 'No'
+		       END AS sae,
+		       COALESCE((
+		       	SELECT NULLIF(r.reaction_meddra_code, '')
+		       	  FROM reactions r
+		       	 WHERE r.case_id = c.id
+		       	 ORDER BY r.sequence_number ASC, r.created_at ASC
+		       	 LIMIT 1
+		       ), 'N/A') AS meddra,
+		       COALESCE((
+		       	SELECT NULLIF(r.primary_source_reaction, '')
+		       	  FROM reactions r
+		       	 WHERE r.case_id = c.id
+		       	 ORDER BY r.sequence_number ASC, r.created_at ASC
+		       	 LIMIT 1
+		       ), 'N/A') AS ae_term,
+		       COALESCE((
+		       	SELECT NULLIF(si.sponsor_study_number, '')
+		       	  FROM study_information si
+		       	 WHERE si.case_id = c.id
+		       	 ORDER BY si.created_at ASC
+		       	 LIMIT 1
+		       ), 'N/A') AS study_no,
+		       COALESCE((
+		       	SELECT NULLIF(p.patient_initials, '')
+		       	  FROM patient_information p
+		       	 WHERE p.case_id = c.id
+		       	 ORDER BY p.created_at ASC
+		       	 LIMIT 1
+		       ), 'N/A') AS subject,
+		       COALESCE(NULLIF(s.worldwide_unique_id, ''), 'N/A') AS worldwide_unique_no,
+		       CASE s.report_type
+		       	WHEN '1' THEN 'Spontaneous report'
+		       	WHEN '2' THEN 'Report from study'
+		       	WHEN '3' THEN 'Other'
+		       	WHEN '4' THEN 'Not available to sender'
+		       	ELSE COALESCE(NULLIF(s.report_type, ''), 'N/A')
+		       END AS type_of_report,
+		       COALESCE((
+		       	SELECT NULLIF(sender.organization_name, '')
+		       	  FROM sender_information sender
+		       	 WHERE sender.case_id = c.id
+		       	 ORDER BY sender.created_at ASC
+		       	 LIMIT 1
+		       ), 'N/A') AS sender,
+		       COALESCE((
+		       	SELECT NULLIF(d.manufacturer_name, '')
+		       	  FROM drug_information d
+		       	 WHERE d.case_id = c.id
+		       	 ORDER BY d.sequence_number ASC, d.created_at ASC
+		       	 LIMIT 1
+		       ), 'N/A') AS manufacturer,
+		       COALESCE(NULLIF(c.workflow_assigned_role, ''), 'ALL') AS wf_role,
+		       COALESCE((
+		       	SELECT NULLIF(u.email, '')
+		       	  FROM users u
+		       	 WHERE u.id = c.workflow_assigned_user_id
+		       	 LIMIT 1
+		       ), 'ALL') AS wf_user,
+		       COALESCE((
+		       	SELECT NULLIF(ri.organization_name, '')
+		       	  FROM receiver_information ri
+		       	 WHERE ri.case_id = c.id
+		       	 LIMIT 1
+		       ), NULLIF(s.receiver_organization, ''), 'N/A') AS receiver,
+		       CASE WHEN c.raw_xml IS NULL THEN 'Manual' ELSE 'Import' END AS creation_type,
+		       c.status = 'reviewed' AS reviewed,
+		       c.status = 'locked' AS locked,
+		       c.status = 'deleted' AS deleted,
+		       (
+		       	c.status IN ('validated', 'reviewed', 'locked')
+		       	OR (
+		       		c.raw_xml IS NOT NULL
+		       		AND COALESCE(c.dirty_c, false) = false
+		       		AND COALESCE(c.dirty_d, false) = false
+		       		AND COALESCE(c.dirty_e, false) = false
+		       		AND COALESCE(c.dirty_f, false) = false
+		       		AND COALESCE(c.dirty_g, false) = false
+		       		AND COALESCE(c.dirty_h, false) = false
+		       	)
+		       ) AS export_eligible
+		  FROM cases c
+		  LEFT JOIN safety_report_identification s ON s.case_id = c.id
+		 {where_clause}
+		 ORDER BY {order_clause}
+		"#
+	)
+}
+
 // -- Case domain helpers
 
 /// Returns true when `status` is a recognized case lifecycle value.
@@ -285,6 +401,7 @@ pub struct CaseListViewRow {
 	pub reviewed: bool,
 	pub locked: bool,
 	pub deleted: bool,
+	pub export_eligible: bool,
 }
 
 // -- CaseBmc (Business Model Controller)
@@ -599,108 +716,27 @@ impl CaseBmc {
 		let order_clause = list_view_order_clause(
 			list_options.and_then(|options| options.order_bys.as_ref()),
 		);
-		let sql = format!(
-			r#"
-			SELECT row_number() OVER (ORDER BY {order_clause})::bigint AS no,
-			       c.id AS case_id,
-			       COALESCE(NULLIF(s.safety_report_id, ''), c.id::text) AS case_no,
-			       GREATEST(COALESCE(s.version, 1) - 1, 0) AS fu,
-			       COALESCE(s.transmission_date, to_char(c.created_at AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS')) AS date_of_creation,
-			       COALESCE(s.date_of_most_recent_information::text, 'N/A') AS date_of_most_recent_information,
-			       COALESCE(NULLIF(c.dg_prd_key, ''), 'N/A') AS dg_prd_key,
-			       '0' AS warn,
-			       COALESCE(NULLIF(c.workflow_status, ''), c.status) AS wf_status,
-			       COALESCE((
-			       	SELECT cs.status
-			       	  FROM case_submissions cs
-			       	 WHERE cs.case_id = c.id
-			       	 ORDER BY cs.submitted_at DESC
-			       	 LIMIT 1
-			       ), 'No') AS submission,
-			       CASE
-			       	WHEN EXISTS (
-			       		SELECT 1
-			       		  FROM reactions r
-			       		 WHERE r.case_id = c.id
-			       		   AND COALESCE(r.serious, false) = true
-			       	)
-			       	THEN 'Yes'
-			       	ELSE 'No'
-			       END AS sae,
-			       COALESCE((
-			       	SELECT NULLIF(r.reaction_meddra_code, '')
-			       	  FROM reactions r
-			       	 WHERE r.case_id = c.id
-			       	 ORDER BY r.sequence_number ASC, r.created_at ASC
-			       	 LIMIT 1
-			       ), 'N/A') AS meddra,
-			       COALESCE((
-			       	SELECT NULLIF(r.primary_source_reaction, '')
-			       	  FROM reactions r
-			       	 WHERE r.case_id = c.id
-			       	 ORDER BY r.sequence_number ASC, r.created_at ASC
-			       	 LIMIT 1
-			       ), 'N/A') AS ae_term,
-			       COALESCE((
-			       	SELECT NULLIF(si.sponsor_study_number, '')
-			       	  FROM study_information si
-			       	 WHERE si.case_id = c.id
-			       	 ORDER BY si.created_at ASC
-			       	 LIMIT 1
-			       ), 'N/A') AS study_no,
-			       COALESCE((
-			       	SELECT NULLIF(p.patient_initials, '')
-			       	  FROM patient_information p
-			       	 WHERE p.case_id = c.id
-			       	 ORDER BY p.created_at ASC
-			       	 LIMIT 1
-			       ), 'N/A') AS subject,
-			       COALESCE(NULLIF(s.worldwide_unique_id, ''), 'N/A') AS worldwide_unique_no,
-			       CASE s.report_type
-			       	WHEN '1' THEN 'Spontaneous report'
-			       	WHEN '2' THEN 'Report from study'
-			       	WHEN '3' THEN 'Other'
-			       	WHEN '4' THEN 'Not available to sender'
-			       	ELSE COALESCE(NULLIF(s.report_type, ''), 'N/A')
-			       END AS type_of_report,
-			       COALESCE((
-			       	SELECT NULLIF(sender.organization_name, '')
-			       	  FROM sender_information sender
-			       	 WHERE sender.case_id = c.id
-			       	 ORDER BY sender.created_at ASC
-			       	 LIMIT 1
-			       ), 'N/A') AS sender,
-			       COALESCE((
-			       	SELECT NULLIF(d.manufacturer_name, '')
-			       	  FROM drug_information d
-			       	 WHERE d.case_id = c.id
-			       	 ORDER BY d.sequence_number ASC, d.created_at ASC
-			       	 LIMIT 1
-			       ), 'N/A') AS manufacturer,
-			       COALESCE(NULLIF(c.workflow_assigned_role, ''), 'ALL') AS wf_role,
-			       COALESCE((
-			       	SELECT NULLIF(u.email, '')
-			       	  FROM users u
-			       	 WHERE u.id = c.workflow_assigned_user_id
-			       	 LIMIT 1
-			       ), 'ALL') AS wf_user,
-			       COALESCE((
-			       	SELECT NULLIF(ri.organization_name, '')
-			       	  FROM receiver_information ri
-			       	 WHERE ri.case_id = c.id
-			       	 LIMIT 1
-			       ), NULLIF(s.receiver_organization, ''), 'N/A') AS receiver,
-			       CASE WHEN c.raw_xml IS NULL THEN 'Manual' ELSE 'Import' END AS creation_type,
-			       c.status = 'reviewed' AS reviewed,
-			       c.status = 'locked' AS locked,
-			       c.status = 'deleted' AS deleted
-			  FROM cases c
-			  LEFT JOIN safety_report_identification s ON s.case_id = c.id
-			 ORDER BY {order_clause}
-			"#
-		);
+		let sql = list_view_rows_sql(order_clause, "");
 
 		dbx.fetch_all(sqlx::query_as::<_, CaseListViewRow>(&sql))
+			.await
+			.map_err(crate::model::Error::from)
+	}
+
+	/// List case grid projections for a known case-id set.
+	/// Must be called from inside an RLS-scoped read context.
+	pub async fn list_view_rows_by_ids(
+		dbx: &Dbx,
+		case_ids: &[Uuid],
+	) -> Result<Vec<CaseListViewRow>> {
+		if case_ids.is_empty() {
+			return Ok(Vec::new());
+		}
+		let sql = list_view_rows_sql(
+			"c.created_at DESC, c.id DESC",
+			"WHERE c.id = ANY($1)",
+		);
+		dbx.fetch_all(sqlx::query_as::<_, CaseListViewRow>(&sql).bind(case_ids))
 			.await
 			.map_err(crate::model::Error::from)
 	}

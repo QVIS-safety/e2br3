@@ -29,7 +29,7 @@ use lib_core::model::organization::{
 };
 use lib_core::model::permission_profile::PermissionProfileBmc;
 use lib_core::model::user::{
-	User, UserBmc, UserFilter, UserForCreate, UserForUpdate,
+	User, UserBmc, UserFilter, UserForCreate, UserForUpdate, WorkflowUserOption,
 };
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate, ParamsList};

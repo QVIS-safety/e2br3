@@ -62,6 +62,14 @@ pub struct UserView {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct WorkflowUserOptionView {
+	pub id: Uuid,
+	pub email: String,
+	pub display_name: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct OrganizationOptionView {
 	pub id: Uuid,
 	pub name: String,

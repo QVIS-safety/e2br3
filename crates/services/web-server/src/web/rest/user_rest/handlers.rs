@@ -165,6 +165,34 @@ pub async fn list_users(
 	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkflowUserOptionsQuery {
+	pub limit: Option<i64>,
+}
+
+/// GET /api/users/workflow-options
+/// Lightweight active user options for workflow assignment selectors.
+pub async fn list_workflow_user_options(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	axum::extract::Query(query): axum::extract::Query<WorkflowUserOptionsQuery>,
+) -> Result<(
+	StatusCode,
+	Json<DataRestResult<Vec<WorkflowUserOptionView>>>,
+)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_READ)?;
+	let users =
+		UserBmc::list_workflow_options(&ctx, &mm, query.limit.unwrap_or(200))
+			.await?;
+	let users = users
+		.into_iter()
+		.map(workflow_user_option_view)
+		.collect::<Vec<_>>();
+	Ok((StatusCode::OK, Json(DataRestResult { data: users })))
+}
+
 /// PUT /api/users/:id
 /// Update a user
 /// **Requires User.Update permission (admin only)**

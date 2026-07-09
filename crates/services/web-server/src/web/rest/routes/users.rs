@@ -44,6 +44,10 @@ pub fn routes_users(mm: ModelManager) -> Router {
 			"/users/me/password",
 			axum::routing::post(user_rest::set_my_password),
 		)
+		.route(
+			"/users/workflow-options",
+			get(user_rest::list_workflow_user_options),
+		)
 		// Standard collection routes
 		.route(
 			"/users",
