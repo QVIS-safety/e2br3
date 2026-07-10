@@ -15,11 +15,14 @@ use lib_core::model::case::{
 };
 use lib_core::model::case_numbering::generate_case_number;
 use lib_core::model::case_validation_summary::CaseValidationSummaryBmc;
+use lib_core::model::presave::{ReceiverPresave, ReceiverPresaveBmc};
+use lib_core::model::reaction::{Reaction, ReactionBmc};
 use lib_core::model::safety_report::{
 	SafetyReportIdentificationBmc, SafetyReportIdentificationForCreate,
 };
 use lib_core::model::ModelManager;
 use lib_core::regulatory::RegulatoryAuthority;
+use lib_core::report_due::{classify_report, report_due_date, ReceiverTimeline};
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
@@ -32,7 +35,6 @@ use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use sqlx::{types::time::OffsetDateTime, FromRow};
-use time::Duration;
 use uuid::Uuid;
 use validator::validate_case_for_authority;
 
@@ -117,10 +119,18 @@ async fn normalize_review_receivers_for_update(
 			message: "C.1.5 date_of_most_recent_information is required to calculate review receiver reportDueDate".to_string(),
 		}
 	})?;
+	let reactions = ReactionBmc::list_by_case(ctx, mm, case_id)
+		.await
+		.map_err(Error::Model)?;
+	let is_serious = reactions.iter().any(reaction_is_serious);
+	let category = classify_report(report.report_type.as_deref(), is_serious);
+	let receiver_presaves = ReceiverPresaveBmc::list(ctx, mm, None)
+		.await
+		.map_err(Error::Model)?;
 
 	match &mut value {
 		Value::Array(rows) => {
-			normalize_review_receiver_rows(rows, c15)?;
+			normalize_review_receiver_rows(rows, c15, category, &receiver_presaves)?;
 		}
 		Value::Object(object) => {
 			let rows = object
@@ -129,7 +139,7 @@ async fn normalize_review_receivers_for_update(
 				.ok_or_else(|| Error::BadRequest {
 					message: "review_receivers_json must be an array or contain reviewReceivers array".to_string(),
 				})?;
-			normalize_review_receiver_rows(rows, c15)?;
+			normalize_review_receiver_rows(rows, c15, category, &receiver_presaves)?;
 		}
 		_ => {
 			return Err(Error::BadRequest {
@@ -150,6 +160,8 @@ async fn normalize_review_receivers_for_update(
 fn normalize_review_receiver_rows(
 	rows: &mut [Value],
 	c15: time::Date,
+	category: lib_core::report_due::ReportCategory,
+	receiver_presaves: &[ReceiverPresave],
 ) -> Result<()> {
 	for (idx, row) in rows.iter_mut().enumerate() {
 		let Some(object) = row.as_object_mut() else {
@@ -157,7 +169,13 @@ fn normalize_review_receiver_rows(
 				message: format!("review receiver row {idx} must be an object"),
 			});
 		};
-		normalize_review_receiver_row(idx, object, c15)?;
+		normalize_review_receiver_row(
+			idx,
+			object,
+			c15,
+			category,
+			receiver_presaves,
+		)?;
 	}
 	Ok(())
 }
@@ -166,18 +184,27 @@ fn normalize_review_receiver_row(
 	idx: usize,
 	object: &mut Map<String, Value>,
 	c15: time::Date,
+	category: lib_core::report_due::ReportCategory,
+	receiver_presaves: &[ReceiverPresave],
 ) -> Result<()> {
 	let receiver =
-		text_field(object, &["receiver", "receiverName", "receiver_name"]);
-	if receiver.is_none() {
-		return Err(Error::BadRequest {
-			message: format!("review receiver row {idx} receiver is required"),
-		});
-	}
-	let report_due = integer_field(object, &["reportDue", "report_due"])
-		.ok_or_else(|| Error::BadRequest {
-			message: format!("review receiver row {idx} reportDue is required"),
-		})?;
+		text_field(object, &["receiver", "receiverName", "receiver_name"])
+			.ok_or_else(|| Error::BadRequest {
+				message: format!("review receiver row {idx} receiver is required"),
+			})?;
+	let report_due = match integer_field(object, &["reportDue", "report_due"]) {
+		Some(value) => value,
+		None => {
+			let value = default_report_due_from_receiver(
+				idx,
+				receiver,
+				category,
+				receiver_presaves,
+			)?;
+			object.insert("reportDue".to_string(), Value::Number(value.into()));
+			value
+		}
+	};
 	if report_due < 0 {
 		return Err(Error::BadRequest {
 			message: format!(
@@ -188,18 +215,111 @@ fn normalize_review_receiver_row(
 	if text_field(object, &["reportDueDate", "report_due_date"]).is_some() {
 		return Ok(());
 	}
-	let due_date = c15.checked_add(Duration::days(report_due)).ok_or_else(|| {
-		Error::BadRequest {
-			message: format!(
-				"review receiver row {idx} reportDueDate calculation overflowed"
-			),
-		}
+	let report_due_i32 = i32::try_from(report_due).map_err(|_| Error::BadRequest {
+		message: format!(
+			"review receiver row {idx} reportDue is too large to calculate reportDueDate"
+		),
+	})?;
+	let due_date = report_due_date(
+		c15,
+		&ReceiverTimeline {
+			nsae_spontaneous: Some(report_due_i32),
+			sae_spontaneous: Some(report_due_i32),
+			nsae_solicited: Some(report_due_i32),
+			sae_solicited: Some(report_due_i32),
+		},
+		category,
+	)
+	.ok_or_else(|| Error::BadRequest {
+		message: format!(
+			"review receiver row {idx} reportDueDate calculation overflowed"
+		),
 	})?;
 	object.insert(
 		"reportDueDate".to_string(),
 		Value::String(format_date(due_date)),
 	);
 	Ok(())
+}
+
+fn default_report_due_from_receiver(
+	idx: usize,
+	receiver: &str,
+	category: lib_core::report_due::ReportCategory,
+	receiver_presaves: &[ReceiverPresave],
+) -> Result<i64> {
+	let receiver = receiver.trim();
+	let presave = receiver_presaves
+		.iter()
+		.find(|row| {
+			!row.deleted
+				&& row
+					.organization_name
+					.as_deref()
+					.map(str::trim)
+					.is_some_and(|name| name == receiver)
+		})
+		.ok_or_else(|| Error::BadRequest {
+			message: format!(
+				"review receiver row {idx} receiver '{receiver}' was not found in INFO receivers"
+			),
+		})?;
+	let timeline = receiver_timeline(presave);
+	let day_count = timeline.day_count(category).ok_or_else(|| Error::BadRequest {
+		message: format!(
+			"review receiver row {idx} receiver '{receiver}' has no reportDue timeline for the case category"
+		),
+	})?;
+	if day_count < 0 {
+		return Err(Error::BadRequest {
+			message: format!(
+				"review receiver row {idx} receiver '{receiver}' reportDue timeline must be non-negative"
+			),
+		});
+	}
+	Ok(day_count as i64)
+}
+
+fn receiver_timeline(receiver: &ReceiverPresave) -> ReceiverTimeline {
+	ReceiverTimeline {
+		nsae_spontaneous: timeline_day_count(
+			receiver.nsae_non_solicited_day_count,
+			receiver.nsae_non_solicited_not_applicable,
+		),
+		sae_spontaneous: timeline_day_count(
+			receiver.sae_non_solicited_day_count,
+			receiver.sae_non_solicited_not_applicable,
+		),
+		nsae_solicited: timeline_day_count(
+			receiver.nsae_solicited_day_count,
+			receiver.nsae_solicited_not_applicable,
+		),
+		sae_solicited: timeline_day_count(
+			receiver.sae_solicited_day_count,
+			receiver.sae_solicited_not_applicable,
+		),
+	}
+}
+
+fn timeline_day_count(
+	day_count: Option<i32>,
+	not_applicable: Option<bool>,
+) -> Option<i32> {
+	if not_applicable == Some(true) {
+		None
+	} else {
+		day_count
+	}
+}
+
+fn reaction_is_serious(reaction: &Reaction) -> bool {
+	reaction.serious.unwrap_or(false)
+		|| reaction.criteria_death
+		|| reaction.criteria_life_threatening
+		|| reaction.criteria_hospitalization
+		|| reaction.criteria_disabling
+		|| reaction.criteria_congenital_anomaly
+		|| reaction.criteria_other_medically_important
 }
 
 fn text_field<'a>(object: &'a Map<String, Value>, keys: &[&str]) -> Option<&'a str> {
