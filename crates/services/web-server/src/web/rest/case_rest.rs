@@ -22,7 +22,9 @@ use lib_core::model::safety_report::{
 };
 use lib_core::model::ModelManager;
 use lib_core::regulatory::RegulatoryAuthority;
-use lib_core::report_due::{classify_report, report_due_date, ReceiverTimeline};
+use lib_core::report_due::{
+	classify_report, report_due_date, ReceiverTimeline, ReportCategory,
+};
 use lib_rest_core::prelude::*;
 use lib_rest_core::rest_params::ParamsForCreate;
 use lib_rest_core::rest_result::DataRestResult;
@@ -41,6 +43,24 @@ use validator::validate_case_for_authority;
 const SYSTEM_VALIDATION_REASON_VALIDATOR: &str =
 	"system validation: validator mark-validated endpoint";
 const FDA_REPORT_TYPE_VALUES: &[&str] = &["1", "2", "3", "4"];
+const REVIEW_RECEIVER_MAX_LEN: usize = 128;
+const REVIEW_RECEIVER_ROW_FIELDS: &[&str] = &[
+	"receiver",
+	"receiverName",
+	"receiver_name",
+	"reportDue",
+	"report_due",
+	"reportDueDate",
+	"report_due_date",
+	"reportedDate",
+	"reported_date",
+];
+
+#[derive(Default)]
+struct ReviewReceiverRequirements {
+	needs_report_due_default: bool,
+	needs_report_due_date: bool,
+}
 
 // -- Public helpers (used by sibling modules)
 
@@ -111,42 +131,41 @@ async fn normalize_review_receivers_for_update(
 			message: format!("review_receivers_json must be valid JSON: {err}"),
 		})?;
 
-	let report = SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id)
-		.await
-		.map_err(Error::Model)?;
-	let c15 = report.date_of_most_recent_information.ok_or_else(|| {
-		Error::BadRequest {
-			message: "C.1.5 date_of_most_recent_information is required to calculate review receiver reportDueDate".to_string(),
-		}
-	})?;
-	let reactions = ReactionBmc::list_by_case(ctx, mm, case_id)
-		.await
-		.map_err(Error::Model)?;
-	let is_serious = reactions.iter().any(reaction_is_serious);
-	let category = classify_report(report.report_type.as_deref(), is_serious);
-	let receiver_presaves = ReceiverPresaveBmc::list(ctx, mm, None)
-		.await
-		.map_err(Error::Model)?;
-
-	match &mut value {
-		Value::Array(rows) => {
-			normalize_review_receiver_rows(rows, c15, category, &receiver_presaves)?;
-		}
-		Value::Object(object) => {
-			let rows = object
-				.get_mut("reviewReceivers")
-				.and_then(Value::as_array_mut)
-				.ok_or_else(|| Error::BadRequest {
-					message: "review_receivers_json must be an array or contain reviewReceivers array".to_string(),
-				})?;
-			normalize_review_receiver_rows(rows, c15, category, &receiver_presaves)?;
-		}
-		_ => {
-			return Err(Error::BadRequest {
-				message: "review_receivers_json must be an array or object"
-					.to_string(),
-			});
-		}
+	let requirements = prepare_review_receiver_rows(&mut value)?;
+	if requirements.needs_report_due_default || requirements.needs_report_due_date {
+		let report = SafetyReportIdentificationBmc::get_by_case(ctx, mm, case_id)
+			.await
+			.map_err(Error::Model)?;
+		let c15 = if requirements.needs_report_due_date {
+			Some(report.date_of_most_recent_information.ok_or_else(|| {
+				Error::BadRequest {
+					message: "C.1.5 date_of_most_recent_information is required to calculate review receiver reportDueDate".to_string(),
+				}
+			})?)
+		} else {
+			None
+		};
+		let (category, receiver_presaves) = if requirements.needs_report_due_default
+		{
+			let reactions = ReactionBmc::list_by_case(ctx, mm, case_id)
+				.await
+				.map_err(Error::Model)?;
+			let is_serious = reactions.iter().any(reaction_is_serious);
+			let category =
+				classify_report(report.report_type.as_deref(), is_serious);
+			let receiver_presaves = ReceiverPresaveBmc::list(ctx, mm, None)
+				.await
+				.map_err(Error::Model)?;
+			(category, receiver_presaves)
+		} else {
+			(ReportCategory::NonSaeSpontaneous, Vec::new())
+		};
+		apply_review_receiver_defaults(
+			&mut value,
+			c15,
+			category,
+			&receiver_presaves,
+		)?;
 	}
 
 	data.review_receivers_json = Some(serde_json::to_string(&value).map_err(
@@ -157,10 +176,133 @@ async fn normalize_review_receivers_for_update(
 	Ok(())
 }
 
+fn prepare_review_receiver_rows(
+	value: &mut Value,
+) -> Result<ReviewReceiverRequirements> {
+	match value {
+		Value::Array(rows) => validate_review_receiver_rows(rows),
+		Value::Object(object) => {
+			let rows = object
+				.get_mut("reviewReceivers")
+				.and_then(Value::as_array_mut)
+				.ok_or_else(|| Error::BadRequest {
+					message: "review_receivers_json must be an array or contain reviewReceivers array".to_string(),
+				})?;
+			validate_review_receiver_rows(rows)
+		}
+		_ => Err(Error::BadRequest {
+			message: "review_receivers_json must be an array or object".to_string(),
+		}),
+	}
+}
+
+fn apply_review_receiver_defaults(
+	value: &mut Value,
+	c15: Option<time::Date>,
+	category: ReportCategory,
+	receiver_presaves: &[ReceiverPresave],
+) -> Result<()> {
+	match value {
+		Value::Array(rows) => {
+			normalize_review_receiver_rows(rows, c15, category, receiver_presaves)
+		}
+		Value::Object(object) => {
+			let rows = object
+				.get_mut("reviewReceivers")
+				.and_then(Value::as_array_mut)
+				.ok_or_else(|| Error::BadRequest {
+					message: "review_receivers_json must be an array or contain reviewReceivers array".to_string(),
+				})?;
+			normalize_review_receiver_rows(rows, c15, category, receiver_presaves)
+		}
+		_ => Err(Error::BadRequest {
+			message: "review_receivers_json must be an array or object".to_string(),
+		}),
+	}
+}
+
+fn validate_review_receiver_rows(
+	rows: &mut Vec<Value>,
+) -> Result<ReviewReceiverRequirements> {
+	let mut requirements = ReviewReceiverRequirements::default();
+	let mut filtered = Vec::with_capacity(rows.len());
+	for (idx, mut row) in rows.drain(..).enumerate() {
+		let Some(object) = row.as_object_mut() else {
+			return Err(Error::BadRequest {
+				message: format!("review receiver row {idx} must be an object"),
+			});
+		};
+		if is_blank_review_receiver_row(object) {
+			continue;
+		}
+		validate_review_receiver_row(idx, object, &mut requirements)?;
+		filtered.push(row);
+	}
+	*rows = filtered;
+	Ok(requirements)
+}
+
+fn validate_review_receiver_row(
+	idx: usize,
+	object: &Map<String, Value>,
+	requirements: &mut ReviewReceiverRequirements,
+) -> Result<()> {
+	let receiver =
+		text_field(object, &["receiver", "receiverName", "receiver_name"])
+			.ok_or_else(|| Error::BadRequest {
+				message: format!("review receiver row {idx} receiver is required"),
+			})?;
+	if receiver.chars().count() > REVIEW_RECEIVER_MAX_LEN {
+		return Err(Error::BadRequest {
+			message: format!(
+				"review receiver row {idx} receiver must be {REVIEW_RECEIVER_MAX_LEN} characters or fewer"
+			),
+		});
+	}
+
+	let report_due = review_receiver_integer_field(
+		idx,
+		object,
+		&["reportDue", "report_due"],
+		"reportDue",
+	)?;
+	if let Some(report_due) = report_due {
+		if report_due < 0 {
+			return Err(Error::BadRequest {
+				message: format!(
+					"review receiver row {idx} reportDue must be non-negative"
+				),
+			});
+		}
+	} else {
+		requirements.needs_report_due_default = true;
+	}
+
+	if let Some(value) = review_receiver_date_field(
+		idx,
+		object,
+		&["reportDueDate", "report_due_date"],
+		"reportDueDate",
+	)? {
+		validate_review_receiver_date(idx, "reportDueDate", value)?;
+	} else {
+		requirements.needs_report_due_date = true;
+	}
+	if let Some(value) = review_receiver_date_field(
+		idx,
+		object,
+		&["reportedDate", "reported_date"],
+		"reportedDate",
+	)? {
+		validate_review_receiver_date(idx, "reportedDate", value)?;
+	}
+	Ok(())
+}
+
 fn normalize_review_receiver_rows(
 	rows: &mut [Value],
-	c15: time::Date,
-	category: lib_core::report_due::ReportCategory,
+	c15: Option<time::Date>,
+	category: ReportCategory,
 	receiver_presaves: &[ReceiverPresave],
 ) -> Result<()> {
 	for (idx, row) in rows.iter_mut().enumerate() {
@@ -183,8 +325,8 @@ fn normalize_review_receiver_rows(
 fn normalize_review_receiver_row(
 	idx: usize,
 	object: &mut Map<String, Value>,
-	c15: time::Date,
-	category: lib_core::report_due::ReportCategory,
+	c15: Option<time::Date>,
+	category: ReportCategory,
 	receiver_presaves: &[ReceiverPresave],
 ) -> Result<()> {
 	let receiver =
@@ -192,7 +334,12 @@ fn normalize_review_receiver_row(
 			.ok_or_else(|| Error::BadRequest {
 				message: format!("review receiver row {idx} receiver is required"),
 			})?;
-	let report_due = match integer_field(object, &["reportDue", "report_due"]) {
+	let report_due = match review_receiver_integer_field(
+		idx,
+		object,
+		&["reportDue", "report_due"],
+		"reportDue",
+	)? {
 		Some(value) => value,
 		None => {
 			let value = default_report_due_from_receiver(
@@ -215,11 +362,15 @@ fn normalize_review_receiver_row(
 	if text_field(object, &["reportDueDate", "report_due_date"]).is_some() {
 		return Ok(());
 	}
-	let report_due_i32 = i32::try_from(report_due).map_err(|_| Error::BadRequest {
-		message: format!(
+	let c15 = c15.ok_or_else(|| Error::BadRequest {
+		message: "C.1.5 date_of_most_recent_information is required to calculate review receiver reportDueDate".to_string(),
+	})?;
+	let report_due_i32 =
+		i32::try_from(report_due).map_err(|_| Error::BadRequest {
+			message: format!(
 			"review receiver row {idx} reportDue is too large to calculate reportDueDate"
 		),
-	})?;
+		})?;
 	let due_date = report_due_date(
 		c15,
 		&ReceiverTimeline {
@@ -245,7 +396,7 @@ fn normalize_review_receiver_row(
 fn default_report_due_from_receiver(
 	idx: usize,
 	receiver: &str,
-	category: lib_core::report_due::ReportCategory,
+	category: ReportCategory,
 	receiver_presaves: &[ReceiverPresave],
 ) -> Result<i64> {
 	let receiver = receiver.trim();
@@ -322,6 +473,16 @@ fn reaction_is_serious(reaction: &Reaction) -> bool {
 		|| reaction.criteria_other_medically_important
 }
 
+fn is_blank_review_receiver_row(object: &Map<String, Value>) -> bool {
+	REVIEW_RECEIVER_ROW_FIELDS.iter().all(|key| {
+		object.get(*key).is_none_or(|value| match value {
+			Value::Null => true,
+			Value::String(value) => value.trim().is_empty(),
+			_ => false,
+		})
+	})
+}
+
 fn text_field<'a>(object: &'a Map<String, Value>, keys: &[&str]) -> Option<&'a str> {
 	keys.iter()
 		.find_map(|key| object.get(*key).and_then(Value::as_str))
@@ -329,13 +490,104 @@ fn text_field<'a>(object: &'a Map<String, Value>, keys: &[&str]) -> Option<&'a s
 		.filter(|value| !value.is_empty())
 }
 
-fn integer_field(object: &Map<String, Value>, keys: &[&str]) -> Option<i64> {
-	keys.iter().find_map(|key| {
-		let value = object.get(*key)?;
-		value
-			.as_i64()
-			.or_else(|| value.as_str()?.trim().parse::<i64>().ok())
-	})
+fn review_receiver_integer_field(
+	idx: usize,
+	object: &Map<String, Value>,
+	keys: &[&str],
+	label: &str,
+) -> Result<Option<i64>> {
+	for key in keys {
+		let Some(value) = object.get(*key) else {
+			continue;
+		};
+		return match value {
+			Value::Null => Ok(None),
+			Value::Number(value) => {
+				value.as_i64().map(Some).ok_or_else(|| Error::BadRequest {
+					message: format!(
+						"review receiver row {idx} {label} must be an integer"
+					),
+				})
+			}
+			Value::String(value) => {
+				let value = value.trim();
+				if value.is_empty() {
+					Ok(None)
+				} else {
+					value
+						.parse::<i64>()
+						.map(Some)
+						.map_err(|_| Error::BadRequest {
+							message: format!(
+								"review receiver row {idx} {label} must be an integer"
+							),
+						})
+				}
+			}
+			_ => Err(Error::BadRequest {
+				message: format!(
+					"review receiver row {idx} {label} must be an integer"
+				),
+			}),
+		};
+	}
+	Ok(None)
+}
+
+fn review_receiver_date_field<'a>(
+	idx: usize,
+	object: &'a Map<String, Value>,
+	keys: &[&str],
+	label: &str,
+) -> Result<Option<&'a str>> {
+	for key in keys {
+		let Some(value) = object.get(*key) else {
+			continue;
+		};
+		return match value {
+			Value::Null => Ok(None),
+			Value::String(value) => {
+				let value = value.trim();
+				if value.is_empty() {
+					Ok(None)
+				} else {
+					Ok(Some(value))
+				}
+			}
+			_ => Err(Error::BadRequest {
+				message: format!(
+					"review receiver row {idx} {label} must be YYYY-MM-DD"
+				),
+			}),
+		};
+	}
+	Ok(None)
+}
+
+fn validate_review_receiver_date(
+	idx: usize,
+	label: &str,
+	value: &str,
+) -> Result<()> {
+	parse_review_receiver_date(value).ok_or_else(|| Error::BadRequest {
+		message: format!("review receiver row {idx} {label} must be YYYY-MM-DD"),
+	})?;
+	Ok(())
+}
+
+fn parse_review_receiver_date(value: &str) -> Option<time::Date> {
+	if value.len() != 10 {
+		return None;
+	}
+	let bytes = value.as_bytes();
+	if bytes.get(4) != Some(&b'-') || bytes.get(7) != Some(&b'-') {
+		return None;
+	}
+	let year = value.get(0..4)?.parse::<i32>().ok()?;
+	let month = value.get(5..7)?.parse::<u8>().ok()?;
+	let day = value.get(8..10)?.parse::<u8>().ok()?;
+	time::Date::from_calendar_date(year, time::Month::try_from(month).ok()?, day)
+		.ok()
 }
 
 fn format_date(date: time::Date) -> String {
