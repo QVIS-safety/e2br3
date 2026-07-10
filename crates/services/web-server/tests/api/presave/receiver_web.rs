@@ -7,6 +7,115 @@ use serial_test::serial;
 
 #[serial]
 #[tokio::test]
+async fn receiver_presave_rejects_required_duplicate_and_timeline_gaps() -> Result<()>
+{
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+	let receiver_name = format!("Receiver Validation {}", uuid::Uuid::new_v4());
+
+	for (label, body, expected_detail) in [
+		(
+			"missing receiver_type",
+			json!({
+				"data": {
+					"organization_name": format!("Receiver Missing Type {}", uuid::Uuid::new_v4())
+				}
+			}),
+			"receiver_type",
+		),
+		(
+			"missing organization_name",
+			json!({
+				"data": {
+					"receiver_type": "Regulatory Authority"
+				}
+			}),
+			"organization_name",
+		),
+		(
+			"negative timeline day count",
+			json!({
+				"data": {
+					"receiver_type": "Regulatory Authority",
+					"organization_name": format!("Receiver Negative Timeline {}", uuid::Uuid::new_v4()),
+					"nsae_non_solicited_day_count": -1
+				}
+			}),
+			"zero or greater",
+		),
+		(
+			"day count plus not applicable",
+			json!({
+				"data": {
+					"receiver_type": "Regulatory Authority",
+					"organization_name": format!("Receiver NA Conflict {}", uuid::Uuid::new_v4()),
+					"sae_solicited_day_count": 7,
+					"sae_solicited_not_applicable": true
+				}
+			}),
+			"Not Applicable",
+		),
+	] {
+		let (status, value) = request_json(
+			&app,
+			&admin_cookie,
+			Method::POST,
+			"/api/presaves/receivers".to_string(),
+			Some(body),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{label}: {value:?}");
+		assert!(
+			value["error"]["data"]["detail"]
+				.as_str()
+				.unwrap_or_default()
+				.contains(expected_detail),
+			"{label}: {value:?}"
+		);
+	}
+
+	post_json_created(
+		&app,
+		&admin_cookie,
+		"/api/presaves/receivers".to_string(),
+		json!({
+			"data": {
+				"receiver_type": "Regulatory Authority",
+				"organization_name": receiver_name
+			}
+		}),
+	)
+	.await?;
+	let (status, duplicate) = request_json(
+		&app,
+		&admin_cookie,
+		Method::POST,
+		"/api/presaves/receivers".to_string(),
+		Some(json!({
+			"data": {
+				"receiver_type": "Regulatory Authority",
+				"organization_name": receiver_name
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CONFLICT, "{duplicate:?}");
+	assert!(
+		duplicate["error"]["data"]["detail"]
+			.as_str()
+			.unwrap_or_default()
+			.contains("duplicate"),
+		"{duplicate:?}"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn section_presave_receiver_details_contract_includes_routes() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
