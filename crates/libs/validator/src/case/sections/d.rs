@@ -1,17 +1,17 @@
 use super::rule_table::{
-	eval_allowed_codes, eval_companions, eval_conditional_indexed,
-	eval_conditional_value, eval_derived_length, eval_future_dates,
-	eval_indexed_allowed_codes, eval_indexed_derived_length,
+	eval_companions, eval_conditional_indexed, eval_conditional_value,
+	eval_constraints, eval_derived_length, eval_future_dates,
+	eval_indexed_constraints, eval_indexed_derived_length,
 	eval_indexed_future_dates, eval_indexed_length, eval_indexed_meddra,
-	eval_indexed_true_markers, eval_length, eval_nested_companions,
-	eval_nested_future_dates, eval_nested_length, eval_nested_meddra,
-	eval_true_markers, AllowedCodeRule, CompanionRule, ConditionalIndexedRule,
-	ConditionalValueRule, DateValues, DerivedLengthRule, FutureDateRule,
-	IndexedAllowedCodeRule, IndexedDerivedLengthRule, IndexedFutureDateRule,
-	IndexedLengthRule, IndexedMeddraRule, IndexedTrueMarkerRule, LengthRule,
+	eval_length, eval_nested_companions, eval_nested_future_dates,
+	eval_nested_length, eval_nested_meddra, CompanionRule, ConditionalIndexedRule,
+	ConditionalValueRule, ConstraintRule, DateValues, DerivedLengthRule,
+	FutureDateRule, IndexedConstraintRule, IndexedDerivedLengthRule,
+	IndexedFutureDateRule, IndexedLengthRule, IndexedMeddraRule, LengthRule,
 	NestedCompanionRule, NestedFutureDateRule, NestedLengthRule, NestedMeddraRule,
-	RuleValue, TrueMarkerRule,
+	RuleValue,
 };
+use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
 	has_patient_initials, has_text, is_mfds_domestic_receiver,
 	is_mfds_foreign_postmarket_receiver, push_issue_by_code,
@@ -26,6 +26,7 @@ use lib_core::model::patient::{
 	ReportedCauseOfDeath,
 };
 use sqlx::types::{Decimal, Uuid};
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 fn decimal_text(value: Option<Decimal>) -> Option<String> {
@@ -319,32 +320,34 @@ const D_PATIENT_LENGTH_RULES: &[LengthRule<PatientInformation>] = &[
 	},
 ];
 
-const D_PATIENT_ALLOWED_CODE_RULES: &[AllowedCodeRule<PatientInformation>] = &[
-	AllowedCodeRule {
+const D_PATIENT_CONSTRAINT_RULES: &[ConstraintRule<PatientInformation>] = &[
+	ConstraintRule {
 		code: "ICH.D.2.3.ALLOWED.VALUE",
 		path: "patientInformation.patientAgeGroup",
-		value: |patient| patient.age_group.as_deref(),
+		value: |patient| {
+			ConstraintValue::Text(patient.age_group.as_deref().map(Cow::Borrowed))
+		},
 	},
-	AllowedCodeRule {
+	ConstraintRule {
 		code: "ICH.D.5.ALLOWED.VALUE",
 		path: "patientInformation.sex",
-		value: |patient| patient.sex.as_deref(),
+		value: |patient| {
+			ConstraintValue::Text(patient.sex.as_deref().map(Cow::Borrowed))
+		},
+	},
+	ConstraintRule {
+		code: "ICH.D.7.3.ALLOWED.VALUE",
+		path: "patientInformation.concomitantTherapy",
+		value: |patient| true_marker_value(patient.concomitant_therapy, None),
 	},
 ];
 
-const D_PATIENT_TRUE_MARKER_RULES: &[TrueMarkerRule<PatientInformation>] =
-	&[TrueMarkerRule {
-		code: "ICH.D.7.3.ALLOWED.VALUE",
-		path: "patientInformation.concomitantTherapy",
-		value: |patient| (patient.concomitant_therapy, None),
-	}];
-
-const D_MEDICAL_HISTORY_TRUE_MARKER_RULES: &[IndexedTrueMarkerRule<
+const D_MEDICAL_HISTORY_CONSTRAINT_RULES: &[IndexedConstraintRule<
 	MedicalHistoryEpisode,
->] = &[IndexedTrueMarkerRule {
+>] = &[IndexedConstraintRule {
 	code: "ICH.D.7.1.r.6.ALLOWED.VALUE",
 	path: |idx| format!("patientInformation.medicalHistory.{idx}.familyHistory"),
-	value: |episode| (episode.family_history, None),
+	value: |episode| true_marker_value(episode.family_history, None),
 }];
 
 const D_PATIENT_DERIVED_LENGTH_RULES: &[DerivedLengthRule<PatientInformation>] = &[
@@ -592,11 +595,13 @@ const D_PARENT_LENGTH_RULES: &[IndexedLengthRule<ParentInformation>] = &[
 	},
 ];
 
-const D_PARENT_ALLOWED_CODE_RULES: &[IndexedAllowedCodeRule<ParentInformation>] =
-	&[IndexedAllowedCodeRule {
+const D_PARENT_CONSTRAINT_RULES: &[IndexedConstraintRule<ParentInformation>] =
+	&[IndexedConstraintRule {
 		code: "ICH.D.10.6.ALLOWED.VALUE",
 		path: |idx| format!("patientInformation.parents.{idx}.sex"),
-		value: |parent| parent.sex.as_deref(),
+		value: |parent| {
+			ConstraintValue::Text(parent.sex.as_deref().map(Cow::Borrowed))
+		},
 	}];
 
 const D_PARENT_DERIVED_LENGTH_RULES: &[IndexedDerivedLengthRule<
@@ -982,8 +987,12 @@ pub(crate) fn collect_ich_issues(
 			eval_conditional_value(issues, patient, D_PATIENT_ICH_RULES);
 		}
 		eval_future_dates(issues, patient, D_PATIENT_FUTURE_DATE_RULES);
-		eval_allowed_codes(issues, patient, D_PATIENT_ALLOWED_CODE_RULES);
-		eval_true_markers(issues, patient, D_PATIENT_TRUE_MARKER_RULES);
+		eval_constraints(
+			issues,
+			patient,
+			D_PATIENT_CONSTRAINT_RULES,
+			&validation_ctx.vocabulary,
+		);
 		eval_length(issues, patient, D_PATIENT_LENGTH_RULES);
 		eval_derived_length(issues, patient, D_PATIENT_DERIVED_LENGTH_RULES);
 		let age_value_present = patient.age_at_time_of_onset.is_some();
@@ -1048,10 +1057,11 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.medical_history,
 		D_MEDICAL_HISTORY_MEDDRA_RULES,
 	);
-	eval_indexed_true_markers(
+	eval_indexed_constraints(
 		issues,
 		&validation_ctx.medical_history,
-		D_MEDICAL_HISTORY_TRUE_MARKER_RULES,
+		D_MEDICAL_HISTORY_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 
 	eval_conditional_indexed(
@@ -1146,10 +1156,11 @@ pub(crate) fn collect_ich_issues(
 		D_PARENT_FUTURE_DATE_RULES,
 	);
 	eval_indexed_length(issues, &validation_ctx.parents, D_PARENT_LENGTH_RULES);
-	eval_indexed_allowed_codes(
+	eval_indexed_constraints(
 		issues,
 		&validation_ctx.parents,
-		D_PARENT_ALLOWED_CODE_RULES,
+		D_PARENT_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 	eval_indexed_derived_length(
 		issues,
@@ -1414,6 +1425,20 @@ pub(crate) fn collect_mfds_issues(
 			RuleFacts::default(),
 		);
 	});
+}
+
+#[cfg(test)]
+pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
+	D_PATIENT_CONSTRAINT_RULES
+		.iter()
+		.map(|rule| rule.code)
+		.chain(
+			D_MEDICAL_HISTORY_CONSTRAINT_RULES
+				.iter()
+				.map(|rule| rule.code),
+		)
+		.chain(D_PARENT_CONSTRAINT_RULES.iter().map(|rule| rule.code))
+		.collect()
 }
 
 #[cfg(test)]

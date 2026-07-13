@@ -1,13 +1,12 @@
 use super::rule_table::{
-	e2b_datetime_date, eval_allowed_codes, eval_conditional_indexed,
-	eval_datetime_text, eval_future_dates, eval_indexed, eval_indexed_allowed_codes,
-	eval_indexed_length, eval_indexed_vocabulary, eval_length, eval_nested_length,
-	eval_nested_vocabulary, eval_true_markers, eval_value, eval_vocabulary,
-	no_facts, AllowedCodeRule, ConditionalIndexedRule, DateTimeTextRule, DateValues,
-	FutureDateRule, IndexedAllowedCodeRule, IndexedLengthRule, IndexedRule,
-	IndexedVocabularyRule, LengthRule, NestedLengthRule, NestedVocabularyRule,
-	RuleValue, TrueMarkerRule, ValueRule, VocabularyRule,
+	e2b_datetime_date, eval_conditional_indexed, eval_constraints,
+	eval_future_dates, eval_indexed, eval_indexed_constraints, eval_indexed_length,
+	eval_length, eval_nested_constraints, eval_nested_length, eval_value, no_facts,
+	ConditionalIndexedRule, ConstraintRule, DateValues, FutureDateRule,
+	IndexedConstraintRule, IndexedLengthRule, IndexedRule, LengthRule,
+	NestedConstraintRule, NestedLengthRule, RuleValue, ValueRule,
 };
+use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
 	has_any_primary_source_content, has_text, is_fda_ind_message_receiver,
 	is_fda_pre_anda_message_receiver, list_study_registrations, push_issue_by_code,
@@ -23,6 +22,7 @@ use lib_core::model::safety_report::{
 	StudyRegistrationNumber,
 };
 use lib_core::model::{ModelManager, Result};
+use std::borrow::Cow;
 
 fn is_six_digit_numeric(value: Option<&str>) -> bool {
 	value
@@ -188,42 +188,52 @@ const C_FUTURE_DATE_RULES: &[FutureDateRule<SafetyReportIdentification>] = &[
 	},
 ];
 
-const C_DATETIME_TEXT_RULES: &[DateTimeTextRule<SafetyReportIdentification>] =
-	&[DateTimeTextRule {
+const C_CONSTRAINT_RULES: &[ConstraintRule<SafetyReportIdentification>] = &[
+	ConstraintRule {
 		code: "ICH.C.1.2.ALLOWED.VALUE",
 		path: "safetyReportIdentification.transmissionDate",
-		value: |report| report.transmission_date.as_deref(),
-	}];
-
-const C_ALLOWED_CODE_RULES: &[AllowedCodeRule<SafetyReportIdentification>] = &[
-	AllowedCodeRule {
+		value: |report| {
+			ConstraintValue::Text(
+				report.transmission_date.as_deref().map(Cow::Borrowed),
+			)
+		},
+	},
+	ConstraintRule {
 		code: "ICH.C.1.3.ALLOWED.VALUE",
 		path: "safetyReportIdentification.reportType",
-		value: |report| report.report_type.as_deref(),
+		value: |report| {
+			ConstraintValue::Text(report.report_type.as_deref().map(Cow::Borrowed))
+		},
 	},
-	AllowedCodeRule {
+	ConstraintRule {
 		code: "ICH.C.1.8.2.ALLOWED.VALUE",
 		path: "safetyReportIdentification.firstSenderType",
-		value: |report| report.first_sender_type.as_deref(),
+		value: |report| {
+			ConstraintValue::Text(
+				report.first_sender_type.as_deref().map(Cow::Borrowed),
+			)
+		},
 	},
-	AllowedCodeRule {
+	ConstraintRule {
 		code: "ICH.C.1.11.1.ALLOWED.VALUE",
 		path: "safetyReportIdentification.nullificationCode",
-		value: |report| report.nullification_code.as_deref(),
+		value: |report| {
+			ConstraintValue::Text(
+				report.nullification_code.as_deref().map(Cow::Borrowed),
+			)
+		},
 	},
-];
-
-const C_TRUE_MARKER_RULES: &[TrueMarkerRule<SafetyReportIdentification>] =
-	&[TrueMarkerRule {
+	ConstraintRule {
 		code: "ICH.C.1.9.1.ALLOWED.VALUE",
 		path: "safetyReportIdentification.otherCaseIdentifiersExist",
 		value: |report| {
-			(
+			true_marker_value(
 				report.other_case_identifiers_exist,
 				report.other_case_identifiers_exist_null_flavor.as_deref(),
 			)
 		},
-	}];
+	},
+];
 
 const C_LENGTH_RULES: &[LengthRule<SafetyReportIdentification>] = &[
 	LengthRule {
@@ -365,43 +375,53 @@ const C_PRIMARY_SOURCE_LENGTH_RULES: &[IndexedLengthRule<PrimarySource>] = &[
 	},
 ];
 
-const C_PRIMARY_SOURCE_ALLOWED_CODE_RULES: &[IndexedAllowedCodeRule<
-	PrimarySource,
->] = &[
-	IndexedAllowedCodeRule {
+const C_PRIMARY_SOURCE_CONSTRAINT_RULES: &[IndexedConstraintRule<PrimarySource>] = &[
+	IndexedConstraintRule {
 		code: "ICH.C.2.r.4.ALLOWED.VALUE",
 		path: |idx| format!("primarySources.{idx}.qualification"),
-		value: |source| source.qualification.as_deref(),
+		value: |source| {
+			ConstraintValue::Text(source.qualification.as_deref().map(Cow::Borrowed))
+		},
 	},
-	IndexedAllowedCodeRule {
+	IndexedConstraintRule {
 		code: "ICH.C.2.r.5.ALLOWED.VALUE",
 		path: |idx| {
 			format!("primarySources.{idx}.primarySourceForRegulatoryPurposes")
 		},
-		value: |source| source.primary_source_regulatory.as_deref(),
+		value: |source| {
+			ConstraintValue::Text(
+				source
+					.primary_source_regulatory
+					.as_deref()
+					.map(Cow::Borrowed),
+			)
+		},
+	},
+	IndexedConstraintRule {
+		code: "ICH.C.2.r.3.VOCABULARY",
+		path: |idx| format!("primarySources.{idx}.reporterCountry"),
+		value: |source| {
+			ConstraintValue::Text(source.country_code.as_deref().map(Cow::Borrowed))
+		},
 	},
 ];
 
-const C_PRIMARY_SOURCE_VOCABULARY_RULES: &[IndexedVocabularyRule<PrimarySource>] =
-	&[IndexedVocabularyRule {
-		code: "ICH.C.2.r.3.VOCABULARY",
-		path: |idx| format!("primarySources.{idx}.reporterCountry"),
-		value: |source| source.country_code.as_deref(),
-	}];
-
-const C_SENDER_ALLOWED_CODE_RULES: &[AllowedCodeRule<SenderInformation>] =
-	&[AllowedCodeRule {
+const C_SENDER_CONSTRAINT_RULES: &[ConstraintRule<SenderInformation>] = &[
+	ConstraintRule {
 		code: "ICH.C.3.1.ALLOWED.VALUE",
 		path: "safetyReportIdentification.senderType",
-		value: |sender| sender.sender_type.as_deref(),
-	}];
-
-const C_SENDER_VOCABULARY_RULES: &[VocabularyRule<SenderInformation>] =
-	&[VocabularyRule {
+		value: |sender| {
+			ConstraintValue::Text(sender.sender_type.as_deref().map(Cow::Borrowed))
+		},
+	},
+	ConstraintRule {
 		code: "ICH.C.3.4.5.VOCABULARY",
 		path: "senderInformation.countryCode",
-		value: |sender| sender.country_code.as_deref(),
-	}];
+		value: |sender| {
+			ConstraintValue::Text(sender.country_code.as_deref().map(Cow::Borrowed))
+		},
+	},
+];
 
 const C_SENDER_LENGTH_RULES: &[LengthRule<SenderInformation>] = &[
 	LengthRule {
@@ -581,11 +601,15 @@ const C_STUDY_LENGTH_RULES: &[IndexedLengthRule<StudyInformation>] = &[
 	},
 ];
 
-const C_STUDY_ALLOWED_CODE_RULES: &[IndexedAllowedCodeRule<StudyInformation>] =
-	&[IndexedAllowedCodeRule {
+const C_STUDY_CONSTRAINT_RULES: &[IndexedConstraintRule<StudyInformation>] =
+	&[IndexedConstraintRule {
 		code: "ICH.C.5.4.ALLOWED.VALUE",
 		path: |idx| format!("studyInformation.{idx}.studyTypeReaction"),
-		value: |study| study.study_type_reaction.as_deref(),
+		value: |study| {
+			ConstraintValue::Text(
+				study.study_type_reaction.as_deref().map(Cow::Borrowed),
+			)
+		},
 	}];
 
 const C_LITERATURE_LENGTH_RULES: &[IndexedLengthRule<LiteratureReference>] =
@@ -614,15 +638,19 @@ const C_STUDY_REGISTRATION_LENGTH_RULES: &[NestedLengthRule<
 	},
 ];
 
-const C_STUDY_REGISTRATION_VOCABULARY_RULES: &[NestedVocabularyRule<
+const C_STUDY_REGISTRATION_CONSTRAINT_RULES: &[NestedConstraintRule<
 	StudyRegistrationNumber,
 >] =
-	&[NestedVocabularyRule {
+	&[NestedConstraintRule {
 		code: "ICH.C.5.1.r.2.VOCABULARY",
 		path: |study_idx, idx| {
 			format!("studyInformation.{study_idx}.registrations.{idx}.registrationCountry")
 		},
-		value: |registration| registration.country_code.as_deref(),
+		value: |registration| {
+			ConstraintValue::Text(
+				registration.country_code.as_deref().map(Cow::Borrowed),
+			)
+		},
 	}];
 
 pub(crate) fn collect_ich_issues(
@@ -652,9 +680,12 @@ pub(crate) fn collect_ich_issues(
 		// in `C_VALUE_RULES` and evaluated by this single loop.
 		eval_value(issues, report, C_VALUE_RULES);
 		eval_future_dates(issues, report, C_FUTURE_DATE_RULES);
-		eval_datetime_text(issues, report, C_DATETIME_TEXT_RULES);
-		eval_allowed_codes(issues, report, C_ALLOWED_CODE_RULES);
-		eval_true_markers(issues, report, C_TRUE_MARKER_RULES);
+		eval_constraints(
+			issues,
+			report,
+			C_CONSTRAINT_RULES,
+			&validation_ctx.vocabulary,
+		);
 		eval_length(issues, report, C_LENGTH_RULES);
 		let transmission_date_for_compare =
 			e2b_datetime_date(report.transmission_date.as_deref());
@@ -720,15 +751,11 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.primary_sources,
 		C_PRIMARY_SOURCE_LENGTH_RULES,
 	);
-	eval_indexed_allowed_codes(
+	eval_indexed_constraints(
 		issues,
 		&validation_ctx.primary_sources,
-		C_PRIMARY_SOURCE_ALLOWED_CODE_RULES,
-	);
-	eval_indexed_vocabulary(
-		issues,
-		&validation_ctx.primary_sources,
-		C_PRIMARY_SOURCE_VOCABULARY_RULES,
+		C_PRIMARY_SOURCE_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 
 	eval_indexed(
@@ -762,10 +789,11 @@ pub(crate) fn collect_ich_issues(
 		C_LINKED_REPORT_LENGTH_RULES,
 	);
 	eval_indexed_length(issues, &validation_ctx.studies, C_STUDY_LENGTH_RULES);
-	eval_indexed_allowed_codes(
+	eval_indexed_constraints(
 		issues,
 		&validation_ctx.studies,
-		C_STUDY_ALLOWED_CODE_RULES,
+		C_STUDY_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 	eval_nested_length(
 		issues,
@@ -778,7 +806,7 @@ pub(crate) fn collect_ich_issues(
 		},
 		C_STUDY_REGISTRATION_LENGTH_RULES,
 	);
-	eval_nested_vocabulary(
+	eval_nested_constraints(
 		issues,
 		&validation_ctx.studies,
 		&validation_ctx.study_registrations,
@@ -787,7 +815,8 @@ pub(crate) fn collect_ich_issues(
 		|registration, fallback_idx| {
 			index_from_sequence(registration.sequence_number, fallback_idx)
 		},
-		C_STUDY_REGISTRATION_VOCABULARY_RULES,
+		C_STUDY_REGISTRATION_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 
 	let report_type_is_study = validation_ctx
@@ -816,8 +845,12 @@ pub(crate) fn collect_ich_issues(
 
 	if let Some(sender) = validation_ctx.sender.as_ref() {
 		eval_length(issues, sender, C_SENDER_LENGTH_RULES);
-		eval_allowed_codes(issues, sender, C_SENDER_ALLOWED_CODE_RULES);
-		eval_vocabulary(issues, sender, C_SENDER_VOCABULARY_RULES);
+		eval_constraints(
+			issues,
+			sender,
+			C_SENDER_CONSTRAINT_RULES,
+			&validation_ctx.vocabulary,
+		);
 		let _ = push_issue_if_rule_invalid(
 			issues,
 			"ICH.C.3.1.REQUIRED",
@@ -1138,6 +1171,26 @@ pub(crate) fn collect_mfds_issues(
 				RuleFacts::default(),
 			);
 		});
+}
+
+#[cfg(test)]
+pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
+	C_CONSTRAINT_RULES
+		.iter()
+		.map(|rule| rule.code)
+		.chain(
+			C_PRIMARY_SOURCE_CONSTRAINT_RULES
+				.iter()
+				.map(|rule| rule.code),
+		)
+		.chain(C_SENDER_CONSTRAINT_RULES.iter().map(|rule| rule.code))
+		.chain(C_STUDY_CONSTRAINT_RULES.iter().map(|rule| rule.code))
+		.chain(
+			C_STUDY_REGISTRATION_CONSTRAINT_RULES
+				.iter()
+				.map(|rule| rule.code),
+		)
+		.collect()
 }
 
 #[cfg(test)]

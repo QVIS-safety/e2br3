@@ -1,15 +1,16 @@
 use super::rule_table::{
-	eval_companions, eval_indexed, eval_indexed_allowed_codes,
+	eval_companions, eval_indexed, eval_indexed_constraints,
 	eval_indexed_future_dates, eval_indexed_length, eval_indexed_meddra,
-	eval_indexed_numeric_text, CompanionRule, DateValues, IndexedAllowedCodeRule,
-	IndexedFutureDateRule, IndexedLengthRule, IndexedMeddraRule,
-	IndexedNumericTextRule, IndexedRule, RuleValue,
+	CompanionRule, DateValues, IndexedConstraintRule, IndexedFutureDateRule,
+	IndexedLengthRule, IndexedMeddraRule, IndexedRule, RuleValue,
 };
+use crate::allowed_value::ConstraintValue;
 use crate::{
 	has_test_payload, has_text, RegulatoryAuthority, RuleFacts, ValidationContext,
 	ValidationIssue,
 };
 use lib_core::model::test_result::TestResult;
+use std::borrow::Cow;
 
 fn test_payload_facts(test: &TestResult) -> RuleFacts {
 	RuleFacts {
@@ -45,19 +46,26 @@ const F_FUTURE_DATE_RULES: &[IndexedFutureDateRule<TestResult>] =
 		dates: |test| DateValues::One(test.test_date),
 	}];
 
-const F_ALLOWED_CODE_RULES: &[IndexedAllowedCodeRule<TestResult>] =
-	&[IndexedAllowedCodeRule {
+const F_CONSTRAINT_RULES: &[IndexedConstraintRule<TestResult>] = &[
+	IndexedConstraintRule {
 		code: "ICH.F.r.3.1.ALLOWED.VALUE",
 		path: |idx| format!("testResults.{idx}.testResultCode"),
-		value: |test| test.test_result_code.as_deref(),
-	}];
-
-const F_NUMERIC_TEXT_RULES: &[IndexedNumericTextRule<TestResult>] =
-	&[IndexedNumericTextRule {
+		value: |test| {
+			ConstraintValue::Text(
+				test.test_result_code.as_deref().map(Cow::Borrowed),
+			)
+		},
+	},
+	IndexedConstraintRule {
 		code: "ICH.F.r.3.2.ALLOWED.VALUE",
 		path: |idx| format!("testResults.{idx}.testResultValue"),
-		value: |test| test.test_result_value.as_deref(),
-	}];
+		value: |test| {
+			ConstraintValue::Text(
+				test.test_result_value.as_deref().map(Cow::Borrowed),
+			)
+		},
+	},
+];
 
 const F_LENGTH_RULES: &[IndexedLengthRule<TestResult>] = &[
 	IndexedLengthRule {
@@ -198,8 +206,12 @@ pub(crate) fn collect_ich_issues(
 	eval_indexed(issues, &validation_ctx.tests, F_INDEXED_RULES);
 	eval_companions(issues, &validation_ctx.tests, F_COMPANION_RULES);
 	eval_indexed_future_dates(issues, &validation_ctx.tests, F_FUTURE_DATE_RULES);
-	eval_indexed_allowed_codes(issues, &validation_ctx.tests, F_ALLOWED_CODE_RULES);
-	eval_indexed_numeric_text(issues, &validation_ctx.tests, F_NUMERIC_TEXT_RULES);
+	eval_indexed_constraints(
+		issues,
+		&validation_ctx.tests,
+		F_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
+	);
 	eval_indexed_length(issues, &validation_ctx.tests, F_LENGTH_RULES);
 	eval_indexed_meddra(
 		issues,
@@ -207,6 +219,11 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.tests,
 		F_TEST_MEDDRA_RULES,
 	);
+}
+
+#[cfg(test)]
+pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
+	F_CONSTRAINT_RULES.iter().map(|rule| rule.code).collect()
 }
 
 #[cfg(test)]

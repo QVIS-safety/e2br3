@@ -1,12 +1,13 @@
 use super::rule_table::{
-	e2b_datetime_date, eval_allowed_codes, eval_datetime_text, eval_future_dates,
-	eval_length, eval_value, AllowedCodeRule, DateTimeTextRule, DateValues,
-	FutureDateRule, LengthRule, RuleValue, ValueRule,
+	e2b_datetime_date, eval_constraints, eval_future_dates, eval_length, eval_value,
+	ConstraintRule, DateValues, FutureDateRule, LengthRule, RuleValue, ValueRule,
 };
+use crate::allowed_value::ConstraintValue;
 use crate::{
 	push_issue_by_code, RegulatoryAuthority, ValidationContext, ValidationIssue,
 };
 use lib_core::model::message_header::MessageHeader;
+use std::borrow::Cow;
 
 fn message_type_code(header: &MessageHeader) -> Option<&str> {
 	Some(if header.message_type == "ichicsr" {
@@ -110,18 +111,22 @@ const N_FUTURE_DATE_RULES: &[FutureDateRule<MessageHeader>] = &[
 	},
 ];
 
-const N_DATETIME_TEXT_RULES: &[DateTimeTextRule<MessageHeader>] =
-	&[DateTimeTextRule {
+const N_CONSTRAINT_RULES: &[ConstraintRule<MessageHeader>] = &[
+	ConstraintRule {
 		code: "ICH.N.2.r.4.ALLOWED.VALUE",
 		path: "messageHeader.messageDate",
-		value: |header| Some(header.message_date.as_str()),
-	}];
-
-const N_ALLOWED_CODE_RULES: &[AllowedCodeRule<MessageHeader>] = &[AllowedCodeRule {
-	code: "ICH.N.1.1.ALLOWED.VALUE",
-	path: "messageHeader.messageType",
-	value: message_type_code,
-}];
+		value: |header| {
+			ConstraintValue::Text(Some(Cow::Borrowed(header.message_date.as_str())))
+		},
+	},
+	ConstraintRule {
+		code: "ICH.N.1.1.ALLOWED.VALUE",
+		path: "messageHeader.messageType",
+		value: |header| {
+			ConstraintValue::Text(message_type_code(header).map(Cow::Borrowed))
+		},
+	},
+];
 
 const N_LENGTH_RULES: &[LengthRule<MessageHeader>] = &[
 	LengthRule {
@@ -179,11 +184,20 @@ pub(crate) fn collect_ich_issues(
 	}
 	if let Some(header) = validation_ctx.message_header.as_ref() {
 		eval_value(issues, header, N_VALUE_RULES);
-		eval_allowed_codes(issues, header, N_ALLOWED_CODE_RULES);
-		eval_datetime_text(issues, header, N_DATETIME_TEXT_RULES);
+		eval_constraints(
+			issues,
+			header,
+			N_CONSTRAINT_RULES,
+			&validation_ctx.vocabulary,
+		);
 		eval_future_dates(issues, header, N_FUTURE_DATE_RULES);
 		eval_length(issues, header, N_LENGTH_RULES);
 	}
+}
+
+#[cfg(test)]
+pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
+	N_CONSTRAINT_RULES.iter().map(|rule| rule.code).collect()
 }
 
 #[cfg(test)]

@@ -10,6 +10,7 @@ use std::borrow::Cow;
 
 pub(crate) enum ConstraintValue<'a> {
 	Text(Option<Cow<'a, str>>),
+	Texts(Vec<Cow<'a, str>>),
 	Boolean(Option<bool>),
 	#[allow(dead_code)]
 	Decimal(Option<Decimal>),
@@ -23,6 +24,7 @@ impl ConstraintValue<'_> {
 			Self::Text(value) => {
 				value.as_deref().map(str::trim).is_none_or(str::is_empty)
 			}
+			Self::Texts(values) => values.is_empty(),
 			Self::Boolean(value) => value.is_none(),
 			Self::Decimal(value) => value.is_none(),
 			Self::Date(value) => value.is_none(),
@@ -46,8 +48,16 @@ pub(crate) fn is_allowed_value_valid(
 	value: ConstraintValue<'_>,
 	vocabulary: &VocabularyContext,
 ) -> bool {
-	let constraint = allowed_value_constraint_for_rule(rule_code)
-		.unwrap_or_else(|| panic!("missing allowed-value constraint: {rule_code}"));
+	if let ConstraintValue::Texts(values) = value {
+		return values.into_iter().all(|value| {
+			is_allowed_value_valid(
+				rule_code,
+				ConstraintValue::Text(Some(value)),
+				vocabulary,
+			)
+		});
+	}
+	let constraint = constraint_for_rule(rule_code);
 	if value.is_empty() {
 		return true;
 	}
@@ -67,6 +77,23 @@ pub(crate) fn is_allowed_value_valid(
 		}
 		AllowedValueConstraintKind::Descriptive => true,
 	}
+}
+
+fn constraint_for_rule(rule_code: &str) -> &'static AllowedValueConstraint {
+	if let Some(constraint) = allowed_value_constraint_for_rule(rule_code) {
+		return constraint;
+	}
+	if vocabulary_for_rule(rule_code).is_some() {
+		let element_code = rule_code
+			.strip_suffix(".VOCABULARY")
+			.expect("vocabulary rule should end in .VOCABULARY");
+		let constraint_code = format!("{element_code}.ALLOWED.VALUE");
+		if let Some(constraint) = allowed_value_constraint_for_rule(&constraint_code)
+		{
+			return constraint;
+		}
+	}
+	panic!("missing allowed-value constraint: {rule_code}")
 }
 
 fn text_value<'a>(value: ConstraintValue<'a>, rule_kind: &str) -> Cow<'a, str> {
@@ -212,9 +239,11 @@ fn valid_e2b_datetime(value: &str) -> bool {
 }
 
 fn vocabulary_name_for_allowed_rule(rule_code: &str) -> Option<&'static str> {
+	if rule_code.ends_with(".VOCABULARY") {
+		return vocabulary_for_rule(rule_code);
+	}
 	let prefix = rule_code.strip_suffix(".ALLOWED.VALUE")?;
-	let vocabulary_code = format!("{prefix}.VOCABULARY");
-	vocabulary_for_rule(&vocabulary_code)
+	vocabulary_for_rule(&format!("{prefix}.VOCABULARY"))
 }
 
 fn validate_vocabulary(

@@ -13,6 +13,23 @@ use crate::{
 };
 use lib_core::ctx::Ctx;
 use lib_core::model::{ModelManager, Result};
+#[cfg(test)]
+use std::collections::BTreeSet;
+
+#[cfg(test)]
+pub(crate) fn implemented_allowed_value_rule_codes() -> BTreeSet<&'static str> {
+	[
+		c::constraint_rule_codes(),
+		d::constraint_rule_codes(),
+		e::constraint_rule_codes(),
+		f::constraint_rule_codes(),
+		g::constraint_rule_codes(),
+		n::constraint_rule_codes(),
+	]
+	.into_iter()
+	.flatten()
+	.collect()
+}
 
 pub(crate) async fn collect_section_issues(
 	ctx: &Ctx,
@@ -139,6 +156,14 @@ mod tests {
 	use super::*;
 	use crate::{canonical_rules_for_phase, find_canonical_rule, ValidationPhase};
 	use std::collections::BTreeSet;
+
+	#[test]
+	fn implemented_allowed_value_registry_contains_all_current_tables() {
+		let codes = implemented_allowed_value_rule_codes();
+		assert_eq!(codes.len(), 30);
+		assert!(codes.contains("ICH.C.1.3.ALLOWED.VALUE"));
+		assert!(codes.contains("ICH.G.k.9.i.4.ALLOWED.VALUE"));
+	}
 
 	fn source_rule_codes(source: &str, section_letter: char) -> BTreeSet<String> {
 		let prefixes = [

@@ -1,11 +1,11 @@
 use super::rule_table::{
-	eval_companions, eval_indexed, eval_indexed_allowed_codes,
+	eval_companions, eval_indexed, eval_indexed_constraints,
 	eval_indexed_derived_length, eval_indexed_future_dates, eval_indexed_length,
-	eval_indexed_meddra, eval_indexed_vocabulary, CompanionRule, DateValues,
-	IndexedAllowedCodeRule, IndexedDerivedLengthRule, IndexedFutureDateRule,
-	IndexedLengthRule, IndexedMeddraRule, IndexedRule, IndexedVocabularyRule,
-	RuleValue,
+	eval_indexed_meddra, CompanionRule, DateValues, IndexedConstraintRule,
+	IndexedDerivedLengthRule, IndexedFutureDateRule, IndexedLengthRule,
+	IndexedMeddraRule, IndexedRule, RuleValue,
 };
+use crate::allowed_value::ConstraintValue;
 use crate::{
 	has_text, push_issue_by_code, push_issue_if_conditioned_value_invalid,
 	should_case_validation_require_required_intervention, FdaValidationContext,
@@ -13,6 +13,7 @@ use crate::{
 };
 use lib_core::model::reaction::Reaction;
 use sqlx::types::Decimal;
+use std::borrow::Cow;
 
 fn decimal_text(value: Option<Decimal>) -> Option<String> {
 	value.map(|value| value.to_string())
@@ -141,19 +142,24 @@ const E_REACTION_FUTURE_DATE_RULES: &[IndexedFutureDateRule<Reaction>] =
 		dates: |reaction| DateValues::Two(reaction.start_date, reaction.end_date),
 	}];
 
-const E_REACTION_ALLOWED_CODE_RULES: &[IndexedAllowedCodeRule<Reaction>] =
-	&[IndexedAllowedCodeRule {
+const E_REACTION_CONSTRAINT_RULES: &[IndexedConstraintRule<Reaction>] = &[
+	IndexedConstraintRule {
 		code: "ICH.E.i.7.ALLOWED.VALUE",
 		path: |idx| format!("reactions.{idx}.reactionOutcome"),
-		value: |reaction| reaction.outcome.as_deref(),
-	}];
-
-const E_REACTION_VOCABULARY_RULES: &[IndexedVocabularyRule<Reaction>] =
-	&[IndexedVocabularyRule {
+		value: |reaction| {
+			ConstraintValue::Text(reaction.outcome.as_deref().map(Cow::Borrowed))
+		},
+	},
+	IndexedConstraintRule {
 		code: "ICH.E.i.9.VOCABULARY",
 		path: |idx| format!("reactions.{idx}.reactionCountry"),
-		value: |reaction| reaction.country_code.as_deref(),
-	}];
+		value: |reaction| {
+			ConstraintValue::Text(
+				reaction.country_code.as_deref().map(Cow::Borrowed),
+			)
+		},
+	},
+];
 
 const E_REACTION_MEDDRA_RULES: &[IndexedMeddraRule<Reaction>] =
 	&[IndexedMeddraRule {
@@ -301,15 +307,11 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.reactions,
 		E_REACTION_FUTURE_DATE_RULES,
 	);
-	eval_indexed_allowed_codes(
+	eval_indexed_constraints(
 		issues,
 		&validation_ctx.reactions,
-		E_REACTION_ALLOWED_CODE_RULES,
-	);
-	eval_indexed_vocabulary(
-		issues,
-		&validation_ctx.reactions,
-		E_REACTION_VOCABULARY_RULES,
+		E_REACTION_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 	eval_indexed_meddra(
 		issues,
@@ -398,6 +400,14 @@ pub(crate) fn collect_fda_issues(
 				);
 			});
 	}
+}
+
+#[cfg(test)]
+pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
+	E_REACTION_CONSTRAINT_RULES
+		.iter()
+		.map(|rule| rule.code)
+		.collect()
 }
 
 #[cfg(test)]

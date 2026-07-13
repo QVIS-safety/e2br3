@@ -1,16 +1,13 @@
 use super::rule_table::{
-	eval_companions, eval_grandchild_length, eval_indexed,
-	eval_indexed_allowed_codes, eval_indexed_derived_length,
-	eval_indexed_future_dates, eval_indexed_length,
-	eval_indexed_repeated_allowed_codes, eval_indexed_true_markers,
-	eval_indexed_vocabulary, eval_nested_allowed_codes, eval_nested_derived_length,
-	eval_nested_length, eval_nested_meddra, CompanionRule, DateValues,
-	GrandchildLengthRule, IndexedAllowedCodeRule, IndexedDerivedLengthRule,
-	IndexedFutureDateRule, IndexedLengthRule, IndexedRepeatedAllowedCodeRule,
-	IndexedRule, IndexedTrueMarkerRule, IndexedVocabularyRule,
-	NestedAllowedCodeRule, NestedDerivedLengthRule, NestedLengthRule,
-	NestedMeddraRule, RuleValue,
+	eval_companions, eval_grandchild_length, eval_indexed, eval_indexed_constraints,
+	eval_indexed_derived_length, eval_indexed_future_dates, eval_indexed_length,
+	eval_nested_constraints, eval_nested_derived_length, eval_nested_length,
+	eval_nested_meddra, CompanionRule, DateValues, GrandchildLengthRule,
+	IndexedConstraintRule, IndexedDerivedLengthRule, IndexedFutureDateRule,
+	IndexedLengthRule, IndexedRule, NestedConstraintRule, NestedDerivedLengthRule,
+	NestedLengthRule, NestedMeddraRule, RuleValue,
 };
+use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
 	has_text, is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
 	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
@@ -30,6 +27,7 @@ use lib_core::model::drug_reaction_assessment::{
 };
 use lib_core::model::{ModelManager, Result};
 use sqlx::types::Decimal;
+use std::borrow::Cow;
 
 fn normalize_code(raw: Option<&str>) -> String {
 	raw.unwrap_or("")
@@ -219,46 +217,59 @@ const G_DRUG_DERIVED_LENGTH_RULES: &[IndexedDerivedLengthRule<DrugInformation>] 
 	},
 ];
 
-const G_DRUG_ALLOWED_CODE_RULES: &[IndexedAllowedCodeRule<DrugInformation>] = &[
-	IndexedAllowedCodeRule {
+const G_DRUG_CONSTRAINT_RULES: &[IndexedConstraintRule<DrugInformation>] = &[
+	IndexedConstraintRule {
 		code: "ICH.G.k.1.ALLOWED.VALUE",
 		path: |idx| format!("drugs.{idx}.drugCharacterization"),
-		value: |drug| Some(drug.drug_characterization.as_str()),
+		value: |drug| {
+			ConstraintValue::Text(Some(Cow::Borrowed(
+				drug.drug_characterization.as_str(),
+			)))
+		},
 	},
-	IndexedAllowedCodeRule {
+	IndexedConstraintRule {
 		code: "ICH.G.k.8.ALLOWED.VALUE",
 		path: |idx| format!("drugs.{idx}.actionTaken"),
-		value: |drug| drug.action_taken.as_deref(),
+		value: |drug| {
+			ConstraintValue::Text(drug.action_taken.as_deref().map(Cow::Borrowed))
+		},
 	},
-];
-
-const G_DRUG_VOCABULARY_RULES: &[IndexedVocabularyRule<DrugInformation>] = &[
-	IndexedVocabularyRule {
+	IndexedConstraintRule {
 		code: "ICH.G.k.2.4.VOCABULARY",
 		path: |idx| format!("drugs.{idx}.obtainDrugCountry"),
-		value: |drug| drug.obtain_drug_country.as_deref(),
+		value: |drug| {
+			ConstraintValue::Text(
+				drug.obtain_drug_country.as_deref().map(Cow::Borrowed),
+			)
+		},
 	},
-	IndexedVocabularyRule {
+	IndexedConstraintRule {
 		code: "ICH.G.k.3.2.VOCABULARY",
 		path: |idx| format!("drugs.{idx}.drugAuthorizationCountry"),
-		value: |drug| drug.manufacturer_country.as_deref(),
+		value: |drug| {
+			ConstraintValue::Text(
+				drug.manufacturer_country.as_deref().map(Cow::Borrowed),
+			)
+		},
 	},
-];
-
-const G_DRUG_REPEATED_ALLOWED_CODE_RULES: &[IndexedRepeatedAllowedCodeRule<
-	DrugInformation,
->] = &[IndexedRepeatedAllowedCodeRule {
-	code: "ICH.G.k.10.r.ALLOWED.VALUE",
-	path: |idx| format!("drugs.{idx}.drugAdditionalInformationCodes"),
-	values: additional_info_codes,
-}];
-
-const G_DRUG_TRUE_MARKER_RULES: &[IndexedTrueMarkerRule<DrugInformation>] =
-	&[IndexedTrueMarkerRule {
+	IndexedConstraintRule {
+		code: "ICH.G.k.10.r.ALLOWED.VALUE",
+		path: |idx| format!("drugs.{idx}.drugAdditionalInformationCodes"),
+		value: |drug| {
+			ConstraintValue::Texts(
+				additional_info_codes(drug)
+					.into_iter()
+					.map(Cow::Owned)
+					.collect(),
+			)
+		},
+	},
+	IndexedConstraintRule {
 		code: "ICH.G.k.2.5.ALLOWED.VALUE",
 		path: |idx| format!("drugs.{idx}.investigationalProductBlinded"),
-		value: |drug| (drug.investigational_product_blinded, None),
-	}];
+		value: |drug| true_marker_value(drug.investigational_product_blinded, None),
+	},
+];
 
 const G_DRUG_COMPANION_RULES: &[CompanionRule<DrugInformation>] = &[
 	CompanionRule {
@@ -683,14 +694,18 @@ const G_RELATEDNESS_ASSESSMENT_LENGTH_RULES: &[GrandchildLengthRule<
 	},
 ];
 
-const G_REACTION_ASSESSMENT_ALLOWED_CODE_RULES: &[NestedAllowedCodeRule<
+const G_REACTION_ASSESSMENT_CONSTRAINT_RULES: &[NestedConstraintRule<
 	DrugReactionAssessment,
->] = &[NestedAllowedCodeRule {
+>] = &[NestedConstraintRule {
 	code: "ICH.G.k.9.i.4.ALLOWED.VALUE",
 	path: |drug_idx, idx| {
 		format!("drugs.{drug_idx}.reactionAssessments.{idx}.reactionRecurred")
 	},
-	value: |assessment| assessment.reaction_recurred.as_deref(),
+	value: |assessment| {
+		ConstraintValue::Text(
+			assessment.reaction_recurred.as_deref().map(Cow::Borrowed),
+		)
+	},
 }];
 
 const G_REACTION_ASSESSMENT_COMPANION_RULES: &[CompanionRule<
@@ -792,21 +807,11 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.drugs,
 		G_DRUG_DERIVED_LENGTH_RULES,
 	);
-	eval_indexed_allowed_codes(
+	eval_indexed_constraints(
 		issues,
 		&validation_ctx.drugs,
-		G_DRUG_ALLOWED_CODE_RULES,
-	);
-	eval_indexed_vocabulary(issues, &validation_ctx.drugs, G_DRUG_VOCABULARY_RULES);
-	eval_indexed_repeated_allowed_codes(
-		issues,
-		&validation_ctx.drugs,
-		G_DRUG_REPEATED_ALLOWED_CODE_RULES,
-	);
-	eval_indexed_true_markers(
-		issues,
-		&validation_ctx.drugs,
-		G_DRUG_TRUE_MARKER_RULES,
+		G_DRUG_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 	eval_companions(issues, &validation_ctx.drugs, G_DRUG_COMPANION_RULES);
 	eval_nested_length(
@@ -900,14 +905,15 @@ pub(crate) fn collect_ich_issues(
 		|_, fallback| fallback,
 		G_REACTION_ASSESSMENT_DERIVED_LENGTH_RULES,
 	);
-	eval_nested_allowed_codes(
+	eval_nested_constraints(
 		issues,
 		&validation_ctx.drugs,
 		&validation_ctx.drug_reaction_assessments,
 		|drug| drug.id,
 		|assessment| assessment.drug_id,
 		|_, fallback| fallback,
-		G_REACTION_ASSESSMENT_ALLOWED_CODE_RULES,
+		G_REACTION_ASSESSMENT_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 	eval_grandchild_length(
 		issues,
@@ -1373,6 +1379,19 @@ pub(crate) fn collect_mfds_issues(
 			);
 		}
 	});
+}
+
+#[cfg(test)]
+pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
+	G_DRUG_CONSTRAINT_RULES
+		.iter()
+		.map(|rule| rule.code)
+		.chain(
+			G_REACTION_ASSESSMENT_CONSTRAINT_RULES
+				.iter()
+				.map(|rule| rule.code),
+		)
+		.collect()
 }
 
 #[cfg(test)]

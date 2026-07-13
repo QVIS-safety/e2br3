@@ -12,9 +12,7 @@
 //!   (`push_issue_if_rule_invalid` + `ValuePolicy`).
 //! - [`CompanionRule`]: "if X is present, its companion Y is required".
 
-use crate::allowed_value::{
-	is_allowed_value_valid, true_marker_value, ConstraintValue,
-};
+use crate::allowed_value::{is_allowed_value_valid, ConstraintValue};
 use crate::context::VocabularyContext;
 use crate::{
 	max_length_for_rule, push_issue_by_code, push_issue_if_rule_invalid,
@@ -85,57 +83,157 @@ fn is_future_date(value: Option<Date>) -> bool {
 	value > OffsetDateTime::now_utc().date()
 }
 
-fn invalid_code(rule_code: &str, value: Option<&str>) -> bool {
-	!is_allowed_value_valid(
-		rule_code,
-		ConstraintValue::Text(value.map(Cow::Borrowed)),
-		&VocabularyContext::default(),
-	)
+pub(crate) struct ConstraintRule<T> {
+	pub code: &'static str,
+	pub path: &'static str,
+	pub value: for<'a> fn(&'a T) -> ConstraintValue<'a>,
 }
 
-fn invalid_true_marker(
-	rule_code: &str,
-	value: Option<bool>,
-	null_flavor: Option<&str>,
-) -> bool {
-	!is_allowed_value_valid(
-		rule_code,
-		true_marker_value(value, null_flavor),
-		&VocabularyContext::default(),
-	)
+pub(crate) struct IndexedConstraintRule<T> {
+	pub code: &'static str,
+	pub path: fn(usize) -> String,
+	pub value: for<'a> fn(&'a T) -> ConstraintValue<'a>,
 }
 
-fn invalid_numeric_text(rule_code: &str, value: Option<&str>) -> bool {
-	!is_allowed_value_valid(
-		rule_code,
-		ConstraintValue::Text(value.map(Cow::Borrowed)),
-		&VocabularyContext::default(),
-	)
+pub(crate) struct NestedConstraintRule<T> {
+	pub code: &'static str,
+	pub path: fn(usize, usize) -> String,
+	pub value: for<'a> fn(&'a T) -> ConstraintValue<'a>,
 }
 
-fn invalid_datetime_text(rule_code: &str, value: Option<&str>) -> bool {
-	!is_allowed_value_valid(
-		rule_code,
-		ConstraintValue::Text(value.map(Cow::Borrowed)),
-		&VocabularyContext::default(),
-	)
+#[allow(dead_code)]
+pub(crate) struct GrandchildConstraintRule<T> {
+	pub code: &'static str,
+	pub path: fn(usize, usize, usize) -> String,
+	pub value: for<'a> fn(&'a T) -> ConstraintValue<'a>,
 }
 
-fn invalid_vocabulary(rule_code: &str, value: Option<&str>) -> bool {
-	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
-		return false;
-	};
-	match vocabulary_for_rule(rule_code) {
-		Some("ISO3166") => {
-			value != "EU"
-				&& !country_code::CountryCode::VARS
-					.iter()
-					.any(|country| country == value)
+pub(crate) fn eval_constraints<T>(
+	issues: &mut Vec<ValidationIssue>,
+	item: &T,
+	rules: &[ConstraintRule<T>],
+	vocabulary: &VocabularyContext,
+) {
+	for rule in rules {
+		if !is_allowed_value_valid(rule.code, (rule.value)(item), vocabulary) {
+			push_issue_by_code(issues, rule.code, rule.path);
 		}
-		Some(vocabulary) => {
-			panic!("unsupported vocabulary evaluator {vocabulary}: {rule_code}")
+	}
+}
+
+pub(crate) fn eval_indexed_constraints<T>(
+	issues: &mut Vec<ValidationIssue>,
+	items: &[T],
+	rules: &[IndexedConstraintRule<T>],
+	vocabulary: &VocabularyContext,
+) {
+	for (index, item) in items.iter().enumerate() {
+		for rule in rules {
+			if !is_allowed_value_valid(rule.code, (rule.value)(item), vocabulary) {
+				push_issue_by_code(issues, rule.code, (rule.path)(index));
+			}
 		}
-		None => panic!("vocabulary rule code should exist in catalog: {rule_code}"),
+	}
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn eval_nested_constraints<P, T, K>(
+	issues: &mut Vec<ValidationIssue>,
+	parents: &[P],
+	items: &[T],
+	parent_key: fn(&P) -> K,
+	item_parent_key: fn(&T) -> K,
+	item_idx: fn(&T, usize) -> usize,
+	rules: &[NestedConstraintRule<T>],
+	vocabulary: &VocabularyContext,
+) where
+	K: Copy + Eq + Hash,
+{
+	let parent_indices = parents
+		.iter()
+		.enumerate()
+		.map(|(index, parent)| (parent_key(parent), index))
+		.collect::<HashMap<_, _>>();
+	let mut fallback_idx_by_parent = HashMap::<K, usize>::new();
+	for item in items {
+		let owner_key = item_parent_key(item);
+		let Some(parent_idx) = parent_indices.get(&owner_key).copied() else {
+			continue;
+		};
+		let fallback_idx = fallback_idx_by_parent.entry(owner_key).or_insert(0);
+		let item_idx = item_idx(item, *fallback_idx);
+		*fallback_idx += 1;
+		for rule in rules {
+			if !is_allowed_value_valid(rule.code, (rule.value)(item), vocabulary) {
+				push_issue_by_code(
+					issues,
+					rule.code,
+					(rule.path)(parent_idx, item_idx),
+				);
+			}
+		}
+	}
+}
+
+#[allow(clippy::too_many_arguments)]
+#[allow(dead_code)]
+pub(crate) fn eval_grandchild_constraints<G, P, T, GK, PK>(
+	issues: &mut Vec<ValidationIssue>,
+	grandparents: &[G],
+	parents: &[P],
+	items: &[T],
+	grandparent_key: fn(&G) -> GK,
+	parent_key: fn(&P) -> PK,
+	parent_grandparent_key: fn(&P) -> GK,
+	item_parent_key: fn(&T) -> PK,
+	parent_idx: fn(&P, usize) -> usize,
+	item_idx: fn(&T, usize) -> usize,
+	rules: &[GrandchildConstraintRule<T>],
+	vocabulary: &VocabularyContext,
+) where
+	GK: Copy + Eq + Hash,
+	PK: Copy + Eq + Hash,
+{
+	let grandparent_indices = grandparents
+		.iter()
+		.enumerate()
+		.map(|(index, grandparent)| (grandparent_key(grandparent), index))
+		.collect::<HashMap<_, _>>();
+	let mut fallback_parent_idx_by_grandparent = HashMap::<GK, usize>::new();
+	let parent_indices = parents
+		.iter()
+		.filter_map(|parent| {
+			let owner_key = parent_grandparent_key(parent);
+			grandparent_indices.get(&owner_key)?;
+			let fallback_idx = fallback_parent_idx_by_grandparent
+				.entry(owner_key)
+				.or_insert(0);
+			let concrete_idx = parent_idx(parent, *fallback_idx);
+			*fallback_idx += 1;
+			Some((parent_key(parent), (owner_key, concrete_idx)))
+		})
+		.collect::<HashMap<_, _>>();
+	let mut fallback_item_idx_by_parent = HashMap::<PK, usize>::new();
+	for item in items {
+		let owner_key = item_parent_key(item);
+		let Some((grandparent_key, parent_idx)) =
+			parent_indices.get(&owner_key).copied()
+		else {
+			continue;
+		};
+		let grandparent_idx = grandparent_indices[&grandparent_key];
+		let fallback_idx = fallback_item_idx_by_parent.entry(owner_key).or_insert(0);
+		let item_idx = item_idx(item, *fallback_idx);
+		*fallback_idx += 1;
+		for rule in rules {
+			if !is_allowed_value_valid(rule.code, (rule.value)(item), vocabulary) {
+				push_issue_by_code(
+					issues,
+					rule.code,
+					(rule.path)(grandparent_idx, parent_idx, item_idx),
+				);
+			}
+		}
 	}
 }
 
@@ -206,24 +304,6 @@ pub(crate) struct FutureDateRule<T> {
 	pub dates: fn(&T) -> DateValues,
 }
 
-pub(crate) struct DateTimeTextRule<T> {
-	pub code: &'static str,
-	pub path: &'static str,
-	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
-}
-
-pub(crate) fn eval_datetime_text<T>(
-	issues: &mut Vec<ValidationIssue>,
-	item: &T,
-	rules: &[DateTimeTextRule<T>],
-) {
-	for rule in rules {
-		if invalid_datetime_text(rule.code, (rule.value)(item)) {
-			push_issue_by_code(issues, rule.code, rule.path);
-		}
-	}
-}
-
 pub(crate) fn eval_future_dates<T>(
 	issues: &mut Vec<ValidationIssue>,
 	item: &T,
@@ -232,87 +312,6 @@ pub(crate) fn eval_future_dates<T>(
 	for rule in rules {
 		if (rule.dates)(item).any_future() {
 			push_issue_by_code(issues, rule.code, rule.path);
-		}
-	}
-}
-
-pub(crate) struct AllowedCodeRule<T> {
-	pub code: &'static str,
-	pub path: &'static str,
-	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
-}
-
-pub(crate) struct VocabularyRule<T> {
-	pub code: &'static str,
-	pub path: &'static str,
-	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
-}
-
-pub(crate) fn eval_vocabulary<T>(
-	issues: &mut Vec<ValidationIssue>,
-	item: &T,
-	rules: &[VocabularyRule<T>],
-) {
-	for rule in rules {
-		if invalid_vocabulary(rule.code, (rule.value)(item)) {
-			push_issue_by_code(issues, rule.code, rule.path);
-		}
-	}
-}
-
-pub(crate) struct TrueMarkerRule<T> {
-	pub code: &'static str,
-	pub path: &'static str,
-	pub value: for<'a> fn(&'a T) -> (Option<bool>, Option<&'a str>),
-}
-
-pub(crate) fn eval_true_markers<T>(
-	issues: &mut Vec<ValidationIssue>,
-	item: &T,
-	rules: &[TrueMarkerRule<T>],
-) {
-	for rule in rules {
-		let (value, null_flavor) = (rule.value)(item);
-		if invalid_true_marker(rule.code, value, null_flavor) {
-			push_issue_by_code(issues, rule.code, rule.path);
-		}
-	}
-}
-
-pub(crate) fn eval_allowed_codes<T>(
-	issues: &mut Vec<ValidationIssue>,
-	item: &T,
-	rules: &[AllowedCodeRule<T>],
-) {
-	for rule in rules {
-		if invalid_code(rule.code, (rule.value)(item)) {
-			push_issue_by_code(issues, rule.code, rule.path);
-		}
-	}
-}
-
-pub(crate) struct IndexedAllowedCodeRule<T> {
-	pub code: &'static str,
-	pub path: fn(usize) -> String,
-	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
-}
-
-pub(crate) struct IndexedVocabularyRule<T> {
-	pub code: &'static str,
-	pub path: fn(usize) -> String,
-	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
-}
-
-pub(crate) fn eval_indexed_vocabulary<T>(
-	issues: &mut Vec<ValidationIssue>,
-	items: &[T],
-	rules: &[IndexedVocabularyRule<T>],
-) {
-	for (idx, item) in items.iter().enumerate() {
-		for rule in rules {
-			if invalid_vocabulary(rule.code, (rule.value)(item)) {
-				push_issue_by_code(issues, rule.code, (rule.path)(idx));
-			}
 		}
 	}
 }
@@ -375,96 +374,6 @@ pub(crate) fn eval_indexed_meddra<T>(
 	}
 }
 
-pub(crate) struct IndexedTrueMarkerRule<T> {
-	pub code: &'static str,
-	pub path: fn(usize) -> String,
-	pub value: for<'a> fn(&'a T) -> (Option<bool>, Option<&'a str>),
-}
-
-pub(crate) fn eval_indexed_true_markers<T>(
-	issues: &mut Vec<ValidationIssue>,
-	items: &[T],
-	rules: &[IndexedTrueMarkerRule<T>],
-) {
-	for (idx, item) in items.iter().enumerate() {
-		for rule in rules {
-			let (value, null_flavor) = (rule.value)(item);
-			if invalid_true_marker(rule.code, value, null_flavor) {
-				push_issue_by_code(issues, rule.code, (rule.path)(idx));
-			}
-		}
-	}
-}
-
-pub(crate) fn eval_indexed_allowed_codes<T>(
-	issues: &mut Vec<ValidationIssue>,
-	items: &[T],
-	rules: &[IndexedAllowedCodeRule<T>],
-) {
-	for (idx, item) in items.iter().enumerate() {
-		for rule in rules {
-			if invalid_code(rule.code, (rule.value)(item)) {
-				push_issue_by_code(issues, rule.code, (rule.path)(idx));
-			}
-		}
-	}
-}
-
-pub(crate) struct IndexedRepeatedAllowedCodeRule<T> {
-	pub code: &'static str,
-	pub path: fn(usize) -> String,
-	pub values: fn(&T) -> Vec<String>,
-}
-
-pub(crate) struct IndexedNumericTextRule<T> {
-	pub code: &'static str,
-	pub path: fn(usize) -> String,
-	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
-}
-
-pub(crate) fn eval_indexed_numeric_text<T>(
-	issues: &mut Vec<ValidationIssue>,
-	items: &[T],
-	rules: &[IndexedNumericTextRule<T>],
-) {
-	for (idx, item) in items.iter().enumerate() {
-		for rule in rules {
-			if invalid_numeric_text(rule.code, (rule.value)(item)) {
-				push_issue_by_code(issues, rule.code, (rule.path)(idx));
-			}
-		}
-	}
-}
-
-pub(crate) fn eval_indexed_repeated_allowed_codes<T>(
-	issues: &mut Vec<ValidationIssue>,
-	items: &[T],
-	rules: &[IndexedRepeatedAllowedCodeRule<T>],
-) {
-	for (idx, item) in items.iter().enumerate() {
-		for rule in rules {
-			if (rule.values)(item)
-				.iter()
-				.any(|value| invalid_code(rule.code, Some(value)))
-			{
-				push_issue_by_code(issues, rule.code, (rule.path)(idx));
-			}
-		}
-	}
-}
-
-pub(crate) struct NestedAllowedCodeRule<T> {
-	pub code: &'static str,
-	pub path: fn(usize, usize) -> String,
-	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
-}
-
-pub(crate) struct NestedVocabularyRule<T> {
-	pub code: &'static str,
-	pub path: fn(usize, usize) -> String,
-	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
-}
-
 pub(crate) struct NestedMeddraRule<T> {
 	pub version_code: &'static str,
 	pub code_code: &'static str,
@@ -511,80 +420,6 @@ pub(crate) fn eval_nested_meddra<P, T, K>(
 				version,
 				code,
 			);
-		}
-	}
-}
-
-pub(crate) fn eval_nested_vocabulary<P, T, K>(
-	issues: &mut Vec<ValidationIssue>,
-	parents: &[P],
-	items: &[T],
-	parent_key: fn(&P) -> K,
-	item_parent_key: fn(&T) -> K,
-	item_idx: fn(&T, usize) -> usize,
-	rules: &[NestedVocabularyRule<T>],
-) where
-	K: Copy + Eq + Hash,
-{
-	let parent_indices = parents
-		.iter()
-		.enumerate()
-		.map(|(idx, parent)| (parent_key(parent), idx))
-		.collect::<HashMap<_, _>>();
-	let mut fallback_idx_by_parent = HashMap::<K, usize>::new();
-	for item in items {
-		let parent_key = item_parent_key(item);
-		let Some(parent_idx) = parent_indices.get(&parent_key).copied() else {
-			continue;
-		};
-		let fallback_idx = fallback_idx_by_parent.entry(parent_key).or_insert(0);
-		let item_idx = item_idx(item, *fallback_idx);
-		*fallback_idx += 1;
-		for rule in rules {
-			if invalid_vocabulary(rule.code, (rule.value)(item)) {
-				push_issue_by_code(
-					issues,
-					rule.code,
-					(rule.path)(parent_idx, item_idx),
-				);
-			}
-		}
-	}
-}
-
-pub(crate) fn eval_nested_allowed_codes<P, T, K>(
-	issues: &mut Vec<ValidationIssue>,
-	parents: &[P],
-	items: &[T],
-	parent_key: fn(&P) -> K,
-	item_parent_key: fn(&T) -> K,
-	item_idx: fn(&T, usize) -> usize,
-	rules: &[NestedAllowedCodeRule<T>],
-) where
-	K: Copy + Eq + Hash,
-{
-	let parent_indices = parents
-		.iter()
-		.enumerate()
-		.map(|(idx, parent)| (parent_key(parent), idx))
-		.collect::<HashMap<_, _>>();
-	let mut fallback_idx_by_parent = HashMap::<K, usize>::new();
-	for item in items {
-		let parent_key = item_parent_key(item);
-		let Some(parent_idx) = parent_indices.get(&parent_key).copied() else {
-			continue;
-		};
-		let fallback_idx = fallback_idx_by_parent.entry(parent_key).or_insert(0);
-		let item_idx = item_idx(item, *fallback_idx);
-		*fallback_idx += 1;
-		for rule in rules {
-			if invalid_code(rule.code, (rule.value)(item)) {
-				push_issue_by_code(
-					issues,
-					rule.code,
-					(rule.path)(parent_idx, item_idx),
-				);
-			}
 		}
 	}
 }
@@ -1058,126 +893,204 @@ pub(crate) fn eval_grandchild_length<G, P, T, GK, PK>(
 }
 
 #[cfg(test)]
-mod vocabulary_rule_tests {
-	use super::{eval_vocabulary, VocabularyRule};
-	use crate::ValidationIssue;
-
-	struct Item {
-		country: Option<&'static str>,
-	}
-
-	#[test]
-	fn iso3166_rule_accepts_standard_and_ich_eu_codes() {
-		let rules = [VocabularyRule {
-			code: "ICH.C.3.4.5.VOCABULARY",
-			path: "senderInformation.countryCode",
-			value: |item: &Item| item.country,
-		}];
-		let mut issues = Vec::<ValidationIssue>::new();
-
-		for country in [None, Some("KR"), Some("EU")] {
-			eval_vocabulary(&mut issues, &Item { country }, &rules);
-		}
-
-		assert!(issues.is_empty());
-	}
-
-	#[test]
-	fn iso3166_rule_rejects_unknown_and_wrong_case_codes() {
-		let rules = [VocabularyRule {
-			code: "ICH.C.3.4.5.VOCABULARY",
-			path: "senderInformation.countryCode",
-			value: |item: &Item| item.country,
-		}];
-		let mut issues = Vec::<ValidationIssue>::new();
-
-		for country in [Some("ZZ"), Some("kr")] {
-			eval_vocabulary(&mut issues, &Item { country }, &rules);
-		}
-
-		assert_eq!(issues.len(), 2);
-		assert!(issues
-			.iter()
-			.all(|issue| issue.code == "ICH.C.3.4.5.VOCABULARY"));
-	}
-}
-
-#[cfg(test)]
-mod allowed_code_rule_tests {
+mod constraint_rule_tests {
 	use super::{
-		eval_allowed_codes, eval_nested_allowed_codes, AllowedCodeRule,
-		NestedAllowedCodeRule,
+		eval_constraints, eval_grandchild_constraints, eval_indexed_constraints,
+		eval_nested_constraints, ConstraintRule, GrandchildConstraintRule,
+		IndexedConstraintRule, NestedConstraintRule,
 	};
+	use crate::allowed_value::ConstraintValue;
+	use crate::context::VocabularyContext;
 	use crate::ValidationIssue;
+	use std::borrow::Cow;
 
 	struct Item {
-		value: Option<&'static str>,
 		parent_id: u8,
+		stored_idx: usize,
+		value: Option<&'static str>,
 	}
 
 	struct Parent {
 		id: u8,
+		grandparent_id: u8,
+		stored_idx: usize,
+	}
+
+	struct Grandparent {
+		id: u8,
 	}
 
 	#[test]
-	fn allowed_code_rule_reads_values_from_catalog() {
-		let rules = [AllowedCodeRule {
-			code: "ICH.C.1.3.ALLOWED.VALUE",
-			path: "safetyReportIdentification.reportType",
-			value: |item: &Item| item.value,
+	fn scalar_constraint_uses_catalog_vocabulary_semantics() {
+		let rule = [ConstraintRule {
+			code: "ICH.C.3.4.5.VOCABULARY",
+			path: "senderInformation.countryCode",
+			value: |item: &Item| {
+				ConstraintValue::Text(item.value.map(Cow::Borrowed))
+			},
 		}];
 		let mut issues = Vec::<ValidationIssue>::new();
 
-		eval_allowed_codes(
-			&mut issues,
-			&Item {
-				value: Some("2"),
-				parent_id: 1,
-			},
-			&rules,
-		);
+		for value in [None, Some("KR"), Some("EU")] {
+			eval_constraints(
+				&mut issues,
+				&Item {
+					parent_id: 0,
+					stored_idx: 0,
+					value,
+				},
+				&rule,
+				&VocabularyContext::default(),
+			);
+		}
 		assert!(issues.is_empty());
 
-		eval_allowed_codes(
+		eval_constraints(
 			&mut issues,
 			&Item {
-				value: Some("9"),
-				parent_id: 1,
+				parent_id: 0,
+				stored_idx: 0,
+				value: Some("ZZ"),
 			},
-			&rules,
+			&rule,
+			&VocabularyContext::default(),
 		);
 		assert_eq!(issues.len(), 1);
-		assert_eq!(issues[0].code, "ICH.C.1.3.ALLOWED.VALUE");
 	}
 
 	#[test]
-	fn nested_allowed_rule_does_not_fallback_to_parent_zero() {
-		let parents = [Parent { id: 1 }];
-		let items = [Item {
-			value: Some("9"),
-			parent_id: 2,
+	fn indexed_constraint_retains_actual_index() {
+		let items = [
+			Item {
+				parent_id: 0,
+				stored_idx: 0,
+				value: Some("1"),
+			},
+			Item {
+				parent_id: 0,
+				stored_idx: 0,
+				value: Some("99"),
+			},
+		];
+		let rules = [IndexedConstraintRule {
+			code: "ICH.E.i.7.ALLOWED.VALUE",
+			path: |index| format!("reactions.{index}.outcome"),
+			value: |item: &Item| {
+				ConstraintValue::Text(item.value.map(Cow::Borrowed))
+			},
 		}];
-		let rules =
-			[NestedAllowedCodeRule {
-				code: "ICH.G.k.9.i.4.ALLOWED.VALUE",
-				path: |parent_idx, idx| {
-					format!("drugs.{parent_idx}.reactionAssessments.{idx}.reactionRecurred")
-				},
-				value: |item: &Item| item.value,
-			}];
 		let mut issues = Vec::<ValidationIssue>::new();
 
-		eval_nested_allowed_codes(
+		eval_indexed_constraints(
+			&mut issues,
+			&items,
+			&rules,
+			&VocabularyContext::default(),
+		);
+
+		assert_eq!(issues.len(), 1);
+		assert_eq!(issues[0].field_path.as_deref(), Some("reactions.1.outcome"));
+	}
+
+	#[test]
+	fn nested_constraint_never_falls_back_to_parent_zero() {
+		let parents = [Parent {
+			id: 1,
+			grandparent_id: 0,
+			stored_idx: 0,
+		}];
+		let items = [Item {
+			parent_id: 2,
+			stored_idx: 3,
+			value: Some("99"),
+		}];
+		let rules = [NestedConstraintRule {
+			code: "ICH.E.i.7.ALLOWED.VALUE",
+			path: |parent_idx, item_idx| {
+				format!("parents.{parent_idx}.items.{item_idx}.outcome")
+			},
+			value: |item: &Item| {
+				ConstraintValue::Text(item.value.map(Cow::Borrowed))
+			},
+		}];
+		let mut issues = Vec::<ValidationIssue>::new();
+
+		eval_nested_constraints(
 			&mut issues,
 			&parents,
 			&items,
 			|parent| parent.id,
 			|item| item.parent_id,
-			|_, idx| idx,
+			|item, fallback| {
+				if item.stored_idx == 0 {
+					fallback
+				} else {
+					item.stored_idx
+				}
+			},
 			&rules,
+			&VocabularyContext::default(),
 		);
 
 		assert!(issues.is_empty());
+	}
+
+	#[test]
+	fn grandchild_constraint_retains_all_concrete_indexes() {
+		let grandparents = [Grandparent { id: 1 }, Grandparent { id: 2 }];
+		let parents = [Parent {
+			id: 8,
+			grandparent_id: 2,
+			stored_idx: 2,
+		}];
+		let items = [Item {
+			parent_id: 8,
+			stored_idx: 3,
+			value: Some("99"),
+		}];
+		let rules = [GrandchildConstraintRule {
+			code: "ICH.E.i.7.ALLOWED.VALUE",
+			path: |grandparent_idx, parent_idx, item_idx| {
+				format!("drugs.{grandparent_idx}.dosages.{parent_idx}.intervals.{item_idx}.unit")
+			},
+			value: |item: &Item| {
+				ConstraintValue::Text(item.value.map(Cow::Borrowed))
+			},
+		}];
+		let mut issues = Vec::<ValidationIssue>::new();
+
+		eval_grandchild_constraints(
+			&mut issues,
+			&grandparents,
+			&parents,
+			&items,
+			|grandparent| grandparent.id,
+			|parent| parent.id,
+			|parent| parent.grandparent_id,
+			|item| item.parent_id,
+			|parent, fallback| {
+				if parent.stored_idx == 0 {
+					fallback
+				} else {
+					parent.stored_idx
+				}
+			},
+			|item, fallback| {
+				if item.stored_idx == 0 {
+					fallback
+				} else {
+					item.stored_idx
+				}
+			},
+			&rules,
+			&VocabularyContext::default(),
+		);
+
+		assert_eq!(issues.len(), 1);
+		assert_eq!(
+			issues[0].field_path.as_deref(),
+			Some("drugs.1.dosages.2.intervals.3.unit")
+		);
 	}
 }
 
