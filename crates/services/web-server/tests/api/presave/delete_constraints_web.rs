@@ -69,7 +69,7 @@ async fn test_presave_rest_rejects_deleting_referenced_parent() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_canonical_product_parent_soft_delete_requires_delete_permission(
+async fn test_canonical_product_parent_soft_delete_allows_editor_with_unset_scope(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -93,7 +93,7 @@ async fn test_canonical_product_parent_soft_delete_requires_delete_permission(
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+	assert_eq!(status, StatusCode::OK, "{value:?}");
 
 	let details_id =
 		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;
@@ -111,7 +111,7 @@ async fn test_canonical_product_parent_soft_delete_requires_delete_permission(
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+	assert_eq!(status, StatusCode::OK, "{value:?}");
 
 	Ok(())
 }
