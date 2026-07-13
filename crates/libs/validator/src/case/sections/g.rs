@@ -219,6 +219,18 @@ const G_DRUG_DERIVED_LENGTH_RULES: &[IndexedDerivedLengthRule<DrugInformation>] 
 
 const G_DRUG_CONSTRAINT_RULES: &[IndexedConstraintRule<DrugInformation>] = &[
 	IndexedConstraintRule {
+		code: "ICH.G.k.2.1.1b.ALLOWED.VALUE",
+		path: |idx| format!("drugs.{idx}.mpid"),
+		value: |drug| ConstraintValue::Text(drug.mpid.as_deref().map(Cow::Borrowed)),
+	},
+	IndexedConstraintRule {
+		code: "ICH.G.k.2.1.2b.ALLOWED.VALUE",
+		path: |idx| format!("drugs.{idx}.phpid"),
+		value: |drug| {
+			ConstraintValue::Text(drug.phpid.as_deref().map(Cow::Borrowed))
+		},
+	},
+	IndexedConstraintRule {
 		code: "ICH.G.k.1.ALLOWED.VALUE",
 		path: |idx| format!("drugs.{idx}.drugCharacterization"),
 		value: |drug| {
@@ -336,6 +348,33 @@ const G_ACTIVE_SUBSTANCE_LENGTH_RULES: &[NestedLengthRule<DrugActiveSubstance>] 
 			format!("drugs.{drug_idx}.activeSubstances.{idx}.strengthUnit")
 		},
 		value: |substance| substance.strength_unit.as_deref(),
+	},
+];
+
+const G_ACTIVE_SUBSTANCE_CONSTRAINT_RULES: &[NestedConstraintRule<
+	DrugActiveSubstance,
+>] = &[
+	NestedConstraintRule {
+		code: "ICH.G.k.2.3.r.2b.ALLOWED.VALUE",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.activeSubstances.{idx}.substanceTermId")
+		},
+		value: |substance| {
+			ConstraintValue::Text(
+				substance.substance_termid.as_deref().map(Cow::Borrowed),
+			)
+		},
+	},
+	NestedConstraintRule {
+		code: "ICH.G.k.2.3.r.3b.ALLOWED.VALUE",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.activeSubstances.{idx}.strengthUnit")
+		},
+		value: |substance| {
+			ConstraintValue::Text(
+				substance.strength_unit.as_deref().map(Cow::Borrowed),
+			)
+		},
 	},
 ];
 
@@ -824,6 +863,16 @@ pub(crate) fn collect_ich_issues(
 		|substance| substance.drug_id,
 		|substance, fallback| sequence_idx(substance.sequence_number, fallback),
 		G_ACTIVE_SUBSTANCE_LENGTH_RULES,
+	);
+	eval_nested_constraints(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.active_substances,
+		|drug| drug.id,
+		|substance| substance.drug_id,
+		|substance, fallback| sequence_idx(substance.sequence_number, fallback),
+		G_ACTIVE_SUBSTANCE_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 	eval_nested_derived_length(
 		issues,
@@ -1390,6 +1439,11 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 		.map(|rule| rule.code)
 		.chain(
 			G_REACTION_ASSESSMENT_CONSTRAINT_RULES
+				.iter()
+				.map(|rule| rule.code),
+		)
+		.chain(
+			G_ACTIVE_SUBSTANCE_CONSTRAINT_RULES
 				.iter()
 				.map(|rule| rule.code),
 		)

@@ -144,6 +144,15 @@ const E_REACTION_FUTURE_DATE_RULES: &[IndexedFutureDateRule<Reaction>] =
 
 const E_REACTION_CONSTRAINT_RULES: &[IndexedConstraintRule<Reaction>] = &[
 	IndexedConstraintRule {
+		code: "ICH.E.i.1.1b.ALLOWED.VALUE",
+		path: |idx| format!("reactions.{idx}.reactionLanguage"),
+		value: |reaction| {
+			ConstraintValue::Text(
+				reaction.reaction_language.as_deref().map(Cow::Borrowed),
+			)
+		},
+	},
+	IndexedConstraintRule {
 		code: "ICH.E.i.7.ALLOWED.VALUE",
 		path: |idx| format!("reactions.{idx}.reactionOutcome"),
 		value: |reaction| {

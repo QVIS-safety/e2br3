@@ -50,6 +50,15 @@ const F_FUTURE_DATE_RULES: &[IndexedFutureDateRule<TestResult>] =
 
 const F_CONSTRAINT_RULES: &[IndexedConstraintRule<TestResult>] = &[
 	IndexedConstraintRule {
+		code: "ICH.F.r.3.3.ALLOWED.VALUE",
+		path: |idx| format!("testResults.{idx}.testResultUnit"),
+		value: |test| {
+			ConstraintValue::Text(
+				test.test_result_unit.as_deref().map(Cow::Borrowed),
+			)
+		},
+	},
+	IndexedConstraintRule {
 		code: "ICH.F.r.3.1.ALLOWED.VALUE",
 		path: |idx| format!("testResults.{idx}.testResultCode"),
 		value: |test| {

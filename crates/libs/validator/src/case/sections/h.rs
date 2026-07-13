@@ -1,7 +1,9 @@
 use super::rule_table::{
-	eval_companions, eval_indexed_length, eval_indexed_meddra, eval_length,
-	CompanionRule, IndexedLengthRule, IndexedMeddraRule, LengthRule,
+	eval_companions, eval_indexed_constraints, eval_indexed_length,
+	eval_indexed_meddra, eval_length, CompanionRule, IndexedConstraintRule,
+	IndexedLengthRule, IndexedMeddraRule, LengthRule,
 };
+use crate::allowed_value::ConstraintValue;
 use crate::{
 	has_text, push_issue_by_code, push_issue_if_rule_invalid,
 	should_require_case_narrative, RegulatoryAuthority, RuleFacts,
@@ -10,6 +12,7 @@ use crate::{
 use lib_core::model::narrative::{
 	CaseSummaryInformation, NarrativeInformation, SenderDiagnosis,
 };
+use std::borrow::Cow;
 
 const H_NARRATIVE_LENGTH_RULES: &[LengthRule<NarrativeInformation>] = &[
 	LengthRule {
@@ -104,6 +107,16 @@ const H_CASE_SUMMARY_LENGTH_RULES: &[IndexedLengthRule<CaseSummaryInformation>] 
 	},
 ];
 
+const H_CASE_SUMMARY_CONSTRAINT_RULES: &[IndexedConstraintRule<
+	CaseSummaryInformation,
+>] = &[IndexedConstraintRule {
+	code: "ICH.H.5.r.1b.ALLOWED.VALUE",
+	path: |idx| format!("narrative.caseSummaries.{idx}.languageCode"),
+	value: |summary| {
+		ConstraintValue::Text(summary.language_code.as_deref().map(Cow::Borrowed))
+	},
+}];
+
 pub(crate) fn collect(
 	issues: &mut Vec<ValidationIssue>,
 	authority: RegulatoryAuthority,
@@ -161,13 +174,23 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.case_summaries,
 		H_CASE_SUMMARY_LENGTH_RULES,
 	);
+	eval_indexed_constraints(
+		issues,
+		&validation_ctx.case_summaries,
+		H_CASE_SUMMARY_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
+	);
 }
 
 #[cfg(test)]
 pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
-	super::rule_table::indexed_meddra_constraint_codes(
-		H_SENDER_DIAGNOSIS_MEDDRA_RULES,
-	)
+	H_CASE_SUMMARY_CONSTRAINT_RULES
+		.iter()
+		.map(|rule| rule.code)
+		.chain(super::rule_table::indexed_meddra_constraint_codes(
+			H_SENDER_DIAGNOSIS_MEDDRA_RULES,
+		))
+		.collect()
 }
 
 #[cfg(test)]

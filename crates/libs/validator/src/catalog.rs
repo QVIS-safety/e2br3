@@ -3959,6 +3959,8 @@ fn phases_for_allowed_value_rule(code: &str) -> &'static [ValidationPhase] {
 		| "ICH.D.10.6.ALLOWED.VALUE"
 		| "ICH.D.7.1.r.1a.ALLOWED.VALUE"
 		| "ICH.D.7.1.r.1b.ALLOWED.VALUE"
+		| "ICH.D.8.r.2b.ALLOWED.VALUE"
+		| "ICH.D.8.r.3b.ALLOWED.VALUE"
 		| "ICH.D.8.r.6a.ALLOWED.VALUE"
 		| "ICH.D.8.r.6b.ALLOWED.VALUE"
 		| "ICH.D.8.r.7a.ALLOWED.VALUE"
@@ -3973,6 +3975,9 @@ fn phases_for_allowed_value_rule(code: &str) -> &'static [ValidationPhase] {
 		| "ICH.D.10.8.r.6b.ALLOWED.VALUE"
 		| "ICH.D.10.8.r.7a.ALLOWED.VALUE"
 		| "ICH.D.10.8.r.7b.ALLOWED.VALUE"
+		| "ICH.D.10.8.r.2b.ALLOWED.VALUE"
+		| "ICH.D.10.8.r.3b.ALLOWED.VALUE"
+		| "ICH.E.i.1.1b.ALLOWED.VALUE"
 		| "ICH.E.i.2.1a.ALLOWED.VALUE"
 		| "ICH.E.i.2.1b.ALLOWED.VALUE"
 		| "ICH.E.i.3.2a.ALLOWED.VALUE"
@@ -3984,6 +3989,7 @@ fn phases_for_allowed_value_rule(code: &str) -> &'static [ValidationPhase] {
 		| "ICH.E.i.7.ALLOWED.VALUE"
 		| "ICH.F.r.2.2a.ALLOWED.VALUE"
 		| "ICH.F.r.2.2b.ALLOWED.VALUE"
+		| "ICH.F.r.3.3.ALLOWED.VALUE"
 		| "ICH.F.r.3.1.ALLOWED.VALUE"
 		| "ICH.F.r.3.2.ALLOWED.VALUE"
 		| "ICH.G.k.1.ALLOWED.VALUE"
@@ -3991,10 +3997,15 @@ fn phases_for_allowed_value_rule(code: &str) -> &'static [ValidationPhase] {
 		| "ICH.G.k.8.ALLOWED.VALUE"
 		| "ICH.G.k.9.i.4.ALLOWED.VALUE"
 		| "ICH.G.k.10.r.ALLOWED.VALUE" => PHASES_CASE_VALIDATE,
-		"ICH.G.k.7.r.2a.ALLOWED.VALUE"
+		"ICH.G.k.2.1.1b.ALLOWED.VALUE"
+		| "ICH.G.k.2.1.2b.ALLOWED.VALUE"
+		| "ICH.G.k.2.3.r.2b.ALLOWED.VALUE"
+		| "ICH.G.k.2.3.r.3b.ALLOWED.VALUE"
+		| "ICH.G.k.7.r.2a.ALLOWED.VALUE"
 		| "ICH.G.k.7.r.2b.ALLOWED.VALUE"
 		| "ICH.H.3.r.1a.ALLOWED.VALUE"
-		| "ICH.H.3.r.1b.ALLOWED.VALUE" => PHASES_CASE_VALIDATE,
+		| "ICH.H.3.r.1b.ALLOWED.VALUE"
+		| "ICH.H.5.r.1b.ALLOWED.VALUE" => PHASES_CASE_VALIDATE,
 		_ => PHASES_METADATA_ONLY,
 	}
 }

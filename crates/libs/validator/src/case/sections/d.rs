@@ -3,13 +3,13 @@ use super::rule_table::{
 	eval_constraints, eval_derived_length, eval_future_dates,
 	eval_indexed_constraints, eval_indexed_derived_length,
 	eval_indexed_future_dates, eval_indexed_length, eval_indexed_meddra,
-	eval_length, eval_nested_companions, eval_nested_future_dates,
-	eval_nested_length, eval_nested_meddra, CompanionRule, ConditionalIndexedRule,
-	ConditionalValueRule, ConstraintRule, DateValues, DerivedLengthRule,
-	FutureDateRule, IndexedConstraintRule, IndexedDerivedLengthRule,
-	IndexedFutureDateRule, IndexedLengthRule, IndexedMeddraRule, LengthRule,
-	NestedCompanionRule, NestedFutureDateRule, NestedLengthRule, NestedMeddraRule,
-	RuleValue,
+	eval_length, eval_nested_companions, eval_nested_constraints,
+	eval_nested_future_dates, eval_nested_length, eval_nested_meddra, CompanionRule,
+	ConditionalIndexedRule, ConditionalValueRule, ConstraintRule, DateValues,
+	DerivedLengthRule, FutureDateRule, IndexedConstraintRule,
+	IndexedDerivedLengthRule, IndexedFutureDateRule, IndexedLengthRule,
+	IndexedMeddraRule, LengthRule, NestedCompanionRule, NestedConstraintRule,
+	NestedFutureDateRule, NestedLengthRule, NestedMeddraRule, RuleValue,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
@@ -504,6 +504,21 @@ const D_PAST_DRUG_LENGTH_RULES: &[IndexedLengthRule<PastDrugHistory>] = &[
 	},
 ];
 
+const D_PAST_DRUG_CONSTRAINT_RULES: &[IndexedConstraintRule<PastDrugHistory>] = &[
+	IndexedConstraintRule {
+		code: "ICH.D.8.r.2b.ALLOWED.VALUE",
+		path: |idx| format!("patientInformation.pastDrugs.{idx}.mpid"),
+		value: |drug| ConstraintValue::Text(drug.mpid.as_deref().map(Cow::Borrowed)),
+	},
+	IndexedConstraintRule {
+		code: "ICH.D.8.r.3b.ALLOWED.VALUE",
+		path: |idx| format!("patientInformation.pastDrugs.{idx}.phpid"),
+		value: |drug| {
+			ConstraintValue::Text(drug.phpid.as_deref().map(Cow::Borrowed))
+		},
+	},
+];
+
 const D_DEATH_FUTURE_DATE_RULES: &[FutureDateRule<PatientDeathInformation>] =
 	&[FutureDateRule {
 		code: "ICH.D.9.1.FUTURE_DATE.FORBIDDEN",
@@ -742,6 +757,27 @@ const D_PARENT_PAST_DRUG_LENGTH_RULES: &[NestedLengthRule<ParentPastDrugHistory>
 			value: |past_drug| past_drug.reaction_meddra_code.as_deref(),
 		},
 	];
+
+const D_PARENT_PAST_DRUG_CONSTRAINT_RULES: &[NestedConstraintRule<
+	ParentPastDrugHistory,
+>] = &[
+	NestedConstraintRule {
+		code: "ICH.D.10.8.r.2b.ALLOWED.VALUE",
+		path: |parent_idx, idx| {
+			format!("patientInformation.parents.{parent_idx}.pastDrugs.{idx}.mpid")
+		},
+		value: |drug| ConstraintValue::Text(drug.mpid.as_deref().map(Cow::Borrowed)),
+	},
+	NestedConstraintRule {
+		code: "ICH.D.10.8.r.3b.ALLOWED.VALUE",
+		path: |parent_idx, idx| {
+			format!("patientInformation.parents.{parent_idx}.pastDrugs.{idx}.phpid")
+		},
+		value: |drug| {
+			ConstraintValue::Text(drug.phpid.as_deref().map(Cow::Borrowed))
+		},
+	},
+];
 
 fn past_drug_has_payload(past_drug: &PastDrugHistory) -> bool {
 	has_text(past_drug.drug_name.as_deref())
@@ -1091,6 +1127,12 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.past_drugs,
 		D_PAST_DRUG_LENGTH_RULES,
 	);
+	eval_indexed_constraints(
+		issues,
+		&validation_ctx.past_drugs,
+		D_PAST_DRUG_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
+	);
 	eval_indexed_meddra(
 		issues,
 		&validation_ctx.vocabulary,
@@ -1257,6 +1299,16 @@ pub(crate) fn collect_ich_issues(
 		|drug, fallback_idx| index_from_sequence(drug.sequence_number, fallback_idx),
 		D_PARENT_PAST_DRUG_LENGTH_RULES,
 	);
+	eval_nested_constraints(
+		issues,
+		&validation_ctx.parents,
+		&validation_ctx.parent_past_drugs,
+		|parent| parent.id,
+		|drug| drug.parent_id,
+		|drug, fallback_idx| index_from_sequence(drug.sequence_number, fallback_idx),
+		D_PARENT_PAST_DRUG_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
+	);
 	eval_nested_meddra(
 		issues,
 		&validation_ctx.vocabulary,
@@ -1273,16 +1325,16 @@ pub(crate) fn collect_ich_issues(
 		.parent_past_drugs
 		.iter()
 		.for_each(|past_drug| {
+			let Some(parent_idx) = parent_indices.get(&past_drug.parent_id).copied()
+			else {
+				return;
+			};
 			let fallback_idx = fallback_idx_by_parent
 				.entry(past_drug.parent_id)
 				.or_insert(0);
 			let past_idx =
 				index_from_sequence(past_drug.sequence_number, *fallback_idx);
 			*fallback_idx += 1;
-			let parent_idx = parent_indices
-				.get(&past_drug.parent_id)
-				.copied()
-				.unwrap_or(0);
 			if has_text(past_drug.mpid.as_deref())
 				&& has_text(past_drug.phpid.as_deref())
 			{
@@ -1454,6 +1506,12 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 				.map(|rule| rule.code),
 		)
 		.chain(D_PARENT_CONSTRAINT_RULES.iter().map(|rule| rule.code))
+		.chain(D_PAST_DRUG_CONSTRAINT_RULES.iter().map(|rule| rule.code))
+		.chain(
+			D_PARENT_PAST_DRUG_CONSTRAINT_RULES
+				.iter()
+				.map(|rule| rule.code),
+		)
 		.chain(super::rule_table::indexed_meddra_constraint_codes(
 			D_MEDICAL_HISTORY_MEDDRA_RULES,
 		))

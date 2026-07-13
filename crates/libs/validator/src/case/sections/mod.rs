@@ -161,11 +161,61 @@ mod tests {
 	#[test]
 	fn implemented_allowed_value_registry_contains_all_current_tables() {
 		let codes = implemented_allowed_value_rule_codes();
-		assert_eq!(codes.len(), 64);
+		assert_eq!(codes.len(), 75);
 		assert!(codes.contains("ICH.C.1.3.ALLOWED.VALUE"));
 		assert!(codes.contains("ICH.G.k.9.i.4.ALLOWED.VALUE"));
 		assert!(codes.contains("ICH.E.i.3.2f.ALLOWED.VALUE"));
 		assert!(codes.is_disjoint(&crate::representation_enforced_rule_codes()));
+	}
+
+	#[test]
+	fn structured_allowed_value_target_has_only_official_vocabulary_gates_left() {
+		let target = crate::ICH_STRUCTURED_ALLOWED_VALUE_TARGET_CODES
+			.iter()
+			.copied()
+			.collect::<BTreeSet<_>>();
+		let representation = crate::representation_enforced_rule_codes()
+			.intersection(&target)
+			.copied()
+			.collect::<BTreeSet<_>>();
+		let case_validate = implemented_allowed_value_rule_codes()
+			.intersection(&target)
+			.copied()
+			.collect::<BTreeSet<_>>();
+		let covered = representation
+			.union(&case_validate)
+			.copied()
+			.collect::<BTreeSet<_>>();
+		let gated = target
+			.difference(&covered)
+			.copied()
+			.collect::<BTreeSet<_>>();
+
+		assert_eq!(representation.len(), 43);
+		assert_eq!(case_validate.len(), 45);
+		assert!(representation.is_disjoint(&case_validate));
+		assert_eq!(
+			gated,
+			[
+				"ICH.D.2.2b.ALLOWED.VALUE",
+				"ICH.D.2.2.1b.ALLOWED.VALUE",
+				"ICH.D.10.2.2b.ALLOWED.VALUE",
+				"ICH.E.i.6b.ALLOWED.VALUE",
+				"ICH.G.k.4.r.1b.ALLOWED.VALUE",
+				"ICH.G.k.4.r.3.ALLOWED.VALUE",
+				"ICH.G.k.4.r.6b.ALLOWED.VALUE",
+				"ICH.G.k.4.r.9.2a.ALLOWED.VALUE",
+				"ICH.G.k.4.r.9.2b.ALLOWED.VALUE",
+				"ICH.G.k.4.r.10.2b.ALLOWED.VALUE",
+				"ICH.G.k.4.r.11.2b.ALLOWED.VALUE",
+				"ICH.G.k.5b.ALLOWED.VALUE",
+				"ICH.G.k.6b.ALLOWED.VALUE",
+				"ICH.G.k.9.i.3.1b.ALLOWED.VALUE",
+				"ICH.G.k.9.i.3.2b.ALLOWED.VALUE",
+			]
+			.into_iter()
+			.collect()
+		);
 	}
 
 	fn source_rule_codes(source: &str, section_letter: char) -> BTreeSet<String> {
