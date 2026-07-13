@@ -12,14 +12,15 @@
 //!   (`push_issue_if_rule_invalid` + `ValuePolicy`).
 //! - [`CompanionRule`]: "if X is present, its companion Y is required".
 
+use crate::allowed_value::{
+	is_allowed_value_valid, true_marker_value, ConstraintValue,
+};
 use crate::context::VocabularyContext;
 use crate::{
-	allowed_value_constraint_for_rule, max_length_for_rule, push_issue_by_code,
-	push_issue_if_rule_invalid, vocabulary_for_rule, AllowedValueConstraintKind,
-	RuleFacts, ValidationIssue,
+	max_length_for_rule, push_issue_by_code, push_issue_if_rule_invalid,
+	vocabulary_for_rule, RuleFacts, ValidationIssue,
 };
 use sqlx::types::time::{Date, OffsetDateTime};
-use sqlx::types::Decimal;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -85,17 +86,11 @@ fn is_future_date(value: Option<Date>) -> bool {
 }
 
 fn invalid_code(rule_code: &str, value: Option<&str>) -> bool {
-	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
-		return false;
-	};
-	let constraint = allowed_value_constraint_for_rule(rule_code)
-		.expect("allowed-value rule code should have a catalog constraint");
-	assert_eq!(
-		constraint.kind,
-		AllowedValueConstraintKind::CodeSet,
-		"allowed-code evaluator requires a code_set catalog constraint: {rule_code}"
-	);
-	!constraint.values.iter().any(|allowed| allowed == value)
+	!is_allowed_value_valid(
+		rule_code,
+		ConstraintValue::Text(value.map(Cow::Borrowed)),
+		&VocabularyContext::default(),
+	)
 }
 
 fn invalid_true_marker(
@@ -103,48 +98,27 @@ fn invalid_true_marker(
 	value: Option<bool>,
 	null_flavor: Option<&str>,
 ) -> bool {
-	let constraint = allowed_value_constraint_for_rule(rule_code)
-		.expect("true-marker rule code should have a catalog constraint");
-	assert_eq!(
-		constraint.kind,
-		AllowedValueConstraintKind::TrueMarker,
-		"true-marker evaluator requires a true_marker catalog constraint: {rule_code}"
-	);
-	if null_flavor
-		.map(str::trim)
-		.is_some_and(|null_flavor| !null_flavor.is_empty())
-	{
-		return false;
-	}
-	matches!(value, Some(false))
+	!is_allowed_value_valid(
+		rule_code,
+		true_marker_value(value, null_flavor),
+		&VocabularyContext::default(),
+	)
 }
 
 fn invalid_numeric_text(rule_code: &str, value: Option<&str>) -> bool {
-	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
-		return false;
-	};
-	let constraint = allowed_value_constraint_for_rule(rule_code)
-		.expect("numeric rule code should have a catalog constraint");
-	assert_eq!(
-		constraint.kind,
-		AllowedValueConstraintKind::Numeric,
-		"numeric evaluator requires a numeric catalog constraint: {rule_code}"
-	);
-	value.parse::<Decimal>().is_err()
+	!is_allowed_value_valid(
+		rule_code,
+		ConstraintValue::Text(value.map(Cow::Borrowed)),
+		&VocabularyContext::default(),
+	)
 }
 
 fn invalid_datetime_text(rule_code: &str, value: Option<&str>) -> bool {
-	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
-		return false;
-	};
-	let constraint = allowed_value_constraint_for_rule(rule_code)
-		.expect("date-time rule code should have a catalog constraint");
-	assert_eq!(
-		constraint.kind,
-		AllowedValueConstraintKind::Format,
-		"date-time evaluator requires a format catalog constraint: {rule_code}"
-	);
-	e2b_datetime_date(Some(value)).is_none()
+	!is_allowed_value_valid(
+		rule_code,
+		ConstraintValue::Text(value.map(Cow::Borrowed)),
+		&VocabularyContext::default(),
+	)
 }
 
 fn invalid_vocabulary(rule_code: &str, value: Option<&str>) -> bool {

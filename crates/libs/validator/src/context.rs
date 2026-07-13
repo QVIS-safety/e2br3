@@ -1,3 +1,4 @@
+use crate::VocabularyScope;
 use lib_core::ctx::Ctx;
 use lib_core::model::case::{Case, CaseBmc};
 use lib_core::model::case_identifiers::{LinkedReportNumber, OtherCaseIdentifier};
@@ -30,15 +31,69 @@ use lib_core::model::terminology::{MeddraTermBmc, MeddraTermKey};
 use lib_core::model::test_result::TestResult;
 use lib_core::model::{ModelManager, Result};
 use modql::filter::{OpValValue, OpValsValue};
+use serde::Deserialize;
 use serde_json::json;
 use sqlx::types::Uuid;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, OnceLock};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Deserialize)]
+struct EmbeddedVocabularySnapshot {
+	name: String,
+	entries: Vec<EmbeddedVocabularyEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EmbeddedVocabularyEntry {
+	code: String,
+	scopes: Vec<VocabularyScope>,
+}
+
+type SnapshotCodes = HashMap<(String, VocabularyScope), HashSet<String>>;
+
+fn embedded_snapshot_codes() -> Arc<SnapshotCodes> {
+	static CODES: OnceLock<Arc<SnapshotCodes>> = OnceLock::new();
+	CODES
+		.get_or_init(|| {
+			let snapshots = [include_str!(
+				"../../../../registry/vocabularies/iso639-2.json"
+			)];
+			let mut codes = SnapshotCodes::new();
+			for source in snapshots {
+				let snapshot: EmbeddedVocabularySnapshot =
+					serde_json::from_str(source)
+						.expect("embedded vocabulary snapshot should parse");
+				for entry in snapshot.entries {
+					for scope in entry.scopes {
+						codes
+							.entry((snapshot.name.clone(), scope))
+							.or_default()
+							.insert(entry.code.clone());
+					}
+				}
+			}
+			Arc::new(codes)
+		})
+		.clone()
+}
+
+#[derive(Debug, Clone)]
 pub struct VocabularyContext {
 	meddra_available: bool,
 	meddra_versions: HashSet<String>,
 	meddra_terms: HashSet<MeddraTermKey>,
+	snapshot_codes: Arc<SnapshotCodes>,
+}
+
+impl Default for VocabularyContext {
+	fn default() -> Self {
+		Self {
+			meddra_available: false,
+			meddra_versions: HashSet::new(),
+			meddra_terms: HashSet::new(),
+			snapshot_codes: embedded_snapshot_codes(),
+		}
+	}
 }
 
 impl VocabularyContext {
@@ -57,6 +112,20 @@ impl VocabularyContext {
 		})
 	}
 
+	pub(crate) fn contains_snapshot_code(
+		&self,
+		vocabulary: &str,
+		scope: VocabularyScope,
+		code: &str,
+	) -> bool {
+		self.snapshot_codes
+			.get(&(vocabulary.to_string(), scope))
+			.unwrap_or_else(|| {
+				panic!("unknown vocabulary snapshot scope: {vocabulary}/{scope:?}")
+			})
+			.contains(code)
+	}
+
 	#[cfg(test)]
 	pub(crate) fn for_meddra(keys: &[(&str, &str)]) -> Self {
 		Self {
@@ -72,6 +141,7 @@ impl VocabularyContext {
 					code: (*code).to_string(),
 				})
 				.collect(),
+			snapshot_codes: embedded_snapshot_codes(),
 		}
 	}
 }
@@ -236,6 +306,7 @@ async fn load_vocabulary_context(
 		meddra_available,
 		meddra_versions: versions.into_iter().collect(),
 		meddra_terms: terms.into_iter().collect(),
+		snapshot_codes: embedded_snapshot_codes(),
 	})
 }
 

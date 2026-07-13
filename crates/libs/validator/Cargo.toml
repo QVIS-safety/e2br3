@@ -10,8 +10,10 @@ doctest = false
 workspace = true
 
 [dependencies]
+base64 = "0.22"
 lib-core = { path = "../lib-core" }
 modql = { workspace = true }
+octofhir-ucum = "0.5.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sqlx = { workspace = true }

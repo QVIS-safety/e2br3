@@ -1,3 +1,4 @@
+mod allowed_value;
 mod c_reporter_policy;
 mod c_safety_report_policy;
 pub mod case;
