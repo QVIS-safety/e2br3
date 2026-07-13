@@ -163,6 +163,7 @@ mod tests {
 		assert_eq!(codes.len(), 30);
 		assert!(codes.contains("ICH.C.1.3.ALLOWED.VALUE"));
 		assert!(codes.contains("ICH.G.k.9.i.4.ALLOWED.VALUE"));
+		assert!(codes.is_disjoint(&crate::representation_enforced_rule_codes()));
 	}
 
 	fn source_rule_codes(source: &str, section_letter: char) -> BTreeSet<String> {
