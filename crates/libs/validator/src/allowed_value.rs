@@ -285,7 +285,10 @@ fn validate_vocabulary(
 		Some("ISO639") => {
 			vocabulary.contains_snapshot_code("ISO639-2", scope, value)
 		}
-		Some("UCUM") => octofhir_ucum::validate(value).is_ok(),
+		Some("UCUM") if scope == crate::VocabularyScope::All => {
+			octofhir_ucum::validate(value).is_ok()
+		}
+		Some("UCUM") => vocabulary.contains_snapshot_code("ICH-UCUM", scope, value),
 		Some("EDQM") => vocabulary.contains_snapshot_code("EDQM", scope, value),
 		Some(name) => panic!("unsupported vocabulary {name}: {rule_code}"),
 		None => panic!("missing vocabulary metadata: {rule_code}"),
@@ -418,6 +421,26 @@ mod tests {
 			text("not-a-unit"),
 			&VocabularyContext::default(),
 		));
+	}
+
+	#[test]
+	#[should_panic(expected = "unknown vocabulary snapshot scope: ICH-UCUM/Time")]
+	fn constrained_ucum_fails_closed_without_official_scope_snapshot() {
+		let _ = is_allowed_value_valid(
+			"ICH.D.2.2b.ALLOWED.VALUE",
+			text("a"),
+			&VocabularyContext::default(),
+		);
+	}
+
+	#[test]
+	#[should_panic(expected = "unknown vocabulary snapshot scope: EDQM/DoseForm")]
+	fn edqm_fails_closed_without_approved_snapshot() {
+		let _ = is_allowed_value_valid(
+			"ICH.G.k.4.r.9.2b.ALLOWED.VALUE",
+			text("example"),
+			&VocabularyContext::default(),
+		);
 	}
 
 	#[test]
