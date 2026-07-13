@@ -739,7 +739,52 @@ class DictionaryValidatorTests(unittest.TestCase):
   }
 ]""" % (code, code, authority)
 
+    def validate_allowed_constraint(self, constraint: dict[str, object]):
+        entry = {
+            "code": "C.3.1",
+            "name": "Sender Type",
+            "section": "C",
+            "kind": "element",
+            "conformance": "mandatory",
+            "allowed_values": "Numeric",
+            "allowed_value_constraint": constraint,
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row(code="C.3.1"))
+            self.write_dictionary(
+                root,
+                "ich-e2br3.json",
+                self.ich_dictionary(json.dumps(entry)),
+            )
+            return validate.validate_registry(root, validate_backend_inventory=False)
+
     SENDER_ENTRY = '{"code": "C.3.2", "name": "Sender\'s Organisation", "section": "C", "kind": "element", "conformance": "mandatory"}'
+
+    def test_dictionary_numeric_constraint_requires_shape(self):
+        result = self.validate_allowed_constraint(
+            {"kind": "numeric", "enforcement": "case_validate"}
+        )
+
+        self.assertIn(
+            "numeric allowed_value_constraint requires numeric_shape",
+            "\n".join(result.errors),
+        )
+
+    def test_dictionary_identifier_rejects_vocabulary_scope(self):
+        result = self.validate_allowed_constraint(
+            {
+                "kind": "vocabulary",
+                "identifier_profile": "mpid",
+                "vocabulary_scope": "all",
+                "enforcement": "case_validate",
+            }
+        )
+
+        self.assertIn(
+            "identifier_profile cannot be combined with vocabulary_scope",
+            "\n".join(result.errors),
+        )
 
     def test_dictionary_element_entries_require_conformance(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -951,7 +996,8 @@ class DictionaryValidatorTests(unittest.TestCase):
             ' "kind": "element", "conformance": "mandatory",'
             ' "allowed_values": "1=Company 2=Authority",'
             ' "allowed_value_constraint":'
-            ' {"kind": "code_set", "values": ["1", "2"]}}'
+            ' {"kind": "code_set", "values": ["1", "2"],'
+            ' "enforcement": "case_validate"}}'
         )
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

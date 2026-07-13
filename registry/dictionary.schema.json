@@ -43,6 +43,26 @@
           "minItems": 1,
           "uniqueItems": true,
           "items": { "type": "string", "minLength": 1 }
+        },
+        "numeric_shape": {
+          "type": "string",
+          "enum": ["decimal", "integer", "dotted_version"]
+        },
+        "format_name": {
+          "type": "string",
+          "enum": ["e2b_datetime", "base64", "ich_identifier"]
+        },
+        "vocabulary_scope": {
+          "type": "string",
+          "enum": ["all", "time", "gestation", "dose", "frequency", "dose_form", "route"]
+        },
+        "identifier_profile": {
+          "type": "string",
+          "enum": ["mpid", "phpid", "substance_id"]
+        },
+        "enforcement": {
+          "type": "string",
+          "enum": ["case_validate", "representation_enforced"]
         }
       },
       "allOf": [
@@ -51,7 +71,43 @@
             "properties": { "kind": { "const": "code_set" } },
             "required": ["kind"]
           },
-          "then": { "required": ["values"] }
+          "then": { "required": ["values", "enforcement"] }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "numeric" } },
+            "required": ["kind"]
+          },
+          "then": { "required": ["numeric_shape", "enforcement"] }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "format" } },
+            "required": ["kind"]
+          },
+          "then": { "required": ["format_name", "enforcement"] }
+        },
+        {
+          "if": {
+            "properties": { "kind": { "const": "vocabulary" } },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["enforcement"],
+            "oneOf": [
+              { "required": ["vocabulary_scope"] },
+              { "required": ["identifier_profile"] }
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": { "enum": ["boolean", "true_marker"] }
+            },
+            "required": ["kind"]
+          },
+          "then": { "required": ["enforcement"] }
         }
       ]
     },

@@ -72,15 +72,117 @@ class ParseIchCsvTests(unittest.TestCase):
 
     def test_classifies_boolean_allowed_values(self):
         self.assertEqual(
-            {"kind": "boolean"},
+            {"kind": "boolean", "enforcement": "representation_enforced"},
             self.entries["C.1.6.1"]["allowed_value_constraint"],
         )
 
 
 class AllowedValueConstraintTests(unittest.TestCase):
+    def test_moves_constraint_after_merged_metadata(self):
+        entries = [
+            {
+                "code": "C.3.1",
+                "allowed_value_constraint": {"kind": "descriptive"},
+                "xpath": "/example",
+            }
+        ]
+
+        build_dictionary.move_allowed_value_constraints_to_end(entries)
+
+        self.assertEqual(
+            ["code", "xpath", "allowed_value_constraint"], list(entries[0])
+        )
+
+    def test_refreshes_only_allowed_value_constraints(self):
+        dictionary_entries = [
+            {
+                "code": "C.1.6.1.r.1",
+                "condition_text": "Preserve me",
+                "allowed_value_constraint": {"kind": "descriptive"},
+            }
+        ]
+        source_entries = [
+            {
+                "code": "C.1.6.1.r.1",
+                "allowed_value_constraint": {
+                    "kind": "format",
+                    "format_name": "base64",
+                    "enforcement": "case_validate",
+                },
+            }
+        ]
+
+        build_dictionary.refresh_allowed_value_constraints(
+            dictionary_entries, source_entries
+        )
+
+        self.assertEqual("Preserve me", dictionary_entries[0]["condition_text"])
+        self.assertEqual(
+            {
+                "kind": "format",
+                "format_name": "base64",
+                "enforcement": "case_validate",
+            },
+            dictionary_entries[0]["allowed_value_constraint"],
+        )
+
+    def test_adds_executable_parameters(self):
+        self.assertEqual(
+            {
+                "kind": "numeric",
+                "numeric_shape": "decimal",
+                "enforcement": "case_validate",
+            },
+            build_dictionary.allowed_value_constraint("Numeric", "F.r.3.2", "ST"),
+        )
+        self.assertEqual(
+            {
+                "kind": "format",
+                "format_name": "e2b_datetime",
+                "enforcement": "case_validate",
+            },
+            build_dictionary.allowed_value_constraint(
+                "CCYYMMDDHHMMSS.UUUU[+|-ZZzz]", "N.2.r.4", "TS"
+            ),
+        )
+        self.assertEqual(
+            {
+                "kind": "vocabulary",
+                "identifier_profile": "mpid",
+                "enforcement": "case_validate",
+            },
+            build_dictionary.allowed_value_constraint("MPID", "D.8.r.2b", "II"),
+        )
+
+    def test_partitions_machine_checkable_constraints_by_enforcement(self):
+        entries = build_dictionary.parse_ich_csv(
+            (build_dictionary.SOURCES_DIR / build_dictionary.ICH_SOURCE).read_text(
+                encoding="utf-8"
+            )
+        )
+        machine = [
+            entry["allowed_value_constraint"]
+            for entry in entries
+            if "allowed_value_constraint" in entry
+            and entry["allowed_value_constraint"]["kind"] != "descriptive"
+        ]
+
+        self.assertEqual(133, len(machine))
+        self.assertTrue(
+            all(
+                rule.get("enforcement")
+                in {"case_validate", "representation_enforced"}
+                for rule in machine
+            )
+        )
+
     def test_extracts_explicit_code_set_in_source_order(self):
         self.assertEqual(
-            {"kind": "code_set", "values": ["1", "2", "0", "9"]},
+            {
+                "kind": "code_set",
+                "values": ["1", "2", "0", "9"],
+                "enforcement": "case_validate",
+            },
             build_dictionary.allowed_value_constraint(
                 "1=Withdrawn 2=Reduced 0=Unknown 9=Not applicable"
             ),
@@ -88,7 +190,7 @@ class AllowedValueConstraintTests(unittest.TestCase):
 
     def test_classifies_true_marker_separately_from_boolean(self):
         self.assertEqual(
-            {"kind": "true_marker"},
+            {"kind": "true_marker", "enforcement": "case_validate"},
             build_dictionary.allowed_value_constraint("true nullFlavor: NI"),
         )
 

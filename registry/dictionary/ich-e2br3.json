@@ -28,7 +28,8 @@
         "kind": "code_set",
         "values": [
           "1"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -107,7 +108,9 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/creationTime/@value",
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -194,7 +197,9 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/creationTime/@value",
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -237,7 +242,9 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/effectiveTime/@value",
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -265,7 +272,8 @@
           "2",
           "3",
           "4"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -283,7 +291,9 @@
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
       "hl7_component": "low=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -300,7 +310,9 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/availabilityTime/@value",
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -318,7 +330,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][observationEvent/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observationEvent[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL']/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "boolean"
+        "kind": "boolean",
+        "enforcement": "representation_enforced"
       }
     },
     {
@@ -366,7 +379,9 @@
       "fda_severity": "rejection",
       "fda_error_id": "R0010",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "base64"
       }
     },
     {
@@ -389,7 +404,8 @@
       "fda_severity": "rejection",
       "fda_error_id": "R0011",
       "allowed_value_constraint": {
-        "kind": "boolean"
+        "kind": "boolean",
+        "enforcement": "representation_enforced"
       }
     },
     {
@@ -409,7 +425,9 @@
       "hl7_data_type": "Instance Identifier (II)",
       "hl7_component": "extension=Character String(ST)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "ich_identifier"
       }
     },
     {
@@ -433,7 +451,8 @@
         "values": [
           "1",
           "2"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -454,7 +473,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ'][investigationCharacteristic/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.23']][1]/investigationCharacteristic[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL']/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "true_marker"
+        "kind": "true_marker",
+        "enforcement": "case_validate"
       }
     },
     {
@@ -507,7 +527,9 @@
       "fda_error_id": "R0018",
       "condition_text": "Optional, but required if C.1.9.1= ‘true’.",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "ich_identifier"
       }
     },
     {
@@ -518,14 +540,14 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code/@nullFlavor='NA'][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ'][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/id[@root='2.16.840.1.113883.3.989.2.1.3.2'][1]/@extension",
       "hl7_data_type": "Instance Identifier (II)",
       "hl7_component": "extension=Character String(ST)",
-      "allowed_value_constraint": {
-        "kind": "descriptive"
-      },
       "conformance": "optional",
       "data_type": "AN",
       "max_length": "100",
       "allowed_values": "Free Text",
-      "oid": "2.16.840.1.113883.3.989.2.1.3.2"
+      "oid": "2.16.840.1.113883.3.989.2.1.3.2",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.1.11.1",
@@ -550,7 +572,8 @@
         "values": [
           "1",
           "2"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -880,7 +903,9 @@
       "fda_error_id": "R0019",
       "condition_text": "Optional, but required if C.2.r.5 = 1.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "all"
       }
     },
     {
@@ -913,7 +938,8 @@
           "3",
           "4",
           "5"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -937,7 +963,8 @@
         "kind": "code_set",
         "values": [
           "1"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -972,7 +999,8 @@
           "5",
           "6",
           "7"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -1219,7 +1247,9 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "ISO3166",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "all"
       }
     },
     {
@@ -1329,7 +1359,9 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/reference[@typeCode='REFR'][document/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.27']][r]/document[@classCode='DOC'][@moodCode='EVN']/text/text()",
       "hl7_data_type": "Encapsulated Data (ED)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "base64"
       }
     },
     {
@@ -1391,7 +1423,9 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "ISO3166",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "all"
       }
     },
     {
@@ -1465,7 +1499,8 @@
           "1",
           "2",
           "3"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -1617,7 +1652,9 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/birthTime/@value",
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -1640,7 +1677,9 @@
       "fda_error_id": "R0029",
       "condition_text": "Optional, but required if D.2.2b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -1663,7 +1702,9 @@
       "fda_error_id": "R0030",
       "condition_text": "Optional, but required if D.2.2a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "time"
       }
     },
     {
@@ -1686,7 +1727,9 @@
       "fda_error_id": "R0031",
       "condition_text": "Optional, but required if D.2.2.1b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -1709,7 +1752,9 @@
       "fda_error_id": "R0032",
       "condition_text": "Optional, but required if D.2.2.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "gestation"
       }
     },
     {
@@ -1738,7 +1783,8 @@
           "4",
           "5",
           "6"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -1758,7 +1804,9 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -1778,7 +1826,9 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -1808,7 +1858,8 @@
         "values": [
           "1",
           "2"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -1828,7 +1879,9 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation/code[@code='22'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='TS'][1]/@value",
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -1858,7 +1911,9 @@
       "fda_error_id": "R0033",
       "condition_text": "Optional, but required if D.7.1.r.1b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -1882,7 +1937,9 @@
       "fda_error_id": "R0034",
       "condition_text": "Optional, but required if D.7.1.r.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -1905,7 +1962,9 @@
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
       "hl7_component": "low=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -1929,7 +1988,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/inboundRelationship[@typeCode='REFR'][observation/code[@code='13'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "boolean"
+        "kind": "boolean",
+        "enforcement": "representation_enforced"
       }
     },
     {
@@ -1952,7 +2012,9 @@
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
       "hl7_component": "high=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -1989,7 +2051,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='EXPL'][observation/code[@code='38'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "true_marker"
+        "kind": "true_marker",
+        "enforcement": "case_validate"
       }
     },
     {
@@ -2035,7 +2098,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@code='11'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "true_marker"
+        "kind": "true_marker",
+        "enforcement": "case_validate"
       }
     },
     {
@@ -2107,7 +2171,9 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "identifier_profile": "mpid"
       }
     },
     {
@@ -2146,7 +2212,9 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "identifier_profile": "phpid"
       }
     },
     {
@@ -2169,7 +2237,9 @@
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
       "hl7_component": "low=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -2192,7 +2262,9 @@
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
       "hl7_component": "high=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -2215,7 +2287,9 @@
       "fda_error_id": "R0037",
       "condition_text": "Optional, but required if D.8.r.6b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -2239,7 +2313,9 @@
       "fda_error_id": "R0038",
       "condition_text": "Optional, but required if D.8.r.6a is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -2262,7 +2338,9 @@
       "fda_error_id": "R0039",
       "condition_text": "Optional, but required if D.8.r.7b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -2286,7 +2364,9 @@
       "fda_error_id": "R0040",
       "condition_text": "Optional, but required if D.8.r.7a is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -2317,7 +2397,9 @@
       "fda_severity": "rejection",
       "fda_error_id": "R0041",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -2347,7 +2429,9 @@
       "fda_error_id": "R0042",
       "condition_text": "Optional, but required if D.9.2.r.1b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -2371,7 +2455,9 @@
       "fda_error_id": "R0043",
       "condition_text": "Optional, but required if D.9.2.r.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -2420,7 +2506,8 @@
       "fda_error_id": "R0045",
       "condition_text": "Optional, but required if D.9.1 is populated.",
       "allowed_value_constraint": {
-        "kind": "boolean"
+        "kind": "boolean",
+        "enforcement": "representation_enforced"
       }
     },
     {
@@ -2450,7 +2537,9 @@
       "fda_error_id": "R0046",
       "condition_text": "Optional, but required if D.9.4.r.1b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -2474,7 +2563,9 @@
       "fda_error_id": "R0047",
       "condition_text": "Optional, but required if D.9.4.r.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -2557,7 +2648,9 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/associatedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/birthTime/@value",
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -2580,7 +2673,9 @@
       "fda_error_id": "R0049",
       "condition_text": "Optional, but required if D.10.2.2b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -2603,7 +2698,9 @@
       "fda_error_id": "R0050",
       "condition_text": "Optional, but required if D.10.2.2a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "time"
       }
     },
     {
@@ -2626,7 +2723,9 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][observation/code[@code='22'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='TS'][1]/@value",
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -2646,7 +2745,9 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -2666,7 +2767,9 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -2699,7 +2802,8 @@
         "values": [
           "1",
           "2"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -2735,7 +2839,9 @@
       "fda_error_id": "R0052",
       "condition_text": "Optional, but required if D.10.7.1.r.1b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -2759,7 +2865,9 @@
       "fda_error_id": "R0053",
       "condition_text": "Optional, but required if D.10.7.1.r.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -2782,7 +2890,9 @@
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
       "hl7_component": "low=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -2806,7 +2916,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/inboundRelationship[@typeCode='REFR'][observation/code[@code='13'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "boolean"
+        "kind": "boolean",
+        "enforcement": "representation_enforced"
       }
     },
     {
@@ -2829,7 +2940,9 @@
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
       "hl7_component": "high=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -2932,7 +3045,9 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "identifier_profile": "mpid"
       }
     },
     {
@@ -2971,7 +3086,9 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "identifier_profile": "phpid"
       }
     },
     {
@@ -2994,7 +3111,9 @@
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
       "hl7_component": "low=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -3017,7 +3136,9 @@
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
       "hl7_component": "high=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -3040,7 +3161,9 @@
       "fda_error_id": "R0054",
       "condition_text": "Optional, but required if D.10.8.r.6b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -3064,7 +3187,9 @@
       "fda_error_id": "R0055",
       "condition_text": "Optional, but required if D.10.8.r.6a is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -3087,7 +3212,9 @@
       "fda_error_id": "R0056",
       "condition_text": "Optional, but required if D.10.8.r.7b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -3111,7 +3238,9 @@
       "fda_error_id": "R0057",
       "condition_text": "Optional, but required if D.10.8.r.7a is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -3160,7 +3289,9 @@
       "fda_error_id": "R0058",
       "condition_text": "Optional, but required if E.i.1.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "all"
       }
     },
     {
@@ -3199,7 +3330,9 @@
       "hl7_component": "codeSystemVersion= Character String (ST)",
       "vocabulary": "MedDRA",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -3220,7 +3353,9 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "MedDRA",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -3246,7 +3381,8 @@
           "2",
           "3",
           "4"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -3273,7 +3409,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='34'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "true_marker"
+        "kind": "true_marker",
+        "enforcement": "case_validate"
       }
     },
     {
@@ -3294,7 +3431,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='21'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "true_marker"
+        "kind": "true_marker",
+        "enforcement": "case_validate"
       }
     },
     {
@@ -3315,7 +3453,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='33'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "true_marker"
+        "kind": "true_marker",
+        "enforcement": "case_validate"
       }
     },
     {
@@ -3336,7 +3475,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='35'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "true_marker"
+        "kind": "true_marker",
+        "enforcement": "case_validate"
       }
     },
     {
@@ -3357,7 +3497,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='12'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "true_marker"
+        "kind": "true_marker",
+        "enforcement": "case_validate"
       }
     },
     {
@@ -3378,7 +3519,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='26'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "true_marker"
+        "kind": "true_marker",
+        "enforcement": "case_validate"
       }
     },
     {
@@ -3401,7 +3543,9 @@
       "hl7_data_type": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nHL7 Data Type: Interval of Point in Time (IVL<TS>)",
       "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nlow=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -3424,7 +3568,9 @@
       "hl7_data_type": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nHL7 Data Type: Interval of Point in Time (IVL<TS>)",
       "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nhigh=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -3446,7 +3592,9 @@
       "fda_error_id": "R0059",
       "condition_text": "Optional, but required if E.i.6b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -3469,7 +3617,9 @@
       "fda_error_id": "R0060",
       "condition_text": "Optional, but required if E.i.6a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "time"
       }
     },
     {
@@ -3497,7 +3647,8 @@
           "4",
           "5",
           "0"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -3515,7 +3666,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='24'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL']/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "boolean"
+        "kind": "boolean",
+        "enforcement": "representation_enforced"
       }
     },
     {
@@ -3536,7 +3688,9 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "ISO3166",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "all"
       }
     },
     {
@@ -3567,7 +3721,9 @@
       "fda_error_id": "R0061",
       "condition_text": "Optional, but required if F.r.2 is populated.",
       "allowed_value_constraint": {
-        "kind": "format"
+        "kind": "format",
+        "enforcement": "case_validate",
+        "format_name": "e2b_datetime"
       }
     },
     {
@@ -3611,7 +3767,9 @@
       "fda_error_id": "R0063",
       "condition_text": "Optional, but required when F.r.2.2b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -3635,7 +3793,9 @@
       "fda_error_id": "R0064",
       "condition_text": "Optional, but required if F.r.1 is populated and F.r.2.2b is not populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -3671,7 +3831,8 @@
           "2",
           "3",
           "4"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -3697,7 +3858,9 @@
       "fda_error_id": "R0066",
       "condition_text": "Optional, but required if F.r.2 is populated, and F.r.3.1 and F.r.3.4 is not populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -3721,7 +3884,9 @@
       "fda_error_id": "R0067",
       "condition_text": "Optional, but required if F.r.3.2 is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "all"
       }
     },
     {
@@ -3819,7 +3984,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='3'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='REFR'][observation/code[@code='25'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "boolean"
+        "kind": "boolean",
+        "enforcement": "representation_enforced"
       }
     },
     {
@@ -3855,7 +4021,8 @@
           "2",
           "3",
           "4"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -3901,7 +4068,9 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "identifier_profile": "mpid"
       }
     },
     {
@@ -3940,7 +4109,9 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "identifier_profile": "phpid"
       }
     },
     {
@@ -4026,7 +4197,9 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "identifier_profile": "substance_id"
       }
     },
     {
@@ -4045,7 +4218,9 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -4067,7 +4242,9 @@
       "fda_severity": "rejection",
       "fda_error_id": "R0073",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "all"
       }
     },
     {
@@ -4088,7 +4265,9 @@
       "hl7_component": "country=Address Part (ADXP)",
       "vocabulary": "ISO3166",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "all"
       }
     },
     {
@@ -4106,7 +4285,8 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='6'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
       "hl7_data_type": "Boolean (BL)",
       "allowed_value_constraint": {
-        "kind": "true_marker"
+        "kind": "true_marker",
+        "enforcement": "case_validate"
       }
     },
     {
@@ -4152,7 +4332,9 @@
       "fda_error_id": "R0074",
       "condition_text": "Optional, but required if G.k.3.1 is provided.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "all"
       }
     },
     {
@@ -4197,7 +4379,9 @@
       "hl7_data_type": "Physical Quantity (PQ)",
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -4220,7 +4404,9 @@
       "fda_error_id": "R0075",
       "condition_text": "Optional, but required if G.k.4.r.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "dose"
       }
     },
     {
@@ -4239,7 +4425,9 @@
       "hl7_data_type": "1. When more than two values in the following data elements appear   1) G.k.4.r.2、\nG.k.4.r.3   2) \nG.k.4.r.4   3) \nG.k.4.r.5   4) \nG.k.4.r.6a、 G.k.4.r.6bThe first comp element with data type SXPRParenthetic Set Expression of Time (SXPR_TS) [Periodic Interval   of Time (PIVL_TS)]",
       "hl7_component": "period/value=Real Number (REAL)",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -4262,7 +4450,9 @@
       "fda_error_id": "R0076",
       "condition_text": "Optional, but required if G.k.4.r.2 is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "frequency"
       }
     },
     {
@@ -4330,7 +4520,9 @@
       "fda_error_id": "R0077",
       "condition_text": "Optional, but required if G.k.4.r.6b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -4353,7 +4545,9 @@
       "fda_error_id": "R0078",
       "condition_text": "Optional, but required if G.k.4.r.6a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "time"
       }
     },
     {
@@ -4433,7 +4627,9 @@
       "hl7_component": "codeSystemVersion=Character String (ST)",
       "vocabulary": "EDQM",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "dose_form"
       }
     },
     {
@@ -4454,7 +4650,9 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "EDQM",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "dose_form"
       }
     },
     {
@@ -4519,7 +4717,9 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "EDQM",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "route"
       }
     },
     {
@@ -4585,7 +4785,9 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "EDQM",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "route"
       }
     },
     {
@@ -4608,7 +4810,9 @@
       "fda_error_id": "R0079",
       "condition_text": "Optional, but required if G.k.5b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -4631,7 +4835,9 @@
       "fda_error_id": "R0080",
       "condition_text": "Optional, but required if G.k.5a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "dose"
       }
     },
     {
@@ -4654,7 +4860,9 @@
       "fda_error_id": "R0081",
       "condition_text": "Optional, but required if G.k.6b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -4677,7 +4885,9 @@
       "fda_error_id": "R0082",
       "condition_text": "Optional, but required if G.k.6a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "gestation"
       }
     },
     {
@@ -4732,7 +4942,9 @@
       "fda_error_id": "R0083",
       "condition_text": "Optional, but required if G.k.7.r.2b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -4756,7 +4968,9 @@
       "fda_error_id": "R0084",
       "condition_text": "Optional, but required if G.k.7.r.2a is provided.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -4784,7 +4998,8 @@
           "4",
           "0",
           "9"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -4893,7 +5108,9 @@
       "fda_error_id": "R0088",
       "condition_text": "Optional, but required if G.k.9.i.3.1b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -4916,7 +5133,9 @@
       "fda_error_id": "R0089",
       "condition_text": "Optional, but required if G.k.9.i.3.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "time"
       }
     },
     {
@@ -4938,7 +5157,9 @@
       "fda_error_id": "R0090",
       "condition_text": "Optional, but required if G.k.9.i.3.2b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -4961,7 +5182,9 @@
       "fda_error_id": "R0091",
       "condition_text": "Optional, but required if G.k.9.i.3.2a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "time"
       }
     },
     {
@@ -4987,7 +5210,8 @@
           "2",
           "3",
           "4"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -5020,7 +5244,8 @@
           "9",
           "10",
           "11"
-        ]
+        ],
+        "enforcement": "case_validate"
       }
     },
     {
@@ -5113,7 +5338,9 @@
       "fda_error_id": "R0097",
       "condition_text": "Optional, but required if H.3.r.1b is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "dotted_version"
       }
     },
     {
@@ -5137,7 +5364,9 @@
       "fda_error_id": "R0098",
       "condition_text": "Optional, but required if H.3.r.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "numeric"
+        "kind": "numeric",
+        "enforcement": "case_validate",
+        "numeric_shape": "decimal"
       }
     },
     {
@@ -5206,7 +5435,9 @@
       "fda_error_id": "R0099",
       "condition_text": "Required if H.5.r.1a is populated.",
       "allowed_value_constraint": {
-        "kind": "vocabulary"
+        "kind": "vocabulary",
+        "enforcement": "case_validate",
+        "vocabulary_scope": "all"
       }
     }
   ]

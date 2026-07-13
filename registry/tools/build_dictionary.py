@@ -38,6 +38,44 @@ MFDS_CONFORMANCE_MAP = {
     "비필수": "optional",
 }
 
+ICH_IDENTIFIER_PROFILES = {
+    "D.8.r.2b": "mpid",
+    "D.10.8.r.2b": "mpid",
+    "G.k.2.1.1b": "mpid",
+    "D.8.r.3b": "phpid",
+    "D.10.8.r.3b": "phpid",
+    "G.k.2.1.2b": "phpid",
+    "G.k.2.3.r.2b": "substance_id",
+}
+
+ICH_VOCABULARY_SCOPES = {
+    "C.2.r.3": "all",
+    "C.3.4.5": "all",
+    "C.5.1.r.2": "all",
+    "D.2.2b": "time",
+    "D.2.2.1b": "gestation",
+    "D.10.2.2b": "time",
+    "E.i.1.1b": "all",
+    "E.i.6b": "time",
+    "E.i.9": "all",
+    "F.r.3.3": "all",
+    "G.k.2.3.r.3b": "all",
+    "G.k.2.4": "all",
+    "G.k.3.2": "all",
+    "G.k.4.r.1b": "dose",
+    "G.k.4.r.3": "frequency",
+    "G.k.4.r.6b": "time",
+    "G.k.4.r.9.2a": "dose_form",
+    "G.k.4.r.9.2b": "dose_form",
+    "G.k.4.r.10.2b": "route",
+    "G.k.4.r.11.2b": "route",
+    "G.k.5b": "dose",
+    "G.k.6b": "gestation",
+    "G.k.9.i.3.1b": "time",
+    "G.k.9.i.3.2b": "time",
+    "H.5.r.1b": "all",
+}
+
 
 def clean(value: Any) -> str:
     if value is None:
@@ -56,7 +94,7 @@ def set_optional(entry: dict[str, Any], key: str, value: Any) -> None:
         entry[key] = text
 
 
-def allowed_value_constraint(value: str) -> dict[str, Any]:
+def classify_allowed_value_kind(value: str) -> dict[str, Any]:
     """Normalize the official VALUE ALLOWED prose without replacing it.
 
     The raw source text remains in ``allowed_values``. This classification only
@@ -119,6 +157,48 @@ def allowed_value_constraint(value: str) -> dict[str, Any]:
     return {"kind": "descriptive"}
 
 
+def numeric_shape_for(value: str) -> str:
+    return "dotted_version" if " ".join(value.upper().split()) == "N.N" else "decimal"
+
+
+def format_name_for(value: str) -> str:
+    normalized = " ".join(value.lower().split())
+    if "media type:" in normalized:
+        return "base64"
+    if "guidance for format" in normalized:
+        return "ich_identifier"
+    return "e2b_datetime"
+
+
+def enforcement_for(kind: str) -> str:
+    if kind == "boolean":
+        return "representation_enforced"
+    return "case_validate"
+
+
+def allowed_value_constraint(
+    value: str, code: str = "", data_type: str | None = None
+) -> dict[str, Any]:
+    """Add executable parameters while preserving the official source prose."""
+    del data_type
+    result = classify_allowed_value_kind(value)
+    kind = result["kind"]
+    if kind == "descriptive":
+        return result
+
+    result["enforcement"] = enforcement_for(kind)
+    if kind == "numeric":
+        result["numeric_shape"] = numeric_shape_for(value)
+    elif kind == "format":
+        result["format_name"] = format_name_for(value)
+    elif kind == "vocabulary":
+        if code in ICH_IDENTIFIER_PROFILES:
+            result["identifier_profile"] = ICH_IDENTIFIER_PROFILES[code]
+        else:
+            result["vocabulary_scope"] = ICH_VOCABULARY_SCOPES.get(code, "all")
+    return result
+
+
 def parse_ich_csv(text: str) -> list[dict[str, Any]]:
     rows = list(csv.reader(io.StringIO(text.lstrip("﻿"))))
     header_index = next(
@@ -154,13 +234,15 @@ def parse_ich_csv(text: str) -> list[dict[str, Any]]:
         }
         if normalized:
             entry["conformance"] = normalized
-        set_optional(entry, "data_type", cell(row, "DATA TYPE"))
+        data_type = optional_value(cell(row, "DATA TYPE"))
+        if data_type is not None:
+            entry["data_type"] = data_type
         set_optional(entry, "max_length", cell(row, "MAX LENGTH"))
         allowed_values = optional_value(cell(row, "VALUE ALLOWED"))
         if allowed_values is not None:
             entry["allowed_values"] = allowed_values
             entry["allowed_value_constraint"] = allowed_value_constraint(
-                allowed_values
+                allowed_values, code, data_type
             )
         set_optional(entry, "oid", cell(row, "Code system OID"))
         null_flavors = [
@@ -528,6 +610,31 @@ def merge_vocabulary(entries: list[dict[str, Any]], mapping: dict[str, str]) -> 
     return annotated
 
 
+def move_allowed_value_constraints_to_end(entries: list[dict[str, Any]]) -> None:
+    """Keep generated object order stable after regional metadata merges."""
+    for entry in entries:
+        constraint = entry.pop("allowed_value_constraint", None)
+        if constraint is not None:
+            entry["allowed_value_constraint"] = constraint
+
+
+def refresh_allowed_value_constraints(
+    dictionary_entries: list[dict[str, Any]], source_entries: list[dict[str, Any]]
+) -> None:
+    """Refresh source-derived constraints without replacing enriched metadata."""
+    constraints = {
+        entry["code"]: entry["allowed_value_constraint"]
+        for entry in source_entries
+        if "allowed_value_constraint" in entry
+    }
+    for entry in dictionary_entries:
+        constraint = constraints.get(entry["code"])
+        if constraint is None:
+            continue
+        entry.pop("allowed_value_constraint", None)
+        entry["allowed_value_constraint"] = constraint
+
+
 def extract_mfds_rules(sheet1_rows: list[list[Any]]) -> dict[str, str]:
     """Pull the MFDS 항목검증룰 prose per element code (ICH and KR alike) from sheet 1."""
     rules: dict[str, str] = {}
@@ -626,6 +733,7 @@ def main() -> int:
     nf_annotated = merge_nullflavors(ich_entries, nullflavor_usage)
     vocab_annotated = merge_vocabulary(ich_entries, vocabulary_usage)
     sev_annotated = merge_fda_severity(ich_entries, fda_severity)
+    move_allowed_value_constraints_to_end(ich_entries)
     path = write_dictionary("ich-e2br3.json", "ICH", ICH_SOURCE, ich_entries)
     elements = sum(1 for entry in ich_entries if entry["kind"] == "element")
     print(

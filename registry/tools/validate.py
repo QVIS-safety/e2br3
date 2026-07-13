@@ -48,6 +48,28 @@ ALLOWED_VALUE_CONSTRAINT_KINDS = {
     "vocabulary",
     "descriptive",
 }
+ALLOWED_VALUE_CONSTRAINT_FIELDS = {
+    "kind",
+    "values",
+    "numeric_shape",
+    "format_name",
+    "vocabulary_scope",
+    "identifier_profile",
+    "enforcement",
+}
+NUMERIC_SHAPES = {"decimal", "integer", "dotted_version"}
+FORMAT_NAMES = {"e2b_datetime", "base64", "ich_identifier"}
+VOCABULARY_SCOPES = {
+    "all",
+    "time",
+    "gestation",
+    "dose",
+    "frequency",
+    "dose_form",
+    "route",
+}
+IDENTIFIER_PROFILES = {"mpid", "phpid", "substance_id"}
+CONSTRAINT_ENFORCEMENTS = {"case_validate", "representation_enforced"}
 DICTIONARY_VOCABULARIES = {
     "MedDRA",
     "WHODrug",
@@ -294,7 +316,7 @@ def validate_dictionary_entry(entry: Any, source: Path, result: ValidationResult
             )
         else:
             for key in allowed_value_constraint:
-                if key not in {"kind", "values"}:
+                if key not in ALLOWED_VALUE_CONSTRAINT_FIELDS:
                     result.add(
                         f"{source}: entry {code}: unsupported allowed_value_constraint field {key}"
                     )
@@ -323,6 +345,61 @@ def validate_dictionary_entry(entry: Any, source: Path, result: ValidationResult
                 result.add(
                     f"{source}: entry {code}: code_set allowed_value_constraint"
                     " requires values"
+                )
+
+            enforcement = allowed_value_constraint.get("enforcement")
+            if constraint_kind == "descriptive":
+                if enforcement is not None:
+                    result.add(
+                        f"{source}: entry {code}: descriptive allowed_value_constraint"
+                        " cannot declare enforcement"
+                    )
+            elif enforcement not in CONSTRAINT_ENFORCEMENTS:
+                result.add(
+                    f"{source}: entry {code}: non-descriptive allowed_value_constraint"
+                    " requires enforcement"
+                )
+
+            numeric_shape = allowed_value_constraint.get("numeric_shape")
+            if constraint_kind == "numeric":
+                if numeric_shape not in NUMERIC_SHAPES:
+                    result.add(
+                        f"{source}: entry {code}: numeric allowed_value_constraint"
+                        " requires numeric_shape"
+                    )
+            elif numeric_shape is not None:
+                result.add(
+                    f"{source}: entry {code}: numeric_shape requires numeric kind"
+                )
+
+            format_name = allowed_value_constraint.get("format_name")
+            if constraint_kind == "format":
+                if format_name not in FORMAT_NAMES:
+                    result.add(
+                        f"{source}: entry {code}: format allowed_value_constraint"
+                        " requires format_name"
+                    )
+            elif format_name is not None:
+                result.add(
+                    f"{source}: entry {code}: format_name requires format kind"
+                )
+
+            vocabulary_scope = allowed_value_constraint.get("vocabulary_scope")
+            identifier_profile = allowed_value_constraint.get("identifier_profile")
+            if constraint_kind == "vocabulary":
+                if vocabulary_scope is not None and identifier_profile is not None:
+                    result.add(
+                        f"{source}: entry {code}: identifier_profile cannot be"
+                        " combined with vocabulary_scope"
+                    )
+                elif vocabulary_scope not in VOCABULARY_SCOPES and identifier_profile not in IDENTIFIER_PROFILES:
+                    result.add(
+                        f"{source}: entry {code}: vocabulary allowed_value_constraint"
+                        " requires vocabulary_scope or identifier_profile"
+                    )
+            elif vocabulary_scope is not None or identifier_profile is not None:
+                result.add(
+                    f"{source}: entry {code}: vocabulary metadata requires vocabulary kind"
                 )
 
     profiles = entry.get("profiles")
