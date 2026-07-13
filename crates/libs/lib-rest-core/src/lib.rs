@@ -625,6 +625,10 @@ async fn load_case_scope(
 							SELECT NULLIF(BTRIM(sender.organization_name), '') AS ident
 							FROM sender_information sender
 							WHERE sender.case_id = c.id
+							UNION ALL
+							SELECT sender.source_sender_presave_id::text
+							FROM sender_information sender
+							WHERE sender.case_id = c.id
 						) senders
 						WHERE ident IS NOT NULL
 					),
@@ -637,6 +641,10 @@ async fn load_case_scope(
 							SELECT NULLIF(BTRIM(d.brand_name), '') AS ident
 							FROM drug_information d
 							WHERE d.case_id = c.id
+							UNION ALL
+							SELECT d.source_product_presave_id::text
+							FROM drug_information d
+							WHERE d.case_id = c.id
 						) products
 						WHERE ident IS NOT NULL
 					),
@@ -647,6 +655,10 @@ async fn load_case_scope(
 						SELECT array_agg(DISTINCT ident)
 						FROM (
 							SELECT NULLIF(BTRIM(s.sponsor_study_number), '') AS ident
+							FROM study_information s
+							WHERE s.case_id = c.id
+							UNION ALL
+							SELECT s.source_study_presave_id::text
 							FROM study_information s
 							WHERE s.case_id = c.id
 						) studies

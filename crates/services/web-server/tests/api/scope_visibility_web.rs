@@ -1216,6 +1216,56 @@ async fn test_unset_sender_scope_lists_all_sender_presaves() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_sender_uuid_scope_lists_matching_sender_presave() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	let allowed_id = create_sender_presave(
+		&app,
+		&admin_cookie,
+		"UUID Scope Sender A",
+		"SEND-UUID-A",
+	)
+	.await?;
+	let denied_id = create_sender_presave(
+		&app,
+		&admin_cookie,
+		"UUID Scope Sender B",
+		"SEND-UUID-B",
+	)
+	.await?;
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({ "access_sender_ids": [allowed_id.to_string()] }),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		"GET",
+		&viewer_cookie,
+		"/api/presaves/senders".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let rows = value["data"].as_array().ok_or("missing sender rows")?;
+	assert!(rows.iter().any(|row| row["id"] == allowed_id.to_string()));
+	assert!(!rows.iter().any(|row| row["id"] == denied_id.to_string()));
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_company_sponsor_admin_cannot_assign_sender_scope() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

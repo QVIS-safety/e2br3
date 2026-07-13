@@ -93,13 +93,13 @@ pub(super) async fn allowed_scope_for_section(
 }
 
 pub(super) fn product_scope_identifiers(entity: &ProductPresave) -> Vec<String> {
-	let mut values = Vec::new();
+	let mut values = vec![entity.id.to_string()];
 	push_scope_identifier(&mut values, entity.brand_name.as_deref());
 	values
 }
 
 pub(super) fn study_scope_identifiers(entity: &StudyPresave) -> Vec<String> {
-	let mut values = Vec::new();
+	let mut values = vec![entity.id.to_string()];
 	push_scope_identifier(&mut values, entity.sponsor_study_number.as_deref());
 	values
 }
@@ -109,7 +109,7 @@ pub(super) async fn sender_scope_identifiers(
 	_mm: &ModelManager,
 	entity: &SenderPresave,
 ) -> Result<Vec<String>> {
-	let mut values = Vec::new();
+	let mut values = vec![entity.id.to_string()];
 	push_scope_identifier(&mut values, entity.organization_name.as_deref());
 	Ok(values)
 }
