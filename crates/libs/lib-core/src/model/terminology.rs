@@ -24,6 +24,12 @@ pub struct MeddraTerm {
 	pub created_at: OffsetDateTime,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, FromRow)]
+pub struct MeddraTermKey {
+	pub version: String,
+	pub code: String,
+}
+
 #[derive(Fields, Deserialize)]
 pub struct MeddraTermForCreate {
 	pub code: String,
@@ -143,6 +149,45 @@ impl DbBmc for MeddraTermBmc {
 }
 
 impl MeddraTermBmc {
+	pub async fn active_versions(mm: &ModelManager) -> Result<Vec<String>> {
+		let sql = format!(
+			"SELECT DISTINCT version FROM {} WHERE active = true ORDER BY version",
+			Self::TABLE
+		);
+		let rows = mm
+			.dbx()
+			.fetch_all(sqlx::query_as::<_, (String,)>(&sql))
+			.await?;
+		Ok(rows.into_iter().map(|(version,)| version).collect())
+	}
+
+	pub async fn existing_active_keys(
+		mm: &ModelManager,
+		keys: &[MeddraTermKey],
+	) -> Result<Vec<MeddraTermKey>> {
+		if keys.is_empty() {
+			return Ok(Vec::new());
+		}
+
+		let mut qb: QueryBuilder<Postgres> =
+			QueryBuilder::new("WITH requested(version, code) AS (");
+		qb.push_values(keys, |mut row, key| {
+			row.push_bind(&key.version).push_bind(&key.code);
+		});
+		qb.push(
+			") SELECT DISTINCT terms.version, terms.code \
+			 FROM meddra_terms terms \
+			 JOIN requested ON requested.version = terms.version \
+			 AND requested.code = terms.code \
+			 WHERE terms.active = true",
+		);
+
+		Ok(mm
+			.dbx()
+			.fetch_all(qb.build_query_as::<MeddraTermKey>())
+			.await?)
+	}
+
 	pub async fn search(
 		_ctx: &Ctx,
 		mm: &ModelManager,

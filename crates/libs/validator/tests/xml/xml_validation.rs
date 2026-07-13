@@ -147,8 +147,8 @@ fn test_invalid_reaction_term_fails() -> Result<(), Box<dyn Error>> {
 		"expected at least one business error"
 	);
 	assert!(
-		find_canonical_rule("ICH.E.i.2.NULLFLAVOR.REQUIRED").is_some(),
-		"canonical rule missing: ICH.E.i.2.NULLFLAVOR.REQUIRED"
+		find_canonical_rule("ICH.XML.CODE.NULLFLAVOR.REQUIRED").is_some(),
+		"canonical rule missing: ICH.XML.CODE.NULLFLAVOR.REQUIRED"
 	);
 
 	Ok(())

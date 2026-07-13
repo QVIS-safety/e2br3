@@ -1,5 +1,15 @@
 use super::rule_table::{
-	eval_companions, eval_indexed, CompanionRule, IndexedRule, RuleValue,
+	eval_companions, eval_grandchild_length, eval_indexed,
+	eval_indexed_allowed_codes, eval_indexed_derived_length,
+	eval_indexed_future_dates, eval_indexed_length,
+	eval_indexed_repeated_allowed_codes, eval_indexed_true_markers,
+	eval_indexed_vocabulary, eval_nested_allowed_codes, eval_nested_derived_length,
+	eval_nested_length, eval_nested_meddra, CompanionRule, DateValues,
+	GrandchildLengthRule, IndexedAllowedCodeRule, IndexedDerivedLengthRule,
+	IndexedFutureDateRule, IndexedLengthRule, IndexedRepeatedAllowedCodeRule,
+	IndexedRule, IndexedTrueMarkerRule, IndexedVocabularyRule,
+	NestedAllowedCodeRule, NestedDerivedLengthRule, NestedLengthRule,
+	NestedMeddraRule, RuleValue,
 };
 use crate::{
 	has_text, is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
@@ -11,11 +21,15 @@ use crate::{
 };
 use lib_core::ctx::Ctx;
 use lib_core::model::drug::{
+	derive_fda_device_characteristics, parse_drug_additional_info_codes_json,
 	DosageInformation, DrugActiveSubstance, DrugDeviceCharacteristic,
 	DrugIndication, DrugInformation,
 };
-use lib_core::model::drug_reaction_assessment::DrugReactionAssessment;
+use lib_core::model::drug_reaction_assessment::{
+	DrugReactionAssessment, RelatednessAssessment,
+};
 use lib_core::model::{ModelManager, Result};
+use sqlx::types::Decimal;
 
 fn normalize_code(raw: Option<&str>) -> String {
 	raw.unwrap_or("")
@@ -53,12 +67,46 @@ fn is_code_one_characteristic(ch: &DrugDeviceCharacteristic) -> bool {
 	code == "1" || value == "1"
 }
 
-fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
-	let Some(value) = value else {
-		return false;
-	};
-	let today = sqlx::types::time::OffsetDateTime::now_utc().date();
-	value > today
+fn has_characteristic_value(
+	chars: &[DrugDeviceCharacteristic],
+	target: &str,
+) -> bool {
+	chars.iter().any(|ch| {
+		characteristic_code_matches(ch.code.as_deref(), target)
+			&& (has_text(ch.value_value.as_deref())
+				|| has_text(ch.value_code.as_deref())
+				|| has_text(ch.value_display_name.as_deref()))
+	})
+}
+
+fn decimal_text(value: Option<Decimal>) -> Option<String> {
+	value.map(|value| value.to_string())
+}
+
+fn i32_text(value: Option<i32>) -> Option<String> {
+	value.map(|value| value.to_string())
+}
+
+fn sequence_idx(sequence_number: i32, fallback: usize) -> usize {
+	sequence_number
+		.checked_sub(1)
+		.and_then(|value| usize::try_from(value).ok())
+		.unwrap_or(fallback)
+}
+
+fn longest_additional_info_code(drug: &DrugInformation) -> Option<String> {
+	additional_info_codes(drug)
+		.into_iter()
+		.max_by_key(|value| value.chars().count())
+}
+
+fn additional_info_codes(drug: &DrugInformation) -> Vec<String> {
+	parse_drug_additional_info_codes_json(
+		drug.drug_additional_info_codes_json.as_ref(),
+	)
+	.into_iter()
+	.filter_map(|entry| entry.value_code)
+	.collect()
 }
 
 const G_DRUG_VALUE_RULES: &[IndexedRule<DrugInformation>] = &[
@@ -79,6 +127,138 @@ const G_DRUG_VALUE_RULES: &[IndexedRule<DrugInformation>] = &[
 		facts: |_| RuleFacts::default(),
 	},
 ];
+
+const G_DRUG_LENGTH_RULES: &[IndexedLengthRule<DrugInformation>] = &[
+	IndexedLengthRule {
+		code: "ICH.G.k.1.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.drugCharacterization"),
+		value: |drug| Some(drug.drug_characterization.as_str()),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.2.1.1a.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.mpidVersion"),
+		value: |drug| drug.mpid_version.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.2.1.1b.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.mpid"),
+		value: |drug| drug.mpid.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.2.1.2a.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.phpidVersion"),
+		value: |drug| drug.phpid_version.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.2.1.2b.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.phpid"),
+		value: |drug| drug.phpid.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.2.2.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.medicinalProduct"),
+		value: |drug| Some(drug.medicinal_product.as_str()),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.2.4.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.obtainDrugCountry"),
+		value: |drug| drug.obtain_drug_country.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.3.1.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.drugAuthorizationNumber"),
+		value: |drug| drug.drug_authorization_number.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.3.2.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.drugAuthorizationCountry"),
+		value: |drug| drug.manufacturer_country.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.3.3.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.manufacturerName"),
+		value: |drug| drug.manufacturer_name.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.5b.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.cumulativeDoseFirstReactionUnit"),
+		value: |drug| drug.cumulative_dose_first_reaction_unit.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.6b.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.gestationPeriodExposureUnit"),
+		value: |drug| drug.gestation_period_exposure_unit.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.8.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.actionTaken"),
+		value: |drug| drug.action_taken.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.G.k.11.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.drugAdditionalInformation"),
+		value: |drug| drug.drug_additional_information.as_deref(),
+	},
+];
+
+const G_DRUG_DERIVED_LENGTH_RULES: &[IndexedDerivedLengthRule<DrugInformation>] = &[
+	IndexedDerivedLengthRule {
+		code: "ICH.G.k.5a.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.cumulativeDoseFirstReactionValue"),
+		value: |drug| decimal_text(drug.cumulative_dose_first_reaction_value),
+	},
+	IndexedDerivedLengthRule {
+		code: "ICH.G.k.6a.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.gestationPeriodExposureValue"),
+		value: |drug| decimal_text(drug.gestation_period_exposure_value),
+	},
+	IndexedDerivedLengthRule {
+		code: "ICH.G.k.10.r.LENGTH.MAX",
+		path: |idx| format!("drugs.{idx}.drugAdditionalInformationCodes"),
+		value: longest_additional_info_code,
+	},
+];
+
+const G_DRUG_ALLOWED_CODE_RULES: &[IndexedAllowedCodeRule<DrugInformation>] = &[
+	IndexedAllowedCodeRule {
+		code: "ICH.G.k.1.ALLOWED.VALUE",
+		path: |idx| format!("drugs.{idx}.drugCharacterization"),
+		value: |drug| Some(drug.drug_characterization.as_str()),
+	},
+	IndexedAllowedCodeRule {
+		code: "ICH.G.k.8.ALLOWED.VALUE",
+		path: |idx| format!("drugs.{idx}.actionTaken"),
+		value: |drug| drug.action_taken.as_deref(),
+	},
+];
+
+const G_DRUG_VOCABULARY_RULES: &[IndexedVocabularyRule<DrugInformation>] = &[
+	IndexedVocabularyRule {
+		code: "ICH.G.k.2.4.VOCABULARY",
+		path: |idx| format!("drugs.{idx}.obtainDrugCountry"),
+		value: |drug| drug.obtain_drug_country.as_deref(),
+	},
+	IndexedVocabularyRule {
+		code: "ICH.G.k.3.2.VOCABULARY",
+		path: |idx| format!("drugs.{idx}.drugAuthorizationCountry"),
+		value: |drug| drug.manufacturer_country.as_deref(),
+	},
+];
+
+const G_DRUG_REPEATED_ALLOWED_CODE_RULES: &[IndexedRepeatedAllowedCodeRule<
+	DrugInformation,
+>] = &[IndexedRepeatedAllowedCodeRule {
+	code: "ICH.G.k.10.r.ALLOWED.VALUE",
+	path: |idx| format!("drugs.{idx}.drugAdditionalInformationCodes"),
+	values: additional_info_codes,
+}];
+
+const G_DRUG_TRUE_MARKER_RULES: &[IndexedTrueMarkerRule<DrugInformation>] =
+	&[IndexedTrueMarkerRule {
+		code: "ICH.G.k.2.5.ALLOWED.VALUE",
+		path: |idx| format!("drugs.{idx}.investigationalProductBlinded"),
+		value: |drug| (drug.investigational_product_blinded, None),
+	}];
 
 const G_DRUG_COMPANION_RULES: &[CompanionRule<DrugInformation>] = &[
 	CompanionRule {
@@ -109,7 +289,54 @@ const G_DRUG_COMPANION_RULES: &[CompanionRule<DrugInformation>] = &[
 		trigger: |drug| drug.gestation_period_exposure_value.is_some(),
 		required: |drug| has_text(drug.gestation_period_exposure_unit.as_deref()),
 	},
+	CompanionRule {
+		code: "ICH.G.k.3.2.REQUIRED",
+		path: |idx| format!("drugs.{idx}.drugAuthorizationCountry"),
+		trigger: |drug| has_text(drug.drug_authorization_number.as_deref()),
+		required: |drug| has_text(drug.manufacturer_country.as_deref()),
+	},
 ];
+
+const G_ACTIVE_SUBSTANCE_LENGTH_RULES: &[NestedLengthRule<DrugActiveSubstance>] = &[
+	NestedLengthRule {
+		code: "ICH.G.k.2.3.r.1.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.activeSubstances.{idx}.substanceName")
+		},
+		value: |substance| substance.substance_name.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.2.3.r.2a.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.activeSubstances.{idx}.substanceTermIdVersion")
+		},
+		value: |substance| substance.substance_termid_version.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.2.3.r.2b.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.activeSubstances.{idx}.substanceTermId")
+		},
+		value: |substance| substance.substance_termid.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.2.3.r.3b.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.activeSubstances.{idx}.strengthUnit")
+		},
+		value: |substance| substance.strength_unit.as_deref(),
+	},
+];
+
+const G_ACTIVE_SUBSTANCE_DERIVED_LENGTH_RULES: &[NestedDerivedLengthRule<
+	DrugActiveSubstance,
+>] = &[NestedDerivedLengthRule {
+	code: "ICH.G.k.2.3.r.3a.LENGTH.MAX",
+	path: |drug_idx, idx| {
+		format!("drugs.{drug_idx}.activeSubstances.{idx}.strengthValue")
+	},
+	value: |substance| decimal_text(substance.strength_value),
+}];
 
 const G_ACTIVE_SUBSTANCE_COMPANION_RULES: &[CompanionRule<DrugActiveSubstance>] = &[
 	CompanionRule {
@@ -134,6 +361,119 @@ const G_ACTIVE_SUBSTANCE_COMPANION_RULES: &[CompanionRule<DrugActiveSubstance>] 
 		path: |idx| format!("drugs.0.activeSubstances.{idx}.strengthUnit"),
 		trigger: |substance| substance.strength_value.is_some(),
 		required: |substance| has_text(substance.strength_unit.as_deref()),
+	},
+];
+
+const G_DOSAGE_LENGTH_RULES: &[NestedLengthRule<DosageInformation>] = &[
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.1b.LENGTH.MAX",
+		path: |drug_idx, idx| format!("drugs.{drug_idx}.dosages.{idx}.doseUnit"),
+		value: |dosage| dosage.dose_unit.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.3.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.frequencyUnit")
+		},
+		value: |dosage| dosage.frequency_unit.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.6b.LENGTH.MAX",
+		path: |drug_idx, idx| format!("drugs.{drug_idx}.dosages.{idx}.durationUnit"),
+		value: |dosage| dosage.duration_unit.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.7.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.batchLotNumber")
+		},
+		value: |dosage| dosage.batch_lot_number.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.8.LENGTH.MAX",
+		path: |drug_idx, idx| format!("drugs.{drug_idx}.dosages.{idx}.dosageText"),
+		value: |dosage| dosage.dosage_text.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.9.1.LENGTH.MAX",
+		path: |drug_idx, idx| format!("drugs.{drug_idx}.dosages.{idx}.doseForm"),
+		value: |dosage| dosage.dose_form.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.9.2a.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.doseFormTermIdVersion")
+		},
+		value: |dosage| dosage.dose_form_termid_version.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.9.2b.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.doseFormTermId")
+		},
+		value: |dosage| dosage.dose_form_termid.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.10.1.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.routeOfAdministration")
+		},
+		value: |dosage| dosage.route_of_administration.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.10.2a.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.routeTermIdVersion")
+		},
+		value: |dosage| dosage.route_termid_version.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.10.2b.LENGTH.MAX",
+		path: |drug_idx, idx| format!("drugs.{drug_idx}.dosages.{idx}.routeTermId"),
+		value: |dosage| dosage.route_termid.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.11.1.LENGTH.MAX",
+		path: |drug_idx, idx| format!("drugs.{drug_idx}.dosages.{idx}.parentRoute"),
+		value: |dosage| dosage.parent_route.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.11.2a.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.parentRouteTermIdVersion")
+		},
+		value: |dosage| dosage.parent_route_termid_version.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.4.r.11.2b.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.parentRouteTermId")
+		},
+		value: |dosage| dosage.parent_route_termid.as_deref(),
+	},
+];
+
+const G_DOSAGE_DERIVED_LENGTH_RULES: &[NestedDerivedLengthRule<
+	DosageInformation,
+>] = &[
+	NestedDerivedLengthRule {
+		code: "ICH.G.k.4.r.1a.LENGTH.MAX",
+		path: |drug_idx, idx| format!("drugs.{drug_idx}.dosages.{idx}.doseValue"),
+		value: |dosage| decimal_text(dosage.dose_value),
+	},
+	NestedDerivedLengthRule {
+		code: "ICH.G.k.4.r.2.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.numberOfUnits")
+		},
+		value: |dosage| i32_text(dosage.number_of_units),
+	},
+	NestedDerivedLengthRule {
+		code: "ICH.G.k.4.r.6a.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.durationValue")
+		},
+		value: |dosage| decimal_text(dosage.duration_value),
 	},
 ];
 
@@ -182,6 +522,42 @@ const G_DOSAGE_COMPANION_RULES: &[CompanionRule<DosageInformation>] = &[
 	},
 ];
 
+const G_DOSAGE_FUTURE_DATE_RULES: &[IndexedFutureDateRule<DosageInformation>] =
+	&[IndexedFutureDateRule {
+		code: "ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
+		path: |idx| format!("drugs.0.dosageInformation.{idx}.dateRange"),
+		dates: |dosage| {
+			DateValues::Two(
+				dosage.first_administration_date,
+				dosage.last_administration_date,
+			)
+		},
+	}];
+
+const G_INDICATION_LENGTH_RULES: &[NestedLengthRule<DrugIndication>] = &[
+	NestedLengthRule {
+		code: "ICH.G.k.7.r.1.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.indications.{idx}.indicationText")
+		},
+		value: |indication| indication.indication_text.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.7.r.2a.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.indications.{idx}.indicationMeddraVersion")
+		},
+		value: |indication| indication.indication_meddra_version.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.7.r.2b.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.indications.{idx}.indicationMeddraCode")
+		},
+		value: |indication| indication.indication_meddra_code.as_deref(),
+	},
+];
+
 const G_INDICATION_COMPANION_RULES: &[CompanionRule<DrugIndication>] = &[
 	CompanionRule {
 		code: "ICH.G.k.7.r.2a.REQUIRED",
@@ -202,6 +578,120 @@ const G_INDICATION_COMPANION_RULES: &[CompanionRule<DrugIndication>] = &[
 		},
 	},
 ];
+
+const G_INDICATION_MEDDRA_RULES: &[NestedMeddraRule<DrugIndication>] =
+	&[NestedMeddraRule {
+		version_code: "ICH.G.k.7.r.2a.VOCABULARY",
+		code_code: "ICH.G.k.7.r.2b.VOCABULARY",
+		version_path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.indications.{idx}.indicationMeddraVersion")
+		},
+		code_path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.indications.{idx}.indicationMeddraCode")
+		},
+		values: |indication| {
+			(
+				indication.indication_meddra_version.as_deref(),
+				indication.indication_meddra_code.as_deref(),
+			)
+		},
+	}];
+
+const G_REACTION_ASSESSMENT_LENGTH_RULES: &[NestedLengthRule<
+	DrugReactionAssessment,
+>] = &[
+	NestedLengthRule {
+		code: "ICH.G.k.9.i.3.1b.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!(
+				"drugs.{drug_idx}.reactionAssessments.{idx}.administrationStartIntervalUnit"
+			)
+		},
+		value: |assessment| assessment.administration_start_interval_unit.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.9.i.3.2b.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!(
+				"drugs.{drug_idx}.reactionAssessments.{idx}.lastDoseIntervalUnit"
+			)
+		},
+		value: |assessment| assessment.last_dose_interval_unit.as_deref(),
+	},
+	NestedLengthRule {
+		code: "ICH.G.k.9.i.4.LENGTH.MAX",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.reactionAssessments.{idx}.reactionRecurred")
+		},
+		value: |assessment| assessment.reaction_recurred.as_deref(),
+	},
+];
+
+const G_REACTION_ASSESSMENT_DERIVED_LENGTH_RULES: &[NestedDerivedLengthRule<
+	DrugReactionAssessment,
+>] =
+	&[
+		NestedDerivedLengthRule {
+			code: "ICH.G.k.9.i.3.1a.LENGTH.MAX",
+			path: |drug_idx, idx| {
+				format!(
+				"drugs.{drug_idx}.reactionAssessments.{idx}.administrationStartIntervalValue"
+			)
+			},
+			value: |assessment| {
+				decimal_text(assessment.administration_start_interval_value)
+			},
+		},
+		NestedDerivedLengthRule {
+			code: "ICH.G.k.9.i.3.2a.LENGTH.MAX",
+			path: |drug_idx, idx| {
+				format!("drugs.{drug_idx}.reactionAssessments.{idx}.lastDoseIntervalValue")
+			},
+			value: |assessment| decimal_text(assessment.last_dose_interval_value),
+		},
+	];
+
+const G_RELATEDNESS_ASSESSMENT_LENGTH_RULES: &[GrandchildLengthRule<
+	RelatednessAssessment,
+>] = &[
+	GrandchildLengthRule {
+		code: "ICH.G.k.9.i.2.r.1.LENGTH.MAX",
+		path: |drug_idx, assessment_idx, idx| {
+			format!(
+				"drugs.{drug_idx}.reactionAssessments.{assessment_idx}.relatednessAssessments.{idx}.sourceOfAssessment"
+			)
+		},
+		value: |relatedness| relatedness.source_of_assessment.as_deref(),
+	},
+	GrandchildLengthRule {
+		code: "ICH.G.k.9.i.2.r.2.LENGTH.MAX",
+		path: |drug_idx, assessment_idx, idx| {
+			format!(
+				"drugs.{drug_idx}.reactionAssessments.{assessment_idx}.relatednessAssessments.{idx}.methodOfAssessment"
+			)
+		},
+		value: |relatedness| relatedness.method_of_assessment.as_deref(),
+	},
+	GrandchildLengthRule {
+		code: "ICH.G.k.9.i.2.r.3.LENGTH.MAX",
+		path: |drug_idx, assessment_idx, idx| {
+			format!(
+				"drugs.{drug_idx}.reactionAssessments.{assessment_idx}.relatednessAssessments.{idx}.resultOfAssessment"
+			)
+		},
+		value: |relatedness| relatedness.result_of_assessment.as_deref(),
+	},
+];
+
+const G_REACTION_ASSESSMENT_ALLOWED_CODE_RULES: &[NestedAllowedCodeRule<
+	DrugReactionAssessment,
+>] = &[NestedAllowedCodeRule {
+	code: "ICH.G.k.9.i.4.ALLOWED.VALUE",
+	path: |drug_idx, idx| {
+		format!("drugs.{drug_idx}.reactionAssessments.{idx}.reactionRecurred")
+	},
+	value: |assessment| assessment.reaction_recurred.as_deref(),
+}];
 
 const G_REACTION_ASSESSMENT_COMPANION_RULES: &[CompanionRule<
 	DrugReactionAssessment,
@@ -296,34 +786,141 @@ pub(crate) fn collect_ich_issues(
 	}
 
 	eval_indexed(issues, &validation_ctx.drugs, G_DRUG_VALUE_RULES);
+	eval_indexed_length(issues, &validation_ctx.drugs, G_DRUG_LENGTH_RULES);
+	eval_indexed_derived_length(
+		issues,
+		&validation_ctx.drugs,
+		G_DRUG_DERIVED_LENGTH_RULES,
+	);
+	eval_indexed_allowed_codes(
+		issues,
+		&validation_ctx.drugs,
+		G_DRUG_ALLOWED_CODE_RULES,
+	);
+	eval_indexed_vocabulary(issues, &validation_ctx.drugs, G_DRUG_VOCABULARY_RULES);
+	eval_indexed_repeated_allowed_codes(
+		issues,
+		&validation_ctx.drugs,
+		G_DRUG_REPEATED_ALLOWED_CODE_RULES,
+	);
+	eval_indexed_true_markers(
+		issues,
+		&validation_ctx.drugs,
+		G_DRUG_TRUE_MARKER_RULES,
+	);
 	eval_companions(issues, &validation_ctx.drugs, G_DRUG_COMPANION_RULES);
+	eval_nested_length(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.active_substances,
+		|drug| drug.id,
+		|substance| substance.drug_id,
+		|substance, fallback| sequence_idx(substance.sequence_number, fallback),
+		G_ACTIVE_SUBSTANCE_LENGTH_RULES,
+	);
+	eval_nested_derived_length(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.active_substances,
+		|drug| drug.id,
+		|substance| substance.drug_id,
+		|substance, fallback| sequence_idx(substance.sequence_number, fallback),
+		G_ACTIVE_SUBSTANCE_DERIVED_LENGTH_RULES,
+	);
 	eval_companions(
 		issues,
 		&validation_ctx.active_substances,
 		G_ACTIVE_SUBSTANCE_COMPANION_RULES,
 	);
 
+	eval_nested_length(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.dosages,
+		|drug| drug.id,
+		|dosage| dosage.drug_id,
+		|dosage, fallback| sequence_idx(dosage.sequence_number, fallback),
+		G_DOSAGE_LENGTH_RULES,
+	);
+	eval_nested_derived_length(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.dosages,
+		|drug| drug.id,
+		|dosage| dosage.drug_id,
+		|dosage, fallback| sequence_idx(dosage.sequence_number, fallback),
+		G_DOSAGE_DERIVED_LENGTH_RULES,
+	);
 	eval_companions(issues, &validation_ctx.dosages, G_DOSAGE_COMPANION_RULES);
-	validation_ctx
-		.dosages
-		.iter()
-		.enumerate()
-		.for_each(|(idx, dosage)| {
-			if is_future_date(dosage.first_administration_date)
-				|| is_future_date(dosage.last_administration_date)
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
-					format!("drugs.0.dosageInformation.{idx}.dateRange"),
-				);
-			}
-		});
+	eval_indexed_future_dates(
+		issues,
+		&validation_ctx.dosages,
+		G_DOSAGE_FUTURE_DATE_RULES,
+	);
 
+	eval_nested_length(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.indications,
+		|drug| drug.id,
+		|indication| indication.drug_id,
+		|indication, fallback| sequence_idx(indication.sequence_number, fallback),
+		G_INDICATION_LENGTH_RULES,
+	);
 	eval_companions(
 		issues,
 		&validation_ctx.indications,
 		G_INDICATION_COMPANION_RULES,
+	);
+	eval_nested_meddra(
+		issues,
+		&validation_ctx.vocabulary,
+		&validation_ctx.drugs,
+		&validation_ctx.indications,
+		|drug| drug.id,
+		|indication| indication.drug_id,
+		|indication, fallback| sequence_idx(indication.sequence_number, fallback),
+		G_INDICATION_MEDDRA_RULES,
+	);
+	eval_nested_length(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.drug_reaction_assessments,
+		|drug| drug.id,
+		|assessment| assessment.drug_id,
+		|_, fallback| fallback,
+		G_REACTION_ASSESSMENT_LENGTH_RULES,
+	);
+	eval_nested_derived_length(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.drug_reaction_assessments,
+		|drug| drug.id,
+		|assessment| assessment.drug_id,
+		|_, fallback| fallback,
+		G_REACTION_ASSESSMENT_DERIVED_LENGTH_RULES,
+	);
+	eval_nested_allowed_codes(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.drug_reaction_assessments,
+		|drug| drug.id,
+		|assessment| assessment.drug_id,
+		|_, fallback| fallback,
+		G_REACTION_ASSESSMENT_ALLOWED_CODE_RULES,
+	);
+	eval_grandchild_length(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.drug_reaction_assessments,
+		&validation_ctx.relatedness_assessments,
+		|drug| drug.id,
+		|assessment| assessment.id,
+		|assessment| assessment.drug_id,
+		|relatedness| relatedness.drug_reaction_assessment_id,
+		|_, fallback| fallback,
+		|relatedness, fallback| sequence_idx(relatedness.sequence_number, fallback),
+		G_RELATEDNESS_ASSESSMENT_LENGTH_RULES,
 	);
 	eval_companions(
 		issues,
@@ -354,12 +951,54 @@ pub(crate) async fn collect_fda_issues(
 	let mut has_gk12r11 = false;
 	let mut has_invalid_gk1a = false;
 
-	for drug in &validation_ctx.drugs {
-		let chars = list_drug_characteristics(ctx, mm, drug.id).await?;
+	for (drug_idx, drug) in validation_ctx.drugs.iter().enumerate() {
+		let mut chars = list_drug_characteristics(ctx, mm, drug.id).await?;
+		chars.extend(derive_fda_device_characteristics(drug));
 		let malfunction_this_drug = chars.iter().any(|ch| {
 			characteristic_code_matches(ch.code.as_deref(), "FDA.G.k.12.r.1")
 				&& is_truthy_characteristic(ch)
 		});
+		if combination_true
+			&& malfunction_this_drug
+			&& drug.drug_characterization == "4"
+			&& !has_text(drug.fda_other_characterization.as_deref())
+		{
+			push_issue_by_code(
+				issues,
+				"FDA.G.k.1.a.REQUIRED",
+				format!("drugs.{drug_idx}.fdaOtherCharacterization"),
+			);
+		}
+		if local_criteria == Some("5") && !malfunction_this_drug {
+			push_issue_by_code(
+				issues,
+				"FDA.G.k.12.r.1.REQUIRED",
+				format!("drugs.{drug_idx}.fdaDeviceInfo.malfunction"),
+			);
+		}
+		if malfunction_this_drug {
+			if !has_characteristic_value(&chars, "FDA.G.k.12.r.4") {
+				push_issue_by_code(
+					issues,
+					"FDA.G.k.12.r.4.REQUIRED",
+					format!("drugs.{drug_idx}.fdaDeviceInfo.deviceBrandName"),
+				);
+			}
+			if !has_characteristic_value(&chars, "FDA.G.k.12.r.5") {
+				push_issue_by_code(
+					issues,
+					"FDA.G.k.12.r.5.REQUIRED",
+					format!("drugs.{drug_idx}.fdaDeviceInfo.commonDeviceName"),
+				);
+			}
+			if !has_characteristic_value(&chars, "FDA.G.k.12.r.6") {
+				push_issue_by_code(
+					issues,
+					"FDA.G.k.12.r.6.REQUIRED",
+					format!("drugs.{drug_idx}.fdaDeviceInfo.deviceProductCode"),
+				);
+			}
+		}
 		if malfunction_this_drug {
 			has_malfunction_any = true;
 			if drug.drug_characterization == "1" {
@@ -399,11 +1038,21 @@ pub(crate) async fn collect_fda_issues(
 	if has_malfunction_any && !has_gk12r3 {
 		push_issue_by_code(
 			issues,
+			"FDA.G.k.12.r.3.r.REQUIRED",
+			"drugs.0.fdaDeviceInfo.deviceProblemCodes",
+		);
+		push_issue_by_code(
+			issues,
 			"FDA.G.K.12.R.3.REQUIRED",
 			"drugs.0.deviceCharacteristics.0.valueCode",
 		);
 	}
 	if local_criteria == Some("4") && has_malfunction_any && !has_gk12r11 {
+		push_issue_by_code(
+			issues,
+			"FDA.G.k.12.r.11.r.REQUIRED",
+			"drugs.0.fdaDeviceInfo.remedialActions",
+		);
 		push_issue_by_code(
 			issues,
 			"FDA.G.K.12.R.11.REQUIRED",
@@ -730,7 +1379,9 @@ pub(crate) fn collect_mfds_issues(
 mod golden_g_required_tests {
 	use super::*;
 	use lib_core::model::case::Case;
+	use serde_json::json;
 	use sqlx::types::time::OffsetDateTime;
+	use sqlx::types::Decimal;
 	use sqlx::types::Uuid;
 
 	fn dummy_case() -> Case {
@@ -768,6 +1419,7 @@ mod golden_g_required_tests {
 
 	fn empty_ctx() -> ValidationContext {
 		ValidationContext {
+			vocabulary: Default::default(),
 			case: dummy_case(),
 			safety_report: None,
 			message_header: None,
@@ -786,8 +1438,11 @@ mod golden_g_required_tests {
 			parent_past_drugs: Vec::new(),
 			primary_sources: Vec::new(),
 			documents_held_by_sender: Vec::new(),
+			literature_references: Vec::new(),
 			other_case_identifiers: Vec::new(),
+			linked_report_numbers: Vec::new(),
 			studies: Vec::new(),
+			study_registrations: Vec::new(),
 			reactions: Vec::new(),
 			tests: Vec::new(),
 			drugs: Vec::new(),
@@ -795,6 +1450,7 @@ mod golden_g_required_tests {
 			indications: Vec::new(),
 			dosages: Vec::new(),
 			drug_reaction_assessments: Vec::new(),
+			relatedness_assessments: Vec::new(),
 			patient_identifiers: Vec::new(),
 		}
 	}
@@ -939,10 +1595,84 @@ mod golden_g_required_tests {
 		}
 	}
 
+	fn relatedness() -> RelatednessAssessment {
+		RelatednessAssessment {
+			id: Uuid::nil(),
+			drug_reaction_assessment_id: Uuid::nil(),
+			sequence_number: 1,
+			source_of_assessment: None,
+			method_of_assessment: None,
+			result_of_assessment: None,
+			result_of_assessment_kr2: None,
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
 	fn codes_for(ctx: &ValidationContext) -> Vec<String> {
 		let mut issues = Vec::new();
 		collect_ich_issues(ctx, &mut issues);
 		issues.into_iter().map(|issue| issue.code).collect()
+	}
+
+	fn length_issues(ctx: &ValidationContext) -> Vec<(String, String)> {
+		let mut issues = Vec::new();
+		collect_ich_issues(ctx, &mut issues);
+		issues
+			.into_iter()
+			.filter(|issue| issue.code.ends_with(".LENGTH.MAX"))
+			.map(|issue| (issue.code, issue.field_path.unwrap_or_default()))
+			.collect()
+	}
+
+	#[test]
+	fn allowed_value_rules_cover_g_drug_and_reaction_codes() {
+		let mut ctx = empty_ctx();
+		let mut drug = drug();
+		drug.id = Uuid::from_u128(1);
+		drug.drug_characterization = "9".to_string();
+		drug.investigational_product_blinded = Some(false);
+		drug.action_taken = Some("8".to_string());
+		drug.drug_additional_info_codes_json = Some(json!([
+			{ "value_code": "12" }
+		]));
+		ctx.drugs.push(drug);
+
+		let mut assessment = assessment();
+		assessment.drug_id = Uuid::from_u128(1);
+		assessment.reaction_recurred = Some("9".to_string());
+		ctx.drug_reaction_assessments.push(assessment);
+
+		let codes = codes_for(&ctx);
+		assert!(codes.contains(&"ICH.G.k.1.ALLOWED.VALUE".to_string()));
+		assert!(codes.contains(&"ICH.G.k.2.5.ALLOWED.VALUE".to_string()));
+		assert!(codes.contains(&"ICH.G.k.8.ALLOWED.VALUE".to_string()));
+		assert!(codes.contains(&"ICH.G.k.9.i.4.ALLOWED.VALUE".to_string()));
+		assert!(codes.contains(&"ICH.G.k.10.r.ALLOWED.VALUE".to_string()));
+	}
+
+	#[test]
+	fn meddra_vocabulary_rules_cover_g_indication_codes() {
+		let mut ctx = empty_ctx();
+		ctx.vocabulary =
+			crate::context::VocabularyContext::for_meddra(&[("26.1", "10000001")]);
+
+		let mut drug = drug();
+		drug.id = Uuid::from_u128(1);
+		ctx.drugs.push(drug);
+
+		let mut indication = indication();
+		indication.drug_id = Uuid::from_u128(1);
+		indication.indication_meddra_version = Some("99.9".to_string());
+		indication.indication_meddra_code = Some("99999999".to_string());
+		ctx.indications.push(indication);
+
+		let codes = codes_for(&ctx);
+		assert!(codes.contains(&"ICH.G.k.7.r.2a.VOCABULARY".to_string()));
+		assert!(codes.contains(&"ICH.G.k.7.r.2b.VOCABULARY".to_string()));
 	}
 
 	#[test]
@@ -1025,5 +1755,192 @@ mod golden_g_required_tests {
 				"ICH.G.k.9.i.3.2a.REQUIRED".to_string(),
 			]
 		);
+	}
+
+	#[test]
+	fn max_length_rules_cover_g_drug_fields() {
+		let mut ctx = empty_ctx();
+		let mut drug = drug();
+		drug.drug_characterization = "12".to_string();
+		drug.mpid_version = Some("12345678901".to_string());
+		drug.mpid = Some("x".repeat(1001));
+		drug.phpid_version = Some("12345678901".to_string());
+		drug.phpid = Some("x".repeat(251));
+		drug.medicinal_product = "x".repeat(251);
+		drug.obtain_drug_country = Some("USA".to_string());
+		drug.drug_authorization_number = Some("x".repeat(36));
+		drug.manufacturer_country = Some("USA".to_string());
+		drug.manufacturer_name = Some("x".repeat(61));
+		drug.cumulative_dose_first_reaction_value =
+			Some(Decimal::new(12_345_678_901, 0));
+		drug.cumulative_dose_first_reaction_unit = Some("x".repeat(51));
+		drug.gestation_period_exposure_value = Some(Decimal::new(1234, 0));
+		drug.gestation_period_exposure_unit = Some("x".repeat(51));
+		drug.action_taken = Some("12".to_string());
+		drug.drug_additional_info_codes_json = Some(json!([
+			{ "value_code": "123" }
+		]));
+		drug.drug_additional_information = Some("x".repeat(2001));
+		ctx.drugs.push(drug);
+
+		assert_eq!(
+			length_issues(&ctx),
+			vec![
+				(
+					"ICH.G.k.1.LENGTH.MAX".to_string(),
+					"drugs.0.drugCharacterization".to_string()
+				),
+				(
+					"ICH.G.k.2.1.1a.LENGTH.MAX".to_string(),
+					"drugs.0.mpidVersion".to_string()
+				),
+				(
+					"ICH.G.k.2.1.1b.LENGTH.MAX".to_string(),
+					"drugs.0.mpid".to_string()
+				),
+				(
+					"ICH.G.k.2.1.2a.LENGTH.MAX".to_string(),
+					"drugs.0.phpidVersion".to_string()
+				),
+				(
+					"ICH.G.k.2.1.2b.LENGTH.MAX".to_string(),
+					"drugs.0.phpid".to_string()
+				),
+				(
+					"ICH.G.k.2.2.LENGTH.MAX".to_string(),
+					"drugs.0.medicinalProduct".to_string()
+				),
+				(
+					"ICH.G.k.2.4.LENGTH.MAX".to_string(),
+					"drugs.0.obtainDrugCountry".to_string()
+				),
+				(
+					"ICH.G.k.3.1.LENGTH.MAX".to_string(),
+					"drugs.0.drugAuthorizationNumber".to_string()
+				),
+				(
+					"ICH.G.k.3.2.LENGTH.MAX".to_string(),
+					"drugs.0.drugAuthorizationCountry".to_string()
+				),
+				(
+					"ICH.G.k.3.3.LENGTH.MAX".to_string(),
+					"drugs.0.manufacturerName".to_string()
+				),
+				(
+					"ICH.G.k.5b.LENGTH.MAX".to_string(),
+					"drugs.0.cumulativeDoseFirstReactionUnit".to_string()
+				),
+				(
+					"ICH.G.k.6b.LENGTH.MAX".to_string(),
+					"drugs.0.gestationPeriodExposureUnit".to_string()
+				),
+				(
+					"ICH.G.k.8.LENGTH.MAX".to_string(),
+					"drugs.0.actionTaken".to_string()
+				),
+				(
+					"ICH.G.k.11.LENGTH.MAX".to_string(),
+					"drugs.0.drugAdditionalInformation".to_string()
+				),
+				(
+					"ICH.G.k.5a.LENGTH.MAX".to_string(),
+					"drugs.0.cumulativeDoseFirstReactionValue".to_string()
+				),
+				(
+					"ICH.G.k.6a.LENGTH.MAX".to_string(),
+					"drugs.0.gestationPeriodExposureValue".to_string()
+				),
+				(
+					"ICH.G.k.10.r.LENGTH.MAX".to_string(),
+					"drugs.0.drugAdditionalInformationCodes".to_string()
+				),
+			]
+		);
+	}
+
+	#[test]
+	fn max_length_rules_cover_g_nested_drug_collections() {
+		let mut ctx = empty_ctx();
+		let mut drug = drug();
+		drug.id = Uuid::from_u128(1);
+		ctx.drugs.push(drug);
+
+		let mut substance = substance();
+		substance.drug_id = Uuid::from_u128(1);
+		substance.substance_name = Some("x".repeat(251));
+		substance.substance_termid_version = Some("x".repeat(11));
+		substance.substance_termid = Some("x".repeat(101));
+		substance.strength_value = Some(Decimal::new(12_345_678_901, 0));
+		substance.strength_unit = Some("x".repeat(51));
+		ctx.active_substances.push(substance);
+
+		let mut dosage = dosage();
+		dosage.drug_id = Uuid::from_u128(1);
+		dosage.dose_value = Some(Decimal::new(123_456_789, 0));
+		dosage.dose_unit = Some("x".repeat(51));
+		dosage.number_of_units = Some(12_345);
+		dosage.frequency_unit = Some("x".repeat(51));
+		dosage.duration_value = Some(Decimal::new(123_456, 0));
+		dosage.duration_unit = Some("x".repeat(51));
+		dosage.batch_lot_number = Some("x".repeat(36));
+		dosage.dosage_text = Some("x".repeat(2001));
+		dosage.dose_form = Some("x".repeat(61));
+		dosage.dose_form_termid_version = Some("x".repeat(11));
+		dosage.dose_form_termid = Some("x".repeat(101));
+		dosage.route_of_administration = Some("x".repeat(61));
+		dosage.route_termid_version = Some("x".repeat(11));
+		dosage.route_termid = Some("x".repeat(101));
+		dosage.parent_route = Some("x".repeat(61));
+		dosage.parent_route_termid_version = Some("x".repeat(11));
+		dosage.parent_route_termid = Some("x".repeat(101));
+		ctx.dosages.push(dosage);
+
+		let mut indication = indication();
+		indication.drug_id = Uuid::from_u128(1);
+		indication.indication_text = Some("x".repeat(251));
+		indication.indication_meddra_version = Some("x".repeat(5));
+		indication.indication_meddra_code = Some("x".repeat(9));
+		ctx.indications.push(indication);
+
+		let mut assessment = assessment();
+		assessment.id = Uuid::from_u128(2);
+		assessment.drug_id = Uuid::from_u128(1);
+		assessment.administration_start_interval_value =
+			Some(Decimal::new(123_456, 0));
+		assessment.administration_start_interval_unit = Some("x".repeat(51));
+		assessment.last_dose_interval_value = Some(Decimal::new(123_456, 0));
+		assessment.last_dose_interval_unit = Some("x".repeat(51));
+		assessment.reaction_recurred = Some("12".to_string());
+		ctx.drug_reaction_assessments.push(assessment);
+
+		let mut relatedness = relatedness();
+		relatedness.drug_reaction_assessment_id = Uuid::from_u128(2);
+		relatedness.source_of_assessment = Some("x".repeat(61));
+		relatedness.method_of_assessment = Some("x".repeat(61));
+		relatedness.result_of_assessment = Some("x".repeat(61));
+		ctx.relatedness_assessments.push(relatedness);
+
+		assert_eq!(length_issues(&ctx).len(), 33);
+		assert!(length_issues(&ctx).contains(&(
+			"ICH.G.k.2.3.r.1.LENGTH.MAX".to_string(),
+			"drugs.0.activeSubstances.0.substanceName".to_string()
+		)));
+		assert!(length_issues(&ctx).contains(&(
+			"ICH.G.k.4.r.1a.LENGTH.MAX".to_string(),
+			"drugs.0.dosages.0.doseValue".to_string()
+		)));
+		assert!(length_issues(&ctx).contains(&(
+			"ICH.G.k.7.r.2b.LENGTH.MAX".to_string(),
+			"drugs.0.indications.0.indicationMeddraCode".to_string()
+		)));
+		assert!(length_issues(&ctx).contains(&(
+			"ICH.G.k.9.i.4.LENGTH.MAX".to_string(),
+			"drugs.0.reactionAssessments.0.reactionRecurred".to_string()
+		)));
+		assert!(length_issues(&ctx).contains(&(
+			"ICH.G.k.9.i.2.r.1.LENGTH.MAX".to_string(),
+			"drugs.0.reactionAssessments.0.relatednessAssessments.0.sourceOfAssessment"
+				.to_string()
+		)));
 	}
 }

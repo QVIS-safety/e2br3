@@ -98,6 +98,30 @@ FIELD_PATTERNS = [
 ]
 
 
+# Field names composed from an object-array `.map` callback, e.g. a
+# `SERIOUSNESS_CRITERIA = [{ name: "criteria..." }] as const` list rendered via
+# `name={`reactions.${i}.seriousness.${criterion.name}`}`. The concrete field
+# name lives on the array element and never appears literally at the `name=`
+# call site, so it is resolved here from the `as const` source array.
+OBJECT_NAME_TEMPLATE = re.compile(r"`([^`]*?)\$\{[A-Za-z_]\w*\.name\}`")
+OBJECT_ARRAY_AS_CONST = re.compile(r"=\s*\[(.*?)\]\s*as const", re.DOTALL)
+OBJECT_ARRAY_NAME_ENTRY = re.compile(r"\bname:\s*[\"']([A-Za-z][A-Za-z0-9_]*)[\"']")
+
+
+def expand_object_name_map_paths(source: str) -> set[str]:
+    prefixes = {prefix.rstrip(".") for prefix in OBJECT_NAME_TEMPLATE.findall(source)}
+    if not prefixes:
+        return set()
+
+    names: set[str] = set()
+    for array_body in OBJECT_ARRAY_AS_CONST.findall(source):
+        names.update(OBJECT_ARRAY_NAME_ENTRY.findall(array_body))
+    if not names:
+        return set()
+
+    return {f"{prefix}.{name}" for prefix in prefixes if prefix for name in names}
+
+
 def extract_raw_field_paths_from_source(source: str) -> list[str]:
     fields: set[str] = set()
     for pattern in FIELD_PATTERNS:
@@ -106,6 +130,7 @@ def extract_raw_field_paths_from_source(source: str) -> list[str]:
             if raw:
                 fields.add(raw.strip())
     fields.update(expand_name_placeholder_paths(source, fields))
+    fields.update(expand_object_name_map_paths(source))
     return sorted(fields)
 
 

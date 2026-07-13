@@ -112,6 +112,40 @@ class FrontendFieldExtractorTests(unittest.TestCase):
             fields,
         )
 
+    def test_expands_object_array_name_map_field_names(self):
+        source = '''
+const SERIOUSNESS_CRITERIA = [
+  { name: "criteriaResultsInDeath", label: "Death", fieldNumber: "E.i.3.2a" },
+  { name: "criteriaLifeThreatening", label: "Life Threatening", fieldNumber: "E.i.3.2b" },
+] as const;
+
+const renderSeriousnessCriterion = (
+  criterion: (typeof SERIOUSNESS_CRITERIA)[number]
+) => {
+  const fieldName = `reactions.${activeIndex}.seriousness.${criterion.name}`;
+  return <Controller name={fieldName} />;
+};
+'''
+
+        fields = extractor.extract_field_paths_from_source(source)
+
+        self.assertEqual(
+            [
+                "reactions.seriousness.criteriaLifeThreatening",
+                "reactions.seriousness.criteriaResultsInDeath",
+            ],
+            fields,
+        )
+
+    def test_object_array_name_map_ignores_arrays_that_are_not_as_const(self):
+        # A bare object-property placeholder with no `as const` name source stays unresolved.
+        source = '''
+const fieldName = `reactions.${activeIndex}.seriousness.${criterion.name}`;
+<Controller name={fieldName} />
+'''
+
+        self.assertEqual([], extractor.extract_field_paths_from_source(source))
+
     def test_extracts_inventory_from_configured_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -73,6 +73,15 @@ data types, and XPaths (ICH/MFDS XPaths come from
 authority, including each authority's rules for shared ICH elements. The
 validator checks that every rule key references an existing dictionary element.
 
+ICH entries with official `VALUE ALLOWED` text also carry an
+`allowed_value_constraint`. The raw `allowed_values` source text is always
+retained; the structured field classifies it as `code_set`, `boolean`,
+`true_marker`, `numeric`, `format`, `vocabulary`, or `descriptive`. Explicit
+`code_set` values are extracted in source order. The committed ICH dictionary
+contains 223 such entries, including `C.1.10.r`; the source table emits that code
+once as a header and again as the actual element, and the element row is
+authoritative.
+
 Dictionary files are validated for shape on every `validate.py` run. Codes must
 be unique across all dictionary files.
 
@@ -120,6 +129,8 @@ Strict dictionary rules:
   example `G.k.local.rechallenge`, `C.3.receiver.*`, `E.local.*`). A
   `local_only` row must not use a code that exists in a dictionary.
 - Every `mandatory` dictionary element must have a registry row.
+
+- `catalog_only`: present in the catalog but not referenced by validator source.
 
 Rebuild the dictionaries after a source spec change (requires `openpyxl`):
 

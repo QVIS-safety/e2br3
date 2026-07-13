@@ -6,30 +6,11 @@ use crate::{
 use lib_core::xml::types::XmlValidationError;
 use libxml::xpath::Context;
 
-pub(crate) const ICH_G_IDENTITY_TEXT_NULL_FLAVOR_RULES: &[TextNullFlavorPairRuleSpec] = &[
-	TextNullFlavorPairRuleSpec {
-		node_xpath: "//hl7:ingredientSubstance/hl7:name",
-		required_code: "ICH.G.k.2.3.NAME.NULLFLAVOR.REQUIRED",
-		required_message: "ingredientSubstance/name is empty; nullFlavor is required",
-		forbidden_code: Some("ICH.G.k.2.3.NAME.NULLFLAVOR.FORBIDDEN"),
-		forbidden_message: Some(
-			"ingredientSubstance/name has value and nullFlavor; nullFlavor must be absent when value present",
-		),
-	},
-];
+pub(crate) const ICH_G_IDENTITY_TEXT_NULL_FLAVOR_RULES:
+	&[TextNullFlavorPairRuleSpec] = &[];
 
-pub(crate) const ICH_G_PROFILE_ATTR_NULL_FLAVOR_RULES: &[AttrNullFlavorPairRuleSpec] = &[
-	AttrNullFlavorPairRuleSpec {
-		node_xpath: "//hl7:adverseEventAssessment/hl7:id",
-		value_attr: "extension",
-		required_code: "ICH.G.k.9.i.2.ID.NULLFLAVOR.REQUIRED",
-		required_message: "adverseEventAssessment/id missing extension; nullFlavor is required",
-		forbidden_code: Some("ICH.G.k.9.i.2.ID.NULLFLAVOR.FORBIDDEN"),
-		forbidden_message: Some(
-			"adverseEventAssessment/id has extension and nullFlavor; nullFlavor must be absent when value present",
-		),
-	},
-];
+pub(crate) const ICH_G_PROFILE_ATTR_NULL_FLAVOR_RULES:
+	&[AttrNullFlavorPairRuleSpec] = &[];
 
 pub(crate) const ICH_G_PROFILE_ATTR_OR_NULL_RULES: &[AttrOrNullFlavorRequiredRuleSpec] = &[
 	AttrOrNullFlavorRequiredRuleSpec {

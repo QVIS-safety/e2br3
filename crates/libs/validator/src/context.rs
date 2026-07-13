@@ -1,10 +1,12 @@
 use lib_core::ctx::Ctx;
 use lib_core::model::case::{Case, CaseBmc};
-use lib_core::model::case_identifiers::OtherCaseIdentifier;
+use lib_core::model::case_identifiers::{LinkedReportNumber, OtherCaseIdentifier};
 use lib_core::model::drug::{
 	DosageInformation, DrugActiveSubstance, DrugIndication, DrugInformation,
 };
-use lib_core::model::drug_reaction_assessment::DrugReactionAssessment;
+use lib_core::model::drug_reaction_assessment::{
+	DrugReactionAssessment, RelatednessAssessment,
+};
 use lib_core::model::message_header::{MessageHeader, MessageHeaderBmc};
 use lib_core::model::narrative::{
 	CaseSummaryInformation, NarrativeInformation, NarrativeInformationBmc,
@@ -18,19 +20,65 @@ use lib_core::model::patient::{
 };
 use lib_core::model::reaction::Reaction;
 use lib_core::model::safety_report::{
-	DocumentsHeldBySender, PrimarySource, PrimarySourceBmc, PrimarySourceFilter,
-	SafetyReportIdentification, SafetyReportIdentificationBmc, SenderInformation,
-	SenderInformationBmc, SenderInformationFilter, StudyInformation,
+	DocumentsHeldBySender, LiteratureReference, PrimarySource, PrimarySourceBmc,
+	PrimarySourceFilter, SafetyReportIdentification, SafetyReportIdentificationBmc,
+	SenderInformation, SenderInformationBmc, SenderInformationFilter,
+	StudyInformation, StudyRegistrationNumber,
 };
 use lib_core::model::store::set_full_context_from_ctx_dbx;
+use lib_core::model::terminology::{MeddraTermBmc, MeddraTermKey};
 use lib_core::model::test_result::TestResult;
 use lib_core::model::{ModelManager, Result};
 use modql::filter::{OpValValue, OpValsValue};
 use serde_json::json;
 use sqlx::types::Uuid;
+use std::collections::HashSet;
+
+#[derive(Debug, Clone, Default)]
+pub struct VocabularyContext {
+	meddra_available: bool,
+	meddra_versions: HashSet<String>,
+	meddra_terms: HashSet<MeddraTermKey>,
+}
+
+impl VocabularyContext {
+	pub(crate) fn meddra_available(&self) -> bool {
+		self.meddra_available
+	}
+
+	pub(crate) fn contains_meddra_version(&self, version: &str) -> bool {
+		self.meddra_versions.contains(version)
+	}
+
+	pub(crate) fn contains_meddra_term(&self, version: &str, code: &str) -> bool {
+		self.meddra_terms.contains(&MeddraTermKey {
+			version: version.to_string(),
+			code: code.to_string(),
+		})
+	}
+
+	#[cfg(test)]
+	pub(crate) fn for_meddra(keys: &[(&str, &str)]) -> Self {
+		Self {
+			meddra_available: true,
+			meddra_versions: keys
+				.iter()
+				.map(|(version, _)| (*version).to_string())
+				.collect(),
+			meddra_terms: keys
+				.iter()
+				.map(|(version, code)| MeddraTermKey {
+					version: (*version).to_string(),
+					code: (*code).to_string(),
+				})
+				.collect(),
+		}
+	}
+}
 
 #[derive(Debug, Clone)]
 pub struct ValidationContext {
+	pub vocabulary: VocabularyContext,
 	pub case: Case,
 	pub safety_report: Option<SafetyReportIdentification>,
 	pub message_header: Option<MessageHeader>,
@@ -49,8 +97,11 @@ pub struct ValidationContext {
 	pub parent_past_drugs: Vec<ParentPastDrugHistory>,
 	pub primary_sources: Vec<PrimarySource>,
 	pub documents_held_by_sender: Vec<DocumentsHeldBySender>,
+	pub literature_references: Vec<LiteratureReference>,
 	pub other_case_identifiers: Vec<OtherCaseIdentifier>,
+	pub linked_report_numbers: Vec<LinkedReportNumber>,
 	pub studies: Vec<StudyInformation>,
+	pub study_registrations: Vec<StudyRegistrationNumber>,
 	pub reactions: Vec<Reaction>,
 	pub tests: Vec<TestResult>,
 	pub drugs: Vec<DrugInformation>,
@@ -58,6 +109,7 @@ pub struct ValidationContext {
 	pub indications: Vec<DrugIndication>,
 	pub dosages: Vec<DosageInformation>,
 	pub drug_reaction_assessments: Vec<DrugReactionAssessment>,
+	pub relatedness_assessments: Vec<RelatednessAssessment>,
 	pub patient_identifiers: Vec<PatientIdentifier>,
 }
 
@@ -101,7 +153,9 @@ pub async fn load_base_validation_context(
 	let (
 		primary_sources,
 		documents_held_by_sender,
+		literature_references,
 		other_case_identifiers,
+		linked_report_numbers,
 		studies,
 		reactions,
 		tests,
@@ -109,12 +163,15 @@ pub async fn load_base_validation_context(
 	) = tokio::try_join!(
 		list_primary_sources(ctx, mm, case_id),
 		list_documents_held_by_sender(mm, case_id),
+		list_literature_references(mm, case_id),
 		list_other_case_identifiers(mm, case_id),
+		list_linked_report_numbers(mm, case_id),
 		list_studies(mm, case_id),
 		lib_core::model::reaction::ReactionBmc::list_by_case(ctx, mm, case_id),
 		lib_core::model::test_result::TestResultBmc::list_by_case(ctx, mm, case_id),
 		lib_core::model::drug::DrugInformationBmc::list_by_case(ctx, mm, case_id),
 	)?;
+	let study_registrations = list_study_registrations(mm, &studies).await?;
 
 	let (active_substances, indications, dosages, drug_reaction_assessments) = tokio::try_join!(
 		list_active_substances(mm, &drugs),
@@ -122,9 +179,12 @@ pub async fn load_base_validation_context(
 		list_dosages(mm, &drugs),
 		list_drug_reaction_assessments(mm, &drugs),
 	)?;
+	let relatedness_assessments =
+		list_relatedness_assessments(mm, &drug_reaction_assessments).await?;
 	let patient_identifiers = list_patient_identifiers(mm, patient.as_ref()).await?;
 
-	Ok(ValidationContext {
+	let mut validation_ctx = ValidationContext {
+		vocabulary: VocabularyContext::default(),
 		case,
 		safety_report,
 		message_header,
@@ -143,8 +203,11 @@ pub async fn load_base_validation_context(
 		parent_past_drugs,
 		primary_sources,
 		documents_held_by_sender,
+		literature_references,
 		other_case_identifiers,
+		linked_report_numbers,
 		studies,
+		study_registrations,
 		reactions,
 		tests,
 		drugs,
@@ -152,8 +215,105 @@ pub async fn load_base_validation_context(
 		indications,
 		dosages,
 		drug_reaction_assessments,
+		relatedness_assessments,
 		patient_identifiers,
+	};
+	validation_ctx.vocabulary = load_vocabulary_context(mm, &validation_ctx).await?;
+	Ok(validation_ctx)
+}
+
+async fn load_vocabulary_context(
+	mm: &ModelManager,
+	validation_ctx: &ValidationContext,
+) -> Result<VocabularyContext> {
+	let requested_keys = case_meddra_keys(validation_ctx);
+	let (versions, terms) = tokio::try_join!(
+		MeddraTermBmc::active_versions(mm),
+		MeddraTermBmc::existing_active_keys(mm, &requested_keys),
+	)?;
+	let meddra_available = !versions.is_empty();
+	Ok(VocabularyContext {
+		meddra_available,
+		meddra_versions: versions.into_iter().collect(),
+		meddra_terms: terms.into_iter().collect(),
 	})
+}
+
+fn case_meddra_keys(validation_ctx: &ValidationContext) -> Vec<MeddraTermKey> {
+	let mut keys = HashSet::<MeddraTermKey>::new();
+	let mut add = |version: Option<&str>, code: Option<&str>| {
+		let Some(version) = version.map(str::trim).filter(|value| !value.is_empty())
+		else {
+			return;
+		};
+		let Some(code) = code.map(str::trim).filter(|value| !value.is_empty())
+		else {
+			return;
+		};
+		keys.insert(MeddraTermKey {
+			version: version.to_string(),
+			code: code.to_string(),
+		});
+	};
+
+	for item in &validation_ctx.medical_history {
+		add(item.meddra_version.as_deref(), item.meddra_code.as_deref());
+	}
+	for item in &validation_ctx.past_drugs {
+		add(
+			item.indication_meddra_version.as_deref(),
+			item.indication_meddra_code.as_deref(),
+		);
+		add(
+			item.reaction_meddra_version.as_deref(),
+			item.reaction_meddra_code.as_deref(),
+		);
+	}
+	for item in &validation_ctx.reported_causes_of_death {
+		add(item.meddra_version.as_deref(), item.meddra_code.as_deref());
+	}
+	for item in &validation_ctx.autopsy_causes_of_death {
+		add(item.meddra_version.as_deref(), item.meddra_code.as_deref());
+	}
+	for item in &validation_ctx.parent_medical_history {
+		add(item.meddra_version.as_deref(), item.meddra_code.as_deref());
+	}
+	for item in &validation_ctx.parent_past_drugs {
+		add(
+			item.indication_meddra_version.as_deref(),
+			item.indication_meddra_code.as_deref(),
+		);
+		add(
+			item.reaction_meddra_version.as_deref(),
+			item.reaction_meddra_code.as_deref(),
+		);
+	}
+	for item in &validation_ctx.reactions {
+		add(
+			item.reaction_meddra_version.as_deref(),
+			item.reaction_meddra_code.as_deref(),
+		);
+	}
+	for item in &validation_ctx.tests {
+		add(
+			item.test_meddra_version.as_deref(),
+			item.test_meddra_code.as_deref(),
+		);
+	}
+	for item in &validation_ctx.indications {
+		add(
+			item.indication_meddra_version.as_deref(),
+			item.indication_meddra_code.as_deref(),
+		);
+	}
+	for item in &validation_ctx.sender_diagnoses {
+		add(
+			item.diagnosis_meddra_version.as_deref(),
+			item.diagnosis_meddra_code.as_deref(),
+		);
+	}
+
+	keys.into_iter().collect()
 }
 
 async fn get_safety_report_optional(
@@ -229,6 +389,17 @@ async fn list_other_case_identifiers(
 		.map_err(Into::into)
 }
 
+async fn list_linked_report_numbers(
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<Vec<LinkedReportNumber>> {
+	let sql = "SELECT * FROM linked_report_numbers WHERE case_id = $1 AND deleted = false ORDER BY sequence_number";
+	mm.dbx()
+		.fetch_all(sqlx::query_as::<_, LinkedReportNumber>(sql).bind(case_id))
+		.await
+		.map_err(Into::into)
+}
+
 async fn list_documents_held_by_sender(
 	mm: &ModelManager,
 	case_id: Uuid,
@@ -237,6 +408,17 @@ async fn list_documents_held_by_sender(
 		"SELECT * FROM documents_held_by_sender WHERE case_id = $1 ORDER BY sequence_number";
 	mm.dbx()
 		.fetch_all(sqlx::query_as::<_, DocumentsHeldBySender>(sql).bind(case_id))
+		.await
+		.map_err(Into::into)
+}
+
+async fn list_literature_references(
+	mm: &ModelManager,
+	case_id: Uuid,
+) -> Result<Vec<LiteratureReference>> {
+	let sql = "SELECT * FROM literature_references WHERE case_id = $1 AND deleted = false ORDER BY sequence_number";
+	mm.dbx()
+		.fetch_all(sqlx::query_as::<_, LiteratureReference>(sql).bind(case_id))
 		.await
 		.map_err(Into::into)
 }
@@ -297,6 +479,24 @@ async fn list_drug_reaction_assessments(
 	let sql = "SELECT * FROM drug_reaction_assessments WHERE drug_id = ANY($1) ORDER BY drug_id, reaction_id";
 	mm.dbx()
 		.fetch_all(sqlx::query_as::<_, DrugReactionAssessment>(sql).bind(&drug_ids))
+		.await
+		.map_err(Into::into)
+}
+
+async fn list_relatedness_assessments(
+	mm: &ModelManager,
+	assessments: &[DrugReactionAssessment],
+) -> Result<Vec<RelatednessAssessment>> {
+	if assessments.is_empty() {
+		return Ok(Vec::new());
+	}
+	let assessment_ids: Vec<Uuid> =
+		assessments.iter().map(|assessment| assessment.id).collect();
+	let sql = "SELECT * FROM relatedness_assessments WHERE drug_reaction_assessment_id = ANY($1) ORDER BY drug_reaction_assessment_id, sequence_number";
+	mm.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, RelatednessAssessment>(sql).bind(&assessment_ids),
+		)
 		.await
 		.map_err(Into::into)
 }
@@ -475,6 +675,21 @@ async fn list_studies(
 		"SELECT * FROM study_information WHERE case_id = $1 ORDER BY created_at";
 	mm.dbx()
 		.fetch_all(sqlx::query_as::<_, StudyInformation>(sql).bind(case_id))
+		.await
+		.map_err(Into::into)
+}
+
+async fn list_study_registrations(
+	mm: &ModelManager,
+	studies: &[StudyInformation],
+) -> Result<Vec<StudyRegistrationNumber>> {
+	if studies.is_empty() {
+		return Ok(Vec::new());
+	}
+	let study_ids = studies.iter().map(|study| study.id).collect::<Vec<_>>();
+	let sql = "SELECT * FROM study_registration_numbers WHERE study_information_id = ANY($1) AND deleted = false ORDER BY study_information_id, sequence_number";
+	mm.dbx()
+		.fetch_all(sqlx::query_as::<_, StudyRegistrationNumber>(sql).bind(study_ids))
 		.await
 		.map_err(Into::into)
 }

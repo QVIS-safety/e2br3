@@ -390,7 +390,7 @@
     "label": "Included in EMA IME List",
     "section": "E",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -400,14 +400,14 @@
       "evidence": "Reaction.included_in_ema_ime_list stores E.local.includedInEmaImeList values."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "reactions",
       "field": "includedInEmaImeList",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
-      "evidence": "SectionE binds fieldNumber AE_IME_LIST to reactions[index].includedInEmaImeList."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": ""
+    "notes": " Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "E.local.expectedness",

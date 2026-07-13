@@ -5,50 +5,11 @@ use crate::{
 use lib_core::xml::types::XmlValidationError;
 use libxml::xpath::Context;
 
-pub(crate) const ICH_E_PROFILE_TEXT_NULL_FLAVOR_RULES: &[TextNullFlavorPairRuleSpec] = &[
-	TextNullFlavorPairRuleSpec {
-		node_xpath: "//hl7:observation[hl7:code[@code='30']]/hl7:value[@xsi:type='ED']",
-		required_code: "ICH.E.i.1.2.NULLFLAVOR.REQUIRED",
-		required_message: "reaction translation missing value; nullFlavor is required",
-		forbidden_code: Some("ICH.E.i.1.2.NULLFLAVOR.FORBIDDEN"),
-		forbidden_message: Some(
-			"reaction translation has value and nullFlavor; nullFlavor must be absent when value present",
-		),
-	},
-];
+pub(crate) const ICH_E_PROFILE_TEXT_NULL_FLAVOR_RULES:
+	&[TextNullFlavorPairRuleSpec] = &[];
 
-pub(crate) const ICH_E_PROFILE_ATTR_NULL_FLAVOR_RULES: &[AttrNullFlavorPairRuleSpec] = &[
-	AttrNullFlavorPairRuleSpec {
-		node_xpath: "//hl7:outboundRelationship[@typeCode='SPRT']/hl7:relatedInvestigation/hl7:code",
-		value_attr: "code",
-		required_code: "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.REQUIRED",
-		required_message: "relatedInvestigation/code missing code; nullFlavor is required",
-		forbidden_code: Some("ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.FORBIDDEN"),
-		forbidden_message: Some(
-			"relatedInvestigation/code has value and nullFlavor; nullFlavor must be absent when value present",
-		),
-	},
-	AttrNullFlavorPairRuleSpec {
-		node_xpath: "//hl7:observation[hl7:code[@code='27']]/hl7:value",
-		value_attr: "code",
-		required_code: "ICH.E.i.7.NULLFLAVOR.REQUIRED",
-		required_message: "reaction outcome value missing code; nullFlavor is required",
-		forbidden_code: Some("ICH.E.i.7.NULLFLAVOR.FORBIDDEN"),
-		forbidden_message: Some(
-			"reaction outcome value has value and nullFlavor; nullFlavor must be absent when value present",
-		),
-	},
-	AttrNullFlavorPairRuleSpec {
-		node_xpath: "//hl7:observation[hl7:code[@code='29']]/hl7:value",
-		value_attr: "code",
-		required_code: "ICH.E.i.2.NULLFLAVOR.REQUIRED",
-		required_message: "reaction term missing code; nullFlavor is required",
-		forbidden_code: Some("ICH.E.i.2.NULLFLAVOR.FORBIDDEN"),
-		forbidden_message: Some(
-			"reaction term has code and nullFlavor; nullFlavor must be absent when value present",
-		),
-	},
-];
+pub(crate) const ICH_E_PROFILE_ATTR_NULL_FLAVOR_RULES:
+	&[AttrNullFlavorPairRuleSpec] = &[];
 
 pub(crate) const ICH_E_PROFILE_ATTR_OR_NULL_RULES: &[AttrOrNullFlavorRequiredRuleSpec] = &[
 	AttrOrNullFlavorRequiredRuleSpec {
@@ -58,12 +19,6 @@ pub(crate) const ICH_E_PROFILE_ATTR_OR_NULL_RULES: &[AttrOrNullFlavorRequiredRul
 		required_code: "ICH.E.i.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
 		required_message:
 			"reaction effectiveTime low/high missing value; nullFlavor is required",
-	},
-	AttrOrNullFlavorRequiredRuleSpec {
-		node_xpath: "//hl7:locatedPlace/hl7:code",
-		value_attr: "code",
-		required_code: "ICH.E.i.9.COUNTRY.NULLFLAVOR.REQUIRED",
-		required_message: "reaction country missing code; nullFlavor is required",
 	},
 ];
 

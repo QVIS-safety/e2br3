@@ -368,6 +368,7 @@ pub async fn create_case_from_intake(
 			additional_documents_available: None,
 			other_case_identifiers_exist: None,
 			other_case_identifiers_exist_null_flavor: None,
+			combination_product_report_indicator_null_flavor: None,
 			worldwide_unique_id: generated_case_number
 				.as_ref()
 				.map(|generated| generated.worldwide_unique_id.clone()),

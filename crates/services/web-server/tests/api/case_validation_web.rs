@@ -82,9 +82,11 @@ async fn create_safety_report(
 			"transmission_date": [2024, 1],
 			"report_type": "1",
 			"date_first_received_from_source": [2024, 1],
-			"date_of_most_recent_information": [2024, 1],
-			"fulfil_expedited_criteria": false,
-			"combination_product_report_indicator": "false"
+				"date_of_most_recent_information": [2024, 1],
+				"fulfil_expedited_criteria": false,
+				"combination_product_report_indicator": "false",
+				"other_case_identifiers_exist": null,
+				"other_case_identifiers_exist_null_flavor": "NI"
 		}
 	});
 	let req = Request::builder()
@@ -159,10 +161,11 @@ async fn create_primary_source(
 	let body = json!({
 		"data": {
 			"case_id": case_id,
-			"sequence_number": 1,
-			"qualification": "1",
-			"email": "reporter@example.com",
-			"primary_source_regulatory": "1"
+				"sequence_number": 1,
+				"qualification": "1",
+				"country_code": "KR",
+				"email": "reporter@example.com",
+				"primary_source_regulatory": "1"
 		}
 	});
 	let req = Request::builder()
@@ -190,9 +193,10 @@ async fn create_primary_source(
 		.ok_or("missing primary source id")?;
 	let update = json!({
 		"data": {
-			"qualification": "1",
-			"email": "reporter@example.com",
-			"primary_source_regulatory": "1"
+				"qualification": "1",
+				"country_code": "KR",
+				"email": "reporter@example.com",
+				"primary_source_regulatory": "1"
 		}
 	});
 	let req = Request::builder()
@@ -271,12 +275,13 @@ async fn create_patient(
 		)
 		.into());
 	}
-	let update = json!({
-		"data": {
-			"race_code": "C41260",
-			"ethnicity_code": "C41222"
-		}
-	});
+		let update = json!({
+			"data": {
+				"race_code": "C41260",
+				"ethnicity_code": "C41222",
+				"medical_history_text": "No relevant medical history."
+			}
+		});
 	let req = Request::builder()
 		.method("PUT")
 		.uri(format!("/api/cases/{case_id}/patient"))
@@ -328,12 +333,12 @@ async fn create_reaction(
 		.into());
 	}
 	let reaction_id = value["data"]["id"].as_str().ok_or("missing reaction id")?;
-	let update = json!({
-		"data": {
-			"reaction_meddra_version": "27.0",
-			"reaction_meddra_code": "10019211",
-			"outcome": "1",
-			"reaction_language": "en"
+		let update = json!({
+			"data": {
+				"reaction_meddra_version": "26.0",
+				"reaction_meddra_code": "10000001",
+				"outcome": "1",
+				"reaction_language": "en"
 		}
 	});
 	let req = Request::builder()
@@ -509,9 +514,9 @@ async fn create_message_header(
 	case_id: Uuid,
 ) -> Result<()> {
 	let body = json!({
-		"data": {
-			"case_id": case_id,
-			"message_number": format!("MSG-{case_id}"),
+			"data": {
+				"case_id": case_id,
+				"message_number": format!("MSG-{case_id}"),
 			"message_sender_identifier": "SENDER01",
 			"message_receiver_identifier": "RECEIVER01",
 			"message_date": "20240201010101"

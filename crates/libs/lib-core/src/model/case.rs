@@ -171,7 +171,16 @@ fn list_view_rows_sql(order_clause: &str, where_clause: &str) -> String {
 		       c.id AS case_id,
 		       COALESCE(NULLIF(s.safety_report_id, ''), c.id::text) AS case_no,
 		       GREATEST(COALESCE(s.version, 1) - 1, 0) AS fu,
-		       COALESCE(s.transmission_date, to_char(c.created_at AT TIME ZONE 'UTC', 'YYYYMMDDHH24MISS')) AS date_of_creation,
+			       COALESCE(
+			       	CASE
+			       		WHEN length(s.transmission_date) >= 8 THEN
+			       			substring(s.transmission_date from 1 for 4) || '-' ||
+			       			substring(s.transmission_date from 5 for 2) || '-' ||
+			       			substring(s.transmission_date from 7 for 2)
+			       		ELSE NULL
+			       	END,
+			       	to_char(c.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')
+			       ) AS date_of_creation,
 		       COALESCE(s.date_of_most_recent_information::text, 'N/A') AS date_of_most_recent_information,
 		       COALESCE(NULLIF(c.dg_prd_key, ''), 'N/A') AS dg_prd_key,
 		       '0' AS warn,

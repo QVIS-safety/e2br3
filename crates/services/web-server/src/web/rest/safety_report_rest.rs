@@ -55,6 +55,7 @@ fn create_payload_to_update(
 		other_case_identifiers_exist: data.other_case_identifiers_exist,
 		other_case_identifiers_exist_null_flavor: data
 			.other_case_identifiers_exist_null_flavor,
+		combination_product_report_indicator_null_flavor: None,
 		nullification_code: data.nullification_code,
 		nullification_reason: data.nullification_reason,
 		receiver_organization: data.receiver_organization,

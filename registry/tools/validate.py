@@ -39,6 +39,15 @@ ALLOWED_ROW_FIELDS = {
 }
 DICTIONARY_KINDS = {"element", "group"}
 DICTIONARY_CONFORMANCES = {"mandatory", "conditional_mandatory", "optional", "required"}
+ALLOWED_VALUE_CONSTRAINT_KINDS = {
+    "code_set",
+    "boolean",
+    "true_marker",
+    "numeric",
+    "format",
+    "vocabulary",
+    "descriptive",
+}
 DICTIONARY_VOCABULARIES = {
     "MedDRA",
     "WHODrug",
@@ -58,6 +67,7 @@ ALLOWED_DICTIONARY_ENTRY_FIELDS = {
     "data_type",
     "max_length",
     "allowed_values",
+    "allowed_value_constraint",
     "null_flavors",
     "oid",
     "profiles",
@@ -270,6 +280,50 @@ def validate_dictionary_entry(entry: Any, source: Path, result: ValidationResult
             f"{source}: entry {code}: invalid vocabulary {vocabulary!r};"
             f" expected one of {sorted(DICTIONARY_VOCABULARIES)}"
         )
+
+    allowed_value_constraint = entry.get("allowed_value_constraint")
+    if allowed_value_constraint is not None:
+        if not entry.get("allowed_values"):
+            result.add(
+                f"{source}: entry {code}: allowed_value_constraint requires"
+                " allowed_values source text"
+            )
+        if not isinstance(allowed_value_constraint, dict):
+            result.add(
+                f"{source}: entry {code}: allowed_value_constraint must be an object"
+            )
+        else:
+            for key in allowed_value_constraint:
+                if key not in {"kind", "values"}:
+                    result.add(
+                        f"{source}: entry {code}: unsupported allowed_value_constraint field {key}"
+                    )
+
+            constraint_kind = allowed_value_constraint.get("kind")
+            if constraint_kind not in ALLOWED_VALUE_CONSTRAINT_KINDS:
+                result.add(
+                    f"{source}: entry {code}: invalid allowed_value_constraint kind"
+                    f" {constraint_kind!r}; expected one of"
+                    f" {sorted(ALLOWED_VALUE_CONSTRAINT_KINDS)}"
+                )
+
+            values = allowed_value_constraint.get("values")
+            values_valid = (
+                isinstance(values, list)
+                and bool(values)
+                and all(isinstance(value, str) and bool(value) for value in values)
+                and len(values) == len(set(values))
+            )
+            if values is not None and not values_valid:
+                result.add(
+                    f"{source}: entry {code}: allowed_value_constraint values must be"
+                    " a non-empty array of unique, non-empty strings"
+                )
+            if constraint_kind == "code_set" and not values_valid:
+                result.add(
+                    f"{source}: entry {code}: code_set allowed_value_constraint"
+                    " requires values"
+                )
 
     profiles = entry.get("profiles")
     if profiles is not None:

@@ -192,7 +192,10 @@ pub(super) async fn refresh_editor_validation_cache(
 	CaseValidationSummaryBmc::mark_stale_for_case(ctx, mm, case_id).await?;
 	CaseValidationReportCacheBmc::mark_stale_for_case(ctx, mm, case_id).await?;
 	crate::web::rest::case_validation_rest::refresh_case_validation_cache(
-		ctx, mm, case_id, &authorities,
+		ctx,
+		mm,
+		case_id,
+		&authorities,
 	)
 	.await?;
 	Ok(())

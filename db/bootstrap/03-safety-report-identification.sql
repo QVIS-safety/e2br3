@@ -32,6 +32,7 @@ CREATE TABLE safety_report_identification (
 
     -- FDA.C.1.12 - Combination Product Report Indicator (FDA)
     combination_product_report_indicator VARCHAR(10),
+    combination_product_report_indicator_null_flavor VARCHAR(4) CHECK (combination_product_report_indicator_null_flavor IN ('NI')),
 
     -- C.1.8.1 - Worldwide Unique Case Identification
     worldwide_unique_id VARCHAR(100),
@@ -209,6 +210,9 @@ CREATE TABLE study_information (
     CONSTRAINT unique_study_per_case UNIQUE (case_id)
 );
 
+ALTER TABLE safety_report_identification
+    ADD COLUMN IF NOT EXISTS combination_product_report_indicator_null_flavor VARCHAR(4) CHECK (combination_product_report_indicator_null_flavor IN ('NI'));
+
 -- C.5.1.r - Study Registration Numbers (Repeating)
 CREATE TABLE study_registration_numbers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -227,6 +231,9 @@ CREATE TABLE study_registration_numbers (
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 
 );
+
+ALTER TABLE study_registration_numbers
+    ADD COLUMN IF NOT EXISTS country_code_null_flavor VARCHAR(4) CHECK (country_code_null_flavor IN ('ASKU', 'NASK'));
 
 CREATE UNIQUE INDEX idx_study_registration_numbers_active_sequence_unique
     ON study_registration_numbers(study_information_id, sequence_number)
@@ -286,9 +293,11 @@ CREATE TABLE primary_sources (
 
     -- C.2.r.3 - Country Code
     country_code VARCHAR(2),  -- ISO 3166-1 alpha-2
+    country_code_null_flavor VARCHAR(4),
 
     -- Email (not in spec but commonly used)
     email VARCHAR(100),
+    email_null_flavor VARCHAR(4),
 
     -- C.2.r.4 - Qualification (MANDATORY within primary source - E2B(R3) codes)
     qualification VARCHAR(1) CHECK (qualification IN ('1', '2', '3', '4', '5')),
@@ -309,6 +318,10 @@ CREATE TABLE primary_sources (
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
 
 );
+
+ALTER TABLE primary_sources
+    ADD COLUMN IF NOT EXISTS country_code_null_flavor VARCHAR(4),
+    ADD COLUMN IF NOT EXISTS email_null_flavor VARCHAR(4);
 
 CREATE INDEX idx_primary_sources_case ON primary_sources(case_id);
 CREATE INDEX idx_primary_sources_source_presave ON primary_sources(source_reporter_presave_id);

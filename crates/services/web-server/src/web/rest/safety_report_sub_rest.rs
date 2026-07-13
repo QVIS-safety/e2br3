@@ -140,6 +140,8 @@ fn primary_source_flag_update(value: &str) -> PrimarySourceForUpdate {
 		postcode: None,
 		telephone: None,
 		reporter_address_null_flavor: None,
+		country_code_null_flavor: None,
+		email_null_flavor: None,
 		country_code: None,
 		email: None,
 		qualification: None,

@@ -1620,6 +1620,7 @@ pub struct ReporterPresave {
 	// for qualification (C.2.r.4): UNK.
 	pub reporter_name_null_flavor: Option<String>,
 	pub reporter_address_null_flavor: Option<String>,
+	pub country_code_null_flavor: Option<String>,
 	pub qualification_null_flavor: Option<String>,
 	pub created_at: OffsetDateTime,
 	pub updated_at: OffsetDateTime,
@@ -1647,6 +1648,7 @@ pub struct ReporterPresaveForCreate {
 	pub primary_source_regulatory: Option<String>,
 	pub reporter_name_null_flavor: Option<String>,
 	pub reporter_address_null_flavor: Option<String>,
+	pub country_code_null_flavor: Option<String>,
 	pub qualification_null_flavor: Option<String>,
 }
 
@@ -1670,6 +1672,7 @@ struct ReporterPresaveForInsert {
 	primary_source_regulatory: Option<String>,
 	reporter_name_null_flavor: Option<String>,
 	reporter_address_null_flavor: Option<String>,
+	country_code_null_flavor: Option<String>,
 	qualification_null_flavor: Option<String>,
 }
 
@@ -1696,6 +1699,7 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 			primary_source_regulatory: self.primary_source_regulatory,
 			reporter_name_null_flavor: self.reporter_name_null_flavor,
 			reporter_address_null_flavor: self.reporter_address_null_flavor,
+			country_code_null_flavor: self.country_code_null_flavor,
 			qualification_null_flavor: self.qualification_null_flavor,
 		}
 	}
@@ -1722,6 +1726,7 @@ pub struct ReporterPresaveForUpdate {
 	pub primary_source_regulatory: Option<String>,
 	pub reporter_name_null_flavor: Option<String>,
 	pub reporter_address_null_flavor: Option<String>,
+	pub country_code_null_flavor: Option<String>,
 	pub qualification_null_flavor: Option<String>,
 }
 
@@ -1740,6 +1745,7 @@ impl ReporterPresaveBmc {
 		Self::validate_null_flavors(
 			data.reporter_name_null_flavor.as_deref(),
 			data.reporter_address_null_flavor.as_deref(),
+			data.country_code_null_flavor.as_deref(),
 			data.qualification_null_flavor.as_deref(),
 		)?;
 		Self::validate_identity(
@@ -1795,6 +1801,7 @@ impl ReporterPresaveBmc {
 		Self::validate_null_flavors(
 			data.reporter_name_null_flavor.as_deref(),
 			data.reporter_address_null_flavor.as_deref(),
+			data.country_code_null_flavor.as_deref(),
 			data.qualification_null_flavor.as_deref(),
 		)?;
 		if data.deleted != Some(true) {
@@ -1850,10 +1857,18 @@ impl ReporterPresaveBmc {
 	fn validate_null_flavors(
 		reporter_name_null_flavor: Option<&str>,
 		reporter_address_null_flavor: Option<&str>,
+		country_code_null_flavor: Option<&str>,
 		qualification_null_flavor: Option<&str>,
 	) -> Result<()> {
 		const NAME_ADDRESS_ALLOWED: &[NullFlavor] =
 			&[NullFlavor::MSK, NullFlavor::ASKU, NullFlavor::NASK];
+		// C.2.r.3 country additionally permits UNK per the ICH dictionary.
+		const COUNTRY_ALLOWED: &[NullFlavor] = &[
+			NullFlavor::MSK,
+			NullFlavor::UNK,
+			NullFlavor::ASKU,
+			NullFlavor::NASK,
+		];
 		const QUALIFICATION_ALLOWED: &[NullFlavor] = &[NullFlavor::UNK];
 
 		validate_null_flavor_set(
@@ -1865,6 +1880,11 @@ impl ReporterPresaveBmc {
 			"reporter_address_null_flavor",
 			reporter_address_null_flavor,
 			NAME_ADDRESS_ALLOWED,
+		)?;
+		validate_null_flavor_set(
+			"country_code_null_flavor",
+			country_code_null_flavor,
+			COUNTRY_ALLOWED,
 		)?;
 		validate_null_flavor_set(
 			"qualification_null_flavor",

@@ -211,6 +211,7 @@ pub async fn patch_editor_ci_page_projection(
 		fulfil_expedited_criteria_null_flavor: None,
 		local_criteria_report_type: PatchValue::Missing,
 		combination_product_report_indicator: PatchValue::Missing,
+		combination_product_report_indicator_null_flavor: None,
 		worldwide_unique_id: None,
 		first_sender_type: None,
 		additional_documents_available: None,
@@ -240,6 +241,10 @@ pub async fn patch_editor_ci_page_projection(
 			"combinationProductReportIndicator" => {
 				update.combination_product_report_indicator =
 					patch_string_value(field, patch)?;
+			}
+			"combinationProductReportIndicatorNullFlavor" => {
+				update.combination_product_report_indicator_null_flavor =
+					patch_optional_string_value(field, patch)?;
 			}
 			"otherCaseIdentifiersExist" => {
 				update.other_case_identifiers_exist =
@@ -615,7 +620,15 @@ async fn apply_rp_page_rows_patch(
 			&["reporterAddressNullFlavor", "reporter_address_null_flavor"],
 		),
 		country_code: string_field(source, &["reporterCountry", "country_code"]),
+		country_code_null_flavor: string_field(
+			source,
+			&["reporterCountryNullFlavor", "country_code_null_flavor"],
+		),
 		email: string_field(source, &["reporterEmail", "email"]),
+		email_null_flavor: string_field(
+			source,
+			&["reporterEmailNullFlavor", "email_null_flavor"],
+		),
 		qualification: string_field(source, &["qualification"]),
 		qualification_null_flavor: string_field(
 			source,
@@ -661,7 +674,9 @@ async fn apply_rp_page_rows_patch(
 				telephone: update.telephone,
 				reporter_address_null_flavor: update.reporter_address_null_flavor,
 				country_code: update.country_code,
+				country_code_null_flavor: update.country_code_null_flavor,
 				email: update.email,
+				email_null_flavor: update.email_null_flavor,
 				qualification: update.qualification,
 				qualification_null_flavor: update.qualification_null_flavor,
 				qualification_kr1: update.qualification_kr1,
@@ -1230,7 +1245,8 @@ async fn load_editor_sd_data(
 	// The SD page patch writes message-header routing fields
 	// (messageReceiverIdentifier / batchReceiverIdentifier), so the projection
 	// must load the message header back for the edit to round-trip.
-	let message_header = match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await {
+	let message_header = match MessageHeaderBmc::get_by_case(ctx, mm, case_id).await
+	{
 		Ok(entity) => Some(entity),
 		Err(lib_core::model::Error::EntityUuidNotFound { .. }) => None,
 		Err(err) => return Err(err.into()),

@@ -945,6 +945,80 @@ class DictionaryValidatorTests(unittest.TestCase):
 
         self.assertEqual([], result.errors)
 
+    def test_dictionary_entries_accept_allowed_value_code_set(self):
+        entry = (
+            '{"code": "C.3.1", "name": "Sender Type", "section": "C",'
+            ' "kind": "element", "conformance": "mandatory",'
+            ' "allowed_values": "1=Company 2=Authority",'
+            ' "allowed_value_constraint":'
+            ' {"kind": "code_set", "values": ["1", "2"]}}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row(code="C.3.1"))
+            self.write_dictionary(root, "ich-e2br3.json", self.ich_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertEqual([], result.errors)
+
+    def test_dictionary_code_set_constraint_requires_values(self):
+        entry = (
+            '{"code": "C.3.1", "name": "Sender Type", "section": "C",'
+            ' "kind": "element", "conformance": "mandatory",'
+            ' "allowed_values": "1=Company 2=Authority",'
+            ' "allowed_value_constraint": {"kind": "code_set"}}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row(code="C.3.1"))
+            self.write_dictionary(root, "ich-e2br3.json", self.ich_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertIn(
+            "code_set allowed_value_constraint requires values",
+            "\n".join(result.errors),
+        )
+
+    def test_dictionary_allowed_value_constraint_requires_source_text(self):
+        entry = (
+            '{"code": "C.3.1", "name": "Sender Type", "section": "C",'
+            ' "kind": "element", "conformance": "mandatory",'
+            ' "allowed_value_constraint":'
+            ' {"kind": "code_set", "values": ["1", "2"]}}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row(code="C.3.1"))
+            self.write_dictionary(root, "ich-e2br3.json", self.ich_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertIn(
+            "allowed_value_constraint requires allowed_values source text",
+            "\n".join(result.errors),
+        )
+
+    def test_dictionary_allowed_value_constraint_kind_must_be_known(self):
+        entry = (
+            '{"code": "C.3.1", "name": "Sender Type", "section": "C",'
+            ' "kind": "element", "conformance": "mandatory",'
+            ' "allowed_values": "1=Company 2=Authority",'
+            ' "allowed_value_constraint": {"kind": "enum", "values": ["1"]}}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row(code="C.3.1"))
+            self.write_dictionary(root, "ich-e2br3.json", self.ich_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertIn(
+            "invalid allowed_value_constraint kind 'enum'",
+            "\n".join(result.errors),
+        )
+
     def test_dictionary_vocabulary_must_be_a_known_value(self):
         entry = (
             '{"code": "C.3.2", "name": "Sender", "section": "C", "kind": "element",'

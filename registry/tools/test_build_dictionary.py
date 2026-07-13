@@ -1,4 +1,6 @@
+import json
 import unittest
+from collections import Counter
 from pathlib import Path
 import sys
 
@@ -11,6 +13,8 @@ SOURCE,HEADER ELEMENT,DATA ELEMENT NUMBER,DATA ELEMENT NAME,MAX LENGTH,DATA TYPE
 ICH,N.1 ,-,ICH CSR Transmission Identification (batch wrapper),-,-,-,-,-,,,-,-,-,-,-,-,-,-,-
 ICH,N.1 ,N.1.2,Batch Number,100,AN,Free Text,Mandatory ,Some rule text,,,No,No,No,No,No,No,No,No,2.16.840.1.113883.3.989.2.1.3.22
 ICH,C.1,C.1.6.1,Are Additional Documents Available?,1,Boolean,true / false,Conditional-Mandatory ,Another rule,,,Yes,No,Yes,No,No,No,No,No,-
+ICH,C.1.10.r,-,Linked Report Header,-,-,-,-,-,,,No,No,No,No,No,No,No,No,-
+ICH,C.1.10.r,C.1.10.r,Linked Report Number,100,AN,Free Text,Optional,-,,,No,No,No,No,No,No,No,No,-
 ICH,D,D.9,In Case of Death,-,-,-,-,-,,,-,-,-,-,-,-,-,-,-
 """
 
@@ -28,6 +32,9 @@ class ParseIchCsvTests(unittest.TestCase):
         self.assertEqual("AN", entry["data_type"])
         self.assertEqual("100", entry["max_length"])
         self.assertEqual("Free Text", entry["allowed_values"])
+        self.assertEqual(
+            {"kind": "descriptive"}, entry["allowed_value_constraint"]
+        )
         self.assertEqual("2.16.840.1.113883.3.989.2.1.3.22", entry["oid"])
         self.assertNotIn("business_rule", entry)
         self.assertNotIn("null_flavors", entry)
@@ -49,12 +56,111 @@ class ParseIchCsvTests(unittest.TestCase):
         self.assertEqual("group", self.entries["D.9"]["kind"])
         self.assertNotIn("conformance", self.entries["D.9"])
 
+    def test_element_row_replaces_same_code_header_row(self):
+        entry = self.entries["C.1.10.r"]
+
+        self.assertEqual("element", entry["kind"])
+        self.assertEqual("optional", entry["conformance"])
+        self.assertEqual("Free Text", entry["allowed_values"])
+
     def test_group_code_falls_back_to_header_element(self):
         entry = self.entries["N.1"]
         self.assertEqual("group", entry["kind"])
         self.assertEqual(
             "ICH CSR Transmission Identification (batch wrapper)", entry["name"]
         )
+
+    def test_classifies_boolean_allowed_values(self):
+        self.assertEqual(
+            {"kind": "boolean"},
+            self.entries["C.1.6.1"]["allowed_value_constraint"],
+        )
+
+
+class AllowedValueConstraintTests(unittest.TestCase):
+    def test_extracts_explicit_code_set_in_source_order(self):
+        self.assertEqual(
+            {"kind": "code_set", "values": ["1", "2", "0", "9"]},
+            build_dictionary.allowed_value_constraint(
+                "1=Withdrawn 2=Reduced 0=Unknown 9=Not applicable"
+            ),
+        )
+
+    def test_classifies_true_marker_separately_from_boolean(self):
+        self.assertEqual(
+            {"kind": "true_marker"},
+            build_dictionary.allowed_value_constraint("true nullFlavor: NI"),
+        )
+
+    def test_classifies_non_enumerated_constraints(self):
+        cases = {
+            "Numeric nullFlavor: NINF, PINF": "numeric",
+            "Constrained UCUM codes": "vocabulary",
+            "See Appendix II for further information.": "format",
+            "Free Text": "descriptive",
+        }
+        self.assertEqual(
+            {source: kind for source, kind in cases.items()},
+            {
+                source: build_dictionary.allowed_value_constraint(source)["kind"]
+                for source in cases
+            },
+        )
+
+    def test_official_ich_allowed_values_are_fully_classified(self):
+        source_path = build_dictionary.SOURCES_DIR / build_dictionary.ICH_SOURCE
+        entries = build_dictionary.parse_ich_csv(
+            source_path.read_text(encoding="utf-8")
+        )
+        classified = [
+            entry["allowed_value_constraint"]
+            for entry in entries
+            if "allowed_values" in entry
+        ]
+
+        self.assertEqual(223, len(classified))
+        self.assertEqual(
+            {
+                "boolean": 7,
+                "code_set": 18,
+                "descriptive": 90,
+                "format": 25,
+                "numeric": 41,
+                "true_marker": 10,
+                "vocabulary": 32,
+            },
+            dict(sorted(Counter(rule["kind"] for rule in classified).items())),
+        )
+
+    def test_committed_dictionary_matches_official_allowed_value_constraints(self):
+        source_entries = build_dictionary.parse_ich_csv(
+            (build_dictionary.SOURCES_DIR / build_dictionary.ICH_SOURCE).read_text(
+                encoding="utf-8"
+            )
+        )
+        dictionary_entries = json.loads(
+            (build_dictionary.DICTIONARY_DIR / "ich-e2br3.json").read_text(
+                encoding="utf-8"
+            )
+        )["entries"]
+        expected = {
+            entry["code"]: (
+                entry["allowed_values"],
+                entry["allowed_value_constraint"],
+            )
+            for entry in source_entries
+            if "allowed_values" in entry
+        }
+        actual = {
+            entry["code"]: (
+                entry["allowed_values"],
+                entry.get("allowed_value_constraint"),
+            )
+            for entry in dictionary_entries
+            if "allowed_values" in entry
+        }
+
+        self.assertEqual(expected, actual)
 
 
 class ParseMfdsTests(unittest.TestCase):

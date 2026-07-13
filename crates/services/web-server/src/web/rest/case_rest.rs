@@ -939,6 +939,7 @@ pub async fn create_case_guarded(
 			additional_documents_available: None,
 			other_case_identifiers_exist: None,
 			other_case_identifiers_exist_null_flavor: None,
+			combination_product_report_indicator_null_flavor: None,
 			worldwide_unique_id,
 			nullification_code: None,
 			nullification_reason: None,

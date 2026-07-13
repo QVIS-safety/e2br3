@@ -1883,12 +1883,144 @@
     "frontend": {
       "status": "mapped",
       "section": "safetyReportIdentification",
-      "field": "sourceDocumentName",
+      "field": "sourceDocuments.sourceDocumentName",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
-      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.sourceDocumentName from the case-form section source."
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.sourceDocuments.sourceDocumentName from the case-form section source (repeating sourceDocuments[] upload rows)."
     },
     "action": "",
     "notes": "App-local parallel single-file upload stored on Case (source_document_name/base64/media_type). Re-pointed from the wrong SafetyReportIdentification model. The official Included Documents element (C.1.6.1.r.1 title / C.1.6.1.r.2 payload) is separately mapped via documentsHeldBySender; consider consolidating these two upload paths."
+  },
+  {
+    "id": "C.1.local.fulfilExpeditedCriteriaNullFlavor",
+    "e2br3_code": "C.1.local.fulfilExpeditedCriteriaNullFlavor",
+    "label": "Fulfil Expedited Criteria NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "evidence": "nullFlavor is persisted via SafetyReportIdentification.fulfil_expedited_criteria_null_flavor, a support column the backend inventory binds to the C.1.7 base field rather than tracking as a separate mapping."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "fulfilExpeditedCriteriaNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.fulfilExpeditedCriteriaNullFlavor from the case-form section source."
+    },
+    "action": "",
+    "notes": "nullFlavor companion for C.1.7 (fulfilExpeditedCriteria). Support column fulfil_expedited_criteria_null_flavor exists on SafetyReportIdentification."
+  },
+  {
+    "id": "C.1.local.combinationProductReportIndicatorNullFlavor",
+    "e2br3_code": "C.1.local.combinationProductReportIndicatorNullFlavor",
+    "label": "Combination Product Report Indicator NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "evidence": "nullFlavor is persisted via SafetyReportIdentification.combination_product_report_indicator_null_flavor, a support column the backend inventory binds to the FDA.C.1.12 base field rather than tracking as a separate mapping."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "combinationProductReportIndicatorNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.combinationProductReportIndicatorNullFlavor from the case-form section source."
+    },
+    "action": "",
+    "notes": "nullFlavor companion for FDA.C.1.12 (combinationProductReportIndicator). Support column combination_product_report_indicator_null_flavor now exists on SafetyReportIdentification (full-stack nullFlavor persistence + REST intake + validation parity)."
+  },
+  {
+    "id": "C.1.local.otherCaseIdentifiersExistNullFlavor",
+    "e2br3_code": "C.1.local.otherCaseIdentifiersExistNullFlavor",
+    "label": "Other Case Identifiers Exist NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "evidence": "nullFlavor is persisted via SafetyReportIdentification.other_case_identifiers_exist_null_flavor, a support column the backend inventory binds to the C.1.9.1 base field rather than tracking as a separate mapping."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "safetyReportIdentification",
+      "field": "otherCaseIdentifiersExistNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend input inventory extracts safetyReportIdentification.otherCaseIdentifiersExistNullFlavor from the case-form section source."
+    },
+    "action": "",
+    "notes": "nullFlavor companion for C.1.9.1 (otherCaseIdentifiersExist). Support column other_case_identifiers_exist_null_flavor exists on SafetyReportIdentification."
+  },
+  {
+    "id": "C.2.r.local.reporterAddressNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterAddressNullFlavor",
+    "label": "Reporter Address NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "evidence": "nullFlavor is persisted via PrimarySource.reporter_address_null_flavor, a support column the backend inventory binds to the reporter address base field rather than tracking as a separate mapping."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterAddressNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "Strict frontend input inventory extracts primarySources.reporterAddressNullFlavor from the case-form section source."
+    },
+    "action": "",
+    "notes": "nullFlavor companion for the C.2.r reporter address. Support column reporter_address_null_flavor exists on PrimarySource."
+  },
+  {
+    "id": "C.2.r.local.reporterCountryNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterCountryNullFlavor",
+    "label": "Reporter Country NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "evidence": "nullFlavor is persisted via PrimarySource.country_code_null_flavor, a support column the backend inventory binds to the C.2.r.3 base field rather than tracking as a separate mapping."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterCountryNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "Strict frontend input inventory extracts primarySources.reporterCountryNullFlavor from the case-form section source."
+    },
+    "action": "",
+    "notes": "nullFlavor companion for C.2.r.3 (reporterCountry). Support column country_code_null_flavor now exists on PrimarySource (full-stack nullFlavor persistence + REST intake + validation parity)."
+  },
+  {
+    "id": "C.2.r.local.reporterEmailNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterEmailNullFlavor",
+    "label": "Reporter Email NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "evidence": "nullFlavor is persisted via PrimarySource.email_null_flavor, a support column the backend inventory binds to the FDA.C.2.r.2.8 base field rather than tracking as a separate mapping."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "reporterEmailNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
+      "evidence": "Strict frontend input inventory extracts primarySources.reporterEmailNullFlavor from the case-form section source."
+    },
+    "action": "",
+    "notes": "nullFlavor companion for FDA.C.2.r.2.8 (reporterEmail). Support column email_null_flavor now exists on PrimarySource (full-stack nullFlavor persistence + REST intake + validation parity)."
   },
   {
     "id": "C.1.10.r",

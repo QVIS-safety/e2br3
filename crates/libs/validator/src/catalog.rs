@@ -1,5 +1,7 @@
 use lib_core::regulatory::RegulatoryAuthority;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::OnceLock;
 
 #[derive(Debug, Clone, Copy, Serialize)]
 pub struct ValidationRuleMetadata {
@@ -9,6 +11,324 @@ pub struct ValidationRuleMetadata {
 	pub blocking: bool,
 	pub message: &'static str,
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct MaxLengthRuleMetadata {
+	pub code: &'static str,
+	pub authority: RegulatoryAuthority,
+	pub max_length: usize,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct AllowedValueRuleMetadata {
+	pub code: &'static str,
+	pub authority: RegulatoryAuthority,
+	pub source_hash: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AllowedValueConstraintKind {
+	CodeSet,
+	Boolean,
+	TrueMarker,
+	Numeric,
+	Format,
+	Vocabulary,
+	Descriptive,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+pub struct AllowedValueConstraint {
+	pub kind: AllowedValueConstraintKind,
+	#[serde(default)]
+	pub values: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EmbeddedDictionary {
+	entries: Vec<EmbeddedDictionaryEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EmbeddedDictionaryEntry {
+	code: String,
+	allowed_value_constraint: Option<AllowedValueConstraint>,
+}
+
+static ALLOWED_VALUE_CONSTRAINTS: OnceLock<HashMap<String, AllowedValueConstraint>> =
+	OnceLock::new();
+
+fn allowed_value_constraints() -> &'static HashMap<String, AllowedValueConstraint> {
+	ALLOWED_VALUE_CONSTRAINTS.get_or_init(|| {
+		let dictionary: EmbeddedDictionary = serde_json::from_str(include_str!(
+			"../../../../registry/dictionary/ich-e2br3.json"
+		))
+		.expect("embedded ICH dictionary should parse");
+		dictionary
+			.entries
+			.into_iter()
+			.filter_map(|entry| {
+				entry.allowed_value_constraint.map(|constraint| {
+					(format!("ICH.{}.ALLOWED.VALUE", entry.code), constraint)
+				})
+			})
+			.collect()
+	})
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct VocabularyRuleMetadata {
+	pub code: &'static str,
+	pub authority: RegulatoryAuthority,
+	pub vocabulary: &'static str,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct NullFlavorRuleMetadata {
+	pub code: &'static str,
+	pub authority: RegulatoryAuthority,
+	pub source_hash: u64,
+}
+
+#[path = "catalog_dictionary_constraints.rs"]
+mod catalog_dictionary_constraints;
+pub use catalog_dictionary_constraints::{
+	ALLOWED_VALUE_RULES, NULL_FLAVOR_RULES, VOCABULARY_RULES,
+};
+
+macro_rules! max_length_rules {
+	($(($code:literal, $authority:ident, $max_length:literal),)*) => {
+		&[
+			$(MaxLengthRuleMetadata {
+				code: $code,
+				authority: RegulatoryAuthority::$authority,
+				max_length: $max_length,
+			},)*
+		]
+	};
+}
+
+pub const MAX_LENGTH_RULES: &[MaxLengthRuleMetadata] = max_length_rules![
+	("ICH.N.1.1.LENGTH.MAX", Ich, 2),
+	("ICH.N.1.2.LENGTH.MAX", Ich, 100),
+	("ICH.N.1.3.LENGTH.MAX", Ich, 60),
+	("ICH.N.1.4.LENGTH.MAX", Ich, 60),
+	("ICH.N.2.r.1.LENGTH.MAX", Ich, 100),
+	("ICH.N.2.r.2.LENGTH.MAX", Ich, 60),
+	("ICH.N.2.r.3.LENGTH.MAX", Ich, 60),
+	("ICH.C.1.1.LENGTH.MAX", Ich, 100),
+	("ICH.C.1.3.LENGTH.MAX", Ich, 1),
+	("ICH.C.1.6.1.r.1.LENGTH.MAX", Ich, 2000),
+	("ICH.C.1.8.1.LENGTH.MAX", Ich, 100),
+	("ICH.C.1.8.2.LENGTH.MAX", Ich, 1),
+	("ICH.C.1.9.1.r.1.LENGTH.MAX", Ich, 100),
+	("ICH.C.1.9.1.r.2.LENGTH.MAX", Ich, 100),
+	("ICH.C.1.10.r.LENGTH.MAX", Ich, 100),
+	("ICH.C.1.11.1.LENGTH.MAX", Ich, 1),
+	("ICH.C.1.11.2.LENGTH.MAX", Ich, 2000),
+	("ICH.C.2.r.1.1.LENGTH.MAX", Ich, 50),
+	("ICH.C.2.r.1.2.LENGTH.MAX", Ich, 60),
+	("ICH.C.2.r.1.3.LENGTH.MAX", Ich, 60),
+	("ICH.C.2.r.1.4.LENGTH.MAX", Ich, 60),
+	("ICH.C.2.r.2.1.LENGTH.MAX", Ich, 60),
+	("ICH.C.2.r.2.2.LENGTH.MAX", Ich, 60),
+	("ICH.C.2.r.2.3.LENGTH.MAX", Ich, 100),
+	("ICH.C.2.r.2.4.LENGTH.MAX", Ich, 35),
+	("ICH.C.2.r.2.5.LENGTH.MAX", Ich, 40),
+	("ICH.C.2.r.2.6.LENGTH.MAX", Ich, 15),
+	("ICH.C.2.r.2.7.LENGTH.MAX", Ich, 33),
+	("ICH.C.2.r.3.LENGTH.MAX", Ich, 2),
+	("ICH.C.2.r.4.LENGTH.MAX", Ich, 1),
+	("ICH.C.2.r.5.LENGTH.MAX", Ich, 1),
+	("ICH.C.3.1.LENGTH.MAX", Ich, 1),
+	("ICH.C.3.2.LENGTH.MAX", Ich, 100),
+	("ICH.C.3.3.1.LENGTH.MAX", Ich, 60),
+	("ICH.C.3.3.2.LENGTH.MAX", Ich, 50),
+	("ICH.C.3.3.3.LENGTH.MAX", Ich, 60),
+	("ICH.C.3.3.4.LENGTH.MAX", Ich, 60),
+	("ICH.C.3.3.5.LENGTH.MAX", Ich, 60),
+	("ICH.C.3.4.1.LENGTH.MAX", Ich, 100),
+	("ICH.C.3.4.2.LENGTH.MAX", Ich, 35),
+	("ICH.C.3.4.3.LENGTH.MAX", Ich, 40),
+	("ICH.C.3.4.4.LENGTH.MAX", Ich, 15),
+	("ICH.C.3.4.5.LENGTH.MAX", Ich, 2),
+	("ICH.C.3.4.6.LENGTH.MAX", Ich, 33),
+	("ICH.C.3.4.7.LENGTH.MAX", Ich, 33),
+	("ICH.C.3.4.8.LENGTH.MAX", Ich, 100),
+	("ICH.C.4.r.1.LENGTH.MAX", Ich, 500),
+	("ICH.C.5.1.r.1.LENGTH.MAX", Ich, 50),
+	("ICH.C.5.1.r.2.LENGTH.MAX", Ich, 2),
+	("ICH.C.5.2.LENGTH.MAX", Ich, 2000),
+	("ICH.C.5.3.LENGTH.MAX", Ich, 50),
+	("ICH.C.5.4.LENGTH.MAX", Ich, 1),
+	("ICH.D.1.LENGTH.MAX", Ich, 60),
+	("ICH.D.1.1.1.LENGTH.MAX", Ich, 20),
+	("ICH.D.1.1.2.LENGTH.MAX", Ich, 20),
+	("ICH.D.1.1.3.LENGTH.MAX", Ich, 20),
+	("ICH.D.1.1.4.LENGTH.MAX", Ich, 20),
+	("ICH.D.2.2a.LENGTH.MAX", Ich, 5),
+	("ICH.D.2.2b.LENGTH.MAX", Ich, 50),
+	("ICH.D.2.2.1a.LENGTH.MAX", Ich, 3),
+	("ICH.D.2.2.1b.LENGTH.MAX", Ich, 50),
+	("ICH.D.2.3.LENGTH.MAX", Ich, 1),
+	("ICH.D.3.LENGTH.MAX", Ich, 6),
+	("ICH.D.4.LENGTH.MAX", Ich, 3),
+	("ICH.D.5.LENGTH.MAX", Ich, 1),
+	("ICH.D.7.1.r.1a.LENGTH.MAX", Ich, 4),
+	("ICH.D.7.1.r.1b.LENGTH.MAX", Ich, 8),
+	("ICH.D.7.1.r.5.LENGTH.MAX", Ich, 2000),
+	("ICH.D.7.2.LENGTH.MAX", Ich, 10000),
+	("ICH.D.8.r.1.LENGTH.MAX", Ich, 250),
+	("ICH.D.8.r.2a.LENGTH.MAX", Ich, 10),
+	("ICH.D.8.r.2b.LENGTH.MAX", Ich, 1000),
+	("ICH.D.8.r.3a.LENGTH.MAX", Ich, 10),
+	("ICH.D.8.r.3b.LENGTH.MAX", Ich, 250),
+	("ICH.D.8.r.6a.LENGTH.MAX", Ich, 4),
+	("ICH.D.8.r.6b.LENGTH.MAX", Ich, 8),
+	("ICH.D.8.r.7a.LENGTH.MAX", Ich, 4),
+	("ICH.D.8.r.7b.LENGTH.MAX", Ich, 8),
+	("ICH.D.9.2.r.1a.LENGTH.MAX", Ich, 4),
+	("ICH.D.9.2.r.1b.LENGTH.MAX", Ich, 8),
+	("ICH.D.9.2.r.2.LENGTH.MAX", Ich, 250),
+	("ICH.D.9.4.r.1a.LENGTH.MAX", Ich, 4),
+	("ICH.D.9.4.r.1b.LENGTH.MAX", Ich, 8),
+	("ICH.D.9.4.r.2.LENGTH.MAX", Ich, 250),
+	("ICH.D.10.1.LENGTH.MAX", Ich, 60),
+	("ICH.D.10.2.2a.LENGTH.MAX", Ich, 3),
+	("ICH.D.10.2.2b.LENGTH.MAX", Ich, 50),
+	("ICH.D.10.4.LENGTH.MAX", Ich, 6),
+	("ICH.D.10.5.LENGTH.MAX", Ich, 3),
+	("ICH.D.10.6.LENGTH.MAX", Ich, 1),
+	("ICH.D.10.7.1.r.1a.LENGTH.MAX", Ich, 4),
+	("ICH.D.10.7.1.r.1b.LENGTH.MAX", Ich, 8),
+	("ICH.D.10.7.1.r.5.LENGTH.MAX", Ich, 2000),
+	("ICH.D.10.7.2.LENGTH.MAX", Ich, 10000),
+	("ICH.D.10.8.r.1.LENGTH.MAX", Ich, 250),
+	("ICH.D.10.8.r.2a.LENGTH.MAX", Ich, 10),
+	("ICH.D.10.8.r.2b.LENGTH.MAX", Ich, 1000),
+	("ICH.D.10.8.r.3a.LENGTH.MAX", Ich, 10),
+	("ICH.D.10.8.r.3b.LENGTH.MAX", Ich, 250),
+	("ICH.D.10.8.r.6a.LENGTH.MAX", Ich, 4),
+	("ICH.D.10.8.r.6b.LENGTH.MAX", Ich, 8),
+	("ICH.D.10.8.r.7a.LENGTH.MAX", Ich, 4),
+	("ICH.D.10.8.r.7b.LENGTH.MAX", Ich, 8),
+	("ICH.E.i.1.1a.LENGTH.MAX", Ich, 250),
+	("ICH.E.i.1.1b.LENGTH.MAX", Ich, 3),
+	("ICH.E.i.1.2.LENGTH.MAX", Ich, 250),
+	("ICH.E.i.2.1a.LENGTH.MAX", Ich, 4),
+	("ICH.E.i.2.1b.LENGTH.MAX", Ich, 8),
+	("ICH.E.i.3.1.LENGTH.MAX", Ich, 1),
+	("ICH.E.i.6a.LENGTH.MAX", Ich, 5),
+	("ICH.E.i.6b.LENGTH.MAX", Ich, 50),
+	("ICH.E.i.7.LENGTH.MAX", Ich, 1),
+	("ICH.E.i.9.LENGTH.MAX", Ich, 2),
+	("ICH.F.r.2.1.LENGTH.MAX", Ich, 250),
+	("ICH.F.r.2.2a.LENGTH.MAX", Ich, 4),
+	("ICH.F.r.2.2b.LENGTH.MAX", Ich, 8),
+	("ICH.F.r.3.1.LENGTH.MAX", Ich, 1),
+	("ICH.F.r.3.2.LENGTH.MAX", Ich, 50),
+	("ICH.F.r.3.3.LENGTH.MAX", Ich, 50),
+	("ICH.F.r.3.4.LENGTH.MAX", Ich, 2000),
+	("ICH.F.r.4.LENGTH.MAX", Ich, 50),
+	("ICH.F.r.5.LENGTH.MAX", Ich, 50),
+	("ICH.F.r.6.LENGTH.MAX", Ich, 2000),
+	("ICH.G.k.1.LENGTH.MAX", Ich, 1),
+	("ICH.G.k.2.1.1a.LENGTH.MAX", Ich, 10),
+	("ICH.G.k.2.1.1b.LENGTH.MAX", Ich, 1000),
+	("ICH.G.k.2.1.2a.LENGTH.MAX", Ich, 10),
+	("ICH.G.k.2.1.2b.LENGTH.MAX", Ich, 250),
+	("ICH.G.k.2.2.LENGTH.MAX", Ich, 250),
+	("ICH.G.k.2.3.r.1.LENGTH.MAX", Ich, 250),
+	("ICH.G.k.2.3.r.2a.LENGTH.MAX", Ich, 10),
+	("ICH.G.k.2.3.r.2b.LENGTH.MAX", Ich, 100),
+	("ICH.G.k.2.3.r.3a.LENGTH.MAX", Ich, 10),
+	("ICH.G.k.2.3.r.3b.LENGTH.MAX", Ich, 50),
+	("ICH.G.k.2.4.LENGTH.MAX", Ich, 2),
+	("ICH.G.k.3.1.LENGTH.MAX", Ich, 35),
+	("ICH.G.k.3.2.LENGTH.MAX", Ich, 2),
+	("ICH.G.k.3.3.LENGTH.MAX", Ich, 60),
+	("ICH.G.k.4.r.1a.LENGTH.MAX", Ich, 8),
+	("ICH.G.k.4.r.1b.LENGTH.MAX", Ich, 50),
+	("ICH.G.k.4.r.2.LENGTH.MAX", Ich, 4),
+	("ICH.G.k.4.r.3.LENGTH.MAX", Ich, 50),
+	("ICH.G.k.4.r.6a.LENGTH.MAX", Ich, 5),
+	("ICH.G.k.4.r.6b.LENGTH.MAX", Ich, 50),
+	("ICH.G.k.4.r.7.LENGTH.MAX", Ich, 35),
+	("ICH.G.k.4.r.8.LENGTH.MAX", Ich, 2000),
+	("ICH.G.k.4.r.9.1.LENGTH.MAX", Ich, 60),
+	("ICH.G.k.4.r.9.2a.LENGTH.MAX", Ich, 10),
+	("ICH.G.k.4.r.9.2b.LENGTH.MAX", Ich, 100),
+	("ICH.G.k.4.r.10.1.LENGTH.MAX", Ich, 60),
+	("ICH.G.k.4.r.10.2a.LENGTH.MAX", Ich, 10),
+	("ICH.G.k.4.r.10.2b.LENGTH.MAX", Ich, 100),
+	("ICH.G.k.4.r.11.1.LENGTH.MAX", Ich, 60),
+	("ICH.G.k.4.r.11.2a.LENGTH.MAX", Ich, 10),
+	("ICH.G.k.4.r.11.2b.LENGTH.MAX", Ich, 100),
+	("ICH.G.k.5a.LENGTH.MAX", Ich, 10),
+	("ICH.G.k.5b.LENGTH.MAX", Ich, 50),
+	("ICH.G.k.6a.LENGTH.MAX", Ich, 3),
+	("ICH.G.k.6b.LENGTH.MAX", Ich, 50),
+	("ICH.G.k.7.r.1.LENGTH.MAX", Ich, 250),
+	("ICH.G.k.7.r.2a.LENGTH.MAX", Ich, 4),
+	("ICH.G.k.7.r.2b.LENGTH.MAX", Ich, 8),
+	("ICH.G.k.8.LENGTH.MAX", Ich, 1),
+	("ICH.G.k.9.i.2.r.1.LENGTH.MAX", Ich, 60),
+	("ICH.G.k.9.i.2.r.2.LENGTH.MAX", Ich, 60),
+	("ICH.G.k.9.i.2.r.3.LENGTH.MAX", Ich, 60),
+	("ICH.G.k.9.i.3.1a.LENGTH.MAX", Ich, 5),
+	("ICH.G.k.9.i.3.1b.LENGTH.MAX", Ich, 50),
+	("ICH.G.k.9.i.3.2a.LENGTH.MAX", Ich, 5),
+	("ICH.G.k.9.i.3.2b.LENGTH.MAX", Ich, 50),
+	("ICH.G.k.9.i.4.LENGTH.MAX", Ich, 1),
+	("ICH.G.k.10.r.LENGTH.MAX", Ich, 2),
+	("ICH.G.k.11.LENGTH.MAX", Ich, 2000),
+	("ICH.H.1.LENGTH.MAX", Ich, 100000),
+	("ICH.H.2.LENGTH.MAX", Ich, 20000),
+	("ICH.H.3.r.1a.LENGTH.MAX", Ich, 4),
+	("ICH.H.3.r.1b.LENGTH.MAX", Ich, 8),
+	("ICH.H.4.LENGTH.MAX", Ich, 20000),
+	("ICH.H.5.r.1a.LENGTH.MAX", Ich, 100000),
+	("ICH.H.5.r.1b.LENGTH.MAX", Ich, 3),
+	("FDA.C.1.7.1.LENGTH.MAX", Fda, 1),
+	("FDA.C.2.r.2.8.LENGTH.MAX", Fda, 100),
+	("FDA.C.5.5a.LENGTH.MAX", Fda, 10),
+	("FDA.C.5.5b.LENGTH.MAX", Fda, 10),
+	("FDA.C.5.6.r.LENGTH.MAX", Fda, 10),
+	("FDA.D.11.r.1.LENGTH.MAX", Fda, 10),
+	("FDA.D.12.LENGTH.MAX", Fda, 10),
+	("FDA.G.k.1.a.LENGTH.MAX", Fda, 1),
+	("FDA.G.k.10a.LENGTH.MAX", Fda, 2),
+	("FDA.G.k.10.1.LENGTH.MAX", Fda, 10),
+	("FDA.G.k.12.r.2.r.LENGTH.MAX", Fda, 1),
+	("FDA.G.k.12.r.3.r.LENGTH.MAX", Fda, 7),
+	("FDA.G.k.12.r.4.LENGTH.MAX", Fda, 80),
+	("FDA.G.k.12.r.5.LENGTH.MAX", Fda, 80),
+	("FDA.G.k.12.r.6.LENGTH.MAX", Fda, 10),
+	("FDA.G.k.12.r.7.1a.LENGTH.MAX", Fda, 100),
+	("FDA.G.k.12.r.7.1b.LENGTH.MAX", Fda, 100),
+	("FDA.G.k.12.r.7.1c.LENGTH.MAX", Fda, 35),
+	("FDA.G.k.12.r.7.1d.LENGTH.MAX", Fda, 40),
+	("FDA.G.k.12.r.7.1e.LENGTH.MAX", Fda, 2),
+	("FDA.G.k.12.r.8.LENGTH.MAX", Fda, 1),
+	("FDA.G.k.12.r.9.LENGTH.MAX", Fda, 100),
+	("FDA.G.k.12.r.10.LENGTH.MAX", Fda, 1),
+	("FDA.G.k.12.r.11.r.LENGTH.MAX", Fda, 1),
+	("MFDS.C.2.r.4.KR.1.LENGTH.MAX", Mfds, 1),
+	("MFDS.C.3.1.KR.1.LENGTH.MAX", Mfds, 1),
+	("MFDS.C.5.4.KR.1.LENGTH.MAX", Mfds, 1),
+	("MFDS.D.8.r.1.KR.1a.LENGTH.MAX", Mfds, 20),
+	("MFDS.D.8.r.1.KR.1b.LENGTH.MAX", Mfds, 10),
+	("MFDS.D.10.8.r.1.KR.1a.LENGTH.MAX", Mfds, 20),
+	("MFDS.D.10.8.r.1.KR.1b.LENGTH.MAX", Mfds, 10),
+	("MFDS.G.k.2.1.KR.1a.LENGTH.MAX", Mfds, 20),
+	("MFDS.G.k.2.1.KR.1b.LENGTH.MAX", Mfds, 10),
+	("MFDS.G.k.2.3.r.1.KR.1a.LENGTH.MAX", Mfds, 20),
+	("MFDS.G.k.2.3.r.1.KR.1b.LENGTH.MAX", Mfds, 10),
+	("MFDS.G.k.9.i.2.r.2.KR.1.LENGTH.MAX", Mfds, 1),
+	("MFDS.G.k.9.i.2.r.3.KR.1.LENGTH.MAX", Mfds, 1),
+	("MFDS.G.k.9.i.2.r.3.KR.2.LENGTH.MAX", Mfds, 1),
+];
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -533,6 +853,13 @@ pub const VALIDATION_RULES: &[
 			"[D.10.2.2a] Parent age is required when [D.10.2.2b] is provided.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.D.10.2.1.FUTURE_DATE.FORBIDDEN",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.10.2.1] Parent date of birth must not be later than today.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.D.10.2.2b.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "patient",
@@ -546,6 +873,14 @@ pub const VALIDATION_RULES: &[
 		section: "patient",
 		blocking: true,
 		message: "[D.10.6] Parent sex is required when parent data is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.3.FUTURE_DATE.FORBIDDEN",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.3] Parent last menstrual period date must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.7.1.r.1a.REQUIRED",
@@ -562,6 +897,14 @@ pub const VALIDATION_RULES: &[
 		blocking: true,
 		message:
 			"[D.10.7.1.r.1b] Parent medical history MedDRA code is required when [D.10.7.1.r.1a] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.7.1.r.FUTURE_DATE.FORBIDDEN",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.7.1.r.2/D.10.7.1.r.4] Parent medical history dates must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
@@ -586,6 +929,14 @@ pub const VALIDATION_RULES: &[
 		blocking: true,
 		message:
 			"[D.10.8.r.3a] Parent past drug PhPID version is required when [D.10.8.r.3b] PhPID is populated.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.10.8.r.FUTURE_DATE.FORBIDDEN",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message:
+			"[D.10.8.r.4/D.10.8.r.5] Parent past drug dates must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.10.8.r.6a.REQUIRED",
@@ -674,6 +1025,13 @@ pub const VALIDATION_RULES: &[
 		message: "birthTime missing value; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.D.6.FUTURE_DATE.FORBIDDEN",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.6] Last menstrual period date must not be later than today.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.D.5.SEX.CONDITIONAL",
 		authority: RegulatoryAuthority::Ich,
 		section: "patient",
@@ -719,6 +1077,13 @@ pub const VALIDATION_RULES: &[
 			"[D.8.r.2b/D.8.r.3b] Any given past drug entry may have either MPID or PhPID, but not both.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.D.8.r.FUTURE_DATE.FORBIDDEN",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.8.r.4/D.8.r.5] Past drug dates must not be later than today.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.D.8.r.6a.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "patient",
@@ -757,6 +1122,13 @@ pub const VALIDATION_RULES: &[
 		blocking: true,
 		message:
 			"[D.9.2.r.1a] Reported cause of death MedDRA version is required when [D.9.2.r.1b] is provided.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.D.9.1.FUTURE_DATE.FORBIDDEN",
+		authority: RegulatoryAuthority::Ich,
+		section: "patient",
+		blocking: true,
+		message: "[D.9.1] Date of death must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.D.9.2.r.1b.REQUIRED",
@@ -847,22 +1219,6 @@ pub const VALIDATION_RULES: &[
 			"associatedPerson name element is empty; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.FORBIDDEN",
-		authority: RegulatoryAuthority::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"relatedInvestigation/code has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"relatedInvestigation/code missing code; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
 		code: "ICH.E.i.3.2.CRITERIA.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
@@ -894,21 +1250,6 @@ pub const VALIDATION_RULES: &[
 			"[E.i.1.1b] is required when [E.i.1.1a] is provided.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.E.i.1.2.NULLFLAVOR.FORBIDDEN",
-		authority: RegulatoryAuthority::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"reaction translation has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.1.2.NULLFLAVOR.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "reactions",
-		blocking: true,
-		message: "reaction translation missing value; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
 		code: "ICH.E.i.2.1a.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
@@ -923,21 +1264,6 @@ pub const VALIDATION_RULES: &[
 		blocking: true,
 		message:
 			"[E.i.2.1b] Reaction MedDRA code is required when a reaction row is present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.2.NULLFLAVOR.FORBIDDEN",
-		authority: RegulatoryAuthority::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"reaction term has code and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.2.NULLFLAVOR.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "reactions",
-		blocking: true,
-		message: "reaction term missing code; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.E.i.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
@@ -978,33 +1304,11 @@ pub const VALIDATION_RULES: &[
 			"[E.i.6b] Reaction duration unit is required when [E.i.6a] is provided.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.E.i.7.NULLFLAVOR.FORBIDDEN",
-		authority: RegulatoryAuthority::Ich,
-		section: "reactions",
-		blocking: true,
-		message:
-			"reaction outcome value has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.7.NULLFLAVOR.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "reactions",
-		blocking: true,
-		message: "reaction outcome value missing code; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
 		code: "ICH.E.i.7.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "reactions",
 		blocking: true,
 		message: "[E.i.7] is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.E.i.9.COUNTRY.NULLFLAVOR.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "reactions",
-		blocking: true,
-		message: "reaction country missing code; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.F.r.1.REQUIRED",
@@ -1096,21 +1400,6 @@ pub const VALIDATION_RULES: &[
 		section: "drugs",
 		blocking: true,
 		message: "[G.k.2.2] is required.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.2.3.NAME.NULLFLAVOR.FORBIDDEN",
-		authority: RegulatoryAuthority::Ich,
-		section: "drugs",
-		blocking: true,
-		message:
-			"ingredientSubstance/name has value and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.2.3.NAME.NULLFLAVOR.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "drugs",
-		blocking: true,
-		message: "ingredientSubstance/name is empty; nullFlavor is required.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.G.k.2.3.r.1.REQUIRED",
@@ -1279,22 +1568,6 @@ pub const VALIDATION_RULES: &[
 			"[G.k.7.r.2b] Indication MedDRA code is required when [G.k.7.r.2a] is provided.",
 	},
 	ValidationRuleMetadata {
-		code: "ICH.G.k.9.i.2.ID.NULLFLAVOR.FORBIDDEN",
-		authority: RegulatoryAuthority::Ich,
-		section: "drugs",
-		blocking: true,
-		message:
-			"adverseEventAssessment/id has extension and nullFlavor; nullFlavor must be absent when value present.",
-	},
-	ValidationRuleMetadata {
-		code: "ICH.G.k.9.i.2.ID.NULLFLAVOR.REQUIRED",
-		authority: RegulatoryAuthority::Ich,
-		section: "drugs",
-		blocking: true,
-		message:
-			"adverseEventAssessment/id missing extension; nullFlavor is required.",
-	},
-	ValidationRuleMetadata {
 		code: "ICH.G.k.9.i.3.1a.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "drugs",
@@ -1386,6 +1659,13 @@ pub const VALIDATION_RULES: &[
 		message: "[N.1.5] Date of batch transmission is required.",
 	},
 	ValidationRuleMetadata {
+		code: "ICH.N.1.5.FUTURE_DATE.FORBIDDEN",
+		authority: RegulatoryAuthority::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[N.1.5] Date of batch transmission must not be later than today.",
+	},
+	ValidationRuleMetadata {
 		code: "ICH.N.2.r.2.REQUIRED",
 		authority: RegulatoryAuthority::Ich,
 		section: "case-identification",
@@ -1398,6 +1678,13 @@ pub const VALIDATION_RULES: &[
 		section: "case-identification",
 		blocking: true,
 		message: "[N.2.r.3] Message receiver identifier is required.",
+	},
+	ValidationRuleMetadata {
+		code: "ICH.N.2.r.4.FUTURE_DATE.FORBIDDEN",
+		authority: RegulatoryAuthority::Ich,
+		section: "case-identification",
+		blocking: true,
+		message: "[N.2.r.4] Message date must not be later than today.",
 	},
 	ValidationRuleMetadata {
 		code: "ICH.N.REQUIRED",
@@ -3381,6 +3668,349 @@ fn to_canonical_rule<'a>(rule: &'a ValidationRuleMetadata) -> CanonicalRule<'a> 
 	}
 }
 
+fn to_canonical_max_length_rule<'a>(
+	rule: &'a MaxLengthRuleMetadata,
+) -> CanonicalRule<'a> {
+	CanonicalRule {
+		code: rule.code,
+		authority: rule.authority,
+		section: section_for_rule_code(rule.code),
+		blocking: true,
+		category: RuleCategory::CaseBusiness,
+		phases: phases_for_max_length_rule(rule.code),
+		severity: RuleSeverity::Blocking,
+		message: "Dictionary max length exceeded.",
+		condition: RuleCondition::Always,
+	}
+}
+
+fn phases_for_max_length_rule(code: &str) -> &'static [ValidationPhase] {
+	match code {
+		"ICH.C.1.1.LENGTH.MAX"
+		| "ICH.C.1.3.LENGTH.MAX"
+		| "ICH.C.1.6.1.r.1.LENGTH.MAX"
+		| "ICH.C.1.8.1.LENGTH.MAX"
+		| "ICH.C.1.8.2.LENGTH.MAX"
+		| "ICH.C.1.9.1.r.1.LENGTH.MAX"
+		| "ICH.C.1.9.1.r.2.LENGTH.MAX"
+		| "ICH.C.1.10.r.LENGTH.MAX"
+		| "ICH.C.1.11.1.LENGTH.MAX"
+		| "ICH.C.1.11.2.LENGTH.MAX"
+		| "ICH.C.2.r.1.1.LENGTH.MAX"
+		| "ICH.C.2.r.1.2.LENGTH.MAX"
+		| "ICH.C.2.r.1.3.LENGTH.MAX"
+		| "ICH.C.2.r.1.4.LENGTH.MAX"
+		| "ICH.C.2.r.2.1.LENGTH.MAX"
+		| "ICH.C.2.r.2.2.LENGTH.MAX"
+		| "ICH.C.2.r.2.3.LENGTH.MAX"
+		| "ICH.C.2.r.2.4.LENGTH.MAX"
+		| "ICH.C.2.r.2.5.LENGTH.MAX"
+		| "ICH.C.2.r.2.6.LENGTH.MAX"
+		| "ICH.C.2.r.2.7.LENGTH.MAX"
+		| "ICH.C.2.r.3.LENGTH.MAX"
+		| "ICH.C.2.r.4.LENGTH.MAX"
+		| "ICH.C.2.r.5.LENGTH.MAX"
+		| "ICH.C.3.1.LENGTH.MAX"
+		| "ICH.C.3.2.LENGTH.MAX"
+		| "ICH.C.3.3.1.LENGTH.MAX"
+		| "ICH.C.3.3.2.LENGTH.MAX"
+		| "ICH.C.3.3.3.LENGTH.MAX"
+		| "ICH.C.3.3.4.LENGTH.MAX"
+		| "ICH.C.3.3.5.LENGTH.MAX"
+		| "ICH.C.3.4.1.LENGTH.MAX"
+		| "ICH.C.3.4.2.LENGTH.MAX"
+		| "ICH.C.3.4.3.LENGTH.MAX"
+		| "ICH.C.3.4.4.LENGTH.MAX"
+		| "ICH.C.3.4.5.LENGTH.MAX"
+		| "ICH.C.3.4.6.LENGTH.MAX"
+		| "ICH.C.3.4.7.LENGTH.MAX"
+		| "ICH.C.3.4.8.LENGTH.MAX"
+		| "ICH.C.4.r.1.LENGTH.MAX"
+		| "ICH.C.5.1.r.1.LENGTH.MAX"
+		| "ICH.C.5.1.r.2.LENGTH.MAX"
+		| "ICH.C.5.2.LENGTH.MAX"
+		| "ICH.C.5.3.LENGTH.MAX"
+		| "ICH.C.5.4.LENGTH.MAX"
+		| "ICH.D.1.LENGTH.MAX"
+		| "ICH.D.1.1.1.LENGTH.MAX"
+		| "ICH.D.1.1.2.LENGTH.MAX"
+		| "ICH.D.1.1.3.LENGTH.MAX"
+		| "ICH.D.1.1.4.LENGTH.MAX"
+		| "ICH.D.2.2a.LENGTH.MAX"
+		| "ICH.D.2.2b.LENGTH.MAX"
+		| "ICH.D.2.2.1a.LENGTH.MAX"
+		| "ICH.D.2.2.1b.LENGTH.MAX"
+		| "ICH.D.2.3.LENGTH.MAX"
+		| "ICH.D.3.LENGTH.MAX"
+		| "ICH.D.4.LENGTH.MAX"
+		| "ICH.D.5.LENGTH.MAX"
+		| "ICH.D.7.1.r.1a.LENGTH.MAX"
+		| "ICH.D.7.1.r.1b.LENGTH.MAX"
+		| "ICH.D.7.1.r.5.LENGTH.MAX"
+		| "ICH.D.7.2.LENGTH.MAX"
+		| "ICH.D.8.r.1.LENGTH.MAX"
+		| "ICH.D.8.r.2a.LENGTH.MAX"
+		| "ICH.D.8.r.2b.LENGTH.MAX"
+		| "ICH.D.8.r.3a.LENGTH.MAX"
+		| "ICH.D.8.r.3b.LENGTH.MAX"
+		| "ICH.D.8.r.6a.LENGTH.MAX"
+		| "ICH.D.8.r.6b.LENGTH.MAX"
+		| "ICH.D.8.r.7a.LENGTH.MAX"
+		| "ICH.D.8.r.7b.LENGTH.MAX"
+		| "ICH.D.9.2.r.1a.LENGTH.MAX"
+		| "ICH.D.9.2.r.1b.LENGTH.MAX"
+		| "ICH.D.9.2.r.2.LENGTH.MAX"
+		| "ICH.D.9.4.r.1a.LENGTH.MAX"
+		| "ICH.D.9.4.r.1b.LENGTH.MAX"
+		| "ICH.D.9.4.r.2.LENGTH.MAX"
+		| "ICH.D.10.1.LENGTH.MAX"
+		| "ICH.D.10.2.2a.LENGTH.MAX"
+		| "ICH.D.10.2.2b.LENGTH.MAX"
+		| "ICH.D.10.4.LENGTH.MAX"
+		| "ICH.D.10.5.LENGTH.MAX"
+		| "ICH.D.10.6.LENGTH.MAX"
+		| "ICH.D.10.7.1.r.1a.LENGTH.MAX"
+		| "ICH.D.10.7.1.r.1b.LENGTH.MAX"
+		| "ICH.D.10.7.1.r.5.LENGTH.MAX"
+		| "ICH.D.10.7.2.LENGTH.MAX"
+		| "ICH.D.10.8.r.1.LENGTH.MAX"
+		| "ICH.D.10.8.r.2a.LENGTH.MAX"
+		| "ICH.D.10.8.r.2b.LENGTH.MAX"
+		| "ICH.D.10.8.r.3a.LENGTH.MAX"
+		| "ICH.D.10.8.r.3b.LENGTH.MAX"
+		| "ICH.D.10.8.r.6a.LENGTH.MAX"
+		| "ICH.D.10.8.r.6b.LENGTH.MAX"
+		| "ICH.D.10.8.r.7a.LENGTH.MAX"
+		| "ICH.D.10.8.r.7b.LENGTH.MAX"
+		| "ICH.E.i.1.1a.LENGTH.MAX"
+		| "ICH.E.i.1.1b.LENGTH.MAX"
+		| "ICH.E.i.1.2.LENGTH.MAX"
+		| "ICH.E.i.2.1a.LENGTH.MAX"
+		| "ICH.E.i.2.1b.LENGTH.MAX"
+		| "ICH.E.i.3.1.LENGTH.MAX"
+		| "ICH.E.i.6a.LENGTH.MAX"
+		| "ICH.E.i.6b.LENGTH.MAX"
+		| "ICH.E.i.7.LENGTH.MAX"
+		| "ICH.E.i.9.LENGTH.MAX"
+		| "ICH.F.r.2.1.LENGTH.MAX"
+		| "ICH.F.r.2.2a.LENGTH.MAX"
+		| "ICH.F.r.2.2b.LENGTH.MAX"
+		| "ICH.F.r.3.1.LENGTH.MAX"
+		| "ICH.F.r.3.2.LENGTH.MAX"
+		| "ICH.F.r.3.3.LENGTH.MAX"
+		| "ICH.F.r.3.4.LENGTH.MAX"
+		| "ICH.F.r.4.LENGTH.MAX"
+		| "ICH.F.r.5.LENGTH.MAX"
+		| "ICH.F.r.6.LENGTH.MAX"
+		| "ICH.G.k.1.LENGTH.MAX"
+		| "ICH.G.k.2.1.1a.LENGTH.MAX"
+		| "ICH.G.k.2.1.1b.LENGTH.MAX"
+		| "ICH.G.k.2.1.2a.LENGTH.MAX"
+		| "ICH.G.k.2.1.2b.LENGTH.MAX"
+		| "ICH.G.k.2.2.LENGTH.MAX"
+		| "ICH.G.k.2.3.r.1.LENGTH.MAX"
+		| "ICH.G.k.2.3.r.2a.LENGTH.MAX"
+		| "ICH.G.k.2.3.r.2b.LENGTH.MAX"
+		| "ICH.G.k.2.3.r.3a.LENGTH.MAX"
+		| "ICH.G.k.2.3.r.3b.LENGTH.MAX"
+		| "ICH.G.k.2.4.LENGTH.MAX"
+		| "ICH.G.k.3.1.LENGTH.MAX"
+		| "ICH.G.k.3.2.LENGTH.MAX"
+		| "ICH.G.k.3.3.LENGTH.MAX"
+		| "ICH.G.k.4.r.1a.LENGTH.MAX"
+		| "ICH.G.k.4.r.1b.LENGTH.MAX"
+		| "ICH.G.k.4.r.2.LENGTH.MAX"
+		| "ICH.G.k.4.r.3.LENGTH.MAX"
+		| "ICH.G.k.4.r.6a.LENGTH.MAX"
+		| "ICH.G.k.4.r.6b.LENGTH.MAX"
+		| "ICH.G.k.4.r.7.LENGTH.MAX"
+		| "ICH.G.k.4.r.8.LENGTH.MAX"
+		| "ICH.G.k.4.r.9.1.LENGTH.MAX"
+		| "ICH.G.k.4.r.9.2a.LENGTH.MAX"
+		| "ICH.G.k.4.r.9.2b.LENGTH.MAX"
+		| "ICH.G.k.4.r.10.1.LENGTH.MAX"
+		| "ICH.G.k.4.r.10.2a.LENGTH.MAX"
+		| "ICH.G.k.4.r.10.2b.LENGTH.MAX"
+		| "ICH.G.k.4.r.11.1.LENGTH.MAX"
+		| "ICH.G.k.4.r.11.2a.LENGTH.MAX"
+		| "ICH.G.k.4.r.11.2b.LENGTH.MAX"
+		| "ICH.G.k.5a.LENGTH.MAX"
+		| "ICH.G.k.5b.LENGTH.MAX"
+		| "ICH.G.k.6a.LENGTH.MAX"
+		| "ICH.G.k.6b.LENGTH.MAX"
+		| "ICH.G.k.7.r.1.LENGTH.MAX"
+		| "ICH.G.k.7.r.2a.LENGTH.MAX"
+		| "ICH.G.k.7.r.2b.LENGTH.MAX"
+		| "ICH.G.k.8.LENGTH.MAX"
+		| "ICH.G.k.9.i.2.r.1.LENGTH.MAX"
+		| "ICH.G.k.9.i.2.r.2.LENGTH.MAX"
+		| "ICH.G.k.9.i.2.r.3.LENGTH.MAX"
+		| "ICH.G.k.9.i.3.1a.LENGTH.MAX"
+		| "ICH.G.k.9.i.3.1b.LENGTH.MAX"
+		| "ICH.G.k.9.i.3.2a.LENGTH.MAX"
+		| "ICH.G.k.9.i.3.2b.LENGTH.MAX"
+		| "ICH.G.k.9.i.4.LENGTH.MAX"
+		| "ICH.G.k.10.r.LENGTH.MAX"
+		| "ICH.G.k.11.LENGTH.MAX"
+		| "ICH.H.1.LENGTH.MAX"
+		| "ICH.H.2.LENGTH.MAX"
+		| "ICH.H.3.r.1a.LENGTH.MAX"
+		| "ICH.H.3.r.1b.LENGTH.MAX"
+		| "ICH.H.4.LENGTH.MAX"
+		| "ICH.H.5.r.1a.LENGTH.MAX"
+		| "ICH.H.5.r.1b.LENGTH.MAX"
+		| "ICH.N.1.1.LENGTH.MAX"
+		| "ICH.N.1.2.LENGTH.MAX"
+		| "ICH.N.1.3.LENGTH.MAX"
+		| "ICH.N.1.4.LENGTH.MAX"
+		| "ICH.N.2.r.1.LENGTH.MAX"
+		| "ICH.N.2.r.2.LENGTH.MAX"
+		| "ICH.N.2.r.3.LENGTH.MAX" => PHASES_CASE_VALIDATE,
+		_ => PHASES_METADATA_ONLY,
+	}
+}
+
+fn to_canonical_allowed_value_rule<'a>(
+	rule: &'a AllowedValueRuleMetadata,
+) -> CanonicalRule<'a> {
+	CanonicalRule {
+		code: rule.code,
+		authority: rule.authority,
+		section: section_for_rule_code(rule.code),
+		blocking: true,
+		category: RuleCategory::CaseBusiness,
+		phases: phases_for_allowed_value_rule(rule.code),
+		severity: RuleSeverity::Blocking,
+		message: "Dictionary allowed values constraint.",
+		condition: RuleCondition::Always,
+	}
+}
+
+fn phases_for_allowed_value_rule(code: &str) -> &'static [ValidationPhase] {
+	match code {
+		"ICH.N.1.1.ALLOWED.VALUE"
+		| "ICH.N.2.r.4.ALLOWED.VALUE"
+		| "ICH.C.1.2.ALLOWED.VALUE"
+		| "ICH.C.1.3.ALLOWED.VALUE"
+		| "ICH.C.1.8.2.ALLOWED.VALUE"
+		| "ICH.C.1.9.1.ALLOWED.VALUE"
+		| "ICH.C.1.11.1.ALLOWED.VALUE"
+		| "ICH.C.2.r.4.ALLOWED.VALUE"
+		| "ICH.C.2.r.5.ALLOWED.VALUE"
+		| "ICH.C.3.1.ALLOWED.VALUE"
+		| "ICH.C.5.4.ALLOWED.VALUE"
+		| "ICH.D.2.3.ALLOWED.VALUE"
+		| "ICH.D.5.ALLOWED.VALUE"
+		| "ICH.D.7.1.r.6.ALLOWED.VALUE"
+		| "ICH.D.7.3.ALLOWED.VALUE"
+		| "ICH.D.10.6.ALLOWED.VALUE"
+		| "ICH.E.i.7.ALLOWED.VALUE"
+		| "ICH.F.r.3.1.ALLOWED.VALUE"
+		| "ICH.F.r.3.2.ALLOWED.VALUE"
+		| "ICH.G.k.1.ALLOWED.VALUE"
+		| "ICH.G.k.2.5.ALLOWED.VALUE"
+		| "ICH.G.k.8.ALLOWED.VALUE"
+		| "ICH.G.k.9.i.4.ALLOWED.VALUE"
+		| "ICH.G.k.10.r.ALLOWED.VALUE" => PHASES_CASE_VALIDATE,
+		_ => PHASES_METADATA_ONLY,
+	}
+}
+
+fn to_canonical_vocabulary_rule<'a>(
+	rule: &'a VocabularyRuleMetadata,
+) -> CanonicalRule<'a> {
+	CanonicalRule {
+		code: rule.code,
+		authority: rule.authority,
+		section: section_for_rule_code(rule.code),
+		blocking: true,
+		category: RuleCategory::CaseBusiness,
+		phases: phases_for_vocabulary_rule(rule.code),
+		severity: RuleSeverity::Blocking,
+		message: "Dictionary vocabulary constraint.",
+		condition: RuleCondition::Always,
+	}
+}
+
+fn phases_for_vocabulary_rule(code: &str) -> &'static [ValidationPhase] {
+	match code {
+		"ICH.C.2.r.3.VOCABULARY"
+		| "ICH.C.3.4.5.VOCABULARY"
+		| "ICH.C.5.1.r.2.VOCABULARY"
+		| "ICH.D.7.1.r.1a.VOCABULARY"
+		| "ICH.D.7.1.r.1b.VOCABULARY"
+		| "ICH.D.8.r.6a.VOCABULARY"
+		| "ICH.D.8.r.6b.VOCABULARY"
+		| "ICH.D.8.r.7a.VOCABULARY"
+		| "ICH.D.8.r.7b.VOCABULARY"
+		| "ICH.D.9.2.r.1a.VOCABULARY"
+		| "ICH.D.9.2.r.1b.VOCABULARY"
+		| "ICH.D.9.4.r.1a.VOCABULARY"
+		| "ICH.D.9.4.r.1b.VOCABULARY"
+		| "ICH.D.10.7.1.r.1a.VOCABULARY"
+		| "ICH.D.10.7.1.r.1b.VOCABULARY"
+		| "ICH.D.10.8.r.6a.VOCABULARY"
+		| "ICH.D.10.8.r.6b.VOCABULARY"
+		| "ICH.D.10.8.r.7a.VOCABULARY"
+		| "ICH.D.10.8.r.7b.VOCABULARY"
+		| "ICH.E.i.2.1a.VOCABULARY"
+		| "ICH.E.i.2.1b.VOCABULARY"
+		| "ICH.E.i.9.VOCABULARY"
+		| "ICH.F.r.2.2a.VOCABULARY"
+		| "ICH.F.r.2.2b.VOCABULARY"
+		| "ICH.G.k.2.4.VOCABULARY"
+		| "ICH.G.k.3.2.VOCABULARY"
+		| "ICH.G.k.7.r.2a.VOCABULARY"
+		| "ICH.G.k.7.r.2b.VOCABULARY"
+		| "ICH.H.3.r.1a.VOCABULARY"
+		| "ICH.H.3.r.1b.VOCABULARY" => PHASES_CASE_VALIDATE,
+		_ => PHASES_METADATA_ONLY,
+	}
+}
+
+fn to_canonical_null_flavor_rule<'a>(
+	rule: &'a NullFlavorRuleMetadata,
+) -> CanonicalRule<'a> {
+	CanonicalRule {
+		code: rule.code,
+		authority: rule.authority,
+		section: section_for_rule_code(rule.code),
+		blocking: true,
+		category: RuleCategory::CaseBusiness,
+		phases: PHASES_METADATA_ONLY,
+		severity: RuleSeverity::Blocking,
+		message: "Dictionary nullFlavor allowed set.",
+		condition: RuleCondition::Always,
+	}
+}
+
+fn section_for_rule_code(code: &str) -> &'static str {
+	let data_code = code
+		.strip_prefix("ICH.")
+		.or_else(|| code.strip_prefix("FDA."))
+		.or_else(|| code.strip_prefix("MFDS."))
+		.unwrap_or(code);
+	if data_code.starts_with("C.") || data_code.starts_with("N.") {
+		return "case-identification";
+	}
+	if data_code.starts_with("D.") {
+		return "patient";
+	}
+	if data_code.starts_with("E.") {
+		return "reactions";
+	}
+	if data_code.starts_with("F.") {
+		return "tests";
+	}
+	if data_code.starts_with("G.") {
+		return "drugs";
+	}
+	if data_code.starts_with("H.") {
+		return "narrative";
+	}
+	"case"
+}
+
 fn category_for_rule(rule: &ValidationRuleMetadata) -> RuleCategory {
 	if is_xml_structure_rule(rule) {
 		RuleCategory::XmlStructure
@@ -3400,35 +4030,8 @@ fn phases_for_rule(rule: &ValidationRuleMetadata) -> &'static [ValidationPhase] 
 }
 
 fn is_dictionary_required_metadata_only(code: &str) -> bool {
-	matches!(
-		code,
-		"ICH.N.1.1.REQUIRED"
-			| "ICH.N.2.r.1.REQUIRED"
-			| "ICH.N.2.r.4.REQUIRED"
-			| "ICH.C.1.6.1.REQUIRED"
-			| "ICH.C.1.8.1.REQUIRED"
-			| "ICH.C.1.8.2.REQUIRED"
-			| "ICH.C.1.9.1.REQUIRED"
-			| "ICH.C.2.r.3.REQUIRED"
-			| "ICH.D.7.2.REQUIRED"
-			| "ICH.D.8.r.1.REQUIRED"
-			| "ICH.E.i.3.2a.REQUIRED"
-			| "ICH.E.i.3.2b.REQUIRED"
-			| "ICH.E.i.3.2c.REQUIRED"
-			| "ICH.E.i.3.2d.REQUIRED"
-			| "ICH.E.i.3.2e.REQUIRED"
-			| "ICH.E.i.3.2f.REQUIRED"
-			| "ICH.G.k.3.2.REQUIRED"
-			| "FDA.C.2.r.2.8.REQUIRED"
-			| "FDA.D.11.r.1.REQUIRED"
-			| "FDA.G.k.1.a.REQUIRED"
-			| "FDA.G.k.12.r.1.REQUIRED"
-			| "FDA.G.k.12.r.3.r.REQUIRED"
-			| "FDA.G.k.12.r.4.REQUIRED"
-			| "FDA.G.k.12.r.5.REQUIRED"
-			| "FDA.G.k.12.r.6.REQUIRED"
-			| "FDA.G.k.12.r.11.r.REQUIRED"
-	)
+	let _ = code;
+	false
 }
 
 fn is_xml_structure_rule(rule: &ValidationRuleMetadata) -> bool {
@@ -3476,30 +4079,118 @@ pub fn find_canonical_rule_for_phase(
 		.filter(|rule| rule.code == code)
 		.map(to_canonical_rule)
 		.find(|rule| rule_applies_in_phase(*rule, phase))
+		.or_else(|| {
+			MAX_LENGTH_RULES
+				.iter()
+				.filter(|rule| rule.code == code)
+				.map(to_canonical_max_length_rule)
+				.find(|rule| rule_applies_in_phase(*rule, phase))
+		})
+		.or_else(|| {
+			ALLOWED_VALUE_RULES
+				.iter()
+				.filter(|rule| rule.code == code)
+				.map(to_canonical_allowed_value_rule)
+				.find(|rule| rule_applies_in_phase(*rule, phase))
+		})
+		.or_else(|| {
+			VOCABULARY_RULES
+				.iter()
+				.filter(|rule| rule.code == code)
+				.map(to_canonical_vocabulary_rule)
+				.find(|rule| rule_applies_in_phase(*rule, phase))
+		})
+		.or_else(|| {
+			NULL_FLAVOR_RULES
+				.iter()
+				.filter(|rule| rule.code == code)
+				.map(to_canonical_null_flavor_rule)
+				.find(|rule| rule_applies_in_phase(*rule, phase))
+		})
 }
 
 pub fn find_canonical_rule(code: &str) -> Option<CanonicalRule<'static>> {
-	find_canonical_rule_for_phase(code, ValidationPhase::CaseValidate).or_else(
-		|| {
+	find_canonical_rule_for_phase(code, ValidationPhase::CaseValidate)
+		.or_else(|| {
 			VALIDATION_RULES
 				.iter()
 				.find(|rule| rule.code == code)
 				.map(to_canonical_rule)
-		},
-	)
+		})
+		.or_else(|| {
+			MAX_LENGTH_RULES
+				.iter()
+				.find(|rule| rule.code == code)
+				.map(to_canonical_max_length_rule)
+		})
+		.or_else(|| {
+			ALLOWED_VALUE_RULES
+				.iter()
+				.find(|rule| rule.code == code)
+				.map(to_canonical_allowed_value_rule)
+		})
+		.or_else(|| {
+			VOCABULARY_RULES
+				.iter()
+				.find(|rule| rule.code == code)
+				.map(to_canonical_vocabulary_rule)
+		})
+		.or_else(|| {
+			NULL_FLAVOR_RULES
+				.iter()
+				.find(|rule| rule.code == code)
+				.map(to_canonical_null_flavor_rule)
+		})
 }
 
 pub fn canonical_rules_for_authority(
 	authority: RegulatoryAuthority,
 ) -> Vec<CanonicalRule<'static>> {
-	VALIDATION_RULES
+	let mut rules = VALIDATION_RULES
 		.iter()
 		.filter(|rule| {
 			matches!(rule.authority, RegulatoryAuthority::Ich)
 				|| rule.authority == authority
 		})
 		.map(to_canonical_rule)
-		.collect()
+		.collect::<Vec<_>>();
+	rules.extend(
+		MAX_LENGTH_RULES
+			.iter()
+			.filter(|rule| {
+				matches!(rule.authority, RegulatoryAuthority::Ich)
+					|| rule.authority == authority
+			})
+			.map(to_canonical_max_length_rule),
+	);
+	rules.extend(
+		ALLOWED_VALUE_RULES
+			.iter()
+			.filter(|rule| {
+				matches!(rule.authority, RegulatoryAuthority::Ich)
+					|| rule.authority == authority
+			})
+			.map(to_canonical_allowed_value_rule),
+	);
+	rules.extend(
+		VOCABULARY_RULES
+			.iter()
+			.filter(|rule| {
+				matches!(rule.authority, RegulatoryAuthority::Ich)
+					|| rule.authority == authority
+			})
+			.map(to_canonical_vocabulary_rule),
+	);
+	rules.extend(
+		NULL_FLAVOR_RULES
+			.iter()
+			.filter(|rule| {
+				matches!(rule.authority, RegulatoryAuthority::Ich)
+					|| rule.authority == authority
+			})
+			.map(to_canonical_null_flavor_rule),
+	);
+	rules
 }
 
 pub fn canonical_rules_for_authority_phase(
@@ -3513,7 +4204,18 @@ pub fn canonical_rules_for_authority_phase(
 }
 
 pub fn canonical_rules_all() -> Vec<CanonicalRule<'static>> {
-	VALIDATION_RULES.iter().map(to_canonical_rule).collect()
+	VALIDATION_RULES
+		.iter()
+		.map(to_canonical_rule)
+		.chain(MAX_LENGTH_RULES.iter().map(to_canonical_max_length_rule))
+		.chain(
+			ALLOWED_VALUE_RULES
+				.iter()
+				.map(to_canonical_allowed_value_rule),
+		)
+		.chain(VOCABULARY_RULES.iter().map(to_canonical_vocabulary_rule))
+		.chain(NULL_FLAVOR_RULES.iter().map(to_canonical_null_flavor_rule))
+		.collect()
 }
 
 pub fn canonical_rules_for_phase(
@@ -3565,6 +4267,40 @@ pub fn canonical_rules_version(authority: Option<RegulatoryAuthority>) -> String
 	}
 
 	format!("{hash:016x}")
+}
+
+pub fn max_length_for_rule(code: &str) -> Option<usize> {
+	MAX_LENGTH_RULES
+		.iter()
+		.find(|rule| rule.code == code)
+		.map(|rule| rule.max_length)
+}
+
+pub fn allowed_values_source_hash_for_rule(code: &str) -> Option<u64> {
+	ALLOWED_VALUE_RULES
+		.iter()
+		.find(|rule| rule.code == code)
+		.map(|rule| rule.source_hash)
+}
+
+pub fn allowed_value_constraint_for_rule(
+	code: &str,
+) -> Option<&'static AllowedValueConstraint> {
+	allowed_value_constraints().get(code)
+}
+
+pub fn vocabulary_for_rule(code: &str) -> Option<&'static str> {
+	VOCABULARY_RULES
+		.iter()
+		.find(|rule| rule.code == code)
+		.map(|rule| rule.vocabulary)
+}
+
+pub fn null_flavors_source_hash_for_rule(code: &str) -> Option<u64> {
+	NULL_FLAVOR_RULES
+		.iter()
+		.find(|rule| rule.code == code)
+		.map(|rule| rule.source_hash)
 }
 
 pub fn is_rule_condition_satisfied(code: &str, facts: RuleFacts) -> bool {
@@ -3782,12 +4518,40 @@ mod tests {
 		kind: String,
 		conformance: Option<String>,
 		condition_text: Option<String>,
+		data_type: Option<String>,
+		max_length: Option<String>,
+		allowed_values: Option<String>,
+		allowed_value_constraint: Option<AllowedValueConstraint>,
+		vocabulary: Option<serde_json::Value>,
 		#[serde(default)]
 		null_flavors: Vec<String>,
 	}
 
 	fn dictionary_from_json(source: &str) -> Dictionary {
 		serde_json::from_str(source).expect("dictionary should parse")
+	}
+
+	fn all_dictionary_entries() -> Vec<DictionaryEntry> {
+		let mut entries = Vec::new();
+		entries.extend(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/ich-e2br3.json"
+			))
+			.entries,
+		);
+		entries.extend(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/fda-regional.json"
+			))
+			.entries,
+		);
+		entries.extend(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/mfds-regional.json"
+			))
+			.entries,
+		);
+		entries
 	}
 
 	fn required_dictionary_codes(
@@ -3882,6 +4646,317 @@ mod tests {
 		.collect()
 	}
 
+	fn ich_date_time_dictionary_codes() -> Vec<String> {
+		let mut codes = dictionary_from_json(include_str!(
+			"../../../../registry/dictionary/ich-e2br3.json"
+		))
+		.entries
+		.into_iter()
+		.filter(|entry| {
+			entry.kind == "element"
+				&& entry.data_type.as_deref() == Some("Date/Time")
+		})
+		.map(|entry| format!("ICH.{}", entry.code))
+		.collect::<Vec<_>>();
+		codes.sort();
+		codes
+	}
+
+	fn parse_dictionary_max_length(value: &str) -> usize {
+		let value = value.trim();
+		if let Some(r3_pos) = value.find("E2B(R3)") {
+			let prefix = value[..r3_pos].trim_end();
+			let digits = prefix
+				.chars()
+				.rev()
+				.skip_while(|ch| ch.is_whitespace() || *ch == '*')
+				.take_while(|ch| ch.is_ascii_digit())
+				.collect::<String>()
+				.chars()
+				.rev()
+				.collect::<String>();
+			return digits
+				.parse()
+				.expect("R3 max_length should contain numeric length");
+		}
+		value.parse().expect("max_length should be numeric")
+	}
+
+	fn max_length_dictionary_rules(
+		dictionary: Dictionary,
+		authority_prefix: &str,
+	) -> Vec<(String, usize)> {
+		dictionary
+			.entries
+			.into_iter()
+			.filter(|entry| {
+				entry.kind == "element"
+					&& entry
+						.max_length
+						.as_deref()
+						.is_some_and(|value| !value.trim().is_empty())
+			})
+			.map(|entry| {
+				let code = if entry.code.starts_with(authority_prefix) {
+					entry.code
+				} else {
+					format!("{authority_prefix}.{}", entry.code)
+				};
+				(
+					format!("{code}.LENGTH.MAX"),
+					parse_dictionary_max_length(
+						entry.max_length.as_deref().unwrap_or_default(),
+					),
+				)
+			})
+			.collect()
+	}
+
+	fn dictionary_text_hash(value: &str) -> u64 {
+		let mut hash: u64 = 14695981039346656037;
+		hash = fnv1a_update(hash, value.trim().as_bytes());
+		hash
+	}
+
+	fn allowed_values_dictionary_rules(
+		dictionary: Dictionary,
+		authority_prefix: &str,
+	) -> Vec<(String, u64)> {
+		dictionary
+			.entries
+			.into_iter()
+			.filter(|entry| {
+				entry.kind == "element"
+					&& entry
+						.allowed_values
+						.as_deref()
+						.is_some_and(|value| !value.trim().is_empty())
+			})
+			.map(|entry| {
+				let code = if entry.code.starts_with(authority_prefix) {
+					entry.code
+				} else {
+					format!("{authority_prefix}.{}", entry.code)
+				};
+				(
+					format!("{code}.ALLOWED.VALUE"),
+					dictionary_text_hash(
+						entry.allowed_values.as_deref().unwrap_or_default(),
+					),
+				)
+			})
+			.collect()
+	}
+
+	fn allowed_value_constraint_dictionary_rules(
+		dictionary: Dictionary,
+		authority_prefix: &str,
+	) -> Vec<(String, AllowedValueConstraint)> {
+		dictionary
+			.entries
+			.into_iter()
+			.filter_map(|entry| {
+				entry.allowed_value_constraint.map(|constraint| {
+					let code = if entry.code.starts_with(authority_prefix) {
+						entry.code
+					} else {
+						format!("{authority_prefix}.{}", entry.code)
+					};
+					(format!("{code}.ALLOWED.VALUE"), constraint)
+				})
+			})
+			.collect()
+	}
+
+	fn vocabulary_dictionary_rules(
+		dictionary: Dictionary,
+		authority_prefix: &str,
+	) -> Vec<(String, String)> {
+		dictionary
+			.entries
+			.into_iter()
+			.filter(|entry| entry.kind == "element" && entry.vocabulary.is_some())
+			.map(|entry| {
+				let code = if entry.code.starts_with(authority_prefix) {
+					entry.code
+				} else {
+					format!("{authority_prefix}.{}", entry.code)
+				};
+				let vocabulary = entry
+					.vocabulary
+					.expect("filtered vocabulary entry")
+					.as_str()
+					.map(str::to_string)
+					.unwrap_or_else(|| "non_string_vocabulary".to_string());
+				(format!("{code}.VOCABULARY"), vocabulary)
+			})
+			.collect()
+	}
+
+	fn null_flavors_dictionary_rules(
+		dictionary: Dictionary,
+		authority_prefix: &str,
+	) -> Vec<(String, u64)> {
+		dictionary
+			.entries
+			.into_iter()
+			.filter(|entry| {
+				entry.kind == "element" && !entry.null_flavors.is_empty()
+			})
+			.map(|entry| {
+				let code = if entry.code.starts_with(authority_prefix) {
+					entry.code
+				} else {
+					format!("{authority_prefix}.{}", entry.code)
+				};
+				(
+					format!("{code}.NULLFLAVOR.ALLOWED"),
+					dictionary_text_hash(&entry.null_flavors.join(",")),
+				)
+			})
+			.collect()
+	}
+
+	fn all_max_length_dictionary_rules() -> Vec<(String, usize)> {
+		let mut rules = Vec::new();
+		rules.extend(max_length_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/ich-e2br3.json"
+			)),
+			"ICH",
+		));
+		rules.extend(max_length_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/fda-regional.json"
+			)),
+			"FDA",
+		));
+		rules.extend(max_length_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/mfds-regional.json"
+			)),
+			"MFDS",
+		));
+		rules
+	}
+
+	fn all_null_flavors_dictionary_rules() -> Vec<(String, u64)> {
+		let mut rules = Vec::new();
+		rules.extend(null_flavors_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/ich-e2br3.json"
+			)),
+			"ICH",
+		));
+		rules.extend(null_flavors_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/fda-regional.json"
+			)),
+			"FDA",
+		));
+		rules.extend(null_flavors_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/mfds-regional.json"
+			)),
+			"MFDS",
+		));
+		rules
+	}
+
+	fn all_allowed_values_dictionary_rules() -> Vec<(String, u64)> {
+		let mut rules = Vec::new();
+		rules.extend(allowed_values_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/ich-e2br3.json"
+			)),
+			"ICH",
+		));
+		rules.extend(allowed_values_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/fda-regional.json"
+			)),
+			"FDA",
+		));
+		rules.extend(allowed_values_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/mfds-regional.json"
+			)),
+			"MFDS",
+		));
+		rules
+	}
+
+	fn all_vocabulary_dictionary_rules() -> Vec<(String, String)> {
+		let mut rules = Vec::new();
+		rules.extend(vocabulary_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/ich-e2br3.json"
+			)),
+			"ICH",
+		));
+		rules.extend(vocabulary_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/fda-regional.json"
+			)),
+			"FDA",
+		));
+		rules.extend(vocabulary_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/mfds-regional.json"
+			)),
+			"MFDS",
+		));
+		rules
+	}
+
+	const CLASSIFIED_ICH_DATE_TIME_FUTURE_RULES: &[&str] = &[
+		"ICH.C.1.2.FUTURE_DATE.FORBIDDEN",
+		"ICH.C.1.4.FUTURE_DATE.FORBIDDEN",
+		"ICH.C.1.5.FUTURE_DATE.FORBIDDEN",
+		"ICH.D.10.2.1.FUTURE_DATE.FORBIDDEN",
+		"ICH.D.10.3.FUTURE_DATE.FORBIDDEN",
+		"ICH.D.10.7.1.r.FUTURE_DATE.FORBIDDEN",
+		"ICH.D.10.8.r.FUTURE_DATE.FORBIDDEN",
+		"ICH.D.2.1.FUTURE_DATE.FORBIDDEN",
+		"ICH.D.6.FUTURE_DATE.FORBIDDEN",
+		"ICH.D.7.1.r.FUTURE_DATE.FORBIDDEN",
+		"ICH.D.8.r.FUTURE_DATE.FORBIDDEN",
+		"ICH.D.9.1.FUTURE_DATE.FORBIDDEN",
+		"ICH.E.i.4-5.FUTURE_DATE.FORBIDDEN",
+		"ICH.F.r.1.FUTURE_DATE.FORBIDDEN",
+		"ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
+		"ICH.N.1.5.FUTURE_DATE.FORBIDDEN",
+		"ICH.N.2.r.4.FUTURE_DATE.FORBIDDEN",
+	];
+
+	const CLASSIFIED_ICH_DATE_TIME_FUTURE_RULE_COVERAGE: &[&str] = &[
+		"ICH.C.1.2",
+		"ICH.C.1.4",
+		"ICH.C.1.5",
+		"ICH.D.10.2.1",
+		"ICH.D.10.3",
+		"ICH.D.10.7.1.r.2",
+		"ICH.D.10.7.1.r.4",
+		"ICH.D.10.8.r.4",
+		"ICH.D.10.8.r.5",
+		"ICH.D.2.1",
+		"ICH.D.6",
+		"ICH.D.7.1.r.2",
+		"ICH.D.7.1.r.4",
+		"ICH.D.8.r.4",
+		"ICH.D.8.r.5",
+		"ICH.D.9.1",
+		"ICH.E.i.4",
+		"ICH.E.i.5",
+		"ICH.F.r.1",
+		"ICH.G.k.4.r.4",
+		"ICH.G.k.4.r.5",
+		"ICH.N.1.5",
+		"ICH.N.2.r.4",
+	];
+
+	const CLASSIFIED_ICH_DATE_TIME_WITHOUT_FUTURE_RULE: &[&str] = &[];
+
 	const CLASSIFIED_ICH_CATALOG_REQUIRED_EXTRAS: &[&str] = &[
 		"ICH.C.1.REQUIRED",
 		"ICH.C.2.r.1.ID.NULLFLAVOR.REQUIRED",
@@ -3900,17 +4975,11 @@ mod tests {
 		"ICH.D.EFFECTIVETIME.LOW_HIGH.NULLFLAVOR.REQUIRED",
 		"ICH.D.PARENT.BIRTHTIME.NULLFLAVOR.REQUIRED",
 		"ICH.D.PARENT.NAME.NULLFLAVOR.REQUIRED",
-		"ICH.E.i.0.RELATIONSHIP.CODE.NULLFLAVOR.REQUIRED",
 		"ICH.E.i.1.1a.REQUIRED",
-		"ICH.E.i.1.2.NULLFLAVOR.REQUIRED",
-		"ICH.E.i.2.NULLFLAVOR.REQUIRED",
 		"ICH.E.i.3.2.CRITERIA.REQUIRED",
 		"ICH.E.i.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
-		"ICH.E.i.7.NULLFLAVOR.REQUIRED",
-		"ICH.E.i.9.COUNTRY.NULLFLAVOR.REQUIRED",
 		"ICH.F.r.2.1.REQUIRED",
 		"ICH.F.r.2.REQUIRED",
-		"ICH.G.k.2.3.NAME.NULLFLAVOR.REQUIRED",
 		"ICH.G.k.2.3.r.1.REQUIRED",
 		"ICH.G.k.2.3.r.2a.REQUIRED",
 		"ICH.G.k.2.3.r.3b.REQUIRED",
@@ -3920,7 +4989,6 @@ mod tests {
 		"ICH.G.k.4.r.11.NULLFLAVOR.REQUIRED",
 		"ICH.G.k.4.r.4-5.LOW_HIGH.NULLFLAVOR.REQUIRED",
 		"ICH.G.k.4.r.9.2a.REQUIRED",
-		"ICH.G.k.9.i.2.ID.NULLFLAVOR.REQUIRED",
 		"ICH.N.REQUIRED",
 		"ICH.XML.BL.NULLFLAVOR.REQUIRED",
 		"ICH.XML.CODE.NULLFLAVOR.REQUIRED",
@@ -3985,6 +5053,378 @@ mod tests {
 			ich_required_dictionary_codes().len(),
 			96,
 			"ICH dictionary required candidate count changed"
+		);
+	}
+
+	#[test]
+	fn ich_date_time_dictionary_inventory_is_stable() {
+		let expected = CLASSIFIED_ICH_DATE_TIME_FUTURE_RULE_COVERAGE
+			.iter()
+			.chain(CLASSIFIED_ICH_DATE_TIME_WITHOUT_FUTURE_RULE.iter())
+			.map(|code| (*code).to_string())
+			.collect::<BTreeSet<_>>();
+		let actual = ich_date_time_dictionary_codes()
+			.into_iter()
+			.collect::<BTreeSet<_>>();
+
+		assert_eq!(
+			actual, expected,
+			"ICH Date/Time dictionary inventory changed; review FUTURE_DATE coverage classification"
+		);
+	}
+
+	#[test]
+	fn dictionary_value_constraint_candidate_inventory_is_stable() {
+		let entries = all_dictionary_entries();
+		let mut counts = BTreeMap::new();
+		counts.insert("allowed_values", 0usize);
+		counts.insert("date_time", 0usize);
+		counts.insert("max_length", 0usize);
+		counts.insert("null_flavors", 0usize);
+		counts.insert("vocabulary", 0usize);
+
+		for entry in entries.iter().filter(|entry| entry.kind == "element") {
+			if entry
+				.allowed_values
+				.as_deref()
+				.is_some_and(|value| !value.trim().is_empty())
+			{
+				*counts.get_mut("allowed_values").unwrap() += 1;
+			}
+			if entry.data_type.as_deref() == Some("Date/Time") {
+				*counts.get_mut("date_time").unwrap() += 1;
+			}
+			if entry
+				.max_length
+				.as_deref()
+				.is_some_and(|value| !value.trim().is_empty())
+			{
+				*counts.get_mut("max_length").unwrap() += 1;
+			}
+			if !entry.null_flavors.is_empty() {
+				*counts.get_mut("null_flavors").unwrap() += 1;
+			}
+			if entry.vocabulary.is_some() {
+				*counts.get_mut("vocabulary").unwrap() += 1;
+			}
+		}
+
+		assert_eq!(
+			counts,
+			BTreeMap::from([
+				("allowed_values", 261),
+				("date_time", 23),
+				("max_length", 218),
+				("null_flavors", 72),
+				("vocabulary", 59),
+			]),
+			"dictionary value-constraint candidate inventory changed"
+		);
+	}
+
+	#[test]
+	fn catalog_value_constraint_rule_inventory_is_stable() {
+		let catalog_codes = canonical_rules_all()
+			.into_iter()
+			.map(|rule| rule.code)
+			.collect::<BTreeSet<_>>();
+		let counts = BTreeMap::from([
+			(
+				"allowed",
+				catalog_codes
+					.iter()
+					.filter(|code| code.contains(".ALLOWED."))
+					.count(),
+			),
+			(
+				"exclusive",
+				catalog_codes
+					.iter()
+					.filter(|code| code.contains(".EXCLUSIVE"))
+					.count(),
+			),
+			(
+				"format",
+				catalog_codes
+					.iter()
+					.filter(|code| code.contains(".FORMAT."))
+					.count(),
+			),
+			(
+				"future_date",
+				catalog_codes
+					.iter()
+					.filter(|code| code.contains(".FUTURE_DATE."))
+					.count(),
+			),
+			(
+				"length",
+				catalog_codes
+					.iter()
+					.filter(|code| code.contains(".LENGTH."))
+					.count(),
+			),
+			(
+				"null_flavor",
+				catalog_codes
+					.iter()
+					.filter(|code| code.contains(".NULLFLAVOR."))
+					.count(),
+			),
+			(
+				"vocabulary",
+				catalog_codes
+					.iter()
+					.filter(|code| code.contains(".VOCABULARY"))
+					.count(),
+			),
+		]);
+
+		assert_eq!(
+			counts,
+			BTreeMap::from([
+				("allowed", 261),
+				("exclusive", 2),
+				("format", 3),
+				("future_date", 17),
+				("length", 218),
+				("null_flavor", 104),
+				("vocabulary", 59),
+			]),
+			"catalog value-constraint rule inventory changed"
+		);
+	}
+
+	#[test]
+	fn dictionary_max_length_rules_are_catalog_backed() {
+		let dictionary_rules = all_max_length_dictionary_rules();
+		assert_eq!(
+			dictionary_rules.len(),
+			218,
+			"dictionary max_length rule count changed"
+		);
+
+		let missing = dictionary_rules
+			.iter()
+			.filter(|(code, _)| find_canonical_rule(code).is_none())
+			.collect::<Vec<_>>();
+		assert!(
+			missing.is_empty(),
+			"dictionary max_length rules missing from catalog: {missing:?}"
+		);
+
+		let mismatched = dictionary_rules
+			.iter()
+			.filter(|(code, expected)| max_length_for_rule(code) != Some(*expected))
+			.collect::<Vec<_>>();
+		assert!(
+			mismatched.is_empty(),
+			"dictionary max_length values differ from catalog: {mismatched:?}"
+		);
+	}
+
+	#[test]
+	fn dictionary_allowed_values_rules_are_catalog_backed() {
+		let dictionary_rules = all_allowed_values_dictionary_rules();
+		assert_eq!(
+			dictionary_rules.len(),
+			261,
+			"dictionary allowed_values rule count changed"
+		);
+
+		let missing = dictionary_rules
+			.iter()
+			.filter(|(code, _)| find_canonical_rule(code).is_none())
+			.collect::<Vec<_>>();
+		assert!(
+			missing.is_empty(),
+			"dictionary allowed_values rules missing from catalog: {missing:?}"
+		);
+
+		let mismatched = dictionary_rules
+			.iter()
+			.filter(|(code, expected)| {
+				allowed_values_source_hash_for_rule(code) != Some(*expected)
+			})
+			.collect::<Vec<_>>();
+		assert!(
+			mismatched.is_empty(),
+			"dictionary allowed_values source hashes differ from catalog: {mismatched:?}"
+		);
+	}
+
+	#[test]
+	fn dictionary_allowed_value_constraints_match_catalog_exactly() {
+		let dictionary_rules = allowed_value_constraint_dictionary_rules(
+			dictionary_from_json(include_str!(
+				"../../../../registry/dictionary/ich-e2br3.json"
+			)),
+			"ICH",
+		);
+		assert_eq!(
+			dictionary_rules.len(),
+			223,
+			"ICH allowed_value_constraint count changed"
+		);
+
+		let mismatched = dictionary_rules
+			.iter()
+			.filter(|(code, expected)| {
+				allowed_value_constraint_for_rule(code) != Some(expected)
+			})
+			.collect::<Vec<_>>();
+		assert!(
+			mismatched.is_empty(),
+			"dictionary allowed_value_constraint values differ from catalog: {mismatched:?}"
+		);
+
+		let dictionary_codes = dictionary_rules
+			.iter()
+			.map(|(code, _)| code.as_str())
+			.collect::<BTreeSet<_>>();
+		let catalog_codes = allowed_value_constraints()
+			.keys()
+			.map(String::as_str)
+			.collect::<BTreeSet<_>>();
+		assert_eq!(
+			dictionary_codes, catalog_codes,
+			"catalog allowed_value_constraint codes must exactly match the dictionary"
+		);
+	}
+
+	#[test]
+	fn dictionary_vocabulary_rules_are_catalog_backed() {
+		let dictionary_rules = all_vocabulary_dictionary_rules();
+		assert_eq!(
+			dictionary_rules.len(),
+			59,
+			"dictionary vocabulary rule count changed"
+		);
+
+		let missing = dictionary_rules
+			.iter()
+			.filter(|(code, _)| find_canonical_rule(code).is_none())
+			.collect::<Vec<_>>();
+		assert!(
+			missing.is_empty(),
+			"dictionary vocabulary rules missing from catalog: {missing:?}"
+		);
+
+		let mismatched = dictionary_rules
+			.iter()
+			.filter(|(code, expected)| {
+				vocabulary_for_rule(code) != Some(expected.as_str())
+			})
+			.collect::<Vec<_>>();
+		assert!(
+			mismatched.is_empty(),
+			"dictionary vocabulary values differ from catalog: {mismatched:?}"
+		);
+	}
+
+	#[test]
+	fn dictionary_null_flavor_allowed_rules_are_catalog_backed() {
+		let dictionary_rules = all_null_flavors_dictionary_rules();
+		assert_eq!(
+			dictionary_rules.len(),
+			72,
+			"dictionary null_flavors rule count changed"
+		);
+
+		let missing = dictionary_rules
+			.iter()
+			.filter(|(code, _)| find_canonical_rule(code).is_none())
+			.collect::<Vec<_>>();
+		assert!(
+			missing.is_empty(),
+			"dictionary null_flavors rules missing from catalog: {missing:?}"
+		);
+
+		let mismatched = dictionary_rules
+			.iter()
+			.filter(|(code, expected)| {
+				null_flavors_source_hash_for_rule(code) != Some(*expected)
+			})
+			.collect::<Vec<_>>();
+		assert!(
+			mismatched.is_empty(),
+			"dictionary null_flavors source hashes differ from catalog: {mismatched:?}"
+		);
+	}
+
+	#[test]
+	fn dictionary_rule_metadata_audit_has_no_catalog_gaps() {
+		let required_codes = ich_required_dictionary_codes()
+			.into_iter()
+			.chain(fda_required_dictionary_codes())
+			.chain(mfds_required_dictionary_codes())
+			.map(|(code, _)| code)
+			.collect::<Vec<_>>();
+		let date_time_codes = CLASSIFIED_ICH_DATE_TIME_FUTURE_RULES
+			.iter()
+			.map(|code| (*code).to_string())
+			.collect::<Vec<_>>();
+		let max_length_codes = all_max_length_dictionary_rules()
+			.into_iter()
+			.map(|(code, _)| code)
+			.collect::<Vec<_>>();
+		let allowed_values_codes = all_allowed_values_dictionary_rules()
+			.into_iter()
+			.map(|(code, _)| code)
+			.collect::<Vec<_>>();
+		let vocabulary_codes = all_vocabulary_dictionary_rules()
+			.into_iter()
+			.map(|(code, _)| code)
+			.collect::<Vec<_>>();
+		let null_flavor_codes = all_null_flavors_dictionary_rules()
+			.into_iter()
+			.map(|(code, _)| code)
+			.collect::<Vec<_>>();
+
+		let buckets = [
+			("required", required_codes),
+			("date_time", date_time_codes),
+			("max_length", max_length_codes),
+			("allowed_values", allowed_values_codes),
+			("vocabulary", vocabulary_codes),
+			("null_flavors", null_flavor_codes),
+		];
+		let gaps = buckets
+			.into_iter()
+			.filter_map(|(bucket, codes)| {
+				let missing = codes
+					.into_iter()
+					.filter(|code| find_canonical_rule(code).is_none())
+					.collect::<Vec<_>>();
+				(!missing.is_empty()).then_some((bucket.to_string(), missing))
+			})
+			.collect::<BTreeMap<_, _>>();
+
+		assert_eq!(
+			gaps,
+			BTreeMap::<String, Vec<String>>::new(),
+			"dictionary rule metadata must be catalog-backed with no unclassified gaps"
+		);
+	}
+
+	#[test]
+	fn ich_date_time_future_date_catalog_coverage_is_stable() {
+		let actual_future_rules = VALIDATION_RULES
+			.iter()
+			.map(|rule| rule.code)
+			.filter(|code| {
+				code.starts_with("ICH.") && code.contains(".FUTURE_DATE.")
+			})
+			.map(str::to_string)
+			.collect::<BTreeSet<_>>();
+		let expected_future_rules = CLASSIFIED_ICH_DATE_TIME_FUTURE_RULES
+			.iter()
+			.map(|code| (*code).to_string())
+			.collect::<BTreeSet<_>>();
+
+		assert_eq!(
+			actual_future_rules, expected_future_rules,
+			"ICH FUTURE_DATE catalog rules changed; update Date/Time dictionary coverage classification"
 		);
 	}
 

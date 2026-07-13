@@ -21,9 +21,46 @@
       "type": "string",
       "enum": ["mandatory", "conditional_mandatory", "optional", "required"]
     },
+    "allowed_value_constraint": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "code_set",
+            "boolean",
+            "true_marker",
+            "numeric",
+            "format",
+            "vocabulary",
+            "descriptive"
+          ]
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "kind": { "const": "code_set" } },
+            "required": ["kind"]
+          },
+          "then": { "required": ["values"] }
+        }
+      ]
+    },
     "entry": {
       "type": "object",
       "required": ["code", "name", "section", "kind"],
+      "dependentRequired": {
+        "allowed_value_constraint": ["allowed_values"]
+      },
       "additionalProperties": false,
       "properties": {
         "code": { "type": "string", "minLength": 1 },
@@ -44,6 +81,9 @@
         "data_type": { "type": "string" },
         "max_length": { "type": "string" },
         "allowed_values": { "type": "string" },
+        "allowed_value_constraint": {
+          "$ref": "#/$defs/allowed_value_constraint"
+        },
         "null_flavors": {
           "type": "array",
           "items": {

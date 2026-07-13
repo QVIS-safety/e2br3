@@ -56,6 +56,69 @@ def set_optional(entry: dict[str, Any], key: str, value: Any) -> None:
         entry[key] = text
 
 
+def allowed_value_constraint(value: str) -> dict[str, Any]:
+    """Normalize the official VALUE ALLOWED prose without replacing it.
+
+    The raw source text remains in ``allowed_values``. This classification only
+    identifies the validator shape and extracts values when the source contains
+    an explicit numeric code set.
+    """
+    before_null_flavor = re.split(
+        r"nullflavor\s*[:=]", value, maxsplit=1, flags=re.IGNORECASE
+    )[0]
+    boolean_tokens = {
+        token.lower()
+        for token in re.findall(r"\b(?:true|false)\b", before_null_flavor, re.IGNORECASE)
+    }
+    boolean_residue = re.sub(
+        r"\b(?:true|false)\b|[,/\s]",
+        "",
+        before_null_flavor,
+        flags=re.IGNORECASE,
+    )
+    if not boolean_residue and boolean_tokens == {"true", "false"}:
+        return {"kind": "boolean"}
+    if not boolean_residue and boolean_tokens == {"true"}:
+        return {"kind": "true_marker"}
+
+    codes: list[str] = []
+    for match in re.finditer(r"(?<![\w.])(\d+)\s*=", value):
+        code = match.group(1)
+        if code not in codes:
+            codes.append(code)
+    if codes:
+        return {"kind": "code_set", "values": codes}
+
+    normalized = " ".join(value.lower().split())
+    if normalized == "n.n" or normalized.startswith("numeric"):
+        return {"kind": "numeric"}
+    if any(
+        marker in normalized
+        for marker in (
+            "ucum",
+            "iso 3166",
+            "iso 639",
+            "mpid",
+            "phpid",
+            "substanceid",
+            "iso idmp",
+            "roaid",
+        )
+    ):
+        return {"kind": "vocabulary"}
+    if any(
+        marker in normalized
+        for marker in (
+            "see appendix ii",
+            "ccyy",
+            "media type:",
+            "guidance for format",
+        )
+    ):
+        return {"kind": "format"}
+    return {"kind": "descriptive"}
+
+
 def parse_ich_csv(text: str) -> list[dict[str, Any]]:
     rows = list(csv.reader(io.StringIO(text.lstrip("﻿"))))
     header_index = next(
@@ -72,15 +135,14 @@ def parse_ich_csv(text: str) -> list[dict[str, Any]]:
         return clean(row[index]) if index < len(row) else ""
 
     entries: list[dict[str, Any]] = []
-    seen: set[str] = set()
+    entry_index_by_code: dict[str, int] = {}
     for row in rows[header_index + 1 :]:
         code = cell(row, "DATA ELEMENT NUMBER")
         name = cell(row, "DATA ELEMENT NAME")
         if code in ("", "-"):
             code = cell(row, "HEADER ELEMENT")
-        if not CODE_PATTERN.match(code) or not name or code in seen:
+        if not CODE_PATTERN.match(code) or not name:
             continue
-        seen.add(code)
 
         conformance_raw = cell(row, "CONFORMANCE")
         normalized = ICH_CONFORMANCE_MAP.get(conformance_raw.lower().replace("–", "-"))
@@ -94,7 +156,12 @@ def parse_ich_csv(text: str) -> list[dict[str, Any]]:
             entry["conformance"] = normalized
         set_optional(entry, "data_type", cell(row, "DATA TYPE"))
         set_optional(entry, "max_length", cell(row, "MAX LENGTH"))
-        set_optional(entry, "allowed_values", cell(row, "VALUE ALLOWED"))
+        allowed_values = optional_value(cell(row, "VALUE ALLOWED"))
+        if allowed_values is not None:
+            entry["allowed_values"] = allowed_values
+            entry["allowed_value_constraint"] = allowed_value_constraint(
+                allowed_values
+            )
         set_optional(entry, "oid", cell(row, "Code system OID"))
         null_flavors = [
             label
@@ -103,7 +170,14 @@ def parse_ich_csv(text: str) -> list[dict[str, Any]]:
         ]
         if null_flavors:
             entry["null_flavors"] = null_flavors
-        entries.append(entry)
+        existing_index = entry_index_by_code.get(code)
+        if existing_index is None:
+            entry_index_by_code[code] = len(entries)
+            entries.append(entry)
+        elif entries[existing_index]["kind"] == "group" and entry["kind"] == "element":
+            # C.1.10.r is emitted once as a header and again as the actual
+            # element. The element row owns the dictionary definition.
+            entries[existing_index] = entry
     return entries
 
 

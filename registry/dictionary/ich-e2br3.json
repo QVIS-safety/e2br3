@@ -23,7 +23,13 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/name[@codeSystem='2.16.840.1.113883.3.989.2.1.1.1']/@code",
       "hl7_data_type": "Character String \nwith Code (SC)",
-      "hl7_component": "code=Coded With \nEquivalents (CE)"
+      "hl7_component": "code=Coded With \nEquivalents (CE)",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1"
+        ]
+      }
     },
     {
       "code": "N.1.2",
@@ -40,7 +46,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/id[@root='2.16.840.1.113883.3.989.2.1.3.22']/@extension",
       "hl7_data_type": "Instance Identifier \n(II)",
-      "hl7_component": "extension=Character \nString (ST)"
+      "hl7_component": "extension=Character \nString (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "N.1.3",
@@ -57,7 +66,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/sender[@typeCode='SND']/device[@classCode='DEV'][@determinerCode='INSTANCE']/id[@root='2.16.840.1.113883.3.989.2.1.3.13'][1]/@extension",
       "hl7_data_type": "Instance Identifier (II)",
-      "hl7_component": "extension=Character String (ST)"
+      "hl7_component": "extension=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "N.1.4",
@@ -76,7 +88,10 @@
       "hl7_data_type": "Instance Identifier (II)",
       "hl7_component": "extension=Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0004"
+      "fda_error_id": "R0004",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "N.1.5",
@@ -90,7 +105,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/creationTime/@value",
-      "hl7_data_type": "Point in Time (TS)"
+      "hl7_data_type": "Point in Time (TS)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "N.2.R",
@@ -113,7 +131,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/id[@root='2.16.840.1.113883.3.989.2.1.3.1'][1]/@extension",
       "hl7_data_type": "Instance Identifier (II)",
-      "hl7_component": "extension=Character String (ST)"
+      "hl7_component": "extension=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "N.2.r.2",
@@ -132,7 +153,10 @@
       "hl7_data_type": "Instance Identifier (II)",
       "hl7_component": "extension=Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0100"
+      "fda_error_id": "R0100",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "N.2.r.3",
@@ -151,7 +175,10 @@
       "hl7_data_type": "Instance Identifier (II)",
       "hl7_component": "extension=Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0006"
+      "fda_error_id": "R0006",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "N.2.r.4",
@@ -165,7 +192,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/creationTime/@value",
-      "hl7_data_type": "Point in Time (TS)"
+      "hl7_data_type": "Point in Time (TS)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "C.1",
@@ -188,7 +218,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/id[@root='2.16.840.1.113883.3.989.2.1.3.1'][1]/@extension",
       "hl7_data_type": "Instance Identifier (II)",
-      "hl7_component": "extension=Character String (ST)"
+      "hl7_component": "extension=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.1.2",
@@ -202,7 +235,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/effectiveTime/@value",
-      "hl7_data_type": "Point in Time (TS)"
+      "hl7_data_type": "Point in Time (TS)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "C.1.3",
@@ -221,7 +257,16 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0008"
+      "fda_error_id": "R0008",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      }
     },
     {
       "code": "C.1.4",
@@ -236,7 +281,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/effectiveTime/low/@value",
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "low=Interval Boundary (IVXB)"
+      "hl7_component": "low=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "C.1.5",
@@ -250,7 +298,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/availabilityTime/@value",
-      "hl7_data_type": "Point in Time (TS)"
+      "hl7_data_type": "Point in Time (TS)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "C.1.6.1",
@@ -265,7 +316,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][observationEvent/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observationEvent[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL']/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "boolean"
+      }
     },
     {
       "code": "C.1.6.1.r",
@@ -291,7 +345,10 @@
       "hl7_data_type": "Character String (ST)",
       "fda_severity": "rejection",
       "fda_error_id": "R0009",
-      "condition_text": "Optional, but required if C.1.6.1 is ‘true’."
+      "condition_text": "Optional, but required if C.1.6.1 is ‘true’.",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.1.6.1.r.2",
@@ -307,7 +364,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/reference[@typeCode='REFR'][document/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.27']][r]/document[@classCode='DOC'][@moodCode='EVN']/text/text()",
       "hl7_data_type": "Encapsulated Data (ED)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0010"
+      "fda_error_id": "R0010",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "C.1.7",
@@ -327,7 +387,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][observationEvent/code[@code='23'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observationEvent[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL']/@value",
       "hl7_data_type": "Boolean (BL)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0011"
+      "fda_error_id": "R0011",
+      "allowed_value_constraint": {
+        "kind": "boolean"
+      }
     },
     {
       "code": "C.1.8.1",
@@ -344,7 +407,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/id[@root='2.16.840.1.113883.3.989.2.1.3.2'][1]/@extension",
       "hl7_data_type": "Instance Identifier (II)",
-      "hl7_component": "extension=Character String(ST)"
+      "hl7_component": "extension=Character String(ST)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "C.1.8.2",
@@ -361,7 +427,14 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][1]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ'][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.3']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2"
+        ]
+      }
     },
     {
       "code": "C.1.9.1",
@@ -379,7 +452,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ'][investigationCharacteristic/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.23']][1]/investigationCharacteristic[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL']/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "true_marker"
+      }
     },
     {
       "code": "C.1.9.1.r",
@@ -406,7 +482,10 @@
       "hl7_component": "assigningAuthorityNa me=Character String (ST)",
       "fda_severity": "rejection",
       "fda_error_id": "R0017",
-      "condition_text": "Optional, but required if C.1.9.1=‘true’."
+      "condition_text": "Optional, but required if C.1.9.1=‘true’.",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.1.9.1.r.2",
@@ -426,16 +505,27 @@
       "hl7_component": "extension=Character String(ST)",
       "fda_severity": "rejection",
       "fda_error_id": "R0018",
-      "condition_text": "Optional, but required if C.1.9.1= ‘true’."
+      "condition_text": "Optional, but required if C.1.9.1= ‘true’.",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "C.1.10.r",
-      "name": "Identification Number of the Report Which Is Linked to This Report (repeat as necessary)",
+      "name": "Identification Number of the Report Which Is Linked to This Report",
       "section": "C",
-      "kind": "group",
+      "kind": "element",
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code/@nullFlavor='NA'][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ'][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/id[@root='2.16.840.1.113883.3.989.2.1.3.2'][1]/@extension",
       "hl7_data_type": "Instance Identifier (II)",
-      "hl7_component": "extension=Character String(ST)"
+      "hl7_component": "extension=Character String(ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      },
+      "conformance": "optional",
+      "data_type": "AN",
+      "max_length": "100",
+      "allowed_values": "Free Text",
+      "oid": "2.16.840.1.113883.3.989.2.1.3.2"
     },
     {
       "code": "C.1.11.1",
@@ -454,7 +544,14 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0101"
+      "fda_error_id": "R0101",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2"
+        ]
+      }
     },
     {
       "code": "C.1.11.2",
@@ -473,7 +570,10 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "originalText = Encapsulated Data (ED)",
       "fda_severity": "rejection",
-      "condition_text": "Optional, but required when C.1.11.1 is populated."
+      "condition_text": "Optional, but required when C.1.11.1 is populated.",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r",
@@ -502,7 +602,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/assignedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/name/prefix[1]/text()",
       "hl7_data_type": "Person Name (PN)",
-      "hl7_component": "prefix=Entity Name Part (ENXP)"
+      "hl7_component": "prefix=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.1.2",
@@ -524,7 +627,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/assignedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/name/given[1]/text()",
       "hl7_data_type": "Person Name (PN)",
-      "hl7_component": "given=Entity Name Part (ENXP)"
+      "hl7_component": "given=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.1.3",
@@ -545,7 +651,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/assignedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/name/given[2]/text()",
       "hl7_data_type": "Person Name (PN)",
-      "hl7_component": "given=Entity Name Part (ENXP)"
+      "hl7_component": "given=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.1.4",
@@ -567,7 +676,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/assignedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/name/family[1]/text()",
       "hl7_data_type": "Person Name (PN)",
-      "hl7_component": "family=Entity Name Part (ENXP)"
+      "hl7_component": "family=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.2.1",
@@ -588,7 +700,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/representedOrganization[@classCode='ORG'][@determinerCode='INSTANCE']/assignedEntity[@classCode='ASSIGNED']/representedOrganization[@classCode='ORG'][@determinerCode='INSTANCE']/name/text()",
       "hl7_data_type": "Organization Name (ON)",
-      "hl7_component": "name=Entity Name Part (ENXP)"
+      "hl7_component": "name=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.2.2",
@@ -609,7 +724,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/representedOrganization[@classCode='ORG'][@determinerCode='INSTANCE']/name/text()",
       "hl7_data_type": "Organization Name (ON)",
-      "hl7_component": "name=Entity Name Part (ENXP)"
+      "hl7_component": "name=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.2.3",
@@ -631,7 +749,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/addr[1]/streetAddressLine[1]/text()",
       "hl7_data_type": "Postal Address (AD)",
-      "hl7_component": "streetAddressLine=A ddress Part (ADXP)"
+      "hl7_component": "streetAddressLine=A ddress Part (ADXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.2.4",
@@ -653,7 +774,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/addr[1]/city[1]/text()",
       "hl7_data_type": "Postal Address (AD)",
-      "hl7_component": "city=Address Part (ADXP)"
+      "hl7_component": "city=Address Part (ADXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.2.5",
@@ -675,7 +799,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/addr[1]/state[1]/text()",
       "hl7_data_type": "Postal Address (AD)",
-      "hl7_component": "state=Address Part (ADXP)"
+      "hl7_component": "state=Address Part (ADXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.2.6",
@@ -697,7 +824,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/addr[1]/postalCode[1]/text()",
       "hl7_data_type": "Postal Address (AD)",
-      "hl7_component": "postalCode=Address Part (ADXP)"
+      "hl7_component": "postalCode=Address Part (ADXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.2.7",
@@ -718,7 +848,10 @@
         "vaers": "conditional_mandatory"
       },
       "xpath": "substring(/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/outboundRelationship[@typeCode='SPRT'][relatedInvestigation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.22']][r]/relatedInvestigation[@classCode='INVSTG'][@moodCode='EVN']/subjectOf2[@typeCode='SUBJ']/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/telecom[starts-with(@value,'tel:')][1]/@value,5)",
-      "hl7_data_type": "Telecommunication Address (TEL)"
+      "hl7_data_type": "Telecommunication Address (TEL)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.2.r.3",
@@ -745,7 +878,10 @@
       "vocabulary": "ISO3166",
       "fda_severity": "rejection",
       "fda_error_id": "R0019",
-      "condition_text": "Optional, but required if C.2.r.5 = 1."
+      "condition_text": "Optional, but required if C.2.r.5 = 1.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "C.2.r.4",
@@ -768,7 +904,17 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0020"
+      "fda_error_id": "R0020",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ]
+      }
     },
     {
       "code": "C.2.r.5",
@@ -786,7 +932,13 @@
       "hl7_data_type": "Real Number (REAL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0021",
-      "condition_text": "Required for one and only one instance of this element."
+      "condition_text": "Required for one and only one instance of this element.",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1"
+        ]
+      }
     },
     {
       "code": "C.3",
@@ -809,7 +961,19 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7"
+        ]
+      }
     },
     {
       "code": "C.3.2",
@@ -828,7 +992,10 @@
       "hl7_component": "name=Entity Name Part (ENXP)",
       "fda_severity": "rejection",
       "fda_error_id": "R0022",
-      "condition_text": "Required if the ‘Sender Type’ (C.3.1) is not coded as 7 (Patient / Consumer)."
+      "condition_text": "Required if the ‘Sender Type’ (C.3.1) is not coded as 7 (Patient / Consumer).",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.3",
@@ -853,7 +1020,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/representedOrganization[@classCode='ORG'][@determinerCode='INSTANCE']/name/text()",
       "hl7_data_type": "Organization Name (ON)",
-      "hl7_component": "name=Entity Name Part (ENXP)"
+      "hl7_component": "name=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.3.2",
@@ -872,7 +1042,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/assignedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/name/prefix[1]/text()",
       "hl7_data_type": "Person Name (PN)",
-      "hl7_component": "prefix=Entity Name Part (ENXP)"
+      "hl7_component": "prefix=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.3.3",
@@ -891,7 +1064,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/assignedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/name/given[1]/text()",
       "hl7_data_type": "Person Name (PN)",
-      "hl7_component": "given=Entity Name Part (ENXP)"
+      "hl7_component": "given=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.3.4",
@@ -907,7 +1083,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/assignedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/name/given[2]/text()",
       "hl7_data_type": "Person Name (PN)",
-      "hl7_component": "given=Entity Name Part (ENXP)"
+      "hl7_component": "given=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.3.5",
@@ -926,7 +1105,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/assignedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/name/family[1]/text()",
       "hl7_data_type": "Person Name (PN)",
-      "hl7_component": "family=Entity Name Part (ENXP)"
+      "hl7_component": "family=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.4.1",
@@ -945,7 +1127,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/addr[1]/streetAddressLine[1]/text()",
       "hl7_data_type": "Postal Address (AD)",
-      "hl7_component": "streetAddressLine=A ddress Part (ADXP)"
+      "hl7_component": "streetAddressLine=A ddress Part (ADXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.4.2",
@@ -964,7 +1149,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/addr[1]/city[1]/text()",
       "hl7_data_type": "Postal Address (AD)",
-      "hl7_component": "city=Address Part (ADXP)"
+      "hl7_component": "city=Address Part (ADXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.4.3",
@@ -983,7 +1171,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/addr[1]/state[1]/text()",
       "hl7_data_type": "Postal Address (AD)",
-      "hl7_component": "state=Address Part (ADXP)"
+      "hl7_component": "state=Address Part (ADXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.4.4",
@@ -1002,7 +1193,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/addr[1]/postalCode[1]/text()",
       "hl7_data_type": "Postal Address (AD)",
-      "hl7_component": "postalCode=Address Part (ADXP)"
+      "hl7_component": "postalCode=Address Part (ADXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.4.5",
@@ -1023,7 +1217,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/assignedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/asLocatedEntity[@classCode='LOCE'][1]/location[@classCode='COUNTRY'][@determinerCode='INSTANCE']/code[@codeSystem='1.0.3166.1.2.2']/@code",
       "hl7_data_type": "Concept Descriptor (CD)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "ISO3166"
+      "vocabulary": "ISO3166",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "C.3.4.6",
@@ -1041,7 +1238,10 @@
         "vaers": "mandatory"
       },
       "xpath": "substring(/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/telecom[starts-with(@value,'tel:')][1]/@value,5)",
-      "hl7_data_type": "Telecommunication Address (TEL)"
+      "hl7_data_type": "Telecommunication Address (TEL)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.4.7",
@@ -1059,7 +1259,10 @@
         "vaers": "mandatory"
       },
       "xpath": "substring(/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/telecom[starts-with(@value,'fax:')][1]/@value,5)",
-      "hl7_data_type": "Telecommunication Address (TEL)"
+      "hl7_data_type": "Telecommunication Address (TEL)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.3.4.8",
@@ -1077,7 +1280,10 @@
         "vaers": "mandatory"
       },
       "xpath": "substring(/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/subjectOf1[@typeCode='SUBJ'][controlActEvent/author/assignedEntity/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.7']][1]/controlActEvent[@classCode='CACT'][@moodCode='EVN']/author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/telecom[starts-with(@value,'mailto:')][1]/@value,8)",
-      "hl7_data_type": "Telecommunication Address (TEL)"
+      "hl7_data_type": "Telecommunication Address (TEL)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.4.r",
@@ -1104,7 +1310,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/reference[@typeCode='REFR'][document/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.27']][r]/document[@classCode='DOC'][@moodCode='EVN']/bibliographicDesignationText/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.4.r.2",
@@ -1118,7 +1327,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/reference[@typeCode='REFR'][document/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.27']][r]/document[@classCode='DOC'][@moodCode='EVN']/text/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "C.5",
@@ -1152,7 +1364,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][r]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/id[@root='2.16.840.1.113883.3.989.2.1.3.6']/@extension",
       "hl7_data_type": "Instance Identifier (II)",
-      "hl7_component": "extension=Character String (ST)"
+      "hl7_component": "extension=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.5.1.r.2",
@@ -1174,7 +1389,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/authorization[@typeCode='AUTH'][r]/studyRegistration[@classCode='ACT'][@moodCode='EVN']/author[@typeCode='AUT']/territorialAuthority[@classCode='TERR']/governingPlace[@classCode='COUNTRY'][@determinerCode='INSTANCE']/code[@codeSystem='1.0.3166.1.2.2']/@code",
       "hl7_data_type": "Concept Descriptor (CD)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "ISO3166"
+      "vocabulary": "ISO3166",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "C.5.2",
@@ -1193,7 +1411,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/title/text()",
-      "hl7_data_type": "Character String (ST)"
+      "hl7_data_type": "Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.5.3",
@@ -1214,7 +1435,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf1[@typeCode='SBJ'][1]/researchStudy[@classCode='CLNTRL'][@moodCode='EVN']/id[@root='2.16.840.1.113883.3.989.2.1.3.5']/@extension",
       "hl7_data_type": "Instance Identifier (II)",
-      "hl7_component": "extension=Character String (ST)"
+      "hl7_component": "extension=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "C.5.4",
@@ -1234,7 +1458,15 @@
       "hl7_component": "code=Character String (ST)",
       "fda_severity": "rejection",
       "fda_error_id": "R0023",
-      "condition_text": "Optional, but required if C.1.3=2 (Report from study)."
+      "condition_text": "Optional, but required if C.1.3=2 (Report from study).",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3"
+        ]
+      }
     },
     {
       "code": "D.",
@@ -1264,7 +1496,10 @@
       "hl7_data_type": "Entity Name (EN)",
       "hl7_component": "name=Entity Name Part (ENXP)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0027"
+      "fda_error_id": "R0027",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.1.1.1",
@@ -1284,7 +1519,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/asIdentifiedEntity[@classCode='IDENT'][code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.4']][1]/id[@root='2.16.840.1.113883.3.989.2.1.3.7'][1]/@extension",
       "hl7_data_type": "Instance Identifier \n(II)",
-      "hl7_component": "extension=Character \nString (ST)"
+      "hl7_component": "extension=Character \nString (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.1.1.2",
@@ -1304,7 +1542,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/asIdentifiedEntity[@classCode='IDENT'][code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.4']][1]/id[@root='2.16.840.1.113883.3.989.2.1.3.8'][1]/@extension",
       "hl7_data_type": "Instance Identifier (II)",
-      "hl7_component": "extension=Character String (ST)"
+      "hl7_component": "extension=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.1.1.3",
@@ -1324,7 +1565,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/asIdentifiedEntity[@classCode='IDENT'][code[@code='3'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.4']][1]/id[@root='2.16.840.1.113883.3.989.2.1.3.9'][1]/@extension",
       "hl7_data_type": "Instance Identifier (II)",
-      "hl7_component": "extension=Character String (ST)"
+      "hl7_component": "extension=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.1.1.4",
@@ -1344,7 +1588,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/asIdentifiedEntity[@classCode='IDENT'][code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.4']][1]/id[@root='2.16.840.1.113883.3.989.2.1.3.10'][1]/@extension",
       "hl7_data_type": "Instance Identifier (II)",
-      "hl7_component": "extension=Character String (ST)"
+      "hl7_component": "extension=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.2",
@@ -1368,7 +1615,10 @@
         "vaers": "conditional_mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/birthTime/@value",
-      "hl7_data_type": "Point in Time (TS)"
+      "hl7_data_type": "Point in Time (TS)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.2.2a",
@@ -1388,7 +1638,10 @@
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0029",
-      "condition_text": "Optional, but required if D.2.2b is populated."
+      "condition_text": "Optional, but required if D.2.2b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.2.2b",
@@ -1408,7 +1661,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0030",
-      "condition_text": "Optional, but required if D.2.2a is populated."
+      "condition_text": "Optional, but required if D.2.2a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "D.2.2.1a",
@@ -1428,7 +1684,10 @@
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0031",
-      "condition_text": "Optional, but required if D.2.2.1b is populated."
+      "condition_text": "Optional, but required if D.2.2.1b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.2.2.1b",
@@ -1448,7 +1707,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0032",
-      "condition_text": "Optional, but required if D.2.2.1a is populated."
+      "condition_text": "Optional, but required if D.2.2.1a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "D.2.3",
@@ -1465,7 +1727,19 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.9'][1]/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "0",
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6"
+        ]
+      }
     },
     {
       "code": "D.3",
@@ -1482,7 +1756,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation/code[@code='7'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='PQ'][@unit='kg'][1]/@value",
       "hl7_data_type": "Physical Quantity (PQ)",
-      "hl7_component": "value=Real Number (REAL)"
+      "hl7_component": "value=Real Number (REAL)",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.4",
@@ -1499,7 +1776,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation/code[@code='17'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='PQ'][@unit='cm'][1]/@value",
       "hl7_data_type": "Physical Quantity (PQ)",
-      "hl7_component": "value=Real Number (REAL)"
+      "hl7_component": "value=Real Number (REAL)",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.5",
@@ -1522,7 +1802,14 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/administrativeGenderCode[@codeSystem='1.0.5218']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "sex"
+      "vocabulary": "sex",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2"
+        ]
+      }
     },
     {
       "code": "D.6",
@@ -1539,7 +1826,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation/code[@code='22'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='TS'][1]/@value",
-      "hl7_data_type": "Point in Time (TS)"
+      "hl7_data_type": "Point in Time (TS)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.7.1.r",
@@ -1566,7 +1856,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0033",
-      "condition_text": "Optional, but required if D.7.1.r.1b is populated."
+      "condition_text": "Optional, but required if D.7.1.r.1b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.7.1.r.1b",
@@ -1587,7 +1880,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0034",
-      "condition_text": "Optional, but required if D.7.1.r.1a is populated."
+      "condition_text": "Optional, but required if D.7.1.r.1a is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.7.1.r.2",
@@ -1607,7 +1903,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/effectiveTime[@xsi:type='IVL_TS']/low/@value",
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "low=Interval Boundary (IVXB)"
+      "hl7_component": "low=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.7.1.r.3",
@@ -1628,7 +1927,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/inboundRelationship[@typeCode='REFR'][observation/code[@code='13'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "boolean"
+      }
     },
     {
       "code": "D.7.1.r.4",
@@ -1648,7 +1950,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/effectiveTime[@xsi:type='IVL_TS']/high/@value",
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "high=Interval Boundary (IVXB)"
+      "hl7_component": "high=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.7.1.r.5",
@@ -1664,7 +1969,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][observation/code[@code='10'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ED'][1]/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.7.1.r.6",
@@ -1679,7 +1987,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='EXPL'][observation/code[@code='38'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "true_marker"
+      }
     },
     {
       "code": "D.7.2",
@@ -1704,7 +2015,10 @@
       "hl7_data_type": "Encapsulated Data (ED)",
       "fda_severity": "rejection",
       "fda_error_id": "R0035",
-      "condition_text": "Optional, but required if Section D.7.1 is null."
+      "condition_text": "Optional, but required if Section D.7.1 is null.",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.7.3",
@@ -1719,7 +2033,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@code='11'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "true_marker"
+      }
     },
     {
       "code": "D.8.r",
@@ -1749,7 +2066,10 @@
       "hl7_component": "name=Entity Name Part (ENXP)",
       "fda_severity": "rejection",
       "fda_error_id": "R0036",
-      "condition_text": "Optional, but required by the schema if any data element in section D.8.r is used."
+      "condition_text": "Optional, but required by the schema if any data element in section D.8.r is used.",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.8.r.2a",
@@ -1765,7 +2085,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-MPID']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "codeSystemVersion= Character String (ST)"
+      "hl7_component": "codeSystemVersion= Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.8.r.2b",
@@ -1782,7 +2105,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-MPID']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "D.8.r.3a",
@@ -1798,7 +2124,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-PhPID']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "codeSystemVersion= Character String (ST)"
+      "hl7_component": "codeSystemVersion= Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.8.r.3b",
@@ -1815,7 +2144,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-PhPID']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "D.8.r.4",
@@ -1835,7 +2167,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/effectiveTime[@xsi:type='IVL_TS']/low/@value",
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "low=Interval Boundary (IVXB)"
+      "hl7_component": "low=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.8.r.5",
@@ -1855,7 +2190,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/effectiveTime[@xsi:type='IVL_TS']/high/@value",
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "high=Interval Boundary (IVXB)"
+      "hl7_component": "high=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.8.r.6a",
@@ -1875,7 +2213,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0037",
-      "condition_text": "Optional, but required if D.8.r.6b is populated."
+      "condition_text": "Optional, but required if D.8.r.6b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.8.r.6b",
@@ -1896,7 +2237,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0038",
-      "condition_text": "Optional, but required if D.8.r.6a is populated."
+      "condition_text": "Optional, but required if D.8.r.6a is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.8.r.7a",
@@ -1916,7 +2260,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0039",
-      "condition_text": "Optional, but required if D.8.r.7b is populated."
+      "condition_text": "Optional, but required if D.8.r.7b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.8.r.7b",
@@ -1937,7 +2284,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0040",
-      "condition_text": "Optional, but required if D.8.r.7a is populated."
+      "condition_text": "Optional, but required if D.8.r.7a is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.9",
@@ -1965,7 +2315,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/deceasedTime/@value",
       "hl7_data_type": "Point in Time (TS)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0041"
+      "fda_error_id": "R0041",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.9.2.r",
@@ -1992,7 +2345,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0042",
-      "condition_text": "Optional, but required if D.9.2.r.1b is populated."
+      "condition_text": "Optional, but required if D.9.2.r.1b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.9.2.r.1b",
@@ -2013,7 +2369,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0043",
-      "condition_text": "Optional, but required if D.9.2.r.1a is populated."
+      "condition_text": "Optional, but required if D.9.2.r.1a is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.9.2.r.2",
@@ -2032,7 +2391,10 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "originalText = Encapsulated Data (ED)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0044"
+      "fda_error_id": "R0044",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.9.3",
@@ -2056,7 +2418,10 @@
       "hl7_data_type": "Boolean (BL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0045",
-      "condition_text": "Optional, but required if D.9.1 is populated."
+      "condition_text": "Optional, but required if D.9.1 is populated.",
+      "allowed_value_constraint": {
+        "kind": "boolean"
+      }
     },
     {
       "code": "D.9.4.r",
@@ -2083,7 +2448,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0046",
-      "condition_text": "Optional, but required if D.9.4.r.1b is populated."
+      "condition_text": "Optional, but required if D.9.4.r.1b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.9.4.r.1b",
@@ -2104,7 +2472,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0047",
-      "condition_text": "Optional, but required if D.9.4.r.1a is populated."
+      "condition_text": "Optional, but required if D.9.4.r.1a is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.9.4.r.2",
@@ -2124,7 +2495,10 @@
       "hl7_component": "originalText = Encapsulated Data (ED)",
       "fda_severity": "rejection",
       "fda_error_id": "R0048",
-      "condition_text": "Optional, but required if D.9.4.r.1 is populated."
+      "condition_text": "Optional, but required if D.9.4.r.1 is populated.",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.10",
@@ -2153,7 +2527,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/associatedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/name[1]/text()",
       "hl7_data_type": "Entity Name (EN)",
-      "hl7_component": "name=Entity Name Part (ENXP)"
+      "hl7_component": "name=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.10.2",
@@ -2178,7 +2555,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/associatedPerson[@classCode='PSN'][@determinerCode='INSTANCE']/birthTime/@value",
-      "hl7_data_type": "Point in Time (TS)"
+      "hl7_data_type": "Point in Time (TS)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.10.2.2a",
@@ -2198,7 +2578,10 @@
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0049",
-      "condition_text": "Optional, but required if D.10.2.2b is populated."
+      "condition_text": "Optional, but required if D.10.2.2b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.10.2.2b",
@@ -2218,7 +2601,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0050",
-      "condition_text": "Optional, but required if D.10.2.2a is populated."
+      "condition_text": "Optional, but required if D.10.2.2a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "D.10.3",
@@ -2238,7 +2624,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][observation/code[@code='22'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='TS'][1]/@value",
-      "hl7_data_type": "Point in Time (TS)"
+      "hl7_data_type": "Point in Time (TS)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.10.4",
@@ -2255,7 +2644,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][observation/code[@code='7'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='PQ'][@unit='kg'][1]/@value",
       "hl7_data_type": "Physical Quantity (PQ)",
-      "hl7_component": "value=Real Number (REAL)"
+      "hl7_component": "value=Real Number (REAL)",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.10.5",
@@ -2272,7 +2664,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][observation/code[@code='17'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='PQ'][@unit='cm'][1]/@value",
       "hl7_data_type": "Physical Quantity (PQ)",
-      "hl7_component": "value=Real Number (REAL)"
+      "hl7_component": "value=Real Number (REAL)",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.10.6",
@@ -2298,7 +2693,14 @@
       "hl7_component": "code=Character String (ST)",
       "vocabulary": "sex",
       "fda_severity": "rejection",
-      "fda_error_id": "R0051"
+      "fda_error_id": "R0051",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2"
+        ]
+      }
     },
     {
       "code": "D.10.7",
@@ -2331,7 +2733,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0052",
-      "condition_text": "Optional, but required if D.10.7.1.r.1b is populated."
+      "condition_text": "Optional, but required if D.10.7.1.r.1b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.10.7.1.r.1b",
@@ -2352,7 +2757,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0053",
-      "condition_text": "Optional, but required if D.10.7.1.r.1a is populated."
+      "condition_text": "Optional, but required if D.10.7.1.r.1a is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.10.7.1.r.2",
@@ -2372,7 +2780,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/effectiveTime[@xsi:type='IVL_TS']/low/@value",
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "low=Interval Boundary (IVXB)"
+      "hl7_component": "low=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.10.7.1.r.3",
@@ -2393,7 +2804,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/inboundRelationship[@typeCode='REFR'][observation/code[@code='13'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "boolean"
+      }
     },
     {
       "code": "D.10.7.1.r.4",
@@ -2413,7 +2827,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/effectiveTime[@xsi:type='IVL_TS']/high/@value",
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "high=Interval Boundary (IVXB)"
+      "hl7_component": "high=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.10.7.1.r.5",
@@ -2429,7 +2846,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][observation/code[@code='10'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ED'][1]/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.10.7.2",
@@ -2445,7 +2865,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@code='18'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ED'][1]/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.10.8.r",
@@ -2468,7 +2891,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/name[1]/text()",
       "hl7_data_type": "Entity Name (EN)",
-      "hl7_component": "name=Entity Name Part (ENXP)"
+      "hl7_component": "name=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.10.8.r.2a",
@@ -2484,7 +2910,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-MPID']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "codeSystemVersion= Character String (ST)"
+      "hl7_component": "codeSystemVersion= Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.10.8.r.2b",
@@ -2501,7 +2930,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-MPID']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "D.10.8.r.3a",
@@ -2517,7 +2949,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-PhPID']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "codeSystemVersion= Character String (ST)"
+      "hl7_component": "codeSystemVersion= Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "D.10.8.r.3b",
@@ -2534,7 +2969,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-PhPID']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "D.10.8.r.4",
@@ -2554,7 +2992,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/effectiveTime[@xsi:type='IVL_TS']/low/@value",
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "low=Interval Boundary (IVXB)"
+      "hl7_component": "low=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.10.8.r.5",
@@ -2574,7 +3015,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/effectiveTime[@xsi:type='IVL_TS']/high/@value",
       "hl7_data_type": "Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "high=Interval Boundary (IVXB)"
+      "hl7_component": "high=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "D.10.8.r.6a",
@@ -2594,7 +3038,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0054",
-      "condition_text": "Optional, but required if D.10.8.r.6b is populated."
+      "condition_text": "Optional, but required if D.10.8.r.6b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.10.8.r.6b",
@@ -2615,7 +3062,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0055",
-      "condition_text": "Optional, but required if D.10.8.r.6a is populated."
+      "condition_text": "Optional, but required if D.10.8.r.6a is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.10.8.r.7a",
@@ -2635,7 +3085,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0056",
-      "condition_text": "Optional, but required if D.10.8.r.7b is populated."
+      "condition_text": "Optional, but required if D.10.8.r.7b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "D.10.8.r.7b",
@@ -2656,7 +3109,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0057",
-      "condition_text": "Optional, but required if D.10.8.r.7a is populated."
+      "condition_text": "Optional, but required if D.10.8.r.7a is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "E.i.1",
@@ -2678,7 +3134,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.6.163'][1]/originalText/text()",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "originalText = Encapsulated Data (ED)"
+      "hl7_component": "originalText = Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "E.i.1.1b",
@@ -2699,7 +3158,10 @@
       "vocabulary": "ISO639",
       "fda_severity": "rejection",
       "fda_error_id": "R0058",
-      "condition_text": "Optional, but required if E.i.1.1a is populated."
+      "condition_text": "Optional, but required if E.i.1.1a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "E.i.1.2",
@@ -2715,7 +3177,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='30'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ED'][1]/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "E.i.2.1a",
@@ -2732,7 +3197,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.6.163'][1]/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "codeSystemVersion= Character String (ST)",
-      "vocabulary": "MedDRA"
+      "vocabulary": "MedDRA",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "E.i.2.1b",
@@ -2750,7 +3218,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.6.163'][1]/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "MedDRA"
+      "vocabulary": "MedDRA",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "E.i.3.1",
@@ -2767,7 +3238,16 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='37'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.10'][1]/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      }
     },
     {
       "code": "E.1.3.2",
@@ -2791,7 +3271,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='34'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "true_marker"
+      }
     },
     {
       "code": "E.i.3.2b",
@@ -2809,7 +3292,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='21'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "true_marker"
+      }
     },
     {
       "code": "E.i.3.2c",
@@ -2827,7 +3313,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='33'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "true_marker"
+      }
     },
     {
       "code": "E.i.3.2d",
@@ -2845,7 +3334,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='35'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "true_marker"
+      }
     },
     {
       "code": "E.i.3.2e",
@@ -2863,7 +3355,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='12'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "true_marker"
+      }
     },
     {
       "code": "E.i.3.2f",
@@ -2881,7 +3376,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='26'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "true_marker"
+      }
     },
     {
       "code": "E.i.4",
@@ -2901,7 +3399,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/effectiveTime[@xsi:type='IVL_TS']/low/@value",
       "hl7_data_type": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nHL7 Data Type: Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nlow=Interval Boundary (IVXB)"
+      "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nlow=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "E.i.5",
@@ -2921,7 +3422,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/effectiveTime[@xsi:type='IVL_TS']/high/@value",
       "hl7_data_type": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nHL7 Data Type: Interval of Point in Time (IVL<TS>)",
-      "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nhigh=Interval Boundary (IVXB)"
+      "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nhigh=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "E.i.6a",
@@ -2940,7 +3444,10 @@
       "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nwidth/value=Real Number (REAL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0059",
-      "condition_text": "Optional, but required if E.i.6b is populated."
+      "condition_text": "Optional, but required if E.i.6b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "E.i.6b",
@@ -2960,7 +3467,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0060",
-      "condition_text": "Optional, but required if E.i.6a is populated."
+      "condition_text": "Optional, but required if E.i.6a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "E.i.7",
@@ -2977,7 +3487,18 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='27'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.11'][1]/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "0"
+        ]
+      }
     },
     {
       "code": "E.i.8",
@@ -2992,7 +3513,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='24'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL']/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "boolean"
+      }
     },
     {
       "code": "E.i.9",
@@ -3010,7 +3534,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][observation[id][code[@code='29'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]][i]/observation[@classCode='OBS'][@moodCode='EVN']/location[@typeCode='LOC'][1]/locatedEntity[@classCode='LOCE']/locatedPlace[@classCode='COUNTRY'][@determinerCode='INSTANCE']/code[@codeSystem='1.0.3166.1.2.2']/@code",
       "hl7_data_type": "Concept Descriptor (CD)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "ISO3166"
+      "vocabulary": "ISO3166",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "F.r",
@@ -3038,7 +3565,10 @@
       "hl7_data_type": "Point in Time (TS)",
       "fda_severity": "rejection",
       "fda_error_id": "R0061",
-      "condition_text": "Optional, but required if F.r.2 is populated."
+      "condition_text": "Optional, but required if F.r.2 is populated.",
+      "allowed_value_constraint": {
+        "kind": "format"
+      }
     },
     {
       "code": "F.r.2.1",
@@ -3056,7 +3586,10 @@
       "hl7_data_type": "Concept Descriptor (CD)",
       "hl7_component": "originalText=Encapsu lated Data (ED)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0062"
+      "fda_error_id": "R0062",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "F.r.2.2a",
@@ -3076,7 +3609,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0063",
-      "condition_text": "Optional, but required when F.r.2.2b is populated."
+      "condition_text": "Optional, but required when F.r.2.2b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "F.r.2.2b",
@@ -3097,7 +3633,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0064",
-      "condition_text": "Optional, but required if F.r.1 is populated and F.r.2.2b is not populated."
+      "condition_text": "Optional, but required if F.r.1 is populated and F.r.2.2b is not populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "F.r.3",
@@ -3124,7 +3663,16 @@
       "hl7_component": "code=Character String (ST)",
       "fda_severity": "rejection",
       "fda_error_id": "R0065",
-      "condition_text": "Optional, but required if F.r.2 is populated, and neither F.r.3.2 nor F.r.3.4 is populated."
+      "condition_text": "Optional, but required if F.r.2 is populated, and neither F.r.3.2 nor F.r.3.4 is populated.",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      }
     },
     {
       "code": "F.r.3.2",
@@ -3147,7 +3695,10 @@
       "hl7_component": "1.EQ\ncenter=Physical Quantity (PQ)",
       "fda_severity": "rejection",
       "fda_error_id": "R0066",
-      "condition_text": "Optional, but required if F.r.2 is populated, and F.r.3.1 and F.r.3.4 is not populated."
+      "condition_text": "Optional, but required if F.r.2 is populated, and F.r.3.1 and F.r.3.4 is not populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "F.r.3.3",
@@ -3168,7 +3719,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0067",
-      "condition_text": "Optional, but required if F.r.3.2 is populated."
+      "condition_text": "Optional, but required if F.r.3.2 is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "F.r.3.4",
@@ -3186,7 +3740,10 @@
       "hl7_data_type": "Encapsulated Data (ED)",
       "fda_severity": "rejection",
       "fda_error_id": "R0068",
-      "condition_text": "Optional, but required if F.r.2 is populated, and F.r.3 is not populated."
+      "condition_text": "Optional, but required if F.r.2 is populated, and F.r.3 is not populated.",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "F.r.4",
@@ -3203,7 +3760,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='3'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/referenceRange[@typeCode='REFV'][observationRange/interpretationCode[@code='L'][@codeSystem='2.16.840.1.113883.5.83']][1]/observationRange[@classCode='OBS'][@moodCode='EVN.CRT']/value[@xsi:type='PQ']/@value",
       "hl7_data_type": "Physical Quantity (PQ)",
-      "hl7_component": "value=Real Number (REAL)"
+      "hl7_component": "value=Real Number (REAL)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "F.r.5",
@@ -3220,7 +3780,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='3'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/referenceRange[@typeCode='REFV'][observationRange/interpretationCode[@code='H'][@codeSystem='2.16.840.1.113883.5.83']][1]/observationRange[@classCode='OBS'][@moodCode='EVN.CRT']/value[@xsi:type='PQ']/@value",
       "hl7_data_type": "Physical Quantity (PQ)",
-      "hl7_component": "value=Real Number (REAL)"
+      "hl7_component": "value=Real Number (REAL)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "F.r.6",
@@ -3236,7 +3799,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='3'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='10'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ED'][1]/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "F.r.7",
@@ -3251,7 +3817,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='3'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][observation/code[@codeSystem='2.16.840.1.113883.6.163']][r]/observation[@classCode='OBS'][@moodCode='EVN']/outboundRelationship2[@typeCode='REFR'][observation/code[@code='25'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "boolean"
+      }
     },
     {
       "code": "G.k",
@@ -3278,7 +3847,16 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
       "fda_severity": "warning",
-      "fda_error_id": "W0005"
+      "fda_error_id": "W0005",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      }
     },
     {
       "code": "G.k.2",
@@ -3301,7 +3879,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-MPID']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "codeSystemVersion= Character String (ST)"
+      "hl7_component": "codeSystemVersion= Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.2.1.1b",
@@ -3318,7 +3899,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-MPID']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.2.1.2a",
@@ -3334,7 +3918,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-PhPID']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "codeSystemVersion= Character String (ST)"
+      "hl7_component": "codeSystemVersion= Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.2.1.2b",
@@ -3351,7 +3938,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-PhPID']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.2.2",
@@ -3369,7 +3959,10 @@
       "hl7_data_type": "Entity Name (EN)",
       "hl7_component": "name=Entity Name Part (ENXP)",
       "fda_severity": "warning",
-      "fda_error_id": "W0009"
+      "fda_error_id": "W0009",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.2.3.r",
@@ -3392,7 +3985,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/ingredient[@classCode='ACTI'][r]/ingredientSubstance[@classCode='MMAT'][@determinerCode='KIND']/name[1]/text()",
       "hl7_data_type": "Trivial Name (TN)",
-      "hl7_component": "name=Entity Name Part (ENXP)"
+      "hl7_component": "name=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.2.3.r.2a",
@@ -3408,7 +4004,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/ingredient[@classCode='ACTI'][r]/ingredientSubstance[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-Substance']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "codeSystemVersion= Character String (ST)"
+      "hl7_component": "codeSystemVersion= Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.2.3.r.2b",
@@ -3425,7 +4024,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/ingredient[@classCode='ACTI'][r]/ingredientSubstance[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='TBD-Substance']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.2.3.r.3a",
@@ -3441,7 +4043,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/ingredient[@classCode='ACTI'][r]/quantity[denominator/@value='1']/numerator/@value",
       "hl7_data_type": "Physical Quantity (PQ)",
-      "hl7_component": "value=Real Number (REAL)"
+      "hl7_component": "value=Real Number (REAL)",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "G.k.2.3.r.3b",
@@ -3460,7 +4065,10 @@
       "hl7_component": "unit=Coded Simple Value (CS)",
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
-      "fda_error_id": "R0073"
+      "fda_error_id": "R0073",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.2.4",
@@ -3478,7 +4086,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/subjectOf[@typeCode='SBJ'][1]/productEvent[@classCode='ACT'][@moodCode='EVN'][code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.18']]/performer[@typeCode='PRF']/assignedEntity[@classCode='ASSIGNED']/representedOrganization[@classCode='ORG'][@determinerCode='INSTANCE']/addr/country[1]/text()",
       "hl7_data_type": "Postal Address (AD)",
       "hl7_component": "country=Address Part (ADXP)",
-      "vocabulary": "ISO3166"
+      "vocabulary": "ISO3166",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.2.5",
@@ -3493,7 +4104,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='6'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='BL'][1]/@value",
-      "hl7_data_type": "Boolean (BL)"
+      "hl7_data_type": "Boolean (BL)",
+      "allowed_value_constraint": {
+        "kind": "true_marker"
+      }
     },
     {
       "code": "G.k.3.1",
@@ -3512,7 +4126,10 @@
       "hl7_data_type": "Instance Identifier (II)",
       "hl7_component": "extension=Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0114"
+      "fda_error_id": "R0114",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.3.2",
@@ -3533,7 +4150,10 @@
       "vocabulary": "ISO3166",
       "fda_severity": "rejection",
       "fda_error_id": "R0074",
-      "condition_text": "Optional, but required if G.k.3.1 is provided."
+      "condition_text": "Optional, but required if G.k.3.1 is provided.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.3.3",
@@ -3549,7 +4169,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/asManufacturedProduct[@classCode='MANU']/subjectOf[@typeCode='SBJ'][1]/approval[@classCode='CNTRCT'][@moodCode='EVN']/holder[@typeCode='HLD'][1]/role[@classCode='HLD']/playingOrganization[@classCode='ORG'][@determinerCode='INSTANCE']/name/text()",
       "hl7_data_type": "Organization Name (ON)",
-      "hl7_component": "name=Entity Name Part (ENXP)"
+      "hl7_component": "name=Entity Name Part (ENXP)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.4.r",
@@ -3572,7 +4195,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/doseQuantity/@value",
       "hl7_data_type": "Physical Quantity (PQ)",
-      "hl7_component": "value=Real Number (REAL)"
+      "hl7_component": "value=Real Number (REAL)",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "G.k.4.r.1b",
@@ -3592,7 +4218,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0075",
-      "condition_text": "Optional, but required if G.k.4.r.1a is populated."
+      "condition_text": "Optional, but required if G.k.4.r.1a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.4.r.2",
@@ -3608,7 +4237,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/effectiveTime[@xsi:type='SXPR_TS']/comp[@xsi:type='PIVL_TS']/period/@value",
       "hl7_data_type": "1. When more than two values in the following data elements appear   1) G.k.4.r.2、\nG.k.4.r.3   2) \nG.k.4.r.4   3) \nG.k.4.r.5   4) \nG.k.4.r.6a、 G.k.4.r.6bThe first comp element with data type SXPRParenthetic Set Expression of Time (SXPR_TS) [Periodic Interval   of Time (PIVL_TS)]",
-      "hl7_component": "period/value=Real Number (REAL)"
+      "hl7_component": "period/value=Real Number (REAL)",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "G.k.4.r.3",
@@ -3628,7 +4260,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0076",
-      "condition_text": "Optional, but required if G.k.4.r.2 is populated."
+      "condition_text": "Optional, but required if G.k.4.r.2 is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.4.r.4",
@@ -3648,7 +4283,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/effectiveTime[@xsi:type='SXPR_TS']/comp[@xsi:type='IVL_TS']/low/@value",
       "hl7_data_type": "1. When more than two values in the following data elements appear \n \n   1) G.k.4.r.2、\nG.k.4.r.3 \n   2) G.k.4.r.4 \n   3) G.k.4.r.5 \n   4) G.k.4.r.6a、\nG.k.4.r.6b \n \nThe first comp element with data type SXPR\n \nParenthetic Set Expression of Time (SXPR_TS)   \n[Intervale of Point in Time (IVL_TS)]",
-      "hl7_component": "low=Interval Boundary (IVXB)"
+      "hl7_component": "low=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.4.r.5",
@@ -3668,7 +4306,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/effectiveTime[@xsi:type='SXPR_TS']/comp[@xsi:type='IVL_TS']/high/@value",
       "hl7_data_type": "1. When more than two values in the following data elements appear \n \n   1) G.k.4.r.2、\nG.k.4.r.3 \n   2) G.k.4.r.4 \n   3) G.k.4.r.5 \n   4) G.k.4.r.6a、\nG.k.4.r.6b \n \nThe first comp element with data type SXPR \n \nParenthetic Set Expression of Time (SXPR_TS)   \n[Intervale of Point in Time (IVL_TS)]",
-      "hl7_component": "high=Interval Boundary (IVXB)"
+      "hl7_component": "high=Interval Boundary (IVXB)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.4.r.6a",
@@ -3687,7 +4328,10 @@
       "hl7_component": "width/value=Real Number (REAL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0077",
-      "condition_text": "Optional, but required if G.k.4.r.6b is populated."
+      "condition_text": "Optional, but required if G.k.4.r.6b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "G.k.4.r.6b",
@@ -3707,7 +4351,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0078",
-      "condition_text": "Optional, but required if G.k.4.r.6a is populated."
+      "condition_text": "Optional, but required if G.k.4.r.6a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.4.r.7",
@@ -3722,7 +4369,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/productInstanceInstance[@classCode='MMAT'][@determinerCode='INSTANCE']/lotNumberText/text()",
-      "hl7_data_type": "Character String (ST)"
+      "hl7_data_type": "Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.4.r.8",
@@ -3737,7 +4387,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/text/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.4.r.9.1",
@@ -3758,7 +4411,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/formCode[@codeSystem='0.4.0.127.0.16.1.1.2.1']/originalText/text()",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "originalText=Encapsu lated Data (ED)"
+      "hl7_component": "originalText=Encapsu lated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.4.r.9.2a",
@@ -3775,7 +4431,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/formCode[@codeSystem='0.4.0.127.0.16.1.1.2.1']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "codeSystemVersion=Character String (ST)",
-      "vocabulary": "EDQM"
+      "vocabulary": "EDQM",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.4.r.9.2b",
@@ -3793,7 +4452,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/formCode[@codeSystem='0.4.0.127.0.16.1.1.2.1']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "EDQM"
+      "vocabulary": "EDQM",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.4.r.10.1",
@@ -3814,7 +4476,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/routeCode[@codeSystem='0.4.0.127.0.16.1.1.2.6']/originalText/text()",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "originalText=Encapsu lated Data (ED)"
+      "hl7_component": "originalText=Encapsu lated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.4.r.10.2a",
@@ -3831,7 +4496,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/routeCode[@codeSystem='0.4.0.127.0.16.1.1.2.6']/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "codeSystemVersion= Character String (ST)",
-      "vocabulary": "EDQM"
+      "vocabulary": "EDQM",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.4.r.10.2b",
@@ -3849,7 +4517,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/routeCode[@codeSystem='0.4.0.127.0.16.1.1.2.6']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "EDQM"
+      "vocabulary": "EDQM",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.4.r.11.1",
@@ -3871,7 +4542,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/inboundRelationship[@typeCode='REFR'][observation/code[@code='28'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='0.4.0.127.0.16.1.1.2.6'][1]/originalText/text()",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "originalText=Encapsulated Data (ED)"
+      "hl7_component": "originalText=Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.4.r.11.2a",
@@ -3888,7 +4562,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/inboundRelationship[@typeCode='REFR'][observation/code[@code='28'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='0.4.0.127.0.16.1.1.2.6'][1]/@codeSystemVersion",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "codeSystemVersion= Character String (ST)",
-      "vocabulary": "EDQM"
+      "vocabulary": "EDQM",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.4.r.11.2b",
@@ -3906,7 +4583,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/inboundRelationship[@typeCode='REFR'][observation/code[@code='28'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='0.4.0.127.0.16.1.1.2.6'][1]/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "EDQM"
+      "vocabulary": "EDQM",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.5a",
@@ -3926,7 +4606,10 @@
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0079",
-      "condition_text": "Optional, but required if G.k.5b is populated."
+      "condition_text": "Optional, but required if G.k.5b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "G.k.5b",
@@ -3946,7 +4629,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0080",
-      "condition_text": "Optional, but required if G.k.5a is populated."
+      "condition_text": "Optional, but required if G.k.5a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.6a",
@@ -3966,7 +4652,10 @@
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0081",
-      "condition_text": "Optional, but required if G.k.6b is populated."
+      "condition_text": "Optional, but required if G.k.6b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "G.k.6b",
@@ -3986,7 +4675,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0082",
-      "condition_text": "Optional, but required if G.k.6a is populated."
+      "condition_text": "Optional, but required if G.k.6a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.7.r",
@@ -4015,7 +4707,10 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/inboundRelationship[@typeCode='RSON'][observation/code[@code='19'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][r]/observation[@classCode='OBS'][@moodCode='EVN'][performer[@typeCode='PRF']/assignedEntity[@classCode='ASSIGNED']/code[@code='3'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.21']][1]/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.6.163'][1]/originalText/text()",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "originalText=Encapsu lated Data (ED)"
+      "hl7_component": "originalText=Encapsu lated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.7.r.2a",
@@ -4035,7 +4730,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0083",
-      "condition_text": "Optional, but required if G.k.7.r.2b is populated."
+      "condition_text": "Optional, but required if G.k.7.r.2b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "G.k.7.r.2b",
@@ -4056,7 +4754,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0084",
-      "condition_text": "Optional, but required if G.k.7.r.2a is provided."
+      "condition_text": "Optional, but required if G.k.7.r.2a is provided.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "G.k.8",
@@ -4073,7 +4774,18 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/inboundRelationship[@typeCode='CAUS'][act/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.15']][1]/act[@classCode='ACT'][@moodCode='EVN']/code[@codeSystem='2.16.840.1.113883.3.989.2.1.1.15']/@code",
       "hl7_data_type": "Concept Descriptor (CD)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "0",
+          "9"
+        ]
+      }
     },
     {
       "code": "G.k.9.i",
@@ -4092,6 +4804,9 @@
       "oid": "UUIDs",
       "profiles": {
         "mfds": "optional"
+      },
+      "allowed_value_constraint": {
+        "kind": "descriptive"
       }
     },
     {
@@ -4111,7 +4826,10 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "originalText=Encapsu lated Data (ED)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0085"
+      "fda_error_id": "R0085",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.9.i.2.r.2",
@@ -4130,7 +4848,10 @@
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "originalText=Encapsu lated Data (ED)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0086"
+      "fda_error_id": "R0086",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.9.i.2.r.3",
@@ -4148,7 +4869,10 @@
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][causalityAssessment/code[@code='39'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][r]/causalityAssessment[@classCode='OBS'][@moodCode='EVN'][subject1[@typeCode='SUBJ']/adverseEffectReference[@classCode='OBS'][@moodCode='EVN']/id[@root='UUID of i-th reaction']][subject2[@typeCode='SUBJ']/productUseReference[@classCode='SBADM'][@moodCode='EVN']/id[@root='UUID of k-th drug']]/value[@xsi:type='ST']/text()",
       "hl7_data_type": "Character String (ST)",
       "fda_severity": "rejection",
-      "fda_error_id": "R0087"
+      "fda_error_id": "R0087",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "G.k.9.i.3.1a",
@@ -4167,7 +4891,10 @@
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0088",
-      "condition_text": "Optional, but required if G.k.9.i.3.1b is populated."
+      "condition_text": "Optional, but required if G.k.9.i.3.1b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "G.k.9.i.3.1b",
@@ -4187,7 +4914,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0089",
-      "condition_text": "Optional, but required if G.k.9.i.3.1a is populated."
+      "condition_text": "Optional, but required if G.k.9.i.3.1a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.9.i.3.2a",
@@ -4206,7 +4936,10 @@
       "hl7_component": "value=Real Number (REAL)",
       "fda_severity": "rejection",
       "fda_error_id": "R0090",
-      "condition_text": "Optional, but required if G.k.9.i.3.2b is populated."
+      "condition_text": "Optional, but required if G.k.9.i.3.2b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "G.k.9.i.3.2b",
@@ -4226,7 +4959,10 @@
       "vocabulary": "UCUM",
       "fda_severity": "rejection",
       "fda_error_id": "R0091",
-      "condition_text": "Optional, but required if G.k.9.i.3.2a is populated."
+      "condition_text": "Optional, but required if G.k.9.i.3.2a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     },
     {
       "code": "G.k.9.i.4",
@@ -4243,7 +4979,16 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ']/organizer[@classCode='CATEGORY'][@moodCode='EVN'][code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='PERT'][observation/code[@code='31'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']]/observation[@classCode='OBS'][@moodCode='EVN'][outboundRelationship1[@typeCode='REFR']/actReference[@classCode='OBS'][@moodCode='EVN']/id[@root='UUID of i-th reaction']]/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.16'][1]/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      }
     },
     {
       "code": "G.k.10.r",
@@ -4260,7 +5005,23 @@
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='REFR'][observation/code[@code='9'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][r]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='CE'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.17'][1]/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
-      "hl7_component": "code=Character String (ST)"
+      "hl7_component": "code=Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "code_set",
+        "values": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "9",
+          "10",
+          "11"
+        ]
+      }
     },
     {
       "code": "G.k.11",
@@ -4276,7 +5037,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/outboundRelationship2[@typeCode='REFR'][observation/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][1]/observation[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ST'][1]/text()",
-      "hl7_data_type": "Character String (ST)"
+      "hl7_data_type": "Character String (ST)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "H",
@@ -4298,7 +5062,10 @@
         "mfds": "mandatory"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/text/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "H.2",
@@ -4314,7 +5081,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/component1[@typeCode='COMP'][observationEvent[code[@code='10'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/code[@code='3'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.21']]][1]/observationEvent[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ED']/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "H.3.r",
@@ -4341,7 +5111,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0097",
-      "condition_text": "Optional, but required if H.3.r.1b is populated."
+      "condition_text": "Optional, but required if H.3.r.1b is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "H.3.r.1b",
@@ -4362,7 +5135,10 @@
       "vocabulary": "MedDRA",
       "fda_severity": "rejection",
       "fda_error_id": "R0098",
-      "condition_text": "Optional, but required if H.3.r.1a is populated."
+      "condition_text": "Optional, but required if H.3.r.1a is populated.",
+      "allowed_value_constraint": {
+        "kind": "numeric"
+      }
     },
     {
       "code": "H.4",
@@ -4378,7 +5154,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/component1[@typeCode='COMP'][observationEvent[code[@code='10'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/code[@code='1'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.21']]][1]/observationEvent[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ED']/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "H.5.r",
@@ -4401,7 +5180,10 @@
         "mfds": "optional"
       },
       "xpath": "/MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][observationEvent[code[@code='36'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.19']][author[@typeCode='AUT']/assignedEntity[@classCode='ASSIGNED']/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.21']]][r]/observationEvent[@classCode='OBS'][@moodCode='EVN']/value[@xsi:type='ED']/text()",
-      "hl7_data_type": "Encapsulated Data (ED)"
+      "hl7_data_type": "Encapsulated Data (ED)",
+      "allowed_value_constraint": {
+        "kind": "descriptive"
+      }
     },
     {
       "code": "H.5.r.1b",
@@ -4422,7 +5204,10 @@
       "vocabulary": "ISO639",
       "fda_severity": "rejection",
       "fda_error_id": "R0099",
-      "condition_text": "Required if H.5.r.1a is populated."
+      "condition_text": "Required if H.5.r.1a is populated.",
+      "allowed_value_constraint": {
+        "kind": "vocabulary"
+      }
     }
   ]
 }

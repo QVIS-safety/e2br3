@@ -390,7 +390,7 @@
     "label": "Dose Frequency Value",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -400,14 +400,14 @@
       "evidence": "DosageInformation.frequency_value stores the numeric component paired with G.k.4.r.3."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs.dosageInformation",
       "field": "frequencyValue",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds drugs[index].dosageInformation[doseIndex].frequencyValue as a helper paired with G.k.4.r.3."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": "Component row for the local split of G.k.4.r.3 frequency. Local frequency helper; the official frequency elements G.k.4.r.2 and G.k.4.r.3 are separately mapped."
+    "notes": "Component row for the local split of G.k.4.r.3 frequency. Local frequency helper; the official frequency elements G.k.4.r.2 and G.k.4.r.3 are separately mapped. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.4.r.3",
@@ -1290,7 +1290,7 @@
     "label": "Supplemental Brand Name",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1300,14 +1300,14 @@
       "evidence": "DrugInformation.brand_name stores the local supplemental brand-name field."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "drugBrandName",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds drugs[index].drugBrandName as a supplemental product detail."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": "Local helper row; SectionG tooltip says this is not the canonical E2B G.k.2.4 field. Supplemental local field; official product naming is G.k.2.2 / G.k.2.3.r."
+    "notes": "Local helper row; SectionG tooltip says this is not the canonical E2B G.k.2.4 field. Supplemental local field; official product naming is G.k.2.2 / G.k.2.3.r. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.local.supplemental.genericName",
@@ -1315,7 +1315,7 @@
     "label": "Supplemental Generic Name",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1325,14 +1325,14 @@
       "evidence": "DrugInformation.drug_generic_name stores the local supplemental generic-name field."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "drugGenericName",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds drugs[index].drugGenericName as a supplemental product detail."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": "Local helper row; SectionG tooltip says this is not the canonical E2B G.k.2.5 field. Supplemental local field; official product naming is G.k.2.2 / G.k.2.3.r."
+    "notes": "Local helper row; SectionG tooltip says this is not the canonical E2B G.k.2.5 field. Supplemental local field; official product naming is G.k.2.2 / G.k.2.3.r. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.3.1",
@@ -1412,7 +1412,7 @@
     "label": "Cumulative Dose to First Reaction Value",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "backend": {
       "status": "mapped",
       "model": "DrugInformation",
@@ -1421,14 +1421,14 @@
       "evidence": "DrugInformation.cumulative_dose_first_reaction_value stores G.k.5a values."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "cumulativeDoseValue",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds drugs[index].cumulativeDoseValue for ICH.G.k.5a validation."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": ""
+    "notes": " Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.5b",
@@ -1436,7 +1436,7 @@
     "label": "Cumulative Dose to First Reaction Unit",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "backend": {
       "status": "mapped",
       "model": "DrugInformation",
@@ -1445,14 +1445,14 @@
       "evidence": "DrugInformation.cumulative_dose_first_reaction_unit stores G.k.5b values."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "cumulativeDoseUnit",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds drugs[index].cumulativeDoseUnit for ICH.G.k.5b validation."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": ""
+    "notes": " Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.6a",
@@ -1460,7 +1460,7 @@
     "label": "Gestation Period at Time of Exposure Value",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "backend": {
       "status": "mapped",
       "model": "DrugInformation",
@@ -1469,14 +1469,14 @@
       "evidence": "DrugInformation.gestation_period_exposure_value stores G.k.6a values."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "gestationPeriodExposureValue",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds drugs[index].gestationPeriodExposureValue for ICH.G.k.6a validation."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": ""
+    "notes": " Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.6b",
@@ -1484,7 +1484,7 @@
     "label": "Gestation Period at Time of Exposure Unit",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "backend": {
       "status": "mapped",
       "model": "DrugInformation",
@@ -1493,14 +1493,14 @@
       "evidence": "DrugInformation.gestation_period_exposure_unit stores G.k.6b values."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "gestationPeriodExposureUnit",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds drugs[index].gestationPeriodExposureUnit for ICH.G.k.6b validation."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": ""
+    "notes": " Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.local.supplemental.dosageText",
@@ -1508,7 +1508,7 @@
     "label": "Supplemental Drug Dosage Text",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1518,14 +1518,14 @@
       "evidence": "DrugInformation.dosage_text stores the local app-level dosage text helper."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "drugDosageText",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds drugs[index].drugDosageText as a supplemental field."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": "Structured dosage is captured under G.k.4.r DosageInformation rows. Supplemental local field; official dosage text is G.k.4.r.8."
+    "notes": "Structured dosage is captured under G.k.4.r DosageInformation rows. Supplemental local field; official dosage text is G.k.4.r.8. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.local.rechallenge",
@@ -1533,7 +1533,7 @@
     "label": "Drug Rechallenge / Readministration",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1543,14 +1543,14 @@
       "evidence": "DrugInformation.rechallenge stores G.k.8 values."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "drugRechallengeAction",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds fieldNumber G.k.8 to drugs[index].drugRechallengeAction."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": "Drug-level rechallenge convenience field; the official G.k.8 is Action Taken with Drug. Not an E2BR3 data element."
+    "notes": "Drug-level rechallenge convenience field; the official G.k.8 is Action Taken with Drug. Not an E2BR3 data element. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.11",
@@ -1780,7 +1780,7 @@
     "label": "Did Reaction Recur on Readministration",
     "section": "G",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1790,14 +1790,14 @@
       "evidence": "DrugRecurrenceInformation.reaction_recurred is annotated as G.k.8.r.3."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "drugs",
       "field": "drugRecurrence",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds fieldNumber G.k.8.r to drugs[index].drugRecurrence."
+      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
     },
     "action": "",
-    "notes": "Local drug-level recurrence flag; the official per drug-reaction element is G.k.9.i.4. Not an E2BR3 data element."
+    "notes": "Local drug-level recurrence flag; the official per drug-reaction element is G.k.9.i.4. Not an E2BR3 data element. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.9.i.3.1a",

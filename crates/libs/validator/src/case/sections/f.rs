@@ -1,19 +1,15 @@
 use super::rule_table::{
-	eval_companions, eval_indexed, CompanionRule, IndexedRule, RuleValue,
+	eval_companions, eval_indexed, eval_indexed_allowed_codes,
+	eval_indexed_future_dates, eval_indexed_length, eval_indexed_meddra,
+	eval_indexed_numeric_text, CompanionRule, DateValues, IndexedAllowedCodeRule,
+	IndexedFutureDateRule, IndexedLengthRule, IndexedMeddraRule,
+	IndexedNumericTextRule, IndexedRule, RuleValue,
 };
 use crate::{
-	has_test_payload, has_text, push_issue_by_code, RegulatoryAuthority, RuleFacts,
-	ValidationContext, ValidationIssue,
+	has_test_payload, has_text, RegulatoryAuthority, RuleFacts, ValidationContext,
+	ValidationIssue,
 };
 use lib_core::model::test_result::TestResult;
-
-fn is_future_date(value: Option<sqlx::types::time::Date>) -> bool {
-	let Some(value) = value else {
-		return false;
-	};
-	let today = sqlx::types::time::OffsetDateTime::now_utc().date();
-	value > today
-}
 
 fn test_payload_facts(test: &TestResult) -> RuleFacts {
 	RuleFacts {
@@ -22,12 +18,99 @@ fn test_payload_facts(test: &TestResult) -> RuleFacts {
 	}
 }
 
+const F_TEST_MEDDRA_RULES: &[IndexedMeddraRule<TestResult>] = &[IndexedMeddraRule {
+	version_code: "ICH.F.r.2.2a.VOCABULARY",
+	code_code: "ICH.F.r.2.2b.VOCABULARY",
+	version_path: |idx| format!("testResults.{idx}.testMeddraVersion"),
+	code_path: |idx| format!("testResults.{idx}.testMeddraCode"),
+	values: |test| {
+		(
+			test.test_meddra_version.as_deref(),
+			test.test_meddra_code.as_deref(),
+		)
+	},
+}];
+
 const F_INDEXED_RULES: &[IndexedRule<TestResult>] = &[IndexedRule {
 	code: "ICH.F.r.2.REQUIRED",
 	path: |idx| format!("testResults.{idx}.testName"),
 	value: |test| RuleValue::borrowed(Some(test.test_name.as_str()), None),
 	facts: test_payload_facts,
 }];
+
+const F_FUTURE_DATE_RULES: &[IndexedFutureDateRule<TestResult>] =
+	&[IndexedFutureDateRule {
+		code: "ICH.F.r.1.FUTURE_DATE.FORBIDDEN",
+		path: |idx| format!("testResults.{idx}.testDate"),
+		dates: |test| DateValues::One(test.test_date),
+	}];
+
+const F_ALLOWED_CODE_RULES: &[IndexedAllowedCodeRule<TestResult>] =
+	&[IndexedAllowedCodeRule {
+		code: "ICH.F.r.3.1.ALLOWED.VALUE",
+		path: |idx| format!("testResults.{idx}.testResultCode"),
+		value: |test| test.test_result_code.as_deref(),
+	}];
+
+const F_NUMERIC_TEXT_RULES: &[IndexedNumericTextRule<TestResult>] =
+	&[IndexedNumericTextRule {
+		code: "ICH.F.r.3.2.ALLOWED.VALUE",
+		path: |idx| format!("testResults.{idx}.testResultValue"),
+		value: |test| test.test_result_value.as_deref(),
+	}];
+
+const F_LENGTH_RULES: &[IndexedLengthRule<TestResult>] = &[
+	IndexedLengthRule {
+		code: "ICH.F.r.2.1.LENGTH.MAX",
+		path: |idx| format!("testResults.{idx}.testName"),
+		value: |test| Some(test.test_name.as_str()),
+	},
+	IndexedLengthRule {
+		code: "ICH.F.r.2.2a.LENGTH.MAX",
+		path: |idx| format!("testResults.{idx}.testMeddraVersion"),
+		value: |test| test.test_meddra_version.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.F.r.2.2b.LENGTH.MAX",
+		path: |idx| format!("testResults.{idx}.testMeddraCode"),
+		value: |test| test.test_meddra_code.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.F.r.3.1.LENGTH.MAX",
+		path: |idx| format!("testResults.{idx}.testResultCode"),
+		value: |test| test.test_result_code.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.F.r.3.2.LENGTH.MAX",
+		path: |idx| format!("testResults.{idx}.testResultValue"),
+		value: |test| test.test_result_value.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.F.r.3.3.LENGTH.MAX",
+		path: |idx| format!("testResults.{idx}.testResultUnit"),
+		value: |test| test.test_result_unit.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.F.r.3.4.LENGTH.MAX",
+		path: |idx| format!("testResults.{idx}.resultUnstructured"),
+		value: |test| test.result_unstructured.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.F.r.4.LENGTH.MAX",
+		path: |idx| format!("testResults.{idx}.normalLowValue"),
+		value: |test| test.normal_low_value.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.F.r.5.LENGTH.MAX",
+		path: |idx| format!("testResults.{idx}.normalHighValue"),
+		value: |test| test.normal_high_value.as_deref(),
+	},
+	IndexedLengthRule {
+		code: "ICH.F.r.6.LENGTH.MAX",
+		path: |idx| format!("testResults.{idx}.comments"),
+		value: |test| test.comments.as_deref(),
+	},
+];
 
 const F_COMPANION_RULES: &[CompanionRule<TestResult>] = &[
 	CompanionRule {
@@ -114,19 +197,16 @@ pub(crate) fn collect_ich_issues(
 ) {
 	eval_indexed(issues, &validation_ctx.tests, F_INDEXED_RULES);
 	eval_companions(issues, &validation_ctx.tests, F_COMPANION_RULES);
-	validation_ctx
-		.tests
-		.iter()
-		.enumerate()
-		.for_each(|(idx, test)| {
-			if is_future_date(test.test_date) {
-				push_issue_by_code(
-					issues,
-					"ICH.F.r.1.FUTURE_DATE.FORBIDDEN",
-					format!("testResults.{idx}.testDate"),
-				);
-			}
-		});
+	eval_indexed_future_dates(issues, &validation_ctx.tests, F_FUTURE_DATE_RULES);
+	eval_indexed_allowed_codes(issues, &validation_ctx.tests, F_ALLOWED_CODE_RULES);
+	eval_indexed_numeric_text(issues, &validation_ctx.tests, F_NUMERIC_TEXT_RULES);
+	eval_indexed_length(issues, &validation_ctx.tests, F_LENGTH_RULES);
+	eval_indexed_meddra(
+		issues,
+		&validation_ctx.vocabulary,
+		&validation_ctx.tests,
+		F_TEST_MEDDRA_RULES,
+	);
 }
 
 #[cfg(test)]
@@ -173,6 +253,7 @@ mod golden_f_required_tests {
 
 	fn empty_ctx() -> ValidationContext {
 		ValidationContext {
+			vocabulary: Default::default(),
 			case: dummy_case(),
 			safety_report: None,
 			message_header: None,
@@ -191,8 +272,11 @@ mod golden_f_required_tests {
 			parent_past_drugs: Vec::new(),
 			primary_sources: Vec::new(),
 			documents_held_by_sender: Vec::new(),
+			literature_references: Vec::new(),
 			other_case_identifiers: Vec::new(),
+			linked_report_numbers: Vec::new(),
 			studies: Vec::new(),
+			study_registrations: Vec::new(),
 			reactions: Vec::new(),
 			tests: Vec::new(),
 			drugs: Vec::new(),
@@ -200,6 +284,7 @@ mod golden_f_required_tests {
 			indications: Vec::new(),
 			dosages: Vec::new(),
 			drug_reaction_assessments: Vec::new(),
+			relatedness_assessments: Vec::new(),
 			patient_identifiers: Vec::new(),
 		}
 	}
@@ -238,6 +323,46 @@ mod golden_f_required_tests {
 		issues.into_iter().map(|issue| issue.code).collect()
 	}
 
+	fn length_issue(code: &str, path: &str) -> (String, String) {
+		(code.to_string(), path.to_string())
+	}
+
+	fn length_issues_for(test: TestResult) -> Vec<(String, String)> {
+		let mut ctx = empty_ctx();
+		ctx.tests.push(test);
+		let mut issues = Vec::new();
+		collect_ich_issues(&ctx, &mut issues);
+		let mut out = issues
+			.into_iter()
+			.filter(|issue| issue.code.contains(".LENGTH.MAX"))
+			.map(|issue| (issue.code, issue.path))
+			.collect::<Vec<_>>();
+		out.sort();
+		out
+	}
+
+	#[test]
+	fn allowed_value_rule_flags_invalid_test_result_code() {
+		let mut test = test_result();
+		test.test_name = "ALT".to_string();
+		test.test_date =
+			Some(Date::from_calendar_date(2020, Month::January, 1).unwrap());
+		test.test_result_code = Some("9".to_string());
+
+		assert!(codes_for(test).contains(&"ICH.F.r.3.1.ALLOWED.VALUE".to_string()));
+	}
+
+	#[test]
+	fn numeric_rule_flags_non_numeric_test_result_value() {
+		let mut test = test_result();
+		test.test_name = "ALT".to_string();
+		test.test_date =
+			Some(Date::from_calendar_date(2020, Month::January, 1).unwrap());
+		test.test_result_value = Some("not-numeric".to_string());
+
+		assert!(codes_for(test).contains(&"ICH.F.r.3.2.ALLOWED.VALUE".to_string()));
+	}
+
 	#[test]
 	fn empty_test_result_is_silent() {
 		assert!(codes_for(test_result()).is_empty());
@@ -246,7 +371,7 @@ mod golden_f_required_tests {
 	#[test]
 	fn test_payload_without_name_flags_test_name() {
 		let mut test = test_result();
-		test.test_result_code = Some("123".to_string());
+		test.test_result_code = Some("1".to_string());
 
 		assert_eq!(codes_for(test), vec!["ICH.F.r.2.REQUIRED".to_string()]);
 	}
@@ -302,6 +427,58 @@ mod golden_f_required_tests {
 			vec![
 				"ICH.F.r.1.REQUIRED".to_string(),
 				"ICH.F.r.3.3.REQUIRED".to_string(),
+			]
+		);
+	}
+
+	#[test]
+	fn max_length_rules_cover_f_test_result_text_fields() {
+		let mut test = test_result();
+		test.test_name = "T".repeat(251);
+		test.test_meddra_version = Some("V".repeat(5));
+		test.test_meddra_code = Some("M".repeat(9));
+		test.test_result_code = Some("RC".to_string());
+		test.test_result_value = Some("V".repeat(51));
+		test.test_result_unit = Some("U".repeat(51));
+		test.result_unstructured = Some("R".repeat(2001));
+		test.normal_low_value = Some("L".repeat(51));
+		test.normal_high_value = Some("H".repeat(51));
+		test.comments = Some("C".repeat(2001));
+
+		assert_eq!(
+			length_issues_for(test),
+			vec![
+				length_issue("ICH.F.r.2.1.LENGTH.MAX", "testResults.0.testName"),
+				length_issue(
+					"ICH.F.r.2.2a.LENGTH.MAX",
+					"testResults.0.testMeddraVersion"
+				),
+				length_issue(
+					"ICH.F.r.2.2b.LENGTH.MAX",
+					"testResults.0.testMeddraCode"
+				),
+				length_issue(
+					"ICH.F.r.3.1.LENGTH.MAX",
+					"testResults.0.testResultCode"
+				),
+				length_issue(
+					"ICH.F.r.3.2.LENGTH.MAX",
+					"testResults.0.testResultValue"
+				),
+				length_issue(
+					"ICH.F.r.3.3.LENGTH.MAX",
+					"testResults.0.testResultUnit"
+				),
+				length_issue(
+					"ICH.F.r.3.4.LENGTH.MAX",
+					"testResults.0.resultUnstructured"
+				),
+				length_issue("ICH.F.r.4.LENGTH.MAX", "testResults.0.normalLowValue"),
+				length_issue(
+					"ICH.F.r.5.LENGTH.MAX",
+					"testResults.0.normalHighValue"
+				),
+				length_issue("ICH.F.r.6.LENGTH.MAX", "testResults.0.comments"),
 			]
 		);
 	}

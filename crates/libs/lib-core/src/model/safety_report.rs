@@ -73,6 +73,7 @@ pub struct SafetyReportIdentification {
 
 	// FDA.C.1.12 - Combination Product Report Indicator (FDA)
 	pub combination_product_report_indicator: Option<String>,
+	pub combination_product_report_indicator_null_flavor: Option<String>,
 
 	// C.1.8.1 - Worldwide Unique Case Identification
 	pub worldwide_unique_id: Option<String>,
@@ -129,6 +130,7 @@ pub struct SafetyReportIdentificationForCreate {
 	pub fulfil_expedited_criteria_null_flavor: Option<String>,
 	pub local_criteria_report_type: Option<String>,
 	pub combination_product_report_indicator: Option<String>,
+	pub combination_product_report_indicator_null_flavor: Option<String>,
 	pub first_sender_type: Option<String>,
 	pub additional_documents_available: Option<bool>,
 	pub other_case_identifiers_exist: Option<bool>,
@@ -207,6 +209,7 @@ pub struct SafetyReportIdentificationForUpdate {
 	pub local_criteria_report_type: PatchValue<String>,
 	#[serde(default, deserialize_with = "deserialize_patch_value")]
 	pub combination_product_report_indicator: PatchValue<String>,
+	pub combination_product_report_indicator_null_flavor: Option<String>,
 	pub worldwide_unique_id: Option<String>,
 	pub first_sender_type: Option<String>,
 	pub additional_documents_available: Option<bool>,
@@ -334,7 +337,9 @@ pub struct PrimarySource {
 
 	// C.2.r.3 - Country Code
 	pub country_code: Option<String>,
+	pub country_code_null_flavor: Option<String>,
 	pub email: Option<String>,
+	pub email_null_flavor: Option<String>,
 
 	// C.2.r.4 - Qualification (MANDATORY within primary source)
 	pub qualification: Option<String>,
@@ -373,7 +378,9 @@ pub struct PrimarySourceForCreate {
 	pub telephone: Option<String>,
 	pub reporter_address_null_flavor: Option<String>,
 	pub country_code: Option<String>,
+	pub country_code_null_flavor: Option<String>,
 	pub email: Option<String>,
+	pub email_null_flavor: Option<String>,
 	pub qualification: Option<String>,
 	pub qualification_null_flavor: Option<String>,
 	pub qualification_kr1: Option<String>,
@@ -397,7 +404,9 @@ pub struct PrimarySourceForUpdate {
 	pub telephone: Option<String>,
 	pub reporter_address_null_flavor: Option<String>,
 	pub country_code: Option<String>,
+	pub country_code_null_flavor: Option<String>,
 	pub email: Option<String>,
+	pub email_null_flavor: Option<String>,
 	pub qualification: Option<String>,
 	pub qualification_null_flavor: Option<String>,
 	pub qualification_kr1: Option<String>,
@@ -699,8 +708,8 @@ impl SafetyReportIdentificationBmc {
 		set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
 
 		let sql = format!(
-			"INSERT INTO {} (case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, fulfil_expedited_criteria_null_flavor, local_criteria_report_type, combination_product_report_indicator, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, other_case_identifiers_exist_null_flavor, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
-			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, now(), now(), $20)
+			"INSERT INTO {} (case_id, safety_report_id, version, transmission_date, report_type, date_first_received_from_source, date_of_most_recent_information, fulfil_expedited_criteria, fulfil_expedited_criteria_null_flavor, local_criteria_report_type, combination_product_report_indicator, combination_product_report_indicator_null_flavor, worldwide_unique_id, first_sender_type, additional_documents_available, other_case_identifiers_exist, other_case_identifiers_exist_null_flavor, nullification_code, nullification_reason, receiver_organization, created_at, updated_at, created_by)
+			 VALUES ($1, $2, COALESCE($3, 1), $4, $5, $6, $7, $8, $9, $10, $11, $21, $12, $13, $14, $15, $16, $17, $18, $19, now(), now(), $20)
 			 RETURNING id",
 			Self::TABLE
 		);
@@ -727,7 +736,8 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.nullification_code)
 					.bind(data.nullification_reason)
 					.bind(data.receiver_organization)
-					.bind(ctx.user_id()),
+					.bind(ctx.user_id())
+					.bind(data.combination_product_report_indicator_null_flavor),
 			)
 			.await?;
 		mm.dbx().commit_txn().await?;
@@ -847,7 +857,8 @@ impl SafetyReportIdentificationBmc {
 			     fulfil_expedited_criteria = CASE WHEN $9 OR $11 IS NOT NULL THEN NULL ELSE COALESCE($10, fulfil_expedited_criteria) END,
 			     fulfil_expedited_criteria_null_flavor = CASE WHEN $10 IS NOT NULL THEN NULL ELSE COALESCE($11, fulfil_expedited_criteria_null_flavor) END,
 			     local_criteria_report_type = CASE WHEN $12 THEN NULL ELSE COALESCE($13, local_criteria_report_type) END,
-			     combination_product_report_indicator = CASE WHEN $14 THEN NULL ELSE COALESCE($15, combination_product_report_indicator) END,
+			     combination_product_report_indicator = CASE WHEN $14 OR $25 IS NOT NULL THEN NULL ELSE COALESCE($15, combination_product_report_indicator) END,
+			     combination_product_report_indicator_null_flavor = CASE WHEN $15 IS NOT NULL THEN NULL ELSE COALESCE($25, combination_product_report_indicator_null_flavor) END,
 			     worldwide_unique_id = COALESCE($16, worldwide_unique_id),
 			     first_sender_type = COALESCE($17, first_sender_type),
 			     additional_documents_available = COALESCE($18, additional_documents_available),
@@ -888,7 +899,8 @@ impl SafetyReportIdentificationBmc {
 					.bind(data.nullification_code)
 					.bind(data.nullification_reason)
 					.bind(data.receiver_organization)
-					.bind(ctx.user_id()),
+					.bind(ctx.user_id())
+					.bind(data.combination_product_report_indicator_null_flavor),
 			)
 			.await?;
 		if result == 0 {
@@ -1004,6 +1016,8 @@ impl PrimarySourceBmc {
 		Self::validate_null_flavors(
 			data.reporter_name_null_flavor.as_deref(),
 			data.reporter_address_null_flavor.as_deref(),
+			data.country_code_null_flavor.as_deref(),
+			data.email_null_flavor.as_deref(),
 			data.qualification_null_flavor.as_deref(),
 		)?;
 		base_uuid::create::<Self, _>(ctx, mm, data).await
@@ -1040,6 +1054,8 @@ impl PrimarySourceBmc {
 		Self::validate_null_flavors(
 			data.reporter_name_null_flavor.as_deref(),
 			data.reporter_address_null_flavor.as_deref(),
+			data.country_code_null_flavor.as_deref(),
+			data.email_null_flavor.as_deref(),
 			data.qualification_null_flavor.as_deref(),
 		)?;
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
@@ -1056,21 +1072,42 @@ impl PrimarySourceBmc {
 	fn validate_null_flavors(
 		reporter_name_null_flavor: Option<&str>,
 		reporter_address_null_flavor: Option<&str>,
+		country_code_null_flavor: Option<&str>,
+		email_null_flavor: Option<&str>,
 		qualification_null_flavor: Option<&str>,
 	) -> Result<()> {
-		const NAME_ADDRESS_ALLOWED: &[NullFlavor] =
+		// C.2.r.1 name / C.2.r.2 address and FDA.C.2.r.2.8 email share the
+		// masked/asked-but-unknown/not-asked set; C.2.r.3 country additionally
+		// permits UNK per the ICH dictionary null_flavors.
+		const NAME_ADDRESS_EMAIL_ALLOWED: &[NullFlavor] =
 			&[NullFlavor::MSK, NullFlavor::ASKU, NullFlavor::NASK];
+		const COUNTRY_ALLOWED: &[NullFlavor] = &[
+			NullFlavor::MSK,
+			NullFlavor::UNK,
+			NullFlavor::ASKU,
+			NullFlavor::NASK,
+		];
 		const QUALIFICATION_ALLOWED: &[NullFlavor] = &[NullFlavor::UNK];
 
 		validate_primary_source_null_flavor_set(
 			"reporter_name_null_flavor",
 			reporter_name_null_flavor,
-			NAME_ADDRESS_ALLOWED,
+			NAME_ADDRESS_EMAIL_ALLOWED,
 		)?;
 		validate_primary_source_null_flavor_set(
 			"reporter_address_null_flavor",
 			reporter_address_null_flavor,
-			NAME_ADDRESS_ALLOWED,
+			NAME_ADDRESS_EMAIL_ALLOWED,
+		)?;
+		validate_primary_source_null_flavor_set(
+			"country_code_null_flavor",
+			country_code_null_flavor,
+			COUNTRY_ALLOWED,
+		)?;
+		validate_primary_source_null_flavor_set(
+			"email_null_flavor",
+			email_null_flavor,
+			NAME_ADDRESS_EMAIL_ALLOWED,
 		)?;
 		validate_primary_source_null_flavor_set(
 			"qualification_null_flavor",
