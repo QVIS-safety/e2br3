@@ -76,8 +76,21 @@ async fn test_canonical_product_parent_soft_delete_allows_editor_with_unset_scop
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm.clone());
-	let (_editor_id, editor_cookie) =
+	let (editor_id, editor_cookie) =
 		create_info_editor(&app, &mm, &admin_cookie, seed.org_id).await?;
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PUT,
+		format!("/api/users/{editor_id}"),
+		Some(json!({
+			"data": {
+				"access_product_ids": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
 
 	let patch_id =
 		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;

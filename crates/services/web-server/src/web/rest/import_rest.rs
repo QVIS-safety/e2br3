@@ -850,40 +850,38 @@ pub async fn import_xml(
 		.filename
 		.clone()
 		.unwrap_or_else(|| "import.xml".to_string());
+	let effective_product_id = selected_product
+		.as_ref()
+		.and_then(|(_, product_id, _)| product_id.as_deref())
+		.or(payload.product_id.as_deref());
 
 	for (entry_name, xml) in entries {
-		let decision = match decide_import_entry(
-			&ctx,
-			&mm,
-			&xml,
-			payload.product_id.as_deref(),
-		)
-		.await
-		{
-			Ok(decision) => decision,
-			Err(err) => {
-				let message = err.to_string();
-				if let Err(history_err) = record_import_history(
-					&ctx,
-					&mm,
-					&uploaded_file_name,
-					&entry_name,
-					None,
-					None,
-					"error",
-					Some(&message),
-				)
-				.await
-				{
-					warn!(
+		let decision =
+			match decide_import_entry(&ctx, &mm, &xml, effective_product_id).await {
+				Ok(decision) => decision,
+				Err(err) => {
+					let message = err.to_string();
+					if let Err(history_err) = record_import_history(
+						&ctx,
+						&mm,
+						&uploaded_file_name,
+						&entry_name,
+						None,
+						None,
+						"error",
+						Some(&message),
+					)
+					.await
+					{
+						warn!(
 						"failed to record xml import decision error: {history_err}"
 					);
+					}
+					imported_cases
+						.push(summary_for_decision_error(&entry_name, message));
+					continue;
 				}
-				imported_cases
-					.push(summary_for_decision_error(&entry_name, message));
-				continue;
-			}
-		};
+			};
 
 		if decision.action == XmlImportDecisionAction::Skip {
 			if let Err(history_err) = record_import_history(
