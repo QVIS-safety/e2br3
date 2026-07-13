@@ -24,6 +24,7 @@ pub(crate) fn implemented_allowed_value_rule_codes() -> BTreeSet<&'static str> {
 		e::constraint_rule_codes(),
 		f::constraint_rule_codes(),
 		g::constraint_rule_codes(),
+		h::constraint_rule_codes(),
 		n::constraint_rule_codes(),
 	]
 	.into_iter()
@@ -160,7 +161,7 @@ mod tests {
 	#[test]
 	fn implemented_allowed_value_registry_contains_all_current_tables() {
 		let codes = implemented_allowed_value_rule_codes();
-		assert_eq!(codes.len(), 40);
+		assert_eq!(codes.len(), 64);
 		assert!(codes.contains("ICH.C.1.3.ALLOWED.VALUE"));
 		assert!(codes.contains("ICH.G.k.9.i.4.ALLOWED.VALUE"));
 		assert!(codes.contains("ICH.E.i.3.2f.ALLOWED.VALUE"));

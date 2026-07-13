@@ -225,7 +225,9 @@ const E_REACTION_CONSTRAINT_RULES: &[IndexedConstraintRule<Reaction>] = &[
 
 const E_REACTION_MEDDRA_RULES: &[IndexedMeddraRule<Reaction>] =
 	&[IndexedMeddraRule {
+		version_allowed_code: "ICH.E.i.2.1a.ALLOWED.VALUE",
 		version_code: "ICH.E.i.2.1a.VOCABULARY",
+		code_allowed_code: "ICH.E.i.2.1b.ALLOWED.VALUE",
 		code_code: "ICH.E.i.2.1b.VOCABULARY",
 		version_path: |idx| format!("reactions.{idx}.reactionMeddraVersion"),
 		code_path: |idx| format!("reactions.{idx}.reactionMeddraCode"),
@@ -469,6 +471,9 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 	E_REACTION_CONSTRAINT_RULES
 		.iter()
 		.map(|rule| rule.code)
+		.chain(super::rule_table::indexed_meddra_constraint_codes(
+			E_REACTION_MEDDRA_RULES,
+		))
 		.collect()
 }
 

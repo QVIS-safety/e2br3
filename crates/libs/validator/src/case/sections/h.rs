@@ -65,7 +65,9 @@ const H_SENDER_DIAGNOSIS_LENGTH_RULES: &[IndexedLengthRule<SenderDiagnosis>] = &
 
 const H_SENDER_DIAGNOSIS_MEDDRA_RULES: &[IndexedMeddraRule<SenderDiagnosis>] =
 	&[IndexedMeddraRule {
+		version_allowed_code: "ICH.H.3.r.1a.ALLOWED.VALUE",
 		version_code: "ICH.H.3.r.1a.VOCABULARY",
+		code_allowed_code: "ICH.H.3.r.1b.ALLOWED.VALUE",
 		code_code: "ICH.H.3.r.1b.VOCABULARY",
 		version_path: |idx| {
 			format!("narrative.senderDiagnoses.{idx}.diagnosisMeddraVersion")
@@ -159,6 +161,13 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.case_summaries,
 		H_CASE_SUMMARY_LENGTH_RULES,
 	);
+}
+
+#[cfg(test)]
+pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
+	super::rule_table::indexed_meddra_constraint_codes(
+		H_SENDER_DIAGNOSIS_MEDDRA_RULES,
+	)
 }
 
 #[cfg(test)]

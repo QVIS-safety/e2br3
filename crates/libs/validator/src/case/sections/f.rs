@@ -20,7 +20,9 @@ fn test_payload_facts(test: &TestResult) -> RuleFacts {
 }
 
 const F_TEST_MEDDRA_RULES: &[IndexedMeddraRule<TestResult>] = &[IndexedMeddraRule {
+	version_allowed_code: "ICH.F.r.2.2a.ALLOWED.VALUE",
 	version_code: "ICH.F.r.2.2a.VOCABULARY",
+	code_allowed_code: "ICH.F.r.2.2b.ALLOWED.VALUE",
 	code_code: "ICH.F.r.2.2b.VOCABULARY",
 	version_path: |idx| format!("testResults.{idx}.testMeddraVersion"),
 	code_path: |idx| format!("testResults.{idx}.testMeddraCode"),
@@ -223,7 +225,13 @@ pub(crate) fn collect_ich_issues(
 
 #[cfg(test)]
 pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
-	F_CONSTRAINT_RULES.iter().map(|rule| rule.code).collect()
+	F_CONSTRAINT_RULES
+		.iter()
+		.map(|rule| rule.code)
+		.chain(super::rule_table::indexed_meddra_constraint_codes(
+			F_TEST_MEDDRA_RULES,
+		))
+		.collect()
 }
 
 #[cfg(test)]

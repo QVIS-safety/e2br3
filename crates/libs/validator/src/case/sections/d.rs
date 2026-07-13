@@ -783,7 +783,9 @@ fn index_from_sequence(sequence_number: i32, fallback_idx: usize) -> usize {
 
 const D_MEDICAL_HISTORY_MEDDRA_RULES: &[IndexedMeddraRule<MedicalHistoryEpisode>] =
 	&[IndexedMeddraRule {
+		version_allowed_code: "ICH.D.7.1.r.1a.ALLOWED.VALUE",
 		version_code: "ICH.D.7.1.r.1a.VOCABULARY",
+		code_allowed_code: "ICH.D.7.1.r.1b.ALLOWED.VALUE",
 		code_code: "ICH.D.7.1.r.1b.VOCABULARY",
 		version_path: |idx| {
 			format!("patientInformation.medicalHistory.{idx}.meddraVersion")
@@ -796,7 +798,9 @@ const D_MEDICAL_HISTORY_MEDDRA_RULES: &[IndexedMeddraRule<MedicalHistoryEpisode>
 
 const D_PAST_DRUG_MEDDRA_RULES: &[IndexedMeddraRule<PastDrugHistory>] = &[
 	IndexedMeddraRule {
+		version_allowed_code: "ICH.D.8.r.6a.ALLOWED.VALUE",
 		version_code: "ICH.D.8.r.6a.VOCABULARY",
+		code_allowed_code: "ICH.D.8.r.6b.ALLOWED.VALUE",
 		code_code: "ICH.D.8.r.6b.VOCABULARY",
 		version_path: |idx| {
 			format!("patientInformation.pastDrugs.{idx}.indicationMeddraVersion")
@@ -812,7 +816,9 @@ const D_PAST_DRUG_MEDDRA_RULES: &[IndexedMeddraRule<PastDrugHistory>] = &[
 		},
 	},
 	IndexedMeddraRule {
+		version_allowed_code: "ICH.D.8.r.7a.ALLOWED.VALUE",
 		version_code: "ICH.D.8.r.7a.VOCABULARY",
+		code_allowed_code: "ICH.D.8.r.7b.ALLOWED.VALUE",
 		code_code: "ICH.D.8.r.7b.VOCABULARY",
 		version_path: |idx| {
 			format!("patientInformation.pastDrugs.{idx}.reactionMeddraVersion")
@@ -831,7 +837,9 @@ const D_PAST_DRUG_MEDDRA_RULES: &[IndexedMeddraRule<PastDrugHistory>] = &[
 
 const D_REPORTED_CAUSE_MEDDRA_RULES: &[IndexedMeddraRule<ReportedCauseOfDeath>] =
 	&[IndexedMeddraRule {
+		version_allowed_code: "ICH.D.9.2.r.1a.ALLOWED.VALUE",
 		version_code: "ICH.D.9.2.r.1a.VOCABULARY",
+		code_allowed_code: "ICH.D.9.2.r.1b.ALLOWED.VALUE",
 		code_code: "ICH.D.9.2.r.1b.VOCABULARY",
 		version_path: |idx| {
 			format!("patientInformation.death.reportedCauses.{idx}.meddraVersion")
@@ -844,7 +852,9 @@ const D_REPORTED_CAUSE_MEDDRA_RULES: &[IndexedMeddraRule<ReportedCauseOfDeath>] 
 
 const D_AUTOPSY_CAUSE_MEDDRA_RULES: &[IndexedMeddraRule<AutopsyCauseOfDeath>] =
 	&[IndexedMeddraRule {
+		version_allowed_code: "ICH.D.9.4.r.1a.ALLOWED.VALUE",
 		version_code: "ICH.D.9.4.r.1a.VOCABULARY",
+		code_allowed_code: "ICH.D.9.4.r.1b.ALLOWED.VALUE",
 		code_code: "ICH.D.9.4.r.1b.VOCABULARY",
 		version_path: |idx| {
 			format!("patientInformation.death.autopsyCauses.{idx}.meddraVersion")
@@ -858,7 +868,9 @@ const D_AUTOPSY_CAUSE_MEDDRA_RULES: &[IndexedMeddraRule<AutopsyCauseOfDeath>] =
 const D_PARENT_MEDICAL_HISTORY_MEDDRA_RULES: &[NestedMeddraRule<
 	ParentMedicalHistory,
 >] = &[NestedMeddraRule {
+	version_allowed_code: "ICH.D.10.7.1.r.1a.ALLOWED.VALUE",
 	version_code: "ICH.D.10.7.1.r.1a.VOCABULARY",
+	code_allowed_code: "ICH.D.10.7.1.r.1b.ALLOWED.VALUE",
 	code_code: "ICH.D.10.7.1.r.1b.VOCABULARY",
 	version_path: |parent_idx, idx| {
 		format!("patientInformation.parents.{parent_idx}.medicalHistory.{idx}.meddraVersion")
@@ -872,7 +884,9 @@ const D_PARENT_MEDICAL_HISTORY_MEDDRA_RULES: &[NestedMeddraRule<
 const D_PARENT_PAST_DRUG_MEDDRA_RULES: &[NestedMeddraRule<ParentPastDrugHistory>] =
 	&[
 		NestedMeddraRule {
+			version_allowed_code: "ICH.D.10.8.r.6a.ALLOWED.VALUE",
 			version_code: "ICH.D.10.8.r.6a.VOCABULARY",
+			code_allowed_code: "ICH.D.10.8.r.6b.ALLOWED.VALUE",
 			code_code: "ICH.D.10.8.r.6b.VOCABULARY",
 			version_path: |parent_idx, idx| {
 				format!("patientInformation.parents.{parent_idx}.pastDrugs.{idx}.indicationMeddraVersion")
@@ -888,7 +902,9 @@ const D_PARENT_PAST_DRUG_MEDDRA_RULES: &[NestedMeddraRule<ParentPastDrugHistory>
 			},
 		},
 		NestedMeddraRule {
+			version_allowed_code: "ICH.D.10.8.r.7a.ALLOWED.VALUE",
 			version_code: "ICH.D.10.8.r.7a.VOCABULARY",
+			code_allowed_code: "ICH.D.10.8.r.7b.ALLOWED.VALUE",
 			code_code: "ICH.D.10.8.r.7b.VOCABULARY",
 			version_path: |parent_idx, idx| {
 				format!("patientInformation.parents.{parent_idx}.pastDrugs.{idx}.reactionMeddraVersion")
@@ -1438,6 +1454,24 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 				.map(|rule| rule.code),
 		)
 		.chain(D_PARENT_CONSTRAINT_RULES.iter().map(|rule| rule.code))
+		.chain(super::rule_table::indexed_meddra_constraint_codes(
+			D_MEDICAL_HISTORY_MEDDRA_RULES,
+		))
+		.chain(super::rule_table::indexed_meddra_constraint_codes(
+			D_PAST_DRUG_MEDDRA_RULES,
+		))
+		.chain(super::rule_table::indexed_meddra_constraint_codes(
+			D_REPORTED_CAUSE_MEDDRA_RULES,
+		))
+		.chain(super::rule_table::indexed_meddra_constraint_codes(
+			D_AUTOPSY_CAUSE_MEDDRA_RULES,
+		))
+		.chain(super::rule_table::nested_meddra_constraint_codes(
+			D_PARENT_MEDICAL_HISTORY_MEDDRA_RULES,
+		))
+		.chain(super::rule_table::nested_meddra_constraint_codes(
+			D_PARENT_PAST_DRUG_MEDDRA_RULES,
+		))
 		.collect()
 }
 

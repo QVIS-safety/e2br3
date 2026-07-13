@@ -592,7 +592,9 @@ const G_INDICATION_COMPANION_RULES: &[CompanionRule<DrugIndication>] = &[
 
 const G_INDICATION_MEDDRA_RULES: &[NestedMeddraRule<DrugIndication>] =
 	&[NestedMeddraRule {
+		version_allowed_code: "ICH.G.k.7.r.2a.ALLOWED.VALUE",
 		version_code: "ICH.G.k.7.r.2a.VOCABULARY",
+		code_allowed_code: "ICH.G.k.7.r.2b.ALLOWED.VALUE",
 		code_code: "ICH.G.k.7.r.2b.VOCABULARY",
 		version_path: |drug_idx, idx| {
 			format!("drugs.{drug_idx}.indications.{idx}.indicationMeddraVersion")
@@ -1391,6 +1393,9 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 				.iter()
 				.map(|rule| rule.code),
 		)
+		.chain(super::rule_table::nested_meddra_constraint_codes(
+			G_INDICATION_MEDDRA_RULES,
+		))
 		.collect()
 }
 

@@ -317,6 +317,8 @@ pub(crate) fn eval_future_dates<T>(
 }
 
 pub(crate) struct IndexedMeddraRule<T> {
+	pub version_allowed_code: &'static str,
+	pub code_allowed_code: &'static str,
 	pub version_code: &'static str,
 	pub code_code: &'static str,
 	pub version_path: fn(usize) -> String,
@@ -324,9 +326,21 @@ pub(crate) struct IndexedMeddraRule<T> {
 	pub values: for<'a> fn(&'a T) -> (Option<&'a str>, Option<&'a str>),
 }
 
+#[cfg(test)]
+pub(crate) fn indexed_meddra_constraint_codes<T>(
+	rules: &[IndexedMeddraRule<T>],
+) -> Vec<&'static str> {
+	rules
+		.iter()
+		.flat_map(|rule| [rule.version_allowed_code, rule.code_allowed_code])
+		.collect()
+}
+
 fn eval_meddra_values(
 	issues: &mut Vec<ValidationIssue>,
 	vocabulary: &VocabularyContext,
+	version_allowed_code: &str,
+	code_allowed_code: &str,
 	version_code: &str,
 	code_code: &str,
 	version_path: String,
@@ -334,6 +348,23 @@ fn eval_meddra_values(
 	version: Option<&str>,
 	code: Option<&str>,
 ) {
+	for (allowed_value_code, vocabulary_code, path, value) in [
+		(
+			version_allowed_code,
+			version_code,
+			version_path.clone(),
+			version,
+		),
+		(code_allowed_code, code_code, code_path.clone(), code),
+	] {
+		if !is_allowed_value_valid(
+			vocabulary_code,
+			ConstraintValue::Text(value.map(Cow::Borrowed)),
+			vocabulary,
+		) {
+			push_issue_by_code(issues, allowed_value_code, path);
+		}
+	}
 	if !vocabulary.meddra_available() {
 		return;
 	}
@@ -363,6 +394,8 @@ pub(crate) fn eval_indexed_meddra<T>(
 			eval_meddra_values(
 				issues,
 				vocabulary,
+				rule.version_allowed_code,
+				rule.code_allowed_code,
 				rule.version_code,
 				rule.code_code,
 				(rule.version_path)(idx),
@@ -375,11 +408,23 @@ pub(crate) fn eval_indexed_meddra<T>(
 }
 
 pub(crate) struct NestedMeddraRule<T> {
+	pub version_allowed_code: &'static str,
+	pub code_allowed_code: &'static str,
 	pub version_code: &'static str,
 	pub code_code: &'static str,
 	pub version_path: fn(usize, usize) -> String,
 	pub code_path: fn(usize, usize) -> String,
 	pub values: for<'a> fn(&'a T) -> (Option<&'a str>, Option<&'a str>),
+}
+
+#[cfg(test)]
+pub(crate) fn nested_meddra_constraint_codes<T>(
+	rules: &[NestedMeddraRule<T>],
+) -> Vec<&'static str> {
+	rules
+		.iter()
+		.flat_map(|rule| [rule.version_allowed_code, rule.code_allowed_code])
+		.collect()
 }
 
 pub(crate) fn eval_nested_meddra<P, T, K>(
@@ -413,6 +458,8 @@ pub(crate) fn eval_nested_meddra<P, T, K>(
 			eval_meddra_values(
 				issues,
 				vocabulary,
+				rule.version_allowed_code,
+				rule.code_allowed_code,
 				rule.version_code,
 				rule.code_code,
 				(rule.version_path)(parent_idx, item_idx),

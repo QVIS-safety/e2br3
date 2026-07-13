@@ -3957,6 +3957,24 @@ fn phases_for_allowed_value_rule(code: &str) -> &'static [ValidationPhase] {
 		| "ICH.D.7.1.r.6.ALLOWED.VALUE"
 		| "ICH.D.7.3.ALLOWED.VALUE"
 		| "ICH.D.10.6.ALLOWED.VALUE"
+		| "ICH.D.7.1.r.1a.ALLOWED.VALUE"
+		| "ICH.D.7.1.r.1b.ALLOWED.VALUE"
+		| "ICH.D.8.r.6a.ALLOWED.VALUE"
+		| "ICH.D.8.r.6b.ALLOWED.VALUE"
+		| "ICH.D.8.r.7a.ALLOWED.VALUE"
+		| "ICH.D.8.r.7b.ALLOWED.VALUE"
+		| "ICH.D.9.2.r.1a.ALLOWED.VALUE"
+		| "ICH.D.9.2.r.1b.ALLOWED.VALUE"
+		| "ICH.D.9.4.r.1a.ALLOWED.VALUE"
+		| "ICH.D.9.4.r.1b.ALLOWED.VALUE"
+		| "ICH.D.10.7.1.r.1a.ALLOWED.VALUE"
+		| "ICH.D.10.7.1.r.1b.ALLOWED.VALUE"
+		| "ICH.D.10.8.r.6a.ALLOWED.VALUE"
+		| "ICH.D.10.8.r.6b.ALLOWED.VALUE"
+		| "ICH.D.10.8.r.7a.ALLOWED.VALUE"
+		| "ICH.D.10.8.r.7b.ALLOWED.VALUE"
+		| "ICH.E.i.2.1a.ALLOWED.VALUE"
+		| "ICH.E.i.2.1b.ALLOWED.VALUE"
 		| "ICH.E.i.3.2a.ALLOWED.VALUE"
 		| "ICH.E.i.3.2b.ALLOWED.VALUE"
 		| "ICH.E.i.3.2c.ALLOWED.VALUE"
@@ -3964,6 +3982,8 @@ fn phases_for_allowed_value_rule(code: &str) -> &'static [ValidationPhase] {
 		| "ICH.E.i.3.2e.ALLOWED.VALUE"
 		| "ICH.E.i.3.2f.ALLOWED.VALUE"
 		| "ICH.E.i.7.ALLOWED.VALUE"
+		| "ICH.F.r.2.2a.ALLOWED.VALUE"
+		| "ICH.F.r.2.2b.ALLOWED.VALUE"
 		| "ICH.F.r.3.1.ALLOWED.VALUE"
 		| "ICH.F.r.3.2.ALLOWED.VALUE"
 		| "ICH.G.k.1.ALLOWED.VALUE"
@@ -3971,6 +3991,10 @@ fn phases_for_allowed_value_rule(code: &str) -> &'static [ValidationPhase] {
 		| "ICH.G.k.8.ALLOWED.VALUE"
 		| "ICH.G.k.9.i.4.ALLOWED.VALUE"
 		| "ICH.G.k.10.r.ALLOWED.VALUE" => PHASES_CASE_VALIDATE,
+		"ICH.G.k.7.r.2a.ALLOWED.VALUE"
+		| "ICH.G.k.7.r.2b.ALLOWED.VALUE"
+		| "ICH.H.3.r.1a.ALLOWED.VALUE"
+		| "ICH.H.3.r.1b.ALLOWED.VALUE" => PHASES_CASE_VALIDATE,
 		_ => PHASES_METADATA_ONLY,
 	}
 }
@@ -4352,6 +4376,14 @@ pub fn allowed_value_enforcement_for_rule(
 	code: &str,
 ) -> Option<ConstraintEnforcement> {
 	allowed_value_constraint_for_rule(code)?.enforcement
+}
+
+pub fn allowed_value_code_for_vocabulary_rule(code: &str) -> Option<&'static str> {
+	let prefix = code.strip_suffix(".VOCABULARY")?;
+	ALLOWED_VALUE_RULES
+		.iter()
+		.find(|rule| rule.code.strip_suffix(".ALLOWED.VALUE") == Some(prefix))
+		.map(|rule| rule.code)
 }
 
 pub fn representation_enforced_rule_codes() -> BTreeSet<&'static str> {

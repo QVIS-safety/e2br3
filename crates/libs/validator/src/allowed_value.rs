@@ -1,7 +1,8 @@
 use crate::context::VocabularyContext;
 use crate::{
-	allowed_value_constraint_for_rule, vocabulary_for_rule, AllowedValueConstraint,
-	AllowedValueConstraintKind, FormatName, IdentifierProfile, NumericShape,
+	allowed_value_code_for_vocabulary_rule, allowed_value_constraint_for_rule,
+	vocabulary_for_rule, AllowedValueConstraint, AllowedValueConstraintKind,
+	FormatName, IdentifierProfile, NumericShape,
 };
 use base64::engine::{general_purpose, Engine};
 use sqlx::types::time::Date;
@@ -84,14 +85,10 @@ fn constraint_for_rule(rule_code: &str) -> &'static AllowedValueConstraint {
 		return constraint;
 	}
 	if vocabulary_for_rule(rule_code).is_some() {
-		let element_code = rule_code
-			.strip_suffix(".VOCABULARY")
-			.expect("vocabulary rule should end in .VOCABULARY");
-		let constraint_code = format!("{element_code}.ALLOWED.VALUE");
-		if let Some(constraint) = allowed_value_constraint_for_rule(&constraint_code)
-		{
-			return constraint;
-		}
+		let constraint_code = allowed_value_code_for_vocabulary_rule(rule_code)
+			.expect("vocabulary rule should have an allowed-value companion");
+		return allowed_value_constraint_for_rule(constraint_code)
+			.expect("vocabulary companion should have a constraint");
 	}
 	panic!("missing allowed-value constraint: {rule_code}")
 }
