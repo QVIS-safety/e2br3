@@ -254,7 +254,9 @@ async fn import_c_2_sender_information(
 			header.message_receiver.as_deref(),
 		)
 	});
-	let (sender, source_sender_presave_id) = if settings.apply_sender_info_to_imported_cases {
+	let (sender, source_sender_presave_id) = if settings
+		.apply_sender_info_to_imported_cases
+	{
 		let xml_sender = c_helpers::parse_sender_information(xml, header)
 			.ok()
 			.flatten();
@@ -270,13 +272,23 @@ async fn import_c_2_sender_information(
 				});
 			}
 			let sender = sender_import_from_presave(ctx, mm, sender_presave).await?;
-			(Some(merge_sender_import(sender, xml_sender)), Some(sender_id))
+			(
+				Some(merge_sender_import(sender, xml_sender)),
+				Some(sender_id),
+			)
 		} else {
 			match sender_from_product_linked_presave(ctx, mm, xml).await? {
-				Some(sender) => (Some(merge_sender_import(sender, xml_sender)), None),
-				None => match default_sender_from_presave(ctx, mm, authority).await? {
-					Some(sender) => (Some(merge_sender_import(sender, xml_sender)), None),
-					None => (c_helpers::parse_sender_information(xml, header)?, None),
+				Some(sender) => {
+					(Some(merge_sender_import(sender, xml_sender)), None)
+				}
+				None => match default_sender_from_presave(ctx, mm, authority).await?
+				{
+					Some(sender) => {
+						(Some(merge_sender_import(sender, xml_sender)), None)
+					}
+					None => {
+						(c_helpers::parse_sender_information(xml, header)?, None)
+					}
 				},
 			}
 		}

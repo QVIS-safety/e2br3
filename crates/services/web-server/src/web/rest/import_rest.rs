@@ -148,11 +148,12 @@ async fn read_xml_multipart(
 			})?;
 			let trimmed = text.trim();
 			if !trimmed.is_empty() {
-				product_presave_id = Some(Uuid::parse_str(trimmed).map_err(|_| {
-					Error::BadRequest {
-						message: "productPresaveId must be a UUID".to_string(),
-					}
-				})?);
+				product_presave_id =
+					Some(Uuid::parse_str(trimmed).map_err(|_| {
+						Error::BadRequest {
+							message: "productPresaveId must be a UUID".to_string(),
+						}
+					})?);
 			}
 		}
 	}

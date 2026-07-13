@@ -251,7 +251,10 @@ async fn test_import_selected_product_links_first_drug_and_case_product_id(
 	.fetch_one(&mut *tx)
 	.await?;
 	tx.commit().await?;
-	assert_eq!(row.0.map(|id| id.to_string()).as_deref(), Some(product_presave_id));
+	assert_eq!(
+		row.0.map(|id| id.to_string()).as_deref(),
+		Some(product_presave_id)
+	);
 	assert_eq!(row.1.as_deref(), Some(business_product_id.as_str()));
 	assert_eq!(linked_drug_count, 1, "only the first G.k may be linked");
 	assert_eq!(
