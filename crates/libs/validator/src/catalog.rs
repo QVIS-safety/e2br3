@@ -1,6 +1,6 @@
 use lib_core::regulatory::RegulatoryAuthority;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::sync::OnceLock;
 
 #[derive(Debug, Clone, Copy, Serialize)]
@@ -38,11 +38,59 @@ pub enum AllowedValueConstraintKind {
 	Descriptive,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum NumericShape {
+	Decimal,
+	Integer,
+	DottedVersion,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FormatName {
+	E2bDatetime,
+	Base64,
+	IchIdentifier,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum VocabularyScope {
+	All,
+	Time,
+	Gestation,
+	Dose,
+	Frequency,
+	DoseForm,
+	Route,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IdentifierProfile {
+	Mpid,
+	Phpid,
+	SubstanceId,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConstraintEnforcement {
+	CaseValidate,
+	RepresentationEnforced,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct AllowedValueConstraint {
 	pub kind: AllowedValueConstraintKind,
 	#[serde(default)]
 	pub values: Vec<String>,
+	pub numeric_shape: Option<NumericShape>,
+	pub format_name: Option<FormatName>,
+	pub vocabulary_scope: Option<VocabularyScope>,
+	pub identifier_profile: Option<IdentifierProfile>,
+	pub enforcement: Option<ConstraintEnforcement>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -94,7 +142,8 @@ pub struct NullFlavorRuleMetadata {
 #[path = "catalog_dictionary_constraints.rs"]
 mod catalog_dictionary_constraints;
 pub use catalog_dictionary_constraints::{
-	ALLOWED_VALUE_RULES, NULL_FLAVOR_RULES, VOCABULARY_RULES,
+	ALLOWED_VALUE_RULES, ICH_STRUCTURED_ALLOWED_VALUE_TARGET_CODES,
+	NULL_FLAVOR_RULES, VOCABULARY_RULES,
 };
 
 macro_rules! max_length_rules {
@@ -4289,6 +4338,23 @@ pub fn allowed_value_constraint_for_rule(
 	allowed_value_constraints().get(code)
 }
 
+pub fn allowed_value_enforcement_for_rule(
+	code: &str,
+) -> Option<ConstraintEnforcement> {
+	allowed_value_constraint_for_rule(code)?.enforcement
+}
+
+pub fn representation_enforced_rule_codes() -> BTreeSet<&'static str> {
+	ALLOWED_VALUE_RULES
+		.iter()
+		.filter_map(|rule| {
+			(allowed_value_enforcement_for_rule(rule.code)
+				== Some(ConstraintEnforcement::RepresentationEnforced))
+			.then_some(rule.code)
+		})
+		.collect()
+}
+
 pub fn vocabulary_for_rule(code: &str) -> Option<&'static str> {
 	VOCABULARY_RULES
 		.iter()
@@ -5290,6 +5356,71 @@ mod tests {
 			dictionary_codes, catalog_codes,
 			"catalog allowed_value_constraint codes must exactly match the dictionary"
 		);
+	}
+
+	#[test]
+	fn ich_machine_constraints_have_enforcement() {
+		let machine = allowed_value_constraints()
+			.values()
+			.filter(|constraint| {
+				constraint.kind != AllowedValueConstraintKind::Descriptive
+			})
+			.collect::<Vec<_>>();
+
+		assert_eq!(machine.len(), 133);
+		assert!(machine
+			.iter()
+			.all(|constraint| constraint.enforcement.is_some()));
+	}
+
+	#[test]
+	fn ich_structured_allowed_value_target_baseline_is_exact() {
+		let expected = allowed_value_constraints()
+			.iter()
+			.filter(|(code, constraint)| {
+				if constraint.kind == AllowedValueConstraintKind::Descriptive {
+					return false;
+				}
+				if phases_for_allowed_value_rule(code) == PHASES_CASE_VALIDATE {
+					return false;
+				}
+				let vocabulary_code = code
+					.strip_suffix(".ALLOWED.VALUE")
+					.map(|prefix| format!("{prefix}.VOCABULARY"));
+				constraint.kind != AllowedValueConstraintKind::Vocabulary
+					|| !vocabulary_code.as_deref().is_some_and(|vocabulary_code| {
+						phases_for_vocabulary_rule(vocabulary_code)
+							== PHASES_CASE_VALIDATE
+					})
+			})
+			.map(|(code, _)| code.as_str())
+			.collect::<BTreeSet<_>>();
+		let generated = ICH_STRUCTURED_ALLOWED_VALUE_TARGET_CODES
+			.iter()
+			.copied()
+			.collect::<BTreeSet<_>>();
+
+		assert_eq!(expected.len(), 103);
+		assert_eq!(generated, expected);
+		for (kind, count) in [
+			(AllowedValueConstraintKind::Numeric, 40),
+			(AllowedValueConstraintKind::Vocabulary, 26),
+			(AllowedValueConstraintKind::Format, 23),
+			(AllowedValueConstraintKind::Boolean, 7),
+			(AllowedValueConstraintKind::TrueMarker, 6),
+			(AllowedValueConstraintKind::CodeSet, 1),
+		] {
+			assert_eq!(
+				expected
+					.iter()
+					.filter(|code| {
+						allowed_value_constraint_for_rule(code).unwrap().kind == kind
+					})
+					.count(),
+				count,
+				"unexpected target count for {kind:?}"
+			);
+		}
 	}
 
 	#[test]
