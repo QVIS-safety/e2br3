@@ -160,9 +160,10 @@ mod tests {
 	#[test]
 	fn implemented_allowed_value_registry_contains_all_current_tables() {
 		let codes = implemented_allowed_value_rule_codes();
-		assert_eq!(codes.len(), 30);
+		assert_eq!(codes.len(), 40);
 		assert!(codes.contains("ICH.C.1.3.ALLOWED.VALUE"));
 		assert!(codes.contains("ICH.G.k.9.i.4.ALLOWED.VALUE"));
+		assert!(codes.contains("ICH.E.i.3.2f.ALLOWED.VALUE"));
 		assert!(codes.is_disjoint(&crate::representation_enforced_rule_codes()));
 	}
 

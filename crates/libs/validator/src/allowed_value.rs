@@ -164,12 +164,29 @@ fn validate_format(
 			FormatName::Base64 => {
 				general_purpose::STANDARD.decode(value.trim()).is_ok()
 			}
-			FormatName::IchIdentifier => {
-				!value.trim().is_empty() && !value.chars().any(char::is_control)
-			}
+			FormatName::IchIdentifier => valid_ich_identifier(value.trim()),
 		},
 		_ => panic!("format constraint received an incompatible value"),
 	}
+}
+
+fn valid_ich_identifier(value: &str) -> bool {
+	if value.chars().count() > 100 || value.chars().any(char::is_control) {
+		return false;
+	}
+	let Some((country, remainder)) = value.split_once('-') else {
+		return false;
+	};
+	let Some((organization, report_number)) = remainder.rsplit_once('-') else {
+		return false;
+	};
+	let valid_country = country == "EU"
+		|| country_code::CountryCode::VARS
+			.iter()
+			.any(|candidate| candidate == country);
+	valid_country
+		&& !organization.trim().is_empty()
+		&& !report_number.trim().is_empty()
 }
 
 fn valid_e2b_datetime(value: &str) -> bool {
@@ -404,5 +421,22 @@ mod tests {
 			text("not-a-unit"),
 			&VocabularyContext::default(),
 		));
+	}
+
+	#[test]
+	fn ich_identifiers_require_country_organization_and_report_components() {
+		let vocabulary = VocabularyContext::default();
+		assert!(is_allowed_value_valid(
+			"ICH.C.1.8.1.ALLOWED.VALUE",
+			text("KR-ACME-2026-001"),
+			&vocabulary,
+		));
+		for invalid in ["ACME-2026-001", "ZZ-ACME-001", "KR--001", "KR-ACME-"] {
+			assert!(!is_allowed_value_valid(
+				"ICH.C.1.8.1.ALLOWED.VALUE",
+				text(invalid),
+				&vocabulary,
+			));
+		}
 	}
 }

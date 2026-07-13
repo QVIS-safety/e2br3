@@ -3382,7 +3382,7 @@
           "3",
           "4"
         ],
-        "enforcement": "case_validate"
+        "enforcement": "representation_enforced"
       }
     },
     {

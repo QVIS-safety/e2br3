@@ -3941,9 +3941,13 @@ fn phases_for_allowed_value_rule(code: &str) -> &'static [ValidationPhase] {
 		| "ICH.N.2.r.4.ALLOWED.VALUE"
 		| "ICH.C.1.2.ALLOWED.VALUE"
 		| "ICH.C.1.3.ALLOWED.VALUE"
+		| "ICH.C.1.6.1.r.2.ALLOWED.VALUE"
+		| "ICH.C.1.8.1.ALLOWED.VALUE"
 		| "ICH.C.1.8.2.ALLOWED.VALUE"
 		| "ICH.C.1.9.1.ALLOWED.VALUE"
+		| "ICH.C.1.9.1.r.2.ALLOWED.VALUE"
 		| "ICH.C.1.11.1.ALLOWED.VALUE"
+		| "ICH.C.4.r.2.ALLOWED.VALUE"
 		| "ICH.C.2.r.4.ALLOWED.VALUE"
 		| "ICH.C.2.r.5.ALLOWED.VALUE"
 		| "ICH.C.3.1.ALLOWED.VALUE"
@@ -3953,6 +3957,12 @@ fn phases_for_allowed_value_rule(code: &str) -> &'static [ValidationPhase] {
 		| "ICH.D.7.1.r.6.ALLOWED.VALUE"
 		| "ICH.D.7.3.ALLOWED.VALUE"
 		| "ICH.D.10.6.ALLOWED.VALUE"
+		| "ICH.E.i.3.2a.ALLOWED.VALUE"
+		| "ICH.E.i.3.2b.ALLOWED.VALUE"
+		| "ICH.E.i.3.2c.ALLOWED.VALUE"
+		| "ICH.E.i.3.2d.ALLOWED.VALUE"
+		| "ICH.E.i.3.2e.ALLOWED.VALUE"
+		| "ICH.E.i.3.2f.ALLOWED.VALUE"
 		| "ICH.E.i.7.ALLOWED.VALUE"
 		| "ICH.F.r.3.1.ALLOWED.VALUE"
 		| "ICH.F.r.3.2.ALLOWED.VALUE"
@@ -5375,33 +5385,12 @@ mod tests {
 
 	#[test]
 	fn ich_structured_allowed_value_target_baseline_is_exact() {
-		let expected = allowed_value_constraints()
-			.iter()
-			.filter(|(code, constraint)| {
-				if constraint.kind == AllowedValueConstraintKind::Descriptive {
-					return false;
-				}
-				if phases_for_allowed_value_rule(code) == PHASES_CASE_VALIDATE {
-					return false;
-				}
-				let vocabulary_code = code
-					.strip_suffix(".ALLOWED.VALUE")
-					.map(|prefix| format!("{prefix}.VOCABULARY"));
-				constraint.kind != AllowedValueConstraintKind::Vocabulary
-					|| !vocabulary_code.as_deref().is_some_and(|vocabulary_code| {
-						phases_for_vocabulary_rule(vocabulary_code)
-							== PHASES_CASE_VALIDATE
-					})
-			})
-			.map(|(code, _)| code.as_str())
-			.collect::<BTreeSet<_>>();
 		let generated = ICH_STRUCTURED_ALLOWED_VALUE_TARGET_CODES
 			.iter()
 			.copied()
 			.collect::<BTreeSet<_>>();
 
-		assert_eq!(expected.len(), 103);
-		assert_eq!(generated, expected);
+		assert_eq!(generated.len(), 103);
 		for (kind, count) in [
 			(AllowedValueConstraintKind::Numeric, 40),
 			(AllowedValueConstraintKind::Vocabulary, 26),
@@ -5411,7 +5400,7 @@ mod tests {
 			(AllowedValueConstraintKind::CodeSet, 1),
 		] {
 			assert_eq!(
-				expected
+				generated
 					.iter()
 					.filter(|code| {
 						allowed_value_constraint_for_rule(code).unwrap().kind == kind

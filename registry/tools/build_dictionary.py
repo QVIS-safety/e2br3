@@ -179,6 +179,9 @@ REPRESENTATION_ENFORCED_CODES = {
     "D.10.7.1.r.3",
     "E.i.8",
     "F.r.7",
+    # The four E.i.3.1 source codes are the complete boolean serious/highlighted
+    # cross-product stored by the API.
+    "E.i.3.1",
     # Decimal/integer-backed DTO fields.
     "D.2.2a",
     "D.2.2.1a",

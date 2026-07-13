@@ -5,7 +5,7 @@ use super::rule_table::{
 	IndexedDerivedLengthRule, IndexedFutureDateRule, IndexedLengthRule,
 	IndexedMeddraRule, IndexedRule, RuleValue,
 };
-use crate::allowed_value::ConstraintValue;
+use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
 	has_text, push_issue_by_code, push_issue_if_conditioned_value_invalid,
 	should_case_validation_require_required_intervention, FdaValidationContext,
@@ -156,6 +156,68 @@ const E_REACTION_CONSTRAINT_RULES: &[IndexedConstraintRule<Reaction>] = &[
 		value: |reaction| {
 			ConstraintValue::Text(
 				reaction.country_code.as_deref().map(Cow::Borrowed),
+			)
+		},
+	},
+	IndexedConstraintRule {
+		code: "ICH.E.i.3.2a.ALLOWED.VALUE",
+		path: |idx| format!("reactions.{idx}.criteriaDeath"),
+		value: |reaction| {
+			true_marker_value(
+				Some(reaction.criteria_death),
+				reaction.criteria_death_null_flavor.as_deref(),
+			)
+		},
+	},
+	IndexedConstraintRule {
+		code: "ICH.E.i.3.2b.ALLOWED.VALUE",
+		path: |idx| format!("reactions.{idx}.criteriaLifeThreatening"),
+		value: |reaction| {
+			true_marker_value(
+				Some(reaction.criteria_life_threatening),
+				reaction.criteria_life_threatening_null_flavor.as_deref(),
+			)
+		},
+	},
+	IndexedConstraintRule {
+		code: "ICH.E.i.3.2c.ALLOWED.VALUE",
+		path: |idx| format!("reactions.{idx}.criteriaHospitalization"),
+		value: |reaction| {
+			true_marker_value(
+				Some(reaction.criteria_hospitalization),
+				reaction.criteria_hospitalization_null_flavor.as_deref(),
+			)
+		},
+	},
+	IndexedConstraintRule {
+		code: "ICH.E.i.3.2d.ALLOWED.VALUE",
+		path: |idx| format!("reactions.{idx}.criteriaDisabling"),
+		value: |reaction| {
+			true_marker_value(
+				Some(reaction.criteria_disabling),
+				reaction.criteria_disabling_null_flavor.as_deref(),
+			)
+		},
+	},
+	IndexedConstraintRule {
+		code: "ICH.E.i.3.2e.ALLOWED.VALUE",
+		path: |idx| format!("reactions.{idx}.criteriaCongenitalAnomaly"),
+		value: |reaction| {
+			true_marker_value(
+				Some(reaction.criteria_congenital_anomaly),
+				reaction.criteria_congenital_anomaly_null_flavor.as_deref(),
+			)
+		},
+	},
+	IndexedConstraintRule {
+		code: "ICH.E.i.3.2f.ALLOWED.VALUE",
+		path: |idx| format!("reactions.{idx}.criteriaOtherMedicallyImportant"),
+		value: |reaction| {
+			true_marker_value(
+				Some(reaction.criteria_other_medically_important),
+				reaction
+					.criteria_other_medically_important_null_flavor
+					.as_deref(),
 			)
 		},
 	},
@@ -582,6 +644,30 @@ mod tests {
 		assert!(issues.iter().any(|issue| {
 			issue.code == "ICH.E.i.7.ALLOWED.VALUE"
 				&& issue.path == "reactions.0.reactionOutcome"
+		}));
+	}
+
+	#[test]
+	fn true_marker_rules_emit_concrete_paths_and_honor_null_flavor() {
+		let mut reaction = reaction();
+		reaction.criteria_death_null_flavor = Some("NI".to_string());
+		let mut ctx = empty_ctx();
+		ctx.reactions = vec![reaction];
+		let mut issues = Vec::new();
+
+		collect_ich_issues(&ctx, &mut issues);
+
+		let marker_issues = issues
+			.iter()
+			.filter(|issue| issue.code.starts_with("ICH.E.i.3.2"))
+			.collect::<Vec<_>>();
+		assert_eq!(marker_issues.len(), 5);
+		assert!(!marker_issues
+			.iter()
+			.any(|issue| issue.code == "ICH.E.i.3.2a.ALLOWED.VALUE"));
+		assert!(marker_issues.iter().any(|issue| {
+			issue.code == "ICH.E.i.3.2f.ALLOWED.VALUE"
+				&& issue.path == "reactions.0.criteriaOtherMedicallyImportant"
 		}));
 	}
 

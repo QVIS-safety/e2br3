@@ -215,6 +215,15 @@ const C_CONSTRAINT_RULES: &[ConstraintRule<SafetyReportIdentification>] = &[
 		},
 	},
 	ConstraintRule {
+		code: "ICH.C.1.8.1.ALLOWED.VALUE",
+		path: "safetyReportIdentification.worldwideUniqueId",
+		value: |report| {
+			ConstraintValue::Text(
+				report.worldwide_unique_id.as_deref().map(Cow::Borrowed),
+			)
+		},
+	},
+	ConstraintRule {
 		code: "ICH.C.1.11.1.ALLOWED.VALUE",
 		path: "safetyReportIdentification.nullificationCode",
 		value: |report| {
@@ -522,6 +531,16 @@ const C_DOCUMENT_LENGTH_RULES: &[IndexedLengthRule<DocumentsHeldBySender>] =
 		value: |document| document.title.as_deref(),
 	}];
 
+const C_DOCUMENT_CONSTRAINT_RULES: &[IndexedConstraintRule<
+	DocumentsHeldBySender,
+>] = &[IndexedConstraintRule {
+	code: "ICH.C.1.6.1.r.2.ALLOWED.VALUE",
+	path: |idx| format!("documentsHeldBySender.{idx}.documentBase64"),
+	value: |document| {
+		ConstraintValue::Text(document.document_base64.as_deref().map(Cow::Borrowed))
+	},
+}];
+
 const C_OTHER_IDENTIFIER_RULES: &[IndexedRule<OtherCaseIdentifier>] = &[
 	IndexedRule {
 		code: "ICH.C.1.9.1.r.1.REQUIRED",
@@ -553,6 +572,18 @@ const C_OTHER_IDENTIFIER_LENGTH_RULES: &[IndexedLengthRule<OtherCaseIdentifier>]
 		value: |identifier| Some(identifier.case_identifier.as_str()),
 	},
 ];
+
+const C_OTHER_IDENTIFIER_CONSTRAINT_RULES: &[IndexedConstraintRule<
+	OtherCaseIdentifier,
+>] = &[IndexedConstraintRule {
+	code: "ICH.C.1.9.1.r.2.ALLOWED.VALUE",
+	path: |idx| format!("otherCaseIdentifiers.{idx}.caseIdentifier"),
+	value: |identifier| {
+		ConstraintValue::Text(Some(Cow::Borrowed(
+			identifier.case_identifier.as_str(),
+		)))
+	},
+}];
 
 const C_LINKED_REPORT_LENGTH_RULES: &[IndexedLengthRule<LinkedReportNumber>] =
 	&[IndexedLengthRule {
@@ -618,6 +649,18 @@ const C_LITERATURE_LENGTH_RULES: &[IndexedLengthRule<LiteratureReference>] =
 		path: |idx| format!("literatureReferences.{idx}.referenceText"),
 		value: |reference| Some(reference.reference_text.as_str()),
 	}];
+
+const C_LITERATURE_CONSTRAINT_RULES: &[IndexedConstraintRule<
+	LiteratureReference,
+>] = &[IndexedConstraintRule {
+	code: "ICH.C.4.r.2.ALLOWED.VALUE",
+	path: |idx| format!("literatureReferences.{idx}.documentBase64"),
+	value: |reference| {
+		ConstraintValue::Text(
+			reference.document_base64.as_deref().map(Cow::Borrowed),
+		)
+	},
+}];
 
 const C_STUDY_REGISTRATION_LENGTH_RULES: &[NestedLengthRule<
 	StudyRegistrationNumber,
@@ -763,6 +806,12 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.documents_held_by_sender,
 		C_DOCUMENT_RULES,
 	);
+	eval_indexed_constraints(
+		issues,
+		&validation_ctx.documents_held_by_sender,
+		C_DOCUMENT_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
+	);
 	eval_indexed_length(
 		issues,
 		&validation_ctx.documents_held_by_sender,
@@ -773,10 +822,22 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.literature_references,
 		C_LITERATURE_LENGTH_RULES,
 	);
+	eval_indexed_constraints(
+		issues,
+		&validation_ctx.literature_references,
+		C_LITERATURE_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
+	);
 	eval_indexed(
 		issues,
 		&validation_ctx.other_case_identifiers,
 		C_OTHER_IDENTIFIER_RULES,
+	);
+	eval_indexed_constraints(
+		issues,
+		&validation_ctx.other_case_identifiers,
+		C_OTHER_IDENTIFIER_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 	eval_indexed_length(
 		issues,
@@ -1178,6 +1239,13 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 	C_CONSTRAINT_RULES
 		.iter()
 		.map(|rule| rule.code)
+		.chain(C_DOCUMENT_CONSTRAINT_RULES.iter().map(|rule| rule.code))
+		.chain(C_LITERATURE_CONSTRAINT_RULES.iter().map(|rule| rule.code))
+		.chain(
+			C_OTHER_IDENTIFIER_CONSTRAINT_RULES
+				.iter()
+				.map(|rule| rule.code),
+		)
 		.chain(
 			C_PRIMARY_SOURCE_CONSTRAINT_RULES
 				.iter()
