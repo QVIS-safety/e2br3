@@ -124,7 +124,7 @@ pub(super) async fn identifiers_allowed_for_scope(
 		return Ok(true);
 	};
 	if allowed.is_empty() {
-		return Ok(false);
+		return Ok(true);
 	}
 	Ok(identifiers
 		.iter()
@@ -463,8 +463,8 @@ pub(super) async fn filter_sender_presaves_for_scope(
 	let mut filtered = Vec::new();
 	for entity in entities {
 		let identifiers = sender_scope_identifiers(ctx, mm, &entity).await?;
-		if !allowed.is_empty()
-			&& identifiers
+		if allowed.is_empty()
+			|| identifiers
 				.iter()
 				.any(|identifier| allowed.contains(identifier))
 		{
@@ -487,8 +487,8 @@ pub(super) async fn filter_product_presaves_for_scope(
 	Ok(entities
 		.into_iter()
 		.filter(|entity| {
-			!allowed.is_empty()
-				&& product_scope_identifiers(entity)
+			allowed.is_empty()
+				|| product_scope_identifiers(entity)
 					.iter()
 					.any(|identifier| allowed.contains(identifier))
 		})
@@ -508,8 +508,8 @@ pub(super) async fn filter_study_presaves_for_scope(
 	Ok(entities
 		.into_iter()
 		.filter(|entity| {
-			!allowed.is_empty()
-				&& study_scope_identifiers(entity)
+			allowed.is_empty()
+				|| study_scope_identifiers(entity)
 					.iter()
 					.any(|identifier| allowed.contains(identifier))
 		})
