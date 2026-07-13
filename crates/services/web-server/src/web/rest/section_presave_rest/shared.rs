@@ -387,7 +387,7 @@ pub(super) async fn ensure_sender_presave_scope(
 	Err(deny_presave_scope())
 }
 
-pub(super) async fn ensure_product_presave_scope(
+pub(crate) async fn ensure_product_presave_scope(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	entity: &ProductPresave,

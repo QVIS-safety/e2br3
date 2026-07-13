@@ -254,19 +254,34 @@ async fn import_c_2_sender_information(
 			header.message_receiver.as_deref(),
 		)
 	});
-	let sender = if settings.apply_sender_info_to_imported_cases {
+	let (sender, source_sender_presave_id) = if settings.apply_sender_info_to_imported_cases {
 		let xml_sender = c_helpers::parse_sender_information(xml, header)
 			.ok()
 			.flatten();
-		match sender_from_product_linked_presave(ctx, mm, xml).await? {
-			Some(sender) => Some(merge_sender_import(sender, xml_sender)),
-			None => match default_sender_from_presave(ctx, mm, authority).await? {
-				Some(sender) => Some(merge_sender_import(sender, xml_sender)),
-				None => c_helpers::parse_sender_information(xml, header)?,
-			},
+		if let Some(sender_id) = settings.selected_sender_presave_id {
+			let sender_presave = SenderPresaveBmc::get(ctx, mm, sender_id)
+				.await
+				.map_err(Error::Model)?;
+			if sender_presave.deleted {
+				return Err(Error::InvalidXml {
+					message: "selected Product Sender is deleted".to_string(),
+					line: None,
+					column: None,
+				});
+			}
+			let sender = sender_import_from_presave(ctx, mm, sender_presave).await?;
+			(Some(merge_sender_import(sender, xml_sender)), Some(sender_id))
+		} else {
+			match sender_from_product_linked_presave(ctx, mm, xml).await? {
+				Some(sender) => (Some(merge_sender_import(sender, xml_sender)), None),
+				None => match default_sender_from_presave(ctx, mm, authority).await? {
+					Some(sender) => (Some(merge_sender_import(sender, xml_sender)), None),
+					None => (c_helpers::parse_sender_information(xml, header)?, None),
+				},
+			}
 		}
 	} else {
-		c_helpers::parse_sender_information(xml, header)?
+		(c_helpers::parse_sender_information(xml, header)?, None)
 	};
 	let Some(sender) = sender else {
 		return Ok(());
@@ -290,7 +305,7 @@ async fn import_c_2_sender_information(
 			mm,
 			SenderInformationForCreate {
 				case_id,
-				source_sender_presave_id: None,
+				source_sender_presave_id,
 				sender_type: Some(sender.sender_type.clone()),
 				health_professional_type_kr1: sender
 					.health_professional_type_kr1
@@ -319,7 +334,7 @@ async fn import_c_2_sender_information(
 		mm,
 		sender_id,
 		SenderInformationForUpdate {
-			source_sender_presave_id: None,
+			source_sender_presave_id,
 			sender_type: Some(sender.sender_type),
 			health_professional_type_kr1: sender.health_professional_type_kr1,
 			organization_name: Some(sender.organization_name),
@@ -1086,6 +1101,7 @@ mod tests {
 				update_report_first_received_date: true,
 				apply_sender_info_to_imported_cases: false,
 				apply_default_values_to_imported_r2_cases: false,
+				selected_sender_presave_id: None,
 			},
 			import_date,
 		);
@@ -1121,6 +1137,7 @@ mod tests {
 				update_report_first_received_date: false,
 				apply_sender_info_to_imported_cases: false,
 				apply_default_values_to_imported_r2_cases: false,
+				selected_sender_presave_id: None,
 			},
 			import_date,
 		);

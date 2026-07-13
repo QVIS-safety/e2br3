@@ -7,6 +7,7 @@ use lib_core::ctx::Ctx;
 use lib_core::model::acs::{XML_IMPORT, XML_IMPORT_READ};
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::case_duplicate::{CaseDuplicateBmc, CaseDuplicateKey};
+use lib_core::model::presave::ProductPresaveBmc;
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::xml_import_decision::{
 	decide_xml_import, XmlImportDecision, XmlImportDecisionAction,
@@ -47,6 +48,7 @@ struct UploadedImportPayload {
 	bytes: Vec<u8>,
 	filename: Option<String>,
 	product_id: Option<String>,
+	product_presave_id: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize)]
@@ -109,6 +111,7 @@ async fn read_xml_multipart(
 	let mut file_bytes: Option<Vec<u8>> = None;
 	let mut filename: Option<String> = None;
 	let mut product_id: Option<String> = None;
+	let mut product_presave_id: Option<Uuid> = None;
 
 	while let Some(field) =
 		multipart
@@ -134,6 +137,23 @@ async fn read_xml_multipart(
 			if !trimmed.is_empty() {
 				product_id = Some(trimmed.to_string());
 			}
+			continue;
+		}
+		if matches!(
+			name.as_deref(),
+			Some("productPresaveId") | Some("product_presave_id")
+		) {
+			let text = field.text().await.map_err(|err| Error::BadRequest {
+				message: format!("multipart productPresaveId read error: {err}"),
+			})?;
+			let trimmed = text.trim();
+			if !trimmed.is_empty() {
+				product_presave_id = Some(Uuid::parse_str(trimmed).map_err(|_| {
+					Error::BadRequest {
+						message: "productPresaveId must be a UUID".to_string(),
+					}
+				})?);
+			}
 		}
 	}
 
@@ -145,6 +165,7 @@ async fn read_xml_multipart(
 		bytes,
 		filename,
 		product_id,
+		product_presave_id,
 	})
 }
 
@@ -281,6 +302,8 @@ async fn import_single_xml(
 	filename: String,
 	c_settings: CImportSettings,
 	decision: XmlImportDecision,
+	product_presave_id: Option<Uuid>,
+	product_id: Option<String>,
 ) -> ImportedCaseSummary {
 	let validation_report = if should_skip_xml_validation() {
 		validate_e2b_xml_basic(&xml, None)
@@ -361,6 +384,8 @@ async fn import_single_xml(
 			filename: Some(filename.clone()),
 			skip_validation: false,
 			c_settings,
+			product_presave_id,
+			product_id,
 		},
 	)
 	.await;
@@ -653,6 +678,7 @@ async fn load_import_settings(
 			.get("apply_default_values_to_imported_r2_cases")
 			.and_then(|v| v.as_bool())
 			.unwrap_or(false),
+		selected_sender_presave_id: None,
 	})
 }
 
@@ -793,9 +819,32 @@ pub async fn import_xml(
 	require_permission(&ctx, XML_IMPORT)?;
 
 	let payload = read_xml_multipart(multipart).await?;
+	let selected_product = match payload.product_presave_id {
+		Some(id) => {
+			let product = ProductPresaveBmc::get(&ctx, &mm, id)
+				.await
+				.map_err(Error::Model)?;
+			if product.deleted {
+				return Err(Error::BadRequest {
+					message: "selected Product is deleted".to_string(),
+				});
+			}
+			super::section_presave_rest::ensure_product_presave_scope(
+				&ctx, &mm, &product,
+			)
+			.await?;
+			Some((id, product.product_id, product.sender_presave_id))
+		}
+		None => None,
+	};
 	let entries = extract_xml_entries(&payload.bytes, payload.filename.as_deref())?;
 	let mut imported_cases = Vec::with_capacity(entries.len());
-	let c_settings = load_import_settings(&ctx, &mm).await?;
+	let mut c_settings = load_import_settings(&ctx, &mm).await?;
+	if c_settings.apply_sender_info_to_imported_cases {
+		c_settings.selected_sender_presave_id = selected_product
+			.as_ref()
+			.and_then(|(_, _, sender_presave_id)| *sender_presave_id);
+	}
 	let uploaded_file_name = payload
 		.filename
 		.clone()
@@ -867,6 +916,10 @@ pub async fn import_xml(
 				entry_name,
 				c_settings,
 				decision,
+				selected_product.as_ref().map(|(id, _, _)| *id),
+				selected_product
+					.as_ref()
+					.and_then(|(_, product_id, _)| product_id.clone()),
 			)
 			.await,
 		);
