@@ -91,7 +91,6 @@ CREATE TABLE reactions (
     -- Null Flavor Support (E2B(R3) compliant: NI, UNK, ASKU, NASK, MSK)
     start_date_null_flavor VARCHAR(4) CHECK (start_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
     end_date_null_flavor VARCHAR(4) CHECK (end_date_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
-    outcome_null_flavor VARCHAR(4) CHECK (outcome_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     deleted BOOLEAN NOT NULL DEFAULT false,
 
