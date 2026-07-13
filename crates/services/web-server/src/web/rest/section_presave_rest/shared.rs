@@ -93,13 +93,13 @@ pub(super) async fn allowed_scope_for_section(
 }
 
 pub(super) fn product_scope_identifiers(entity: &ProductPresave) -> Vec<String> {
-	let mut values = Vec::new();
+	let mut values = vec![entity.id.to_string()];
 	push_scope_identifier(&mut values, entity.brand_name.as_deref());
 	values
 }
 
 pub(super) fn study_scope_identifiers(entity: &StudyPresave) -> Vec<String> {
-	let mut values = Vec::new();
+	let mut values = vec![entity.id.to_string()];
 	push_scope_identifier(&mut values, entity.sponsor_study_number.as_deref());
 	values
 }
@@ -109,7 +109,7 @@ pub(super) async fn sender_scope_identifiers(
 	_mm: &ModelManager,
 	entity: &SenderPresave,
 ) -> Result<Vec<String>> {
-	let mut values = Vec::new();
+	let mut values = vec![entity.id.to_string()];
 	push_scope_identifier(&mut values, entity.organization_name.as_deref());
 	Ok(values)
 }
@@ -124,7 +124,7 @@ pub(super) async fn identifiers_allowed_for_scope(
 		return Ok(true);
 	};
 	if allowed.is_empty() {
-		return Ok(false);
+		return Ok(true);
 	}
 	Ok(identifiers
 		.iter()
@@ -387,7 +387,7 @@ pub(super) async fn ensure_sender_presave_scope(
 	Err(deny_presave_scope())
 }
 
-pub(super) async fn ensure_product_presave_scope(
+pub(crate) async fn ensure_product_presave_scope(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	entity: &ProductPresave,
@@ -463,8 +463,8 @@ pub(super) async fn filter_sender_presaves_for_scope(
 	let mut filtered = Vec::new();
 	for entity in entities {
 		let identifiers = sender_scope_identifiers(ctx, mm, &entity).await?;
-		if !allowed.is_empty()
-			&& identifiers
+		if allowed.is_empty()
+			|| identifiers
 				.iter()
 				.any(|identifier| allowed.contains(identifier))
 		{
@@ -487,8 +487,8 @@ pub(super) async fn filter_product_presaves_for_scope(
 	Ok(entities
 		.into_iter()
 		.filter(|entity| {
-			!allowed.is_empty()
-				&& product_scope_identifiers(entity)
+			allowed.is_empty()
+				|| product_scope_identifiers(entity)
 					.iter()
 					.any(|identifier| allowed.contains(identifier))
 		})
@@ -508,8 +508,8 @@ pub(super) async fn filter_study_presaves_for_scope(
 	Ok(entities
 		.into_iter()
 		.filter(|entity| {
-			!allowed.is_empty()
-				&& study_scope_identifiers(entity)
+			allowed.is_empty()
+				|| study_scope_identifiers(entity)
 					.iter()
 					.any(|identifier| allowed.contains(identifier))
 		})

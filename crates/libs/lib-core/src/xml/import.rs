@@ -19,6 +19,7 @@ pub struct CImportSettings {
 	pub update_report_first_received_date: bool,
 	pub apply_sender_info_to_imported_cases: bool,
 	pub apply_default_values_to_imported_r2_cases: bool,
+	pub selected_sender_presave_id: Option<sqlx::types::Uuid>,
 }
 
 #[derive(Debug, Clone)]
@@ -27,6 +28,8 @@ pub struct XmlImportRequest {
 	pub filename: Option<String>,
 	pub skip_validation: bool,
 	pub c_settings: CImportSettings,
+	pub product_presave_id: Option<sqlx::types::Uuid>,
+	pub product_id: Option<String>,
 }
 
 pub fn extract_safety_report_id_from_xml(xml: &[u8]) -> Result<String> {
@@ -88,7 +91,7 @@ pub async fn import_e2b_xml_unvalidated(
 		&mm,
 		CaseForCreate {
 			organization_id: ctx.organization_id(),
-			dg_prd_key: None,
+			dg_prd_key: req.product_id.clone(),
 			status: Some("draft".to_string()),
 			review_receivers_json: None,
 			workflow_routes_json: None,
@@ -191,7 +194,15 @@ pub async fn import_e2b_xml_unvalidated(
 
 	let reaction_map = e::import_section_e(ctx, &mm, &req.xml, case_id).await?;
 	f::import_section_f(ctx, &mm, &req.xml, case_id).await?;
-	g::import_section_g(ctx, &mm, &req.xml, case_id, &reaction_map).await?;
+	g::import_section_g(
+		ctx,
+		&mm,
+		&req.xml,
+		case_id,
+		&reaction_map,
+		req.product_presave_id,
+	)
+	.await?;
 
 	let version_id = match CaseVersionBmc::create(
 		ctx,
@@ -215,7 +226,7 @@ pub async fn import_e2b_xml_unvalidated(
 		case_id,
 		CaseForUpdate {
 			raw_xml: Some(req.xml.to_vec()),
-			dg_prd_key: None,
+			dg_prd_key: req.product_id,
 			status: None,
 			review_receivers_json: None,
 			workflow_routes_json: None,

@@ -345,7 +345,6 @@ pub async fn load_workflow_runtime_settings(
 #[derive(Debug, FromRow)]
 struct CaseScopeRow {
 	sender_identifiers: Vec<String>,
-	routing_sender_identifiers: Vec<String>,
 	product_identifiers: Vec<String>,
 	study_identifiers: Vec<String>,
 	has_blinded_data: bool,
@@ -436,21 +435,6 @@ fn scope_allows(assigned: &HashSet<String>, available: &[String]) -> bool {
 		return true;
 	}
 	available.iter().any(|value| assigned.contains(value))
-}
-
-fn selected_sender_matches(
-	selected_sender: Option<&str>,
-	available: &[String],
-) -> bool {
-	let Some(selected_sender) = selected_sender
-		.map(str::trim)
-		.filter(|value| !value.is_empty())
-		.map(|value| value.to_ascii_lowercase())
-	else {
-		return true;
-	};
-	let available = normalize_values(available);
-	available.contains(&selected_sender)
 }
 
 async fn load_sender_options_for_org(
@@ -641,6 +625,10 @@ async fn load_case_scope(
 							SELECT NULLIF(BTRIM(sender.organization_name), '') AS ident
 							FROM sender_information sender
 							WHERE sender.case_id = c.id
+							UNION ALL
+							SELECT sender.source_sender_presave_id::text
+							FROM sender_information sender
+							WHERE sender.case_id = c.id
 						) senders
 						WHERE ident IS NOT NULL
 					),
@@ -650,23 +638,11 @@ async fn load_case_scope(
 					(
 						SELECT array_agg(DISTINCT ident)
 						FROM (
-							SELECT NULLIF(BTRIM(mh.message_sender_identifier), '') AS ident
-							FROM message_headers mh
-							WHERE mh.case_id = c.id
-							UNION ALL
-							SELECT NULLIF(BTRIM(mh.batch_sender_identifier), '')
-							FROM message_headers mh
-							WHERE mh.case_id = c.id
-						) routing_senders
-						WHERE ident IS NOT NULL
-					),
-					ARRAY[]::text[]
-				) AS routing_sender_identifiers,
-				COALESCE(
-					(
-						SELECT array_agg(DISTINCT ident)
-						FROM (
 							SELECT NULLIF(BTRIM(d.brand_name), '') AS ident
+							FROM drug_information d
+							WHERE d.case_id = c.id
+							UNION ALL
+							SELECT d.source_product_presave_id::text
 							FROM drug_information d
 							WHERE d.case_id = c.id
 						) products
@@ -679,6 +655,10 @@ async fn load_case_scope(
 						SELECT array_agg(DISTINCT ident)
 						FROM (
 							SELECT NULLIF(BTRIM(s.sponsor_study_number), '') AS ident
+							FROM study_information s
+							WHERE s.case_id = c.id
+							UNION ALL
+							SELECT s.source_study_presave_id::text
 							FROM study_information s
 							WHERE s.case_id = c.id
 						) studies
@@ -732,12 +712,6 @@ pub async fn case_matches_user_scope(
 	if !scope_allows(
 		&parse_scope_values(user.access_sender_ids.as_deref()),
 		&scope.sender_identifiers,
-	) {
-		return Ok(false);
-	}
-	if !selected_sender_matches(
-		user.active_sender_identifier.as_deref(),
-		&scope.routing_sender_identifiers,
 	) {
 		return Ok(false);
 	}

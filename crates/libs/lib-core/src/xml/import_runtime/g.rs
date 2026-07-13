@@ -29,8 +29,9 @@ pub(crate) async fn import_section_g(
 	xml: &[u8],
 	case_id: Uuid,
 	reaction_map: &ImportIdMap,
+	product_presave_id: Option<Uuid>,
 ) -> Result<ImportIdMap> {
-	let drug_map = import_drugs(ctx, mm, xml, case_id).await?;
+	let drug_map = import_drugs(ctx, mm, xml, case_id, product_presave_id).await?;
 	import_drug_recurrences(ctx, mm, xml, &drug_map).await?;
 	import_drug_reaction_assessments(ctx, mm, xml, &drug_map, reaction_map).await?;
 	Ok(drug_map)
@@ -41,6 +42,7 @@ async fn import_drugs(
 	mm: &ModelManager,
 	xml: &[u8],
 	case_id: Uuid,
+	product_presave_id: Option<Uuid>,
 ) -> Result<ImportIdMap> {
 	let imports = crate::xml::import_sections::g_drug::parse_g_drugs(xml)?
 		.into_iter()
@@ -150,7 +152,7 @@ async fn import_drugs(
 		.collect::<Vec<_>>();
 	let mut map = ImportIdMap::default();
 
-	for drug in imports {
+	for (index, drug) in imports.into_iter().enumerate() {
 		let (fda_specialized_product_category, fda_device_info_json) =
 			g_helpers::import_fda_device_info(&drug, &drug.characteristics);
 		let drug_additional_info_codes_json =
@@ -162,7 +164,9 @@ async fn import_drugs(
 			mm,
 			DrugInformationForCreate {
 				case_id,
-				source_product_presave_id: None,
+				source_product_presave_id: (index == 0)
+					.then_some(product_presave_id)
+					.flatten(),
 				sequence_number: drug.sequence_number,
 				drug_characterization: drug.drug_characterization.clone(),
 				medicinal_product: drug.medicinal_product.clone(),
@@ -177,7 +181,9 @@ async fn import_drugs(
 			mm,
 			drug_id,
 			DrugInformationForUpdate {
-				source_product_presave_id: None,
+				source_product_presave_id: (index == 0)
+					.then_some(product_presave_id)
+					.flatten(),
 				medicinal_product: Some(drug.medicinal_product),
 				drug_characterization: Some(drug.drug_characterization),
 				brand_name: drug.brand_name,
