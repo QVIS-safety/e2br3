@@ -170,8 +170,57 @@ def format_name_for(value: str) -> str:
     return "e2b_datetime"
 
 
-def enforcement_for(kind: str) -> str:
-    if kind == "boolean":
+REPRESENTATION_ENFORCED_CODES = {
+    # Boolean-backed DTO fields.
+    "C.1.6.1",
+    "C.1.7",
+    "D.7.1.r.3",
+    "D.9.3",
+    "D.10.7.1.r.3",
+    "E.i.8",
+    "F.r.7",
+    # Decimal/integer-backed DTO fields.
+    "D.2.2a",
+    "D.2.2.1a",
+    "D.3",
+    "D.4",
+    "D.10.2.2a",
+    "D.10.4",
+    "D.10.5",
+    "E.i.6a",
+    "G.k.2.3.r.3a",
+    "G.k.4.r.1a",
+    "G.k.4.r.2",
+    "G.k.4.r.6a",
+    "G.k.5a",
+    "G.k.6a",
+    "G.k.9.i.3.1a",
+    "G.k.9.i.3.2a",
+    # Date/OffsetDateTime-backed DTO fields.
+    "N.1.5",
+    "C.1.4",
+    "C.1.5",
+    "D.2.1",
+    "D.6",
+    "D.7.1.r.2",
+    "D.7.1.r.4",
+    "D.8.r.4",
+    "D.8.r.5",
+    "D.9.1",
+    "D.10.2.1",
+    "D.10.3",
+    "D.10.7.1.r.2",
+    "D.10.7.1.r.4",
+    "D.10.8.r.4",
+    "D.10.8.r.5",
+    "E.i.4",
+    "E.i.5",
+    "F.r.1",
+}
+
+
+def enforcement_for(code: str) -> str:
+    if code in REPRESENTATION_ENFORCED_CODES:
         return "representation_enforced"
     return "case_validate"
 
@@ -186,7 +235,7 @@ def allowed_value_constraint(
     if kind == "descriptive":
         return result
 
-    result["enforcement"] = enforcement_for(kind)
+    result["enforcement"] = enforcement_for(code)
     if kind == "numeric":
         result["numeric_shape"] = numeric_shape_for(value)
     elif kind == "format":

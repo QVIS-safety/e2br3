@@ -114,13 +114,20 @@ where
 	let opt = Option::<FlexDateInput>::deserialize(deserializer)?;
 	let Some(v) = opt else { return Ok(None) };
 	match v {
-		FlexDateInput::Str(s) => Ok(parse_flexible_date_str(&s)),
+		FlexDateInput::Str(s) => parse_flexible_date_str(&s)
+			.map(Some)
+			.ok_or_else(|| de::Error::custom("invalid optional date")),
 		FlexDateInput::YearOrdinal(year, ordinal) => {
-			Ok(Date::from_ordinal_date(year, u16::max(1, ordinal) as u16).ok())
+			Date::from_ordinal_date(year, ordinal)
+				.map(Some)
+				.map_err(|_| de::Error::custom("invalid optional date"))
 		}
 		FlexDateInput::YearMonthDay(year, month, day) => {
-			let month = Month::try_from(month).ok();
-			Ok(month.and_then(|m| Date::from_calendar_date(year, m, day).ok()))
+			let month = Month::try_from(month)
+				.map_err(|_| de::Error::custom("invalid optional date"))?;
+			Date::from_calendar_date(year, month, day)
+				.map(Some)
+				.map_err(|_| de::Error::custom("invalid optional date"))
 		}
 	}
 }

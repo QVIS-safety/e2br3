@@ -109,7 +109,7 @@
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -292,7 +292,7 @@
       "hl7_component": "low=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -311,7 +311,7 @@
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -1653,7 +1653,7 @@
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -1678,7 +1678,7 @@
       "condition_text": "Optional, but required if D.2.2b is populated.",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -1728,7 +1728,7 @@
       "condition_text": "Optional, but required if D.2.2.1b is populated.",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -1805,7 +1805,7 @@
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -1827,7 +1827,7 @@
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -1880,7 +1880,7 @@
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -1963,7 +1963,7 @@
       "hl7_component": "low=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -2013,7 +2013,7 @@
       "hl7_component": "high=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -2238,7 +2238,7 @@
       "hl7_component": "low=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -2263,7 +2263,7 @@
       "hl7_component": "high=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -2398,7 +2398,7 @@
       "fda_error_id": "R0041",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -2649,7 +2649,7 @@
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -2674,7 +2674,7 @@
       "condition_text": "Optional, but required if D.10.2.2b is populated.",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -2724,7 +2724,7 @@
       "hl7_data_type": "Point in Time (TS)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -2746,7 +2746,7 @@
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -2768,7 +2768,7 @@
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -2891,7 +2891,7 @@
       "hl7_component": "low=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -2941,7 +2941,7 @@
       "hl7_component": "high=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -3112,7 +3112,7 @@
       "hl7_component": "low=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -3137,7 +3137,7 @@
       "hl7_component": "high=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -3544,7 +3544,7 @@
       "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nlow=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -3569,7 +3569,7 @@
       "hl7_component": "1. When all the elements E.i.4, E.i.5, and E.i.6 do not appear\nhigh=Interval Boundary (IVXB)",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -3593,7 +3593,7 @@
       "condition_text": "Optional, but required if E.i.6b is populated.",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -3722,7 +3722,7 @@
       "condition_text": "Optional, but required if F.r.2 is populated.",
       "allowed_value_constraint": {
         "kind": "format",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "format_name": "e2b_datetime"
       }
     },
@@ -4219,7 +4219,7 @@
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -4380,7 +4380,7 @@
       "hl7_component": "value=Real Number (REAL)",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -4426,7 +4426,7 @@
       "hl7_component": "period/value=Real Number (REAL)",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -4521,7 +4521,7 @@
       "condition_text": "Optional, but required if G.k.4.r.6b is populated.",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -4811,7 +4811,7 @@
       "condition_text": "Optional, but required if G.k.5b is populated.",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -4861,7 +4861,7 @@
       "condition_text": "Optional, but required if G.k.6b is populated.",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -5109,7 +5109,7 @@
       "condition_text": "Optional, but required if G.k.9.i.3.1b is populated.",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },
@@ -5158,7 +5158,7 @@
       "condition_text": "Optional, but required if G.k.9.i.3.2b is populated.",
       "allowed_value_constraint": {
         "kind": "numeric",
-        "enforcement": "case_validate",
+        "enforcement": "representation_enforced",
         "numeric_shape": "decimal"
       }
     },

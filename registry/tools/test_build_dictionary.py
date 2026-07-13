@@ -78,6 +78,28 @@ class ParseIchCsvTests(unittest.TestCase):
 
 
 class AllowedValueConstraintTests(unittest.TestCase):
+    def test_typed_numeric_and_datetime_constraints_are_representation_enforced(self):
+        self.assertEqual(
+            "representation_enforced",
+            build_dictionary.allowed_value_constraint("Numeric", "D.3", "N")[
+                "enforcement"
+            ],
+        )
+        self.assertEqual(
+            "case_validate",
+            build_dictionary.allowed_value_constraint(
+                "Numeric", "D.7.1.r.1b", "N"
+            )["enforcement"],
+        )
+        self.assertEqual(
+            "representation_enforced",
+            build_dictionary.allowed_value_constraint(
+                "See Appendix II for further information.",
+                "C.1.4",
+                "Date/Time",
+            )["enforcement"],
+        )
+
     def test_moves_constraint_after_merged_metadata(self):
         entries = [
             {
@@ -168,6 +190,13 @@ class AllowedValueConstraintTests(unittest.TestCase):
         ]
 
         self.assertEqual(133, len(machine))
+        self.assertEqual(
+            42,
+            sum(
+                rule["enforcement"] == "representation_enforced"
+                for rule in machine
+            ),
+        )
         self.assertTrue(
             all(
                 rule.get("enforcement")
