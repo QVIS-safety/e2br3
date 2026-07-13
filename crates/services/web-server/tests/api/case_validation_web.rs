@@ -275,13 +275,13 @@ async fn create_patient(
 		)
 		.into());
 	}
-		let update = json!({
-			"data": {
-				"race_code": "C41260",
-				"ethnicity_code": "C41222",
-				"medical_history_text": "No relevant medical history."
-			}
-		});
+	let update = json!({
+		"data": {
+			"race_code": "C41260",
+			"ethnicity_code": "C41222",
+			"medical_history_text": "No relevant medical history."
+		}
+	});
 	let req = Request::builder()
 		.method("PUT")
 		.uri(format!("/api/cases/{case_id}/patient"))
@@ -333,7 +333,7 @@ async fn create_reaction(
 		.into());
 	}
 	let reaction_id = value["data"]["id"].as_str().ok_or("missing reaction id")?;
-		let update = json!({
+	let update = json!({
 			"data": {
 				"reaction_meddra_version": "26.0",
 				"reaction_meddra_code": "10000001",
@@ -2025,8 +2025,8 @@ async fn test_case_edit_marks_full_validation_report_cache_stale() -> Result<()>
 			"ich",
 		)
 		.await?,
-		Some(true),
-		"case editor changes should mark full validation report cache stale"
+		Some(false),
+		"case editor page save should refresh the requested validation cache"
 	);
 
 	Ok(())

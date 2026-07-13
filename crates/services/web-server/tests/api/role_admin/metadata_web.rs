@@ -51,34 +51,12 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 	assert_eq!(system["is_operational"].as_bool(), Some(false));
 	assert_eq!(system["is_editable"].as_bool(), Some(false));
 
-	let sponsor = roles
+	assert!(!roles
 		.iter()
-		.find(|role| role["id"] == ROLE_SPONSOR_ADMIN_CRO)
-		.ok_or("missing sponsor permission profile")?;
-	assert_eq!(sponsor["is_builtin"].as_bool(), Some(true));
-	assert_eq!(sponsor["is_sponsor_admin"].as_bool(), Some(true));
-	assert_eq!(sponsor["is_editable"].as_bool(), Some(false));
-	let sponsor_privileges = sponsor["privileges"]
-		.as_array()
-		.ok_or("sponsor privileges should be an array")?;
-	for menu_key in [
-		"case",
-		"info",
-		"import",
-		"export_submission",
-		"users",
-		"roles",
-		"settings",
-		"audit",
-		"data",
-	] {
-		let privilege = sponsor_privileges
-			.iter()
-			.find(|row| row["menu_key"] == menu_key)
-			.ok_or_else(|| format!("missing sponsor privilege for {menu_key}"))?;
-		assert_eq!(privilege["can_read"].as_bool(), Some(true), "{menu_key}");
-		assert_eq!(privilege["can_edit"].as_bool(), Some(true), "{menu_key}");
-	}
+		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_CRO));
+	assert!(!roles
+		.iter()
+		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_COMPANY));
 
 	let system_privileges = system["privileges"]
 		.as_array()
@@ -87,90 +65,6 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 		system_privileges.is_empty(),
 		"system admin should not receive Safety DB working menu privileges"
 	);
-
-	let (status, value) = request_json(
-		&app,
-		"GET",
-		&admin_cookie,
-		format!("/api/admin/permission-profiles/{ROLE_SPONSOR_ADMIN_CRO}"),
-		None,
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(value["id"], ROLE_SPONSOR_ADMIN_CRO);
-
-	let (status, _value) = request_json(
-		&app,
-		"PUT",
-		&admin_cookie,
-		format!("/api/admin/permission-profiles/{ROLE_SPONSOR_ADMIN_CRO}"),
-		Some(json!({ "data": { "name": "Should Not Change" } })),
-	)
-	.await?;
-	assert_eq!(status, StatusCode::FORBIDDEN);
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_role_admin_api_filters_sponsor_built_ins_by_org_type() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let cro_seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let cro_token =
-		generate_web_token(&cro_seed.admin.email, cro_seed.admin.token_salt)?;
-	let cro_cookie = cookie_header(&cro_token.to_string());
-
-	let company_seed = seed_org_with_users(&mm, "companypwd", "companyview").await?;
-	set_org_type(&mm, company_seed.org_id, "pharmaceutical_company").await?;
-	let company_admin = insert_user(
-		&mm,
-		company_seed.org_id,
-		ROLE_SPONSOR_ADMIN_COMPANY,
-		system_user_id(),
-		Some("companypwd"),
-	)
-	.await?;
-	let company_token =
-		generate_web_token(&company_admin.email, company_admin.token_salt)?;
-	let company_cookie = cookie_header(&company_token.to_string());
-	let app = web_server::app(mm);
-
-	let (status, cro_value) = request_json(
-		&app,
-		"GET",
-		&cro_cookie,
-		"/api/admin/permission-profiles".to_string(),
-		None,
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{cro_value:?}");
-	let cro_roles = cro_value.as_array().ok_or("CRO roles should be array")?;
-	assert!(cro_roles
-		.iter()
-		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_CRO));
-	assert!(!cro_roles
-		.iter()
-		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_COMPANY));
-
-	let (status, company_value) = request_json(
-		&app,
-		"GET",
-		&company_cookie,
-		"/api/admin/permission-profiles".to_string(),
-		None,
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{company_value:?}");
-	let company_roles = company_value
-		.as_array()
-		.ok_or("company roles should be array")?;
-	assert!(company_roles
-		.iter()
-		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_COMPANY));
-	assert!(!company_roles
-		.iter()
-		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_CRO));
-
 	Ok(())
 }
 

@@ -1521,11 +1521,10 @@ impl DrugActiveSubstanceBmc {
 		filters: Option<Vec<DrugActiveSubstanceFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugActiveSubstance>> {
-		let mut filters = filters.unwrap_or_default();
-		filters.push(DrugActiveSubstanceFilter {
-			deleted: Some(OpValBool::Eq(false).into()),
-			..Default::default()
-		});
+		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		for filter in &mut filters {
+			filter.deleted = Some(OpValBool::Eq(false).into());
+		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 
@@ -1685,11 +1684,10 @@ impl DrugDeviceCharacteristicBmc {
 		filters: Option<Vec<DrugDeviceCharacteristicFilter>>,
 		list_options: Option<ListOptions>,
 	) -> Result<Vec<DrugDeviceCharacteristic>> {
-		let mut filters = filters.unwrap_or_default();
-		filters.push(DrugDeviceCharacteristicFilter {
-			deleted: Some(OpValBool::Eq(false).into()),
-			..Default::default()
-		});
+		let mut filters = filters.unwrap_or_else(|| vec![Default::default()]);
+		for filter in &mut filters {
+			filter.deleted = Some(OpValBool::Eq(false).into());
+		}
 		base_uuid::list::<Self, _, _>(ctx, mm, Some(filters), list_options).await
 	}
 

@@ -252,10 +252,13 @@ async fn create_safety_report(
 		"data": {
 			"case_id": case_id,
 			"transmission_date": [2024, 10],
-			"report_type": "1",
-			"date_first_received_from_source": [2024, 10],
-			"date_of_most_recent_information": [2024, 10],
-			"fulfil_expedited_criteria": false
+				"report_type": "1",
+				"date_first_received_from_source": [2024, 10],
+				"date_of_most_recent_information": [2024, 10],
+				"fulfil_expedited_criteria": false,
+				"combination_product_report_indicator": "false",
+				"other_case_identifiers_exist": null,
+				"other_case_identifiers_exist_null_flavor": "NI"
 		}
 	});
 	let (status, value) = post_json(
@@ -364,10 +367,12 @@ async fn create_primary_source(
 ) -> Result<()> {
 	let body = json!({
 		"data": {
-			"case_id": case_id,
-			"sequence_number": 1,
-			"qualification": "1",
-			"email": "reporter@example.com"
+				"case_id": case_id,
+				"sequence_number": 1,
+				"qualification": "1",
+				"country_code": "KR",
+				"email": "reporter@example.com",
+				"primary_source_regulatory": "1"
 		}
 	});
 	let (status, value) = post_json(
@@ -394,7 +399,12 @@ async fn create_primary_source(
 		.header("cookie", cookie)
 		.header("content-type", "application/json")
 		.body(Body::from(
-			json!({"data": { "email": "reporter@example.com" }}).to_string(),
+			json!({"data": {
+				"country_code": "KR",
+				"email": "reporter@example.com",
+				"primary_source_regulatory": "1"
+			}})
+			.to_string(),
 		))?;
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
@@ -438,7 +448,8 @@ async fn create_patient(
 			json!({
 				"data": {
 					"race_code": "C41260",
-					"ethnicity_code": "C41222"
+					"ethnicity_code": "C41222",
+					"medical_history_text": "No relevant medical history."
 				}
 			})
 			.to_string(),
@@ -487,8 +498,8 @@ async fn create_reaction(
 		.header("content-type", "application/json")
 		.body(Body::from(
 			json!({ "data": {
-				"reaction_meddra_version": "27.0",
-				"reaction_meddra_code": "10019211",
+					"reaction_meddra_version": "26.0",
+					"reaction_meddra_code": "10000001",
 				"outcome": "1",
 				"reaction_language": "en"
 			}})
@@ -1074,19 +1085,7 @@ async fn test_submission_ack_terminal_status_does_not_change() -> Result<()> {
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	seed_rule_clean_case(&app, &cookie, case_id).await?;
-	set_full_context_dbx(
-		mm.dbx(),
-		seed.admin.id,
-		seed.org_id,
-		ROLE_SPONSOR_ADMIN_CRO,
-	)
-	.await?;
-	mm.dbx()
-		.execute(
-			sqlx::query("UPDATE cases SET status = 'validated' WHERE id = $1")
-				.bind(case_id),
-		)
-		.await?;
+	mark_case_validated(&app, &cookie, case_id, "validator-secret").await?;
 
 	let (status, submit_body) = post_json(
 		&app,

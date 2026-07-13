@@ -577,7 +577,7 @@ async fn test_singleton_post_endpoints_are_idempotent() -> Result<()> {
 		body,
 	)
 	.await?;
-	assert_eq!(status, StatusCode::OK);
+	assert_eq!(status, StatusCode::CREATED);
 	let (status, body) =
 		get_json(&app, &cookie, format!("/api/cases/{case_id}/safety-report"))
 			.await?;

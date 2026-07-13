@@ -4,7 +4,9 @@ use crate::ctx::Ctx;
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
 use crate::model::modql_utils::uuid_to_sea_value;
-use crate::model::store::set_full_context_dbx_or_rollback;
+use crate::model::store::{
+	set_full_context_dbx_or_rollback, set_full_context_from_ctx_dbx,
+};
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::Fields;
@@ -749,13 +751,10 @@ impl PatientInformationBmc {
 		data: PatientInformationForUpdate,
 	) -> Result<()> {
 		mm.dbx().begin_txn().await?;
-		set_full_context_dbx_or_rollback(
-			mm.dbx(),
-			ctx.user_id(),
-			ctx.organization_id(),
-			ctx.role(),
-		)
-		.await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+			mm.dbx().rollback_txn().await?;
+			return Err(err);
+		}
 
 		let sql = format!(
 			"UPDATE {}
@@ -908,13 +907,10 @@ impl PatientInformationBmc {
 		data: PatientInformationForUpdate,
 	) -> Result<()> {
 		mm.dbx().begin_txn().await?;
-		set_full_context_dbx_or_rollback(
-			mm.dbx(),
-			ctx.user_id(),
-			ctx.organization_id(),
-			ctx.role(),
-		)
-		.await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(mm.dbx(), ctx).await {
+			mm.dbx().rollback_txn().await?;
+			return Err(err);
+		}
 
 		let sql = format!(
 			"UPDATE {}

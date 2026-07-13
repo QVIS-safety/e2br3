@@ -128,6 +128,27 @@ fn reset_test_dynamic_roles() {
 				can_review: false,
 				can_lock: false,
 			},
+			AdminMenuPrivilege {
+				menu_key: "info".to_string(),
+				can_read: true,
+				can_edit: false,
+				can_review: false,
+				can_lock: false,
+			},
+			AdminMenuPrivilege {
+				menu_key: "import".to_string(),
+				can_read: true,
+				can_edit: false,
+				can_review: false,
+				can_lock: false,
+			},
+			AdminMenuPrivilege {
+				menu_key: "export_submission".to_string(),
+				can_read: true,
+				can_edit: false,
+				can_review: false,
+				can_lock: false,
+			},
 		]),
 	);
 	replace_dynamic_roles(roles);

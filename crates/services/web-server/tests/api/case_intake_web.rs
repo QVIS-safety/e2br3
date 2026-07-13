@@ -221,7 +221,7 @@ async fn test_case_from_intake_persists_distinct_c_1_dates() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(value["data"]["transmission_date"], json!([2024, 121]));
+	assert_eq!(value["data"]["transmission_date"], "20240430000000");
 	assert_eq!(
 		value["data"]["date_first_received_from_source"],
 		json!([2024, 122])

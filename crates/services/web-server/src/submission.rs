@@ -73,9 +73,9 @@ use gateway::{select_gateway_name, submit_to_gateway_with_retry};
 use persistence::{
 	ack_event_exists, append_submission_event, compose_submission_record,
 	find_submission_idempotency, get_dispatch_attempt_count, get_submission_row,
-	insert_submission_idempotency, list_ack_rows, list_submission_rows_by_case,
-	mark_dispatch_terminal, upsert_dispatch_state_submit_failure,
-	upsert_dispatch_state_submit_success,
+	get_submission_row_for_ctx, insert_submission_idempotency, list_ack_rows,
+	list_submission_rows_by_case, mark_dispatch_terminal,
+	upsert_dispatch_state_submit_failure, upsert_dispatch_state_submit_success,
 };
 use reconcile_runtime::{record_reconcile_error, record_reconcile_result};
 use rows::*;

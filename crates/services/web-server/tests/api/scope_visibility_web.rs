@@ -648,6 +648,93 @@ async fn test_case_get_does_not_match_sender_scope_by_message_header_only(
 
 #[serial]
 #[tokio::test]
+async fn test_case_get_allows_case_without_sender_org_when_user_has_sender_scope(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	// Case carries no sender organization (and no product/study/blind data).
+	let case_id = create_case(
+		&app,
+		&admin_cookie,
+		&format!("SR-NO-SENDER-ORG-{}", Uuid::new_v4()),
+		None,
+	)
+	.await?;
+
+	// Viewer has a sender scope, but the case has no sender org to match against.
+	// Sender scope must behave like product/study: an absent case value is allowed,
+	// not blocked. (required_scope_matches semantics, not optional_scope_matches.)
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({ "access_sender_ids": ["Sender Org A"] }),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		"GET",
+		&viewer_cookie,
+		format!("/api/cases/{case_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["id"], case_id.to_string());
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_case_get_allows_unset_scope_even_when_case_has_values() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let viewer_token =
+		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let viewer_cookie = cookie_header(&viewer_token.to_string());
+	let app = web_server::app(mm);
+
+	// Case carries sender org, product brand, and study number.
+	let case_id = create_case(
+		&app,
+		&admin_cookie,
+		&format!("SR-UNSET-ALL-{}", Uuid::new_v4()),
+		Some("PROD-UNSET"),
+	)
+	.await?;
+	create_message_header(&app, &admin_cookie, case_id, "SEND-UNSET").await?;
+	create_sender_information(&app, &admin_cookie, case_id, "Sender Unset Org")
+		.await?;
+	create_drug_with_brand(&app, &admin_cookie, case_id, "Brand Unset").await?;
+	create_study(&app, &admin_cookie, case_id, "STUDY-UNSET").await?;
+
+	// Viewer has NO scope configured at all. Unset scope means "allow all":
+	// the case must be visible even though it carries sender/product/study values.
+	let (status, value) = request_json(
+		&app,
+		"GET",
+		&viewer_cookie,
+		format!("/api/cases/{case_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["id"], case_id.to_string());
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_update_requires_matching_sender_scope() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -752,7 +839,7 @@ async fn test_case_get_requires_matching_product_and_study_scope() -> Result<()>
 
 #[serial]
 #[tokio::test]
-async fn test_case_get_blocks_empty_product_or_study_scope_when_case_has_values(
+async fn test_case_get_allows_empty_product_or_study_scope_but_blocks_mismatch(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -776,11 +863,36 @@ async fn test_case_get_blocks_empty_product_or_study_scope_when_case_has_values(
 	create_drug_with_brand(&app, &admin_cookie, case_id, "Brand Strict").await?;
 	create_study(&app, &admin_cookie, case_id, "STUDY-STRICT").await?;
 
+	// Sender matches; product/study left unset. Unset scope means "allow all",
+	// so the case is visible even though it carries product/study values.
 	update_user_scope(
 		&app,
 		&admin_cookie,
 		seed.viewer.id,
 		json!({ "access_sender_ids": ["Sender Strict Org"] }),
+	)
+	.await?;
+
+	let (status, value) = request_json(
+		&app,
+		"GET",
+		&viewer_cookie,
+		format!("/api/cases/{case_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	// A product scope that is set but does NOT match the case must still block:
+	// filtering only kicks in when the user has an explicit scope value.
+	update_user_scope(
+		&app,
+		&admin_cookie,
+		seed.viewer.id,
+		json!({
+			"access_sender_ids": ["Sender Strict Org"],
+			"access_product_ids": ["Wrong Brand"]
+		}),
 	)
 	.await?;
 
@@ -794,6 +906,7 @@ async fn test_case_get_blocks_empty_product_or_study_scope_when_case_has_values(
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN);
 
+	// Matching scope on every dimension is allowed.
 	update_user_scope(
 		&app,
 		&admin_cookie,

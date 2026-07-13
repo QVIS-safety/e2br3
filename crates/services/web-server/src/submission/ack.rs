@@ -204,12 +204,11 @@ pub async fn apply_mock_ack(
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 
-	let row =
-		get_submission_row(mm, submission_id)
-			.await?
-			.ok_or(Error::BadRequest {
-				message: format!("submission not found: {submission_id}"),
-			})?;
+	let row = get_submission_row_for_ctx(ctx, mm, submission_id)
+		.await?
+		.ok_or(Error::BadRequest {
+			message: format!("submission not found: {submission_id}"),
+		})?;
 	let acks = list_ack_rows(mm, submission_id).await?;
 	compose_submission_record(row, acks)
 }
@@ -371,10 +370,25 @@ pub async fn apply_gateway_ack_by_remote(
 }
 
 pub async fn list_submission_events(
-	_ctx: &Ctx,
+	ctx: &Ctx,
 	mm: &ModelManager,
 	submission_id: Uuid,
 ) -> Result<Vec<SubmissionEventRecord>> {
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if let Err(err) = set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
+	)
+	.await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
 	let rows = mm
 		.dbx()
 		.fetch_all(
@@ -388,7 +402,7 @@ pub async fn list_submission_events(
 		)
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	Ok(rows
+	let events = rows
 		.into_iter()
 		.map(|row| SubmissionEventRecord {
 			id: row.id,
@@ -397,15 +411,35 @@ pub async fn list_submission_events(
 			event_data: row.event_data,
 			created_at: row.created_at,
 		})
-		.collect())
+		.collect();
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(events)
 }
 
 pub async fn get_ack_download(
-	_ctx: &Ctx,
+	ctx: &Ctx,
 	mm: &ModelManager,
 	submission_id: Uuid,
 	level: u8,
 ) -> Result<Option<SubmissionAckDownload>> {
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if let Err(err) = set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
+	)
+	.await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
 	let row = mm
 		.dbx()
 		.fetch_optional(
@@ -431,8 +465,8 @@ pub async fn get_ack_download(
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 
-	row.map(|row| {
-		Ok(SubmissionAckDownload {
+	let ack = match row {
+		Some(row) => Some(SubmissionAckDownload {
 			submission_id: row.submission_id,
 			case_id: row.case_id,
 			level: u8::try_from(row.ack_level).map_err(|_| Error::BadRequest {
@@ -443,16 +477,36 @@ pub async fn get_ack_download(
 			message: row.ack_message,
 			received_at: row.received_at,
 			raw_payload: row.raw_payload,
-		})
-	})
-	.transpose()
+		}),
+		None => None,
+	};
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(ack)
 }
 
 pub async fn get_submission_dispatch_state(
-	_ctx: &Ctx,
+	ctx: &Ctx,
 	mm: &ModelManager,
 	submission_id: Uuid,
 ) -> Result<Option<SubmissionDispatchStateRecord>> {
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if let Err(err) = set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
+	)
+	.await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
 	let row = mm
 		.dbx()
 		.fetch_optional(
@@ -465,7 +519,7 @@ pub async fn get_submission_dispatch_state(
 		)
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
-	Ok(row.map(|r| SubmissionDispatchStateRecord {
+	let state = row.map(|r| SubmissionDispatchStateRecord {
 		submission_id: r.submission_id,
 		attempt_count: r.attempt_count,
 		last_attempt_at: r.last_attempt_at,
@@ -474,5 +528,10 @@ pub async fn get_submission_dispatch_state(
 		terminal_at: r.terminal_at,
 		created_at: r.created_at,
 		updated_at: r.updated_at,
-	}))
+	});
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	Ok(state)
 }

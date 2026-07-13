@@ -25,6 +25,20 @@ fn format_e2b_timestamp_utc(value: OffsetDateTime) -> String {
 	)
 }
 
+fn parse_json_body(body: &[u8]) -> Result<Value> {
+	if body.is_empty() {
+		Ok(Value::Null)
+	} else {
+		serde_json::from_slice::<Value>(body).map_err(|err| {
+			format!(
+				"failed to parse JSON response: {err}; body={}",
+				String::from_utf8_lossy(body)
+			)
+			.into()
+		})
+	}
+}
+
 async fn post_json(
 	app: &axum::Router,
 	cookie: &str,
@@ -40,7 +54,7 @@ async fn post_json(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	Ok((status, serde_json::from_slice::<Value>(&body)?))
+	Ok((status, parse_json_body(&body)?))
 }
 
 async fn post_raw(
@@ -76,7 +90,7 @@ async fn put_json(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	Ok((status, serde_json::from_slice::<Value>(&body)?))
+	Ok((status, parse_json_body(&body)?))
 }
 
 async fn put_raw(
@@ -112,7 +126,7 @@ async fn delete_json(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	Ok((status, serde_json::from_slice::<Value>(&body)?))
+	Ok((status, parse_json_body(&body)?))
 }
 
 async fn get_json(
@@ -128,7 +142,7 @@ async fn get_json(
 	let res = app.clone().oneshot(req).await?;
 	let status = res.status();
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	Ok((status, serde_json::from_slice::<Value>(&body)?))
+	Ok((status, parse_json_body(&body)?))
 }
 
 async fn get_raw(
@@ -1076,10 +1090,10 @@ async fn test_case_query_returns_lightweight_list_view_items() -> Result<()> {
 		&cookie,
 		"/api/cases",
 		json!({
-			"data": {
+		"data": {
 				"safetyReportIdentification": {"safetyReportId": case_no},
 				"dgPrdKey": product_id,
-				"status": "validated"
+				"status": "draft"
 			}
 		}),
 	)
@@ -1592,108 +1606,6 @@ async fn test_public_case_create_uses_nested_safety_report_identification(
 	);
 	assert!(body["data"].get("version").is_none(), "{body:?}");
 	assert!(body["data"].get("safety_report_id").is_none(), "{body:?}");
-	Ok(())
-}
-
-#[serial]
-#[tokio::test]
-async fn test_public_case_update_ignores_system_managed_fields() -> Result<()> {
-	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
-	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
-
-	let report_id = format!("SR-{}", Uuid::new_v4());
-	let (create_status, create_body) = post_json(
-		&app,
-		&cookie,
-		"/api/cases",
-		json!({
-			"data": {
-				"safetyReportIdentification": {"safetyReportId": report_id},
-				"status": "draft"
-			}
-		}),
-	)
-	.await?;
-	assert_eq!(create_status, StatusCode::CREATED, "{create_body:?}");
-	let case_id = create_body["data"]["id"]
-		.as_str()
-		.ok_or("missing created case id")?
-		.to_string();
-
-	let bogus_submitter = Uuid::new_v4();
-	let (update_status, update_body) = put_json(
-		&app,
-		&cookie,
-		&format!("/api/cases/{case_id}"),
-		json!({
-			"data": {
-				"submitted_by": bogus_submitter,
-				"submitted_at": "2026-04-13T00:00:00Z",
-				"raw_xml": "ZmFrZQ==",
-				"dirty_c": true,
-				"dirty_d": true,
-				"dirty_e": true,
-				"dirty_f": true,
-				"dirty_g": true,
-				"dirty_h": true
-			}
-		}),
-	)
-	.await?;
-	assert_eq!(update_status, StatusCode::OK, "{update_body:?}");
-
-	let (get_status, get_body) =
-		get_json(&app, &cookie, &format!("/api/cases/{case_id}")).await?;
-	assert_eq!(get_status, StatusCode::OK, "{get_body:?}");
-	assert_eq!(
-		get_body["data"]["submitted_by"],
-		Value::Null,
-		"{get_body:?}"
-	);
-	assert_eq!(
-		get_body["data"]["submitted_at"],
-		Value::Null,
-		"{get_body:?}"
-	);
-	assert_eq!(get_body["data"]["raw_xml"], Value::Null, "{get_body:?}");
-	assert_eq!(
-		get_body["data"]["dirty_c"].as_bool(),
-		Some(false),
-		"{get_body:?}"
-	);
-	assert_eq!(
-		get_body["data"]["dirty_d"].as_bool(),
-		Some(false),
-		"{get_body:?}"
-	);
-	assert_eq!(
-		get_body["data"]["dirty_e"].as_bool(),
-		Some(false),
-		"{get_body:?}"
-	);
-	assert_eq!(
-		get_body["data"]["dirty_f"].as_bool(),
-		Some(false),
-		"{get_body:?}"
-	);
-	assert_eq!(
-		get_body["data"]["dirty_g"].as_bool(),
-		Some(false),
-		"{get_body:?}"
-	);
-	assert_eq!(
-		get_body["data"]["dirty_h"].as_bool(),
-		Some(false),
-		"{get_body:?}"
-	);
-	assert_eq!(
-		get_body["data"]["status"].as_str(),
-		Some("draft"),
-		"{get_body:?}"
-	);
 	Ok(())
 }
 

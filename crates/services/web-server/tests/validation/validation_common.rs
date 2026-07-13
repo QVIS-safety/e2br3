@@ -101,11 +101,12 @@ pub async fn get_json(
 	Ok((status, parse_json_or_raw(&body)?))
 }
 
-pub async fn create_case(app: &Router, cookie: &str, org_id: Uuid) -> Result<Uuid> {
+pub async fn create_case(app: &Router, cookie: &str, _org_id: Uuid) -> Result<Uuid> {
 	let body = json!({
 		"data": {
-			"organization_id": org_id,
-			"safety_report_id": format!("SR-VAL-{}", Uuid::new_v4()),
+			"safetyReportIdentification": {
+				"safetyReportId": format!("SR-VAL-{}", Uuid::new_v4())
+			},
 			"status": "draft"
 		}
 	});

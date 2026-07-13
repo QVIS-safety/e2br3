@@ -423,20 +423,19 @@ fn normalize_values(values: &[String]) -> HashSet<String> {
 		.collect()
 }
 
-fn optional_scope_matches(assigned: &HashSet<String>, available: &[String]) -> bool {
+/// Case-list scope gate. Filters a case out only when the user has an explicit
+/// scope for the dimension AND the case carries a value for it that does not
+/// match. An unset user scope means "allow all"; a case with no value for the
+/// dimension is always allowed. Applied uniformly to sender/product/study.
+fn scope_allows(assigned: &HashSet<String>, available: &[String]) -> bool {
 	if assigned.is_empty() {
 		return true;
 	}
 	let available = normalize_values(available);
-	!available.is_empty() && available.iter().any(|value| assigned.contains(value))
-}
-
-fn required_scope_matches(assigned: &HashSet<String>, available: &[String]) -> bool {
-	let available = normalize_values(available);
 	if available.is_empty() {
 		return true;
 	}
-	!assigned.is_empty() && available.iter().any(|value| assigned.contains(value))
+	available.iter().any(|value| assigned.contains(value))
 }
 
 fn selected_sender_matches(
@@ -455,14 +454,15 @@ fn selected_sender_matches(
 }
 
 async fn load_sender_options_for_org(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	organization_id: Uuid,
 ) -> Result<Vec<RoutingSenderOption>> {
-	let rows = mm
-		.dbx()
-		.fetch_all(
-			sqlx::query_as::<_, SenderOptionRow>(
-				r#"
+	let rows = with_rls_read(mm, ctx, |dbx| {
+		Box::pin(async move {
+			dbx.fetch_all(
+				sqlx::query_as::<_, SenderOptionRow>(
+					r#"
 			WITH sender_master_rows AS (
 				SELECT DISTINCT
 				       NULLIF(BTRIM(g.sender_identifier), '') AS sender_identifier,
@@ -513,12 +513,15 @@ async fn load_sender_options_for_org(
 			WHERE r.sender_identifier IS NOT NULL
 			GROUP BY r.sender_identifier, c.case_count
 			ORDER BY sender_identifier ASC
-			"#,
+				"#,
+				)
+				.bind(organization_id),
 			)
-			.bind(organization_id),
-		)
-		.await
-		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+			.await
+			.map_err(|e| Error::from(lib_core::model::Error::from(e)))
+		})
+	})
+	.await?;
 
 	Ok(rows
 		.into_iter()
@@ -553,7 +556,7 @@ pub async fn routing_profile_for_user(
 	let all_senders = if ctx.is_system_admin() {
 		Vec::new()
 	} else {
-		load_sender_options_for_org(mm, ctx.organization_id()).await?
+		load_sender_options_for_org(ctx, mm, ctx.organization_id()).await?
 	};
 
 	let available_senders = if ctx.is_sponsor_admin() {
@@ -726,13 +729,10 @@ pub async fn case_matches_user_scope(
 	}
 
 	let scope = load_case_scope(ctx, mm, case_id).await?;
-	let assigned_sender_ids = parse_scope_values(user.access_sender_ids.as_deref());
-	if assigned_sender_ids.is_empty() && !scope.sender_identifiers.is_empty() {
-		return Ok(false);
-	}
-	if !assigned_sender_ids.is_empty()
-		&& !optional_scope_matches(&assigned_sender_ids, &scope.sender_identifiers)
-	{
+	if !scope_allows(
+		&parse_scope_values(user.access_sender_ids.as_deref()),
+		&scope.sender_identifiers,
+	) {
 		return Ok(false);
 	}
 	if !selected_sender_matches(
@@ -741,13 +741,13 @@ pub async fn case_matches_user_scope(
 	) {
 		return Ok(false);
 	}
-	if !required_scope_matches(
+	if !scope_allows(
 		&parse_scope_values(user.access_product_ids.as_deref()),
 		&scope.product_identifiers,
 	) {
 		return Ok(false);
 	}
-	if !required_scope_matches(
+	if !scope_allows(
 		&parse_scope_values(user.access_study_ids.as_deref()),
 		&scope.study_identifiers,
 	) {

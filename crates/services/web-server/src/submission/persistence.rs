@@ -102,11 +102,27 @@ pub(super) async fn get_dispatch_attempt_count(
 }
 
 pub(super) async fn find_submission_idempotency(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 	authority: SubmissionAuthority,
 	key: &str,
 ) -> Result<Option<Uuid>> {
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if let Err(err) = set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
+	)
+	.await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
 	let row = mm
 		.dbx()
 		.fetch_optional(
@@ -123,10 +139,15 @@ pub(super) async fn find_submission_idempotency(
 		)
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 	Ok(row.map(|r| r.0))
 }
 
 pub(super) async fn insert_submission_idempotency(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 	authority: SubmissionAuthority,
@@ -134,6 +155,21 @@ pub(super) async fn insert_submission_idempotency(
 	submission_id: Uuid,
 	created_by: Uuid,
 ) -> Result<()> {
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if let Err(err) = set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
+	)
+	.await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
 	mm.dbx()
 		.execute(
 			sqlx::query(
@@ -149,6 +185,10 @@ pub(super) async fn insert_submission_idempotency(
 			.bind(submission_id)
 			.bind(created_by),
 		)
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	mm.dbx()
+		.commit_txn()
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 	Ok(())
@@ -234,6 +274,42 @@ pub(super) async fn get_submission_row(
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 	Ok(row)
+}
+
+pub(super) async fn get_submission_row_for_ctx(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	submission_id: Uuid,
+) -> Result<Option<CaseSubmissionRow>> {
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if let Err(err) = set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
+	)
+	.await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
+	let row = get_submission_row(mm, submission_id).await;
+	match row {
+		Ok(row) => {
+			mm.dbx()
+				.commit_txn()
+				.await
+				.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+			Ok(row)
+		}
+		Err(err) => {
+			let _ = mm.dbx().rollback_txn().await;
+			Err(err)
+		}
+	}
 }
 
 pub(super) async fn list_submission_rows_by_case(

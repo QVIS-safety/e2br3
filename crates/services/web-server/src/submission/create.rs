@@ -296,14 +296,11 @@ pub async fn create_submission(
 		.await
 		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 
-	let row =
-		get_submission_row(mm, submission_id)
-			.await?
-			.ok_or(Error::BadRequest {
-				message: format!(
-					"submission not found after insert: {submission_id}"
-				),
-			})?;
+	let row = get_submission_row_for_ctx(ctx, mm, submission_id)
+		.await?
+		.ok_or(Error::BadRequest {
+			message: format!("submission not found after insert: {submission_id}"),
+		})?;
 	let acks = list_ack_rows(mm, submission_id).await?;
 	compose_submission_record(row, acks)
 }
@@ -321,7 +318,7 @@ pub async fn create_submission_idempotent(
 
 	if let Some(key) = normalized_key.as_deref() {
 		if let Some(existing_id) =
-			find_submission_idempotency(mm, case_id, authority, key).await?
+			find_submission_idempotency(ctx, mm, case_id, authority, key).await?
 		{
 			return get_submission(ctx, mm, existing_id).await?.ok_or(
 				Error::BadRequest {
@@ -340,6 +337,7 @@ pub async fn create_submission_idempotent(
 				&& is_case_not_validated_for_submission_error(&err)
 			{
 				if let Some(existing_id) = wait_for_submission_idempotency(
+					ctx,
 					mm,
 					case_id,
 					authority,
@@ -362,6 +360,7 @@ pub async fn create_submission_idempotent(
 
 	if let Some(key) = normalized_key.as_deref() {
 		insert_submission_idempotency(
+			ctx,
 			mm,
 			case_id,
 			authority,
@@ -384,6 +383,7 @@ pub(super) fn is_case_not_validated_for_submission_error(err: &Error) -> bool {
 }
 
 pub(super) async fn wait_for_submission_idempotency(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 	authority: SubmissionAuthority,
@@ -391,7 +391,7 @@ pub(super) async fn wait_for_submission_idempotency(
 ) -> Result<Option<Uuid>> {
 	for _ in 0..10 {
 		if let Some(existing_id) =
-			find_submission_idempotency(mm, case_id, authority, key).await?
+			find_submission_idempotency(ctx, mm, case_id, authority, key).await?
 		{
 			return Ok(Some(existing_id));
 		}
@@ -428,27 +428,69 @@ pub async fn assert_case_ready_for_submission(
 }
 
 pub async fn list_by_case(
-	_ctx: &Ctx,
+	ctx: &Ctx,
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Vec<SubmissionRecord>> {
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if let Err(err) = set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
+	)
+	.await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
 	let rows = list_submission_rows_by_case(mm, case_id).await?;
 	let mut out = Vec::with_capacity(rows.len());
 	for row in rows {
 		let acks = list_ack_rows(mm, row.id).await?;
 		out.push(compose_submission_record(row, acks)?);
 	}
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 	Ok(out)
 }
 
 pub async fn get_submission(
-	_ctx: &Ctx,
+	ctx: &Ctx,
 	mm: &ModelManager,
 	id: Uuid,
 ) -> Result<Option<SubmissionRecord>> {
+	mm.dbx()
+		.begin_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
+	if let Err(err) = set_full_context_dbx_or_rollback(
+		mm.dbx(),
+		ctx.user_id(),
+		ctx.organization_id(),
+		ctx.role(),
+	)
+	.await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
 	let Some(row) = get_submission_row(mm, id).await? else {
+		mm.dbx()
+			.commit_txn()
+			.await
+			.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 		return Ok(None);
 	};
 	let acks = list_ack_rows(mm, id).await?;
+	mm.dbx()
+		.commit_txn()
+		.await
+		.map_err(|e| Error::from(lib_core::model::Error::from(e)))?;
 	Ok(Some(compose_submission_record(row, acks)?))
 }
