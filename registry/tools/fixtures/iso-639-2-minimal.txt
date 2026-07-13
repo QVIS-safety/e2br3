@@ -1,0 +1,3 @@
+eng||en|English|anglais
+kor||ko|Korean|coreen
+fre|fra|fr|French|francais

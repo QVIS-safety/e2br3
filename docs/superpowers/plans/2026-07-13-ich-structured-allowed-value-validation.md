@@ -15,7 +15,8 @@
 - Preserve the original `allowed_values` prose byte-for-byte in generated dictionary entries.
 - No rule-specific finite values, vocabulary membership, or format parameters may exist only in a section validator.
 - Runtime case validation is offline and must not make network calls.
-- UCUM comes from official UCUM source/essence XML, ISO 639 from official Set 2 data, and EDQM from an authenticated approved export.
+- UCUM grammar symbols come from official UCUM source/essence XML, ISO 639 from official Set 2 data, and EDQM from an authenticated approved export.
+- General UCUM values use a grammar parser; constrained UCUM fields additionally require official ICH CL25/CL26 artifacts.
 - MPID, PhPID, and SubstanceID are identifier profiles, not finite vocabulary membership checks.
 - Empty optional values pass allowed-value validation; required rules own presence.
 - A populated nullFlavor suppresses value validation only when the model has no simultaneous value.
@@ -240,7 +241,7 @@ git commit -m "feat: structure ICH allowed value metadata"
 - Create: `registry/tools/fixtures/iso-639-2-minimal.txt`
 - Create: `registry/tools/fixtures/edqm-minimal.json`
 - Create: `registry/vocabularies/ucum.json`
-- Create: `registry/vocabularies/ich-ucum-scopes.json`
+- Create after official CL25/CL26 artifacts are supplied: `registry/vocabularies/ich-ucum-scopes.json`
 - Create: `registry/vocabularies/iso639-2.json`
 
 **Interfaces:**
@@ -259,7 +260,9 @@ class VocabularyImporterTests(unittest.TestCase):
         second = import_vocabularies.normalize_ucum(raw)
         self.assertEqual(first, second)
         self.assertEqual(hashlib.sha256(raw).hexdigest(), first["source_sha256"])
-        self.assertIn({"code": "mg", "scopes": ["all", "dose"]}, first["entries"])
+        self.assertIn({"code": "m", "scopes": ["prefix"]}, first["entries"])
+        self.assertIn({"code": "g", "scopes": ["unit"]}, first["entries"])
+        self.assertNotIn("mg", [entry["code"] for entry in first["entries"]])
 
     def test_iso639_uses_set_two_three_letter_codes(self):
         result = import_vocabularies.normalize_iso639(
@@ -321,7 +324,7 @@ UCUM source metadata must reference `https://ucum.org/ucum.xml`; ISO metadata mu
 
 - [ ] **Step 4: Generate official snapshots and verify hashes**
 
-Before this step, set all three source variables to readable official artifacts. Extract the ICH UCUM field subsets from `docs/refs/ich_e2b_r3_implementation_guide.pdf` into `registry/vocabularies/ich-ucum-scopes.json`; each row must carry the ICH element code, UCUM code, and PDF page citation. Then run:
+Before this step, set UCUM and ISO source variables to readable official artifacts. Generate `ich-ucum-scopes.json` only from official CL25/CL26 files; the implementation guide identifies the OIDs but does not contain the complete constrained term lists. Each scope row must carry the ICH element code, UCUM code, and source artifact version. Then run:
 
 ```bash
 python3 -m unittest registry.tools.test_import_vocabularies -v
@@ -336,7 +339,7 @@ Expected: all tests PASS and repeated UCUM/ISO imports produce no Git diff. The 
 ```bash
 git add registry/vocabulary.schema.json registry/tools/import_vocabularies.py \
   registry/tools/test_import_vocabularies.py registry/tools/fixtures \
-  registry/vocabularies/ucum.json registry/vocabularies/ich-ucum-scopes.json \
+  registry/vocabularies/ucum.json \
   registry/vocabularies/iso639-2.json
 git commit -m "feat: add official ICH vocabulary snapshots"
 ```
@@ -551,7 +554,7 @@ pub(crate) fn is_allowed_value_valid(
 }
 ```
 
-Use full-string predicates: Decimal parsing for `decimal`, ASCII digits for `integer`, `digits.digits` for `dotted_version`, existing `flex_date::e2b_datetime_date` for E2B time, and `base64 = "0.22"` with `general_purpose::STANDARD.decode(value)` for Base64. Implement exact identifier-profile predicates from the ICH representation text. A type mismatch between metadata and `ConstraintValue` must panic in tests/configuration instead of accepting the value.
+Use full-string predicates: Decimal parsing for `decimal`, ASCII digits for `integer`, `digits.digits` for `dotted_version`, existing `flex_date::e2b_datetime_date` for E2B time, `base64 = "0.22"` with `general_purpose::STANDARD.decode(value)` for Base64, and a UCUM grammar parser compatible with Rust 1.88. Implement exact identifier-profile predicates from the ICH representation text. A type mismatch between metadata and `ConstraintValue` must panic in tests/configuration instead of accepting the value.
 
 - [ ] **Step 4: Embed vocabulary snapshots in `VocabularyContext`**
 

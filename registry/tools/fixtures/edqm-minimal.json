@@ -1,0 +1,20 @@
+{
+  "release": "2026-01-01",
+  "terms": [
+    {
+      "code": "100000073664",
+      "domain": "dose_form",
+      "status": "CURRENT"
+    },
+    {
+      "code": "20053000",
+      "domain": "route",
+      "status": "CURRENT"
+    },
+    {
+      "code": "retired-code",
+      "domain": "route",
+      "status": "RETIRED"
+    }
+  ]
+}

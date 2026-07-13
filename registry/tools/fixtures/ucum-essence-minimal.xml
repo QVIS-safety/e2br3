@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="ascii"?>
+<root xmlns="http://unitsofmeasure.org/ucum-essence" version="2.2" revision-date="2024-06-17">
+  <prefix Code="m" CODE="M">
+    <name>milli</name>
+    <value value="1e-3" />
+  </prefix>
+  <base-unit Code="g" CODE="G" dim="M">
+    <name>gram</name>
+  </base-unit>
+  <unit Code="L" CODE="L" isMetric="yes" class="si">
+    <name>liter</name>
+    <value Unit="m3" UNIT="M3" value="1e-3" />
+  </unit>
+</root>

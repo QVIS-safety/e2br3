@@ -82,8 +82,12 @@ must contain:
 Source handling differs by vocabulary:
 
 - UCUM: import the official UCUM source/essence XML and preserve the UCUM
-  license notice. Field-specific constrained sets may add ICH-defined special
-  units such as `{DF}` without altering the upstream UCUM snapshot.
+  license notice. The snapshot contains prefixes and base/derived unit symbols;
+  it is not treated as a finite list of every valid UCUM expression. Runtime
+  validation uses a UCUM grammar/parser so composed expressions such as
+  `mg/kg` remain valid. Field-specific constrained sets come from the official
+  ICH CL25/CL26 artifacts and may add ICH-defined annotations such as `{DF}`
+  without altering the upstream UCUM snapshot.
 - ISO 639: import the official Set 2 three-letter codes used by E2B(R3).
 - EDQM: consume an authenticated, approved EDQM API export. CI and runtime
   validation must not depend on network access or EDQM credentials.
@@ -138,9 +142,11 @@ vocabulary lookup, or true-marker semantics itself.
 ## Vocabulary Context
 
 `VocabularyContext` will retain the existing MedDRA data and add immutable
-lookups for normalized UCUM, ISO 639, and EDQM snapshots. Lookup keys include
-both vocabulary and scope so that a valid general UCUM unit can still be
-rejected when an ICH field permits only a constrained subset.
+lookups for normalized ISO 639 and EDQM snapshots. UCUM uses a grammar parser
+backed by the official prefix/unit snapshot; constrained ICH fields additionally
+check a CL25/CL26 scope set. This keeps a valid general UCUM expression from
+being rejected merely because it is composed, while still rejecting it where
+an ICH field permits only a constrained subset.
 
 Snapshots are loaded once per process or embedded at compile time. Case
 validation must not perform network requests. DB-backed terminology remains
@@ -213,6 +219,8 @@ The implementation is complete only when all of the following hold:
   invalid representation cannot be persisted.
 - Dictionary constraint metadata matches generated catalog metadata exactly.
 - Vocabulary snapshot source hashes and versions are validated.
+- General UCUM validation accepts valid composed expressions and rejects
+  unknown unit symbols; constrained fields match their official CL25/CL26 set.
 - Scalar, indexed, nested, and grandchild paths preserve their actual indexes.
 - Existing required, max-length, future-date, MedDRA, case validation, and XML
   validation tests remain green.

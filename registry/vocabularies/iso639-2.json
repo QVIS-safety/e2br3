@@ -1,0 +1,3051 @@
+{
+  "entries": [
+    {
+      "code": "aar",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "abk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ace",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ach",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ada",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ady",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "afa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "afh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "afr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ain",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "aka",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "akk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "alb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ale",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "alg",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "alt",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "amh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ang",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "anp",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "apa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ara",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "arc",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "arg",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "arm",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "arn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "arp",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "art",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "arw",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "asm",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ast",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ath",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "aus",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ava",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ave",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "awa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "aym",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "aze",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bad",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bai",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bak",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bal",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bam",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ban",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "baq",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bas",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bat",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bej",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bel",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bem",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ben",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ber",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bho",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bih",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bik",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bin",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bis",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bla",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bnt",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bod",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bos",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bra",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bre",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "btk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bua",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bug",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bul",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "bur",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "byn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cad",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cai",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "car",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cat",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cau",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ceb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cel",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ces",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cha",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "che",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chg",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chm",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cho",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chp",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chu",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chv",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "chy",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cmc",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cnr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cop",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cor",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cos",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cpe",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cpf",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cpp",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cre",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "crh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "crp",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "csb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cus",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cym",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "cze",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dak",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dan",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dar",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "day",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "del",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "den",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "deu",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dgr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "din",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "div",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "doi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dra",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dsb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dua",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dum",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dut",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dyu",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "dzo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "efi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "egy",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "eka",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ell",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "elx",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "eng",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "enm",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "epo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "est",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "eus",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ewe",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ewo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fan",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fao",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fas",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fat",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fij",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fil",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fin",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fiu",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fon",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fra",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fre",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "frm",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fro",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "frr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "frs",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fry",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ful",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "fur",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gaa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gay",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gba",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gem",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "geo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ger",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gez",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gil",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gla",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gle",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "glg",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "glv",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gmh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "goh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gon",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gor",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "got",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "grb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "grc",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gre",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "grn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gsw",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "guj",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "gwi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hai",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hat",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hau",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "haw",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "heb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "her",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hil",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "him",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hin",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hit",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hmn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hmo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hrv",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hsb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hun",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hup",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "hye",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "iba",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ibo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ice",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ido",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "iii",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ijo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "iku",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ile",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ilo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ina",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "inc",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ind",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ine",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "inh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ipk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ira",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "iro",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "isl",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ita",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "jav",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "jbo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "jpn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "jpr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "jrb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kaa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kab",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kac",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kal",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kam",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kan",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kar",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kas",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kat",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kau",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kaw",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kaz",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kbd",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kha",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "khi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "khm",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kho",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kik",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kin",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kir",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kmb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kok",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kom",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kon",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kor",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kos",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kpe",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "krc",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "krl",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kro",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kru",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kua",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kum",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kur",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "kut",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lad",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lah",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lam",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lao",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lat",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lav",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lez",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lim",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lin",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lit",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lol",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "loz",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ltz",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lua",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lub",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lug",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lui",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lun",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "luo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "lus",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mac",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mad",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mag",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mah",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mai",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mak",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mal",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "man",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mao",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "map",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mar",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mas",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "may",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mdf",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mdr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "men",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mga",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mic",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "min",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mis",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mkd",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mkh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mlg",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mlt",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mnc",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mni",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mno",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "moh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mon",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mos",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mri",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "msa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mul",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mun",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mus",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mwl",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mwr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "mya",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "myn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "myv",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nah",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nai",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nap",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nau",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nav",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nbl",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nde",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ndo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nds",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nep",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "new",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nia",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nic",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "niu",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nld",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nno",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nob",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nog",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "non",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nor",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nqo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nso",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nub",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nwc",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nya",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nym",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nyn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nyo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "nzi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "oci",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "oji",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ori",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "orm",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "osa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "oss",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ota",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "oto",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "paa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pag",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pal",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pam",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pan",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pap",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pau",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "peo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "per",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "phi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "phn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pli",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pol",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pon",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "por",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pra",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pro",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "pus",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "qaa-qtz",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "que",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "raj",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "rap",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "rar",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "roa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "roh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "rom",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ron",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "rum",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "run",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "rup",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "rus",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sad",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sag",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sah",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sai",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sal",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sam",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "san",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sas",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sat",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "scn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sco",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sel",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sem",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sga",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sgn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "shn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sid",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sin",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sio",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sit",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sla",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "slk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "slo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "slv",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sma",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sme",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "smi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "smj",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "smn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "smo",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sms",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sna",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "snd",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "snk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sog",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "som",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "son",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sot",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "spa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sqi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "srd",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "srn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "srp",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "srr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ssa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ssw",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "suk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sun",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sus",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "sux",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "swa",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "swe",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "syc",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "syr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tah",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tai",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tam",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tat",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tel",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tem",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ter",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tet",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tgk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tgl",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tha",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tib",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tig",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tir",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tiv",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tkl",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tlh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tli",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tmh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tog",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ton",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tpi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tsi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tsn",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tso",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tuk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tum",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tup",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tur",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tut",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tvl",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "twi",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "tyv",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "udm",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "uga",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "uig",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ukr",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "umb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "und",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "urd",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "uzb",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "vai",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ven",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "vie",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "vol",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "vot",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "wak",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "wal",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "war",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "was",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "wel",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "wen",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "wln",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "wol",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "xal",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "xho",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "yao",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "yap",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "yid",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "yor",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "ypk",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "zap",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "zbl",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "zen",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "zgh",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "zha",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "zho",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "znd",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "zul",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "zun",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "zxx",
+      "scopes": [
+        "all"
+      ]
+    },
+    {
+      "code": "zza",
+      "scopes": [
+        "all"
+      ]
+    }
+  ],
+  "license": "https://www.loc.gov/standards/iso639-2/",
+  "name": "ISO639-2",
+  "source": "https://www.loc.gov/standards/iso639-2/ISO-639-2_utf-8.txt",
+  "source_sha256": "42b71885e4dc885559fda5ad059fd81838cf4782cedb5fd08cc3431f7d067371",
+  "version": "continuously-maintained"
+}

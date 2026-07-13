@@ -1,0 +1,1985 @@
+{
+  "entries": [
+    {
+      "code": "%",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "%[slope]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "'",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "''",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "10*",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "10^",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "A",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "AU",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Ao",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "B",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "B[10.nV]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "B[SPL]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "B[V]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "B[W]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "B[kW]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "B[mV]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "B[uV]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Bd",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Bi",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Bq",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "By",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "C",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Cel",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Ci",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "E",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "F",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "G",
+      "scopes": [
+        "prefix",
+        "unit"
+      ]
+    },
+    {
+      "code": "Gal",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Gb",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Gi",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "Gy",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "H",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Hz",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "J",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "K",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Ki",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "Ky",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "L",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Lmb",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "M",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "Mi",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "Mx",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "N",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Np",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Oe",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Ohm",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "P",
+      "scopes": [
+        "prefix",
+        "unit"
+      ]
+    },
+    {
+      "code": "Pa",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "R",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "RAD",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "REM",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "S",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "St",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Sv",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "T",
+      "scopes": [
+        "prefix",
+        "unit"
+      ]
+    },
+    {
+      "code": "Ti",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "U",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "V",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "W",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Wb",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "Y",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "Z",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "[APL'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[AU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Amb'a'1'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[BAU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Btu]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Btu_39]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Btu_59]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Btu_60]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Btu_IT]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Btu_m]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Btu_th]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[CCID_50]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[CFU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Cal]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Ch]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[D'ag'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[EID_50]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ELU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[EU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[FEU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[FFU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[FNU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[GPL'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[G]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[HPF]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[HP]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[IR]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[IU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[LPF]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[Lf]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[MET]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[MPL'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[NTU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[PFU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[PNU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[PRU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[S]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[TCID_50]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[USP'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[acr_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[acr_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[anti'Xa'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[arb'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[bbl_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[bdsk'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[beth'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[bf_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[bu_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[bu_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[c]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[car_Au]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[car_m]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[cft_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ch_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ch_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[cicero]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[cin_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[cml_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[cr_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[crd_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[cup_m]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[cup_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[cyd_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[degF]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[degR]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[degRe]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[den]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[didot]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[diop]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[dpt_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[dqt_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[dr_ap]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[dr_av]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[drp]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[dye'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[e]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[eps_0]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[fdr_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[fdr_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[foz_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[foz_m]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[foz_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ft_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ft_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ft_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[fth_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[fth_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[fth_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[fur_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[g]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[gal_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[gal_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[gal_wi]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[gil_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[gil_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[gr]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[h]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[hd_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[hnsf'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[hp'_C]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[hp'_M]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[hp'_Q]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[hp'_X]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[hp_C]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[hp_M]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[hp_Q]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[hp_X]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[iU]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[in_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[in_i'H2O]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[in_i'Hg]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[in_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[in_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[k]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ka'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[kn_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[kn_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[knk'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[kp_C]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[kp_M]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[kp_Q]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[kp_X]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[lb_ap]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[lb_av]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[lb_tr]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[lbf_av]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[lcwt_av]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ligne]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[lk_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[lk_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[lne]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[lton_av]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ly]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[m/s2/Hz^(1/2)]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[m_e]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[m_p]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[mclg'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[mesh_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[mi_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[mi_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[mi_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[mil_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[mil_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[min_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[min_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[mu_0]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[nmi_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[nmi_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[oz_ap]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[oz_av]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[oz_m]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[oz_tr]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[p'diop]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pH]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pc_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pca]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pca_pr]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pi]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pied]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pk_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pk_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pnt]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pnt_pr]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pouce]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ppb]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ppm]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ppth]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pptr]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[psi]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pt_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pt_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[pwt_tr]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[qt_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[qt_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[rch_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[rd_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[rd_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[rlk_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[sc_ap]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[sct]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[scwt_av]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[sft_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[sin_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[smgy'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[smi_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[smoot]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[srd_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[ston_av]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[stone_av]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[syd_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[tb'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[tbs_m]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[tbs_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[todd'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[tsp_m]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[tsp_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[twp]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[wood'U]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[yd_br]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[yd_i]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "[yd_us]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "a",
+      "scopes": [
+        "prefix",
+        "unit"
+      ]
+    },
+    {
+      "code": "a_g",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "a_j",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "a_t",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "ar",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "atm",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "att",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "b",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "bar",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "bit",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "bit_s",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "c",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "cal",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "cal_IT",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "cal_[15]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "cal_[20]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "cal_m",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "cal_th",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "cd",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "circ",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "d",
+      "scopes": [
+        "prefix",
+        "unit"
+      ]
+    },
+    {
+      "code": "da",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "deg",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "dyn",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "eV",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "eq",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "erg",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "f",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "g",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "g%",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "gf",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "gon",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "h",
+      "scopes": [
+        "prefix",
+        "unit"
+      ]
+    },
+    {
+      "code": "k",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "kat",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "l",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "lm",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "lx",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "m",
+      "scopes": [
+        "prefix",
+        "unit"
+      ]
+    },
+    {
+      "code": "m[H2O]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "m[Hg]",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "mho",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "min",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "mo",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "mo_g",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "mo_j",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "mo_s",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "mol",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "n",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "osm",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "p",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "pc",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "ph",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "rad",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "s",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "sb",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "sph",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "sr",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "st",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "t",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "tex",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "u",
+      "scopes": [
+        "prefix",
+        "unit"
+      ]
+    },
+    {
+      "code": "wk",
+      "scopes": [
+        "unit"
+      ]
+    },
+    {
+      "code": "y",
+      "scopes": [
+        "prefix"
+      ]
+    },
+    {
+      "code": "z",
+      "scopes": [
+        "prefix"
+      ]
+    }
+  ],
+  "license": "https://ucum.org/license",
+  "name": "UCUM",
+  "source": "https://raw.githubusercontent.com/ucum-org/ucum/v2.2/ucum-essence.xml",
+  "source_sha256": "dfccea1b5dc284245ebae97edd1dc03c45864da4e87df55bc9851797b4fd0b61",
+  "version": "2.2"
+}
