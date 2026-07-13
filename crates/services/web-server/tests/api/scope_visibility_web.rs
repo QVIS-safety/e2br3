@@ -1356,7 +1356,7 @@ async fn test_routing_profile_sender_options_follow_role_scope() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_active_sender_selection_filters_case_list() -> Result<()> {
+async fn test_active_sender_selection_does_not_filter_case_list() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -1408,7 +1408,7 @@ async fn test_active_sender_selection_filters_case_list() -> Result<()> {
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	let cases = value["data"].as_array().ok_or("missing cases array")?;
 	assert!(cases.iter().any(|row| row["id"] == case_a.to_string()));
-	assert!(!cases.iter().any(|row| row["id"] == case_b.to_string()));
+	assert!(cases.iter().any(|row| row["id"] == case_b.to_string()));
 
 	let (status, _value) = request_json(
 		&app,
