@@ -10,9 +10,9 @@ use super::rule_table::{
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
 	has_any_primary_source_content, has_text, is_fda_ind_message_receiver,
-	is_fda_pre_anda_message_receiver, list_study_registrations, push_issue_by_code,
-	push_issue_if_rule_invalid, FdaValidationContext, MfdsValidationContext,
-	RegulatoryAuthority, RuleFacts, ValidationContext, ValidationIssue,
+	is_fda_pre_anda_message_receiver, list_study_registrations,
+	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority, RuleFacts,
+	ValidationContext, ValidationIssue,
 };
 use lib_core::ctx::Ctx;
 use lib_core::model::case_identifiers::{LinkedReportNumber, OtherCaseIdentifier};
@@ -106,12 +106,18 @@ macro_rules! c_ich_presence_rule {
 
 c_ich_presence_rule!(C_ICH_C11_RULE, "ICH.C.1.1.REQUIRED");
 c_ich_presence_rule!(C_ICH_C1_ROOT_RULE, "ICH.C.1.REQUIRED");
+c_ich_presence_rule!(C_ICH_C12_RULE, "ICH.C.1.2.REQUIRED");
+c_ich_presence_rule!(C_ICH_C13_RULE, "ICH.C.1.3.REQUIRED");
+c_ich_presence_rule!(C_ICH_C14_RULE, "ICH.C.1.4.REQUIRED");
+c_ich_presence_rule!(C_ICH_C15_RULE, "ICH.C.1.5.REQUIRED");
+c_ich_presence_rule!(C_ICH_C17_RULE, "ICH.C.1.7.REQUIRED");
 c_ich_presence_rule!(C_ICH_C1112_RULE, "ICH.C.1.11.2.REQUIRED");
 c_ich_presence_rule!(C_ICH_C2R21_RULE, "ICH.C.2.r.2.1.REQUIRED");
 c_ich_presence_rule!(C_ICH_C2R4_RULE, "ICH.C.2.r.4.REQUIRED");
 c_ich_presence_rule!(C_ICH_C2R5_RULE, "ICH.C.2.r.5.REQUIRED");
 c_ich_presence_rule!(C_ICH_C31_RULE, "ICH.C.3.1.REQUIRED");
 c_ich_presence_rule!(C_ICH_C32_RULE, "ICH.C.3.2.REQUIRED");
+c_ich_presence_rule!(C_ICH_C54_AGGREGATE_RULE, "ICH.C.5.4.REQUIRED");
 
 fn eval_c_ich_presence(
 	issues: &mut Vec<ValidationIssue>,
@@ -973,15 +979,6 @@ pub(crate) fn collect_ich_issues(
 			},
 			C_ICH_C1112_RULE,
 		);
-		if report.report_type.as_deref().map(str::trim) == Some("2")
-			&& validation_ctx.studies.is_empty()
-		{
-			push_issue_by_code(
-				issues,
-				"ICH.C.5.4.REQUIRED",
-				"studyInformation.0.studyTypeReaction",
-			);
-		}
 	} else {
 		push_missing_safety_report_field_issues(issues);
 	}
@@ -1087,6 +1084,16 @@ pub(crate) fn collect_ich_issues(
 		.as_ref()
 		.map(|report| report.report_type.as_deref().map(str::trim) == Some("2"))
 		.unwrap_or(false);
+	eval_c_ich_presence(
+		issues,
+		"studyInformation.0.studyTypeReaction",
+		(!validation_ctx.studies.is_empty()).then(|| "present".to_string()),
+		RuleFacts {
+			ich_report_type_is_study: Some(report_type_is_study),
+			..RuleFacts::default()
+		},
+		C_ICH_C54_AGGREGATE_RULE,
+	);
 	if report_type_is_study {
 		eval_indexed(issues, &validation_ctx.studies, C_STUDY_RULES);
 	}
@@ -1207,36 +1214,26 @@ pub(crate) fn collect_ich_issues(
 }
 
 fn push_missing_safety_report_field_issues(issues: &mut Vec<ValidationIssue>) {
-	for (code, path) in [
+	for (rules, path) in [
 		(
-			"ICH.C.1.2.REQUIRED",
+			C_ICH_C12_RULE,
 			"safetyReportIdentification.transmissionDate",
 		),
+		(C_ICH_C13_RULE, "safetyReportIdentification.reportType"),
 		(
-			"ICH.C.1.3.REQUIRED",
-			"safetyReportIdentification.reportType",
-		),
-		(
-			"ICH.C.1.4.REQUIRED",
+			C_ICH_C14_RULE,
 			"safetyReportIdentification.dateFirstReceivedFromSource",
 		),
 		(
-			"ICH.C.1.5.REQUIRED",
+			C_ICH_C15_RULE,
 			"safetyReportIdentification.dateOfMostRecentInformation",
 		),
 		(
-			"ICH.C.1.7.REQUIRED",
+			C_ICH_C17_RULE,
 			"safetyReportIdentification.fulfilExpeditedCriteria",
 		),
 	] {
-		let _ = push_issue_if_rule_invalid(
-			issues,
-			code,
-			path,
-			None,
-			None,
-			RuleFacts::default(),
-		);
+		eval_c_ich_presence(issues, path, None, RuleFacts::default(), rules);
 	}
 }
 
@@ -1487,12 +1484,13 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	add!(C_ICH_C15_AFTER_C12_RULE);
 	add!(C_FDA_STUDY_CATALOG_VALUE_RULES);
 	add!(C_FDA_REPORTER_EMAIL_CATALOG_VALUE_RULES);
+	add!(C_ICH_C12_RULE);
+	add!(C_ICH_C13_RULE);
+	add!(C_ICH_C14_RULE);
+	add!(C_ICH_C15_RULE);
+	add!(C_ICH_C17_RULE);
+	add!(C_ICH_C54_AGGREGATE_RULE);
 	codes
-}
-
-#[cfg(test)]
-pub(super) fn direct_rule_codes() -> &'static [&'static str] {
-	&[]
 }
 
 #[cfg(test)]

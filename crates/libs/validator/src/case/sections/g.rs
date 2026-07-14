@@ -14,9 +14,8 @@ use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
 	has_text, is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
 	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
-	list_drug_characteristics, push_issue_by_code, FdaValidationContext,
-	MfdsValidationContext, RegulatoryAuthority, RuleFacts, ValidationContext,
-	ValidationIssue,
+	list_drug_characteristics, FdaValidationContext, MfdsValidationContext,
+	RegulatoryAuthority, RuleFacts, ValidationContext, ValidationIssue,
 };
 use lib_core::ctx::Ctx;
 use lib_core::model::drug::{
@@ -111,6 +110,25 @@ struct FdaDrugRuleView {
 	common_name: Option<String>,
 	product_code: Option<String>,
 }
+
+struct GDrugRootView {
+	value: Option<String>,
+}
+
+const G_DRUG_ROOT_RULES: &[CatalogValueRule<GDrugRootView>] = &[
+	CatalogValueRule {
+		code: "ICH.G.k.1.REQUIRED",
+		path: |_| "drugs.0.drugCharacterization".to_string(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "ICH.G.k.2.2.REQUIRED",
+		path: |_| "drugs.0.medicinalProduct".to_string(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+];
 
 const G_FDA_DRUG_CATALOG_VALUE_RULES: &[CatalogValueRule<FdaDrugRuleView>] = &[
 	CatalogValueRule {
@@ -1118,18 +1136,10 @@ pub(crate) fn collect_ich_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	if validation_ctx.drugs.is_empty() {
-		push_issue_by_code(
-			issues,
-			"ICH.G.k.1.REQUIRED",
-			"drugs.0.drugCharacterization",
-		);
-		push_issue_by_code(
-			issues,
-			"ICH.G.k.2.2.REQUIRED",
-			"drugs.0.medicinalProduct",
-		);
-	}
+	let root = GDrugRootView {
+		value: (!validation_ctx.drugs.is_empty()).then(|| "present".to_string()),
+	};
+	eval_catalog_values(issues, std::slice::from_ref(&root), G_DRUG_ROOT_RULES);
 
 	eval_indexed(issues, &validation_ctx.drugs, G_DRUG_VALUE_RULES);
 	eval_indexed_length(issues, &validation_ctx.drugs, G_DRUG_LENGTH_RULES);
@@ -1635,15 +1645,11 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	add!(G_FDA_DRUG_CATALOG_VALUE_RULES);
 	add!(G_FDA_DRUG_SET_CATALOG_VALUE_RULES);
 	add!(G_FDA_GK1A_VIOLATION_RULES);
+	add!(G_DRUG_ROOT_RULES);
 	codes.extend(super::rule_table::nested_meddra_rule_codes(
 		G_INDICATION_MEDDRA_RULES,
 	));
 	codes
-}
-
-#[cfg(test)]
-pub(super) fn direct_rule_codes() -> &'static [&'static str] {
-	&[]
 }
 
 #[cfg(test)]

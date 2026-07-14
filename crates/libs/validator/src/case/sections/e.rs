@@ -8,9 +8,9 @@ use super::rule_table::{
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
-	has_text, push_issue_by_code,
-	should_case_validation_require_required_intervention, FdaValidationContext,
-	RegulatoryAuthority, RuleFacts, ValidationContext, ValidationIssue,
+	has_text, should_case_validation_require_required_intervention,
+	FdaValidationContext, RegulatoryAuthority, RuleFacts, ValidationContext,
+	ValidationIssue,
 };
 use lib_core::model::reaction::Reaction;
 use sqlx::types::Decimal;
@@ -29,6 +29,25 @@ struct FdaReactionRuleView {
 	required_intervention: Option<String>,
 	facts: RuleFacts,
 }
+
+struct EReactionRootView {
+	value: Option<String>,
+}
+
+const E_REACTION_ROOT_RULES: &[CatalogValueRule<EReactionRootView>] = &[
+	CatalogValueRule {
+		code: "ICH.E.i.1.1a.REQUIRED",
+		path: |_| "reactions.0.primarySourceReaction".to_string(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "ICH.E.i.7.REQUIRED",
+		path: |_| "reactions.0.reactionOutcome".to_string(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+];
 
 const E_FDA_CATALOG_VALUE_RULES: &[CatalogValueRule<FdaReactionRuleView>] =
 	&[CatalogValueRule {
@@ -394,18 +413,10 @@ pub(crate) fn collect_ich_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	if validation_ctx.reactions.is_empty() {
-		push_issue_by_code(
-			issues,
-			"ICH.E.i.1.1a.REQUIRED",
-			"reactions.0.primarySourceReaction",
-		);
-		push_issue_by_code(
-			issues,
-			"ICH.E.i.7.REQUIRED",
-			"reactions.0.reactionOutcome",
-		);
-	}
+	let root = EReactionRootView {
+		value: (!validation_ctx.reactions.is_empty()).then(|| "present".to_string()),
+	};
+	eval_catalog_values(issues, std::slice::from_ref(&root), E_REACTION_ROOT_RULES);
 
 	eval_indexed(issues, &validation_ctx.reactions, E_REACTION_VALUE_RULES);
 	eval_companions(
@@ -539,15 +550,11 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	codes.extend(super::rule_table::table_rule_codes(
 		E_NI_ONLY_VIOLATION_RULES,
 	));
+	codes.extend(super::rule_table::table_rule_codes(E_REACTION_ROOT_RULES));
 	codes.extend(super::rule_table::indexed_meddra_rule_codes(
 		E_REACTION_MEDDRA_RULES,
 	));
 	codes
-}
-
-#[cfg(test)]
-pub(super) fn direct_rule_codes() -> &'static [&'static str] {
-	&[]
 }
 
 #[cfg(test)]

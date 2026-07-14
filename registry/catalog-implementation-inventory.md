@@ -2,10 +2,9 @@
 
 ## Case Validator Coverage
 
-The validator's executable coverage registry is derived from the rule tables
-passed to the shared evaluators in `case/sections/rule_table.rs`, plus an
-explicit inventory of rules emitted by section-specific conditional branches.
-It does not scan arbitrary source strings.
+The validator's executable coverage registry is derived only from rule tables
+passed to shared evaluators in `case/sections/rule_table.rs`. It does not scan
+arbitrary source strings or maintain a parallel direct-branch inventory.
 
 | Catalog scope | Catalog rules | Evaluator tables | Direct inventory | Overlap | Direct-only | Missing | Unexpected |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -20,10 +19,12 @@ cargo test -p validator implemented_case_registry_matches_case_validate_catalog 
 ```
 
 The 461 table-backed rules cover required/presence, companion, allowed-value,
-vocabulary, MedDRA, maximum-length, and future-date evaluators. The direct
-inventory is empty. These counts are enforced by
-`case_rule_inventory_baseline_is_exact`; a catalog rule added to this scope
-fails the exact-set test until its case implementation is registered.
+vocabulary, MedDRA, maximum-length, future-date, and algorithmic violation
+evaluators. Section-specific prepared views resolve concrete paths and facts;
+`CatalogValueRule` delegates conditions and value policies to the catalog, while
+`ViolationRule` handles normalized relation predicates. These counts are
+enforced by `case_catalog_is_fully_evaluator_backed`; a catalog rule added to
+this scope fails the exact-set test until its case table is registered.
 
 ## Release-Backed Terminology
 

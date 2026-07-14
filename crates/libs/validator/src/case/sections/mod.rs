@@ -49,28 +49,8 @@ pub(crate) fn implemented_table_rule_codes() -> BTreeSet<&'static str> {
 }
 
 #[cfg(test)]
-pub(crate) fn implemented_direct_rule_codes() -> BTreeSet<&'static str> {
-	[
-		c::direct_rule_codes(),
-		d::direct_rule_codes(),
-		e::direct_rule_codes(),
-		f::direct_rule_codes(),
-		g::direct_rule_codes(),
-		h::direct_rule_codes(),
-		n::direct_rule_codes(),
-	]
-	.into_iter()
-	.flatten()
-	.copied()
-	.collect()
-}
-
-#[cfg(test)]
 pub(crate) fn implemented_case_rule_codes() -> BTreeSet<&'static str> {
 	implemented_table_rule_codes()
-		.union(&implemented_direct_rule_codes())
-		.copied()
-		.collect()
 }
 
 pub(crate) async fn collect_section_issues(
@@ -210,7 +190,7 @@ mod tests {
 	}
 
 	#[test]
-	fn implemented_case_registry_is_backed_by_executed_tables_and_direct_branches() {
+	fn implemented_case_registry_is_backed_by_executed_tables() {
 		let codes = implemented_case_rule_codes();
 		assert!(codes.contains("ICH.C.1.3.ALLOWED.VALUE"));
 		assert!(codes.contains("ICH.C.1.4.AFTER_C.1.2.FORBIDDEN"));
@@ -219,21 +199,9 @@ mod tests {
 	}
 
 	#[test]
-	fn case_rule_inventory_baseline_is_exact() {
+	fn case_catalog_is_fully_evaluator_backed() {
 		let table = implemented_table_rule_codes();
-		let direct = implemented_direct_rule_codes();
-		let overlap = table
-			.intersection(&direct)
-			.copied()
-			.collect::<BTreeSet<_>>();
-		let direct_only =
-			direct.difference(&table).copied().collect::<BTreeSet<_>>();
-
 		assert_eq!(table.len(), 461);
-		assert_eq!(direct.len(), 0);
-		assert_eq!(overlap, BTreeSet::new());
-		assert_eq!(direct_only.len(), 0);
-		assert_eq!(table.union(&direct).count(), 461);
 	}
 
 	#[test]

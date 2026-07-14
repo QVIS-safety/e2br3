@@ -1791,11 +1791,6 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 }
 
 #[cfg(test)]
-pub(super) fn direct_rule_codes() -> &'static [&'static str] {
-	&[]
-}
-
-#[cfg(test)]
 mod conditioned_catalog_rule_tests {
 	use super::*;
 
