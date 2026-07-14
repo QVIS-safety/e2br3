@@ -10,10 +10,6 @@ pub async fn create_product_presave(
 	let ParamsForCreate { data } = params;
 	let id = ProductPresaveBmc::create(&ctx, &mm, data).await?;
 	let entity = ProductPresaveBmc::get(&ctx, &mm, id).await?;
-	if let Err(err) = ensure_product_presave_scope(&ctx, &mm, &entity).await {
-		ProductPresaveBmc::delete(&ctx, &mm, id).await?;
-		return Err(err);
-	}
 	Ok(rest_created(entity))
 }
 
@@ -54,27 +50,12 @@ pub async fn update_product_presave(
 	}
 	let current = ProductPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &current).await?;
-	if data.deleted == Some(true)
-		&& product_presave_used_by_cases(&mm, ctx.organization_id(), id).await?
-	{
-		return Err(presave_case_link_conflict(
-			"product presave is used by cases",
-		));
+	if data.deleted == Some(true) {
+		PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Product, id)
+			.await?;
+	} else {
+		ProductPresaveBmc::update(&ctx, &mm, id, data).await?;
 	}
-	if data.deleted == Some(true)
-		&& presave_scope_assigned_to_users(
-			&mm,
-			ctx.organization_id(),
-			"access_product_ids",
-			product_scope_identifiers(&current),
-		)
-		.await?
-	{
-		return Err(presave_case_link_conflict(
-			"product presave is assigned to users",
-		));
-	}
-	ProductPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = ProductPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &entity).await?;
 	Ok(rest_ok(entity))
@@ -89,33 +70,7 @@ pub async fn delete_product_presave(
 	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
 	let entity = ProductPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_product_presave_scope(&ctx, &mm, &entity).await?;
-	if product_presave_used_by_cases(&mm, ctx.organization_id(), id).await? {
-		return Err(presave_case_link_conflict(
-			"product presave is used by cases",
-		));
-	}
-	if presave_scope_assigned_to_users(
-		&mm,
-		ctx.organization_id(),
-		"access_product_ids",
-		product_scope_identifiers(&entity),
-	)
-	.await?
-	{
-		return Err(presave_case_link_conflict(
-			"product presave is assigned to users",
-		));
-	}
-	ProductPresaveBmc::update(
-		&ctx,
-		&mm,
-		id,
-		ProductPresaveForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
+	PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Product, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 
@@ -213,27 +168,15 @@ pub async fn update_product_presave_details(
 		.parent
 		.as_ref()
 		.is_some_and(|parent| parent.deleted == Some(true))
-		&& product_presave_used_by_cases(&mm, ctx.organization_id(), id).await?
 	{
-		return Err(presave_case_link_conflict(
-			"product presave is used by cases",
-		));
-	}
-	if data
-		.parent
-		.as_ref()
-		.is_some_and(|parent| parent.deleted == Some(true))
-		&& presave_scope_assigned_to_users(
-			&mm,
-			ctx.organization_id(),
-			"access_product_ids",
-			product_scope_identifiers(&current),
-		)
-		.await?
-	{
-		return Err(presave_case_link_conflict(
-			"product presave is assigned to users",
-		));
+		if data.substances.is_some() {
+			return Err(Error::BadRequest {
+				message: "presave deletion cannot include child changes".into(),
+			});
+		}
+		PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Product, id)
+			.await?;
+		return Ok(rest_ok(load_product_presave_details(&ctx, &mm, id).await?));
 	}
 	preflight_product_presave_details(&ctx, &mm, id, &data).await?;
 	apply_product_presave_details(&ctx, &mm, id, data).await?;

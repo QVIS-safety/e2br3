@@ -10,6 +10,5 @@ generate_simple_presave_rest_fns! {
 	GetFn: get_reporter_presave,
 	UpdateFn: update_reporter_presave,
 	DeleteFn: delete_reporter_presave,
-	UsedByCasesFn: reporter_presave_used_by_cases,
-	ConflictMessage: "reporter presave is used by cases"
+	Kind: Reporter
 }

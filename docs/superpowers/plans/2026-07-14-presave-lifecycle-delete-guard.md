@@ -33,6 +33,7 @@
 - Modify `crates/services/web-server/src/web/rest/section_presave_rest/{reporter,narrative}.rs`: use the lifecycle-aware common handlers.
 - Modify `crates/services/web-server/tests/api/presave/delete_constraints_web.rs`: DELETE/PATCH parity and 409 contracts.
 - Modify `crates/services/web-server/src/web/rest/user_rest/validation.rs`: UUID-only scope input validation.
+- Modify `crates/libs/lib-rest-core/src/lib.rs`: shared UUID scope parser, Case source-UUID projection, routing profile, and active Sender UUID validation.
 - Modify `crates/services/web-server/tests/authz/rbac_users/create_validation_web.rs`: reject non-UUID scope values.
 - Modify `crates/services/web-server/tests/api/scope_visibility_web.rs`: replace legacy display-name grants with UUID grants and assert display names are ineffective.
 
@@ -42,18 +43,19 @@
 
 **Files:**
 - Modify: `crates/services/web-server/src/web/rest/user_rest/validation.rs`
+- Modify: `crates/libs/lib-rest-core/src/lib.rs`
 - Modify: `crates/services/web-server/src/web/rest/section_presave_rest/shared.rs`
 - Modify: `crates/libs/lib-core/src/model/presave.rs`
 - Test: `crates/services/web-server/tests/authz/rbac_users/create_validation_web.rs`
 - Test: `crates/services/web-server/tests/api/scope_visibility_web.rs`
 
 **Interfaces:**
-- Consumes: `ScopeListInput` values accepted by user create/update handlers.
-- Produces: `validate_presave_scope_uuids(field, input) -> Result<()>` and UUID-only matching shared by visibility and lifecycle work.
+- Consumes: `ScopeListInput` values accepted by user create/update handlers and Case `source_*_presave_id` columns.
+- Produces: `validate_presave_scope_uuids(field, input) -> Result<()>`, `scope_uuid_values_from_raw(raw) -> Vec<Uuid>`, and UUID-only matching shared by Case authorization, routing, INFO visibility, and lifecycle work.
 
 - [ ] **Step 1: Add failing validation tests**
 
-Add user create and update cases that submit display names and expect HTTP 400:
+Add user create, update, and active-Sender selection cases that submit display names and expect HTTP 400:
 
 ```rust
 json!({
@@ -63,7 +65,7 @@ json!({
 })
 ```
 
-Add a positive case using three `Uuid::new_v4().to_string()` values.
+Add a positive case using three `Uuid::new_v4().to_string()` values. Add Case authorization tests proving that a restricted dimension matches only `source_sender_presave_id`, `source_product_presave_id`, or `source_study_presave_id`; a matching organization name, brand, or Study number with a null source UUID must remain inaccessible.
 
 - [ ] **Step 2: Run the validation tests and verify RED**
 
@@ -92,29 +94,56 @@ fn validate_uuid_scope(field: &str, input: Option<ScopeListInput>) -> Result<()>
 
 Invoke it for sender, product, and study scopes in both create and update validation paths.
 
-- [ ] **Step 4: Remove display-name visibility matching**
+- [ ] **Step 4: Implement the shared UUID authorization projection**
+
+In `lib-rest-core`, add a parser that retains valid UUID values and ignores stored legacy values:
+
+```rust
+pub fn scope_uuid_values_from_raw(raw: Option<&str>) -> Vec<Uuid> {
+    scope_values_from_raw(raw)
+        .into_iter()
+        .filter_map(|value| Uuid::parse_str(value.trim()).ok())
+        .collect()
+}
+```
+
+Change `load_case_scope` to select only UUID text values:
+
+```sql
+array_remove(array_agg(DISTINCT sender.source_sender_presave_id::text), NULL),
+array_remove(array_agg(DISTINCT drug.source_product_presave_id::text), NULL),
+array_remove(array_agg(DISTINCT study.source_study_presave_id::text), NULL)
+```
+
+Keep unrestricted semantics for empty scope dimensions. For a non-empty dimension, require any matching source UUID; a null source UUID never matches. Keep AND semantics across non-empty dimensions and blinded-data enforcement unchanged.
+
+- [ ] **Step 5: Convert routing and INFO visibility to UUIDs**
 
 Change `sender_scope_identifiers`, `product_scope_identifiers`, and `study_scope_identifiers` to return only `entity.id.to_string()`. Replace `any_user_scope_contains` with a SQL `EXISTS` helper that compares the canonical lowercase UUID string and active users only.
 
-- [ ] **Step 5: Update visibility fixtures and verify legacy values are ignored**
+Make `routing_profile_for_user` build available Sender options from Sender Presave rows and use each Presave UUID as `sender_identifier`. Validate `active_sender_identifier` with `Uuid::parse_str` before option membership; non-UUID values return `BadRequest`. Preserve human-readable labels separately.
 
-For tests that intend to grant access, create the presave first and store its returned UUID in the user scope. Retain one explicit display-name test and assert that it grants no visibility. Do not transform existing database values.
+- [ ] **Step 6: Update visibility fixtures and verify legacy values are ignored**
 
-- [ ] **Step 6: Run GREEN verification**
+For tests that intend to grant access, create the relevant Presave and set the Case row's `source_*_presave_id`, then store the returned UUID in the user scope. Update Case list/read/update/delete, Import/Export/Submission history, and Routing profile fixtures. Retain explicit display-name rows inserted directly into legacy user columns and assert that they grant no visibility. Do not transform existing database values.
+
+- [ ] **Step 7: Run GREEN verification**
 
 Run:
 
 ```bash
 cargo test -p web-server --test authz rbac_users::create_validation_web -- --nocapture
-cargo test -p web-server --test api scope_visibility -- --nocapture
+cargo test -p web-server --test api scope_visibility_web -- --nocapture --test-threads=1
+cargo test -p lib-rest-core --lib -- --nocapture
 ```
 
 Expected: UUID writes pass, display-name writes return 400, and stored legacy names match no presave.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add crates/services/web-server/src/web/rest/user_rest/validation.rs \
+  crates/libs/lib-rest-core/src/lib.rs \
   crates/services/web-server/src/web/rest/section_presave_rest/shared.rs \
   crates/libs/lib-core/src/model/presave.rs \
   crates/services/web-server/tests/authz/rbac_users/create_validation_web.rs \

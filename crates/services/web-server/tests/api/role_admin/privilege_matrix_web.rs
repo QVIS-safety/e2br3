@@ -354,10 +354,9 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		custom_user_id,
 		json!({
 			"access_sender_ids": [
-				seed_sender_name,
-				editable_sender_name,
-				deletable_sender_name,
-				"INFO-MATRIX-EDIT"
+				template_id.to_string(),
+				editable_template_id.to_string(),
+				deletable_template_id.to_string()
 			]
 		}),
 	)
@@ -537,12 +536,12 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		None,
 	)
 	.await?;
-	assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
 	assert_get_status(
 		&app,
 		&custom_cookie,
 		&format!("/api/presaves/senders/{created_template_id}"),
-		StatusCode::OK,
+		StatusCode::FORBIDDEN,
 	)
 	.await?;
 

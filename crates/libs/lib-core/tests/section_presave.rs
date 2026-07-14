@@ -26,6 +26,7 @@ use lib_core::model::presave::{
 	StudyPresaveRegistrationNumberForCreate,
 	StudyPresaveRegistrationNumberForUpdate,
 };
+use lib_core::model::presave_lifecycle::{PresaveKind, PresaveLifecycleService};
 use lib_core::model::store::{set_org_context, set_user_context};
 use lib_core::model::Error as ModelError;
 use lib_core::model::ModelManager;
@@ -56,11 +57,290 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"narrative_presaves",
 ];
 
-fn is_foreign_key_violation(err: &SqlxError) -> bool {
+fn is_inactive_presave_reference(err: &SqlxError) -> bool {
 	match err {
-		SqlxError::Database(db_err) => db_err.code().as_deref() == Some("23503"),
+		SqlxError::Database(db_err) => db_err.code().as_deref() == Some("P2001"),
 		_ => false,
 	}
+}
+
+#[test]
+fn inactive_presave_reference_migration_covers_every_uuid_link() {
+	let migration = include_str!(
+		"../../../../db/migrations/20260714_presave_lifecycle_guards.sql"
+	);
+	for trigger in [
+		"guard_sender_information_source_sender_presave",
+		"guard_drug_information_source_product_presave",
+		"guard_study_information_source_study_presave",
+		"guard_primary_sources_source_reporter_presave",
+		"guard_narrative_information_source_narrative_presave",
+		"guard_product_presaves_sender_presave",
+		"guard_product_presaves_receiver_presave",
+		"guard_study_presaves_product_presave",
+		"guard_study_presave_products_product_presave",
+		"guard_study_presave_reporters_reporter_presave",
+	] {
+		assert!(migration.contains(trigger), "missing trigger {trigger}");
+	}
+	assert!(migration.contains("ERRCODE = 'P2001'"));
+	assert!(migration.contains("FOR KEY SHARE"));
+}
+
+#[serial]
+#[tokio::test]
+async fn inactive_presave_reference_returns_p2001_for_receiver_link() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create("Trigger sender".into()),
+	)
+	.await?;
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			receiver_type: Some("Regulatory Authority".into()),
+			organization_name: Some(format!("Archived receiver {}", Uuid::new_v4())),
+			receiver_identifier: None,
+			day_count_rule: None,
+			nsae_solicited_day_count: None,
+			nsae_solicited_not_applicable: None,
+			nsae_non_solicited_day_count: None,
+			nsae_non_solicited_not_applicable: None,
+			sae_solicited_day_count: None,
+			sae_solicited_not_applicable: None,
+			sae_non_solicited_day_count: None,
+			sae_non_solicited_not_applicable: None,
+			description: None,
+		},
+	)
+	.await?;
+
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, demo_user_id()).await?;
+	set_org_context(&mut tx, demo_org_id(), ROLE_SPONSOR_ADMIN_CRO).await?;
+	sqlx::query("UPDATE receiver_presaves SET deleted = true WHERE id = $1")
+		.bind(receiver_id)
+		.execute(&mut *tx)
+		.await?;
+	let result = sqlx::query(
+		"INSERT INTO product_presaves (
+			id, organization_id, sender_presave_id, receiver_presave_id,
+			created_by, updated_by
+		) VALUES ($1, $2, $3, $4, $5, $5)",
+	)
+	.bind(Uuid::new_v4())
+	.bind(demo_org_id())
+	.bind(sender_id)
+	.bind(receiver_id)
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await;
+	assert!(
+		matches!(result, Err(ref error) if error.as_database_error().and_then(|db| db.code()).as_deref() == Some("P2001")),
+		"expected P2001, got {result:?}"
+	);
+	tx.rollback().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn presave_lifecycle_archives_unreferenced_and_blocks_used_receiver(
+) -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create(format!("Lifecycle sender {}", Uuid::new_v4())),
+	)
+	.await?;
+	let available_receiver = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		receiver_presave_create(format!(
+			"Lifecycle available receiver {}",
+			Uuid::new_v4()
+		)),
+	)
+	.await?;
+	PresaveLifecycleService::archive(
+		&ctx,
+		&mm,
+		PresaveKind::Receiver,
+		available_receiver,
+	)
+	.await?;
+	assert!(
+		ReceiverPresaveBmc::get(&ctx, &mm, available_receiver)
+			.await?
+			.deleted
+	);
+
+	let used_receiver = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		receiver_presave_create(format!(
+			"Lifecycle used receiver {}",
+			Uuid::new_v4()
+		)),
+	)
+	.await?;
+	let mut product = product_presave_create(
+		RegulatoryAuthority::Fda,
+		format!("Lifecycle receiver product {}", Uuid::new_v4()),
+		sender_id,
+	);
+	product.receiver_presave_id = Some(used_receiver);
+	ProductPresaveBmc::create(&ctx, &mm, product).await?;
+	expect_conflict_error(
+		PresaveLifecycleService::archive(
+			&ctx,
+			&mm,
+			PresaveKind::Receiver,
+			used_receiver,
+		)
+		.await,
+		"receiver presave is in use",
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn presave_lifecycle_reference_race_preserves_active_reference_invariant(
+) -> Result<()> {
+	use tokio::time::{sleep, Duration};
+
+	_dev_utils::init_dev().await;
+	let setup_mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&setup_mm,
+		sender_presave_create(format!("Race sender {}", Uuid::new_v4())),
+	)
+	.await?;
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&setup_mm,
+		receiver_presave_create(format!("Race receiver {}", Uuid::new_v4())),
+	)
+	.await?;
+
+	let lock_mm = ModelManager::new().await?;
+	let mut archive_tx = lock_mm.dbx().db().begin().await?;
+	set_user_context(&mut archive_tx, demo_user_id()).await?;
+	set_org_context(&mut archive_tx, demo_org_id(), ROLE_SPONSOR_ADMIN_CRO).await?;
+	sqlx::query("SELECT id FROM receiver_presaves WHERE id = $1 FOR UPDATE")
+		.bind(receiver_id)
+		.execute(&mut *archive_tx)
+		.await?;
+	sqlx::query("UPDATE receiver_presaves SET deleted = true WHERE id = $1")
+		.bind(receiver_id)
+		.execute(&mut *archive_tx)
+		.await?;
+
+	let reference_task = tokio::spawn(async move {
+		let mm = ModelManager::new().await.expect("race model manager");
+		let mut tx = mm.dbx().db().begin().await.expect("race transaction");
+		set_user_context(&mut tx, demo_user_id())
+			.await
+			.expect("race user context");
+		set_org_context(&mut tx, demo_org_id(), ROLE_SPONSOR_ADMIN_CRO)
+			.await
+			.expect("race org context");
+		let result = sqlx::query(
+			"INSERT INTO product_presaves (
+				id, organization_id, sender_presave_id, receiver_presave_id,
+				created_by, updated_by
+			) VALUES ($1, $2, $3, $4, $5, $5)",
+		)
+		.bind(Uuid::new_v4())
+		.bind(demo_org_id())
+		.bind(sender_id)
+		.bind(receiver_id)
+		.bind(demo_user_id())
+		.execute(&mut *tx)
+		.await;
+		tx.rollback().await.expect("race rollback");
+		result
+	});
+	sleep(Duration::from_millis(50)).await;
+	archive_tx.commit().await?;
+	let result = reference_task.await?;
+	assert!(
+		matches!(result, Err(ref error) if error.as_database_error().and_then(|db| db.code()).as_deref() == Some("P2001")),
+		"reference created after archive lock must fail with P2001: {result:?}"
+	);
+
+	let mut verify_tx = setup_mm.dbx().db().begin().await?;
+	set_user_context(&mut verify_tx, demo_user_id()).await?;
+	set_org_context(&mut verify_tx, demo_org_id(), ROLE_SPONSOR_ADMIN_CRO).await?;
+	let deleted: bool =
+		sqlx::query_scalar("SELECT deleted FROM receiver_presaves WHERE id = $1")
+			.bind(receiver_id)
+			.fetch_one(&mut *verify_tx)
+			.await?;
+	let reference_exists: bool = sqlx::query_scalar(
+		"SELECT EXISTS (SELECT 1 FROM product_presaves WHERE receiver_presave_id = $1)",
+	)
+	.bind(receiver_id)
+	.fetch_one(&mut *verify_tx)
+	.await?;
+	assert!(deleted && !reference_exists);
+	verify_tx.rollback().await?;
+
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&setup_mm,
+		receiver_presave_create(format!(
+			"Race referenced receiver {}",
+			Uuid::new_v4()
+		)),
+	)
+	.await?;
+	let reference_mm = ModelManager::new().await?;
+	let mut reference_tx = reference_mm.dbx().db().begin().await?;
+	set_user_context(&mut reference_tx, demo_user_id()).await?;
+	set_org_context(&mut reference_tx, demo_org_id(), ROLE_SPONSOR_ADMIN_CRO)
+		.await?;
+	sqlx::query(
+		"INSERT INTO product_presaves (
+			id, organization_id, sender_presave_id, receiver_presave_id,
+			created_by, updated_by
+		) VALUES ($1, $2, $3, $4, $5, $5)",
+	)
+	.bind(Uuid::new_v4())
+	.bind(demo_org_id())
+	.bind(sender_id)
+	.bind(receiver_id)
+	.bind(demo_user_id())
+	.execute(&mut *reference_tx)
+	.await?;
+
+	let archive_task = tokio::spawn(async move {
+		let mm = ModelManager::new().await.expect("archive race manager");
+		PresaveLifecycleService::archive(
+			&demo_ctx(),
+			&mm,
+			PresaveKind::Receiver,
+			receiver_id,
+		)
+		.await
+	});
+	sleep(Duration::from_millis(50)).await;
+	reference_tx.commit().await?;
+	expect_conflict_error(archive_task.await?, "receiver presave is in use");
+	let receiver = ReceiverPresaveBmc::get(&ctx, &setup_mm, receiver_id).await?;
+	assert!(!receiver.deleted);
+	Ok(())
 }
 
 fn expect_store_error<T>(result: lib_core::model::Result<T>, expected: &str) {
@@ -203,6 +483,24 @@ fn product_presave_create(
 	}
 }
 
+fn receiver_presave_create(organization_name: String) -> ReceiverPresaveForCreate {
+	ReceiverPresaveForCreate {
+		receiver_type: Some("Regulatory Authority".into()),
+		organization_name: Some(organization_name),
+		receiver_identifier: None,
+		day_count_rule: None,
+		nsae_solicited_day_count: None,
+		nsae_solicited_not_applicable: None,
+		nsae_non_solicited_day_count: None,
+		nsae_non_solicited_not_applicable: None,
+		sae_solicited_day_count: None,
+		sae_solicited_not_applicable: None,
+		sae_non_solicited_day_count: None,
+		sae_non_solicited_not_applicable: None,
+		description: None,
+	}
+}
+
 fn sender_presave_create(_name: String) -> SenderPresaveForCreate {
 	SenderPresaveForCreate {
 		is_default: None,
@@ -309,16 +607,8 @@ async fn sponsor_company_sender_presave_limited_to_one_active_record() -> Result
 		"pharmaceutical company sponsor administrators can register only one active sender presave",
 	);
 
-	SenderPresaveBmc::update(
-		&ctx,
-		&mm,
-		first_id,
-		SenderPresaveForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
+	PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Sender, first_id)
+		.await?;
 
 	SenderPresaveBmc::create(
 		&ctx,
@@ -401,17 +691,14 @@ async fn product_presave_round_trips_receiver_presave_id() -> Result<()> {
 		Some(receiver_id)
 	);
 	expect_conflict_error(
-		ReceiverPresaveBmc::update(
+		PresaveLifecycleService::archive(
 			&ctx,
 			&mm,
+			PresaveKind::Receiver,
 			receiver_id,
-			ReceiverPresaveForUpdate {
-				deleted: Some(true),
-				..Default::default()
-			},
 		)
 		.await,
-		"receiver presave is used by product presaves",
+		"receiver presave is in use",
 	);
 	let deleted_receiver_id = ReceiverPresaveBmc::create(
 		&ctx,
@@ -433,14 +720,11 @@ async fn product_presave_round_trips_receiver_presave_id() -> Result<()> {
 		},
 	)
 	.await?;
-	ReceiverPresaveBmc::update(
+	PresaveLifecycleService::archive(
 		&ctx,
 		&mm,
+		PresaveKind::Receiver,
 		deleted_receiver_id,
-		ReceiverPresaveForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
 	)
 	.await?;
 	let mut deleted_input = product_presave_create(
@@ -986,8 +1270,8 @@ async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
 	.execute(&mut *invalid_tx)
 	.await;
 	assert!(
-		matches!(cross_org_product, Err(ref err) if is_foreign_key_violation(err)),
-		"cross-org product->sender link should fail composite FK: {cross_org_product:?}"
+		matches!(cross_org_product, Err(ref err) if is_inactive_presave_reference(err)),
+		"cross-org product->sender link should fail the active-reference boundary: {cross_org_product:?}"
 	);
 	invalid_tx.rollback().await?;
 
@@ -1007,8 +1291,8 @@ async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
 	.execute(&mut *invalid_tx)
 	.await;
 	assert!(
-		matches!(cross_org_study, Err(ref err) if is_foreign_key_violation(err)),
-		"cross-org study->product link should fail composite FK: {cross_org_study:?}"
+		matches!(cross_org_study, Err(ref err) if is_inactive_presave_reference(err)),
+		"cross-org study->product link should fail the active-reference boundary: {cross_org_study:?}"
 	);
 	invalid_tx.rollback().await?;
 
@@ -2024,7 +2308,7 @@ async fn section_presave_parent_bmcs_reject_delete_when_referenced() -> Result<(
 	)
 	.await?;
 
-	expect_conflict_error(
+	expect_validation_error(
 		SenderPresaveBmc::update(
 			&ctx,
 			&mm,
@@ -2035,14 +2319,14 @@ async fn section_presave_parent_bmcs_reject_delete_when_referenced() -> Result<(
 			},
 		)
 		.await,
-		"sender presave is used by product presaves",
+		"presave deletion must use lifecycle service",
 	);
 	expect_conflict_error(
 		SenderPresaveBmc::delete(&ctx, &mm, sender_id).await,
-		"sender presave is used by product presaves",
+		"sender presave is in use",
 	);
 
-	expect_conflict_error(
+	expect_validation_error(
 		ProductPresaveBmc::update(
 			&ctx,
 			&mm,
@@ -2053,11 +2337,11 @@ async fn section_presave_parent_bmcs_reject_delete_when_referenced() -> Result<(
 			},
 		)
 		.await,
-		"product presave is used by study presaves",
+		"presave deletion must use lifecycle service",
 	);
 	expect_conflict_error(
 		ProductPresaveBmc::delete(&ctx, &mm, product_id).await,
-		"product presave is used by study presaves",
+		"product presave is in use",
 	);
 
 	Ok(())

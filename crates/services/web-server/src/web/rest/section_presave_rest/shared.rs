@@ -36,6 +36,9 @@ pub(super) use lib_core::model::presave::{
 	StudyPresaveReporterBmc, StudyPresaveReporterForCreate,
 	StudyPresaveReporterForUpdate,
 };
+pub(super) use lib_core::model::presave_lifecycle::{
+	PresaveKind, PresaveLifecycleService,
+};
 pub(super) use lib_core::model::user::UserBmc;
 pub(super) use lib_core::model::{self, ModelManager};
 pub(super) use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
@@ -57,8 +60,7 @@ macro_rules! generate_simple_presave_rest_fns {
 		GetFn: $get_fn:ident,
 		UpdateFn: $update_fn:ident,
 		DeleteFn: $delete_fn:ident,
-		UsedByCasesFn: $used_by_cases_fn:ident,
-		ConflictMessage: $conflict_message:literal
+		Kind: $kind:ident
 	) => {
 		pub async fn $create_fn(
 			State(mm): State<ModelManager>,
@@ -103,7 +105,12 @@ macro_rules! generate_simple_presave_rest_fns {
 			if data.deleted == Some(true) {
 				require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
 			}
-			$bmc::update(&ctx, &mm, id, data).await?;
+			if data.deleted == Some(true) {
+				PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::$kind, id)
+					.await?;
+			} else {
+				$bmc::update(&ctx, &mm, id, data).await?;
+			}
 			Ok(rest_ok($bmc::get(&ctx, &mm, id).await?))
 		}
 
@@ -114,20 +121,8 @@ macro_rules! generate_simple_presave_rest_fns {
 		) -> Result<StatusCode> {
 			let ctx = ctx_w.0;
 			require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-			$bmc::get(&ctx, &mm, id).await?;
-			if $used_by_cases_fn(&mm, ctx.organization_id(), id).await? {
-				return Err(presave_case_link_conflict($conflict_message));
-			}
-			$bmc::update(
-				&ctx,
-				&mm,
-				id,
-				$for_update {
-					deleted: Some(true),
-					..Default::default()
-				},
-			)
-			.await?;
+			PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::$kind, id)
+				.await?;
 			Ok(StatusCode::NO_CONTENT)
 		}
 	};
@@ -282,16 +277,6 @@ pub(super) fn normalized_set(values: Vec<String>) -> HashSet<String> {
 		.collect()
 }
 
-pub(super) fn push_scope_identifier(values: &mut Vec<String>, value: Option<&str>) {
-	let Some(value) = value else {
-		return;
-	};
-	let value = value.trim();
-	if !value.is_empty() {
-		values.push(value.to_ascii_lowercase());
-	}
-}
-
 pub(super) async fn allowed_scope_for_section(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -317,15 +302,11 @@ pub(super) async fn allowed_scope_for_section(
 }
 
 pub(super) fn product_scope_identifiers(entity: &ProductPresave) -> Vec<String> {
-	let mut values = vec![entity.id.to_string()];
-	push_scope_identifier(&mut values, entity.brand_name.as_deref());
-	values
+	vec![entity.id.to_string()]
 }
 
 pub(super) fn study_scope_identifiers(entity: &StudyPresave) -> Vec<String> {
-	let mut values = vec![entity.id.to_string()];
-	push_scope_identifier(&mut values, entity.sponsor_study_number.as_deref());
-	values
+	vec![entity.id.to_string()]
 }
 
 pub(super) async fn sender_scope_identifiers(
@@ -333,9 +314,7 @@ pub(super) async fn sender_scope_identifiers(
 	_mm: &ModelManager,
 	entity: &SenderPresave,
 ) -> Result<Vec<String>> {
-	let mut values = vec![entity.id.to_string()];
-	push_scope_identifier(&mut values, entity.organization_name.as_deref());
-	Ok(values)
+	Ok(vec![entity.id.to_string()])
 }
 
 pub(super) async fn identifiers_allowed_for_scope(

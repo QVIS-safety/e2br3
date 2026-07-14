@@ -46,7 +46,12 @@ pub async fn update_receiver_presave(
 	if data.deleted == Some(true) {
 		require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
 	}
-	ReceiverPresaveBmc::update(&ctx, &mm, id, data).await?;
+	if data.deleted == Some(true) {
+		PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Receiver, id)
+			.await?;
+	} else {
+		ReceiverPresaveBmc::update(&ctx, &mm, id, data).await?;
+	}
 	let entity = ReceiverPresaveBmc::get(&ctx, &mm, id).await?;
 	Ok(rest_ok(entity))
 }
@@ -58,16 +63,7 @@ pub async fn delete_receiver_presave(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	ReceiverPresaveBmc::update(
-		&ctx,
-		&mm,
-		id,
-		ReceiverPresaveForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
+	PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Receiver, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 
@@ -267,6 +263,23 @@ pub async fn update_receiver_presave_details(
 
 	let ParamsForUpdate { data } = params;
 	require_receiver_detail_operation_permissions(&ctx, &data)?;
+	if data
+		.parent
+		.as_ref()
+		.is_some_and(|parent| parent.deleted == Some(true))
+	{
+		if data.consignees.is_some()
+			|| data.routes.is_some()
+			|| data.children.is_some()
+		{
+			return Err(Error::BadRequest {
+				message: "presave deletion cannot include child changes".into(),
+			});
+		}
+		PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Receiver, id)
+			.await?;
+		return Ok(rest_ok(load_receiver_presave_details(&ctx, &mm, id).await?));
+	}
 	preflight_receiver_presave_details(&ctx, &mm, id, &data).await?;
 	apply_receiver_presave_details(&ctx, &mm, id, data).await?;
 

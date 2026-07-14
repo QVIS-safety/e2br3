@@ -42,11 +42,19 @@ async fn test_presave_rest_rejects_deleting_referenced_parent() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
 	assert!(
-		value
-			.to_string()
-			.contains("sender presave is used by product presaves"),
+		value.to_string().contains("sender presave is in use"),
 		"unexpected sender delete conflict body: {value:?}"
 	);
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/senders/{sender_id}"),
+		Some(json!({ "data": { "deleted": true } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+	assert!(value.to_string().contains("sender presave is in use"));
 
 	let (status, value) = request_json(
 		&app,
@@ -58,11 +66,19 @@ async fn test_presave_rest_rejects_deleting_referenced_parent() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
 	assert!(
-		value
-			.to_string()
-			.contains("product presave is used by study presaves"),
+		value.to_string().contains("product presave is in use"),
 		"unexpected product delete conflict body: {value:?}"
 	);
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PATCH,
+		format!("/api/presaves/products/{product_id}"),
+		Some(json!({ "data": { "deleted": true } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+	assert!(value.to_string().contains("product presave is in use"));
 
 	Ok(())
 }

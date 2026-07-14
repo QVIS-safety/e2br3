@@ -84,6 +84,15 @@ impl Error {
 		}
 	}
 
+	pub fn resolve_inactive_presave_reference(self) -> Self {
+		match self.as_database_error().and_then(|error| error.code()) {
+			Some(code) if code == "P2001" => Error::Conflict {
+				message: "inactive presave reference".to_string(),
+			},
+			_ => self,
+		}
+	}
+
 	/// A convenient function to return the eventual database error (Postgres)
 	/// if this Error is an SQLX Error that contains a database error.
 	pub fn as_database_error(&self) -> Option<&(dyn DatabaseError + 'static)> {
