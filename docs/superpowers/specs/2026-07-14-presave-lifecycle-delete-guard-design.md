@@ -51,6 +51,25 @@ impl PresaveLifecycleService {
 
 Existing public BMC update methods must not allow callers to set `deleted=true` directly. REST update handlers route such requests to `archive`; normal field updates continue through the BMC. Existing BMC `delete` methods delegate to `hard_delete`, preserving their public signatures while removing the bypass.
 
+The lifecycle service performs its final mutation through private transaction-local primitives, not through public BMC methods or `base_uuid` functions:
+
+```rust
+async fn archive_row_in_current_txn(
+	dbx: &Dbx,
+	kind: PresaveKind,
+	id: Uuid,
+	user_id: Uuid,
+) -> Result<()>;
+
+async fn delete_row_in_current_txn(
+	dbx: &Dbx,
+	kind: PresaveKind,
+	id: Uuid,
+) -> Result<()>;
+```
+
+These primitives issue the mutation on the already-open transaction and never call `begin_txn`, `commit_txn`, a public BMC method, or the lifecycle service. This prevents recursive `BMC::delete -> hard_delete -> BMC::delete` calls and avoids counter-based nested transaction behavior.
+
 ## Dependency Policy
 
 Each presave kind has an explicit dependency specification:
@@ -76,7 +95,24 @@ User assignment checks compare only the canonical lowercase UUID string for the 
 
 The lifecycle service opens one transaction, installs the full request context on that transaction, locks the target presave row with `SELECT ... FOR UPDATE`, evaluates all dependency queries with `SELECT EXISTS`, and performs the final mutation before commit.
 
-Target-row locking serializes competing lifecycle operations. Reference creation paths must lock the referenced presave row before accepting a new reference. The implementation will extend existing assignment validation to acquire a compatible row lock in the same transaction where possible. This closes the check-then-reference race without relying on process-local locks.
+Target-row locking serializes competing lifecycle operations. Database triggers provide the mandatory reference-creation boundary for every UUID reference to a presave. Before an INSERT or an UPDATE changes a presave reference, the trigger selects the referenced presave row `FOR KEY SHARE` and rejects the write unless that row exists in the same organization and has `deleted=false`.
+
+Lifecycle archive takes `FOR UPDATE` on the target row. PostgreSQL row-lock compatibility makes a concurrent trigger wait. After the archive commits, the waiting trigger re-evaluates `deleted=false` against the current row version and rejects the reference. If reference creation obtains its key-share lock first, archive waits and subsequently observes the committed reference in its `EXISTS` guard. Thus only an active-reference state or an archived-unreferenced state can commit.
+
+Triggers cover these columns:
+
+- `sender_information.source_sender_presave_id`
+- `drug_information.source_product_presave_id`
+- `study_information.source_study_presave_id`
+- `primary_sources.source_reporter_presave_id`
+- `narrative_information.source_narrative_presave_id`
+- `product_presaves.sender_presave_id`
+- `product_presaves.receiver_presave_id`
+- `study_presaves.product_presave_id`
+- `study_presave_products.product_presave_id`
+- `study_presave_reporters.reporter_presave_id`
+
+The trigger function raises the dedicated user-defined SQLSTATE `P2001` with the stable message `inactive presave reference` and details containing the presave kind and UUID. The model layer adds an explicit database-error resolver for `P2001` and always maps it to `model::Error::Conflict`; REST therefore returns HTTP 409. Trigger definitions are installed in bootstrap SQL and an idempotent migration.
 
 If a reference appears or remains visible during the transaction, the lifecycle service returns `model::Error::Conflict` with a stable entity-specific message. Any query or mutation failure rolls back the transaction.
 
@@ -120,13 +156,13 @@ For each presave kind:
 - A direct BMC physical delete cannot bypass the lifecycle guard.
 - Conflict status and message remain stable.
 
-Relationship-specific tests cover Sender-to-Product, Receiver-to-Product UUID, Receiver legacy null-UUID fallback, Product-to-Study parent and child links, Reporter-to-Study reporter links, and active UUID user assignments. Scope tests verify that legacy display-name values no longer grant access or block deletion and that new non-UUID scope writes are rejected. A concurrency test holds a lifecycle target lock while attempting reference creation and verifies that only one valid final state can commit.
+Relationship-specific tests cover Sender-to-Product, Receiver-to-Product UUID, Receiver legacy null-UUID fallback, Product-to-Study parent and child links, Reporter-to-Study reporter links, and active UUID user assignments. Scope tests verify that legacy display-name values no longer grant access or block deletion and that new non-UUID scope writes are rejected. Trigger tests verify that every listed reference column rejects an archived target. A two-connection concurrency test holds each side of the lifecycle/reference race and verifies that only one valid final state can commit.
 
 Regression verification includes the complete `section_presave` model suite, presave REST authorization tests, formatting, and compilation.
 
 ## Migration and Compatibility
 
-No data migration is required. Existing endpoints and successful response shapes remain unchanged. Conflict behavior becomes stricter only for paths that previously bypassed an established delete guard.
+An idempotent schema migration installs the active-presave reference trigger functions and triggers; no row backfill or data transformation is performed. Existing endpoints and successful response shapes remain unchanged. Conflict behavior becomes stricter only for paths that previously bypassed an established delete guard.
 
 UUID-only scope enforcement is an intentional compatibility break. Existing display-name entries remain stored but are immediately ineffective; the system neither resolves nor migrates them. Administrators must reassign affected scopes using presave UUIDs when access is still required.
 
