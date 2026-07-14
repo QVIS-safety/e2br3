@@ -18,7 +18,9 @@ use lib_core::model::presave::{
 	SenderPresaveGatewayBmc, SenderPresaveGatewayForCreate,
 	SenderPresaveGatewayForUpdate, SenderPresaveResponsiblePersonBmc,
 	SenderPresaveResponsiblePersonForCreate,
-	SenderPresaveResponsiblePersonForUpdate, StudyPresaveBmc, StudyPresaveForCreate,
+	SenderPresaveResponsiblePersonForUpdate, StudyPresaveBmc,
+	StudyPresaveFdaCrossReportedIndBmc, StudyPresaveFdaCrossReportedIndForCreate,
+	StudyPresaveFdaCrossReportedIndForUpdate, StudyPresaveForCreate,
 	StudyPresaveProductBmc, StudyPresaveProductForCreate,
 	StudyPresaveProductForUpdate, StudyPresaveRegistrationNumberBmc,
 	StudyPresaveRegistrationNumberForCreate,
@@ -48,6 +50,7 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"reporter_presaves",
 	"study_presaves",
 	"study_presave_registration_numbers",
+	"study_presave_fda_cross_reported_inds",
 	"study_presave_products",
 	"study_presave_reporters",
 	"narrative_presaves",
@@ -177,6 +180,7 @@ fn product_presave_create(
 ) -> ProductPresaveForCreate {
 	ProductPresaveForCreate {
 		sender_presave_id: Some(sender_presave_id),
+		receiver_presave_id: None,
 		product_id: Some(format!("PRODUCT-{}", Uuid::new_v4())),
 		medicinal_product: Some("Authority Product".into()),
 		medicinal_product_notation: None,
@@ -254,6 +258,8 @@ fn study_presave_create(
 		sponsor_study_number: Some("AUTH-STUDY".into()),
 		sponsor_study_number_kind: None,
 		study_type_reaction: Some("1".into()),
+		fda_ind_number_occurred: None,
+		fda_pre_anda_number_occurred: None,
 		edc_sync: None,
 		exclude_case_key_from_sync: None,
 	}
@@ -270,6 +276,8 @@ fn study_presave_create_for_product(
 		sponsor_study_number: Some(format!("REL-STUDY-{}", Uuid::new_v4())),
 		sponsor_study_number_kind: None,
 		study_type_reaction: Some("1".into()),
+		fda_ind_number_occurred: None,
+		fda_pre_anda_number_occurred: None,
 		edc_sync: None,
 		exclude_case_key_from_sync: None,
 	}
@@ -343,6 +351,144 @@ async fn sponsor_cro_sender_presave_allows_multiple_active_records() -> Result<(
 	)
 	.await?;
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn product_presave_round_trips_receiver_presave_id() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create("Receiver-linked product sender".into()),
+	)
+	.await?;
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			receiver_type: Some("Regulatory Authority".into()),
+			organization_name: Some(format!("Receiver Link {}", Uuid::new_v4())),
+			receiver_identifier: None,
+			day_count_rule: None,
+			nsae_solicited_day_count: None,
+			nsae_solicited_not_applicable: None,
+			nsae_non_solicited_day_count: None,
+			nsae_non_solicited_not_applicable: None,
+			sae_solicited_day_count: None,
+			sae_solicited_not_applicable: None,
+			sae_non_solicited_day_count: None,
+			sae_non_solicited_not_applicable: None,
+			description: None,
+		},
+	)
+	.await?;
+	let mut input = product_presave_create(
+		RegulatoryAuthority::Fda,
+		"Receiver-linked product".into(),
+		sender_id,
+	);
+	input.receiver_presave_id = Some(receiver_id);
+	let product_id = ProductPresaveBmc::create(&ctx, &mm, input).await?;
+
+	assert_eq!(
+		ProductPresaveBmc::get(&ctx, &mm, product_id)
+			.await?
+			.receiver_presave_id,
+		Some(receiver_id)
+	);
+	expect_conflict_error(
+		ReceiverPresaveBmc::update(
+			&ctx,
+			&mm,
+			receiver_id,
+			ReceiverPresaveForUpdate {
+				deleted: Some(true),
+				..Default::default()
+			},
+		)
+		.await,
+		"receiver presave is used by product presaves",
+	);
+	let deleted_receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			receiver_type: Some("Regulatory Authority".into()),
+			organization_name: Some(format!("Deleted Receiver {}", Uuid::new_v4())),
+			receiver_identifier: None,
+			day_count_rule: None,
+			nsae_solicited_day_count: None,
+			nsae_solicited_not_applicable: None,
+			nsae_non_solicited_day_count: None,
+			nsae_non_solicited_not_applicable: None,
+			sae_solicited_day_count: None,
+			sae_solicited_not_applicable: None,
+			sae_non_solicited_day_count: None,
+			sae_non_solicited_not_applicable: None,
+			description: None,
+		},
+	)
+	.await?;
+	ReceiverPresaveBmc::update(
+		&ctx,
+		&mm,
+		deleted_receiver_id,
+		ReceiverPresaveForUpdate {
+			deleted: Some(true),
+			..Default::default()
+		},
+	)
+	.await?;
+	let mut deleted_input = product_presave_create(
+		RegulatoryAuthority::Fda,
+		"Deleted receiver product".into(),
+		sender_id,
+	);
+	deleted_input.receiver_presave_id = Some(deleted_receiver_id);
+	expect_conflict_error(
+		ProductPresaveBmc::create(&ctx, &mm, deleted_input).await,
+		"active receiver presave",
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn study_presave_round_trips_fda_regional_numbers() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create("FDA study sender".into()),
+	)
+	.await?;
+	let product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Fda,
+			"FDA study product".into(),
+			sender_id,
+		),
+	)
+	.await?;
+	let mut input =
+		study_presave_create_for_product("FDA regional study".into(), product_id);
+	input.fda_ind_number_occurred = Some("123456".into());
+	input.fda_pre_anda_number_occurred = Some("234567".into());
+	let id = StudyPresaveBmc::create(&ctx, &mm, input).await?;
+	let saved = StudyPresaveBmc::get(&ctx, &mm, id).await?;
+	assert_eq!(saved.fda_ind_number_occurred.as_deref(), Some("123456"));
+	assert_eq!(
+		saved.fda_pre_anda_number_occurred.as_deref(),
+		Some("234567")
+	);
 	Ok(())
 }
 
@@ -957,6 +1103,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 		&mm,
 		ProductPresaveForCreate {
 			sender_presave_id: Some(sender_id),
+			receiver_presave_id: None,
 			product_id: Some(format!("PRODUCT-{suffix}")),
 			medicinal_product: Some(format!("Medicinal Product {suffix}")),
 			medicinal_product_notation: None,
@@ -1024,6 +1171,8 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			sponsor_study_number: Some(format!("ST-001-{suffix}")),
 			sponsor_study_number_kind: Some("PROTOCOL_NO".into()),
 			study_type_reaction: Some("1".into()),
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
 			edc_sync: Some(true),
 			exclude_case_key_from_sync: Some(true),
 		},
@@ -1431,6 +1580,7 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 			&mm,
 			ProductPresaveForCreate {
 				sender_presave_id: None,
+				receiver_presave_id: None,
 				product_id: None,
 				medicinal_product: None,
 				medicinal_product_notation: None,
@@ -1506,6 +1656,8 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 				sponsor_study_number: Some("INVALID-STUDY".into()),
 				sponsor_study_number_kind: None,
 				study_type_reaction: None,
+				fda_ind_number_occurred: None,
+				fda_pre_anda_number_occurred: None,
 				edc_sync: None,
 				exclude_case_key_from_sync: None,
 			},
@@ -1655,6 +1807,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 		&mm,
 		ProductPresaveForCreate {
 			sender_presave_id: Some(sender_id),
+			receiver_presave_id: None,
 			product_id: Some(format!("DUP-PRODUCT-{suffix}")),
 			medicinal_product: None,
 			medicinal_product_notation: None,
@@ -1683,6 +1836,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			&mm,
 			ProductPresaveForCreate {
 				sender_presave_id: Some(sender_id),
+				receiver_presave_id: None,
 				product_id: Some(format!(" dup-product-{suffix} ")),
 				medicinal_product: None,
 				medicinal_product_notation: None,
@@ -1774,6 +1928,8 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			sponsor_study_number: Some(format!("DUP-STUDY-{suffix}")),
 			sponsor_study_number_kind: None,
 			study_type_reaction: Some("1".into()),
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
 			edc_sync: None,
 			exclude_case_key_from_sync: None,
 		},
@@ -1790,6 +1946,8 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				sponsor_study_number: Some(format!(" dup-study-{suffix} ")),
 				sponsor_study_number_kind: None,
 				study_type_reaction: Some("2".into()),
+				fda_ind_number_occurred: None,
+				fda_pre_anda_number_occurred: None,
 				edc_sync: None,
 				exclude_case_key_from_sync: None,
 			},
@@ -2083,6 +2241,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&mm,
 		ProductPresaveForCreate {
 			sender_presave_id: Some(sender_id),
+			receiver_presave_id: None,
 			product_id: Some(format!("CHILD-PRODUCT-{suffix}")),
 			medicinal_product: Some("Child Product".into()),
 			medicinal_product_notation: None,
@@ -2110,6 +2269,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&mm,
 		ProductPresaveForCreate {
 			sender_presave_id: Some(sender_id),
+			receiver_presave_id: None,
 			product_id: Some(format!("CHILD-FDA-PRODUCT-{suffix}")),
 			medicinal_product: Some("Child FDA Product".into()),
 			medicinal_product_notation: None,
@@ -2142,6 +2302,8 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			sponsor_study_number: Some(format!("CHILD-STUDY-{suffix}")),
 			sponsor_study_number_kind: None,
 			study_type_reaction: Some("1".into()),
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
 			edc_sync: None,
 			exclude_case_key_from_sync: None,
 		},
@@ -2410,6 +2572,40 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		registration_id
 	);
 
+	let cross_reported_ind_id = StudyPresaveFdaCrossReportedIndBmc::create(
+		&ctx,
+		&mm,
+		StudyPresaveFdaCrossReportedIndForCreate {
+			study_presave_id: study_id,
+			sequence_number: 1,
+			ind_number: "IND-123".into(),
+			deleted: Some(false),
+		},
+	)
+	.await?;
+	StudyPresaveFdaCrossReportedIndBmc::update(
+		&ctx,
+		&mm,
+		cross_reported_ind_id,
+		StudyPresaveFdaCrossReportedIndForUpdate {
+			ind_number: Some("IND-456".into()),
+			deleted: Some(true),
+			..Default::default()
+		},
+	)
+	.await?;
+	let cross_reported_ind =
+		StudyPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, cross_reported_ind_id)
+			.await?;
+	assert_eq!(cross_reported_ind.ind_number, "IND-456");
+	assert!(cross_reported_ind.deleted);
+	assert_eq!(
+		StudyPresaveFdaCrossReportedIndBmc::list_by_parent(&ctx, &mm, study_id)
+			.await?[0]
+			.id,
+		cross_reported_ind_id
+	);
+
 	let study_product_id = StudyPresaveProductBmc::create(
 		&ctx,
 		&mm,
@@ -2456,6 +2652,8 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	);
 
 	StudyPresaveProductBmc::delete(&ctx, &mm, study_product_id).await?;
+	StudyPresaveFdaCrossReportedIndBmc::delete(&ctx, &mm, cross_reported_ind_id)
+		.await?;
 	StudyPresaveRegistrationNumberBmc::delete(&ctx, &mm, registration_id).await?;
 	ProductPresaveSubstanceBmc::delete(&ctx, &mm, substance_id).await?;
 	ReceiverPresaveConsigneeBmc::delete(&ctx, &mm, consignee_id).await?;

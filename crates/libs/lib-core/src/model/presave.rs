@@ -1046,12 +1046,13 @@ impl ReceiverPresaveBmc {
 			.into_iter()
 			.any(|row| {
 				!row.deleted
-					&& normalized_text(row.original_manufacturer.as_deref())
-						.is_some_and(|manufacturer| {
-							receiver_name.as_ref().is_some_and(|receiver_name| {
-								receiver_name == &manufacturer
-							})
-						})
+					&& (row.receiver_presave_id == Some(id)
+						|| normalized_text(row.original_manufacturer.as_deref())
+							.is_some_and(|manufacturer| {
+								receiver_name.as_ref().is_some_and(|receiver_name| {
+									receiver_name == &manufacturer
+								})
+							}))
 			});
 		if referenced {
 			Err(relationship_conflict(
@@ -1227,6 +1228,7 @@ pub struct ProductPresave {
 	pub organization_id: Uuid,
 	pub deleted: bool,
 	pub sender_presave_id: Option<Uuid>,
+	pub receiver_presave_id: Option<Uuid>,
 	pub product_id: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
@@ -1255,6 +1257,7 @@ pub struct ProductPresave {
 #[derive(Deserialize)]
 pub struct ProductPresaveForCreate {
 	pub sender_presave_id: Option<Uuid>,
+	pub receiver_presave_id: Option<Uuid>,
 	pub product_id: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
@@ -1280,6 +1283,7 @@ pub struct ProductPresaveForCreate {
 struct ProductPresaveForInsert {
 	organization_id: Uuid,
 	sender_presave_id: Option<Uuid>,
+	receiver_presave_id: Option<Uuid>,
 	product_id: Option<String>,
 	medicinal_product: Option<String>,
 	medicinal_product_notation: Option<String>,
@@ -1308,6 +1312,7 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 		ProductPresaveForInsert {
 			organization_id,
 			sender_presave_id: self.sender_presave_id,
+			receiver_presave_id: self.receiver_presave_id,
 			product_id: self.product_id,
 			medicinal_product: self.medicinal_product,
 			medicinal_product_notation: self.medicinal_product_notation,
@@ -1335,6 +1340,7 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 pub struct ProductPresaveForUpdate {
 	pub deleted: Option<bool>,
 	pub sender_presave_id: Option<Uuid>,
+	pub receiver_presave_id: Option<Uuid>,
 	pub product_id: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
@@ -1369,6 +1375,8 @@ impl ProductPresaveBmc {
 		data: ProductPresaveForCreate,
 	) -> Result<Uuid> {
 		Self::ensure_sender_assignment_allowed(ctx, data.sender_presave_id)?;
+		Self::ensure_receiver_assignment_allowed(ctx, mm, data.receiver_presave_id)
+			.await?;
 		Self::validate_identity(
 			data.sender_presave_id,
 			data.product_id.as_deref(),
@@ -1420,6 +1428,14 @@ impl ProductPresaveBmc {
 		data: ProductPresaveForUpdate,
 	) -> Result<()> {
 		Self::ensure_sender_assignment_allowed(ctx, data.sender_presave_id)?;
+		if data.deleted != Some(true) {
+			Self::ensure_receiver_assignment_allowed(
+				ctx,
+				mm,
+				data.receiver_presave_id,
+			)
+			.await?;
+		}
 		if data.deleted == Some(true) {
 			Self::ensure_not_referenced_by_studies(ctx, mm, id).await?;
 			if any_user_scope_contains(ctx, mm, id, |u| {
@@ -1494,6 +1510,29 @@ impl ProductPresaveBmc {
 			));
 		}
 
+		Ok(())
+	}
+
+	async fn ensure_receiver_assignment_allowed(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		receiver_presave_id: Option<Uuid>,
+	) -> Result<()> {
+		let Some(receiver_id) = receiver_presave_id else {
+			return Ok(());
+		};
+		let receiver = ReceiverPresaveBmc::get(ctx, mm, receiver_id)
+			.await
+			.map_err(|_| {
+				relationship_conflict(
+					"product requires an active receiver presave in the same organization",
+				)
+			})?;
+		if receiver.deleted || receiver.organization_id != ctx.organization_id() {
+			return Err(relationship_conflict(
+				"product requires an active receiver presave in the same organization",
+			));
+		}
 		Ok(())
 	}
 
@@ -1931,6 +1970,8 @@ pub struct StudyPresave {
 	pub sponsor_study_number: Option<String>,
 	pub sponsor_study_number_kind: Option<String>,
 	pub study_type_reaction: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 	pub edc_sync: Option<bool>,
 	pub exclude_case_key_from_sync: Option<bool>,
 	pub created_at: OffsetDateTime,
@@ -1947,6 +1988,8 @@ pub struct StudyPresaveForCreate {
 	pub sponsor_study_number: Option<String>,
 	pub sponsor_study_number_kind: Option<String>,
 	pub study_type_reaction: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 	pub edc_sync: Option<bool>,
 	pub exclude_case_key_from_sync: Option<bool>,
 }
@@ -1960,6 +2003,8 @@ struct StudyPresaveForInsert {
 	sponsor_study_number: Option<String>,
 	sponsor_study_number_kind: Option<String>,
 	study_type_reaction: Option<String>,
+	fda_ind_number_occurred: Option<String>,
+	fda_pre_anda_number_occurred: Option<String>,
 	edc_sync: Option<bool>,
 	exclude_case_key_from_sync: Option<bool>,
 }
@@ -1976,6 +2021,8 @@ impl IntoOrgScopedCreate for StudyPresaveForCreate {
 			sponsor_study_number: self.sponsor_study_number,
 			sponsor_study_number_kind: self.sponsor_study_number_kind,
 			study_type_reaction: self.study_type_reaction,
+			fda_ind_number_occurred: self.fda_ind_number_occurred,
+			fda_pre_anda_number_occurred: self.fda_pre_anda_number_occurred,
 			edc_sync: self.edc_sync,
 			exclude_case_key_from_sync: self.exclude_case_key_from_sync,
 		}
@@ -2005,6 +2052,8 @@ pub struct StudyPresaveForUpdate {
 	pub sponsor_study_number: Option<String>,
 	pub sponsor_study_number_kind: Option<String>,
 	pub study_type_reaction: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 	pub edc_sync: Option<bool>,
 	pub exclude_case_key_from_sync: Option<bool>,
 }
@@ -2320,6 +2369,43 @@ impl StudyPresaveRegistrationNumberBmc {
 		Ok(rows)
 	}
 }
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct StudyPresaveFdaCrossReportedInd {
+	pub id: Uuid,
+	pub study_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub ind_number: String,
+	pub deleted: bool,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct StudyPresaveFdaCrossReportedIndForCreate {
+	pub study_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub ind_number: String,
+	pub deleted: Option<bool>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct StudyPresaveFdaCrossReportedIndForUpdate {
+	pub sequence_number: Option<i32>,
+	pub ind_number: Option<String>,
+	pub deleted: Option<bool>,
+}
+
+impl_child_bmc!(
+	StudyPresaveFdaCrossReportedIndBmc,
+	StudyPresaveFdaCrossReportedInd,
+	StudyPresaveFdaCrossReportedIndForCreate,
+	StudyPresaveFdaCrossReportedIndForUpdate,
+	"study_presave_fda_cross_reported_inds",
+	"study_presave_id"
+);
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct StudyPresaveProduct {

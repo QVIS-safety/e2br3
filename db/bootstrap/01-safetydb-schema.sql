@@ -262,6 +262,7 @@ CREATE TABLE IF NOT EXISTS product_presaves (
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
     deleted BOOLEAN NOT NULL DEFAULT false,
     sender_presave_id UUID,
+    receiver_presave_id UUID REFERENCES receiver_presaves(id) ON DELETE RESTRICT,
     product_id VARCHAR(255),
     medicinal_product VARCHAR(2000),
     medicinal_product_notation VARCHAR(50),
@@ -292,6 +293,13 @@ CREATE TABLE IF NOT EXISTS product_presaves (
         REFERENCES sender_presaves(id, organization_id)
         ON DELETE SET NULL (sender_presave_id)
 );
+
+ALTER TABLE product_presaves
+    ADD COLUMN IF NOT EXISTS receiver_presave_id UUID REFERENCES receiver_presaves(id) ON DELETE RESTRICT;
+
+CREATE INDEX IF NOT EXISTS idx_product_presaves_receiver
+    ON product_presaves(receiver_presave_id)
+    WHERE receiver_presave_id IS NOT NULL;
 
 
 CREATE TABLE IF NOT EXISTS product_presave_substances (
@@ -356,6 +364,8 @@ CREATE TABLE IF NOT EXISTS study_presaves (
     sponsor_study_number VARCHAR(50),
     sponsor_study_number_kind VARCHAR(50),
     study_type_reaction VARCHAR(50),
+    fda_ind_number_occurred VARCHAR(10),
+    fda_pre_anda_number_occurred VARCHAR(10),
     edc_sync BOOLEAN,
     exclude_case_key_from_sync BOOLEAN,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -373,6 +383,10 @@ CREATE TABLE IF NOT EXISTS study_presaves (
         ON DELETE SET NULL (product_presave_id)
 );
 
+ALTER TABLE study_presaves
+    ADD COLUMN IF NOT EXISTS fda_ind_number_occurred VARCHAR(10),
+    ADD COLUMN IF NOT EXISTS fda_pre_anda_number_occurred VARCHAR(10);
+
 CREATE TABLE IF NOT EXISTS study_presave_registration_numbers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,
@@ -386,6 +400,20 @@ CREATE TABLE IF NOT EXISTS study_presave_registration_numbers (
     updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
 
     CONSTRAINT study_presave_registration_numbers_sequence_unique UNIQUE (study_presave_id, sequence_number)
+);
+
+CREATE TABLE IF NOT EXISTS study_presave_fda_cross_reported_inds (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    study_presave_id UUID NOT NULL REFERENCES study_presaves(id) ON DELETE CASCADE,
+    sequence_number INTEGER NOT NULL,
+    ind_number VARCHAR(10) NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT,
+
+    CONSTRAINT study_presave_fda_cross_reported_inds_sequence_unique UNIQUE (study_presave_id, sequence_number)
 );
 
 CREATE TABLE IF NOT EXISTS study_presave_products (
@@ -451,6 +479,7 @@ CREATE INDEX idx_reporter_presaves_org ON reporter_presaves(organization_id);
 CREATE INDEX idx_study_presaves_org ON study_presaves(organization_id);
 CREATE INDEX idx_study_presaves_product ON study_presaves(product_presave_id);
 CREATE INDEX idx_study_presave_registration_numbers_parent ON study_presave_registration_numbers(study_presave_id);
+CREATE INDEX idx_study_presave_fda_cross_reported_inds_parent ON study_presave_fda_cross_reported_inds(study_presave_id);
 CREATE INDEX idx_study_presave_products_parent ON study_presave_products(study_presave_id);
 CREATE INDEX idx_study_presave_reporters_parent ON study_presave_reporters(study_presave_id);
 CREATE INDEX idx_narrative_presaves_org ON narrative_presaves(organization_id);
@@ -1829,6 +1858,26 @@ CREATE POLICY study_presave_registration_numbers_via_parent ON study_presave_reg
         EXISTS (
             SELECT 1 FROM study_presaves p
             WHERE p.id = study_presave_registration_numbers.study_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    );
+
+ALTER TABLE study_presave_fda_cross_reported_inds ENABLE ROW LEVEL SECURITY;
+ALTER TABLE study_presave_fda_cross_reported_inds FORCE ROW LEVEL SECURITY;
+CREATE POLICY study_presave_fda_cross_reported_inds_via_parent ON study_presave_fda_cross_reported_inds
+    FOR ALL
+    TO e2br3_app_role
+    USING (
+        EXISTS (
+            SELECT 1 FROM study_presaves p
+            WHERE p.id = study_presave_fda_cross_reported_inds.study_presave_id
+            AND (p.organization_id = current_organization_id() OR is_current_user_admin())
+        )
+    )
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM study_presaves p
+            WHERE p.id = study_presave_fda_cross_reported_inds.study_presave_id
             AND (p.organization_id = current_organization_id() OR is_current_user_admin())
         )
     );
