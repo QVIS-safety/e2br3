@@ -4,7 +4,6 @@ use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
 use crate::model::presave_lifecycle::{PresaveKind, PresaveLifecycleService};
 use crate::model::store::set_full_context_from_ctx_dbx;
-use crate::model::user::{User, UserBmc};
 use crate::model::ModelManager;
 use crate::model::Result;
 use modql::field::{Fields, HasSeaFields};
@@ -217,30 +216,6 @@ fn relationship_conflict(message: &str) -> crate::model::Error {
 	}
 }
 
-/// Whether a user access-scope (stored as a JSON array of id strings, e.g.
-/// `["id1","id2"]`) contains the given presave id. Used by the in-use delete
-/// guards to block deleting a presave that is still granted to a user
-/// (Admin > User).
-fn id_scope_contains(scope_json: Option<&str>, id: Uuid) -> bool {
-	let target = id.to_string();
-	match scope_json.and_then(|raw| serde_json::from_str::<Vec<String>>(raw).ok()) {
-		Some(ids) => ids.iter().any(|item| item.trim() == target),
-		None => false,
-	}
-}
-
-/// True when any user in the organization grants access to `id` via the
-/// access-scope field selected by `pick`.
-async fn any_user_scope_contains(
-	ctx: &Ctx,
-	mm: &ModelManager,
-	id: Uuid,
-	pick: impl Fn(&User) -> Option<&str>,
-) -> Result<bool> {
-	let users = UserBmc::list(ctx, mm, None, None).await?;
-	Ok(users.iter().any(|user| id_scope_contains(pick(user), id)))
-}
-
 fn validation_error(message: &str) -> crate::model::Error {
 	crate::model::Error::Validation {
 		message: message.to_string(),
@@ -430,36 +405,28 @@ impl SenderPresaveBmc {
 		data: SenderPresaveForUpdate,
 	) -> Result<()> {
 		if data.deleted == Some(true) {
-			Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
-			if any_user_scope_contains(ctx, mm, id, |u| {
-				u.access_sender_ids.as_deref()
-			})
-			.await?
-			{
-				return Err(relationship_conflict(
-					"sender presave is granted to users",
-				));
-			}
-		} else {
-			let current = Self::get(ctx, mm, id).await?;
-			let sender_type = data
-				.sender_type
-				.as_deref()
-				.or(current.sender_type.as_deref());
-			let organization_name = data
-				.organization_name
-				.as_deref()
-				.or(current.organization_name.as_deref());
-			Self::validate_identity(sender_type, organization_name)?;
-			Self::ensure_unique_identity(
-				ctx,
-				mm,
-				Some(id),
-				sender_type,
-				organization_name,
-			)
-			.await?;
+			return Err(validation_error(
+				"presave deletion must use lifecycle service",
+			));
 		}
+		let current = Self::get(ctx, mm, id).await?;
+		let sender_type = data
+			.sender_type
+			.as_deref()
+			.or(current.sender_type.as_deref());
+		let organization_name = data
+			.organization_name
+			.as_deref()
+			.or(current.organization_name.as_deref());
+		Self::validate_identity(sender_type, organization_name)?;
+		Self::ensure_unique_identity(
+			ctx,
+			mm,
+			Some(id),
+			sender_type,
+			organization_name,
+		)
+		.await?;
 		base_uuid::update::<Self, _>(ctx, mm, id, data).await
 	}
 
@@ -518,24 +485,6 @@ impl SenderPresaveBmc {
 		});
 		if duplicate {
 			Err(duplicate_identity("sender presave duplicate identity"))
-		} else {
-			Ok(())
-		}
-	}
-
-	async fn ensure_not_referenced_by_products(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		id: Uuid,
-	) -> Result<()> {
-		let referenced = ProductPresaveBmc::list(ctx, mm, None)
-			.await?
-			.into_iter()
-			.any(|row| !row.deleted && row.sender_presave_id == Some(id));
-		if referenced {
-			Err(relationship_conflict(
-				"sender presave is used by product presaves",
-			))
 		} else {
 			Ok(())
 		}
@@ -821,78 +770,77 @@ impl ReceiverPresaveBmc {
 		data: ReceiverPresaveForUpdate,
 	) -> Result<()> {
 		if data.deleted == Some(true) {
-			Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
-		} else {
-			let current = Self::get(ctx, mm, id).await?;
-			let receiver_type = data.receiver_type.as_deref();
-			let current_receiver_type = current.receiver_type.as_deref();
-			let organization_name = data
-				.organization_name
-				.as_deref()
-				.or(current.organization_name.as_deref());
-			Self::validate_update_identity(
-				receiver_type,
-				current_receiver_type,
-				organization_name,
-			)?;
-			let clear_nsae_non_solicited_day_count =
-				data.nsae_non_solicited_not_applicable == Some(true);
-			let clear_sae_non_solicited_day_count =
-				data.sae_non_solicited_not_applicable == Some(true);
-			let clear_nsae_solicited_day_count =
-				data.nsae_solicited_not_applicable == Some(true);
-			let clear_sae_solicited_day_count =
-				data.sae_solicited_not_applicable == Some(true);
-			Self::validate_timeline(
-				if clear_nsae_non_solicited_day_count {
-					None
-				} else {
-					data.nsae_non_solicited_day_count
-						.or(current.nsae_non_solicited_day_count)
-				},
-				data.nsae_non_solicited_not_applicable
-					.or(current.nsae_non_solicited_not_applicable),
-				if clear_sae_non_solicited_day_count {
-					None
-				} else {
-					data.sae_non_solicited_day_count
-						.or(current.sae_non_solicited_day_count)
-				},
-				data.sae_non_solicited_not_applicable
-					.or(current.sae_non_solicited_not_applicable),
-				if clear_nsae_solicited_day_count {
-					None
-				} else {
-					data.nsae_solicited_day_count
-						.or(current.nsae_solicited_day_count)
-				},
-				data.nsae_solicited_not_applicable
-					.or(current.nsae_solicited_not_applicable),
-				if clear_sae_solicited_day_count {
-					None
-				} else {
-					data.sae_solicited_day_count
-						.or(current.sae_solicited_day_count)
-				},
-				data.sae_solicited_not_applicable
-					.or(current.sae_solicited_not_applicable),
-			)?;
-			Self::ensure_unique_identity(ctx, mm, Some(id), organization_name)
-				.await?;
-			base_uuid::update::<Self, _>(ctx, mm, id, data).await?;
-			Self::clear_not_applicable_day_counts(
-				ctx,
-				mm,
-				id,
-				clear_nsae_non_solicited_day_count,
-				clear_sae_non_solicited_day_count,
-				clear_nsae_solicited_day_count,
-				clear_sae_solicited_day_count,
-			)
-			.await?;
-			return Ok(());
+			return Err(validation_error(
+				"presave deletion must use lifecycle service",
+			));
 		}
-		base_uuid::update::<Self, _>(ctx, mm, id, data).await
+		let current = Self::get(ctx, mm, id).await?;
+		let receiver_type = data.receiver_type.as_deref();
+		let current_receiver_type = current.receiver_type.as_deref();
+		let organization_name = data
+			.organization_name
+			.as_deref()
+			.or(current.organization_name.as_deref());
+		Self::validate_update_identity(
+			receiver_type,
+			current_receiver_type,
+			organization_name,
+		)?;
+		let clear_nsae_non_solicited_day_count =
+			data.nsae_non_solicited_not_applicable == Some(true);
+		let clear_sae_non_solicited_day_count =
+			data.sae_non_solicited_not_applicable == Some(true);
+		let clear_nsae_solicited_day_count =
+			data.nsae_solicited_not_applicable == Some(true);
+		let clear_sae_solicited_day_count =
+			data.sae_solicited_not_applicable == Some(true);
+		Self::validate_timeline(
+			if clear_nsae_non_solicited_day_count {
+				None
+			} else {
+				data.nsae_non_solicited_day_count
+					.or(current.nsae_non_solicited_day_count)
+			},
+			data.nsae_non_solicited_not_applicable
+				.or(current.nsae_non_solicited_not_applicable),
+			if clear_sae_non_solicited_day_count {
+				None
+			} else {
+				data.sae_non_solicited_day_count
+					.or(current.sae_non_solicited_day_count)
+			},
+			data.sae_non_solicited_not_applicable
+				.or(current.sae_non_solicited_not_applicable),
+			if clear_nsae_solicited_day_count {
+				None
+			} else {
+				data.nsae_solicited_day_count
+					.or(current.nsae_solicited_day_count)
+			},
+			data.nsae_solicited_not_applicable
+				.or(current.nsae_solicited_not_applicable),
+			if clear_sae_solicited_day_count {
+				None
+			} else {
+				data.sae_solicited_day_count
+					.or(current.sae_solicited_day_count)
+			},
+			data.sae_solicited_not_applicable
+				.or(current.sae_solicited_not_applicable),
+		)?;
+		Self::ensure_unique_identity(ctx, mm, Some(id), organization_name).await?;
+		base_uuid::update::<Self, _>(ctx, mm, id, data).await?;
+		Self::clear_not_applicable_day_counts(
+			ctx,
+			mm,
+			id,
+			clear_nsae_non_solicited_day_count,
+			clear_sae_non_solicited_day_count,
+			clear_nsae_solicited_day_count,
+			clear_sae_solicited_day_count,
+		)
+		.await?;
+		Ok(())
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
@@ -1024,35 +972,6 @@ impl ReceiverPresaveBmc {
 		});
 		if duplicate {
 			Err(duplicate_identity("receiver presave duplicate identity"))
-		} else {
-			Ok(())
-		}
-	}
-
-	async fn ensure_not_referenced_by_products(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		id: Uuid,
-	) -> Result<()> {
-		let receiver = Self::get(ctx, mm, id).await?;
-		let receiver_name = normalized_text(receiver.organization_name.as_deref());
-		let referenced = ProductPresaveBmc::list(ctx, mm, None)
-			.await?
-			.into_iter()
-			.any(|row| {
-				!row.deleted
-					&& (row.receiver_presave_id == Some(id)
-						|| normalized_text(row.original_manufacturer.as_deref())
-							.is_some_and(|manufacturer| {
-								receiver_name.as_ref().is_some_and(|receiver_name| {
-									receiver_name == &manufacturer
-								})
-							}))
-			});
-		if referenced {
-			Err(relationship_conflict(
-				"receiver presave is used by product presaves",
-			))
 		} else {
 			Ok(())
 		}
@@ -1422,27 +1341,15 @@ impl ProductPresaveBmc {
 		id: Uuid,
 		data: ProductPresaveForUpdate,
 	) -> Result<()> {
-		Self::ensure_sender_assignment_allowed(ctx, data.sender_presave_id)?;
-		if data.deleted != Some(true) {
-			Self::ensure_receiver_assignment_allowed(
-				ctx,
-				mm,
-				data.receiver_presave_id,
-			)
-			.await?;
-		}
 		if data.deleted == Some(true) {
-			Self::ensure_not_referenced_by_studies(ctx, mm, id).await?;
-			if any_user_scope_contains(ctx, mm, id, |u| {
-				u.access_product_ids.as_deref()
-			})
-			.await?
-			{
-				return Err(relationship_conflict(
-					"product presave is granted to users",
-				));
-			}
-		} else {
+			return Err(validation_error(
+				"presave deletion must use lifecycle service",
+			));
+		}
+		Self::ensure_sender_assignment_allowed(ctx, data.sender_presave_id)?;
+		Self::ensure_receiver_assignment_allowed(ctx, mm, data.receiver_presave_id)
+			.await?;
+		{
 			let current = Self::get(ctx, mm, id).await?;
 			let sender_presave_id =
 				data.sender_presave_id.or(current.sender_presave_id);
@@ -1545,24 +1452,6 @@ impl ProductPresaveBmc {
 		});
 		if duplicate {
 			Err(duplicate_identity("product presave duplicate identity"))
-		} else {
-			Ok(())
-		}
-	}
-
-	async fn ensure_not_referenced_by_studies(
-		ctx: &Ctx,
-		mm: &ModelManager,
-		id: Uuid,
-	) -> Result<()> {
-		let referenced = StudyPresaveBmc::list(ctx, mm, None)
-			.await?
-			.into_iter()
-			.any(|row| !row.deleted && row.product_presave_id == Some(id));
-		if referenced {
-			Err(relationship_conflict(
-				"product presave is used by study presaves",
-			))
 		} else {
 			Ok(())
 		}
@@ -1824,6 +1713,11 @@ impl ReporterPresaveBmc {
 		id: Uuid,
 		data: ReporterPresaveForUpdate,
 	) -> Result<()> {
+		if data.deleted == Some(true) {
+			return Err(validation_error(
+				"presave deletion must use lifecycle service",
+			));
+		}
 		Self::validate_null_flavors(
 			data.reporter_name_null_flavor.as_deref(),
 			data.reporter_address_null_flavor.as_deref(),
@@ -2133,13 +2027,10 @@ impl StudyPresaveBmc {
 		data: StudyPresaveForUpdate,
 	) -> Result<()> {
 		data.validate_fields()?;
-		if data.deleted == Some(true)
-			&& any_user_scope_contains(ctx, mm, id, |u| {
-				u.access_study_ids.as_deref()
-			})
-			.await?
-		{
-			return Err(relationship_conflict("study presave is granted to users"));
+		if data.deleted == Some(true) {
+			return Err(validation_error(
+				"presave deletion must use lifecycle service",
+			));
 		}
 		if data.deleted != Some(true) {
 			let current = Self::get(ctx, mm, id).await?;
@@ -2581,6 +2472,11 @@ impl NarrativePresaveBmc {
 		id: Uuid,
 		data: NarrativePresaveForUpdate,
 	) -> Result<()> {
+		if data.deleted == Some(true) {
+			return Err(validation_error(
+				"presave deletion must use lifecycle service",
+			));
+		}
 		if data.deleted != Some(true) {
 			let current = Self::get(ctx, mm, id).await?;
 			let case_narrative = data
@@ -2632,37 +2528,5 @@ impl NarrativePresaveBmc {
 		} else {
 			Ok(())
 		}
-	}
-}
-
-#[cfg(test)]
-mod presave_guard_tests {
-	use super::id_scope_contains;
-	use sqlx::types::Uuid;
-
-	#[test]
-	fn scope_contains_matches_json_array_membership() {
-		let id = Uuid::new_v4();
-		let other = Uuid::new_v4();
-		let json = format!("[\"{id}\",\"{other}\"]");
-		assert!(id_scope_contains(Some(&json), id));
-		assert!(id_scope_contains(Some(&json), other));
-	}
-
-	#[test]
-	fn scope_absent_or_empty_is_false() {
-		let id = Uuid::new_v4();
-		assert!(!id_scope_contains(None, id));
-		assert!(!id_scope_contains(Some("[]"), id));
-		assert!(!id_scope_contains(
-			Some(&format!("[\"{}\"]", Uuid::new_v4())),
-			id
-		));
-	}
-
-	#[test]
-	fn malformed_scope_is_false_not_panic() {
-		let id = Uuid::new_v4();
-		assert!(!id_scope_contains(Some("not json"), id));
 	}
 }
