@@ -91,6 +91,24 @@ All case queries include organization isolation. Presave-to-presave queries rely
 
 User assignment checks compare only the canonical lowercase UUID string for the presave ID. Sender organization names, Product brand names, and Study sponsor study numbers are no longer valid scope identifiers. Existing non-UUID values in `access_sender_ids`, `access_product_ids`, and `access_study_ids` are not converted, do not match any presave, and are ignored. New scope writes must reject non-UUID values.
 
+## UUID Authorization Projection
+
+UUID-only scope applies to the complete authorization surface, not only lifecycle deletion. The canonical comparison is:
+
+| User scope | Case projection |
+|---|---|
+| `access_sender_ids` | `sender_information.source_sender_presave_id` |
+| `access_product_ids` | `drug_information.source_product_presave_id` |
+| `access_study_ids` | `study_information.source_study_presave_id` |
+
+The projection is used by Case list, read, update, and delete authorization; Import, Export, and Submission history visibility; Routing profile Sender options; INFO Presave visibility; and lifecycle user-assignment guards. Organization names, Sender codes, Product brand names, Product names, Study numbers, and message-header values never satisfy a presave scope.
+
+An unset or empty scope dimension is unrestricted, preserving the existing empty-scope rule. A non-empty scope dimension requires at least one matching source UUID in that dimension. A Case with no source UUID for a restricted dimension is inaccessible to the scoped user. When multiple scope dimensions are non-empty, the Case must satisfy every restricted dimension; multiple Product or Study rows use any-match within their own dimension.
+
+`active_sender_identifier` is renamed only semantically, not at the API or storage layer: its value must be a Sender Presave UUID. New create, update, and routing-selection writes reject non-UUID values with HTTP 400. Existing non-UUID values remain stored but are ineffective. Routing options return and compare Sender Presave UUIDs while retaining current display labels for presentation.
+
+UUID parsing, canonical lowercase serialization, empty-scope handling, and source-UUID comparison live in shared `lib-rest-core` authorization helpers. REST modules must not implement local display-name fallback. Lifecycle assignment checks consume the same UUID parser so access enforcement and deletion protection cannot disagree.
+
 ## Transaction and Concurrency
 
 The lifecycle service opens one transaction, installs the full request context on that transaction, locks the target presave row with `SELECT ... FOR UPDATE`, evaluates all dependency queries with `SELECT EXISTS`, and performs the final mutation before commit.
