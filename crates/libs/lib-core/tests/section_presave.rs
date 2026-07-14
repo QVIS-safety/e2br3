@@ -56,11 +56,95 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"narrative_presaves",
 ];
 
-fn is_foreign_key_violation(err: &SqlxError) -> bool {
+fn is_inactive_presave_reference(err: &SqlxError) -> bool {
 	match err {
-		SqlxError::Database(db_err) => db_err.code().as_deref() == Some("23503"),
+		SqlxError::Database(db_err) => db_err.code().as_deref() == Some("P2001"),
 		_ => false,
 	}
+}
+
+#[test]
+fn inactive_presave_reference_migration_covers_every_uuid_link() {
+	let migration = include_str!(
+		"../../../../db/migrations/20260714_presave_lifecycle_guards.sql"
+	);
+	for trigger in [
+		"guard_sender_information_source_sender_presave",
+		"guard_drug_information_source_product_presave",
+		"guard_study_information_source_study_presave",
+		"guard_primary_sources_source_reporter_presave",
+		"guard_narrative_information_source_narrative_presave",
+		"guard_product_presaves_sender_presave",
+		"guard_product_presaves_receiver_presave",
+		"guard_study_presaves_product_presave",
+		"guard_study_presave_products_product_presave",
+		"guard_study_presave_reporters_reporter_presave",
+	] {
+		assert!(migration.contains(trigger), "missing trigger {trigger}");
+	}
+	assert!(migration.contains("ERRCODE = 'P2001'"));
+	assert!(migration.contains("FOR KEY SHARE"));
+}
+
+#[serial]
+#[tokio::test]
+async fn inactive_presave_reference_returns_p2001_for_receiver_link() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create("Trigger sender".into()),
+	)
+	.await?;
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			receiver_type: Some("Regulatory Authority".into()),
+			organization_name: Some(format!("Archived receiver {}", Uuid::new_v4())),
+			receiver_identifier: None,
+			day_count_rule: None,
+			nsae_solicited_day_count: None,
+			nsae_solicited_not_applicable: None,
+			nsae_non_solicited_day_count: None,
+			nsae_non_solicited_not_applicable: None,
+			sae_solicited_day_count: None,
+			sae_solicited_not_applicable: None,
+			sae_non_solicited_day_count: None,
+			sae_non_solicited_not_applicable: None,
+			description: None,
+		},
+	)
+	.await?;
+
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, demo_user_id()).await?;
+	set_org_context(&mut tx, demo_org_id(), ROLE_SPONSOR_ADMIN_CRO).await?;
+	sqlx::query("UPDATE receiver_presaves SET deleted = true WHERE id = $1")
+		.bind(receiver_id)
+		.execute(&mut *tx)
+		.await?;
+	let result = sqlx::query(
+		"INSERT INTO product_presaves (
+			id, organization_id, sender_presave_id, receiver_presave_id,
+			created_by, updated_by
+		) VALUES ($1, $2, $3, $4, $5, $5)",
+	)
+	.bind(Uuid::new_v4())
+	.bind(demo_org_id())
+	.bind(sender_id)
+	.bind(receiver_id)
+	.bind(demo_user_id())
+	.execute(&mut *tx)
+	.await;
+	assert!(
+		matches!(result, Err(ref error) if error.as_database_error().and_then(|db| db.code()).as_deref() == Some("P2001")),
+		"expected P2001, got {result:?}"
+	);
+	tx.rollback().await?;
+	Ok(())
 }
 
 fn expect_store_error<T>(result: lib_core::model::Result<T>, expected: &str) {
@@ -986,8 +1070,8 @@ async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
 	.execute(&mut *invalid_tx)
 	.await;
 	assert!(
-		matches!(cross_org_product, Err(ref err) if is_foreign_key_violation(err)),
-		"cross-org product->sender link should fail composite FK: {cross_org_product:?}"
+		matches!(cross_org_product, Err(ref err) if is_inactive_presave_reference(err)),
+		"cross-org product->sender link should fail the active-reference boundary: {cross_org_product:?}"
 	);
 	invalid_tx.rollback().await?;
 
@@ -1007,8 +1091,8 @@ async fn section_presave_relationships_reject_cross_org_links() -> Result<()> {
 	.execute(&mut *invalid_tx)
 	.await;
 	assert!(
-		matches!(cross_org_study, Err(ref err) if is_foreign_key_violation(err)),
-		"cross-org study->product link should fail composite FK: {cross_org_study:?}"
+		matches!(cross_org_study, Err(ref err) if is_inactive_presave_reference(err)),
+		"cross-org study->product link should fail the active-reference boundary: {cross_org_study:?}"
 	);
 	invalid_tx.rollback().await?;
 

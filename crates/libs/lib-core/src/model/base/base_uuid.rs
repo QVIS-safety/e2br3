@@ -65,7 +65,15 @@ where
 	// -- Execute the query
 	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 	let sqlx_query = sqlx::query_as_with::<_, (Uuid,), _>(&sql, values);
-	let (id,) = dbx.fetch_one(sqlx_query).await?;
+	let (id,) = match dbx.fetch_one(sqlx_query).await {
+		Ok(row) => row,
+		Err(err) => {
+			dbx.rollback_txn().await?;
+			return Err(
+				crate::model::Error::from(err).resolve_inactive_presave_reference()
+			);
+		}
+	};
 
 	// Commit transaction (triggers fire before commit)
 	dbx.commit_txn().await?;
@@ -110,7 +118,9 @@ where
 		}
 		Err(err) => {
 			dbx.rollback_txn().await?;
-			return Err(err.into());
+			return Err(
+				crate::model::Error::from(err).resolve_inactive_presave_reference()
+			);
 		}
 	};
 	dbx.commit_txn().await?;
@@ -172,7 +182,9 @@ where
 		Ok(count) => count,
 		Err(err) => {
 			dbx.rollback_txn().await?;
-			return Err(err.into());
+			return Err(
+				crate::model::Error::from(err).resolve_inactive_presave_reference()
+			);
 		}
 	};
 
