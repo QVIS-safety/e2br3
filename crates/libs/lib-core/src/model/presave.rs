@@ -2371,6 +2371,43 @@ impl StudyPresaveRegistrationNumberBmc {
 }
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct StudyPresaveFdaCrossReportedInd {
+	pub id: Uuid,
+	pub study_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub ind_number: String,
+	pub deleted: bool,
+	pub created_at: OffsetDateTime,
+	pub updated_at: OffsetDateTime,
+	pub created_by: Uuid,
+	pub updated_by: Option<Uuid>,
+}
+
+#[derive(Fields, Deserialize)]
+pub struct StudyPresaveFdaCrossReportedIndForCreate {
+	pub study_presave_id: Uuid,
+	pub sequence_number: i32,
+	pub ind_number: String,
+	pub deleted: Option<bool>,
+}
+
+#[derive(Default, Fields, Deserialize)]
+pub struct StudyPresaveFdaCrossReportedIndForUpdate {
+	pub sequence_number: Option<i32>,
+	pub ind_number: Option<String>,
+	pub deleted: Option<bool>,
+}
+
+impl_child_bmc!(
+	StudyPresaveFdaCrossReportedIndBmc,
+	StudyPresaveFdaCrossReportedInd,
+	StudyPresaveFdaCrossReportedIndForCreate,
+	StudyPresaveFdaCrossReportedIndForUpdate,
+	"study_presave_fda_cross_reported_inds",
+	"study_presave_id"
+);
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
 pub struct StudyPresaveProduct {
 	pub id: Uuid,
 	pub study_presave_id: Uuid,
