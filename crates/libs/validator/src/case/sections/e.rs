@@ -1,9 +1,10 @@
 use super::rule_table::{
 	eval_catalog_values, eval_companions, eval_indexed, eval_indexed_constraints,
 	eval_indexed_derived_length, eval_indexed_future_dates, eval_indexed_length,
-	eval_indexed_meddra, CatalogValueRule, CompanionRule, DateValues,
-	IndexedConstraintRule, IndexedDerivedLengthRule, IndexedFutureDateRule,
-	IndexedLengthRule, IndexedMeddraRule, IndexedRule, RuleValue,
+	eval_indexed_meddra, eval_violations, CatalogValueRule, CompanionRule,
+	DateValues, IndexedConstraintRule, IndexedDerivedLengthRule,
+	IndexedFutureDateRule, IndexedLengthRule, IndexedMeddraRule, IndexedRule,
+	RuleValue, ViolationRule,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
@@ -37,6 +38,27 @@ const E_FDA_CATALOG_VALUE_RULES: &[CatalogValueRule<FdaReactionRuleView>] =
 			RuleValue::borrowed(item.required_intervention.as_deref(), None)
 		},
 		facts: |item| item.facts,
+	}];
+
+struct ECriteriaViolationView {
+	path: String,
+	missing_serious_criteria: bool,
+	has_non_ni_null_flavor: bool,
+}
+
+const E_CRITERIA_REQUIRED_VIOLATION_RULES: &[ViolationRule<
+	ECriteriaViolationView,
+>] = &[ViolationRule {
+	code: "ICH.E.i.3.2.CRITERIA.REQUIRED",
+	path: |item| item.path.clone(),
+	violated: |item| item.missing_serious_criteria,
+}];
+
+const E_NI_ONLY_VIOLATION_RULES: &[ViolationRule<ECriteriaViolationView>] =
+	&[ViolationRule {
+		code: "ICH.E.i.3.2.NI.ONLY",
+		path: |item| item.path.clone(),
+		violated: |item| item.has_non_ni_null_flavor,
 	}];
 
 const E_REACTION_VALUE_RULES: &[IndexedRule<Reaction>] = &[
@@ -415,28 +437,17 @@ pub(crate) fn collect_ich_issues(
 		E_REACTION_DERIVED_LENGTH_RULES,
 	);
 
-	validation_ctx
+	let criteria_violations = validation_ctx
 		.reactions
 		.iter()
 		.enumerate()
-		.for_each(|(idx, reaction)| {
-			// E.i.3.2 seriousness criteria rules
-			if reaction.serious == Some(true) {
-				let any_criteria_true = reaction.criteria_death
-					|| reaction.criteria_life_threatening
-					|| reaction.criteria_hospitalization
-					|| reaction.criteria_disabling
-					|| reaction.criteria_congenital_anomaly
-					|| reaction.criteria_other_medically_important;
-				if !any_criteria_true {
-					push_issue_by_code(
-						issues,
-						"ICH.E.i.3.2.CRITERIA.REQUIRED",
-						format!("reactions.{idx}.seriousnessCriteria"),
-					);
-				}
-			}
-
+		.map(|(idx, reaction)| {
+			let any_criteria_true = reaction.criteria_death
+				|| reaction.criteria_life_threatening
+				|| reaction.criteria_hospitalization
+				|| reaction.criteria_disabling
+				|| reaction.criteria_congenital_anomaly
+				|| reaction.criteria_other_medically_important;
 			let criteria_null_flavors = [
 				reaction.criteria_death_null_flavor.as_deref(),
 				reaction.criteria_life_threatening_null_flavor.as_deref(),
@@ -451,14 +462,20 @@ pub(crate) fn collect_ich_issues(
 				nf.map(str::trim)
 					.is_some_and(|v| !v.eq_ignore_ascii_case("NI"))
 			});
-			if has_non_ni_null_flavor {
-				push_issue_by_code(
-					issues,
-					"ICH.E.i.3.2.NI.ONLY",
-					format!("reactions.{idx}.seriousnessCriteria"),
-				);
+			ECriteriaViolationView {
+				path: format!("reactions.{idx}.seriousnessCriteria"),
+				missing_serious_criteria: reaction.serious == Some(true)
+					&& !any_criteria_true,
+				has_non_ni_null_flavor,
 			}
-		});
+		})
+		.collect::<Vec<_>>();
+	eval_violations(
+		issues,
+		&criteria_violations,
+		E_CRITERIA_REQUIRED_VIOLATION_RULES,
+	);
+	eval_violations(issues, &criteria_violations, E_NI_ONLY_VIOLATION_RULES);
 }
 
 pub(crate) fn collect_fda_issues(
@@ -516,6 +533,12 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	codes.extend(super::rule_table::table_rule_codes(
 		E_FDA_CATALOG_VALUE_RULES,
 	));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_CRITERIA_REQUIRED_VIOLATION_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_NI_ONLY_VIOLATION_RULES,
+	));
 	codes.extend(super::rule_table::indexed_meddra_rule_codes(
 		E_REACTION_MEDDRA_RULES,
 	));
@@ -524,7 +547,7 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 
 #[cfg(test)]
 pub(super) fn direct_rule_codes() -> &'static [&'static str] {
-	&["ICH.E.i.3.2.CRITERIA.REQUIRED", "ICH.E.i.3.2.NI.ONLY"]
+	&[]
 }
 
 #[cfg(test)]

@@ -4,11 +4,11 @@ use super::rule_table::{
 	eval_indexed_future_dates, eval_indexed_length,
 	eval_indexed_vocabulary_variants, eval_nested_constraints,
 	eval_nested_derived_length, eval_nested_length, eval_nested_meddra,
-	CatalogValueRule, CompanionRule, DateValues, GrandchildLengthRule,
-	IndexedConstraintRule, IndexedDerivedLengthRule, IndexedFutureDateRule,
-	IndexedLengthRule, IndexedRule, IndexedVocabularyVariantRule,
-	NestedConstraintRule, NestedDerivedLengthRule, NestedLengthRule,
-	NestedMeddraRule, RuleValue,
+	eval_violations, CatalogValueRule, CompanionRule, DateValues,
+	GrandchildLengthRule, IndexedConstraintRule, IndexedDerivedLengthRule,
+	IndexedFutureDateRule, IndexedLengthRule, IndexedRule,
+	IndexedVocabularyVariantRule, NestedConstraintRule, NestedDerivedLengthRule,
+	NestedLengthRule, NestedMeddraRule, RuleValue, ViolationRule,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
@@ -183,6 +183,9 @@ struct MfdsRelatednessRuleView {
 	method: Option<String>,
 	result_kr1: Option<String>,
 	result_kr2: Option<String>,
+	receiver_is_ct_or_cu: bool,
+	receiver_is_kr: bool,
+	receiver_is_fr: bool,
 	facts: RuleFacts,
 }
 
@@ -223,6 +226,48 @@ const G_MFDS_RELATEDNESS_CATALOG_VALUE_RULES: &[CatalogValueRule<
 		facts: |item| item.facts,
 	},
 ];
+
+const G_MFDS_METHOD_PROFILE_VIOLATION_RULES: &[ViolationRule<
+	MfdsRelatednessRuleView,
+>] = &[ViolationRule {
+	code: "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
+	path: |item| item.path("methodOfAssessment"),
+	violated: |item| {
+		let Some(code) = item.method.as_deref().map(str::trim) else {
+			return false;
+		};
+		let valid_code = matches!(code, "1" | "2");
+		let profile_valid = if item.receiver_is_ct_or_cu {
+			code == "2"
+		} else if item.receiver_is_kr {
+			code == "1"
+		} else if item.receiver_is_fr {
+			false
+		} else {
+			true
+		};
+		!valid_code || !profile_valid
+	},
+}];
+
+const G_MFDS_RESULT_PROFILE_VIOLATION_RULES: &[ViolationRule<
+	MfdsRelatednessRuleView,
+>] = &[ViolationRule {
+	code: "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
+	path: |item| item.path("resultOfAssessment"),
+	violated: |item| {
+		if item.method.as_deref().map(str::trim) != Some("1") {
+			return false;
+		}
+		item.result_kr1
+			.as_deref()
+			.map(str::trim)
+			.is_some_and(|code| {
+				!code.is_empty()
+					&& !matches!(code, "1" | "2" | "3" | "4" | "5" | "6" | "NA")
+			})
+	},
+}];
 
 fn resolve_drug_child_indices(
 	drug_indices: &HashMap<sqlx::types::Uuid, usize>,
@@ -1416,6 +1461,9 @@ pub(crate) fn collect_mfds_issues(
 				method: r.method_of_assessment.clone(),
 				result_kr1: r.result_of_assessment.clone(),
 				result_kr2: r.result_of_assessment_kr2.clone(),
+				receiver_is_ct_or_cu,
+				receiver_is_kr,
+				receiver_is_fr,
 				facts: RuleFacts {
 					mfds_relatedness_method_required_context: Some(
 						method_required_context,
@@ -1439,47 +1487,16 @@ pub(crate) fn collect_mfds_issues(
 		G_MFDS_RELATEDNESS_CATALOG_VALUE_RULES,
 	);
 
-	for relatedness in &relatedness_views {
-		let method_code = relatedness.method.as_deref().map(str::trim);
-		if let Some(code) = method_code {
-			let valid_code = code == "1" || code == "2";
-			let profile_valid = if receiver_is_ct_or_cu {
-				code == "2"
-			} else if receiver_is_kr {
-				code == "1"
-			} else if receiver_is_fr {
-				false
-			} else {
-				true
-			};
-			if !valid_code || !profile_valid {
-				push_issue_by_code(
-					issues,
-					"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
-					relatedness.path("methodOfAssessment"),
-				);
-			}
-		}
-		// G.k.9.i.2.r.3.KR.1 allowed values: WHO-UMC result must be 1..6 or the
-		// NA nullFlavor token. Only enforced when the method is WHO-UMC (1).
-		if method_code == Some("1") {
-			if let Some(result_code) =
-				relatedness.result_kr1.as_deref().map(str::trim)
-			{
-				if !result_code.is_empty()
-					&& !matches!(
-						result_code,
-						"1" | "2" | "3" | "4" | "5" | "6" | "NA"
-					) {
-					push_issue_by_code(
-						issues,
-						"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-						relatedness.path("resultOfAssessment"),
-					);
-				}
-			}
-		}
-	}
+	eval_violations(
+		issues,
+		&relatedness_views,
+		G_MFDS_METHOD_PROFILE_VIOLATION_RULES,
+	);
+	eval_violations(
+		issues,
+		&relatedness_views,
+		G_MFDS_RESULT_PROFILE_VIOLATION_RULES,
+	);
 }
 
 #[cfg(test)]
@@ -1535,6 +1552,8 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	add!(G_MFDS_DRUG_CATALOG_VALUE_RULES);
 	add!(G_MFDS_SUBSTANCE_CATALOG_VALUE_RULES);
 	add!(G_MFDS_RELATEDNESS_CATALOG_VALUE_RULES);
+	add!(G_MFDS_METHOD_PROFILE_VIOLATION_RULES);
+	add!(G_MFDS_RESULT_PROFILE_VIOLATION_RULES);
 	codes.extend(super::rule_table::nested_meddra_rule_codes(
 		G_INDICATION_MEDDRA_RULES,
 	));
@@ -1555,9 +1574,6 @@ pub(super) fn direct_rule_codes() -> &'static [&'static str] {
 		"FDA.G.k.12.r.4.REQUIRED",
 		"FDA.G.k.12.r.5.REQUIRED",
 		"FDA.G.k.12.r.6.REQUIRED",
-		"ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
-		"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
-		"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
 	]
 }
 
@@ -1678,6 +1694,9 @@ mod conditioned_catalog_rule_tests {
 				method: None,
 				result_kr1: None,
 				result_kr2: None,
+				receiver_is_ct_or_cu: false,
+				receiver_is_kr: false,
+				receiver_is_fr: false,
 				facts: RuleFacts {
 					mfds_relatedness_method_required_context: Some(true),
 					..RuleFacts::default()
@@ -1690,6 +1709,9 @@ mod conditioned_catalog_rule_tests {
 				method: Some("1".to_string()),
 				result_kr1: None,
 				result_kr2: None,
+				receiver_is_ct_or_cu: false,
+				receiver_is_kr: false,
+				receiver_is_fr: false,
 				facts: RuleFacts {
 					mfds_relatedness_method_required_context: Some(true),
 					mfds_relatedness_kr1_required_context: Some(true),
@@ -1703,6 +1725,9 @@ mod conditioned_catalog_rule_tests {
 				method: Some("2".to_string()),
 				result_kr1: None,
 				result_kr2: None,
+				receiver_is_ct_or_cu: true,
+				receiver_is_kr: false,
+				receiver_is_fr: false,
 				facts: RuleFacts {
 					mfds_relatedness_method_required_context: Some(true),
 					mfds_relatedness_kr2_required_context: Some(true),
@@ -1716,6 +1741,9 @@ mod conditioned_catalog_rule_tests {
 				method: Some("1".to_string()),
 				result_kr1: None,
 				result_kr2: None,
+				receiver_is_ct_or_cu: false,
+				receiver_is_kr: true,
+				receiver_is_fr: false,
 				facts: RuleFacts {
 					mfds_relatedness_method_present: Some(true),
 					mfds_relatedness_result_present: Some(false),

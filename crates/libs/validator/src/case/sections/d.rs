@@ -5,20 +5,21 @@ use super::rule_table::{
 	eval_indexed_future_dates, eval_indexed_length, eval_indexed_meddra,
 	eval_indexed_vocabulary_variants, eval_length, eval_nested_companions,
 	eval_nested_constraints, eval_nested_future_dates, eval_nested_length,
-	eval_nested_meddra, eval_nested_vocabulary_variants, CatalogValueRule,
-	CompanionRule, ConditionalIndexedRule, ConditionalValueRule, ConstraintRule,
-	DateValues, DerivedLengthRule, FutureDateRule, IndexedConstraintRule,
-	IndexedDerivedLengthRule, IndexedFutureDateRule, IndexedLengthRule,
-	IndexedMeddraRule, IndexedVocabularyVariantRule, LengthRule,
+	eval_nested_meddra, eval_nested_vocabulary_variants, eval_violations,
+	CatalogValueRule, CompanionRule, ConditionalIndexedRule, ConditionalValueRule,
+	ConstraintRule, DateValues, DerivedLengthRule, FutureDateRule,
+	IndexedConstraintRule, IndexedDerivedLengthRule, IndexedFutureDateRule,
+	IndexedLengthRule, IndexedMeddraRule, IndexedVocabularyVariantRule, LengthRule,
 	NestedCompanionRule, NestedConstraintRule, NestedFutureDateRule,
 	NestedLengthRule, NestedMeddraRule, NestedVocabularyVariantRule, RuleValue,
+	ViolationRule,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
 	has_patient_initials, has_text, is_mfds_domestic_receiver,
-	is_mfds_foreign_postmarket_receiver, push_issue_by_code,
-	should_require_patient_initials, FdaValidationContext, MfdsValidationContext,
-	RegulatoryAuthority, RuleFacts, ValidationContext, ValidationIssue,
+	is_mfds_foreign_postmarket_receiver, should_require_patient_initials,
+	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority, RuleFacts,
+	ValidationContext, ValidationIssue,
 };
 use lib_core::model::parent_history::{ParentMedicalHistory, ParentPastDrugHistory};
 use lib_core::model::patient::{
@@ -887,6 +888,26 @@ fn eval_d_ich_presence(
 	eval_catalog_values(issues, std::slice::from_ref(&view), rules);
 }
 
+struct DExclusionRuleView {
+	path: String,
+	mpid_present: bool,
+	phpid_present: bool,
+}
+
+const D_ICH_D8_EXCLUSION_RULES: &[ViolationRule<DExclusionRuleView>] =
+	&[ViolationRule {
+		code: "ICH.D.8.MPID_PHPID.EXCLUSIVE",
+		path: |item| item.path.clone(),
+		violated: |item| item.mpid_present && item.phpid_present,
+	}];
+
+const D_ICH_D108_EXCLUSION_RULES: &[ViolationRule<DExclusionRuleView>] =
+	&[ViolationRule {
+		code: "ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
+		path: |item| item.path.clone(),
+		violated: |item| item.mpid_present && item.phpid_present,
+	}];
+
 const D_FDA_CATALOG_VALUE_RULES: &[CatalogValueRule<DPatientRegionalRuleView>] = &[
 	CatalogValueRule {
 		code: "FDA.D.11.REQUIRED",
@@ -1319,21 +1340,17 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.past_drugs,
 		D_PAST_DRUG_MEDDRA_RULES,
 	);
-	validation_ctx
+	let past_drug_exclusions = validation_ctx
 		.past_drugs
 		.iter()
 		.enumerate()
-		.for_each(|(idx, past_drug)| {
-			if has_text(past_drug.mpid.as_deref())
-				&& has_text(past_drug.phpid.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.8.MPID_PHPID.EXCLUSIVE",
-					format!("patientInformation.pastDrugs.{idx}.mpid"),
-				);
-			}
-		});
+		.map(|(idx, past_drug)| DExclusionRuleView {
+			path: format!("patientInformation.pastDrugs.{idx}.mpid"),
+			mpid_present: has_text(past_drug.mpid.as_deref()),
+			phpid_present: has_text(past_drug.phpid.as_deref()),
+		})
+		.collect::<Vec<_>>();
+	eval_violations(issues, &past_drug_exclusions, D_ICH_D8_EXCLUSION_RULES);
 	eval_indexed_future_dates(
 		issues,
 		&validation_ctx.past_drugs,
@@ -1501,30 +1518,29 @@ pub(crate) fn collect_ich_issues(
 		D_PARENT_PAST_DRUG_MEDDRA_RULES,
 	);
 	let parent_indices = parent_index_by_id(&validation_ctx.parents);
-	let mut fallback_idx_by_parent = HashMap::<Uuid, usize>::new();
-	validation_ctx
+	let parent_past_drug_exclusions = validation_ctx
 		.parent_past_drugs
 		.iter()
-		.for_each(|past_drug| {
-			let Some(parent_idx) = parent_indices.get(&past_drug.parent_id).copied()
-			else {
-				return;
-			};
-			let fallback_idx = fallback_idx_by_parent
-				.entry(past_drug.parent_id)
-				.or_insert(0);
-			let past_idx =
-				index_from_sequence(past_drug.sequence_number, *fallback_idx);
-			*fallback_idx += 1;
-			if has_text(past_drug.mpid.as_deref())
-				&& has_text(past_drug.phpid.as_deref())
-			{
-				let path = format!(
+		.filter_map(|past_drug| {
+			let (parent_idx, past_idx) = resolve_parent_past_drug_indices(
+				&parent_indices,
+				past_drug.parent_id,
+				past_drug.sequence_number,
+			)?;
+			Some(DExclusionRuleView {
+				path: format!(
 					"patientInformation.parents.{parent_idx}.pastDrugs.{past_idx}.mpid"
-				);
-				push_issue_by_code(issues, "ICH.D.10.8.MPID_PHPID.EXCLUSIVE", path);
-			}
-		});
+				),
+				mpid_present: has_text(past_drug.mpid.as_deref()),
+				phpid_present: has_text(past_drug.phpid.as_deref()),
+			})
+		})
+		.collect::<Vec<_>>();
+	eval_violations(
+		issues,
+		&parent_past_drug_exclusions,
+		D_ICH_D108_EXCLUSION_RULES,
+	);
 }
 
 pub(crate) fn collect_fda_issues(
@@ -1751,6 +1767,8 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	add!(D_ICH_D221A_RULE);
 	add!(D_ICH_D221B_RULE);
 	add!(D_ICH_D93_RULE);
+	add!(D_ICH_D8_EXCLUSION_RULES);
+	add!(D_ICH_D108_EXCLUSION_RULES);
 	codes.extend(super::rule_table::indexed_meddra_rule_codes(
 		D_MEDICAL_HISTORY_MEDDRA_RULES,
 	));
@@ -1774,10 +1792,7 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 
 #[cfg(test)]
 pub(super) fn direct_rule_codes() -> &'static [&'static str] {
-	&[
-		"ICH.D.8.MPID_PHPID.EXCLUSIVE",
-		"ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
-	]
+	&[]
 }
 
 #[cfg(test)]

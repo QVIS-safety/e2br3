@@ -2,10 +2,10 @@ use super::rule_table::{
 	e2b_datetime_date, eval_catalog_values, eval_conditional_indexed,
 	eval_constraints, eval_future_dates, eval_indexed, eval_indexed_constraints,
 	eval_indexed_length, eval_length, eval_nested_constraints, eval_nested_length,
-	eval_value, no_facts, CatalogValueRule, ConditionalIndexedRule, ConstraintRule,
-	DateValues, FutureDateRule, IndexedConstraintRule, IndexedLengthRule,
-	IndexedRule, LengthRule, NestedConstraintRule, NestedLengthRule, RuleValue,
-	ValueRule,
+	eval_value, eval_violations, no_facts, CatalogValueRule, ConditionalIndexedRule,
+	ConstraintRule, DateValues, FutureDateRule, IndexedConstraintRule,
+	IndexedLengthRule, IndexedRule, LengthRule, NestedConstraintRule,
+	NestedLengthRule, RuleValue, ValueRule, ViolationRule,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
@@ -91,6 +91,38 @@ fn eval_c_ich_presence(
 		facts,
 	};
 	eval_catalog_values(issues, std::slice::from_ref(&view), rules);
+}
+
+struct CDateRelationView {
+	path: String,
+	violated: bool,
+}
+
+macro_rules! c_date_relation_rule {
+	($name:ident, $code:literal) => {
+		const $name: &[ViolationRule<CDateRelationView>] = &[ViolationRule {
+			code: $code,
+			path: |item| item.path.clone(),
+			violated: |item| item.violated,
+		}];
+	};
+}
+
+c_date_relation_rule!(C_ICH_C14_AFTER_C12_RULE, "ICH.C.1.4.AFTER_C.1.2.FORBIDDEN");
+c_date_relation_rule!(C_ICH_C14_AFTER_C15_RULE, "ICH.C.1.4.AFTER_C.1.5.FORBIDDEN");
+c_date_relation_rule!(C_ICH_C15_AFTER_C12_RULE, "ICH.C.1.5.AFTER_C.1.2.FORBIDDEN");
+
+fn eval_c_date_relation(
+	issues: &mut Vec<ValidationIssue>,
+	path: &'static str,
+	violated: bool,
+	rules: &[ViolationRule<CDateRelationView>],
+) {
+	let view = CDateRelationView {
+		path: path.to_string(),
+		violated,
+	};
+	eval_violations(issues, std::slice::from_ref(&view), rules);
 }
 
 const C_FDA_CATALOG_VALUE_RULES: &[CatalogValueRule<CReportRegionalRuleView>] = &[
@@ -867,36 +899,33 @@ pub(crate) fn collect_ich_issues(
 		eval_length(issues, report, C_LENGTH_RULES);
 		let transmission_date_for_compare =
 			e2b_datetime_date(report.transmission_date.as_deref());
-		if is_later_than(
-			report.date_first_received_from_source,
-			transmission_date_for_compare,
-		) {
-			push_issue_by_code(
-				issues,
-				"ICH.C.1.4.AFTER_C.1.2.FORBIDDEN",
-				"safetyReportIdentification.dateFirstReceivedFromSource",
-			);
-		}
-		if is_later_than(
-			report.date_first_received_from_source,
-			report.date_of_most_recent_information,
-		) {
-			push_issue_by_code(
-				issues,
-				"ICH.C.1.4.AFTER_C.1.5.FORBIDDEN",
-				"safetyReportIdentification.dateFirstReceivedFromSource",
-			);
-		}
-		if is_later_than(
-			report.date_of_most_recent_information,
-			transmission_date_for_compare,
-		) {
-			push_issue_by_code(
-				issues,
-				"ICH.C.1.5.AFTER_C.1.2.FORBIDDEN",
-				"safetyReportIdentification.dateOfMostRecentInformation",
-			);
-		}
+		eval_c_date_relation(
+			issues,
+			"safetyReportIdentification.dateFirstReceivedFromSource",
+			is_later_than(
+				report.date_first_received_from_source,
+				transmission_date_for_compare,
+			),
+			C_ICH_C14_AFTER_C12_RULE,
+		);
+		eval_c_date_relation(
+			issues,
+			"safetyReportIdentification.dateFirstReceivedFromSource",
+			is_later_than(
+				report.date_first_received_from_source,
+				report.date_of_most_recent_information,
+			),
+			C_ICH_C14_AFTER_C15_RULE,
+		);
+		eval_c_date_relation(
+			issues,
+			"safetyReportIdentification.dateOfMostRecentInformation",
+			is_later_than(
+				report.date_of_most_recent_information,
+				transmission_date_for_compare,
+			),
+			C_ICH_C15_AFTER_C12_RULE,
+		);
 		eval_c_ich_presence(
 			issues,
 			"safetyReportIdentification.nullificationReason",
@@ -1422,6 +1451,9 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	add!(C_ICH_C2R5_RULE);
 	add!(C_ICH_C31_RULE);
 	add!(C_ICH_C32_RULE);
+	add!(C_ICH_C14_AFTER_C12_RULE);
+	add!(C_ICH_C14_AFTER_C15_RULE);
+	add!(C_ICH_C15_AFTER_C12_RULE);
 	codes
 }
 
@@ -1432,9 +1464,6 @@ pub(super) fn direct_rule_codes() -> &'static [&'static str] {
 		"FDA.C.5.5a.REQUIRED",
 		"FDA.C.5.5b.REQUIRED",
 		"FDA.C.5.6.r.REQUIRED",
-		"ICH.C.1.4.AFTER_C.1.2.FORBIDDEN",
-		"ICH.C.1.4.AFTER_C.1.5.FORBIDDEN",
-		"ICH.C.1.5.AFTER_C.1.2.FORBIDDEN",
 	]
 }
 
