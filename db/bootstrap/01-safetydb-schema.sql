@@ -262,6 +262,7 @@ CREATE TABLE IF NOT EXISTS product_presaves (
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT,
     deleted BOOLEAN NOT NULL DEFAULT false,
     sender_presave_id UUID,
+    receiver_presave_id UUID REFERENCES receiver_presaves(id) ON DELETE RESTRICT,
     product_id VARCHAR(255),
     medicinal_product VARCHAR(2000),
     medicinal_product_notation VARCHAR(50),
@@ -292,6 +293,13 @@ CREATE TABLE IF NOT EXISTS product_presaves (
         REFERENCES sender_presaves(id, organization_id)
         ON DELETE SET NULL (sender_presave_id)
 );
+
+ALTER TABLE product_presaves
+    ADD COLUMN IF NOT EXISTS receiver_presave_id UUID REFERENCES receiver_presaves(id) ON DELETE RESTRICT;
+
+CREATE INDEX IF NOT EXISTS idx_product_presaves_receiver
+    ON product_presaves(receiver_presave_id)
+    WHERE receiver_presave_id IS NOT NULL;
 
 
 CREATE TABLE IF NOT EXISTS product_presave_substances (

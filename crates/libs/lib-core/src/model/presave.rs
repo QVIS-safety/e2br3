@@ -1046,12 +1046,13 @@ impl ReceiverPresaveBmc {
 			.into_iter()
 			.any(|row| {
 				!row.deleted
-					&& normalized_text(row.original_manufacturer.as_deref())
-						.is_some_and(|manufacturer| {
-							receiver_name.as_ref().is_some_and(|receiver_name| {
-								receiver_name == &manufacturer
-							})
-						})
+					&& (row.receiver_presave_id == Some(id)
+						|| normalized_text(row.original_manufacturer.as_deref())
+							.is_some_and(|manufacturer| {
+								receiver_name.as_ref().is_some_and(|receiver_name| {
+									receiver_name == &manufacturer
+								})
+							}))
 			});
 		if referenced {
 			Err(relationship_conflict(
@@ -1227,6 +1228,7 @@ pub struct ProductPresave {
 	pub organization_id: Uuid,
 	pub deleted: bool,
 	pub sender_presave_id: Option<Uuid>,
+	pub receiver_presave_id: Option<Uuid>,
 	pub product_id: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
@@ -1255,6 +1257,7 @@ pub struct ProductPresave {
 #[derive(Deserialize)]
 pub struct ProductPresaveForCreate {
 	pub sender_presave_id: Option<Uuid>,
+	pub receiver_presave_id: Option<Uuid>,
 	pub product_id: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
@@ -1280,6 +1283,7 @@ pub struct ProductPresaveForCreate {
 struct ProductPresaveForInsert {
 	organization_id: Uuid,
 	sender_presave_id: Option<Uuid>,
+	receiver_presave_id: Option<Uuid>,
 	product_id: Option<String>,
 	medicinal_product: Option<String>,
 	medicinal_product_notation: Option<String>,
@@ -1308,6 +1312,7 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 		ProductPresaveForInsert {
 			organization_id,
 			sender_presave_id: self.sender_presave_id,
+			receiver_presave_id: self.receiver_presave_id,
 			product_id: self.product_id,
 			medicinal_product: self.medicinal_product,
 			medicinal_product_notation: self.medicinal_product_notation,
@@ -1335,6 +1340,7 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 pub struct ProductPresaveForUpdate {
 	pub deleted: Option<bool>,
 	pub sender_presave_id: Option<Uuid>,
+	pub receiver_presave_id: Option<Uuid>,
 	pub product_id: Option<String>,
 	pub medicinal_product: Option<String>,
 	pub medicinal_product_notation: Option<String>,
@@ -1369,6 +1375,8 @@ impl ProductPresaveBmc {
 		data: ProductPresaveForCreate,
 	) -> Result<Uuid> {
 		Self::ensure_sender_assignment_allowed(ctx, data.sender_presave_id)?;
+		Self::ensure_receiver_assignment_allowed(ctx, mm, data.receiver_presave_id)
+			.await?;
 		Self::validate_identity(
 			data.sender_presave_id,
 			data.product_id.as_deref(),
@@ -1420,6 +1428,14 @@ impl ProductPresaveBmc {
 		data: ProductPresaveForUpdate,
 	) -> Result<()> {
 		Self::ensure_sender_assignment_allowed(ctx, data.sender_presave_id)?;
+		if data.deleted != Some(true) {
+			Self::ensure_receiver_assignment_allowed(
+				ctx,
+				mm,
+				data.receiver_presave_id,
+			)
+			.await?;
+		}
 		if data.deleted == Some(true) {
 			Self::ensure_not_referenced_by_studies(ctx, mm, id).await?;
 			if any_user_scope_contains(ctx, mm, id, |u| {
@@ -1494,6 +1510,29 @@ impl ProductPresaveBmc {
 			));
 		}
 
+		Ok(())
+	}
+
+	async fn ensure_receiver_assignment_allowed(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		receiver_presave_id: Option<Uuid>,
+	) -> Result<()> {
+		let Some(receiver_id) = receiver_presave_id else {
+			return Ok(());
+		};
+		let receiver = ReceiverPresaveBmc::get(ctx, mm, receiver_id)
+			.await
+			.map_err(|_| {
+				relationship_conflict(
+					"product requires an active receiver presave in the same organization",
+				)
+			})?;
+		if receiver.deleted || receiver.organization_id != ctx.organization_id() {
+			return Err(relationship_conflict(
+				"product requires an active receiver presave in the same organization",
+			));
+		}
 		Ok(())
 	}
 

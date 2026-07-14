@@ -177,6 +177,7 @@ fn product_presave_create(
 ) -> ProductPresaveForCreate {
 	ProductPresaveForCreate {
 		sender_presave_id: Some(sender_presave_id),
+		receiver_presave_id: None,
 		product_id: Some(format!("PRODUCT-{}", Uuid::new_v4())),
 		medicinal_product: Some("Authority Product".into()),
 		medicinal_product_notation: None,
@@ -343,6 +344,108 @@ async fn sponsor_cro_sender_presave_allows_multiple_active_records() -> Result<(
 	)
 	.await?;
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn product_presave_round_trips_receiver_presave_id() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create("Receiver-linked product sender".into()),
+	)
+	.await?;
+	let receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			receiver_type: Some("Regulatory Authority".into()),
+			organization_name: Some(format!("Receiver Link {}", Uuid::new_v4())),
+			receiver_identifier: None,
+			day_count_rule: None,
+			nsae_solicited_day_count: None,
+			nsae_solicited_not_applicable: None,
+			nsae_non_solicited_day_count: None,
+			nsae_non_solicited_not_applicable: None,
+			sae_solicited_day_count: None,
+			sae_solicited_not_applicable: None,
+			sae_non_solicited_day_count: None,
+			sae_non_solicited_not_applicable: None,
+			description: None,
+		},
+	)
+	.await?;
+	let mut input = product_presave_create(
+		RegulatoryAuthority::Fda,
+		"Receiver-linked product".into(),
+		sender_id,
+	);
+	input.receiver_presave_id = Some(receiver_id);
+	let product_id = ProductPresaveBmc::create(&ctx, &mm, input).await?;
+
+	assert_eq!(
+		ProductPresaveBmc::get(&ctx, &mm, product_id)
+			.await?
+			.receiver_presave_id,
+		Some(receiver_id)
+	);
+	expect_conflict_error(
+		ReceiverPresaveBmc::update(
+			&ctx,
+			&mm,
+			receiver_id,
+			ReceiverPresaveForUpdate {
+				deleted: Some(true),
+				..Default::default()
+			},
+		)
+		.await,
+		"receiver presave is used by product presaves",
+	);
+	let deleted_receiver_id = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		ReceiverPresaveForCreate {
+			receiver_type: Some("Regulatory Authority".into()),
+			organization_name: Some(format!("Deleted Receiver {}", Uuid::new_v4())),
+			receiver_identifier: None,
+			day_count_rule: None,
+			nsae_solicited_day_count: None,
+			nsae_solicited_not_applicable: None,
+			nsae_non_solicited_day_count: None,
+			nsae_non_solicited_not_applicable: None,
+			sae_solicited_day_count: None,
+			sae_solicited_not_applicable: None,
+			sae_non_solicited_day_count: None,
+			sae_non_solicited_not_applicable: None,
+			description: None,
+		},
+	)
+	.await?;
+	ReceiverPresaveBmc::update(
+		&ctx,
+		&mm,
+		deleted_receiver_id,
+		ReceiverPresaveForUpdate {
+			deleted: Some(true),
+			..Default::default()
+		},
+	)
+	.await?;
+	let mut deleted_input = product_presave_create(
+		RegulatoryAuthority::Fda,
+		"Deleted receiver product".into(),
+		sender_id,
+	);
+	deleted_input.receiver_presave_id = Some(deleted_receiver_id);
+	expect_conflict_error(
+		ProductPresaveBmc::create(&ctx, &mm, deleted_input).await,
+		"active receiver presave",
+	);
 	Ok(())
 }
 
@@ -957,6 +1060,7 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 		&mm,
 		ProductPresaveForCreate {
 			sender_presave_id: Some(sender_id),
+			receiver_presave_id: None,
 			product_id: Some(format!("PRODUCT-{suffix}")),
 			medicinal_product: Some(format!("Medicinal Product {suffix}")),
 			medicinal_product_notation: None,
@@ -1431,6 +1535,7 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 			&mm,
 			ProductPresaveForCreate {
 				sender_presave_id: None,
+				receiver_presave_id: None,
 				product_id: None,
 				medicinal_product: None,
 				medicinal_product_notation: None,
@@ -1655,6 +1760,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 		&mm,
 		ProductPresaveForCreate {
 			sender_presave_id: Some(sender_id),
+			receiver_presave_id: None,
 			product_id: Some(format!("DUP-PRODUCT-{suffix}")),
 			medicinal_product: None,
 			medicinal_product_notation: None,
@@ -1683,6 +1789,7 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			&mm,
 			ProductPresaveForCreate {
 				sender_presave_id: Some(sender_id),
+				receiver_presave_id: None,
 				product_id: Some(format!(" dup-product-{suffix} ")),
 				medicinal_product: None,
 				medicinal_product_notation: None,
@@ -2083,6 +2190,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&mm,
 		ProductPresaveForCreate {
 			sender_presave_id: Some(sender_id),
+			receiver_presave_id: None,
 			product_id: Some(format!("CHILD-PRODUCT-{suffix}")),
 			medicinal_product: Some("Child Product".into()),
 			medicinal_product_notation: None,
@@ -2110,6 +2218,7 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		&mm,
 		ProductPresaveForCreate {
 			sender_presave_id: Some(sender_id),
+			receiver_presave_id: None,
 			product_id: Some(format!("CHILD-FDA-PRODUCT-{suffix}")),
 			medicinal_product: Some("Child FDA Product".into()),
 			medicinal_product_notation: None,
