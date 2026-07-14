@@ -109,6 +109,12 @@ class MfdsProductImportTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "DATA_GO_KR_SERVICE_KEY"):
                 importer.service_key_from_environment()
 
+    def test_rows_per_page_cannot_exceed_mfds_api_limit(self):
+        with self.assertRaisesRegex(ValueError, "must be between 1 and 500"):
+            importer.collect_products(
+                "v1", "key", fetch=lambda *_: b"{}", rows_per_page=501
+            )
+
     @unittest.skipUnless(
         os.environ.get("DATA_GO_KR_SERVICE_KEY"),
         "DATA_GO_KR_SERVICE_KEY is not configured",
