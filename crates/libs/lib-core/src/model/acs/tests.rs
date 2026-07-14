@@ -1,3 +1,5 @@
+use super::*;
+use crate::ctx::{ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO};
 use std::fs;
 use std::path::PathBuf;
 
@@ -20,4 +22,47 @@ fn acs_modules_separate_types_and_catalog() {
 		!dir.join("permission.rs").exists(),
 		"legacy permission.rs should be removed"
 	);
+}
+
+#[test]
+fn case_read_privilege_covers_drug_device_characteristic_routes() {
+	let permissions = permissions_for_menu_privileges(&[AdminMenuPrivilege {
+		menu_key: "case".to_string(),
+		can_read: true,
+		can_edit: false,
+		can_review: false,
+		can_lock: false,
+	}]);
+
+	assert!(permissions.contains(&DRUG_DEVICE_CHARACTERISTIC_READ));
+	assert!(permissions.contains(&DRUG_DEVICE_CHARACTERISTIC_LIST));
+}
+
+#[test]
+fn sponsor_admin_can_send_configured_email_notifications() {
+	for role in [ROLE_SPONSOR_ADMIN_CRO, ROLE_SPONSOR_ADMIN_COMPANY] {
+		assert!(has_permission(role, EMAIL_NOTIFICATION_SEND), "{role}");
+	}
+}
+
+#[test]
+fn menu_aliases_expand_to_identical_permissions() {
+	fn expand(menu_key: &str) -> Vec<Permission> {
+		permissions_for_menu_privileges(&[AdminMenuPrivilege {
+			menu_key: menu_key.to_string(),
+			can_read: true,
+			can_edit: true,
+			can_review: true,
+			can_lock: true,
+		}])
+	}
+
+	for aliases in [
+		["export_submission", "submission", "export"],
+		["user", "users", "users"],
+		["data", "terminology", "terminology"],
+	] {
+		assert_eq!(expand(aliases[0]), expand(aliases[1]));
+		assert_eq!(expand(aliases[0]), expand(aliases[2]));
+	}
 }

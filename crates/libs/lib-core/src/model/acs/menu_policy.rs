@@ -275,7 +275,7 @@ mod tests {
 			}
 		}
 
-		assert_eq!(hash, 15683745391403549514);
+		assert_eq!(hash, 5602083785880063594);
 	}
 
 	#[test]
