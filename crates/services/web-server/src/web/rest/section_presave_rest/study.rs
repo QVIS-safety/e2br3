@@ -77,10 +77,6 @@ pub async fn create_study_presave(
 	let ParamsForCreate { data } = params;
 	let id = StudyPresaveBmc::create(&ctx, &mm, data).await?;
 	let entity = StudyPresaveBmc::get(&ctx, &mm, id).await?;
-	if let Err(err) = ensure_study_presave_scope(&ctx, &mm, &entity).await {
-		StudyPresaveBmc::delete(&ctx, &mm, id).await?;
-		return Err(err);
-	}
 	Ok(rest_created(entity))
 }
 
@@ -121,20 +117,11 @@ pub async fn update_study_presave(
 	}
 	let current = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &current).await?;
-	if data.deleted == Some(true)
-		&& presave_scope_assigned_to_users(
-			&mm,
-			ctx.organization_id(),
-			"access_study_ids",
-			study_scope_identifiers(&current),
-		)
-		.await?
-	{
-		return Err(presave_case_link_conflict(
-			"study presave is assigned to users",
-		));
+	if data.deleted == Some(true) {
+		PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Study, id).await?;
+	} else {
+		StudyPresaveBmc::update(&ctx, &mm, id, data).await?;
 	}
-	StudyPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &entity).await?;
 	Ok(rest_ok(entity))
@@ -149,31 +136,7 @@ pub async fn delete_study_presave(
 	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
 	let entity = StudyPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_study_presave_scope(&ctx, &mm, &entity).await?;
-	if study_presave_used_by_cases(&mm, ctx.organization_id(), id).await? {
-		return Err(presave_case_link_conflict("study presave is used by cases"));
-	}
-	if presave_scope_assigned_to_users(
-		&mm,
-		ctx.organization_id(),
-		"access_study_ids",
-		study_scope_identifiers(&entity),
-	)
-	.await?
-	{
-		return Err(presave_case_link_conflict(
-			"study presave is assigned to users",
-		));
-	}
-	StudyPresaveBmc::update(
-		&ctx,
-		&mm,
-		id,
-		StudyPresaveForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
+	PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Study, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 
@@ -396,17 +359,18 @@ pub async fn update_study_presave_details(
 		.parent
 		.as_ref()
 		.is_some_and(|parent| parent.deleted == Some(true))
-		&& presave_scope_assigned_to_users(
-			&mm,
-			ctx.organization_id(),
-			"access_study_ids",
-			study_scope_identifiers(&current),
-		)
-		.await?
 	{
-		return Err(presave_case_link_conflict(
-			"study presave is assigned to users",
-		));
+		if data.products.is_some()
+			|| data.registration_numbers.is_some()
+			|| data.fda_cross_reported_inds.is_some()
+			|| data.reporters.is_some()
+		{
+			return Err(Error::BadRequest {
+				message: "presave deletion cannot include child changes".into(),
+			});
+		}
+		PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Study, id).await?;
+		return Ok(rest_ok(load_study_presave_details(&ctx, &mm, id).await?));
 	}
 	preflight_study_presave_details(&ctx, &mm, id, &data).await?;
 	apply_study_presave_details(&ctx, &mm, id, data).await?;

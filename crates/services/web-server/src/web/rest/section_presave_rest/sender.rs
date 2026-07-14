@@ -10,10 +10,6 @@ pub async fn create_sender_presave(
 	let ParamsForCreate { data } = params;
 	let id = SenderPresaveBmc::create(&ctx, &mm, data).await?;
 	let entity = SenderPresaveBmc::get(&ctx, &mm, id).await?;
-	if let Err(err) = ensure_sender_presave_scope(&ctx, &mm, &entity).await {
-		SenderPresaveBmc::delete(&ctx, &mm, id).await?;
-		return Err(err);
-	}
 	Ok(rest_created(entity))
 }
 
@@ -55,21 +51,10 @@ pub async fn update_sender_presave(
 	let current = SenderPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_sender_presave_scope(&ctx, &mm, &current).await?;
 	if data.deleted == Some(true) {
-		let identifiers = sender_scope_identifiers(&ctx, &mm, &current).await?;
-		if presave_scope_assigned_to_users(
-			&mm,
-			ctx.organization_id(),
-			"access_sender_ids",
-			identifiers,
-		)
-		.await?
-		{
-			return Err(presave_case_link_conflict(
-				"sender presave is assigned to users",
-			));
-		}
+		PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Sender, id).await?;
+	} else {
+		SenderPresaveBmc::update(&ctx, &mm, id, data).await?;
 	}
-	SenderPresaveBmc::update(&ctx, &mm, id, data).await?;
 	let entity = SenderPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_sender_presave_scope(&ctx, &mm, &entity).await?;
 	Ok(rest_ok(entity))
@@ -84,34 +69,7 @@ pub async fn delete_sender_presave(
 	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
 	let entity = SenderPresaveBmc::get(&ctx, &mm, id).await?;
 	ensure_sender_presave_scope(&ctx, &mm, &entity).await?;
-	if sender_presave_used_by_cases(&mm, ctx.organization_id(), id).await? {
-		return Err(presave_case_link_conflict(
-			"sender presave is used by cases",
-		));
-	}
-	let identifiers = sender_scope_identifiers(&ctx, &mm, &entity).await?;
-	if presave_scope_assigned_to_users(
-		&mm,
-		ctx.organization_id(),
-		"access_sender_ids",
-		identifiers,
-	)
-	.await?
-	{
-		return Err(presave_case_link_conflict(
-			"sender presave is assigned to users",
-		));
-	}
-	SenderPresaveBmc::update(
-		&ctx,
-		&mm,
-		id,
-		SenderPresaveForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
+	PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Sender, id).await?;
 	Ok(StatusCode::NO_CONTENT)
 }
 
@@ -271,19 +229,14 @@ pub async fn update_sender_presave_details(
 		.as_ref()
 		.is_some_and(|parent| parent.deleted == Some(true))
 	{
-		let identifiers = sender_scope_identifiers(&ctx, &mm, &current).await?;
-		if presave_scope_assigned_to_users(
-			&mm,
-			ctx.organization_id(),
-			"access_sender_ids",
-			identifiers,
-		)
-		.await?
-		{
-			return Err(presave_case_link_conflict(
-				"sender presave is assigned to users",
-			));
+		if data.gateways.is_some() || data.responsible_persons.is_some() {
+			return Err(Error::BadRequest {
+				message: "presave deletion cannot include child changes".into(),
+			});
 		}
+		PresaveLifecycleService::archive(&ctx, &mm, PresaveKind::Sender, id).await?;
+		let details = load_sender_presave_details(&ctx, &mm, id).await?;
+		return Ok(rest_ok(details));
 	}
 	preflight_sender_presave_details(&ctx, &mm, id, &data).await?;
 
