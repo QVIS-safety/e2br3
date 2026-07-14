@@ -39,6 +39,12 @@ pub use types::*;
 mod catalog;
 pub use catalog::*;
 
+mod builtin_roles;
+pub use builtin_roles::role_permissions;
+pub(crate) use builtin_roles::{
+	admin_permissions, profile_edit_permissions, viewer_permissions,
+};
+
 mod permission;
 
 pub use permission::*;

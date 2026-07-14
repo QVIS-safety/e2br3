@@ -10,6 +10,7 @@ macro_rules! permission_group {
 			pub const $constant: Permission =
 				Permission::new(Resource::$resource, Action::$action);
 		)+
+		#[allow(dead_code)]
 		pub(crate) const $group: &[Permission] = &[$($constant),+];
 	};
 }
