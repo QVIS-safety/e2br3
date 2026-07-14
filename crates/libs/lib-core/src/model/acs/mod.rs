@@ -33,6 +33,29 @@
 //! | sponsor_admin_company | Sponsor admin without sender-scope assignment    |
 //! | user                  | Default operational user permissions             |
 
-mod permission;
+mod types;
+pub use types::*;
 
-pub use permission::*;
+mod catalog;
+pub use catalog::*;
+
+mod builtin_roles;
+pub use builtin_roles::role_permissions;
+pub(crate) use builtin_roles::{
+	admin_permissions, profile_edit_permissions, viewer_permissions,
+};
+
+mod dynamic_roles;
+pub(crate) use dynamic_roles::with_dynamic_role_permissions;
+pub use dynamic_roles::{
+	remove_dynamic_role, replace_dynamic_roles, upsert_dynamic_role_permissions,
+};
+
+mod check;
+pub use check::{has_all_permissions, has_any_permission, has_permission};
+
+mod menu_policy;
+pub use menu_policy::{permissions_for_menu_privileges, AdminMenuPrivilege};
+
+#[cfg(test)]
+mod tests;
