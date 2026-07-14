@@ -89,435 +89,63 @@ async fn ensure_death_info_case(
 
 // -- Patient Identifiers (D.1.1.x)
 
-/// POST /api/cases/{case_id}/patient/identifiers
-pub async fn create_patient_identifier(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<PatientIdentifierForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<PatientIdentifier>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PATIENT_IDENTIFIER_CREATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
-
-	let ParamsForCreate { data } = params;
-	let mut data = data;
-	data.patient_id = patient_id;
-
-	let id = PatientIdentifierBmc::create(&ctx, &mm, data).await?;
-	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-}
-
-/// GET /api/cases/{case_id}/patient/identifiers
-pub async fn list_patient_identifiers(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<PatientIdentifier>>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PATIENT_IDENTIFIER_LIST)?;
-	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
-
-	let filter = PatientIdentifierFilter {
-		patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-			patient_id.to_string()
-		))])),
-		..Default::default()
-	};
-	let entities = PatientIdentifierBmc::list(
-		&ctx,
-		&mm,
-		Some(vec![filter]),
-		Some(ListOptions::default()),
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-}
-
-/// GET /api/cases/{case_id}/patient/identifiers/{id}
-pub async fn get_patient_identifier(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<PatientIdentifier>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PATIENT_IDENTIFIER_READ)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-
-	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"patient_identifiers",
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// PUT /api/cases/{case_id}/patient/identifiers/{id}
-pub async fn update_patient_identifier(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<PatientIdentifierForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<PatientIdentifier>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PATIENT_IDENTIFIER_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-
-	let ParamsForUpdate { data } = params;
-	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"patient_identifiers",
-	)
-	.await?;
-	PatientIdentifierBmc::update(&ctx, &mm, id, data).await?;
-	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// DELETE /api/cases/{case_id}/patient/identifiers/{id}
-pub async fn delete_patient_identifier(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<PatientIdentifier>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PATIENT_IDENTIFIER_DELETE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-
-	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"patient_identifiers",
-	)
-	.await?;
-	PatientIdentifierBmc::delete(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// POST /api/cases/{case_id}/patient/identifiers/{id}/restore
-pub async fn restore_patient_identifier(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<PatientIdentifier>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PATIENT_IDENTIFIER_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"patient_identifiers",
-	)
-	.await?;
-	PatientIdentifierBmc::restore(&ctx, &mm, id).await?;
-	let entity = PatientIdentifierBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+lib_rest_core::generate_patient_child_rest_fns! {
+	Bmc: PatientIdentifierBmc,
+	Entity: PatientIdentifier,
+	ForCreate: PatientIdentifierForCreate,
+	ForUpdate: PatientIdentifierForUpdate,
+	Filter: PatientIdentifierFilter,
+	CreateFn: create_patient_identifier,
+	ListFn: list_patient_identifiers,
+	GetFn: get_patient_identifier,
+	UpdateFn: update_patient_identifier,
+	DeleteFn: delete_patient_identifier,
+	RestoreFn: restore_patient_identifier,
+	ParentField: patient_id,
+	ResolveParentFn: patient_id_for_case,
+	ScopeFn: ensure_patient_scope,
+	EntityName: "patient_identifiers",
+	DeleteResult: (StatusCode, Json<DataRestResult<PatientIdentifier>>),
+	DeleteResponse: entity,
+	PermCreate: PATIENT_IDENTIFIER_CREATE,
+	PermList: PATIENT_IDENTIFIER_LIST,
+	PermRead: PATIENT_IDENTIFIER_READ,
+	PermUpdate: PATIENT_IDENTIFIER_UPDATE,
+	PermDelete: PATIENT_IDENTIFIER_DELETE
 }
 
 // -- Medical History Episodes (D.7.1.r)
 
-/// POST /api/cases/{case_id}/patient/medical-history
-pub async fn create_medical_history_episode(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<MedicalHistoryEpisodeForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<MedicalHistoryEpisode>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, MEDICAL_HISTORY_CREATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
-
-	let ParamsForCreate { data } = params;
-	let mut data = data;
-	data.patient_id = patient_id;
-
-	let id = MedicalHistoryEpisodeBmc::create(&ctx, &mm, data).await?;
-	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-}
-
-/// GET /api/cases/{case_id}/patient/medical-history
-pub async fn list_medical_history_episodes(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<MedicalHistoryEpisode>>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, MEDICAL_HISTORY_LIST)?;
-	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
-
-	let filter = MedicalHistoryEpisodeFilter {
-		patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-			patient_id.to_string()
-		))])),
-		..Default::default()
-	};
-	let entities = MedicalHistoryEpisodeBmc::list(
-		&ctx,
-		&mm,
-		Some(vec![filter]),
-		Some(ListOptions::default()),
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-}
-
-/// GET /api/cases/{case_id}/patient/medical-history/{id}
-pub async fn get_medical_history_episode(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<MedicalHistoryEpisode>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, MEDICAL_HISTORY_READ)?;
-	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"medical_history_episodes",
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// PUT /api/cases/{case_id}/patient/medical-history/{id}
-pub async fn update_medical_history_episode(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<MedicalHistoryEpisodeForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<MedicalHistoryEpisode>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, MEDICAL_HISTORY_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForUpdate { data } = params;
-	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"medical_history_episodes",
-	)
-	.await?;
-	MedicalHistoryEpisodeBmc::update(&ctx, &mm, id, data).await?;
-	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// DELETE /api/cases/{case_id}/patient/medical-history/{id}
-pub async fn delete_medical_history_episode(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, MEDICAL_HISTORY_DELETE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"medical_history_episodes",
-	)
-	.await?;
-	MedicalHistoryEpisodeBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
-/// POST /api/cases/{case_id}/patient/medical-history/{id}/restore
-pub async fn restore_medical_history_episode(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<MedicalHistoryEpisode>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, MEDICAL_HISTORY_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"medical_history_episodes",
-	)
-	.await?;
-	MedicalHistoryEpisodeBmc::restore(&ctx, &mm, id).await?;
-	let entity = MedicalHistoryEpisodeBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+lib_rest_core::generate_patient_child_rest_fns! {
+	Bmc: MedicalHistoryEpisodeBmc, Entity: MedicalHistoryEpisode,
+	ForCreate: MedicalHistoryEpisodeForCreate, ForUpdate: MedicalHistoryEpisodeForUpdate,
+	Filter: MedicalHistoryEpisodeFilter,
+	CreateFn: create_medical_history_episode, ListFn: list_medical_history_episodes,
+	GetFn: get_medical_history_episode, UpdateFn: update_medical_history_episode,
+	DeleteFn: delete_medical_history_episode, RestoreFn: restore_medical_history_episode,
+	ParentField: patient_id, ResolveParentFn: patient_id_for_case,
+	ScopeFn: ensure_patient_scope, EntityName: "medical_history_episodes",
+	DeleteResult: StatusCode, DeleteResponse: no_content,
+	PermCreate: MEDICAL_HISTORY_CREATE, PermList: MEDICAL_HISTORY_LIST,
+	PermRead: MEDICAL_HISTORY_READ, PermUpdate: MEDICAL_HISTORY_UPDATE,
+	PermDelete: MEDICAL_HISTORY_DELETE
 }
 
 // -- Past Drug History (D.8.r)
 
-/// POST /api/cases/{case_id}/patient/past-drugs
-pub async fn create_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<PastDrugHistoryForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<PastDrugHistory>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PAST_DRUG_CREATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
-
-	let ParamsForCreate { data } = params;
-	let mut data = data;
-	data.patient_id = patient_id;
-
-	let id = PastDrugHistoryBmc::create(&ctx, &mm, data).await?;
-	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-}
-
-/// GET /api/cases/{case_id}/patient/past-drugs
-pub async fn list_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<PastDrugHistory>>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PAST_DRUG_LIST)?;
-	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
-
-	let filter = PastDrugHistoryFilter {
-		patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-			patient_id.to_string()
-		))])),
-		..Default::default()
-	};
-	let entities = PastDrugHistoryBmc::list(
-		&ctx,
-		&mm,
-		Some(vec![filter]),
-		Some(ListOptions::default()),
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-}
-
-/// GET /api/cases/{case_id}/patient/past-drugs/{id}
-pub async fn get_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<PastDrugHistory>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PAST_DRUG_READ)?;
-	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"past_drug_history",
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// PUT /api/cases/{case_id}/patient/past-drugs/{id}
-pub async fn update_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<PastDrugHistoryForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<PastDrugHistory>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PAST_DRUG_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForUpdate { data } = params;
-	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"past_drug_history",
-	)
-	.await?;
-	PastDrugHistoryBmc::update(&ctx, &mm, id, data).await?;
-	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// DELETE /api/cases/{case_id}/patient/past-drugs/{id}
-pub async fn delete_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PAST_DRUG_DELETE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"past_drug_history",
-	)
-	.await?;
-	PastDrugHistoryBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
-/// POST /api/cases/{case_id}/patient/past-drugs/{id}/restore
-pub async fn restore_past_drug_history(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<PastDrugHistory>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PAST_DRUG_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"past_drug_history",
-	)
-	.await?;
-	PastDrugHistoryBmc::restore(&ctx, &mm, id).await?;
-	let entity = PastDrugHistoryBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+lib_rest_core::generate_patient_child_rest_fns! {
+	Bmc: PastDrugHistoryBmc, Entity: PastDrugHistory,
+	ForCreate: PastDrugHistoryForCreate, ForUpdate: PastDrugHistoryForUpdate,
+	Filter: PastDrugHistoryFilter,
+	CreateFn: create_past_drug_history, ListFn: list_past_drug_history,
+	GetFn: get_past_drug_history, UpdateFn: update_past_drug_history,
+	DeleteFn: delete_past_drug_history, RestoreFn: restore_past_drug_history,
+	ParentField: patient_id, ResolveParentFn: patient_id_for_case,
+	ScopeFn: ensure_patient_scope, EntityName: "past_drug_history",
+	DeleteResult: StatusCode, DeleteResponse: no_content,
+	PermCreate: PAST_DRUG_CREATE, PermList: PAST_DRUG_LIST,
+	PermRead: PAST_DRUG_READ, PermUpdate: PAST_DRUG_UPDATE,
+	PermDelete: PAST_DRUG_DELETE
 }
 
 // -- Patient Death Information (D.9)
@@ -917,143 +545,17 @@ pub async fn restore_autopsy_cause_of_death(
 
 // -- Parent Information (D.10)
 
-/// POST /api/cases/{case_id}/patient/parents
-pub async fn create_parent_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<ParentInformationForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentInformation>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PARENT_INFORMATION_CREATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
-
-	let ParamsForCreate { data } = params;
-	let mut data = data;
-	data.patient_id = patient_id;
-
-	let id = ParentInformationBmc::create(&ctx, &mm, data).await?;
-	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-}
-
-/// GET /api/cases/{case_id}/patient/parents
-pub async fn list_parent_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(case_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<ParentInformation>>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PARENT_INFORMATION_LIST)?;
-	let patient_id = patient_id_for_case(&ctx, &mm, case_id).await?;
-
-	let filter = ParentInformationFilter {
-		patient_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-			patient_id.to_string()
-		))])),
-		..Default::default()
-	};
-	let entities = ParentInformationBmc::list(
-		&ctx,
-		&mm,
-		Some(vec![filter]),
-		Some(ListOptions::default()),
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-}
-
-/// GET /api/cases/{case_id}/patient/parents/{id}
-pub async fn get_parent_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentInformation>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PARENT_INFORMATION_READ)?;
-	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"parent_information",
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// PUT /api/cases/{case_id}/patient/parents/{id}
-pub async fn update_parent_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<ParentInformationForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentInformation>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PARENT_INFORMATION_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForUpdate { data } = params;
-	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"parent_information",
-	)
-	.await?;
-	ParentInformationBmc::update(&ctx, &mm, id, data).await?;
-	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// DELETE /api/cases/{case_id}/patient/parents/{id}
-pub async fn delete_parent_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PARENT_INFORMATION_DELETE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"parent_information",
-	)
-	.await?;
-	ParentInformationBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
-/// POST /api/cases/{case_id}/patient/parents/{id}/restore
-pub async fn restore_parent_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<ParentInformation>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PARENT_INFORMATION_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
-	ensure_patient_scope(
-		&ctx,
-		&mm,
-		case_id,
-		entity.patient_id,
-		id,
-		"parent_information",
-	)
-	.await?;
-	ParentInformationBmc::restore(&ctx, &mm, id).await?;
-	let entity = ParentInformationBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+lib_rest_core::generate_patient_child_rest_fns! {
+	Bmc: ParentInformationBmc, Entity: ParentInformation,
+	ForCreate: ParentInformationForCreate, ForUpdate: ParentInformationForUpdate,
+	Filter: ParentInformationFilter,
+	CreateFn: create_parent_information, ListFn: list_parent_information,
+	GetFn: get_parent_information, UpdateFn: update_parent_information,
+	DeleteFn: delete_parent_information, RestoreFn: restore_parent_information,
+	ParentField: patient_id, ResolveParentFn: patient_id_for_case,
+	ScopeFn: ensure_patient_scope, EntityName: "parent_information",
+	DeleteResult: StatusCode, DeleteResponse: no_content,
+	PermCreate: PARENT_INFORMATION_CREATE, PermList: PARENT_INFORMATION_LIST,
+	PermRead: PARENT_INFORMATION_READ, PermUpdate: PARENT_INFORMATION_UPDATE,
+	PermDelete: PARENT_INFORMATION_DELETE
 }

@@ -1213,6 +1213,51 @@ async fn test_patient_subresources_endpoints_ok() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn patient_identifier_preserves_scope_and_delete_response() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let first_case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let second_case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let first_patient_id = create_patient(&app, &cookie, first_case_id).await?;
+	create_patient(&app, &cookie, second_case_id).await?;
+	let (status, body) = post_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{first_case_id}/patient/identifiers"),
+		json!({"data": {
+			"patient_id": first_patient_id,
+			"sequence_number": 1,
+			"identifier_type_code": "1",
+			"identifier_value": "contract-id"
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED);
+	let id = extract_id(&body)?;
+	let (status, _) = get_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{second_case_id}/patient/identifiers/{id}"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND);
+	let (status, body) = delete_json(
+		&app,
+		&cookie,
+		format!("/api/cases/{first_case_id}/patient/identifiers/{id}"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	let value: Value = serde_json::from_slice(&body)?;
+	assert_eq!(value["data"]["id"], id.to_string());
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_past_drugs_support_mfds_product_fields_and_200_char_ids() -> Result<()>
 {
 	let mm = init_test_mm().await?;
