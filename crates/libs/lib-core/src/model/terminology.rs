@@ -408,6 +408,34 @@ impl DbBmc for MfdsProductBmc {
 }
 
 impl MfdsProductBmc {
+	pub async fn search(
+		_ctx: &Ctx,
+		mm: &ModelManager,
+		query: &str,
+		limit: i64,
+	) -> Result<Vec<MfdsProduct>> {
+		let pattern = format!("%{}%", query.trim());
+		let rows = mm
+			.dbx()
+			.fetch_all(
+				sqlx::query_as::<_, MfdsProduct>(
+					"SELECT * FROM mfds_products
+					 WHERE active = true
+					   AND (item_seq ILIKE $1
+					        OR product_name_kr ILIKE $1
+					        OR product_name_en ILIKE $1
+					        OR manufacturer_name_kr ILIKE $1
+					        OR manufacturer_name_en ILIKE $1)
+					 ORDER BY product_name_kr, item_seq
+					 LIMIT $2",
+				)
+				.bind(pattern)
+				.bind(limit.clamp(1, 100)),
+			)
+			.await?;
+		Ok(rows)
+	}
+
 	pub async fn existing_active_item_seqs(
 		mm: &ModelManager,
 		codes: &[String],

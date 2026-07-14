@@ -109,6 +109,19 @@ class MfdsProductImportTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "DATA_GO_KR_SERVICE_KEY"):
                 importer.service_key_from_environment()
 
+    @unittest.skipUnless(
+        os.environ.get("DATA_GO_KR_SERVICE_KEY"),
+        "DATA_GO_KR_SERVICE_KEY is not configured",
+    )
+    def test_live_api_returns_a_valid_product_page(self):
+        raw = importer.fetch_page(
+            1, 1, importer.service_key_from_environment()
+        )
+        _, body = importer._response_parts(raw)
+        items = importer._body_items(body)
+        self.assertTrue(items)
+        importer._normalize_product(items[0])
+
 
 if __name__ == "__main__":
     unittest.main()

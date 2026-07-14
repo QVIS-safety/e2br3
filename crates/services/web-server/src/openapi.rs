@@ -116,6 +116,7 @@ pub fn router() -> Router {
 		list_case_submissions,
 		search_meddra,
 		search_whodrug,
+		search_mfds_products,
 		import_meddra,
 		import_whodrug,
 		list_terminology_releases,
@@ -3714,6 +3715,21 @@ fn search_meddra() {}
 	responses((status = 200, description = "WHO Drug results", body = GenericDataResponse))
 )]
 fn search_whodrug() {}
+
+#[utoipa::path(
+	get,
+	path = "/api/terminology/mfds-products",
+	tag = "terminology",
+	security(
+		("auth_token" = [])
+	),
+	params(
+		("q" = String, Query, description = "ITEM_SEQ, product, or manufacturer search term"),
+		("limit" = Option<i64>, Query, description = "Maximum rows (1-100)")
+	),
+	responses((status = 200, description = "Active MFDS product results", body = GenericDataResponse))
+)]
+fn search_mfds_products() {}
 
 #[utoipa::path(
 	post,

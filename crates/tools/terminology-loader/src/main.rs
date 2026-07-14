@@ -929,6 +929,7 @@ fn sha256_if_file(path: &Path) -> Option<String> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use serial_test::serial;
 	use std::io::Write;
 	use std::sync::atomic::{AtomicU64, Ordering};
 	use zip::write::SimpleFileOptions;
@@ -968,6 +969,7 @@ mod tests {
 		let _ = fs::remove_dir_all(dir);
 	}
 
+	#[serial]
 	#[tokio::test]
 	async fn load_meddra_allows_sequential_versions_for_same_language() {
 		std::env::var("SERVICE_DB_URL")
@@ -1192,6 +1194,7 @@ mod tests {
 		let _ = fs::remove_file(path);
 	}
 
+	#[serial]
 	#[tokio::test]
 	async fn load_mfds_products_stages_inactive_validated_release() {
 		std::env::var("SERVICE_DB_URL")

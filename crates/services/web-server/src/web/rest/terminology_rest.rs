@@ -10,7 +10,8 @@ use lib_core::model::acs::{
 use lib_core::model::terminology::{
 	E2bCodeList, E2bCodeListBmc, FdaHierarchicalCodeList,
 	FdaHierarchicalCodeListBmc, IsoCountry, IsoCountryBmc, MeddraTerm,
-	MeddraTermBmc, UcumUnit, UcumUnitBmc, WhodrugProduct, WhodrugProductBmc,
+	MeddraTermBmc, MfdsProduct, MfdsProductBmc, UcumUnit, UcumUnitBmc,
+	WhodrugProduct, WhodrugProductBmc,
 };
 use lib_core::model::terminology_import::{self, TerminologyReleaseRow};
 use lib_core::model::ModelManager;
@@ -197,6 +198,20 @@ pub async fn search_whodrug(
 	let products =
 		WhodrugProductBmc::search(&ctx, &mm, &params.q, params.limit).await?;
 
+	Ok((StatusCode::OK, Json(DataRestResult { data: products })))
+}
+
+/// GET /api/terminology/mfds-products?q={term}&limit={count}
+pub async fn search_mfds_products(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	_perm: RequirePermission<TerminologyReadPerm>,
+	Query(params): Query<TerminologySearchParams>,
+) -> Result<(StatusCode, Json<DataRestResult<Vec<MfdsProduct>>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, TERMINOLOGY_READ)?;
+	let products =
+		MfdsProductBmc::search(&ctx, &mm, &params.q, params.limit).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: products })))
 }
 

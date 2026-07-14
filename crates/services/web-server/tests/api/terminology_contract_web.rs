@@ -39,6 +39,22 @@ async fn seed_active_terminology_rows(
 	.await?;
 
 	sqlx::query(
+		"INSERT INTO mfds_products
+		 (item_seq, product_name_kr, product_name_en, manufacturer_name_kr, version, active)
+		 VALUES
+		 ('9000000001', '활성제품', 'Active MFDS Product', '활성제약', '2026-01', true),
+		 ('9000000002', '비활성제품', 'Inactive MFDS Product', '비활성제약', '2026-02', false)
+		 ON CONFLICT (item_seq, version)
+		 DO UPDATE SET
+		   product_name_kr = EXCLUDED.product_name_kr,
+		   product_name_en = EXCLUDED.product_name_en,
+		   manufacturer_name_kr = EXCLUDED.manufacturer_name_kr,
+		   active = EXCLUDED.active",
+	)
+	.execute(&mut *tx)
+	.await?;
+
+	sqlx::query(
 		"INSERT INTO whodrug_products (code, drug_name, atc_code, version, language, active)
 		 VALUES ('W90000001', 'Example Drug test term', 'A01AA01', '2026.03', 'en', true)
 		 ON CONFLICT (code, version, language)
@@ -63,6 +79,7 @@ async fn test_admin_can_access_terminology_endpoints() -> Result<()> {
 	for uri in [
 		"/api/terminology/meddra?q=test&limit=5",
 		"/api/terminology/whodrug?q=test&limit=5",
+		"/api/terminology/mfds-products?q=9000000001&limit=5",
 		"/api/terminology/countries",
 		"/api/terminology/code-lists?list_name=report_type",
 	] {
@@ -83,6 +100,155 @@ async fn test_admin_can_access_terminology_endpoints() -> Result<()> {
 		}
 	}
 
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_sponsor_admin_searches_only_active_mfds_products_by_code_or_name(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	seed_active_terminology_rows(&mm).await?;
+	let seed = seed_terminology_admin(&mm).await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	for (query, expected_count) in [
+		("9000000001", 1),
+		("Active%20MFDS", 1),
+		("Inactive%20MFDS", 0),
+	] {
+		let req = Request::builder()
+			.method("GET")
+			.uri(format!("/api/terminology/mfds-products?q={query}&limit=5"))
+			.header("cookie", cookie.clone())
+			.body(Body::empty())?;
+		let res = app.clone().oneshot(req).await?;
+		assert_eq!(res.status(), StatusCode::OK);
+		let body = to_bytes(res.into_body(), usize::MAX).await?;
+		let payload: serde_json::Value = serde_json::from_slice(&body)?;
+		assert_eq!(
+			payload["data"].as_array().map(Vec::len),
+			Some(expected_count)
+		);
+	}
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_mfds_product_activation_and_rollback_change_visible_search_release(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_terminology_admin(&mm).await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let suffix = Uuid::new_v4().simple().to_string();
+	let version_v1 = format!("api-v1-{}", &suffix[..8]);
+	let version_v2 = format!("api-v2-{}", &suffix[..8]);
+	let item_v1 = format!("A{}", &suffix[..9]);
+	let item_v2 = format!("B{}", &suffix[..9]);
+
+	let system_user_id = Uuid::parse_str(SYSTEM_USER_ID)?;
+	let system_org_id = Uuid::parse_str(SYSTEM_ORG_ID)?;
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, system_user_id).await?;
+	set_org_context(&mut tx, system_org_id, ROLE_SYSTEM_ADMIN).await?;
+	sqlx::query(
+		"INSERT INTO mfds_products
+		 (item_seq, product_name_kr, version, active)
+		 VALUES ($1, 'API V1 Product', $2, true), ($3, 'API V2 Product', $4, false)",
+	)
+	.bind(&item_v1)
+	.bind(&version_v1)
+	.bind(&item_v2)
+	.bind(&version_v2)
+	.execute(&mut *tx)
+	.await?;
+	sqlx::query(
+		"INSERT INTO terminology_releases
+		 (dictionary, version, language, status, loaded_rows, activated_at)
+		 VALUES
+		 ('mfds_product', $1, 'ko', 'active', 1, NOW()),
+		 ('mfds_product', $2, 'ko', 'validated', 1, NULL)",
+	)
+	.bind(&version_v1)
+	.bind(&version_v2)
+	.execute(&mut *tx)
+	.await?;
+	tx.commit().await?;
+
+	let app = web_server::app(mm.clone());
+	for uri in [
+		format!(
+			"/api/terminology/releases/mfds_product/{version_v2}/approve?language=ko"
+		),
+		format!(
+			"/api/terminology/releases/mfds_product/{version_v2}/activate?language=ko"
+		),
+	] {
+		let req = Request::builder()
+			.method("POST")
+			.uri(uri)
+			.header("cookie", cookie.clone())
+			.body(Body::empty())?;
+		let res = app.clone().oneshot(req).await?;
+		assert_eq!(res.status(), StatusCode::OK);
+	}
+	assert_mfds_search_count(&app, &cookie, &item_v2, 1).await?;
+	assert_mfds_search_count(&app, &cookie, &item_v1, 0).await?;
+
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!(
+			"/api/terminology/releases/mfds_product/{version_v1}/rollback?language=ko"
+		))
+		.header("cookie", cookie.clone())
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+	assert_mfds_search_count(&app, &cookie, &item_v1, 1).await?;
+	assert_mfds_search_count(&app, &cookie, &item_v2, 0).await?;
+
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, system_user_id).await?;
+	set_org_context(&mut tx, system_org_id, ROLE_SYSTEM_ADMIN).await?;
+	sqlx::query("DELETE FROM mfds_products WHERE version IN ($1, $2)")
+		.bind(&version_v1)
+		.bind(&version_v2)
+		.execute(&mut *tx)
+		.await?;
+	sqlx::query(
+		"DELETE FROM terminology_releases
+		 WHERE dictionary = 'mfds_product' AND version IN ($1, $2) AND language = 'ko'",
+	)
+	.bind(&version_v1)
+	.bind(&version_v2)
+	.execute(&mut *tx)
+	.await?;
+	tx.commit().await?;
+
+	Ok(())
+}
+
+async fn assert_mfds_search_count(
+	app: &axum::Router,
+	cookie: &str,
+	query: &str,
+	expected: usize,
+) -> Result<()> {
+	let req = Request::builder()
+		.method("GET")
+		.uri(format!("/api/terminology/mfds-products?q={query}&limit=5"))
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let payload: serde_json::Value = serde_json::from_slice(&body)?;
+	assert_eq!(payload["data"].as_array().map(Vec::len), Some(expected));
 	Ok(())
 }
 
@@ -134,6 +300,14 @@ async fn test_viewer_cannot_access_terminology_endpoints() -> Result<()> {
 	let req = Request::builder()
 		.method("GET")
 		.uri("/api/terminology/meddra?q=test&limit=5")
+		.header("cookie", cookie.clone())
+		.body(Body::empty())?;
+	let res = app.clone().oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::FORBIDDEN);
+
+	let req = Request::builder()
+		.method("GET")
+		.uri("/api/terminology/mfds-products?q=test&limit=5")
 		.header("cookie", cookie.clone())
 		.body(Body::empty())?;
 	let res = app.clone().oneshot(req).await?;
