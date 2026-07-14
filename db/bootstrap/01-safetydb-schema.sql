@@ -364,6 +364,8 @@ CREATE TABLE IF NOT EXISTS study_presaves (
     sponsor_study_number VARCHAR(50),
     sponsor_study_number_kind VARCHAR(50),
     study_type_reaction VARCHAR(50),
+    fda_ind_number_occurred VARCHAR(10),
+    fda_pre_anda_number_occurred VARCHAR(10),
     edc_sync BOOLEAN,
     exclude_case_key_from_sync BOOLEAN,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -380,6 +382,10 @@ CREATE TABLE IF NOT EXISTS study_presaves (
         REFERENCES product_presaves(id, organization_id)
         ON DELETE SET NULL (product_presave_id)
 );
+
+ALTER TABLE study_presaves
+    ADD COLUMN IF NOT EXISTS fda_ind_number_occurred VARCHAR(10),
+    ADD COLUMN IF NOT EXISTS fda_pre_anda_number_occurred VARCHAR(10);
 
 CREATE TABLE IF NOT EXISTS study_presave_registration_numbers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -1970,6 +1970,8 @@ pub struct StudyPresave {
 	pub sponsor_study_number: Option<String>,
 	pub sponsor_study_number_kind: Option<String>,
 	pub study_type_reaction: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 	pub edc_sync: Option<bool>,
 	pub exclude_case_key_from_sync: Option<bool>,
 	pub created_at: OffsetDateTime,
@@ -1986,6 +1988,8 @@ pub struct StudyPresaveForCreate {
 	pub sponsor_study_number: Option<String>,
 	pub sponsor_study_number_kind: Option<String>,
 	pub study_type_reaction: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 	pub edc_sync: Option<bool>,
 	pub exclude_case_key_from_sync: Option<bool>,
 }
@@ -1999,6 +2003,8 @@ struct StudyPresaveForInsert {
 	sponsor_study_number: Option<String>,
 	sponsor_study_number_kind: Option<String>,
 	study_type_reaction: Option<String>,
+	fda_ind_number_occurred: Option<String>,
+	fda_pre_anda_number_occurred: Option<String>,
 	edc_sync: Option<bool>,
 	exclude_case_key_from_sync: Option<bool>,
 }
@@ -2015,6 +2021,8 @@ impl IntoOrgScopedCreate for StudyPresaveForCreate {
 			sponsor_study_number: self.sponsor_study_number,
 			sponsor_study_number_kind: self.sponsor_study_number_kind,
 			study_type_reaction: self.study_type_reaction,
+			fda_ind_number_occurred: self.fda_ind_number_occurred,
+			fda_pre_anda_number_occurred: self.fda_pre_anda_number_occurred,
 			edc_sync: self.edc_sync,
 			exclude_case_key_from_sync: self.exclude_case_key_from_sync,
 		}
@@ -2044,6 +2052,8 @@ pub struct StudyPresaveForUpdate {
 	pub sponsor_study_number: Option<String>,
 	pub sponsor_study_number_kind: Option<String>,
 	pub study_type_reaction: Option<String>,
+	pub fda_ind_number_occurred: Option<String>,
+	pub fda_pre_anda_number_occurred: Option<String>,
 	pub edc_sync: Option<bool>,
 	pub exclude_case_key_from_sync: Option<bool>,
 }

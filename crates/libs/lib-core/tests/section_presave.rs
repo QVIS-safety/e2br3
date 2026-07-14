@@ -255,6 +255,8 @@ fn study_presave_create(
 		sponsor_study_number: Some("AUTH-STUDY".into()),
 		sponsor_study_number_kind: None,
 		study_type_reaction: Some("1".into()),
+		fda_ind_number_occurred: None,
+		fda_pre_anda_number_occurred: None,
 		edc_sync: None,
 		exclude_case_key_from_sync: None,
 	}
@@ -271,6 +273,8 @@ fn study_presave_create_for_product(
 		sponsor_study_number: Some(format!("REL-STUDY-{}", Uuid::new_v4())),
 		sponsor_study_number_kind: None,
 		study_type_reaction: Some("1".into()),
+		fda_ind_number_occurred: None,
+		fda_pre_anda_number_occurred: None,
 		edc_sync: None,
 		exclude_case_key_from_sync: None,
 	}
@@ -445,6 +449,42 @@ async fn product_presave_round_trips_receiver_presave_id() -> Result<()> {
 	expect_conflict_error(
 		ProductPresaveBmc::create(&ctx, &mm, deleted_input).await,
 		"active receiver presave",
+	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn study_presave_round_trips_fda_regional_numbers() -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create("FDA study sender".into()),
+	)
+	.await?;
+	let product_id = ProductPresaveBmc::create(
+		&ctx,
+		&mm,
+		product_presave_create(
+			RegulatoryAuthority::Fda,
+			"FDA study product".into(),
+			sender_id,
+		),
+	)
+	.await?;
+	let mut input =
+		study_presave_create_for_product("FDA regional study".into(), product_id);
+	input.fda_ind_number_occurred = Some("123456".into());
+	input.fda_pre_anda_number_occurred = Some("234567".into());
+	let id = StudyPresaveBmc::create(&ctx, &mm, input).await?;
+	let saved = StudyPresaveBmc::get(&ctx, &mm, id).await?;
+	assert_eq!(saved.fda_ind_number_occurred.as_deref(), Some("123456"));
+	assert_eq!(
+		saved.fda_pre_anda_number_occurred.as_deref(),
+		Some("234567")
 	);
 	Ok(())
 }
@@ -1128,6 +1168,8 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			sponsor_study_number: Some(format!("ST-001-{suffix}")),
 			sponsor_study_number_kind: Some("PROTOCOL_NO".into()),
 			study_type_reaction: Some("1".into()),
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
 			edc_sync: Some(true),
 			exclude_case_key_from_sync: Some(true),
 		},
@@ -1611,6 +1653,8 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 				sponsor_study_number: Some("INVALID-STUDY".into()),
 				sponsor_study_number_kind: None,
 				study_type_reaction: None,
+				fda_ind_number_occurred: None,
+				fda_pre_anda_number_occurred: None,
 				edc_sync: None,
 				exclude_case_key_from_sync: None,
 			},
@@ -1881,6 +1925,8 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			sponsor_study_number: Some(format!("DUP-STUDY-{suffix}")),
 			sponsor_study_number_kind: None,
 			study_type_reaction: Some("1".into()),
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
 			edc_sync: None,
 			exclude_case_key_from_sync: None,
 		},
@@ -1897,6 +1943,8 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				sponsor_study_number: Some(format!(" dup-study-{suffix} ")),
 				sponsor_study_number_kind: None,
 				study_type_reaction: Some("2".into()),
+				fda_ind_number_occurred: None,
+				fda_pre_anda_number_occurred: None,
 				edc_sync: None,
 				exclude_case_key_from_sync: None,
 			},
@@ -2251,6 +2299,8 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 			sponsor_study_number: Some(format!("CHILD-STUDY-{suffix}")),
 			sponsor_study_number_kind: None,
 			study_type_reaction: Some("1".into()),
+			fda_ind_number_occurred: None,
+			fda_pre_anda_number_occurred: None,
 			edc_sync: None,
 			exclude_case_key_from_sync: None,
 		},
