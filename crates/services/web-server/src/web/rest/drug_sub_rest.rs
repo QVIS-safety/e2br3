@@ -49,111 +49,26 @@ fn ensure_drug_scope(
 
 // -- Drug Active Substances (G.k.2.3.r)
 
-/// POST /api/cases/{case_id}/drugs/{drug_id}/active-substances
-pub async fn create_drug_active_substance(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForCreate<DrugActiveSubstanceForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugActiveSubstance>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_SUBSTANCE_CREATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForCreate { data } = params;
-	let mut data = data;
-	data.drug_id = drug_id;
-
-	let id = DrugActiveSubstanceBmc::create(&ctx, &mm, data).await?;
-	let entity = DrugActiveSubstanceBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-}
-
-/// GET /api/cases/{case_id}/drugs/{drug_id}/active-substances
-pub async fn list_drug_active_substances(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<DrugActiveSubstance>>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_SUBSTANCE_LIST)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-	let filter = DrugActiveSubstanceFilter {
-		drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-			drug_id.to_string()
-		))])),
-		..Default::default()
-	};
-	let entities = DrugActiveSubstanceBmc::list(
-		&ctx,
-		&mm,
-		Some(vec![filter]),
-		Some(ListOptions::default()),
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-}
-
-/// GET /api/cases/{case_id}/drugs/{drug_id}/active-substances/{id}
-pub async fn get_drug_active_substance(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugActiveSubstance>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_SUBSTANCE_READ)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-	let entity = DrugActiveSubstanceBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_active_substances")?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// PUT /api/cases/{case_id}/drugs/{drug_id}/active-substances/{id}
-pub async fn update_drug_active_substance(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<DrugActiveSubstanceForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugActiveSubstance>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_SUBSTANCE_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForUpdate { data } = params;
-	let entity = DrugActiveSubstanceBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_active_substances")?;
-	DrugActiveSubstanceBmc::update(&ctx, &mm, id, data).await?;
-	let entity = DrugActiveSubstanceBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// DELETE /api/cases/{case_id}/drugs/{drug_id}/active-substances/{id}
-pub async fn delete_drug_active_substance(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_SUBSTANCE_DELETE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = DrugActiveSubstanceBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_active_substances")?;
-	DrugActiveSubstanceBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
-/// POST /api/cases/{case_id}/drugs/{drug_id}/active-substances/{id}/restore
-pub async fn restore_drug_active_substance(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugActiveSubstance>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_SUBSTANCE_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = DrugActiveSubstanceBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_active_substances")?;
-	DrugActiveSubstanceBmc::restore(&ctx, &mm, id).await?;
-	let entity = DrugActiveSubstanceBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+lib_rest_core::generate_drug_child_rest_fns! {
+	Bmc: DrugActiveSubstanceBmc,
+	Entity: DrugActiveSubstance,
+	ForCreate: DrugActiveSubstanceForCreate,
+	ForUpdate: DrugActiveSubstanceForUpdate,
+	Filter: DrugActiveSubstanceFilter,
+	CreateFn: create_drug_active_substance,
+	ListFn: list_drug_active_substances,
+	GetFn: get_drug_active_substance,
+	UpdateFn: update_drug_active_substance,
+	DeleteFn: delete_drug_active_substance,
+	RestoreFn: restore_drug_active_substance,
+	ParentField: drug_id,
+	ScopeFn: ensure_drug_scope,
+	EntityName: "drug_active_substances",
+	PermCreate: DRUG_SUBSTANCE_CREATE,
+	PermList: DRUG_SUBSTANCE_LIST,
+	PermRead: DRUG_SUBSTANCE_READ,
+	PermUpdate: DRUG_SUBSTANCE_UPDATE,
+	PermDelete: DRUG_SUBSTANCE_DELETE
 }
 
 // -- Dosage Information (G.k.4.r)
