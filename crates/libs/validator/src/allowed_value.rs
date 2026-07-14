@@ -72,7 +72,9 @@ pub(crate) fn is_allowed_value_valid(
 			matches!(value, ConstraintValue::Boolean(Some(true)))
 		}
 		AllowedValueConstraintKind::Numeric => validate_numeric(constraint, value),
-		AllowedValueConstraintKind::Format => validate_format(constraint, value),
+		AllowedValueConstraintKind::Format => {
+			validate_format(constraint, value, vocabulary)
+		}
 		AllowedValueConstraintKind::Vocabulary => {
 			validate_vocabulary(rule_code, constraint, value, vocabulary)
 		}
@@ -150,6 +152,7 @@ fn validate_numeric(
 fn validate_format(
 	constraint: &AllowedValueConstraint,
 	value: ConstraintValue<'_>,
+	vocabulary: &VocabularyContext,
 ) -> bool {
 	let format = constraint
 		.format_name
@@ -161,13 +164,15 @@ fn validate_format(
 			FormatName::Base64 => {
 				general_purpose::STANDARD.decode(value.trim()).is_ok()
 			}
-			FormatName::IchIdentifier => valid_ich_identifier(value.trim()),
+			FormatName::IchIdentifier => {
+				valid_ich_identifier(value.trim(), vocabulary)
+			}
 		},
 		_ => panic!("format constraint received an incompatible value"),
 	}
 }
 
-fn valid_ich_identifier(value: &str) -> bool {
+fn valid_ich_identifier(value: &str, vocabulary: &VocabularyContext) -> bool {
 	if value.chars().count() > 100 || value.chars().any(char::is_control) {
 		return false;
 	}
@@ -177,10 +182,11 @@ fn valid_ich_identifier(value: &str) -> bool {
 	let Some((organization, report_number)) = remainder.rsplit_once('-') else {
 		return false;
 	};
-	let valid_country = country == "EU"
-		|| country_code::CountryCode::VARS
-			.iter()
-			.any(|candidate| candidate == country);
+	let valid_country = vocabulary.contains_snapshot_code(
+		"ISO3166",
+		crate::VocabularyScope::All,
+		country,
+	);
 	valid_country
 		&& !organization.trim().is_empty()
 		&& !report_number.trim().is_empty()
@@ -277,10 +283,7 @@ fn validate_vocabulary(
 	);
 	match vocabulary_name_for_allowed_rule(rule_code) {
 		Some("ISO3166") => {
-			value == "EU"
-				|| country_code::CountryCode::VARS
-					.iter()
-					.any(|country| country == value)
+			vocabulary.contains_snapshot_code("ISO3166", scope, value)
 		}
 		Some("ISO639") => {
 			vocabulary.contains_snapshot_code("ISO639-2", scope, value)
@@ -289,6 +292,9 @@ fn validate_vocabulary(
 			octofhir_ucum::validate(value).is_ok()
 		}
 		Some("UCUM") => vocabulary.contains_snapshot_code("ICH-UCUM", scope, value),
+		Some("EDQM") if rule_code.starts_with("ICH.G.k.4.r.9.2a.") => {
+			vocabulary.contains_vocabulary_version("EDQM", value)
+		}
 		Some("EDQM") => vocabulary.contains_snapshot_code("EDQM", scope, value),
 		Some(name) => panic!("unsupported vocabulary {name}: {rule_code}"),
 		None => panic!("missing vocabulary metadata: {rule_code}"),
@@ -424,28 +430,63 @@ mod tests {
 	}
 
 	#[test]
-	#[should_panic(expected = "unknown vocabulary snapshot scope: ICH-UCUM/Time")]
 	fn constrained_ucum_fails_closed_without_official_scope_snapshot() {
-		let _ = is_allowed_value_valid(
+		assert!(!is_allowed_value_valid(
 			"ICH.D.2.2b.ALLOWED.VALUE",
 			text("a"),
 			&VocabularyContext::default(),
-		);
+		));
 	}
 
 	#[test]
-	#[should_panic(expected = "unknown vocabulary snapshot scope: EDQM/DoseForm")]
 	fn edqm_fails_closed_without_approved_snapshot() {
-		let _ = is_allowed_value_valid(
+		assert!(!is_allowed_value_valid(
 			"ICH.G.k.4.r.9.2b.ALLOWED.VALUE",
 			text("example"),
 			&VocabularyContext::default(),
-		);
+		));
+		assert!(!is_allowed_value_valid(
+			"ICH.G.k.4.r.9.2a.ALLOWED.VALUE",
+			text("2026-01-01"),
+			&VocabularyContext::default(),
+		));
+		assert!(is_allowed_value_valid(
+			"ICH.G.k.4.r.9.2a.ALLOWED.VALUE",
+			text("2026-01-01"),
+			&VocabularyContext::for_active_versions(&[("EDQM", "2026-01-01")]),
+		));
+	}
+
+	#[test]
+	fn country_and_ich_identifier_use_explicit_active_terminology() {
+		let vocabulary = VocabularyContext::for_active_codes(&[
+			("ISO3166", crate::VocabularyScope::All, "KR"),
+			("ISO3166", crate::VocabularyScope::All, "EU"),
+		]);
+		assert!(is_allowed_value_valid(
+			"ICH.C.2.r.3.VOCABULARY",
+			text("KR"),
+			&vocabulary,
+		));
+		assert!(!is_allowed_value_valid(
+			"ICH.C.2.r.3.VOCABULARY",
+			text("ZZ"),
+			&vocabulary,
+		));
+		assert!(is_allowed_value_valid(
+			"ICH.C.1.8.1.ALLOWED.VALUE",
+			text("KR-ACME-2026-001"),
+			&vocabulary,
+		));
 	}
 
 	#[test]
 	fn ich_identifiers_require_country_organization_and_report_components() {
-		let vocabulary = VocabularyContext::default();
+		let vocabulary = VocabularyContext::for_active_codes(&[(
+			"ISO3166",
+			crate::VocabularyScope::All,
+			"KR",
+		)]);
 		assert!(is_allowed_value_valid(
 			"ICH.C.1.8.1.ALLOWED.VALUE",
 			text("KR-ACME-2026-001"),

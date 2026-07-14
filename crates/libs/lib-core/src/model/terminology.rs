@@ -332,6 +332,25 @@ impl UcumUnitBmc {
 pub struct ControlledTermBmc;
 
 impl ControlledTermBmc {
+	pub async fn active_release_versions(
+		mm: &ModelManager,
+		dictionary: &str,
+		language: &str,
+	) -> Result<HashSet<String>> {
+		let rows = mm
+			.dbx()
+			.fetch_all(
+				sqlx::query_as::<_, (String,)>(
+					"SELECT version FROM terminology_releases
+					 WHERE dictionary = $1 AND language = $2 AND status = 'active'",
+				)
+				.bind(dictionary)
+				.bind(language),
+			)
+			.await?;
+		Ok(rows.into_iter().map(|(version,)| version).collect())
+	}
+
 	pub async fn existing_active_codes(
 		mm: &ModelManager,
 		dictionary: &str,

@@ -27,7 +27,9 @@ use lib_core::model::safety_report::{
 	StudyInformation, StudyRegistrationNumber,
 };
 use lib_core::model::store::set_full_context_from_ctx_dbx;
-use lib_core::model::terminology::{MeddraTermBmc, MeddraTermKey};
+use lib_core::model::terminology::{
+	ControlledTermBmc, MeddraTermBmc, MeddraTermKey,
+};
 use lib_core::model::test_result::TestResult;
 use lib_core::model::{ModelManager, Result};
 use modql::filter::{OpValValue, OpValsValue};
@@ -82,6 +84,7 @@ pub struct VocabularyContext {
 	meddra_available: bool,
 	meddra_versions: HashSet<String>,
 	meddra_terms: HashSet<MeddraTermKey>,
+	vocabulary_versions: HashMap<String, HashSet<String>>,
 	snapshot_codes: Arc<SnapshotCodes>,
 }
 
@@ -91,6 +94,7 @@ impl Default for VocabularyContext {
 			meddra_available: false,
 			meddra_versions: HashSet::new(),
 			meddra_terms: HashSet::new(),
+			vocabulary_versions: HashMap::new(),
 			snapshot_codes: embedded_snapshot_codes(),
 		}
 	}
@@ -120,29 +124,63 @@ impl VocabularyContext {
 	) -> bool {
 		self.snapshot_codes
 			.get(&(vocabulary.to_string(), scope))
-			.unwrap_or_else(|| {
-				panic!("unknown vocabulary snapshot scope: {vocabulary}/{scope:?}")
-			})
-			.contains(code)
+			.is_some_and(|codes| codes.contains(code))
+	}
+
+	pub(crate) fn contains_vocabulary_version(
+		&self,
+		vocabulary: &str,
+		version: &str,
+	) -> bool {
+		self.vocabulary_versions
+			.get(vocabulary)
+			.is_some_and(|versions| versions.contains(version))
+	}
+
+	#[cfg(test)]
+	pub(crate) fn for_active_codes(
+		entries: &[(&str, VocabularyScope, &str)],
+	) -> Self {
+		let mut context = Self::default();
+		let codes = Arc::make_mut(&mut context.snapshot_codes);
+		for (vocabulary, scope, code) in entries {
+			codes
+				.entry(((*vocabulary).to_string(), *scope))
+				.or_default()
+				.insert((*code).to_string());
+		}
+		context
+	}
+
+	#[cfg(test)]
+	pub(crate) fn for_active_versions(entries: &[(&str, &str)]) -> Self {
+		let mut context = Self::default();
+		for (vocabulary, version) in entries {
+			context
+				.vocabulary_versions
+				.entry((*vocabulary).to_string())
+				.or_default()
+				.insert((*version).to_string());
+		}
+		context
 	}
 
 	#[cfg(test)]
 	pub(crate) fn for_meddra(keys: &[(&str, &str)]) -> Self {
-		Self {
-			meddra_available: true,
-			meddra_versions: keys
-				.iter()
-				.map(|(version, _)| (*version).to_string())
-				.collect(),
-			meddra_terms: keys
-				.iter()
-				.map(|(version, code)| MeddraTermKey {
-					version: (*version).to_string(),
-					code: (*code).to_string(),
-				})
-				.collect(),
-			snapshot_codes: embedded_snapshot_codes(),
-		}
+		let mut context = Self::default();
+		context.meddra_available = true;
+		context.meddra_versions = keys
+			.iter()
+			.map(|(version, _)| (*version).to_string())
+			.collect();
+		context.meddra_terms = keys
+			.iter()
+			.map(|(version, code)| MeddraTermKey {
+				version: (*version).to_string(),
+				code: (*code).to_string(),
+			})
+			.collect();
+		context
 	}
 }
 
@@ -297,17 +335,180 @@ async fn load_vocabulary_context(
 	validation_ctx: &ValidationContext,
 ) -> Result<VocabularyContext> {
 	let requested_keys = case_meddra_keys(validation_ctx);
-	let (versions, terms) = tokio::try_join!(
+	let requested_countries = case_country_codes(validation_ctx);
+	let (versions, terms, iso_countries, ich_country_extensions, edqm_versions) = tokio::try_join!(
 		MeddraTermBmc::active_versions(mm),
 		MeddraTermBmc::existing_active_keys(mm, &requested_keys),
+		ControlledTermBmc::existing_active_codes(
+			mm,
+			"iso3166",
+			"country",
+			&requested_countries,
+		),
+		ControlledTermBmc::existing_active_codes(
+			mm,
+			"iso3166",
+			"ich_country",
+			&requested_countries,
+		),
+		ControlledTermBmc::active_release_versions(mm, "edqm", "en"),
 	)?;
 	let meddra_available = !versions.is_empty();
+	let mut snapshot_codes = embedded_snapshot_codes();
+	Arc::make_mut(&mut snapshot_codes)
+		.entry(("ISO3166".to_string(), VocabularyScope::All))
+		.or_default()
+		.extend(
+			iso_countries
+				.into_iter()
+				.chain(ich_country_extensions.into_iter()),
+		);
+	let requested_scoped_codes = case_scoped_terminology_codes(validation_ctx);
+	for (scope, codes) in requested_scoped_codes {
+		let (dictionary, vocabulary) = match scope {
+			VocabularyScope::Time
+			| VocabularyScope::Gestation
+			| VocabularyScope::Dose
+			| VocabularyScope::Frequency => ("ich_constrained_ucum", "ICH-UCUM"),
+			VocabularyScope::DoseForm | VocabularyScope::Route => ("edqm", "EDQM"),
+			VocabularyScope::All => continue,
+		};
+		let values: Vec<String> = codes.into_iter().collect();
+		let existing = ControlledTermBmc::existing_active_codes(
+			mm,
+			dictionary,
+			vocabulary_scope_name(scope),
+			&values,
+		)
+		.await?;
+		Arc::make_mut(&mut snapshot_codes)
+			.entry((vocabulary.to_string(), scope))
+			.or_default()
+			.extend(existing);
+	}
+	let mut vocabulary_versions = HashMap::new();
+	vocabulary_versions.insert("EDQM".to_string(), edqm_versions);
 	Ok(VocabularyContext {
 		meddra_available,
 		meddra_versions: versions.into_iter().collect(),
 		meddra_terms: terms.into_iter().collect(),
-		snapshot_codes: embedded_snapshot_codes(),
+		vocabulary_versions,
+		snapshot_codes,
 	})
+}
+
+fn vocabulary_scope_name(scope: VocabularyScope) -> &'static str {
+	match scope {
+		VocabularyScope::All => "all",
+		VocabularyScope::Time => "time",
+		VocabularyScope::Gestation => "gestation",
+		VocabularyScope::Dose => "dose",
+		VocabularyScope::Frequency => "frequency",
+		VocabularyScope::DoseForm => "dose_form",
+		VocabularyScope::Route => "route",
+	}
+}
+
+fn case_scoped_terminology_codes(
+	validation_ctx: &ValidationContext,
+) -> HashMap<VocabularyScope, HashSet<String>> {
+	let mut codes = HashMap::<VocabularyScope, HashSet<String>>::new();
+	let mut add = |scope: VocabularyScope, value: Option<&str>| {
+		if let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) {
+			codes.entry(scope).or_default().insert(value.to_string());
+		}
+	};
+
+	if let Some(patient) = validation_ctx.patient.as_ref() {
+		add(VocabularyScope::Time, patient.age_unit.as_deref());
+		add(
+			VocabularyScope::Gestation,
+			patient.gestation_period_unit.as_deref(),
+		);
+	}
+	for parent in &validation_ctx.parents {
+		add(VocabularyScope::Time, parent.parent_age_unit.as_deref());
+	}
+	for reaction in &validation_ctx.reactions {
+		add(VocabularyScope::Time, reaction.duration_unit.as_deref());
+	}
+	for drug in &validation_ctx.drugs {
+		add(
+			VocabularyScope::Dose,
+			drug.cumulative_dose_first_reaction_unit.as_deref(),
+		);
+		add(
+			VocabularyScope::Gestation,
+			drug.gestation_period_exposure_unit.as_deref(),
+		);
+	}
+	for dosage in &validation_ctx.dosages {
+		add(VocabularyScope::Dose, dosage.dose_unit.as_deref());
+		add(VocabularyScope::Frequency, dosage.frequency_unit.as_deref());
+		add(VocabularyScope::Time, dosage.duration_unit.as_deref());
+		add(
+			VocabularyScope::DoseForm,
+			dosage.dose_form_termid.as_deref(),
+		);
+		add(VocabularyScope::Route, dosage.route_termid.as_deref());
+		add(
+			VocabularyScope::Route,
+			dosage.parent_route_termid.as_deref(),
+		);
+	}
+	for assessment in &validation_ctx.drug_reaction_assessments {
+		add(
+			VocabularyScope::Time,
+			assessment.administration_start_interval_unit.as_deref(),
+		);
+		add(
+			VocabularyScope::Time,
+			assessment.last_dose_interval_unit.as_deref(),
+		);
+	}
+
+	codes
+}
+
+fn case_country_codes(validation_ctx: &ValidationContext) -> Vec<String> {
+	let mut codes = HashSet::new();
+	let mut add = |value: Option<&str>| {
+		if let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) {
+			codes.insert(value.to_string());
+		}
+	};
+	let mut add_identifier = |value: Option<&str>| {
+		if let Some(country) =
+			value.and_then(|value| value.split_once('-').map(|v| v.0))
+		{
+			add(Some(country));
+		}
+	};
+
+	if let Some(report) = validation_ctx.safety_report.as_ref() {
+		add_identifier(report.worldwide_unique_id.as_deref());
+	}
+	for identifier in &validation_ctx.other_case_identifiers {
+		add_identifier(Some(identifier.case_identifier.as_str()));
+	}
+	for source in &validation_ctx.primary_sources {
+		add(source.country_code.as_deref());
+	}
+	if let Some(sender) = validation_ctx.sender.as_ref() {
+		add(sender.country_code.as_deref());
+	}
+	for registration in &validation_ctx.study_registrations {
+		add(registration.country_code.as_deref());
+	}
+	for reaction in &validation_ctx.reactions {
+		add(reaction.country_code.as_deref());
+	}
+	for drug in &validation_ctx.drugs {
+		add(drug.obtain_drug_country.as_deref());
+		add(drug.manufacturer_country.as_deref());
+	}
+
+	codes.into_iter().collect()
 }
 
 fn case_meddra_keys(validation_ctx: &ValidationContext) -> Vec<MeddraTermKey> {

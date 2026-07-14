@@ -977,6 +977,10 @@ mod constraint_rule_tests {
 			},
 		}];
 		let mut issues = Vec::<ValidationIssue>::new();
+		let vocabulary = VocabularyContext::for_active_codes(&[
+			("ISO3166", crate::VocabularyScope::All, "KR"),
+			("ISO3166", crate::VocabularyScope::All, "EU"),
+		]);
 
 		for value in [None, Some("KR"), Some("EU")] {
 			eval_constraints(
@@ -987,7 +991,7 @@ mod constraint_rule_tests {
 					value,
 				},
 				&rule,
-				&VocabularyContext::default(),
+				&vocabulary,
 			);
 		}
 		assert!(issues.is_empty());
@@ -1000,7 +1004,7 @@ mod constraint_rule_tests {
 				value: Some("ZZ"),
 			},
 			&rule,
-			&VocabularyContext::default(),
+			&vocabulary,
 		);
 		assert_eq!(issues.len(), 1);
 	}

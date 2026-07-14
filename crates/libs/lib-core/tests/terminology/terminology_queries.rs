@@ -37,6 +37,15 @@ async fn active_controlled_terms_and_mfds_products_support_membership() -> Resul
 	.await?;
 	dbx.execute(
 		sqlx::query(
+			"INSERT INTO terminology_releases
+			 (dictionary, version, language, status, loaded_rows)
+			 VALUES ('edqm', $1, 'en', 'active', 1)",
+		)
+		.bind(&version),
+	)
+	.await?;
+	dbx.execute(
+		sqlx::query(
 			"INSERT INTO mfds_products
 			 (item_seq, product_name_kr, version, active)
 			 VALUES ($1, 'Test product', $2, true)",
@@ -56,6 +65,9 @@ async fn active_controlled_terms_and_mfds_products_support_membership() -> Resul
 	.await?;
 	assert!(existing_countries.contains("KR"));
 	assert!(!existing_countries.contains("ZZ"));
+	let edqm_versions =
+		ControlledTermBmc::active_release_versions(&mm, "edqm", "en").await?;
+	assert!(edqm_versions.contains(&version));
 
 	let product_codes = vec![item_seq.clone(), "missing".to_string()];
 	let existing_products =
