@@ -33,6 +33,15 @@
 //! | sponsor_admin_company | Sponsor admin without sender-scope assignment    |
 //! | user                  | Default operational user permissions             |
 
+mod types;
+pub use types::*;
+
+mod catalog;
+pub use catalog::*;
+
 mod permission;
 
 pub use permission::*;
+
+#[cfg(test)]
+mod tests;

@@ -1,0 +1,415 @@
+use super::{Action, Permission, Resource};
+
+macro_rules! permission_group {
+	(
+		$group:ident,
+		$resource:ident,
+		$( $constant:ident => $action:ident ),+ $(,)?
+	) => {
+		$(
+			pub const $constant: Permission =
+				Permission::new(Resource::$resource, Action::$action);
+		)+
+		pub(crate) const $group: &[Permission] = &[$($constant),+];
+	};
+}
+
+permission_group! {
+	CASE_PERMISSIONS,
+	Case,
+	CASE_CREATE => Create,
+	CASE_READ => Read,
+	CASE_UPDATE => Update,
+	CASE_DELETE => Delete,
+	CASE_LIST => List,
+	CASE_APPROVE => Approve,
+}
+
+permission_group! {
+	PATIENT_PERMISSIONS,
+	Patient,
+	PATIENT_CREATE => Create,
+	PATIENT_READ => Read,
+	PATIENT_UPDATE => Update,
+	PATIENT_DELETE => Delete,
+	PATIENT_LIST => List,
+}
+
+permission_group! {
+	PATIENT_IDENTIFIER_PERMISSIONS,
+	PatientIdentifier,
+	PATIENT_IDENTIFIER_CREATE => Create,
+	PATIENT_IDENTIFIER_READ => Read,
+	PATIENT_IDENTIFIER_UPDATE => Update,
+	PATIENT_IDENTIFIER_DELETE => Delete,
+	PATIENT_IDENTIFIER_LIST => List,
+}
+
+permission_group! {
+	DRUG_PERMISSIONS,
+	Drug,
+	DRUG_CREATE => Create,
+	DRUG_READ => Read,
+	DRUG_UPDATE => Update,
+	DRUG_DELETE => Delete,
+	DRUG_LIST => List,
+}
+
+permission_group! {
+	DRUG_SUBSTANCE_PERMISSIONS,
+	DrugSubstance,
+	DRUG_SUBSTANCE_CREATE => Create,
+	DRUG_SUBSTANCE_READ => Read,
+	DRUG_SUBSTANCE_UPDATE => Update,
+	DRUG_SUBSTANCE_DELETE => Delete,
+	DRUG_SUBSTANCE_LIST => List,
+}
+
+permission_group! {
+	DRUG_DOSAGE_PERMISSIONS,
+	DrugDosage,
+	DRUG_DOSAGE_CREATE => Create,
+	DRUG_DOSAGE_READ => Read,
+	DRUG_DOSAGE_UPDATE => Update,
+	DRUG_DOSAGE_DELETE => Delete,
+	DRUG_DOSAGE_LIST => List,
+}
+
+permission_group! {
+	DRUG_INDICATION_PERMISSIONS,
+	DrugIndication,
+	DRUG_INDICATION_CREATE => Create,
+	DRUG_INDICATION_READ => Read,
+	DRUG_INDICATION_UPDATE => Update,
+	DRUG_INDICATION_DELETE => Delete,
+	DRUG_INDICATION_LIST => List,
+}
+
+permission_group! {
+	DRUG_DEVICE_CHARACTERISTIC_PERMISSIONS,
+	DrugDeviceCharacteristic,
+	DRUG_DEVICE_CHARACTERISTIC_CREATE => Create,
+	DRUG_DEVICE_CHARACTERISTIC_READ => Read,
+	DRUG_DEVICE_CHARACTERISTIC_UPDATE => Update,
+	DRUG_DEVICE_CHARACTERISTIC_DELETE => Delete,
+	DRUG_DEVICE_CHARACTERISTIC_LIST => List,
+}
+
+permission_group! {
+	DRUG_REACTION_ASSESSMENT_PERMISSIONS,
+	DrugReactionAssessment,
+	DRUG_REACTION_ASSESSMENT_CREATE => Create,
+	DRUG_REACTION_ASSESSMENT_READ => Read,
+	DRUG_REACTION_ASSESSMENT_UPDATE => Update,
+	DRUG_REACTION_ASSESSMENT_DELETE => Delete,
+	DRUG_REACTION_ASSESSMENT_LIST => List,
+}
+
+permission_group! {
+	RELATEDNESS_ASSESSMENT_PERMISSIONS,
+	RelatednessAssessment,
+	RELATEDNESS_ASSESSMENT_CREATE => Create,
+	RELATEDNESS_ASSESSMENT_READ => Read,
+	RELATEDNESS_ASSESSMENT_UPDATE => Update,
+	RELATEDNESS_ASSESSMENT_DELETE => Delete,
+	RELATEDNESS_ASSESSMENT_LIST => List,
+}
+
+permission_group! {
+	DRUG_RECURRENCE_PERMISSIONS,
+	DrugRecurrence,
+	DRUG_RECURRENCE_CREATE => Create,
+	DRUG_RECURRENCE_READ => Read,
+	DRUG_RECURRENCE_UPDATE => Update,
+	DRUG_RECURRENCE_DELETE => Delete,
+	DRUG_RECURRENCE_LIST => List,
+}
+
+permission_group! {
+	REACTION_PERMISSIONS,
+	Reaction,
+	REACTION_CREATE => Create,
+	REACTION_READ => Read,
+	REACTION_UPDATE => Update,
+	REACTION_DELETE => Delete,
+	REACTION_LIST => List,
+}
+
+permission_group! {
+	TEST_RESULT_PERMISSIONS,
+	TestResult,
+	TEST_RESULT_CREATE => Create,
+	TEST_RESULT_READ => Read,
+	TEST_RESULT_UPDATE => Update,
+	TEST_RESULT_DELETE => Delete,
+	TEST_RESULT_LIST => List,
+}
+
+permission_group! {
+	NARRATIVE_PERMISSIONS,
+	Narrative,
+	NARRATIVE_CREATE => Create,
+	NARRATIVE_READ => Read,
+	NARRATIVE_UPDATE => Update,
+	NARRATIVE_DELETE => Delete,
+	NARRATIVE_LIST => List,
+}
+
+permission_group! {
+	MESSAGE_HEADER_PERMISSIONS,
+	MessageHeader,
+	MESSAGE_HEADER_CREATE => Create,
+	MESSAGE_HEADER_READ => Read,
+	MESSAGE_HEADER_UPDATE => Update,
+	MESSAGE_HEADER_DELETE => Delete,
+	MESSAGE_HEADER_LIST => List,
+}
+
+permission_group! {
+	SAFETY_REPORT_PERMISSIONS,
+	SafetyReport,
+	SAFETY_REPORT_CREATE => Create,
+	SAFETY_REPORT_READ => Read,
+	SAFETY_REPORT_UPDATE => Update,
+	SAFETY_REPORT_DELETE => Delete,
+	SAFETY_REPORT_LIST => List,
+}
+
+permission_group! {
+	SENDER_INFORMATION_PERMISSIONS,
+	SenderInformation,
+	SENDER_INFORMATION_CREATE => Create,
+	SENDER_INFORMATION_READ => Read,
+	SENDER_INFORMATION_UPDATE => Update,
+	SENDER_INFORMATION_DELETE => Delete,
+	SENDER_INFORMATION_LIST => List,
+}
+
+permission_group! {
+	PRIMARY_SOURCE_PERMISSIONS,
+	PrimarySource,
+	PRIMARY_SOURCE_CREATE => Create,
+	PRIMARY_SOURCE_READ => Read,
+	PRIMARY_SOURCE_UPDATE => Update,
+	PRIMARY_SOURCE_DELETE => Delete,
+	PRIMARY_SOURCE_LIST => List,
+}
+
+permission_group! {
+	LITERATURE_REFERENCE_PERMISSIONS,
+	LiteratureReference,
+	LITERATURE_REFERENCE_CREATE => Create,
+	LITERATURE_REFERENCE_READ => Read,
+	LITERATURE_REFERENCE_UPDATE => Update,
+	LITERATURE_REFERENCE_DELETE => Delete,
+	LITERATURE_REFERENCE_LIST => List,
+}
+
+permission_group! {
+	STUDY_INFORMATION_PERMISSIONS,
+	StudyInformation,
+	STUDY_INFORMATION_CREATE => Create,
+	STUDY_INFORMATION_READ => Read,
+	STUDY_INFORMATION_UPDATE => Update,
+	STUDY_INFORMATION_DELETE => Delete,
+	STUDY_INFORMATION_LIST => List,
+}
+
+permission_group! {
+	STUDY_REGISTRATION_PERMISSIONS,
+	StudyRegistration,
+	STUDY_REGISTRATION_CREATE => Create,
+	STUDY_REGISTRATION_READ => Read,
+	STUDY_REGISTRATION_UPDATE => Update,
+	STUDY_REGISTRATION_DELETE => Delete,
+	STUDY_REGISTRATION_LIST => List,
+}
+
+permission_group! {
+	MEDICAL_HISTORY_PERMISSIONS,
+	MedicalHistory,
+	MEDICAL_HISTORY_CREATE => Create,
+	MEDICAL_HISTORY_READ => Read,
+	MEDICAL_HISTORY_UPDATE => Update,
+	MEDICAL_HISTORY_DELETE => Delete,
+	MEDICAL_HISTORY_LIST => List,
+}
+
+permission_group! {
+	PAST_DRUG_PERMISSIONS,
+	PastDrug,
+	PAST_DRUG_CREATE => Create,
+	PAST_DRUG_READ => Read,
+	PAST_DRUG_UPDATE => Update,
+	PAST_DRUG_DELETE => Delete,
+	PAST_DRUG_LIST => List,
+}
+
+permission_group! {
+	PATIENT_DEATH_PERMISSIONS,
+	PatientDeath,
+	PATIENT_DEATH_CREATE => Create,
+	PATIENT_DEATH_READ => Read,
+	PATIENT_DEATH_UPDATE => Update,
+	PATIENT_DEATH_DELETE => Delete,
+	PATIENT_DEATH_LIST => List,
+}
+
+permission_group! {
+	DEATH_CAUSE_PERMISSIONS,
+	DeathCause,
+	DEATH_CAUSE_CREATE => Create,
+	DEATH_CAUSE_READ => Read,
+	DEATH_CAUSE_UPDATE => Update,
+	DEATH_CAUSE_DELETE => Delete,
+	DEATH_CAUSE_LIST => List,
+}
+
+permission_group! {
+	PARENT_INFORMATION_PERMISSIONS,
+	ParentInformation,
+	PARENT_INFORMATION_CREATE => Create,
+	PARENT_INFORMATION_READ => Read,
+	PARENT_INFORMATION_UPDATE => Update,
+	PARENT_INFORMATION_DELETE => Delete,
+	PARENT_INFORMATION_LIST => List,
+}
+
+permission_group! {
+	PARENT_MEDICAL_HISTORY_PERMISSIONS,
+	ParentMedicalHistory,
+	PARENT_MEDICAL_HISTORY_CREATE => Create,
+	PARENT_MEDICAL_HISTORY_READ => Read,
+	PARENT_MEDICAL_HISTORY_UPDATE => Update,
+	PARENT_MEDICAL_HISTORY_DELETE => Delete,
+	PARENT_MEDICAL_HISTORY_LIST => List,
+}
+
+permission_group! {
+	PARENT_PAST_DRUG_PERMISSIONS,
+	ParentPastDrug,
+	PARENT_PAST_DRUG_CREATE => Create,
+	PARENT_PAST_DRUG_READ => Read,
+	PARENT_PAST_DRUG_UPDATE => Update,
+	PARENT_PAST_DRUG_DELETE => Delete,
+	PARENT_PAST_DRUG_LIST => List,
+}
+
+permission_group! {
+	SENDER_DIAGNOSIS_PERMISSIONS,
+	SenderDiagnosis,
+	SENDER_DIAGNOSIS_CREATE => Create,
+	SENDER_DIAGNOSIS_READ => Read,
+	SENDER_DIAGNOSIS_UPDATE => Update,
+	SENDER_DIAGNOSIS_DELETE => Delete,
+	SENDER_DIAGNOSIS_LIST => List,
+}
+
+permission_group! {
+	CASE_SUMMARY_PERMISSIONS,
+	CaseSummary,
+	CASE_SUMMARY_CREATE => Create,
+	CASE_SUMMARY_READ => Read,
+	CASE_SUMMARY_UPDATE => Update,
+	CASE_SUMMARY_DELETE => Delete,
+	CASE_SUMMARY_LIST => List,
+}
+
+permission_group! {
+	CASE_IDENTIFIER_PERMISSIONS,
+	CaseIdentifier,
+	CASE_IDENTIFIER_CREATE => Create,
+	CASE_IDENTIFIER_READ => Read,
+	CASE_IDENTIFIER_UPDATE => Update,
+	CASE_IDENTIFIER_DELETE => Delete,
+	CASE_IDENTIFIER_LIST => List,
+}
+
+permission_group! {
+	RECEIVER_PERMISSIONS,
+	Receiver,
+	RECEIVER_CREATE => Create,
+	RECEIVER_READ => Read,
+	RECEIVER_UPDATE => Update,
+	RECEIVER_DELETE => Delete,
+	RECEIVER_LIST => List,
+}
+
+permission_group! {
+	PRESAVE_TEMPLATE_PERMISSIONS,
+	PresaveTemplate,
+	PRESAVE_TEMPLATE_CREATE => Create,
+	PRESAVE_TEMPLATE_READ => Read,
+	PRESAVE_TEMPLATE_UPDATE => Update,
+	PRESAVE_TEMPLATE_DELETE => Delete,
+	PRESAVE_TEMPLATE_LIST => List,
+}
+
+permission_group! {
+	USER_PERMISSIONS,
+	User,
+	USER_CREATE => Create,
+	USER_READ => Read,
+	USER_UPDATE => Update,
+	USER_DELETE => Delete,
+	USER_LIST => List,
+}
+
+permission_group! {
+	ORGANIZATION_PERMISSIONS,
+	Organization,
+	ORG_CREATE => Create,
+	ORG_READ => Read,
+	ORG_UPDATE => Update,
+	ORG_DELETE => Delete,
+	ORG_LIST => List,
+}
+
+permission_group! {
+	AUDIT_LOG_PERMISSIONS,
+	AuditLog,
+	AUDIT_READ => Read,
+	AUDIT_LIST => List,
+}
+
+permission_group! {
+	SETTINGS_PERMISSIONS,
+	Settings,
+	SETTINGS_READ => Read,
+	SETTINGS_UPDATE => Update,
+}
+
+permission_group! {
+	DASHBOARD_NOTICE_PERMISSIONS,
+	DashboardNotice,
+	DASHBOARD_NOTICE_READ => Read,
+	DASHBOARD_NOTICE_UPDATE => Update,
+}
+
+permission_group! {
+	EMAIL_NOTIFICATION_PERMISSIONS,
+	EmailNotification,
+	EMAIL_NOTIFICATION_SEND => Send,
+}
+
+permission_group! {
+	TERMINOLOGY_PERMISSIONS,
+	Terminology,
+	TERMINOLOGY_READ => Read,
+	TERMINOLOGY_IMPORT => Import,
+	TERMINOLOGY_APPROVE => Approve,
+}
+
+permission_group! {
+	XML_EXPORT_PERMISSIONS,
+	XmlExport,
+	XML_EXPORT_READ => Read,
+	XML_EXPORT => Export,
+}
+
+permission_group! {
+	XML_IMPORT_PERMISSIONS,
+	XmlImport,
+	XML_IMPORT_READ => Read,
+	XML_IMPORT => Import,
+}
