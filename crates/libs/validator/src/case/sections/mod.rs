@@ -229,15 +229,19 @@ mod tests {
 		let direct_only =
 			direct.difference(&table).copied().collect::<BTreeSet<_>>();
 
-		assert_eq!(table.len(), 411);
-		assert_eq!(direct.len(), 51);
+		assert_eq!(table.len(), 422);
+		assert_eq!(direct.len(), 42);
 		assert_eq!(
 			overlap,
-			["ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN"]
-				.into_iter()
-				.collect()
+			[
+				"ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
+				"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
+				"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
+			]
+			.into_iter()
+			.collect()
 		);
-		assert_eq!(direct_only.len(), 50);
+		assert_eq!(direct_only.len(), 39);
 		assert_eq!(table.union(&direct).count(), 461);
 	}
 
