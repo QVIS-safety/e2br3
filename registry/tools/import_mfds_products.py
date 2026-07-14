@@ -106,12 +106,12 @@ def collect_products(
     service_key: str,
     *,
     fetch: FetchPage = fetch_page,
-    rows_per_page: int = 1000,
+    rows_per_page: int = 500,
 ) -> tuple[dict[str, Any], list[tuple[int, bytes]]]:
     if not version.strip():
         raise ValueError("version must be non-empty")
-    if rows_per_page <= 0:
-        raise ValueError("rows_per_page must be positive")
+    if not 1 <= rows_per_page <= 500:
+        raise ValueError("rows_per_page must be between 1 and 500")
 
     products: dict[str, dict[str, str | None]] = {}
     raw_pages: list[tuple[int, bytes]] = []
@@ -173,7 +173,7 @@ def collect_to_paths(
     output: Path,
     raw_dir: Path,
     fetch: FetchPage = fetch_page,
-    rows_per_page: int = 1000,
+    rows_per_page: int = 500,
 ) -> dict[str, Any]:
     artifact, raw_pages = collect_products(
         version, service_key, fetch=fetch, rows_per_page=rows_per_page
@@ -192,7 +192,7 @@ def main() -> int:
     parser.add_argument("--version", required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--raw-dir", type=Path)
-    parser.add_argument("--rows-per-page", type=int, default=1000)
+    parser.add_argument("--rows-per-page", type=int, default=500)
     parser.add_argument("--collect-only", action="store_true")
     args = parser.parse_args()
 
