@@ -1280,6 +1280,82 @@ mod tests {
 	use super::*;
 	use crate::ctx::ROLE_SYSTEM_ADMIN;
 
+	fn snapshot_bytes(hash: &mut u64, bytes: &[u8]) {
+		for byte in bytes {
+			*hash ^= u64::from(*byte);
+			*hash = hash.wrapping_mul(0x100000001b3);
+		}
+		*hash ^= 0xff;
+		*hash = hash.wrapping_mul(0x100000001b3);
+	}
+
+	#[test]
+	fn rbac_builtin_and_menu_policy_snapshot() {
+		let mut hash = 0xcbf29ce484222325;
+		for role in [
+			ROLE_SYSTEM_ADMIN,
+			ROLE_SPONSOR_ADMIN_CRO,
+			ROLE_SPONSOR_ADMIN_COMPANY,
+			ROLE_USER,
+			"viewer",
+			"unknown",
+		] {
+			snapshot_bytes(&mut hash, role.as_bytes());
+			for permission in role_permissions(role) {
+				snapshot_bytes(&mut hash, permission.to_string().as_bytes());
+			}
+		}
+
+		for menu_key in [
+			"home_workflow",
+			"home_notice",
+			"home_email",
+			"case",
+			"info",
+			"import",
+			"export_submission",
+			"submission",
+			"export",
+			"user",
+			"users",
+			"audit",
+			"data",
+			"terminology",
+			"admin",
+			"settings",
+			"roles",
+			"organization",
+			"organizations",
+			"unknown",
+		] {
+			for flags in [
+				[true, false, false, false],
+				[false, true, false, false],
+				[false, false, true, false],
+				[false, false, false, true],
+				[true, true, true, true],
+			] {
+				snapshot_bytes(&mut hash, menu_key.as_bytes());
+				for flag in flags {
+					snapshot_bytes(&mut hash, &[u8::from(flag)]);
+				}
+				let permissions =
+					permissions_for_menu_privileges(&[AdminMenuPrivilege {
+						menu_key: menu_key.to_string(),
+						can_read: flags[0],
+						can_edit: flags[1],
+						can_review: flags[2],
+						can_lock: flags[3],
+					}]);
+				for permission in permissions {
+					snapshot_bytes(&mut hash, permission.to_string().as_bytes());
+				}
+			}
+		}
+
+		assert_eq!(hash, 15683745391403549514);
+	}
+
 	#[test]
 	fn test_system_admin_has_no_operational_permissions() {
 		assert!(!has_permission(ROLE_SYSTEM_ADMIN, CASE_CREATE));
