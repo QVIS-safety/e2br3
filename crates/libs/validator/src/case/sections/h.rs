@@ -1,18 +1,30 @@
 use super::rule_table::{
-	eval_companions, eval_indexed_constraints, eval_indexed_length,
-	eval_indexed_meddra, eval_length, CompanionRule, IndexedConstraintRule,
-	IndexedLengthRule, IndexedMeddraRule, LengthRule,
+	eval_catalog_values, eval_companions, eval_indexed_constraints,
+	eval_indexed_length, eval_indexed_meddra, eval_length, CatalogValueRule,
+	CompanionRule, IndexedConstraintRule, IndexedLengthRule, IndexedMeddraRule,
+	LengthRule, RuleValue,
 };
 use crate::allowed_value::ConstraintValue;
 use crate::{
-	has_text, push_issue_by_code, push_issue_if_rule_invalid,
-	should_require_case_narrative, RegulatoryAuthority, RuleFacts,
+	has_text, should_require_case_narrative, RegulatoryAuthority, RuleFacts,
 	ValidationContext, ValidationIssue,
 };
 use lib_core::model::narrative::{
 	CaseSummaryInformation, NarrativeInformation, SenderDiagnosis,
 };
 use std::borrow::Cow;
+
+struct HNarrativePresenceView {
+	value: Option<String>,
+}
+
+const H_NARRATIVE_PRESENCE_RULES: &[CatalogValueRule<HNarrativePresenceView>] =
+	&[CatalogValueRule {
+		code: "ICH.H.1.REQUIRED",
+		path: |_| "narrative.caseNarrative".to_string(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	}];
 
 const H_NARRATIVE_LENGTH_RULES: &[LengthRule<NarrativeInformation>] = &[
 	LengthRule {
@@ -130,23 +142,23 @@ pub(crate) fn collect_ich_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	if validation_ctx.narrative.is_none() {
-		push_issue_by_code(issues, "ICH.H.1.REQUIRED", "narrative.caseNarrative");
-	}
-
 	if let Some(narrative) = validation_ctx.narrative.as_ref() {
 		eval_length(issues, narrative, H_NARRATIVE_LENGTH_RULES);
-		if should_require_case_narrative(narrative) {
-			let _ = push_issue_if_rule_invalid(
-				issues,
-				"ICH.H.1.REQUIRED",
-				"narrative.caseNarrative",
-				Some(narrative.case_narrative.as_str()),
-				None,
-				RuleFacts::default(),
-			);
-		}
 	}
+	let narrative_presence = HNarrativePresenceView {
+		value: validation_ctx.narrative.as_ref().and_then(|narrative| {
+			if should_require_case_narrative(narrative) {
+				Some(narrative.case_narrative.clone())
+			} else {
+				Some("present".to_string())
+			}
+		}),
+	};
+	eval_catalog_values(
+		issues,
+		std::slice::from_ref(&narrative_presence),
+		H_NARRATIVE_PRESENCE_RULES,
+	);
 
 	eval_companions(
 		issues,
@@ -217,12 +229,15 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	codes.extend(super::rule_table::table_rule_codes(
 		H_CASE_SUMMARY_CONSTRAINT_RULES,
 	));
+	codes.extend(super::rule_table::table_rule_codes(
+		H_NARRATIVE_PRESENCE_RULES,
+	));
 	codes
 }
 
 #[cfg(test)]
 pub(super) fn direct_rule_codes() -> &'static [&'static str] {
-	&["ICH.H.1.REQUIRED"]
+	&[]
 }
 
 #[cfg(test)]

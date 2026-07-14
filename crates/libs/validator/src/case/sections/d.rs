@@ -846,6 +846,47 @@ struct DPatientRegionalRuleView {
 	facts: RuleFacts,
 }
 
+struct DIchPresenceRuleView {
+	path: String,
+	value: Option<String>,
+	facts: RuleFacts,
+}
+
+macro_rules! d_ich_presence_rule {
+	($name:ident, $code:literal) => {
+		const $name: &[CatalogValueRule<DIchPresenceRuleView>] =
+			&[CatalogValueRule {
+				code: $code,
+				path: |item| item.path.clone(),
+				value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+				facts: |item| item.facts,
+			}];
+	};
+}
+
+d_ich_presence_rule!(D_ICH_D1_RULE, "ICH.D.1.REQUIRED");
+d_ich_presence_rule!(D_ICH_D114_RULE, "ICH.D.1.1.4.REQUIRED");
+d_ich_presence_rule!(D_ICH_D22A_RULE, "ICH.D.2.2a.REQUIRED");
+d_ich_presence_rule!(D_ICH_D22B_RULE, "ICH.D.2.2b.REQUIRED");
+d_ich_presence_rule!(D_ICH_D221A_RULE, "ICH.D.2.2.1a.REQUIRED");
+d_ich_presence_rule!(D_ICH_D221B_RULE, "ICH.D.2.2.1b.REQUIRED");
+d_ich_presence_rule!(D_ICH_D93_RULE, "ICH.D.9.3.REQUIRED");
+
+fn eval_d_ich_presence(
+	issues: &mut Vec<ValidationIssue>,
+	path: impl Into<String>,
+	value: Option<String>,
+	facts: RuleFacts,
+	rules: &[CatalogValueRule<DIchPresenceRuleView>],
+) {
+	let view = DIchPresenceRuleView {
+		path: path.into(),
+		value,
+		facts,
+	};
+	eval_catalog_values(issues, std::slice::from_ref(&view), rules);
+}
+
 const D_FDA_CATALOG_VALUE_RULES: &[CatalogValueRule<DPatientRegionalRuleView>] = &[
 	CatalogValueRule {
 		code: "FDA.D.11.REQUIRED",
@@ -1128,44 +1169,38 @@ pub(crate) fn collect_ich_issues(
 		.unwrap_or(false);
 
 	if !report_type_is_study {
-		if validation_ctx.patient.is_none() {
-			push_issue_by_code(
-				issues,
-				"ICH.D.1.REQUIRED",
-				"patientInformation.patientInitials",
-			);
-		}
-
-		if let Some(patient) = validation_ctx.patient.as_ref() {
-			if should_require_patient_initials(patient)
-				&& !has_patient_initials(patient)
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.1.REQUIRED",
-					"patientInformation.patientInitials",
-				);
-			}
-		}
-	}
-
-	if report_type_is_study {
-		let has_study_number = validation_ctx.patient_identifiers.iter().any(|id| {
-			id.identifier_type_code.trim() == "4"
-				&& id
-					.identifier_value
-					.as_deref()
-					.map(|value| !value.trim().is_empty())
-					.unwrap_or(false)
+		let initials_present = validation_ctx.patient.as_ref().and_then(|patient| {
+			(!should_require_patient_initials(patient)
+				|| has_patient_initials(patient))
+			.then(|| "present".to_string())
 		});
-		if !has_study_number {
-			push_issue_by_code(
-				issues,
-				"ICH.D.1.1.4.REQUIRED",
-				"patientInformation.patientStudyNumber",
-			);
-		}
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.patientInitials",
+			initials_present,
+			RuleFacts::default(),
+			D_ICH_D1_RULE,
+		);
 	}
+
+	let has_study_number = validation_ctx.patient_identifiers.iter().any(|id| {
+		id.identifier_type_code.trim() == "4"
+			&& id
+				.identifier_value
+				.as_deref()
+				.map(|value| !value.trim().is_empty())
+				.unwrap_or(false)
+	});
+	eval_d_ich_presence(
+		issues,
+		"patientInformation.patientStudyNumber",
+		has_study_number.then(|| "present".to_string()),
+		RuleFacts {
+			ich_report_type_is_study: Some(report_type_is_study),
+			..RuleFacts::default()
+		},
+		D_ICH_D114_RULE,
+	);
 
 	if let Some(patient) = validation_ctx.patient.as_ref() {
 		if validation_ctx.medical_history.is_empty() {
@@ -1182,37 +1217,49 @@ pub(crate) fn collect_ich_issues(
 		eval_derived_length(issues, patient, D_PATIENT_DERIVED_LENGTH_RULES);
 		let age_value_present = patient.age_at_time_of_onset.is_some();
 		let age_unit_present = has_text(patient.age_unit.as_deref());
-		if age_unit_present && !age_value_present {
-			push_issue_by_code(
-				issues,
-				"ICH.D.2.2a.REQUIRED",
-				"patientInformation.ageAtTimeOfOnset",
-			);
-		}
-		if age_value_present && !age_unit_present {
-			push_issue_by_code(
-				issues,
-				"ICH.D.2.2b.REQUIRED",
-				"patientInformation.ageUnit",
-			);
-		}
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.ageAtTimeOfOnset",
+			decimal_text(patient.age_at_time_of_onset),
+			RuleFacts {
+				ich_age_unit_present: Some(age_unit_present),
+				..RuleFacts::default()
+			},
+			D_ICH_D22A_RULE,
+		);
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.ageUnit",
+			patient.age_unit.clone(),
+			RuleFacts {
+				ich_age_value_present: Some(age_value_present),
+				..RuleFacts::default()
+			},
+			D_ICH_D22B_RULE,
+		);
 		let gestation_value_present = patient.gestation_period.is_some();
 		let gestation_unit_present =
 			has_text(patient.gestation_period_unit.as_deref());
-		if gestation_unit_present && !gestation_value_present {
-			push_issue_by_code(
-				issues,
-				"ICH.D.2.2.1a.REQUIRED",
-				"patientInformation.gestationPeriod",
-			);
-		}
-		if gestation_value_present && !gestation_unit_present {
-			push_issue_by_code(
-				issues,
-				"ICH.D.2.2.1b.REQUIRED",
-				"patientInformation.gestationPeriodUnit",
-			);
-		}
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.gestationPeriod",
+			decimal_text(patient.gestation_period),
+			RuleFacts {
+				ich_gestation_unit_present: Some(gestation_unit_present),
+				..RuleFacts::default()
+			},
+			D_ICH_D221A_RULE,
+		);
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.gestationPeriodUnit",
+			patient.gestation_period_unit.clone(),
+			RuleFacts {
+				ich_gestation_value_present: Some(gestation_value_present),
+				..RuleFacts::default()
+			},
+			D_ICH_D221B_RULE,
+		);
 	}
 
 	eval_indexed_length(
@@ -1312,15 +1359,16 @@ pub(crate) fn collect_ich_issues(
 
 	if let Some(death_info) = validation_ctx.death_info.as_ref() {
 		eval_future_dates(issues, death_info, D_DEATH_FUTURE_DATE_RULES);
-		if death_info.date_of_death.is_some()
-			&& death_info.autopsy_performed.is_none()
-		{
-			push_issue_by_code(
-				issues,
-				"ICH.D.9.3.REQUIRED",
-				"patientInformation.death.autopsyPerformed",
-			);
-		}
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.death.autopsyPerformed",
+			death_info.autopsy_performed.map(|value| value.to_string()),
+			RuleFacts {
+				ich_date_of_death_present: Some(death_info.date_of_death.is_some()),
+				..RuleFacts::default()
+			},
+			D_ICH_D93_RULE,
+		);
 	}
 
 	eval_companions(
@@ -1696,6 +1744,13 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	add!(D_FDA_CATALOG_VALUE_RULES);
 	add!(D_MFDS_PAST_DRUG_CATALOG_VALUE_RULES);
 	add!(D_MFDS_PARENT_PAST_DRUG_CATALOG_VALUE_RULES);
+	add!(D_ICH_D1_RULE);
+	add!(D_ICH_D114_RULE);
+	add!(D_ICH_D22A_RULE);
+	add!(D_ICH_D22B_RULE);
+	add!(D_ICH_D221A_RULE);
+	add!(D_ICH_D221B_RULE);
+	add!(D_ICH_D93_RULE);
 	codes.extend(super::rule_table::indexed_meddra_rule_codes(
 		D_MEDICAL_HISTORY_MEDDRA_RULES,
 	));
@@ -1720,14 +1775,7 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 #[cfg(test)]
 pub(super) fn direct_rule_codes() -> &'static [&'static str] {
 	&[
-		"ICH.D.1.1.4.REQUIRED",
-		"ICH.D.1.REQUIRED",
-		"ICH.D.2.2.1a.REQUIRED",
-		"ICH.D.2.2.1b.REQUIRED",
-		"ICH.D.2.2a.REQUIRED",
-		"ICH.D.2.2b.REQUIRED",
 		"ICH.D.8.MPID_PHPID.EXCLUSIVE",
-		"ICH.D.9.3.REQUIRED",
 		"ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
 	]
 }

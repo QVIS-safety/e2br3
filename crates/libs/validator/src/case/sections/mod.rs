@@ -229,8 +229,8 @@ mod tests {
 		let direct_only =
 			direct.difference(&table).copied().collect::<BTreeSet<_>>();
 
-		assert_eq!(table.len(), 422);
-		assert_eq!(direct.len(), 42);
+		assert_eq!(table.len(), 439);
+		assert_eq!(direct.len(), 25);
 		assert_eq!(
 			overlap,
 			[
@@ -241,7 +241,7 @@ mod tests {
 			.into_iter()
 			.collect()
 		);
-		assert_eq!(direct_only.len(), 39);
+		assert_eq!(direct_only.len(), 22);
 		assert_eq!(table.union(&direct).count(), 461);
 	}
 

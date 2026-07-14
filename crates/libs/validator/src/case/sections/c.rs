@@ -51,6 +51,48 @@ struct CReportRegionalRuleView {
 	facts: RuleFacts,
 }
 
+struct CIchPresenceRuleView {
+	path: String,
+	value: Option<String>,
+	facts: RuleFacts,
+}
+
+macro_rules! c_ich_presence_rule {
+	($name:ident, $code:literal) => {
+		const $name: &[CatalogValueRule<CIchPresenceRuleView>] =
+			&[CatalogValueRule {
+				code: $code,
+				path: |item| item.path.clone(),
+				value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+				facts: |item| item.facts,
+			}];
+	};
+}
+
+c_ich_presence_rule!(C_ICH_C11_RULE, "ICH.C.1.1.REQUIRED");
+c_ich_presence_rule!(C_ICH_C1_ROOT_RULE, "ICH.C.1.REQUIRED");
+c_ich_presence_rule!(C_ICH_C1112_RULE, "ICH.C.1.11.2.REQUIRED");
+c_ich_presence_rule!(C_ICH_C2R21_RULE, "ICH.C.2.r.2.1.REQUIRED");
+c_ich_presence_rule!(C_ICH_C2R4_RULE, "ICH.C.2.r.4.REQUIRED");
+c_ich_presence_rule!(C_ICH_C2R5_RULE, "ICH.C.2.r.5.REQUIRED");
+c_ich_presence_rule!(C_ICH_C31_RULE, "ICH.C.3.1.REQUIRED");
+c_ich_presence_rule!(C_ICH_C32_RULE, "ICH.C.3.2.REQUIRED");
+
+fn eval_c_ich_presence(
+	issues: &mut Vec<ValidationIssue>,
+	path: impl Into<String>,
+	value: Option<String>,
+	facts: RuleFacts,
+	rules: &[CatalogValueRule<CIchPresenceRuleView>],
+) {
+	let view = CIchPresenceRuleView {
+		path: path.into(),
+		value,
+		facts,
+	};
+	eval_catalog_values(issues, std::slice::from_ref(&view), rules);
+}
+
 const C_FDA_CATALOG_VALUE_RULES: &[CatalogValueRule<CReportRegionalRuleView>] = &[
 	CatalogValueRule {
 		code: "FDA.C.1.7.1.REQUIRED",
@@ -792,19 +834,24 @@ pub(crate) fn collect_ich_issues(
 		.safety_report
 		.as_ref()
 		.and_then(|report| report.safety_report_id.as_deref())
-		.unwrap_or("");
-	let _ = push_issue_if_rule_invalid(
+		.map(str::to_string);
+	eval_c_ich_presence(
 		issues,
-		"ICH.C.1.1.REQUIRED",
 		"safetyReportIdentification.safetyReportId",
-		Some(safety_report_id),
-		None,
+		safety_report_id,
 		RuleFacts::default(),
+		C_ICH_C11_RULE,
 	);
-
-	if validation_ctx.safety_report.is_none() && !has_text(Some(safety_report_id)) {
-		push_issue_by_code(issues, "ICH.C.1.REQUIRED", "safetyReportIdentification");
-	}
+	eval_c_ich_presence(
+		issues,
+		"safetyReportIdentification",
+		validation_ctx
+			.safety_report
+			.as_ref()
+			.map(|_| "present".to_string()),
+		RuleFacts::default(),
+		C_ICH_C1_ROOT_RULE,
+	);
 
 	if let Some(report) = validation_ctx.safety_report.as_ref() {
 		// One-to-one presence/value rules (C.1.2/1.3/1.4/1.5/1.7) are declared
@@ -850,15 +897,18 @@ pub(crate) fn collect_ich_issues(
 				"safetyReportIdentification.dateOfMostRecentInformation",
 			);
 		}
-		if has_text(report.nullification_code.as_deref())
-			&& !has_text(report.nullification_reason.as_deref())
-		{
-			push_issue_by_code(
-				issues,
-				"ICH.C.1.11.2.REQUIRED",
-				"safetyReportIdentification.nullificationReason",
-			);
-		}
+		eval_c_ich_presence(
+			issues,
+			"safetyReportIdentification.nullificationReason",
+			report.nullification_reason.clone(),
+			RuleFacts {
+				ich_nullification_code_present: Some(has_text(
+					report.nullification_code.as_deref(),
+				)),
+				..RuleFacts::default()
+			},
+			C_ICH_C1112_RULE,
+		);
 		if report.report_type.as_deref().map(str::trim) == Some("2")
 			&& validation_ctx.studies.is_empty()
 		{
@@ -975,22 +1025,26 @@ pub(crate) fn collect_ich_issues(
 		.unwrap_or(false);
 	if report_type_is_study {
 		eval_indexed(issues, &validation_ctx.studies, C_STUDY_RULES);
-
-		let has_reporter_org = validation_ctx.primary_sources.iter().any(|s| {
-			!s.organization
+	}
+	let reporter_organization =
+		validation_ctx.primary_sources.iter().find_map(|source| {
+			source
+				.organization
 				.as_deref()
 				.map(str::trim)
-				.unwrap_or("")
-				.is_empty()
+				.filter(|value| !value.is_empty())
+				.map(str::to_string)
 		});
-		if !has_reporter_org {
-			push_issue_by_code(
-				issues,
-				"ICH.C.2.r.2.1.REQUIRED",
-				"primarySources.0.reporterOrganization",
-			);
-		}
-	}
+	eval_c_ich_presence(
+		issues,
+		"primarySources.0.reporterOrganization",
+		reporter_organization,
+		RuleFacts {
+			ich_report_type_is_study: Some(report_type_is_study),
+			..RuleFacts::default()
+		},
+		C_ICH_C2R21_RULE,
+	);
 
 	if let Some(sender) = validation_ctx.sender.as_ref() {
 		eval_length(issues, sender, C_SENDER_LENGTH_RULES);
@@ -1000,52 +1054,69 @@ pub(crate) fn collect_ich_issues(
 			C_SENDER_CONSTRAINT_RULES,
 			&validation_ctx.vocabulary,
 		);
-		let _ = push_issue_if_rule_invalid(
+		eval_c_ich_presence(
 			issues,
-			"ICH.C.3.1.REQUIRED",
 			"safetyReportIdentification.senderType",
-			sender.sender_type.as_deref(),
-			None,
+			sender.sender_type.clone(),
 			RuleFacts::default(),
+			C_ICH_C31_RULE,
 		);
-		let _ = push_issue_if_rule_invalid(
+		eval_c_ich_presence(
 			issues,
-			"ICH.C.3.2.REQUIRED",
 			"safetyReportIdentification.senderOrganization",
-			sender.organization_name.as_deref(),
-			None,
-			RuleFacts::default(),
+			sender.organization_name.clone(),
+			RuleFacts {
+				ich_sender_organization_required: Some(
+					sender.sender_type.as_deref().map(str::trim) != Some("7"),
+				),
+				..RuleFacts::default()
+			},
+			C_ICH_C32_RULE,
 		);
 	} else {
-		push_issue_by_code(
+		eval_c_ich_presence(
 			issues,
-			"ICH.C.3.1.REQUIRED",
 			"safetyReportIdentification.senderType",
+			None,
+			RuleFacts::default(),
+			C_ICH_C31_RULE,
 		);
-		push_issue_by_code(
+		eval_c_ich_presence(
 			issues,
-			"ICH.C.3.2.REQUIRED",
 			"safetyReportIdentification.senderOrganization",
+			None,
+			RuleFacts {
+				ich_sender_organization_required: Some(true),
+				..RuleFacts::default()
+			},
+			C_ICH_C32_RULE,
 		);
 	}
 
 	if validation_ctx.primary_sources.is_empty() {
-		push_issue_by_code(
+		eval_c_ich_presence(
 			issues,
-			"ICH.C.2.r.4.REQUIRED",
 			"primarySources.0.qualification",
+			None,
+			RuleFacts::default(),
+			C_ICH_C2R4_RULE,
 		);
 	}
 
-	if !validation_ctx.primary_sources.iter().any(|source| {
-		source.primary_source_regulatory.as_deref().map(str::trim) == Some("1")
-	}) {
-		push_issue_by_code(
-			issues,
-			"ICH.C.2.r.5.REQUIRED",
-			"primarySources.0.primarySourceForRegulatoryPurposes",
-		);
-	}
+	eval_c_ich_presence(
+		issues,
+		"primarySources.0.primarySourceForRegulatoryPurposes",
+		validation_ctx
+			.primary_sources
+			.iter()
+			.any(|source| {
+				source.primary_source_regulatory.as_deref().map(str::trim)
+					== Some("1")
+			})
+			.then(|| "present".to_string()),
+		RuleFacts::default(),
+		C_ICH_C2R5_RULE,
+	);
 
 	eval_conditional_indexed(
 		issues,
@@ -1061,13 +1132,12 @@ pub(crate) fn collect_ich_issues(
 			if !has_any_primary_source_content(source) {
 				return;
 			}
-			let _ = push_issue_if_rule_invalid(
+			eval_c_ich_presence(
 				issues,
-				"ICH.C.2.r.4.REQUIRED",
 				format!("primarySources.{idx}.qualification"),
-				source.qualification.as_deref(),
-				None,
+				source.qualification.clone(),
 				RuleFacts::default(),
+				C_ICH_C2R4_RULE,
 			);
 		});
 }
@@ -1344,6 +1414,14 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	add!(C_MFDS_SENDER_CATALOG_VALUE_RULES);
 	add!(C_MFDS_PRIMARY_SOURCE_CATALOG_VALUE_RULES);
 	add!(C_MFDS_STUDY_CATALOG_VALUE_RULES);
+	add!(C_ICH_C11_RULE);
+	add!(C_ICH_C1_ROOT_RULE);
+	add!(C_ICH_C1112_RULE);
+	add!(C_ICH_C2R21_RULE);
+	add!(C_ICH_C2R4_RULE);
+	add!(C_ICH_C2R5_RULE);
+	add!(C_ICH_C31_RULE);
+	add!(C_ICH_C32_RULE);
 	codes
 }
 
@@ -1354,17 +1432,9 @@ pub(super) fn direct_rule_codes() -> &'static [&'static str] {
 		"FDA.C.5.5a.REQUIRED",
 		"FDA.C.5.5b.REQUIRED",
 		"FDA.C.5.6.r.REQUIRED",
-		"ICH.C.1.1.REQUIRED",
-		"ICH.C.1.11.2.REQUIRED",
 		"ICH.C.1.4.AFTER_C.1.2.FORBIDDEN",
 		"ICH.C.1.4.AFTER_C.1.5.FORBIDDEN",
 		"ICH.C.1.5.AFTER_C.1.2.FORBIDDEN",
-		"ICH.C.1.REQUIRED",
-		"ICH.C.2.r.2.1.REQUIRED",
-		"ICH.C.2.r.4.REQUIRED",
-		"ICH.C.2.r.5.REQUIRED",
-		"ICH.C.3.1.REQUIRED",
-		"ICH.C.3.2.REQUIRED",
 	]
 }
 
