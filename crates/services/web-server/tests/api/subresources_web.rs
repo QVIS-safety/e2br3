@@ -1264,6 +1264,49 @@ async fn test_past_drugs_support_mfds_product_fields_and_200_char_ids() -> Resul
 
 #[serial]
 #[tokio::test]
+async fn drug_child_id_is_hidden_under_a_different_drug() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let first_case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let second_case_id = create_case(&app, &cookie, seed.org_id).await?;
+	let first_drug_id = create_drug(&app, &cookie, first_case_id).await?;
+	let second_drug_id = create_drug(&app, &cookie, second_case_id).await?;
+	let (status, created) = post_json(
+		&app,
+		&cookie,
+		format!(
+			"/api/cases/{first_case_id}/drugs/{first_drug_id}/active-substances"
+		),
+		json!({"data": {
+			"drug_id": first_drug_id,
+			"sequence_number": 1,
+			"substance_name": "contract",
+			"substance_termid": "TERM-CONTRACT",
+			"substance_termid_version": "2026-01",
+			"strength_value": 1.0,
+			"strength_unit": "mg"
+		}}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED);
+	let id = extract_id(&created)?;
+	let (status, _) = get_json(
+		&app,
+		&cookie,
+		format!(
+			"/api/cases/{second_case_id}/drugs/{second_drug_id}/active-substances/{id}"
+		),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NOT_FOUND);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_drug_active_substance_soft_delete_restore() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
