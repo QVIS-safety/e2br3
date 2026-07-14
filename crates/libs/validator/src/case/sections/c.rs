@@ -24,13 +24,6 @@ use lib_core::model::safety_report::{
 use lib_core::model::{ModelManager, Result};
 use std::borrow::Cow;
 
-fn is_six_digit_numeric(value: Option<&str>) -> bool {
-	value
-		.map(str::trim)
-		.map(|v| v.len() == 6 && v.chars().all(|ch| ch.is_ascii_digit()))
-		.unwrap_or(false)
-}
-
 fn is_later_than(
 	value: Option<sqlx::types::time::Date>,
 	other: Option<sqlx::types::time::Date>,
@@ -50,6 +43,48 @@ struct CReportRegionalRuleView {
 	combination_product_report_indicator: Option<String>,
 	facts: RuleFacts,
 }
+
+struct FdaStudyRuleView {
+	study_number: Option<String>,
+	cross_reported: Option<String>,
+	facts: RuleFacts,
+}
+
+const C_FDA_STUDY_CATALOG_VALUE_RULES: &[CatalogValueRule<FdaStudyRuleView>] = &[
+	CatalogValueRule {
+		code: "FDA.C.5.5a.REQUIRED",
+		path: |_| "studyInformation.sponsorStudyNumber".to_string(),
+		value: |item| RuleValue::borrowed(item.study_number.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "FDA.C.5.5b.REQUIRED",
+		path: |_| "studyInformation.sponsorStudyNumber".to_string(),
+		value: |item| RuleValue::borrowed(item.study_number.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "FDA.C.5.6.r.REQUIRED",
+		path: |_| "studyInformation.registrations.0.registrationNumber".to_string(),
+		value: |item| RuleValue::borrowed(item.cross_reported.as_deref(), None),
+		facts: |item| item.facts,
+	},
+];
+
+struct FdaReporterEmailRuleView {
+	index: usize,
+	email: Option<String>,
+	facts: RuleFacts,
+}
+
+const C_FDA_REPORTER_EMAIL_CATALOG_VALUE_RULES: &[CatalogValueRule<
+	FdaReporterEmailRuleView,
+>] = &[CatalogValueRule {
+	code: "FDA.C.2.r.2.EMAIL.REQUIRED",
+	path: |item| format!("primarySources.{}.reporterEmail", item.index),
+	value: |item| RuleValue::borrowed(item.email.as_deref(), None),
+	facts: |item| item.facts,
+}];
 
 struct CIchPresenceRuleView {
 	path: String,
@@ -1249,69 +1284,65 @@ pub(crate) async fn collect_fda_issues(
 		.first()
 		.and_then(|s| s.sponsor_study_number.as_deref())
 		.map(str::trim)
-		.filter(|v| !v.is_empty());
+		.filter(|v| !v.is_empty())
+		.map(str::to_string);
 	let has_ind_number = study_number.is_some();
-
-	let c55a_required = matches!(type_of_report, Some("1") | Some("2"))
-		&& is_fda_ind_message_receiver(message_receiver);
-	if c55a_required && !is_six_digit_numeric(study_number) {
-		push_issue_by_code(
-			issues,
-			"FDA.C.5.5a.REQUIRED",
-			"studyInformation.sponsorStudyNumber",
-		);
-	}
-
-	let c55b_required = matches!(type_of_report, Some("2"))
-		&& is_fda_pre_anda_message_receiver(message_receiver);
-	if c55b_required && !is_six_digit_numeric(study_number) {
-		push_issue_by_code(
-			issues,
-			"FDA.C.5.5b.REQUIRED",
-			"studyInformation.sponsorStudyNumber",
-		);
-	}
-
-	if has_ind_number {
-		let has_cross_reported = if let Some(study) = fda_ctx.studies.first() {
+	let has_cross_reported = if has_ind_number {
+		if let Some(study) = fda_ctx.studies.first() {
 			list_study_registrations(ctx, mm, study.id)
 				.await?
 				.iter()
 				.any(|reg| !reg.registration_number.trim().is_empty())
 		} else {
 			false
-		};
-		if !has_cross_reported {
-			push_issue_by_code(
-				issues,
-				"FDA.C.5.6.r.REQUIRED",
-				"studyInformation.registrations.0.registrationNumber",
-			);
 		}
-	}
+	} else {
+		false
+	};
+	let study_view = FdaStudyRuleView {
+		study_number,
+		cross_reported: has_cross_reported.then(|| "present".to_string()),
+		facts: RuleFacts {
+			fda_type_of_report_is_one_or_two: Some(matches!(
+				type_of_report,
+				Some("1") | Some("2")
+			)),
+			fda_type_of_report_is_two: Some(type_of_report == Some("2")),
+			fda_msg_receiver_is_cder_ind_or_cber_ind: Some(
+				is_fda_ind_message_receiver(message_receiver),
+			),
+			fda_msg_receiver_is_cder_ind_exempt_ba_be: Some(
+				is_fda_pre_anda_message_receiver(message_receiver),
+			),
+			fda_has_ind_number: Some(has_ind_number),
+			..RuleFacts::default()
+		},
+	};
+	eval_catalog_values(
+		issues,
+		std::slice::from_ref(&study_view),
+		C_FDA_STUDY_CATALOG_VALUE_RULES,
+	);
 
-	validation_ctx
+	let reporter_views = validation_ctx
 		.primary_sources
 		.iter()
 		.enumerate()
-		.for_each(|(idx, source)| {
-			if !has_any_primary_source_content(source) {
-				return;
-			}
-			if source
-				.email
-				.as_deref()
-				.map(str::trim)
-				.filter(|v| !v.is_empty())
-				.is_none()
-			{
-				push_issue_by_code(
-					issues,
-					"FDA.C.2.r.2.EMAIL.REQUIRED",
-					format!("primarySources.{idx}.reporterEmail"),
-				);
-			}
-		});
+		.filter(|(_, source)| has_any_primary_source_content(source))
+		.map(|(idx, source)| FdaReporterEmailRuleView {
+			index: idx,
+			email: source.email.clone(),
+			facts: RuleFacts {
+				fda_primary_source_present: Some(true),
+				..RuleFacts::default()
+			},
+		})
+		.collect::<Vec<_>>();
+	eval_catalog_values(
+		issues,
+		&reporter_views,
+		C_FDA_REPORTER_EMAIL_CATALOG_VALUE_RULES,
+	);
 	Ok(())
 }
 
@@ -1454,17 +1485,14 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	add!(C_ICH_C14_AFTER_C12_RULE);
 	add!(C_ICH_C14_AFTER_C15_RULE);
 	add!(C_ICH_C15_AFTER_C12_RULE);
+	add!(C_FDA_STUDY_CATALOG_VALUE_RULES);
+	add!(C_FDA_REPORTER_EMAIL_CATALOG_VALUE_RULES);
 	codes
 }
 
 #[cfg(test)]
 pub(super) fn direct_rule_codes() -> &'static [&'static str] {
-	&[
-		"FDA.C.2.r.2.EMAIL.REQUIRED",
-		"FDA.C.5.5a.REQUIRED",
-		"FDA.C.5.5b.REQUIRED",
-		"FDA.C.5.6.r.REQUIRED",
-	]
+	&[]
 }
 
 #[cfg(test)]
