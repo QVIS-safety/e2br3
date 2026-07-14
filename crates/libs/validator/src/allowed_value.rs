@@ -266,6 +266,20 @@ fn vocabulary_name_for_allowed_rule(rule_code: &str) -> Option<&'static str> {
 	vocabulary_for_rule(&format!("{prefix}.VOCABULARY"))
 }
 
+pub(crate) fn is_named_vocabulary_value_valid(
+	vocabulary_name: &str,
+	scope: crate::VocabularyScope,
+	value: &str,
+	vocabulary: &VocabularyContext,
+) -> bool {
+	match vocabulary_name {
+		"MFDS_PRODUCT" | "WHODrug" => {
+			vocabulary.contains_snapshot_code(vocabulary_name, scope, value.trim())
+		}
+		_ => false,
+	}
+}
+
 fn validate_vocabulary(
 	rule_code: &str,
 	constraint: &AllowedValueConstraint,
@@ -313,12 +327,41 @@ fn validate_identifier(profile: IdentifierProfile, value: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-	use super::{is_allowed_value_valid, ConstraintValue};
+	use super::{
+		is_allowed_value_valid, is_named_vocabulary_value_valid, ConstraintValue,
+	};
 	use crate::context::VocabularyContext;
 	use std::borrow::Cow;
 
 	fn text(value: &str) -> ConstraintValue<'_> {
 		ConstraintValue::Text(Some(Cow::Borrowed(value)))
+	}
+
+	#[test]
+	fn release_backed_product_vocabularies_fail_closed() {
+		let context = VocabularyContext::for_active_codes(&[
+			("MFDS_PRODUCT", crate::VocabularyScope::ItemSeq, "KR123"),
+			("WHODrug", crate::VocabularyScope::All, "FR456"),
+		]);
+
+		assert!(is_named_vocabulary_value_valid(
+			"MFDS_PRODUCT",
+			crate::VocabularyScope::ItemSeq,
+			"KR123",
+			&context,
+		));
+		assert!(is_named_vocabulary_value_valid(
+			"WHODrug",
+			crate::VocabularyScope::All,
+			"FR456",
+			&context,
+		));
+		assert!(!is_named_vocabulary_value_valid(
+			"MFDS_PRODUCT",
+			crate::VocabularyScope::ItemSeq,
+			"missing",
+			&context,
+		));
 	}
 
 	#[test]

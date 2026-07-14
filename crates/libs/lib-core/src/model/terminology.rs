@@ -243,6 +243,28 @@ impl DbBmc for WhodrugProductBmc {
 }
 
 impl WhodrugProductBmc {
+	pub async fn existing_active_codes(
+		mm: &ModelManager,
+		codes: &[String],
+	) -> Result<HashSet<String>> {
+		if codes.is_empty() {
+			return Ok(HashSet::new());
+		}
+
+		let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
+			"SELECT DISTINCT code FROM whodrug_products \
+			 WHERE active = true AND code IN (",
+		);
+		let mut separated = qb.separated(", ");
+		for code in codes {
+			separated.push_bind(code);
+		}
+		separated.push_unseparated(")");
+
+		let rows = mm.dbx().fetch_all(qb.build_query_as::<(String,)>()).await?;
+		Ok(rows.into_iter().map(|(code,)| code).collect())
+	}
+
 	pub async fn search(
 		_ctx: &Ctx,
 		mm: &ModelManager,

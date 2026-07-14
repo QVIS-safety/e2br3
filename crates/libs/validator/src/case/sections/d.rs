@@ -3,13 +3,15 @@ use super::rule_table::{
 	eval_constraints, eval_derived_length, eval_future_dates,
 	eval_indexed_constraints, eval_indexed_derived_length,
 	eval_indexed_future_dates, eval_indexed_length, eval_indexed_meddra,
-	eval_length, eval_nested_companions, eval_nested_constraints,
-	eval_nested_future_dates, eval_nested_length, eval_nested_meddra, CompanionRule,
+	eval_indexed_vocabulary_variants, eval_length, eval_nested_companions,
+	eval_nested_constraints, eval_nested_future_dates, eval_nested_length,
+	eval_nested_meddra, eval_nested_vocabulary_variants, CompanionRule,
 	ConditionalIndexedRule, ConditionalValueRule, ConstraintRule, DateValues,
 	DerivedLengthRule, FutureDateRule, IndexedConstraintRule,
 	IndexedDerivedLengthRule, IndexedFutureDateRule, IndexedLengthRule,
-	IndexedMeddraRule, LengthRule, NestedCompanionRule, NestedConstraintRule,
-	NestedFutureDateRule, NestedLengthRule, NestedMeddraRule, RuleValue,
+	IndexedMeddraRule, IndexedVocabularyVariantRule, LengthRule,
+	NestedCompanionRule, NestedConstraintRule, NestedFutureDateRule,
+	NestedLengthRule, NestedMeddraRule, NestedVocabularyVariantRule, RuleValue,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
@@ -28,6 +30,28 @@ use lib_core::model::patient::{
 use sqlx::types::{Decimal, Uuid};
 use std::borrow::Cow;
 use std::collections::HashMap;
+
+const D_MFDS_PAST_DRUG_VOCABULARY_RULES: &[IndexedVocabularyVariantRule<
+	crate::PastDrugByCase,
+>] = &[IndexedVocabularyVariantRule {
+	code: "MFDS.D.8.r.1.KR.1b.VOCABULARY",
+	path: |idx| {
+		format!("patientInformation.pastDrugHistory.{idx}.mfdsMedicinalProductId")
+	},
+	value: |item| item.mfds_medicinal_product_id.as_deref(),
+}];
+
+const D_MFDS_PARENT_PAST_DRUG_VOCABULARY_RULES: &[NestedVocabularyVariantRule<
+	crate::ParentPastDrugByCase,
+>] = &[NestedVocabularyVariantRule {
+	code: "MFDS.D.10.8.r.1.KR.1b.VOCABULARY",
+	path: |parent_idx, item_idx| {
+		format!(
+			"patientInformation.parents.{parent_idx}.pastDrugs.{item_idx}.mfdsMedicinalProductId"
+		)
+	},
+	value: |item| item.mfds_medicinal_product_id.as_deref(),
+}];
 
 fn decimal_text(value: Option<Decimal>) -> Option<String> {
 	value.map(|value| value.to_string())
@@ -1394,6 +1418,36 @@ pub(crate) fn collect_mfds_issues(
 		.map(|h| h.message_receiver_identifier.as_str());
 	let receiver_is_kr = is_mfds_domestic_receiver(msg_receiver);
 	let receiver_is_fr = is_mfds_foreign_postmarket_receiver(msg_receiver);
+	let vocabulary_receiver = if receiver_is_kr {
+		Some("KR")
+	} else if receiver_is_fr {
+		Some("FR")
+	} else {
+		None
+	};
+
+	eval_indexed_vocabulary_variants(
+		issues,
+		&mfds_ctx.past_drugs,
+		D_MFDS_PAST_DRUG_VOCABULARY_RULES,
+		vocabulary_receiver,
+		&validation_ctx.vocabulary,
+	);
+	eval_nested_vocabulary_variants(
+		issues,
+		&validation_ctx.parents,
+		&mfds_ctx.parent_past_drugs,
+		|parent| parent.id,
+		|item| item.parent_id,
+		|item| {
+			item.sequence_number
+				.checked_sub(1)
+				.and_then(|index| usize::try_from(index).ok())
+		},
+		D_MFDS_PARENT_PAST_DRUG_VOCABULARY_RULES,
+		vocabulary_receiver,
+		&validation_ctx.vocabulary,
+	);
 
 	mfds_ctx
 		.past_drugs

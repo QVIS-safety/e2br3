@@ -1,10 +1,11 @@
 use super::rule_table::{
 	eval_companions, eval_grandchild_length, eval_indexed, eval_indexed_constraints,
 	eval_indexed_derived_length, eval_indexed_future_dates, eval_indexed_length,
-	eval_nested_constraints, eval_nested_derived_length, eval_nested_length,
-	eval_nested_meddra, CompanionRule, DateValues, GrandchildLengthRule,
-	IndexedConstraintRule, IndexedDerivedLengthRule, IndexedFutureDateRule,
-	IndexedLengthRule, IndexedRule, NestedConstraintRule, NestedDerivedLengthRule,
+	eval_indexed_vocabulary_variants, eval_nested_constraints,
+	eval_nested_derived_length, eval_nested_length, eval_nested_meddra,
+	CompanionRule, DateValues, GrandchildLengthRule, IndexedConstraintRule,
+	IndexedDerivedLengthRule, IndexedFutureDateRule, IndexedLengthRule, IndexedRule,
+	IndexedVocabularyVariantRule, NestedConstraintRule, NestedDerivedLengthRule,
 	NestedLengthRule, NestedMeddraRule, RuleValue,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
@@ -28,6 +29,14 @@ use lib_core::model::drug_reaction_assessment::{
 use lib_core::model::{ModelManager, Result};
 use sqlx::types::Decimal;
 use std::borrow::Cow;
+
+const G_MFDS_PRODUCT_VOCABULARY_RULES: &[IndexedVocabularyVariantRule<
+	DrugInformation,
+>] = &[IndexedVocabularyVariantRule {
+	code: "MFDS.G.k.2.1.KR.1b.VOCABULARY",
+	path: |idx| format!("drugs.{idx}.mfdsMpid"),
+	value: |item| item.mfds_mpid.as_deref(),
+}];
 
 fn normalize_code(raw: Option<&str>) -> String {
 	raw.unwrap_or("")
@@ -1142,6 +1151,20 @@ pub(crate) fn collect_mfds_issues(
 		.map(|h| h.message_receiver_identifier.as_str());
 	let receiver_is_kr = is_mfds_domestic_receiver(msg_receiver);
 	let receiver_is_fr = is_mfds_foreign_postmarket_receiver(msg_receiver);
+	let vocabulary_receiver = if receiver_is_kr {
+		Some("KR")
+	} else if receiver_is_fr {
+		Some("FR")
+	} else {
+		None
+	};
+	eval_indexed_vocabulary_variants(
+		issues,
+		&validation_ctx.drugs,
+		G_MFDS_PRODUCT_VOCABULARY_RULES,
+		vocabulary_receiver,
+		&validation_ctx.vocabulary,
+	);
 	let receiver_is_ct_or_cu = is_mfds_clinical_trial_receiver(msg_receiver)
 		|| is_mfds_compassionate_use_receiver(msg_receiver);
 

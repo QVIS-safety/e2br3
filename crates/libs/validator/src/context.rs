@@ -28,7 +28,8 @@ use lib_core::model::safety_report::{
 };
 use lib_core::model::store::set_full_context_from_ctx_dbx;
 use lib_core::model::terminology::{
-	ControlledTermBmc, MeddraTermBmc, MeddraTermKey,
+	ControlledTermBmc, MeddraTermBmc, MeddraTermKey, MfdsProductBmc,
+	WhodrugProductBmc,
 };
 use lib_core::model::test_result::TestResult;
 use lib_core::model::{ModelManager, Result};
@@ -336,7 +337,16 @@ async fn load_vocabulary_context(
 ) -> Result<VocabularyContext> {
 	let requested_keys = case_meddra_keys(validation_ctx);
 	let requested_countries = case_country_codes(validation_ctx);
-	let (versions, terms, iso_countries, ich_country_extensions, edqm_versions) = tokio::try_join!(
+	let requested_product_codes = case_product_codes(validation_ctx);
+	let (
+		versions,
+		terms,
+		iso_countries,
+		ich_country_extensions,
+		edqm_versions,
+		mfds_products,
+		whodrug_products,
+	) = tokio::try_join!(
 		MeddraTermBmc::active_versions(mm),
 		MeddraTermBmc::existing_active_keys(mm, &requested_keys),
 		ControlledTermBmc::existing_active_codes(
@@ -352,6 +362,8 @@ async fn load_vocabulary_context(
 			&requested_countries,
 		),
 		ControlledTermBmc::active_release_versions(mm, "edqm", "en"),
+		MfdsProductBmc::existing_active_item_seqs(mm, &requested_product_codes),
+		WhodrugProductBmc::existing_active_codes(mm, &requested_product_codes),
 	)?;
 	let meddra_available = !versions.is_empty();
 	let mut snapshot_codes = embedded_snapshot_codes();
@@ -363,6 +375,14 @@ async fn load_vocabulary_context(
 				.into_iter()
 				.chain(ich_country_extensions.into_iter()),
 		);
+	Arc::make_mut(&mut snapshot_codes)
+		.entry(("MFDS_PRODUCT".to_string(), VocabularyScope::ItemSeq))
+		.or_default()
+		.extend(mfds_products);
+	Arc::make_mut(&mut snapshot_codes)
+		.entry(("WHODrug".to_string(), VocabularyScope::All))
+		.or_default()
+		.extend(whodrug_products);
 	let requested_scoped_codes = case_scoped_terminology_codes(validation_ctx);
 	for (scope, codes) in requested_scoped_codes {
 		let (dictionary, vocabulary) = match scope {
@@ -395,6 +415,31 @@ async fn load_vocabulary_context(
 		vocabulary_versions,
 		snapshot_codes,
 	})
+}
+
+fn case_product_codes(validation_ctx: &ValidationContext) -> Vec<String> {
+	validation_ctx
+		.past_drugs
+		.iter()
+		.filter_map(|item| item.mfds_medicinal_product_id.as_deref())
+		.chain(
+			validation_ctx
+				.parent_past_drugs
+				.iter()
+				.filter_map(|item| item.mfds_medicinal_product_id.as_deref()),
+		)
+		.chain(
+			validation_ctx
+				.drugs
+				.iter()
+				.filter_map(|item| item.mfds_mpid.as_deref()),
+		)
+		.map(str::trim)
+		.filter(|code| !code.is_empty())
+		.map(str::to_string)
+		.collect::<HashSet<_>>()
+		.into_iter()
+		.collect()
 }
 
 fn vocabulary_scope_name(scope: VocabularyScope) -> &'static str {

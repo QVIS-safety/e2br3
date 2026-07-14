@@ -4036,6 +4036,22 @@ fn to_canonical_vocabulary_rule<'a>(
 	}
 }
 
+fn to_canonical_vocabulary_variant<'a>(
+	rule: &'a VocabularyVariantMetadata,
+) -> CanonicalRule<'a> {
+	CanonicalRule {
+		code: rule.code,
+		authority: rule.authority,
+		section: section_for_rule_code(rule.code),
+		blocking: true,
+		category: RuleCategory::CaseBusiness,
+		phases: PHASES_CASE_VALIDATE,
+		severity: RuleSeverity::Blocking,
+		message: "Dictionary receiver-specific vocabulary constraint.",
+		condition: RuleCondition::Always,
+	}
+}
+
 fn phases_for_vocabulary_rule(code: &str) -> &'static [ValidationPhase] {
 	match code {
 		"ICH.C.2.r.3.VOCABULARY"
@@ -4205,6 +4221,13 @@ pub fn find_canonical_rule_for_phase(
 				.find(|rule| rule_applies_in_phase(*rule, phase))
 		})
 		.or_else(|| {
+			VOCABULARY_VARIANTS
+				.iter()
+				.filter(|rule| rule.code == code)
+				.map(to_canonical_vocabulary_variant)
+				.find(|rule| rule_applies_in_phase(*rule, phase))
+		})
+		.or_else(|| {
 			NULL_FLAVOR_RULES
 				.iter()
 				.filter(|rule| rule.code == code)
@@ -4238,6 +4261,12 @@ pub fn find_canonical_rule(code: &str) -> Option<CanonicalRule<'static>> {
 				.iter()
 				.find(|rule| rule.code == code)
 				.map(to_canonical_vocabulary_rule)
+		})
+		.or_else(|| {
+			VOCABULARY_VARIANTS
+				.iter()
+				.find(|rule| rule.code == code)
+				.map(to_canonical_vocabulary_variant)
 		})
 		.or_else(|| {
 			NULL_FLAVOR_RULES
@@ -4285,6 +4314,14 @@ pub fn canonical_rules_for_authority(
 			})
 			.map(to_canonical_vocabulary_rule),
 	);
+	for variant in VOCABULARY_VARIANTS.iter().filter(|rule| {
+		matches!(rule.authority, RegulatoryAuthority::Ich)
+			|| rule.authority == authority
+	}) {
+		if !rules.iter().any(|rule| rule.code == variant.code) {
+			rules.push(to_canonical_vocabulary_variant(variant));
+		}
+	}
 	rules.extend(
 		NULL_FLAVOR_RULES
 			.iter()
@@ -4308,7 +4345,7 @@ pub fn canonical_rules_for_authority_phase(
 }
 
 pub fn canonical_rules_all() -> Vec<CanonicalRule<'static>> {
-	VALIDATION_RULES
+	let mut rules = VALIDATION_RULES
 		.iter()
 		.map(to_canonical_rule)
 		.chain(MAX_LENGTH_RULES.iter().map(to_canonical_max_length_rule))
@@ -4319,7 +4356,13 @@ pub fn canonical_rules_all() -> Vec<CanonicalRule<'static>> {
 		)
 		.chain(VOCABULARY_RULES.iter().map(to_canonical_vocabulary_rule))
 		.chain(NULL_FLAVOR_RULES.iter().map(to_canonical_null_flavor_rule))
-		.collect()
+		.collect::<Vec<_>>();
+	for variant in VOCABULARY_VARIANTS {
+		if !rules.iter().any(|rule| rule.code == variant.code) {
+			rules.push(to_canonical_vocabulary_variant(variant));
+		}
+	}
+	rules
 }
 
 pub fn canonical_rules_for_phase(
@@ -4429,9 +4472,9 @@ pub fn vocabulary_variant_for_rule(
 	code: &str,
 	receiver: &str,
 ) -> Option<&'static VocabularyVariantMetadata> {
-	VOCABULARY_VARIANTS
-		.iter()
-		.find(|variant| variant.code == code && variant.receiver == receiver)
+	VOCABULARY_VARIANTS.iter().find(|variant| {
+		variant.code == code && variant.receiver.eq_ignore_ascii_case(receiver)
+	})
 }
 
 pub fn null_flavors_source_hash_for_rule(code: &str) -> Option<u64> {
@@ -5293,7 +5336,7 @@ mod tests {
 			if !entry.null_flavors.is_empty() {
 				*counts.get_mut("null_flavors").unwrap() += 1;
 			}
-			if entry.vocabulary.is_some() {
+			if entry.vocabulary.is_some() || !entry.vocabulary_variants.is_empty() {
 				*counts.get_mut("vocabulary").unwrap() += 1;
 			}
 		}

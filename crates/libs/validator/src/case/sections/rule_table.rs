@@ -12,11 +12,13 @@
 //!   (`push_issue_if_rule_invalid` + `ValuePolicy`).
 //! - [`CompanionRule`]: "if X is present, its companion Y is required".
 
-use crate::allowed_value::{is_allowed_value_valid, ConstraintValue};
+use crate::allowed_value::{
+	is_allowed_value_valid, is_named_vocabulary_value_valid, ConstraintValue,
+};
 use crate::context::VocabularyContext;
 use crate::{
 	max_length_for_rule, push_issue_by_code, push_issue_if_rule_invalid,
-	vocabulary_for_rule, RuleFacts, ValidationIssue,
+	vocabulary_for_rule, vocabulary_variant_for_rule, RuleFacts, ValidationIssue,
 };
 use sqlx::types::time::{Date, OffsetDateTime};
 use std::borrow::Cow;
@@ -99,6 +101,107 @@ pub(crate) struct NestedConstraintRule<T> {
 	pub code: &'static str,
 	pub path: fn(usize, usize) -> String,
 	pub value: for<'a> fn(&'a T) -> ConstraintValue<'a>,
+}
+
+pub(crate) struct IndexedVocabularyVariantRule<T> {
+	pub code: &'static str,
+	pub path: fn(usize) -> String,
+	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
+}
+
+pub(crate) struct NestedVocabularyVariantRule<T> {
+	pub code: &'static str,
+	pub path: fn(usize, usize) -> String,
+	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
+}
+
+fn vocabulary_variant_value_is_invalid(
+	code: &str,
+	receiver: Option<&str>,
+	value: Option<&str>,
+	vocabulary: &VocabularyContext,
+) -> bool {
+	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
+		return false;
+	};
+	let Some(variant) = receiver
+		.map(str::trim)
+		.filter(|receiver| !receiver.is_empty())
+		.and_then(|receiver| vocabulary_variant_for_rule(code, receiver))
+	else {
+		return false;
+	};
+	!is_named_vocabulary_value_valid(
+		variant.vocabulary,
+		variant.scope,
+		value,
+		vocabulary,
+	)
+}
+
+pub(crate) fn eval_indexed_vocabulary_variants<T>(
+	issues: &mut Vec<ValidationIssue>,
+	items: &[T],
+	rules: &[IndexedVocabularyVariantRule<T>],
+	receiver: Option<&str>,
+	vocabulary: &VocabularyContext,
+) {
+	for (index, item) in items.iter().enumerate() {
+		for rule in rules {
+			if vocabulary_variant_value_is_invalid(
+				rule.code,
+				receiver,
+				(rule.value)(item),
+				vocabulary,
+			) {
+				push_issue_by_code(issues, rule.code, (rule.path)(index));
+			}
+		}
+	}
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn eval_nested_vocabulary_variants<P, T, K>(
+	issues: &mut Vec<ValidationIssue>,
+	parents: &[P],
+	items: &[T],
+	parent_key: fn(&P) -> K,
+	item_parent_key: fn(&T) -> K,
+	item_idx: fn(&T) -> Option<usize>,
+	rules: &[NestedVocabularyVariantRule<T>],
+	receiver: Option<&str>,
+	vocabulary: &VocabularyContext,
+) where
+	K: Copy + Eq + Hash,
+{
+	let parent_indices = parents
+		.iter()
+		.enumerate()
+		.map(|(index, parent)| (parent_key(parent), index))
+		.collect::<HashMap<_, _>>();
+	for item in items {
+		let Some(parent_idx) = parent_indices.get(&item_parent_key(item)).copied()
+		else {
+			continue;
+		};
+		let Some(item_idx) = item_idx(item) else {
+			continue;
+		};
+		for rule in rules {
+			if vocabulary_variant_value_is_invalid(
+				rule.code,
+				receiver,
+				(rule.value)(item),
+				vocabulary,
+			) {
+				push_issue_by_code(
+					issues,
+					rule.code,
+					(rule.path)(parent_idx, item_idx),
+				);
+			}
+		}
+	}
 }
 
 #[allow(dead_code)]
@@ -1438,5 +1541,64 @@ mod length_rule_tests {
 			issues[0].field_path.as_deref(),
 			Some("parents.1.messageHeaders.2.messageType")
 		);
+	}
+}
+
+#[cfg(test)]
+mod vocabulary_variant_rule_tests {
+	use super::{eval_indexed_vocabulary_variants, IndexedVocabularyVariantRule};
+	use crate::context::VocabularyContext;
+	use crate::{ValidationIssue, VocabularyScope};
+
+	struct Item {
+		code: Option<&'static str>,
+	}
+
+	const RULES: &[IndexedVocabularyVariantRule<Item>] =
+		&[IndexedVocabularyVariantRule {
+			code: "MFDS.G.k.2.1.KR.1b.VOCABULARY",
+			path: |idx| format!("drugs.{idx}.mfdsMpid"),
+			value: |item| item.code,
+		}];
+
+	#[test]
+	fn receiver_variant_uses_matching_active_vocabulary_without_fallback() {
+		let vocabulary = VocabularyContext::for_active_codes(&[
+			("MFDS_PRODUCT", VocabularyScope::ItemSeq, "KR123"),
+			("WHODrug", VocabularyScope::All, "FR456"),
+		]);
+		let items = [Item {
+			code: Some("KR123"),
+		}];
+		let mut issues = Vec::<ValidationIssue>::new();
+
+		eval_indexed_vocabulary_variants(
+			&mut issues,
+			&items,
+			RULES,
+			Some("KR"),
+			&vocabulary,
+		);
+		assert!(issues.is_empty());
+
+		eval_indexed_vocabulary_variants(
+			&mut issues,
+			&items,
+			RULES,
+			Some("FR"),
+			&vocabulary,
+		);
+		assert_eq!(issues.len(), 1);
+		assert_eq!(issues[0].code, "MFDS.G.k.2.1.KR.1b.VOCABULARY");
+
+		issues.clear();
+		eval_indexed_vocabulary_variants(
+			&mut issues,
+			&items,
+			RULES,
+			Some("UNKNOWN"),
+			&vocabulary,
+		);
+		assert!(issues.is_empty());
 	}
 }

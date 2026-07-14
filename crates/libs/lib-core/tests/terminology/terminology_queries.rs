@@ -15,7 +15,9 @@ async fn active_controlled_terms_and_mfds_products_support_membership() -> Resul
 	let dbx = mm.dbx();
 	let suffix = unique_suffix();
 	let version = format!("test-{}", &suffix[..16]);
+	let whodrug_version = format!("T{}", &suffix[..8]);
 	let item_seq = format!("P{}", &suffix[..8]);
+	let whodrug_code = format!("W{}", &suffix[..8]);
 
 	dbx.begin_txn().await?;
 	set_full_context_dbx_or_rollback(
@@ -33,6 +35,16 @@ async fn active_controlled_terms_and_mfds_products_support_membership() -> Resul
 			 VALUES ('iso3166', $1, 'en', 'country', 'KR', 'Korea', true)",
 		)
 		.bind(&version),
+	)
+	.await?;
+	dbx.execute(
+		sqlx::query(
+			"INSERT INTO whodrug_products
+			 (code, drug_name, version, language, active)
+			 VALUES ($1, 'Test WHODrug product', $2, 'en', true)",
+		)
+		.bind(&whodrug_code)
+		.bind(&whodrug_version),
 	)
 	.await?;
 	dbx.execute(
@@ -74,6 +86,11 @@ async fn active_controlled_terms_and_mfds_products_support_membership() -> Resul
 		MfdsProductBmc::existing_active_item_seqs(&mm, &product_codes).await?;
 	assert!(existing_products.contains(&item_seq));
 	assert!(!existing_products.contains("missing"));
+	let whodrug_codes = vec![whodrug_code.clone(), "missing".to_string()];
+	let existing_whodrug =
+		WhodrugProductBmc::existing_active_codes(&mm, &whodrug_codes).await?;
+	assert!(existing_whodrug.contains(&whodrug_code));
+	assert!(!existing_whodrug.contains("missing"));
 
 	dbx.rollback_txn().await?;
 	Ok(())
