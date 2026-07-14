@@ -43,6 +43,227 @@ pub(super) use serde::{Deserialize, Serialize};
 pub(super) use std::collections::HashSet;
 pub(super) use uuid::Uuid;
 
+macro_rules! generate_simple_presave_rest_fns {
+	(
+		Bmc: $bmc:ident,
+		Entity: $entity:ident,
+		ForCreate: $for_create:ident,
+		ForUpdate: $for_update:ident,
+		CreateFn: $create_fn:ident,
+		ListFn: $list_fn:ident,
+		GetFn: $get_fn:ident,
+		UpdateFn: $update_fn:ident,
+		DeleteFn: $delete_fn:ident,
+		UsedByCasesFn: $used_by_cases_fn:ident,
+		ConflictMessage: $conflict_message:literal
+	) => {
+		pub async fn $create_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			Json(params): Json<ParamsForCreate<$for_create>>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
+			let ParamsForCreate { data } = params;
+			let id = $bmc::create(&ctx, &mm, data).await?;
+			Ok(rest_created($bmc::get(&ctx, &mm, id).await?))
+		}
+
+		pub async fn $list_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+		) -> Result<(StatusCode, Json<DataRestResult<Vec<$entity>>>)> {
+			let ctx = ctx_w.0;
+			require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
+			Ok(rest_ok($bmc::list(&ctx, &mm, None).await?))
+		}
+
+		pub async fn $get_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			Path(id): Path<Uuid>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
+			Ok(rest_ok($bmc::get(&ctx, &mm, id).await?))
+		}
+
+		pub async fn $update_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			Path(id): Path<Uuid>,
+			Json(params): Json<ParamsForUpdate<$for_update>>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
+			let ParamsForUpdate { data } = params;
+			if data.deleted == Some(true) {
+				require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
+			}
+			$bmc::update(&ctx, &mm, id, data).await?;
+			Ok(rest_ok($bmc::get(&ctx, &mm, id).await?))
+		}
+
+		pub async fn $delete_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			Path(id): Path<Uuid>,
+		) -> Result<StatusCode> {
+			let ctx = ctx_w.0;
+			require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
+			$bmc::get(&ctx, &mm, id).await?;
+			if $used_by_cases_fn(&mm, ctx.organization_id(), id).await? {
+				return Err(presave_case_link_conflict($conflict_message));
+			}
+			$bmc::update(
+				&ctx,
+				&mm,
+				id,
+				$for_update {
+					deleted: Some(true),
+					..Default::default()
+				},
+			)
+			.await?;
+			Ok(StatusCode::NO_CONTENT)
+		}
+	};
+}
+
+pub(super) use generate_simple_presave_rest_fns;
+
+macro_rules! delete_presave_child {
+	(hard, $bmc:ident, $for_update:ident, $ctx:ident, $mm:ident, $id:ident) => {
+		$bmc::delete(&$ctx, &$mm, $id).await?;
+	};
+	(soft, $bmc:ident, $for_update:ident, $ctx:ident, $mm:ident, $id:ident) => {
+		$bmc::update(
+			&$ctx,
+			&$mm,
+			$id,
+			$for_update {
+				deleted: Some(true),
+				..Default::default()
+			},
+		)
+		.await?;
+	};
+}
+
+pub(super) use delete_presave_child;
+
+macro_rules! require_presave_child_update_permission {
+	(update, $ctx:ident, $data:ident) => {
+		require_permission(&$ctx, PRESAVE_TEMPLATE_UPDATE)?;
+	};
+	(delete_aware, $ctx:ident, $data:ident) => {
+		if $data.deleted == Some(true) {
+			require_permission(&$ctx, PRESAVE_TEMPLATE_DELETE)?;
+		} else {
+			require_permission(&$ctx, PRESAVE_TEMPLATE_UPDATE)?;
+		}
+	};
+}
+
+pub(super) use require_presave_child_update_permission;
+
+macro_rules! generate_presave_child_rest_fns {
+	(
+		Bmc: $bmc:ident,
+		Entity: $entity:ident,
+		RestCreate: $rest_create:ident,
+		ForUpdate: $for_update:ident,
+		CreateFn: $create_fn:ident,
+		ListFn: $list_fn:ident,
+		GetFn: $get_fn:ident,
+		UpdateFn: $update_fn:ident,
+		DeleteFn: $delete_fn:ident,
+		ParentField: $parent_field:ident,
+		ParentScopeFn: $parent_scope_fn:ident,
+		EntityName: $entity_name:literal,
+		UpdatePermission: $update_permission:ident,
+		DeleteMode: $delete_mode:ident
+	) => {
+		pub async fn $create_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			Path(parent_id): Path<Uuid>,
+			Json(params): Json<ParamsForCreate<$rest_create>>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
+			$parent_scope_fn(&ctx, &mm, parent_id).await?;
+			let ParamsForCreate { data } = params;
+			let id = $bmc::create(&ctx, &mm, data.into_core(parent_id)).await?;
+			Ok(rest_created($bmc::get(&ctx, &mm, id).await?))
+		}
+
+		pub async fn $list_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			Path(parent_id): Path<Uuid>,
+		) -> Result<(StatusCode, Json<DataRestResult<Vec<$entity>>>)> {
+			let ctx = ctx_w.0;
+			require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
+			$parent_scope_fn(&ctx, &mm, parent_id).await?;
+			Ok(rest_ok($bmc::list_by_parent(&ctx, &mm, parent_id).await?))
+		}
+
+		pub async fn $get_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			Path((parent_id, id)): Path<(Uuid, Uuid)>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
+			let entity = $bmc::get(&ctx, &mm, id).await?;
+			ensure_parent_scope(parent_id, entity.$parent_field, id, $entity_name)?;
+			$parent_scope_fn(&ctx, &mm, parent_id).await?;
+			Ok(rest_ok(entity))
+		}
+
+		pub async fn $update_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			Path((parent_id, id)): Path<(Uuid, Uuid)>,
+			Json(params): Json<ParamsForUpdate<$for_update>>,
+		) -> Result<(StatusCode, Json<DataRestResult<$entity>>)> {
+			let ctx = ctx_w.0;
+			let ParamsForUpdate { data } = params;
+			require_presave_child_update_permission!($update_permission, ctx, data);
+			let entity = $bmc::get(&ctx, &mm, id).await?;
+			ensure_parent_scope(parent_id, entity.$parent_field, id, $entity_name)?;
+			$parent_scope_fn(&ctx, &mm, parent_id).await?;
+			$bmc::update(&ctx, &mm, id, data).await?;
+			Ok(rest_ok($bmc::get(&ctx, &mm, id).await?))
+		}
+
+		pub async fn $delete_fn(
+			State(mm): State<ModelManager>,
+			ctx_w: CtxW,
+			Path((parent_id, id)): Path<(Uuid, Uuid)>,
+		) -> Result<StatusCode> {
+			let ctx = ctx_w.0;
+			require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
+			let entity = $bmc::get(&ctx, &mm, id).await?;
+			ensure_parent_scope(parent_id, entity.$parent_field, id, $entity_name)?;
+			$parent_scope_fn(&ctx, &mm, parent_id).await?;
+			delete_presave_child!($delete_mode, $bmc, $for_update, ctx, mm, id);
+			Ok(StatusCode::NO_CONTENT)
+		}
+	};
+}
+
+pub(super) use generate_presave_child_rest_fns;
+
+pub(super) async fn allow_presave_parent_scope(
+	_ctx: &lib_core::ctx::Ctx,
+	_mm: &ModelManager,
+	_parent_id: Uuid,
+) -> Result<()> {
+	Ok(())
+}
+
 #[derive(Clone, Copy)]
 pub(super) enum PresaveScopeSection {
 	Sender,

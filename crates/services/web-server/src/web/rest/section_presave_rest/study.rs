@@ -782,306 +782,53 @@ async fn upsert_study_reporter_detail(
 	Ok(())
 }
 
-pub async fn create_study_registration_number(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(study_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<StudyRegistrationNumberForRestCreate>>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<StudyPresaveRegistrationNumber>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	let ParamsForCreate { data } = params;
-	let data = data.into_core(study_id);
-	let id = StudyPresaveRegistrationNumberBmc::create(&ctx, &mm, data).await?;
-	let entity = StudyPresaveRegistrationNumberBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_created(entity))
+generate_presave_child_rest_fns! {
+	Bmc: StudyPresaveRegistrationNumberBmc,
+	Entity: StudyPresaveRegistrationNumber,
+	RestCreate: StudyRegistrationNumberForRestCreate,
+	ForUpdate: StudyPresaveRegistrationNumberForUpdate,
+	CreateFn: create_study_registration_number,
+	ListFn: list_study_registration_numbers,
+	GetFn: get_study_registration_number,
+	UpdateFn: update_study_registration_number,
+	DeleteFn: delete_study_registration_number,
+	ParentField: study_presave_id,
+	ParentScopeFn: ensure_study_presave_id_scope,
+	EntityName: "study_presave_registration_numbers",
+	UpdatePermission: update,
+	DeleteMode: soft
 }
 
-pub async fn list_study_registration_numbers(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(study_id): Path<Uuid>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<Vec<StudyPresaveRegistrationNumber>>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	let entities =
-		StudyPresaveRegistrationNumberBmc::list_by_parent(&ctx, &mm, study_id)
-			.await?;
-	Ok(rest_ok(entities))
+generate_presave_child_rest_fns! {
+	Bmc: StudyPresaveProductBmc,
+	Entity: StudyPresaveProduct,
+	RestCreate: StudyProductForRestCreate,
+	ForUpdate: StudyPresaveProductForUpdate,
+	CreateFn: create_study_product,
+	ListFn: list_study_products,
+	GetFn: get_study_product,
+	UpdateFn: update_study_product,
+	DeleteFn: delete_study_product,
+	ParentField: study_presave_id,
+	ParentScopeFn: ensure_study_presave_id_scope,
+	EntityName: "study_presave_products",
+	UpdatePermission: update,
+	DeleteMode: soft
 }
 
-pub async fn get_study_registration_number(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((study_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<StudyPresaveRegistrationNumber>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
-	let entity = StudyPresaveRegistrationNumberBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		study_id,
-		entity.study_presave_id,
-		id,
-		"study_presave_registration_numbers",
-	)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn update_study_registration_number(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((study_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<StudyPresaveRegistrationNumberForUpdate>>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<StudyPresaveRegistrationNumber>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
-	let entity = StudyPresaveRegistrationNumberBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		study_id,
-		entity.study_presave_id,
-		id,
-		"study_presave_registration_numbers",
-	)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	let ParamsForUpdate { data } = params;
-	StudyPresaveRegistrationNumberBmc::update(&ctx, &mm, id, data).await?;
-	let entity = StudyPresaveRegistrationNumberBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn delete_study_registration_number(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((study_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	let entity = StudyPresaveRegistrationNumberBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		study_id,
-		entity.study_presave_id,
-		id,
-		"study_presave_registration_numbers",
-	)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	StudyPresaveRegistrationNumberBmc::update(
-		&ctx,
-		&mm,
-		id,
-		StudyPresaveRegistrationNumberForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
-pub async fn create_study_product(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(study_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<StudyProductForRestCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveProduct>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	let ParamsForCreate { data } = params;
-	let data = data.into_core(study_id);
-	let id = StudyPresaveProductBmc::create(&ctx, &mm, data).await?;
-	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_created(entity))
-}
-
-pub async fn list_study_products(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(study_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<StudyPresaveProduct>>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	let entities =
-		StudyPresaveProductBmc::list_by_parent(&ctx, &mm, study_id).await?;
-	Ok(rest_ok(entities))
-}
-
-pub async fn get_study_product(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((study_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveProduct>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
-	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		study_id,
-		entity.study_presave_id,
-		id,
-		"study_presave_products",
-	)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn update_study_product(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((study_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<StudyPresaveProductForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveProduct>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
-	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		study_id,
-		entity.study_presave_id,
-		id,
-		"study_presave_products",
-	)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	let ParamsForUpdate { data } = params;
-	StudyPresaveProductBmc::update(&ctx, &mm, id, data).await?;
-	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn delete_study_product(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((study_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	let entity = StudyPresaveProductBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		study_id,
-		entity.study_presave_id,
-		id,
-		"study_presave_products",
-	)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	StudyPresaveProductBmc::update(
-		&ctx,
-		&mm,
-		id,
-		StudyPresaveProductForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
-pub async fn create_study_reporter(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(study_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<StudyReporterForRestCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveReporter>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	let ParamsForCreate { data } = params;
-	let data = data.into_core(study_id);
-	let id = StudyPresaveReporterBmc::create(&ctx, &mm, data).await?;
-	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_created(entity))
-}
-
-pub async fn list_study_reporters(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(study_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<StudyPresaveReporter>>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	let entities =
-		StudyPresaveReporterBmc::list_by_parent(&ctx, &mm, study_id).await?;
-	Ok(rest_ok(entities))
-}
-
-pub async fn get_study_reporter(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((study_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveReporter>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
-	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		study_id,
-		entity.study_presave_id,
-		id,
-		"study_presave_reporters",
-	)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn update_study_reporter(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((study_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<StudyPresaveReporterForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<StudyPresaveReporter>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
-	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		study_id,
-		entity.study_presave_id,
-		id,
-		"study_presave_reporters",
-	)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	let ParamsForUpdate { data } = params;
-	StudyPresaveReporterBmc::update(&ctx, &mm, id, data).await?;
-	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn delete_study_reporter(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((study_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	let entity = StudyPresaveReporterBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		study_id,
-		entity.study_presave_id,
-		id,
-		"study_presave_reporters",
-	)?;
-	ensure_study_presave_id_scope(&ctx, &mm, study_id).await?;
-	StudyPresaveReporterBmc::update(
-		&ctx,
-		&mm,
-		id,
-		StudyPresaveReporterForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
-	Ok(StatusCode::NO_CONTENT)
+generate_presave_child_rest_fns! {
+	Bmc: StudyPresaveReporterBmc,
+	Entity: StudyPresaveReporter,
+	RestCreate: StudyReporterForRestCreate,
+	ForUpdate: StudyPresaveReporterForUpdate,
+	CreateFn: create_study_reporter,
+	ListFn: list_study_reporters,
+	GetFn: get_study_reporter,
+	UpdateFn: update_study_reporter,
+	DeleteFn: delete_study_reporter,
+	ParentField: study_presave_id,
+	ParentScopeFn: ensure_study_presave_id_scope,
+	EntityName: "study_presave_reporters",
+	UpdatePermission: update,
+	DeleteMode: soft
 }

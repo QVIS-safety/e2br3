@@ -653,89 +653,19 @@ impl ReceiverConsigneeForRestCreate {
 	}
 }
 
-pub async fn create_receiver_consignee(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(receiver_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<ReceiverConsigneeForRestCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ReceiverPresaveConsignee>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
-	let ParamsForCreate { data } = params;
-	let id =
-		ReceiverPresaveConsigneeBmc::create(&ctx, &mm, data.into_core(receiver_id))
-			.await?;
-	let entity = ReceiverPresaveConsigneeBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_created(entity))
-}
-
-pub async fn list_receiver_consignees(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(receiver_id): Path<Uuid>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<Vec<ReceiverPresaveConsignee>>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	let entities =
-		ReceiverPresaveConsigneeBmc::list_by_parent(&ctx, &mm, receiver_id).await?;
-	Ok(rest_ok(entities))
-}
-
-pub async fn get_receiver_consignee(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((receiver_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<ReceiverPresaveConsignee>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
-	let entity = ReceiverPresaveConsigneeBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		receiver_id,
-		entity.receiver_presave_id,
-		id,
-		"receiver_presave_consignees",
-	)?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn update_receiver_consignee(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((receiver_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<ReceiverPresaveConsigneeForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ReceiverPresaveConsignee>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
-	let entity = ReceiverPresaveConsigneeBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		receiver_id,
-		entity.receiver_presave_id,
-		id,
-		"receiver_presave_consignees",
-	)?;
-	let ParamsForUpdate { data } = params;
-	ReceiverPresaveConsigneeBmc::update(&ctx, &mm, id, data).await?;
-	let entity = ReceiverPresaveConsigneeBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn delete_receiver_consignee(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((receiver_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	let entity = ReceiverPresaveConsigneeBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		receiver_id,
-		entity.receiver_presave_id,
-		id,
-		"receiver_presave_consignees",
-	)?;
-	ReceiverPresaveConsigneeBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
+generate_presave_child_rest_fns! {
+	Bmc: ReceiverPresaveConsigneeBmc,
+	Entity: ReceiverPresaveConsignee,
+	RestCreate: ReceiverConsigneeForRestCreate,
+	ForUpdate: ReceiverPresaveConsigneeForUpdate,
+	CreateFn: create_receiver_consignee,
+	ListFn: list_receiver_consignees,
+	GetFn: get_receiver_consignee,
+	UpdateFn: update_receiver_consignee,
+	DeleteFn: delete_receiver_consignee,
+	ParentField: receiver_presave_id,
+	ParentScopeFn: allow_presave_parent_scope,
+	EntityName: "receiver_presave_consignees",
+	UpdatePermission: update,
+	DeleteMode: hard
 }

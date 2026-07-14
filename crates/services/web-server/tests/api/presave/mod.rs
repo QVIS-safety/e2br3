@@ -7,4 +7,5 @@ mod product_web;
 mod receiver_web;
 mod reporter_web;
 mod sender_web;
+mod source_contract_web;
 mod study_web;

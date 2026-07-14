@@ -446,94 +446,19 @@ impl ProductSubstanceForRestCreate {
 	}
 }
 
-pub async fn create_product_substance(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(product_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<ProductSubstanceForRestCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ProductPresaveSubstance>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	let ParamsForCreate { data } = params;
-	let id =
-		ProductPresaveSubstanceBmc::create(&ctx, &mm, data.into_core(product_id))
-			.await?;
-	let entity = ProductPresaveSubstanceBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_created(entity))
-}
-
-pub async fn list_product_substances(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(product_id): Path<Uuid>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<Vec<ProductPresaveSubstance>>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	let entities =
-		ProductPresaveSubstanceBmc::list_by_parent(&ctx, &mm, product_id).await?;
-	Ok(rest_ok(entities))
-}
-
-pub async fn get_product_substance(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((product_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<ProductPresaveSubstance>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
-	let entity = ProductPresaveSubstanceBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		product_id,
-		entity.product_presave_id,
-		id,
-		"product_presave_substances",
-	)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn update_product_substance(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((product_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<ProductPresaveSubstanceForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<ProductPresaveSubstance>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
-	let entity = ProductPresaveSubstanceBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		product_id,
-		entity.product_presave_id,
-		id,
-		"product_presave_substances",
-	)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	let ParamsForUpdate { data } = params;
-	ProductPresaveSubstanceBmc::update(&ctx, &mm, id, data).await?;
-	let entity = ProductPresaveSubstanceBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn delete_product_substance(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((product_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	let entity = ProductPresaveSubstanceBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		product_id,
-		entity.product_presave_id,
-		id,
-		"product_presave_substances",
-	)?;
-	ensure_product_presave_id_scope(&ctx, &mm, product_id).await?;
-	ProductPresaveSubstanceBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
+generate_presave_child_rest_fns! {
+	Bmc: ProductPresaveSubstanceBmc,
+	Entity: ProductPresaveSubstance,
+	RestCreate: ProductSubstanceForRestCreate,
+	ForUpdate: ProductPresaveSubstanceForUpdate,
+	CreateFn: create_product_substance,
+	ListFn: list_product_substances,
+	GetFn: get_product_substance,
+	UpdateFn: update_product_substance,
+	DeleteFn: delete_product_substance,
+	ParentField: product_presave_id,
+	ParentScopeFn: ensure_product_presave_id_scope,
+	EntityName: "product_presave_substances",
+	UpdatePermission: update,
+	DeleteMode: hard
 }

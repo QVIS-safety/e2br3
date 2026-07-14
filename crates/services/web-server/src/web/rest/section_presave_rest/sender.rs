@@ -713,105 +713,21 @@ impl SenderGatewayForRestCreate {
 	}
 }
 
-pub async fn create_sender_gateway_from_path(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(sender_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<SenderGatewayForRestCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<SenderPresaveGateway>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
-	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	let ParamsForCreate { data } = params;
-	let id = SenderPresaveGatewayBmc::create(&ctx, &mm, data.into_core(sender_id))
-		.await?;
-	let entity = SenderPresaveGatewayBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_created(entity))
-}
-
-pub async fn list_sender_gateways(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(sender_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<SenderPresaveGateway>>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	let entities =
-		SenderPresaveGatewayBmc::list_by_parent(&ctx, &mm, sender_id).await?;
-	Ok(rest_ok(entities))
-}
-
-pub async fn get_sender_gateway(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((sender_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<SenderPresaveGateway>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
-	let entity = SenderPresaveGatewayBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		sender_id,
-		entity.sender_presave_id,
-		id,
-		"sender_presave_gateways",
-	)?;
-	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn update_sender_gateway(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((sender_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<SenderPresaveGatewayForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<SenderPresaveGateway>>)> {
-	let ctx = ctx_w.0;
-	let ParamsForUpdate { data } = params;
-	if data.deleted == Some(true) {
-		require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	} else {
-		require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
-	}
-	let entity = SenderPresaveGatewayBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		sender_id,
-		entity.sender_presave_id,
-		id,
-		"sender_presave_gateways",
-	)?;
-	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	SenderPresaveGatewayBmc::update(&ctx, &mm, id, data).await?;
-	let entity = SenderPresaveGatewayBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn delete_sender_gateway(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((sender_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	let entity = SenderPresaveGatewayBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		sender_id,
-		entity.sender_presave_id,
-		id,
-		"sender_presave_gateways",
-	)?;
-	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	SenderPresaveGatewayBmc::update(
-		&ctx,
-		&mm,
-		id,
-		SenderPresaveGatewayForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
-	Ok(StatusCode::NO_CONTENT)
+generate_presave_child_rest_fns! {
+	Bmc: SenderPresaveGatewayBmc,
+	Entity: SenderPresaveGateway,
+	RestCreate: SenderGatewayForRestCreate,
+	ForUpdate: SenderPresaveGatewayForUpdate,
+	CreateFn: create_sender_gateway_from_path,
+	ListFn: list_sender_gateways,
+	GetFn: get_sender_gateway,
+	UpdateFn: update_sender_gateway,
+	DeleteFn: delete_sender_gateway,
+	ParentField: sender_presave_id,
+	ParentScopeFn: ensure_sender_presave_id_scope,
+	EntityName: "sender_presave_gateways",
+	UpdatePermission: delete_aware,
+	DeleteMode: soft
 }
 
 #[derive(Debug, Deserialize)]
@@ -844,120 +760,19 @@ impl SenderResponsiblePersonForRestCreate {
 	}
 }
 
-pub async fn create_sender_responsible_person(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(sender_id): Path<Uuid>,
-	Json(params): Json<ParamsForCreate<SenderResponsiblePersonForRestCreate>>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<SenderPresaveResponsiblePerson>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_CREATE)?;
-	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	let ParamsForCreate { data } = params;
-	let id = SenderPresaveResponsiblePersonBmc::create(
-		&ctx,
-		&mm,
-		data.into_core(sender_id),
-	)
-	.await?;
-	let entity = SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_created(entity))
-}
-
-pub async fn list_sender_responsible_persons(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path(sender_id): Path<Uuid>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<Vec<SenderPresaveResponsiblePerson>>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_LIST)?;
-	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	let entities =
-		SenderPresaveResponsiblePersonBmc::list_by_parent(&ctx, &mm, sender_id)
-			.await?;
-	Ok(rest_ok(entities))
-}
-
-pub async fn get_sender_responsible_person(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((sender_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<SenderPresaveResponsiblePerson>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_READ)?;
-	let entity = SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		sender_id,
-		entity.sender_presave_id,
-		id,
-		"sender_presave_responsible_persons",
-	)?;
-	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn update_sender_responsible_person(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((sender_id, id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<SenderPresaveResponsiblePersonForUpdate>>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<SenderPresaveResponsiblePerson>>,
-)> {
-	let ctx = ctx_w.0;
-	let ParamsForUpdate { data } = params;
-	if data.deleted == Some(true) {
-		require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	} else {
-		require_permission(&ctx, PRESAVE_TEMPLATE_UPDATE)?;
-	}
-	let entity = SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		sender_id,
-		entity.sender_presave_id,
-		id,
-		"sender_presave_responsible_persons",
-	)?;
-	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	SenderPresaveResponsiblePersonBmc::update(&ctx, &mm, id, data).await?;
-	let entity = SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, id).await?;
-	Ok(rest_ok(entity))
-}
-
-pub async fn delete_sender_responsible_person(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((sender_id, id)): Path<(Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, PRESAVE_TEMPLATE_DELETE)?;
-	let entity = SenderPresaveResponsiblePersonBmc::get(&ctx, &mm, id).await?;
-	ensure_parent_scope(
-		sender_id,
-		entity.sender_presave_id,
-		id,
-		"sender_presave_responsible_persons",
-	)?;
-	ensure_sender_presave_id_scope(&ctx, &mm, sender_id).await?;
-	SenderPresaveResponsiblePersonBmc::update(
-		&ctx,
-		&mm,
-		id,
-		SenderPresaveResponsiblePersonForUpdate {
-			deleted: Some(true),
-			..Default::default()
-		},
-	)
-	.await?;
-	Ok(StatusCode::NO_CONTENT)
+generate_presave_child_rest_fns! {
+	Bmc: SenderPresaveResponsiblePersonBmc,
+	Entity: SenderPresaveResponsiblePerson,
+	RestCreate: SenderResponsiblePersonForRestCreate,
+	ForUpdate: SenderPresaveResponsiblePersonForUpdate,
+	CreateFn: create_sender_responsible_person,
+	ListFn: list_sender_responsible_persons,
+	GetFn: get_sender_responsible_person,
+	UpdateFn: update_sender_responsible_person,
+	DeleteFn: delete_sender_responsible_person,
+	ParentField: sender_presave_id,
+	ParentScopeFn: ensure_sender_presave_id_scope,
+	EntityName: "sender_presave_responsible_persons",
+	UpdatePermission: delete_aware,
+	DeleteMode: soft
 }
