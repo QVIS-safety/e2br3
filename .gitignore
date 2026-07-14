@@ -89,6 +89,7 @@ output/playwright/
 
 # -- Python
 __pycache__/
+/tmp/mfds-products/
 
 
 # -- Environment

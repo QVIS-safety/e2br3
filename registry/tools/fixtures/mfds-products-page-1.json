@@ -1,0 +1,33 @@
+{
+  "header": {
+    "resultCode": "00",
+    "resultMsg": "NORMAL SERVICE."
+  },
+  "body": {
+    "pageNo": 1,
+    "numOfRows": 2,
+    "totalCount": 3,
+    "items": [
+      {
+        "ITEM_SEQ": "200000001",
+        "ITEM_NAME": "테스트정",
+        "ITEM_ENG_NAME": "Test Tablet",
+        "ENTP_NAME": "테스트제약",
+        "ENTP_ENG_NAME": "Test Pharma",
+        "ITEM_PERMIT_DATE": "20200101",
+        "CANCEL_DATE": "",
+        "CANCEL_NAME": ""
+      },
+      {
+        "ITEM_SEQ": "200000002",
+        "ITEM_NAME": "취소캡슐",
+        "ITEM_ENG_NAME": "Cancelled Capsule",
+        "ENTP_NAME": "예시제약",
+        "ENTP_ENG_NAME": "Example Pharma",
+        "ITEM_PERMIT_DATE": "20200202",
+        "CANCEL_DATE": "20251231",
+        "CANCEL_NAME": "취하"
+      }
+    ]
+  }
+}

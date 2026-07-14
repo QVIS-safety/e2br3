@@ -1,0 +1,33 @@
+{
+  "header": {
+    "resultCode": "00",
+    "resultMsg": "NORMAL SERVICE."
+  },
+  "body": {
+    "pageNo": 2,
+    "numOfRows": 2,
+    "totalCount": 3,
+    "items": [
+      {
+        "ITEM_SEQ": "200000001",
+        "ITEM_NAME": "테스트정",
+        "ITEM_ENG_NAME": "Test Tablet",
+        "ENTP_NAME": "테스트제약",
+        "ENTP_ENG_NAME": "Test Pharma",
+        "ITEM_PERMIT_DATE": "20200101",
+        "CANCEL_DATE": "",
+        "CANCEL_NAME": ""
+      },
+      {
+        "ITEM_SEQ": "200000003",
+        "ITEM_NAME": "예시시럽",
+        "ITEM_ENG_NAME": "Example Syrup",
+        "ENTP_NAME": "예시제약",
+        "ENTP_ENG_NAME": "Example Pharma",
+        "ITEM_PERMIT_DATE": "20200303",
+        "CANCEL_DATE": "",
+        "CANCEL_NAME": ""
+      }
+    ]
+  }
+}

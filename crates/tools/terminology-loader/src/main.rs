@@ -3,6 +3,7 @@ use lib_core::ctx::Ctx;
 use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::terminology_import::parse_whodrug_upload;
 use lib_core::model::ModelManager;
+use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use sqlx::{Postgres, QueryBuilder};
 use std::collections::{BTreeMap, HashSet};
@@ -24,6 +25,7 @@ struct Cli {
 enum Commands {
 	Meddra(LoadArgs),
 	Whodrug(LoadArgs),
+	MfdsProducts(MfdsLoadArgs),
 }
 
 #[derive(Args, Debug, Clone)]
@@ -34,6 +36,16 @@ struct LoadArgs {
 	version: String,
 	#[arg(long, default_value = "en")]
 	language: String,
+	#[arg(long)]
+	dry_run: bool,
+}
+
+#[derive(Args, Debug, Clone)]
+struct MfdsLoadArgs {
+	#[arg(long)]
+	input: PathBuf,
+	#[arg(long)]
+	version: String,
 	#[arg(long)]
 	dry_run: bool,
 }
@@ -52,6 +64,29 @@ struct WhodrugRow {
 	atc_code: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct MfdsProductArtifact {
+	dictionary: String,
+	version: String,
+	language: String,
+	source: String,
+	products: Vec<MfdsProductRow>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct MfdsProductRow {
+	item_seq: String,
+	product_name_kr: String,
+	product_name_en: Option<String>,
+	manufacturer_name_kr: Option<String>,
+	manufacturer_name_en: Option<String>,
+	permit_date: Option<String>,
+	cancel_date: Option<String>,
+	cancel_name: Option<String>,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let cli = Cli::parse();
@@ -60,8 +95,48 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	match cli.command {
 		Commands::Meddra(args) => load_meddra(&mm, &args).await?,
 		Commands::Whodrug(args) => load_whodrug(&mm, &args).await?,
+		Commands::MfdsProducts(args) => load_mfds_products(&mm, &args).await?,
 	}
 
+	Ok(())
+}
+
+async fn load_mfds_products(
+	mm: &ModelManager,
+	args: &MfdsLoadArgs,
+) -> Result<(), Box<dyn std::error::Error>> {
+	let artifact = parse_mfds_products(&args.input, &args.version)?;
+	println!(
+		"MFDS product parse complete: rows={}, version={}",
+		artifact.products.len(),
+		artifact.version
+	);
+	if args.dry_run {
+		println!("Dry run complete. No DB changes were made.");
+		return Ok(());
+	}
+
+	let checksum = sha256_if_file(&args.input);
+	let source_path = args.input.to_string_lossy().to_string();
+	with_loader_txn(mm, || async {
+		upsert_release_header(
+			mm,
+			"mfds_product",
+			&artifact.version,
+			&artifact.language,
+			"validated",
+			&source_path,
+			checksum.as_deref(),
+			artifact.products.len() as i64,
+		)
+		.await?;
+		upsert_mfds_product_rows(mm, &artifact.products, &artifact.version).await
+	})
+	.await?;
+
+	println!(
+		"MFDS product release staged inactive; approval and activation required."
+	);
 	Ok(())
 }
 
@@ -455,6 +530,116 @@ async fn upsert_whodrug_rows(
 		mm.dbx().execute(qb.build()).await?;
 	}
 	Ok(())
+}
+
+async fn upsert_mfds_product_rows(
+	mm: &ModelManager,
+	rows: &[MfdsProductRow],
+	version: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+	const BATCH: usize = 1000;
+	for chunk in rows.chunks(BATCH) {
+		let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
+			"INSERT INTO mfds_products
+			 (item_seq, product_name_kr, product_name_en, manufacturer_name_kr,
+			  manufacturer_name_en, permit_date, cancellation_date,
+			  cancellation_status, version, active) ",
+		);
+		qb.push_values(chunk, |mut b, row| {
+			let permit_date = parse_basic_date(row.permit_date.as_deref())
+				.expect("MFDS permit date was validated");
+			let cancellation_date = parse_basic_date(row.cancel_date.as_deref())
+				.expect("MFDS cancellation date was validated");
+			b.push_bind(&row.item_seq)
+				.push_bind(&row.product_name_kr)
+				.push_bind(&row.product_name_en)
+				.push_bind(&row.manufacturer_name_kr)
+				.push_bind(&row.manufacturer_name_en)
+				.push_bind(permit_date)
+				.push_bind(cancellation_date)
+				.push_bind(&row.cancel_name)
+				.push_bind(version)
+				.push_bind(false);
+		});
+		qb.push(
+			" ON CONFLICT (item_seq, version)
+			  DO UPDATE SET
+			    product_name_kr = EXCLUDED.product_name_kr,
+			    product_name_en = EXCLUDED.product_name_en,
+			    manufacturer_name_kr = EXCLUDED.manufacturer_name_kr,
+			    manufacturer_name_en = EXCLUDED.manufacturer_name_en,
+			    permit_date = EXCLUDED.permit_date,
+			    cancellation_date = EXCLUDED.cancellation_date,
+			    cancellation_status = EXCLUDED.cancellation_status,
+			    active = false",
+		);
+		mm.dbx().execute(qb.build()).await?;
+	}
+	Ok(())
+}
+
+fn parse_mfds_products(
+	input: &Path,
+	expected_version: &str,
+) -> Result<MfdsProductArtifact, Box<dyn std::error::Error>> {
+	let bytes = fs::read(input)?;
+	let artifact: MfdsProductArtifact = serde_json::from_slice(&bytes)?;
+	if artifact.dictionary != "mfds_product" {
+		return Err("MFDS artifact dictionary must be mfds_product".into());
+	}
+	if artifact.version != expected_version {
+		return Err(format!(
+			"MFDS artifact version {} does not match requested version {}",
+			artifact.version, expected_version
+		)
+		.into());
+	}
+	if artifact.language != "ko" {
+		return Err("MFDS artifact language must be ko".into());
+	}
+	if artifact.source.trim().is_empty() {
+		return Err("MFDS artifact source must be non-empty".into());
+	}
+	if artifact.products.is_empty() {
+		return Err("MFDS artifact products must be non-empty".into());
+	}
+
+	let mut seen = HashSet::new();
+	for row in &artifact.products {
+		let item_seq = row.item_seq.trim();
+		if item_seq.is_empty() || item_seq.len() > 10 {
+			return Err(format!("invalid MFDS ITEM_SEQ {item_seq:?}").into());
+		}
+		if row.product_name_kr.trim().is_empty() {
+			return Err(format!(
+				"MFDS ITEM_SEQ {item_seq} is missing product_name_kr"
+			)
+			.into());
+		}
+		if !seen.insert(item_seq.to_string()) {
+			return Err(format!("duplicate ITEM_SEQ {item_seq}").into());
+		}
+		parse_basic_date(row.permit_date.as_deref())?;
+		parse_basic_date(row.cancel_date.as_deref())?;
+	}
+	Ok(artifact)
+}
+
+fn parse_basic_date(
+	value: Option<&str>,
+) -> Result<Option<sqlx::types::time::Date>, Box<dyn std::error::Error>> {
+	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
+		return Ok(None);
+	};
+	if value.len() != 8 || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+		return Err(format!("invalid basic date {value:?}").into());
+	}
+	let year = value[0..4].parse::<i32>()?;
+	let month = value[4..6].parse::<u8>()?;
+	let day = value[6..8].parse::<u8>()?;
+	let month = time::Month::try_from(month)?;
+	let date = sqlx::types::time::Date::from_calendar_date(year, month, day)?;
+	Ok(Some(date))
 }
 
 fn parse_meddra(input: &Path) -> Result<Vec<MeddraRow>, Box<dyn std::error::Error>> {
@@ -949,6 +1134,159 @@ mod tests {
 		assert_eq!(rows[0].drug_name, "Methyldopa");
 		assert_eq!(rows[0].atc_code.as_deref(), Some("C02AB"));
 		let _ = fs::remove_file(zip_path);
+	}
+
+	#[test]
+	fn parse_mfds_product_artifact_is_strict_and_preserves_cancellation() {
+		let path = write_temp_json(
+			r#"{
+  "dictionary": "mfds_product",
+  "version": "2026-07-14",
+  "language": "ko",
+  "source": "https://apis.data.go.kr/example",
+  "products": [{
+    "item_seq": "200000001",
+    "product_name_kr": "테스트정",
+    "product_name_en": "Test Tablet",
+    "manufacturer_name_kr": "테스트제약",
+    "manufacturer_name_en": null,
+    "permit_date": "20200101",
+    "cancel_date": "20251231",
+    "cancel_name": "취하"
+  }]
+}"#,
+		);
+
+		let artifact = parse_mfds_products(&path, "2026-07-14")
+			.expect("valid MFDS artifact should parse");
+
+		assert_eq!(artifact.products.len(), 1);
+		assert_eq!(artifact.products[0].item_seq, "200000001");
+		assert_eq!(
+			artifact.products[0].cancel_date.as_deref(),
+			Some("20251231")
+		);
+		assert_eq!(artifact.products[0].cancel_name.as_deref(), Some("취하"));
+		let _ = fs::remove_file(path);
+	}
+
+	#[test]
+	fn parse_mfds_product_artifact_rejects_duplicate_codes() {
+		let path = write_temp_json(
+			r#"{
+  "dictionary": "mfds_product",
+  "version": "v1",
+  "language": "ko",
+  "source": "source",
+  "products": [
+    {"item_seq":"1","product_name_kr":"A","product_name_en":null,"manufacturer_name_kr":null,"manufacturer_name_en":null,"permit_date":null,"cancel_date":null,"cancel_name":null},
+    {"item_seq":"1","product_name_kr":"A","product_name_en":null,"manufacturer_name_kr":null,"manufacturer_name_en":null,"permit_date":null,"cancel_date":null,"cancel_name":null}
+  ]
+}"#,
+		);
+
+		let error = parse_mfds_products(&path, "v1")
+			.expect_err("duplicate ITEM_SEQ must fail");
+
+		assert!(error.to_string().contains("duplicate ITEM_SEQ 1"));
+		let _ = fs::remove_file(path);
+	}
+
+	#[tokio::test]
+	async fn load_mfds_products_stages_inactive_validated_release() {
+		std::env::var("SERVICE_DB_URL")
+			.expect("SERVICE_DB_URL must be set for terminology loader DB test");
+		std::env::set_var("SERVICE_WEB_FOLDER", "web-folder");
+		let mm = ModelManager::new().await.expect("model manager");
+		let suffix = ZIP_COUNTER.fetch_add(1, Ordering::Relaxed);
+		let version = format!("loader-test-{suffix}");
+		let item_seq = format!("{:010}", suffix % 10_000_000_000);
+		let path = write_temp_json(&format!(
+			r#"{{
+  "dictionary": "mfds_product",
+  "version": "{version}",
+  "language": "ko",
+  "source": "fixture",
+  "products": [{{
+    "item_seq": "{item_seq}",
+    "product_name_kr": "테스트정",
+    "product_name_en": null,
+    "manufacturer_name_kr": null,
+    "manufacturer_name_en": null,
+    "permit_date": "20200101",
+    "cancel_date": null,
+    "cancel_name": null
+  }}]
+}}"#
+		));
+
+		load_mfds_products(
+			&mm,
+			&MfdsLoadArgs {
+				input: path.clone(),
+				version: version.clone(),
+				dry_run: false,
+			},
+		)
+		.await
+		.expect("MFDS product release should stage");
+
+		mm.dbx().begin_txn().await.expect("begin verification");
+		set_loader_context(&mm).await.expect("set loader context");
+		let product: (bool,) = mm
+			.dbx()
+			.fetch_one(
+				sqlx::query_as(
+					"SELECT active FROM mfds_products WHERE item_seq = $1 AND version = $2",
+				)
+				.bind(&item_seq)
+				.bind(&version),
+			)
+			.await
+			.expect("staged product");
+		let release: (String,) = mm
+			.dbx()
+			.fetch_one(
+				sqlx::query_as(
+					"SELECT status FROM terminology_releases
+					 WHERE dictionary = 'mfds_product' AND version = $1 AND language = 'ko'",
+				)
+				.bind(&version),
+			)
+			.await
+			.expect("staged release");
+		mm.dbx()
+			.execute(
+				sqlx::query("DELETE FROM mfds_products WHERE version = $1")
+					.bind(&version),
+			)
+			.await
+			.expect("delete staged products");
+		mm.dbx()
+			.execute(
+				sqlx::query(
+					"DELETE FROM terminology_releases
+					 WHERE dictionary = 'mfds_product' AND version = $1 AND language = 'ko'",
+				)
+				.bind(&version),
+			)
+			.await
+			.expect("delete staged release");
+		mm.dbx().commit_txn().await.expect("commit cleanup");
+
+		assert!(!product.0);
+		assert_eq!(release.0, "validated");
+		let _ = fs::remove_file(path);
+	}
+
+	fn write_temp_json(content: &str) -> PathBuf {
+		let path = std::env::temp_dir().join(format!(
+			"terminology-loader-mfds-test-{}-{}.json",
+			std::process::id(),
+			ZIP_COUNTER.fetch_add(1, Ordering::Relaxed)
+		));
+		fs::write(&path, content).unwrap();
+		path
 	}
 
 	fn write_zip(entries: &[(&str, &str)]) -> PathBuf {
