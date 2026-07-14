@@ -79,6 +79,7 @@ pub(super) async fn create_product_presave(
 		&ctx,
 		mm,
 		ProductPresaveForCreate {
+			receiver_presave_id: None,
 			sender_presave_id: Some(sender_id),
 			product_id: Some(format!("REST-PRODUCT-{}", Uuid::new_v4())),
 			medicinal_product: Some("REST Product".into()),
