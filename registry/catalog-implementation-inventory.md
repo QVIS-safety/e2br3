@@ -9,7 +9,7 @@ It does not scan arbitrary source strings.
 
 | Catalog scope | Catalog rules | Evaluator tables | Direct inventory | Overlap | Direct-only | Missing | Unexpected |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| `CaseValidate`, sections C/D/E/F/G/H/N, ICH/FDA/MFDS | 461 | 398 | 64 | 1 | 63 | 0 | 0 |
+| `CaseValidate`, sections C/D/E/F/G/H/N, ICH/FDA/MFDS | 461 | 411 | 51 | 1 | 50 | 0 | 0 |
 
 The exact-set regression is
 `case::sections::tests::implemented_case_registry_matches_case_validate_catalog`.
@@ -19,10 +19,10 @@ Run it with:
 cargo test -p validator implemented_case_registry_matches_case_validate_catalog --lib
 ```
 
-The 398 table-backed rules cover required/presence, companion, allowed-value,
+The 411 table-backed rules cover required/presence, companion, allowed-value,
 vocabulary, MedDRA, maximum-length, and future-date evaluators. The direct
 inventory contains 64 rules, including one rule already registered through a
-table, leaving 63 direct-only rules. These counts are enforced by
+table, leaving 50 direct-only rules. These counts are enforced by
 `case_rule_inventory_baseline_is_exact`; a catalog rule added to this scope
 fails the exact-set test until its case implementation is registered.
 
