@@ -3172,6 +3172,10 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::FdaBooleanStringOrNullFlavor,
 	},
 	ValuePolicyBinding {
+		code: "FDA.C.1.12.RECOMMENDED",
+		policy: ValuePolicy::FdaBooleanStringOrNullFlavor,
+	},
+	ValuePolicyBinding {
 		code: "FDA.C.1.7.1.REQUIRED",
 		policy: ValuePolicy::FdaLocalCriteriaAllowedCode,
 	},
@@ -6354,6 +6358,33 @@ mod tests {
 			None,
 			RuleFacts::default()
 		));
+	}
+
+	#[test]
+	fn conditioned_issue_codes_own_their_value_policy() {
+		for (value, null_flavor) in [
+			(Some("true"), None),
+			(Some("false"), None),
+			(Some("1"), None),
+			(None, Some("NI")),
+			(None, None),
+		] {
+			assert_eq!(
+				is_rule_value_valid(
+					"FDA.C.1.12.RECOMMENDED",
+					value,
+					null_flavor,
+					RuleFacts::default(),
+				),
+				is_rule_value_valid(
+					"FDA.C.1.12.REQUIRED",
+					value,
+					null_flavor,
+					RuleFacts::default(),
+				),
+				"conditioned issue code must own the same policy for value={value:?}, null_flavor={null_flavor:?}",
+			);
+		}
 	}
 
 	#[test]
