@@ -1,8 +1,6 @@
 // Drug sub-resources REST endpoints (G.k.2.3.r, G.k.4.r, G.k.6.r)
 
-use axum::extract::{Path, State};
-use axum::http::StatusCode;
-use axum::Json;
+use lib_core::model;
 use lib_core::model::acs::{
 	DRUG_DEVICE_CHARACTERISTIC_CREATE, DRUG_DEVICE_CHARACTERISTIC_DELETE,
 	DRUG_DEVICE_CHARACTERISTIC_LIST, DRUG_DEVICE_CHARACTERISTIC_READ,
@@ -22,13 +20,7 @@ use lib_core::model::drug::{
 	DrugIndication, DrugIndicationBmc, DrugIndicationFilter,
 	DrugIndicationForCreate, DrugIndicationForUpdate,
 };
-use lib_core::model::{self, ModelManager};
-use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
-use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::{require_case_write_allowed, require_permission, Result};
-use lib_web::middleware::mw_auth::CtxW;
-use modql::filter::{ListOptions, OpValValue, OpValsValue};
-use serde_json::json;
+use lib_rest_core::Result;
 use uuid::Uuid;
 
 fn ensure_drug_scope(
@@ -73,330 +65,72 @@ lib_rest_core::generate_drug_child_rest_fns! {
 
 // -- Dosage Information (G.k.4.r)
 
-/// POST /api/cases/{case_id}/drugs/{drug_id}/dosages
-pub async fn create_dosage_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForCreate<DosageInformationForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<DosageInformation>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DOSAGE_CREATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForCreate { data } = params;
-	let mut data = data;
-	data.drug_id = drug_id;
-
-	let id = DosageInformationBmc::create(&ctx, &mm, data).await?;
-	let entity = DosageInformationBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-}
-
-/// GET /api/cases/{case_id}/drugs/{drug_id}/dosages
-pub async fn list_dosage_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<DosageInformation>>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DOSAGE_LIST)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-	let filter = DosageInformationFilter {
-		drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-			drug_id.to_string()
-		))])),
-		..Default::default()
-	};
-	let entities = DosageInformationBmc::list(
-		&ctx,
-		&mm,
-		Some(vec![filter]),
-		Some(ListOptions::default()),
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-}
-
-/// GET /api/cases/{case_id}/drugs/{drug_id}/dosages/{id}
-pub async fn get_dosage_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<DosageInformation>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DOSAGE_READ)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-	let entity = DosageInformationBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "dosage_information")?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// PUT /api/cases/{case_id}/drugs/{drug_id}/dosages/{id}
-pub async fn update_dosage_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<DosageInformationForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<DosageInformation>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DOSAGE_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForUpdate { data } = params;
-	let entity = DosageInformationBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "dosage_information")?;
-	DosageInformationBmc::update(&ctx, &mm, id, data).await?;
-	let entity = DosageInformationBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// DELETE /api/cases/{case_id}/drugs/{drug_id}/dosages/{id}
-pub async fn delete_dosage_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DOSAGE_DELETE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = DosageInformationBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "dosage_information")?;
-	DosageInformationBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
-/// POST /api/cases/{case_id}/drugs/{drug_id}/dosages/{id}/restore
-pub async fn restore_dosage_information(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<DosageInformation>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DOSAGE_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = DosageInformationBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "dosage_information")?;
-	DosageInformationBmc::restore(&ctx, &mm, id).await?;
-	let entity = DosageInformationBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+lib_rest_core::generate_drug_child_rest_fns! {
+	Bmc: DosageInformationBmc,
+	Entity: DosageInformation,
+	ForCreate: DosageInformationForCreate,
+	ForUpdate: DosageInformationForUpdate,
+	Filter: DosageInformationFilter,
+	CreateFn: create_dosage_information,
+	ListFn: list_dosage_information,
+	GetFn: get_dosage_information,
+	UpdateFn: update_dosage_information,
+	DeleteFn: delete_dosage_information,
+	RestoreFn: restore_dosage_information,
+	ParentField: drug_id,
+	ScopeFn: ensure_drug_scope,
+	EntityName: "dosage_information",
+	PermCreate: DRUG_DOSAGE_CREATE,
+	PermList: DRUG_DOSAGE_LIST,
+	PermRead: DRUG_DOSAGE_READ,
+	PermUpdate: DRUG_DOSAGE_UPDATE,
+	PermDelete: DRUG_DOSAGE_DELETE
 }
 
 // -- Drug Indications (G.k.6.r)
 
-/// POST /api/cases/{case_id}/drugs/{drug_id}/indications
-pub async fn create_drug_indication(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForCreate<DrugIndicationForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugIndication>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_INDICATION_CREATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForCreate { data } = params;
-	let mut data = data;
-	data.drug_id = drug_id;
-
-	let id = DrugIndicationBmc::create(&ctx, &mm, data).await?;
-	let entity = DrugIndicationBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-}
-
-/// GET /api/cases/{case_id}/drugs/{drug_id}/indications
-pub async fn list_drug_indications(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<Vec<DrugIndication>>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_INDICATION_LIST)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-	let filter = DrugIndicationFilter {
-		drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-			drug_id.to_string()
-		))])),
-		..Default::default()
-	};
-	let entities = DrugIndicationBmc::list(
-		&ctx,
-		&mm,
-		Some(vec![filter]),
-		Some(ListOptions::default()),
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-}
-
-/// GET /api/cases/{case_id}/drugs/{drug_id}/indications/{id}
-pub async fn get_drug_indication(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugIndication>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_INDICATION_READ)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-	let entity = DrugIndicationBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_indications")?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// PUT /api/cases/{case_id}/drugs/{drug_id}/indications/{id}
-pub async fn update_drug_indication(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<DrugIndicationForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugIndication>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_INDICATION_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForUpdate { data } = params;
-	let entity = DrugIndicationBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_indications")?;
-	DrugIndicationBmc::update(&ctx, &mm, id, data).await?;
-	let entity = DrugIndicationBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// DELETE /api/cases/{case_id}/drugs/{drug_id}/indications/{id}
-pub async fn delete_drug_indication(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_INDICATION_DELETE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = DrugIndicationBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_indications")?;
-	DrugIndicationBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
-/// POST /api/cases/{case_id}/drugs/{drug_id}/indications/{id}/restore
-pub async fn restore_drug_indication(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugIndication>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_INDICATION_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = DrugIndicationBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_indications")?;
-	DrugIndicationBmc::restore(&ctx, &mm, id).await?;
-	let entity = DrugIndicationBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+lib_rest_core::generate_drug_child_rest_fns! {
+	Bmc: DrugIndicationBmc,
+	Entity: DrugIndication,
+	ForCreate: DrugIndicationForCreate,
+	ForUpdate: DrugIndicationForUpdate,
+	Filter: DrugIndicationFilter,
+	CreateFn: create_drug_indication,
+	ListFn: list_drug_indications,
+	GetFn: get_drug_indication,
+	UpdateFn: update_drug_indication,
+	DeleteFn: delete_drug_indication,
+	RestoreFn: restore_drug_indication,
+	ParentField: drug_id,
+	ScopeFn: ensure_drug_scope,
+	EntityName: "drug_indications",
+	PermCreate: DRUG_INDICATION_CREATE,
+	PermList: DRUG_INDICATION_LIST,
+	PermRead: DRUG_INDICATION_READ,
+	PermUpdate: DRUG_INDICATION_UPDATE,
+	PermDelete: DRUG_INDICATION_DELETE
 }
 
 // -- Drug Device Characteristics (FDA device authority)
 
-/// POST /api/cases/{case_id}/drugs/{drug_id}/device-characteristics
-pub async fn create_drug_device_characteristic(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
-	Json(params): Json<ParamsForCreate<DrugDeviceCharacteristicForCreate>>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugDeviceCharacteristic>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DEVICE_CHARACTERISTIC_CREATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForCreate { data } = params;
-	let mut data = data;
-	data.drug_id = drug_id;
-
-	let id = DrugDeviceCharacteristicBmc::create(&ctx, &mm, data).await?;
-	let entity = DrugDeviceCharacteristicBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::CREATED, Json(DataRestResult { data: entity })))
-}
-
-/// GET /api/cases/{case_id}/drugs/{drug_id}/device-characteristics
-pub async fn list_drug_device_characteristics(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id)): Path<(Uuid, Uuid)>,
-) -> Result<(
-	StatusCode,
-	Json<DataRestResult<Vec<DrugDeviceCharacteristic>>>,
-)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DEVICE_CHARACTERISTIC_LIST)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-	let filter = DrugDeviceCharacteristicFilter {
-		drug_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(
-			drug_id.to_string()
-		))])),
-		..Default::default()
-	};
-	let entities = DrugDeviceCharacteristicBmc::list(
-		&ctx,
-		&mm,
-		Some(vec![filter]),
-		Some(ListOptions::default()),
-	)
-	.await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entities })))
-}
-
-/// GET /api/cases/{case_id}/drugs/{drug_id}/device-characteristics/{id}
-pub async fn get_drug_device_characteristic(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugDeviceCharacteristic>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DEVICE_CHARACTERISTIC_READ)?;
-	lib_rest_core::require_case_read_allowed(&ctx, &mm, case_id).await?;
-	let entity = DrugDeviceCharacteristicBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_device_characteristics")?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// PUT /api/cases/{case_id}/drugs/{drug_id}/device-characteristics/{id}
-pub async fn update_drug_device_characteristic(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-	Json(params): Json<ParamsForUpdate<DrugDeviceCharacteristicForUpdate>>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugDeviceCharacteristic>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DEVICE_CHARACTERISTIC_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let ParamsForUpdate { data } = params;
-	let entity = DrugDeviceCharacteristicBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_device_characteristics")?;
-	DrugDeviceCharacteristicBmc::update(&ctx, &mm, id, data).await?;
-	let entity = DrugDeviceCharacteristicBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
-}
-
-/// DELETE /api/cases/{case_id}/drugs/{drug_id}/device-characteristics/{id}
-pub async fn delete_drug_device_characteristic(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DEVICE_CHARACTERISTIC_DELETE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = DrugDeviceCharacteristicBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_device_characteristics")?;
-	DrugDeviceCharacteristicBmc::delete(&ctx, &mm, id).await?;
-	Ok(StatusCode::NO_CONTENT)
-}
-
-/// POST /api/cases/{case_id}/drugs/{drug_id}/device-characteristics/{id}/restore
-pub async fn restore_drug_device_characteristic(
-	State(mm): State<ModelManager>,
-	ctx_w: CtxW,
-	Path((case_id, drug_id, id)): Path<(Uuid, Uuid, Uuid)>,
-) -> Result<(StatusCode, Json<DataRestResult<DrugDeviceCharacteristic>>)> {
-	let ctx = ctx_w.0;
-	require_permission(&ctx, DRUG_DEVICE_CHARACTERISTIC_UPDATE)?;
-	require_case_write_allowed(&ctx, &mm, case_id).await?;
-	let entity = DrugDeviceCharacteristicBmc::get(&ctx, &mm, id).await?;
-	ensure_drug_scope(drug_id, entity.drug_id, id, "drug_device_characteristics")?;
-	DrugDeviceCharacteristicBmc::restore(&ctx, &mm, id).await?;
-	let entity = DrugDeviceCharacteristicBmc::get(&ctx, &mm, id).await?;
-	Ok((StatusCode::OK, Json(DataRestResult { data: entity })))
+lib_rest_core::generate_drug_child_rest_fns! {
+	Bmc: DrugDeviceCharacteristicBmc,
+	Entity: DrugDeviceCharacteristic,
+	ForCreate: DrugDeviceCharacteristicForCreate,
+	ForUpdate: DrugDeviceCharacteristicForUpdate,
+	Filter: DrugDeviceCharacteristicFilter,
+	CreateFn: create_drug_device_characteristic,
+	ListFn: list_drug_device_characteristics,
+	GetFn: get_drug_device_characteristic,
+	UpdateFn: update_drug_device_characteristic,
+	DeleteFn: delete_drug_device_characteristic,
+	RestoreFn: restore_drug_device_characteristic,
+	ParentField: drug_id,
+	ScopeFn: ensure_drug_scope,
+	EntityName: "drug_device_characteristics",
+	PermCreate: DRUG_DEVICE_CHARACTERISTIC_CREATE,
+	PermList: DRUG_DEVICE_CHARACTERISTIC_LIST,
+	PermRead: DRUG_DEVICE_CHARACTERISTIC_READ,
+	PermUpdate: DRUG_DEVICE_CHARACTERISTIC_UPDATE,
+	PermDelete: DRUG_DEVICE_CHARACTERISTIC_DELETE
 }
