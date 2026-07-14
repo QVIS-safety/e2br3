@@ -78,6 +78,31 @@ pub(super) fn serialize_scope_input(
 	})
 }
 
+pub(super) fn validate_uuid_scope(
+	field: &str,
+	input: &Option<ScopeListInput>,
+) -> Result<()> {
+	for value in parse_scope_input(input.clone()).unwrap_or_default() {
+		Uuid::parse_str(value.trim()).map_err(|_| Error::BadRequest {
+			message: format!("{field} accepts UUID values only"),
+		})?;
+	}
+	Ok(())
+}
+
+pub(super) fn validate_optional_uuid_identifier(
+	field: &str,
+	value: Option<&str>,
+) -> Result<()> {
+	let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) else {
+		return Ok(());
+	};
+	Uuid::parse_str(value).map_err(|_| Error::BadRequest {
+		message: format!("{field} accepts a UUID value only"),
+	})?;
+	Ok(())
+}
+
 pub(super) fn role_display_name(role: &str) -> String {
 	match canonical_role(role).as_str() {
 		ROLE_SYSTEM_ADMIN => "System Administrator".to_string(),
@@ -353,5 +378,30 @@ pub(super) fn sender_scope_assignment_forbidden_for_ctx(ctx: &Ctx) -> bool {
 pub(super) fn sender_scope_assignment_forbidden() -> Error {
 	Error::AccessDenied {
 		required_role: "sender_scope_assignment_cro_admin".to_string(),
+	}
+}
+
+#[cfg(test)]
+mod uuid_scope_tests {
+	use super::*;
+
+	#[test]
+	fn presave_scope_values_must_be_uuids() {
+		let valid_id = Uuid::new_v4().to_string();
+		assert!(validate_uuid_scope(
+			"access_sender_ids",
+			&Some(ScopeListInput::List(vec![valid_id])),
+		)
+		.is_ok());
+		assert!(validate_uuid_scope(
+			"access_sender_ids",
+			&Some(ScopeListInput::List(vec!["Sender Org A".to_string()])),
+		)
+		.is_err());
+		assert!(validate_optional_uuid_identifier(
+			"active_sender_identifier",
+			Some("Sender Org A"),
+		)
+		.is_err());
 	}
 }

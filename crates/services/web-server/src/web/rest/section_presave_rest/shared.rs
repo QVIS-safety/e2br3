@@ -282,16 +282,6 @@ pub(super) fn normalized_set(values: Vec<String>) -> HashSet<String> {
 		.collect()
 }
 
-pub(super) fn push_scope_identifier(values: &mut Vec<String>, value: Option<&str>) {
-	let Some(value) = value else {
-		return;
-	};
-	let value = value.trim();
-	if !value.is_empty() {
-		values.push(value.to_ascii_lowercase());
-	}
-}
-
 pub(super) async fn allowed_scope_for_section(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
@@ -317,15 +307,11 @@ pub(super) async fn allowed_scope_for_section(
 }
 
 pub(super) fn product_scope_identifiers(entity: &ProductPresave) -> Vec<String> {
-	let mut values = vec![entity.id.to_string()];
-	push_scope_identifier(&mut values, entity.brand_name.as_deref());
-	values
+	vec![entity.id.to_string()]
 }
 
 pub(super) fn study_scope_identifiers(entity: &StudyPresave) -> Vec<String> {
-	let mut values = vec![entity.id.to_string()];
-	push_scope_identifier(&mut values, entity.sponsor_study_number.as_deref());
-	values
+	vec![entity.id.to_string()]
 }
 
 pub(super) async fn sender_scope_identifiers(
@@ -333,9 +319,7 @@ pub(super) async fn sender_scope_identifiers(
 	_mm: &ModelManager,
 	entity: &SenderPresave,
 ) -> Result<Vec<String>> {
-	let mut values = vec![entity.id.to_string()];
-	push_scope_identifier(&mut values, entity.organization_name.as_deref());
-	Ok(values)
+	Ok(vec![entity.id.to_string()])
 }
 
 pub(super) async fn identifiers_allowed_for_scope(

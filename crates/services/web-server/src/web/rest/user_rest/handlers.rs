@@ -15,6 +15,13 @@ pub async fn create_user(
 	if !ctx.is_system_admin() {
 		require_permission(&ctx, USER_CREATE)?;
 	}
+	validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
+	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
+	validate_uuid_scope("access_study_ids", &data.access_study_ids)?;
+	validate_optional_uuid_identifier(
+		"active_sender_identifier",
+		data.active_sender_identifier.as_deref(),
+	)?;
 	if sender_scope_assignment_forbidden_for_ctx(&ctx)
 		&& has_sender_scope_assignment(
 			&data.active_sender_identifier,
@@ -209,6 +216,13 @@ pub async fn update_user(
 	if !ctx.is_system_admin() {
 		require_permission(&ctx, USER_UPDATE)?;
 	}
+	validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
+	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
+	validate_uuid_scope("access_study_ids", &data.access_study_ids)?;
+	validate_optional_uuid_identifier(
+		"active_sender_identifier",
+		data.active_sender_identifier.as_deref(),
+	)?;
 	if sender_scope_assignment_forbidden_for_ctx(&ctx)
 		&& has_sender_scope_assignment(
 			&data.active_sender_identifier,

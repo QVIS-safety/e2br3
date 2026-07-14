@@ -387,6 +387,7 @@ pub struct RoutingProfile {
 #[derive(Debug, FromRow)]
 struct SenderOptionRow {
 	sender_identifier: String,
+	sender_organization: Option<String>,
 	scope_identifiers: Vec<String>,
 	case_count: i64,
 }
@@ -398,13 +399,13 @@ fn parse_scope_values(raw: Option<&str>) -> HashSet<String> {
 	if let Ok(values) = serde_json::from_str::<Vec<String>>(raw) {
 		return values
 			.into_iter()
-			.map(|value| value.trim().to_ascii_lowercase())
-			.filter(|value| !value.is_empty())
+			.filter_map(|value| Uuid::parse_str(value.trim()).ok())
+			.map(|value| value.to_string())
 			.collect();
 	}
 	raw.split(',')
-		.map(|value| value.trim().to_ascii_lowercase())
-		.filter(|value| !value.is_empty())
+		.filter_map(|value| Uuid::parse_str(value.trim()).ok())
+		.map(|value| value.to_string())
 		.collect()
 }
 
@@ -431,9 +432,6 @@ fn scope_allows(assigned: &HashSet<String>, available: &[String]) -> bool {
 		return true;
 	}
 	let available = normalize_values(available);
-	if available.is_empty() {
-		return true;
-	}
 	available.iter().any(|value| assigned.contains(value))
 }
 
@@ -447,56 +445,17 @@ async fn load_sender_options_for_org(
 			dbx.fetch_all(
 				sqlx::query_as::<_, SenderOptionRow>(
 					r#"
-			WITH sender_master_rows AS (
-				SELECT DISTINCT
-				       NULLIF(BTRIM(g.sender_identifier), '') AS sender_identifier,
-				       NULLIF(BTRIM(s.organization_name), '') AS scope_identifier
-				FROM sender_presaves s
-				JOIN sender_presave_gateways g ON g.sender_presave_id = s.id
-				WHERE s.organization_id = $1
-				  AND s.deleted = FALSE
-				  AND NULLIF(BTRIM(g.sender_identifier), '') IS NOT NULL
-			),
-			case_sender_rows AS (
-				SELECT DISTINCT senders.case_id,
-				       senders.sender_identifier,
-				       NULLIF(BTRIM(sender.organization_name), '') AS scope_identifier
-				FROM (
-					SELECT mh.case_id,
-					       NULLIF(BTRIM(mh.message_sender_identifier), '') AS sender_identifier
-					FROM message_headers mh
-					UNION ALL
-					SELECT mh.case_id,
-					       NULLIF(BTRIM(mh.batch_sender_identifier), '') AS sender_identifier
-					FROM message_headers mh
-				) senders
-				JOIN cases c ON c.id = senders.case_id
-				LEFT JOIN sender_information sender ON sender.case_id = senders.case_id
-				WHERE c.organization_id = $1
-				  AND sender_identifier IS NOT NULL
-			),
-			case_sender_counts AS (
-				SELECT sender_identifier, COUNT(DISTINCT case_id) AS case_count
-				FROM case_sender_rows
-				GROUP BY sender_identifier
-			),
-			sender_scope_rows AS (
-				SELECT sender_identifier, scope_identifier FROM sender_master_rows
-				UNION
-				SELECT sender_identifier, scope_identifier FROM case_sender_rows
-			)
-			SELECT r.sender_identifier,
-			       COALESCE(
-				       ARRAY_AGG(DISTINCT r.scope_identifier)
-				       FILTER (WHERE r.scope_identifier IS NOT NULL),
-				       ARRAY[]::text[]
-			       ) AS scope_identifiers,
-			       COALESCE(c.case_count, 0)::bigint AS case_count
-			FROM sender_scope_rows r
-			LEFT JOIN case_sender_counts c ON c.sender_identifier = r.sender_identifier
-			WHERE r.sender_identifier IS NOT NULL
-			GROUP BY r.sender_identifier, c.case_count
-			ORDER BY sender_identifier ASC
+			SELECT s.id::text AS sender_identifier,
+			       NULLIF(BTRIM(s.organization_name), '') AS sender_organization,
+			       ARRAY[s.id::text] AS scope_identifiers,
+			       COUNT(DISTINCT sender.case_id)::bigint AS case_count
+			FROM sender_presaves s
+			LEFT JOIN sender_information sender
+			  ON sender.source_sender_presave_id = s.id
+			WHERE s.organization_id = $1
+			  AND s.deleted = FALSE
+			GROUP BY s.id, s.organization_name
+			ORDER BY s.organization_name ASC NULLS LAST, s.id ASC
 				"#,
 				)
 				.bind(organization_id),
@@ -510,7 +469,7 @@ async fn load_sender_options_for_org(
 	Ok(rows
 		.into_iter()
 		.map(|row| RoutingSenderOption {
-			sender_organization: row.scope_identifiers.first().cloned(),
+			sender_organization: row.sender_organization,
 			sender_identifier: row.sender_identifier,
 			case_count: row.case_count,
 			scope_identifiers: row.scope_identifiers,
@@ -595,6 +554,12 @@ pub async fn validate_active_sender_selection(
 	}
 	let profile = routing_profile_for_user(ctx, mm).await?;
 	let requested = next.clone().expect("checked is_some");
+	let requested = Uuid::parse_str(&requested)
+		.map_err(|_| Error::BadRequest {
+			message: "active_sender_identifier accepts a UUID value only"
+				.to_string(),
+		})?
+		.to_string();
 	let allowed = profile
 		.available_senders
 		.iter()
@@ -604,7 +569,7 @@ pub async fn validate_active_sender_selection(
 			required_permission: "Routing.SenderSelection".to_string(),
 		});
 	}
-	Ok(next)
+	Ok(Some(requested))
 }
 
 async fn load_case_scope(
@@ -620,49 +585,28 @@ async fn load_case_scope(
 			SELECT
 				COALESCE(
 					(
-						SELECT array_agg(DISTINCT ident)
-						FROM (
-							SELECT NULLIF(BTRIM(sender.organization_name), '') AS ident
-							FROM sender_information sender
-							WHERE sender.case_id = c.id
-							UNION ALL
-							SELECT sender.source_sender_presave_id::text
-							FROM sender_information sender
-							WHERE sender.case_id = c.id
-						) senders
-						WHERE ident IS NOT NULL
+						SELECT array_agg(DISTINCT sender.source_sender_presave_id::text)
+						FROM sender_information sender
+						WHERE sender.case_id = c.id
+						  AND sender.source_sender_presave_id IS NOT NULL
 					),
 					ARRAY[]::text[]
 				) AS sender_identifiers,
 				COALESCE(
 					(
-						SELECT array_agg(DISTINCT ident)
-						FROM (
-							SELECT NULLIF(BTRIM(d.brand_name), '') AS ident
-							FROM drug_information d
-							WHERE d.case_id = c.id
-							UNION ALL
-							SELECT d.source_product_presave_id::text
-							FROM drug_information d
-							WHERE d.case_id = c.id
-						) products
-						WHERE ident IS NOT NULL
+						SELECT array_agg(DISTINCT d.source_product_presave_id::text)
+						FROM drug_information d
+						WHERE d.case_id = c.id
+						  AND d.source_product_presave_id IS NOT NULL
 					),
 					ARRAY[]::text[]
 				) AS product_identifiers,
 				COALESCE(
 					(
-						SELECT array_agg(DISTINCT ident)
-						FROM (
-							SELECT NULLIF(BTRIM(s.sponsor_study_number), '') AS ident
-							FROM study_information s
-							WHERE s.case_id = c.id
-							UNION ALL
-							SELECT s.source_study_presave_id::text
-							FROM study_information s
-							WHERE s.case_id = c.id
-						) studies
-						WHERE ident IS NOT NULL
+						SELECT array_agg(DISTINCT s.source_study_presave_id::text)
+						FROM study_information s
+						WHERE s.case_id = c.id
+						  AND s.source_study_presave_id IS NOT NULL
 					),
 					ARRAY[]::text[]
 				) AS study_identifiers,
