@@ -3,16 +3,7 @@
 //! Defines resources, actions, and the permission matrix for RBAC.
 
 use super::*;
-use crate::ctx::canonical_role;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::{OnceLock, RwLock};
-
-fn dynamic_roles() -> &'static RwLock<HashMap<String, Vec<Permission>>> {
-	static DYNAMIC_ROLES: OnceLock<RwLock<HashMap<String, Vec<Permission>>>> =
-		OnceLock::new();
-	DYNAMIC_ROLES.get_or_init(|| RwLock::new(HashMap::new()))
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AdminMenuPrivilege {
@@ -200,63 +191,6 @@ pub fn permissions_for_menu_privileges(
 	}
 	permissions
 }
-
-pub fn replace_dynamic_roles(map: HashMap<String, Vec<Permission>>) {
-	if let Ok(mut guard) = dynamic_roles().write() {
-		*guard = map;
-	}
-}
-
-pub fn upsert_dynamic_role_permissions(role: &str, permissions: Vec<Permission>) {
-	if let Ok(mut guard) = dynamic_roles().write() {
-		guard.insert(role.trim().to_ascii_lowercase(), permissions);
-	}
-}
-
-pub fn remove_dynamic_role(role: &str) {
-	if let Ok(mut guard) = dynamic_roles().write() {
-		guard.remove(&role.trim().to_ascii_lowercase());
-	}
-}
-
-// region:    --- Permission Checking Functions
-
-/// Checks if a role has a specific permission
-pub fn has_permission(role: &str, permission: Permission) -> bool {
-	let normalized = canonical_role(role);
-	if let Ok(guard) = dynamic_roles().read() {
-		if let Some(perms) = guard.get(&normalized) {
-			return perms.contains(&permission);
-		}
-	}
-	role_permissions(&normalized).contains(&permission)
-}
-
-/// Checks if a role has any of the given permissions
-pub fn has_any_permission(role: &str, permissions: &[Permission]) -> bool {
-	let normalized = canonical_role(role);
-	if let Ok(guard) = dynamic_roles().read() {
-		if let Some(role_perms) = guard.get(&normalized) {
-			return permissions.iter().any(|p| role_perms.contains(p));
-		}
-	}
-	let role_perms = role_permissions(&normalized);
-	permissions.iter().any(|p| role_perms.contains(p))
-}
-
-/// Checks if a role has all of the given permissions
-pub fn has_all_permissions(role: &str, permissions: &[Permission]) -> bool {
-	let normalized = canonical_role(role);
-	if let Ok(guard) = dynamic_roles().read() {
-		if let Some(role_perms) = guard.get(&normalized) {
-			return permissions.iter().all(|p| role_perms.contains(p));
-		}
-	}
-	let role_perms = role_permissions(&normalized);
-	permissions.iter().all(|p| role_perms.contains(p))
-}
-
-// endregion: --- Permission Checking Functions
 
 // region:    --- Tests
 

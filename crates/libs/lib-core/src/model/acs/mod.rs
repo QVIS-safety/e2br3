@@ -45,9 +45,17 @@ pub(crate) use builtin_roles::{
 	admin_permissions, profile_edit_permissions, viewer_permissions,
 };
 
-mod permission;
+mod dynamic_roles;
+pub(crate) use dynamic_roles::with_dynamic_role_permissions;
+pub use dynamic_roles::{
+	remove_dynamic_role, replace_dynamic_roles, upsert_dynamic_role_permissions,
+};
 
-pub use permission::*;
+mod check;
+pub use check::{has_all_permissions, has_any_permission, has_permission};
+
+mod menu_policy;
+pub use menu_policy::{permissions_for_menu_privileges, AdminMenuPrivilege};
 
 #[cfg(test)]
 mod tests;
