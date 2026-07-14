@@ -61,7 +61,7 @@ Ambiguous or unmatched rows remain null. The migration must not overwrite `origi
 
 ## 2. INFO Reporter MFDS Regional Field
 
-Extend `ReporterPresaveData`, its Zod schema, canonical read/write mappers, and backend Reporter presave model with an optional value for `C.2.r.4.KR.1` using the established backend snake-case name `qualification_kr1` and frontend name `qualificationKr1`.
+The backend Reporter presave table and model already persist the optional snake-case field `qualification_kr1`. Extend `ReporterPresaveData`, its Zod schema, and canonical read/write mappers with the frontend name `qualificationKr1`, then bind it to the existing backend contract. Do not add a duplicate backend column or model field.
 
 The INFO Reporter form displays the field only when:
 
