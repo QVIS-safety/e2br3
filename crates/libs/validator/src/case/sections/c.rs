@@ -1,16 +1,16 @@
 use super::rule_table::{
-	e2b_datetime_date, eval_conditional_indexed, eval_constraints,
-	eval_future_dates, eval_indexed, eval_indexed_constraints, eval_indexed_length,
-	eval_length, eval_nested_constraints, eval_nested_length, eval_value, no_facts,
-	ConditionalIndexedRule, ConstraintRule, DateValues, FutureDateRule,
-	IndexedConstraintRule, IndexedLengthRule, IndexedRule, LengthRule,
-	NestedConstraintRule, NestedLengthRule, RuleValue, ValueRule,
+	e2b_datetime_date, eval_catalog_values, eval_conditional_indexed,
+	eval_constraints, eval_future_dates, eval_indexed, eval_indexed_constraints,
+	eval_indexed_length, eval_length, eval_nested_constraints, eval_nested_length,
+	eval_value, eval_violations, no_facts, CatalogValueRule, ConditionalIndexedRule,
+	ConstraintRule, DateValues, FutureDateRule, IndexedConstraintRule,
+	IndexedLengthRule, IndexedRule, LengthRule, NestedConstraintRule,
+	NestedLengthRule, RuleValue, ValueRule, ViolationRule,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
 	has_any_primary_source_content, has_text, is_fda_ind_message_receiver,
-	is_fda_pre_anda_message_receiver, list_study_registrations, push_issue_by_code,
-	push_issue_if_conditioned_value_invalid, push_issue_if_rule_invalid,
+	is_fda_pre_anda_message_receiver, list_study_registrations,
 	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority, RuleFacts,
 	ValidationContext, ValidationIssue,
 };
@@ -23,13 +23,6 @@ use lib_core::model::safety_report::{
 };
 use lib_core::model::{ModelManager, Result};
 use std::borrow::Cow;
-
-fn is_six_digit_numeric(value: Option<&str>) -> bool {
-	value
-		.map(str::trim)
-		.map(|v| v.len() == 6 && v.chars().all(|ch| ch.is_ascii_digit()))
-		.unwrap_or(false)
-}
 
 fn is_later_than(
 	value: Option<sqlx::types::time::Date>,
@@ -44,6 +37,216 @@ fn index_from_sequence(sequence_number: i32, fallback_idx: usize) -> usize {
 		.and_then(|value| usize::try_from(value).ok())
 		.unwrap_or(fallback_idx)
 }
+
+struct CReportRegionalRuleView {
+	local_criteria_report_type: Option<String>,
+	combination_product_report_indicator: Option<String>,
+	facts: RuleFacts,
+}
+
+struct FdaStudyRuleView {
+	study_number: Option<String>,
+	cross_reported: Option<String>,
+	facts: RuleFacts,
+}
+
+const C_FDA_STUDY_CATALOG_VALUE_RULES: &[CatalogValueRule<FdaStudyRuleView>] = &[
+	CatalogValueRule {
+		code: "FDA.C.5.5a.REQUIRED",
+		path: |_| "studyInformation.sponsorStudyNumber".to_string(),
+		value: |item| RuleValue::borrowed(item.study_number.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "FDA.C.5.5b.REQUIRED",
+		path: |_| "studyInformation.sponsorStudyNumber".to_string(),
+		value: |item| RuleValue::borrowed(item.study_number.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "FDA.C.5.6.r.REQUIRED",
+		path: |_| "studyInformation.registrations.0.registrationNumber".to_string(),
+		value: |item| RuleValue::borrowed(item.cross_reported.as_deref(), None),
+		facts: |item| item.facts,
+	},
+];
+
+struct FdaReporterEmailRuleView {
+	index: usize,
+	email: Option<String>,
+	facts: RuleFacts,
+}
+
+const C_FDA_REPORTER_EMAIL_CATALOG_VALUE_RULES: &[CatalogValueRule<
+	FdaReporterEmailRuleView,
+>] = &[CatalogValueRule {
+	code: "FDA.C.2.r.2.EMAIL.REQUIRED",
+	path: |item| format!("primarySources.{}.reporterEmail", item.index),
+	value: |item| RuleValue::borrowed(item.email.as_deref(), None),
+	facts: |item| item.facts,
+}];
+
+struct CIchPresenceRuleView {
+	path: String,
+	value: Option<String>,
+	facts: RuleFacts,
+}
+
+macro_rules! c_ich_presence_rule {
+	($name:ident, $code:literal) => {
+		const $name: &[CatalogValueRule<CIchPresenceRuleView>] =
+			&[CatalogValueRule {
+				code: $code,
+				path: |item| item.path.clone(),
+				value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+				facts: |item| item.facts,
+			}];
+	};
+}
+
+c_ich_presence_rule!(C_ICH_C11_RULE, "ICH.C.1.1.REQUIRED");
+c_ich_presence_rule!(C_ICH_C1_ROOT_RULE, "ICH.C.1.REQUIRED");
+c_ich_presence_rule!(C_ICH_C12_RULE, "ICH.C.1.2.REQUIRED");
+c_ich_presence_rule!(C_ICH_C13_RULE, "ICH.C.1.3.REQUIRED");
+c_ich_presence_rule!(C_ICH_C14_RULE, "ICH.C.1.4.REQUIRED");
+c_ich_presence_rule!(C_ICH_C15_RULE, "ICH.C.1.5.REQUIRED");
+c_ich_presence_rule!(C_ICH_C17_RULE, "ICH.C.1.7.REQUIRED");
+c_ich_presence_rule!(C_ICH_C1112_RULE, "ICH.C.1.11.2.REQUIRED");
+c_ich_presence_rule!(C_ICH_C2R21_RULE, "ICH.C.2.r.2.1.REQUIRED");
+c_ich_presence_rule!(C_ICH_C2R4_RULE, "ICH.C.2.r.4.REQUIRED");
+c_ich_presence_rule!(C_ICH_C2R5_RULE, "ICH.C.2.r.5.REQUIRED");
+c_ich_presence_rule!(C_ICH_C31_RULE, "ICH.C.3.1.REQUIRED");
+c_ich_presence_rule!(C_ICH_C32_RULE, "ICH.C.3.2.REQUIRED");
+c_ich_presence_rule!(C_ICH_C54_AGGREGATE_RULE, "ICH.C.5.4.REQUIRED");
+
+fn eval_c_ich_presence(
+	issues: &mut Vec<ValidationIssue>,
+	path: impl Into<String>,
+	value: Option<String>,
+	facts: RuleFacts,
+	rules: &[CatalogValueRule<CIchPresenceRuleView>],
+) {
+	let view = CIchPresenceRuleView {
+		path: path.into(),
+		value,
+		facts,
+	};
+	eval_catalog_values(issues, std::slice::from_ref(&view), rules);
+}
+
+struct CDateRelationView {
+	path: String,
+	violated: bool,
+}
+
+macro_rules! c_date_relation_rule {
+	($name:ident, $code:literal) => {
+		const $name: &[ViolationRule<CDateRelationView>] = &[ViolationRule {
+			code: $code,
+			path: |item| item.path.clone(),
+			violated: |item| item.violated,
+		}];
+	};
+}
+
+c_date_relation_rule!(C_ICH_C14_AFTER_C12_RULE, "ICH.C.1.4.AFTER_C.1.2.FORBIDDEN");
+c_date_relation_rule!(C_ICH_C14_AFTER_C15_RULE, "ICH.C.1.4.AFTER_C.1.5.FORBIDDEN");
+c_date_relation_rule!(C_ICH_C15_AFTER_C12_RULE, "ICH.C.1.5.AFTER_C.1.2.FORBIDDEN");
+
+fn eval_c_date_relation(
+	issues: &mut Vec<ValidationIssue>,
+	path: &'static str,
+	violated: bool,
+	rules: &[ViolationRule<CDateRelationView>],
+) {
+	let view = CDateRelationView {
+		path: path.to_string(),
+		violated,
+	};
+	eval_violations(issues, std::slice::from_ref(&view), rules);
+}
+
+const C_FDA_CATALOG_VALUE_RULES: &[CatalogValueRule<CReportRegionalRuleView>] = &[
+	CatalogValueRule {
+		code: "FDA.C.1.7.1.REQUIRED",
+		path: |_| "safetyReportIdentification.localCriteriaReportType".to_string(),
+		value: |item| {
+			RuleValue::borrowed(item.local_criteria_report_type.as_deref(), None)
+		},
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "FDA.C.1.12.REQUIRED",
+		path: |_| {
+			"safetyReportIdentification.combinationProductReportIndicator"
+				.to_string()
+		},
+		value: |item| {
+			RuleValue::borrowed(
+				item.combination_product_report_indicator.as_deref(),
+				None,
+			)
+		},
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "FDA.C.1.12.RECOMMENDED",
+		path: |_| {
+			"safetyReportIdentification.combinationProductReportIndicator"
+				.to_string()
+		},
+		value: |item| {
+			RuleValue::borrowed(
+				item.combination_product_report_indicator.as_deref(),
+				None,
+			)
+		},
+		facts: |item| item.facts,
+	},
+];
+
+struct MfdsSenderRuleView {
+	path: String,
+	value: Option<String>,
+	facts: RuleFacts,
+}
+
+const C_MFDS_SENDER_CATALOG_VALUE_RULES: &[CatalogValueRule<MfdsSenderRuleView>] =
+	&[CatalogValueRule {
+		code: "MFDS.C.3.1.KR.1.REQUIRED",
+		path: |item| item.path.clone(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |item| item.facts,
+	}];
+
+struct MfdsPrimarySourceRuleView {
+	path: String,
+	value: Option<String>,
+	facts: RuleFacts,
+}
+
+const C_MFDS_PRIMARY_SOURCE_CATALOG_VALUE_RULES: &[CatalogValueRule<
+	MfdsPrimarySourceRuleView,
+>] = &[CatalogValueRule {
+	code: "MFDS.C.2.r.4.KR.1.REQUIRED",
+	path: |item| item.path.clone(),
+	value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+	facts: |item| item.facts,
+}];
+
+struct MfdsStudyRuleView {
+	path: String,
+	value: Option<String>,
+	facts: RuleFacts,
+}
+
+const C_MFDS_STUDY_CATALOG_VALUE_RULES: &[CatalogValueRule<MfdsStudyRuleView>] =
+	&[CatalogValueRule {
+		code: "MFDS.C.5.4.KR.1.REQUIRED",
+		path: |item| item.path.clone(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |item| item.facts,
+	}];
 
 pub(crate) async fn collect(
 	issues: &mut Vec<ValidationIssue>,
@@ -704,19 +907,24 @@ pub(crate) fn collect_ich_issues(
 		.safety_report
 		.as_ref()
 		.and_then(|report| report.safety_report_id.as_deref())
-		.unwrap_or("");
-	let _ = push_issue_if_rule_invalid(
+		.map(str::to_string);
+	eval_c_ich_presence(
 		issues,
-		"ICH.C.1.1.REQUIRED",
 		"safetyReportIdentification.safetyReportId",
-		Some(safety_report_id),
-		None,
+		safety_report_id,
 		RuleFacts::default(),
+		C_ICH_C11_RULE,
 	);
-
-	if validation_ctx.safety_report.is_none() && !has_text(Some(safety_report_id)) {
-		push_issue_by_code(issues, "ICH.C.1.REQUIRED", "safetyReportIdentification");
-	}
+	eval_c_ich_presence(
+		issues,
+		"safetyReportIdentification",
+		validation_ctx
+			.safety_report
+			.as_ref()
+			.map(|_| "present".to_string()),
+		RuleFacts::default(),
+		C_ICH_C1_ROOT_RULE,
+	);
 
 	if let Some(report) = validation_ctx.safety_report.as_ref() {
 		// One-to-one presence/value rules (C.1.2/1.3/1.4/1.5/1.7) are declared
@@ -732,54 +940,45 @@ pub(crate) fn collect_ich_issues(
 		eval_length(issues, report, C_LENGTH_RULES);
 		let transmission_date_for_compare =
 			e2b_datetime_date(report.transmission_date.as_deref());
-		if is_later_than(
-			report.date_first_received_from_source,
-			transmission_date_for_compare,
-		) {
-			push_issue_by_code(
-				issues,
-				"ICH.C.1.4.AFTER_C.1.2.FORBIDDEN",
-				"safetyReportIdentification.dateFirstReceivedFromSource",
-			);
-		}
-		if is_later_than(
-			report.date_first_received_from_source,
-			report.date_of_most_recent_information,
-		) {
-			push_issue_by_code(
-				issues,
-				"ICH.C.1.4.AFTER_C.1.5.FORBIDDEN",
-				"safetyReportIdentification.dateFirstReceivedFromSource",
-			);
-		}
-		if is_later_than(
-			report.date_of_most_recent_information,
-			transmission_date_for_compare,
-		) {
-			push_issue_by_code(
-				issues,
-				"ICH.C.1.5.AFTER_C.1.2.FORBIDDEN",
-				"safetyReportIdentification.dateOfMostRecentInformation",
-			);
-		}
-		if has_text(report.nullification_code.as_deref())
-			&& !has_text(report.nullification_reason.as_deref())
-		{
-			push_issue_by_code(
-				issues,
-				"ICH.C.1.11.2.REQUIRED",
-				"safetyReportIdentification.nullificationReason",
-			);
-		}
-		if report.report_type.as_deref().map(str::trim) == Some("2")
-			&& validation_ctx.studies.is_empty()
-		{
-			push_issue_by_code(
-				issues,
-				"ICH.C.5.4.REQUIRED",
-				"studyInformation.0.studyTypeReaction",
-			);
-		}
+		eval_c_date_relation(
+			issues,
+			"safetyReportIdentification.dateFirstReceivedFromSource",
+			is_later_than(
+				report.date_first_received_from_source,
+				transmission_date_for_compare,
+			),
+			C_ICH_C14_AFTER_C12_RULE,
+		);
+		eval_c_date_relation(
+			issues,
+			"safetyReportIdentification.dateFirstReceivedFromSource",
+			is_later_than(
+				report.date_first_received_from_source,
+				report.date_of_most_recent_information,
+			),
+			C_ICH_C14_AFTER_C15_RULE,
+		);
+		eval_c_date_relation(
+			issues,
+			"safetyReportIdentification.dateOfMostRecentInformation",
+			is_later_than(
+				report.date_of_most_recent_information,
+				transmission_date_for_compare,
+			),
+			C_ICH_C15_AFTER_C12_RULE,
+		);
+		eval_c_ich_presence(
+			issues,
+			"safetyReportIdentification.nullificationReason",
+			report.nullification_reason.clone(),
+			RuleFacts {
+				ich_nullification_code_present: Some(has_text(
+					report.nullification_code.as_deref(),
+				)),
+				..RuleFacts::default()
+			},
+			C_ICH_C1112_RULE,
+		);
 	} else {
 		push_missing_safety_report_field_issues(issues);
 	}
@@ -885,24 +1084,38 @@ pub(crate) fn collect_ich_issues(
 		.as_ref()
 		.map(|report| report.report_type.as_deref().map(str::trim) == Some("2"))
 		.unwrap_or(false);
+	eval_c_ich_presence(
+		issues,
+		"studyInformation.0.studyTypeReaction",
+		(!validation_ctx.studies.is_empty()).then(|| "present".to_string()),
+		RuleFacts {
+			ich_report_type_is_study: Some(report_type_is_study),
+			..RuleFacts::default()
+		},
+		C_ICH_C54_AGGREGATE_RULE,
+	);
 	if report_type_is_study {
 		eval_indexed(issues, &validation_ctx.studies, C_STUDY_RULES);
-
-		let has_reporter_org = validation_ctx.primary_sources.iter().any(|s| {
-			!s.organization
+	}
+	let reporter_organization =
+		validation_ctx.primary_sources.iter().find_map(|source| {
+			source
+				.organization
 				.as_deref()
 				.map(str::trim)
-				.unwrap_or("")
-				.is_empty()
+				.filter(|value| !value.is_empty())
+				.map(str::to_string)
 		});
-		if !has_reporter_org {
-			push_issue_by_code(
-				issues,
-				"ICH.C.2.r.2.1.REQUIRED",
-				"primarySources.0.reporterOrganization",
-			);
-		}
-	}
+	eval_c_ich_presence(
+		issues,
+		"primarySources.0.reporterOrganization",
+		reporter_organization,
+		RuleFacts {
+			ich_report_type_is_study: Some(report_type_is_study),
+			..RuleFacts::default()
+		},
+		C_ICH_C2R21_RULE,
+	);
 
 	if let Some(sender) = validation_ctx.sender.as_ref() {
 		eval_length(issues, sender, C_SENDER_LENGTH_RULES);
@@ -912,52 +1125,69 @@ pub(crate) fn collect_ich_issues(
 			C_SENDER_CONSTRAINT_RULES,
 			&validation_ctx.vocabulary,
 		);
-		let _ = push_issue_if_rule_invalid(
+		eval_c_ich_presence(
 			issues,
-			"ICH.C.3.1.REQUIRED",
 			"safetyReportIdentification.senderType",
-			sender.sender_type.as_deref(),
-			None,
+			sender.sender_type.clone(),
 			RuleFacts::default(),
+			C_ICH_C31_RULE,
 		);
-		let _ = push_issue_if_rule_invalid(
+		eval_c_ich_presence(
 			issues,
-			"ICH.C.3.2.REQUIRED",
 			"safetyReportIdentification.senderOrganization",
-			sender.organization_name.as_deref(),
-			None,
-			RuleFacts::default(),
+			sender.organization_name.clone(),
+			RuleFacts {
+				ich_sender_organization_required: Some(
+					sender.sender_type.as_deref().map(str::trim) != Some("7"),
+				),
+				..RuleFacts::default()
+			},
+			C_ICH_C32_RULE,
 		);
 	} else {
-		push_issue_by_code(
+		eval_c_ich_presence(
 			issues,
-			"ICH.C.3.1.REQUIRED",
 			"safetyReportIdentification.senderType",
+			None,
+			RuleFacts::default(),
+			C_ICH_C31_RULE,
 		);
-		push_issue_by_code(
+		eval_c_ich_presence(
 			issues,
-			"ICH.C.3.2.REQUIRED",
 			"safetyReportIdentification.senderOrganization",
+			None,
+			RuleFacts {
+				ich_sender_organization_required: Some(true),
+				..RuleFacts::default()
+			},
+			C_ICH_C32_RULE,
 		);
 	}
 
 	if validation_ctx.primary_sources.is_empty() {
-		push_issue_by_code(
+		eval_c_ich_presence(
 			issues,
-			"ICH.C.2.r.4.REQUIRED",
 			"primarySources.0.qualification",
+			None,
+			RuleFacts::default(),
+			C_ICH_C2R4_RULE,
 		);
 	}
 
-	if !validation_ctx.primary_sources.iter().any(|source| {
-		source.primary_source_regulatory.as_deref().map(str::trim) == Some("1")
-	}) {
-		push_issue_by_code(
-			issues,
-			"ICH.C.2.r.5.REQUIRED",
-			"primarySources.0.primarySourceForRegulatoryPurposes",
-		);
-	}
+	eval_c_ich_presence(
+		issues,
+		"primarySources.0.primarySourceForRegulatoryPurposes",
+		validation_ctx
+			.primary_sources
+			.iter()
+			.any(|source| {
+				source.primary_source_regulatory.as_deref().map(str::trim)
+					== Some("1")
+			})
+			.then(|| "present".to_string()),
+		RuleFacts::default(),
+		C_ICH_C2R5_RULE,
+	);
 
 	eval_conditional_indexed(
 		issues,
@@ -973,48 +1203,37 @@ pub(crate) fn collect_ich_issues(
 			if !has_any_primary_source_content(source) {
 				return;
 			}
-			let _ = push_issue_if_rule_invalid(
+			eval_c_ich_presence(
 				issues,
-				"ICH.C.2.r.4.REQUIRED",
 				format!("primarySources.{idx}.qualification"),
-				source.qualification.as_deref(),
-				None,
+				source.qualification.clone(),
 				RuleFacts::default(),
+				C_ICH_C2R4_RULE,
 			);
 		});
 }
 
 fn push_missing_safety_report_field_issues(issues: &mut Vec<ValidationIssue>) {
-	for (code, path) in [
+	for (rules, path) in [
 		(
-			"ICH.C.1.2.REQUIRED",
+			C_ICH_C12_RULE,
 			"safetyReportIdentification.transmissionDate",
 		),
+		(C_ICH_C13_RULE, "safetyReportIdentification.reportType"),
 		(
-			"ICH.C.1.3.REQUIRED",
-			"safetyReportIdentification.reportType",
-		),
-		(
-			"ICH.C.1.4.REQUIRED",
+			C_ICH_C14_RULE,
 			"safetyReportIdentification.dateFirstReceivedFromSource",
 		),
 		(
-			"ICH.C.1.5.REQUIRED",
+			C_ICH_C15_RULE,
 			"safetyReportIdentification.dateOfMostRecentInformation",
 		),
 		(
-			"ICH.C.1.7.REQUIRED",
+			C_ICH_C17_RULE,
 			"safetyReportIdentification.fulfilExpeditedCriteria",
 		),
 	] {
-		let _ = push_issue_if_rule_invalid(
-			issues,
-			code,
-			path,
-			None,
-			None,
-			RuleFacts::default(),
-		);
+		eval_c_ich_presence(issues, path, None, RuleFacts::default(), rules);
 	}
 }
 
@@ -1026,21 +1245,12 @@ pub(crate) async fn collect_fda_issues(
 	issues: &mut Vec<ValidationIssue>,
 ) -> Result<()> {
 	if let Some(report) = validation_ctx.safety_report.as_ref() {
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"FDA.C.1.7.1.REQUIRED",
-			"FDA.C.1.7.1.REQUIRED",
-			"FDA.C.1.7.1.REQUIRED",
-			"safetyReportIdentification.localCriteriaReportType",
-			report.local_criteria_report_type.as_deref(),
-			None,
-			RuleFacts {
-				fda_fulfil_expedited_criteria: Some(
-					report.fulfil_expedited_criteria.unwrap_or(false),
-				),
-				..RuleFacts::default()
-			},
-			RuleFacts {
+		let view = CReportRegionalRuleView {
+			local_criteria_report_type: report.local_criteria_report_type.clone(),
+			combination_product_report_indicator: report
+				.combination_product_report_indicator
+				.clone(),
+			facts: RuleFacts {
 				fda_fulfil_expedited_criteria: Some(
 					report.fulfil_expedited_criteria.unwrap_or(false),
 				),
@@ -1050,28 +1260,11 @@ pub(crate) async fn collect_fda_issues(
 				),
 				..RuleFacts::default()
 			},
-		);
-		let _ = push_issue_if_conditioned_value_invalid(
+		};
+		eval_catalog_values(
 			issues,
-			"FDA.C.1.12.REQUIRED",
-			"FDA.C.1.12.REQUIRED",
-			"FDA.C.1.12.REQUIRED",
-			"safetyReportIdentification.combinationProductReportIndicator",
-			report.combination_product_report_indicator.as_deref(),
-			None,
-			RuleFacts::default(),
-			RuleFacts::default(),
-		);
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"FDA.C.1.12.RECOMMENDED",
-			"FDA.C.1.12.REQUIRED",
-			"FDA.C.1.12.RECOMMENDED",
-			"safetyReportIdentification.combinationProductReportIndicator",
-			report.combination_product_report_indicator.as_deref(),
-			None,
-			RuleFacts::default(),
-			RuleFacts::default(),
+			std::slice::from_ref(&view),
+			C_FDA_CATALOG_VALUE_RULES,
 		);
 	}
 
@@ -1088,69 +1281,65 @@ pub(crate) async fn collect_fda_issues(
 		.first()
 		.and_then(|s| s.sponsor_study_number.as_deref())
 		.map(str::trim)
-		.filter(|v| !v.is_empty());
+		.filter(|v| !v.is_empty())
+		.map(str::to_string);
 	let has_ind_number = study_number.is_some();
-
-	let c55a_required = matches!(type_of_report, Some("1") | Some("2"))
-		&& is_fda_ind_message_receiver(message_receiver);
-	if c55a_required && !is_six_digit_numeric(study_number) {
-		push_issue_by_code(
-			issues,
-			"FDA.C.5.5a.REQUIRED",
-			"studyInformation.sponsorStudyNumber",
-		);
-	}
-
-	let c55b_required = matches!(type_of_report, Some("2"))
-		&& is_fda_pre_anda_message_receiver(message_receiver);
-	if c55b_required && !is_six_digit_numeric(study_number) {
-		push_issue_by_code(
-			issues,
-			"FDA.C.5.5b.REQUIRED",
-			"studyInformation.sponsorStudyNumber",
-		);
-	}
-
-	if has_ind_number {
-		let has_cross_reported = if let Some(study) = fda_ctx.studies.first() {
+	let has_cross_reported = if has_ind_number {
+		if let Some(study) = fda_ctx.studies.first() {
 			list_study_registrations(ctx, mm, study.id)
 				.await?
 				.iter()
 				.any(|reg| !reg.registration_number.trim().is_empty())
 		} else {
 			false
-		};
-		if !has_cross_reported {
-			push_issue_by_code(
-				issues,
-				"FDA.C.5.6.r.REQUIRED",
-				"studyInformation.registrations.0.registrationNumber",
-			);
 		}
-	}
+	} else {
+		false
+	};
+	let study_view = FdaStudyRuleView {
+		study_number,
+		cross_reported: has_cross_reported.then(|| "present".to_string()),
+		facts: RuleFacts {
+			fda_type_of_report_is_one_or_two: Some(matches!(
+				type_of_report,
+				Some("1") | Some("2")
+			)),
+			fda_type_of_report_is_two: Some(type_of_report == Some("2")),
+			fda_msg_receiver_is_cder_ind_or_cber_ind: Some(
+				is_fda_ind_message_receiver(message_receiver),
+			),
+			fda_msg_receiver_is_cder_ind_exempt_ba_be: Some(
+				is_fda_pre_anda_message_receiver(message_receiver),
+			),
+			fda_has_ind_number: Some(has_ind_number),
+			..RuleFacts::default()
+		},
+	};
+	eval_catalog_values(
+		issues,
+		std::slice::from_ref(&study_view),
+		C_FDA_STUDY_CATALOG_VALUE_RULES,
+	);
 
-	validation_ctx
+	let reporter_views = validation_ctx
 		.primary_sources
 		.iter()
 		.enumerate()
-		.for_each(|(idx, source)| {
-			if !has_any_primary_source_content(source) {
-				return;
-			}
-			if source
-				.email
-				.as_deref()
-				.map(str::trim)
-				.filter(|v| !v.is_empty())
-				.is_none()
-			{
-				push_issue_by_code(
-					issues,
-					"FDA.C.2.r.2.EMAIL.REQUIRED",
-					format!("primarySources.{idx}.reporterEmail"),
-				);
-			}
-		});
+		.filter(|(_, source)| has_any_primary_source_content(source))
+		.map(|(idx, source)| FdaReporterEmailRuleView {
+			index: idx,
+			email: source.email.clone(),
+			facts: RuleFacts {
+				fda_primary_source_present: Some(true),
+				..RuleFacts::default()
+			},
+		})
+		.collect::<Vec<_>>();
+	eval_catalog_values(
+		issues,
+		&reporter_views,
+		C_FDA_REPORTER_EMAIL_CATALOG_VALUE_RULES,
+	);
 	Ok(())
 }
 
@@ -1159,79 +1348,64 @@ pub(crate) fn collect_mfds_issues(
 	mfds_ctx: &MfdsValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	mfds_ctx
+	let sender_views = mfds_ctx
 		.senders
 		.iter()
 		.enumerate()
-		.for_each(|(idx, sender)| {
-			let _ = push_issue_if_conditioned_value_invalid(
-				issues,
-				"MFDS.C.3.1.KR.1.REQUIRED",
-				"MFDS.C.3.1.KR.1.REQUIRED",
-				"MFDS.C.3.1.KR.1.REQUIRED",
-				format!("senderInformation.{idx}.healthProfessionalTypeKr1"),
-				sender.health_professional_type_kr1.as_deref(),
-				None,
-				RuleFacts {
-					mfds_sender_type_is_health_professional: Some(
-						sender
-							.sender_type
-							.as_deref()
-							.map(|value| value.trim() == "3")
-							.unwrap_or(false),
-					),
-					..RuleFacts::default()
-				},
-				RuleFacts::default(),
-			);
-		});
+		.map(|(idx, sender)| MfdsSenderRuleView {
+			path: format!("senderInformation.{idx}.healthProfessionalTypeKr1"),
+			value: sender.health_professional_type_kr1.clone(),
+			facts: RuleFacts {
+				mfds_sender_type_is_health_professional: Some(
+					sender
+						.sender_type
+						.as_deref()
+						.map(|value| value.trim() == "3")
+						.unwrap_or(false),
+				),
+				..RuleFacts::default()
+			},
+		})
+		.collect::<Vec<_>>();
+	eval_catalog_values(issues, &sender_views, C_MFDS_SENDER_CATALOG_VALUE_RULES);
 
-	validation_ctx
+	let primary_source_views = validation_ctx
 		.primary_sources
 		.iter()
 		.enumerate()
-		.for_each(|(idx, source)| {
-			let _ = push_issue_if_conditioned_value_invalid(
-				issues,
-				"MFDS.C.2.r.4.KR.1.REQUIRED",
-				"MFDS.C.2.r.4.KR.1.REQUIRED",
-				"MFDS.C.2.r.4.KR.1.REQUIRED",
-				format!("primarySources.{idx}.qualificationKr1"),
-				source.qualification_kr1.as_deref(),
-				None,
-				RuleFacts {
-					mfds_primary_source_qualification_is_three: Some(
-						source.qualification.as_deref().map(str::trim) == Some("3"),
-					),
-					..RuleFacts::default()
-				},
-				RuleFacts::default(),
-			);
-		});
+		.map(|(idx, source)| MfdsPrimarySourceRuleView {
+			path: format!("primarySources.{idx}.qualificationKr1"),
+			value: source.qualification_kr1.clone(),
+			facts: RuleFacts {
+				mfds_primary_source_qualification_is_three: Some(
+					source.qualification.as_deref().map(str::trim) == Some("3"),
+				),
+				..RuleFacts::default()
+			},
+		})
+		.collect::<Vec<_>>();
+	eval_catalog_values(
+		issues,
+		&primary_source_views,
+		C_MFDS_PRIMARY_SOURCE_CATALOG_VALUE_RULES,
+	);
 
-	mfds_ctx
+	let study_views = mfds_ctx
 		.studies
 		.iter()
 		.enumerate()
-		.for_each(|(idx, study)| {
-			let _ = push_issue_if_conditioned_value_invalid(
-				issues,
-				"MFDS.C.5.4.KR.1.REQUIRED",
-				"MFDS.C.5.4.KR.1.REQUIRED",
-				"MFDS.C.5.4.KR.1.REQUIRED",
-				format!("studyInformation.{idx}.studyTypeReactionKr1"),
-				study.study_type_reaction_kr1.as_deref(),
-				None,
-				RuleFacts {
-					mfds_study_type_reaction_is_three: Some(
-						study.study_type_reaction.as_deref().map(str::trim)
-							== Some("3"),
-					),
-					..RuleFacts::default()
-				},
-				RuleFacts::default(),
-			);
-		});
+		.map(|(idx, study)| MfdsStudyRuleView {
+			path: format!("studyInformation.{idx}.studyTypeReactionKr1"),
+			value: study.study_type_reaction_kr1.clone(),
+			facts: RuleFacts {
+				mfds_study_type_reaction_is_three: Some(
+					study.study_type_reaction.as_deref().map(str::trim) == Some("3"),
+				),
+				..RuleFacts::default()
+			},
+		})
+		.collect::<Vec<_>>();
+	eval_catalog_values(issues, &study_views, C_MFDS_STUDY_CATALOG_VALUE_RULES);
 }
 
 #[cfg(test)]
@@ -1259,6 +1433,180 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 				.map(|rule| rule.code),
 		)
 		.collect()
+}
+
+#[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	macro_rules! add {
+		($rules:expr) => {
+			codes.extend(super::rule_table::table_rule_codes($rules));
+		};
+	}
+	add!(C_VALUE_RULES);
+	add!(C_FUTURE_DATE_RULES);
+	add!(C_CONSTRAINT_RULES);
+	add!(C_LENGTH_RULES);
+	add!(C_PRIMARY_SOURCE_ICH_RULES);
+	add!(C_PRIMARY_SOURCE_FDA_RULES);
+	add!(C_PRIMARY_SOURCE_LENGTH_RULES);
+	add!(C_PRIMARY_SOURCE_CONSTRAINT_RULES);
+	add!(C_SENDER_CONSTRAINT_RULES);
+	add!(C_SENDER_LENGTH_RULES);
+	add!(C_DOCUMENT_RULES);
+	add!(C_DOCUMENT_LENGTH_RULES);
+	add!(C_DOCUMENT_CONSTRAINT_RULES);
+	add!(C_OTHER_IDENTIFIER_RULES);
+	add!(C_OTHER_IDENTIFIER_LENGTH_RULES);
+	add!(C_OTHER_IDENTIFIER_CONSTRAINT_RULES);
+	add!(C_LINKED_REPORT_LENGTH_RULES);
+	add!(C_STUDY_RULES);
+	add!(C_STUDY_LENGTH_RULES);
+	add!(C_STUDY_CONSTRAINT_RULES);
+	add!(C_LITERATURE_LENGTH_RULES);
+	add!(C_LITERATURE_CONSTRAINT_RULES);
+	add!(C_STUDY_REGISTRATION_LENGTH_RULES);
+	add!(C_STUDY_REGISTRATION_CONSTRAINT_RULES);
+	add!(C_FDA_CATALOG_VALUE_RULES);
+	add!(C_MFDS_SENDER_CATALOG_VALUE_RULES);
+	add!(C_MFDS_PRIMARY_SOURCE_CATALOG_VALUE_RULES);
+	add!(C_MFDS_STUDY_CATALOG_VALUE_RULES);
+	add!(C_ICH_C11_RULE);
+	add!(C_ICH_C1_ROOT_RULE);
+	add!(C_ICH_C1112_RULE);
+	add!(C_ICH_C2R21_RULE);
+	add!(C_ICH_C2R4_RULE);
+	add!(C_ICH_C2R5_RULE);
+	add!(C_ICH_C31_RULE);
+	add!(C_ICH_C32_RULE);
+	add!(C_ICH_C14_AFTER_C12_RULE);
+	add!(C_ICH_C14_AFTER_C15_RULE);
+	add!(C_ICH_C15_AFTER_C12_RULE);
+	add!(C_FDA_STUDY_CATALOG_VALUE_RULES);
+	add!(C_FDA_REPORTER_EMAIL_CATALOG_VALUE_RULES);
+	add!(C_ICH_C12_RULE);
+	add!(C_ICH_C13_RULE);
+	add!(C_ICH_C14_RULE);
+	add!(C_ICH_C15_RULE);
+	add!(C_ICH_C17_RULE);
+	add!(C_ICH_C54_AGGREGATE_RULE);
+	codes
+}
+
+#[cfg(test)]
+mod conditioned_catalog_rule_tests {
+	use super::*;
+
+	#[test]
+	fn fda_report_rules_emit_and_pass_from_catalog() {
+		let facts = RuleFacts {
+			fda_fulfil_expedited_criteria: Some(true),
+			fda_combination_product_true: Some(false),
+			..RuleFacts::default()
+		};
+		let mut issues = Vec::new();
+		eval_catalog_values(
+			&mut issues,
+			&[CReportRegionalRuleView {
+				local_criteria_report_type: None,
+				combination_product_report_indicator: None,
+				facts,
+			}],
+			C_FDA_CATALOG_VALUE_RULES,
+		);
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| issue.code.as_str())
+				.collect::<Vec<_>>(),
+			[
+				"FDA.C.1.7.1.REQUIRED",
+				"FDA.C.1.12.REQUIRED",
+				"FDA.C.1.12.RECOMMENDED",
+			]
+		);
+
+		issues.clear();
+		eval_catalog_values(
+			&mut issues,
+			&[CReportRegionalRuleView {
+				local_criteria_report_type: Some("1".to_string()),
+				combination_product_report_indicator: Some("true".to_string()),
+				facts,
+			}],
+			C_FDA_CATALOG_VALUE_RULES,
+		);
+		assert!(issues.is_empty());
+	}
+
+	#[test]
+	fn mfds_rules_preserve_nonzero_paths_and_catalog_conditions() {
+		let mut issues = Vec::new();
+		eval_catalog_values(
+			&mut issues,
+			&[MfdsSenderRuleView {
+				path: "senderInformation.2.healthProfessionalTypeKr1".to_string(),
+				value: None,
+				facts: RuleFacts {
+					mfds_sender_type_is_health_professional: Some(true),
+					..RuleFacts::default()
+				},
+			}],
+			C_MFDS_SENDER_CATALOG_VALUE_RULES,
+		);
+		eval_catalog_values(
+			&mut issues,
+			&[MfdsPrimarySourceRuleView {
+				path: "primarySources.3.qualificationKr1".to_string(),
+				value: None,
+				facts: RuleFacts {
+					mfds_primary_source_qualification_is_three: Some(true),
+					..RuleFacts::default()
+				},
+			}],
+			C_MFDS_PRIMARY_SOURCE_CATALOG_VALUE_RULES,
+		);
+		eval_catalog_values(
+			&mut issues,
+			&[MfdsStudyRuleView {
+				path: "studyInformation.4.studyTypeReactionKr1".to_string(),
+				value: None,
+				facts: RuleFacts {
+					mfds_study_type_reaction_is_three: Some(true),
+					..RuleFacts::default()
+				},
+			}],
+			C_MFDS_STUDY_CATALOG_VALUE_RULES,
+		);
+
+		assert_eq!(issues.len(), 3);
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| issue.field_path.as_deref().unwrap())
+				.collect::<Vec<_>>(),
+			[
+				"senderInformation.2.healthProfessionalTypeKr1",
+				"primarySources.3.qualificationKr1",
+				"studyInformation.4.studyTypeReactionKr1",
+			]
+		);
+
+		issues.clear();
+		eval_catalog_values(
+			&mut issues,
+			&[MfdsStudyRuleView {
+				path: "studyInformation.4.studyTypeReactionKr1".to_string(),
+				value: None,
+				facts: RuleFacts {
+					mfds_study_type_reaction_is_three: Some(false),
+					..RuleFacts::default()
+				},
+			}],
+			C_MFDS_STUDY_CATALOG_VALUE_RULES,
+		);
+		assert!(issues.is_empty());
+	}
 }
 
 #[cfg(test)]

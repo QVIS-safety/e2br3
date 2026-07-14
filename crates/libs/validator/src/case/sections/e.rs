@@ -1,15 +1,16 @@
 use super::rule_table::{
-	eval_companions, eval_indexed, eval_indexed_constraints,
+	eval_catalog_values, eval_companions, eval_indexed, eval_indexed_constraints,
 	eval_indexed_derived_length, eval_indexed_future_dates, eval_indexed_length,
-	eval_indexed_meddra, CompanionRule, DateValues, IndexedConstraintRule,
-	IndexedDerivedLengthRule, IndexedFutureDateRule, IndexedLengthRule,
-	IndexedMeddraRule, IndexedRule, RuleValue,
+	eval_indexed_meddra, eval_violations, CatalogValueRule, CompanionRule,
+	DateValues, IndexedConstraintRule, IndexedDerivedLengthRule,
+	IndexedFutureDateRule, IndexedLengthRule, IndexedMeddraRule, IndexedRule,
+	RuleValue, ViolationRule,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
-	has_text, push_issue_by_code, push_issue_if_conditioned_value_invalid,
-	should_case_validation_require_required_intervention, FdaValidationContext,
-	RegulatoryAuthority, RuleFacts, ValidationContext, ValidationIssue,
+	has_text, should_case_validation_require_required_intervention,
+	FdaValidationContext, RegulatoryAuthority, RuleFacts, ValidationContext,
+	ValidationIssue,
 };
 use lib_core::model::reaction::Reaction;
 use sqlx::types::Decimal;
@@ -22,6 +23,62 @@ fn decimal_text(value: Option<Decimal>) -> Option<String> {
 fn bool_code(value: Option<bool>) -> Option<String> {
 	value.map(|value| if value { "1" } else { "2" }.to_string())
 }
+
+struct FdaReactionRuleView {
+	index: usize,
+	required_intervention: Option<String>,
+	facts: RuleFacts,
+}
+
+struct EReactionRootView {
+	value: Option<String>,
+}
+
+const E_REACTION_ROOT_RULES: &[CatalogValueRule<EReactionRootView>] = &[
+	CatalogValueRule {
+		code: "ICH.E.i.1.1a.REQUIRED",
+		path: |_| "reactions.0.primarySourceReaction".to_string(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "ICH.E.i.7.REQUIRED",
+		path: |_| "reactions.0.reactionOutcome".to_string(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+];
+
+const E_FDA_CATALOG_VALUE_RULES: &[CatalogValueRule<FdaReactionRuleView>] =
+	&[CatalogValueRule {
+		code: "FDA.E.i.3.2h.REQUIRED",
+		path: |item| format!("reactions.{}.requiredIntervention", item.index),
+		value: |item| {
+			RuleValue::borrowed(item.required_intervention.as_deref(), None)
+		},
+		facts: |item| item.facts,
+	}];
+
+struct ECriteriaViolationView {
+	path: String,
+	missing_serious_criteria: bool,
+	has_non_ni_null_flavor: bool,
+}
+
+const E_CRITERIA_REQUIRED_VIOLATION_RULES: &[ViolationRule<
+	ECriteriaViolationView,
+>] = &[ViolationRule {
+	code: "ICH.E.i.3.2.CRITERIA.REQUIRED",
+	path: |item| item.path.clone(),
+	violated: |item| item.missing_serious_criteria,
+}];
+
+const E_NI_ONLY_VIOLATION_RULES: &[ViolationRule<ECriteriaViolationView>] =
+	&[ViolationRule {
+		code: "ICH.E.i.3.2.NI.ONLY",
+		path: |item| item.path.clone(),
+		violated: |item| item.has_non_ni_null_flavor,
+	}];
 
 const E_REACTION_VALUE_RULES: &[IndexedRule<Reaction>] = &[
 	IndexedRule {
@@ -356,18 +413,10 @@ pub(crate) fn collect_ich_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	if validation_ctx.reactions.is_empty() {
-		push_issue_by_code(
-			issues,
-			"ICH.E.i.1.1a.REQUIRED",
-			"reactions.0.primarySourceReaction",
-		);
-		push_issue_by_code(
-			issues,
-			"ICH.E.i.7.REQUIRED",
-			"reactions.0.reactionOutcome",
-		);
-	}
+	let root = EReactionRootView {
+		value: (!validation_ctx.reactions.is_empty()).then(|| "present".to_string()),
+	};
+	eval_catalog_values(issues, std::slice::from_ref(&root), E_REACTION_ROOT_RULES);
 
 	eval_indexed(issues, &validation_ctx.reactions, E_REACTION_VALUE_RULES);
 	eval_companions(
@@ -399,28 +448,17 @@ pub(crate) fn collect_ich_issues(
 		E_REACTION_DERIVED_LENGTH_RULES,
 	);
 
-	validation_ctx
+	let criteria_violations = validation_ctx
 		.reactions
 		.iter()
 		.enumerate()
-		.for_each(|(idx, reaction)| {
-			// E.i.3.2 seriousness criteria rules
-			if reaction.serious == Some(true) {
-				let any_criteria_true = reaction.criteria_death
-					|| reaction.criteria_life_threatening
-					|| reaction.criteria_hospitalization
-					|| reaction.criteria_disabling
-					|| reaction.criteria_congenital_anomaly
-					|| reaction.criteria_other_medically_important;
-				if !any_criteria_true {
-					push_issue_by_code(
-						issues,
-						"ICH.E.i.3.2.CRITERIA.REQUIRED",
-						format!("reactions.{idx}.seriousnessCriteria"),
-					);
-				}
-			}
-
+		.map(|(idx, reaction)| {
+			let any_criteria_true = reaction.criteria_death
+				|| reaction.criteria_life_threatening
+				|| reaction.criteria_hospitalization
+				|| reaction.criteria_disabling
+				|| reaction.criteria_congenital_anomaly
+				|| reaction.criteria_other_medically_important;
 			let criteria_null_flavors = [
 				reaction.criteria_death_null_flavor.as_deref(),
 				reaction.criteria_life_threatening_null_flavor.as_deref(),
@@ -435,14 +473,20 @@ pub(crate) fn collect_ich_issues(
 				nf.map(str::trim)
 					.is_some_and(|v| !v.eq_ignore_ascii_case("NI"))
 			});
-			if has_non_ni_null_flavor {
-				push_issue_by_code(
-					issues,
-					"ICH.E.i.3.2.NI.ONLY",
-					format!("reactions.{idx}.seriousnessCriteria"),
-				);
+			ECriteriaViolationView {
+				path: format!("reactions.{idx}.seriousnessCriteria"),
+				missing_serious_criteria: reaction.serious == Some(true)
+					&& !any_criteria_true,
+				has_non_ni_null_flavor,
 			}
-		});
+		})
+		.collect::<Vec<_>>();
+	eval_violations(
+		issues,
+		&criteria_violations,
+		E_CRITERIA_REQUIRED_VIOLATION_RULES,
+	);
+	eval_violations(issues, &criteria_violations, E_NI_ONLY_VIOLATION_RULES);
 }
 
 pub(crate) fn collect_fda_issues(
@@ -450,28 +494,22 @@ pub(crate) fn collect_fda_issues(
 	issues: &mut Vec<ValidationIssue>,
 ) {
 	if should_case_validation_require_required_intervention() {
-		validation_ctx
+		let views = validation_ctx
 			.reactions
 			.iter()
 			.enumerate()
-			.for_each(|(idx, reaction)| {
-				let _ = push_issue_if_conditioned_value_invalid(
-					issues,
-					"FDA.E.i.3.2h.REQUIRED",
-					"FDA.E.i.3.2h.REQUIRED",
-					"FDA.E.i.3.2h.REQUIRED",
-					&format!("reactions.{idx}.requiredIntervention"),
-					reaction.required_intervention.as_deref(),
-					None,
-					RuleFacts {
-						fda_reaction_other_medically_important: Some(
-							reaction.criteria_other_medically_important,
-						),
-						..RuleFacts::default()
-					},
-					RuleFacts::default(),
-				);
-			});
+			.map(|(idx, reaction)| FdaReactionRuleView {
+				index: idx,
+				required_intervention: reaction.required_intervention.clone(),
+				facts: RuleFacts {
+					fda_reaction_other_medically_important: Some(
+						reaction.criteria_other_medically_important,
+					),
+					..RuleFacts::default()
+				},
+			})
+			.collect::<Vec<_>>();
+		eval_catalog_values(issues, &views, E_FDA_CATALOG_VALUE_RULES);
 	}
 }
 
@@ -484,6 +522,82 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 			E_REACTION_MEDDRA_RULES,
 		))
 		.collect()
+}
+
+#[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	codes.extend(super::rule_table::table_rule_codes(E_REACTION_VALUE_RULES));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_REACTION_FUTURE_DATE_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_REACTION_CONSTRAINT_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(E_REACTION_LENGTH_RULES));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_REACTION_DERIVED_LENGTH_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_REACTION_COMPANION_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_FDA_CATALOG_VALUE_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_CRITERIA_REQUIRED_VIOLATION_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_NI_ONLY_VIOLATION_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(E_REACTION_ROOT_RULES));
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		E_REACTION_MEDDRA_RULES,
+	));
+	codes
+}
+
+#[cfg(test)]
+mod conditioned_catalog_rule_tests {
+	use super::*;
+
+	#[test]
+	fn fda_reaction_rule_uses_catalog_condition_and_concrete_path() {
+		let mut issues = Vec::new();
+		eval_catalog_values(
+			&mut issues,
+			&[FdaReactionRuleView {
+				index: 3,
+				required_intervention: None,
+				facts: RuleFacts {
+					fda_reaction_other_medically_important: Some(true),
+					..RuleFacts::default()
+				},
+			}],
+			E_FDA_CATALOG_VALUE_RULES,
+		);
+		assert_eq!(issues.len(), 1);
+		assert_eq!(issues[0].code, "FDA.E.i.3.2h.REQUIRED");
+		assert_eq!(
+			issues[0].field_path.as_deref(),
+			Some("reactions.3.requiredIntervention")
+		);
+
+		issues.clear();
+		eval_catalog_values(
+			&mut issues,
+			&[FdaReactionRuleView {
+				index: 3,
+				required_intervention: None,
+				facts: RuleFacts {
+					fda_reaction_other_medically_important: Some(false),
+					..RuleFacts::default()
+				},
+			}],
+			E_FDA_CATALOG_VALUE_RULES,
+		);
+		assert!(issues.is_empty());
+	}
 }
 
 #[cfg(test)]

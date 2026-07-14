@@ -1,21 +1,21 @@
 use super::rule_table::{
-	eval_companions, eval_grandchild_length, eval_indexed, eval_indexed_constraints,
-	eval_indexed_derived_length, eval_indexed_future_dates, eval_indexed_length,
+	eval_catalog_values, eval_companions, eval_grandchild_length, eval_indexed,
+	eval_indexed_constraints, eval_indexed_derived_length,
+	eval_indexed_future_dates, eval_indexed_length,
 	eval_indexed_vocabulary_variants, eval_nested_constraints,
 	eval_nested_derived_length, eval_nested_length, eval_nested_meddra,
-	CompanionRule, DateValues, GrandchildLengthRule, IndexedConstraintRule,
-	IndexedDerivedLengthRule, IndexedFutureDateRule, IndexedLengthRule, IndexedRule,
+	eval_violations, CatalogValueRule, CompanionRule, DateValues,
+	GrandchildLengthRule, IndexedConstraintRule, IndexedDerivedLengthRule,
+	IndexedFutureDateRule, IndexedLengthRule, IndexedRule,
 	IndexedVocabularyVariantRule, NestedConstraintRule, NestedDerivedLengthRule,
-	NestedLengthRule, NestedMeddraRule, RuleValue,
+	NestedLengthRule, NestedMeddraRule, RuleValue, ViolationRule,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
 	has_text, is_mfds_clinical_trial_receiver, is_mfds_compassionate_use_receiver,
 	is_mfds_domestic_receiver, is_mfds_foreign_postmarket_receiver,
-	list_drug_characteristics, push_issue_by_code,
-	push_issue_if_conditioned_value_invalid, FdaValidationContext,
-	MfdsValidationContext, RegulatoryAuthority, RuleFacts, ValidationContext,
-	ValidationIssue,
+	list_drug_characteristics, FdaValidationContext, MfdsValidationContext,
+	RegulatoryAuthority, RuleFacts, ValidationContext, ValidationIssue,
 };
 use lib_core::ctx::Ctx;
 use lib_core::model::drug::{
@@ -29,6 +29,7 @@ use lib_core::model::drug_reaction_assessment::{
 use lib_core::model::{ModelManager, Result};
 use sqlx::types::Decimal;
 use std::borrow::Cow;
+use std::collections::{HashMap, HashSet};
 
 const G_MFDS_PRODUCT_VOCABULARY_RULES: &[IndexedVocabularyVariantRule<
 	DrugInformation,
@@ -92,6 +93,304 @@ fn decimal_text(value: Option<Decimal>) -> Option<String> {
 
 fn i32_text(value: Option<i32>) -> Option<String> {
 	value.map(|value| value.to_string())
+}
+
+struct MfdsDrugRuleView {
+	index: usize,
+	mpid: Option<String>,
+	mpid_version: Option<String>,
+	facts: RuleFacts,
+}
+
+struct FdaDrugRuleView {
+	index: usize,
+	other_characterization: Option<String>,
+	malfunction: Option<String>,
+	brand_name: Option<String>,
+	common_name: Option<String>,
+	product_code: Option<String>,
+}
+
+struct GDrugRootView {
+	value: Option<String>,
+}
+
+const G_DRUG_ROOT_RULES: &[CatalogValueRule<GDrugRootView>] = &[
+	CatalogValueRule {
+		code: "ICH.G.k.1.REQUIRED",
+		path: |_| "drugs.0.drugCharacterization".to_string(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "ICH.G.k.2.2.REQUIRED",
+		path: |_| "drugs.0.medicinalProduct".to_string(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+];
+
+const G_FDA_DRUG_CATALOG_VALUE_RULES: &[CatalogValueRule<FdaDrugRuleView>] = &[
+	CatalogValueRule {
+		code: "FDA.G.k.1.a.REQUIRED",
+		path: |item| format!("drugs.{}.fdaOtherCharacterization", item.index),
+		value: |item| {
+			RuleValue::borrowed(item.other_characterization.as_deref(), None)
+		},
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "FDA.G.k.12.r.1.REQUIRED",
+		path: |item| format!("drugs.{}.fdaDeviceInfo.malfunction", item.index),
+		value: |item| RuleValue::borrowed(item.malfunction.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "FDA.G.k.12.r.4.REQUIRED",
+		path: |item| format!("drugs.{}.fdaDeviceInfo.deviceBrandName", item.index),
+		value: |item| RuleValue::borrowed(item.brand_name.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "FDA.G.k.12.r.5.REQUIRED",
+		path: |item| format!("drugs.{}.fdaDeviceInfo.commonDeviceName", item.index),
+		value: |item| RuleValue::borrowed(item.common_name.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "FDA.G.k.12.r.6.REQUIRED",
+		path: |item| format!("drugs.{}.fdaDeviceInfo.deviceProductCode", item.index),
+		value: |item| RuleValue::borrowed(item.product_code.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+];
+
+struct FdaDrugSetRuleView {
+	malfunction_suspect: Option<String>,
+	problem_code: Option<String>,
+	remedial_action: Option<String>,
+	invalid_gk1a: bool,
+}
+
+const G_FDA_DRUG_SET_CATALOG_VALUE_RULES: &[CatalogValueRule<FdaDrugSetRuleView>] =
+	&[
+		CatalogValueRule {
+			code: "FDA.G.K.12.REQUIRED",
+			path: |_| "drugs.0.deviceCharacteristics.0.valueCode".to_string(),
+			value: |item| {
+				RuleValue::borrowed(item.malfunction_suspect.as_deref(), None)
+			},
+			facts: |_| RuleFacts::default(),
+		},
+		CatalogValueRule {
+			code: "FDA.G.k.12.r.3.r.REQUIRED",
+			path: |_| "drugs.0.fdaDeviceInfo.deviceProblemCodes".to_string(),
+			value: |item| RuleValue::borrowed(item.problem_code.as_deref(), None),
+			facts: |_| RuleFacts::default(),
+		},
+		CatalogValueRule {
+			code: "FDA.G.K.12.R.3.REQUIRED",
+			path: |_| "drugs.0.deviceCharacteristics.0.valueCode".to_string(),
+			value: |item| RuleValue::borrowed(item.problem_code.as_deref(), None),
+			facts: |_| RuleFacts::default(),
+		},
+		CatalogValueRule {
+			code: "FDA.G.k.12.r.11.r.REQUIRED",
+			path: |_| "drugs.0.fdaDeviceInfo.remedialActions".to_string(),
+			value: |item| RuleValue::borrowed(item.remedial_action.as_deref(), None),
+			facts: |_| RuleFacts::default(),
+		},
+		CatalogValueRule {
+			code: "FDA.G.K.12.R.11.REQUIRED",
+			path: |_| "drugs.0.deviceCharacteristics.0.valueCode".to_string(),
+			value: |item| RuleValue::borrowed(item.remedial_action.as_deref(), None),
+			facts: |_| RuleFacts::default(),
+		},
+	];
+
+const G_FDA_GK1A_VIOLATION_RULES: &[ViolationRule<FdaDrugSetRuleView>] =
+	&[ViolationRule {
+		code: "FDA.G.K.1.A.CONDITIONAL",
+		path: |_| "drugs.0.deviceCharacteristics.0.valueCode".to_string(),
+		violated: |item| item.invalid_gk1a,
+	}];
+
+const G_MFDS_DRUG_CATALOG_VALUE_RULES: &[CatalogValueRule<MfdsDrugRuleView>] = &[
+	CatalogValueRule {
+		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
+		path: |item| format!("drugs.{}.mfdsMpid", item.index),
+		value: |item| RuleValue::borrowed(item.mpid.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "MFDS.G.k.2.1.KR.1a.REQUIRED",
+		path: |item| format!("drugs.{}.mfdsMpidVersion", item.index),
+		value: |item| RuleValue::borrowed(item.mpid_version.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
+		path: |item| format!("drugs.{}.mfdsMpid", item.index),
+		value: |item| RuleValue::borrowed(item.mpid.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
+		path: |item| format!("drugs.{}.mfdsMpid", item.index),
+		value: |item| RuleValue::borrowed(item.mpid.as_deref(), None),
+		facts: |item| item.facts,
+	},
+];
+
+struct MfdsSubstanceRuleView {
+	drug_index: usize,
+	substance_index: usize,
+	id: Option<String>,
+	version: Option<String>,
+	facts: RuleFacts,
+}
+
+const G_MFDS_SUBSTANCE_CATALOG_VALUE_RULES: &[CatalogValueRule<
+	MfdsSubstanceRuleView,
+>] = &[
+	CatalogValueRule {
+		code: "MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
+		path: |item| {
+			format!(
+				"drugs.{}.activeSubstances.{}.mfdsId",
+				item.drug_index, item.substance_index
+			)
+		},
+		value: |item| RuleValue::borrowed(item.id.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+		path: |item| {
+			format!(
+				"drugs.{}.activeSubstances.{}.mfdsId",
+				item.drug_index, item.substance_index
+			)
+		},
+		value: |item| RuleValue::borrowed(item.id.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
+		path: |item| {
+			format!(
+				"drugs.{}.activeSubstances.{}.mfdsVersion",
+				item.drug_index, item.substance_index
+			)
+		},
+		value: |item| RuleValue::borrowed(item.version.as_deref(), None),
+		facts: |item| item.facts,
+	},
+];
+
+struct MfdsRelatednessRuleView {
+	drug_index: usize,
+	assessment_index: usize,
+	source: Option<String>,
+	method: Option<String>,
+	result_kr1: Option<String>,
+	result_kr2: Option<String>,
+	receiver_is_ct_or_cu: bool,
+	receiver_is_kr: bool,
+	receiver_is_fr: bool,
+	facts: RuleFacts,
+}
+
+impl MfdsRelatednessRuleView {
+	fn path(&self, field: &str) -> String {
+		format!(
+			"drugs.{}.drugReactionAssessments.{}.{}",
+			self.drug_index, self.assessment_index, field
+		)
+	}
+}
+
+const G_MFDS_RELATEDNESS_CATALOG_VALUE_RULES: &[CatalogValueRule<
+	MfdsRelatednessRuleView,
+>] = &[
+	CatalogValueRule {
+		code: "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
+		path: |item| item.path("methodOfAssessment"),
+		value: |item| RuleValue::borrowed(item.method.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
+		path: |item| item.path("resultOfAssessment"),
+		value: |item| RuleValue::borrowed(item.result_kr1.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
+		path: |item| item.path("resultOfAssessmentKr2"),
+		value: |item| RuleValue::borrowed(item.result_kr2.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "MFDS.G.k.9.i.2.r.1.REQUIRED",
+		path: |item| item.path("sourceOfAssessment"),
+		value: |item| RuleValue::borrowed(item.source.as_deref(), None),
+		facts: |item| item.facts,
+	},
+];
+
+const G_MFDS_METHOD_PROFILE_VIOLATION_RULES: &[ViolationRule<
+	MfdsRelatednessRuleView,
+>] = &[ViolationRule {
+	code: "MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
+	path: |item| item.path("methodOfAssessment"),
+	violated: |item| {
+		let Some(code) = item.method.as_deref().map(str::trim) else {
+			return false;
+		};
+		let valid_code = matches!(code, "1" | "2");
+		let profile_valid = if item.receiver_is_ct_or_cu {
+			code == "2"
+		} else if item.receiver_is_kr {
+			code == "1"
+		} else if item.receiver_is_fr {
+			false
+		} else {
+			true
+		};
+		!valid_code || !profile_valid
+	},
+}];
+
+const G_MFDS_RESULT_PROFILE_VIOLATION_RULES: &[ViolationRule<
+	MfdsRelatednessRuleView,
+>] = &[ViolationRule {
+	code: "MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
+	path: |item| item.path("resultOfAssessment"),
+	violated: |item| {
+		if item.method.as_deref().map(str::trim) != Some("1") {
+			return false;
+		}
+		item.result_kr1
+			.as_deref()
+			.map(str::trim)
+			.is_some_and(|code| {
+				!code.is_empty()
+					&& !matches!(code, "1" | "2" | "3" | "4" | "5" | "6" | "NA")
+			})
+	},
+}];
+
+fn resolve_drug_child_indices(
+	drug_indices: &HashMap<sqlx::types::Uuid, usize>,
+	drug_id: sqlx::types::Uuid,
+	sequence_number: i32,
+) -> Option<(usize, usize)> {
+	let drug_index = drug_indices.get(&drug_id).copied()?;
+	let child_index = sequence_number
+		.checked_sub(1)
+		.and_then(|value| usize::try_from(value).ok())?;
+	Some((drug_index, child_index))
 }
 
 fn sequence_idx(sequence_number: i32, fallback: usize) -> usize {
@@ -837,18 +1136,10 @@ pub(crate) fn collect_ich_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	if validation_ctx.drugs.is_empty() {
-		push_issue_by_code(
-			issues,
-			"ICH.G.k.1.REQUIRED",
-			"drugs.0.drugCharacterization",
-		);
-		push_issue_by_code(
-			issues,
-			"ICH.G.k.2.2.REQUIRED",
-			"drugs.0.medicinalProduct",
-		);
-	}
+	let root = GDrugRootView {
+		value: (!validation_ctx.drugs.is_empty()).then(|| "present".to_string()),
+	};
+	eval_catalog_values(issues, std::slice::from_ref(&root), G_DRUG_ROOT_RULES);
 
 	eval_indexed(issues, &validation_ctx.drugs, G_DRUG_VALUE_RULES);
 	eval_indexed_length(issues, &validation_ctx.drugs, G_DRUG_LENGTH_RULES);
@@ -1016,6 +1307,7 @@ pub(crate) async fn collect_fda_issues(
 	let mut has_gk12r3 = false;
 	let mut has_gk12r11 = false;
 	let mut has_invalid_gk1a = false;
+	let mut drug_views = Vec::with_capacity(validation_ctx.drugs.len());
 
 	for (drug_idx, drug) in validation_ctx.drugs.iter().enumerate() {
 		let mut chars = list_drug_characteristics(ctx, mm, drug.id).await?;
@@ -1024,47 +1316,40 @@ pub(crate) async fn collect_fda_issues(
 			characteristic_code_matches(ch.code.as_deref(), "FDA.G.k.12.r.1")
 				&& is_truthy_characteristic(ch)
 		});
-		if combination_true
+		let gk1a_required = combination_true
 			&& malfunction_this_drug
-			&& drug.drug_characterization == "4"
-			&& !has_text(drug.fda_other_characterization.as_deref())
-		{
-			push_issue_by_code(
-				issues,
-				"FDA.G.k.1.a.REQUIRED",
-				format!("drugs.{drug_idx}.fdaOtherCharacterization"),
-			);
-		}
-		if local_criteria == Some("5") && !malfunction_this_drug {
-			push_issue_by_code(
-				issues,
-				"FDA.G.k.12.r.1.REQUIRED",
-				format!("drugs.{drug_idx}.fdaDeviceInfo.malfunction"),
-			);
-		}
-		if malfunction_this_drug {
-			if !has_characteristic_value(&chars, "FDA.G.k.12.r.4") {
-				push_issue_by_code(
-					issues,
-					"FDA.G.k.12.r.4.REQUIRED",
-					format!("drugs.{drug_idx}.fdaDeviceInfo.deviceBrandName"),
-				);
-			}
-			if !has_characteristic_value(&chars, "FDA.G.k.12.r.5") {
-				push_issue_by_code(
-					issues,
-					"FDA.G.k.12.r.5.REQUIRED",
-					format!("drugs.{drug_idx}.fdaDeviceInfo.commonDeviceName"),
-				);
-			}
-			if !has_characteristic_value(&chars, "FDA.G.k.12.r.6") {
-				push_issue_by_code(
-					issues,
-					"FDA.G.k.12.r.6.REQUIRED",
-					format!("drugs.{drug_idx}.fdaDeviceInfo.deviceProductCode"),
-				);
-			}
-		}
+			&& drug.drug_characterization == "4";
+		drug_views.push(FdaDrugRuleView {
+			index: drug_idx,
+			other_characterization: if gk1a_required {
+				drug.fda_other_characterization.clone()
+			} else {
+				Some("not-applicable".to_string())
+			},
+			malfunction: if local_criteria == Some("5") {
+				malfunction_this_drug.then(|| "present".to_string())
+			} else {
+				Some("not-applicable".to_string())
+			},
+			brand_name: if malfunction_this_drug {
+				has_characteristic_value(&chars, "FDA.G.k.12.r.4")
+					.then(|| "present".to_string())
+			} else {
+				Some("not-applicable".to_string())
+			},
+			common_name: if malfunction_this_drug {
+				has_characteristic_value(&chars, "FDA.G.k.12.r.5")
+					.then(|| "present".to_string())
+			} else {
+				Some("not-applicable".to_string())
+			},
+			product_code: if malfunction_this_drug {
+				has_characteristic_value(&chars, "FDA.G.k.12.r.6")
+					.then(|| "present".to_string())
+			} else {
+				Some("not-applicable".to_string())
+			},
+		});
 		if malfunction_this_drug {
 			has_malfunction_any = true;
 			if drug.drug_characterization == "1" {
@@ -1093,45 +1378,35 @@ pub(crate) async fn collect_fda_issues(
 			has_invalid_gk1a = true;
 		}
 	}
-
-	if local_criteria == Some("5") && !has_malfunction_suspect {
-		push_issue_by_code(
-			issues,
-			"FDA.G.K.12.REQUIRED",
-			"drugs.0.deviceCharacteristics.0.valueCode",
-		);
-	}
-	if has_malfunction_any && !has_gk12r3 {
-		push_issue_by_code(
-			issues,
-			"FDA.G.k.12.r.3.r.REQUIRED",
-			"drugs.0.fdaDeviceInfo.deviceProblemCodes",
-		);
-		push_issue_by_code(
-			issues,
-			"FDA.G.K.12.R.3.REQUIRED",
-			"drugs.0.deviceCharacteristics.0.valueCode",
-		);
-	}
-	if local_criteria == Some("4") && has_malfunction_any && !has_gk12r11 {
-		push_issue_by_code(
-			issues,
-			"FDA.G.k.12.r.11.r.REQUIRED",
-			"drugs.0.fdaDeviceInfo.remedialActions",
-		);
-		push_issue_by_code(
-			issues,
-			"FDA.G.K.12.R.11.REQUIRED",
-			"drugs.0.deviceCharacteristics.0.valueCode",
-		);
-	}
-	if has_invalid_gk1a {
-		push_issue_by_code(
-			issues,
-			"FDA.G.K.1.A.CONDITIONAL",
-			"drugs.0.deviceCharacteristics.0.valueCode",
-		);
-	}
+	eval_catalog_values(issues, &drug_views, G_FDA_DRUG_CATALOG_VALUE_RULES);
+	let set_view = FdaDrugSetRuleView {
+		malfunction_suspect: if local_criteria == Some("5") {
+			has_malfunction_suspect.then(|| "present".to_string())
+		} else {
+			Some("not-applicable".to_string())
+		},
+		problem_code: if has_malfunction_any {
+			has_gk12r3.then(|| "present".to_string())
+		} else {
+			Some("not-applicable".to_string())
+		},
+		remedial_action: if local_criteria == Some("4") && has_malfunction_any {
+			has_gk12r11.then(|| "present".to_string())
+		} else {
+			Some("not-applicable".to_string())
+		},
+		invalid_gk1a: has_invalid_gk1a,
+	};
+	eval_catalog_values(
+		issues,
+		std::slice::from_ref(&set_view),
+		G_FDA_DRUG_SET_CATALOG_VALUE_RULES,
+	);
+	eval_violations(
+		issues,
+		std::slice::from_ref(&set_view),
+		G_FDA_GK1A_VIOLATION_RULES,
+	);
 	Ok(())
 }
 
@@ -1168,291 +1443,148 @@ pub(crate) fn collect_mfds_issues(
 	let receiver_is_ct_or_cu = is_mfds_clinical_trial_receiver(msg_receiver)
 		|| is_mfds_compassionate_use_receiver(msg_receiver);
 
-	let mut domestic_drug_ids = std::collections::HashSet::new();
-	let mut drug_index_by_id = std::collections::HashMap::new();
-	let mut drug_has_mfds_mpid_by_id = std::collections::HashMap::new();
+	let mut domestic_drug_ids = HashSet::new();
+	let mut drug_index_by_id = HashMap::new();
+	let mut drug_has_mfds_mpid_by_id = HashMap::new();
 
-	validation_ctx
+	let drug_views = validation_ctx
 		.drugs
 		.iter()
 		.enumerate()
-		.for_each(|(idx, drug)| {
+		.map(|(idx, drug)| {
 			drug_index_by_id.insert(drug.id, idx);
 			let has_mfds_mpid = has_text(drug.mfds_mpid.as_deref());
 			drug_has_mfds_mpid_by_id.insert(drug.id, has_mfds_mpid);
-			let _ = push_issue_if_conditioned_value_invalid(
-				issues,
-				"MFDS.G.k.2.1.KR.1b.REQUIRED",
-				"MFDS.G.k.2.1.KR.1b.REQUIRED",
-				"MFDS.G.k.2.1.KR.1b.REQUIRED",
-				format!("drugs.{idx}.mfdsMpid"),
-				drug.mfds_mpid.as_deref(),
-				None,
-				RuleFacts {
-					mfds_product_code_required_context: Some(
-						receiver_is_kr || receiver_is_fr,
-					),
-					..RuleFacts::default()
-				},
-				RuleFacts::default(),
-			);
-			let _ = push_issue_if_conditioned_value_invalid(
-				issues,
-				"MFDS.G.k.2.1.KR.1a.REQUIRED",
-				"MFDS.G.k.2.1.KR.1a.REQUIRED",
-				"MFDS.G.k.2.1.KR.1a.REQUIRED",
-				format!("drugs.{idx}.mfdsMpidVersion"),
-				drug.mfds_mpid_version.as_deref(),
-				None,
-				RuleFacts {
-					mfds_product_version_required_context: Some(
-						receiver_is_fr && has_mfds_mpid,
-					),
-					..RuleFacts::default()
-				},
-				RuleFacts::default(),
-			);
 			let country = drug.obtain_drug_country.as_deref().map(str::trim);
 			let is_domestic_kr = matches!(country, Some("KR"));
 			let is_foreign_non_kr =
 				matches!(country, Some(other) if !other.is_empty() && other != "KR");
-			match country {
-				Some("KR") => {
-					domestic_drug_ids.insert(drug.id);
-					let _ = push_issue_if_conditioned_value_invalid(
-						issues,
-						"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
-						"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
-						"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
-						format!("drugs.{idx}.mfdsMpid"),
-						drug.mfds_mpid.as_deref(),
-						None,
-						RuleFacts {
-							mfds_drug_domestic_kr: Some(is_domestic_kr),
-							..RuleFacts::default()
-						},
-						RuleFacts::default(),
-					);
-				}
-				Some(other) if !other.is_empty() => {
-					let _ = push_issue_if_conditioned_value_invalid(
-						issues,
-						"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
-						"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
-						"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
-						format!("drugs.{idx}.mfdsMpid"),
-						drug.mfds_mpid.as_deref(),
-						None,
-						RuleFacts {
-							mfds_drug_foreign_non_kr: Some(is_foreign_non_kr),
-							..RuleFacts::default()
-						},
-						RuleFacts::default(),
-					);
-				}
-				_ => {}
+			if is_domestic_kr {
+				domestic_drug_ids.insert(drug.id);
 			}
-		});
+			MfdsDrugRuleView {
+				index: idx,
+				mpid: drug.mfds_mpid.clone(),
+				mpid_version: drug.mfds_mpid_version.clone(),
+				facts: RuleFacts {
+					mfds_product_code_required_context: Some(
+						receiver_is_kr || receiver_is_fr,
+					),
+					mfds_product_version_required_context: Some(
+						receiver_is_fr && has_mfds_mpid,
+					),
+					mfds_drug_domestic_kr: Some(is_domestic_kr),
+					mfds_drug_foreign_non_kr: Some(is_foreign_non_kr),
+					..RuleFacts::default()
+				},
+			}
+		})
+		.collect::<Vec<_>>();
+	eval_catalog_values(issues, &drug_views, G_MFDS_DRUG_CATALOG_VALUE_RULES);
 
-	mfds_ctx.active_substances.iter().for_each(|substance| {
-		let drug_index = drug_index_by_id.get(&substance.drug_id).copied();
-		let drug_has_mfds_mpid = drug_has_mfds_mpid_by_id
-			.get(&substance.drug_id)
-			.copied()
-			.unwrap_or(false);
-		let substance_index = substance
-			.sequence_number
-			.checked_sub(1)
-			.and_then(|v| usize::try_from(v).ok());
-		let path = match (drug_index, substance_index) {
-			(Some(d_idx), Some(s_idx)) => {
-				format!("drugs.{d_idx}.activeSubstances.{s_idx}.mfdsId")
-			}
-			_ => "drugs".to_string(),
-		};
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
-			"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
-			"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
-			path.clone(),
-			substance.mfds_id.as_deref(),
-			None,
-			RuleFacts {
-				mfds_drug_domestic_kr: Some(
-					domestic_drug_ids.contains(&substance.drug_id),
-				),
-				..RuleFacts::default()
-			},
-			RuleFacts::default(),
-		);
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
-			"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
-			"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
-			path,
-			substance.mfds_id.as_deref(),
-			None,
-			RuleFacts {
-				mfds_substance_code_required_context: Some(
-					(receiver_is_kr || receiver_is_fr) && !drug_has_mfds_mpid,
-				),
-				..RuleFacts::default()
-			},
-			RuleFacts::default(),
-		);
-		let version_path = match (drug_index, substance_index) {
-			(Some(d_idx), Some(s_idx)) => {
-				format!("drugs.{d_idx}.activeSubstances.{s_idx}.mfdsVersion")
-			}
-			_ => "drugs".to_string(),
-		};
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
-			"MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
-			"MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
-			version_path,
-			substance.mfds_version.as_deref(),
-			None,
-			RuleFacts {
-				mfds_substance_version_required_context: Some(
-					receiver_is_fr && has_text(substance.mfds_id.as_deref()),
-				),
-				..RuleFacts::default()
-			},
-			RuleFacts::default(),
-		);
-	});
+	let substance_views = mfds_ctx
+		.active_substances
+		.iter()
+		.filter_map(|substance| {
+			let (drug_index, substance_index) = resolve_drug_child_indices(
+				&drug_index_by_id,
+				substance.drug_id,
+				substance.sequence_number,
+			)?;
+			let drug_has_mfds_mpid = drug_has_mfds_mpid_by_id
+				.get(&substance.drug_id)
+				.copied()
+				.unwrap_or(false);
+			Some(MfdsSubstanceRuleView {
+				drug_index,
+				substance_index,
+				id: substance.mfds_id.clone(),
+				version: substance.mfds_version.clone(),
+				facts: RuleFacts {
+					mfds_drug_domestic_kr: Some(
+						domestic_drug_ids.contains(&substance.drug_id),
+					),
+					mfds_substance_code_required_context: Some(
+						(receiver_is_kr || receiver_is_fr) && !drug_has_mfds_mpid,
+					),
+					mfds_substance_version_required_context: Some(
+						receiver_is_fr && has_text(substance.mfds_id.as_deref()),
+					),
+					..RuleFacts::default()
+				},
+			})
+		})
+		.collect::<Vec<_>>();
+	eval_catalog_values(
+		issues,
+		&substance_views,
+		G_MFDS_SUBSTANCE_CATALOG_VALUE_RULES,
+	);
 
-	mfds_ctx.relatedness.iter().for_each(|r| {
-		let has_source = has_text(r.source_of_assessment.as_deref());
-		let has_method = has_text(r.method_of_assessment.as_deref());
-		let has_result_kr1 = has_text(r.result_of_assessment.as_deref());
-		let has_result_kr2 = has_text(r.result_of_assessment_kr2.as_deref());
-		let has_any_result = has_result_kr1 || has_result_kr2;
-		let method_code = r.method_of_assessment.as_deref().map(str::trim);
-		let method_is_who_umc = method_code == Some("1");
-		let method_is_krct = method_code == Some("2");
-		let method_required_context = has_source || receiver_is_ct_or_cu;
-		let kr2_required_context = has_source
-			&& method_is_krct
-			&& (report_type_is_study || receiver_is_ct_or_cu);
-		let drug_index = drug_index_by_id.get(&r.drug_id).copied();
-		let assess_index = r
-			.relatedness_sequence_number
-			.checked_sub(1)
-			.and_then(|v| usize::try_from(v).ok());
-		let path_for = |field: &str| match (drug_index, assess_index) {
-			(Some(d_idx), Some(a_idx)) => {
-				format!("drugs.{d_idx}.drugReactionAssessments.{a_idx}.{field}")
-			}
-			_ => "drugs".to_string(),
-		};
-
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
-			"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
-			"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
-			path_for("methodOfAssessment"),
-			r.method_of_assessment.as_deref(),
-			None,
-			RuleFacts {
-				mfds_relatedness_method_required_context: Some(
-					method_required_context,
-				),
-				..RuleFacts::default()
-			},
-			RuleFacts::default(),
-		);
-		if let Some(code) = method_code {
-			let valid_code = code == "1" || code == "2";
-			let profile_valid = if receiver_is_ct_or_cu {
-				code == "2"
-			} else if receiver_is_kr {
-				code == "1"
-			} else if receiver_is_fr {
-				false
-			} else {
-				true
-			};
-			if !valid_code || !profile_valid {
-				push_issue_by_code(
-					issues,
-					"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
-					path_for("methodOfAssessment"),
-				);
-			}
-		}
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-			"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-			"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-			path_for("resultOfAssessment"),
-			r.result_of_assessment.as_deref(),
-			None,
-			RuleFacts {
-				mfds_relatedness_kr1_required_context: Some(
-					has_source && method_is_who_umc,
-				),
-				..RuleFacts::default()
-			},
-			RuleFacts::default(),
-		);
-		// G.k.9.i.2.r.3.KR.1 allowed values: WHO-UMC result must be 1..6 or the
-		// NA nullFlavor token. Only enforced when the method is WHO-UMC (1).
-		if method_is_who_umc {
-			if let Some(result_code) =
-				r.result_of_assessment.as_deref().map(str::trim)
-			{
-				if !result_code.is_empty()
-					&& !matches!(
-						result_code,
-						"1" | "2" | "3" | "4" | "5" | "6" | "NA"
-					) {
-					push_issue_by_code(
-						issues,
-						"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
-						path_for("resultOfAssessment"),
-					);
-				}
-			}
-		}
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
-			"MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
-			"MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
-			path_for("resultOfAssessmentKr2"),
-			r.result_of_assessment_kr2.as_deref(),
-			None,
-			RuleFacts {
-				mfds_relatedness_kr2_required_context: Some(kr2_required_context),
-				..RuleFacts::default()
-			},
-			RuleFacts::default(),
-		);
-		if !has_source {
-			let _ = push_issue_if_conditioned_value_invalid(
-				issues,
-				"MFDS.G.k.9.i.2.r.1.REQUIRED",
-				"MFDS.G.k.9.i.2.r.1.REQUIRED",
-				"MFDS.G.k.9.i.2.r.1.REQUIRED",
-				path_for("sourceOfAssessment"),
-				r.source_of_assessment.as_deref(),
-				None,
-				RuleFacts {
+	let relatedness_views = mfds_ctx
+		.relatedness
+		.iter()
+		.filter_map(|r| {
+			let (drug_index, assessment_index) = resolve_drug_child_indices(
+				&drug_index_by_id,
+				r.drug_id,
+				r.relatedness_sequence_number,
+			)?;
+			let has_source = has_text(r.source_of_assessment.as_deref());
+			let has_method = has_text(r.method_of_assessment.as_deref());
+			let has_result_kr1 = has_text(r.result_of_assessment.as_deref());
+			let has_result_kr2 = has_text(r.result_of_assessment_kr2.as_deref());
+			let has_any_result = has_result_kr1 || has_result_kr2;
+			let method_code = r.method_of_assessment.as_deref().map(str::trim);
+			let method_is_who_umc = method_code == Some("1");
+			let method_is_krct = method_code == Some("2");
+			let method_required_context = has_source || receiver_is_ct_or_cu;
+			let kr2_required_context = has_source
+				&& method_is_krct
+				&& (report_type_is_study || receiver_is_ct_or_cu);
+			Some(MfdsRelatednessRuleView {
+				drug_index,
+				assessment_index,
+				source: r.source_of_assessment.clone(),
+				method: r.method_of_assessment.clone(),
+				result_kr1: r.result_of_assessment.clone(),
+				result_kr2: r.result_of_assessment_kr2.clone(),
+				receiver_is_ct_or_cu,
+				receiver_is_kr,
+				receiver_is_fr,
+				facts: RuleFacts {
+					mfds_relatedness_method_required_context: Some(
+						method_required_context,
+					),
+					mfds_relatedness_kr1_required_context: Some(
+						has_source && method_is_who_umc,
+					),
+					mfds_relatedness_kr2_required_context: Some(
+						kr2_required_context,
+					),
 					mfds_relatedness_method_present: Some(has_method),
 					mfds_relatedness_result_present: Some(has_any_result),
 					..RuleFacts::default()
 				},
-				RuleFacts::default(),
-			);
-		}
-	});
+			})
+		})
+		.collect::<Vec<_>>();
+	eval_catalog_values(
+		issues,
+		&relatedness_views,
+		G_MFDS_RELATEDNESS_CATALOG_VALUE_RULES,
+	);
+
+	eval_violations(
+		issues,
+		&relatedness_views,
+		G_MFDS_METHOD_PROFILE_VIOLATION_RULES,
+	);
+	eval_violations(
+		issues,
+		&relatedness_views,
+		G_MFDS_RESULT_PROFILE_VIOLATION_RULES,
+	);
 }
 
 #[cfg(test)]
@@ -1474,6 +1606,260 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 			G_INDICATION_MEDDRA_RULES,
 		))
 		.collect()
+}
+
+#[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	macro_rules! add {
+		($rules:expr) => {
+			codes.extend(super::rule_table::table_rule_codes($rules));
+		};
+	}
+	add!(G_MFDS_PRODUCT_VOCABULARY_RULES);
+	add!(G_DRUG_VALUE_RULES);
+	add!(G_DRUG_LENGTH_RULES);
+	add!(G_DRUG_DERIVED_LENGTH_RULES);
+	add!(G_DRUG_CONSTRAINT_RULES);
+	add!(G_DRUG_COMPANION_RULES);
+	add!(G_ACTIVE_SUBSTANCE_LENGTH_RULES);
+	add!(G_ACTIVE_SUBSTANCE_CONSTRAINT_RULES);
+	add!(G_ACTIVE_SUBSTANCE_DERIVED_LENGTH_RULES);
+	add!(G_ACTIVE_SUBSTANCE_COMPANION_RULES);
+	add!(G_DOSAGE_LENGTH_RULES);
+	add!(G_DOSAGE_DERIVED_LENGTH_RULES);
+	add!(G_DOSAGE_COMPANION_RULES);
+	add!(G_DOSAGE_FUTURE_DATE_RULES);
+	add!(G_INDICATION_LENGTH_RULES);
+	add!(G_INDICATION_COMPANION_RULES);
+	add!(G_REACTION_ASSESSMENT_LENGTH_RULES);
+	add!(G_REACTION_ASSESSMENT_DERIVED_LENGTH_RULES);
+	add!(G_RELATEDNESS_ASSESSMENT_LENGTH_RULES);
+	add!(G_REACTION_ASSESSMENT_CONSTRAINT_RULES);
+	add!(G_REACTION_ASSESSMENT_COMPANION_RULES);
+	add!(G_MFDS_DRUG_CATALOG_VALUE_RULES);
+	add!(G_MFDS_SUBSTANCE_CATALOG_VALUE_RULES);
+	add!(G_MFDS_RELATEDNESS_CATALOG_VALUE_RULES);
+	add!(G_MFDS_METHOD_PROFILE_VIOLATION_RULES);
+	add!(G_MFDS_RESULT_PROFILE_VIOLATION_RULES);
+	add!(G_FDA_DRUG_CATALOG_VALUE_RULES);
+	add!(G_FDA_DRUG_SET_CATALOG_VALUE_RULES);
+	add!(G_FDA_GK1A_VIOLATION_RULES);
+	add!(G_DRUG_ROOT_RULES);
+	codes.extend(super::rule_table::nested_meddra_rule_codes(
+		G_INDICATION_MEDDRA_RULES,
+	));
+	codes
+}
+
+#[cfg(test)]
+mod conditioned_catalog_rule_tests {
+	use super::*;
+	use sqlx::types::Uuid;
+
+	#[test]
+	fn drug_rules_cover_domestic_foreign_and_unrelated_contexts() {
+		let rows = [
+			MfdsDrugRuleView {
+				index: 1,
+				mpid: None,
+				mpid_version: None,
+				facts: RuleFacts {
+					mfds_product_code_required_context: Some(true),
+					mfds_product_version_required_context: Some(false),
+					mfds_drug_domestic_kr: Some(true),
+					mfds_drug_foreign_non_kr: Some(false),
+					..RuleFacts::default()
+				},
+			},
+			MfdsDrugRuleView {
+				index: 2,
+				mpid: Some("product".to_string()),
+				mpid_version: None,
+				facts: RuleFacts {
+					mfds_product_code_required_context: Some(true),
+					mfds_product_version_required_context: Some(true),
+					mfds_drug_domestic_kr: Some(false),
+					mfds_drug_foreign_non_kr: Some(true),
+					..RuleFacts::default()
+				},
+			},
+			MfdsDrugRuleView {
+				index: 3,
+				mpid: None,
+				mpid_version: None,
+				facts: RuleFacts::default(),
+			},
+		];
+		let mut issues = Vec::new();
+		eval_catalog_values(&mut issues, &rows, G_MFDS_DRUG_CATALOG_VALUE_RULES);
+
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| issue.code.as_str())
+				.collect::<Vec<_>>(),
+			[
+				"MFDS.G.k.2.1.KR.1b.REQUIRED",
+				"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
+				"MFDS.G.k.2.1.KR.1a.REQUIRED",
+			]
+		);
+		assert!(issues
+			.iter()
+			.all(|issue| issue.field_path.as_deref() != Some("drugs.3.mfdsMpid")));
+	}
+
+	#[test]
+	fn substance_rules_preserve_resolved_drug_and_substance_indices() {
+		let rows = [
+			MfdsSubstanceRuleView {
+				drug_index: 1,
+				substance_index: 2,
+				id: None,
+				version: None,
+				facts: RuleFacts {
+					mfds_drug_domestic_kr: Some(true),
+					mfds_substance_code_required_context: Some(true),
+					mfds_substance_version_required_context: Some(false),
+					..RuleFacts::default()
+				},
+			},
+			MfdsSubstanceRuleView {
+				drug_index: 3,
+				substance_index: 4,
+				id: Some("ingredient".to_string()),
+				version: None,
+				facts: RuleFacts {
+					mfds_drug_domestic_kr: Some(false),
+					mfds_substance_code_required_context: Some(true),
+					mfds_substance_version_required_context: Some(true),
+					..RuleFacts::default()
+				},
+			},
+		];
+		let mut issues = Vec::new();
+		eval_catalog_values(
+			&mut issues,
+			&rows,
+			G_MFDS_SUBSTANCE_CATALOG_VALUE_RULES,
+		);
+
+		assert_eq!(issues.len(), 3);
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| issue.field_path.as_deref().unwrap())
+				.collect::<Vec<_>>(),
+			[
+				"drugs.1.activeSubstances.2.mfdsId",
+				"drugs.1.activeSubstances.2.mfdsId",
+				"drugs.3.activeSubstances.4.mfdsVersion",
+			]
+		);
+	}
+
+	#[test]
+	fn relatedness_rules_cover_method_results_and_source_companion() {
+		let rows = [
+			MfdsRelatednessRuleView {
+				drug_index: 1,
+				assessment_index: 2,
+				source: Some("source".to_string()),
+				method: None,
+				result_kr1: None,
+				result_kr2: None,
+				receiver_is_ct_or_cu: false,
+				receiver_is_kr: false,
+				receiver_is_fr: false,
+				facts: RuleFacts {
+					mfds_relatedness_method_required_context: Some(true),
+					..RuleFacts::default()
+				},
+			},
+			MfdsRelatednessRuleView {
+				drug_index: 1,
+				assessment_index: 3,
+				source: Some("source".to_string()),
+				method: Some("1".to_string()),
+				result_kr1: None,
+				result_kr2: None,
+				receiver_is_ct_or_cu: false,
+				receiver_is_kr: false,
+				receiver_is_fr: false,
+				facts: RuleFacts {
+					mfds_relatedness_method_required_context: Some(true),
+					mfds_relatedness_kr1_required_context: Some(true),
+					..RuleFacts::default()
+				},
+			},
+			MfdsRelatednessRuleView {
+				drug_index: 1,
+				assessment_index: 4,
+				source: Some("source".to_string()),
+				method: Some("2".to_string()),
+				result_kr1: None,
+				result_kr2: None,
+				receiver_is_ct_or_cu: true,
+				receiver_is_kr: false,
+				receiver_is_fr: false,
+				facts: RuleFacts {
+					mfds_relatedness_method_required_context: Some(true),
+					mfds_relatedness_kr2_required_context: Some(true),
+					..RuleFacts::default()
+				},
+			},
+			MfdsRelatednessRuleView {
+				drug_index: 1,
+				assessment_index: 5,
+				source: None,
+				method: Some("1".to_string()),
+				result_kr1: None,
+				result_kr2: None,
+				receiver_is_ct_or_cu: false,
+				receiver_is_kr: true,
+				receiver_is_fr: false,
+				facts: RuleFacts {
+					mfds_relatedness_method_present: Some(true),
+					mfds_relatedness_result_present: Some(false),
+					..RuleFacts::default()
+				},
+			},
+		];
+		let mut issues = Vec::new();
+		eval_catalog_values(
+			&mut issues,
+			&rows,
+			G_MFDS_RELATEDNESS_CATALOG_VALUE_RULES,
+		);
+
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| issue.code.as_str())
+				.collect::<Vec<_>>(),
+			[
+				"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
+				"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
+				"MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
+				"MFDS.G.k.9.i.2.r.1.REQUIRED",
+			]
+		);
+	}
+
+	#[test]
+	fn child_indices_have_no_owner_or_sequence_fallback() {
+		let known_drug = Uuid::new_v4();
+		let unknown_drug = Uuid::new_v4();
+		let indices = HashMap::from([(known_drug, 2)]);
+
+		assert_eq!(
+			resolve_drug_child_indices(&indices, known_drug, 4),
+			Some((2, 3))
+		);
+		assert_eq!(resolve_drug_child_indices(&indices, unknown_drug, 4), None);
+		assert_eq!(resolve_drug_child_indices(&indices, known_drug, 0), None);
+	}
 }
 
 #[cfg(test)]

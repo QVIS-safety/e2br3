@@ -25,6 +25,29 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+#[cfg(test)]
+pub(crate) trait HasRuleCode {
+	fn rule_code(&self) -> &'static str;
+}
+
+#[cfg(test)]
+pub(crate) fn table_rule_codes<T: HasRuleCode>(
+	rules: &[T],
+) -> impl Iterator<Item = &'static str> + '_ {
+	rules.iter().map(HasRuleCode::rule_code)
+}
+
+#[cfg(test)]
+macro_rules! impl_has_rule_code {
+	($($rule:ident),+ $(,)?) => {
+		$(impl<T> HasRuleCode for $rule<T> {
+			fn rule_code(&self) -> &'static str {
+				self.code
+			}
+		})+
+	};
+}
+
 /// A value pulled from a model plus its optional nullFlavor. `Cow` lets string
 /// fields borrow directly while computed values (e.g. a date `to_string()`)
 /// carry an owned string — sidestepping the temporary-`&str` lifetime problem.
@@ -377,6 +400,57 @@ pub(crate) fn eval_value<T>(
 			null_flavor,
 			RuleFacts::default(),
 		);
+	}
+}
+
+/// A prepared value whose concrete path and rule facts are supplied by the
+/// section. The catalog remains responsible for condition and value policy.
+pub(crate) struct CatalogValueRule<T> {
+	pub code: &'static str,
+	pub path: fn(&T) -> String,
+	pub value: for<'a> fn(&'a T) -> RuleValue<'a>,
+	pub facts: fn(&T) -> RuleFacts,
+}
+
+pub(crate) fn eval_catalog_values<T>(
+	issues: &mut Vec<ValidationIssue>,
+	items: &[T],
+	rules: &[CatalogValueRule<T>],
+) {
+	for item in items {
+		for rule in rules {
+			let RuleValue::Text { value, null_flavor } = (rule.value)(item);
+			let _ = push_issue_if_rule_invalid(
+				issues,
+				rule.code,
+				(rule.path)(item),
+				value.as_deref(),
+				null_flavor,
+				(rule.facts)(item),
+			);
+		}
+	}
+}
+
+/// A prepared rule for algorithmic invalidity that cannot be expressed as a
+/// catalog value policy. The section supplies only the predicate and path.
+pub(crate) struct ViolationRule<T> {
+	pub code: &'static str,
+	pub path: fn(&T) -> String,
+	pub violated: fn(&T) -> bool,
+}
+
+pub(crate) fn eval_violations<T>(
+	issues: &mut Vec<ValidationIssue>,
+	items: &[T],
+	rules: &[ViolationRule<T>],
+) {
+	for item in items {
+		for rule in rules {
+			if (rule.violated)(item) {
+				push_issue_by_code(issues, rule.code, (rule.path)(item));
+			}
+		}
 	}
 }
 
@@ -974,6 +1048,62 @@ pub(crate) struct GrandchildLengthRule<T> {
 	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
 }
 
+#[cfg(test)]
+impl_has_rule_code!(
+	ConstraintRule,
+	IndexedConstraintRule,
+	NestedConstraintRule,
+	GrandchildConstraintRule,
+	IndexedVocabularyVariantRule,
+	NestedVocabularyVariantRule,
+	ValueRule,
+	CatalogValueRule,
+	ViolationRule,
+	ConditionalValueRule,
+	FutureDateRule,
+	LengthRule,
+	IndexedLengthRule,
+	DerivedLengthRule,
+	IndexedDerivedLengthRule,
+	NestedDerivedLengthRule,
+	IndexedRule,
+	ConditionalIndexedRule,
+	IndexedFutureDateRule,
+	CompanionRule,
+	NestedCompanionRule,
+	NestedFutureDateRule,
+	NestedLengthRule,
+	GrandchildLengthRule,
+);
+
+#[cfg(test)]
+pub(crate) fn indexed_meddra_rule_codes<T>(
+	rules: &[IndexedMeddraRule<T>],
+) -> impl Iterator<Item = &'static str> + '_ {
+	rules.iter().flat_map(|rule| {
+		[
+			rule.version_allowed_code,
+			rule.code_allowed_code,
+			rule.version_code,
+			rule.code_code,
+		]
+	})
+}
+
+#[cfg(test)]
+pub(crate) fn nested_meddra_rule_codes<T>(
+	rules: &[NestedMeddraRule<T>],
+) -> impl Iterator<Item = &'static str> + '_ {
+	rules.iter().flat_map(|rule| {
+		[
+			rule.version_allowed_code,
+			rule.code_allowed_code,
+			rule.version_code,
+			rule.code_code,
+		]
+	})
+}
+
 pub(crate) fn eval_grandchild_length<G, P, T, GK, PK>(
 	issues: &mut Vec<ValidationIssue>,
 	grandparents: &[G],
@@ -1039,6 +1169,96 @@ pub(crate) fn eval_grandchild_length<G, P, T, GK, PK>(
 				);
 			}
 		}
+	}
+}
+
+#[cfg(test)]
+mod catalog_value_rule_tests {
+	use super::{eval_catalog_values, CatalogValueRule, RuleValue};
+	use crate::{RuleFacts, ValidationIssue};
+
+	struct PreparedValue {
+		path: String,
+		value: Option<String>,
+		facts: RuleFacts,
+	}
+
+	const RULES: &[CatalogValueRule<PreparedValue>] = &[CatalogValueRule {
+		code: "MFDS.C.5.4.KR.1.REQUIRED",
+		path: |item| item.path.clone(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |item| item.facts,
+	}];
+
+	fn prepared(condition: bool, value: Option<&str>) -> PreparedValue {
+		PreparedValue {
+			path: "studyInformation.2.studyTypeReactionKr1".to_string(),
+			value: value.map(str::to_string),
+			facts: RuleFacts {
+				mfds_study_type_reaction_is_three: Some(condition),
+				..RuleFacts::default()
+			},
+		}
+	}
+
+	#[test]
+	fn catalog_condition_and_value_policy_control_emission() {
+		let items = [
+			prepared(false, None),
+			prepared(true, None),
+			prepared(true, Some("value")),
+		];
+		let mut issues = Vec::<ValidationIssue>::new();
+
+		eval_catalog_values(&mut issues, &items, RULES);
+
+		assert_eq!(issues.len(), 1);
+		assert_eq!(issues[0].code, "MFDS.C.5.4.KR.1.REQUIRED");
+		assert_eq!(
+			issues[0].field_path.as_deref(),
+			Some("studyInformation.2.studyTypeReactionKr1")
+		);
+	}
+}
+
+#[cfg(test)]
+mod violation_rule_tests {
+	use super::{eval_violations, ViolationRule};
+	use crate::ValidationIssue;
+
+	struct PreparedViolation {
+		path: String,
+		violated: bool,
+	}
+
+	const RULES: &[ViolationRule<PreparedViolation>] = &[ViolationRule {
+		code: "ICH.D.8.MPID_PHPID.EXCLUSIVE",
+		path: |item| item.path.clone(),
+		violated: |item| item.violated,
+	}];
+
+	#[test]
+	fn violation_predicate_controls_emission_and_preserves_path() {
+		let items = [
+			PreparedViolation {
+				path: "parents.0.pastDrugs.0.mpid".to_string(),
+				violated: false,
+			},
+			PreparedViolation {
+				path: "parents.1.pastDrugs.3.mpid".to_string(),
+				violated: true,
+			},
+		];
+		let mut issues = Vec::<ValidationIssue>::new();
+
+		eval_violations(&mut issues, &items, RULES);
+
+		assert_eq!(issues.len(), 1);
+		assert_eq!(issues[0].code, "ICH.D.8.MPID_PHPID.EXCLUSIVE");
+		assert_eq!(
+			issues[0].field_path.as_deref(),
+			Some("parents.1.pastDrugs.3.mpid")
+		);
 	}
 }
 

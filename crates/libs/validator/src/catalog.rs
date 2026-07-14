@@ -2306,6 +2306,13 @@ pub enum RuleCondition {
 	IchCaseHistoryTrueMissingPriorIds,
 	IchMedicalHistoryMissingD72Text,
 	IchReportTypeIsStudy,
+	IchNullificationCodePresent,
+	IchSenderOrganizationRequired,
+	IchAgeValuePresent,
+	IchAgeUnitPresent,
+	IchGestationValuePresent,
+	IchGestationUnitPresent,
+	IchDateOfDeathPresent,
 	FdaFulfilExpeditedCriteriaTrue,
 	FdaReactionOtherMedicallyImportantTrue,
 	FdaPrimarySourcePresent,
@@ -2350,6 +2357,15 @@ impl RuleCondition {
 				"ich_medical_history_missing_d72_text"
 			}
 			Self::IchReportTypeIsStudy => "ich_report_type_is_study",
+			Self::IchNullificationCodePresent => "ich_nullification_code_present",
+			Self::IchSenderOrganizationRequired => {
+				"ich_sender_organization_required"
+			}
+			Self::IchAgeValuePresent => "ich_age_value_present",
+			Self::IchAgeUnitPresent => "ich_age_unit_present",
+			Self::IchGestationValuePresent => "ich_gestation_value_present",
+			Self::IchGestationUnitPresent => "ich_gestation_unit_present",
+			Self::IchDateOfDeathPresent => "ich_date_of_death_present",
 			Self::FdaFulfilExpeditedCriteriaTrue => {
 				"fda_fulfil_expedited_criteria_true"
 			}
@@ -2425,6 +2441,13 @@ pub struct RuleFacts {
 	pub ich_case_history_true_missing_prior_ids: Option<bool>,
 	pub ich_medical_history_missing_d72_text: Option<bool>,
 	pub ich_report_type_is_study: Option<bool>,
+	pub ich_nullification_code_present: Option<bool>,
+	pub ich_sender_organization_required: Option<bool>,
+	pub ich_age_value_present: Option<bool>,
+	pub ich_age_unit_present: Option<bool>,
+	pub ich_gestation_value_present: Option<bool>,
+	pub ich_gestation_unit_present: Option<bool>,
+	pub ich_date_of_death_present: Option<bool>,
 	pub fda_fulfil_expedited_criteria: Option<bool>,
 	pub fda_reaction_other_medically_important: Option<bool>,
 	pub fda_combination_product_true: Option<bool>,
@@ -2579,7 +2602,7 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 	},
 	ConditionBinding {
 		code: "ICH.C.1.11.2.REQUIRED",
-		condition: RuleCondition::IchDictionaryCondition,
+		condition: RuleCondition::IchNullificationCodePresent,
 	},
 	ConditionBinding {
 		code: "ICH.C.2.r.3.REQUIRED",
@@ -2591,23 +2614,23 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 	},
 	ConditionBinding {
 		code: "ICH.C.3.2.REQUIRED",
-		condition: RuleCondition::IchDictionaryCondition,
+		condition: RuleCondition::IchSenderOrganizationRequired,
 	},
 	ConditionBinding {
 		code: "ICH.D.2.2a.REQUIRED",
-		condition: RuleCondition::IchDictionaryCondition,
+		condition: RuleCondition::IchAgeUnitPresent,
 	},
 	ConditionBinding {
 		code: "ICH.D.2.2b.REQUIRED",
-		condition: RuleCondition::IchDictionaryCondition,
+		condition: RuleCondition::IchAgeValuePresent,
 	},
 	ConditionBinding {
 		code: "ICH.D.2.2.1a.REQUIRED",
-		condition: RuleCondition::IchDictionaryCondition,
+		condition: RuleCondition::IchGestationUnitPresent,
 	},
 	ConditionBinding {
 		code: "ICH.D.2.2.1b.REQUIRED",
-		condition: RuleCondition::IchDictionaryCondition,
+		condition: RuleCondition::IchGestationValuePresent,
 	},
 	ConditionBinding {
 		code: "ICH.D.7.1.r.1a.REQUIRED",
@@ -2651,7 +2674,7 @@ const CONDITION_BINDINGS: &[ConditionBinding] = &[
 	},
 	ConditionBinding {
 		code: "ICH.D.9.3.REQUIRED",
-		condition: RuleCondition::IchDictionaryCondition,
+		condition: RuleCondition::IchDateOfDeathPresent,
 	},
 	ConditionBinding {
 		code: "ICH.D.9.4.r.1a.REQUIRED",
@@ -3169,6 +3192,10 @@ struct ValuePolicyBinding {
 const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 	ValuePolicyBinding {
 		code: "FDA.C.1.12.REQUIRED",
+		policy: ValuePolicy::FdaBooleanStringOrNullFlavor,
+	},
+	ValuePolicyBinding {
+		code: "FDA.C.1.12.RECOMMENDED",
 		policy: ValuePolicy::FdaBooleanStringOrNullFlavor,
 	},
 	ValuePolicyBinding {
@@ -4499,6 +4526,27 @@ pub fn is_rule_condition_satisfied(code: &str, facts: RuleFacts) -> bool {
 		}
 		RuleCondition::IchReportTypeIsStudy => {
 			facts.ich_report_type_is_study.unwrap_or(false)
+		}
+		RuleCondition::IchNullificationCodePresent => {
+			facts.ich_nullification_code_present.unwrap_or(false)
+		}
+		RuleCondition::IchSenderOrganizationRequired => {
+			facts.ich_sender_organization_required.unwrap_or(false)
+		}
+		RuleCondition::IchAgeValuePresent => {
+			facts.ich_age_value_present.unwrap_or(false)
+		}
+		RuleCondition::IchAgeUnitPresent => {
+			facts.ich_age_unit_present.unwrap_or(false)
+		}
+		RuleCondition::IchGestationValuePresent => {
+			facts.ich_gestation_value_present.unwrap_or(false)
+		}
+		RuleCondition::IchGestationUnitPresent => {
+			facts.ich_gestation_unit_present.unwrap_or(false)
+		}
+		RuleCondition::IchDateOfDeathPresent => {
+			facts.ich_date_of_death_present.unwrap_or(false)
 		}
 		RuleCondition::FdaFulfilExpeditedCriteriaTrue => {
 			facts.fda_fulfil_expedited_criteria.unwrap_or(false)
@@ -6354,6 +6402,93 @@ mod tests {
 			None,
 			RuleFacts::default()
 		));
+	}
+
+	#[test]
+	fn conditioned_issue_codes_own_their_value_policy() {
+		for (value, null_flavor) in [
+			(Some("true"), None),
+			(Some("false"), None),
+			(Some("1"), None),
+			(None, Some("NI")),
+			(None, None),
+		] {
+			assert_eq!(
+				is_rule_value_valid(
+					"FDA.C.1.12.RECOMMENDED",
+					value,
+					null_flavor,
+					RuleFacts::default(),
+				),
+				is_rule_value_valid(
+					"FDA.C.1.12.REQUIRED",
+					value,
+					null_flavor,
+					RuleFacts::default(),
+				),
+				"conditioned issue code must own the same policy for value={value:?}, null_flavor={null_flavor:?}",
+			);
+		}
+	}
+
+	#[test]
+	fn ich_companion_conditions_are_catalog_executable() {
+		let cases = [
+			(
+				"ICH.C.1.11.2.REQUIRED",
+				RuleFacts {
+					ich_nullification_code_present: Some(true),
+					..RuleFacts::default()
+				},
+			),
+			(
+				"ICH.C.3.2.REQUIRED",
+				RuleFacts {
+					ich_sender_organization_required: Some(true),
+					..RuleFacts::default()
+				},
+			),
+			(
+				"ICH.D.2.2a.REQUIRED",
+				RuleFacts {
+					ich_age_unit_present: Some(true),
+					..RuleFacts::default()
+				},
+			),
+			(
+				"ICH.D.2.2b.REQUIRED",
+				RuleFacts {
+					ich_age_value_present: Some(true),
+					..RuleFacts::default()
+				},
+			),
+			(
+				"ICH.D.2.2.1a.REQUIRED",
+				RuleFacts {
+					ich_gestation_unit_present: Some(true),
+					..RuleFacts::default()
+				},
+			),
+			(
+				"ICH.D.2.2.1b.REQUIRED",
+				RuleFacts {
+					ich_gestation_value_present: Some(true),
+					..RuleFacts::default()
+				},
+			),
+			(
+				"ICH.D.9.3.REQUIRED",
+				RuleFacts {
+					ich_date_of_death_present: Some(true),
+					..RuleFacts::default()
+				},
+			),
+		];
+
+		for (code, true_facts) in cases {
+			assert!(!is_rule_condition_satisfied(code, RuleFacts::default()));
+			assert!(is_rule_condition_satisfied(code, true_facts));
+		}
 	}
 
 	#[test]

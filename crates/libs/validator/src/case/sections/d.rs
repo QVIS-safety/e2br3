@@ -1,23 +1,23 @@
 use super::rule_table::{
-	eval_companions, eval_conditional_indexed, eval_conditional_value,
-	eval_constraints, eval_derived_length, eval_future_dates,
-	eval_indexed_constraints, eval_indexed_derived_length,
+	eval_catalog_values, eval_companions, eval_conditional_indexed,
+	eval_conditional_value, eval_constraints, eval_derived_length,
+	eval_future_dates, eval_indexed_constraints, eval_indexed_derived_length,
 	eval_indexed_future_dates, eval_indexed_length, eval_indexed_meddra,
 	eval_indexed_vocabulary_variants, eval_length, eval_nested_companions,
 	eval_nested_constraints, eval_nested_future_dates, eval_nested_length,
-	eval_nested_meddra, eval_nested_vocabulary_variants, CompanionRule,
-	ConditionalIndexedRule, ConditionalValueRule, ConstraintRule, DateValues,
-	DerivedLengthRule, FutureDateRule, IndexedConstraintRule,
-	IndexedDerivedLengthRule, IndexedFutureDateRule, IndexedLengthRule,
-	IndexedMeddraRule, IndexedVocabularyVariantRule, LengthRule,
+	eval_nested_meddra, eval_nested_vocabulary_variants, eval_violations,
+	CatalogValueRule, CompanionRule, ConditionalIndexedRule, ConditionalValueRule,
+	ConstraintRule, DateValues, DerivedLengthRule, FutureDateRule,
+	IndexedConstraintRule, IndexedDerivedLengthRule, IndexedFutureDateRule,
+	IndexedLengthRule, IndexedMeddraRule, IndexedVocabularyVariantRule, LengthRule,
 	NestedCompanionRule, NestedConstraintRule, NestedFutureDateRule,
 	NestedLengthRule, NestedMeddraRule, NestedVocabularyVariantRule, RuleValue,
+	ViolationRule,
 };
 use crate::allowed_value::{true_marker_value, ConstraintValue};
 use crate::{
 	has_patient_initials, has_text, is_mfds_domestic_receiver,
-	is_mfds_foreign_postmarket_receiver, push_issue_by_code,
-	push_issue_if_conditioned_value_invalid, should_require_patient_initials,
+	is_mfds_foreign_postmarket_receiver, should_require_patient_initials,
 	FdaValidationContext, MfdsValidationContext, RegulatoryAuthority, RuleFacts,
 	ValidationContext, ValidationIssue,
 };
@@ -841,6 +841,177 @@ fn index_from_sequence(sequence_number: i32, fallback_idx: usize) -> usize {
 		.unwrap_or(fallback_idx)
 }
 
+struct DPatientRegionalRuleView {
+	race_code: Option<String>,
+	ethnicity_code: Option<String>,
+	facts: RuleFacts,
+}
+
+struct DIchPresenceRuleView {
+	path: String,
+	value: Option<String>,
+	facts: RuleFacts,
+}
+
+macro_rules! d_ich_presence_rule {
+	($name:ident, $code:literal) => {
+		const $name: &[CatalogValueRule<DIchPresenceRuleView>] =
+			&[CatalogValueRule {
+				code: $code,
+				path: |item| item.path.clone(),
+				value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+				facts: |item| item.facts,
+			}];
+	};
+}
+
+d_ich_presence_rule!(D_ICH_D1_RULE, "ICH.D.1.REQUIRED");
+d_ich_presence_rule!(D_ICH_D114_RULE, "ICH.D.1.1.4.REQUIRED");
+d_ich_presence_rule!(D_ICH_D22A_RULE, "ICH.D.2.2a.REQUIRED");
+d_ich_presence_rule!(D_ICH_D22B_RULE, "ICH.D.2.2b.REQUIRED");
+d_ich_presence_rule!(D_ICH_D221A_RULE, "ICH.D.2.2.1a.REQUIRED");
+d_ich_presence_rule!(D_ICH_D221B_RULE, "ICH.D.2.2.1b.REQUIRED");
+d_ich_presence_rule!(D_ICH_D93_RULE, "ICH.D.9.3.REQUIRED");
+
+fn eval_d_ich_presence(
+	issues: &mut Vec<ValidationIssue>,
+	path: impl Into<String>,
+	value: Option<String>,
+	facts: RuleFacts,
+	rules: &[CatalogValueRule<DIchPresenceRuleView>],
+) {
+	let view = DIchPresenceRuleView {
+		path: path.into(),
+		value,
+		facts,
+	};
+	eval_catalog_values(issues, std::slice::from_ref(&view), rules);
+}
+
+struct DExclusionRuleView {
+	path: String,
+	mpid_present: bool,
+	phpid_present: bool,
+}
+
+const D_ICH_D8_EXCLUSION_RULES: &[ViolationRule<DExclusionRuleView>] =
+	&[ViolationRule {
+		code: "ICH.D.8.MPID_PHPID.EXCLUSIVE",
+		path: |item| item.path.clone(),
+		violated: |item| item.mpid_present && item.phpid_present,
+	}];
+
+const D_ICH_D108_EXCLUSION_RULES: &[ViolationRule<DExclusionRuleView>] =
+	&[ViolationRule {
+		code: "ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
+		path: |item| item.path.clone(),
+		violated: |item| item.mpid_present && item.phpid_present,
+	}];
+
+const D_FDA_CATALOG_VALUE_RULES: &[CatalogValueRule<DPatientRegionalRuleView>] = &[
+	CatalogValueRule {
+		code: "FDA.D.11.REQUIRED",
+		path: |_| "patientInformation.raceCode".to_string(),
+		value: |item| RuleValue::borrowed(item.race_code.as_deref(), None),
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "FDA.D.12.REQUIRED",
+		path: |_| "patientInformation.ethnicityCode".to_string(),
+		value: |item| RuleValue::borrowed(item.ethnicity_code.as_deref(), None),
+		facts: |item| item.facts,
+	},
+];
+
+struct MfdsPastDrugRuleView {
+	index: usize,
+	medicinal_product_id: Option<String>,
+	medicinal_product_version: Option<String>,
+	facts: RuleFacts,
+}
+
+const D_MFDS_PAST_DRUG_CATALOG_VALUE_RULES: &[CatalogValueRule<
+	MfdsPastDrugRuleView,
+>] = &[
+	CatalogValueRule {
+		code: "MFDS.D.8.r.1.KR.1b.REQUIRED",
+		path: |item| {
+			format!(
+				"patientInformation.pastDrugHistory.{}.mfdsMedicinalProductId",
+				item.index
+			)
+		},
+		value: |item| {
+			RuleValue::borrowed(item.medicinal_product_id.as_deref(), None)
+		},
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "MFDS.D.8.r.1.KR.1a.REQUIRED",
+		path: |item| {
+			format!(
+				"patientInformation.pastDrugHistory.{}.mfdsMedicinalProductVersion",
+				item.index
+			)
+		},
+		value: |item| {
+			RuleValue::borrowed(item.medicinal_product_version.as_deref(), None)
+		},
+		facts: |item| item.facts,
+	},
+];
+
+struct MfdsParentPastDrugRuleView {
+	parent_index: usize,
+	past_drug_index: usize,
+	medicinal_product_id: Option<String>,
+	medicinal_product_version: Option<String>,
+	facts: RuleFacts,
+}
+
+const D_MFDS_PARENT_PAST_DRUG_CATALOG_VALUE_RULES: &[CatalogValueRule<
+	MfdsParentPastDrugRuleView,
+>] = &[
+	CatalogValueRule {
+		code: "MFDS.D.10.8.r.1.KR.1b.REQUIRED",
+		path: |item| {
+			format!(
+				"patientInformation.parents.{}.pastDrugs.{}.mfdsMedicinalProductId",
+				item.parent_index, item.past_drug_index
+			)
+		},
+		value: |item| {
+			RuleValue::borrowed(item.medicinal_product_id.as_deref(), None)
+		},
+		facts: |item| item.facts,
+	},
+	CatalogValueRule {
+		code: "MFDS.D.10.8.r.1.KR.1a.REQUIRED",
+		path: |item| {
+			format!(
+				"patientInformation.parents.{}.pastDrugs.{}.mfdsMedicinalProductVersion",
+				item.parent_index, item.past_drug_index
+			)
+		},
+		value: |item| {
+			RuleValue::borrowed(item.medicinal_product_version.as_deref(), None)
+		},
+		facts: |item| item.facts,
+	},
+];
+
+fn resolve_parent_past_drug_indices(
+	parent_indices: &HashMap<Uuid, usize>,
+	parent_id: Uuid,
+	sequence_number: i32,
+) -> Option<(usize, usize)> {
+	let parent_index = parent_indices.get(&parent_id).copied()?;
+	let past_drug_index = sequence_number
+		.checked_sub(1)
+		.and_then(|value| usize::try_from(value).ok())?;
+	Some((parent_index, past_drug_index))
+}
+
 const D_MEDICAL_HISTORY_MEDDRA_RULES: &[IndexedMeddraRule<MedicalHistoryEpisode>] =
 	&[IndexedMeddraRule {
 		version_allowed_code: "ICH.D.7.1.r.1a.ALLOWED.VALUE",
@@ -1019,44 +1190,38 @@ pub(crate) fn collect_ich_issues(
 		.unwrap_or(false);
 
 	if !report_type_is_study {
-		if validation_ctx.patient.is_none() {
-			push_issue_by_code(
-				issues,
-				"ICH.D.1.REQUIRED",
-				"patientInformation.patientInitials",
-			);
-		}
-
-		if let Some(patient) = validation_ctx.patient.as_ref() {
-			if should_require_patient_initials(patient)
-				&& !has_patient_initials(patient)
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.1.REQUIRED",
-					"patientInformation.patientInitials",
-				);
-			}
-		}
-	}
-
-	if report_type_is_study {
-		let has_study_number = validation_ctx.patient_identifiers.iter().any(|id| {
-			id.identifier_type_code.trim() == "4"
-				&& id
-					.identifier_value
-					.as_deref()
-					.map(|value| !value.trim().is_empty())
-					.unwrap_or(false)
+		let initials_present = validation_ctx.patient.as_ref().and_then(|patient| {
+			(!should_require_patient_initials(patient)
+				|| has_patient_initials(patient))
+			.then(|| "present".to_string())
 		});
-		if !has_study_number {
-			push_issue_by_code(
-				issues,
-				"ICH.D.1.1.4.REQUIRED",
-				"patientInformation.patientStudyNumber",
-			);
-		}
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.patientInitials",
+			initials_present,
+			RuleFacts::default(),
+			D_ICH_D1_RULE,
+		);
 	}
+
+	let has_study_number = validation_ctx.patient_identifiers.iter().any(|id| {
+		id.identifier_type_code.trim() == "4"
+			&& id
+				.identifier_value
+				.as_deref()
+				.map(|value| !value.trim().is_empty())
+				.unwrap_or(false)
+	});
+	eval_d_ich_presence(
+		issues,
+		"patientInformation.patientStudyNumber",
+		has_study_number.then(|| "present".to_string()),
+		RuleFacts {
+			ich_report_type_is_study: Some(report_type_is_study),
+			..RuleFacts::default()
+		},
+		D_ICH_D114_RULE,
+	);
 
 	if let Some(patient) = validation_ctx.patient.as_ref() {
 		if validation_ctx.medical_history.is_empty() {
@@ -1073,37 +1238,49 @@ pub(crate) fn collect_ich_issues(
 		eval_derived_length(issues, patient, D_PATIENT_DERIVED_LENGTH_RULES);
 		let age_value_present = patient.age_at_time_of_onset.is_some();
 		let age_unit_present = has_text(patient.age_unit.as_deref());
-		if age_unit_present && !age_value_present {
-			push_issue_by_code(
-				issues,
-				"ICH.D.2.2a.REQUIRED",
-				"patientInformation.ageAtTimeOfOnset",
-			);
-		}
-		if age_value_present && !age_unit_present {
-			push_issue_by_code(
-				issues,
-				"ICH.D.2.2b.REQUIRED",
-				"patientInformation.ageUnit",
-			);
-		}
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.ageAtTimeOfOnset",
+			decimal_text(patient.age_at_time_of_onset),
+			RuleFacts {
+				ich_age_unit_present: Some(age_unit_present),
+				..RuleFacts::default()
+			},
+			D_ICH_D22A_RULE,
+		);
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.ageUnit",
+			patient.age_unit.clone(),
+			RuleFacts {
+				ich_age_value_present: Some(age_value_present),
+				..RuleFacts::default()
+			},
+			D_ICH_D22B_RULE,
+		);
 		let gestation_value_present = patient.gestation_period.is_some();
 		let gestation_unit_present =
 			has_text(patient.gestation_period_unit.as_deref());
-		if gestation_unit_present && !gestation_value_present {
-			push_issue_by_code(
-				issues,
-				"ICH.D.2.2.1a.REQUIRED",
-				"patientInformation.gestationPeriod",
-			);
-		}
-		if gestation_value_present && !gestation_unit_present {
-			push_issue_by_code(
-				issues,
-				"ICH.D.2.2.1b.REQUIRED",
-				"patientInformation.gestationPeriodUnit",
-			);
-		}
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.gestationPeriod",
+			decimal_text(patient.gestation_period),
+			RuleFacts {
+				ich_gestation_unit_present: Some(gestation_unit_present),
+				..RuleFacts::default()
+			},
+			D_ICH_D221A_RULE,
+		);
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.gestationPeriodUnit",
+			patient.gestation_period_unit.clone(),
+			RuleFacts {
+				ich_gestation_value_present: Some(gestation_value_present),
+				..RuleFacts::default()
+			},
+			D_ICH_D221B_RULE,
+		);
 	}
 
 	eval_indexed_length(
@@ -1163,21 +1340,17 @@ pub(crate) fn collect_ich_issues(
 		&validation_ctx.past_drugs,
 		D_PAST_DRUG_MEDDRA_RULES,
 	);
-	validation_ctx
+	let past_drug_exclusions = validation_ctx
 		.past_drugs
 		.iter()
 		.enumerate()
-		.for_each(|(idx, past_drug)| {
-			if has_text(past_drug.mpid.as_deref())
-				&& has_text(past_drug.phpid.as_deref())
-			{
-				push_issue_by_code(
-					issues,
-					"ICH.D.8.MPID_PHPID.EXCLUSIVE",
-					format!("patientInformation.pastDrugs.{idx}.mpid"),
-				);
-			}
-		});
+		.map(|(idx, past_drug)| DExclusionRuleView {
+			path: format!("patientInformation.pastDrugs.{idx}.mpid"),
+			mpid_present: has_text(past_drug.mpid.as_deref()),
+			phpid_present: has_text(past_drug.phpid.as_deref()),
+		})
+		.collect::<Vec<_>>();
+	eval_violations(issues, &past_drug_exclusions, D_ICH_D8_EXCLUSION_RULES);
 	eval_indexed_future_dates(
 		issues,
 		&validation_ctx.past_drugs,
@@ -1203,15 +1376,16 @@ pub(crate) fn collect_ich_issues(
 
 	if let Some(death_info) = validation_ctx.death_info.as_ref() {
 		eval_future_dates(issues, death_info, D_DEATH_FUTURE_DATE_RULES);
-		if death_info.date_of_death.is_some()
-			&& death_info.autopsy_performed.is_none()
-		{
-			push_issue_by_code(
-				issues,
-				"ICH.D.9.3.REQUIRED",
-				"patientInformation.death.autopsyPerformed",
-			);
-		}
+		eval_d_ich_presence(
+			issues,
+			"patientInformation.death.autopsyPerformed",
+			death_info.autopsy_performed.map(|value| value.to_string()),
+			RuleFacts {
+				ich_date_of_death_present: Some(death_info.date_of_death.is_some()),
+				..RuleFacts::default()
+			},
+			D_ICH_D93_RULE,
+		);
 	}
 
 	eval_companions(
@@ -1344,30 +1518,29 @@ pub(crate) fn collect_ich_issues(
 		D_PARENT_PAST_DRUG_MEDDRA_RULES,
 	);
 	let parent_indices = parent_index_by_id(&validation_ctx.parents);
-	let mut fallback_idx_by_parent = HashMap::<Uuid, usize>::new();
-	validation_ctx
+	let parent_past_drug_exclusions = validation_ctx
 		.parent_past_drugs
 		.iter()
-		.for_each(|past_drug| {
-			let Some(parent_idx) = parent_indices.get(&past_drug.parent_id).copied()
-			else {
-				return;
-			};
-			let fallback_idx = fallback_idx_by_parent
-				.entry(past_drug.parent_id)
-				.or_insert(0);
-			let past_idx =
-				index_from_sequence(past_drug.sequence_number, *fallback_idx);
-			*fallback_idx += 1;
-			if has_text(past_drug.mpid.as_deref())
-				&& has_text(past_drug.phpid.as_deref())
-			{
-				let path = format!(
+		.filter_map(|past_drug| {
+			let (parent_idx, past_idx) = resolve_parent_past_drug_indices(
+				&parent_indices,
+				past_drug.parent_id,
+				past_drug.sequence_number,
+			)?;
+			Some(DExclusionRuleView {
+				path: format!(
 					"patientInformation.parents.{parent_idx}.pastDrugs.{past_idx}.mpid"
-				);
-				push_issue_by_code(issues, "ICH.D.10.8.MPID_PHPID.EXCLUSIVE", path);
-			}
-		});
+				),
+				mpid_present: has_text(past_drug.mpid.as_deref()),
+				phpid_present: has_text(past_drug.phpid.as_deref()),
+			})
+		})
+		.collect::<Vec<_>>();
+	eval_violations(
+		issues,
+		&parent_past_drug_exclusions,
+		D_ICH_D108_EXCLUSION_RULES,
+	);
 }
 
 pub(crate) fn collect_fda_issues(
@@ -1376,33 +1549,18 @@ pub(crate) fn collect_fda_issues(
 ) {
 	if let Some(patient) = validation_ctx.patient.as_ref() {
 		eval_conditional_value(issues, patient, D_PATIENT_FDA_RULES);
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"FDA.D.11.REQUIRED",
-			"FDA.D.11.REQUIRED",
-			"FDA.D.11.REQUIRED",
-			"patientInformation.raceCode",
-			patient.race_code.as_deref(),
-			None,
-			RuleFacts {
+		let view = DPatientRegionalRuleView {
+			race_code: patient.race_code.clone(),
+			ethnicity_code: patient.ethnicity_code.clone(),
+			facts: RuleFacts {
 				fda_patient_payload_present: Some(true),
 				..RuleFacts::default()
 			},
-			RuleFacts::default(),
-		);
-		let _ = push_issue_if_conditioned_value_invalid(
+		};
+		eval_catalog_values(
 			issues,
-			"FDA.D.12.REQUIRED",
-			"FDA.D.12.REQUIRED",
-			"FDA.D.12.REQUIRED",
-			"patientInformation.ethnicityCode",
-			patient.ethnicity_code.as_deref(),
-			None,
-			RuleFacts {
-				fda_patient_payload_present: Some(true),
-				..RuleFacts::default()
-			},
-			RuleFacts::default(),
+			std::slice::from_ref(&view),
+			D_FDA_CATALOG_VALUE_RULES,
 		);
 	}
 }
@@ -1449,104 +1607,73 @@ pub(crate) fn collect_mfds_issues(
 		&validation_ctx.vocabulary,
 	);
 
-	mfds_ctx
+	let past_drug_views = mfds_ctx
 		.past_drugs
 		.iter()
 		.enumerate()
-		.for_each(|(idx, past)| {
+		.map(|(idx, past)| {
 			let has_mfds_medicinal_product_id =
 				has_text(past.mfds_medicinal_product_id.as_deref());
-			let _ = push_issue_if_conditioned_value_invalid(
-				issues,
-				"MFDS.D.8.r.1.KR.1b.REQUIRED",
-				"MFDS.D.8.r.1.KR.1b.REQUIRED",
-				"MFDS.D.8.r.1.KR.1b.REQUIRED",
-				format!(
-					"patientInformation.pastDrugHistory.{idx}.mfdsMedicinalProductId"
-				),
-				past.mfds_medicinal_product_id.as_deref(),
-				None,
-				RuleFacts {
+			MfdsPastDrugRuleView {
+				index: idx,
+				medicinal_product_id: past.mfds_medicinal_product_id.clone(),
+				medicinal_product_version: past
+					.mfds_medicinal_product_version
+					.clone(),
+				facts: RuleFacts {
 					mfds_past_drug_code_required_context: Some(
 						receiver_is_kr || receiver_is_fr,
 					),
-					..RuleFacts::default()
-				},
-				RuleFacts::default(),
-			);
-			let _ = push_issue_if_conditioned_value_invalid(
-				issues,
-				"MFDS.D.8.r.1.KR.1a.REQUIRED",
-				"MFDS.D.8.r.1.KR.1a.REQUIRED",
-				"MFDS.D.8.r.1.KR.1a.REQUIRED",
-				format!(
-					"patientInformation.pastDrugHistory.{idx}.mfdsMedicinalProductVersion"
-				),
-				past.mfds_medicinal_product_version.as_deref(),
-				None,
-				RuleFacts {
 					mfds_past_drug_version_required_context: Some(
 						receiver_is_fr && has_mfds_medicinal_product_id,
 					),
 					..RuleFacts::default()
 				},
-				RuleFacts::default(),
-			);
-		});
+			}
+		})
+		.collect::<Vec<_>>();
+	eval_catalog_values(
+		issues,
+		&past_drug_views,
+		D_MFDS_PAST_DRUG_CATALOG_VALUE_RULES,
+	);
 
-	let mut parent_idx_by_id = std::collections::HashMap::new();
-	let mut next_parent_idx: usize = 0;
-	mfds_ctx.parent_past_drugs.iter().for_each(|past| {
-		let parent_idx =
-			*parent_idx_by_id.entry(past.parent_id).or_insert_with(|| {
-				let idx = next_parent_idx;
-				next_parent_idx += 1;
-				idx
-			});
-		let has_mfds_medicinal_product_id =
-			has_text(past.mfds_medicinal_product_id.as_deref());
-		let past_idx = past
-			.sequence_number
-			.checked_sub(1)
-			.and_then(|v| usize::try_from(v).ok())
-			.unwrap_or(0);
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"MFDS.D.10.8.r.1.KR.1b.REQUIRED",
-			"MFDS.D.10.8.r.1.KR.1b.REQUIRED",
-			"MFDS.D.10.8.r.1.KR.1b.REQUIRED",
-			format!(
-				"patientInformation.parents.{parent_idx}.pastDrugs.{past_idx}.mfdsMedicinalProductId"
-			),
-			past.mfds_medicinal_product_id.as_deref(),
-			None,
-			RuleFacts {
-				mfds_parent_past_drug_code_required_context: Some(
-					receiver_is_kr || receiver_is_fr,
-				),
-				..RuleFacts::default()
-			},
-			RuleFacts::default(),
-		);
-		let _ = push_issue_if_conditioned_value_invalid(
-			issues,
-			"MFDS.D.10.8.r.1.KR.1a.REQUIRED",
-			"MFDS.D.10.8.r.1.KR.1a.REQUIRED",
-			"MFDS.D.10.8.r.1.KR.1a.REQUIRED",
-			format!(
-				"patientInformation.parents.{parent_idx}.pastDrugs.{past_idx}.mfdsMedicinalProductVersion"
-			),
-			past.mfds_medicinal_product_version.as_deref(),
-			None,
-			RuleFacts {
-				mfds_parent_past_drug_version_required_context: Some(
-					receiver_is_fr && has_mfds_medicinal_product_id,
-				),
-				..RuleFacts::default()
-			},
-			RuleFacts::default(),
-		);
-	});
+	let parent_indices = parent_index_by_id(&validation_ctx.parents);
+	let parent_past_drug_views = mfds_ctx
+		.parent_past_drugs
+		.iter()
+		.filter_map(|past| {
+			let (parent_index, past_drug_index) = resolve_parent_past_drug_indices(
+				&parent_indices,
+				past.parent_id,
+				past.sequence_number,
+			)?;
+			let has_mfds_medicinal_product_id =
+				has_text(past.mfds_medicinal_product_id.as_deref());
+			Some(MfdsParentPastDrugRuleView {
+				parent_index,
+				past_drug_index,
+				medicinal_product_id: past.mfds_medicinal_product_id.clone(),
+				medicinal_product_version: past
+					.mfds_medicinal_product_version
+					.clone(),
+				facts: RuleFacts {
+					mfds_parent_past_drug_code_required_context: Some(
+						receiver_is_kr || receiver_is_fr,
+					),
+					mfds_parent_past_drug_version_required_context: Some(
+						receiver_is_fr && has_mfds_medicinal_product_id,
+					),
+					..RuleFacts::default()
+				},
+			})
+		})
+		.collect::<Vec<_>>();
+	eval_catalog_values(
+		issues,
+		&parent_past_drug_views,
+		D_MFDS_PARENT_PAST_DRUG_CATALOG_VALUE_RULES,
+	);
 }
 
 #[cfg(test)]
@@ -1585,6 +1712,234 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 			D_PARENT_PAST_DRUG_MEDDRA_RULES,
 		))
 		.collect()
+}
+
+#[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	macro_rules! add {
+		($rules:expr) => {
+			codes.extend(super::rule_table::table_rule_codes($rules));
+		};
+	}
+	add!(D_MFDS_PAST_DRUG_VOCABULARY_RULES);
+	add!(D_MFDS_PARENT_PAST_DRUG_VOCABULARY_RULES);
+	add!(D_MEDICAL_HISTORY_COMPANIONS);
+	add!(D_PAST_DRUG_COMPANIONS);
+	add!(D_REPORTED_CAUSE_COMPANIONS);
+	add!(D_AUTOPSY_CAUSE_COMPANIONS);
+	add!(D_PARENT_COMPANIONS);
+	add!(D_PARENT_MEDICAL_HISTORY_PARENT_COMPANIONS);
+	add!(D_PARENT_PAST_DRUG_PARENT_COMPANIONS);
+	add!(D_PATIENT_ICH_RULES);
+	add!(D_PATIENT_FDA_RULES);
+	add!(D_PATIENT_FUTURE_DATE_RULES);
+	add!(D_PATIENT_LENGTH_RULES);
+	add!(D_PATIENT_CONSTRAINT_RULES);
+	add!(D_MEDICAL_HISTORY_CONSTRAINT_RULES);
+	add!(D_PATIENT_DERIVED_LENGTH_RULES);
+	add!(D_PATIENT_IDENTIFIER_LENGTH_RULES);
+	add!(D_MEDICAL_HISTORY_FUTURE_DATE_RULES);
+	add!(D_MEDICAL_HISTORY_LENGTH_RULES);
+	add!(D_PAST_DRUG_FUTURE_DATE_RULES);
+	add!(D_PAST_DRUG_LENGTH_RULES);
+	add!(D_PAST_DRUG_CONSTRAINT_RULES);
+	add!(D_DEATH_FUTURE_DATE_RULES);
+	add!(D_REPORTED_CAUSE_LENGTH_RULES);
+	add!(D_AUTOPSY_CAUSE_LENGTH_RULES);
+	add!(D_PARENT_FUTURE_DATE_RULES);
+	add!(D_PARENT_LENGTH_RULES);
+	add!(D_PARENT_CONSTRAINT_RULES);
+	add!(D_PARENT_DERIVED_LENGTH_RULES);
+	add!(D_PARENT_MEDICAL_HISTORY_FUTURE_DATE_RULES);
+	add!(D_PARENT_MEDICAL_HISTORY_LENGTH_RULES);
+	add!(D_PARENT_PAST_DRUG_FUTURE_DATE_RULES);
+	add!(D_PARENT_PAST_DRUG_LENGTH_RULES);
+	add!(D_PARENT_PAST_DRUG_CONSTRAINT_RULES);
+	add!(D_PAST_DRUG_VALUE_RULES);
+	add!(D_FDA_CATALOG_VALUE_RULES);
+	add!(D_MFDS_PAST_DRUG_CATALOG_VALUE_RULES);
+	add!(D_MFDS_PARENT_PAST_DRUG_CATALOG_VALUE_RULES);
+	add!(D_ICH_D1_RULE);
+	add!(D_ICH_D114_RULE);
+	add!(D_ICH_D22A_RULE);
+	add!(D_ICH_D22B_RULE);
+	add!(D_ICH_D221A_RULE);
+	add!(D_ICH_D221B_RULE);
+	add!(D_ICH_D93_RULE);
+	add!(D_ICH_D8_EXCLUSION_RULES);
+	add!(D_ICH_D108_EXCLUSION_RULES);
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		D_MEDICAL_HISTORY_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		D_PAST_DRUG_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		D_REPORTED_CAUSE_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		D_AUTOPSY_CAUSE_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::nested_meddra_rule_codes(
+		D_PARENT_MEDICAL_HISTORY_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::nested_meddra_rule_codes(
+		D_PARENT_PAST_DRUG_MEDDRA_RULES,
+	));
+	codes
+}
+
+#[cfg(test)]
+mod conditioned_catalog_rule_tests {
+	use super::*;
+
+	#[test]
+	fn fda_patient_rules_emit_and_pass_from_catalog() {
+		let mut issues = Vec::new();
+		eval_catalog_values(
+			&mut issues,
+			&[DPatientRegionalRuleView {
+				race_code: None,
+				ethnicity_code: None,
+				facts: RuleFacts {
+					fda_patient_payload_present: Some(true),
+					..RuleFacts::default()
+				},
+			}],
+			D_FDA_CATALOG_VALUE_RULES,
+		);
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| issue.code.as_str())
+				.collect::<Vec<_>>(),
+			["FDA.D.11.REQUIRED", "FDA.D.12.REQUIRED"]
+		);
+
+		issues.clear();
+		eval_catalog_values(
+			&mut issues,
+			&[DPatientRegionalRuleView {
+				race_code: None,
+				ethnicity_code: None,
+				facts: RuleFacts {
+					fda_patient_payload_present: Some(false),
+					..RuleFacts::default()
+				},
+			}],
+			D_FDA_CATALOG_VALUE_RULES,
+		);
+		assert!(issues.is_empty());
+	}
+
+	#[test]
+	fn mfds_past_drug_rules_preserve_concrete_indices() {
+		let rows = [
+			MfdsPastDrugRuleView {
+				index: 2,
+				medicinal_product_id: None,
+				medicinal_product_version: None,
+				facts: RuleFacts {
+					mfds_past_drug_code_required_context: Some(true),
+					mfds_past_drug_version_required_context: Some(false),
+					..RuleFacts::default()
+				},
+			},
+			MfdsPastDrugRuleView {
+				index: 4,
+				medicinal_product_id: Some("product".to_string()),
+				medicinal_product_version: None,
+				facts: RuleFacts {
+					mfds_past_drug_code_required_context: Some(true),
+					mfds_past_drug_version_required_context: Some(true),
+					..RuleFacts::default()
+				},
+			},
+		];
+		let mut issues = Vec::new();
+		eval_catalog_values(
+			&mut issues,
+			&rows,
+			D_MFDS_PAST_DRUG_CATALOG_VALUE_RULES,
+		);
+		assert_eq!(issues.len(), 2);
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| issue.field_path.as_deref().unwrap())
+				.collect::<Vec<_>>(),
+			[
+				"patientInformation.pastDrugHistory.2.mfdsMedicinalProductId",
+				"patientInformation.pastDrugHistory.4.mfdsMedicinalProductVersion",
+			]
+		);
+	}
+
+	#[test]
+	fn mfds_parent_past_drug_rules_preserve_parent_and_child_indices() {
+		let rows = [
+			MfdsParentPastDrugRuleView {
+				parent_index: 1,
+				past_drug_index: 2,
+				medicinal_product_id: None,
+				medicinal_product_version: None,
+				facts: RuleFacts {
+					mfds_parent_past_drug_code_required_context: Some(true),
+					mfds_parent_past_drug_version_required_context: Some(false),
+					..RuleFacts::default()
+				},
+			},
+			MfdsParentPastDrugRuleView {
+				parent_index: 3,
+				past_drug_index: 4,
+				medicinal_product_id: Some("product".to_string()),
+				medicinal_product_version: None,
+				facts: RuleFacts {
+					mfds_parent_past_drug_code_required_context: Some(true),
+					mfds_parent_past_drug_version_required_context: Some(true),
+					..RuleFacts::default()
+				},
+			},
+		];
+		let mut issues = Vec::new();
+		eval_catalog_values(
+			&mut issues,
+			&rows,
+			D_MFDS_PARENT_PAST_DRUG_CATALOG_VALUE_RULES,
+		);
+		assert_eq!(issues.len(), 2);
+		assert_eq!(
+			issues
+				.iter()
+				.map(|issue| issue.field_path.as_deref().unwrap())
+				.collect::<Vec<_>>(),
+			[
+				"patientInformation.parents.1.pastDrugs.2.mfdsMedicinalProductId",
+				"patientInformation.parents.3.pastDrugs.4.mfdsMedicinalProductVersion",
+			]
+		);
+	}
+
+	#[test]
+	fn parent_past_drug_indices_have_no_owner_or_sequence_fallback() {
+		let known_parent = Uuid::new_v4();
+		let unknown_parent = Uuid::new_v4();
+		let parent_indices = HashMap::from([(known_parent, 3)]);
+
+		assert_eq!(
+			resolve_parent_past_drug_indices(&parent_indices, known_parent, 5),
+			Some((3, 4))
+		);
+		assert_eq!(
+			resolve_parent_past_drug_indices(&parent_indices, unknown_parent, 5),
+			None
+		);
+		assert_eq!(
+			resolve_parent_past_drug_indices(&parent_indices, known_parent, 0),
+			None
+		);
+	}
 }
 
 #[cfg(test)]

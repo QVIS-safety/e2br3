@@ -1,13 +1,24 @@
 use super::rule_table::{
-	e2b_datetime_date, eval_constraints, eval_future_dates, eval_length, eval_value,
-	ConstraintRule, DateValues, FutureDateRule, LengthRule, RuleValue, ValueRule,
+	e2b_datetime_date, eval_catalog_values, eval_constraints, eval_future_dates,
+	eval_length, eval_value, CatalogValueRule, ConstraintRule, DateValues,
+	FutureDateRule, LengthRule, RuleValue, ValueRule,
 };
 use crate::allowed_value::ConstraintValue;
-use crate::{
-	push_issue_by_code, RegulatoryAuthority, ValidationContext, ValidationIssue,
-};
+use crate::{RegulatoryAuthority, RuleFacts, ValidationContext, ValidationIssue};
 use lib_core::model::message_header::MessageHeader;
 use std::borrow::Cow;
+
+struct NHeaderPresenceView {
+	value: Option<String>,
+}
+
+const N_HEADER_PRESENCE_RULES: &[CatalogValueRule<NHeaderPresenceView>] =
+	&[CatalogValueRule {
+		code: "ICH.N.REQUIRED",
+		path: |_| "messageHeader".to_string(),
+		value: |item| RuleValue::borrowed(item.value.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	}];
 
 fn message_type_code(header: &MessageHeader) -> Option<&str> {
 	Some(if header.message_type == "ichicsr" {
@@ -179,9 +190,17 @@ pub(crate) fn collect_ich_issues(
 	validation_ctx: &ValidationContext,
 	issues: &mut Vec<ValidationIssue>,
 ) {
-	if validation_ctx.message_header.is_none() {
-		push_issue_by_code(issues, "ICH.N.REQUIRED", "messageHeader");
-	}
+	let header_presence = NHeaderPresenceView {
+		value: validation_ctx
+			.message_header
+			.as_ref()
+			.map(|_| "present".to_string()),
+	};
+	eval_catalog_values(
+		issues,
+		std::slice::from_ref(&header_presence),
+		N_HEADER_PRESENCE_RULES,
+	);
 	if let Some(header) = validation_ctx.message_header.as_ref() {
 		eval_value(issues, header, N_VALUE_RULES);
 		eval_constraints(
@@ -198,6 +217,17 @@ pub(crate) fn collect_ich_issues(
 #[cfg(test)]
 pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 	N_CONSTRAINT_RULES.iter().map(|rule| rule.code).collect()
+}
+
+#[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	codes.extend(super::rule_table::table_rule_codes(N_VALUE_RULES));
+	codes.extend(super::rule_table::table_rule_codes(N_FUTURE_DATE_RULES));
+	codes.extend(super::rule_table::table_rule_codes(N_CONSTRAINT_RULES));
+	codes.extend(super::rule_table::table_rule_codes(N_LENGTH_RULES));
+	codes.extend(super::rule_table::table_rule_codes(N_HEADER_PRESENCE_RULES));
+	codes
 }
 
 #[cfg(test)]

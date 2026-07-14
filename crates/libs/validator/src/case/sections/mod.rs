@@ -32,6 +32,27 @@ pub(crate) fn implemented_allowed_value_rule_codes() -> BTreeSet<&'static str> {
 	.collect()
 }
 
+#[cfg(test)]
+pub(crate) fn implemented_table_rule_codes() -> BTreeSet<&'static str> {
+	[
+		c::table_rule_codes(),
+		d::table_rule_codes(),
+		e::table_rule_codes(),
+		f::table_rule_codes(),
+		g::table_rule_codes(),
+		h::table_rule_codes(),
+		n::table_rule_codes(),
+	]
+	.into_iter()
+	.flatten()
+	.collect()
+}
+
+#[cfg(test)]
+pub(crate) fn implemented_case_rule_codes() -> BTreeSet<&'static str> {
+	implemented_table_rule_codes()
+}
+
 pub(crate) async fn collect_section_issues(
 	ctx: &Ctx,
 	authority: RegulatoryAuthority,
@@ -155,7 +176,7 @@ pub(crate) fn resolve_validation_subsection(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::{canonical_rules_for_phase, find_canonical_rule, ValidationPhase};
+	use crate::{canonical_rules_for_phase, ValidationPhase};
 	use std::collections::BTreeSet;
 
 	#[test]
@@ -166,6 +187,49 @@ mod tests {
 		assert!(codes.contains("ICH.G.k.9.i.4.ALLOWED.VALUE"));
 		assert!(codes.contains("ICH.E.i.3.2f.ALLOWED.VALUE"));
 		assert!(codes.is_disjoint(&crate::representation_enforced_rule_codes()));
+	}
+
+	#[test]
+	fn implemented_case_registry_is_backed_by_executed_tables() {
+		let codes = implemented_case_rule_codes();
+		assert!(codes.contains("ICH.C.1.3.ALLOWED.VALUE"));
+		assert!(codes.contains("ICH.C.1.4.AFTER_C.1.2.FORBIDDEN"));
+		assert!(codes.contains("ICH.D.10.8.MPID_PHPID.EXCLUSIVE"));
+		assert!(codes.contains("ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN"));
+	}
+
+	#[test]
+	fn case_catalog_is_fully_evaluator_backed() {
+		let table = implemented_table_rule_codes();
+		assert_eq!(table.len(), 461);
+	}
+
+	#[test]
+	fn implemented_case_registry_matches_case_validate_catalog() {
+		let expected = canonical_rules_for_phase(ValidationPhase::CaseValidate)
+			.into_iter()
+			.filter(|rule| {
+				["C", "D", "E", "F", "G", "H", "N"].iter().any(|section| {
+					["ICH", "FDA", "MFDS"].iter().any(|authority| {
+						rule.code.starts_with(&format!("{authority}.{section}."))
+					})
+				}) || rule.code.starts_with("MFDS.KR.")
+			})
+			.map(|rule| rule.code.to_string())
+			.collect::<BTreeSet<_>>();
+		let actual = implemented_case_rule_codes()
+			.into_iter()
+			.map(str::to_string)
+			.collect::<BTreeSet<_>>();
+		let missing = expected.difference(&actual).collect::<Vec<_>>();
+		let unexpected = actual.difference(&expected).collect::<Vec<_>>();
+		assert_eq!(expected.len(), 461);
+		assert!(
+			missing.is_empty() && unexpected.is_empty(),
+			"missing ({missing_len}): {missing:#?}\nunexpected ({unexpected_len}): {unexpected:#?}",
+			missing_len = missing.len(),
+			unexpected_len = unexpected.len(),
+		);
 	}
 
 	#[test]
@@ -216,62 +280,6 @@ mod tests {
 			.into_iter()
 			.collect()
 		);
-	}
-
-	fn source_rule_codes(source: &str, section_letter: char) -> BTreeSet<String> {
-		let prefixes = [
-			format!("ICH.{section_letter}."),
-			format!("FDA.{section_letter}."),
-			format!("MFDS.{section_letter}."),
-		];
-		source
-			.split('"')
-			.filter(|segment| {
-				prefixes.iter().any(|prefix| segment.starts_with(prefix))
-					&& find_canonical_rule(segment).is_some()
-			})
-			.map(str::to_string)
-			.collect()
-	}
-
-	fn expected_case_rule_codes(section_letter: char) -> BTreeSet<String> {
-		let prefixes = [
-			format!("ICH.{section_letter}."),
-			format!("FDA.{section_letter}."),
-			format!("MFDS.{section_letter}."),
-		];
-		canonical_rules_for_phase(ValidationPhase::CaseValidate)
-			.into_iter()
-			.filter(|rule| {
-				prefixes.iter().any(|prefix| rule.code.starts_with(prefix))
-			})
-			.map(|rule| rule.code.to_string())
-			.collect()
-	}
-
-	#[test]
-	fn case_section_sources_cover_catalog_codes_in_canonical_sections() {
-		let actual = [
-			source_rule_codes(include_str!("c.rs"), 'C'),
-			source_rule_codes(include_str!("d.rs"), 'D'),
-			source_rule_codes(include_str!("e.rs"), 'E'),
-			source_rule_codes(include_str!("f.rs"), 'F'),
-			source_rule_codes(include_str!("g.rs"), 'G'),
-			source_rule_codes(include_str!("h.rs"), 'H'),
-			source_rule_codes(include_str!("n.rs"), 'N'),
-		];
-		let expected = [
-			expected_case_rule_codes('C'),
-			expected_case_rule_codes('D'),
-			expected_case_rule_codes('E'),
-			expected_case_rule_codes('F'),
-			expected_case_rule_codes('G'),
-			expected_case_rule_codes('H'),
-			expected_case_rule_codes('N'),
-		];
-		for (actual, expected) in actual.into_iter().zip(expected) {
-			assert_eq!(actual, expected);
-		}
 	}
 
 	#[test]

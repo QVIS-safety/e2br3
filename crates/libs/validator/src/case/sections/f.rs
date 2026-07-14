@@ -244,6 +244,20 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 }
 
 #[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	codes.extend(super::rule_table::table_rule_codes(F_INDEXED_RULES));
+	codes.extend(super::rule_table::table_rule_codes(F_FUTURE_DATE_RULES));
+	codes.extend(super::rule_table::table_rule_codes(F_CONSTRAINT_RULES));
+	codes.extend(super::rule_table::table_rule_codes(F_LENGTH_RULES));
+	codes.extend(super::rule_table::table_rule_codes(F_COMPANION_RULES));
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		F_TEST_MEDDRA_RULES,
+	));
+	codes
+}
+
+#[cfg(test)]
 mod golden_f_required_tests {
 	use super::*;
 	use lib_core::model::case::Case;
