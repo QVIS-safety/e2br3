@@ -6,7 +6,7 @@ Unify every presave logical and physical deletion path behind one lifecycle boun
 
 ## Scope
 
-This change covers Sender, Receiver, Product, Study, Reporter, and Narrative presaves. It consolidates deletion guards, converts in-memory relationship scans to SQL `EXISTS`, and makes guard evaluation plus mutation atomic. It does not normalize the existing user scope JSON/string columns into relationship tables.
+This change covers Sender, Receiver, Product, Study, Reporter, and Narrative presaves. It consolidates deletion guards, converts in-memory relationship scans to SQL `EXISTS`, and makes guard evaluation plus mutation atomic. It does not normalize the existing user scope JSON/string columns into relationship tables. Presave scope values become UUID-only; legacy display-name values are intentionally invalidated without migration.
 
 ## Current Problem
 
@@ -57,10 +57,10 @@ Each presave kind has an explicit dependency specification:
 
 | Kind | Case reference | Presave reference | User assignment |
 |---|---|---|---|
-| Sender | `sender_information.source_sender_presave_id` | active `product_presaves.sender_presave_id` | `access_sender_ids` |
+| Sender | `sender_information.source_sender_presave_id` | active `product_presaves.sender_presave_id` | UUID in `access_sender_ids` |
 | Receiver | none | active Product receiver link | none |
-| Product | `drug_information.source_product_presave_id` | active Study parent or Study product child link | `access_product_ids` |
-| Study | `study_information.source_study_presave_id` | none | `access_study_ids` |
+| Product | `drug_information.source_product_presave_id` | active Study parent or Study product child link | UUID in `access_product_ids` |
+| Study | `study_information.source_study_presave_id` | none | UUID in `access_study_ids` |
 | Reporter | `primary_sources.source_reporter_presave_id` | active Study reporter child link | none |
 | Narrative | `narrative_information.source_narrative_presave_id` | none | none |
 
@@ -69,6 +69,8 @@ The Product-to-Study guard covers both `study_presaves.product_presave_id` and a
 Receiver compatibility checks use `product_presaves.receiver_presave_id = receiver.id`. For legacy products whose UUID link is null only, the guard also compares normalized `original_manufacturer` with the receiver organization name. A populated, different UUID is never overridden by the legacy name fallback.
 
 All case queries include organization isolation. Presave-to-presave queries rely on UUID references and organization-aware RLS/context, with explicit organization predicates where the child table provides the organization column through its parent.
+
+User assignment checks compare only the canonical lowercase UUID string for the presave ID. Sender organization names, Product brand names, and Study sponsor study numbers are no longer valid scope identifiers. Existing non-UUID values in `access_sender_ids`, `access_product_ids`, and `access_study_ids` are not converted, do not match any presave, and are ignored. New scope writes must reject non-UUID values.
 
 ## Transaction and Concurrency
 
@@ -118,13 +120,15 @@ For each presave kind:
 - A direct BMC physical delete cannot bypass the lifecycle guard.
 - Conflict status and message remain stable.
 
-Relationship-specific tests cover Sender-to-Product, Receiver-to-Product UUID, Receiver legacy null-UUID fallback, Product-to-Study parent and child links, Reporter-to-Study reporter links, and active user assignments. A concurrency test holds a lifecycle target lock while attempting reference creation and verifies that only one valid final state can commit.
+Relationship-specific tests cover Sender-to-Product, Receiver-to-Product UUID, Receiver legacy null-UUID fallback, Product-to-Study parent and child links, Reporter-to-Study reporter links, and active UUID user assignments. Scope tests verify that legacy display-name values no longer grant access or block deletion and that new non-UUID scope writes are rejected. A concurrency test holds a lifecycle target lock while attempting reference creation and verifies that only one valid final state can commit.
 
 Regression verification includes the complete `section_presave` model suite, presave REST authorization tests, formatting, and compilation.
 
 ## Migration and Compatibility
 
 No data migration is required. Existing endpoints and successful response shapes remain unchanged. Conflict behavior becomes stricter only for paths that previously bypassed an established delete guard.
+
+UUID-only scope enforcement is an intentional compatibility break. Existing display-name entries remain stored but are immediately ineffective; the system neither resolves nor migrates them. Administrators must reassign affected scopes using presave UUIDs when access is still required.
 
 The Receiver name fallback remains temporarily for legacy data but is narrowed to Product rows with no UUID receiver link. Its eventual removal requires a separate data backfill and is outside this scope.
 
