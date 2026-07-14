@@ -1477,6 +1477,70 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 }
 
 #[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	macro_rules! add {
+		($rules:expr) => {
+			codes.extend(super::rule_table::table_rule_codes($rules));
+		};
+	}
+	add!(G_MFDS_PRODUCT_VOCABULARY_RULES);
+	add!(G_DRUG_VALUE_RULES);
+	add!(G_DRUG_LENGTH_RULES);
+	add!(G_DRUG_DERIVED_LENGTH_RULES);
+	add!(G_DRUG_CONSTRAINT_RULES);
+	add!(G_DRUG_COMPANION_RULES);
+	add!(G_ACTIVE_SUBSTANCE_LENGTH_RULES);
+	add!(G_ACTIVE_SUBSTANCE_CONSTRAINT_RULES);
+	add!(G_ACTIVE_SUBSTANCE_DERIVED_LENGTH_RULES);
+	add!(G_ACTIVE_SUBSTANCE_COMPANION_RULES);
+	add!(G_DOSAGE_LENGTH_RULES);
+	add!(G_DOSAGE_DERIVED_LENGTH_RULES);
+	add!(G_DOSAGE_COMPANION_RULES);
+	add!(G_DOSAGE_FUTURE_DATE_RULES);
+	add!(G_INDICATION_LENGTH_RULES);
+	add!(G_INDICATION_COMPANION_RULES);
+	add!(G_REACTION_ASSESSMENT_LENGTH_RULES);
+	add!(G_REACTION_ASSESSMENT_DERIVED_LENGTH_RULES);
+	add!(G_RELATEDNESS_ASSESSMENT_LENGTH_RULES);
+	add!(G_REACTION_ASSESSMENT_CONSTRAINT_RULES);
+	add!(G_REACTION_ASSESSMENT_COMPANION_RULES);
+	codes.extend(super::rule_table::nested_meddra_rule_codes(
+		G_INDICATION_MEDDRA_RULES,
+	));
+	codes
+}
+
+#[cfg(test)]
+pub(super) fn direct_rule_codes() -> &'static [&'static str] {
+	&[
+		"FDA.G.K.1.A.CONDITIONAL",
+		"FDA.G.K.12.R.11.REQUIRED",
+		"FDA.G.K.12.R.3.REQUIRED",
+		"FDA.G.K.12.REQUIRED",
+		"FDA.G.k.1.a.REQUIRED",
+		"FDA.G.k.12.r.1.REQUIRED",
+		"FDA.G.k.12.r.11.r.REQUIRED",
+		"FDA.G.k.12.r.3.r.REQUIRED",
+		"FDA.G.k.12.r.4.REQUIRED",
+		"FDA.G.k.12.r.5.REQUIRED",
+		"FDA.G.k.12.r.6.REQUIRED",
+		"ICH.G.k.4.r.4-5.FUTURE_DATE.FORBIDDEN",
+		"MFDS.G.k.2.1.KR.1a.REQUIRED",
+		"MFDS.G.k.2.1.KR.1b.REQUIRED",
+		"MFDS.G.k.2.3.r.1.KR.1a.REQUIRED",
+		"MFDS.G.k.2.3.r.1.KR.1b.REQUIRED",
+		"MFDS.G.k.9.i.2.r.1.REQUIRED",
+		"MFDS.G.k.9.i.2.r.2.KR.1.REQUIRED",
+		"MFDS.G.k.9.i.2.r.3.KR.1.REQUIRED",
+		"MFDS.G.k.9.i.2.r.3.KR.2.REQUIRED",
+		"MFDS.KR.DOMESTIC.INGREDIENTCODE.REQUIRED",
+		"MFDS.KR.DOMESTIC.PRODUCTCODE.REQUIRED",
+		"MFDS.KR.FOREIGN.WHOMPID.REQUIRED",
+	]
+}
+
+#[cfg(test)]
 mod golden_g_required_tests {
 	use super::*;
 	use lib_core::model::case::Case;

@@ -487,6 +487,38 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 }
 
 #[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	codes.extend(super::rule_table::table_rule_codes(E_REACTION_VALUE_RULES));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_REACTION_FUTURE_DATE_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_REACTION_CONSTRAINT_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(E_REACTION_LENGTH_RULES));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_REACTION_DERIVED_LENGTH_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		E_REACTION_COMPANION_RULES,
+	));
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		E_REACTION_MEDDRA_RULES,
+	));
+	codes
+}
+
+#[cfg(test)]
+pub(super) fn direct_rule_codes() -> &'static [&'static str] {
+	&[
+		"FDA.E.i.3.2h.REQUIRED",
+		"ICH.E.i.3.2.CRITERIA.REQUIRED",
+		"ICH.E.i.3.2.NI.ONLY",
+	]
+}
+
+#[cfg(test)]
 mod tests {
 	use super::*;
 	use lib_core::model::case::Case;

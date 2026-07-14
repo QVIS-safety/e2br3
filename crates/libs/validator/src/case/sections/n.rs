@@ -201,6 +201,21 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 }
 
 #[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	codes.extend(super::rule_table::table_rule_codes(N_VALUE_RULES));
+	codes.extend(super::rule_table::table_rule_codes(N_FUTURE_DATE_RULES));
+	codes.extend(super::rule_table::table_rule_codes(N_CONSTRAINT_RULES));
+	codes.extend(super::rule_table::table_rule_codes(N_LENGTH_RULES));
+	codes
+}
+
+#[cfg(test)]
+pub(super) fn direct_rule_codes() -> &'static [&'static str] {
+	&["ICH.N.REQUIRED"]
+}
+
+#[cfg(test)]
 mod tests {
 	use super::*;
 	use lib_core::model::case::Case;

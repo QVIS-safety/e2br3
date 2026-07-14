@@ -1588,6 +1588,91 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 }
 
 #[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	macro_rules! add {
+		($rules:expr) => {
+			codes.extend(super::rule_table::table_rule_codes($rules));
+		};
+	}
+	add!(D_MFDS_PAST_DRUG_VOCABULARY_RULES);
+	add!(D_MFDS_PARENT_PAST_DRUG_VOCABULARY_RULES);
+	add!(D_MEDICAL_HISTORY_COMPANIONS);
+	add!(D_PAST_DRUG_COMPANIONS);
+	add!(D_REPORTED_CAUSE_COMPANIONS);
+	add!(D_AUTOPSY_CAUSE_COMPANIONS);
+	add!(D_PARENT_COMPANIONS);
+	add!(D_PARENT_MEDICAL_HISTORY_PARENT_COMPANIONS);
+	add!(D_PARENT_PAST_DRUG_PARENT_COMPANIONS);
+	add!(D_PATIENT_ICH_RULES);
+	add!(D_PATIENT_FDA_RULES);
+	add!(D_PATIENT_FUTURE_DATE_RULES);
+	add!(D_PATIENT_LENGTH_RULES);
+	add!(D_PATIENT_CONSTRAINT_RULES);
+	add!(D_MEDICAL_HISTORY_CONSTRAINT_RULES);
+	add!(D_PATIENT_DERIVED_LENGTH_RULES);
+	add!(D_PATIENT_IDENTIFIER_LENGTH_RULES);
+	add!(D_MEDICAL_HISTORY_FUTURE_DATE_RULES);
+	add!(D_MEDICAL_HISTORY_LENGTH_RULES);
+	add!(D_PAST_DRUG_FUTURE_DATE_RULES);
+	add!(D_PAST_DRUG_LENGTH_RULES);
+	add!(D_PAST_DRUG_CONSTRAINT_RULES);
+	add!(D_DEATH_FUTURE_DATE_RULES);
+	add!(D_REPORTED_CAUSE_LENGTH_RULES);
+	add!(D_AUTOPSY_CAUSE_LENGTH_RULES);
+	add!(D_PARENT_FUTURE_DATE_RULES);
+	add!(D_PARENT_LENGTH_RULES);
+	add!(D_PARENT_CONSTRAINT_RULES);
+	add!(D_PARENT_DERIVED_LENGTH_RULES);
+	add!(D_PARENT_MEDICAL_HISTORY_FUTURE_DATE_RULES);
+	add!(D_PARENT_MEDICAL_HISTORY_LENGTH_RULES);
+	add!(D_PARENT_PAST_DRUG_FUTURE_DATE_RULES);
+	add!(D_PARENT_PAST_DRUG_LENGTH_RULES);
+	add!(D_PARENT_PAST_DRUG_CONSTRAINT_RULES);
+	add!(D_PAST_DRUG_VALUE_RULES);
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		D_MEDICAL_HISTORY_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		D_PAST_DRUG_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		D_REPORTED_CAUSE_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		D_AUTOPSY_CAUSE_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::nested_meddra_rule_codes(
+		D_PARENT_MEDICAL_HISTORY_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::nested_meddra_rule_codes(
+		D_PARENT_PAST_DRUG_MEDDRA_RULES,
+	));
+	codes
+}
+
+#[cfg(test)]
+pub(super) fn direct_rule_codes() -> &'static [&'static str] {
+	&[
+		"FDA.D.11.REQUIRED",
+		"FDA.D.12.REQUIRED",
+		"ICH.D.1.1.4.REQUIRED",
+		"ICH.D.1.REQUIRED",
+		"ICH.D.2.2.1a.REQUIRED",
+		"ICH.D.2.2.1b.REQUIRED",
+		"ICH.D.2.2a.REQUIRED",
+		"ICH.D.2.2b.REQUIRED",
+		"ICH.D.8.MPID_PHPID.EXCLUSIVE",
+		"ICH.D.9.3.REQUIRED",
+		"ICH.D.10.8.MPID_PHPID.EXCLUSIVE",
+		"MFDS.D.10.8.r.1.KR.1a.REQUIRED",
+		"MFDS.D.10.8.r.1.KR.1b.REQUIRED",
+		"MFDS.D.8.r.1.KR.1a.REQUIRED",
+		"MFDS.D.8.r.1.KR.1b.REQUIRED",
+	]
+}
+
+#[cfg(test)]
 mod golden_companion_tests {
 	//! Characterization tests for the MedDRA code⇔version companion rules in
 	//! `collect_ich_issues` (D.7.1.r.1a / D.7.1.r.1b on medical history). They

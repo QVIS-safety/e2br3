@@ -25,6 +25,29 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+#[cfg(test)]
+pub(crate) trait HasRuleCode {
+	fn rule_code(&self) -> &'static str;
+}
+
+#[cfg(test)]
+pub(crate) fn table_rule_codes<T: HasRuleCode>(
+	rules: &[T],
+) -> impl Iterator<Item = &'static str> + '_ {
+	rules.iter().map(HasRuleCode::rule_code)
+}
+
+#[cfg(test)]
+macro_rules! impl_has_rule_code {
+	($($rule:ident),+ $(,)?) => {
+		$(impl<T> HasRuleCode for $rule<T> {
+			fn rule_code(&self) -> &'static str {
+				self.code
+			}
+		})+
+	};
+}
+
 /// A value pulled from a model plus its optional nullFlavor. `Cow` lets string
 /// fields borrow directly while computed values (e.g. a date `to_string()`)
 /// carry an owned string — sidestepping the temporary-`&str` lifetime problem.
@@ -972,6 +995,60 @@ pub(crate) struct GrandchildLengthRule<T> {
 	pub code: &'static str,
 	pub path: fn(usize, usize, usize) -> String,
 	pub value: for<'a> fn(&'a T) -> Option<&'a str>,
+}
+
+#[cfg(test)]
+impl_has_rule_code!(
+	ConstraintRule,
+	IndexedConstraintRule,
+	NestedConstraintRule,
+	GrandchildConstraintRule,
+	IndexedVocabularyVariantRule,
+	NestedVocabularyVariantRule,
+	ValueRule,
+	ConditionalValueRule,
+	FutureDateRule,
+	LengthRule,
+	IndexedLengthRule,
+	DerivedLengthRule,
+	IndexedDerivedLengthRule,
+	NestedDerivedLengthRule,
+	IndexedRule,
+	ConditionalIndexedRule,
+	IndexedFutureDateRule,
+	CompanionRule,
+	NestedCompanionRule,
+	NestedFutureDateRule,
+	NestedLengthRule,
+	GrandchildLengthRule,
+);
+
+#[cfg(test)]
+pub(crate) fn indexed_meddra_rule_codes<T>(
+	rules: &[IndexedMeddraRule<T>],
+) -> impl Iterator<Item = &'static str> + '_ {
+	rules.iter().flat_map(|rule| {
+		[
+			rule.version_allowed_code,
+			rule.code_allowed_code,
+			rule.version_code,
+			rule.code_code,
+		]
+	})
+}
+
+#[cfg(test)]
+pub(crate) fn nested_meddra_rule_codes<T>(
+	rules: &[NestedMeddraRule<T>],
+) -> impl Iterator<Item = &'static str> + '_ {
+	rules.iter().flat_map(|rule| {
+		[
+			rule.version_allowed_code,
+			rule.code_allowed_code,
+			rule.version_code,
+			rule.code_code,
+		]
+	})
 }
 
 pub(crate) fn eval_grandchild_length<G, P, T, GK, PK>(

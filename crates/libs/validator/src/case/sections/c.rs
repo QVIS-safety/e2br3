@@ -1262,6 +1262,68 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 }
 
 #[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	macro_rules! add {
+		($rules:expr) => {
+			codes.extend(super::rule_table::table_rule_codes($rules));
+		};
+	}
+	add!(C_VALUE_RULES);
+	add!(C_FUTURE_DATE_RULES);
+	add!(C_CONSTRAINT_RULES);
+	add!(C_LENGTH_RULES);
+	add!(C_PRIMARY_SOURCE_ICH_RULES);
+	add!(C_PRIMARY_SOURCE_FDA_RULES);
+	add!(C_PRIMARY_SOURCE_LENGTH_RULES);
+	add!(C_PRIMARY_SOURCE_CONSTRAINT_RULES);
+	add!(C_SENDER_CONSTRAINT_RULES);
+	add!(C_SENDER_LENGTH_RULES);
+	add!(C_DOCUMENT_RULES);
+	add!(C_DOCUMENT_LENGTH_RULES);
+	add!(C_DOCUMENT_CONSTRAINT_RULES);
+	add!(C_OTHER_IDENTIFIER_RULES);
+	add!(C_OTHER_IDENTIFIER_LENGTH_RULES);
+	add!(C_OTHER_IDENTIFIER_CONSTRAINT_RULES);
+	add!(C_LINKED_REPORT_LENGTH_RULES);
+	add!(C_STUDY_RULES);
+	add!(C_STUDY_LENGTH_RULES);
+	add!(C_STUDY_CONSTRAINT_RULES);
+	add!(C_LITERATURE_LENGTH_RULES);
+	add!(C_LITERATURE_CONSTRAINT_RULES);
+	add!(C_STUDY_REGISTRATION_LENGTH_RULES);
+	add!(C_STUDY_REGISTRATION_CONSTRAINT_RULES);
+	codes
+}
+
+#[cfg(test)]
+pub(super) fn direct_rule_codes() -> &'static [&'static str] {
+	&[
+		"FDA.C.1.12.RECOMMENDED",
+		"FDA.C.1.12.REQUIRED",
+		"FDA.C.1.7.1.REQUIRED",
+		"FDA.C.2.r.2.EMAIL.REQUIRED",
+		"FDA.C.5.5a.REQUIRED",
+		"FDA.C.5.5b.REQUIRED",
+		"FDA.C.5.6.r.REQUIRED",
+		"ICH.C.1.1.REQUIRED",
+		"ICH.C.1.11.2.REQUIRED",
+		"ICH.C.1.4.AFTER_C.1.2.FORBIDDEN",
+		"ICH.C.1.4.AFTER_C.1.5.FORBIDDEN",
+		"ICH.C.1.5.AFTER_C.1.2.FORBIDDEN",
+		"ICH.C.1.REQUIRED",
+		"ICH.C.2.r.2.1.REQUIRED",
+		"ICH.C.2.r.4.REQUIRED",
+		"ICH.C.2.r.5.REQUIRED",
+		"ICH.C.3.1.REQUIRED",
+		"ICH.C.3.2.REQUIRED",
+		"MFDS.C.2.r.4.KR.1.REQUIRED",
+		"MFDS.C.3.1.KR.1.REQUIRED",
+		"MFDS.C.5.4.KR.1.REQUIRED",
+	]
+}
+
+#[cfg(test)]
 mod golden_c1_value_tests {
 	//! Characterization tests for the one-to-one presence/value rules inside
 	//! `collect_ich_issues` (C.1.2 / C.1.3 / C.1.4 / C.1.5 / C.1.7).

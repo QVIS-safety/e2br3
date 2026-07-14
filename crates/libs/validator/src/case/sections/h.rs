@@ -194,6 +194,38 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 }
 
 #[cfg(test)]
+pub(super) fn table_rule_codes() -> Vec<&'static str> {
+	let mut codes = Vec::new();
+	codes.extend(super::rule_table::table_rule_codes(
+		H_NARRATIVE_LENGTH_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		H_SENDER_DIAGNOSIS_COMPANIONS,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		H_SENDER_DIAGNOSIS_LENGTH_RULES,
+	));
+	codes.extend(super::rule_table::indexed_meddra_rule_codes(
+		H_SENDER_DIAGNOSIS_MEDDRA_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		H_CASE_SUMMARY_COMPANIONS,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		H_CASE_SUMMARY_LENGTH_RULES,
+	));
+	codes.extend(super::rule_table::table_rule_codes(
+		H_CASE_SUMMARY_CONSTRAINT_RULES,
+	));
+	codes
+}
+
+#[cfg(test)]
+pub(super) fn direct_rule_codes() -> &'static [&'static str] {
+	&["ICH.H.1.REQUIRED"]
+}
+
+#[cfg(test)]
 mod tests {
 	use super::*;
 	use lib_core::model::case::Case;
