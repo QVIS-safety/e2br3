@@ -103,6 +103,100 @@ struct MfdsDrugRuleView {
 	facts: RuleFacts,
 }
 
+struct FdaDrugRuleView {
+	index: usize,
+	other_characterization: Option<String>,
+	malfunction: Option<String>,
+	brand_name: Option<String>,
+	common_name: Option<String>,
+	product_code: Option<String>,
+}
+
+const G_FDA_DRUG_CATALOG_VALUE_RULES: &[CatalogValueRule<FdaDrugRuleView>] = &[
+	CatalogValueRule {
+		code: "FDA.G.k.1.a.REQUIRED",
+		path: |item| format!("drugs.{}.fdaOtherCharacterization", item.index),
+		value: |item| {
+			RuleValue::borrowed(item.other_characterization.as_deref(), None)
+		},
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "FDA.G.k.12.r.1.REQUIRED",
+		path: |item| format!("drugs.{}.fdaDeviceInfo.malfunction", item.index),
+		value: |item| RuleValue::borrowed(item.malfunction.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "FDA.G.k.12.r.4.REQUIRED",
+		path: |item| format!("drugs.{}.fdaDeviceInfo.deviceBrandName", item.index),
+		value: |item| RuleValue::borrowed(item.brand_name.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "FDA.G.k.12.r.5.REQUIRED",
+		path: |item| format!("drugs.{}.fdaDeviceInfo.commonDeviceName", item.index),
+		value: |item| RuleValue::borrowed(item.common_name.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+	CatalogValueRule {
+		code: "FDA.G.k.12.r.6.REQUIRED",
+		path: |item| format!("drugs.{}.fdaDeviceInfo.deviceProductCode", item.index),
+		value: |item| RuleValue::borrowed(item.product_code.as_deref(), None),
+		facts: |_| RuleFacts::default(),
+	},
+];
+
+struct FdaDrugSetRuleView {
+	malfunction_suspect: Option<String>,
+	problem_code: Option<String>,
+	remedial_action: Option<String>,
+	invalid_gk1a: bool,
+}
+
+const G_FDA_DRUG_SET_CATALOG_VALUE_RULES: &[CatalogValueRule<FdaDrugSetRuleView>] =
+	&[
+		CatalogValueRule {
+			code: "FDA.G.K.12.REQUIRED",
+			path: |_| "drugs.0.deviceCharacteristics.0.valueCode".to_string(),
+			value: |item| {
+				RuleValue::borrowed(item.malfunction_suspect.as_deref(), None)
+			},
+			facts: |_| RuleFacts::default(),
+		},
+		CatalogValueRule {
+			code: "FDA.G.k.12.r.3.r.REQUIRED",
+			path: |_| "drugs.0.fdaDeviceInfo.deviceProblemCodes".to_string(),
+			value: |item| RuleValue::borrowed(item.problem_code.as_deref(), None),
+			facts: |_| RuleFacts::default(),
+		},
+		CatalogValueRule {
+			code: "FDA.G.K.12.R.3.REQUIRED",
+			path: |_| "drugs.0.deviceCharacteristics.0.valueCode".to_string(),
+			value: |item| RuleValue::borrowed(item.problem_code.as_deref(), None),
+			facts: |_| RuleFacts::default(),
+		},
+		CatalogValueRule {
+			code: "FDA.G.k.12.r.11.r.REQUIRED",
+			path: |_| "drugs.0.fdaDeviceInfo.remedialActions".to_string(),
+			value: |item| RuleValue::borrowed(item.remedial_action.as_deref(), None),
+			facts: |_| RuleFacts::default(),
+		},
+		CatalogValueRule {
+			code: "FDA.G.K.12.R.11.REQUIRED",
+			path: |_| "drugs.0.deviceCharacteristics.0.valueCode".to_string(),
+			value: |item| RuleValue::borrowed(item.remedial_action.as_deref(), None),
+			facts: |_| RuleFacts::default(),
+		},
+	];
+
+const G_FDA_GK1A_VIOLATION_RULES: &[ViolationRule<FdaDrugSetRuleView>] =
+	&[ViolationRule {
+		code: "FDA.G.K.1.A.CONDITIONAL",
+		path: |_| "drugs.0.deviceCharacteristics.0.valueCode".to_string(),
+		violated: |item| item.invalid_gk1a,
+	}];
+
 const G_MFDS_DRUG_CATALOG_VALUE_RULES: &[CatalogValueRule<MfdsDrugRuleView>] = &[
 	CatalogValueRule {
 		code: "MFDS.G.k.2.1.KR.1b.REQUIRED",
@@ -1203,6 +1297,7 @@ pub(crate) async fn collect_fda_issues(
 	let mut has_gk12r3 = false;
 	let mut has_gk12r11 = false;
 	let mut has_invalid_gk1a = false;
+	let mut drug_views = Vec::with_capacity(validation_ctx.drugs.len());
 
 	for (drug_idx, drug) in validation_ctx.drugs.iter().enumerate() {
 		let mut chars = list_drug_characteristics(ctx, mm, drug.id).await?;
@@ -1211,47 +1306,40 @@ pub(crate) async fn collect_fda_issues(
 			characteristic_code_matches(ch.code.as_deref(), "FDA.G.k.12.r.1")
 				&& is_truthy_characteristic(ch)
 		});
-		if combination_true
+		let gk1a_required = combination_true
 			&& malfunction_this_drug
-			&& drug.drug_characterization == "4"
-			&& !has_text(drug.fda_other_characterization.as_deref())
-		{
-			push_issue_by_code(
-				issues,
-				"FDA.G.k.1.a.REQUIRED",
-				format!("drugs.{drug_idx}.fdaOtherCharacterization"),
-			);
-		}
-		if local_criteria == Some("5") && !malfunction_this_drug {
-			push_issue_by_code(
-				issues,
-				"FDA.G.k.12.r.1.REQUIRED",
-				format!("drugs.{drug_idx}.fdaDeviceInfo.malfunction"),
-			);
-		}
-		if malfunction_this_drug {
-			if !has_characteristic_value(&chars, "FDA.G.k.12.r.4") {
-				push_issue_by_code(
-					issues,
-					"FDA.G.k.12.r.4.REQUIRED",
-					format!("drugs.{drug_idx}.fdaDeviceInfo.deviceBrandName"),
-				);
-			}
-			if !has_characteristic_value(&chars, "FDA.G.k.12.r.5") {
-				push_issue_by_code(
-					issues,
-					"FDA.G.k.12.r.5.REQUIRED",
-					format!("drugs.{drug_idx}.fdaDeviceInfo.commonDeviceName"),
-				);
-			}
-			if !has_characteristic_value(&chars, "FDA.G.k.12.r.6") {
-				push_issue_by_code(
-					issues,
-					"FDA.G.k.12.r.6.REQUIRED",
-					format!("drugs.{drug_idx}.fdaDeviceInfo.deviceProductCode"),
-				);
-			}
-		}
+			&& drug.drug_characterization == "4";
+		drug_views.push(FdaDrugRuleView {
+			index: drug_idx,
+			other_characterization: if gk1a_required {
+				drug.fda_other_characterization.clone()
+			} else {
+				Some("not-applicable".to_string())
+			},
+			malfunction: if local_criteria == Some("5") {
+				malfunction_this_drug.then(|| "present".to_string())
+			} else {
+				Some("not-applicable".to_string())
+			},
+			brand_name: if malfunction_this_drug {
+				has_characteristic_value(&chars, "FDA.G.k.12.r.4")
+					.then(|| "present".to_string())
+			} else {
+				Some("not-applicable".to_string())
+			},
+			common_name: if malfunction_this_drug {
+				has_characteristic_value(&chars, "FDA.G.k.12.r.5")
+					.then(|| "present".to_string())
+			} else {
+				Some("not-applicable".to_string())
+			},
+			product_code: if malfunction_this_drug {
+				has_characteristic_value(&chars, "FDA.G.k.12.r.6")
+					.then(|| "present".to_string())
+			} else {
+				Some("not-applicable".to_string())
+			},
+		});
 		if malfunction_this_drug {
 			has_malfunction_any = true;
 			if drug.drug_characterization == "1" {
@@ -1280,45 +1368,35 @@ pub(crate) async fn collect_fda_issues(
 			has_invalid_gk1a = true;
 		}
 	}
-
-	if local_criteria == Some("5") && !has_malfunction_suspect {
-		push_issue_by_code(
-			issues,
-			"FDA.G.K.12.REQUIRED",
-			"drugs.0.deviceCharacteristics.0.valueCode",
-		);
-	}
-	if has_malfunction_any && !has_gk12r3 {
-		push_issue_by_code(
-			issues,
-			"FDA.G.k.12.r.3.r.REQUIRED",
-			"drugs.0.fdaDeviceInfo.deviceProblemCodes",
-		);
-		push_issue_by_code(
-			issues,
-			"FDA.G.K.12.R.3.REQUIRED",
-			"drugs.0.deviceCharacteristics.0.valueCode",
-		);
-	}
-	if local_criteria == Some("4") && has_malfunction_any && !has_gk12r11 {
-		push_issue_by_code(
-			issues,
-			"FDA.G.k.12.r.11.r.REQUIRED",
-			"drugs.0.fdaDeviceInfo.remedialActions",
-		);
-		push_issue_by_code(
-			issues,
-			"FDA.G.K.12.R.11.REQUIRED",
-			"drugs.0.deviceCharacteristics.0.valueCode",
-		);
-	}
-	if has_invalid_gk1a {
-		push_issue_by_code(
-			issues,
-			"FDA.G.K.1.A.CONDITIONAL",
-			"drugs.0.deviceCharacteristics.0.valueCode",
-		);
-	}
+	eval_catalog_values(issues, &drug_views, G_FDA_DRUG_CATALOG_VALUE_RULES);
+	let set_view = FdaDrugSetRuleView {
+		malfunction_suspect: if local_criteria == Some("5") {
+			has_malfunction_suspect.then(|| "present".to_string())
+		} else {
+			Some("not-applicable".to_string())
+		},
+		problem_code: if has_malfunction_any {
+			has_gk12r3.then(|| "present".to_string())
+		} else {
+			Some("not-applicable".to_string())
+		},
+		remedial_action: if local_criteria == Some("4") && has_malfunction_any {
+			has_gk12r11.then(|| "present".to_string())
+		} else {
+			Some("not-applicable".to_string())
+		},
+		invalid_gk1a: has_invalid_gk1a,
+	};
+	eval_catalog_values(
+		issues,
+		std::slice::from_ref(&set_view),
+		G_FDA_DRUG_SET_CATALOG_VALUE_RULES,
+	);
+	eval_violations(
+		issues,
+		std::slice::from_ref(&set_view),
+		G_FDA_GK1A_VIOLATION_RULES,
+	);
 	Ok(())
 }
 
@@ -1554,6 +1632,9 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	add!(G_MFDS_RELATEDNESS_CATALOG_VALUE_RULES);
 	add!(G_MFDS_METHOD_PROFILE_VIOLATION_RULES);
 	add!(G_MFDS_RESULT_PROFILE_VIOLATION_RULES);
+	add!(G_FDA_DRUG_CATALOG_VALUE_RULES);
+	add!(G_FDA_DRUG_SET_CATALOG_VALUE_RULES);
+	add!(G_FDA_GK1A_VIOLATION_RULES);
 	codes.extend(super::rule_table::nested_meddra_rule_codes(
 		G_INDICATION_MEDDRA_RULES,
 	));
@@ -1562,19 +1643,7 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 
 #[cfg(test)]
 pub(super) fn direct_rule_codes() -> &'static [&'static str] {
-	&[
-		"FDA.G.K.1.A.CONDITIONAL",
-		"FDA.G.K.12.R.11.REQUIRED",
-		"FDA.G.K.12.R.3.REQUIRED",
-		"FDA.G.K.12.REQUIRED",
-		"FDA.G.k.1.a.REQUIRED",
-		"FDA.G.k.12.r.1.REQUIRED",
-		"FDA.G.k.12.r.11.r.REQUIRED",
-		"FDA.G.k.12.r.3.r.REQUIRED",
-		"FDA.G.k.12.r.4.REQUIRED",
-		"FDA.G.k.12.r.5.REQUIRED",
-		"FDA.G.k.12.r.6.REQUIRED",
-	]
+	&[]
 }
 
 #[cfg(test)]
