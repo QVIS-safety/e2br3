@@ -371,7 +371,7 @@ async fn load_vocabulary_context(
 			| VocabularyScope::Dose
 			| VocabularyScope::Frequency => ("ich_constrained_ucum", "ICH-UCUM"),
 			VocabularyScope::DoseForm | VocabularyScope::Route => ("edqm", "EDQM"),
-			VocabularyScope::All => continue,
+			VocabularyScope::All | VocabularyScope::ItemSeq => continue,
 		};
 		let values: Vec<String> = codes.into_iter().collect();
 		let existing = ControlledTermBmc::existing_active_codes(
@@ -406,6 +406,7 @@ fn vocabulary_scope_name(scope: VocabularyScope) -> &'static str {
 		VocabularyScope::Frequency => "frequency",
 		VocabularyScope::DoseForm => "dose_form",
 		VocabularyScope::Route => "route",
+		VocabularyScope::ItemSeq => "item_seq",
 	}
 }
 

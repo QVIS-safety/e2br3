@@ -76,7 +76,18 @@
       "xpath": "KR: /MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='2.16.840.1.113883.3.989.5.1.10.2.1']/@code\n------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\nKR: /MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='2.16.840.1.113883.6.294']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "WHODrug"
+      "vocabulary_variants": [
+        {
+          "receiver": "KR",
+          "vocabulary": "MFDS_PRODUCT",
+          "vocabulary_scope": "item_seq"
+        },
+        {
+          "receiver": "FR",
+          "vocabulary": "WHODrug",
+          "vocabulary_scope": "all"
+        }
+      ]
     },
     {
       "code": "D.10.8.r.1.KR.1a",
@@ -107,7 +118,18 @@
       "xpath": "KR: /MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='2.16.840.1.113883.3.989.5.1.10.2.1']/@code\n------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\nFR: /MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/player1[@classCode='PSN'][@determinerCode='INSTANCE']/role[@classCode='PRS'][1]/subjectOf2[@typeCode='SBJ'][organizer/code[@code='2'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration][r]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='2.16.840.1.113883.6.294']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "WHODrug"
+      "vocabulary_variants": [
+        {
+          "receiver": "KR",
+          "vocabulary": "MFDS_PRODUCT",
+          "vocabulary_scope": "item_seq"
+        },
+        {
+          "receiver": "FR",
+          "vocabulary": "WHODrug",
+          "vocabulary_scope": "all"
+        }
+      ]
     },
     {
       "code": "G.k.2.1.KR.1a",
@@ -138,7 +160,18 @@
       "xpath": "KR: /MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='2.16.840.1.113883.3.989.5.1.10.2.1']/@code\n------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\nFR: /MCCI_IN200100UV01[@ITSVersion='XML_1.0'][@xsi:schemaLocation='urn:hl7-org:v3 MCCI_IN200100UV01.xsd']/PORR_IN049016UV[r]/controlActProcess[@classCode='CACT'][@moodCode='EVN']/subject[@typeCode='SUBJ'][1]/investigationEvent[@classCode='INVSTG'][@moodCode='EVN']/component[@typeCode='COMP'][adverseEventAssessment][1]/adverseEventAssessment[@classCode='INVSTG'][@moodCode='EVN']/subject1[@typeCode='SBJ'][1]/primaryRole[@classCode='INVSBJ']/subjectOf2[@typeCode='SBJ'][organizer/code[@code='4'][@codeSystem='2.16.840.1.113883.3.989.2.1.1.20']][1]/organizer[@classCode='CATEGORY'][@moodCode='EVN']/component[@typeCode='COMP'][substanceAdministration/id][k]/substanceAdministration[@classCode='SBADM'][@moodCode='EVN']/consumable[@typeCode='CSM'][1]/instanceOfKind[@classCode='INST']/kindOfProduct[@classCode='MMAT'][@determinerCode='KIND']/code[@codeSystem='2.16.840.1.113883.6.294']/@code",
       "hl7_data_type": "Coded With Equivalents (CE)",
       "hl7_component": "code=Character String (ST)",
-      "vocabulary": "WHODrug"
+      "vocabulary_variants": [
+        {
+          "receiver": "KR",
+          "vocabulary": "MFDS_PRODUCT",
+          "vocabulary_scope": "item_seq"
+        },
+        {
+          "receiver": "FR",
+          "vocabulary": "WHODrug",
+          "vocabulary_scope": "all"
+        }
+      ]
     },
     {
       "code": "G.k.2.3.r.1.KR.1a",

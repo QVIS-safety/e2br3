@@ -54,7 +54,7 @@
         },
         "vocabulary_scope": {
           "type": "string",
-          "enum": ["all", "time", "gestation", "dose", "frequency", "dose_form", "route"]
+          "enum": ["all", "time", "gestation", "dose", "frequency", "dose_form", "route", "item_seq"]
         },
         "identifier_profile": {
           "type": "string",
@@ -111,6 +111,25 @@
         }
       ]
     },
+    "vocabulary_variant": {
+      "type": "object",
+      "required": ["receiver", "vocabulary", "vocabulary_scope"],
+      "additionalProperties": false,
+      "properties": {
+        "receiver": {
+          "type": "string",
+          "enum": ["KR", "FR"]
+        },
+        "vocabulary": {
+          "type": "string",
+          "enum": ["MedDRA", "WHODrug", "ISO3166", "ISO639", "sex", "UCUM", "EDQM", "MFDS_PRODUCT"]
+        },
+        "vocabulary_scope": {
+          "type": "string",
+          "enum": ["all", "time", "gestation", "dose", "frequency", "dose_form", "route", "item_seq"]
+        }
+      }
+    },
     "entry": {
       "type": "object",
       "required": ["code", "name", "section", "kind"],
@@ -163,7 +182,12 @@
         "xpath": { "type": "string" },
         "vocabulary": {
           "type": "string",
-          "enum": ["MedDRA", "WHODrug", "ISO3166", "ISO639", "sex", "UCUM", "EDQM"]
+          "enum": ["MedDRA", "WHODrug", "ISO3166", "ISO639", "sex", "UCUM", "EDQM", "MFDS_PRODUCT"]
+        },
+        "vocabulary_variants": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/vocabulary_variant" }
         },
         "fda_severity": {
           "type": "string",
@@ -173,8 +197,13 @@
         "condition_text": { "type": "string" },
         "notes": { "type": "string" }
       },
-      "if": { "properties": { "kind": { "const": "element" } } },
-      "then": { "required": ["code", "name", "section", "kind", "conformance"] }
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "element" } } },
+          "then": { "required": ["code", "name", "section", "kind", "conformance"] }
+        },
+        { "not": { "required": ["vocabulary", "vocabulary_variants"] } }
+      ]
     }
   }
 }

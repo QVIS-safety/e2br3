@@ -1,5 +1,6 @@
 use super::{
 	AllowedValueRuleMetadata, NullFlavorRuleMetadata, VocabularyRuleMetadata,
+	VocabularyScope, VocabularyVariantMetadata,
 };
 use lib_core::regulatory::RegulatoryAuthority::{Fda, Ich, Mfds};
 
@@ -1689,17 +1690,7 @@ pub const VOCABULARY_RULES: &[VocabularyRuleMetadata] = &[
 		vocabulary: "WHODrug",
 	},
 	VocabularyRuleMetadata {
-		code: "MFDS.D.8.r.1.KR.1b.VOCABULARY",
-		authority: Mfds,
-		vocabulary: "WHODrug",
-	},
-	VocabularyRuleMetadata {
 		code: "MFDS.D.10.8.r.1.KR.1a.VOCABULARY",
-		authority: Mfds,
-		vocabulary: "WHODrug",
-	},
-	VocabularyRuleMetadata {
-		code: "MFDS.D.10.8.r.1.KR.1b.VOCABULARY",
 		authority: Mfds,
 		vocabulary: "WHODrug",
 	},
@@ -1708,10 +1699,50 @@ pub const VOCABULARY_RULES: &[VocabularyRuleMetadata] = &[
 		authority: Mfds,
 		vocabulary: "WHODrug",
 	},
-	VocabularyRuleMetadata {
+];
+
+pub const VOCABULARY_VARIANTS: &[VocabularyVariantMetadata] = &[
+	VocabularyVariantMetadata {
+		code: "MFDS.D.8.r.1.KR.1b.VOCABULARY",
+		authority: Mfds,
+		receiver: "KR",
+		vocabulary: "MFDS_PRODUCT",
+		scope: VocabularyScope::ItemSeq,
+	},
+	VocabularyVariantMetadata {
+		code: "MFDS.D.8.r.1.KR.1b.VOCABULARY",
+		authority: Mfds,
+		receiver: "FR",
+		vocabulary: "WHODrug",
+		scope: VocabularyScope::All,
+	},
+	VocabularyVariantMetadata {
+		code: "MFDS.D.10.8.r.1.KR.1b.VOCABULARY",
+		authority: Mfds,
+		receiver: "KR",
+		vocabulary: "MFDS_PRODUCT",
+		scope: VocabularyScope::ItemSeq,
+	},
+	VocabularyVariantMetadata {
+		code: "MFDS.D.10.8.r.1.KR.1b.VOCABULARY",
+		authority: Mfds,
+		receiver: "FR",
+		vocabulary: "WHODrug",
+		scope: VocabularyScope::All,
+	},
+	VocabularyVariantMetadata {
 		code: "MFDS.G.k.2.1.KR.1b.VOCABULARY",
 		authority: Mfds,
+		receiver: "KR",
+		vocabulary: "MFDS_PRODUCT",
+		scope: VocabularyScope::ItemSeq,
+	},
+	VocabularyVariantMetadata {
+		code: "MFDS.G.k.2.1.KR.1b.VOCABULARY",
+		authority: Mfds,
+		receiver: "FR",
 		vocabulary: "WHODrug",
+		scope: VocabularyScope::All,
 	},
 ];
 

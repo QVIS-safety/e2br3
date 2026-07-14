@@ -64,6 +64,7 @@ pub enum VocabularyScope {
 	Frequency,
 	DoseForm,
 	Route,
+	ItemSeq,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
@@ -133,6 +134,15 @@ pub struct VocabularyRuleMetadata {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub struct VocabularyVariantMetadata {
+	pub code: &'static str,
+	pub authority: RegulatoryAuthority,
+	pub receiver: &'static str,
+	pub vocabulary: &'static str,
+	pub scope: VocabularyScope,
+}
+
+#[derive(Debug, Clone, Copy)]
 pub struct NullFlavorRuleMetadata {
 	pub code: &'static str,
 	pub authority: RegulatoryAuthority,
@@ -143,7 +153,7 @@ pub struct NullFlavorRuleMetadata {
 mod catalog_dictionary_constraints;
 pub use catalog_dictionary_constraints::{
 	ALLOWED_VALUE_RULES, ICH_STRUCTURED_ALLOWED_VALUE_TARGET_CODES,
-	NULL_FLAVOR_RULES, VOCABULARY_RULES,
+	NULL_FLAVOR_RULES, VOCABULARY_RULES, VOCABULARY_VARIANTS,
 };
 
 macro_rules! max_length_rules {
@@ -4415,6 +4425,15 @@ pub fn vocabulary_for_rule(code: &str) -> Option<&'static str> {
 		.map(|rule| rule.vocabulary)
 }
 
+pub fn vocabulary_variant_for_rule(
+	code: &str,
+	receiver: &str,
+) -> Option<&'static VocabularyVariantMetadata> {
+	VOCABULARY_VARIANTS
+		.iter()
+		.find(|variant| variant.code == code && variant.receiver == receiver)
+}
+
 pub fn null_flavors_source_hash_for_rule(code: &str) -> Option<u64> {
 	NULL_FLAVOR_RULES
 		.iter()
@@ -4643,7 +4662,16 @@ mod tests {
 		allowed_value_constraint: Option<AllowedValueConstraint>,
 		vocabulary: Option<serde_json::Value>,
 		#[serde(default)]
+		vocabulary_variants: Vec<DictionaryVocabularyVariant>,
+		#[serde(default)]
 		null_flavors: Vec<String>,
+	}
+
+	#[derive(Debug, serde::Deserialize)]
+	struct DictionaryVocabularyVariant {
+		receiver: String,
+		vocabulary: String,
+		vocabulary_scope: VocabularyScope,
 	}
 
 	fn dictionary_from_json(source: &str) -> Dictionary {
@@ -5026,6 +5054,48 @@ mod tests {
 			"MFDS",
 		));
 		rules
+	}
+
+	fn all_vocabulary_dictionary_variants(
+	) -> Vec<(String, String, String, VocabularyScope)> {
+		let mut variants = Vec::new();
+		for (dictionary, authority_prefix) in [
+			(
+				dictionary_from_json(include_str!(
+					"../../../../registry/dictionary/ich-e2br3.json"
+				)),
+				"ICH",
+			),
+			(
+				dictionary_from_json(include_str!(
+					"../../../../registry/dictionary/fda-regional.json"
+				)),
+				"FDA",
+			),
+			(
+				dictionary_from_json(include_str!(
+					"../../../../registry/dictionary/mfds-regional.json"
+				)),
+				"MFDS",
+			),
+		] {
+			variants.extend(dictionary.entries.into_iter().flat_map(|entry| {
+				let code = if entry.code.starts_with(authority_prefix) {
+					entry.code
+				} else {
+					format!("{authority_prefix}.{}", entry.code)
+				};
+				entry.vocabulary_variants.into_iter().map(move |variant| {
+					(
+						format!("{code}.VOCABULARY"),
+						variant.receiver,
+						variant.vocabulary,
+						variant.vocabulary_scope,
+					)
+				})
+			}));
+		}
+		variants
 	}
 
 	const CLASSIFIED_ICH_DATE_TIME_FUTURE_RULES: &[&str] = &[
@@ -5460,7 +5530,7 @@ mod tests {
 		let dictionary_rules = all_vocabulary_dictionary_rules();
 		assert_eq!(
 			dictionary_rules.len(),
-			59,
+			56,
 			"dictionary vocabulary rule count changed"
 		);
 
@@ -5483,6 +5553,26 @@ mod tests {
 			mismatched.is_empty(),
 			"dictionary vocabulary values differ from catalog: {mismatched:?}"
 		);
+	}
+
+	#[test]
+	fn dictionary_vocabulary_variants_match_catalog_exactly() {
+		let dictionary_variants = all_vocabulary_dictionary_variants();
+		assert_eq!(dictionary_variants.len(), 6);
+
+		let mismatched = dictionary_variants
+			.iter()
+			.filter(|(code, receiver, vocabulary, scope)| {
+				vocabulary_variant_for_rule(code, receiver)
+					.map(|variant| (variant.vocabulary, variant.scope))
+					!= Some((vocabulary.as_str(), *scope))
+			})
+			.collect::<Vec<_>>();
+		assert!(
+			mismatched.is_empty(),
+			"dictionary vocabulary variants differ from catalog: {mismatched:?}"
+		);
+		assert_eq!(VOCABULARY_VARIANTS.len(), dictionary_variants.len());
 	}
 
 	#[test]

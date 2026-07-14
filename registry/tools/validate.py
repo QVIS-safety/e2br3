@@ -67,7 +67,9 @@ VOCABULARY_SCOPES = {
     "frequency",
     "dose_form",
     "route",
+    "item_seq",
 }
+VOCABULARY_RECEIVERS = {"KR", "FR"}
 IDENTIFIER_PROFILES = {"mpid", "phpid", "substance_id"}
 CONSTRAINT_ENFORCEMENTS = {"case_validate", "representation_enforced"}
 DICTIONARY_VOCABULARIES = {
@@ -78,6 +80,7 @@ DICTIONARY_VOCABULARIES = {
     "sex",
     "UCUM",
     "EDQM",
+    "MFDS_PRODUCT",
 }
 ALLOWED_DICTIONARY_ENTRY_FIELDS = {
     "code",
@@ -97,6 +100,7 @@ ALLOWED_DICTIONARY_ENTRY_FIELDS = {
     "hl7_data_type",
     "hl7_component",
     "vocabulary",
+    "vocabulary_variants",
     "fda_severity",
     "fda_error_id",
     "condition_text",
@@ -302,6 +306,54 @@ def validate_dictionary_entry(entry: Any, source: Path, result: ValidationResult
             f"{source}: entry {code}: invalid vocabulary {vocabulary!r};"
             f" expected one of {sorted(DICTIONARY_VOCABULARIES)}"
         )
+
+    vocabulary_variants = entry.get("vocabulary_variants")
+    if vocabulary is not None and vocabulary_variants is not None:
+        result.add(
+            f"{source}: entry {code}: cannot combine vocabulary with vocabulary_variants"
+        )
+    if vocabulary_variants is not None:
+        if not isinstance(vocabulary_variants, list) or not vocabulary_variants:
+            result.add(
+                f"{source}: entry {code}: vocabulary_variants must be a non-empty array"
+            )
+        else:
+            seen_receivers: set[str] = set()
+            for index, variant in enumerate(vocabulary_variants):
+                if not isinstance(variant, dict):
+                    result.add(
+                        f"{source}: entry {code}: vocabulary variant {index} must be an object"
+                    )
+                    continue
+                unsupported = set(variant) - {"receiver", "vocabulary", "vocabulary_scope"}
+                for key in sorted(unsupported):
+                    result.add(
+                        f"{source}: entry {code}: unsupported vocabulary variant field {key}"
+                    )
+                receiver = variant.get("receiver")
+                if receiver not in VOCABULARY_RECEIVERS:
+                    result.add(
+                        f"{source}: entry {code}: invalid vocabulary receiver {receiver!r};"
+                        f" expected one of {sorted(VOCABULARY_RECEIVERS)}"
+                    )
+                elif receiver in seen_receivers:
+                    result.add(
+                        f"{source}: entry {code}: duplicate vocabulary receiver {receiver!r}"
+                    )
+                else:
+                    seen_receivers.add(receiver)
+                variant_vocabulary = variant.get("vocabulary")
+                if variant_vocabulary not in DICTIONARY_VOCABULARIES:
+                    result.add(
+                        f"{source}: entry {code}: invalid vocabulary {variant_vocabulary!r};"
+                        f" expected one of {sorted(DICTIONARY_VOCABULARIES)}"
+                    )
+                vocabulary_scope = variant.get("vocabulary_scope")
+                if vocabulary_scope not in VOCABULARY_SCOPES:
+                    result.add(
+                        f"{source}: entry {code}: invalid vocabulary_scope {vocabulary_scope!r};"
+                        f" expected one of {sorted(VOCABULARY_SCOPES)}"
+                    )
 
     allowed_value_constraint = entry.get("allowed_value_constraint")
     if allowed_value_constraint is not None:

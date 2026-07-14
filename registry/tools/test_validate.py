@@ -725,6 +725,9 @@ class DictionaryValidatorTests(unittest.TestCase):
     def ich_dictionary(self, entries: str) -> str:
         return '{"authority": "ICH", "source": "test", "entries": [%s]}' % entries
 
+    def mfds_dictionary(self, entries: str) -> str:
+        return '{"authority": "MFDS", "source": "test", "entries": [%s]}' % entries
+
     def sender_row(self, authority: str = "ICH", code: str = "C.3.2") -> str:
         return """[
   {
@@ -989,6 +992,75 @@ class DictionaryValidatorTests(unittest.TestCase):
             result = validate.validate_registry(root, validate_backend_inventory=False)
 
         self.assertEqual([], result.errors)
+
+    def test_dictionary_entries_accept_receiver_specific_vocabularies(self):
+        entry = (
+            '{"code": "D.8.r.1.KR.1b", "name": "Medicinal Product ID",'
+            ' "section": "D", "kind": "element", "conformance": "conditional_mandatory",'
+            ' "vocabulary_variants": ['
+            ' {"receiver": "KR", "vocabulary": "MFDS_PRODUCT", "vocabulary_scope": "item_seq"},'
+            ' {"receiver": "FR", "vocabulary": "WHODrug", "vocabulary_scope": "all"}]}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row(authority="MFDS", code="D.8.r.1.KR.1b"))
+            self.write_dictionary(root, "mfds-regional.json", self.mfds_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertEqual([], result.errors)
+
+    def test_dictionary_receiver_specific_vocabularies_reject_duplicate_receiver(self):
+        entry = (
+            '{"code": "D.8.r.1.KR.1b", "name": "Medicinal Product ID",'
+            ' "section": "D", "kind": "element", "conformance": "conditional_mandatory",'
+            ' "vocabulary_variants": ['
+            ' {"receiver": "KR", "vocabulary": "MFDS_PRODUCT", "vocabulary_scope": "item_seq"},'
+            ' {"receiver": "KR", "vocabulary": "WHODrug", "vocabulary_scope": "all"}]}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row(authority="MFDS", code="D.8.r.1.KR.1b"))
+            self.write_dictionary(root, "mfds-regional.json", self.mfds_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertIn("duplicate vocabulary receiver 'KR'", "\n".join(result.errors))
+
+    def test_dictionary_receiver_specific_vocabularies_reject_unconditional_vocabulary(self):
+        entry = (
+            '{"code": "D.8.r.1.KR.1b", "name": "Medicinal Product ID",'
+            ' "section": "D", "kind": "element", "conformance": "conditional_mandatory",'
+            ' "vocabulary": "WHODrug", "vocabulary_variants": ['
+            ' {"receiver": "KR", "vocabulary": "MFDS_PRODUCT", "vocabulary_scope": "item_seq"}]}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row(authority="MFDS", code="D.8.r.1.KR.1b"))
+            self.write_dictionary(root, "mfds-regional.json", self.mfds_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        self.assertIn("cannot combine vocabulary with vocabulary_variants", "\n".join(result.errors))
+
+    def test_dictionary_receiver_specific_vocabularies_reject_unknown_metadata(self):
+        entry = (
+            '{"code": "D.8.r.1.KR.1b", "name": "Medicinal Product ID",'
+            ' "section": "D", "kind": "element", "conformance": "conditional_mandatory",'
+            ' "vocabulary_variants": ['
+            ' {"receiver": "US", "vocabulary": "MagicCodes", "vocabulary_scope": "products"}]}'
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_registry(root, self.sender_row(authority="MFDS", code="D.8.r.1.KR.1b"))
+            self.write_dictionary(root, "mfds-regional.json", self.mfds_dictionary(entry))
+
+            result = validate.validate_registry(root, validate_backend_inventory=False)
+
+        errors = "\n".join(result.errors)
+        self.assertIn("invalid vocabulary receiver 'US'", errors)
+        self.assertIn("invalid vocabulary 'MagicCodes'", errors)
+        self.assertIn("invalid vocabulary_scope 'products'", errors)
 
     def test_dictionary_entries_accept_allowed_value_code_set(self):
         entry = (
