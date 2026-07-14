@@ -43,6 +43,53 @@ CREATE INDEX idx_whodrug_code ON whodrug_products(code);
 CREATE INDEX idx_whodrug_name ON whodrug_products USING gin(to_tsvector('english', drug_name));
 CREATE INDEX idx_whodrug_atc ON whodrug_products(atc_code);
 
+-- Finite controlled terminology sets whose codes are scoped and released.
+CREATE TABLE controlled_terminology_terms (
+    id BIGSERIAL PRIMARY KEY,
+    audit_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    dictionary VARCHAR(40) NOT NULL,
+    version VARCHAR(40) NOT NULL,
+    language VARCHAR(10) NOT NULL DEFAULT 'en',
+    scope VARCHAR(40) NOT NULL,
+    code VARCHAR(100) NOT NULL,
+    display_name TEXT,
+    active BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT controlled_terminology_terms_unique
+        UNIQUE (dictionary, version, language, scope, code),
+    CONSTRAINT controlled_terminology_terms_audit_id_unique UNIQUE (audit_id)
+);
+
+CREATE INDEX idx_controlled_terminology_active_lookup
+    ON controlled_terminology_terms (dictionary, scope, code)
+    WHERE active = true;
+
+-- MFDS products carry searchable product metadata in addition to ITEM_SEQ.
+CREATE TABLE mfds_products (
+    id BIGSERIAL PRIMARY KEY,
+    audit_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    item_seq VARCHAR(10) NOT NULL,
+    product_name_kr TEXT NOT NULL,
+    product_name_en TEXT,
+    manufacturer_name_kr TEXT,
+    manufacturer_name_en TEXT,
+    permit_date DATE,
+    cancellation_date DATE,
+    cancellation_status TEXT,
+    version VARCHAR(40) NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT mfds_products_unique UNIQUE (item_seq, version),
+    CONSTRAINT mfds_products_audit_id_unique UNIQUE (audit_id)
+);
+
+CREATE INDEX idx_mfds_products_active_item_seq
+    ON mfds_products (item_seq) WHERE active = true;
+CREATE INDEX idx_mfds_products_name_kr
+    ON mfds_products USING gin(to_tsvector('simple', product_name_kr));
+
 -- Terminology release workflow (staged/approved/active)
 CREATE TABLE IF NOT EXISTS terminology_releases (
     id BIGSERIAL PRIMARY KEY,
@@ -63,7 +110,14 @@ CREATE TABLE IF NOT EXISTS terminology_releases (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
     CONSTRAINT terminology_release_dictionary_chk
-        CHECK (dictionary IN ('meddra', 'whodrug')),
+        CHECK (dictionary IN (
+            'meddra',
+            'whodrug',
+            'iso3166',
+            'ich_constrained_ucum',
+            'edqm',
+            'mfds_product'
+        )),
     CONSTRAINT terminology_release_status_chk
         CHECK (status IN ('loading', 'validated', 'approved', 'active', 'failed', 'retired')),
     CONSTRAINT terminology_release_unique

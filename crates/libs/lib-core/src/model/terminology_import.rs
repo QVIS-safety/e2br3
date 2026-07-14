@@ -134,10 +134,20 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
 }
 
 pub fn validate_dictionary(dictionary: &str) -> Result<()> {
-	if matches!(dictionary, "meddra" | "whodrug") {
+	if matches!(
+		dictionary,
+		"meddra"
+			| "whodrug"
+			| "iso3166"
+			| "ich_constrained_ucum"
+			| "edqm" | "mfds_product"
+	) {
 		return Ok(());
 	}
-	Err(bad_input("dictionary must be one of: meddra, whodrug"))
+	Err(bad_input(
+		"dictionary must be one of: meddra, whodrug, iso3166, \
+		 ich_constrained_ucum, edqm, mfds_product",
+	))
 }
 
 pub fn parse_meddra_upload(bytes: &[u8]) -> Result<Vec<MeddraRow>> {
@@ -657,6 +667,54 @@ pub async fn activate_release_tx(
 					return Err(bad_input("target WHODrug rows were not staged"));
 				}
 			}
+			"iso3166" | "ich_constrained_ucum" | "edqm" => {
+				dbx.execute(
+					sqlx::query(
+						"UPDATE controlled_terminology_terms
+						 SET active = false
+						 WHERE dictionary = $1 AND language = $2 AND active = true",
+					)
+					.bind(dictionary)
+					.bind(language),
+				)
+				.await
+				.map_err(store_err)?;
+				let changed = dbx
+					.execute(
+						sqlx::query(
+							"UPDATE controlled_terminology_terms
+							 SET active = true
+							 WHERE dictionary = $1 AND version = $2 AND language = $3",
+						)
+						.bind(dictionary)
+						.bind(target_version)
+						.bind(language),
+					)
+					.await
+					.map_err(store_err)?;
+				if changed == 0 {
+					return Err(bad_input("target controlled terminology rows were not staged"));
+				}
+			}
+			"mfds_product" => {
+				dbx.execute(
+					sqlx::query("UPDATE mfds_products SET active = false WHERE active = true"),
+				)
+				.await
+				.map_err(store_err)?;
+				let changed = dbx
+					.execute(
+						sqlx::query(
+							"UPDATE mfds_products SET active = true WHERE version = $1",
+						)
+						.bind(target_version),
+					)
+					.await
+					.map_err(store_err)?;
+				if changed == 0 {
+					return Err(bad_input("target MFDS product rows were not staged"));
+				}
+			}
 			_ => return Err(bad_input("invalid dictionary")),
 		}
 
@@ -1123,6 +1181,23 @@ mod tests {
 	use std::io::Write;
 	use zip::write::SimpleFileOptions;
 	use zip::{CompressionMethod, ZipWriter};
+
+	#[test]
+	fn validates_every_supported_release_dictionary() {
+		for dictionary in [
+			"meddra",
+			"whodrug",
+			"iso3166",
+			"ich_constrained_ucum",
+			"edqm",
+			"mfds_product",
+		] {
+			validate_dictionary(dictionary).unwrap_or_else(|err| {
+				panic!("{dictionary} should be supported: {err}")
+			});
+		}
+		assert!(validate_dictionary("unknown").is_err());
+	}
 
 	#[test]
 	fn parse_meddra_zip_keeps_one_row_per_code_for_database_key() {

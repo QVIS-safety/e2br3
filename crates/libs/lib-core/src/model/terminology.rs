@@ -9,6 +9,7 @@ use modql::filter::{FilterNodes, OpValsBool, OpValsString};
 use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
 use sqlx::{FromRow, Postgres, QueryBuilder};
+use std::collections::HashSet;
 
 // -- MeddraTerm
 
@@ -127,6 +128,22 @@ pub struct UcumUnit {
 	pub description: Option<String>,
 	pub unit_type: Option<String>,
 	pub active: bool,
+}
+
+#[derive(Debug, Clone, Fields, FromRow, Serialize)]
+pub struct MfdsProduct {
+	pub id: i64,
+	pub item_seq: String,
+	pub product_name_kr: String,
+	pub product_name_en: Option<String>,
+	pub manufacturer_name_kr: Option<String>,
+	pub manufacturer_name_en: Option<String>,
+	pub permit_date: Option<sqlx::types::time::Date>,
+	pub cancellation_date: Option<sqlx::types::time::Date>,
+	pub cancellation_status: Option<String>,
+	pub version: String,
+	pub active: bool,
+	pub created_at: OffsetDateTime,
 }
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
@@ -309,6 +326,67 @@ impl UcumUnitBmc {
 			.fetch_all(sqlx::query_as::<_, UcumUnit>(&sql))
 			.await?;
 		Ok(units)
+	}
+}
+
+pub struct ControlledTermBmc;
+
+impl ControlledTermBmc {
+	pub async fn existing_active_codes(
+		mm: &ModelManager,
+		dictionary: &str,
+		scope: &str,
+		codes: &[String],
+	) -> Result<HashSet<String>> {
+		if codes.is_empty() {
+			return Ok(HashSet::new());
+		}
+
+		let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
+			"SELECT DISTINCT code FROM controlled_terminology_terms \
+			 WHERE active = true AND dictionary = ",
+		);
+		qb.push_bind(dictionary)
+			.push(" AND scope = ")
+			.push_bind(scope)
+			.push(" AND code IN (");
+		let mut separated = qb.separated(", ");
+		for code in codes {
+			separated.push_bind(code);
+		}
+		separated.push_unseparated(")");
+
+		let rows = mm.dbx().fetch_all(qb.build_query_as::<(String,)>()).await?;
+		Ok(rows.into_iter().map(|(code,)| code).collect())
+	}
+}
+
+pub struct MfdsProductBmc;
+impl DbBmc for MfdsProductBmc {
+	const TABLE: &'static str = "mfds_products";
+}
+
+impl MfdsProductBmc {
+	pub async fn existing_active_item_seqs(
+		mm: &ModelManager,
+		codes: &[String],
+	) -> Result<HashSet<String>> {
+		if codes.is_empty() {
+			return Ok(HashSet::new());
+		}
+
+		let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
+			"SELECT DISTINCT item_seq FROM mfds_products \
+			 WHERE active = true AND item_seq IN (",
+		);
+		let mut separated = qb.separated(", ");
+		for code in codes {
+			separated.push_bind(code);
+		}
+		separated.push_unseparated(")");
+
+		let rows = mm.dbx().fetch_all(qb.build_query_as::<(String,)>()).await?;
+		Ok(rows.into_iter().map(|(code,)| code).collect())
 	}
 }
 

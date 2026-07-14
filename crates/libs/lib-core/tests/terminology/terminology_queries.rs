@@ -1,10 +1,71 @@
 use crate::common::{demo_ctx, demo_user_id, init_test_mm, unique_suffix, Result};
 use lib_core::model::store::set_full_context_dbx_or_rollback;
 use lib_core::model::terminology::{
-	E2bCodeListBmc, FdaHierarchicalCodeListBmc, IsoCountryBmc, MeddraTermBmc,
-	UcumUnitBmc, WhodrugProductBmc,
+	ControlledTermBmc, E2bCodeListBmc, FdaHierarchicalCodeListBmc, IsoCountryBmc,
+	MeddraTermBmc, MfdsProductBmc, UcumUnitBmc, WhodrugProductBmc,
 };
 use serial_test::serial;
+
+#[serial]
+#[tokio::test]
+async fn active_controlled_terms_and_mfds_products_support_membership() -> Result<()>
+{
+	let mm = init_test_mm().await;
+	let ctx = demo_ctx();
+	let dbx = mm.dbx();
+	let suffix = unique_suffix();
+	let version = format!("test-{}", &suffix[..16]);
+	let item_seq = format!("P{}", &suffix[..8]);
+
+	dbx.begin_txn().await?;
+	set_full_context_dbx_or_rollback(
+		dbx,
+		demo_user_id(),
+		ctx.organization_id(),
+		"system_admin",
+	)
+	.await?;
+
+	dbx.execute(
+		sqlx::query(
+			"INSERT INTO controlled_terminology_terms
+			 (dictionary, version, language, scope, code, display_name, active)
+			 VALUES ('iso3166', $1, 'en', 'country', 'KR', 'Korea', true)",
+		)
+		.bind(&version),
+	)
+	.await?;
+	dbx.execute(
+		sqlx::query(
+			"INSERT INTO mfds_products
+			 (item_seq, product_name_kr, version, active)
+			 VALUES ($1, 'Test product', $2, true)",
+		)
+		.bind(&item_seq)
+		.bind(&version),
+	)
+	.await?;
+
+	let country_codes = vec!["KR".to_string(), "ZZ".to_string()];
+	let existing_countries = ControlledTermBmc::existing_active_codes(
+		&mm,
+		"iso3166",
+		"country",
+		&country_codes,
+	)
+	.await?;
+	assert!(existing_countries.contains("KR"));
+	assert!(!existing_countries.contains("ZZ"));
+
+	let product_codes = vec![item_seq.clone(), "missing".to_string()];
+	let existing_products =
+		MfdsProductBmc::existing_active_item_seqs(&mm, &product_codes).await?;
+	assert!(existing_products.contains(&item_seq));
+	assert!(!existing_products.contains("missing"));
+
+	dbx.rollback_txn().await?;
+	Ok(())
+}
 
 #[serial]
 #[tokio::test]
