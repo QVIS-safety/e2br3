@@ -26,6 +26,7 @@ use lib_core::model::presave::{
 	StudyPresaveRegistrationNumberForCreate,
 	StudyPresaveRegistrationNumberForUpdate,
 };
+use lib_core::model::presave_lifecycle::{PresaveKind, PresaveLifecycleService};
 use lib_core::model::store::{set_org_context, set_user_context};
 use lib_core::model::Error as ModelError;
 use lib_core::model::ModelManager;
@@ -144,6 +145,70 @@ async fn inactive_presave_reference_returns_p2001_for_receiver_link() -> Result<
 		"expected P2001, got {result:?}"
 	);
 	tx.rollback().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn presave_lifecycle_archives_unreferenced_and_blocks_used_receiver(
+) -> Result<()> {
+	_dev_utils::init_dev().await;
+	let mm = ModelManager::new().await?;
+	let ctx = demo_ctx();
+	let sender_id = SenderPresaveBmc::create(
+		&ctx,
+		&mm,
+		sender_presave_create(format!("Lifecycle sender {}", Uuid::new_v4())),
+	)
+	.await?;
+	let available_receiver = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		receiver_presave_create(format!(
+			"Lifecycle available receiver {}",
+			Uuid::new_v4()
+		)),
+	)
+	.await?;
+	PresaveLifecycleService::archive(
+		&ctx,
+		&mm,
+		PresaveKind::Receiver,
+		available_receiver,
+	)
+	.await?;
+	assert!(
+		ReceiverPresaveBmc::get(&ctx, &mm, available_receiver)
+			.await?
+			.deleted
+	);
+
+	let used_receiver = ReceiverPresaveBmc::create(
+		&ctx,
+		&mm,
+		receiver_presave_create(format!(
+			"Lifecycle used receiver {}",
+			Uuid::new_v4()
+		)),
+	)
+	.await?;
+	let mut product = product_presave_create(
+		RegulatoryAuthority::Fda,
+		format!("Lifecycle receiver product {}", Uuid::new_v4()),
+		sender_id,
+	);
+	product.receiver_presave_id = Some(used_receiver);
+	ProductPresaveBmc::create(&ctx, &mm, product).await?;
+	expect_conflict_error(
+		PresaveLifecycleService::archive(
+			&ctx,
+			&mm,
+			PresaveKind::Receiver,
+			used_receiver,
+		)
+		.await,
+		"receiver presave is in use",
+	);
 	Ok(())
 }
 
@@ -284,6 +349,24 @@ fn product_presave_create(
 		drug_authorization_country: None,
 		drug_authorization_holder: None,
 		holder_applicant_name_notation: None,
+	}
+}
+
+fn receiver_presave_create(organization_name: String) -> ReceiverPresaveForCreate {
+	ReceiverPresaveForCreate {
+		receiver_type: Some("Regulatory Authority".into()),
+		organization_name: Some(organization_name),
+		receiver_identifier: None,
+		day_count_rule: None,
+		nsae_solicited_day_count: None,
+		nsae_solicited_not_applicable: None,
+		nsae_non_solicited_day_count: None,
+		nsae_non_solicited_not_applicable: None,
+		sae_solicited_day_count: None,
+		sae_solicited_not_applicable: None,
+		sae_non_solicited_day_count: None,
+		sae_non_solicited_not_applicable: None,
+		description: None,
 	}
 }
 
@@ -2123,7 +2206,7 @@ async fn section_presave_parent_bmcs_reject_delete_when_referenced() -> Result<(
 	);
 	expect_conflict_error(
 		SenderPresaveBmc::delete(&ctx, &mm, sender_id).await,
-		"sender presave is used by product presaves",
+		"sender presave is in use",
 	);
 
 	expect_conflict_error(
@@ -2141,7 +2224,7 @@ async fn section_presave_parent_bmcs_reject_delete_when_referenced() -> Result<(
 	);
 	expect_conflict_error(
 		ProductPresaveBmc::delete(&ctx, &mm, product_id).await,
-		"product presave is used by study presaves",
+		"product presave is in use",
 	);
 
 	Ok(())

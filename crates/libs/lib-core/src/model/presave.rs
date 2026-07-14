@@ -2,6 +2,7 @@ use crate::ctx::Ctx;
 use crate::e2b::null_flavor::NullFlavor;
 use crate::model::base::base_uuid;
 use crate::model::base::DbBmc;
+use crate::model::presave_lifecycle::{PresaveKind, PresaveLifecycleService};
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::user::{User, UserBmc};
 use crate::model::ModelManager;
@@ -463,13 +464,7 @@ impl SenderPresaveBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
-		if any_user_scope_contains(ctx, mm, id, |u| u.access_sender_ids.as_deref())
-			.await?
-		{
-			return Err(relationship_conflict("sender presave is granted to users"));
-		}
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		PresaveLifecycleService::hard_delete(ctx, mm, PresaveKind::Sender, id).await
 	}
 
 	fn validate_identity(
@@ -901,8 +896,8 @@ impl ReceiverPresaveBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		Self::ensure_not_referenced_by_products(ctx, mm, id).await?;
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		PresaveLifecycleService::hard_delete(ctx, mm, PresaveKind::Receiver, id)
+			.await
 	}
 
 	fn validate_identity(
@@ -1476,15 +1471,7 @@ impl ProductPresaveBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		Self::ensure_not_referenced_by_studies(ctx, mm, id).await?;
-		if any_user_scope_contains(ctx, mm, id, |u| u.access_product_ids.as_deref())
-			.await?
-		{
-			return Err(relationship_conflict(
-				"product presave is granted to users",
-			));
-		}
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		PresaveLifecycleService::hard_delete(ctx, mm, PresaveKind::Product, id).await
 	}
 
 	fn validate_identity(
@@ -1877,7 +1864,8 @@ impl ReporterPresaveBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		PresaveLifecycleService::hard_delete(ctx, mm, PresaveKind::Reporter, id)
+			.await
 	}
 
 	fn validate_identity(
@@ -2186,12 +2174,7 @@ impl StudyPresaveBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		if any_user_scope_contains(ctx, mm, id, |u| u.access_study_ids.as_deref())
-			.await?
-		{
-			return Err(relationship_conflict("study presave is granted to users"));
-		}
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		PresaveLifecycleService::hard_delete(ctx, mm, PresaveKind::Study, id).await
 	}
 
 	fn validate_identity(
@@ -2334,7 +2317,8 @@ impl StudyPresaveRegistrationNumberBmc {
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
-		base_uuid::delete::<Self>(ctx, mm, id).await
+		PresaveLifecycleService::hard_delete(ctx, mm, PresaveKind::Narrative, id)
+			.await
 	}
 
 	pub async fn list_by_parent(
