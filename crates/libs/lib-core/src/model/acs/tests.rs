@@ -3,9 +3,13 @@ use crate::ctx::{ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO};
 use std::fs;
 use std::path::PathBuf;
 
+fn acs_dir() -> PathBuf {
+	PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/model/acs")
+}
+
 #[test]
 fn acs_modules_separate_types_and_catalog() {
-	let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/model/acs");
+	let dir = acs_dir();
 	for module in [
 		"types.rs",
 		"catalog.rs",
@@ -22,6 +26,13 @@ fn acs_modules_separate_types_and_catalog() {
 		!dir.join("permission.rs").exists(),
 		"legacy permission.rs should be removed"
 	);
+}
+
+#[test]
+fn menu_policy_is_declarative() {
+	let source = fs::read_to_string(acs_dir().join("menu_policy.rs")).unwrap();
+	assert!(source.contains("static MENU_POLICIES:"));
+	assert!(!source.contains("match menu_key"));
 }
 
 #[test]

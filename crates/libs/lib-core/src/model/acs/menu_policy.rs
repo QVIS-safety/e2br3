@@ -22,157 +22,136 @@ fn push_unique(target: &mut Vec<Permission>, source: &[Permission]) {
 	}
 }
 
-fn permissions_for_menu_key(
-	menu_key: &str,
-	can_read: bool,
-	can_edit: bool,
-	can_review: bool,
-	can_lock: bool,
-) -> Vec<Permission> {
-	let mut permissions = Vec::new();
-	match menu_key {
-		"home_workflow" => {
-			if can_read {
-				push_unique(&mut permissions, &[CASE_READ, CASE_LIST]);
-			}
+#[derive(Clone, Copy)]
+enum PermissionBundle {
+	Viewer,
+	ProfileEdit,
+	Admin,
+}
+
+#[derive(Clone, Copy)]
+enum PermissionSource {
+	Fixed(&'static [Permission]),
+	Bundle(PermissionBundle),
+}
+
+struct MenuPolicy {
+	keys: &'static [&'static str],
+	rules: &'static [MenuRule],
+}
+
+struct MenuRule {
+	flags: u8,
+	source: PermissionSource,
+}
+
+const READ: u8 = 1;
+const EDIT: u8 = 2;
+const REVIEW: u8 = 4;
+const LOCK: u8 = 8;
+
+const fn fixed(permissions: &'static [Permission]) -> PermissionSource {
+	PermissionSource::Fixed(permissions)
+}
+
+const fn bundle(bundle: PermissionBundle) -> PermissionSource {
+	PermissionSource::Bundle(bundle)
+}
+
+macro_rules! policy {
+	($keys:expr; $( $flags:expr => $source:expr ),+ $(,)?) => {
+		MenuPolicy {
+			keys: $keys,
+			rules: &[$(MenuRule { flags: $flags, source: $source }),+],
 		}
-		"home_notice" => {
-			if can_read {
-				push_unique(&mut permissions, &[DASHBOARD_NOTICE_READ]);
-			}
-			if can_edit || can_review || can_lock {
-				push_unique(
-					&mut permissions,
-					&[DASHBOARD_NOTICE_READ, DASHBOARD_NOTICE_UPDATE],
-				);
-			}
+	};
+}
+
+static MENU_POLICIES: &[MenuPolicy] = &[
+	policy!(&["home_workflow"]; READ => fixed(&[CASE_READ, CASE_LIST])),
+	policy!(&["home_notice"];
+		READ => fixed(&[DASHBOARD_NOTICE_READ]),
+		EDIT | REVIEW | LOCK => fixed(&[DASHBOARD_NOTICE_READ, DASHBOARD_NOTICE_UPDATE]),
+	),
+	policy!(&["home_email"];
+		EDIT | REVIEW | LOCK => fixed(&[EMAIL_NOTIFICATION_SEND]),
+	),
+	policy!(&["case"];
+		READ => bundle(PermissionBundle::Viewer),
+		EDIT => bundle(PermissionBundle::ProfileEdit),
+		REVIEW | LOCK => fixed(&[CASE_APPROVE, CASE_UPDATE]),
+	),
+	policy!(&["info"];
+		READ => fixed(&[
+			PRESAVE_TEMPLATE_READ,
+			PRESAVE_TEMPLATE_LIST,
+			SENDER_INFORMATION_READ,
+			SENDER_INFORMATION_LIST,
+			RECEIVER_READ,
+			RECEIVER_LIST,
+			STUDY_INFORMATION_READ,
+			STUDY_INFORMATION_LIST,
+			NARRATIVE_READ,
+			NARRATIVE_LIST,
+		]),
+		EDIT => fixed(&[
+			PRESAVE_TEMPLATE_CREATE,
+			PRESAVE_TEMPLATE_UPDATE,
+			PRESAVE_TEMPLATE_DELETE,
+			SENDER_INFORMATION_CREATE,
+			SENDER_INFORMATION_UPDATE,
+			SENDER_INFORMATION_DELETE,
+			RECEIVER_CREATE,
+			RECEIVER_UPDATE,
+			RECEIVER_DELETE,
+			STUDY_INFORMATION_CREATE,
+			STUDY_INFORMATION_UPDATE,
+			STUDY_INFORMATION_DELETE,
+			NARRATIVE_CREATE,
+			NARRATIVE_UPDATE,
+			NARRATIVE_DELETE,
+		]),
+	),
+	policy!(&["import"];
+		READ => fixed(&[XML_IMPORT_READ]),
+		EDIT => fixed(&[XML_IMPORT]),
+	),
+	policy!(&["export_submission", "submission", "export"];
+		READ => fixed(&[XML_EXPORT_READ]),
+		EDIT => fixed(&[XML_EXPORT]),
+	),
+	policy!(&["user", "users"];
+		READ => fixed(&[USER_READ, USER_LIST]),
+		EDIT | REVIEW | LOCK => fixed(&[USER_CREATE, USER_UPDATE, USER_DELETE]),
+	),
+	policy!(&["audit"];
+		READ | REVIEW => fixed(&[AUDIT_READ, AUDIT_LIST]),
+	),
+	policy!(&["data", "terminology"];
+		READ => fixed(&[TERMINOLOGY_READ]),
+		EDIT | REVIEW => fixed(&[TERMINOLOGY_IMPORT, TERMINOLOGY_APPROVE]),
+	),
+	policy!(&["admin"];
+		READ | EDIT | REVIEW | LOCK => bundle(PermissionBundle::Admin),
+	),
+	policy!(&["settings"];
+		READ => fixed(&[SETTINGS_READ]),
+		EDIT | REVIEW | LOCK => fixed(&[SETTINGS_READ, SETTINGS_UPDATE]),
+	),
+	policy!(&["roles"];
+		EDIT | REVIEW | LOCK => bundle(PermissionBundle::Admin),
+	),
+];
+
+fn resolve(source: PermissionSource) -> &'static [Permission] {
+	match source {
+		PermissionSource::Fixed(permissions) => permissions,
+		PermissionSource::Bundle(PermissionBundle::Viewer) => viewer_permissions(),
+		PermissionSource::Bundle(PermissionBundle::ProfileEdit) => {
+			profile_edit_permissions()
 		}
-		// Home e-mail notifications: the UI exposes a single "Send" checkbox
-		// bound to can_edit. Feature is pending; the permission is reserved so
-		// the checkbox persists and grants correctly once e-mail ships.
-		"home_email" => {
-			if can_edit || can_review || can_lock {
-				push_unique(&mut permissions, &[EMAIL_NOTIFICATION_SEND]);
-			}
-		}
-		"case" => {
-			if can_read {
-				push_unique(&mut permissions, viewer_permissions());
-			}
-			if can_edit {
-				push_unique(&mut permissions, profile_edit_permissions());
-			}
-			if can_review || can_lock {
-				push_unique(&mut permissions, &[CASE_APPROVE, CASE_UPDATE]);
-			}
-		}
-		"info" => {
-			if can_read {
-				push_unique(
-					&mut permissions,
-					&[
-						PRESAVE_TEMPLATE_READ,
-						PRESAVE_TEMPLATE_LIST,
-						SENDER_INFORMATION_READ,
-						SENDER_INFORMATION_LIST,
-						RECEIVER_READ,
-						RECEIVER_LIST,
-						STUDY_INFORMATION_READ,
-						STUDY_INFORMATION_LIST,
-						NARRATIVE_READ,
-						NARRATIVE_LIST,
-					],
-				);
-			}
-			if can_edit {
-				push_unique(
-					&mut permissions,
-					&[
-						PRESAVE_TEMPLATE_CREATE,
-						PRESAVE_TEMPLATE_UPDATE,
-						PRESAVE_TEMPLATE_DELETE,
-						SENDER_INFORMATION_CREATE,
-						SENDER_INFORMATION_UPDATE,
-						SENDER_INFORMATION_DELETE,
-						RECEIVER_CREATE,
-						RECEIVER_UPDATE,
-						RECEIVER_DELETE,
-						STUDY_INFORMATION_CREATE,
-						STUDY_INFORMATION_UPDATE,
-						STUDY_INFORMATION_DELETE,
-						NARRATIVE_CREATE,
-						NARRATIVE_UPDATE,
-						NARRATIVE_DELETE,
-					],
-				);
-			}
-		}
-		"import" => {
-			if can_read {
-				push_unique(&mut permissions, &[XML_IMPORT_READ]);
-			}
-			if can_edit {
-				push_unique(&mut permissions, &[XML_IMPORT]);
-			}
-		}
-		"export_submission" | "submission" | "export" => {
-			if can_read {
-				push_unique(&mut permissions, &[XML_EXPORT_READ]);
-			}
-			if can_edit {
-				push_unique(&mut permissions, &[XML_EXPORT]);
-			}
-		}
-		"user" | "users" => {
-			if can_read {
-				push_unique(&mut permissions, &[USER_READ, USER_LIST]);
-			}
-			if can_edit || can_review || can_lock {
-				push_unique(
-					&mut permissions,
-					&[USER_CREATE, USER_UPDATE, USER_DELETE],
-				);
-			}
-		}
-		// Organization management is system-admin only (org endpoints use
-		// require_system_admin), so it is intentionally NOT a profile-matrix
-		// privilege. No arm here means the org menu key grants nothing.
-		"audit" => {
-			if can_read || can_review {
-				push_unique(&mut permissions, &[AUDIT_READ, AUDIT_LIST]);
-			}
-		}
-		"data" | "terminology" => {
-			if can_read {
-				push_unique(&mut permissions, &[TERMINOLOGY_READ]);
-			}
-			if can_edit || can_review {
-				push_unique(
-					&mut permissions,
-					&[TERMINOLOGY_IMPORT, TERMINOLOGY_APPROVE],
-				);
-			}
-		}
-		"admin" => {
-			if can_read || can_edit || can_review || can_lock {
-				push_unique(&mut permissions, admin_permissions());
-			}
-		}
-		"settings" | "roles" => {
-			if menu_key == "settings" {
-				if can_read {
-					push_unique(&mut permissions, &[SETTINGS_READ]);
-				}
-				if can_edit || can_review || can_lock {
-					push_unique(&mut permissions, &[SETTINGS_READ, SETTINGS_UPDATE]);
-				}
-			} else if can_edit || can_review || can_lock {
-				push_unique(&mut permissions, admin_permissions());
-			}
-		}
-		_ => {}
+		PermissionSource::Bundle(PermissionBundle::Admin) => admin_permissions(),
 	}
-	permissions
 }
 
 pub fn permissions_for_menu_privileges(
@@ -180,14 +159,22 @@ pub fn permissions_for_menu_privileges(
 ) -> Vec<Permission> {
 	let mut permissions = Vec::new();
 	for privilege in privileges {
-		let menu_permissions = permissions_for_menu_key(
-			privilege.menu_key.trim(),
-			privilege.can_read,
-			privilege.can_edit,
-			privilege.can_review,
-			privilege.can_lock,
-		);
-		push_unique(&mut permissions, &menu_permissions);
+		let key = privilege.menu_key.trim();
+		let Some(policy) = MENU_POLICIES
+			.iter()
+			.find(|policy| policy.keys.contains(&key))
+		else {
+			continue;
+		};
+		let enabled = u8::from(privilege.can_read) * READ
+			| u8::from(privilege.can_edit) * EDIT
+			| u8::from(privilege.can_review) * REVIEW
+			| u8::from(privilege.can_lock) * LOCK;
+		for rule in policy.rules {
+			if rule.flags & enabled != 0 {
+				push_unique(&mut permissions, resolve(rule.source));
+			}
+		}
 	}
 	permissions
 }
