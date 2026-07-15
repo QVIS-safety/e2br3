@@ -12,7 +12,7 @@ pub(super) const BINDINGS: &[PortableFieldBinding] = &[
 	PortableFieldBinding {
 		section: "DH",
 		frontend_path: "patientInformation.pastDrugHistory[].drugName",
-		request_path: "pastDrugHistory[].drugName",
+		request_path: "drugName",
 		value_type: PortableValueType::String,
 		rule_codes: &["ICH.D.8.r.1.LENGTH.MAX"],
 		null_flavor_path: None,

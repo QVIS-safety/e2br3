@@ -2195,6 +2195,50 @@ async fn editor_ae_page_row_patch_updates_one_reaction() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn portable_ae_patch_rejects_before_write() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id = create_case(&app, &cookie, "EDITOR-AE-PORTABLE-GATE").await?;
+	let reaction_id = create_reaction_fixture(&app, &cookie, &case_id).await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}"),
+		json!({
+			"changes": {
+				"reactionPrimarySourceNative": { "value": "X".repeat(251) }
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	assert!(
+		body.to_string().contains("ICH.E.i.1.1a.LENGTH.MAX"),
+		"{body}"
+	);
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/AE/rows/{reaction_id}"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["data"]["reaction"]["primary_source_reaction"],
+		"Headache"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_editor_repeatable_row_save_refreshes_validation_cache() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

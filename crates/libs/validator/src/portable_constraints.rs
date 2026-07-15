@@ -163,6 +163,10 @@ pub fn validate_portable_value(
 				value.chars().count()
 					<= rule.max_length.expect("max length is present")
 			}
+			PortableInputValue::Number(value) => {
+				value.to_string().chars().count()
+					<= rule.max_length.expect("max length is present")
+			}
 			_ => false,
 		},
 		PortableConstraintKind::NullFlavor => null_flavor

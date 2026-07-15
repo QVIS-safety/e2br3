@@ -39,7 +39,7 @@ pub(super) const BINDINGS: &[PortableFieldBinding] = &[
 	PortableFieldBinding {
 		section: "RP",
 		frontend_path: "primarySources[].reporterTitle",
-		request_path: "primarySources[].reporterTitle",
+		request_path: "reporterTitle",
 		value_type: PortableValueType::String,
 		rule_codes: &["ICH.C.2.r.1.1.LENGTH.MAX"],
 		null_flavor_path: None,
@@ -55,7 +55,7 @@ pub(super) const BINDINGS: &[PortableFieldBinding] = &[
 	PortableFieldBinding {
 		section: "LR",
 		frontend_path: "literatureReferences[].referenceText",
-		request_path: "literatureReferences[].referenceText",
+		request_path: "literatureReference",
 		value_type: PortableValueType::String,
 		rule_codes: &["ICH.C.4.r.1.LENGTH.MAX"],
 		null_flavor_path: None,

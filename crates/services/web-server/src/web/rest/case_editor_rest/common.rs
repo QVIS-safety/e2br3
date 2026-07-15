@@ -1,5 +1,8 @@
 //! Shared imports and helpers for case editor REST modules.
 
+pub(super) use super::portable_save::{
+	validate_direct_changes, validate_row_payload,
+};
 pub(super) use crate::web::rest::case_editor_dto::{
 	CaseEditorAeListRowDto, CaseEditorDgListRowDto, CaseEditorDhListRowDto,
 	CaseEditorDirectSectionResponse, CaseEditorFieldPatch, CaseEditorLbListRowDto,
@@ -87,7 +90,7 @@ pub(super) use lib_web::middleware::mw_auth::CtxW;
 pub(super) use modql::filter::{ListOptions, OpValValue, OpValsValue};
 pub(super) use serde::Deserialize;
 pub(super) use serde_json::{json, Map, Value};
-pub(super) use std::collections::BTreeMap;
+pub(super) use std::collections::{BTreeMap, BTreeSet};
 pub(super) use uuid::Uuid;
 
 pub(super) fn uuid_eq(id: Uuid) -> OpValsValue {
@@ -662,6 +665,7 @@ macro_rules! repeatable_page_row_create_handler {
 				validate_request_projection_context(request.authorities.as_deref())?;
 
 			let row = required_row_object($section, &request.rows, $row_key)?;
+			validate_row_payload($section, $row_key, row, None)?;
 			let extras = $extras_fn(&ctx, &mm, case_id, row).await?;
 			let value = row_model_value(row, $aliases, &extras);
 			let create = parse_row_model::<$model>($section, $row_key, value)?;
@@ -703,6 +707,7 @@ macro_rules! repeatable_page_row_create_handler {
 				validate_request_projection_context(request.authorities.as_deref())?;
 
 			let row = required_row_object($section, &request.rows, $row_key)?;
+			validate_row_payload($section, $row_key, row, None)?;
 			let extras = {
 				let $case_id = case_id;
 				let $row = row;
@@ -765,6 +770,9 @@ macro_rules! repeatable_page_row_patch_handler {
 				&request.rows
 			};
 			let row = required_row_object($section, rows, $row_key)?;
+			let changed_paths = (!request.changes.is_empty())
+				.then(|| request.changes.keys().cloned().collect::<BTreeSet<_>>());
+			validate_row_payload($section, $row_key, row, changed_paths.as_ref())?;
 			let value = row_model_value(row, $aliases, &[]);
 			let update = parse_row_model::<$model>($section, $row_key, value)?;
 			$bmc::update(&ctx, &mm, row_id, update).await?;
@@ -818,6 +826,9 @@ macro_rules! repeatable_page_row_patch_handler {
 				&request.rows
 			};
 			let row = required_row_object($section, rows, $row_key)?;
+			let changed_paths = (!request.changes.is_empty())
+				.then(|| request.changes.keys().cloned().collect::<BTreeSet<_>>());
+			validate_row_payload($section, $row_key, row, changed_paths.as_ref())?;
 			let value = row_model_value(row, $aliases, &[]);
 			let update = parse_row_model::<$model>($section, $row_key, value)?;
 			$bmc::update(&ctx, &mm, row_id, update).await?;

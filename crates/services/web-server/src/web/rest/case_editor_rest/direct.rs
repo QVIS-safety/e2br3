@@ -183,99 +183,6 @@ fn patch_optional_bool_value(
 	Ok(Some(value))
 }
 
-fn ci_constraint_value<'a>(
-	field: &str,
-	patch: &'a CaseEditorFieldPatch,
-) -> Result<validator::PortableInputValue<'a>> {
-	let Some(value) = patch.value.as_ref() else {
-		return Ok(validator::PortableInputValue::Missing);
-	};
-	if value.is_null() {
-		return Ok(validator::PortableInputValue::Missing);
-	}
-	if matches!(
-		field,
-		"fulfilExpeditedCriteria" | "otherCaseIdentifiersExist"
-	) {
-		return value
-			.as_bool()
-			.map(validator::PortableInputValue::Boolean)
-			.ok_or_else(|| Error::BadRequest {
-				message: format!("{field} must be a boolean or null"),
-			});
-	}
-	value
-		.as_str()
-		.map(validator::PortableInputValue::String)
-		.ok_or_else(|| Error::BadRequest {
-			message: format!("{field} must be a string or null"),
-		})
-}
-
-fn ci_companion_null_flavor<'a>(
-	changes: &'a BTreeMap<String, CaseEditorFieldPatch>,
-	field: &str,
-	patch: &'a CaseEditorFieldPatch,
-) -> Option<&'a str> {
-	let companion = match field {
-		"fulfilExpeditedCriteria" => "fulfilExpeditedCriteriaNullFlavor",
-		"otherCaseIdentifiersExist" => "otherCaseIdentifiersExistNullFlavor",
-		_ => return patch.null_flavor.as_ref().and_then(Option::as_deref),
-	};
-	patch
-		.null_flavor
-		.as_ref()
-		.and_then(Option::as_deref)
-		.or_else(|| {
-			changes
-				.get(companion)
-				.and_then(|patch| patch.value.as_ref())
-				.and_then(Value::as_str)
-		})
-}
-
-fn validate_ci_save_constraints(
-	changes: &BTreeMap<String, CaseEditorFieldPatch>,
-) -> Result<()> {
-	const BINDINGS: &[(&str, &[&str])] = &[
-		(
-			"reportType",
-			&["ICH.C.1.3.LENGTH.MAX", "ICH.C.1.3.ALLOWED.VALUE"],
-		),
-		("fulfilExpeditedCriteria", &["ICH.C.1.7.ALLOWED.VALUE"]),
-		(
-			"fulfilExpeditedCriteriaNullFlavor",
-			&["ICH.C.1.7.NULLFLAVOR.ALLOWED"],
-		),
-		("otherCaseIdentifiersExist", &["ICH.C.1.9.1.ALLOWED.VALUE"]),
-		(
-			"otherCaseIdentifiersExistNullFlavor",
-			&["ICH.C.1.9.1.NULLFLAVOR.ALLOWED"],
-		),
-	];
-
-	for (field, rule_codes) in BINDINGS {
-		let Some(patch) = changes.get(*field) else {
-			continue;
-		};
-		let value = ci_constraint_value(field, patch)?;
-		let null_flavor = ci_companion_null_flavor(changes, field, patch);
-		for rule_code in *rule_codes {
-			if let Err(violation) =
-				validator::validate_portable_value(rule_code, value, null_flavor)
-			{
-				return Err(Error::BadRequest {
-					message: format!(
-						"{} at safetyReportIdentification.{field}: {}",
-						violation.code, violation.message
-					),
-				});
-			}
-		}
-	}
-	Ok(())
-}
-
 /// PATCH /api/cases/{case_id}/editor/pages/CI
 pub async fn patch_editor_ci_page_projection(
 	State(mm): State<ModelManager>,
@@ -292,7 +199,7 @@ pub async fn patch_editor_ci_page_projection(
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let requested_authorities =
 		validate_request_projection_context(request.authorities.as_deref())?;
-	validate_ci_save_constraints(&request.changes)?;
+	validate_direct_changes("CI", &request.changes)?;
 
 	let mut update = SafetyReportIdentificationForUpdate {
 		safety_report_id: None,
@@ -473,6 +380,7 @@ async fn patch_direct_page_projection(
 	lib_rest_core::require_case_write_allowed(&ctx, &mm, case_id).await?;
 	let requested_authorities =
 		validate_request_projection_context(request.authorities.as_deref())?;
+	validate_direct_changes(page_id, &request.changes)?;
 
 	if !request.changes.is_empty() {
 		apply_direct_page_changes_patch(
@@ -1757,36 +1665,42 @@ mod tests {
 
 	#[test]
 	fn ci_gate_rejects_invalid_inline_value() {
-		let error = validate_ci_save_constraints(&changes(
-			"reportType",
-			Value::String("9".to_string()),
-		))
+		let error = validate_direct_changes(
+			"CI",
+			&changes("reportType", Value::String("9".to_string())),
+		)
 		.expect_err("invalid report type should fail");
 		assert!(format!("{error:?}").contains("ICH.C.1.3.ALLOWED.VALUE"));
 	}
 
 	#[test]
 	fn ci_gate_validates_null_flavor_values() {
-		assert!(validate_ci_save_constraints(&changes(
-			"fulfilExpeditedCriteriaNullFlavor",
-			Value::String("NI".to_string()),
-		))
+		assert!(validate_direct_changes(
+			"CI",
+			&changes(
+				"fulfilExpeditedCriteriaNullFlavor",
+				Value::String("NI".to_string()),
+			)
+		)
 		.is_ok());
-		let error = validate_ci_save_constraints(&changes(
-			"fulfilExpeditedCriteriaNullFlavor",
-			Value::String("BAD".to_string()),
-		))
+		let error = validate_direct_changes(
+			"CI",
+			&changes(
+				"fulfilExpeditedCriteriaNullFlavor",
+				Value::String("BAD".to_string()),
+			),
+		)
 		.expect_err("invalid null flavor should fail");
 		assert!(format!("{error:?}").contains("ICH.C.1.7.NULLFLAVOR.ALLOWED"));
 	}
 
 	#[test]
 	fn ci_gate_rejects_non_primitive_patch_values() {
-		let error = validate_ci_save_constraints(&changes(
-			"reportType",
-			json!({ "nested": true }),
-		))
+		let error = validate_direct_changes(
+			"CI",
+			&changes("reportType", json!({ "nested": true })),
+		)
 		.expect_err("object report type should fail");
-		assert!(format!("{error:?}").contains("must be a string or null"));
+		assert!(format!("{error:?}").contains("ICH.C.1.3.LENGTH.MAX"));
 	}
 }
