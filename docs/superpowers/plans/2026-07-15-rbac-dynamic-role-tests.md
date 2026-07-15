@@ -1,72 +1,74 @@
-# RBAC Dynamic Role Tests Implementation Plan
+# Focused RBAC Dynamic Role Tests Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add isolated integration coverage for dynamic-role lifecycle operations and precedence over built-in roles.
+**Goal:** Replace the combined dynamic-role test with focused lifecycle and permission-profile tests organized in a dedicated folder.
 
-**Architecture:** One integration test binary owns all mutations to the process-global dynamic-role registry. A cleanup guard empties the registry on return or panic, while the test exercises only exported ACS APIs.
+**Architecture:** A top-level integration target declares focused modules under `tests/rbac_dynamic_roles/`. Shared support serializes registry mutations, resets global state with a panic-safe guard, expands menu profiles, installs them, and provides complete positive permission assertions.
 
-**Tech Stack:** Rust integration tests and the existing `lib-core` ACS API.
+**Tech Stack:** Rust integration tests, `serial_test`, and exported `lib-core::model::acs` APIs.
 
 ## Global Constraints
 
-- Do not modify production RBAC behavior or public interfaces.
-- Do not require `--test-threads=1`.
-- Restore the global dynamic-role registry after every test outcome.
-- Keep the existing RBAC policy fingerprint unchanged.
+- Do not modify production RBAC code or public interfaces.
+- Every registry-mutating test uses `#[serial]` and `RegistryGuard`.
+- Tests run without `--test-threads=1`.
+- The existing RBAC policy fingerprint remains unchanged.
 
 ---
 
-### Task 1: Dynamic Role Lifecycle and Precedence Integration Test
+### Task 1: Test Harness and Lifecycle Modules
 
 **Files:**
-- Create: `crates/libs/lib-core/tests/rbac_dynamic_roles.rs`
+- Modify: `crates/libs/lib-core/tests/rbac_dynamic_roles.rs`
+- Create: `crates/libs/lib-core/tests/rbac_dynamic_roles/support.rs`
+- Create: `registration.rs`, `update.rs`, `removal.rs`, `replacement.rs`, `precedence.rs` in the same folder
 
 **Interfaces:**
-- Consumes: `replace_dynamic_roles`, `upsert_dynamic_role_permissions`, `remove_dynamic_role`, `has_permission`, `has_any_permission`, `has_all_permissions`
-- Produces: integration test `dynamic_role_lifecycle_and_builtin_precedence`
+- `RegistryGuard::new()` clears the registry and clears it again from `Drop`.
+- `install(role, permissions)` delegates to `upsert_dynamic_role_permissions`.
 
-- [ ] **Step 1: Write the integration test and cleanup guard**
+- [ ] **Step 1:** Replace the combined test with module declarations.
+- [ ] **Step 2:** Implement the cleanup guard and helper functions in `support.rs`.
+- [ ] **Step 3:** Add one or more focused tests per lifecycle file, using `#[serial]`.
+- [ ] **Step 4:** Run `cargo test -p lib-core --test rbac_dynamic_roles -- --nocapture`; expect all lifecycle tests to pass.
+- [ ] **Step 5:** Commit with `test: split dynamic RBAC lifecycle coverage`.
 
-Create a `RegistryCleanup` guard whose `Drop` implementation calls
-`replace_dynamic_roles(HashMap::new())`. In one test, clear the registry, then
-assert registration with a whitespace-and-uppercase custom role, replacement
-of that role's permissions, removal, full-map replacement, and disappearance
-of entries omitted from a subsequent replacement.
+---
 
-For precedence, insert `[CASE_READ]` for `ROLE_SPONSOR_ADMIN_CRO`; assert
-`CASE_READ` is granted and the built-in `USER_CREATE` is denied. Remove the
-dynamic entry and assert built-in `USER_CREATE` is restored.
+### Task 2: Operational Permission Profiles
 
-- [ ] **Step 2: Run the new test**
+**Files:**
+- Create: `crates/libs/lib-core/tests/rbac_dynamic_roles/case_profile.rs`
+- Create: `crates/libs/lib-core/tests/rbac_dynamic_roles/information_profile.rs`
+- Create: `crates/libs/lib-core/tests/rbac_dynamic_roles/transfer_profile.rs`
+- Modify: `crates/libs/lib-core/tests/rbac_dynamic_roles.rs`
+- Modify: `crates/libs/lib-core/tests/rbac_dynamic_roles/support.rs`
 
-Run: `cargo test -p lib-core --test rbac_dynamic_roles -- --nocapture`
+**Interfaces:**
+- `profile(menu_key, read, edit, review, lock) -> Vec<Permission>` expands one `AdminMenuPrivilege`.
+- `install_profile(role, permissions)` installs and returns the vector for complete positive assertions.
 
-Expected: one test passes without test-thread serialization flags.
+- [ ] **Step 1:** Add separate case read, edit, review, and lock tests. Assert every expanded permission is granted and representative disabled writes are denied.
+- [ ] **Step 2:** Add separate information read and edit tests with disabled-write checks.
+- [ ] **Step 3:** Add import and export read/execute tests plus export alias equality tests.
+- [ ] **Step 4:** Run the integration target; expect all profile tests to pass.
+- [ ] **Step 5:** Commit with `test: cover operational dynamic permission profiles`.
 
-- [ ] **Step 3: Prove repeatability**
+---
 
-Run twice:
+### Task 3: Administrative and Dashboard Profiles
 
-```bash
-cargo test -p lib-core --test rbac_dynamic_roles -- --nocapture
-cargo test -p lib-core --test rbac_dynamic_roles -- --nocapture
-```
+**Files:**
+- Create: `crates/libs/lib-core/tests/rbac_dynamic_roles/administration_profile.rs`
+- Create: `crates/libs/lib-core/tests/rbac_dynamic_roles/dashboard_profile.rs`
+- Modify: `crates/libs/lib-core/tests/rbac_dynamic_roles.rs`
 
-Expected: both runs pass, demonstrating cleanup does not leak state.
+**Interfaces:**
+- Reuses `RegistryGuard`, `profile`, and `install_profile` from `support.rs`.
 
-- [ ] **Step 4: Run RBAC and full regression suites**
-
-```bash
-cargo test -p lib-core model::acs:: -- --nocapture
-cargo test -p lib-core
-```
-
-Expected: all tests pass; only the existing database-dependent tests remain ignored.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add crates/libs/lib-core/tests/rbac_dynamic_roles.rs
-git commit -m "test: cover dynamic RBAC role lifecycle"
-```
+- [ ] **Step 1:** Add users, audit, terminology, settings, roles, and admin profile tests with positive and disabled/unrelated negative assertions.
+- [ ] **Step 2:** Add workflow, notice, and e-mail profile tests plus unsupported-menu empty-profile coverage.
+- [ ] **Step 3:** Run the integration target twice; expect both runs to pass without leaked state.
+- [ ] **Step 4:** Run `cargo test -p lib-core model::acs:: -- --nocapture` and `cargo test -p lib-core`; expect zero failures.
+- [ ] **Step 5:** Commit with `test: cover administrative dynamic permission profiles`.
