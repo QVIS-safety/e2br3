@@ -1,92 +1,86 @@
-# RBAC REST Effective Access Tests Design
+# RBAC REST Effective Access Test Split Design
 
 ## Goal
 
-Verify that persisted dynamic permission profiles control real HTTP endpoints,
-not only in-memory permission checks or capability responses. Tests cover the
-complete path from profile persistence and user assignment through Router
-authorization and HTTP status mapping.
+Split the existing 1,600-line dynamic-profile REST test module into focused
+area files without duplicating tests or changing their database and Router
+behavior. Add only the missing authorization assertions exposed during the
+split.
 
-## Existing Coverage and Scope
+## Existing Coverage
 
-Existing `tests/authz` files already cover built-in administrator/viewer access
-for cases, patients, drugs, narratives, safety reports, users, organizations,
-and audit endpoints. The new suite does not repeat those built-in-role tests.
+`tests/api/role_admin/privilege_matrix_web.rs` already exercises persisted
+permission profiles for case, information/presave, terminology, export,
+import, users/roles, settings, workflow, audit, notice, and e-mail behavior.
+Those tests create profiles through HTTP, assign users, update privileges, and
+verify effective permissions or Router responses.
 
-The new suite focuses on dynamic-profile effective access for functional areas
-that are missing or only partially represented: case operations, information
-and presave endpoints, import/export, terminology, administrative settings,
-and dashboard notices. Production code is unchanged unless a test exposes a
-confirmed authorization defect.
+The implementation therefore moves this coverage instead of recreating it.
 
-## File Structure
-
-Add a focused module folder below the existing role-admin API integration tests:
+## Target Structure
 
 ```text
-crates/services/web-server/tests/api/role_admin/effective_access/
-├── support.rs
-├── case_web.rs
-├── information_web.rs
-├── transfer_web.rs
-├── terminology_web.rs
-├── administration_web.rs
-└── dashboard_web.rs
+crates/services/web-server/tests/api/role_admin/
+├── effective_access.rs
+└── effective_access/
+    ├── support.rs
+    ├── persistence_web.rs
+    ├── case_web.rs
+    ├── information_web.rs
+    ├── transfer_web.rs
+    ├── terminology_web.rs
+    ├── administration_web.rs
+    └── dashboard_web.rs
 ```
 
-`tests/api/role_admin/effective_access.rs` is the module entry point, and
-`tests/api/role_admin/mod.rs` includes it.
+`role_admin/mod.rs` replaces `mod privilege_matrix_web` with
+`mod effective_access`. The old `privilege_matrix_web.rs` is deleted after all
+tests have been moved.
 
-## Shared Test Flow
+## File Responsibilities
 
-`support.rs` builds on existing role-admin helpers. Each test:
+- `support.rs`: imports and helper functions shared only by effective-access
+  modules, reusing the existing `role_admin::helpers` API rather than copying
+  request implementations.
+- `persistence_web.rs`: privilege menu persistence and unsupported-key
+  validation.
+- `case_web.rs`: case-list effective access and workflow case-list access.
+- `information_web.rs`: information and presave permissions.
+- `transfer_web.rs`: import and export/submission read-versus-execute behavior.
+- `terminology_web.rs`: terminology read, import, and approval behavior.
+- `administration_web.rs`: users, roles, settings, and audit access.
+- `dashboard_web.rs`: notice capabilities and e-mail permission persistence.
 
-1. initializes the PostgreSQL test model manager and organization fixtures;
-2. creates an empty permission profile through the REST API;
-3. creates a user assigned to the generated profile and obtains its cookie;
-4. calls a protected Router endpoint and verifies HTTP 403 with the expected
-   permission-denied error contract;
-5. updates the persisted profile privileges through the REST API;
-6. repeats the request with the same user and verifies the endpoint is no longer
-   forbidden, using the endpoint's specific success status where fixtures make
-   that deterministic;
-7. calls an unrelated protected endpoint and verifies it remains forbidden.
+## Compatibility
 
-Tests use `#[serial]` because database fixtures and the process-global dynamic
-role registry are shared. Unique names and identifiers prevent row collisions.
+All existing test function names and assertions are preserved unless a name
+must be clarified after extraction. Production code, routes, fixtures,
+permission profiles, and public interfaces remain unchanged.
 
-## Area Coverage
+Tests continue to use `#[serial]` where the original test did. No test is
+silently dropped: a structural inventory compares test names before and after
+the split.
 
-- `case_web.rs`: case read/list and edit/write access, including a denied write
-  for a read-only profile.
-- `information_web.rs`: representative presave/information read and write
-  endpoints, with read-only versus edit separation.
-- `transfer_web.rs`: import read/execute and export read/execute endpoints,
-  including submission aliases where they map to distinct routes.
-- `terminology_web.rs`: terminology read, import, and approve endpoint gates.
-- `administration_web.rs`: settings read/update and user read/write gates; roles
-  and system-only organization behavior remain explicitly separated.
-- `dashboard_web.rs`: notice read/update endpoints and confirmation that the
-  e-mail permission does not grant unrelated settings access.
+## Assertion Improvements
 
-Each file contains focused named tests rather than one route matrix. Endpoint
-fixtures may return domain validation errors after authorization; helpers
-distinguish those from 403 so the test proves the permission gate was crossed.
+During extraction, effective-access tests that currently assert only an
+in-memory permission add Router assertions where a suitable existing endpoint
+and fixture are already available. Denied Router responses assert HTTP 403;
+granted requests assert the endpoint-specific success status or explicitly
+assert that the response crossed the permission gate.
 
-## Assertions
+At least one representative denied response validates the JSON
+permission-denied detail. Each area retains or gains an unrelated-permission
+negative assertion to guard against privilege expansion.
 
-Denied responses must be HTTP 403. Where the JSON error body is available, it
-must include the permission-denied detail contract. Granted requests must use a
-specific success status when the test supplies valid fixtures; otherwise they
-must assert `status != 403` and document the downstream validation status being
-accepted.
-
-Every granted profile test also checks at least one unrelated endpoint remains
-403, preventing broad accidental privilege expansion.
+No new database fixture framework or generalized route matrix is introduced.
 
 ## Verification
 
-Run the new focused integration module, the existing `authz` integration target,
-the complete role-admin API target, and the full `web-server` test suite. Tests
-that require unavailable external services are not added; PostgreSQL is the
-only required integration dependency already used by the project.
+Before moving code, record all test function names in
+`privilege_matrix_web.rs`. After extraction, verify the same names occur under
+`effective_access/`, plus any explicitly added assertion tests.
+
+Run the role-admin API tests, the complete `api` integration target, the
+existing `authz` integration target, and the full `web-server` test suite.
+Only pre-existing ignored or environment-dependent tests may remain skipped.
