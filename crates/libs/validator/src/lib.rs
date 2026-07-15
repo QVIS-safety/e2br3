@@ -219,8 +219,8 @@ pub fn build_report(
 #[cfg(test)]
 mod portable_constraint_api_tests {
 	use super::{
-		portable_constraints, portable_ich_constraints, validate_portable_value,
-		PortableConstraintKind, PortableInputValue,
+		portable_constraints, validate_portable_value, PortableConstraintKind,
+		PortableInputValue,
 	};
 	use std::collections::{BTreeSet, HashMap};
 
@@ -254,8 +254,8 @@ mod portable_constraint_api_tests {
 	}
 
 	#[test]
-	fn projects_only_portable_ich_constraints() {
-		let rules = portable_ich_constraints();
+	fn projects_only_portable_constraint_kinds() {
+		let rules = portable_constraints();
 		let by_code = rules
 			.iter()
 			.map(|rule| (rule.code.as_str(), rule))

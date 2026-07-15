@@ -134,13 +134,6 @@ pub fn portable_constraints() -> Vec<PortableConstraint> {
 	rules
 }
 
-pub fn portable_ich_constraints() -> Vec<PortableConstraint> {
-	portable_constraints()
-		.into_iter()
-		.filter(|rule| rule.code.starts_with("ICH."))
-		.collect()
-}
-
 pub fn validate_portable_value(
 	rule_code: &str,
 	value: PortableInputValue<'_>,
