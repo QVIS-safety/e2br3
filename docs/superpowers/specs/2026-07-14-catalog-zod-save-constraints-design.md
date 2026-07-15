@@ -156,3 +156,20 @@ Vocabulary fixtures are not included because vocabulary is outside this scope.
 - `inline_allowed_values` includes only complete Catalog-owned closed sets.
 - No vocabulary or terminology DB lookup is added.
 - Required and business-validation issues remain draft-saveable.
+
+## Implementation Status
+
+The first ICH CI (`C.1`) vertical slice is implemented:
+
+- the backend Catalog generates the frontend TypeScript constraint map;
+- CI Zod bindings use generated max-length, format, inline allowed-value, and
+  nullFlavor constraints;
+- required CI values no longer enter the frontend syntax save gate;
+- the CI direct PATCH path rejects bound invalid representations before its BMC
+  write;
+- vocabulary and terminology constraints remain excluded.
+
+The generated frontend inventory contains portable ICH constraints for later
+migration, but save-gate bindings are not yet complete for `RP`, `SD`, `LR`,
+`SI`, `DM`, `DH`, `AE`, `LB`, `DG`, or `NR`. Those pages must not be described
+as protected by this implementation.
