@@ -121,4 +121,52 @@ mod portable_bindings_tests {
 			);
 		}
 	}
+
+	fn assert_binding(section: &str, path: &str, rule_code: &str) {
+		assert!(
+			bindings_for_section(section).any(|binding| {
+				binding.frontend_path == path
+					&& binding.rule_codes.contains(&rule_code)
+			}),
+			"missing {section} binding for {rule_code} at {path}"
+		);
+	}
+
+	#[test]
+	fn d_bindings_cover_direct_and_nested_editor_paths() {
+		assert_binding(
+			"DM",
+			"patientInformation.medicalHistoryEpisodes[].comments",
+			"ICH.D.7.1.r.5.LENGTH.MAX",
+		);
+		assert_binding(
+			"DM",
+			"patientInformation.parentInformation.pastDrugHistory[].drugName",
+			"ICH.D.10.8.r.1.LENGTH.MAX",
+		);
+	}
+
+	#[test]
+	fn e_bindings_cover_reaction_editor_paths() {
+		assert_binding(
+			"AE",
+			"reactions[].reactionStartDate",
+			"ICH.E.i.4.ALLOWED.VALUE",
+		);
+		assert_binding(
+			"AE",
+			"reactions[].seriousness.criteriaResultsInDeath",
+			"ICH.E.i.3.2a.NULLFLAVOR.ALLOWED",
+		);
+	}
+
+	#[test]
+	fn f_bindings_cover_test_name_and_numeric_result() {
+		assert_binding("LB", "testResults[].testName", "ICH.F.r.2.1.LENGTH.MAX");
+		assert_binding(
+			"LB",
+			"testResults[].testResult",
+			"ICH.F.r.3.2.ALLOWED.VALUE",
+		);
+	}
 }

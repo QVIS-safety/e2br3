@@ -1,8 +1,9 @@
 use super::common::*;
 use std::collections::BTreeSet;
 use validator::{
-	bindings_for_section, validate_portable_value, PortableFieldBinding,
-	PortableInputValue, PortableValueType,
+	bindings_for_section, portable_constraints, validate_portable_value,
+	PortableConstraintKind, PortableFieldBinding, PortableInputValue,
+	PortableValueType,
 };
 
 struct RequestMatch<'a> {
@@ -131,6 +132,78 @@ fn companion_binding(
 	bindings_for_section(section).find(|candidate| candidate.frontend_path == path)
 }
 
+fn in_band_null_flavor<'a>(
+	binding: &PortableFieldBinding,
+	value: &'a Value,
+) -> Option<&'a str> {
+	if binding.null_flavor_path.is_some() {
+		return None;
+	}
+	let constraints = portable_constraints();
+	let has_value_rule = binding.rule_codes.iter().any(|code| {
+		constraints.iter().any(|rule| {
+			rule.code == *code && rule.kind != PortableConstraintKind::NullFlavor
+		})
+	});
+	if !has_value_rule {
+		return None;
+	}
+	let candidate = value.as_str()?.trim();
+	binding.rule_codes.iter().find_map(|code| {
+		constraints
+			.iter()
+			.find(|rule| {
+				rule.code == *code && rule.kind == PortableConstraintKind::NullFlavor
+			})
+			.filter(|rule| rule.values.iter().any(|allowed| allowed == candidate))
+			.map(|_| candidate)
+	})
+}
+
+fn binding_has_value_rule(binding: &PortableFieldBinding) -> bool {
+	let constraints = portable_constraints();
+	binding.rule_codes.iter().any(|code| {
+		constraints.iter().any(|rule| {
+			rule.code == *code && rule.kind != PortableConstraintKind::NullFlavor
+		})
+	})
+}
+
+fn validate_binding_value(
+	binding: &PortableFieldBinding,
+	value: &Value,
+	null_flavor: Option<&str>,
+	path: &str,
+) -> Result<()> {
+	let constraints = portable_constraints();
+	let in_band = in_band_null_flavor(binding, value);
+	let has_value_rule = binding_has_value_rule(binding);
+	for rule_code in binding.rule_codes {
+		let kind = constraints
+			.iter()
+			.find(|rule| rule.code == *rule_code)
+			.map(|rule| rule.kind);
+		if in_band.is_some() && kind != Some(PortableConstraintKind::NullFlavor) {
+			continue;
+		}
+		if in_band.is_none()
+			&& has_value_rule
+			&& kind == Some(PortableConstraintKind::NullFlavor)
+		{
+			continue;
+		}
+		let input = in_band
+			.map(PortableInputValue::String)
+			.unwrap_or_else(|| input_value(value, binding.value_type));
+		if let Err(error) =
+			validate_portable_value(rule_code, input, in_band.or(null_flavor))
+		{
+			return Err(violation(&error.code, path, &error.message));
+		}
+	}
+	Ok(())
+}
+
 fn violation(rule_code: &str, path: &str, message: &str) -> Error {
 	Error::BadRequest {
 		message: format!("{rule_code} at {path}: {message}"),
@@ -157,19 +230,7 @@ pub(super) fn validate_direct_changes(
 					.and_then(|patch| patch.value.as_ref())
 					.and_then(Value::as_str)
 			});
-		for rule_code in binding.rule_codes {
-			if let Err(error) = validate_portable_value(
-				rule_code,
-				input_value(value, binding.value_type),
-				null_flavor,
-			) {
-				return Err(violation(
-					&error.code,
-					binding.frontend_path,
-					&error.message,
-				));
-			}
-		}
+		validate_binding_value(binding, value, null_flavor, binding.frontend_path)?;
 	}
 	Ok(())
 }
@@ -222,15 +283,7 @@ pub(super) fn validate_row_payload(
 				.and_then(Value::as_str);
 			let path =
 				concrete_frontend_path(binding.frontend_path, &matched.indexes);
-			for rule_code in binding.rule_codes {
-				if let Err(error) = validate_portable_value(
-					rule_code,
-					input_value(matched.value, binding.value_type),
-					null_flavor,
-				) {
-					return Err(violation(&error.code, &path, &error.message));
-				}
-			}
+			validate_binding_value(binding, matched.value, null_flavor, &path)?;
 		}
 	}
 	Ok(())
@@ -305,7 +358,7 @@ mod portable_save_tests {
 		let error = validate_row_payload("LB", "testResult", &test_result, None)
 			.unwrap_err();
 		assert!(error_message(error)
-			.contains("ICH.F.r.3.2.ALLOWED.VALUE at testResults.0.testResultValue"));
+			.contains("ICH.F.r.3.2.ALLOWED.VALUE at testResults.0.testResult"));
 	}
 
 	#[test]
@@ -320,5 +373,19 @@ mod portable_save_tests {
 		let error = validate_row_payload("DG", "drug", &drug, None).unwrap_err();
 		assert!(error_message(error)
 			.contains("at drugs.0.dosageInformation.1.doseValue"));
+	}
+
+	#[test]
+	fn portable_save_accepts_in_band_null_flavor_and_rejects_bad_date() {
+		let allowed =
+			Map::from_iter([("reactionStartDate".to_string(), json!("MSK"))]);
+		validate_row_payload("AE", "reaction", &allowed, None).unwrap();
+
+		let invalid =
+			Map::from_iter([("reactionStartDate".to_string(), json!("2026-07-15"))]);
+		let error =
+			validate_row_payload("AE", "reaction", &invalid, None).unwrap_err();
+		assert!(error_message(error)
+			.contains("ICH.E.i.4.ALLOWED.VALUE at reactions.0.reactionStartDate"));
 	}
 }
