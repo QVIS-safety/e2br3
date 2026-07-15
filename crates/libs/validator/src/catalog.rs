@@ -103,22 +103,30 @@ struct EmbeddedDictionary {
 struct EmbeddedDictionaryEntry {
 	code: String,
 	allowed_value_constraint: Option<AllowedValueConstraint>,
+	#[serde(default)]
+	null_flavors: Vec<String>,
 }
 
+static EMBEDDED_ICH_DICTIONARY: OnceLock<EmbeddedDictionary> = OnceLock::new();
 static ALLOWED_VALUE_CONSTRAINTS: OnceLock<HashMap<String, AllowedValueConstraint>> =
 	OnceLock::new();
 
-fn allowed_value_constraints() -> &'static HashMap<String, AllowedValueConstraint> {
-	ALLOWED_VALUE_CONSTRAINTS.get_or_init(|| {
-		let dictionary: EmbeddedDictionary = serde_json::from_str(include_str!(
+fn embedded_ich_dictionary() -> &'static EmbeddedDictionary {
+	EMBEDDED_ICH_DICTIONARY.get_or_init(|| {
+		serde_json::from_str(include_str!(
 			"../../../../registry/dictionary/ich-e2br3.json"
 		))
-		.expect("embedded ICH dictionary should parse");
-		dictionary
+		.expect("embedded ICH dictionary should parse")
+	})
+}
+
+fn allowed_value_constraints() -> &'static HashMap<String, AllowedValueConstraint> {
+	ALLOWED_VALUE_CONSTRAINTS.get_or_init(|| {
+		embedded_ich_dictionary()
 			.entries
-			.into_iter()
+			.iter()
 			.filter_map(|entry| {
-				entry.allowed_value_constraint.map(|constraint| {
+				entry.allowed_value_constraint.clone().map(|constraint| {
 					(format!("ICH.{}.ALLOWED.VALUE", entry.code), constraint)
 				})
 			})
@@ -4509,6 +4517,17 @@ pub fn null_flavors_source_hash_for_rule(code: &str) -> Option<u64> {
 		.iter()
 		.find(|rule| rule.code == code)
 		.map(|rule| rule.source_hash)
+}
+
+pub fn null_flavors_for_rule(code: &str) -> Option<&'static [String]> {
+	let element_code = code
+		.strip_prefix("ICH.")?
+		.strip_suffix(".NULLFLAVOR.ALLOWED")?;
+	embedded_ich_dictionary()
+		.entries
+		.iter()
+		.find(|entry| entry.code == element_code)
+		.map(|entry| entry.null_flavors.as_slice())
 }
 
 pub fn is_rule_condition_satisfied(code: &str, facts: RuleFacts) -> bool {

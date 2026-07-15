@@ -11,6 +11,7 @@ mod fda_context;
 mod g_drug_policy;
 mod h_narrative_policy;
 mod mfds_context;
+mod portable_constraints;
 pub mod xml;
 
 pub use self::xml::shared_specs::*;
@@ -55,6 +56,7 @@ pub use mfds_context::{
 	load_mfds_validation_context, MfdsValidationContext, ParentPastDrugByCase,
 	PastDrugByCase, RelatednessWithDrug,
 };
+pub use portable_constraints::*;
 use sqlx::types::Uuid;
 use std::collections::BTreeMap;
 
@@ -209,5 +211,63 @@ pub fn build_report(
 		section_summaries,
 		subsection_summaries,
 		issues,
+	}
+}
+
+#[cfg(test)]
+mod portable_constraint_api_tests {
+	use super::{
+		portable_ich_constraints, validate_portable_value, PortableConstraintKind,
+	};
+	use std::collections::HashMap;
+
+	#[test]
+	fn projects_only_portable_ich_constraints() {
+		let rules = portable_ich_constraints();
+		let by_code = rules
+			.iter()
+			.map(|rule| (rule.code.as_str(), rule))
+			.collect::<HashMap<_, _>>();
+
+		assert_eq!(
+			by_code["ICH.C.1.1.LENGTH.MAX"].kind,
+			PortableConstraintKind::MaxLength
+		);
+		assert_eq!(
+			by_code["ICH.C.1.3.ALLOWED.VALUE"].kind,
+			PortableConstraintKind::InlineAllowedValues
+		);
+		assert_eq!(
+			by_code["ICH.C.1.2.ALLOWED.VALUE"].kind,
+			PortableConstraintKind::Format
+		);
+		assert!(by_code.contains_key("ICH.C.1.7.NULLFLAVOR.ALLOWED"));
+		assert!(!by_code.contains_key("ICH.C.1.8.1.ALLOWED.VALUE"));
+		assert!(!rules.iter().any(|rule| rule.code.ends_with(".VOCABULARY")));
+		assert!(!rules.iter().any(|rule| rule.code.ends_with(".REQUIRED")));
+	}
+
+	#[test]
+	fn portable_evaluator_matches_ci_catalog_values() {
+		assert!(
+			validate_portable_value("ICH.C.1.3.ALLOWED.VALUE", Some("1"), None,)
+				.is_ok()
+		);
+		assert!(
+			validate_portable_value("ICH.C.1.3.ALLOWED.VALUE", Some("9"), None,)
+				.is_err()
+		);
+		assert!(validate_portable_value(
+			"ICH.C.1.1.LENGTH.MAX",
+			Some(&"X".repeat(100)),
+			None,
+		)
+		.is_ok());
+		assert!(validate_portable_value(
+			"ICH.C.1.1.LENGTH.MAX",
+			Some(&"X".repeat(101)),
+			None,
+		)
+		.is_err());
 	}
 }

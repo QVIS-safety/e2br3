@@ -759,6 +759,60 @@ async fn editor_ci_page_patch_updates_only_report_type_and_returns_projection(
 
 #[serial]
 #[tokio::test]
+async fn ci_patch_rejects_catalog_constraint_before_write() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &cookie, "EDITOR-CI-GATE", &["ich"]).await?;
+	create_safety_report(&app, &cookie, &case_id, "1", false).await?;
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI"),
+		json!({
+			"changes": {
+				"otherCaseIdentifiersExist": { "value": true }
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/CI"),
+		json!({
+			"changes": {
+				"otherCaseIdentifiersExist": { "value": false }
+			}
+		}),
+	)
+	.await?;
+
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	assert!(
+		body.to_string().contains("ICH.C.1.9.1.ALLOWED.VALUE"),
+		"{body}"
+	);
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/safety-report"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(body["data"]["other_case_identifiers_exist"], true, "{body}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_editor_direct_content_save_refreshes_validation_cache() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
