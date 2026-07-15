@@ -1,306 +1,158 @@
-# Generated Catalog Save Constraints
+# Catalog-Driven Zod And Save Gate
 
 ## Purpose
 
-Make the backend validation catalog the single source of truth for constraints
-that define whether a Case Editor value can be persisted. The frontend receives
-a deterministic generated snapshot of those constraints at build time and
-evaluates the portable subset with Zod. It does not call a catalog API while the
-editor is running and does not maintain handwritten copies of catalog rules.
+Use the backend Catalog as the source of truth for representation constraints
+that must prevent an invalid Case Editor save. The frontend runs the portable
+constraints through the existing Zod syntax flow for immediate feedback. The
+backend evaluates the same Catalog constraints before a database write so a
+direct API caller cannot bypass them.
 
-Representation constraints and business validation remain separate:
+This design intentionally does not add a runtime Catalog API, section loading,
+caching, ETags, or terminology lookup.
 
-- Representation constraints reject values that cannot be stored as valid E2B
-  data. Portable constraints run in the frontend before save, and every
-  constraint runs in the backend before mutation.
-- Business validation describes completeness or submission readiness. It may
-  produce validation issues but does not prevent draft saves.
+## Scope
 
-## Goals
-
-- Generate frontend constraint metadata from the backend catalog.
-- Statically import the generated snapshot and build a generic Zod evaluator.
-- Reject invalid representations at the backend mutation boundary.
-- Keep required, conditional, companion, future-date, and submission rules out
-  of the draft-save gate.
-- Prevent handwritten frontend rule inventories and path maps from drifting.
-- Support all ICH, FDA, and MFDS metadata in one generated artifact.
-
-## Non-Goals
-
-- Fetching catalog metadata at runtime.
-- Reimplementing backend conditional `RuleFacts` evaluation in TypeScript.
-- Shipping large or changing terminology databases in the frontend bundle.
-- Replacing the existing backend case-validation report.
-- Changing exporter or submission-readiness behavior.
-
-## Source Ownership
-
-The source chain is:
-
-```text
-official source -> dictionary -> canonical catalog -> editor binding registry
-                                             |                |
-                                             +------ exporter-+
-                                                        |
-                                      generated frontend JSON
-```
-
-The generated JSON is an artifact, not a source. Its header states that it must
-not be edited manually. The frontend contains no handwritten authority-specific
-constraint list and no separate rule-code-to-field-path map.
-
-The canonical catalog owns rule semantics. A single backend
-`EditorFieldBinding` registry owns editor placement:
-
-```rust
-struct EditorFieldBinding {
-    rule_code: &'static str,
-    editor_page: EditorPage,
-    value_path_template: &'static str,
-    null_flavor_path_template: Option<&'static str>,
-}
-```
-
-Both the snapshot exporter and backend save evaluator use this registry. Paths
-must not also be added as independent strings to `CanonicalRule` or TypeScript.
-
-`EditorPage` matches actual Case Editor pages, including `CI`, `RP`, `SD`, `LR`,
-`SI`, `DM`, `DH`, `AE`, `LB`, `DG`, and `NR`. It does not reuse the current
-coarse catalog `section` grouping.
-
-Path templates use the canonical editor payload shape. Repeating rows use `[]`,
-including nested repetitions such as
-`drugs[].dosageInformation[].dose`. Concrete indexed paths supplied by a
-mutation are preserved; no canonical-owner fallback rewrites them.
-
-## Constraint Classification
-
-Every exported constraint has an explicit enforcement classification:
-
-- `client_and_server`: portable representation constraint evaluated by Zod and
-  by the backend.
-- `server_only`: representation constraint requiring server-side state.
-- `validation_only`: business rule that never prevents a draft save.
-
-Initial `client_and_server` kinds are:
+The save gate includes only:
 
 - `max_length`
-- `primitive_type`
-- `numeric_shape`
-- `allowed_values` for small closed code sets
+- primitive type and numeric shape
 - portable `format`
+- `inline_allowed_values`
 - `null_flavor`
 
-Active terminology membership such as MedDRA, EDQM, MFDS products, and WHODrug
-is `server_only`. Autocomplete may constrain normal user input, but the backend
-is the final membership gate. Required, conditional-mandatory, companion,
-future-date, forbidden-by-business-condition, and submission/export rules are
-`validation_only`.
+`inline_allowed_values` means the Catalog contains the complete closed set of
+accepted values, such as `1,2,3,4` or `800,801,802,803,804,805`. It is not based
+on an arbitrary list-size threshold.
 
-Severity does not determine enforcement. Missing optional values do not violate
-a representation constraint unless a rule explicitly says that a present
-representation is invalid.
+The save gate excludes:
 
-## Generated Artifact
+- vocabulary or terminology references, including MedDRA, EDQM, MFDS products,
+  and WHODrug
+- required and conditional-mandatory rules
+- companion rules
+- future-date and other business rules
+- exporter and submission-readiness rules
 
-Add a workspace tool crate at
-`crates/tools/validation-catalog-exporter`. It depends on `validator` and
-provides the deterministic exporter command:
+Excluded rules continue through their existing validation and autocomplete
+flows. They are not part of this change.
+
+## Minimal Architecture
 
 ```text
-cargo run -p validation-catalog-exporter -- \
-  --output <frontend-repo>/lib/validation/generated/editor-save-constraints.json
+Backend Catalog
+   |                         |
+   | generate                | evaluate directly
+   v                         v
+catalogConstraints.ts   validate_save_constraints(...)
+   |                         |
+   v                         v
+existing Zod syntax      reject before DB write
 ```
 
-Output is sorted by authority, editor page, rule code, and path so repeated
-generation is byte-for-byte identical. The command also supports `--check
-<path>`, which exits nonzero when regenerating would change the target.
+There are two evaluators because the browser is not an integrity boundary, but
+there is only one rule inventory: the backend Catalog.
 
-The artifact has one schema version and one content-derived catalog version:
+## Generated Frontend Constraints
 
-```json
+A small backend export command writes one generated TypeScript file:
+
+`lib/zod/generated/catalogConstraints.ts`
+
+The file contains only portable constraint data:
+
+```ts
+export const catalogConstraints = {
+  "ICH.G.k.1.ALLOWED_VALUES": {
+    kind: "inline_allowed_values",
+    values: ["1", "2", "3", "4"],
+    message: "G.k.1 must be one of: 1, 2, 3, 4.",
+  },
+  "ICH.G.k.2.1.1a.LENGTH.MAX": {
+    kind: "max_length",
+    maxLength: 10,
+    message: "G.k.2.1.1a must be 10 characters or fewer.",
+  },
+} as const;
+```
+
+The generated file is committed but never edited manually. The exporter sorts
+by rule code and supports a check mode that fails when regeneration changes the
+file. No generated JSON, source-commit manifest, runtime API, or cross-repository
+cache is introduced.
+
+## Frontend Field Binding
+
+The Catalog does not currently contain React Hook Form field paths. Existing
+`lib/zod/sections/*.ts` definitions remain the frontend adapter and bind each
+field to its Catalog rule code:
+
+```ts
 {
-  "schemaVersion": 1,
-  "catalogVersion": "sha256:...",
-  "constraints": [
-    {
-      "code": "ICH.G.k.2.2.LENGTH.MAX",
-      "authority": "ich",
-      "editorPage": "DG",
-      "valuePathTemplate": "drugs[].medicinalProduct",
-      "nullFlavorPathTemplate": null,
-      "enforcement": "client_and_server",
-      "constraint": {
-        "kind": "max_length",
-        "maxLength": 250
-      },
-      "message": "Must be 250 characters or fewer."
-    }
-  ]
+  field: "mpidVersion",
+  ruleCode: "ICH.G.k.2.1.1a.LENGTH.MAX",
 }
 ```
 
-Constraint payloads use a tagged JSON union shared by Rust and TypeScript.
-Formats use stable identifiers such as `e2b_datetime`, `ich_identifier`, and
-`base64`, not arbitrary Rust or JavaScript regular expressions. Numeric rules
-define wire-value semantics explicitly, including whether the editor supplies a
-string or JSON number, before typed Rust deserialization occurs.
+These section files own only UI field placement. They must not repeat
+`maxLength`, allowed values, format patterns, nullFlavor policy, or messages.
 
-The backend repository keeps an exporter golden test. The frontend commits:
+The existing `lib/validation/syntax.ts` resolves `ruleCode` from the generated
+map and constructs the corresponding Zod schema. Repeated and nested paths keep
+using the existing section ruleset structure and concrete array indexes.
 
-- `lib/validation/generated/editor-save-constraints.json`;
-- `lib/validation/generated/catalog-source.json`, containing the backend Git
-  commit and expected `catalogVersion`.
-
-Frontend scripts provide these commands:
-
-```text
-npm run validation:catalog:sync
-npm run validation:catalog:check
-```
-
-They use `BACKEND_REPO`, defaulting to `../../e2br3` from the frontend repository
-root. `sync` refuses a dirty backend checkout, invokes the Rust exporter, and
-records `git -C "$BACKEND_REPO" rev-parse HEAD`. Frontend CI reads that SHA,
-checks out `https://github.com/QVIS-safety/e2br3.git` at the exact commit into a
-temporary directory, regenerates the artifact, and compares it byte-for-byte
-with the committed file. It also validates the JSON with the TypeScript schema
-and compares both catalog version values. This makes the frontend copy
-reproducible generated output; editing either generated file manually fails CI.
-
-Because the repositories deploy separately, a coordinated change is released
-in this order: backend gate first, matching frontend artifact second. An older
-frontend may miss immediate preflight for a newly added rule, but the backend
-gate still rejects the invalid mutation with a structured issue. This is an
-acceptable temporary UX difference and cannot permit invalid persistence.
-
-## Frontend Evaluation
-
-The frontend statically imports the generated artifact. There is no loading
-state, request cache, ETag, polling, or catalog availability failure.
-
-For an editor save, it selects `client_and_server` constraints by:
-
-1. affected editor page or pages;
-2. ICH plus the case's active regional profiles;
-3. the concrete values present in the outgoing payload.
-
-Authority filtering in the frontend is only an early UX optimization. It is not
-an integrity boundary.
-
-A generic `z.any().superRefine(...)` evaluator expands path templates against
-the outgoing payload and adds Zod issues at concrete React Hook Form paths. For
-example, `drugs[].dosageInformation[].dose` may produce
-`drugs.2.dosageInformation.1.dose`.
-
-The evaluator validates every page affected by the save orchestration, not only
-the currently selected tab. This covers existing saves that normalize or write
-cross-page message fields. Any emitted issue prevents the mutation requests.
-
-Existing handwritten syntax rules are removed page by page only after generated
-coverage and parity tests exist. `fieldVisibility.ts` is deleted only after no
-remaining local syntax rule depends on it.
+Required rules are removed from this save-blocking syntax path. Existing syntax
+rules are removed only after their field has a Catalog rule binding and parity
+test.
 
 ## Backend Save Gate
 
-Browser validation is not a security or integrity boundary. The backend invokes
-one shared representation gate from the common mutation service before any Case
-write. The gate must not be copied into individual route handlers.
+Add one reusable Rust evaluator:
 
-The gate:
-
-1. resolves authoritative profiles from server-owned case/receiver policy;
-2. determines every editor page affected by the prospective mutation;
-3. selects `client_and_server` and `server_only` catalog constraints;
-4. evaluates the incoming wire value or prospective model before persistence;
-5. returns a structured HTTP 422 response on failure;
-6. performs no write when any issue exists.
-
-Request-provided authority values may help select UI behavior but cannot reduce
-the server-owned authority set. A direct caller cannot send only `ich` to bypass
-FDA or MFDS constraints.
-
-If current route architecture cannot provide one common mutation service, the
-intermediate implementation must include an inventory test proving that every
-Case mutation route invokes the gate. Consolidation remains the preferred
-boundary.
-
-## Error Contract
-
-The REST error layer adds an explicit unprocessable-entity variant mapped to
-HTTP 422:
-
-```json
-{
-  "error": "validation_failed",
-  "catalogVersion": "sha256:...",
-  "issues": [
-    {
-      "code": "ICH.G.k.2.2.LENGTH.MAX",
-      "fieldPath": "drugs.2.medicinalProduct",
-      "message": "Must be 250 characters or fewer."
-    }
-  ]
-}
+```rust
+validate_save_constraints(authorities, affected_values) -> Vec<ValidationIssue>
 ```
 
-The frontend maps these issues into the same field banners as local Zod issues.
-Business-validation failures continue through the existing validation report
-and do not return this save-blocking response.
+It reads the canonical Catalog directly and evaluates the same five constraint
+kinds. It runs before the relevant Case mutation writes to the database. An
+invalid request returns the existing REST validation error response and performs
+no write.
 
-## Migration
+Server-owned case or receiver policy determines authority. Request-provided
+authority cannot remove regional constraints.
 
-Migration proceeds one editor page at a time:
+The first implementation must locate the narrowest existing shared mutation
+boundary. If no single boundary exists, each affected mutation handler calls
+the same evaluator and an inventory test proves coverage. This change does not
+introduce a new mutation API or refactor unrelated routes.
 
-1. Add complete `EditorFieldBinding` coverage for the page.
-2. Add portable constraint payloads and Rust evaluator coverage.
-3. Regenerate the frontend artifact.
-4. Enable the generic Zod evaluator for that page.
-5. Verify Rust/TypeScript parity with shared fixtures.
-6. Remove the page's replaced handwritten frontend constraints.
+## Parity
 
-A page does not use generated preflight until all intended portable constraints
-for that page have bindings. Backend gate coverage is enabled independently and
-remains authoritative throughout migration.
+The exporter includes deterministic fixtures for every portable constraint
+kind. Rust tests and TypeScript tests run the same valid and invalid values and
+must agree on:
 
-## Verification
+- pass or fail
+- rule code
+- concrete field path
 
-Backend tests cover:
+Vocabulary fixtures are not included because vocabulary is outside this scope.
 
-- exact binding coverage and duplicate rule/path rejection;
-- actual editor-page mapping rather than coarse catalog sections;
-- deterministic snapshot generation and catalog-version hashing;
-- serialization and evaluation for every tagged constraint kind;
-- authoritative profile resolution and attempted authority downgrade;
-- scalar, repeated, and nested path expansion without fallback rewriting;
-- direct mutation rejection with HTTP 422 and no database change;
-- route inventory or common-service coverage for every Case mutation;
-- business-validation issues not rejecting draft mutations.
+## Implementation Order
 
-Frontend tests cover:
-
-- generated artifact schema and supported schema version;
-- ICH plus regional-profile selection;
-- every portable constraint kind and wire-value representation;
-- scalar, repeated, and nested concrete issue paths;
-- all pages affected by multi-page save orchestration;
-- backend 422 issues mapped to the same field errors;
-- required metadata excluded from the hard-save evaluator;
-- removal of migrated local syntax and visibility rules.
-
-Parity fixtures are exported from the backend with the artifact and run against
-both Rust and TypeScript evaluators. They assert identical pass/fail results,
-rule codes, and concrete field paths for `client_and_server` constraints.
+1. Identify the shared backend mutation boundary and current error response.
+2. Add failing Rust tests proving invalid direct API input cannot be persisted.
+3. Implement the five-kind Rust save evaluator and connect the mutation gate.
+4. Add the generated TypeScript constraint map and regeneration check.
+5. Add `ruleCode` binding to existing section Zod rules.
+6. Update `syntax.ts` to evaluate generated constraints.
+7. Add Rust/TypeScript parity fixtures and remove replaced handwritten values.
 
 ## Success Criteria
 
-- The frontend has no handwritten authority-specific inventory for migrated
-  representation constraints.
-- Opening and editing a page performs no catalog API request.
-- Invalid values are rejected by frontend preflight where portable and by every
-  direct backend mutation.
-- Required and other business-validation failures remain draft-saveable.
-- Rust and Zod evaluators agree for every portable parity fixture.
-- A generated artifact can be reproduced byte-for-byte from the backend catalog
-  and editor binding registry.
+- Frontend save is blocked by Zod for all bound portable constraints.
+- Direct API writes with the same invalid values are rejected before persistence.
+- Constraint values and messages are not handwritten in frontend section files.
+- `inline_allowed_values` includes only complete Catalog-owned closed sets.
+- No vocabulary or terminology DB lookup is added.
+- Required and business-validation issues remain draft-saveable.
