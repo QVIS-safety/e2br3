@@ -4,8 +4,8 @@ use crate::allowed_value::{
 use crate::context::VocabularyContext;
 use crate::{
 	allowed_value_constraint_for_rule, find_canonical_rule, null_flavors_for_rule,
-	AllowedValueConstraintKind, FormatName, NumericShape, RegulatoryAuthority,
-	ALLOWED_VALUE_RULES, MAX_LENGTH_RULES, NULL_FLAVOR_RULES,
+	AllowedValueConstraintKind, FormatName, NumericShape, ALLOWED_VALUE_RULES,
+	MAX_LENGTH_RULES, NULL_FLAVOR_RULES,
 };
 use serde::Serialize;
 use std::borrow::Cow;
@@ -39,13 +39,19 @@ pub struct PortableConstraintViolation {
 	pub message: String,
 }
 
-pub fn portable_ich_constraints() -> Vec<PortableConstraint> {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum PortableInputValue<'a> {
+	Missing,
+	String(&'a str),
+	Boolean(bool),
+	Number(&'a serde_json::Number),
+	InvalidType,
+}
+
+pub fn portable_constraints() -> Vec<PortableConstraint> {
 	let mut rules = Vec::new();
 
-	for rule in MAX_LENGTH_RULES
-		.iter()
-		.filter(|rule| rule.authority == RegulatoryAuthority::Ich)
-	{
+	for rule in MAX_LENGTH_RULES {
 		rules.push(PortableConstraint {
 			code: rule.code.to_string(),
 			kind: PortableConstraintKind::MaxLength,
@@ -57,10 +63,7 @@ pub fn portable_ich_constraints() -> Vec<PortableConstraint> {
 		});
 	}
 
-	for rule in ALLOWED_VALUE_RULES
-		.iter()
-		.filter(|rule| rule.authority == RegulatoryAuthority::Ich)
-	{
+	for rule in ALLOWED_VALUE_RULES {
 		let Some(constraint) = allowed_value_constraint_for_rule(rule.code) else {
 			continue;
 		};
@@ -103,10 +106,7 @@ pub fn portable_ich_constraints() -> Vec<PortableConstraint> {
 		});
 	}
 
-	for rule in NULL_FLAVOR_RULES
-		.iter()
-		.filter(|rule| rule.authority == RegulatoryAuthority::Ich)
-	{
+	for rule in NULL_FLAVOR_RULES {
 		let Some(values) = null_flavors_for_rule(rule.code) else {
 			continue;
 		};
@@ -134,43 +134,81 @@ pub fn portable_ich_constraints() -> Vec<PortableConstraint> {
 	rules
 }
 
+pub fn portable_ich_constraints() -> Vec<PortableConstraint> {
+	portable_constraints()
+		.into_iter()
+		.filter(|rule| rule.code.starts_with("ICH."))
+		.collect()
+}
+
 pub fn validate_portable_value(
 	rule_code: &str,
-	value: Option<&str>,
+	value: PortableInputValue<'_>,
 	null_flavor: Option<&str>,
 ) -> Result<(), PortableConstraintViolation> {
-	let Some(rule) = portable_ich_constraints()
+	let Some(rule) = portable_constraints()
 		.into_iter()
 		.find(|rule| rule.code == rule_code)
 	else {
 		return Ok(());
 	};
-	let value = value.map(str::trim).filter(|value| !value.is_empty());
+	let value = match value {
+		PortableInputValue::String(value) => {
+			let value = value.trim();
+			if value.is_empty() {
+				PortableInputValue::Missing
+			} else {
+				PortableInputValue::String(value)
+			}
+		}
+		value => value,
+	};
 	let valid = match rule.kind {
-		PortableConstraintKind::MaxLength => value.is_none_or(|value| {
-			value.chars().count() <= rule.max_length.expect("max length is present")
-		}),
+		PortableConstraintKind::MaxLength => match value {
+			PortableInputValue::Missing => true,
+			PortableInputValue::String(value) => {
+				value.chars().count()
+					<= rule.max_length.expect("max length is present")
+			}
+			_ => false,
+		},
 		PortableConstraintKind::NullFlavor => null_flavor
-			.or(value)
+			.or(match value {
+				PortableInputValue::String(value) => Some(value),
+				PortableInputValue::Missing => None,
+				_ => return portable_violation(rule),
+			})
 			.map(str::trim)
 			.filter(|value| !value.is_empty())
 			.is_none_or(|value| rule.values.iter().any(|allowed| allowed == value)),
 		PortableConstraintKind::InlineAllowedValues
 		| PortableConstraintKind::Numeric
 		| PortableConstraintKind::Format => {
-			let Some(value) = value else {
+			if value == PortableInputValue::Missing {
 				return Ok(());
-			};
+			}
 			let constraint = allowed_value_constraint_for_rule(rule_code)
 				.expect("portable allowed-value rule should exist in catalog");
-			let constraint_value = match constraint.kind {
-				AllowedValueConstraintKind::Boolean => {
-					ConstraintValue::Boolean(value.parse::<bool>().ok())
-				}
-				AllowedValueConstraintKind::TrueMarker => {
-					true_marker_value(value.parse::<bool>().ok(), null_flavor)
-				}
-				_ => ConstraintValue::Text(Some(Cow::Borrowed(value))),
+			let constraint_value = match (constraint.kind, value) {
+				(
+					AllowedValueConstraintKind::Boolean,
+					PortableInputValue::Boolean(value),
+				) => ConstraintValue::Boolean(Some(value)),
+				(
+					AllowedValueConstraintKind::TrueMarker,
+					PortableInputValue::Boolean(value),
+				) => true_marker_value(Some(value), null_flavor),
+				(
+					AllowedValueConstraintKind::Numeric,
+					PortableInputValue::Number(value),
+				) => ConstraintValue::Text(Some(Cow::Owned(value.to_string()))),
+				(
+					AllowedValueConstraintKind::CodeSet
+					| AllowedValueConstraintKind::Numeric
+					| AllowedValueConstraintKind::Format,
+					PortableInputValue::String(value),
+				) => ConstraintValue::Text(Some(Cow::Borrowed(value))),
+				_ => return portable_violation(rule),
 			};
 			is_allowed_value_valid(
 				rule_code,
@@ -183,11 +221,17 @@ pub fn validate_portable_value(
 	if valid {
 		Ok(())
 	} else {
-		Err(PortableConstraintViolation {
-			code: rule.code,
-			message: rule.message,
-		})
+		portable_violation(rule)
 	}
+}
+
+fn portable_violation(
+	rule: PortableConstraint,
+) -> Result<(), PortableConstraintViolation> {
+	Err(PortableConstraintViolation {
+		code: rule.code,
+		message: rule.message,
+	})
 }
 
 fn message_for_rule(code: &str) -> String {

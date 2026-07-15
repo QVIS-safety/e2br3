@@ -183,15 +183,15 @@ fn patch_optional_bool_value(
 	Ok(Some(value))
 }
 
-fn ci_constraint_value(
+fn ci_constraint_value<'a>(
 	field: &str,
-	patch: &CaseEditorFieldPatch,
-) -> Result<Option<String>> {
+	patch: &'a CaseEditorFieldPatch,
+) -> Result<validator::PortableInputValue<'a>> {
 	let Some(value) = patch.value.as_ref() else {
-		return Ok(None);
+		return Ok(validator::PortableInputValue::Missing);
 	};
 	if value.is_null() {
-		return Ok(None);
+		return Ok(validator::PortableInputValue::Missing);
 	}
 	if matches!(
 		field,
@@ -199,14 +199,14 @@ fn ci_constraint_value(
 	) {
 		return value
 			.as_bool()
-			.map(|value| Some(value.to_string()))
+			.map(validator::PortableInputValue::Boolean)
 			.ok_or_else(|| Error::BadRequest {
 				message: format!("{field} must be a boolean or null"),
 			});
 	}
 	value
 		.as_str()
-		.map(|value| Some(value.trim().to_string()))
+		.map(validator::PortableInputValue::String)
 		.ok_or_else(|| Error::BadRequest {
 			message: format!("{field} must be a string or null"),
 		})
@@ -261,11 +261,9 @@ fn validate_ci_save_constraints(
 		let value = ci_constraint_value(field, patch)?;
 		let null_flavor = ci_companion_null_flavor(changes, field, patch);
 		for rule_code in *rule_codes {
-			if let Err(violation) = validator::validate_portable_value(
-				rule_code,
-				value.as_deref(),
-				null_flavor,
-			) {
+			if let Err(violation) =
+				validator::validate_portable_value(rule_code, value, null_flavor)
+			{
 				return Err(Error::BadRequest {
 					message: format!(
 						"{} at safetyReportIdentification.{field}: {}",

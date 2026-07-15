@@ -217,9 +217,39 @@ pub fn build_report(
 #[cfg(test)]
 mod portable_constraint_api_tests {
 	use super::{
-		portable_ich_constraints, validate_portable_value, PortableConstraintKind,
+		portable_constraints, portable_ich_constraints, validate_portable_value,
+		PortableConstraintKind, PortableInputValue,
 	};
-	use std::collections::HashMap;
+	use std::collections::{BTreeSet, HashMap};
+
+	#[test]
+	fn portable_projection_spans_catalog_authorities_without_business_rules() {
+		let codes = portable_constraints()
+			.into_iter()
+			.map(|rule| rule.code)
+			.collect::<BTreeSet<_>>();
+
+		assert!(codes.contains("ICH.C.1.1.LENGTH.MAX"));
+		assert!(codes
+			.iter()
+			.any(|code| code.starts_with("FDA.") && code.ends_with(".LENGTH.MAX")));
+		assert!(codes
+			.iter()
+			.any(|code| code.starts_with("MFDS.") && code.ends_with(".LENGTH.MAX")));
+		assert!(codes.iter().all(|code| !code.ends_with(".REQUIRED")));
+		assert!(codes.iter().all(|code| !code.ends_with(".VOCABULARY")));
+	}
+
+	#[test]
+	fn portable_string_binding_rejects_boolean_input() {
+		let result = validate_portable_value(
+			"ICH.C.1.3.ALLOWED.VALUE",
+			PortableInputValue::Boolean(true),
+			None,
+		);
+
+		assert!(result.is_err());
+	}
 
 	#[test]
 	fn projects_only_portable_ich_constraints() {
@@ -249,23 +279,27 @@ mod portable_constraint_api_tests {
 
 	#[test]
 	fn portable_evaluator_matches_ci_catalog_values() {
-		assert!(
-			validate_portable_value("ICH.C.1.3.ALLOWED.VALUE", Some("1"), None,)
-				.is_ok()
-		);
-		assert!(
-			validate_portable_value("ICH.C.1.3.ALLOWED.VALUE", Some("9"), None,)
-				.is_err()
-		);
+		assert!(validate_portable_value(
+			"ICH.C.1.3.ALLOWED.VALUE",
+			PortableInputValue::String("1"),
+			None,
+		)
+		.is_ok());
+		assert!(validate_portable_value(
+			"ICH.C.1.3.ALLOWED.VALUE",
+			PortableInputValue::String("9"),
+			None,
+		)
+		.is_err());
 		assert!(validate_portable_value(
 			"ICH.C.1.1.LENGTH.MAX",
-			Some(&"X".repeat(100)),
+			PortableInputValue::String(&"X".repeat(100)),
 			None,
 		)
 		.is_ok());
 		assert!(validate_portable_value(
 			"ICH.C.1.1.LENGTH.MAX",
-			Some(&"X".repeat(101)),
+			PortableInputValue::String(&"X".repeat(101)),
 			None,
 		)
 		.is_err());
