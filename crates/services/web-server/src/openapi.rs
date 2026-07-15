@@ -171,12 +171,6 @@ pub fn router() -> Router {
 			RoutingProfileDoc,
 			RoutingSenderOptionDoc,
 			EffectiveScopeSummaryDoc,
-			UserCapabilitiesDoc,
-			ModuleCrudCapabilitiesDoc,
-			CaseCapabilitiesDoc,
-			ExecuteCapabilitiesDoc,
-			DataCapabilitiesDoc,
-			AdminCapabilitiesDoc,
 			CreateUserRequest,
 			UpdateUserRequest,
 			SetMyPasswordBodyDoc,
@@ -1003,89 +997,11 @@ struct RoutingProfileDoc {
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-struct ModuleCrudCapabilitiesDoc {
-	/// Permission to view records in this module.
-	read: bool,
-	/// Permission to create records in this module.
-	create: bool,
-	/// Permission to update records in this module.
-	update: bool,
-	/// Permission to delete records in this module.
-	delete: bool,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-struct CaseCapabilitiesDoc {
-	read: bool,
-	create: bool,
-	update: bool,
-	delete: bool,
-	/// Permission to approve or review cases.
-	review: bool,
-	/// Permission to lock cases. Currently follows case approval permission.
-	lock: bool,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-struct ExecuteCapabilitiesDoc {
-	/// Permission to view history or metadata for this operation.
-	read: bool,
-	/// Permission to run this operation.
-	execute: bool,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-struct DataCapabilitiesDoc {
-	read: bool,
-	/// Permission to import terminology data.
-	import: bool,
-	/// Permission to approve terminology data.
-	approve: bool,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-struct AdminCapabilitiesDoc {
-	/// Permission to open admin surfaces.
-	read: bool,
-	/// Permission to make admin-level changes.
-	update: bool,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-struct HomeNoticeCapabilitiesDoc {
-	/// Permission to read HOME notices.
-	read: bool,
-	/// Permission to create, update, or delete HOME notices.
-	update: bool,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
-struct UserCapabilitiesDoc {
-	case: CaseCapabilitiesDoc,
-	info: ModuleCrudCapabilitiesDoc,
-	import: ExecuteCapabilitiesDoc,
-	export_submission: ExecuteCapabilitiesDoc,
-	data: DataCapabilitiesDoc,
-	admin: AdminCapabilitiesDoc,
-	users: ModuleCrudCapabilitiesDoc,
-	roles: ModuleCrudCapabilitiesDoc,
-	settings: AdminCapabilitiesDoc,
-	home_notice: HomeNoticeCapabilitiesDoc,
-}
-
-#[derive(serde::Serialize, serde::Deserialize, ToSchema)]
-#[serde(rename_all = "camelCase")]
 struct CurrentUserProfileDoc {
 	user: UserDoc,
 	routing: RoutingProfileDoc,
-	/// Backend-derived permissions for the authenticated user's UI affordances.
-	capabilities: UserCapabilitiesDoc,
+	/// Effective Resource.Action permissions for the authenticated user.
+	permissions: Vec<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]

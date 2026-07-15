@@ -39,7 +39,7 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 		]),
 	)
 	.await?;
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&custom_cookie,
 		&[
@@ -107,7 +107,7 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 		]),
 	)
 	.await?;
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&custom_cookie,
 		&[

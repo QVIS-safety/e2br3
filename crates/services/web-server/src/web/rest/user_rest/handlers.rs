@@ -357,11 +357,14 @@ pub async fn get_current_user_profile(
 	let organization_selection =
 		current_user_organization_selection_view(&ctx, &mm).await?;
 	let routing = routing_profile_for_user(&ctx, &mm).await?;
-	let capabilities = capabilities_for_subject(
-		ctx.permission_subject(),
-		lib_rest_core::can_access_admin(&ctx),
-		ctx.is_system_admin(),
-	);
+	let mut permissions = all_permissions()
+		.iter()
+		.copied()
+		.filter(|permission| has_permission(ctx.permission_subject(), *permission))
+		.map(|permission| permission.to_string())
+		.collect::<Vec<_>>();
+	permissions.sort_unstable();
+	permissions.dedup();
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
@@ -371,7 +374,7 @@ pub async fn get_current_user_profile(
 				available_organizations: organization_selection
 					.available_organizations,
 				routing,
-				capabilities,
+				permissions,
 			},
 		}),
 	))

@@ -15,7 +15,7 @@ async fn test_home_notice_matrix_privileges_surface_in_current_user_capabilities
 	let (_custom_user_id, custom_cookie) =
 		custom_role_user(&mm, seed.org_id, &profile_id).await?;
 
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&custom_cookie,
 		&[
@@ -41,7 +41,7 @@ async fn test_home_notice_matrix_privileges_surface_in_current_user_capabilities
 	)
 	.await?;
 
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&custom_cookie,
 		&[
