@@ -11,6 +11,7 @@ mod fda_context;
 mod g_drug_policy;
 mod h_narrative_policy;
 mod mfds_context;
+mod portable_bindings;
 mod portable_constraints;
 pub mod xml;
 
@@ -56,6 +57,7 @@ pub use mfds_context::{
 	load_mfds_validation_context, MfdsValidationContext, ParentPastDrugByCase,
 	PastDrugByCase, RelatednessWithDrug,
 };
+pub use portable_bindings::*;
 pub use portable_constraints::*;
 use sqlx::types::Uuid;
 use std::collections::BTreeMap;

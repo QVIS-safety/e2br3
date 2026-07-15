@@ -1,0 +1,124 @@
+mod c;
+mod d;
+mod e;
+mod f;
+mod g;
+mod h;
+mod n;
+
+use serde::Serialize;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PortableValueType {
+	String,
+	Boolean,
+	Number,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortableFieldBinding {
+	pub section: &'static str,
+	pub frontend_path: &'static str,
+	pub request_path: &'static str,
+	pub value_type: PortableValueType,
+	pub rule_codes: &'static [&'static str],
+	pub null_flavor_path: Option<&'static str>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortableBindingExclusion {
+	pub rule_code: &'static str,
+	pub reason: &'static str,
+}
+
+pub fn portable_field_bindings() -> Vec<&'static PortableFieldBinding> {
+	let mut bindings = Vec::new();
+	bindings.extend(c::BINDINGS);
+	bindings.extend(d::BINDINGS);
+	bindings.extend(e::BINDINGS);
+	bindings.extend(f::BINDINGS);
+	bindings.extend(g::BINDINGS);
+	bindings.extend(h::BINDINGS);
+	bindings.extend(n::BINDINGS);
+	bindings.sort_by_key(|binding| {
+		(binding.section, binding.frontend_path, binding.rule_codes)
+	});
+	bindings
+}
+
+pub fn portable_binding_exclusions() -> Vec<&'static PortableBindingExclusion> {
+	Vec::new()
+}
+
+pub fn bindings_for_section(
+	section: &str,
+) -> impl Iterator<Item = &'static PortableFieldBinding> + '_ {
+	portable_field_bindings()
+		.into_iter()
+		.filter(move |binding| binding.section == section)
+}
+
+#[cfg(test)]
+mod portable_bindings_tests {
+	use super::*;
+	use crate::portable_constraints;
+	use std::collections::BTreeSet;
+
+	#[test]
+	fn every_binding_references_a_portable_catalog_rule() {
+		let portable = portable_constraints()
+			.into_iter()
+			.map(|rule| rule.code)
+			.collect::<BTreeSet<_>>();
+
+		for binding in portable_field_bindings() {
+			for code in binding.rule_codes {
+				assert!(portable.contains(*code), "unknown portable rule {code}");
+			}
+		}
+	}
+
+	#[test]
+	fn binding_paths_are_explicit_and_fallback_free() {
+		for binding in portable_field_bindings() {
+			assert!(!binding.frontend_path.contains(".*"));
+			assert!(!binding.request_path.contains(".*"));
+			assert!(!binding.frontend_path.contains(".."));
+			assert!(!binding.request_path.contains(".."));
+		}
+	}
+
+	#[test]
+	fn binding_rule_associations_are_unique() {
+		let mut associations = BTreeSet::new();
+		for binding in portable_field_bindings() {
+			for rule_code in binding.rule_codes {
+				assert!(
+					associations.insert((
+						binding.section,
+						binding.frontend_path,
+						*rule_code,
+					)),
+					"duplicate binding for {} {} {rule_code}",
+					binding.section,
+					binding.frontend_path,
+				);
+			}
+		}
+	}
+
+	#[test]
+	fn exclusions_are_unique() {
+		let mut codes = BTreeSet::new();
+		for exclusion in portable_binding_exclusions() {
+			assert!(
+				codes.insert(exclusion.rule_code),
+				"duplicate exclusion for {}",
+				exclusion.rule_code
+			);
+		}
+	}
+}
