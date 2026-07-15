@@ -6,6 +6,10 @@ edition = "2021"
 [lib]
 doctest = false
 
+[[bin]]
+name = "export-zod-constraints"
+path = "src/bin/export_zod_constraints.rs"
+
 [lints]
 workspace = true
 
