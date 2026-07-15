@@ -20,6 +20,24 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	let version_before = profile_before["data"]["policyVersion"]
 		.as_i64()
 		.ok_or("missing policyVersion")?;
+	let response = app
+		.clone()
+		.oneshot(
+			Request::builder()
+				.method("GET")
+				.uri("/api/users/me/profile")
+				.header("cookie", &admin_cookie)
+				.body(Body::empty())?,
+		)
+		.await?;
+	assert_eq!(
+		response
+			.headers()
+			.get("x-rbac-policy-version")
+			.and_then(|value| value.to_str().ok())
+			.and_then(|value| value.parse::<i64>().ok()),
+		Some(version_before),
+	);
 
 	let (status, value) = request_json(
 		&app,

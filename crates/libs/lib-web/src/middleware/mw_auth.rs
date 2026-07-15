@@ -8,6 +8,7 @@ use axum::middleware::Next;
 use axum::response::Response;
 use lib_auth::token::{validate_web_token, Token};
 use lib_core::ctx::Ctx;
+use lib_core::model::permission_profile::PermissionProfileBmc;
 use lib_core::model::user::{UserBmc, UserForAuth};
 use lib_core::model::ModelManager;
 use serde::Serialize;
@@ -52,7 +53,7 @@ pub async fn mw_ctx_resolver(
 		.and_then(decode_audit_reason_header)
 		.and_then(trim_non_empty);
 
-	let ctx_ext_result = match ctx_resolve(mm, &cookies).await {
+	let ctx_ext_result = match ctx_resolve(mm.clone(), &cookies).await {
 		Ok(CtxW(ctx)) => {
 			let mut ctx = if let Some(reason) = audit_reason {
 				ctx.with_compliance(Some(reason), ctx.e_signature_id())
@@ -66,6 +67,11 @@ pub async fn mw_ctx_resolver(
 		}
 		Err(err) => Err(err),
 	};
+	if ctx_ext_result.is_ok() {
+		if let Ok(version) = PermissionProfileBmc::policy_version(&mm).await {
+			req.extensions_mut().insert(RbacPolicyVersion(version));
+		}
+	}
 
 	if ctx_ext_result.is_err()
 		&& !matches!(ctx_ext_result, Err(CtxExtError::TokenNotInCookie))
@@ -148,6 +154,9 @@ async fn ctx_resolve(mm: ModelManager, cookies: &Cookies) -> CtxExtResult {
 // region:    --- Ctx Extractor
 #[derive(Debug, Clone)]
 pub struct CtxW(pub Ctx);
+
+#[derive(Debug, Clone, Copy)]
+pub struct RbacPolicyVersion(pub i64);
 
 impl<S: Send + Sync> FromRequestParts<S> for CtxW {
 	type Rejection = Error;
