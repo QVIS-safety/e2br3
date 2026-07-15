@@ -1,4 +1,4 @@
-use super::{PortableFieldBinding, PortableValueType};
+use super::{PortableBindingExclusion, PortableFieldBinding, PortableValueType};
 
 macro_rules! binding {
 	($path:literal, $request:literal, $type:ident, [$($code:literal),+ $(,)?]) => {
@@ -485,4 +485,15 @@ pub(super) const BINDINGS: &[PortableFieldBinding] = &[
 		String,
 		["FDA.G.k.12.r.11.r.LENGTH.MAX"]
 	),
+];
+
+pub(super) const EXCLUSIONS: &[PortableBindingExclusion] = &[
+	PortableBindingExclusion {
+		rule_code: "MFDS.G.k.9.i.2.r.2.KR.1.LENGTH.MAX",
+		reason: "authority_dependent_business_value",
+	},
+	PortableBindingExclusion {
+		rule_code: "MFDS.G.k.9.i.2.r.3.KR.1.LENGTH.MAX",
+		reason: "authority_dependent_business_value",
+	},
 ];

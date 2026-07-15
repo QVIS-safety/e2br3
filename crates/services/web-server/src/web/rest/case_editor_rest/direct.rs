@@ -381,6 +381,7 @@ async fn patch_direct_page_projection(
 	let requested_authorities =
 		validate_request_projection_context(request.authorities.as_deref())?;
 	validate_direct_changes(page_id, &request.changes)?;
+	validate_direct_rows(page_id, &request.rows)?;
 
 	if !request.changes.is_empty() {
 		apply_direct_page_changes_patch(

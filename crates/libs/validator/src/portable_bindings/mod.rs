@@ -50,7 +50,7 @@ pub fn portable_field_bindings() -> Vec<&'static PortableFieldBinding> {
 }
 
 pub fn portable_binding_exclusions() -> Vec<&'static PortableBindingExclusion> {
-	Vec::new()
+	g::EXCLUSIONS.iter().collect()
 }
 
 pub fn bindings_for_section(
@@ -112,6 +112,11 @@ mod portable_bindings_tests {
 
 	#[test]
 	fn exclusions_are_unique() {
+		const ALLOWED_REASONS: &[&str] = &[
+			"not_in_case_editor_model",
+			"export_only",
+			"authority_dependent_business_value",
+		];
 		let mut codes = BTreeSet::new();
 		for exclusion in portable_binding_exclusions() {
 			assert!(
@@ -119,7 +124,43 @@ mod portable_bindings_tests {
 				"duplicate exclusion for {}",
 				exclusion.rule_code
 			);
+			assert!(
+				ALLOWED_REASONS.contains(&exclusion.reason),
+				"unsupported exclusion reason for {}: {}",
+				exclusion.rule_code,
+				exclusion.reason
+			);
 		}
+	}
+
+	#[test]
+	fn every_portable_rule_is_bound_or_explicitly_excluded_once() {
+		let expected = portable_constraints()
+			.into_iter()
+			.map(|rule| rule.code)
+			.collect::<BTreeSet<_>>();
+		let bound = portable_field_bindings()
+			.into_iter()
+			.flat_map(|binding| binding.rule_codes.iter().copied())
+			.collect::<BTreeSet<_>>();
+		let excluded = portable_binding_exclusions()
+			.into_iter()
+			.map(|entry| entry.rule_code)
+			.collect::<BTreeSet<_>>();
+
+		assert!(
+			bound.is_disjoint(&excluded),
+			"portable rules cannot be both bound and excluded: {:?}",
+			bound.intersection(&excluded).collect::<Vec<_>>()
+		);
+		assert_eq!(
+			expected,
+			bound
+				.union(&excluded)
+				.map(|code| (*code).to_string())
+				.collect(),
+			"every portable rule must be bound or explicitly excluded"
+		);
 	}
 
 	fn assert_binding(section: &str, path: &str, rule_code: &str) {

@@ -237,6 +237,289 @@ pub(super) fn validate_direct_changes(
 	Ok(())
 }
 
+fn normalized_direct_object(
+	source: &Map<String, Value>,
+	aliases: &[(&str, &[&str])],
+) -> Map<String, Value> {
+	fn insert_path(target: &mut Map<String, Value>, path: &str, value: Value) {
+		let mut current = target;
+		let mut segments = path.split('.').peekable();
+		while let Some(segment) = segments.next() {
+			if segments.peek().is_none() {
+				current.insert(segment.to_string(), value);
+				return;
+			}
+			current = current
+				.entry(segment.to_string())
+				.or_insert_with(|| Value::Object(Map::new()))
+				.as_object_mut()
+				.expect("direct normalization path must remain an object");
+		}
+	}
+
+	let mut normalized = Map::new();
+	for (target, candidates) in aliases {
+		if let Some(value) = candidates
+			.iter()
+			.find_map(|key| source.get(*key).filter(|value| !value.is_null()))
+		{
+			insert_path(&mut normalized, target, value.clone());
+		}
+	}
+	normalized
+}
+
+pub(super) fn validate_direct_rows(
+	section: &str,
+	rows: &BTreeMap<String, Value>,
+) -> Result<()> {
+	let normalized = match section {
+		"RP" => {
+			optional_first_row_object(section, rows, "primarySources")?.map(|row| {
+				normalized_direct_object(
+					row,
+					&[
+						("reporterTitle", &["reporterTitle", "reporter_title"]),
+						(
+							"reporterGivenName",
+							&["reporterGivenName", "reporter_given_name"],
+						),
+						(
+							"reporterMiddleName",
+							&["reporterMiddleName", "reporter_middle_name"],
+						),
+						(
+							"reporterFamilyName",
+							&["reporterFamilyName", "reporter_family_name"],
+						),
+						(
+							"reporterNameNullFlavor",
+							&["reporterNameNullFlavor", "reporter_name_null_flavor"],
+						),
+						(
+							"reporterOrganization",
+							&["reporterOrganization", "organization"],
+						),
+						(
+							"reporterDepartment",
+							&["reporterDepartment", "department"],
+						),
+						("reporterStreet", &["reporterStreet", "street"]),
+						("reporterCity", &["reporterCity", "city"]),
+						("reporterState", &["reporterState", "state"]),
+						("reporterPostcode", &["reporterPostcode", "postcode"]),
+						("reporterTelephone", &["reporterTelephone", "telephone"]),
+						(
+							"reporterAddressNullFlavor",
+							&[
+								"reporterAddressNullFlavor",
+								"reporter_address_null_flavor",
+							],
+						),
+						("reporterCountry", &["reporterCountry", "country_code"]),
+						(
+							"reporterCountryNullFlavor",
+							&[
+								"reporterCountryNullFlavor",
+								"country_code_null_flavor",
+							],
+						),
+						("reporterEmail", &["reporterEmail", "email"]),
+						("qualification", &["qualification"]),
+						(
+							"qualificationNullFlavor",
+							&[
+								"qualificationNullFlavor",
+								"qualification_null_flavor",
+							],
+						),
+						(
+							"qualificationKr1",
+							&["qualificationKr1", "qualification_kr1"],
+						),
+						(
+							"primarySourceForRegulatoryPurposes",
+							&[
+								"primarySourceForRegulatoryPurposes",
+								"primary_source_regulatory",
+							],
+						),
+					],
+				)
+			})
+		}
+		"SD" => {
+			optional_row_object(section, rows, "senderInformation")?.map(|row| {
+				normalized_direct_object(
+					row,
+					&[
+						("senderType", &["senderType", "sender_type"]),
+						(
+							"senderHealthProfessionalTypeKr1",
+							&[
+								"healthProfessionalTypeKr1",
+								"health_professional_type_kr1",
+							],
+						),
+						(
+							"senderOrganization",
+							&["organizationName", "organization_name"],
+						),
+						("senderDepartment", &["department"]),
+						("senderPersonTitle", &["personTitle", "person_title"]),
+						(
+							"senderPersonGivenName",
+							&["personGivenName", "person_given_name"],
+						),
+						(
+							"senderPersonMiddleName",
+							&["personMiddleName", "person_middle_name"],
+						),
+						(
+							"senderPersonFamilyName",
+							&["personFamilyName", "person_family_name"],
+						),
+						(
+							"senderStreetAddress",
+							&["streetAddress", "street_address"],
+						),
+						("senderCity", &["city"]),
+						("senderState", &["state"]),
+						("senderPostcode", &["postcode"]),
+						("senderCountryCode", &["countryCode", "country_code"]),
+						("senderTelephone", &["telephone"]),
+						("senderFax", &["fax"]),
+						("senderEmail", &["email"]),
+					],
+				)
+			})
+		}
+		"LR" => optional_first_row_object(section, rows, "literatureReferences")?
+			.map(|row| {
+				normalized_direct_object(
+					row,
+					&[
+						(
+							"literatureReference",
+							&["referenceText", "reference_text"],
+						),
+						(
+							"referenceTextNullFlavor",
+							&[
+								"referenceTextNullFlavor",
+								"reference_text_null_flavor",
+							],
+						),
+						("documentBase64", &["documentBase64", "document_base64"]),
+					],
+				)
+			}),
+		"SI" => optional_row_object(section, rows, "studyInformation")?.map(|row| {
+			normalized_direct_object(
+				row,
+				&[
+					("studyName", &["studyName", "study_name"]),
+					(
+						"studyNameNullFlavor",
+						&["studyNameNullFlavor", "study_name_null_flavor"],
+					),
+					(
+						"sponsorStudyNumber",
+						&["sponsorStudyNumber", "sponsor_study_number"],
+					),
+					(
+						"sponsorStudyNumberNullFlavor",
+						&[
+							"sponsorStudyNumberNullFlavor",
+							"sponsor_study_number_null_flavor",
+						],
+					),
+					(
+						"studyTypeReaction",
+						&["studyTypeReaction", "study_type_reaction"],
+					),
+					(
+						"studyTypeReactionKr1",
+						&["studyTypeReactionKr1", "study_type_reaction_kr1"],
+					),
+					(
+						"fdaIndNumberOccurred",
+						&["fdaIndNumberOccurred", "fda_ind_number_occurred"],
+					),
+					(
+						"fdaPreAndaNumberOccurred",
+						&[
+							"fdaPreAndaNumberOccurred",
+							"fda_pre_anda_number_occurred",
+						],
+					),
+				],
+			)
+		}),
+		"DM" => {
+			optional_row_object(section, rows, "patientInformation")?.map(|row| {
+				normalized_direct_object(
+					row,
+					&[
+						(
+							"patientInitials",
+							&["patientInitials", "patient_initials"],
+						),
+						(
+							"patientBirthDate",
+							&["birthDateNullFlavor", "birth_date_null_flavor"],
+						),
+						("patientAge.unit", &["ageUnit", "age_unit"]),
+						(
+							"gestationPeriod.unit",
+							&["gestationPeriodUnit", "gestation_period_unit"],
+						),
+						("patientAgeGroup", &["ageGroup", "age_group"]),
+						("patientSex", &["sex", "sexNullFlavor", "sex_null_flavor"]),
+						("raceCode", &["raceCode", "race_code"]),
+						("ethnicityCode", &["ethnicityCode", "ethnicity_code"]),
+						(
+							"lastMenstrualPeriodDate",
+							&[
+								"lastMenstrualPeriodDateNullFlavor",
+								"last_menstrual_period_date_null_flavor",
+							],
+						),
+						(
+							"medicalHistoryText",
+							&[
+								"medicalHistoryText",
+								"medical_history_text",
+								"medicalHistoryTextNullFlavor",
+								"medical_history_text_null_flavor",
+							],
+						),
+					],
+				)
+			})
+		}
+		"NR" => optional_row_object(section, rows, "narrative")?.map(|row| {
+			normalized_direct_object(
+				row,
+				&[
+					("caseNarrative", &["caseNarrative", "case_narrative"]),
+					(
+						"reporterComments",
+						&["reporterComments", "reporter_comments"],
+					),
+					("senderComments", &["senderComments", "sender_comments"]),
+				],
+			)
+		}),
+		_ => None,
+	};
+
+	if let Some(row) = normalized {
+		validate_row_payload(section, section, &row, None)?;
+	}
+	Ok(())
+}
+
 fn normalized_changed_path(path: &str) -> String {
 	path.split('.')
 		.map(|part| {
@@ -401,5 +684,30 @@ mod portable_save_tests {
 			}]),
 		)]);
 		validate_row_payload("DG", "drug", &drug, None).unwrap();
+	}
+
+	#[test]
+	fn portable_save_rejects_direct_page_rows_before_mutation() {
+		let narrative_rows = BTreeMap::from([(
+			"narrative".to_string(),
+			json!({ "caseNarrative": "X".repeat(100_001) }),
+		)]);
+		let error = validate_direct_rows("NR", &narrative_rows).unwrap_err();
+		assert!(error_message(error)
+			.contains("ICH.H.1.LENGTH.MAX at narrative.caseNarrative"));
+		let snake_case_rows = BTreeMap::from([(
+			"narrative".to_string(),
+			json!({ "case_narrative": "X".repeat(100_001) }),
+		)]);
+		validate_direct_rows("NR", &snake_case_rows).unwrap_err();
+
+		let sender_rows = BTreeMap::from([(
+			"senderInformation".to_string(),
+			json!({ "organizationName": "X".repeat(101) }),
+		)]);
+		let error = validate_direct_rows("SD", &sender_rows).unwrap_err();
+		assert!(error_message(error).contains(
+			"ICH.C.3.2.LENGTH.MAX at safetyReportIdentification.senderOrganization"
+		));
 	}
 }

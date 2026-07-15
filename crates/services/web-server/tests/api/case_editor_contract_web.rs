@@ -2239,6 +2239,60 @@ async fn portable_ae_patch_rejects_before_write() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn portable_direct_rows_patch_rejects_before_write() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let case_id =
+		create_case_for_editor(&app, &cookie, "EDITOR-NR-PORTABLE-GATE", &["ich"])
+			.await?;
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/NR"),
+		json!({
+			"rows": {
+				"narrative": { "caseNarrative": "original narrative" }
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+
+	let (status, body) = patch_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/NR"),
+		json!({
+			"rows": {
+				"narrative": { "caseNarrative": "X".repeat(100_001) }
+			}
+		}),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+	assert!(body.to_string().contains("ICH.H.1.LENGTH.MAX"), "{body}");
+
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/editor/pages/NR"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	assert_eq!(
+		body["rows"]["narrative"]["case_narrative"],
+		"original narrative"
+	);
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_editor_repeatable_row_save_refreshes_validation_cache() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
