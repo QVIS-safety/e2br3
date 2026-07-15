@@ -169,4 +169,33 @@ mod portable_bindings_tests {
 			"ICH.F.r.3.2.ALLOWED.VALUE",
 		);
 	}
+
+	#[test]
+	fn g_bindings_cover_nested_drug_editor_paths() {
+		assert_binding(
+			"DG",
+			"drugs[].activeSubstances[].substanceName",
+			"ICH.G.k.2.3.r.1.LENGTH.MAX",
+		);
+		assert_binding(
+			"DG",
+			"drugs[].drugReactionAssessments[].sourceOfAssessment",
+			"ICH.G.k.9.i.2.r.1.LENGTH.MAX",
+		);
+	}
+
+	#[test]
+	fn h_bindings_cover_narrative_and_repeated_editor_paths() {
+		assert_binding("NR", "narrative.caseNarrative", "ICH.H.1.LENGTH.MAX");
+		assert_binding(
+			"NR",
+			"narrative.senderDiagnoses[].diagnosisMeddraVersion",
+			"ICH.H.3.r.1a.LENGTH.MAX",
+		);
+		assert_binding(
+			"NR",
+			"caseSummaryInformation[].summaryText",
+			"ICH.H.5.r.1a.LENGTH.MAX",
+		);
+	}
 }

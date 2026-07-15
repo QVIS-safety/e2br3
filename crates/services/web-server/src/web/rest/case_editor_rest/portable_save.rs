@@ -136,7 +136,8 @@ fn in_band_null_flavor<'a>(
 	binding: &PortableFieldBinding,
 	value: &'a Value,
 ) -> Option<&'a str> {
-	if binding.null_flavor_path.is_some() {
+	let same_path = binding.null_flavor_path == Some(binding.frontend_path);
+	if binding.null_flavor_path.is_some() && !same_path {
 		return None;
 	}
 	let constraints = portable_constraints();
@@ -145,7 +146,7 @@ fn in_band_null_flavor<'a>(
 			rule.code == *code && rule.kind != PortableConstraintKind::NullFlavor
 		})
 	});
-	if !has_value_rule {
+	if !has_value_rule && !same_path {
 		return None;
 	}
 	let candidate = value.as_str()?.trim();
@@ -178,6 +179,7 @@ fn validate_binding_value(
 	let constraints = portable_constraints();
 	let in_band = in_band_null_flavor(binding, value);
 	let has_value_rule = binding_has_value_rule(binding);
+	let same_path = binding.null_flavor_path == Some(binding.frontend_path);
 	for rule_code in binding.rule_codes {
 		let kind = constraints
 			.iter()
@@ -187,7 +189,7 @@ fn validate_binding_value(
 			continue;
 		}
 		if in_band.is_none()
-			&& has_value_rule
+			&& (has_value_rule || same_path)
 			&& kind == Some(PortableConstraintKind::NullFlavor)
 		{
 			continue;
@@ -387,5 +389,17 @@ mod portable_save_tests {
 			validate_row_payload("AE", "reaction", &invalid, None).unwrap_err();
 		assert!(error_message(error)
 			.contains("ICH.E.i.4.ALLOWED.VALUE at reactions.0.reactionStartDate"));
+	}
+
+	#[test]
+	fn portable_save_accepts_normal_or_in_band_null_flavor_only_values() {
+		let drug = Map::from_iter([(
+			"dosageInformation".to_string(),
+			json!([{
+				"firstAdministrationDate": "20260715",
+				"lastAdministrationDate": "MSK"
+			}]),
+		)]);
+		validate_row_payload("DG", "drug", &drug, None).unwrap();
 	}
 }
