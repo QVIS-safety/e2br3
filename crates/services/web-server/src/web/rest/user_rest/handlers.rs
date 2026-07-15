@@ -365,6 +365,9 @@ pub async fn get_current_user_profile(
 		.collect::<Vec<_>>();
 	permissions.sort_unstable();
 	permissions.dedup();
+	let policy_version = PermissionProfileBmc::policy_version(&mm)
+		.await
+		.map_err(Error::Model)?;
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {
@@ -375,6 +378,7 @@ pub async fn get_current_user_profile(
 					.available_organizations,
 				routing,
 				permissions,
+				policy_version,
 			},
 		}),
 	))

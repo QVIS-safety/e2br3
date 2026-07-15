@@ -1002,6 +1002,8 @@ struct CurrentUserProfileDoc {
 	routing: RoutingProfileDoc,
 	/// Effective Resource.Action permissions for the authenticated user.
 	permissions: Vec<String>,
+	/// Monotonic version of the effective RBAC policy.
+	policy_version: i64,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]

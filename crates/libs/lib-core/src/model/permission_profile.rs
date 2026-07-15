@@ -61,6 +61,30 @@ const PROFILE_SELECT: &str = r#"
 pub struct PermissionProfileBmc;
 
 impl PermissionProfileBmc {
+	pub async fn policy_version(mm: &ModelManager) -> Result<i64> {
+		let ctx = Ctx::root_ctx();
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) = set_full_context_from_ctx_dbx(dbx, &ctx).await {
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let version = match dbx
+			.fetch_one(sqlx::query_as::<_, (i64,)>(
+				"SELECT version FROM rbac_policy_state WHERE singleton = true",
+			))
+			.await
+		{
+			Ok((version,)) => version,
+			Err(err) => {
+				dbx.rollback_txn().await?;
+				return Err(crate::model::Error::Store(err.to_string()));
+			}
+		};
+		dbx.commit_txn().await?;
+		Ok(version)
+	}
+
 	pub async fn list(
 		ctx: &Ctx,
 		mm: &ModelManager,
@@ -259,6 +283,13 @@ impl PermissionProfileBmc {
 			.await
 		{
 			Ok((id,)) => {
+				if let Err(err) = dbx.execute(sqlx::query(
+					"UPDATE rbac_policy_state SET version = version + 1, updated_at = now() WHERE singleton = true",
+				))
+				.await {
+					dbx.rollback_txn().await?;
+					return Err(crate::model::Error::Store(err.to_string()));
+				}
 				dbx.commit_txn().await?;
 				Ok(id)
 			}
@@ -305,6 +336,13 @@ impl PermissionProfileBmc {
 			.await
 		{
 			Ok(_) => {
+				if let Err(err) = dbx.execute(sqlx::query(
+					"UPDATE rbac_policy_state SET version = version + 1, updated_at = now() WHERE singleton = true",
+				))
+				.await {
+					dbx.rollback_txn().await?;
+					return Err(crate::model::Error::Store(err.to_string()));
+				}
 				dbx.commit_txn().await?;
 				Ok(())
 			}
@@ -330,6 +368,13 @@ impl PermissionProfileBmc {
 			.await
 		{
 			Ok(_) => {
+				if let Err(err) = dbx.execute(sqlx::query(
+					"UPDATE rbac_policy_state SET version = version + 1, updated_at = now() WHERE singleton = true",
+				))
+				.await {
+					dbx.rollback_txn().await?;
+					return Err(crate::model::Error::Store(err.to_string()));
+				}
 				dbx.commit_txn().await?;
 				Ok(())
 			}

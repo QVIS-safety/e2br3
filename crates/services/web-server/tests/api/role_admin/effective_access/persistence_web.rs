@@ -8,6 +8,18 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let app = web_server::app(mm);
+	let (profile_status, profile_before) = request_json(
+		&app,
+		"GET",
+		&admin_cookie,
+		"/api/users/me/profile".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(profile_status, StatusCode::OK, "{profile_before:?}");
+	let version_before = profile_before["data"]["policyVersion"]
+		.as_i64()
+		.ok_or("missing policyVersion")?;
 
 	let (status, value) = request_json(
 		&app,
@@ -25,6 +37,18 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	let profile_id = value["id"].as_str().ok_or("missing role id")?.to_string();
+	let (_, profile_after_create) = request_json(
+		&app,
+		"GET",
+		&admin_cookie,
+		"/api/users/me/profile".to_string(),
+		None,
+	)
+	.await?;
+	let version_after_create = profile_after_create["data"]["policyVersion"]
+		.as_i64()
+		.ok_or("missing policyVersion after create")?;
+	assert!(version_after_create > version_before);
 
 	let matrix_privileges = json!([
 		{
@@ -74,6 +98,18 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	.await?;
 
 	assert_eq!(status, StatusCode::OK, "{value:?}");
+	let (_, profile_after_update) = request_json(
+		&app,
+		"GET",
+		&admin_cookie,
+		"/api/users/me/profile".to_string(),
+		None,
+	)
+	.await?;
+	let version_after_update = profile_after_update["data"]["policyVersion"]
+		.as_i64()
+		.ok_or("missing policyVersion after update")?;
+	assert!(version_after_update > version_after_create);
 
 	let (status, value) = request_json(
 		&app,
@@ -144,6 +180,28 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 			"unexpected unsupported privilege body for {menu_key}: {value:?}"
 		);
 	}
+
+	let (status, value) = request_json(
+		&app,
+		"DELETE",
+		&admin_cookie,
+		format!("/api/admin/permission-profiles/{profile_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{value:?}");
+	let (_, profile_after_delete) = request_json(
+		&app,
+		"GET",
+		&admin_cookie,
+		"/api/users/me/profile".to_string(),
+		None,
+	)
+	.await?;
+	let version_after_delete = profile_after_delete["data"]["policyVersion"]
+		.as_i64()
+		.ok_or("missing policyVersion after delete")?;
+	assert!(version_after_delete > version_after_update);
 
 	Ok(())
 }
