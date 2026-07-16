@@ -384,6 +384,39 @@ pub struct SafetyReportIdentification {
 
         self.assertEqual({"SafetyReportIdentification.transmission_date"}, keys)
 
+    def test_backend_inventory_ignores_plumbing_only_on_the_owning_model(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "crates/libs/lib-core/src/model"
+            source_dir.mkdir(parents=True)
+            (source_dir / "case.rs").write_text(
+                """
+pub struct Case {
+    pub id: Uuid,
+    pub report_year: Option<String>,
+    pub workflow_status: String,
+}
+
+pub struct Reaction {
+    pub id: Uuid,
+    pub workflow_status: Option<String>,
+}
+""",
+                encoding="utf-8",
+            )
+
+            keys = validate.extract_backend_inventory(
+                root,
+                {
+                    "Case": "crates/libs/lib-core/src/model/case.rs",
+                    "Reaction": "crates/libs/lib-core/src/model/case.rs",
+                },
+            )
+
+        # Case.workflow_status is app plumbing, but the same name on another
+        # model must stay tracked -- the ignore is scoped, not global.
+        self.assertEqual({"Case.report_year", "Reaction.workflow_status"}, keys)
+
     def test_repository_section_n_has_complete_backend_inventory(self):
         registry_root = Path(__file__).resolve().parents[1]
 

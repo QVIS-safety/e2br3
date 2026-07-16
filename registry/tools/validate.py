@@ -116,6 +116,7 @@ BACKEND_MODELS = {
     "StudyInformation": "crates/libs/lib-core/src/model/safety_report.rs",
     "StudyRegistrationNumber": "crates/libs/lib-core/src/model/safety_report.rs",
     "StudyFdaCrossReportedInd": "crates/libs/lib-core/src/model/safety_report.rs",
+    "Case": "crates/libs/lib-core/src/model/case.rs",
     "SourceDocument": "crates/libs/lib-core/src/model/case.rs",
     "OtherCaseIdentifier": "crates/libs/lib-core/src/model/case_identifiers.rs",
     "LinkedReportNumber": "crates/libs/lib-core/src/model/case_identifiers.rs",
@@ -173,6 +174,32 @@ IGNORED_BACKEND_FIELDS = {
     "source_narrative_presave_id",
     "source_patient_presave_id",
     "version",
+}
+# Plumbing that is only plumbing on one model. Kept out of IGNORED_BACKEND_FIELDS so
+# generic names like `status` stay tracked everywhere else.
+IGNORED_BACKEND_FIELDS_BY_MODEL = {
+    "Case": {
+        "organization_id",
+        "dg_prd_key",
+        "status",
+        "review_receivers_json",
+        "workflow_routes_json",
+        "workflow_status",
+        "workflow_assigned_role",
+        "workflow_assigned_user_id",
+        "workflow_due_at",
+        "workflow_description",
+        "workflow_updated_at",
+        "submitted_by",
+        "submitted_at",
+        "raw_xml",
+        "dirty_c",
+        "dirty_d",
+        "dirty_e",
+        "dirty_f",
+        "dirty_g",
+        "dirty_h",
+    },
 }
 
 
@@ -233,8 +260,10 @@ def backend_key(model: str, field_name: str) -> str:
     return f"{model}.{field_name}"
 
 
-def should_ignore_backend_field(field_name: str) -> bool:
-    return field_name in IGNORED_BACKEND_FIELDS or field_name.endswith("_null_flavor")
+def should_ignore_backend_field(model: str, field_name: str) -> bool:
+    if field_name in IGNORED_BACKEND_FIELDS or field_name.endswith("_null_flavor"):
+        return True
+    return field_name in IGNORED_BACKEND_FIELDS_BY_MODEL.get(model, frozenset())
 
 
 def extract_backend_inventory(root: Path, backend_models: dict[str, str]) -> set[str]:
@@ -249,7 +278,7 @@ def extract_backend_inventory(root: Path, backend_models: dict[str, str]) -> set
 
         fields = extract_rust_struct_fields(source, model_name)
         for field_name in fields:
-            if should_ignore_backend_field(field_name):
+            if should_ignore_backend_field(model_name, field_name):
                 continue
             keys.add(backend_key(model_name, field_name))
     return keys
