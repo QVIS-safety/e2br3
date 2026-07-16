@@ -34,6 +34,8 @@ DEFAULT_SOURCE_GLOBS = [
     "../frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx",
     "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
     "../frontend/E2BR3-frontend/components/case-form/sections/SectionH.tsx",
+    "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
+    "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
 ]
 
 ALLOWED_FIELD_ROOTS = {
@@ -41,6 +43,7 @@ ALLOWED_FIELD_ROOTS = {
     "drugReactionAssessments",
     "drugs",
     "literatureReferences",
+    "messageHeader",
     "narrative",
     "patientInformation",
     "primarySources",

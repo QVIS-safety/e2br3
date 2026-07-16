@@ -1227,6 +1227,28 @@
     "notes": ""
   },
   {
+    "id": "C.4.r.local.referenceTextNullFlavor",
+    "e2br3_code": "C.4.r.local.referenceTextNullFlavor",
+    "label": "Literature Reference Text NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "evidence": "nullFlavor is persisted via LiteratureReference.reference_text_null_flavor, a support column the backend inventory binds to the C.4.r.1 literature reference text base field rather than tracking as a separate mapping."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "literatureReferences",
+      "field": "referenceTextNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
+      "evidence": "Strict frontend input inventory extracts literatureReferences.referenceTextNullFlavor from the case-form section source."
+    },
+    "action": "",
+    "notes": "nullFlavor companion for the C.4.r.1 literature reference text element. Support column LiteratureReference.reference_text_null_flavor exists."
+  },
+  {
     "id": "C.4.r.2",
     "e2br3_code": "C.4.r.2",
     "label": "Literature Included Document Payload",
@@ -1256,7 +1278,7 @@
     "label": "Literature Included Document Media Type",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1266,13 +1288,13 @@
       "evidence": "LiteratureReference.media_type stores the C.4.r.2 attachment media type."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "literatureReferences",
       "field": "mediaType",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
-      "evidence": "SectionLiterature sets literatureReferences[index].mediaType when a C.4.r.2 attachment is selected."
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key; SectionLiterature derives it from the selected C.4.r.2 attachment via setValue."
     },
-    "action": "",
+    "action": "Keep this as file-derived ED metadata, or expose it if it ever needs editing.",
     "notes": "ED component row for C.4.r.2. XML ED attribute of the C.4.r.2 attachment element, not a separate ICH data element."
   },
   {
@@ -1281,7 +1303,7 @@
     "label": "Literature Included Document Representation",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1291,13 +1313,13 @@
       "evidence": "LiteratureReference.representation stores the C.4.r.2 attachment representation."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "literatureReferences",
       "field": "representation",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
-      "evidence": "SectionLiterature sets literatureReferences[index].representation to B64 when a C.4.r.2 attachment is selected."
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key; SectionLiterature derives it from the selected C.4.r.2 attachment via setValue."
     },
-    "action": "",
+    "action": "Keep this as file-derived ED metadata, or expose it if it ever needs editing.",
     "notes": "ED component row for C.4.r.2. XML ED attribute of the C.4.r.2 attachment element, not a separate ICH data element."
   },
   {
@@ -1306,7 +1328,7 @@
     "label": "Literature Included Document Compression",
     "section": "C",
     "authority": "ICH",
-    "status": "complete",
+    "status": "frontend_missing",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -1316,13 +1338,13 @@
       "evidence": "LiteratureReference.compression stores the C.4.r.2 attachment compression value."
     },
     "frontend": {
-      "status": "mapped",
+      "status": "missing",
       "section": "literatureReferences",
       "field": "compression",
       "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
-      "evidence": "SectionLiterature clears and saves literatureReferences[index].compression for C.4.r.2 attachments."
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key; SectionLiterature derives it from the selected C.4.r.2 attachment via setValue."
     },
-    "action": "",
+    "action": "Keep this as file-derived ED metadata, or expose it if it ever needs editing.",
     "notes": "ED component row for C.4.r.2. XML ED attribute of the C.4.r.2 attachment element, not a separate ICH data element."
   },
   {
@@ -1540,6 +1562,28 @@
     },
     "action": "",
     "notes": ""
+  },
+  {
+    "id": "FDA.C.5.6.r.local.indNumberNullFlavor",
+    "e2br3_code": "FDA.C.5.6.r.local.indNumberNullFlavor",
+    "label": "FDA Cross-Reported IND Number NullFlavor",
+    "section": "C",
+    "authority": "FDA",
+    "status": "backend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "missing",
+      "evidence": "nullFlavor is persisted via StudyFdaCrossReportedInd.ind_number_null_flavor, a support column the backend inventory binds to the FDA.C.5.6.r cross-reported IND number base field rather than tracking as a separate mapping."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "studyInformation",
+      "field": "fdaCrossReportedIndNumbers.indNumberNullFlavor",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+      "evidence": "Strict frontend input inventory extracts studyInformation.fdaCrossReportedIndNumbers.indNumberNullFlavor from the case-form section source."
+    },
+    "action": "",
+    "notes": "nullFlavor companion for the FDA.C.5.6.r cross-reported IND number element. Support column StudyFdaCrossReportedInd.ind_number_null_flavor exists."
   },
   {
     "id": "local.receiver.1",
