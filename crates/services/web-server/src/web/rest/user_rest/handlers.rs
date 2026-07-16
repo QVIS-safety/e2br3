@@ -12,9 +12,7 @@ pub async fn create_user(
 	let ctx = ctx_w.0;
 	let ParamsForCreate { data } = params;
 	require_admin(&ctx, &mm).await?;
-	if !ctx.is_system_admin() {
-		require_permission(&ctx, USER_CREATE)?;
-	}
+	require_permission(&ctx, USER_CREATE)?;
 	validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
 	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
 	validate_uuid_scope("access_study_ids", &data.access_study_ids)?;
@@ -104,9 +102,7 @@ pub async fn get_user(
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
 	require_admin(&ctx, &mm).await?;
-	if !ctx.is_system_admin() {
-		require_permission(&ctx, USER_READ)?;
-	}
+	require_permission(&ctx, USER_READ)?;
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
 	Ok((
@@ -162,9 +158,7 @@ pub async fn list_users(
 	let params = ParamsList::<UserFilter>::from_raw_query(raw_query.as_deref())
 		.map_err(|message| Error::BadRequest { message })?;
 	require_admin(&ctx, &mm).await?;
-	if !ctx.is_system_admin() {
-		require_permission(&ctx, USER_LIST)?;
-	}
+	require_permission(&ctx, USER_LIST)?;
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let entities =
 		UserBmc::list(&db_ctx, &mm, params.filters, params.list_options).await?;
@@ -213,9 +207,7 @@ pub async fn update_user(
 	let ctx = ctx_w.0;
 	let ParamsForUpdate { data } = params;
 	require_admin(&ctx, &mm).await?;
-	if !ctx.is_system_admin() {
-		require_permission(&ctx, USER_UPDATE)?;
-	}
+	require_permission(&ctx, USER_UPDATE)?;
 	validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
 	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
 	validate_uuid_scope("access_study_ids", &data.access_study_ids)?;
@@ -294,9 +286,7 @@ pub async fn delete_user(
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
 	require_admin(&ctx, &mm).await?;
-	if !ctx.is_system_admin() {
-		require_permission(&ctx, USER_DELETE)?;
-	}
+	require_permission(&ctx, USER_DELETE)?;
 	if id == ctx.user_id() {
 		return Err(Error::BadRequest {
 			message: "cannot delete yourself".to_string(),

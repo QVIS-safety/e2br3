@@ -262,17 +262,17 @@ mod tests {
 			}
 		}
 
-		assert_eq!(hash, 5602083785880063594);
+		assert_eq!(hash, 2630966853104627178);
 	}
 
 	#[test]
-	fn test_system_admin_has_no_operational_permissions() {
+	fn test_system_admin_has_platform_but_no_case_permissions() {
 		assert!(!has_permission(ROLE_SYSTEM_ADMIN, CASE_CREATE));
 		assert!(!has_permission(ROLE_SYSTEM_ADMIN, CASE_DELETE));
-		assert!(!has_permission(ROLE_SYSTEM_ADMIN, USER_CREATE));
-		assert!(!has_permission(ROLE_SYSTEM_ADMIN, USER_DELETE));
-		assert!(!has_permission(ROLE_SYSTEM_ADMIN, ORG_CREATE));
-		assert!(!has_permission(ROLE_SYSTEM_ADMIN, AUDIT_LIST));
+		assert!(has_permission(ROLE_SYSTEM_ADMIN, USER_CREATE));
+		assert!(has_permission(ROLE_SYSTEM_ADMIN, USER_DELETE));
+		assert!(has_permission(ROLE_SYSTEM_ADMIN, ORG_CREATE));
+		assert!(has_permission(ROLE_SYSTEM_ADMIN, AUDIT_LIST));
 	}
 
 	#[test]

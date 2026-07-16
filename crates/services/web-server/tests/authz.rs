@@ -2,6 +2,8 @@ mod common;
 
 #[path = "authz/auth_mw_audit.rs"]
 mod auth_mw_audit;
+#[path = "authz/platform_admin_policy.rs"]
+mod platform_admin_policy;
 #[path = "authz/rbac_audit.rs"]
 mod rbac_audit;
 #[path = "authz/rbac_cases.rs"]
