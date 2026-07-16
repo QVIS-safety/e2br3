@@ -1875,10 +1875,10 @@
     "local_only": true,
     "backend": {
       "status": "mapped",
-      "model": "Case",
+      "model": "SourceDocument",
       "field": "source_document_name",
       "file": "crates/libs/lib-core/src/model/case.rs",
-      "evidence": "Case.source_document_name holds this app-local value; persisted via the Case model."
+      "evidence": "SourceDocument.source_document_name holds this app-local value; SourceDocument rows are per-case attachments keyed by case_id."
     },
     "frontend": {
       "status": "mapped",
@@ -1888,7 +1888,57 @@
       "evidence": "Strict frontend input inventory extracts safetyReportIdentification.sourceDocuments.sourceDocumentName from the case-form section source (repeating sourceDocuments[] upload rows)."
     },
     "action": "",
-    "notes": "App-local parallel single-file upload stored on Case (source_document_name/base64/media_type). Re-pointed from the wrong SafetyReportIdentification model. The official Included Documents element (C.1.6.1.r.1 title / C.1.6.1.r.2 payload) is separately mapped via documentsHeldBySender; consider consolidating these two upload paths."
+    "notes": "App-local parallel upload stored in the SourceDocument table (source_document_name/base64/media_type), one row per attachment keyed by case_id and ordered by sequence_number. Previously mis-pointed at the Case model, which has no such field; the mapping went unchecked because Case was outside BACKEND_MODELS. The official Included Documents element (C.1.6.1.r.1 title / C.1.6.1.r.2 payload) is separately mapped via documentsHeldBySender; consider consolidating these two upload paths."
+  },
+  {
+    "id": "C.local.sourceDocumentBase64",
+    "e2br3_code": "C.local.sourceDocumentBase64",
+    "label": "Source Document Payload",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "SourceDocument",
+      "field": "source_document_base64",
+      "file": "crates/libs/lib-core/src/model/case.rs",
+      "evidence": "SourceDocument.source_document_base64 stores the base64 payload of the app-local attachment."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "sourceDocuments.sourceDocumentBase64",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key; SectionC1 derives it from the selected file via setValue."
+    },
+    "action": "Keep this as file-derived ED metadata, or expose it if it ever needs editing.",
+    "notes": "App-local attachment payload stored in the SourceDocument table. XML ED attribute of the app-local sourceDocuments[] upload row, not a separate ICH data element."
+  },
+  {
+    "id": "C.local.sourceDocumentMediaType",
+    "e2br3_code": "C.local.sourceDocumentMediaType",
+    "label": "Source Document Media Type",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "SourceDocument",
+      "field": "source_document_media_type",
+      "file": "crates/libs/lib-core/src/model/case.rs",
+      "evidence": "SourceDocument.source_document_media_type stores the media type of the app-local attachment."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "safetyReportIdentification",
+      "field": "sourceDocuments.sourceDocumentMediaType",
+      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC1.tsx",
+      "evidence": "Strict frontend inventory did not find a case-form input for this mapped frontend key; SectionC1 derives it from the selected file via setValue."
+    },
+    "action": "Keep this as file-derived ED metadata, or expose it if it ever needs editing.",
+    "notes": "App-local attachment media type stored in the SourceDocument table. XML ED attribute of the app-local sourceDocuments[] upload row, not a separate ICH data element."
   },
   {
     "id": "C.1.local.fulfilExpeditedCriteriaNullFlavor",

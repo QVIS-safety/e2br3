@@ -116,6 +116,7 @@ BACKEND_MODELS = {
     "StudyInformation": "crates/libs/lib-core/src/model/safety_report.rs",
     "StudyRegistrationNumber": "crates/libs/lib-core/src/model/safety_report.rs",
     "StudyFdaCrossReportedInd": "crates/libs/lib-core/src/model/safety_report.rs",
+    "SourceDocument": "crates/libs/lib-core/src/model/case.rs",
     "OtherCaseIdentifier": "crates/libs/lib-core/src/model/case_identifiers.rs",
     "LinkedReportNumber": "crates/libs/lib-core/src/model/case_identifiers.rs",
     "ReceiverInformation": "crates/libs/lib-core/src/model/receiver.rs",
