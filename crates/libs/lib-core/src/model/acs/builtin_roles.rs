@@ -83,6 +83,9 @@ permission_set! {
 permission_set! {
 	SYSTEM_ADMIN_PERMISSIONS,
 	system_admin_permissions,
+	USER_PERMISSIONS => all,
+	ORGANIZATION_PERMISSIONS => all,
+	AUDIT_LOG_PERMISSIONS => all,
 	SETTINGS_PERMISSIONS => all,
 	DASHBOARD_NOTICE_PERMISSIONS => all,
 }

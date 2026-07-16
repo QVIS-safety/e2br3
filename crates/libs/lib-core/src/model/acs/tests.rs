@@ -1,5 +1,7 @@
 use super::*;
-use crate::ctx::{ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO};
+use crate::ctx::{
+	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
+};
 use std::collections::HashSet;
 use std::fs;
 use std::path::PathBuf;
@@ -55,6 +57,29 @@ fn sponsor_admin_can_send_configured_email_notifications() {
 	for role in [ROLE_SPONSOR_ADMIN_CRO, ROLE_SPONSOR_ADMIN_COMPANY] {
 		assert!(has_permission(role, EMAIL_NOTIFICATION_SEND), "{role}");
 	}
+}
+
+#[test]
+fn system_admin_profile_matches_platform_admin_endpoints() {
+	for permission in [
+		USER_LIST,
+		USER_CREATE,
+		USER_UPDATE,
+		USER_DELETE,
+		ORG_LIST,
+		ORG_CREATE,
+		ORG_UPDATE,
+		ORG_DELETE,
+		AUDIT_LIST,
+		AUDIT_READ,
+		SETTINGS_READ,
+		SETTINGS_UPDATE,
+	] {
+		assert!(has_permission(ROLE_SYSTEM_ADMIN, permission), "{permission}");
+	}
+
+	assert!(!has_permission(ROLE_SYSTEM_ADMIN, CASE_READ));
+	assert!(!has_permission(ROLE_SYSTEM_ADMIN, TERMINOLOGY_READ));
 }
 
 #[test]
