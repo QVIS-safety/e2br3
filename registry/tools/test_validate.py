@@ -258,6 +258,74 @@ pub struct PatientInformation {
             "\n".join(result.errors),
         )
 
+    def null_flavor_source(self) -> str:
+        return """
+pub struct PatientInformation {
+    pub id: Uuid,
+    pub case_id: Uuid,
+    pub patient_initial: Option<String>,
+    pub patient_initial_null_flavor: Option<String>,
+}
+"""
+
+    def null_flavor_row(self, field: str) -> str:
+        row = self.valid_row().replace('"model": "SenderInformation"', '"model": "PatientInformation"')
+        row = row.replace('"field": "organization_name"', f'"field": "{field}"')
+        return row.replace('"field": "organizationName"', '"field": "patientInitialNullFlavor"')
+
+    def test_accepts_backend_mapping_to_an_existing_null_flavor_column(self):
+        # A dedicated nullFlavor field (its own frontend input and its own column)
+        # must be mappable, so end-to-end joins resolve to a real column.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "crates/libs/lib-core/src/model"
+            source_dir.mkdir(parents=True)
+            (source_dir / "patient.rs").write_text(self.null_flavor_source(), encoding="utf-8")
+            self.write_registry(root, self.null_flavor_row("patient_initial_null_flavor"))
+
+            result = validate.validate_registry(
+                root,
+                backend_models={"PatientInformation": "crates/libs/lib-core/src/model/patient.rs"},
+            )
+
+        # patient_initial stays unmapped-but-ignored; only the null_flavor mapping matters here.
+        self.assertNotIn("unknown backend mapping", "\n".join(result.errors))
+
+    def test_rejects_backend_mapping_to_a_null_flavor_column_that_does_not_exist(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "crates/libs/lib-core/src/model"
+            source_dir.mkdir(parents=True)
+            (source_dir / "patient.rs").write_text(self.null_flavor_source(), encoding="utf-8")
+            self.write_registry(root, self.null_flavor_row("patient_sex_null_flavor"))
+
+            result = validate.validate_registry(
+                root,
+                backend_models={"PatientInformation": "crates/libs/lib-core/src/model/patient.rs"},
+            )
+
+        self.assertIn(
+            "unknown backend mapping: PatientInformation.patient_sex_null_flavor",
+            "\n".join(result.errors),
+        )
+
+    def test_unmapped_null_flavor_columns_are_not_reported_as_missing(self):
+        # The in-band pattern derives the flavor from the base field at the API layer,
+        # so an unmapped support column must stay opt-in rather than demand a row.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "crates/libs/lib-core/src/model"
+            source_dir.mkdir(parents=True)
+            (source_dir / "patient.rs").write_text(self.null_flavor_source(), encoding="utf-8")
+            self.write_registry(root, "[]")
+
+            result = validate.validate_registry(
+                root,
+                backend_models={"PatientInformation": "crates/libs/lib-core/src/model/patient.rs"},
+            )
+
+        self.assertNotIn("patient_initial_null_flavor", "\n".join(result.errors))
+
     def test_rejects_frontend_field_present_in_source_but_missing_from_registry(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -383,6 +451,39 @@ pub struct SafetyReportIdentification {
             )
 
         self.assertEqual({"SafetyReportIdentification.transmission_date"}, keys)
+
+    def test_backend_inventory_ignores_plumbing_only_on_the_owning_model(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_dir = root / "crates/libs/lib-core/src/model"
+            source_dir.mkdir(parents=True)
+            (source_dir / "case.rs").write_text(
+                """
+pub struct Case {
+    pub id: Uuid,
+    pub report_year: Option<String>,
+    pub workflow_status: String,
+}
+
+pub struct Reaction {
+    pub id: Uuid,
+    pub workflow_status: Option<String>,
+}
+""",
+                encoding="utf-8",
+            )
+
+            keys = validate.extract_backend_inventory(
+                root,
+                {
+                    "Case": "crates/libs/lib-core/src/model/case.rs",
+                    "Reaction": "crates/libs/lib-core/src/model/case.rs",
+                },
+            )
+
+        # Case.workflow_status is app plumbing, but the same name on another
+        # model must stay tracked -- the ignore is scoped, not global.
+        self.assertEqual({"Case.report_year", "Reaction.workflow_status"}, keys)
 
     def test_repository_section_n_has_complete_backend_inventory(self):
         registry_root = Path(__file__).resolve().parents[1]
