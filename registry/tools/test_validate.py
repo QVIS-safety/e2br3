@@ -1489,6 +1489,16 @@ class DictionaryValidatorTests(unittest.TestCase):
             workflow.index("name: Run remaining workspace tests"),
         )
 
+    def test_ci_serializes_workspace_tests_that_share_the_database(self):
+        workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            "cargo test --workspace --exclude lib-core -- --test-threads=1",
+            workflow,
+        )
+
 
 class RemovedOrphanLocalFieldsTests(unittest.TestCase):
     def test_removed_orphan_rows_and_backend_storage_are_absent(self):
