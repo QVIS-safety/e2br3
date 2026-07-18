@@ -102,6 +102,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # XML fixtures and schemas were intentionally removed from the release
+      # tree, but the validation suites still exercise those canonical assets.
+      - name: Checkout XML validation assets
+        uses: actions/checkout@v4
+        with:
+          ref: 698f907f3abe6a555594931ace82e9fbcb9c204d
+          path: .ci/xml-assets
+          sparse-checkout: |
+            deploy/ec2/schemas
+            docs/refs/instances
+
+      - name: Prepare XML validation assets
+        run: |
+          mkdir -p docs/exporter
+          cp -R .ci/xml-assets/deploy/ec2/schemas docs/exporter/schema
+          cp -R .ci/xml-assets/docs/refs/instances docs/exporter/fda
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@1.88
 

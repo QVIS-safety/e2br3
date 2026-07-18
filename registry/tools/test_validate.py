@@ -1474,6 +1474,21 @@ class DictionaryValidatorTests(unittest.TestCase):
             workflow,
         )
 
+    def test_ci_restores_xml_validation_assets_before_workspace_tests(self):
+        workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("name: Checkout XML validation assets", workflow)
+        self.assertIn("ref: 698f907f3abe6a555594931ace82e9fbcb9c204d", workflow)
+        self.assertIn("deploy/ec2/schemas", workflow)
+        self.assertIn("docs/refs/instances", workflow)
+        self.assertIn("name: Prepare XML validation assets", workflow)
+        self.assertLess(
+            workflow.index("name: Prepare XML validation assets"),
+            workflow.index("name: Run remaining workspace tests"),
+        )
+
 
 class RemovedOrphanLocalFieldsTests(unittest.TestCase):
     def test_removed_orphan_rows_and_backend_storage_are_absent(self):
