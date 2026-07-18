@@ -16,7 +16,7 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 	let (_custom_user_id, custom_cookie) =
 		custom_role_user(&mm, seed.org_id, &profile_id).await?;
 
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&custom_cookie,
 		&[
@@ -63,7 +63,7 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 	assert!(!has_permission(&profile_id, USER_CREATE));
 	assert!(!has_permission(&profile_id, USER_UPDATE));
 	assert!(!has_permission(&profile_id, USER_DELETE));
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&custom_cookie,
 		&[
@@ -123,7 +123,7 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 	assert!(has_permission(&roles_profile_id, USER_CREATE));
 	assert!(has_permission(&roles_profile_id, USER_UPDATE));
 	assert!(has_permission(&roles_profile_id, USER_DELETE));
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&roles_cookie,
 		&[
@@ -176,7 +176,7 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 	assert!(has_permission(&profile_id, USER_CREATE));
 	assert!(has_permission(&profile_id, USER_UPDATE));
 	assert!(has_permission(&profile_id, USER_DELETE));
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&custom_cookie,
 		&[
@@ -277,7 +277,7 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 		Some(false),
 		"settings.can_read alone must not make the role Safety DB admin capable: {value:?}"
 	);
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&custom_cookie,
 		&[
@@ -382,7 +382,7 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 		Some(false),
 		"settings.can_edit alone must not make the role broadly admin capable: {value:?}"
 	);
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&custom_cookie,
 		&[

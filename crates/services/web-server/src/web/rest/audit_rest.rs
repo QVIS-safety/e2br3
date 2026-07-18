@@ -19,9 +19,7 @@ use sqlx::types::time::OffsetDateTime;
 use uuid::Uuid;
 
 fn require_audit_permission(ctx: &lib_core::ctx::Ctx) -> Result<()> {
-	if !ctx.is_system_admin()
-		&& !has_permission(ctx.permission_subject(), AUDIT_LIST)
-	{
+	if !has_permission(ctx.permission_subject(), AUDIT_LIST) {
 		return Err(WebError::PermissionDenied {
 			required_permission: "AuditLog.List".to_string(),
 		});

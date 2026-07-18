@@ -70,7 +70,7 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 		]),
 	)
 	.await?;
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&read_cookie,
 		&[
@@ -123,7 +123,7 @@ async fn test_export_submission_matrix_privileges_grant_effective_xml_export_per
 		]),
 	)
 	.await?;
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&edit_cookie,
 		&[
@@ -207,7 +207,7 @@ async fn test_import_matrix_privileges_split_files_edit_from_history_read(
 		]),
 	)
 	.await?;
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&read_cookie,
 		&[("import", "read", true), ("import", "execute", false)],
@@ -250,7 +250,7 @@ async fn test_import_matrix_privileges_split_files_edit_from_history_read(
 		]),
 	)
 	.await?;
-	assert_profile_capabilities(
+	assert_profile_access(
 		&app,
 		&edit_cookie,
 		&[("import", "read", false), ("import", "execute", true)],

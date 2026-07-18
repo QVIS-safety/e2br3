@@ -78,14 +78,14 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		]),
 	)
 	.await?;
-	assert_profile_capabilities(
+	assert_profile_permissions(
 		&app,
 		&custom_cookie,
+		&["PresaveTemplate.Read", "PresaveTemplate.List"],
 		&[
-			("info", "read", true),
-			("info", "create", false),
-			("info", "update", false),
-			("info", "delete", false),
+			"PresaveTemplate.Create",
+			"PresaveTemplate.Update",
+			"PresaveTemplate.Delete",
 		],
 	)
 	.await?;
@@ -165,15 +165,17 @@ async fn test_info_matrix_privileges_grant_effective_presave_permissions(
 		]),
 	)
 	.await?;
-	assert_profile_capabilities(
+	assert_profile_permissions(
 		&app,
 		&custom_cookie,
 		&[
-			("info", "read", true),
-			("info", "create", true),
-			("info", "update", true),
-			("info", "delete", true),
+			"PresaveTemplate.Read",
+			"PresaveTemplate.List",
+			"PresaveTemplate.Create",
+			"PresaveTemplate.Update",
+			"PresaveTemplate.Delete",
 		],
+		&[],
 	)
 	.await?;
 	assert!(has_permission(&profile_id, PRESAVE_TEMPLATE_CREATE));

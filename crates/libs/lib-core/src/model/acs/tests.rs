@@ -1,5 +1,8 @@
 use super::*;
-use crate::ctx::{ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO};
+use crate::ctx::{
+	ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
+};
+use std::collections::HashSet;
 use std::fs;
 use std::path::PathBuf;
 
@@ -57,6 +60,29 @@ fn sponsor_admin_can_send_configured_email_notifications() {
 }
 
 #[test]
+fn system_admin_profile_matches_platform_admin_endpoints() {
+	for permission in [
+		USER_LIST,
+		USER_CREATE,
+		USER_UPDATE,
+		USER_DELETE,
+		ORG_LIST,
+		ORG_CREATE,
+		ORG_UPDATE,
+		ORG_DELETE,
+		AUDIT_LIST,
+		AUDIT_READ,
+		SETTINGS_READ,
+		SETTINGS_UPDATE,
+	] {
+		assert!(has_permission(ROLE_SYSTEM_ADMIN, permission), "{permission}");
+	}
+
+	assert!(!has_permission(ROLE_SYSTEM_ADMIN, CASE_READ));
+	assert!(!has_permission(ROLE_SYSTEM_ADMIN, TERMINOLOGY_READ));
+}
+
+#[test]
 fn menu_aliases_expand_to_identical_permissions() {
 	fn expand(menu_key: &str) -> Vec<Permission> {
 		permissions_for_menu_privileges(&[AdminMenuPrivilege {
@@ -75,5 +101,33 @@ fn menu_aliases_expand_to_identical_permissions() {
 	] {
 		assert_eq!(expand(aliases[0]), expand(aliases[1]));
 		assert_eq!(expand(aliases[0]), expand(aliases[2]));
+	}
+}
+
+#[test]
+fn permission_catalog_is_complete_unique_and_stable() {
+	let values = all_permissions()
+		.iter()
+		.map(ToString::to_string)
+		.collect::<Vec<_>>();
+	let unique = values.iter().collect::<HashSet<_>>();
+
+	assert_eq!(unique.len(), values.len());
+	assert!(values.iter().all(|value| {
+		let mut parts = value.split('.');
+		parts.next().is_some_and(|part| !part.is_empty())
+			&& parts.next().is_some_and(|part| !part.is_empty())
+			&& parts.next().is_none()
+	}));
+	for required in [
+		"Case.Read",
+		"StudyRegistration.Update",
+		"XmlImport.Import",
+		"XmlExport.Export",
+	] {
+		assert!(
+			values.iter().any(|value| value == required),
+			"missing {required}"
+		);
 	}
 }

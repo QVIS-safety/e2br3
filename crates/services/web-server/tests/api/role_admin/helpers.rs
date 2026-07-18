@@ -22,6 +22,7 @@ use lib_core::model::store::set_full_context_dbx;
 use lib_core::model::ModelManager;
 use serde_json::{json, Value};
 use serial_test::serial;
+use std::collections::HashSet;
 use tower::ServiceExt;
 use uuid::Uuid;
 
@@ -163,7 +164,7 @@ pub(super) async fn assert_get_not_status(
 	Ok(value)
 }
 
-pub(super) async fn assert_profile_capabilities(
+pub(super) async fn assert_profile_access(
 	app: &Router,
 	cookie: &str,
 	expected: &[(&str, &str, bool)],
@@ -177,12 +178,80 @@ pub(super) async fn assert_profile_capabilities(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{profile:?}");
+	assert!(profile["data"].get("capabilities").is_none(), "{profile:?}");
+	let permissions = profile["data"]["permissions"]
+		.as_array()
+		.ok_or("missing permissions")?
+		.iter()
+		.filter_map(Value::as_str)
+		.collect::<HashSet<_>>();
 	for (module, action, expected) in expected {
+		let required: &[&str] = match (*module, *action) {
+			("case", "read") => &["Case.Read", "Case.List"],
+			("case", "create") => &["Case.Create"],
+			("case", "update") => &["Case.Update"],
+			("case", "delete") => &["Case.Delete"],
+			("case", "review" | "lock") => &["Case.Approve"],
+			("import", "read") => &["XmlImport.Read"],
+			("import", "execute") => &["XmlImport.Import"],
+			("exportSubmission", "read") => &["XmlExport.Read"],
+			("exportSubmission", "execute") => &["XmlExport.Export"],
+			("data", "read") => &["Terminology.Read"],
+			("data", "import") => &["Terminology.Import"],
+			("data", "approve") => &["Terminology.Approve"],
+			("users", "read") => &["User.Read", "User.List"],
+			("users", "create") => &["User.Create"],
+			("users", "update") => &["User.Update"],
+			("users", "delete") => &["User.Delete"],
+			("settings", "read") => &["Settings.Read"],
+			("settings", "update") => &["Settings.Update"],
+			("homeNotice", "read") => &["DashboardNotice.Read"],
+			("homeNotice", "update") => &["DashboardNotice.Update"],
+			("admin" | "roles", _) => &["User.Create"],
+			_ => {
+				return Err(
+					format!("unknown access assertion {module}.{action}").into()
+				)
+			}
+		};
+		let actual = required
+			.iter()
+			.any(|permission| permissions.contains(permission));
 		assert_eq!(
-			profile["data"]["capabilities"][*module][*action].as_bool(),
-			Some(*expected),
-			"{module}.{action} capability mismatch: {profile:?}"
+			actual, *expected,
+			"{module}.{action} permission mismatch: {profile:?}"
 		);
+	}
+	Ok(profile)
+}
+
+pub(super) async fn assert_profile_permissions(
+	app: &Router,
+	cookie: &str,
+	present: &[&str],
+	absent: &[&str],
+) -> Result<Value> {
+	let (status, profile) = request_json(
+		app,
+		"GET",
+		cookie,
+		"/api/users/me/profile".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{profile:?}");
+	assert!(profile["data"].get("capabilities").is_none(), "{profile:?}");
+	let permissions = profile["data"]["permissions"]
+		.as_array()
+		.ok_or("missing permissions")?
+		.iter()
+		.filter_map(Value::as_str)
+		.collect::<HashSet<_>>();
+	for permission in present {
+		assert!(permissions.contains(permission), "missing {permission}");
+	}
+	for permission in absent {
+		assert!(!permissions.contains(permission), "unexpected {permission}");
 	}
 	Ok(profile)
 }
