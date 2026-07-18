@@ -10,6 +10,32 @@ import extract_frontend_fields as extractor
 
 
 class FrontendFieldExtractorTests(unittest.TestCase):
+    def test_ast_inventory_resolves_current_dynamic_bindings(self):
+        keys = {
+            field.key for field in extractor.extract_frontend_fields_ast()
+        }
+        self.assertIn("patientInformation.gpMedicalRecordNumber", keys)
+        self.assertIn("reactions.seriousness.criteriaResultsInDeath", keys)
+        self.assertIn("reactions.mfdsDeviceAe.actionRecall", keys)
+        self.assertIn(
+            "patientInformation.parentInformation.pastDrugHistory.drugName", keys
+        )
+        self.assertNotIn("patientInformation.gpMedicalRecordNumberId", keys)
+        self.assertNotIn("reactions.id", keys)
+
+    def test_regex_extractor_remains_available_for_explicit_source_fixtures(self):
+        source = '<Input name={`drugs.${drugIndex}.cumulativeDoseValue`} />'
+        self.assertEqual(
+            ["drugs.cumulativeDoseValue"],
+            extractor.extract_field_paths_from_source(source),
+        )
+
+    def test_default_glob_targets_current_case_detail_tree(self):
+        self.assertEqual(
+            ["../frontend/E2BR3-frontend/app/(protected)/*/case/*/detail/**/*.tsx"],
+            extractor.DEFAULT_SOURCE_GLOBS,
+        )
+
     def test_normalizes_template_repeatable_indexes(self):
         self.assertEqual(
             "reactions.reactionCountry",

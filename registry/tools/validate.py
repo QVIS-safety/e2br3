@@ -788,10 +788,13 @@ def validate_registry(
         try:
             source_frontend = {
                 field.key
-                for field in extract_frontend_fields.extract_frontend_fields(
-                    root=root,
-                    source_globs=frontend_source_globs
-                    or extract_frontend_fields.DEFAULT_SOURCE_GLOBS,
+                for field in (
+                    extract_frontend_fields.extract_frontend_fields(
+                        root=root,
+                        source_globs=frontend_source_globs,
+                    )
+                    if frontend_source_globs is not None
+                    else extract_frontend_fields.extract_frontend_fields_ast(root=root)
                 )
             }
         except extract_frontend_fields.FrontendInventoryError as exc:

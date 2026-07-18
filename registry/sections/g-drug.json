@@ -1412,7 +1412,7 @@
     "label": "Cumulative Dose to First Reaction Value",
     "section": "G",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "backend": {
       "status": "mapped",
       "model": "DrugInformation",
@@ -1421,14 +1421,14 @@
       "evidence": "DrugInformation.cumulative_dose_first_reaction_value stores G.k.5a values."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "drugs",
       "field": "cumulativeDoseValue",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DG/drug-entry/DrugExposureSummaryFields.tsx",
+      "evidence": "DrugExposureSummaryFields binds drugs[index].cumulativeDoseValue."
     },
     "action": "",
-    "notes": " Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
+    "notes": "Restored to complete after the current DrugExposureSummaryFields binding was added."
   },
   {
     "id": "G.k.5b",
@@ -1436,7 +1436,7 @@
     "label": "Cumulative Dose to First Reaction Unit",
     "section": "G",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "backend": {
       "status": "mapped",
       "model": "DrugInformation",
@@ -1445,14 +1445,14 @@
       "evidence": "DrugInformation.cumulative_dose_first_reaction_unit stores G.k.5b values."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "drugs",
       "field": "cumulativeDoseUnit",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DG/drug-entry/DrugExposureSummaryFields.tsx",
+      "evidence": "DrugExposureSummaryFields binds drugs[index].cumulativeDoseUnit."
     },
     "action": "",
-    "notes": " Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
+    "notes": "Restored to complete after the current DrugExposureSummaryFields binding was added."
   },
   {
     "id": "G.k.6a",
@@ -1460,7 +1460,7 @@
     "label": "Gestation Period at Time of Exposure Value",
     "section": "G",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "backend": {
       "status": "mapped",
       "model": "DrugInformation",
@@ -1469,14 +1469,14 @@
       "evidence": "DrugInformation.gestation_period_exposure_value stores G.k.6a values."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "drugs",
       "field": "gestationPeriodExposureValue",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DG/drug-entry/DrugExposureSummaryFields.tsx",
+      "evidence": "DrugExposureSummaryFields binds drugs[index].gestationPeriodExposureValue."
     },
     "action": "",
-    "notes": " Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
+    "notes": "Restored to complete after the current DrugExposureSummaryFields binding was added."
   },
   {
     "id": "G.k.6b",
@@ -1484,7 +1484,7 @@
     "label": "Gestation Period at Time of Exposure Unit",
     "section": "G",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "backend": {
       "status": "mapped",
       "model": "DrugInformation",
@@ -1493,14 +1493,14 @@
       "evidence": "DrugInformation.gestation_period_exposure_unit stores G.k.6b values."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "drugs",
       "field": "gestationPeriodExposureUnit",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DG/drug-entry/DrugExposureSummaryFields.tsx",
+      "evidence": "DrugExposureSummaryFields binds drugs[index].gestationPeriodExposureUnit."
     },
     "action": "",
-    "notes": " Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
+    "notes": "Restored to complete after the current DrugExposureSummaryFields binding was added."
   },
   {
     "id": "G.k.local.supplemental.dosageText",
