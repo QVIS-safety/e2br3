@@ -818,19 +818,20 @@ def validate_registry(
         import presave_registry
 
         presaves = presave_registry.load_presave_registry(root, result)
-        expected_transfers: set[tuple[str, str]] = set()
+        expected_transfers_by_section: dict[str, set[tuple[str, str]]] = {}
         for row in presaves.rows:
             if row.get("status") == "not_applicable" and row.get("local_only") is True:
                 continue
             code = row["e2br3_code"]
+            presave_section = presaves.section_by_code.get(code, "unknown")
             case_row = case_rows_by_code.get(code)
             if case_row is None:
-                result.add(f"missing case registry join: {code}")
+                result.add(f"{presave_section}: missing case registry join: {code}")
                 continue
             backend = row.get("backend", {})
             case_backend = case_row.get("backend", {})
             if backend.get("status") == "mapped" and case_backend.get("status") == "mapped":
-                expected_transfers.add(
+                expected_transfers_by_section.setdefault(presave_section, set()).add(
                     (
                         f"{backend['model']}.{backend['field']}",
                         f"{case_backend['model']}.{case_backend['field']}",
@@ -838,35 +839,62 @@ def validate_registry(
                 )
 
         if validate_presave_inventory:
-            try:
-                source_frontend = extract_presave_fields.extract_reporter_frontend(root)
-                source_backend = extract_presave_fields.extract_presave_backend(
-                    root, extract_presave_fields.REPORTER_BACKEND_MODELS
-                )
-                source_transfers = extract_presave_fields.extract_reporter_transfers(root)
-            except (InventoryError, extract_frontend_fields.FrontendInventoryError) as exc:
-                result.add(str(exc))
-                return result
-
-            registry_frontend = set(presaves.frontend_keys.values())
-            registry_backend = set(presaves.backend_keys.values())
-            for key in sorted(source_frontend - registry_frontend):
-                result.add(f"missing presave frontend mapping: {key}")
-            for key in sorted(registry_frontend - source_frontend):
-                result.add(f"unknown presave frontend mapping: {key}")
-            for key in sorted(source_backend - registry_backend):
-                result.add(f"missing presave backend mapping: {key}")
-            for key in sorted(registry_backend - source_backend):
-                result.add(f"unknown presave backend mapping: {key}")
-            for pair in sorted(expected_transfers - source_transfers):
-                result.add(f"missing presave-to-case assignment: {pair[0]} -> {pair[1]}")
-            for source, actual in sorted(source_transfers):
-                expected = {target for candidate, target in expected_transfers if candidate == source}
-                if expected and actual not in expected:
-                    result.add(
-                        f"wrong presave-to-case target: {source} -> {actual}; "
-                        f"expected {sorted(expected)[0]}"
+            for presave_section in sorted(presaves.codes_by_section):
+                if presave_section not in extract_presave_fields.PRESAVE_SECTIONS:
+                    result.add(f"{presave_section}: missing presave inventory configuration")
+                    continue
+                try:
+                    source_frontend = extract_presave_fields.extract_presave_frontend(
+                        root, presave_section
                     )
+                    source_backend = extract_presave_fields.extract_section_backend(
+                        root, presave_section
+                    )
+                    source_transfers = extract_presave_fields.extract_presave_transfers(
+                        root, presave_section
+                    )
+                except (InventoryError, extract_frontend_fields.FrontendInventoryError) as exc:
+                    result.add(f"{presave_section}: {exc}")
+                    continue
+
+                section_codes = set(presaves.codes_by_section[presave_section])
+                registry_frontend = {
+                    value
+                    for code, value in presaves.frontend_keys.items()
+                    if code in section_codes
+                }
+                registry_backend = {
+                    value
+                    for code, value in presaves.backend_keys.items()
+                    if code in section_codes
+                }
+                expected_transfers = expected_transfers_by_section.get(
+                    presave_section, set()
+                )
+                for key in sorted(source_frontend - registry_frontend):
+                    result.add(f"{presave_section}: missing presave frontend mapping: {key}")
+                for key in sorted(registry_frontend - source_frontend):
+                    result.add(f"{presave_section}: unknown presave frontend mapping: {key}")
+                for key in sorted(source_backend - registry_backend):
+                    result.add(f"{presave_section}: missing presave backend mapping: {key}")
+                for key in sorted(registry_backend - source_backend):
+                    result.add(f"{presave_section}: unknown presave backend mapping: {key}")
+                for pair in sorted(expected_transfers - source_transfers):
+                    result.add(
+                        f"{presave_section}: missing presave-to-case assignment: "
+                        f"{pair[0]} -> {pair[1]}"
+                    )
+                for source, actual in sorted(source_transfers):
+                    expected = {
+                        target
+                        for candidate, target in expected_transfers
+                        if candidate == source
+                    }
+                    if expected and actual not in expected:
+                        result.add(
+                            f"{presave_section}: wrong presave-to-case target: "
+                            f"{source} -> {actual}; expected {sorted(expected)[0]}"
+                        )
 
     return result
 

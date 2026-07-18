@@ -57,6 +57,8 @@ class PresaveRegistryTests(unittest.TestCase):
             loaded.backend_keys["C.2.r.1.2"],
         )
         self.assertEqual("reporter.reporterGivenName", loaded.frontend_keys["C.2.r.1.2"])
+        self.assertEqual("reporter", loaded.section_by_code["C.2.r.1.2"])
+        self.assertEqual(("C.2.r.1.2",), loaded.codes_by_section["reporter"])
         self.assertEqual([], result.errors)
 
     def test_rejects_duplicate_code_inside_presave_namespace(self):

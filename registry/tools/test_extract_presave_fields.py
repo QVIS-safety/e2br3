@@ -1,5 +1,7 @@
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -11,6 +13,28 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class PresaveFieldExtractorTests(unittest.TestCase):
+    def test_resolves_explicit_frontend_worktree_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            frontend_root = Path(tmp)
+            source = frontend_root / "components" / "presave" / "ReporterForm.tsx"
+            source.parent.mkdir(parents=True)
+            source.write_text("reporterGivenName?: string;", encoding="utf-8")
+
+            with patch.dict(
+                "os.environ", {"E2BR3_FRONTEND_ROOT": str(frontend_root)}
+            ):
+                resolved = extractor.resolve_frontend_path(
+                    ROOT, "components/presave/ReporterForm.tsx"
+                )
+
+        self.assertEqual(source, resolved)
+
+    def test_configured_sections_include_all_presave_domains(self):
+        self.assertEqual(
+            {"sender", "receiver", "product", "reporter", "study", "narrative"},
+            set(extractor.PRESAVE_SECTIONS),
+        )
+
     def test_extracts_frontend_fields_from_form_and_type_sources(self):
         source = '''
   reporterGivenName?: string;
