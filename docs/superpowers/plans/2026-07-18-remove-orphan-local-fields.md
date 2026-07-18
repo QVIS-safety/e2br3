@@ -118,6 +118,31 @@
 
 ## Appendix — Keep analysis for the remaining 20 local rows (2026-07-18)
 
-- **Structurally local, justified (7):** attachment ED attributes ×6 (`C.1.6.1.r.2` / `C.4.r.2` mediaType·representation·compression — HL7 ED XML attributes of official elements, no dictionary codes exist for attributes) and `G.k.local.dosage.frequencyValue` (numeric period component of G.k.4.r.3; G.k.4.r.2 maps separately to `number_of_units`).
-- **Duplicates official functionality, revisit later (12):** `deviceCharacteristic.*` ×8 — **inverted mapping**: XML export emits FDA device data from `DrugDeviceCharacteristic` while the official `FDA.G.k.12.r.*` rows sit in `conflict` on the `fda_device_info_json` carrier; resolving those 15 conflicts should re-point official rows here and absorb these local rows. `sourceDocumentBase64/MediaType` ×2 — app upload path parallel to official C.1.6.1.r (`documentsHeldBySender`); consolidation candidate. `supplemental.brandName` — official-name duplicate but the key of the presave product-lookup feature; keep. `supplemental.dosageText` — drug-level (non-repeating) vs official G.k.4.r.8 (per-dosage); keep.
-- **Pure app feature, justified (1):** `includedInEmaImeList` — EMA IME-list flag, not an element in any of the three dictionaries; loads/saves through the editor.
+App-wiring evidence per field (scanned against backend `origin/dev` and frontend `origin/main`; "form" counts rendered inputs OR file-driven `setValue` population).
+
+### A. Structurally local — justified, keep as-is (7)
+
+| Row | App wiring | Why it must be local |
+|---|---|---|
+| `C.1.6.1.r.2.local.mediaType` | load 2 / save 3 / form setValue | HL7 ED XML **attribute** of official C.1.6.1.r.2; the dictionary has no codes for attributes |
+| `C.1.6.1.r.2.local.representation` | load 3 / save 3 / form setValue | same (ED attribute) |
+| `C.1.6.1.r.2.local.compression` | load 3 / save 3 / form setValue | same (ED attribute) |
+| `C.4.r.2.local.mediaType` | load 2 / save 3 / form setValue (SectionLiterature) | ED attribute of official C.4.r.2 |
+| `C.4.r.2.local.representation` | load 3 / save 3 / form setValue | same |
+| `C.4.r.2.local.compression` | load 3 / save 3 / form setValue | same |
+| `G.k.local.dosage.frequencyValue` | load 1 / save 4 (`drug-dosage.ts`) | numeric period component (HL7 periodValue) of G.k.4.r.3; official G.k.4.r.2 maps separately to `DosageInformation.number_of_units` |
+
+### B. Duplicates official functionality — keep now, revisit (12)
+
+| Row | App wiring | Verdict |
+|---|---|---|
+| `FDA.G.k.local.deviceCharacteristic.*` ×8 (code, codeSystem, codeDisplayName, valueType, valueValue, valueCode, valueCodeSystem, valueDisplayName) | `deviceCharacteristics` wired end-to-end: `CaseEditor.tsx`, `SectionG.tsx`, `detail.drugs.ts` (load), `lib/case-save/pages/DG/save.ts` (save), `pathOwnership.ts` | **Inverted mapping.** XML export emits FDA device data from `DrugDeviceCharacteristic` (`export/sections/g.rs`, `export/roundtrip/g_drug.rs`), yet the official `FDA.G.k.12.r.*` rows (15, status `conflict`) point at the `DrugInformation.fda_device_info_json` carrier. Resolving those conflicts should re-point the official rows at `DrugDeviceCharacteristic` columns/codes and absorb these 8 local rows |
+| `C.local.sourceDocumentBase64` / `MediaType` ×2 | load 2 / save 3 / form setValue (SectionC1 upload) | App-local upload path (`SourceDocument` table) running parallel to official C.1.6.1.r (`documentsHeldBySender`). Feature duplication — consolidation candidate; merging the two upload paths would retire these rows (plus the `complete` `C.local.sourceDocumentName`) |
+| `G.k.local.supplemental.brandName` | **backend presave.rs 5 hits + frontend presave 7 hits**, `detail.drugs.ts` load, shown in duplication-check page and admin | Duplicates official product naming (G.k.2.2 / G.k.2.3.r) but is the key of the presave product-lookup feature — keep as an app feature |
+| `G.k.local.supplemental.dosageText` | REST 11 / load 2 / save 5 | Drug-level single text vs official G.k.4.r.8 which is per-dosage-row; different shape, keep |
+
+### C. Pure app feature — justified (1)
+
+| Row | App wiring | Why local |
+|---|---|---|
+| `E.local.includedInEmaImeList` | load (`detail.reactions.ts:236`) / save (`reactions.ts:161`) — round-trips through the editor, no input | EMA IME (important medical events) list flag; not an element in the ICH, FDA, or MFDS dictionary |
