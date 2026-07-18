@@ -390,16 +390,16 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO dosage_information (
-        id, drug_id, sequence_number, dose_value, dose_unit, number_of_units,
-        frequency_value, frequency_unit, first_administration_date,
+		id, drug_id, sequence_number, dose_value, dose_unit, number_of_units,
+		frequency_unit, first_administration_date,
         last_administration_date, duration_value, duration_unit,
         batch_lot_number, dosage_text, dose_form, dose_form_termid, dose_form_termid_version,
         route_of_administration, route_termid, route_termid_version, parent_route, parent_route_termid,
         parent_route_termid_version, continuing, created_by, updated_by, created_at, updated_at
     )
     VALUES (
-        v_dosage_info_id, v_drug_info_id, 1, 50.0, 'mg', 1,
-        1.0, 'day', DATE '2026-04-07',
+		v_dosage_info_id, v_drug_info_id, 1, 50.0, 'mg', 0.5,
+		'd', DATE '2026-04-07',
         DATE '2026-04-08', 2, 'day',
         'LOT-2026-A1', '50 mg tablet once daily', 'Tablet', 'TAB', '27.1',
         '001', '20000092', '27.1', 'Oral', '20000092',

@@ -156,7 +156,7 @@ fn boundary_cases() -> Vec<BoundaryCase> {
 			"ICH.G.k.4.r.2.ALLOWED.VALUE",
 			DosageInformationForUpdate,
 			"number_of_units",
-			json!(1.5)
+			json!("12mg")
 		),
 		boundary_case!(
 			"ICH.G.k.4.r.6a.ALLOWED.VALUE",

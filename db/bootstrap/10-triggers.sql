@@ -1,4 +1,4 @@
-+CREATE OR REPLACE FUNCTION require_active_presave_reference()
+CREATE OR REPLACE FUNCTION require_active_presave_reference()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$

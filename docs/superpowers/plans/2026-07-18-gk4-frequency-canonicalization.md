@@ -11,6 +11,8 @@
 ## Global Constraints
 
 - No database migration or compatibility alias; the environment will be reinitialized.
+- G.k.4.r.2 is an HL7 `REAL`/registry `decimal`; canonical `number_of_units`
+  uses Rust `Decimal` and a PostgreSQL `DECIMAL` column, never `i32`/`INTEGER`.
 - No field-specific backend validator function, direct validation branch, or duplicate backend code set.
 - Backend allowed-value validation uses the active `ICH-UCUM / frequency` terminology release and fails closed without it.
 - G.k.4.r.3 exposes exactly `a`, `mo`, `wk`, `d`, `h`, `min`, `{cyclical}`, `{asnecessary}`, and `{total}`.
@@ -38,7 +40,7 @@
 
 **Interfaces:**
 - Consumes: `GDrugPaths::DOSAGE_FREQUENCY_VALUE` and `GDrugPaths::DOSAGE_FREQUENCY_UNIT`.
-- Produces: import structs with only `number_of_units: Option<i32>` and `frequency_unit: Option<String>`; export reads the same two fields.
+- Produces: import structs with only `number_of_units: Option<Decimal>` and `frequency_unit: Option<String>`; export reads the same two fields.
 
 - [ ] **Step 1: Add a failing export regression test**
 
@@ -51,13 +53,13 @@ fn export_g_uses_number_of_units_for_period_value() {
     let drug_id = Uuid::new_v4();
     let drug = test_drug(drug_id, case_id);
     let mut dosage = test_dosage(drug_id);
-    dosage.number_of_units = Some(3);
+    dosage.number_of_units = Some(Decimal::new(5, 1));
     dosage.frequency_unit = Some("d".to_string());
 
     let xml = export_g_drugs_xml(&[drug], &[], &[dosage], &[], &[], &[], &[])
         .expect("export xml");
 
-    assert!(xml.contains("<period value=\"3\" unit=\"d\"/>"), "{xml}");
+    assert!(xml.contains("<period value=\"0.5\" unit=\"d\"/>"), "{xml}");
 }
 ```
 
@@ -65,7 +67,7 @@ fn export_g_uses_number_of_units_for_period_value() {
 
 Run: `cargo test -p lib-core export_g_uses_number_of_units_for_period_value --lib -- --nocapture`
 
-Expected: FAIL because current export emits `unit="d"` without `value="3"` when `frequency_value` is empty.
+Expected: FAIL because current export emits `unit="d"` without `value="0.5"` when `frequency_value` is empty.
 
 - [ ] **Step 3: Add a failing special-value import regression**
 
@@ -78,13 +80,13 @@ but delete the duplicate `first_dosage.frequency_value` assertion. Add:
 fn import_g_preserves_special_frequency_unit_for_validation() {
     let xml = fixture("FAERS2022Scenario6.xml").replacen(
         "<period value=\"10\" unit=\"d\"/>",
-        "<period value=\"10\" unit=\"{cyclical}\"/>",
+        "<period value=\"0.5\" unit=\"{cyclical}\"/>",
         1,
     );
     let drugs = parse_g_drugs(&xml).expect("parse");
     let dosage = &drugs[0].dosages[0];
 
-    assert_eq!(dosage.number_of_units, Some(10));
+    assert_eq!(dosage.number_of_units, Some(Decimal::new(5, 1)));
     assert_eq!(dosage.frequency_unit.as_deref(), Some("{cyclical}"));
 }
 ```
@@ -104,7 +106,7 @@ In import code, remove every `frequency_value` member and assignment. Keep only:
 ```rust
 let number_of_units =
     first_attr(&mut xpath, &dose, GDrugPaths::DOSAGE_FREQUENCY_VALUE)
-        .and_then(|v| v.parse::<i32>().ok());
+        .and_then(|v| v.parse::<Decimal>().ok());
 let frequency_unit = normalize_frequency_unit(first_attr(
     &mut xpath,
     &dose,
@@ -128,7 +130,7 @@ In export code, replace the current frequency block with:
 ```rust
 if dose.number_of_units.is_some() || dose.frequency_unit.is_some() {
     out.push_str("<effectiveTime xsi:type=\"SXPR_TS\"><comp xsi:type=\"PIVL_TS\"><period");
-    if let Some(v) = dose.number_of_units {
+    if let Some(v) = dose.number_of_units.as_ref() {
         out.push_str(" value=\"");
         out.push_str(&v.to_string());
         out.push_str("\"");
@@ -185,14 +187,14 @@ git commit -m "fix: canonicalize dosage interval xml mapping"
 Change the dosage POST fixture in `subresources_web.rs` to send only:
 
 ```rust
-"number_of_units": 1,
+"number_of_units": 0.5,
 "frequency_unit": "d",
 ```
 
 Add assertions:
 
 ```rust
-assert_eq!(value["data"]["number_of_units"], 1);
+assert_eq!(value["data"]["number_of_units"], 0.5);
 assert_eq!(value["data"]["frequency_unit"], "d");
 assert!(value["data"].get("frequency_value").is_none());
 ```
@@ -208,7 +210,7 @@ fn dosage_frequency_unit_is_required_from_number_of_units() {
     ctx.drugs.push(parent);
     let mut row = dosage();
     row.drug_id = Uuid::from_u128(1);
-    row.number_of_units = Some(3);
+    row.number_of_units = Some(Decimal::new(5, 1));
     ctx.dosages.push(row);
 
     let mut issues = Vec::new();
@@ -232,14 +234,20 @@ Expected: API test FAILS because serialized `DosageInformation` still exposes
 
 - [ ] **Step 3: Remove `frequency_value` from persistence and Rust models**
 
-Delete the column from bootstrap SQL and remove the field from all three Rust dosage structs. Update seeds to use:
+Delete the duplicate column from bootstrap SQL, change `number_of_units` from
+`INTEGER`/`Option<i32>` to `DECIMAL`/`Option<Decimal>` in persistence, import
+helpers, and all three Rust dosage structs. Update seeds to use:
 
 ```sql
 INSERT INTO dosage_information (..., number_of_units, frequency_unit, ...)
-VALUES (..., 1, 'd', ...);
+VALUES (..., 0.5, 'd', ...);
 ```
 
 Use canonical UCUM code `d`, not the invalid seed label `day`. Remove the field from every affected struct literal in backend tests.
+
+Replace the representation boundary for G.k.4.r.2 so decimal `1.5` is accepted
+and non-numeric text such as `"12mg"` is rejected. Add API/XML round-trip
+coverage for `0.5` so the canonical field cannot regress to an integer.
 
 In `G_DOSAGE_COMPANION_RULES`, change only the trigger for
 `ICH.G.k.4.r.3.REQUIRED`:

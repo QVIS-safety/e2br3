@@ -6,7 +6,7 @@ CREATE INDEX IF NOT EXISTS idx_product_presaves_receiver
     WHERE receiver_presave_id IS NOT NULL;
 
 WITH unique_matches AS (
-    SELECT p.id AS product_id, min(r.id) AS receiver_id
+    SELECT p.id AS product_id, min(r.id::text)::uuid AS receiver_id
     FROM product_presaves p
     JOIN receiver_presaves r
       ON r.organization_id = p.organization_id

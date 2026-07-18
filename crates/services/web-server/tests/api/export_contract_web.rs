@@ -412,7 +412,6 @@ async fn seed_cioms_case_data(
 			dose_value: None,
 			dose_unit: None,
 			number_of_units: None,
-			frequency_value: None,
 			frequency_unit: None,
 			first_administration_date: Some(Date::from_calendar_date(
 				2026,

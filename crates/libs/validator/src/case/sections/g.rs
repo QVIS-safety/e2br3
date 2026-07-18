@@ -91,10 +91,6 @@ fn decimal_text(value: Option<Decimal>) -> Option<String> {
 	value.map(|value| value.to_string())
 }
 
-fn i32_text(value: Option<i32>) -> Option<String> {
-	value.map(|value| value.to_string())
-}
-
 struct MfdsDrugRuleView {
 	index: usize,
 	mpid: Option<String>,
@@ -824,7 +820,7 @@ const G_DOSAGE_DERIVED_LENGTH_RULES: &[NestedDerivedLengthRule<
 		path: |drug_idx, idx| {
 			format!("drugs.{drug_idx}.dosages.{idx}.numberOfUnits")
 		},
-		value: |dosage| i32_text(dosage.number_of_units),
+		value: |dosage| decimal_text(dosage.number_of_units),
 	},
 	NestedDerivedLengthRule {
 		code: "ICH.G.k.4.r.6a.LENGTH.MAX",
@@ -834,6 +830,19 @@ const G_DOSAGE_DERIVED_LENGTH_RULES: &[NestedDerivedLengthRule<
 		value: |dosage| decimal_text(dosage.duration_value),
 	},
 ];
+
+const G_DOSAGE_CONSTRAINT_RULES: &[NestedConstraintRule<DosageInformation>] =
+	&[NestedConstraintRule {
+		code: "ICH.G.k.4.r.3.ALLOWED.VALUE",
+		path: |drug_idx, idx| {
+			format!("drugs.{drug_idx}.dosages.{idx}.frequencyUnit")
+		},
+		value: |dosage| {
+			ConstraintValue::Text(
+				dosage.frequency_unit.as_deref().map(Cow::Borrowed),
+			)
+		},
+	}];
 
 const G_DOSAGE_COMPANION_RULES: &[CompanionRule<DosageInformation>] = &[
 	CompanionRule {
@@ -845,7 +854,7 @@ const G_DOSAGE_COMPANION_RULES: &[CompanionRule<DosageInformation>] = &[
 	CompanionRule {
 		code: "ICH.G.k.4.r.3.REQUIRED",
 		path: |idx| format!("drugs.0.dosages.{idx}.frequencyUnit"),
-		trigger: |dosage| dosage.frequency_value.is_some(),
+		trigger: |dosage| dosage.number_of_units.is_some(),
 		required: |dosage| has_text(dosage.frequency_unit.as_deref()),
 	},
 	CompanionRule {
@@ -1206,6 +1215,16 @@ pub(crate) fn collect_ich_issues(
 		|dosage| dosage.drug_id,
 		|dosage, fallback| sequence_idx(dosage.sequence_number, fallback),
 		G_DOSAGE_DERIVED_LENGTH_RULES,
+	);
+	eval_nested_constraints(
+		issues,
+		&validation_ctx.drugs,
+		&validation_ctx.dosages,
+		|drug| drug.id,
+		|dosage| dosage.drug_id,
+		|dosage, fallback| sequence_idx(dosage.sequence_number, fallback),
+		G_DOSAGE_CONSTRAINT_RULES,
+		&validation_ctx.vocabulary,
 	);
 	eval_companions(issues, &validation_ctx.dosages, G_DOSAGE_COMPANION_RULES);
 	eval_indexed_future_dates(
@@ -1602,6 +1621,7 @@ pub(super) fn constraint_rule_codes() -> Vec<&'static str> {
 				.iter()
 				.map(|rule| rule.code),
 		)
+		.chain(G_DOSAGE_CONSTRAINT_RULES.iter().map(|rule| rule.code))
 		.chain(super::rule_table::nested_meddra_constraint_codes(
 			G_INDICATION_MEDDRA_RULES,
 		))
@@ -1628,6 +1648,7 @@ pub(super) fn table_rule_codes() -> Vec<&'static str> {
 	add!(G_ACTIVE_SUBSTANCE_COMPANION_RULES);
 	add!(G_DOSAGE_LENGTH_RULES);
 	add!(G_DOSAGE_DERIVED_LENGTH_RULES);
+	add!(G_DOSAGE_CONSTRAINT_RULES);
 	add!(G_DOSAGE_COMPANION_RULES);
 	add!(G_DOSAGE_FUTURE_DATE_RULES);
 	add!(G_INDICATION_LENGTH_RULES);
@@ -2009,7 +2030,6 @@ mod golden_g_required_tests {
 			dose_value: None,
 			dose_unit: None,
 			number_of_units: None,
-			frequency_value: None,
 			frequency_unit: None,
 			first_administration_date: None,
 			last_administration_date: None,
@@ -2212,6 +2232,70 @@ mod golden_g_required_tests {
 	}
 
 	#[test]
+	fn dosage_frequency_unit_is_required_from_number_of_units() {
+		let mut ctx = empty_ctx();
+		let mut dosage = dosage();
+		dosage.number_of_units = Some(Decimal::new(5, 1));
+		ctx.dosages.push(dosage);
+
+		assert!(codes_for(&ctx)
+			.iter()
+			.any(|code| code == "ICH.G.k.4.r.3.REQUIRED"));
+	}
+
+	#[test]
+	fn dosage_frequency_unit_uses_frequency_vocabulary_scope() {
+		const ALLOWED: [&str; 9] = [
+			"a",
+			"mo",
+			"wk",
+			"d",
+			"h",
+			"min",
+			"{cyclical}",
+			"{asnecessary}",
+			"{total}",
+		];
+		let active = ALLOWED
+			.map(|code| ("ICH-UCUM", crate::VocabularyScope::Frequency, code));
+
+		for unit in ALLOWED {
+			let mut ctx = empty_ctx();
+			ctx.vocabulary =
+				crate::context::VocabularyContext::for_active_codes(&active);
+			let mut drug = drug();
+			drug.id = Uuid::from_u128(1);
+			ctx.drugs.push(drug);
+			let mut dosage = dosage();
+			dosage.drug_id = Uuid::from_u128(1);
+			dosage.frequency_unit = Some(unit.to_string());
+			ctx.dosages.push(dosage);
+
+			assert!(
+				!codes_for(&ctx)
+					.iter()
+					.any(|code| code == "ICH.G.k.4.r.3.ALLOWED.VALUE"),
+				"approved unit {unit} was rejected"
+			);
+		}
+
+		let mut ctx = empty_ctx();
+		ctx.vocabulary =
+			crate::context::VocabularyContext::for_active_codes(&active);
+		let mut drug = drug();
+		drug.id = Uuid::from_u128(1);
+		ctx.drugs.push(drug);
+		let mut dosage = dosage();
+		dosage.drug_id = Uuid::from_u128(1);
+		dosage.frequency_unit = Some("fortnight".to_string());
+		ctx.dosages.push(dosage);
+
+		assert!(codes_for(&ctx)
+			.iter()
+			.any(|code| code == "ICH.G.k.4.r.3.ALLOWED.VALUE"));
+	}
+
+	#[test]
 	fn indication_and_reaction_assessment_pair_rules_are_preserved() {
 		let mut ctx = empty_ctx();
 		let mut indication = indication();
@@ -2356,7 +2440,7 @@ mod golden_g_required_tests {
 		dosage.drug_id = Uuid::from_u128(1);
 		dosage.dose_value = Some(Decimal::new(123_456_789, 0));
 		dosage.dose_unit = Some("x".repeat(51));
-		dosage.number_of_units = Some(12_345);
+		dosage.number_of_units = Some(Decimal::new(12_345, 0));
 		dosage.frequency_unit = Some("x".repeat(51));
 		dosage.duration_value = Some(Decimal::new(123_456, 0));
 		dosage.duration_unit = Some("x".repeat(51));

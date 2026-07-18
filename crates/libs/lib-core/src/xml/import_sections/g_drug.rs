@@ -62,9 +62,8 @@ pub struct GDrugSubstanceImport {
 #[derive(Debug)]
 pub struct GDrugDosageImport {
 	pub dosage_text: Option<String>,
-	pub frequency_value: Option<Decimal>,
 	pub frequency_unit: Option<String>,
-	pub number_of_units: Option<i32>,
+	pub number_of_units: Option<Decimal>,
 	pub start_date: Option<sqlx::types::time::Date>,
 	pub start_time: Option<Time>,
 	pub start_date_null_flavor: Option<String>,
@@ -260,10 +259,7 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 		for dose in dosages.into_iter() {
 			let dosage_text =
 				first_text(&mut xpath, &dose, GDrugPaths::DOSAGE_TEXT_NODE);
-			let frequency_value =
-				first_attr(&mut xpath, &dose, GDrugPaths::DOSAGE_FREQUENCY_VALUE)
-					.and_then(|v| v.parse::<Decimal>().ok());
-			let frequency_unit = normalize_code3(first_attr(
+			let frequency_unit = normalize_frequency_unit(first_attr(
 				&mut xpath,
 				&dose,
 				GDrugPaths::DOSAGE_FREQUENCY_UNIT,
@@ -275,7 +271,7 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			);
 			let number_of_units =
 				first_attr(&mut xpath, &dose, GDrugPaths::DOSAGE_FREQUENCY_VALUE)
-					.and_then(|v| v.parse::<i32>().ok());
+					.and_then(|v| v.parse::<Decimal>().ok());
 			let start_date =
 				first_attr(&mut xpath, &dose, GDrugPaths::DOSAGE_START_DATE)
 					.and_then(parse_date);
@@ -348,7 +344,6 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 
 			dosage_list.push(GDrugDosageImport {
 				dosage_text,
-				frequency_value,
 				frequency_unit,
 				number_of_units,
 				start_date,
@@ -478,6 +473,11 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 	Ok(imports)
 }
 
+fn normalize_frequency_unit(value: Option<String>) -> Option<String> {
+	let value = value?.trim().to_string();
+	(!value.is_empty() && value.chars().count() <= 50).then_some(value)
+}
+
 fn first_attr(xpath: &mut Context, node: &Node, expr: &str) -> Option<String> {
 	xpath
 		.findvalues(expr, Some(node))
@@ -571,4 +571,47 @@ fn parse_time(value: String) -> Option<Time> {
 	let minute: u8 = digits[10..12].parse().ok()?;
 	let second: u8 = digits[12..14].parse().ok()?;
 	Time::from_hms(hour, minute, second).ok()
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn imports_decimal_interval_value_and_special_frequency_unit() {
+		for unit in ["{cyclical}", "{asnecessary}", "{total}"] {
+			let xml = format!(
+				r#"
+			<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"
+				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+				<subjectOf2>
+					<organizer>
+						<code code="4" codeSystem="2.16.840.1.113883.3.989.2.1.1.20"/>
+						<component>
+							<substanceAdministration>
+								<consumable><instanceOfKind><kindOfProduct>
+									<name>Drug A</name>
+								</kindOfProduct></instanceOfKind></consumable>
+								<outboundRelationship2 typeCode="COMP">
+									<substanceAdministration>
+										<effectiveTime><comp xsi:type="PIVL_TS">
+											<period value="0.5" unit="{unit}"/>
+										</comp></effectiveTime>
+									</substanceAdministration>
+								</outboundRelationship2>
+							</substanceAdministration>
+						</component>
+					</organizer>
+				</subjectOf2>
+			</MCCI_IN200100UV01>
+		"#
+			);
+
+			let drugs = parse_g_drugs(xml.as_bytes()).expect("parse");
+			let dosage = &drugs[0].dosages[0];
+
+			assert_eq!(dosage.number_of_units, Some(Decimal::new(5, 1)));
+			assert_eq!(dosage.frequency_unit.as_deref(), Some(unit));
+		}
+	}
 }

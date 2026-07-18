@@ -20,7 +20,7 @@ G.k.4.r.2 and G.k.4.r.3 are separate E2B data elements represented together
 in XML as attributes of one periodic interval:
 
 ```xml
-<period value="3" unit="d"/>
+<period value="0.5" unit="d"/>
 ```
 
 The canonical application mapping is therefore:
@@ -40,6 +40,11 @@ Remove `frequency_value` from the bootstrap schema, demo seeds,
 `DosageInformation`, its create/update inputs, XML import helper structs, REST
 payload handling, test fixtures, and generated or maintained contract
 artifacts that are source-controlled.
+
+G.k.4.r.2 is an HL7 `REAL` and the registry declares `numeric_shape =
+decimal`. Therefore `number_of_units` uses Rust `Decimal` and a PostgreSQL
+`DECIMAL` column. The existing `i32`/`INTEGER` representation is part of the
+same original modeling error and is replaced rather than retained.
 
 Remove `frequencyValue` and `doseFrequencyValue` from sibling-frontend types,
 defaults, detail transforms, save transforms, Zod paths, previews, and tests.
@@ -65,7 +70,8 @@ present. Serialize `number_of_units` as `period/@value` and `frequency_unit` as
 ```
 
 Existing handling of dosage dates, duration, dose quantity, route, and dosage
-text is unchanged.
+text is unchanged. Decimal values such as `0.5` must round-trip without
+truncation or rejection.
 
 ## Validation
 
@@ -91,7 +97,8 @@ bypass the form, so the shared Rust validator remains authoritative.
 
 The validation contract is:
 
-- G.k.4.r.2 remains numeric and has a maximum representation length of four.
+- G.k.4.r.2 accepts decimal numeric values and has a maximum representation
+  length of four.
 - G.k.4.r.3 is required when G.k.4.r.2 is populated.
 - G.k.4.r.3 has a maximum length of 50 characters.
 - A populated G.k.4.r.3 must equal one of `a`, `mo`, `wk`, `d`, `h`, `min`,
@@ -149,10 +156,10 @@ offered for G.k.4.r.3 because they are outside this field's approved list.
 
 Implementation follows red-green TDD. Tests must prove:
 
-1. XML import maps `period value="10" unit="d"` only to
-   `number_of_units = 10` and `frequency_unit = "d"`.
-2. XML export maps `number_of_units = 3` and `frequency_unit = "d"` to one
-   `<period value="3" unit="d"/>` fragment.
+1. XML import maps `period value="0.5" unit="d"` only to
+   `number_of_units = 0.5` and `frequency_unit = "d"`.
+2. XML export maps `number_of_units = 0.5` and `frequency_unit = "d"` to one
+   `<period value="0.5" unit="d"/>` fragment.
 3. Rust validation requires G.k.4.r.3 when `number_of_units` is populated.
 4. Frontend Zod validation requires `frequencyUnit` when `numberOfUnits` is
    populated.

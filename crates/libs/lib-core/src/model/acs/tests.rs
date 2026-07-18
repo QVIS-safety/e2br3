@@ -75,7 +75,10 @@ fn system_admin_profile_matches_platform_admin_endpoints() {
 		SETTINGS_READ,
 		SETTINGS_UPDATE,
 	] {
-		assert!(has_permission(ROLE_SYSTEM_ADMIN, permission), "{permission}");
+		assert!(
+			has_permission(ROLE_SYSTEM_ADMIN, permission),
+			"{permission}"
+		);
 	}
 
 	assert!(!has_permission(ROLE_SYSTEM_ADMIN, CASE_READ));

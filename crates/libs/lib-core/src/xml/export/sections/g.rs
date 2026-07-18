@@ -446,11 +446,11 @@ pub(crate) fn drug_fragment(
 			out.push_str(&xml_escape(text));
 			out.push_str("</text>");
 		}
-		if dose.frequency_value.is_some() || dose.frequency_unit.is_some() {
+		if dose.number_of_units.is_some() || dose.frequency_unit.is_some() {
 			out.push_str(
 				"<effectiveTime xsi:type=\"SXPR_TS\"><comp xsi:type=\"PIVL_TS\"><period",
 			);
-			if let Some(v) = dose.frequency_value.as_ref() {
+			if let Some(v) = dose.number_of_units.as_ref() {
 				out.push_str(" value=\"");
 				out.push_str(&xml_escape(&v.to_string()));
 				out.push_str("\"");
@@ -884,7 +884,6 @@ mod tests {
 			dose_value: None,
 			dose_unit: None,
 			number_of_units: None,
-			frequency_value: None,
 			frequency_unit: None,
 			first_administration_date: None::<Date>,
 			last_administration_date: None::<Date>,
@@ -910,6 +909,34 @@ mod tests {
 			updated_at: OffsetDateTime::now_utc(),
 			created_by: Uuid::new_v4(),
 			updated_by: None,
+		}
+	}
+
+	#[test]
+	fn export_g_uses_decimal_number_of_units_for_period_value() {
+		let case_id = Uuid::new_v4();
+		let drug_id = Uuid::new_v4();
+		let drug = test_drug(drug_id, case_id);
+		for unit in ["d", "{cyclical}", "{asnecessary}", "{total}"] {
+			let mut dosage = test_dosage(drug_id);
+			dosage.number_of_units = Some(Decimal::new(5, 1));
+			dosage.frequency_unit = Some(unit.to_string());
+
+			let xml = export_g_drugs_xml(
+				&[drug.clone()],
+				&[],
+				&[dosage],
+				&[],
+				&[],
+				&[],
+				&[],
+			)
+			.expect("export xml");
+
+			assert!(
+				xml.contains(&format!("<period value=\"0.5\" unit=\"{unit}\"/>")),
+				"{xml}"
+			);
 		}
 	}
 

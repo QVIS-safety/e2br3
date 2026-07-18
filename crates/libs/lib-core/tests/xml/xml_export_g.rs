@@ -5,6 +5,7 @@ use lib_core::model::drug::{
 use lib_core::xml::export_sections::g_drug::export_g_drugs_xml;
 use libxml::parser::Parser;
 use libxml::xpath::Context;
+use rust_decimal::Decimal;
 use sqlx::types::time::{Date, Time};
 use sqlx::types::Uuid;
 use time::Month;
@@ -71,8 +72,7 @@ fn export_g_drug_basic() {
 		sequence_number: 1,
 		dose_value: Some(1.into()),
 		dose_unit: Some("mg".to_string()),
-		number_of_units: None,
-		frequency_value: Some(1.into()),
+		number_of_units: Some(Decimal::new(5, 1)),
 		frequency_unit: Some("d".to_string()),
 		first_administration_date: Some(
 			Date::from_calendar_date(2024, Month::January, 1).unwrap(),

@@ -520,8 +520,8 @@ BEGIN
     VALUES (v_drug_substance_id, v_drug_info_id, 1, 'Substance A', 10.0, 'mg', v_user_id, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
-    INSERT INTO dosage_information (id, drug_id, sequence_number, dose_value, dose_unit, frequency_value, frequency_unit, created_by, created_at, updated_at)
-    VALUES (v_dosage_info_id, v_drug_info_id, 1, 1.0, 'tab', 1.0, 'day', v_user_id, NOW(), NOW())
+    INSERT INTO dosage_information (id, drug_id, sequence_number, dose_value, dose_unit, number_of_units, frequency_unit, created_by, created_at, updated_at)
+    VALUES (v_dosage_info_id, v_drug_info_id, 1, 1.0, 'tab', 0.5, 'd', v_user_id, NOW(), NOW())
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO drug_indications (id, drug_id, sequence_number, indication_text, indication_meddra_version, indication_meddra_code, created_by, created_at, updated_at)
