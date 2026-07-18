@@ -12,7 +12,7 @@ use modql::filter::{FilterNodes, ListOptions, OpValBool, OpValsBool, OpValsValue
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value as JsonValue};
-use sqlx::types::time::{Date, OffsetDateTime, Time};
+use sqlx::types::time::{Date, OffsetDateTime};
 use sqlx::types::Uuid;
 use sqlx::FromRow;
 
@@ -44,9 +44,6 @@ pub struct DrugInformation {
 	// G.k.3.1 - Obtain Drug Country
 	pub obtain_drug_country: Option<String>,
 
-	// G.k.3.2 - Brand Name
-	pub brand_name: Option<String>,
-	pub drug_generic_name: Option<String>,
 	pub drug_authorization_number: Option<String>,
 
 	// G.k.3.3 - Manufacturer
@@ -69,12 +66,6 @@ pub struct DrugInformation {
 
 	// G.k.7 - Action taken
 	pub action_taken: Option<String>,
-
-	// G.k.8 - Rechallenge/Recurrence
-	pub rechallenge: Option<String>,
-
-	// G.k.11 - Parent Dosage
-	pub parent_dosage_text: Option<String>,
 
 	// FDA.G.k.10a - Additional Information on Drug (coded)
 	pub fda_additional_info_coded: Option<String>,
@@ -102,9 +93,7 @@ pub struct DrugInformationForCreate {
 	pub sequence_number: i32,
 	pub drug_characterization: String,
 	pub medicinal_product: String,
-	pub drug_generic_name: Option<String>,
 	pub drug_authorization_number: Option<String>,
-	pub brand_name: Option<String>,
 	pub manufacturer_name: Option<String>,
 	pub manufacturer_country: Option<String>,
 	pub batch_lot_number: Option<String>,
@@ -114,7 +103,6 @@ pub struct DrugInformationForCreate {
 	pub gestation_period_exposure_unit: Option<String>,
 	pub dosage_text: Option<String>,
 	pub action_taken: Option<String>,
-	pub rechallenge: Option<String>,
 	pub investigational_product_blinded: Option<bool>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
@@ -123,7 +111,6 @@ pub struct DrugInformationForCreate {
 	pub phpid: Option<String>,
 	pub phpid_version: Option<String>,
 	pub obtain_drug_country: Option<String>,
-	pub parent_dosage_text: Option<String>,
 	pub fda_additional_info_coded: Option<String>,
 	pub drug_additional_info_codes_json: Option<JsonValue>,
 	pub drug_additional_information: Option<String>,
@@ -137,8 +124,6 @@ pub struct DrugInformationForUpdate {
 	pub source_product_presave_id: Option<Uuid>,
 	pub medicinal_product: Option<String>,
 	pub drug_characterization: Option<String>,
-	pub brand_name: Option<String>,
-	pub drug_generic_name: Option<String>,
 	pub drug_authorization_number: Option<String>,
 	pub manufacturer_name: Option<String>,
 	pub manufacturer_country: Option<String>,
@@ -149,7 +134,6 @@ pub struct DrugInformationForUpdate {
 	pub gestation_period_exposure_unit: Option<String>,
 	pub dosage_text: Option<String>,
 	pub action_taken: Option<String>,
-	pub rechallenge: Option<String>,
 	pub investigational_product_blinded: Option<bool>,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
@@ -158,7 +142,6 @@ pub struct DrugInformationForUpdate {
 	pub phpid: Option<String>,
 	pub phpid_version: Option<String>,
 	pub obtain_drug_country: Option<String>,
-	pub parent_dosage_text: Option<String>,
 	pub fda_additional_info_coded: Option<String>,
 	pub drug_additional_info_codes_json: Option<JsonValue>,
 	pub drug_additional_information: Option<String>,
@@ -706,11 +689,9 @@ pub struct DosageInformation {
 
 	// G.k.4.r.4 - Date/Time of First Administration
 	pub first_administration_date: Option<Date>,
-	pub first_administration_time: Option<Time>,
 
 	// G.k.4.r.5 - Date/Time of Last Administration
 	pub last_administration_date: Option<Date>,
-	pub last_administration_time: Option<Time>,
 
 	// G.k.4.r.6 - Duration
 	pub duration_value: Option<Decimal>,
@@ -763,13 +744,11 @@ pub struct DosageInformationForCreate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub first_administration_date: Option<Date>,
-	pub first_administration_time: Option<Time>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub last_administration_date: Option<Date>,
-	pub last_administration_time: Option<Time>,
 	pub duration_value: Option<Decimal>,
 	pub duration_unit: Option<String>,
 	pub continuing: Option<bool>,
@@ -801,13 +780,11 @@ pub struct DosageInformationForUpdate {
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub first_administration_date: Option<Date>,
-	pub first_administration_time: Option<Time>,
 	#[serde(
 		default,
 		deserialize_with = "crate::serde::flex_date::deserialize_option_date"
 	)]
 	pub last_administration_date: Option<Date>,
-	pub last_administration_time: Option<Time>,
 	pub duration_value: Option<Decimal>,
 	pub duration_unit: Option<String>,
 	pub continuing: Option<bool>,
@@ -965,25 +942,25 @@ impl DrugInformationBmc {
 
 		let sql = format!(
 				"INSERT INTO {} (
-				     case_id, source_product_presave_id, sequence_number, drug_characterization, medicinal_product, drug_generic_name,
-				     drug_authorization_number, brand_name, manufacturer_name, manufacturer_country,
+				     case_id, source_product_presave_id, sequence_number, drug_characterization, medicinal_product,
+				     drug_authorization_number, manufacturer_name, manufacturer_country,
 				     batch_lot_number, cumulative_dose_first_reaction_value, cumulative_dose_first_reaction_unit,
 				     gestation_period_exposure_value, gestation_period_exposure_unit, dosage_text,
-			     action_taken, rechallenge, investigational_product_blinded, mpid, mpid_version,
+			     action_taken, investigational_product_blinded, mpid, mpid_version,
 			     mfds_mpid_version, mfds_mpid, phpid, phpid_version, obtain_drug_country,
-			     parent_dosage_text, fda_additional_info_coded,
+			     fda_additional_info_coded,
 			     drug_additional_info_codes_json, drug_additional_information, fda_specialized_product_category, fda_device_info_json,
 			     fda_other_characterization,
 			     created_at, updated_at, created_by
 				 )
 				 VALUES (
 				     $1, $2, $3, $4, $5,
-				     $6, $7, $8, $9, $10,
+				     $7, $9, $10,
 				     $11, $12, $13,
 				     $14, $15, $16,
-				     $17, $18, $19, $20, $21,
+				     $17, $19, $20, $21,
 				     $22, $23, $24, $25, $26,
-				     $27, $28, $29,
+				     $28, $29,
 				     $30, $31, $32,
 				     $33,
 				     now(), now(), $34
@@ -1000,9 +977,9 @@ impl DrugInformationBmc {
 					.bind(drug_c.sequence_number)
 					.bind(drug_c.drug_characterization)
 					.bind(drug_c.medicinal_product)
-					.bind(drug_c.drug_generic_name)
+					.bind(Option::<String>::None)
 					.bind(drug_c.drug_authorization_number)
-					.bind(drug_c.brand_name)
+					.bind(Option::<String>::None)
 					.bind(drug_c.manufacturer_name)
 					.bind(drug_c.manufacturer_country)
 					.bind(drug_c.batch_lot_number)
@@ -1012,7 +989,7 @@ impl DrugInformationBmc {
 					.bind(drug_c.gestation_period_exposure_unit)
 					.bind(drug_c.dosage_text)
 					.bind(drug_c.action_taken)
-					.bind(drug_c.rechallenge)
+					.bind(Option::<String>::None)
 					.bind(drug_c.investigational_product_blinded)
 					.bind(drug_c.mpid)
 					.bind(drug_c.mpid_version)
@@ -1021,7 +998,7 @@ impl DrugInformationBmc {
 					.bind(drug_c.phpid)
 					.bind(drug_c.phpid_version)
 					.bind(drug_c.obtain_drug_country)
-					.bind(drug_c.parent_dosage_text)
+					.bind(Option::<String>::None)
 					.bind(drug_c.fda_additional_info_coded)
 					.bind(drug_c.drug_additional_info_codes_json)
 					.bind(drug_c.drug_additional_information)
@@ -1095,8 +1072,6 @@ impl DrugInformationBmc {
 			"UPDATE {}
 			 SET medicinal_product = COALESCE($2, medicinal_product),
 			     drug_characterization = COALESCE($3, drug_characterization),
-			     brand_name = COALESCE($4, brand_name),
-			     drug_generic_name = COALESCE($5, drug_generic_name),
 			     drug_authorization_number = COALESCE($6, drug_authorization_number),
 			     manufacturer_name = COALESCE($7, manufacturer_name),
 			     manufacturer_country = COALESCE($8, manufacturer_country),
@@ -1107,7 +1082,6 @@ impl DrugInformationBmc {
 			     gestation_period_exposure_unit = COALESCE($13, gestation_period_exposure_unit),
 			     dosage_text = COALESCE($14, dosage_text),
 			     action_taken = COALESCE($15, action_taken),
-			     rechallenge = COALESCE($16, rechallenge),
 			     investigational_product_blinded = COALESCE($17, investigational_product_blinded),
 			     mpid = COALESCE($18, mpid),
 			     mpid_version = COALESCE($19, mpid_version),
@@ -1116,7 +1090,6 @@ impl DrugInformationBmc {
 			     phpid = COALESCE($22, phpid),
 			     phpid_version = COALESCE($23, phpid_version),
 			     obtain_drug_country = COALESCE($24, obtain_drug_country),
-			     parent_dosage_text = COALESCE($25, parent_dosage_text),
 			     fda_additional_info_coded = COALESCE($26, fda_additional_info_coded),
 			     drug_additional_info_codes_json = COALESCE($27, drug_additional_info_codes_json),
 			     drug_additional_information = COALESCE($28, drug_additional_information),
@@ -1136,8 +1109,8 @@ impl DrugInformationBmc {
 					.bind(id)
 					.bind(drug_u.medicinal_product)
 					.bind(drug_u.drug_characterization)
-					.bind(drug_u.brand_name)
-					.bind(drug_u.drug_generic_name)
+					.bind(Option::<String>::None)
+					.bind(Option::<String>::None)
 					.bind(drug_u.drug_authorization_number)
 					.bind(drug_u.manufacturer_name)
 					.bind(drug_u.manufacturer_country)
@@ -1148,7 +1121,7 @@ impl DrugInformationBmc {
 					.bind(drug_u.gestation_period_exposure_unit)
 					.bind(drug_u.dosage_text)
 					.bind(drug_u.action_taken)
-					.bind(drug_u.rechallenge)
+					.bind(Option::<String>::None)
 					.bind(drug_u.investigational_product_blinded)
 					.bind(drug_u.mpid)
 					.bind(drug_u.mpid_version)
@@ -1157,7 +1130,7 @@ impl DrugInformationBmc {
 					.bind(drug_u.phpid)
 					.bind(drug_u.phpid_version)
 					.bind(drug_u.obtain_drug_country)
-					.bind(drug_u.parent_dosage_text)
+					.bind(Option::<String>::None)
 					.bind(drug_u.fda_additional_info_coded)
 					.bind(drug_u.drug_additional_info_codes_json)
 					.bind(drug_u.drug_additional_information)
@@ -1308,8 +1281,6 @@ impl DrugInformationBmc {
 			"UPDATE {}
 			 SET medicinal_product = COALESCE($3, medicinal_product),
 			     drug_characterization = COALESCE($4, drug_characterization),
-			     brand_name = COALESCE($5, brand_name),
-			     drug_generic_name = COALESCE($6, drug_generic_name),
 			     drug_authorization_number = COALESCE($7, drug_authorization_number),
 			     manufacturer_name = COALESCE($8, manufacturer_name),
 			     manufacturer_country = COALESCE($9, manufacturer_country),
@@ -1320,7 +1291,6 @@ impl DrugInformationBmc {
 			     gestation_period_exposure_unit = COALESCE($14, gestation_period_exposure_unit),
 			     dosage_text = COALESCE($15, dosage_text),
 			     action_taken = COALESCE($16, action_taken),
-			     rechallenge = COALESCE($17, rechallenge),
 			     investigational_product_blinded = COALESCE($18, investigational_product_blinded),
 			     mpid = COALESCE($19, mpid),
 			     mpid_version = COALESCE($20, mpid_version),
@@ -1329,7 +1299,6 @@ impl DrugInformationBmc {
 			     phpid = COALESCE($23, phpid),
 			     phpid_version = COALESCE($24, phpid_version),
 			     obtain_drug_country = COALESCE($25, obtain_drug_country),
-			     parent_dosage_text = COALESCE($26, parent_dosage_text),
 			     fda_additional_info_coded = COALESCE($27, fda_additional_info_coded),
 			     drug_additional_info_codes_json = COALESCE($28, drug_additional_info_codes_json),
 			     drug_additional_information = COALESCE($29, drug_additional_information),
@@ -1349,8 +1318,8 @@ impl DrugInformationBmc {
 					.bind(case_id)
 					.bind(drug_u.medicinal_product)
 					.bind(drug_u.drug_characterization)
-					.bind(drug_u.brand_name)
-					.bind(drug_u.drug_generic_name)
+					.bind(Option::<String>::None)
+					.bind(Option::<String>::None)
 					.bind(drug_u.drug_authorization_number)
 					.bind(drug_u.manufacturer_name)
 					.bind(drug_u.manufacturer_country)
@@ -1361,7 +1330,7 @@ impl DrugInformationBmc {
 					.bind(drug_u.gestation_period_exposure_unit)
 					.bind(drug_u.dosage_text)
 					.bind(drug_u.action_taken)
-					.bind(drug_u.rechallenge)
+					.bind(Option::<String>::None)
 					.bind(drug_u.investigational_product_blinded)
 					.bind(drug_u.mpid)
 					.bind(drug_u.mpid_version)
@@ -1370,7 +1339,7 @@ impl DrugInformationBmc {
 					.bind(drug_u.phpid)
 					.bind(drug_u.phpid_version)
 					.bind(drug_u.obtain_drug_country)
-					.bind(drug_u.parent_dosage_text)
+					.bind(Option::<String>::None)
 					.bind(drug_u.fda_additional_info_coded)
 					.bind(drug_u.drug_additional_info_codes_json)
 					.bind(drug_u.drug_additional_information)

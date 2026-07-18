@@ -636,8 +636,6 @@ async fn import_patient_information(
 	)?
 	.map(|patient| d_helpers::PatientImport {
 		patient_initials: patient.patient_initials,
-		patient_given_name: patient.patient_given_name,
-		patient_family_name: patient.patient_family_name,
 		patient_initials_null_flavor: patient.patient_initials_null_flavor,
 		birth_date: patient.birth_date,
 		birth_date_null_flavor: patient.birth_date_null_flavor,
@@ -686,8 +684,6 @@ async fn import_patient_information(
 			PatientInformationForCreate {
 				case_id,
 				patient_initials: patient.patient_initials.clone(),
-				patient_given_name: patient.patient_given_name.clone(),
-				patient_family_name: patient.patient_family_name.clone(),
 				patient_initials_null_flavor: patient
 					.patient_initials_null_flavor
 					.clone(),
@@ -734,8 +730,6 @@ async fn import_patient_information(
 			patient_id,
 			PatientInformationForUpdate {
 				patient_initials: patient.patient_initials,
-				patient_given_name: patient.patient_given_name,
-				patient_family_name: patient.patient_family_name,
 				patient_initials_null_flavor: patient.patient_initials_null_flavor,
 				birth_date: patient.birth_date,
 				birth_date_null_flavor: patient.birth_date_null_flavor,

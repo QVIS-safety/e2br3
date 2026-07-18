@@ -27,15 +27,7 @@ class FrontendField:
 
 
 DEFAULT_SOURCE_GLOBS = [
-    "../frontend/E2BR3-frontend/components/case-form/sections/SectionC*.tsx",
-    "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
-    "../frontend/E2BR3-frontend/components/case-form/sections/SectionDH.tsx",
-    "../frontend/E2BR3-frontend/components/case-form/sections/SectionE.tsx",
-    "../frontend/E2BR3-frontend/components/case-form/sections/SectionF.tsx",
-    "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-    "../frontend/E2BR3-frontend/components/case-form/sections/SectionH.tsx",
-    "../frontend/E2BR3-frontend/components/case-form/sections/SectionLiterature.tsx",
-    "../frontend/E2BR3-frontend/components/case-form/sections/SectionStudy.tsx",
+    "../frontend/E2BR3-frontend/app/(protected)/**/detail/*/*Page.tsx",
 ]
 
 ALLOWED_FIELD_ROOTS = {

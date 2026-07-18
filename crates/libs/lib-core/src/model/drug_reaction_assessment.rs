@@ -35,12 +35,6 @@ pub struct DrugReactionAssessment {
 	// G.k.9.i.4.r.1 - Did Reaction Recur on Readministration - Action
 	pub recurrence_action: Option<String>, // 1-4
 
-	// G.k.9.i.4.r.2a - MedDRA Version for Reported Term for Reaction Recurred
-	pub recurrence_meddra_version: Option<String>,
-
-	// G.k.9.i.4.r.2b - Reported Term for Reaction Recurred (MedDRA code)
-	pub recurrence_meddra_code: Option<String>,
-
 	// G.k.9.i.4.r.3 - Did Reaction Recur on Readministration
 	pub reaction_recurred: Option<String>, // 1-3
 
@@ -60,8 +54,6 @@ pub struct DrugReactionAssessmentForCreate {
 	pub last_dose_interval_value: Option<Decimal>,
 	pub last_dose_interval_unit: Option<String>,
 	pub recurrence_action: Option<String>,
-	pub recurrence_meddra_version: Option<String>,
-	pub recurrence_meddra_code: Option<String>,
 	pub reaction_recurred: Option<String>,
 }
 
@@ -72,8 +64,6 @@ pub struct DrugReactionAssessmentForUpdate {
 	pub last_dose_interval_value: Option<Decimal>,
 	pub last_dose_interval_unit: Option<String>,
 	pub recurrence_action: Option<String>,
-	pub recurrence_meddra_version: Option<String>,
-	pub recurrence_meddra_code: Option<String>,
 	pub reaction_recurred: Option<String>,
 }
 
@@ -166,10 +156,10 @@ impl DrugReactionAssessmentBmc {
 			"INSERT INTO {} (
 			 drug_id, reaction_id, administration_start_interval_value,
 			 administration_start_interval_unit, last_dose_interval_value,
-			 last_dose_interval_unit, recurrence_action, recurrence_meddra_version,
-			 recurrence_meddra_code, reaction_recurred, created_at, updated_at, created_by
+			 last_dose_interval_unit, recurrence_action,
+			 reaction_recurred, created_at, updated_at, created_by
 			)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now(), now(), $11)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $10, now(), now(), $11)
 			 ON CONFLICT (drug_id, reaction_id)
 			 DO UPDATE SET
 			  administration_start_interval_value = COALESCE(EXCLUDED.administration_start_interval_value, drug_reaction_assessments.administration_start_interval_value),
@@ -177,8 +167,6 @@ impl DrugReactionAssessmentBmc {
 			  last_dose_interval_value = COALESCE(EXCLUDED.last_dose_interval_value, drug_reaction_assessments.last_dose_interval_value),
 			  last_dose_interval_unit = COALESCE(EXCLUDED.last_dose_interval_unit, drug_reaction_assessments.last_dose_interval_unit),
 			  recurrence_action = COALESCE(EXCLUDED.recurrence_action, drug_reaction_assessments.recurrence_action),
-			  recurrence_meddra_version = COALESCE(EXCLUDED.recurrence_meddra_version, drug_reaction_assessments.recurrence_meddra_version),
-			  recurrence_meddra_code = COALESCE(EXCLUDED.recurrence_meddra_code, drug_reaction_assessments.recurrence_meddra_code),
 			  reaction_recurred = COALESCE(EXCLUDED.reaction_recurred, drug_reaction_assessments.reaction_recurred),
 			  updated_at = now(),
 			  updated_by = EXCLUDED.created_by
@@ -196,8 +184,8 @@ impl DrugReactionAssessmentBmc {
 					.bind(data.last_dose_interval_value)
 					.bind(data.last_dose_interval_unit)
 					.bind(data.recurrence_action)
-					.bind(data.recurrence_meddra_version)
-					.bind(data.recurrence_meddra_code)
+					.bind(Option::<String>::None)
+					.bind(Option::<String>::None)
 					.bind(data.reaction_recurred)
 					.bind(ctx.user_id()),
 			)
@@ -306,8 +294,6 @@ impl DrugReactionAssessmentBmc {
 			     last_dose_interval_value = COALESCE($4, last_dose_interval_value),
 			     last_dose_interval_unit = COALESCE($5, last_dose_interval_unit),
 			     recurrence_action = COALESCE($6, recurrence_action),
-			     recurrence_meddra_version = COALESCE($7, recurrence_meddra_version),
-			     recurrence_meddra_code = COALESCE($8, recurrence_meddra_code),
 			     reaction_recurred = COALESCE($9, reaction_recurred),
 			     updated_at = now(),
 			     updated_by = $10
@@ -324,8 +310,8 @@ impl DrugReactionAssessmentBmc {
 					.bind(data.last_dose_interval_value)
 					.bind(data.last_dose_interval_unit)
 					.bind(data.recurrence_action)
-					.bind(data.recurrence_meddra_version)
-					.bind(data.recurrence_meddra_code)
+					.bind(Option::<String>::None)
+					.bind(Option::<String>::None)
 					.bind(data.reaction_recurred)
 					.bind(ctx.user_id()),
 			)

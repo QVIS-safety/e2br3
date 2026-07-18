@@ -15,7 +15,6 @@ pub struct GDrugImport {
 	pub xml_id: Option<Uuid>,
 	pub sequence_number: i32,
 	pub medicinal_product: String,
-	pub brand_name: Option<String>,
 	pub drug_characterization: String,
 	pub mpid: Option<String>,
 	pub mpid_version: Option<String>,
@@ -34,7 +33,6 @@ pub struct GDrugImport {
 	pub dosage_text: Option<String>,
 	pub action_taken: Option<String>,
 	pub rechallenge: Option<String>,
-	pub parent_dosage_text: Option<String>,
 	pub fda_additional_info_coded: Option<String>,
 	pub fda_specialized_product_category: Option<String>,
 	pub fda_device_brand_name: Option<String>,
@@ -152,7 +150,6 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 				line: None,
 				column: None,
 			})?;
-		let name2 = first_text(&mut xpath, &node, GDrugPaths::PRODUCT_NAME_2);
 		let drug_characterization = "1".to_string();
 		let mpid = first_attr(&mut xpath, &node, GDrugPaths::MPID);
 		let mpid_version =
@@ -233,9 +230,6 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			first_text(&mut xpath, &node, GDrugPaths::DEVICE_LOT_NUMBER);
 		let fda_operator_of_device =
 			first_attr(&mut xpath, &node, GDrugPaths::DEVICE_OPERATOR_CODE);
-		let parent_dosage_text =
-			first_text(&mut xpath, &node, GDrugPaths::PARENT_DOSAGE_TEXT);
-
 		let subs = xpath
 			.findnodes(GDrugPaths::SUBSTANCE_NODE, Some(&node))
 			.unwrap_or_default();
@@ -447,7 +441,6 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			xml_id,
 			sequence_number: (idx + 1) as i32,
 			medicinal_product: name1,
-			brand_name: name2,
 			drug_characterization,
 			mpid,
 			mpid_version,
@@ -466,7 +459,6 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			dosage_text,
 			action_taken,
 			rechallenge,
-			parent_dosage_text,
 			fda_additional_info_coded,
 			fda_specialized_product_category,
 			fda_device_brand_name,

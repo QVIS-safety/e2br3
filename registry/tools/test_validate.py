@@ -783,7 +783,6 @@ pub struct Reaction {
         result = validate.validate_registry(
             registry_root,
             backend_models={
-                "DrugRecurrenceInformation": "crates/libs/lib-core/src/model/drug_recurrence.rs",
                 "DrugReactionAssessment": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
                 "RelatednessAssessment": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
             },
@@ -1420,6 +1419,56 @@ class DictionaryValidatorTests(unittest.TestCase):
             )
 
         self.assertEqual([], result.errors)
+
+
+class RemovedOrphanLocalFieldsTests(unittest.TestCase):
+    def test_removed_orphan_rows_and_backend_storage_are_absent(self):
+        repo = Path(__file__).resolve().parents[2]
+        removed_rows = {
+            "D.local.patientGivenName",
+            "D.local.patientFamilyName",
+            "G.k.local.supplemental.brandName",
+            "G.k.local.supplemental.genericName",
+            "G.k.local.parentDosageText",
+            "G.k.local.dosage.firstAdministrationTime",
+            "G.k.local.dosage.lastAdministrationTime",
+            "G.k.local.recurrence.reactionRecurred",
+            "G.k.local.recurrence.rechallengeAction",
+            "G.k.local.rechallenge",
+            "G.k.local.recurrence.meddraVersion",
+            "G.k.local.recurrence.meddraCode",
+            "G.k.local.assessmentRecurrence.meddraVersion",
+            "G.k.local.assessmentRecurrence.meddraCode",
+        }
+        registry_ids = set()
+        for section in (repo / "registry" / "sections").glob("*.json"):
+            registry_ids.update(row["id"] for row in json.loads(section.read_text()))
+        self.assertTrue(removed_rows.isdisjoint(registry_ids))
+
+        model_sources = "\n".join(
+            path.read_text()
+            for path in [
+                repo / "crates/libs/lib-core/src/model/patient.rs",
+                repo / "crates/libs/lib-core/src/model/drug.rs",
+                repo / "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+                repo / "db/bootstrap/04-patient-information.sql",
+                repo / "db/bootstrap/07-drug-information.sql",
+            ]
+        )
+        for field in (
+            "patient_given_name",
+            "patient_family_name",
+            "drug_generic_name",
+            "parent_dosage_text",
+            "first_administration_time",
+            "last_administration_time",
+            "recurrence_meddra_version",
+            "recurrence_meddra_code",
+        ):
+            self.assertNotIn(field, model_sources)
+        self.assertNotIn("pub brand_name: Option<String>", model_sources)
+        self.assertNotIn("\n    brand_name VARCHAR", model_sources)
+        self.assertFalse((repo / "crates/libs/lib-core/src/model/drug_recurrence.rs").exists())
 
 
 if __name__ == "__main__":

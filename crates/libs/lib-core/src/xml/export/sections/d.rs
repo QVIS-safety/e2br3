@@ -174,20 +174,5 @@ fn base_d_patient_skeleton() -> &'static str {
 }
 
 fn build_patient_name(patient: &PatientInformation) -> Option<String> {
-	let given = patient.patient_given_name.as_deref().unwrap_or("").trim();
-	let family = patient.patient_family_name.as_deref().unwrap_or("").trim();
-	if !given.is_empty() || !family.is_empty() {
-		let mut name = String::new();
-		if !given.is_empty() {
-			name.push_str(given);
-		}
-		if !family.is_empty() {
-			if !name.is_empty() {
-				name.push(' ');
-			}
-			name.push_str(family);
-		}
-		return Some(name);
-	}
 	patient.patient_initials.clone()
 }

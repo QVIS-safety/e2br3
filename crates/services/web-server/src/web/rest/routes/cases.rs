@@ -6,11 +6,11 @@ use lib_web::handlers::handlers_rest::rest_collection_item_routes;
 use crate::web::rest::{
 	audit_rest, case_editor_rest, case_export_rest, case_identifiers_rest,
 	case_intake_rest, case_rest, case_validation_rest, case_workflow_rest,
-	cioms_export_rest, drug_reaction_assessment_rest, drug_recurrence_rest,
-	drug_rest, drug_sub_rest, message_header_rest, narrative_rest,
-	narrative_sub_rest, parent_history_rest, patient_rest, patient_sub_rest,
-	reaction_rest, receiver_rest, relatedness_assessment_rest, safety_report_rest,
-	safety_report_sub_rest, submission_rest, test_result_rest,
+	cioms_export_rest, drug_reaction_assessment_rest, drug_rest, drug_sub_rest,
+	message_header_rest, narrative_rest, narrative_sub_rest, parent_history_rest,
+	patient_rest, patient_sub_rest, reaction_rest, receiver_rest,
+	relatedness_assessment_rest, safety_report_rest, safety_report_sub_rest,
+	submission_rest, test_result_rest,
 };
 
 /// Routes for /api/cases and nested subresources
@@ -447,22 +447,6 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 	.route(
 		"/cases/{case_id}/drugs/{drug_id}/reaction-assessments/{assessment_id}/relatedness/{id}/restore",
 		axum::routing::post(relatedness_assessment_rest::restore_relatedness_assessment),
-	)
-	// Drug Recurrences (collection per drug) - G.k.8.r
-	.route(
-		"/cases/{case_id}/drugs/{drug_id}/recurrences",
-		get(drug_recurrence_rest::list_drug_recurrences)
-			.post(drug_recurrence_rest::create_drug_recurrence),
-	)
-	.route(
-		"/cases/{case_id}/drugs/{drug_id}/recurrences/{id}",
-		get(drug_recurrence_rest::get_drug_recurrence)
-			.put(drug_recurrence_rest::update_drug_recurrence)
-			.delete(drug_recurrence_rest::delete_drug_recurrence),
-	)
-	.route(
-		"/cases/{case_id}/drugs/{drug_id}/recurrences/{id}/restore",
-		axum::routing::post(drug_recurrence_rest::restore_drug_recurrence),
 	)
 	// Test Results (collection per case)
 	.route(

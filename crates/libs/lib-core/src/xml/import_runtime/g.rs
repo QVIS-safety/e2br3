@@ -10,10 +10,6 @@ use crate::model::drug_reaction_assessment::{
 	RelatednessAssessmentBmc, RelatednessAssessmentForCreate,
 	RelatednessAssessmentForUpdate,
 };
-use crate::model::drug_recurrence::{
-	DrugRecurrenceInformationBmc, DrugRecurrenceInformationForCreate,
-	DrugRecurrenceInformationForUpdate,
-};
 use crate::model::store::set_full_context_dbx;
 use crate::model::ModelManager;
 use crate::xml::error::Error;
@@ -32,7 +28,6 @@ pub(crate) async fn import_section_g(
 	product_presave_id: Option<Uuid>,
 ) -> Result<ImportIdMap> {
 	let drug_map = import_drugs(ctx, mm, xml, case_id, product_presave_id).await?;
-	import_drug_recurrences(ctx, mm, xml, &drug_map).await?;
 	import_drug_reaction_assessments(ctx, mm, xml, &drug_map, reaction_map).await?;
 	Ok(drug_map)
 }
@@ -50,7 +45,6 @@ async fn import_drugs(
 			xml_id: entry.xml_id,
 			sequence_number: entry.sequence_number,
 			medicinal_product: entry.medicinal_product,
-			brand_name: entry.brand_name,
 			drug_characterization: entry.drug_characterization,
 			mpid: entry.mpid,
 			mpid_version: entry.mpid_version,
@@ -70,8 +64,6 @@ async fn import_drugs(
 			gestation_period_exposure_unit: entry.gestation_period_exposure_unit,
 			dosage_text: entry.dosage_text,
 			action_taken: entry.action_taken,
-			rechallenge: entry.rechallenge,
-			parent_dosage_text: entry.parent_dosage_text,
 			fda_additional_info_coded: entry.fda_additional_info_coded,
 			fda_specialized_product_category: entry.fda_specialized_product_category,
 			fda_device_brand_name: entry.fda_device_brand_name,
@@ -104,10 +96,8 @@ async fn import_drugs(
 					frequency_unit: dose.frequency_unit,
 					number_of_units: dose.number_of_units,
 					start_date: dose.start_date,
-					start_time: dose.start_time,
 					start_date_null_flavor: dose.start_date_null_flavor,
 					end_date: dose.end_date,
-					end_time: dose.end_time,
 					end_date_null_flavor: dose.end_date_null_flavor,
 					duration_value: dose.duration_value,
 					duration_unit: dose.duration_unit,
@@ -170,7 +160,6 @@ async fn import_drugs(
 				sequence_number: drug.sequence_number,
 				drug_characterization: drug.drug_characterization.clone(),
 				medicinal_product: drug.medicinal_product.clone(),
-				drug_generic_name: None,
 				..Default::default()
 			},
 		)
@@ -186,10 +175,8 @@ async fn import_drugs(
 					.flatten(),
 				medicinal_product: Some(drug.medicinal_product),
 				drug_characterization: Some(drug.drug_characterization),
-				brand_name: drug.brand_name,
 				// FDA.G.k.2.2.1 intentionally unsupported until a verified
 				// canonical XML source path or fixture exists locally.
-				drug_generic_name: None,
 				drug_authorization_number: drug.drug_authorization_number,
 				manufacturer_name: drug.manufacturer_name,
 				manufacturer_country: drug.manufacturer_country,
@@ -203,7 +190,6 @@ async fn import_drugs(
 				gestation_period_exposure_unit: drug.gestation_period_exposure_unit,
 				dosage_text: drug.dosage_text,
 				action_taken: drug.action_taken,
-				rechallenge: drug.rechallenge,
 				investigational_product_blinded: drug
 					.investigational_product_blinded,
 				mpid: drug.mpid,
@@ -215,7 +201,6 @@ async fn import_drugs(
 				phpid: drug.phpid,
 				phpid_version: drug.phpid_version,
 				obtain_drug_country: drug.obtain_drug_country,
-				parent_dosage_text: drug.parent_dosage_text,
 				fda_additional_info_coded: drug.fda_additional_info_coded,
 				drug_additional_info_codes_json,
 				drug_additional_information: None,
@@ -260,9 +245,7 @@ async fn import_drugs(
 					frequency_value: dose.frequency_value,
 					frequency_unit: dose.frequency_unit,
 					first_administration_date: dose.start_date,
-					first_administration_time: dose.start_time,
 					last_administration_date: dose.end_date,
-					last_administration_time: dose.end_time,
 					duration_value: dose.duration_value,
 					duration_unit: dose.duration_unit,
 					continuing: None,
@@ -364,65 +347,6 @@ async fn import_drugs(
 	Ok(map)
 }
 
-async fn import_drug_recurrences(
-	ctx: &Ctx,
-	mm: &ModelManager,
-	xml: &[u8],
-	drug_map: &ImportIdMap,
-) -> Result<()> {
-	let observations = g_helpers::parse_drug_observations(xml)?;
-	for obs in observations {
-		let Some(drug_id) =
-			drug_map.resolve(obs.drug_xml_id, Some(obs.drug_sequence))
-		else {
-			continue;
-		};
-		let existing: Option<Uuid> = mm
-			.dbx()
-			.fetch_optional(
-				sqlx::query_as::<_, (Uuid,)>(
-					"SELECT id FROM drug_recurrence_information WHERE drug_id = $1 AND sequence_number = $2 LIMIT 1",
-				)
-				.bind(drug_id)
-				.bind(obs.sequence_number),
-			)
-			.await
-			.map_err(model::Error::from)?
-			.map(|v| v.0);
-
-		if let Some(id) = existing {
-			let _ = DrugRecurrenceInformationBmc::update(
-				ctx,
-				mm,
-				id,
-				DrugRecurrenceInformationForUpdate {
-					rechallenge_action: obs.rechallenge_action,
-					reaction_meddra_version: obs.recurrence_meddra_version,
-					reaction_meddra_code: obs.recurrence_meddra_code,
-					reaction_recurred: obs.reaction_recurred,
-				},
-			)
-			.await;
-		} else {
-			DrugRecurrenceInformationBmc::create(
-				ctx,
-				mm,
-				DrugRecurrenceInformationForCreate {
-					drug_id,
-					sequence_number: obs.sequence_number,
-					rechallenge_action: obs.rechallenge_action,
-					reaction_meddra_version: obs.recurrence_meddra_version,
-					reaction_meddra_code: obs.recurrence_meddra_code,
-					reaction_recurred: obs.reaction_recurred,
-				},
-			)
-			.await?;
-		}
-	}
-
-	Ok(())
-}
-
 async fn import_drug_reaction_assessments(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -468,8 +392,6 @@ async fn import_drug_reaction_assessments(
 					last_dose_interval_value: obs.last_dose_interval_value,
 					last_dose_interval_unit: obs.last_dose_interval_unit.clone(),
 					recurrence_action: obs.rechallenge_action.clone(),
-					recurrence_meddra_version: obs.recurrence_meddra_version.clone(),
-					recurrence_meddra_code: obs.recurrence_meddra_code.clone(),
 					reaction_recurred: obs.reaction_recurred.clone(),
 				},
 			)
@@ -514,8 +436,6 @@ async fn import_drug_reaction_assessments(
 					last_dose_interval_value: None,
 					last_dose_interval_unit: None,
 					recurrence_action: None,
-					recurrence_meddra_version: None,
-					recurrence_meddra_code: None,
 					reaction_recurred: None,
 				},
 			)

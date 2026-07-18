@@ -10,8 +10,6 @@ fn import_d_section_all_fields_from_scenario6() {
 		.expect("section D should exist");
 
 	assert_eq!(patient.patient_initials.as_deref(), Some("SM"));
-	assert_eq!(patient.patient_given_name, None);
-	assert_eq!(patient.patient_family_name, None);
 	assert_eq!(patient.patient_initials_null_flavor, None);
 	assert_eq!(patient.birth_date, Some(date(2014, 10, 1)));
 	assert_eq!(patient.birth_date_null_flavor, None);

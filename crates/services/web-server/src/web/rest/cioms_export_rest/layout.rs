@@ -229,7 +229,7 @@ pub(super) fn render_landscape_cioms(
 		118,
 		42,
 		"21. DID REACTION REAPPEAR AFTER REINTRODUCTION?",
-		yes_no_na(suspect_drug.and_then(|drug| drug.rechallenge.as_deref())),
+		yes_no_na(None),
 		20,
 		1,
 	);
@@ -654,7 +654,7 @@ pub(super) fn render_portrait_cioms(
 		100,
 		42,
 		"21. REAPPEAR AFTER REINTRODUCTION?",
-		yes_no_na(suspect_drug.and_then(|drug| drug.rechallenge.as_deref())),
+		yes_no_na(None),
 		14,
 		1,
 	);

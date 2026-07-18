@@ -12,8 +12,6 @@ use sqlx::types::time::Date;
 
 pub(crate) struct PatientImport {
 	pub(crate) patient_initials: Option<String>,
-	pub(crate) patient_given_name: Option<String>,
-	pub(crate) patient_family_name: Option<String>,
 	pub(crate) patient_initials_null_flavor: Option<String>,
 	pub(crate) birth_date: Option<Date>,
 	pub(crate) birth_date_null_flavor: Option<String>,

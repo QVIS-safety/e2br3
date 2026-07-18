@@ -26,7 +26,6 @@ pub mod admin_settings_rest;
 pub mod audit_rest;
 pub mod case_identifiers_rest;
 pub mod drug_reaction_assessment_rest;
-pub mod drug_recurrence_rest;
 pub mod drug_sub_rest;
 pub mod import_rest;
 pub mod narrative_sub_rest;

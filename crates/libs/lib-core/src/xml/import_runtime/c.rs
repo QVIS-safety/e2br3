@@ -510,7 +510,6 @@ fn imported_product_sender_keys(xml: &[u8]) -> Result<Vec<String>> {
 	for drug in crate::xml::import_sections::g_drug::parse_g_drugs(xml)? {
 		for value in [
 			Some(drug.medicinal_product.as_str()),
-			drug.brand_name.as_deref(),
 			drug.drug_authorization_number.as_deref(),
 			drug.mpid.as_deref(),
 			drug.phpid.as_deref(),

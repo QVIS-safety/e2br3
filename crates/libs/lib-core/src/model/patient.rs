@@ -28,8 +28,6 @@ pub struct PatientInformation {
 
 	// D.1 - Patient identification
 	pub patient_initials: Option<String>,
-	pub patient_given_name: Option<String>,
-	pub patient_family_name: Option<String>,
 
 	// D.2 - Age
 	pub birth_date: Option<Date>,
@@ -77,8 +75,6 @@ pub struct PatientInformation {
 pub struct PatientInformationForCreate {
 	pub case_id: Uuid,
 	pub patient_initials: Option<String>,
-	pub patient_given_name: Option<String>,
-	pub patient_family_name: Option<String>,
 	pub patient_initials_null_flavor: Option<String>,
 	#[serde(
 		default,
@@ -116,8 +112,6 @@ pub struct PatientInformationForCreate {
 #[derive(Fields, Deserialize)]
 pub struct PatientInformationForUpdate {
 	pub patient_initials: Option<String>,
-	pub patient_given_name: Option<String>,
-	pub patient_family_name: Option<String>,
 	pub patient_initials_null_flavor: Option<String>,
 	#[serde(
 		default,
@@ -155,8 +149,6 @@ pub struct PatientInformationForUpdate {
 #[derive(FilterNodes, Deserialize, Default)]
 pub struct PatientInformationFilter {
 	pub patient_initials: Option<OpValsString>,
-	pub patient_given_name: Option<OpValsString>,
-	pub patient_family_name: Option<OpValsString>,
 	pub sex: Option<OpValsString>,
 }
 
@@ -622,8 +614,6 @@ impl PatientInformationBmc {
 			"INSERT INTO {} (
 				case_id,
 				patient_initials,
-				patient_given_name,
-				patient_family_name,
 				patient_initials_null_flavor,
 				birth_date,
 				birth_date_null_flavor,
@@ -653,7 +643,7 @@ impl PatientInformationBmc {
 				created_by
 			)
 			 VALUES (
-			 	$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+			  $1, $2, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
 			  $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, now(), now(), $29
 			 )
 			 RETURNING id",
@@ -665,8 +655,8 @@ impl PatientInformationBmc {
 				sqlx::query_as::<_, (Uuid,)>(&sql)
 					.bind(data.case_id)
 					.bind(data.patient_initials)
-					.bind(data.patient_given_name)
-					.bind(data.patient_family_name)
+					.bind(Option::<String>::None)
+					.bind(Option::<String>::None)
 					.bind(data.patient_initials_null_flavor)
 					.bind(data.birth_date)
 					.bind(data.birth_date_null_flavor)
@@ -759,8 +749,6 @@ impl PatientInformationBmc {
 		let sql = format!(
 			"UPDATE {}
 			 SET patient_initials = CASE WHEN $5 IS NOT NULL THEN NULL ELSE COALESCE($2, patient_initials) END,
-			     patient_given_name = COALESCE($3, patient_given_name),
-			     patient_family_name = COALESCE($4, patient_family_name),
 			     patient_initials_null_flavor = CASE WHEN $2 IS NOT NULL THEN NULL ELSE COALESCE($5, patient_initials_null_flavor) END,
 			     birth_date = CASE WHEN $7 IS NOT NULL THEN NULL ELSE COALESCE($6, birth_date) END,
 			     birth_date_null_flavor = CASE WHEN $6 IS NOT NULL THEN NULL ELSE COALESCE($7, birth_date_null_flavor) END,
@@ -796,8 +784,8 @@ impl PatientInformationBmc {
 				sqlx::query(&sql)
 					.bind(id)
 					.bind(data.patient_initials)
-					.bind(data.patient_given_name)
-					.bind(data.patient_family_name)
+					.bind(Option::<String>::None)
+					.bind(Option::<String>::None)
 					.bind(data.patient_initials_null_flavor)
 					.bind(data.birth_date)
 					.bind(data.birth_date_null_flavor)
@@ -915,8 +903,6 @@ impl PatientInformationBmc {
 		let sql = format!(
 			"UPDATE {}
 			 SET patient_initials = CASE WHEN $5 IS NOT NULL THEN NULL ELSE COALESCE($2, patient_initials) END,
-			     patient_given_name = COALESCE($3, patient_given_name),
-			     patient_family_name = COALESCE($4, patient_family_name),
 			     patient_initials_null_flavor = CASE WHEN $2 IS NOT NULL THEN NULL ELSE COALESCE($5, patient_initials_null_flavor) END,
 			     birth_date = CASE WHEN $7 IS NOT NULL THEN NULL ELSE COALESCE($6, birth_date) END,
 			     birth_date_null_flavor = CASE WHEN $6 IS NOT NULL THEN NULL ELSE COALESCE($7, birth_date_null_flavor) END,
@@ -952,8 +938,8 @@ impl PatientInformationBmc {
 				sqlx::query(&sql)
 					.bind(case_id)
 					.bind(data.patient_initials)
-					.bind(data.patient_given_name)
-					.bind(data.patient_family_name)
+					.bind(Option::<String>::None)
+					.bind(Option::<String>::None)
 					.bind(data.patient_initials_null_flavor)
 					.bind(data.birth_date)
 					.bind(data.birth_date_null_flavor)

@@ -140,9 +140,6 @@ async fn load_editor_dg_row_detail(
 	.await?;
 	let drug_reaction_assessments =
 		DrugReactionAssessmentBmc::list_by_drug(ctx, mm, drug_id).await?;
-	let drug_recurrences =
-		DrugRecurrenceInformationBmc::list_by_drug(ctx, mm, drug_id).await?;
-
 	let mut drug = json!(drug);
 	if let Value::Object(ref mut map) = drug {
 		map.insert("activeSubstances".to_string(), json!(active_substances));
@@ -152,7 +149,6 @@ async fn load_editor_dg_row_detail(
 			"drugReactionAssessments".to_string(),
 			json!(drug_reaction_assessments),
 		);
-		map.insert("drugRecurrences".to_string(), json!(drug_recurrences));
 	}
 	Ok(drug)
 }

@@ -777,9 +777,6 @@ CREATE TRIGGER audit_parent_medical_history AFTER INSERT OR UPDATE OR DELETE ON 
 CREATE TRIGGER audit_parent_past_drug_history AFTER INSERT OR UPDATE OR DELETE ON parent_past_drug_history
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
-CREATE TRIGGER audit_drug_recurrence_information AFTER INSERT OR UPDATE OR DELETE ON drug_recurrence_information
-    FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
-
 CREATE TRIGGER audit_drug_reaction_assessments AFTER INSERT OR UPDATE OR DELETE ON drug_reaction_assessments
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
@@ -868,9 +865,6 @@ CREATE TRIGGER update_parent_medical_history_updated_at BEFORE UPDATE ON parent_
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_parent_past_drug_history_updated_at BEFORE UPDATE ON parent_past_drug_history
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_drug_recurrence_information_updated_at BEFORE UPDATE ON drug_recurrence_information
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_drug_reaction_assessments_updated_at BEFORE UPDATE ON drug_reaction_assessments
@@ -1620,28 +1614,6 @@ CREATE POLICY parent_past_drug_history_via_case ON parent_past_drug_history
         )
     );
 
--- Drug Recurrence Information (via drug_information)
-ALTER TABLE drug_recurrence_information ENABLE ROW LEVEL SECURITY;
-ALTER TABLE drug_recurrence_information FORCE ROW LEVEL SECURITY;
-CREATE POLICY drug_recurrence_via_case ON drug_recurrence_information
-    FOR ALL TO e2br3_app_role
-    USING (
-        EXISTS (
-            SELECT 1 FROM drug_information di
-            JOIN cases c ON c.id = di.case_id
-            WHERE di.id = drug_recurrence_information.drug_id
-            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM drug_information di
-            JOIN cases c ON c.id = di.case_id
-            WHERE di.id = drug_recurrence_information.drug_id
-            AND (c.organization_id = current_organization_id() OR is_current_user_admin())
-        )
-    );
-
 -- Relatedness Assessments (via drug_reaction_assessments -> drug_information)
 ALTER TABLE relatedness_assessments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE relatedness_assessments FORCE ROW LEVEL SECURITY;
@@ -2044,9 +2016,6 @@ CREATE TRIGGER aa_dirty_g_drug_indications
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g_from_drug();
 CREATE TRIGGER aa_dirty_g_drug_device_characteristics
   AFTER INSERT OR UPDATE OR DELETE ON drug_device_characteristics
-  FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g_from_drug();
-CREATE TRIGGER aa_dirty_g_drug_recurrence_information
-  AFTER INSERT OR UPDATE OR DELETE ON drug_recurrence_information
   FOR EACH ROW EXECUTE FUNCTION mark_case_dirty_g_from_drug();
 CREATE TRIGGER aa_dirty_g_drug_reaction_assessments
   AFTER INSERT OR UPDATE OR DELETE ON drug_reaction_assessments

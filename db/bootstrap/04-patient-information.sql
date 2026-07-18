@@ -8,8 +8,6 @@ CREATE TABLE patient_information (
 
     -- D.1 - Patient (name identifier)
     patient_initials VARCHAR(60),
-    patient_given_name VARCHAR(60),  -- Can use null flavor
-    patient_family_name VARCHAR(60),  -- Can use null flavor
 
     -- D.2.1 - Date of Birth
     birth_date DATE,  -- Can use null flavor

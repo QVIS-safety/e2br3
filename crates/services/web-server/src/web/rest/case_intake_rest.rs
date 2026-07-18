@@ -416,8 +416,6 @@ pub async fn create_case_from_intake(
 			PatientInformationForCreate {
 				case_id,
 				patient_initials: non_empty(data.patient_initials.as_deref()),
-				patient_given_name: None,
-				patient_family_name: None,
 				patient_initials_null_flavor: None,
 				birth_date: None,
 				birth_date_null_flavor: None,
