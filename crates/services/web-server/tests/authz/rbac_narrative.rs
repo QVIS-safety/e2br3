@@ -10,12 +10,13 @@ use uuid::Uuid;
 async fn create_case(
 	app: &axum::Router,
 	cookie: &str,
-	org_id: Uuid,
+	_org_id: Uuid,
 ) -> Result<Uuid> {
 	let body = json!({
 		"data": {
-			"organization_id": org_id,
-			"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+			"safetyReportIdentification": {
+				"safetyReportId": format!("SR-{}", Uuid::new_v4())
+			},
 			"status": "draft"
 		}
 	});
