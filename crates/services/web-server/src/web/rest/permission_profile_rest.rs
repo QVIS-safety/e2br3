@@ -499,10 +499,24 @@ pub async fn delete_permission_profile(
 		});
 	}
 	let id = parse_custom_role_id(&id)?;
-	PermissionProfileBmc::evict_dynamic_role(id);
-	PermissionProfileBmc::delete(&ctx, &mm, id)
+	let current = PermissionProfileBmc::get(&ctx, &mm, id)
 		.await
 		.map_err(Error::Model)?;
+	PermissionProfileBmc::update(
+		&ctx,
+		&mm,
+		id,
+		PermissionProfileUpdateData {
+			name: current.name,
+			description: current.description,
+			privileges: current.privileges_json,
+			active: false,
+			sponsor_admin_capable: current.sponsor_admin_capable,
+		},
+	)
+	.await
+	.map_err(Error::Model)?;
+	PermissionProfileBmc::evict_dynamic_role(id);
 	PermissionProfileBmc::refresh_dynamic_roles(&mm)
 		.await
 		.map_err(Error::Model)?;

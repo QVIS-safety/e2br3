@@ -1422,6 +1422,49 @@ async fn test_update_case_rejects_invalid_status() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_create_case_rejects_every_protected_lifecycle_status() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	for protected_status in [
+		"reviewed",
+		"validated",
+		"locked",
+		"submitted",
+		"deleted",
+		"archived",
+		"nullified",
+	] {
+		let (status, body) = create_case_with_payload(
+			&app,
+			&cookie,
+			json!({
+				"data": {
+					"safetyReportIdentification": {
+						"safetyReportId": format!("PROTECTED-{protected_status}-{}", Uuid::new_v4())
+					},
+					"status": protected_status
+				}
+			}),
+		)
+		.await?;
+		assert_eq!(
+			status,
+			StatusCode::BAD_REQUEST,
+			"{protected_status}: {body}"
+		);
+		assert!(body
+			.to_string()
+			.contains("case creation only accepts draft"));
+	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_status_transition_prevents_regression_after_submitted(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;

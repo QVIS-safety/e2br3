@@ -1752,6 +1752,7 @@ mod golden_c1_value_tests {
 			organization_id: Uuid::nil(),
 			dg_prd_key: None,
 			status: String::new(),
+			status_before_lock: None,
 			review_receivers_json: None,
 			workflow_routes_json: None,
 			workflow_status: String::new(),

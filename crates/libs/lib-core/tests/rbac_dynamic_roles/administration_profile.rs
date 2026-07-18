@@ -26,12 +26,9 @@ fn user_read_and_write_profiles_are_separate_and_aliases_match() {
 
 #[test]
 #[serial]
-fn audit_read_and_review_profiles_grant_audit_views_only() {
+fn audit_read_grants_views_while_review_is_removed() {
 	let _registry = RegistryGuard::new();
-	assert_eq!(
-		profile("audit", true, false, false, false),
-		profile("audit", false, false, true, false)
-	);
+	assert!(profile("audit", false, false, true, false).is_empty());
 	install_profile("auditor", profile("audit", true, false, false, false));
 	assert!(has_permission("auditor", AUDIT_READ));
 	assert!(has_permission("auditor", AUDIT_LIST));
@@ -81,20 +78,19 @@ fn settings_read_and_update_profiles_are_separate() {
 
 #[test]
 #[serial]
-fn roles_read_is_empty_but_roles_edit_grants_admin_bundle() {
+fn roles_alias_grants_nothing() {
 	let _registry = RegistryGuard::new();
 	assert!(profile("roles", true, false, false, false).is_empty());
-	install_profile("role_admin", profile("roles", false, true, false, false));
-	assert!(has_permission("role_admin", USER_CREATE));
-	assert!(has_permission("role_admin", CASE_CREATE));
+	assert!(profile("roles", false, true, false, false).is_empty());
 }
 
 #[test]
 #[serial]
-fn admin_profile_grants_every_admin_permission_including_email() {
+fn admin_edit_grants_every_admin_permission_while_read_grants_nothing() {
 	let _registry = RegistryGuard::new();
+	assert!(profile("admin", true, false, false, false).is_empty());
 	let granted =
-		install_profile("full_admin", profile("admin", true, false, false, false));
+		install_profile("full_admin", profile("admin", false, true, false, false));
 	assert!(granted.len() > 100);
 	assert!(has_permission("full_admin", CASE_CREATE));
 	assert!(has_permission("full_admin", USER_DELETE));

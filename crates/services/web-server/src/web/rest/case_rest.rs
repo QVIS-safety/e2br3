@@ -80,9 +80,9 @@ pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> 
 				message: format!("invalid case status '{status}'"),
 			});
 		}
-		if status.eq_ignore_ascii_case("validated") {
+		if !status.trim().eq_ignore_ascii_case("draft") {
 			return Err(Error::BadRequest {
-				message: "cannot set case to validated manually: status is managed by validator".to_string(),
+				message: "case creation only accepts draft status; use the dedicated lifecycle action after creation".to_string(),
 			});
 		}
 	}
@@ -1143,9 +1143,8 @@ pub async fn update_case_guarded(
 				|| (next == "draft"
 					&& matches!(prev.as_str(), "reviewed" | "validated"))
 			{
-				return Err(Error::PermissionDenied {
-					required_permission:
-						"dedicated case review/lock toggle endpoint".to_string(),
+				return Err(Error::BadRequest {
+					message: "use the dedicated case review/lock toggle endpoint for QC or lock state changes".to_string(),
 				});
 			}
 			require_permission(&ctx, CASE_UPDATE)?;
@@ -1223,9 +1222,7 @@ pub async fn toggle_case_review(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_APPROVE)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
-	CaseBmc::toggle_review(&ctx, &mm, id).await?;
-	CaseValidationSummaryBmc::mark_stale_for_case(&ctx, &mm, id).await?;
-	let entity = CaseBmc::get(&ctx, &mm, id).await?;
+	let entity = CaseBmc::toggle_review(&ctx, &mm, id).await?;
 	let entity = case_to_read_result(&ctx, &mm, entity).await?;
 	Ok((
 		axum::http::StatusCode::OK,
@@ -1242,8 +1239,7 @@ pub async fn toggle_case_lock(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_LOCK)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
-	CaseBmc::toggle_lock(&ctx, &mm, id).await?;
-	let entity = CaseBmc::get(&ctx, &mm, id).await?;
+	let entity = CaseBmc::toggle_lock(&ctx, &mm, id).await?;
 	let entity = case_to_read_result(&ctx, &mm, entity).await?;
 	Ok((
 		axum::http::StatusCode::OK,

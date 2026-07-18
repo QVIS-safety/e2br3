@@ -419,10 +419,10 @@ async fn test_reviewed_and_locked_status_transitions_require_dedicated_privilege
 	// Generic case update cannot bypass the dedicated PDF actions.
 	let (status, value) =
 		update_case_status(&app, &editor_cookie, case_id, "reviewed").await?;
-	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
 	let (status, value) =
 		update_case_status(&app, &reviewer_cookie, case_id, "reviewed").await?;
-	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
 
 	// Review is a same-button toggle and requires only Case.Approve.
 	let (status, value) =
@@ -463,14 +463,13 @@ async fn test_reviewed_and_locked_status_transitions_require_dedicated_privilege
 
 	// All PDF lockable states round-trip without collapsing to a default.
 	for original in ["draft", "reviewed", "validated"] {
-		let create_status = if original == "validated" {
-			"draft"
-		} else {
-			original
-		};
-		let case_id =
-			create_case_with_status(&app, &admin_cookie, create_status).await?;
-		if original == "validated" {
+		let case_id = create_case_with_status(&app, &admin_cookie, "draft").await?;
+		if original == "reviewed" {
+			let (status, value) =
+				toggle_case_action(&app, &reviewer_cookie, case_id, "review")
+					.await?;
+			assert_eq!(status, StatusCode::OK, "{value:?}");
+		} else if original == "validated" {
 			force_case_status_for_validator_fixture(
 				&mm,
 				seed.admin.id,

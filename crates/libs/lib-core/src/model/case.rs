@@ -700,7 +700,7 @@ impl CaseBmc {
 		ctx: &Ctx,
 		mm: &ModelManager,
 		id: Uuid,
-	) -> Result<()> {
+	) -> Result<Case> {
 		let dbx = mm.dbx();
 		dbx.begin_txn().await?;
 		if let Err(err) =
@@ -736,22 +736,37 @@ impl CaseBmc {
 				});
 			}
 		};
-		dbx.execute(
-			sqlx::query(
-				"UPDATE cases
+		let updated = dbx
+			.fetch_one(
+				sqlx::query_as::<_, Case>(
+					"UPDATE cases
 				 SET status = $2, updated_at = now(), updated_by = $3
-				 WHERE id = $1",
+				 WHERE id = $1
+				 RETURNING *",
+				)
+				.bind(id)
+				.bind(next)
+				.bind(ctx.user_id()),
 			)
-			.bind(id)
-			.bind(next)
-			.bind(ctx.user_id()),
-		)
-		.await?;
+			.await?;
+		for table in ["case_validation_summaries", "case_validation_reports"] {
+			dbx.execute(
+				sqlx::query(&format!(
+					"UPDATE {table} SET stale = true WHERE case_id = $1"
+				))
+				.bind(id),
+			)
+			.await?;
+		}
 		dbx.commit_txn().await?;
-		Ok(())
+		Ok(updated)
 	}
 
-	pub async fn toggle_lock(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {
+	pub async fn toggle_lock(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<Case> {
 		let dbx = mm.dbx();
 		dbx.begin_txn().await?;
 		if let Err(err) =
@@ -809,21 +824,23 @@ impl CaseBmc {
 				});
 			}
 		};
-		dbx.execute(
-			sqlx::query(
-				"UPDATE cases
+		let updated = dbx
+			.fetch_one(
+				sqlx::query_as::<_, Case>(
+					"UPDATE cases
 				 SET status = $2, status_before_lock = $3,
 				     updated_at = now(), updated_by = $4
-				 WHERE id = $1",
+				 WHERE id = $1
+				 RETURNING *",
+				)
+				.bind(id)
+				.bind(next)
+				.bind(remembered)
+				.bind(ctx.user_id()),
 			)
-			.bind(id)
-			.bind(next)
-			.bind(remembered)
-			.bind(ctx.user_id()),
-		)
-		.await?;
+			.await?;
 		dbx.commit_txn().await?;
-		Ok(())
+		Ok(updated)
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {

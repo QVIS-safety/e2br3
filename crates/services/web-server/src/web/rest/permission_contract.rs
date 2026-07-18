@@ -52,25 +52,25 @@ pub const ENDPOINT_PERMISSION_CONTRACTS: &[EndpointPermissionContract] = &[
 	EndpointPermissionContract {
 		key: "import.history",
 		method: "GET",
-		path: "/api/import/history",
+		path: "/api/import/xml/history",
 		permissions: &["XmlImport.Read"],
 	},
 	EndpointPermissionContract {
 		key: "import.execute",
 		method: "POST",
-		path: "/api/import",
+		path: "/api/import/xml",
 		permissions: &["XmlImport.Import"],
 	},
 	EndpointPermissionContract {
 		key: "submission.history",
 		method: "GET",
-		path: "/api/export/history",
+		path: "/api/exports/history",
 		permissions: &["XmlExport.Read"],
 	},
 	EndpointPermissionContract {
 		key: "submission.execute",
 		method: "POST",
-		path: "/api/export",
+		path: "/api/cases/export/xml",
 		permissions: &["XmlExport.Export"],
 	},
 	EndpointPermissionContract {
