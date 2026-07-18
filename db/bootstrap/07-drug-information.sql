@@ -35,11 +35,6 @@ CREATE TABLE drug_information (
     -- G.k.3.1 - Obtain Drug Country
     obtain_drug_country VARCHAR(2),  -- ISO 3166-1 alpha-2
 
-    -- G.k.3.2 - Proprietary/Brand Name
-    brand_name VARCHAR(200),
-
-    -- Application-level helper fields used by the UI
-    drug_generic_name VARCHAR(500),
     drug_authorization_number VARCHAR(100),
 
     -- G.k.3.3.1 - Manufacturer Name
@@ -67,14 +62,7 @@ CREATE TABLE drug_information (
     -- 1=Withdrawn, 2=Dose reduced, 3=Dose increased, 4=Dose not changed,
     -- 5=Unknown, 6=Not applicable
 
-    -- G.k.8 - Rechallenge/Recurrence Information
-    rechallenge VARCHAR(1) CHECK (rechallenge IN ('1', '2', '3', '4')),
-    -- 1=Yes, reaction recurred, 2=Yes, reaction did not recur, 3=No, 4=Unknown
-
     -- G.k.9 - Additional Information (handled in primary_sources table with drug FK)
-
-    -- G.k.11 - Parent Dosage Information
-    parent_dosage_text TEXT,
 
     -- FDA.G.k.10a - Additional Information on Drug (coded)
     fda_additional_info_coded VARCHAR(10),
@@ -170,11 +158,9 @@ CREATE TABLE dosage_information (
 
     -- G.k.4.r.4 - Date/Time of First Administration
     first_administration_date DATE,
-    first_administration_time TIME,
 
     -- G.k.4.r.5 - Date/Time of Last Administration
     last_administration_date DATE,
-    last_administration_time TIME,
 
     -- G.k.4.r.6 - Duration of Drug Administration
     duration_value DECIMAL(10,2),
@@ -281,43 +267,6 @@ CREATE UNIQUE INDEX idx_drug_device_characteristics_active_sequence_unique
     WHERE deleted = false;
 
 -- ============================================================================
--- G.k.8.r: Drug Recurrence Information (Repeating)
--- Structured recurrence data for rechallenge scenarios
--- ============================================================================
-
-CREATE TABLE drug_recurrence_information (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    drug_id UUID NOT NULL REFERENCES drug_information(id) ON DELETE CASCADE,
-    sequence_number INTEGER NOT NULL,
-
-    -- G.k.8.r.1 - Rechallenge Action
-    rechallenge_action VARCHAR(1) CHECK (rechallenge_action IN ('1', '2', '3', '4')),
-    -- 1=Drug readministered, 2=Drug not readministered, 3=Unknown, 4=Not applicable
-
-    -- G.k.8.r.2a - MedDRA Version
-    reaction_meddra_version VARCHAR(10),
-
-    -- G.k.8.r.2b - Reaction Recurred (MedDRA code)
-    reaction_meddra_code VARCHAR(20),
-
-    -- G.k.8.r.3 - Did Reaction Recur on Readministration
-    reaction_recurred VARCHAR(1) CHECK (reaction_recurred IN ('1', '2', '3')),
-    -- 1=Yes, 2=No, 3=Unknown
-    deleted BOOLEAN NOT NULL DEFAULT false,
-
-    -- Audit fields (standardized UUID-based)
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    updated_by UUID REFERENCES users(id) ON DELETE RESTRICT
-);
-
-CREATE INDEX idx_drug_recurrence_drug ON drug_recurrence_information(drug_id);
-CREATE UNIQUE INDEX idx_drug_recurrence_information_active_sequence_unique
-    ON drug_recurrence_information(drug_id, sequence_number)
-    WHERE deleted = false;
-
--- ============================================================================
 -- G.k.9.i: Drug-Reaction Assessment (Causality)
 -- Links each drug (G.k) to each reaction (E.i) with causality assessment data
 -- ============================================================================
@@ -338,12 +287,6 @@ CREATE TABLE drug_reaction_assessments (
     -- G.k.9.i.4.r.1 - Did Reaction Recur on Readministration - Action
     recurrence_action VARCHAR(1) CHECK (recurrence_action IN ('1', '2', '3', '4')),
     -- 1=Drug readministered, 2=Drug not readministered, 3=Unknown, 4=Not applicable
-
-    -- G.k.9.i.4.r.2a - MedDRA Version for Reported Term for Reaction Recurred
-    recurrence_meddra_version VARCHAR(10),
-
-    -- G.k.9.i.4.r.2b - Reported Term for Reaction Recurred (MedDRA code)
-    recurrence_meddra_code VARCHAR(20),
 
     -- G.k.9.i.4.r.3 - Did Reaction Recur on Readministration
     reaction_recurred VARCHAR(1) CHECK (reaction_recurred IN ('1', '2', '3')),

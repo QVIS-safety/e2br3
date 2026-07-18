@@ -4,13 +4,13 @@ use crate::model::drug::{
 };
 use crate::xml::error::Error;
 use crate::xml::import_runtime::shared::{
-	clamp_str, first_attr, first_text, normalize_code, parse_uuid_opt,
+	first_attr, first_text, normalize_code, parse_uuid_opt,
 };
 use crate::xml::Result;
 use libxml::parser::Parser;
 use libxml::xpath::Context;
 use rust_decimal::Decimal;
-use sqlx::types::time::{Date, Time};
+use sqlx::types::time::Date;
 use sqlx::types::Uuid;
 use std::collections::HashMap;
 
@@ -30,10 +30,8 @@ pub(crate) struct DrugDosageImport {
 	pub(crate) frequency_unit: Option<String>,
 	pub(crate) number_of_units: Option<i32>,
 	pub(crate) start_date: Option<Date>,
-	pub(crate) start_time: Option<Time>,
 	pub(crate) start_date_null_flavor: Option<String>,
 	pub(crate) end_date: Option<Date>,
-	pub(crate) end_time: Option<Time>,
 	pub(crate) end_date_null_flavor: Option<String>,
 	pub(crate) duration_value: Option<Decimal>,
 	pub(crate) duration_unit: Option<String>,
@@ -75,7 +73,6 @@ pub(crate) struct DrugImport {
 	pub(crate) xml_id: Option<Uuid>,
 	pub(crate) sequence_number: i32,
 	pub(crate) medicinal_product: String,
-	pub(crate) brand_name: Option<String>,
 	pub(crate) drug_characterization: String,
 	pub(crate) mpid: Option<String>,
 	pub(crate) mpid_version: Option<String>,
@@ -93,8 +90,6 @@ pub(crate) struct DrugImport {
 	pub(crate) gestation_period_exposure_unit: Option<String>,
 	pub(crate) dosage_text: Option<String>,
 	pub(crate) action_taken: Option<String>,
-	pub(crate) rechallenge: Option<String>,
-	pub(crate) parent_dosage_text: Option<String>,
 	pub(crate) fda_additional_info_coded: Option<String>,
 	pub(crate) fda_specialized_product_category: Option<String>,
 	pub(crate) fda_device_brand_name: Option<String>,
@@ -117,7 +112,6 @@ pub(crate) struct DrugImport {
 pub(crate) struct DrugObservationImport {
 	pub(crate) drug_xml_id: Option<Uuid>,
 	pub(crate) drug_sequence: i32,
-	pub(crate) sequence_number: i32,
 	pub(crate) reaction_xml_id: Option<Uuid>,
 	pub(crate) administration_start_interval_value: Option<Decimal>,
 	pub(crate) administration_start_interval_unit: Option<String>,
@@ -125,8 +119,6 @@ pub(crate) struct DrugObservationImport {
 	pub(crate) last_dose_interval_unit: Option<String>,
 	pub(crate) reaction_recurred: Option<String>,
 	pub(crate) rechallenge_action: Option<String>,
-	pub(crate) recurrence_meddra_version: Option<String>,
-	pub(crate) recurrence_meddra_code: Option<String>,
 }
 
 #[derive(Debug)]
@@ -351,12 +343,11 @@ pub(crate) fn parse_drug_observations(
 			}
 		}
 
-		for (oidx, obs) in obs_nodes.into_iter().enumerate() {
-			let sequence_number = (oidx + 1) as i32;
+		for obs in obs_nodes {
 			let reaction_recurred = normalize_code(
 				first_attr(&mut xpath, &obs, "hl7:value", "code"),
 				&["1", "2", "3"],
-				"drug_recurrence_information.reaction_recurred",
+				"drug_reaction_assessments.reaction_recurred",
 			);
 			let reaction_xml_id = parse_uuid_opt(first_attr(
 				&mut xpath,
@@ -401,28 +392,11 @@ pub(crate) fn parse_drug_observations(
 					"code",
 				),
 				&["1", "2", "3", "4"],
-				"drug_recurrence_information.rechallenge_action",
-			);
-			let recurrence_meddra_version = clamp_str(
-				first_attr(
-					&mut xpath,
-					&obs,
-					"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='G.k.8.r.2']]/hl7:value",
-					"codeSystemVersion",
-				),
-				10,
-				"drug_recurrence_information.reaction_meddra_version",
-			);
-			let recurrence_meddra_code = first_attr(
-				&mut xpath,
-				&obs,
-				"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='G.k.8.r.2']]/hl7:value",
-				"code",
+				"drug_reaction_assessments.recurrence_action",
 			);
 			observations.push(DrugObservationImport {
 				drug_xml_id,
 				drug_sequence,
-				sequence_number,
 				reaction_xml_id,
 				administration_start_interval_value,
 				administration_start_interval_unit,
@@ -430,8 +404,6 @@ pub(crate) fn parse_drug_observations(
 				last_dose_interval_unit,
 				reaction_recurred,
 				rechallenge_action,
-				recurrence_meddra_version,
-				recurrence_meddra_code,
 			});
 		}
 	}

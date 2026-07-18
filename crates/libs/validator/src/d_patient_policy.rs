@@ -4,16 +4,14 @@ use lib_core::model::patient::PatientInformation;
 // Shared Section D policy used by exporter + case validators.
 
 pub fn has_patient_payload(patient: &PatientInformation) -> bool {
-	super::has_text(patient.patient_given_name.as_deref())
-		|| super::has_text(patient.patient_family_name.as_deref())
+	super::has_text(patient.patient_initials.as_deref())
 		|| patient.birth_date.is_some()
 		|| patient.age_at_time_of_onset.is_some()
 		|| patient.sex.is_some()
 }
 
-pub fn should_require_patient_initials(patient: &PatientInformation) -> bool {
-	super::has_text(patient.patient_given_name.as_deref())
-		|| super::has_text(patient.patient_family_name.as_deref())
+pub fn should_require_patient_initials(_patient: &PatientInformation) -> bool {
+	false
 }
 
 pub fn has_patient_initials(patient: &PatientInformation) -> bool {
@@ -59,8 +57,6 @@ mod tests {
 			id: Uuid::new_v4(),
 			case_id: Uuid::new_v4(),
 			patient_initials: None,
-			patient_given_name: None,
-			patient_family_name: None,
 			birth_date: None,
 			age_at_time_of_onset: None,
 			age_unit: None,
@@ -105,12 +101,5 @@ mod tests {
 		patient.sex = Some("1".to_string());
 		assert!(has_patient_payload(&patient));
 		assert!(!should_require_patient_initials(&patient));
-	}
-
-	#[test]
-	fn initials_required_when_given_name_present() {
-		let mut patient = empty_patient();
-		patient.patient_given_name = Some("Jane".to_string());
-		assert!(should_require_patient_initials(&patient));
 	}
 }

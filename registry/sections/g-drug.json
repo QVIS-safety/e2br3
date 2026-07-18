@@ -458,31 +458,6 @@
     "notes": ""
   },
   {
-    "id": "G.k.local.dosage.firstAdministrationTime",
-    "e2br3_code": "G.k.local.dosage.firstAdministrationTime",
-    "label": "Time of Start of Drug",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DosageInformation",
-      "field": "first_administration_time",
-      "file": "crates/libs/lib-core/src/model/drug.rs",
-      "evidence": "DosageInformation.first_administration_time stores the time component for G.k.4.r.4."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs.dosageInformation",
-      "field": "firstAdministrationTime",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG initializes firstAdministrationTime but does not render a direct input."
-    },
-    "action": "Add a visible first administration time input or intentionally suppress this component.",
-    "notes": "Component row for the local split of G.k.4.r.4 date/time. Time-of-day split of G.k.4.r.4 (date of start of drug), which is separately mapped."
-  },
-  {
     "id": "G.k.4.r.5",
     "e2br3_code": "G.k.4.r.5",
     "label": "Date of Last Administration",
@@ -505,31 +480,6 @@
     },
     "action": "",
     "notes": ""
-  },
-  {
-    "id": "G.k.local.dosage.lastAdministrationTime",
-    "e2br3_code": "G.k.local.dosage.lastAdministrationTime",
-    "label": "Time of Last Administration",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DosageInformation",
-      "field": "last_administration_time",
-      "file": "crates/libs/lib-core/src/model/drug.rs",
-      "evidence": "DosageInformation.last_administration_time stores the time component for G.k.4.r.5."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs.dosageInformation",
-      "field": "lastAdministrationTime",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG initializes lastAdministrationTime but does not render a direct input."
-    },
-    "action": "Add a visible last administration time input or intentionally suppress this component.",
-    "notes": "Component row for the local split of G.k.4.r.5 date/time. Time-of-day split of G.k.4.r.5 (date of last administration), which is separately mapped."
   },
   {
     "id": "G.k.4.r.6a",
@@ -1285,56 +1235,6 @@
     "notes": ""
   },
   {
-    "id": "G.k.local.supplemental.brandName",
-    "e2br3_code": "G.k.local.supplemental.brandName",
-    "label": "Supplemental Brand Name",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugInformation",
-      "field": "brand_name",
-      "file": "crates/libs/lib-core/src/model/drug.rs",
-      "evidence": "DrugInformation.brand_name stores the local supplemental brand-name field."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs",
-      "field": "drugBrandName",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
-    },
-    "action": "",
-    "notes": "Local helper row; SectionG tooltip says this is not the canonical E2B G.k.2.4 field. Supplemental local field; official product naming is G.k.2.2 / G.k.2.3.r. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
-  },
-  {
-    "id": "G.k.local.supplemental.genericName",
-    "e2br3_code": "G.k.local.supplemental.genericName",
-    "label": "Supplemental Generic Name",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugInformation",
-      "field": "drug_generic_name",
-      "file": "crates/libs/lib-core/src/model/drug.rs",
-      "evidence": "DrugInformation.drug_generic_name stores the local supplemental generic-name field."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs",
-      "field": "drugGenericName",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
-    },
-    "action": "",
-    "notes": "Local helper row; SectionG tooltip says this is not the canonical E2B G.k.2.5 field. Supplemental local field; official product naming is G.k.2.2 / G.k.2.3.r. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
-  },
-  {
     "id": "G.k.3.1",
     "e2br3_code": "G.k.3.1",
     "label": "Authorisation / Application Number",
@@ -1528,31 +1428,6 @@
     "notes": "Structured dosage is captured under G.k.4.r DosageInformation rows. Supplemental local field; official dosage text is G.k.4.r.8. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
-    "id": "G.k.local.rechallenge",
-    "e2br3_code": "G.k.local.rechallenge",
-    "label": "Drug Rechallenge / Readministration",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugInformation",
-      "field": "rechallenge",
-      "file": "crates/libs/lib-core/src/model/drug.rs",
-      "evidence": "DrugInformation.rechallenge stores G.k.8 values."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs",
-      "field": "drugRechallengeAction",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
-    },
-    "action": "",
-    "notes": "Drug-level rechallenge convenience field; the official G.k.8 is Action Taken with Drug. Not an E2BR3 data element. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
-  },
-  {
     "id": "G.k.11",
     "e2br3_code": "G.k.11",
     "label": "Additional Information on Drug",
@@ -1575,31 +1450,6 @@
     },
     "action": "",
     "notes": ""
-  },
-  {
-    "id": "G.k.local.parentDosageText",
-    "e2br3_code": "G.k.local.parentDosageText",
-    "label": "Parent Dosage Text",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugInformation",
-      "field": "parent_dosage_text",
-      "file": "crates/libs/lib-core/src/model/drug.rs",
-      "evidence": "DrugInformation.parent_dosage_text stores top-level parent dosage text."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs",
-      "field": "parentDosageText",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG does not render a direct top-level drugs[index].parentDosageText input."
-    },
-    "action": "Add a top-level parentDosageText input or intentionally remove/suppress this backend field.",
-    "notes": "Local parent dosage text; no ICH element exists for parent dosage narrative (official G.k.11 is separately mapped)."
   },
   {
     "id": "FDA.G.k.10a",
@@ -1698,106 +1548,6 @@
     },
     "action": "Keep the backend JSON carrier mapped here and map each concrete nested frontend input in separate conflict rows.",
     "notes": "The backend has one FDA JSON carrier, while the frontend exposes many nested fdaDeviceInfo controls. Backend JSON carrier column, not an FDA data element; the concrete device elements are mapped as FDA.G.k.12.r.* rows."
-  },
-  {
-    "id": "G.k.local.recurrence.rechallengeAction",
-    "e2br3_code": "G.k.local.recurrence.rechallengeAction",
-    "label": "Structured Recurrence Rechallenge Action",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugRecurrenceInformation",
-      "field": "rechallenge_action",
-      "file": "crates/libs/lib-core/src/model/drug_recurrence.rs",
-      "evidence": "DrugRecurrenceInformation.rechallenge_action is annotated as G.k.8.r.1."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs.recurrences",
-      "field": "rechallengeAction",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG renders the top-level G.k.8 drugRechallengeAction but no separate recurrence-table rechallengeAction input."
-    },
-    "action": "Clarify whether recurrence-table rechallengeAction should be separately editable or derived from G.k.8.",
-    "notes": "Local structured recurrence block; not an E2BR3 data element. Confirmed against the FDA regional dictionary (v1, 2026-06): FDA defines no repeatable rechallenge/recurrence equivalent either, so this entire G.k.local.recurrence.* block is local by design."
-  },
-  {
-    "id": "G.k.local.recurrence.meddraVersion",
-    "e2br3_code": "G.k.local.recurrence.meddraVersion",
-    "label": "Reaction Recurred MedDRA Version",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugRecurrenceInformation",
-      "field": "reaction_meddra_version",
-      "file": "crates/libs/lib-core/src/model/drug_recurrence.rs",
-      "evidence": "DrugRecurrenceInformation.reaction_meddra_version is annotated as G.k.8.r.2a."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs.recurrences",
-      "field": "reactionMeddraVersion",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG does not render a direct recurrence reactionMeddraVersion input."
-    },
-    "action": "Add a recurrence MedDRA version input or intentionally suppress this backend field.",
-    "notes": "Local structured recurrence block; not an E2BR3 data element."
-  },
-  {
-    "id": "G.k.local.recurrence.meddraCode",
-    "e2br3_code": "G.k.local.recurrence.meddraCode",
-    "label": "Reaction Recurred MedDRA Code",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugRecurrenceInformation",
-      "field": "reaction_meddra_code",
-      "file": "crates/libs/lib-core/src/model/drug_recurrence.rs",
-      "evidence": "DrugRecurrenceInformation.reaction_meddra_code is annotated as G.k.8.r.2b."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs.recurrences",
-      "field": "reactionMeddraCode",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG does not render a direct recurrence reactionMeddraCode input."
-    },
-    "action": "Add a recurrence MedDRA code input or intentionally suppress this backend field.",
-    "notes": "Local structured recurrence block; not an E2BR3 data element."
-  },
-  {
-    "id": "G.k.local.recurrence.reactionRecurred",
-    "e2br3_code": "G.k.local.recurrence.reactionRecurred",
-    "label": "Did Reaction Recur on Readministration",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugRecurrenceInformation",
-      "field": "reaction_recurred",
-      "file": "crates/libs/lib-core/src/model/drug_recurrence.rs",
-      "evidence": "DrugRecurrenceInformation.reaction_recurred is annotated as G.k.8.r.3."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs",
-      "field": "drugRecurrence",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
-    },
-    "action": "",
-    "notes": "Local drug-level recurrence flag; the official per drug-reaction element is G.k.9.i.4. Not an E2BR3 data element. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
     "id": "G.k.9.i.3.1a",
@@ -1916,56 +1666,6 @@
     },
     "action": "Backend cleanup candidate: remove reaction_recurred or fold into recurrence_action; not an E2BR3 element.",
     "notes": "Phantom backend field retained only so the strict backend inventory stays complete. Superseded by the G.k.9.i.4 mapping on recurrence_action."
-  },
-  {
-    "id": "G.k.local.assessmentRecurrence.meddraVersion",
-    "e2br3_code": "G.k.local.assessmentRecurrence.meddraVersion",
-    "label": "Assessment Recurrence MedDRA Version",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugReactionAssessment",
-      "field": "recurrence_meddra_version",
-      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
-      "evidence": "DrugReactionAssessment.recurrence_meddra_version is annotated as G.k.9.i.4.r.2a."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs.drugReactionAssessments",
-      "field": "recurrenceMeddraVersion",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG does not render a direct recurrenceMeddraVersion input."
-    },
-    "action": "Add recurrence MedDRA version input to G.k.9 assessment UI or intentionally suppress this backend field.",
-    "notes": "Local assessment-level recurrence detail; not an E2BR3 data element."
-  },
-  {
-    "id": "G.k.local.assessmentRecurrence.meddraCode",
-    "e2br3_code": "G.k.local.assessmentRecurrence.meddraCode",
-    "label": "Assessment Recurrence MedDRA Code",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugReactionAssessment",
-      "field": "recurrence_meddra_code",
-      "file": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
-      "evidence": "DrugReactionAssessment.recurrence_meddra_code is annotated as G.k.9.i.4.r.2b."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs.drugReactionAssessments",
-      "field": "recurrenceMeddraCode",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG does not render a direct recurrenceMeddraCode input."
-    },
-    "action": "Add recurrence MedDRA code input to G.k.9 assessment UI or intentionally suppress this backend field.",
-    "notes": "Local assessment-level recurrence detail; not an E2BR3 data element."
   },
   {
     "id": "G.k.9.i.4",

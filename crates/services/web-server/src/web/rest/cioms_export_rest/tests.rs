@@ -131,8 +131,6 @@ fn suspect_drug(drug_id: Uuid) -> DrugInformation {
 		phpid_version: None,
 		investigational_product_blinded: None,
 		obtain_drug_country: None,
-		brand_name: None,
-		drug_generic_name: None,
 		drug_authorization_number: None,
 		manufacturer_name: None,
 		manufacturer_country: None,
@@ -143,8 +141,6 @@ fn suspect_drug(drug_id: Uuid) -> DrugInformation {
 		gestation_period_exposure_unit: None,
 		dosage_text: None,
 		action_taken: None,
-		rechallenge: None,
-		parent_dosage_text: None,
 		fda_additional_info_coded: None,
 		drug_additional_info_codes_json: None,
 		drug_additional_information: None,
@@ -158,15 +154,6 @@ fn suspect_drug(drug_id: Uuid) -> DrugInformation {
 		created_by: test_uuid(),
 		updated_by: None,
 	}
-}
-
-fn suspect_drug_with_rechallenge(
-	drug_id: Uuid,
-	rechallenge: &str,
-) -> DrugInformation {
-	let mut drug = suspect_drug(drug_id);
-	drug.rechallenge = Some(rechallenge.to_string());
-	drug
 }
 
 fn concomitant_drug(drug_id: Uuid, product: &str) -> DrugInformation {
@@ -184,8 +171,6 @@ fn concomitant_drug(drug_id: Uuid, product: &str) -> DrugInformation {
 		phpid_version: None,
 		investigational_product_blinded: None,
 		obtain_drug_country: None,
-		brand_name: None,
-		drug_generic_name: None,
 		drug_authorization_number: None,
 		manufacturer_name: None,
 		manufacturer_country: None,
@@ -196,8 +181,6 @@ fn concomitant_drug(drug_id: Uuid, product: &str) -> DrugInformation {
 		gestation_period_exposure_unit: None,
 		dosage_text: None,
 		action_taken: None,
-		rechallenge: None,
-		parent_dosage_text: None,
 		fda_additional_info_coded: None,
 		drug_additional_info_codes_json: None,
 		drug_additional_information: None,
@@ -224,9 +207,7 @@ fn dosage_with_route(drug_id: Uuid, route: &str) -> DosageInformation {
 		frequency_value: None,
 		frequency_unit: None,
 		first_administration_date: None,
-		first_administration_time: None,
 		last_administration_date: None,
-		last_administration_time: None,
 		duration_value: None,
 		duration_unit: None,
 		continuing: None,
@@ -555,8 +536,6 @@ fn cioms_form_data_maps_suspect_drug_dosage_and_indication_fields() {
 			phpid_version: None,
 			investigational_product_blinded: None,
 			obtain_drug_country: None,
-			brand_name: None,
-			drug_generic_name: Some("Amoxicillin".to_string()),
 			drug_authorization_number: None,
 			manufacturer_name: None,
 			manufacturer_country: None,
@@ -567,8 +546,6 @@ fn cioms_form_data_maps_suspect_drug_dosage_and_indication_fields() {
 			gestation_period_exposure_unit: None,
 			dosage_text: None,
 			action_taken: None,
-			rechallenge: None,
-			parent_dosage_text: None,
 			fda_additional_info_coded: None,
 			drug_additional_info_codes_json: None,
 			drug_additional_information: None,
@@ -594,11 +571,9 @@ fn cioms_form_data_maps_suspect_drug_dosage_and_indication_fields() {
 			first_administration_date: Some(
 				Date::from_calendar_date(2026, Month::May, 1).expect("valid date"),
 			),
-			first_administration_time: None,
 			last_administration_date: Some(
 				Date::from_calendar_date(2026, Month::May, 10).expect("valid date"),
 			),
-			last_administration_time: None,
 			duration_value: Some(Decimal::new(10, 0)),
 			duration_unit: Some("d".to_string()),
 			continuing: Some(false),
@@ -672,8 +647,6 @@ fn cioms_pdf_uses_latest_suspect_drug_child_records_when_latest_first() {
 			phpid_version: None,
 			investigational_product_blinded: None,
 			obtain_drug_country: None,
-			brand_name: None,
-			drug_generic_name: None,
 			drug_authorization_number: None,
 			manufacturer_name: None,
 			manufacturer_country: None,
@@ -684,8 +657,6 @@ fn cioms_pdf_uses_latest_suspect_drug_child_records_when_latest_first() {
 			gestation_period_exposure_unit: None,
 			dosage_text: None,
 			action_taken: None,
-			rechallenge: None,
-			parent_dosage_text: None,
 			fda_additional_info_coded: None,
 			drug_additional_info_codes_json: None,
 			drug_additional_information: None,
@@ -710,9 +681,7 @@ fn cioms_pdf_uses_latest_suspect_drug_child_records_when_latest_first() {
 				frequency_value: None,
 				frequency_unit: None,
 				first_administration_date: None,
-				first_administration_time: None,
 				last_administration_date: None,
-				last_administration_time: None,
 				duration_value: None,
 				duration_unit: None,
 				continuing: None,
@@ -746,9 +715,7 @@ fn cioms_pdf_uses_latest_suspect_drug_child_records_when_latest_first() {
 				frequency_value: None,
 				frequency_unit: None,
 				first_administration_date: None,
-				first_administration_time: None,
 				last_administration_date: None,
-				last_administration_time: None,
 				duration_value: None,
 				duration_unit: None,
 				continuing: None,
@@ -826,7 +793,7 @@ fn cioms_portrait_pdf_uses_same_official_form_as_landscape() {
 		report: Some(safety_report_identification()),
 		patient: None,
 		reactions: vec![reaction_with_country("JP")],
-		drugs: vec![suspect_drug_with_rechallenge(drug_id, "1")],
+		drugs: vec![suspect_drug(drug_id)],
 		dosages: vec![dosage_with_route(drug_id, "Oral")],
 		indications: vec![DrugIndication {
 			id: test_uuid(),
@@ -924,30 +891,6 @@ fn cioms_portrait_pdf_renders_suspect_drug_route() {
 
 	assert!(text.contains("16. ROUTE"));
 	assert!(text.contains("Oral"));
-}
-
-#[test]
-fn cioms_portrait_pdf_renders_rechallenge_response() {
-	let drug_id = test_uuid();
-	let data = CiomsCaseData {
-		case_number: "SR-PORTRAIT-RECHALLENGE".to_string(),
-		report: None,
-		patient: None,
-		reactions: Vec::new(),
-		drugs: vec![suspect_drug_with_rechallenge(drug_id, "1")],
-		dosages: Vec::new(),
-		indications: Vec::new(),
-		primary_sources: Vec::new(),
-		senders: Vec::new(),
-		narrative: None,
-	};
-
-	let pdf = build_cioms_pdf(&data, &portrait_settings());
-	let text = String::from_utf8_lossy(&pdf);
-
-	assert!(text.contains("21. DID REACTION"));
-	assert!(text.contains("REAPPEAR AFTER"));
-	assert!(text.contains("Yes"));
 }
 
 #[test]

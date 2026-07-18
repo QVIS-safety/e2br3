@@ -505,7 +505,7 @@ pub(super) async fn create_drug_with_brand(
 	app: &Router,
 	cookie: &str,
 	case_id: Uuid,
-	brand_name: &str,
+	_brand_name: &str,
 ) -> Result<()> {
 	let (status, value) = request_json(
 		app,
@@ -517,8 +517,7 @@ pub(super) async fn create_drug_with_brand(
 				"case_id": case_id,
 				"sequence_number": 1,
 				"drug_characterization": "1",
-				"medicinal_product": "Demo Product",
-				"brand_name": brand_name
+				"medicinal_product": "Demo Product"
 			}
 		})),
 	)
