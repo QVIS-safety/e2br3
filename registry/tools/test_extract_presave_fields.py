@@ -55,6 +55,36 @@ pub struct ReporterPresave {
         self.assertIn("ReporterPresave.country_code_null_flavor", backend)
         self.assertIn("ReporterPresave.qualification_null_flavor", backend)
 
+    def test_extracts_reporter_to_primary_source_transfers(self):
+        source = '''
+return {
+  reporterGivenName: data.reporterGivenName || "",
+  reporterCountryNullFlavor: toNullFlavor(data.reporterCountryNullFlavor),
+};
+'''
+        self.assertEqual(
+            {
+                (
+                    "ReporterPresave.reporter_given_name",
+                    "PrimarySource.reporter_given_name",
+                ),
+                (
+                    "ReporterPresave.country_code_null_flavor",
+                    "PrimarySource.country_code_null_flavor",
+                ),
+            },
+            extractor.extract_reporter_transfer_source(source),
+        )
+
+    def test_repository_transfer_includes_country_null_flavor(self):
+        self.assertIn(
+            (
+                "ReporterPresave.country_code_null_flavor",
+                "PrimarySource.country_code_null_flavor",
+            ),
+            extractor.extract_reporter_transfers(ROOT),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

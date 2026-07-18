@@ -20,6 +20,32 @@ TECHNICAL_FIELDS = {
     "created_by",
     "updated_by",
 }
+REPORTER_FRONTEND_TO_BACKEND = {
+    "reporterTitle": "reporter_title",
+    "reporterGivenName": "reporter_given_name",
+    "reporterMiddleName": "reporter_middle_name",
+    "reporterFamilyName": "reporter_family_name",
+    "reporterOrganization": "organization",
+    "reporterDepartment": "department",
+    "reporterStreet": "street",
+    "reporterCity": "city",
+    "reporterState": "state",
+    "reporterPostcode": "postcode",
+    "reporterTelephone": "telephone",
+    "reporterCountry": "country_code",
+    "qualification": "qualification",
+    "qualificationKr1": "qualification_kr1",
+    "primarySourceForRegulatoryPurposes": "primary_source_regulatory",
+    "reporterNameNullFlavor": "reporter_name_null_flavor",
+    "reporterAddressNullFlavor": "reporter_address_null_flavor",
+    "reporterCountryNullFlavor": "country_code_null_flavor",
+    "qualificationNullFlavor": "qualification_null_flavor",
+}
+PRIMARY_SOURCE_FRONTEND_TO_BACKEND = dict(REPORTER_FRONTEND_TO_BACKEND)
+REPORTER_TRANSFER_FILE = (
+    "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/"
+    "RP/model/rpModel.ts"
+)
 
 
 def extract_rust_presave_source(source: str, model: str) -> set[str]:
@@ -77,3 +103,29 @@ def extract_presave_backend(root: Path, models: dict[str, str]) -> set[str]:
             extract_rust_presave_source(path.read_text(encoding="utf-8"), model)
         )
     return fields
+
+
+def extract_reporter_transfer_source(source: str) -> set[tuple[str, str]]:
+    pairs: set[tuple[str, str]] = set()
+    for match in re.finditer(
+        r"(?P<target>[A-Za-z][A-Za-z0-9]*)\s*:\s*[^,\n]*?"
+        r"data\.(?P<source>[A-Za-z][A-Za-z0-9]*)",
+        source,
+    ):
+        source_field = REPORTER_FRONTEND_TO_BACKEND.get(match.group("source"))
+        target_field = PRIMARY_SOURCE_FRONTEND_TO_BACKEND.get(match.group("target"))
+        if source_field and target_field:
+            pairs.add(
+                (
+                    f"ReporterPresave.{source_field}",
+                    f"PrimarySource.{target_field}",
+                )
+            )
+    return pairs
+
+
+def extract_reporter_transfers(root: Path) -> set[tuple[str, str]]:
+    path = root / REPORTER_TRANSFER_FILE
+    if not path.is_file():
+        raise validate.InventoryError(f"reporter transfer source not found: {path}")
+    return extract_reporter_transfer_source(path.read_text(encoding="utf-8"))
