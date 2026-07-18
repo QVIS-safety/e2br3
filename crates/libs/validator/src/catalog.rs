@@ -3307,6 +3307,10 @@ const VALUE_POLICY_BINDINGS: &[ValuePolicyBinding] = &[
 		policy: ValuePolicy::NonEmptyOrNullFlavor,
 	},
 	ValuePolicyBinding {
+		code: "ICH.C.2.r.5.REQUIRED",
+		policy: ValuePolicy::NonEmpty,
+	},
+	ValuePolicyBinding {
 		code: "ICH.C.3.1.REQUIRED",
 		policy: ValuePolicy::NonEmpty,
 	},

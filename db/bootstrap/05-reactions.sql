@@ -13,7 +13,7 @@ CREATE TABLE reactions (
     primary_source_reaction_translation VARCHAR(250),
 
     -- E.i.1.2 - Reaction/Event Language
-    reaction_language VARCHAR(2),  -- ISO 639-1 code
+    reaction_language VARCHAR(3),  -- ISO 639-2 code (E.i.1.1b)
 
     -- E.i.2.1 - MedDRA Coding (LLT or PT)
     reaction_meddra_version VARCHAR(10),  -- Version of MedDRA used

@@ -1,6 +1,4 @@
-use crate::allowed_value::{
-	is_allowed_value_valid, true_marker_value, ConstraintValue,
-};
+use crate::allowed_value::{is_allowed_value_valid, ConstraintValue};
 use crate::context::VocabularyContext;
 use crate::{
 	allowed_value_constraint_for_rule, find_canonical_rule, null_flavors_for_rule,
@@ -194,7 +192,11 @@ pub fn validate_portable_value(
 				(
 					AllowedValueConstraintKind::TrueMarker,
 					PortableInputValue::Boolean(value),
-				) => true_marker_value(Some(value), null_flavor),
+				) => ConstraintValue::Boolean(
+					null_flavor
+						.is_none_or(|value| value.trim().is_empty())
+						.then_some(value),
+				),
 				(
 					AllowedValueConstraintKind::Numeric,
 					PortableInputValue::Number(value),
