@@ -1,5 +1,10 @@
 {
   "sections": [
-    "sections/c-reporter.json"
+    "sections/c-sender.json",
+    "sections/c-receiver.json",
+    "sections/g-product.json",
+    "sections/c-reporter.json",
+    "sections/c-study.json",
+    "sections/h-narrative.json"
   ]
 }

@@ -11,6 +11,8 @@ class PresaveRegistry:
     by_code: dict[str, dict[str, Any]]
     backend_keys: dict[str, str]
     frontend_keys: dict[str, str]
+    section_by_code: dict[str, str]
+    codes_by_section: dict[str, tuple[str, ...]]
 
 
 def load_presave_registry(
@@ -22,16 +24,20 @@ def load_presave_registry(
     by_code: dict[str, dict[str, Any]] = {}
     backend_keys: dict[str, str] = {}
     frontend_keys: dict[str, str] = {}
+    section_by_code: dict[str, str] = {}
+    section_codes: dict[str, list[str]] = {}
 
     if not isinstance(index, dict) or not isinstance(index.get("sections"), list):
         result.add(f"{index_path}: sections must be a non-empty list")
-        return PresaveRegistry((), {}, {}, {})
+        return PresaveRegistry((), {}, {}, {}, {}, {})
 
     for relative in index["sections"]:
         if not isinstance(relative, str):
             result.add(f"{index_path}: section entries must be strings")
             continue
         source = root / "presaves" / relative
+        file_stem = Path(relative).stem
+        presave_section = file_stem.split("-", 1)[-1]
         payload = validate.load_json(source, result)
         if not isinstance(payload, list):
             result.add(f"{source}: section file must contain a JSON array")
@@ -48,6 +54,8 @@ def load_presave_registry(
                 continue
             by_code[code] = row
             rows.append(row)
+            section_by_code[code] = presave_section
+            section_codes.setdefault(presave_section, []).append(code)
             backend = row.get("backend", {})
             frontend = row.get("frontend", {})
             if isinstance(backend, dict) and backend.get("status") == "mapped":
@@ -55,4 +63,11 @@ def load_presave_registry(
             if isinstance(frontend, dict) and frontend.get("status") == "mapped":
                 frontend_keys[code] = f"{frontend['section']}.{frontend['field']}"
 
-    return PresaveRegistry(tuple(rows), by_code, backend_keys, frontend_keys)
+    return PresaveRegistry(
+        tuple(rows),
+        by_code,
+        backend_keys,
+        frontend_keys,
+        section_by_code,
+        {section: tuple(codes) for section, codes in section_codes.items()},
+    )

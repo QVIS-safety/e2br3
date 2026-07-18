@@ -1,0 +1,722 @@
+[
+  {
+    "id": "presave.receiver.local.receiver.1",
+    "e2br3_code": "local.receiver.1",
+    "label": "Receiver Organization",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "organization_name",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.organization_name persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "receiverOrganization",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.receiverOrganization exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.receiver.local.receiver.2",
+    "e2br3_code": "local.receiver.2",
+    "label": "Receiver Type",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "receiver_type",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.receiver_type persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "receiverType",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.receiverType exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.receiver.N.1.4",
+    "e2br3_code": "N.1.4",
+    "label": "Batch Receiver Identifier",
+    "section": "N",
+    "authority": "ICH",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "batch_receiver_identifier",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.batch_receiver_identifier persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.receiver.N.2.r.3",
+    "e2br3_code": "N.2.r.3",
+    "label": "Message Receiver Identifier",
+    "section": "N",
+    "authority": "ICH",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "message_receiver_identifier",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.message_receiver_identifier persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.dayCountRule",
+    "e2br3_code": "local.presave.receiver.dayCountRule",
+    "label": "dayCountRule",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "day_count_rule",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.day_count_rule persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "dayCountRule",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.dayCountRule exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.nonSaeSolicitedDayCount",
+    "e2br3_code": "local.presave.receiver.nonSaeSolicitedDayCount",
+    "label": "nonSaeSolicitedDayCount",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "nsae_solicited_day_count",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.nsae_solicited_day_count persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "nonSaeSolicitedDayCount",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.nonSaeSolicitedDayCount exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.nonSaeSolicitedNotApplicable",
+    "e2br3_code": "local.presave.receiver.nonSaeSolicitedNotApplicable",
+    "label": "nonSaeSolicitedNotApplicable",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "nsae_solicited_not_applicable",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.nsae_solicited_not_applicable persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "nonSaeSolicitedNotApplicable",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.nonSaeSolicitedNotApplicable exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.nonSaeSpontaneousDayCount",
+    "e2br3_code": "local.presave.receiver.nonSaeSpontaneousDayCount",
+    "label": "nonSaeSpontaneousDayCount",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "nsae_non_solicited_day_count",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.nsae_non_solicited_day_count persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "nonSaeSpontaneousDayCount",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.nonSaeSpontaneousDayCount exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.nonSaeSpontaneousNotApplicable",
+    "e2br3_code": "local.presave.receiver.nonSaeSpontaneousNotApplicable",
+    "label": "nonSaeSpontaneousNotApplicable",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "nsae_non_solicited_not_applicable",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.nsae_non_solicited_not_applicable persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "nonSaeSpontaneousNotApplicable",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.nonSaeSpontaneousNotApplicable exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.receiverDescription",
+    "e2br3_code": "local.presave.receiver.receiverDescription",
+    "label": "receiverDescription",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "description",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.description persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "receiverDescription",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.receiverDescription exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.receiverId",
+    "e2br3_code": "local.presave.receiver.receiverId",
+    "label": "receiverId",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "receiver_identifier",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.receiver_identifier persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "receiverId",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.receiverId exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.saeSolicitedDayCount",
+    "e2br3_code": "local.presave.receiver.saeSolicitedDayCount",
+    "label": "saeSolicitedDayCount",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "sae_solicited_day_count",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.sae_solicited_day_count persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "saeSolicitedDayCount",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.saeSolicitedDayCount exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.saeSolicitedNotApplicable",
+    "e2br3_code": "local.presave.receiver.saeSolicitedNotApplicable",
+    "label": "saeSolicitedNotApplicable",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "sae_solicited_not_applicable",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.sae_solicited_not_applicable persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "saeSolicitedNotApplicable",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.saeSolicitedNotApplicable exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.saeSpontaneousDayCount",
+    "e2br3_code": "local.presave.receiver.saeSpontaneousDayCount",
+    "label": "saeSpontaneousDayCount",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "sae_non_solicited_day_count",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.sae_non_solicited_day_count persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "saeSpontaneousDayCount",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.saeSpontaneousDayCount exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.saeSpontaneousNotApplicable",
+    "e2br3_code": "local.presave.receiver.saeSpontaneousNotApplicable",
+    "label": "saeSpontaneousNotApplicable",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresave",
+      "field": "sae_non_solicited_not_applicable",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresave.sae_non_solicited_not_applicable persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "saeSpontaneousNotApplicable",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.saeSpontaneousNotApplicable exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.frontend.consignees",
+    "e2br3_code": "local.presave.receiver.frontend.consignees",
+    "label": "consignees",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "consignees",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.consignees exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.frontend.receiverDeleted",
+    "e2br3_code": "local.presave.receiver.frontend.receiverDeleted",
+    "label": "receiverDeleted",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "receiverDeleted",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.receiverDeleted exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.frontend.routes",
+    "e2br3_code": "local.presave.receiver.frontend.routes",
+    "label": "routes",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "receiver",
+      "field": "routes",
+      "file": "components/presave/ReceiverForm.tsx",
+      "evidence": "ReceiverPresaveData.routes exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveConsignee.email",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveConsignee.email",
+    "label": "ReceiverPresaveConsignee.email",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveConsignee",
+      "field": "email",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveConsignee.email persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveConsignee.name",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveConsignee.name",
+    "label": "ReceiverPresaveConsignee.name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveConsignee",
+      "field": "name",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveConsignee.name persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveConsignee.phone",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveConsignee.phone",
+    "label": "ReceiverPresaveConsignee.phone",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveConsignee",
+      "field": "phone",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveConsignee.phone persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveConsignee.receiver.presave.id",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveConsignee.receiver.presave.id",
+    "label": "ReceiverPresaveConsignee.receiver_presave_id",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveConsignee",
+      "field": "receiver_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveConsignee.receiver_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveConsignee.sequence.number",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveConsignee.sequence.number",
+    "label": "ReceiverPresaveConsignee.sequence_number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveConsignee",
+      "field": "sequence_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveConsignee.sequence_number persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveRoute.authority",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveRoute.authority",
+    "label": "ReceiverPresaveRoute.authority",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "authority",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.authority persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveRoute.condition.field.code",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveRoute.condition.field.code",
+    "label": "ReceiverPresaveRoute.condition_field_code",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "condition_field_code",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.condition_field_code persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveRoute.condition.operator",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveRoute.condition.operator",
+    "label": "ReceiverPresaveRoute.condition_operator",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "condition_operator",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.condition_operator persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveRoute.condition.page",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveRoute.condition.page",
+    "label": "ReceiverPresaveRoute.condition_page",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "condition_page",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.condition_page persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveRoute.condition.value.code",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveRoute.condition.value.code",
+    "label": "ReceiverPresaveRoute.condition_value_code",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "condition_value_code",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.condition_value_code persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveRoute.condition.value.label",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveRoute.condition.value.label",
+    "label": "ReceiverPresaveRoute.condition_value_label",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "condition_value_label",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.condition_value_label persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveRoute.receiver.label",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveRoute.receiver.label",
+    "label": "ReceiverPresaveRoute.receiver_label",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "receiver_label",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.receiver_label persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveRoute.receiver.presave.id",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveRoute.receiver.presave.id",
+    "label": "ReceiverPresaveRoute.receiver_presave_id",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "receiver_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.receiver_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.receiver.local.presave.receiver.backend.ReceiverPresaveRoute.sequence.number",
+    "e2br3_code": "local.presave.receiver.backend.ReceiverPresaveRoute.sequence.number",
+    "label": "ReceiverPresaveRoute.sequence_number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "ReceiverPresaveRoute",
+      "field": "sequence_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "ReceiverPresaveRoute.sequence_number persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  }
+]

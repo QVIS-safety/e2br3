@@ -1,0 +1,75 @@
+[
+  {
+    "id": "presave.narrative.H.1",
+    "e2br3_code": "H.1",
+    "label": "Case Narrative Including Clinical Course",
+    "section": "H",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "NarrativePresave",
+      "field": "case_narrative",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "NarrativePresave.case_narrative persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "narrative",
+      "field": "caseNarrative",
+      "file": "components/presave/NarrativeForm.tsx",
+      "evidence": "NarrativePresaveData.caseNarrative exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.narrative.H.additionalInformation",
+    "e2br3_code": "H.additionalInformation",
+    "label": "Additional Information",
+    "section": "H",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "NarrativePresave",
+      "field": "additional_information",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "NarrativePresave.additional_information persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "narrative",
+      "field": "additionalInformation",
+      "file": "components/presave/NarrativeForm.tsx",
+      "evidence": "NarrativePresaveData.additionalInformation exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.narrative.local.presave.narrative.caseNarrativeNotation",
+    "e2br3_code": "local.presave.narrative.caseNarrativeNotation",
+    "label": "caseNarrativeNotation",
+    "section": "H",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "NarrativePresave",
+      "field": "case_narrative_notation",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "NarrativePresave.case_narrative_notation persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "narrative",
+      "field": "caseNarrativeNotation",
+      "file": "components/presave/NarrativeForm.tsx",
+      "evidence": "NarrativePresaveData.caseNarrativeNotation exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  }
+]

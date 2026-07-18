@@ -1,5 +1,6 @@
 import unittest
 import json
+import os
 import tempfile
 from pathlib import Path
 import sys
@@ -10,6 +11,19 @@ import extract_frontend_fields as extractor
 
 
 class FrontendFieldExtractorTests(unittest.TestCase):
+    def test_ast_inventory_uses_explicit_frontend_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            configured = Path(tmp) / "frontend-worktree"
+            previous = os.environ.get("E2BR3_FRONTEND_ROOT")
+            os.environ["E2BR3_FRONTEND_ROOT"] = str(configured)
+            try:
+                self.assertEqual(configured.resolve(), extractor.resolve_frontend_root())
+            finally:
+                if previous is None:
+                    os.environ.pop("E2BR3_FRONTEND_ROOT", None)
+                else:
+                    os.environ["E2BR3_FRONTEND_ROOT"] = previous
+
     def test_ast_inventory_resolves_current_dynamic_bindings(self):
         keys = {
             field.key for field in extractor.extract_frontend_fields_ast()

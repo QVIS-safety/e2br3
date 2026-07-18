@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -16,6 +17,13 @@ FRONTEND_ROOT = REPO_ROOT.parent / "frontend" / "E2BR3-frontend"
 
 class FrontendInventoryError(Exception):
     pass
+
+
+def resolve_frontend_root(repo_root: Path = REPO_ROOT) -> Path:
+    configured = os.environ.get("E2BR3_FRONTEND_ROOT")
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return repo_root.parent / "frontend" / "E2BR3-frontend"
 
 
 @dataclass(frozen=True)
@@ -131,7 +139,7 @@ def extract_raw_field_paths_from_source(source: str) -> list[str]:
 
 def extract_frontend_fields_ast(root: Path = REPO_ROOT) -> list[FrontendField]:
     repo_root = root if (root / "registry").exists() else root.parent
-    frontend_root = repo_root.parent / "frontend" / "E2BR3-frontend"
+    frontend_root = resolve_frontend_root(repo_root)
     script = Path(__file__).with_suffix(".mjs")
     completed = subprocess.run(
         ["node", str(script), str(frontend_root)],
