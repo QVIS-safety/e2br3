@@ -149,7 +149,6 @@ fn import_e_reaction_preserves_known_extension_fields() {
 	let reactions = parse_e_reactions(xml).expect("parse should succeed");
 	assert_eq!(reactions.len(), 1);
 	let reaction = &reactions[0];
-	assert_eq!(reaction.included_in_ema_ime_list, Some(true));
 	assert_eq!(reaction.expectedness.as_deref(), Some("2"));
 	assert_eq!(reaction.severity.as_deref(), Some("severe"));
 	assert_eq!(reaction.mfds_device_ae_classification.as_deref(), Some("0"));

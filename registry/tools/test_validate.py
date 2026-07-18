@@ -1444,6 +1444,7 @@ class RemovedOrphanLocalFieldsTests(unittest.TestCase):
     def test_removed_orphan_rows_and_backend_storage_are_absent(self):
         repo = Path(__file__).resolve().parents[2]
         removed_rows = {
+            "E.local.includedInEmaImeList",
             "D.local.patientGivenName",
             "D.local.patientFamilyName",
             "G.k.local.supplemental.brandName",
@@ -1471,7 +1472,9 @@ class RemovedOrphanLocalFieldsTests(unittest.TestCase):
                 repo / "crates/libs/lib-core/src/model/patient.rs",
                 repo / "crates/libs/lib-core/src/model/drug.rs",
                 repo / "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
+                repo / "crates/libs/lib-core/src/model/reaction.rs",
                 repo / "db/bootstrap/04-patient-information.sql",
+                repo / "db/bootstrap/05-reactions.sql",
                 repo / "db/bootstrap/07-drug-information.sql",
             ]
         )
@@ -1484,6 +1487,7 @@ class RemovedOrphanLocalFieldsTests(unittest.TestCase):
             "last_administration_time",
             "recurrence_meddra_version",
             "recurrence_meddra_code",
+            "included_in_ema_ime_list",
         ):
             self.assertNotIn(field, model_sources)
         self.assertNotIn("pub brand_name: Option<String>", model_sources)

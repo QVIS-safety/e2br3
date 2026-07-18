@@ -844,7 +844,6 @@ async fn test_reaction_supports_ae_common_and_mfds_device_fields() -> Result<()>
 		"case_id": case_id,
 		"sequence_number": 1,
 		"primary_source_reaction": "Device site pain",
-		"included_in_ema_ime_list": true,
 		"expectedness": "2",
 		"severity": "severe",
 		"mfds_device_ae_classification": "0",

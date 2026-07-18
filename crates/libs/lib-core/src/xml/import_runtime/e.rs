@@ -57,7 +57,6 @@ pub(crate) async fn import_section_e(
 					.clone(),
 				required_intervention: reaction.required_intervention.clone(),
 				required_intervention_null_flavor: None,
-				included_in_ema_ime_list: reaction.included_in_ema_ime_list,
 				expectedness: reaction.expectedness.clone(),
 				severity: reaction.severity.clone(),
 				mfds_device_ae_classification: reaction

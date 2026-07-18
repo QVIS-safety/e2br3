@@ -35,7 +35,6 @@ fn export_e_reaction_basic() {
 		criteria_other_medically_important_null_flavor: None,
 		required_intervention: None,
 		required_intervention_null_flavor: None,
-		included_in_ema_ime_list: None,
 		expectedness: None,
 		severity: None,
 		mfds_device_ae_classification: None,
@@ -125,7 +124,6 @@ fn export_e_reaction_preserves_known_extension_fields() {
 		criteria_other_medically_important_null_flavor: None,
 		required_intervention: Some("true".to_string()),
 		required_intervention_null_flavor: None,
-		included_in_ema_ime_list: Some(true),
 		expectedness: Some("2".to_string()),
 		severity: Some("severe".to_string()),
 		mfds_device_ae_classification: Some("0".to_string()),
@@ -166,13 +164,7 @@ fn export_e_reaction_preserves_known_extension_fields() {
 	let mut xpath = Context::new(&doc).expect("xpath");
 	xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
 
-	let ime = xpath
-		.findvalue(
-			"//hl7:observation[hl7:code[@code='AE_IME_LIST']]/hl7:value/@value",
-			None,
-		)
-		.unwrap();
-	assert_eq!(ime, "true");
+	assert!(!xml.contains("AE_IME_LIST"));
 	let expectedness = xpath
 		.findvalue(
 			"//hl7:observation[hl7:code[@code='AE_EXPECTEDNESS']]/hl7:value/@code",
@@ -246,7 +238,6 @@ fn export_e_reaction_requires_outcome() {
 		criteria_other_medically_important_null_flavor: None,
 		required_intervention: Some("true".to_string()),
 		required_intervention_null_flavor: None,
-		included_in_ema_ime_list: None,
 		expectedness: None,
 		severity: None,
 		mfds_device_ae_classification: None,

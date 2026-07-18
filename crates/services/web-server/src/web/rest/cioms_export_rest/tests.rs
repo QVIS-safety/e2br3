@@ -296,7 +296,6 @@ fn reaction_with_country(country_code: &str) -> Reaction {
 		duration_unit: None,
 		outcome: None,
 		medical_confirmation: None,
-		included_in_ema_ime_list: None,
 		expectedness: None,
 		severity: None,
 		mfds_device_ae_classification: None,

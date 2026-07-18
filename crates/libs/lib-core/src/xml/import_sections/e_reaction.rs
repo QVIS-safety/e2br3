@@ -34,7 +34,6 @@ pub struct EReactionImport {
 	pub criteria_other_medically_important: Option<bool>,
 	pub criteria_other_medically_important_null_flavor: Option<String>,
 	pub required_intervention: Option<String>,
-	pub included_in_ema_ime_list: Option<bool>,
 	pub expectedness: Option<String>,
 	pub severity: Option<String>,
 	pub mfds_device_ae_classification: Option<String>,
@@ -223,8 +222,6 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 			first_attr(&mut xpath, &node, EReactionPaths::REQUIRED_INTERVENTION),
 			10,
 		);
-		let included_in_ema_ime_list =
-			extension_bool(&mut xpath, &node, "AE_IME_LIST");
 		let expectedness =
 			clamp_str(extension_code(&mut xpath, &node, "AE_EXPECTEDNESS"), 1);
 		let severity =
@@ -331,7 +328,6 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 			criteria_other_medically_important,
 			criteria_other_medically_important_null_flavor,
 			required_intervention,
-			included_in_ema_ime_list,
 			expectedness,
 			severity,
 			mfds_device_ae_classification,

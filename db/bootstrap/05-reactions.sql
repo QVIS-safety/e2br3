@@ -44,7 +44,6 @@ CREATE TABLE reactions (
     required_intervention_null_flavor VARCHAR(4) CHECK (required_intervention_null_flavor IN ('NI', 'UNK', 'ASKU', 'NASK', 'MSK')),
 
     -- Reference AE common metadata
-    included_in_ema_ime_list BOOLEAN,
     expectedness VARCHAR(1) CHECK (expectedness IS NULL OR expectedness IN ('1', '2')),
     severity VARCHAR(20),
 

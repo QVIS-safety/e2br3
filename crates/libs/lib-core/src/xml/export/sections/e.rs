@@ -174,11 +174,6 @@ pub(crate) fn reaction_fragment(reaction: &Reaction) -> Result<String> {
 	out.push_str(&observation_rel_required_intervention(
 		reaction.required_intervention.as_deref(),
 	));
-	append_extension_bool(
-		&mut out,
-		"AE_IME_LIST",
-		reaction.included_in_ema_ime_list,
-	);
 	append_extension_code(
 		&mut out,
 		"AE_EXPECTEDNESS",
