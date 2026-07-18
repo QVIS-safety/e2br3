@@ -989,14 +989,6 @@ async fn apply_dm_page_rows_patch(
 			patient,
 			&["patientInitials", "patient_initials"],
 		),
-		patient_given_name: string_field(
-			patient,
-			&["patientGivenName", "patient_given_name"],
-		),
-		patient_family_name: string_field(
-			patient,
-			&["patientFamilyName", "patient_family_name"],
-		),
 		patient_initials_null_flavor: string_field(
 			patient,
 			&["patientInitialsNullFlavor", "patient_initials_null_flavor"],
@@ -1078,8 +1070,6 @@ async fn apply_dm_page_rows_patch(
 				PatientInformationForCreate {
 					case_id,
 					patient_initials: update.patient_initials,
-					patient_given_name: update.patient_given_name,
-					patient_family_name: update.patient_family_name,
 					patient_initials_null_flavor: update
 						.patient_initials_null_flavor,
 					birth_date: None,

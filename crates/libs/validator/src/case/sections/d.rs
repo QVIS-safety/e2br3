@@ -2091,8 +2091,6 @@ mod golden_companion_tests {
 			id: Uuid::nil(),
 			case_id: Uuid::nil(),
 			patient_initials: None,
-			patient_given_name: None,
-			patient_family_name: None,
 			birth_date: None,
 			age_at_time_of_onset: None,
 			age_unit: None,

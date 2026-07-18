@@ -53,10 +53,6 @@ fn import_g_section_all_fields_from_scenario6() {
 	assert_eq!(first.dosage_text, None);
 	assert_eq!(first.action_taken.as_deref(), Some("2"));
 	assert_eq!(first.rechallenge.as_deref(), Some("2"));
-	assert_eq!(
-		first.parent_dosage_text.as_deref(),
-		Some("Somthing seemed strange about the way it went down.")
-	);
 	assert_eq!(first.fda_additional_info_coded.as_deref(), Some("4"));
 	assert_eq!(
 		first.fda_specialized_product_category.as_deref(),

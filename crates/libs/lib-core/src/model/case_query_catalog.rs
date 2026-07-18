@@ -322,20 +322,6 @@ const DG_ITEMS: &[CatalogItem] = &[
 		OneToMany("drug_information"),
 	),
 	item(
-		"drug_generic_name",
-		"Generic Name",
-		Text,
-		"drug_generic_name",
-		OneToMany("drug_information"),
-	),
-	item(
-		"brand_name",
-		"Brand Name",
-		Text,
-		"brand_name",
-		OneToMany("drug_information"),
-	),
-	item(
 		"mpid",
 		"MPID (G.k.2.1.1b)",
 		Code,

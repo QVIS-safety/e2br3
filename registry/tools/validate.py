@@ -138,7 +138,6 @@ BACKEND_MODELS = {
     "DosageInformation": "crates/libs/lib-core/src/model/drug.rs",
     "DrugIndication": "crates/libs/lib-core/src/model/drug.rs",
     "DrugDeviceCharacteristic": "crates/libs/lib-core/src/model/drug.rs",
-    "DrugRecurrenceInformation": "crates/libs/lib-core/src/model/drug_recurrence.rs",
     "DrugReactionAssessment": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
     "RelatednessAssessment": "crates/libs/lib-core/src/model/drug_reaction_assessment.rs",
     "NarrativeInformation": "crates/libs/lib-core/src/model/narrative.rs",

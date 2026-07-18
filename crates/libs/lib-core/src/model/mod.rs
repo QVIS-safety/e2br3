@@ -62,9 +62,6 @@ pub mod receiver; // Receiver details for routing to regulatory authorities
 // E2B(R3) G.k.9.i - Drug-Reaction Assessment
 pub mod drug_reaction_assessment; // Causality assessment linking drugs to reactions
 
-// E2B(R3) G.k.8.r - Drug Recurrence Information
-pub mod drug_recurrence; // Structured rechallenge/recurrence data
-
 // E2B(R3) C.1.9.r / C.1.10.r - Case Identifiers
 pub mod case_identifiers; // Other case identifiers and linked report numbers
 

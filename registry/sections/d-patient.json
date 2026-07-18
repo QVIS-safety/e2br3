@@ -24,52 +24,6 @@
     "notes": ""
   },
   {
-    "id": "D.local.patientGivenName",
-    "e2br3_code": "D.local.patientGivenName",
-    "label": "Patient Given Name",
-    "section": "D",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "PatientInformation",
-      "field": "patient_given_name",
-      "file": "crates/libs/lib-core/src/model/patient.rs",
-      "evidence": "PatientInformation.patient_given_name exists as a D.1 patient-name component in the backend model."
-    },
-    "frontend": {
-      "status": "missing",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
-      "evidence": "SectionD renders patientInformation.patientInitials for D.1 but no separate given-name or family-name input was found."
-    },
-    "action": "Add a frontend field or intentionally remove/ignore the backend field if product scope only supports initials.",
-    "notes": "Backend inventory is covered; this is not a complete 1-1 frontend mapping. Local given/family split; the official single name element D.1 is mapped to patient_initials."
-  },
-  {
-    "id": "D.local.patientFamilyName",
-    "e2br3_code": "D.local.patientFamilyName",
-    "label": "Patient Family Name",
-    "section": "D",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "PatientInformation",
-      "field": "patient_family_name",
-      "file": "crates/libs/lib-core/src/model/patient.rs",
-      "evidence": "PatientInformation.patient_family_name exists as a D.1 patient-name component in the backend model."
-    },
-    "frontend": {
-      "status": "missing",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionD.tsx",
-      "evidence": "SectionD renders patientInformation.patientInitials for D.1 but no separate given-name or family-name input was found."
-    },
-    "action": "Add a frontend field or intentionally remove/ignore the backend field if product scope only supports initials.",
-    "notes": "Backend inventory is covered; this is not a complete 1-1 frontend mapping. Local given/family split; the official single name element D.1 is mapped to patient_initials."
-  },
-  {
     "id": "D.local.patientIdentifier.typeCode",
     "e2br3_code": "D.local.patientIdentifier.typeCode",
     "label": "Patient Identifier Type Code",

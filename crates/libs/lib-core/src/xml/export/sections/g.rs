@@ -148,13 +148,7 @@ pub(crate) fn drug_fragment(
 	assessments: &[&DrugReactionAssessment],
 ) -> Result<String> {
 	let mut out = String::new();
-	let product_name = drug
-		.medicinal_product
-		.trim()
-		.is_empty()
-		.then(|| drug.drug_generic_name.as_deref())
-		.flatten()
-		.unwrap_or(&drug.medicinal_product);
+	let product_name = &drug.medicinal_product;
 
 	out.push_str("<subjectOf2 typeCode=\"SBJ\"><organizer classCode=\"CATEGORY\" moodCode=\"EVN\">");
 	out.push_str(
@@ -175,11 +169,6 @@ pub(crate) fn drug_fragment(
 	out.push_str("<name>");
 	out.push_str(&xml_escape(product_name));
 	out.push_str("</name>");
-	if let Some(brand) = drug.brand_name.as_deref() {
-		out.push_str("<name>");
-		out.push_str(&xml_escape(brand));
-		out.push_str("</name>");
-	}
 	if drug.mpid.is_some() || drug.mpid_version.is_some() {
 		out.push_str("<asIdentifiedEntity classCode=\"IDENT\"><id");
 		if let Some(mpid) = drug.mpid.as_deref() {
@@ -287,13 +276,6 @@ pub(crate) fn drug_fragment(
 			}
 			out.push_str("</ingredientSubstance>");
 			out.push_str("</ingredient>");
-		}
-	} else if let Some(name) = drug.drug_generic_name.as_deref() {
-		let name = name.trim();
-		if !name.is_empty() {
-			out.push_str("<ingredient><ingredientSubstance><name>");
-			out.push_str(&xml_escape(name));
-			out.push_str("</name></ingredientSubstance></ingredient>");
 		}
 	}
 	if !characteristics.is_empty() {
@@ -422,11 +404,6 @@ pub(crate) fn drug_fragment(
 		out.push_str("</country></addr></representedOrganization></assignedEntity></performer></productEvent></subjectOf>");
 	}
 	out.push_str("</instanceOfKind></consumable>");
-	if let Some(rechallenge) = drug.rechallenge.as_deref() {
-		out.push_str("<outboundRelationship2 typeCode=\"COMP\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"31\"/><value xsi:type=\"CE\" code=\"");
-		out.push_str(&xml_escape(rechallenge));
-		out.push_str("\"/></observation></outboundRelationship2>");
-	}
 	for assessment in assessments {
 		out.push_str(&drug_recurrence_fragment(assessment));
 	}
@@ -467,11 +444,6 @@ pub(crate) fn drug_fragment(
 		out.push_str(&xml_escape(code));
 		out.push_str("\"/></observation></outboundRelationship2>");
 	}
-	if let Some(text) = drug.parent_dosage_text.as_deref() {
-		out.push_str("<outboundRelationship2 typeCode=\"REFR\"><observation classCode=\"OBS\" moodCode=\"EVN\"><code code=\"2\"/><value xsi:type=\"ED\">");
-		out.push_str(&xml_escape(text));
-		out.push_str("</value></observation></outboundRelationship2>");
-	}
 	for dose in dosages {
 		out.push_str("<outboundRelationship2 typeCode=\"COMP\"><substanceAdministration classCode=\"SBADM\" moodCode=\"EVN\">");
 		if let Some(text) = dose.dosage_text.as_deref() {
@@ -504,14 +476,14 @@ pub(crate) fn drug_fragment(
 				out.push_str(
 					"<comp xsi:type=\"IVL_TS\" operator=\"A\"><low value=\"",
 				);
-				out.push_str(&fmt_ts(start, dose.first_administration_time));
+				out.push_str(&fmt_ts(start, None));
 				out.push_str("\"/></comp>");
 			}
 			if let Some(end) = dose.last_administration_date {
 				out.push_str(
 					"<comp xsi:type=\"IVL_TS\" operator=\"A\"><high value=\"",
 				);
-				out.push_str(&fmt_ts(end, dose.last_administration_time));
+				out.push_str(&fmt_ts(end, None));
 				out.push_str("\"/></comp>");
 			}
 			if let Some(width) = dose.duration_value.as_ref() {
@@ -865,8 +837,6 @@ mod tests {
 			phpid_version: None,
 			investigational_product_blinded: None,
 			obtain_drug_country: None,
-			brand_name: None,
-			drug_generic_name: None,
 			drug_authorization_number: None,
 			manufacturer_name: None,
 			manufacturer_country: None,
@@ -877,8 +847,6 @@ mod tests {
 			gestation_period_exposure_unit: None,
 			dosage_text: None,
 			action_taken: None,
-			rechallenge: None,
-			parent_dosage_text: None,
 			fda_additional_info_coded: None,
 			drug_additional_info_codes_json: None,
 			drug_additional_information: None,
@@ -975,8 +943,6 @@ mod tests {
 			last_dose_interval_value: None,
 			last_dose_interval_unit: None,
 			recurrence_action: Some("1".to_string()),
-			recurrence_meddra_version: Some("27.0".to_string()),
-			recurrence_meddra_code: Some("10000001".to_string()),
 			reaction_recurred: Some("1".to_string()),
 			created_at: OffsetDateTime::now_utc(),
 			updated_at: OffsetDateTime::now_utc(),

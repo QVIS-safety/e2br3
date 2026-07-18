@@ -12,8 +12,6 @@ use time::Month;
 #[derive(Debug)]
 pub struct DPatientImport {
 	pub patient_initials: Option<String>,
-	pub patient_given_name: Option<String>,
-	pub patient_family_name: Option<String>,
 	pub patient_initials_null_flavor: Option<String>,
 	pub birth_date: Option<Date>,
 	pub birth_date_null_flavor: Option<String>,
@@ -61,8 +59,7 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 	let _ = xpath.register_namespace("hl7", "urn:hl7-org:v3");
 
 	let patient_name = first_text_root(&mut xpath, DPatientPaths::PATIENT_NAME);
-	let (patient_given_name, patient_family_name, patient_initials) =
-		split_patient_name(patient_name.as_deref());
+	let patient_initials = patient_name;
 	let patient_initials_null_flavor =
 		first_value_root(&mut xpath, DPatientPaths::PATIENT_NAME_NULL_FLAVOR);
 
@@ -122,8 +119,6 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 
 	if patient_initials.is_none()
 		&& sex.is_none()
-		&& patient_given_name.is_none()
-		&& patient_family_name.is_none()
 		&& age_at_time_of_onset.is_none()
 		&& gestation_period.is_none()
 		&& weight_kg.is_none()
@@ -141,8 +136,6 @@ pub fn parse_d_patient(xml: &[u8]) -> Result<Option<DPatientImport>> {
 
 	Ok(Some(DPatientImport {
 		patient_initials,
-		patient_given_name,
-		patient_family_name,
 		patient_initials_null_flavor,
 		birth_date,
 		birth_date_null_flavor,
@@ -180,38 +173,6 @@ fn first_text_root(xpath: &mut Context, path: &str) -> Option<String> {
 		Ok(value) if !value.trim().is_empty() => Some(value),
 		_ => None,
 	}
-}
-
-fn split_patient_name(
-	name: Option<&str>,
-) -> (Option<String>, Option<String>, Option<String>) {
-	let name = name.unwrap_or("").trim();
-	if name.is_empty() {
-		return (None, None, None);
-	}
-	let parts: Vec<&str> = name.split_whitespace().collect();
-	if parts.len() == 1 {
-		let initials = parts[0].to_string();
-		return (None, None, Some(initials));
-	}
-	let given = parts.first().copied().unwrap_or("");
-	let family = parts.last().copied().unwrap_or("");
-	(
-		Some(given.to_string()),
-		Some(family.to_string()),
-		Some(build_initials(Some(given), Some(family))),
-	)
-}
-
-fn build_initials(given: Option<&str>, family: Option<&str>) -> String {
-	let mut out = String::new();
-	if let Some(g) = given.and_then(|v| v.chars().next()) {
-		out.push(g);
-	}
-	if let Some(f) = family.and_then(|v| v.chars().next()) {
-		out.push(f);
-	}
-	out
 }
 
 fn normalize_code(

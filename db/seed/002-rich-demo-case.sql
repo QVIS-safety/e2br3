@@ -31,7 +31,6 @@ DECLARE
     v_drug_indication_id UUID := 'd2000000-0000-0000-0000-000000000019';
     v_drug_assessment_id UUID := 'd2000000-0000-0000-0000-00000000001a';
     v_relatedness_id UUID := 'd2000000-0000-0000-0000-00000000001b';
-    v_recurrence_id UUID := 'd2000000-0000-0000-0000-00000000001c';
     v_device_characteristic_id UUID := 'd2000000-0000-0000-0000-00000000001d';
     v_narrative_id UUID := 'd2000000-0000-0000-0000-00000000001e';
     v_sender_diag_id UUID := 'd2000000-0000-0000-0000-00000000001f';
@@ -209,13 +208,13 @@ BEGIN
     ON CONFLICT (id) DO NOTHING;
 
     INSERT INTO patient_information (
-        id, case_id, patient_initials, patient_given_name, patient_family_name, birth_date,
+        id, case_id, patient_initials, birth_date,
         age_at_time_of_onset, age_unit, gestation_period, gestation_period_unit, age_group,
         weight_kg, height_cm, sex, race_code, ethnicity_code, last_menstrual_period_date,
         medical_history_text, concomitant_therapy, created_by, updated_by, created_at, updated_at
     )
     VALUES (
-        v_patient_id, v_case_id, 'HJ', 'Hana', 'Jung', DATE '1988-05-14',
+        v_patient_id, v_case_id, 'HJ', DATE '1988-05-14',
         37, '801', 0, '804', '5',
         61.5, 168.0, '2', 'C41260', 'C41222', DATE '2026-03-20',
         'History of migraine, seasonal allergic rhinitis, and intermittent hypertension.',
@@ -357,21 +356,21 @@ BEGIN
     INSERT INTO drug_information (
         id, case_id, sequence_number, drug_characterization, medicinal_product, mpid,
         mpid_version, phpid, phpid_version, investigational_product_blinded,
-        obtain_drug_country, brand_name, drug_generic_name, drug_authorization_number,
+        obtain_drug_country, drug_authorization_number,
         manufacturer_name, manufacturer_country, batch_lot_number,
         cumulative_dose_first_reaction_value, cumulative_dose_first_reaction_unit,
         gestation_period_exposure_value, gestation_period_exposure_unit, dosage_text,
-        action_taken, rechallenge, parent_dosage_text, fda_additional_info_coded, drug_additional_info_codes_json,
+        action_taken, fda_additional_info_coded, drug_additional_info_codes_json,
         fda_specialized_product_category, fda_device_info_json, drug_additional_information,
         created_by, updated_by, created_at, updated_at
     )
     VALUES (
         v_drug_info_id, v_case_id, 1, '1', 'DEMOZUMAB 50 mg tablet', 'MPID-DEMO-50', '2026.1',
         'PHPID-DEMO-50', '2026.1', false,
-        'KR', 'Demozumab', 'demozumab', 'KR-DA-7781',
+        'KR', 'KR-DA-7781',
         'QVIS Biopharma', 'KR', 'LOT-2026-A1',
         100.0, 'mg', 0, '804', '50 mg orally once daily for 2 days',
-        '2', '1', 'Parent route not applicable; oral tablet.',
+        '2',
         '1', '["3","7"]'::jsonb,
         'combination_product',
         '{"deviceModel":"DV-1000","deviceBrand":"QVIS Smart Pen","operatorType":"patient"}'::jsonb,
@@ -392,16 +391,16 @@ BEGIN
 
     INSERT INTO dosage_information (
         id, drug_id, sequence_number, dose_value, dose_unit, number_of_units,
-        frequency_value, frequency_unit, first_administration_date, first_administration_time,
-        last_administration_date, last_administration_time, duration_value, duration_unit,
+        frequency_value, frequency_unit, first_administration_date,
+        last_administration_date, duration_value, duration_unit,
         batch_lot_number, dosage_text, dose_form, dose_form_termid, dose_form_termid_version,
         route_of_administration, route_termid, route_termid_version, parent_route, parent_route_termid,
         parent_route_termid_version, continuing, created_by, updated_by, created_at, updated_at
     )
     VALUES (
         v_dosage_info_id, v_drug_info_id, 1, 50.0, 'mg', 1,
-        1.0, 'day', DATE '2026-04-07', TIME '08:00:00',
-        DATE '2026-04-08', TIME '08:00:00', 2, 'day',
+        1.0, 'day', DATE '2026-04-07',
+        DATE '2026-04-08', 2, 'day',
         'LOT-2026-A1', '50 mg tablet once daily', 'Tablet', 'TAB', '27.1',
         '001', '20000092', '27.1', 'Oral', '20000092',
         '27.1', false, v_user_id, v_user_id, NOW(), NOW()
@@ -420,13 +419,12 @@ BEGIN
 
     INSERT INTO drug_reaction_assessments (
         id, drug_id, reaction_id, administration_start_interval_value, administration_start_interval_unit,
-        last_dose_interval_value, last_dose_interval_unit, recurrence_action,
-        recurrence_meddra_version, recurrence_meddra_code, reaction_recurred,
+        last_dose_interval_value, last_dose_interval_unit, recurrence_action, reaction_recurred,
         created_by, updated_by, created_at, updated_at
     )
     VALUES (
         v_drug_assessment_id, v_drug_info_id, v_reaction_id, 1, '801',
-        6, '804', '1', '27.1', '10019211', '1',
+        6, '804', '1', '1',
         v_user_id, v_user_id, NOW(), NOW()
     )
     ON CONFLICT (id) DO NOTHING;
@@ -438,16 +436,6 @@ BEGIN
     )
     VALUES (
         v_relatedness_id, v_drug_assessment_id, 1, '1', '1', '2', '2',
-        v_user_id, v_user_id, NOW(), NOW()
-    )
-    ON CONFLICT (id) DO NOTHING;
-
-    INSERT INTO drug_recurrence_information (
-        id, drug_id, sequence_number, rechallenge_action, reaction_meddra_version,
-        reaction_meddra_code, reaction_recurred, created_by, updated_by, created_at, updated_at
-    )
-    VALUES (
-        v_recurrence_id, v_drug_info_id, 1, '1', '27.1', '10019211', '1',
         v_user_id, v_user_id, NOW(), NOW()
     )
     ON CONFLICT (id) DO NOTHING;

@@ -160,11 +160,6 @@ pub(super) fn drug_name(drug: Option<&DrugInformation>) -> String {
 	let Some(drug) = drug else {
 		return String::new();
 	};
-	if let Some(generic) = drug.drug_generic_name.as_deref() {
-		if generic.trim() != drug.medicinal_product.trim() {
-			return format!("{} ({generic})", drug.medicinal_product);
-		}
-	}
 	drug.medicinal_product.clone()
 }
 
