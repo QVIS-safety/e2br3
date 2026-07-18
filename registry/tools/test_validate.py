@@ -1464,6 +1464,16 @@ class DictionaryValidatorTests(unittest.TestCase):
             workflow,
         )
 
+    def test_ci_checks_out_frontend_branch_matching_backend_release_line(self):
+        workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            "ref: ${{ github.event_name == 'push' && github.ref_name == 'dev' && 'dev' || 'main' }}",
+            workflow,
+        )
+
 
 class RemovedOrphanLocalFieldsTests(unittest.TestCase):
     def test_removed_orphan_rows_and_backend_storage_are_absent(self):
