@@ -31,6 +31,9 @@
 - Modify: `crates/services/web-server/src/web/rest/case_editor_rest/direct.rs`
 - Modify: `crates/services/web-server/src/web/rest/case_editor_rest/portable_save.rs`
 - Modify: `crates/services/web-server/src/openapi.rs`
+- Modify: `crates/libs/validator/src/portable_bindings/c.rs`
+- Modify: `crates/libs/validator/src/case/sections/c.rs`
+- Modify: `crates/libs/validator/src/c_reporter_policy.rs`
 - Test: `crates/services/web-server/tests/api/subresources_web.rs`
 - Test: `crates/libs/lib-core/tests/section_presave.rs`
 
@@ -100,11 +103,23 @@ snake_case pairs for the eleven new fields. Update existing struct literals in
 validator, CIOMS, XML, intake, and API tests with `None` for the new fields and
 remove the two old fields.
 
-- [ ] **Step 5: Verify GREEN and commit**
+- [ ] **Step 5: Rebind validation without changing the shared rule engine**
+
+In `portable_bindings/c.rs`, replace the two group nullFlavor bindings with
+eleven bindings and point every reporter value binding at its matching
+nullFlavor path. Keep the existing `ICH.C.2.r.*.NULLFLAVOR.ALLOWED` codes.
+In `case/sections/c.rs`, feed the C.2.r.2.1 presence evaluator a present marker
+when either `organization` or `organization_null_flavor` has text. In
+`c_reporter_policy.rs`, count every new nullFlavor as reporter content. Do not
+modify `case/sections/rule_table.rs`.
+
+- [ ] **Step 6: Verify GREEN and commit**
 
 ```sh
 cargo test -p lib-core --test section_presave
 cargo test -p web-server --test subresources_web reporter -- --nocapture
+cargo test -p validator portable_bindings::c
+cargo test -p validator c_reporter_policy
 cargo check -p lib-core -p web-server
 git add db crates
 git commit -m "refactor: split reporter null flavor persistence"
