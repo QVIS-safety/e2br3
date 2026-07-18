@@ -5,9 +5,7 @@
 //! reviewed/validated/locked case-status transitions.
 
 use super::helpers::*;
-use crate::common::{
-	cookie_header, init_test_mm, seed_org_with_users, Result,
-};
+use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::StatusCode;
 use lib_auth::token::generate_web_token;
 use lib_core::model::acs::{
@@ -195,8 +193,7 @@ async fn test_email_subscription_menu_keys_persist_and_grant_nothing() -> Result
 
 #[serial]
 #[tokio::test]
-async fn test_case_review_and_lock_profile_permissions_are_distinct() -> Result<()>
-{
+async fn test_case_review_and_lock_profile_permissions_are_distinct() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
