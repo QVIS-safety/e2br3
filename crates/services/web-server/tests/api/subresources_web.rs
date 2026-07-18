@@ -1474,8 +1474,7 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 		"sequence_number": 1,
 		"dose_value": 10,
 		"dose_unit": "mg",
-		"number_of_units": 2,
-		"frequency_value": 1,
+		"number_of_units": 0.5,
 		"frequency_unit": "d",
 		"duration_value": 3,
 		"duration_unit": "800",
@@ -1506,7 +1505,9 @@ async fn test_drug_subresources_endpoints_ok() -> Result<()> {
 	);
 	let value: Value = serde_json::from_slice(&body)?;
 	assert_eq!(value["data"]["dose_unit"], "mg");
+	assert_eq!(value["data"]["number_of_units"], "0.50000");
 	assert_eq!(value["data"]["frequency_unit"], "d");
+	assert!(value["data"].get("frequency_value").is_none());
 	assert_eq!(value["data"]["duration_unit"], "800");
 	assert_eq!(value["data"]["batch_lot_number"], "LOT-1");
 	assert_eq!(value["data"]["dosage_text"], "10 mg daily");

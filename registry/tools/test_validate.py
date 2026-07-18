@@ -9,6 +9,15 @@ import validate
 
 
 class RegistryValidatorTests(unittest.TestCase):
+    def test_drug_registry_has_no_local_frequency_value(self):
+        repo = Path(__file__).resolve().parents[2]
+        rows = json.loads(
+            (repo / "registry/sections/g-drug.json").read_text(encoding="utf-8")
+        )
+        ids = {row["id"] for row in rows}
+
+        self.assertNotIn("G.k.local.dosage.frequencyValue", ids)
+
     def write_registry(self, root: Path, row: str) -> None:
         (root / "index.json").write_text(
             '{"sections":["sections/c-safety-report.json"]}',

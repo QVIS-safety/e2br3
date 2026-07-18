@@ -91,7 +91,6 @@ async fn import_drugs(
 				.into_iter()
 				.map(|dose| g_helpers::DrugDosageImport {
 					dosage_text: dose.dosage_text,
-					frequency_value: dose.frequency_value,
 					frequency_unit: dose.frequency_unit,
 					number_of_units: dose.number_of_units,
 					start_date: dose.start_date,
@@ -240,7 +239,6 @@ async fn import_drugs(
 					dose_value: dose.dose_value,
 					dose_unit: dose.dose_unit,
 					number_of_units: dose.number_of_units,
-					frequency_value: dose.frequency_value,
 					frequency_unit: dose.frequency_unit,
 					first_administration_date: dose.start_date,
 					last_administration_date: dose.end_date,

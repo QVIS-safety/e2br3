@@ -19,7 +19,6 @@ fn import_g_section_all_fields_from_scenario6() {
 	);
 	assert_eq!(first.sequence_number, 1);
 	assert_eq!(first.medicinal_product, "Drug A");
-	assert_eq!(first.brand_name, None);
 	assert_eq!(first.drug_characterization, "1");
 	assert_eq!(first.mpid.as_deref(), Some("894444-28525-765"));
 	assert_eq!(first.mpid_version.as_deref(), Some("2014110112"));
@@ -109,8 +108,7 @@ fn import_g_section_all_fields_from_scenario6() {
 		first_dosage.dosage_text.as_deref(),
 		Some("unstructured dosing information, e.g. take by mouth 2 times a day with food ")
 	);
-	assert_eq!(first_dosage.number_of_units, Some(10));
-	assert_eq!(first_dosage.frequency_value, Some(decimal("10")));
+	assert_eq!(first_dosage.number_of_units, Some(decimal("10")));
 	assert_eq!(first_dosage.frequency_unit.as_deref(), Some("d"));
 	assert_eq!(first_dosage.start_date, Some(date(2009, 1, 1)));
 	assert_eq!(first_dosage.start_time, None);

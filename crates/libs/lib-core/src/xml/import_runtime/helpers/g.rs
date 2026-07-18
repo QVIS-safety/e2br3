@@ -26,9 +26,8 @@ pub(crate) struct DrugSubstanceImport {
 #[derive(Debug)]
 pub(crate) struct DrugDosageImport {
 	pub(crate) dosage_text: Option<String>,
-	pub(crate) frequency_value: Option<Decimal>,
 	pub(crate) frequency_unit: Option<String>,
-	pub(crate) number_of_units: Option<i32>,
+	pub(crate) number_of_units: Option<Decimal>,
 	pub(crate) start_date: Option<Date>,
 	pub(crate) start_date_null_flavor: Option<String>,
 	pub(crate) end_date: Option<Date>,

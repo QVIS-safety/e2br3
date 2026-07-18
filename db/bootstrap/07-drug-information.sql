@@ -146,11 +146,10 @@ CREATE TABLE dosage_information (
     dose_value DECIMAL(15,5),
     dose_unit VARCHAR(50),
 
-    -- G.k.4.r.2 - Number of Separate Dosages
-    number_of_units INTEGER,
+    -- G.k.4.r.2 - Number of Units in the Interval (HL7 REAL)
+    number_of_units DECIMAL(15,5),
 
-    -- G.k.4.r.3 - Dose Frequency (value + unit)
-    frequency_value DECIMAL(10,2),
+    -- G.k.4.r.3 - Definition of the Time Interval Unit
     frequency_unit VARCHAR(50),
 
     -- G.k.4.r.4 - Date/Time of First Administration

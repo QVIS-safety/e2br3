@@ -675,11 +675,10 @@ pub struct DosageInformation {
 	pub dose_value: Option<Decimal>,
 	pub dose_unit: Option<String>,
 
-	// G.k.4.r.2 - Number of Separate Dosages
-	pub number_of_units: Option<i32>,
+	// G.k.4.r.2 - Number of Units in the Interval
+	pub number_of_units: Option<Decimal>,
 
-	// G.k.4.r.3 - Dose Frequency
-	pub frequency_value: Option<Decimal>,
+	// G.k.4.r.3 - Definition of the Time Interval Unit
 	pub frequency_unit: Option<String>,
 
 	// G.k.4.r.4 - Date/Time of First Administration
@@ -731,8 +730,7 @@ pub struct DosageInformationForCreate {
 	pub sequence_number: i32,
 	pub dose_value: Option<Decimal>,
 	pub dose_unit: Option<String>,
-	pub number_of_units: Option<i32>,
-	pub frequency_value: Option<Decimal>,
+	pub number_of_units: Option<Decimal>,
 	pub frequency_unit: Option<String>,
 	#[serde(
 		default,
@@ -767,8 +765,7 @@ pub struct DosageInformationForCreate {
 pub struct DosageInformationForUpdate {
 	pub dose_value: Option<Decimal>,
 	pub dose_unit: Option<String>,
-	pub number_of_units: Option<i32>,
-	pub frequency_value: Option<Decimal>,
+	pub number_of_units: Option<Decimal>,
 	pub frequency_unit: Option<String>,
 	#[serde(
 		default,

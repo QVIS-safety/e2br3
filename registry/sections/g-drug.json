@@ -363,7 +363,7 @@
   {
     "id": "G.k.4.r.2",
     "e2br3_code": "G.k.4.r.2",
-    "label": "Number of Separate Dosages",
+    "label": "Number of Units in the Interval",
     "section": "G",
     "authority": "ICH",
     "status": "complete",
@@ -378,41 +378,16 @@
       "status": "mapped",
       "section": "drugs.dosageInformation",
       "field": "numberOfUnits",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds fieldNumber G.k.4.r.2 to drugs[index].dosageInformation[doseIndex].numberOfUnits."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DG/drug-entry/DrugDosageFields.tsx",
+      "evidence": "DrugDosageFields binds G.k.4.r.2 to dosageInformation[doseIndex].numberOfUnits."
     },
     "action": "",
     "notes": ""
   },
   {
-    "id": "G.k.local.dosage.frequencyValue",
-    "e2br3_code": "G.k.local.dosage.frequencyValue",
-    "label": "Dose Frequency Value",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DosageInformation",
-      "field": "frequency_value",
-      "file": "crates/libs/lib-core/src/model/drug.rs",
-      "evidence": "DosageInformation.frequency_value stores the numeric component paired with G.k.4.r.3."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs.dosageInformation",
-      "field": "frequencyValue",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
-    },
-    "action": "",
-    "notes": "Component row for the local split of G.k.4.r.3 frequency. Local frequency helper; the official frequency elements G.k.4.r.2 and G.k.4.r.3 are separately mapped. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
-  },
-  {
     "id": "G.k.4.r.3",
     "e2br3_code": "G.k.4.r.3",
-    "label": "Dose Frequency Unit",
+    "label": "Definition of the Time Interval Unit",
     "section": "G",
     "authority": "ICH",
     "status": "complete",
@@ -427,8 +402,8 @@
       "status": "mapped",
       "section": "drugs.dosageInformation",
       "field": "frequencyUnit",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "SectionG binds fieldNumber G.k.4.r.3 to drugs[index].dosageInformation[doseIndex].frequencyUnit."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/DG/drug-entry/DrugDosageFields.tsx",
+      "evidence": "DrugDosageFields binds G.k.4.r.3 to dosageInformation[doseIndex].frequencyUnit."
     },
     "action": "",
     "notes": ""
