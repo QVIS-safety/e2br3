@@ -152,43 +152,93 @@ pub(super) const BINDINGS: &[PortableFieldBinding] = &[
 		String,
 		["ICH.C.1.11.2.LENGTH.MAX"]
 	),
-	binding!("RP", "primarySources[].reporterTitle", "reporterTitle", String, ["ICH.C.2.r.1.1.LENGTH.MAX"], null: "primarySources[].reporterNameNullFlavor"),
-	binding!("RP", "primarySources[].reporterGivenName", "reporterGivenName", String, ["ICH.C.2.r.1.2.LENGTH.MAX"], null: "primarySources[].reporterNameNullFlavor"),
-	binding!("RP", "primarySources[].reporterMiddleName", "reporterMiddleName", String, ["ICH.C.2.r.1.3.LENGTH.MAX"], null: "primarySources[].reporterNameNullFlavor"),
-	binding!("RP", "primarySources[].reporterFamilyName", "reporterFamilyName", String, ["ICH.C.2.r.1.4.LENGTH.MAX"], null: "primarySources[].reporterNameNullFlavor"),
+	binding!("RP", "primarySources[].reporterTitle", "reporterTitle", String, ["ICH.C.2.r.1.1.LENGTH.MAX"], null: "primarySources[].reporterTitleNullFlavor"),
 	binding!(
 		"RP",
-		"primarySources[].reporterNameNullFlavor",
-		"reporterNameNullFlavor",
+		"primarySources[].reporterTitleNullFlavor",
+		"reporterTitleNullFlavor",
 		String,
-		[
-			"ICH.C.2.r.1.1.NULLFLAVOR.ALLOWED",
-			"ICH.C.2.r.1.2.NULLFLAVOR.ALLOWED",
-			"ICH.C.2.r.1.3.NULLFLAVOR.ALLOWED",
-			"ICH.C.2.r.1.4.NULLFLAVOR.ALLOWED"
-		]
+		["ICH.C.2.r.1.1.NULLFLAVOR.ALLOWED"]
 	),
-	binding!("RP", "primarySources[].reporterOrganization", "reporterOrganization", String, ["ICH.C.2.r.2.1.LENGTH.MAX"], null: "primarySources[].reporterAddressNullFlavor"),
-	binding!("RP", "primarySources[].reporterDepartment", "reporterDepartment", String, ["ICH.C.2.r.2.2.LENGTH.MAX"], null: "primarySources[].reporterAddressNullFlavor"),
-	binding!("RP", "primarySources[].reporterStreet", "reporterStreet", String, ["ICH.C.2.r.2.3.LENGTH.MAX"], null: "primarySources[].reporterAddressNullFlavor"),
-	binding!("RP", "primarySources[].reporterCity", "reporterCity", String, ["ICH.C.2.r.2.4.LENGTH.MAX"], null: "primarySources[].reporterAddressNullFlavor"),
-	binding!("RP", "primarySources[].reporterState", "reporterState", String, ["ICH.C.2.r.2.5.LENGTH.MAX"], null: "primarySources[].reporterAddressNullFlavor"),
-	binding!("RP", "primarySources[].reporterPostcode", "reporterPostcode", String, ["ICH.C.2.r.2.6.LENGTH.MAX"], null: "primarySources[].reporterAddressNullFlavor"),
-	binding!("RP", "primarySources[].reporterTelephone", "reporterTelephone", String, ["ICH.C.2.r.2.7.LENGTH.MAX"], null: "primarySources[].reporterAddressNullFlavor"),
+	binding!("RP", "primarySources[].reporterGivenName", "reporterGivenName", String, ["ICH.C.2.r.1.2.LENGTH.MAX"], null: "primarySources[].reporterGivenNameNullFlavor"),
 	binding!(
 		"RP",
-		"primarySources[].reporterAddressNullFlavor",
-		"reporterAddressNullFlavor",
+		"primarySources[].reporterGivenNameNullFlavor",
+		"reporterGivenNameNullFlavor",
 		String,
-		[
-			"ICH.C.2.r.2.1.NULLFLAVOR.ALLOWED",
-			"ICH.C.2.r.2.2.NULLFLAVOR.ALLOWED",
-			"ICH.C.2.r.2.3.NULLFLAVOR.ALLOWED",
-			"ICH.C.2.r.2.4.NULLFLAVOR.ALLOWED",
-			"ICH.C.2.r.2.5.NULLFLAVOR.ALLOWED",
-			"ICH.C.2.r.2.6.NULLFLAVOR.ALLOWED",
-			"ICH.C.2.r.2.7.NULLFLAVOR.ALLOWED"
-		]
+		["ICH.C.2.r.1.2.NULLFLAVOR.ALLOWED"]
+	),
+	binding!("RP", "primarySources[].reporterMiddleName", "reporterMiddleName", String, ["ICH.C.2.r.1.3.LENGTH.MAX"], null: "primarySources[].reporterMiddleNameNullFlavor"),
+	binding!(
+		"RP",
+		"primarySources[].reporterMiddleNameNullFlavor",
+		"reporterMiddleNameNullFlavor",
+		String,
+		["ICH.C.2.r.1.3.NULLFLAVOR.ALLOWED"]
+	),
+	binding!("RP", "primarySources[].reporterFamilyName", "reporterFamilyName", String, ["ICH.C.2.r.1.4.LENGTH.MAX"], null: "primarySources[].reporterFamilyNameNullFlavor"),
+	binding!(
+		"RP",
+		"primarySources[].reporterFamilyNameNullFlavor",
+		"reporterFamilyNameNullFlavor",
+		String,
+		["ICH.C.2.r.1.4.NULLFLAVOR.ALLOWED"]
+	),
+	binding!("RP", "primarySources[].reporterOrganization", "reporterOrganization", String, ["ICH.C.2.r.2.1.LENGTH.MAX"], null: "primarySources[].reporterOrganizationNullFlavor"),
+	binding!(
+		"RP",
+		"primarySources[].reporterOrganizationNullFlavor",
+		"reporterOrganizationNullFlavor",
+		String,
+		["ICH.C.2.r.2.1.NULLFLAVOR.ALLOWED"]
+	),
+	binding!("RP", "primarySources[].reporterDepartment", "reporterDepartment", String, ["ICH.C.2.r.2.2.LENGTH.MAX"], null: "primarySources[].reporterDepartmentNullFlavor"),
+	binding!(
+		"RP",
+		"primarySources[].reporterDepartmentNullFlavor",
+		"reporterDepartmentNullFlavor",
+		String,
+		["ICH.C.2.r.2.2.NULLFLAVOR.ALLOWED"]
+	),
+	binding!("RP", "primarySources[].reporterStreet", "reporterStreet", String, ["ICH.C.2.r.2.3.LENGTH.MAX"], null: "primarySources[].reporterStreetNullFlavor"),
+	binding!(
+		"RP",
+		"primarySources[].reporterStreetNullFlavor",
+		"reporterStreetNullFlavor",
+		String,
+		["ICH.C.2.r.2.3.NULLFLAVOR.ALLOWED"]
+	),
+	binding!("RP", "primarySources[].reporterCity", "reporterCity", String, ["ICH.C.2.r.2.4.LENGTH.MAX"], null: "primarySources[].reporterCityNullFlavor"),
+	binding!(
+		"RP",
+		"primarySources[].reporterCityNullFlavor",
+		"reporterCityNullFlavor",
+		String,
+		["ICH.C.2.r.2.4.NULLFLAVOR.ALLOWED"]
+	),
+	binding!("RP", "primarySources[].reporterState", "reporterState", String, ["ICH.C.2.r.2.5.LENGTH.MAX"], null: "primarySources[].reporterStateNullFlavor"),
+	binding!(
+		"RP",
+		"primarySources[].reporterStateNullFlavor",
+		"reporterStateNullFlavor",
+		String,
+		["ICH.C.2.r.2.5.NULLFLAVOR.ALLOWED"]
+	),
+	binding!("RP", "primarySources[].reporterPostcode", "reporterPostcode", String, ["ICH.C.2.r.2.6.LENGTH.MAX"], null: "primarySources[].reporterPostcodeNullFlavor"),
+	binding!(
+		"RP",
+		"primarySources[].reporterPostcodeNullFlavor",
+		"reporterPostcodeNullFlavor",
+		String,
+		["ICH.C.2.r.2.6.NULLFLAVOR.ALLOWED"]
+	),
+	binding!("RP", "primarySources[].reporterTelephone", "reporterTelephone", String, ["ICH.C.2.r.2.7.LENGTH.MAX"], null: "primarySources[].reporterTelephoneNullFlavor"),
+	binding!(
+		"RP",
+		"primarySources[].reporterTelephoneNullFlavor",
+		"reporterTelephoneNullFlavor",
+		String,
+		["ICH.C.2.r.2.7.NULLFLAVOR.ALLOWED"]
 	),
 	binding!("RP", "primarySources[].reporterCountry", "reporterCountry", String, ["ICH.C.2.r.3.LENGTH.MAX"], null: "primarySources[].reporterCountryNullFlavor"),
 	binding!(

@@ -360,9 +360,9 @@
     "notes": ""
   },
   {
-    "id": "C.2.r.local.reporterNameNullFlavor",
-    "e2br3_code": "C.2.r.local.reporterNameNullFlavor",
-    "label": "Reporter Name NullFlavor",
+    "id": "C.2.r.local.reporterTitleNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterTitleNullFlavor",
+    "label": "Reporter Title NullFlavor",
     "section": "C",
     "authority": "ICH",
     "status": "complete",
@@ -370,24 +370,24 @@
     "backend": {
       "status": "mapped",
       "model": "ReporterPresave",
-      "field": "reporter_name_null_flavor",
+      "field": "reporter_title_null_flavor",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ReporterPresave.reporter_name_null_flavor stores the reporter presave value."
+      "evidence": "ReporterPresave.reporter_title_null_flavor stores the C.2.r.1.1 nullFlavor."
     },
     "frontend": {
       "status": "mapped",
       "section": "reporter",
-      "field": "reporterNameNullFlavor",
+      "field": "reporterTitleNullFlavor",
       "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx",
-      "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterNameNullFlavor."
+      "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterTitleNullFlavor."
     },
     "action": "",
-    "notes": ""
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.1.1."
   },
   {
-    "id": "C.2.r.local.reporterAddressNullFlavor",
-    "e2br3_code": "C.2.r.local.reporterAddressNullFlavor",
-    "label": "Reporter Address NullFlavor",
+    "id": "C.2.r.local.reporterGivenNameNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterGivenNameNullFlavor",
+    "label": "Reporter Given Name NullFlavor",
     "section": "C",
     "authority": "ICH",
     "status": "complete",
@@ -395,19 +395,19 @@
     "backend": {
       "status": "mapped",
       "model": "ReporterPresave",
-      "field": "reporter_address_null_flavor",
+      "field": "reporter_given_name_null_flavor",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ReporterPresave.reporter_address_null_flavor stores the reporter presave value."
+      "evidence": "ReporterPresave.reporter_given_name_null_flavor stores the C.2.r.1.2 nullFlavor."
     },
     "frontend": {
       "status": "mapped",
       "section": "reporter",
-      "field": "reporterAddressNullFlavor",
+      "field": "reporterGivenNameNullFlavor",
       "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx",
-      "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterAddressNullFlavor."
+      "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterGivenNameNullFlavor."
     },
     "action": "",
-    "notes": ""
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.1.2."
   },
   {
     "id": "C.2.r.local.reporterCountryNullFlavor",
@@ -458,5 +458,122 @@
     },
     "action": "",
     "notes": ""
+  },
+  {
+    "id": "C.2.r.local.reporterMiddleNameNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterMiddleNameNullFlavor",
+    "label": "Reporter Middle Name NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "ReporterPresave", "field": "reporter_middle_name_null_flavor", "file": "crates/libs/lib-core/src/model/presave.rs", "evidence": "ReporterPresave.reporter_middle_name_null_flavor stores the C.2.r.1.3 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "reporter", "field": "reporterMiddleNameNullFlavor", "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx", "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterMiddleNameNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.1.3."
+  },
+  {
+    "id": "C.2.r.local.reporterFamilyNameNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterFamilyNameNullFlavor",
+    "label": "Reporter Family Name NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "ReporterPresave", "field": "reporter_family_name_null_flavor", "file": "crates/libs/lib-core/src/model/presave.rs", "evidence": "ReporterPresave.reporter_family_name_null_flavor stores the C.2.r.1.4 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "reporter", "field": "reporterFamilyNameNullFlavor", "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx", "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterFamilyNameNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.1.4."
+  },
+  {
+    "id": "C.2.r.local.reporterOrganizationNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterOrganizationNullFlavor",
+    "label": "Reporter Organisation NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "ReporterPresave", "field": "organization_null_flavor", "file": "crates/libs/lib-core/src/model/presave.rs", "evidence": "ReporterPresave.organization_null_flavor stores the C.2.r.2.1 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "reporter", "field": "reporterOrganizationNullFlavor", "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx", "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterOrganizationNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.1."
+  },
+  {
+    "id": "C.2.r.local.reporterDepartmentNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterDepartmentNullFlavor",
+    "label": "Reporter Department NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "ReporterPresave", "field": "department_null_flavor", "file": "crates/libs/lib-core/src/model/presave.rs", "evidence": "ReporterPresave.department_null_flavor stores the C.2.r.2.2 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "reporter", "field": "reporterDepartmentNullFlavor", "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx", "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterDepartmentNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.2."
+  },
+  {
+    "id": "C.2.r.local.reporterStreetNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterStreetNullFlavor",
+    "label": "Reporter Street NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "ReporterPresave", "field": "street_null_flavor", "file": "crates/libs/lib-core/src/model/presave.rs", "evidence": "ReporterPresave.street_null_flavor stores the C.2.r.2.3 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "reporter", "field": "reporterStreetNullFlavor", "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx", "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterStreetNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.3."
+  },
+  {
+    "id": "C.2.r.local.reporterCityNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterCityNullFlavor",
+    "label": "Reporter City NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "ReporterPresave", "field": "city_null_flavor", "file": "crates/libs/lib-core/src/model/presave.rs", "evidence": "ReporterPresave.city_null_flavor stores the C.2.r.2.4 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "reporter", "field": "reporterCityNullFlavor", "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx", "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterCityNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.4."
+  },
+  {
+    "id": "C.2.r.local.reporterStateNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterStateNullFlavor",
+    "label": "Reporter State NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "ReporterPresave", "field": "state_null_flavor", "file": "crates/libs/lib-core/src/model/presave.rs", "evidence": "ReporterPresave.state_null_flavor stores the C.2.r.2.5 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "reporter", "field": "reporterStateNullFlavor", "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx", "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterStateNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.5."
+  },
+  {
+    "id": "C.2.r.local.reporterPostcodeNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterPostcodeNullFlavor",
+    "label": "Reporter Postcode NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "ReporterPresave", "field": "postcode_null_flavor", "file": "crates/libs/lib-core/src/model/presave.rs", "evidence": "ReporterPresave.postcode_null_flavor stores the C.2.r.2.6 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "reporter", "field": "reporterPostcodeNullFlavor", "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx", "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterPostcodeNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.6."
+  },
+  {
+    "id": "C.2.r.local.reporterTelephoneNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterTelephoneNullFlavor",
+    "label": "Reporter Telephone NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "ReporterPresave", "field": "telephone_null_flavor", "file": "crates/libs/lib-core/src/model/presave.rs", "evidence": "ReporterPresave.telephone_null_flavor stores the C.2.r.2.7 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "reporter", "field": "reporterTelephoneNullFlavor", "file": "../frontend/E2BR3-frontend/components/presave/ReporterForm.tsx", "evidence": "ReporterForm and ReporterPresaveData bind reporter.reporterTelephoneNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.7."
   }
 ]

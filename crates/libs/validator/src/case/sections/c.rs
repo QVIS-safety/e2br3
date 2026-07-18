@@ -92,6 +92,23 @@ struct CIchPresenceRuleView {
 	facts: RuleFacts,
 }
 
+struct CIchNullablePresenceRuleView {
+	path: String,
+	value: Option<String>,
+	null_flavor: Option<String>,
+	facts: RuleFacts,
+}
+
+const C_ICH_C2R21_RULE: &[CatalogValueRule<CIchNullablePresenceRuleView>] =
+	&[CatalogValueRule {
+		code: "ICH.C.2.r.2.1.REQUIRED",
+		path: |item| item.path.clone(),
+		value: |item| {
+			RuleValue::borrowed(item.value.as_deref(), item.null_flavor.as_deref())
+		},
+		facts: |item| item.facts,
+	}];
+
 macro_rules! c_ich_presence_rule {
 	($name:ident, $code:literal) => {
 		const $name: &[CatalogValueRule<CIchPresenceRuleView>] =
@@ -112,7 +129,6 @@ c_ich_presence_rule!(C_ICH_C14_RULE, "ICH.C.1.4.REQUIRED");
 c_ich_presence_rule!(C_ICH_C15_RULE, "ICH.C.1.5.REQUIRED");
 c_ich_presence_rule!(C_ICH_C17_RULE, "ICH.C.1.7.REQUIRED");
 c_ich_presence_rule!(C_ICH_C1112_RULE, "ICH.C.1.11.2.REQUIRED");
-c_ich_presence_rule!(C_ICH_C2R21_RULE, "ICH.C.2.r.2.1.REQUIRED");
 c_ich_presence_rule!(C_ICH_C2R4_RULE, "ICH.C.2.r.4.REQUIRED");
 c_ich_presence_rule!(C_ICH_C2R5_RULE, "ICH.C.2.r.5.REQUIRED");
 c_ich_presence_rule!(C_ICH_C31_RULE, "ICH.C.3.1.REQUIRED");
@@ -129,6 +145,23 @@ fn eval_c_ich_presence(
 	let view = CIchPresenceRuleView {
 		path: path.into(),
 		value,
+		facts,
+	};
+	eval_catalog_values(issues, std::slice::from_ref(&view), rules);
+}
+
+fn eval_c_ich_nullable_presence(
+	issues: &mut Vec<ValidationIssue>,
+	path: impl Into<String>,
+	value: Option<String>,
+	null_flavor: Option<String>,
+	facts: RuleFacts,
+	rules: &[CatalogValueRule<CIchNullablePresenceRuleView>],
+) {
+	let view = CIchNullablePresenceRuleView {
+		path: path.into(),
+		value,
+		null_flavor,
 		facts,
 	};
 	eval_catalog_values(issues, std::slice::from_ref(&view), rules);
@@ -1097,19 +1130,31 @@ pub(crate) fn collect_ich_issues(
 	if report_type_is_study {
 		eval_indexed(issues, &validation_ctx.studies, C_STUDY_RULES);
 	}
-	let reporter_organization =
-		validation_ctx.primary_sources.iter().find_map(|source| {
-			source
+	let (reporter_organization, reporter_organization_null_flavor) = validation_ctx
+		.primary_sources
+		.iter()
+		.find_map(|source| {
+			let value = source
 				.organization
 				.as_deref()
 				.map(str::trim)
 				.filter(|value| !value.is_empty())
-				.map(str::to_string)
-		});
-	eval_c_ich_presence(
+				.map(str::to_string);
+			let null_flavor = source
+				.organization_null_flavor
+				.as_deref()
+				.map(str::trim)
+				.filter(|value| !value.is_empty())
+				.map(str::to_string);
+			(value.is_some() || null_flavor.is_some())
+				.then_some((value, null_flavor))
+		})
+		.unwrap_or((None, None));
+	eval_c_ich_nullable_presence(
 		issues,
 		"primarySources.0.reporterOrganization",
 		reporter_organization,
+		reporter_organization_null_flavor,
 		RuleFacts {
 			ich_report_type_is_study: Some(report_type_is_study),
 			..RuleFacts::default()
@@ -1892,18 +1937,27 @@ mod golden_c1_value_tests {
 			source_reporter_presave_id: None,
 			sequence_number: 0,
 			reporter_title: None,
+			reporter_title_null_flavor: None,
 			reporter_given_name: None,
+			reporter_given_name_null_flavor: None,
 			reporter_middle_name: None,
+			reporter_middle_name_null_flavor: None,
 			reporter_family_name: None,
-			reporter_name_null_flavor: None,
+			reporter_family_name_null_flavor: None,
 			organization: None,
+			organization_null_flavor: None,
 			department: None,
+			department_null_flavor: None,
 			street: None,
+			street_null_flavor: None,
 			city: None,
+			city_null_flavor: None,
 			state: None,
+			state_null_flavor: None,
 			postcode: None,
+			postcode_null_flavor: None,
 			telephone: None,
-			reporter_address_null_flavor: None,
+			telephone_null_flavor: None,
 			country_code: None,
 			country_code_null_flavor: None,
 			email: None,
@@ -2149,6 +2203,16 @@ mod golden_c1_value_tests {
 		let mut ctx = ctx_with(study_report());
 		ctx.studies = vec![study(Some("1"), Some("SPONSOR-1"))];
 		assert_eq!(filtered(&ctx, STUDY_CODES), Vec::new());
+	}
+
+	#[test]
+	fn study_reporter_organization_null_flavor_satisfies_required_rule() {
+		let mut source = primary_source();
+		source.organization_null_flavor = Some("NASK".to_string());
+		let mut ctx = ctx_with(study_report());
+		ctx.primary_sources = vec![source];
+
+		assert_eq!(filtered(&ctx, &["ICH.C.2.r.2.1.REQUIRED"]), Vec::new());
 	}
 
 	#[test]

@@ -276,20 +276,29 @@ CREATE TABLE primary_sources (
 
     -- C.2.r.1 - Reporter's Name
     reporter_title VARCHAR(50),
+    reporter_title_null_flavor VARCHAR(4) CHECK (reporter_title_null_flavor IN ('MSK', 'UNK', 'ASKU', 'NASK')),
     reporter_given_name VARCHAR(60),
+    reporter_given_name_null_flavor VARCHAR(4) CHECK (reporter_given_name_null_flavor IN ('MSK', 'ASKU', 'NASK')),
     reporter_middle_name VARCHAR(60),
+    reporter_middle_name_null_flavor VARCHAR(4) CHECK (reporter_middle_name_null_flavor IN ('MSK', 'ASKU', 'NASK')),
     reporter_family_name VARCHAR(60),
-    reporter_name_null_flavor VARCHAR(4),
+    reporter_family_name_null_flavor VARCHAR(4) CHECK (reporter_family_name_null_flavor IN ('MSK', 'ASKU', 'NASK')),
 
     -- C.2.r.2 - Reporter's Address and Contact
     organization VARCHAR(60),
+    organization_null_flavor VARCHAR(4) CHECK (organization_null_flavor IN ('MSK', 'ASKU', 'NASK')),
     department VARCHAR(60),
+    department_null_flavor VARCHAR(4) CHECK (department_null_flavor IN ('MSK', 'ASKU', 'NASK')),
     street VARCHAR(100),
+    street_null_flavor VARCHAR(4) CHECK (street_null_flavor IN ('MSK', 'ASKU', 'NASK')),
     city VARCHAR(35),
+    city_null_flavor VARCHAR(4) CHECK (city_null_flavor IN ('MSK', 'ASKU', 'NASK')),
     state VARCHAR(40),
+    state_null_flavor VARCHAR(4) CHECK (state_null_flavor IN ('MSK', 'ASKU', 'NASK')),
     postcode VARCHAR(15),
+    postcode_null_flavor VARCHAR(4) CHECK (postcode_null_flavor IN ('MSK', 'ASKU', 'NASK')),
     telephone VARCHAR(33),
-    reporter_address_null_flavor VARCHAR(4),
+    telephone_null_flavor VARCHAR(4) CHECK (telephone_null_flavor IN ('MSK', 'ASKU', 'NASK')),
 
     -- C.2.r.3 - Country Code
     country_code VARCHAR(2),  -- ISO 3166-1 alpha-2

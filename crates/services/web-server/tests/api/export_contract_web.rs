@@ -468,7 +468,6 @@ async fn seed_cioms_case_data(
 			reporter_given_name: Some("Mina".to_string()),
 			reporter_middle_name: None,
 			reporter_family_name: Some("Kim".to_string()),
-			reporter_name_null_flavor: None,
 			organization: Some("Seoul General Hospital".to_string()),
 			department: None,
 			street: None,
@@ -476,7 +475,6 @@ async fn seed_cioms_case_data(
 			state: None,
 			postcode: None,
 			telephone: None,
-			reporter_address_null_flavor: None,
 			country_code_null_flavor: None,
 			email_null_flavor: None,
 			country_code: Some("KR".to_string()),
@@ -485,6 +483,7 @@ async fn seed_cioms_case_data(
 			qualification_null_flavor: None,
 			qualification_kr1: None,
 			primary_source_regulatory: Some("1".to_string()),
+			..Default::default()
 		},
 	)
 	.await?;

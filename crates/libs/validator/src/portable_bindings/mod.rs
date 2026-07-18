@@ -174,6 +174,75 @@ mod portable_bindings_tests {
 	}
 
 	#[test]
+	fn reporter_elements_bind_only_to_their_own_null_flavor_companions() {
+		for (value_path, null_path, rule_code) in [
+			(
+				"primarySources[].reporterTitle",
+				"primarySources[].reporterTitleNullFlavor",
+				"ICH.C.2.r.1.1.NULLFLAVOR.ALLOWED",
+			),
+			(
+				"primarySources[].reporterGivenName",
+				"primarySources[].reporterGivenNameNullFlavor",
+				"ICH.C.2.r.1.2.NULLFLAVOR.ALLOWED",
+			),
+			(
+				"primarySources[].reporterMiddleName",
+				"primarySources[].reporterMiddleNameNullFlavor",
+				"ICH.C.2.r.1.3.NULLFLAVOR.ALLOWED",
+			),
+			(
+				"primarySources[].reporterFamilyName",
+				"primarySources[].reporterFamilyNameNullFlavor",
+				"ICH.C.2.r.1.4.NULLFLAVOR.ALLOWED",
+			),
+			(
+				"primarySources[].reporterOrganization",
+				"primarySources[].reporterOrganizationNullFlavor",
+				"ICH.C.2.r.2.1.NULLFLAVOR.ALLOWED",
+			),
+			(
+				"primarySources[].reporterDepartment",
+				"primarySources[].reporterDepartmentNullFlavor",
+				"ICH.C.2.r.2.2.NULLFLAVOR.ALLOWED",
+			),
+			(
+				"primarySources[].reporterStreet",
+				"primarySources[].reporterStreetNullFlavor",
+				"ICH.C.2.r.2.3.NULLFLAVOR.ALLOWED",
+			),
+			(
+				"primarySources[].reporterCity",
+				"primarySources[].reporterCityNullFlavor",
+				"ICH.C.2.r.2.4.NULLFLAVOR.ALLOWED",
+			),
+			(
+				"primarySources[].reporterState",
+				"primarySources[].reporterStateNullFlavor",
+				"ICH.C.2.r.2.5.NULLFLAVOR.ALLOWED",
+			),
+			(
+				"primarySources[].reporterPostcode",
+				"primarySources[].reporterPostcodeNullFlavor",
+				"ICH.C.2.r.2.6.NULLFLAVOR.ALLOWED",
+			),
+			(
+				"primarySources[].reporterTelephone",
+				"primarySources[].reporterTelephoneNullFlavor",
+				"ICH.C.2.r.2.7.NULLFLAVOR.ALLOWED",
+			),
+		] {
+			let value_binding = bindings_for_section("RP")
+				.find(|binding| binding.frontend_path == value_path)
+				.unwrap_or_else(|| {
+					panic!("missing reporter value binding {value_path}")
+				});
+			assert_eq!(value_binding.null_flavor_path, Some(null_path));
+			assert_binding("RP", null_path, rule_code);
+		}
+	}
+
+	#[test]
 	fn d_bindings_cover_direct_and_nested_editor_paths() {
 		assert_binding(
 			"DM",

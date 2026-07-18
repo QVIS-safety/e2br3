@@ -320,20 +320,29 @@ pub struct PrimarySource {
 
 	// C.2.r.1 - Reporter's Name
 	pub reporter_title: Option<String>,
+	pub reporter_title_null_flavor: Option<String>,
 	pub reporter_given_name: Option<String>,
+	pub reporter_given_name_null_flavor: Option<String>,
 	pub reporter_middle_name: Option<String>,
+	pub reporter_middle_name_null_flavor: Option<String>,
 	pub reporter_family_name: Option<String>,
-	pub reporter_name_null_flavor: Option<String>,
+	pub reporter_family_name_null_flavor: Option<String>,
 
 	// C.2.r.2 - Reporter's Address
 	pub organization: Option<String>,
+	pub organization_null_flavor: Option<String>,
 	pub department: Option<String>,
+	pub department_null_flavor: Option<String>,
 	pub street: Option<String>,
+	pub street_null_flavor: Option<String>,
 	pub city: Option<String>,
+	pub city_null_flavor: Option<String>,
 	pub state: Option<String>,
+	pub state_null_flavor: Option<String>,
 	pub postcode: Option<String>,
+	pub postcode_null_flavor: Option<String>,
 	pub telephone: Option<String>,
-	pub reporter_address_null_flavor: Option<String>,
+	pub telephone_null_flavor: Option<String>,
 
 	// C.2.r.3 - Country Code
 	pub country_code: Option<String>,
@@ -359,24 +368,33 @@ pub struct PrimarySource {
 	pub updated_by: Option<Uuid>,
 }
 
-#[derive(Fields, Deserialize)]
+#[derive(Default, Fields, Deserialize)]
 pub struct PrimarySourceForCreate {
 	pub case_id: Uuid,
 	pub source_reporter_presave_id: Option<Uuid>,
 	pub sequence_number: i32,
 	pub reporter_title: Option<String>,
+	pub reporter_title_null_flavor: Option<String>,
 	pub reporter_given_name: Option<String>,
+	pub reporter_given_name_null_flavor: Option<String>,
 	pub reporter_middle_name: Option<String>,
+	pub reporter_middle_name_null_flavor: Option<String>,
 	pub reporter_family_name: Option<String>,
-	pub reporter_name_null_flavor: Option<String>,
+	pub reporter_family_name_null_flavor: Option<String>,
 	pub organization: Option<String>,
+	pub organization_null_flavor: Option<String>,
 	pub department: Option<String>,
+	pub department_null_flavor: Option<String>,
 	pub street: Option<String>,
+	pub street_null_flavor: Option<String>,
 	pub city: Option<String>,
+	pub city_null_flavor: Option<String>,
 	pub state: Option<String>,
+	pub state_null_flavor: Option<String>,
 	pub postcode: Option<String>,
+	pub postcode_null_flavor: Option<String>,
 	pub telephone: Option<String>,
-	pub reporter_address_null_flavor: Option<String>,
+	pub telephone_null_flavor: Option<String>,
 	pub country_code: Option<String>,
 	pub country_code_null_flavor: Option<String>,
 	pub email: Option<String>,
@@ -387,22 +405,31 @@ pub struct PrimarySourceForCreate {
 	pub primary_source_regulatory: Option<String>,
 }
 
-#[derive(Fields, Deserialize)]
+#[derive(Default, Fields, Deserialize)]
 pub struct PrimarySourceForUpdate {
 	pub source_reporter_presave_id: Option<Uuid>,
 	pub reporter_title: Option<String>,
+	pub reporter_title_null_flavor: Option<String>,
 	pub reporter_given_name: Option<String>,
+	pub reporter_given_name_null_flavor: Option<String>,
 	pub reporter_middle_name: Option<String>,
+	pub reporter_middle_name_null_flavor: Option<String>,
 	pub reporter_family_name: Option<String>,
-	pub reporter_name_null_flavor: Option<String>,
+	pub reporter_family_name_null_flavor: Option<String>,
 	pub organization: Option<String>,
+	pub organization_null_flavor: Option<String>,
 	pub department: Option<String>,
+	pub department_null_flavor: Option<String>,
 	pub street: Option<String>,
+	pub street_null_flavor: Option<String>,
 	pub city: Option<String>,
+	pub city_null_flavor: Option<String>,
 	pub state: Option<String>,
+	pub state_null_flavor: Option<String>,
 	pub postcode: Option<String>,
+	pub postcode_null_flavor: Option<String>,
 	pub telephone: Option<String>,
-	pub reporter_address_null_flavor: Option<String>,
+	pub telephone_null_flavor: Option<String>,
 	pub country_code: Option<String>,
 	pub country_code_null_flavor: Option<String>,
 	pub email: Option<String>,
@@ -1014,8 +1041,17 @@ impl PrimarySourceBmc {
 		data: PrimarySourceForCreate,
 	) -> Result<Uuid> {
 		Self::validate_null_flavors(
-			data.reporter_name_null_flavor.as_deref(),
-			data.reporter_address_null_flavor.as_deref(),
+			data.reporter_title_null_flavor.as_deref(),
+			data.reporter_given_name_null_flavor.as_deref(),
+			data.reporter_middle_name_null_flavor.as_deref(),
+			data.reporter_family_name_null_flavor.as_deref(),
+			data.organization_null_flavor.as_deref(),
+			data.department_null_flavor.as_deref(),
+			data.street_null_flavor.as_deref(),
+			data.city_null_flavor.as_deref(),
+			data.state_null_flavor.as_deref(),
+			data.postcode_null_flavor.as_deref(),
+			data.telephone_null_flavor.as_deref(),
 			data.country_code_null_flavor.as_deref(),
 			data.email_null_flavor.as_deref(),
 			data.qualification_null_flavor.as_deref(),
@@ -1052,8 +1088,17 @@ impl PrimarySourceBmc {
 		data: PrimarySourceForUpdate,
 	) -> Result<()> {
 		Self::validate_null_flavors(
-			data.reporter_name_null_flavor.as_deref(),
-			data.reporter_address_null_flavor.as_deref(),
+			data.reporter_title_null_flavor.as_deref(),
+			data.reporter_given_name_null_flavor.as_deref(),
+			data.reporter_middle_name_null_flavor.as_deref(),
+			data.reporter_family_name_null_flavor.as_deref(),
+			data.organization_null_flavor.as_deref(),
+			data.department_null_flavor.as_deref(),
+			data.street_null_flavor.as_deref(),
+			data.city_null_flavor.as_deref(),
+			data.state_null_flavor.as_deref(),
+			data.postcode_null_flavor.as_deref(),
+			data.telephone_null_flavor.as_deref(),
 			data.country_code_null_flavor.as_deref(),
 			data.email_null_flavor.as_deref(),
 			data.qualification_null_flavor.as_deref(),
@@ -1070,17 +1115,29 @@ impl PrimarySourceBmc {
 	}
 
 	fn validate_null_flavors(
-		reporter_name_null_flavor: Option<&str>,
-		reporter_address_null_flavor: Option<&str>,
+		reporter_title_null_flavor: Option<&str>,
+		reporter_given_name_null_flavor: Option<&str>,
+		reporter_middle_name_null_flavor: Option<&str>,
+		reporter_family_name_null_flavor: Option<&str>,
+		organization_null_flavor: Option<&str>,
+		department_null_flavor: Option<&str>,
+		street_null_flavor: Option<&str>,
+		city_null_flavor: Option<&str>,
+		state_null_flavor: Option<&str>,
+		postcode_null_flavor: Option<&str>,
+		telephone_null_flavor: Option<&str>,
 		country_code_null_flavor: Option<&str>,
 		email_null_flavor: Option<&str>,
 		qualification_null_flavor: Option<&str>,
 	) -> Result<()> {
-		// C.2.r.1 name / C.2.r.2 address and FDA.C.2.r.2.8 email share the
-		// masked/asked-but-unknown/not-asked set; C.2.r.3 country additionally
-		// permits UNK per the ICH dictionary null_flavors.
-		const NAME_ADDRESS_EMAIL_ALLOWED: &[NullFlavor] =
+		const ELEMENT_EMAIL_ALLOWED: &[NullFlavor] =
 			&[NullFlavor::MSK, NullFlavor::ASKU, NullFlavor::NASK];
+		const TITLE_ALLOWED: &[NullFlavor] = &[
+			NullFlavor::MSK,
+			NullFlavor::UNK,
+			NullFlavor::ASKU,
+			NullFlavor::NASK,
+		];
 		const COUNTRY_ALLOWED: &[NullFlavor] = &[
 			NullFlavor::MSK,
 			NullFlavor::UNK,
@@ -1090,15 +1147,37 @@ impl PrimarySourceBmc {
 		const QUALIFICATION_ALLOWED: &[NullFlavor] = &[NullFlavor::UNK];
 
 		validate_primary_source_null_flavor_set(
-			"reporter_name_null_flavor",
-			reporter_name_null_flavor,
-			NAME_ADDRESS_EMAIL_ALLOWED,
+			"reporter_title_null_flavor",
+			reporter_title_null_flavor,
+			TITLE_ALLOWED,
 		)?;
-		validate_primary_source_null_flavor_set(
-			"reporter_address_null_flavor",
-			reporter_address_null_flavor,
-			NAME_ADDRESS_EMAIL_ALLOWED,
-		)?;
+		for (field, value) in [
+			(
+				"reporter_given_name_null_flavor",
+				reporter_given_name_null_flavor,
+			),
+			(
+				"reporter_middle_name_null_flavor",
+				reporter_middle_name_null_flavor,
+			),
+			(
+				"reporter_family_name_null_flavor",
+				reporter_family_name_null_flavor,
+			),
+			("organization_null_flavor", organization_null_flavor),
+			("department_null_flavor", department_null_flavor),
+			("street_null_flavor", street_null_flavor),
+			("city_null_flavor", city_null_flavor),
+			("state_null_flavor", state_null_flavor),
+			("postcode_null_flavor", postcode_null_flavor),
+			("telephone_null_flavor", telephone_null_flavor),
+		] {
+			validate_primary_source_null_flavor_set(
+				field,
+				value,
+				ELEMENT_EMAIL_ALLOWED,
+			)?;
+		}
 		validate_primary_source_null_flavor_set(
 			"country_code_null_flavor",
 			country_code_null_flavor,
@@ -1107,7 +1186,7 @@ impl PrimarySourceBmc {
 		validate_primary_source_null_flavor_set(
 			"email_null_flavor",
 			email_null_flavor,
-			NAME_ADDRESS_EMAIL_ALLOWED,
+			ELEMENT_EMAIL_ALLOWED,
 		)?;
 		validate_primary_source_null_flavor_set(
 			"qualification_null_flavor",

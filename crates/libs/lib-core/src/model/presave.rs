@@ -1516,25 +1516,32 @@ pub struct ReporterPresave {
 	pub organization_id: Uuid,
 	pub deleted: bool,
 	pub reporter_title: Option<String>,
+	pub reporter_title_null_flavor: Option<String>,
 	pub reporter_given_name: Option<String>,
+	pub reporter_given_name_null_flavor: Option<String>,
 	pub reporter_middle_name: Option<String>,
+	pub reporter_middle_name_null_flavor: Option<String>,
 	pub reporter_family_name: Option<String>,
+	pub reporter_family_name_null_flavor: Option<String>,
 	pub organization: Option<String>,
+	pub organization_null_flavor: Option<String>,
 	pub department: Option<String>,
+	pub department_null_flavor: Option<String>,
 	pub street: Option<String>,
+	pub street_null_flavor: Option<String>,
 	pub city: Option<String>,
+	pub city_null_flavor: Option<String>,
 	pub state: Option<String>,
+	pub state_null_flavor: Option<String>,
 	pub postcode: Option<String>,
+	pub postcode_null_flavor: Option<String>,
 	pub telephone: Option<String>,
+	pub telephone_null_flavor: Option<String>,
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
 	// MFDS.C.2.r.4.KR.1 - Other health professional type
 	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
-	// nullFlavor for name (C.2.r.1) and address/telephone (C.2.r.2): MSK/ASKU/NASK;
-	// for qualification (C.2.r.4): UNK.
-	pub reporter_name_null_flavor: Option<String>,
-	pub reporter_address_null_flavor: Option<String>,
 	pub country_code_null_flavor: Option<String>,
 	pub qualification_null_flavor: Option<String>,
 	pub created_at: OffsetDateTime,
@@ -1543,26 +1550,35 @@ pub struct ReporterPresave {
 	pub updated_by: Option<Uuid>,
 }
 
-#[derive(Deserialize)]
+#[derive(Default, Deserialize)]
 pub struct ReporterPresaveForCreate {
 	pub reporter_title: Option<String>,
+	pub reporter_title_null_flavor: Option<String>,
 	pub reporter_given_name: Option<String>,
+	pub reporter_given_name_null_flavor: Option<String>,
 	pub reporter_middle_name: Option<String>,
+	pub reporter_middle_name_null_flavor: Option<String>,
 	pub reporter_family_name: Option<String>,
+	pub reporter_family_name_null_flavor: Option<String>,
 	pub organization: Option<String>,
+	pub organization_null_flavor: Option<String>,
 	pub department: Option<String>,
+	pub department_null_flavor: Option<String>,
 	pub street: Option<String>,
+	pub street_null_flavor: Option<String>,
 	pub city: Option<String>,
+	pub city_null_flavor: Option<String>,
 	pub state: Option<String>,
+	pub state_null_flavor: Option<String>,
 	pub postcode: Option<String>,
+	pub postcode_null_flavor: Option<String>,
 	pub telephone: Option<String>,
+	pub telephone_null_flavor: Option<String>,
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
 	// MFDS.C.2.r.4.KR.1 - Other health professional type
 	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
-	pub reporter_name_null_flavor: Option<String>,
-	pub reporter_address_null_flavor: Option<String>,
 	pub country_code_null_flavor: Option<String>,
 	pub qualification_null_flavor: Option<String>,
 }
@@ -1571,22 +1587,31 @@ pub struct ReporterPresaveForCreate {
 struct ReporterPresaveForInsert {
 	organization_id: Uuid,
 	reporter_title: Option<String>,
+	reporter_title_null_flavor: Option<String>,
 	reporter_given_name: Option<String>,
+	reporter_given_name_null_flavor: Option<String>,
 	reporter_middle_name: Option<String>,
+	reporter_middle_name_null_flavor: Option<String>,
 	reporter_family_name: Option<String>,
+	reporter_family_name_null_flavor: Option<String>,
 	organization: Option<String>,
+	organization_null_flavor: Option<String>,
 	department: Option<String>,
+	department_null_flavor: Option<String>,
 	street: Option<String>,
+	street_null_flavor: Option<String>,
 	city: Option<String>,
+	city_null_flavor: Option<String>,
 	state: Option<String>,
+	state_null_flavor: Option<String>,
 	postcode: Option<String>,
+	postcode_null_flavor: Option<String>,
 	telephone: Option<String>,
+	telephone_null_flavor: Option<String>,
 	country_code: Option<String>,
 	qualification: Option<String>,
 	qualification_kr1: Option<String>,
 	primary_source_regulatory: Option<String>,
-	reporter_name_null_flavor: Option<String>,
-	reporter_address_null_flavor: Option<String>,
 	country_code_null_flavor: Option<String>,
 	qualification_null_flavor: Option<String>,
 }
@@ -1598,22 +1623,31 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 		ReporterPresaveForInsert {
 			organization_id,
 			reporter_title: self.reporter_title,
+			reporter_title_null_flavor: self.reporter_title_null_flavor,
 			reporter_given_name: self.reporter_given_name,
+			reporter_given_name_null_flavor: self.reporter_given_name_null_flavor,
 			reporter_middle_name: self.reporter_middle_name,
+			reporter_middle_name_null_flavor: self.reporter_middle_name_null_flavor,
 			reporter_family_name: self.reporter_family_name,
+			reporter_family_name_null_flavor: self.reporter_family_name_null_flavor,
 			organization: self.organization,
+			organization_null_flavor: self.organization_null_flavor,
 			department: self.department,
+			department_null_flavor: self.department_null_flavor,
 			street: self.street,
+			street_null_flavor: self.street_null_flavor,
 			city: self.city,
+			city_null_flavor: self.city_null_flavor,
 			state: self.state,
+			state_null_flavor: self.state_null_flavor,
 			postcode: self.postcode,
+			postcode_null_flavor: self.postcode_null_flavor,
 			telephone: self.telephone,
+			telephone_null_flavor: self.telephone_null_flavor,
 			country_code: self.country_code,
 			qualification: self.qualification,
 			qualification_kr1: self.qualification_kr1,
 			primary_source_regulatory: self.primary_source_regulatory,
-			reporter_name_null_flavor: self.reporter_name_null_flavor,
-			reporter_address_null_flavor: self.reporter_address_null_flavor,
 			country_code_null_flavor: self.country_code_null_flavor,
 			qualification_null_flavor: self.qualification_null_flavor,
 		}
@@ -1624,23 +1658,32 @@ impl IntoOrgScopedCreate for ReporterPresaveForCreate {
 pub struct ReporterPresaveForUpdate {
 	pub deleted: Option<bool>,
 	pub reporter_title: Option<String>,
+	pub reporter_title_null_flavor: Option<String>,
 	pub reporter_given_name: Option<String>,
+	pub reporter_given_name_null_flavor: Option<String>,
 	pub reporter_middle_name: Option<String>,
+	pub reporter_middle_name_null_flavor: Option<String>,
 	pub reporter_family_name: Option<String>,
+	pub reporter_family_name_null_flavor: Option<String>,
 	pub organization: Option<String>,
+	pub organization_null_flavor: Option<String>,
 	pub department: Option<String>,
+	pub department_null_flavor: Option<String>,
 	pub street: Option<String>,
+	pub street_null_flavor: Option<String>,
 	pub city: Option<String>,
+	pub city_null_flavor: Option<String>,
 	pub state: Option<String>,
+	pub state_null_flavor: Option<String>,
 	pub postcode: Option<String>,
+	pub postcode_null_flavor: Option<String>,
 	pub telephone: Option<String>,
+	pub telephone_null_flavor: Option<String>,
 	pub country_code: Option<String>,
 	pub qualification: Option<String>,
 	// MFDS.C.2.r.4.KR.1 - Other health professional type
 	pub qualification_kr1: Option<String>,
 	pub primary_source_regulatory: Option<String>,
-	pub reporter_name_null_flavor: Option<String>,
-	pub reporter_address_null_flavor: Option<String>,
 	pub country_code_null_flavor: Option<String>,
 	pub qualification_null_flavor: Option<String>,
 }
@@ -1658,15 +1701,27 @@ impl ReporterPresaveBmc {
 		data: ReporterPresaveForCreate,
 	) -> Result<Uuid> {
 		Self::validate_null_flavors(
-			data.reporter_name_null_flavor.as_deref(),
-			data.reporter_address_null_flavor.as_deref(),
+			data.reporter_title_null_flavor.as_deref(),
+			data.reporter_given_name_null_flavor.as_deref(),
+			data.reporter_middle_name_null_flavor.as_deref(),
+			data.reporter_family_name_null_flavor.as_deref(),
+			data.organization_null_flavor.as_deref(),
+			data.department_null_flavor.as_deref(),
+			data.street_null_flavor.as_deref(),
+			data.city_null_flavor.as_deref(),
+			data.state_null_flavor.as_deref(),
+			data.postcode_null_flavor.as_deref(),
+			data.telephone_null_flavor.as_deref(),
 			data.country_code_null_flavor.as_deref(),
 			data.qualification_null_flavor.as_deref(),
 		)?;
 		Self::validate_identity(
 			data.reporter_given_name.as_deref(),
+			data.reporter_given_name_null_flavor.as_deref(),
 			data.organization.as_deref(),
+			data.organization_null_flavor.as_deref(),
 			data.qualification.as_deref(),
+			data.qualification_null_flavor.as_deref(),
 		)?;
 		Self::ensure_unique_identity(
 			ctx,
@@ -1719,8 +1774,17 @@ impl ReporterPresaveBmc {
 			));
 		}
 		Self::validate_null_flavors(
-			data.reporter_name_null_flavor.as_deref(),
-			data.reporter_address_null_flavor.as_deref(),
+			data.reporter_title_null_flavor.as_deref(),
+			data.reporter_given_name_null_flavor.as_deref(),
+			data.reporter_middle_name_null_flavor.as_deref(),
+			data.reporter_family_name_null_flavor.as_deref(),
+			data.organization_null_flavor.as_deref(),
+			data.department_null_flavor.as_deref(),
+			data.street_null_flavor.as_deref(),
+			data.city_null_flavor.as_deref(),
+			data.state_null_flavor.as_deref(),
+			data.postcode_null_flavor.as_deref(),
+			data.telephone_null_flavor.as_deref(),
 			data.country_code_null_flavor.as_deref(),
 			data.qualification_null_flavor.as_deref(),
 		)?;
@@ -1740,8 +1804,17 @@ impl ReporterPresaveBmc {
 				.or(current.qualification.as_deref());
 			Self::validate_identity(
 				reporter_given_name,
+				data.reporter_given_name_null_flavor
+					.as_deref()
+					.or(current.reporter_given_name_null_flavor.as_deref()),
 				organization,
+				data.organization_null_flavor
+					.as_deref()
+					.or(current.organization_null_flavor.as_deref()),
 				qualification,
+				data.qualification_null_flavor
+					.as_deref()
+					.or(current.qualification_null_flavor.as_deref()),
 			)?;
 			Self::ensure_unique_identity(
 				ctx,
@@ -1764,25 +1837,46 @@ impl ReporterPresaveBmc {
 
 	fn validate_identity(
 		reporter_given_name: Option<&str>,
+		reporter_given_name_null_flavor: Option<&str>,
 		organization: Option<&str>,
+		organization_null_flavor: Option<&str>,
 		qualification: Option<&str>,
+		qualification_null_flavor: Option<&str>,
 	) -> Result<()> {
 		require_identity(
-			normalized_text(reporter_given_name).is_some()
-				&& normalized_text(organization).is_some()
-				&& normalized_text(qualification).is_some(),
-			"reporter presave requires reporter_given_name, organization, and qualification",
+			(normalized_text(reporter_given_name).is_some()
+				|| normalized_text(reporter_given_name_null_flavor).is_some())
+				&& (normalized_text(organization).is_some()
+					|| normalized_text(organization_null_flavor).is_some())
+				&& (normalized_text(qualification).is_some()
+					|| normalized_text(qualification_null_flavor).is_some()),
+			"reporter presave requires reporter_given_name, organization, and qualification values or nullFlavors",
 		)
 	}
 
 	fn validate_null_flavors(
-		reporter_name_null_flavor: Option<&str>,
-		reporter_address_null_flavor: Option<&str>,
+		reporter_title_null_flavor: Option<&str>,
+		reporter_given_name_null_flavor: Option<&str>,
+		reporter_middle_name_null_flavor: Option<&str>,
+		reporter_family_name_null_flavor: Option<&str>,
+		organization_null_flavor: Option<&str>,
+		department_null_flavor: Option<&str>,
+		street_null_flavor: Option<&str>,
+		city_null_flavor: Option<&str>,
+		state_null_flavor: Option<&str>,
+		postcode_null_flavor: Option<&str>,
+		telephone_null_flavor: Option<&str>,
 		country_code_null_flavor: Option<&str>,
 		qualification_null_flavor: Option<&str>,
 	) -> Result<()> {
-		const NAME_ADDRESS_ALLOWED: &[NullFlavor] =
+		const ELEMENT_ALLOWED: &[NullFlavor] =
 			&[NullFlavor::MSK, NullFlavor::ASKU, NullFlavor::NASK];
+		const TITLE_ALLOWED: &[NullFlavor] = &[
+			NullFlavor::MSK,
+			NullFlavor::UNK,
+			NullFlavor::ASKU,
+			NullFlavor::NASK,
+		];
 		// C.2.r.3 country additionally permits UNK per the ICH dictionary.
 		const COUNTRY_ALLOWED: &[NullFlavor] = &[
 			NullFlavor::MSK,
@@ -1793,15 +1887,33 @@ impl ReporterPresaveBmc {
 		const QUALIFICATION_ALLOWED: &[NullFlavor] = &[NullFlavor::UNK];
 
 		validate_null_flavor_set(
-			"reporter_name_null_flavor",
-			reporter_name_null_flavor,
-			NAME_ADDRESS_ALLOWED,
+			"reporter_title_null_flavor",
+			reporter_title_null_flavor,
+			TITLE_ALLOWED,
 		)?;
-		validate_null_flavor_set(
-			"reporter_address_null_flavor",
-			reporter_address_null_flavor,
-			NAME_ADDRESS_ALLOWED,
-		)?;
+		for (field, value) in [
+			(
+				"reporter_given_name_null_flavor",
+				reporter_given_name_null_flavor,
+			),
+			(
+				"reporter_middle_name_null_flavor",
+				reporter_middle_name_null_flavor,
+			),
+			(
+				"reporter_family_name_null_flavor",
+				reporter_family_name_null_flavor,
+			),
+			("organization_null_flavor", organization_null_flavor),
+			("department_null_flavor", department_null_flavor),
+			("street_null_flavor", street_null_flavor),
+			("city_null_flavor", city_null_flavor),
+			("state_null_flavor", state_null_flavor),
+			("postcode_null_flavor", postcode_null_flavor),
+			("telephone_null_flavor", telephone_null_flavor),
+		] {
+			validate_null_flavor_set(field, value, ELEMENT_ALLOWED)?;
+		}
 		validate_null_flavor_set(
 			"country_code_null_flavor",
 			country_code_null_flavor,
