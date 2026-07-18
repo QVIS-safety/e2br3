@@ -537,11 +537,10 @@ fn reporter_presave_create(
 		country_code: Some("KR".into()),
 		qualification: Some("1".into()),
 		qualification_kr1: None,
-		reporter_name_null_flavor: None,
-		reporter_address_null_flavor: None,
 		country_code_null_flavor: None,
 		qualification_null_flavor: None,
 		primary_source_regulatory: None,
+		..Default::default()
 	}
 }
 
@@ -1434,11 +1433,10 @@ async fn section_presave_parent_bmcs_crud_roundtrip() -> Result<()> {
 			country_code: Some("KR".into()),
 			qualification: Some("1".into()),
 			qualification_kr1: None,
-			reporter_name_null_flavor: None,
-			reporter_address_null_flavor: None,
 			country_code_null_flavor: None,
 			qualification_null_flavor: None,
 			primary_source_regulatory: Some("1".into()),
+			..Default::default()
 		},
 	)
 	.await?;
@@ -1642,22 +1640,31 @@ async fn reporter_presave_accepts_field_specific_null_flavors() -> Result<()> {
 		&mm,
 		ReporterPresaveForCreate {
 			reporter_title: None,
+			reporter_title_null_flavor: Some("UNK".into()),
 			reporter_given_name: Some(format!("Reporter {suffix}")),
+			reporter_given_name_null_flavor: Some("ASKU".into()),
 			reporter_middle_name: None,
+			reporter_middle_name_null_flavor: None,
 			reporter_family_name: None,
+			reporter_family_name_null_flavor: None,
 			organization: Some(format!("Reporter Org {suffix}")),
+			organization_null_flavor: Some("NASK".into()),
 			department: None,
+			department_null_flavor: None,
 			street: None,
+			street_null_flavor: None,
 			city: None,
+			city_null_flavor: None,
 			state: None,
+			state_null_flavor: None,
 			postcode: None,
+			postcode_null_flavor: None,
 			telephone: None,
+			telephone_null_flavor: Some("MSK".into()),
 			country_code: None,
 			qualification: Some("1".into()),
 			qualification_kr1: None,
 			primary_source_regulatory: None,
-			reporter_name_null_flavor: Some("MSK".into()),
-			reporter_address_null_flavor: Some("ASKU".into()),
 			country_code_null_flavor: None,
 			qualification_null_flavor: Some("UNK".into()),
 		},
@@ -1665,8 +1672,13 @@ async fn reporter_presave_accepts_field_specific_null_flavors() -> Result<()> {
 	.await?;
 
 	let saved = ReporterPresaveBmc::get(&ctx, &mm, id).await?;
-	assert_eq!(saved.reporter_name_null_flavor.as_deref(), Some("MSK"));
-	assert_eq!(saved.reporter_address_null_flavor.as_deref(), Some("ASKU"));
+	assert_eq!(saved.reporter_title_null_flavor.as_deref(), Some("UNK"));
+	assert_eq!(
+		saved.reporter_given_name_null_flavor.as_deref(),
+		Some("ASKU")
+	);
+	assert_eq!(saved.organization_null_flavor.as_deref(), Some("NASK"));
+	assert_eq!(saved.telephone_null_flavor.as_deref(), Some("MSK"));
 	assert_eq!(saved.qualification_null_flavor.as_deref(), Some("UNK"));
 	Ok(())
 }
@@ -1686,28 +1698,37 @@ async fn reporter_presave_rejects_invalid_field_specific_null_flavors() -> Resul
 			&mm,
 			ReporterPresaveForCreate {
 				reporter_title: None,
+				reporter_title_null_flavor: None,
 				reporter_given_name: Some(format!("Reporter {suffix}")),
+				reporter_given_name_null_flavor: Some("UNK".into()),
 				reporter_middle_name: None,
+				reporter_middle_name_null_flavor: None,
 				reporter_family_name: None,
+				reporter_family_name_null_flavor: None,
 				organization: Some(format!("Reporter Org {suffix}")),
+				organization_null_flavor: Some("MSK".into()),
 				department: None,
+				department_null_flavor: None,
 				street: None,
+				street_null_flavor: None,
 				city: None,
+				city_null_flavor: None,
 				state: None,
+				state_null_flavor: None,
 				postcode: None,
+				postcode_null_flavor: None,
 				telephone: None,
+				telephone_null_flavor: None,
 				country_code: None,
 				qualification: Some("1".into()),
 				qualification_kr1: None,
 				primary_source_regulatory: None,
-				reporter_name_null_flavor: Some("UNK".into()),
-				reporter_address_null_flavor: Some("MSK".into()),
 				country_code_null_flavor: None,
 				qualification_null_flavor: Some("MSK".into()),
 			},
 		)
 		.await,
-		"reporter_name_null_flavor",
+		"reporter_given_name_null_flavor",
 	);
 	Ok(())
 }
@@ -1918,11 +1939,10 @@ async fn section_presave_parent_bmcs_enforce_minimal_identity_requirements(
 					country_code: None,
 					qualification: qualification.map(str::to_string),
 					qualification_kr1: None,
-					reporter_name_null_flavor: None,
-					reporter_address_null_flavor: None,
 					country_code_null_flavor: None,
 					qualification_null_flavor: None,
 					primary_source_regulatory: None,
+					..Default::default()
 				},
 			)
 			.await,
@@ -2164,11 +2184,10 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 			country_code: None,
 			qualification: Some("1".into()),
 			qualification_kr1: None,
-			reporter_name_null_flavor: None,
-			reporter_address_null_flavor: None,
 			country_code_null_flavor: None,
 			qualification_null_flavor: None,
 			primary_source_regulatory: None,
+			..Default::default()
 		},
 	)
 	.await?;
@@ -2191,11 +2210,10 @@ async fn section_presave_parent_bmcs_reject_duplicate_identity_within_org(
 				country_code: None,
 				qualification: Some("1".into()),
 				qualification_kr1: None,
-				reporter_name_null_flavor: None,
-				reporter_address_null_flavor: None,
 				country_code_null_flavor: None,
 				qualification_null_flavor: None,
 				primary_source_regulatory: None,
+				..Default::default()
 			},
 		)
 		.await,

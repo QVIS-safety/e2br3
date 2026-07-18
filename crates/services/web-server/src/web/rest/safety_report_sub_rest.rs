@@ -126,28 +126,8 @@ fn normalize_primary_source_regulatory_value(
 
 fn primary_source_flag_update(value: &str) -> PrimarySourceForUpdate {
 	PrimarySourceForUpdate {
-		source_reporter_presave_id: None,
-		reporter_title: None,
-		reporter_given_name: None,
-		reporter_middle_name: None,
-		reporter_family_name: None,
-		reporter_name_null_flavor: None,
-		organization: None,
-		department: None,
-		street: None,
-		city: None,
-		state: None,
-		postcode: None,
-		telephone: None,
-		reporter_address_null_flavor: None,
-		country_code_null_flavor: None,
-		email_null_flavor: None,
-		country_code: None,
-		email: None,
-		qualification: None,
-		qualification_null_flavor: None,
-		qualification_kr1: None,
 		primary_source_regulatory: Some(value.to_string()),
+		..Default::default()
 	}
 }
 

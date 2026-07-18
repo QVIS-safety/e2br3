@@ -55,6 +55,53 @@ async fn fetch_sender_information(
 		.map_err(Error::from)
 }
 
+fn set_text_or_null_flavor(
+	xpath: &mut Context,
+	path: &str,
+	value: Option<&str>,
+	null_flavor: Option<&str>,
+) {
+	let value = value.map(str::trim).filter(|value| !value.is_empty());
+	let null_flavor = null_flavor.map(str::trim).filter(|value| !value.is_empty());
+	if let Ok(nodes) = xpath.findnodes(path, None) {
+		for mut node in nodes.into_iter().take(1) {
+			if let Some(value) = value {
+				let _ = node.remove_attribute("nullFlavor");
+				let _ = node.set_content(value);
+			} else if let Some(null_flavor) = null_flavor {
+				let _ = node.set_content("");
+				let _ = node.set_attribute("nullFlavor", null_flavor);
+			}
+		}
+	}
+}
+
+fn set_telecom_or_null_flavor(
+	xpath: &mut Context,
+	path: &str,
+	value: Option<&str>,
+	null_flavor: Option<&str>,
+) {
+	let value = value.map(str::trim).filter(|value| !value.is_empty());
+	let null_flavor = null_flavor.map(str::trim).filter(|value| !value.is_empty());
+	if let Ok(nodes) = xpath.findnodes(path, None) {
+		for mut node in nodes.into_iter().take(1) {
+			if let Some(value) = value {
+				let telecom_value = if value.contains(':') {
+					value.to_string()
+				} else {
+					format!("tel:{value}")
+				};
+				let _ = node.remove_attribute("nullFlavor");
+				let _ = node.set_attribute("value", &telecom_value);
+			} else if let Some(null_flavor) = null_flavor {
+				let _ = node.remove_attribute("value");
+				let _ = node.set_attribute("nullFlavor", null_flavor);
+			}
+		}
+	}
+}
+
 pub(crate) async fn apply_primary_source_section(
 	doc: &mut Document,
 	parser: &Parser,
@@ -65,7 +112,15 @@ pub(crate) async fn apply_primary_source_section(
 	let Some(primary) = fetch_primary_source(mm, case_id).await? else {
 		return Ok(());
 	};
+	apply_primary_source_values(doc, parser, xpath, &primary)
+}
 
+fn apply_primary_source_values(
+	doc: &mut Document,
+	parser: &Parser,
+	xpath: &mut Context,
+	primary: &PrimarySource,
+) -> Result<()> {
 	let base = "//hl7:investigationEvent/hl7:outboundRelationship[hl7:relatedInvestigation/hl7:code[@code='2']]/hl7:relatedInvestigation/hl7:subjectOf2/hl7:controlActEvent/hl7:author/hl7:assignedEntity";
 	ensure_primary_source_author_nodes(doc, parser, xpath)?;
 	if xpath
@@ -82,21 +137,27 @@ pub(crate) async fn apply_primary_source_section(
 		)?;
 	}
 
-	if let Some(value) = primary.reporter_title.as_deref() {
-		set_text_first(
-			xpath,
-			&format!("{base}/hl7:assignedPerson/hl7:name/hl7:prefix"),
-			value,
-		);
-	}
-	if let Some(value) = primary.reporter_given_name.as_deref() {
-		set_text_first(
-			xpath,
-			&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given"),
-			value,
-		);
-	}
-	if let Some(value) = primary.reporter_middle_name.as_deref() {
+	set_text_or_null_flavor(
+		xpath,
+		&format!("{base}/hl7:assignedPerson/hl7:name/hl7:prefix"),
+		primary.reporter_title.as_deref(),
+		primary.reporter_title_null_flavor.as_deref(),
+	);
+	set_text_or_null_flavor(
+		xpath,
+		&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[1]"),
+		primary.reporter_given_name.as_deref(),
+		primary.reporter_given_name_null_flavor.as_deref(),
+	);
+	if primary
+		.reporter_middle_name
+		.as_deref()
+		.is_some_and(|v| !v.trim().is_empty())
+		|| primary
+			.reporter_middle_name_null_flavor
+			.as_deref()
+			.is_some_and(|v| !v.trim().is_empty())
+	{
 		if xpath
 			.findnodes(
 				&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[2]"),
@@ -113,66 +174,95 @@ pub(crate) async fn apply_primary_source_section(
 				"<given/>",
 			)?;
 		}
-		set_text_first(
+		set_text_or_null_flavor(
 			xpath,
 			&format!("{base}/hl7:assignedPerson/hl7:name/hl7:given[2]"),
-			value,
+			primary.reporter_middle_name.as_deref(),
+			primary.reporter_middle_name_null_flavor.as_deref(),
 		);
 	}
-	if let Some(value) = primary.reporter_family_name.as_deref() {
-		set_text_first(
-			xpath,
-			&format!("{base}/hl7:assignedPerson/hl7:name/hl7:family"),
-			value,
-		);
-	}
-	let org_name = match (
-		primary.organization.as_deref().map(str::trim),
-		primary.department.as_deref().map(str::trim),
-	) {
-		(Some(org), Some(dept)) if !org.is_empty() && !dept.is_empty() => {
-			Some(format!("{org} / {dept}"))
+	set_text_or_null_flavor(
+		xpath,
+		&format!("{base}/hl7:assignedPerson/hl7:name/hl7:family"),
+		primary.reporter_family_name.as_deref(),
+		primary.reporter_family_name_null_flavor.as_deref(),
+	);
+	let has_department = primary
+		.department
+		.as_deref()
+		.is_some_and(|v| !v.trim().is_empty())
+		|| primary
+			.department_null_flavor
+			.as_deref()
+			.is_some_and(|v| !v.trim().is_empty());
+	let organization_path = if has_department {
+		let nested = format!("{base}/hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name");
+		if xpath
+			.findnodes(&nested, None)
+			.map(|nodes| nodes.is_empty())
+			.unwrap_or(true)
+		{
+			append_fragment_child(
+				doc,
+				parser,
+				xpath,
+				&format!("{base}/hl7:representedOrganization"),
+				"<assignedEntity classCode=\"ASSIGNED\"><representedOrganization classCode=\"ORG\" determinerCode=\"INSTANCE\"><name/></representedOrganization></assignedEntity>",
+			)?;
 		}
-		(Some(org), _) if !org.is_empty() => Some(org.to_string()),
-		(_, Some(dept)) if !dept.is_empty() => Some(dept.to_string()),
-		_ => None,
+		nested
+	} else {
+		format!("{base}/hl7:representedOrganization/hl7:name")
 	};
-	if let Some(value) = org_name.as_deref() {
-		set_text_first(
+	set_text_or_null_flavor(
+		xpath,
+		&organization_path,
+		primary.organization.as_deref(),
+		primary.organization_null_flavor.as_deref(),
+	);
+	if has_department {
+		set_text_or_null_flavor(
 			xpath,
 			&format!("{base}/hl7:representedOrganization/hl7:name"),
-			value,
+			primary.department.as_deref(),
+			primary.department_null_flavor.as_deref(),
 		);
 	}
-	if let Some(value) = primary.street.as_deref() {
-		set_text_first(
+	for (path, value, null_flavor) in [
+		(
+			"streetAddressLine",
+			primary.street.as_deref(),
+			primary.street_null_flavor.as_deref(),
+		),
+		(
+			"city",
+			primary.city.as_deref(),
+			primary.city_null_flavor.as_deref(),
+		),
+		(
+			"state",
+			primary.state.as_deref(),
+			primary.state_null_flavor.as_deref(),
+		),
+		(
+			"postalCode",
+			primary.postcode.as_deref(),
+			primary.postcode_null_flavor.as_deref(),
+		),
+	] {
+		set_text_or_null_flavor(
 			xpath,
-			&format!("{base}/hl7:addr/hl7:streetAddressLine"),
+			&format!("{base}/hl7:addr/hl7:{path}"),
 			value,
+			null_flavor,
 		);
 	}
-	if let Some(value) = primary.city.as_deref() {
-		set_text_first(xpath, &format!("{base}/hl7:addr/hl7:city"), value);
-	}
-	if let Some(value) = primary.state.as_deref() {
-		set_text_first(xpath, &format!("{base}/hl7:addr/hl7:state"), value);
-	}
-	if let Some(value) = primary.postcode.as_deref() {
-		set_text_first(xpath, &format!("{base}/hl7:addr/hl7:postalCode"), value);
-	}
-	if let Some(value) = primary.telephone.as_deref() {
-		let telecom_value = if value.contains(':') {
-			value.to_string()
-		} else {
-			format!("tel:{value}")
-		};
-		set_attr_first(
-			xpath,
-			&format!("{base}/hl7:telecom[starts-with(@value,'tel:')]"),
-			"value",
-			&telecom_value,
-		);
-	}
+	set_telecom_or_null_flavor(
+		xpath,
+		&format!("{base}/hl7:telecom[starts-with(@value,'tel:') or @nullFlavor]"),
+		primary.telephone.as_deref(),
+		primary.telephone_null_flavor.as_deref(),
+	);
 	if let Some(value) = primary.email.as_deref() {
 		let telecom_value = if value.contains(':') {
 			value.to_string()
@@ -340,6 +430,106 @@ fn base_icrs_skeleton() -> &'static str {
 \t\t</controlActProcess>\
 \t</PORR_IN049016UV>\
 </MCCI_IN200100UV01>"
+}
+
+#[cfg(test)]
+mod primary_source_null_flavor_tests {
+	use super::*;
+	use sqlx::types::time::OffsetDateTime;
+	use sqlx::types::Uuid;
+
+	fn source() -> PrimarySource {
+		PrimarySource {
+			id: Uuid::nil(),
+			case_id: Uuid::nil(),
+			source_reporter_presave_id: None,
+			sequence_number: 1,
+			reporter_title: None,
+			reporter_title_null_flavor: None,
+			reporter_given_name: None,
+			reporter_given_name_null_flavor: Some("ASKU".to_string()),
+			reporter_middle_name: None,
+			reporter_middle_name_null_flavor: None,
+			reporter_family_name: None,
+			reporter_family_name_null_flavor: None,
+			organization: None,
+			organization_null_flavor: None,
+			department: None,
+			department_null_flavor: None,
+			street: None,
+			street_null_flavor: None,
+			city: None,
+			city_null_flavor: Some("NASK".to_string()),
+			state: None,
+			state_null_flavor: None,
+			postcode: None,
+			postcode_null_flavor: None,
+			telephone: None,
+			telephone_null_flavor: None,
+			country_code: None,
+			country_code_null_flavor: None,
+			email: None,
+			email_null_flavor: None,
+			qualification: None,
+			qualification_null_flavor: None,
+			qualification_kr1: None,
+			primary_source_regulatory: None,
+			deleted: false,
+			created_at: OffsetDateTime::UNIX_EPOCH,
+			updated_at: OffsetDateTime::UNIX_EPOCH,
+			created_by: Uuid::nil(),
+			updated_by: None,
+		}
+	}
+
+	#[test]
+	fn primary_source_export_isolates_element_null_flavors() {
+		let xml = br#"<MCCI_IN200100UV01 xmlns="urn:hl7-org:v3"><PORR_IN049016UV><controlActProcess><subject><investigationEvent><outboundRelationship><relatedInvestigation><code code="2"/><subjectOf2><controlActEvent><author><assignedEntity><assignedPerson><name><prefix/><given/><family/></name></assignedPerson><representedOrganization><name/></representedOrganization><addr><streetAddressLine/><city/><state/><postalCode/></addr><telecom value="tel:"/></assignedEntity></author></controlActEvent></subjectOf2></relatedInvestigation></outboundRelationship></investigationEvent></subject></controlActProcess></PORR_IN049016UV></MCCI_IN200100UV01>"#;
+		let parser = Parser::default();
+		let mut doc = parser.parse_string(xml).expect("parse");
+		let mut xpath = Context::new(&doc).expect("xpath");
+		xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
+
+		apply_primary_source_values(&mut doc, &parser, &mut xpath, &source())
+			.expect("apply primary source");
+
+		assert_eq!(
+			xpath
+				.findvalue(
+					"//hl7:assignedPerson/hl7:name/hl7:given[1]/@nullFlavor",
+					None
+				)
+				.unwrap(),
+			"ASKU"
+		);
+		assert_eq!(
+			xpath
+				.findvalue(
+					"//hl7:assignedEntity/hl7:addr/hl7:city/@nullFlavor",
+					None
+				)
+				.unwrap(),
+			"NASK"
+		);
+		assert_eq!(
+			xpath
+				.findvalue(
+					"//hl7:assignedPerson/hl7:name/hl7:prefix/@nullFlavor",
+					None
+				)
+				.unwrap(),
+			""
+		);
+		assert_eq!(
+			xpath
+				.findvalue(
+					"//hl7:assignedEntity/hl7:addr/hl7:state/@nullFlavor",
+					None
+				)
+				.unwrap(),
+			""
+		);
+	}
 }
 
 pub(crate) async fn apply_literature_section(

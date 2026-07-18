@@ -281,39 +281,93 @@ pub(super) fn validate_direct_rows(
 					&[
 						("reporterTitle", &["reporterTitle", "reporter_title"]),
 						(
+							"reporterTitleNullFlavor",
+							&[
+								"reporterTitleNullFlavor",
+								"reporter_title_null_flavor",
+							],
+						),
+						(
 							"reporterGivenName",
 							&["reporterGivenName", "reporter_given_name"],
+						),
+						(
+							"reporterGivenNameNullFlavor",
+							&[
+								"reporterGivenNameNullFlavor",
+								"reporter_given_name_null_flavor",
+							],
 						),
 						(
 							"reporterMiddleName",
 							&["reporterMiddleName", "reporter_middle_name"],
 						),
 						(
+							"reporterMiddleNameNullFlavor",
+							&[
+								"reporterMiddleNameNullFlavor",
+								"reporter_middle_name_null_flavor",
+							],
+						),
+						(
 							"reporterFamilyName",
 							&["reporterFamilyName", "reporter_family_name"],
 						),
 						(
-							"reporterNameNullFlavor",
-							&["reporterNameNullFlavor", "reporter_name_null_flavor"],
+							"reporterFamilyNameNullFlavor",
+							&[
+								"reporterFamilyNameNullFlavor",
+								"reporter_family_name_null_flavor",
+							],
 						),
 						(
 							"reporterOrganization",
 							&["reporterOrganization", "organization"],
 						),
 						(
+							"reporterOrganizationNullFlavor",
+							&[
+								"reporterOrganizationNullFlavor",
+								"organization_null_flavor",
+							],
+						),
+						(
 							"reporterDepartment",
 							&["reporterDepartment", "department"],
 						),
+						(
+							"reporterDepartmentNullFlavor",
+							&[
+								"reporterDepartmentNullFlavor",
+								"department_null_flavor",
+							],
+						),
 						("reporterStreet", &["reporterStreet", "street"]),
+						(
+							"reporterStreetNullFlavor",
+							&["reporterStreetNullFlavor", "street_null_flavor"],
+						),
 						("reporterCity", &["reporterCity", "city"]),
+						(
+							"reporterCityNullFlavor",
+							&["reporterCityNullFlavor", "city_null_flavor"],
+						),
 						("reporterState", &["reporterState", "state"]),
+						(
+							"reporterStateNullFlavor",
+							&["reporterStateNullFlavor", "state_null_flavor"],
+						),
 						("reporterPostcode", &["reporterPostcode", "postcode"]),
+						(
+							"reporterPostcodeNullFlavor",
+							&["reporterPostcodeNullFlavor", "postcode_null_flavor"],
+						),
 						("reporterTelephone", &["reporterTelephone", "telephone"]),
 						(
-							"reporterAddressNullFlavor",
+							"reporterTelephoneNullFlavor",
 							&[
-								"reporterAddressNullFlavor",
-								"reporter_address_null_flavor",
+								"reporterTelephoneNullFlavor",
+								"telephone_null_flavor",
 							],
 						),
 						("reporterCountry", &["reporterCountry", "country_code"]),

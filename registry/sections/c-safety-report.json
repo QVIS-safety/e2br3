@@ -2066,9 +2066,9 @@
     "notes": "nullFlavor companion for the C.1.9.1 other case identifiers exist element. Unlike the in-band majority — where the base field carries either a value or the flavor token and the frontend API layer splits them at save time — this element has its own frontend input and its own other_case_identifiers_exist_null_flavor column, so both sides are mapped."
   },
   {
-    "id": "C.2.r.local.reporterAddressNullFlavor",
-    "e2br3_code": "C.2.r.local.reporterAddressNullFlavor",
-    "label": "Reporter Address NullFlavor",
+    "id": "C.2.r.local.reporterGivenNameNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterGivenNameNullFlavor",
+    "label": "Reporter Given Name NullFlavor",
     "section": "C",
     "authority": "ICH",
     "status": "complete",
@@ -2076,19 +2076,19 @@
     "backend": {
       "status": "mapped",
       "model": "PrimarySource",
-      "field": "reporter_address_null_flavor",
+      "field": "reporter_given_name_null_flavor",
       "file": "crates/libs/lib-core/src/model/safety_report.rs",
-      "evidence": "PrimarySource.reporter_address_null_flavor is a dedicated column storing the C.2.r reporter address nullFlavor."
+      "evidence": "PrimarySource.reporter_given_name_null_flavor stores the C.2.r.1.2 nullFlavor."
     },
     "frontend": {
       "status": "mapped",
       "section": "primarySources",
-      "field": "reporterAddressNullFlavor",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionC2.tsx",
-      "evidence": "Strict frontend input inventory extracts primarySources.reporterAddressNullFlavor from the case-form section source."
+      "field": "reporterGivenNameNullFlavor",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx",
+      "evidence": "ReporterEditorPanel binds primarySources[index].reporterGivenNameNullFlavor."
     },
     "action": "",
-    "notes": "nullFlavor companion for the C.2.r reporter address element. Unlike the in-band majority — where the base field carries either a value or the flavor token and the frontend API layer splits them at save time — this element has its own frontend input and its own reporter_address_null_flavor column, so both sides are mapped."
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.1.2."
   },
   {
     "id": "C.2.r.local.reporterCountryNullFlavor",
@@ -2263,29 +2263,29 @@
     "notes": "App-local MFDS report-type classification stored on Case.mfds_report_type. Re-pointed from the wrong SafetyReportIdentification model. Not one of the 14 official MFDS KR extension elements; the .KR. token only satisfies the MFDS authority code rule."
   },
   {
-    "id": "C.2.r.local.reporterNameNullFlavor",
-    "e2br3_code": "C.2.r.local.reporterNameNullFlavor",
-    "label": "Reporter Name NullFlavor",
+    "id": "C.2.r.local.reporterTitleNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterTitleNullFlavor",
+    "label": "Reporter Title NullFlavor",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
       "model": "PrimarySource",
-      "field": "reporter_name_null_flavor",
+      "field": "reporter_title_null_flavor",
       "file": "crates/libs/lib-core/src/model/safety_report.rs",
-      "evidence": "PrimarySource.reporter_name_null_flavor stores the reporter name group nullFlavor."
+      "evidence": "PrimarySource.reporter_title_null_flavor stores the C.2.r.1.1 nullFlavor."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "primarySources",
-      "field": "reporterNameNullFlavor",
-      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP",
-      "evidence": "No current case-detail input binds primarySources[index].reporterNameNullFlavor."
+      "field": "reporterTitleNullFlavor",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx",
+      "evidence": "ReporterEditorPanel binds primarySources[index].reporterTitleNullFlavor."
     },
     "action": "",
-    "notes": "Dedicated local companion for the C.2.r.1 name-group nullFlavor."
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.1.1."
   },
   {
     "id": "C.2.r.local.qualificationNullFlavor",
@@ -2311,5 +2311,122 @@
     },
     "action": "",
     "notes": "Dedicated persistence companion for the C.2.r.4 qualification nullFlavor; the UI exposes only UNK."
+  },
+  {
+    "id": "C.2.r.local.reporterMiddleNameNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterMiddleNameNullFlavor",
+    "label": "Reporter Middle Name NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "PrimarySource", "field": "reporter_middle_name_null_flavor", "file": "crates/libs/lib-core/src/model/safety_report.rs", "evidence": "PrimarySource.reporter_middle_name_null_flavor stores the C.2.r.1.3 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "primarySources", "field": "reporterMiddleNameNullFlavor", "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx", "evidence": "ReporterEditorPanel binds primarySources[index].reporterMiddleNameNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.1.3."
+  },
+  {
+    "id": "C.2.r.local.reporterFamilyNameNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterFamilyNameNullFlavor",
+    "label": "Reporter Family Name NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "PrimarySource", "field": "reporter_family_name_null_flavor", "file": "crates/libs/lib-core/src/model/safety_report.rs", "evidence": "PrimarySource.reporter_family_name_null_flavor stores the C.2.r.1.4 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "primarySources", "field": "reporterFamilyNameNullFlavor", "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx", "evidence": "ReporterEditorPanel binds primarySources[index].reporterFamilyNameNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.1.4."
+  },
+  {
+    "id": "C.2.r.local.reporterOrganizationNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterOrganizationNullFlavor",
+    "label": "Reporter Organisation NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "PrimarySource", "field": "organization_null_flavor", "file": "crates/libs/lib-core/src/model/safety_report.rs", "evidence": "PrimarySource.organization_null_flavor stores the C.2.r.2.1 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "primarySources", "field": "reporterOrganizationNullFlavor", "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx", "evidence": "ReporterEditorPanel binds primarySources[index].reporterOrganizationNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.1."
+  },
+  {
+    "id": "C.2.r.local.reporterDepartmentNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterDepartmentNullFlavor",
+    "label": "Reporter Department NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "PrimarySource", "field": "department_null_flavor", "file": "crates/libs/lib-core/src/model/safety_report.rs", "evidence": "PrimarySource.department_null_flavor stores the C.2.r.2.2 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "primarySources", "field": "reporterDepartmentNullFlavor", "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx", "evidence": "ReporterEditorPanel binds primarySources[index].reporterDepartmentNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.2."
+  },
+  {
+    "id": "C.2.r.local.reporterStreetNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterStreetNullFlavor",
+    "label": "Reporter Street NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "PrimarySource", "field": "street_null_flavor", "file": "crates/libs/lib-core/src/model/safety_report.rs", "evidence": "PrimarySource.street_null_flavor stores the C.2.r.2.3 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "primarySources", "field": "reporterStreetNullFlavor", "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx", "evidence": "ReporterEditorPanel binds primarySources[index].reporterStreetNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.3."
+  },
+  {
+    "id": "C.2.r.local.reporterCityNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterCityNullFlavor",
+    "label": "Reporter City NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "PrimarySource", "field": "city_null_flavor", "file": "crates/libs/lib-core/src/model/safety_report.rs", "evidence": "PrimarySource.city_null_flavor stores the C.2.r.2.4 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "primarySources", "field": "reporterCityNullFlavor", "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx", "evidence": "ReporterEditorPanel binds primarySources[index].reporterCityNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.4."
+  },
+  {
+    "id": "C.2.r.local.reporterStateNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterStateNullFlavor",
+    "label": "Reporter State NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "PrimarySource", "field": "state_null_flavor", "file": "crates/libs/lib-core/src/model/safety_report.rs", "evidence": "PrimarySource.state_null_flavor stores the C.2.r.2.5 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "primarySources", "field": "reporterStateNullFlavor", "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx", "evidence": "ReporterEditorPanel binds primarySources[index].reporterStateNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.5."
+  },
+  {
+    "id": "C.2.r.local.reporterPostcodeNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterPostcodeNullFlavor",
+    "label": "Reporter Postcode NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "PrimarySource", "field": "postcode_null_flavor", "file": "crates/libs/lib-core/src/model/safety_report.rs", "evidence": "PrimarySource.postcode_null_flavor stores the C.2.r.2.6 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "primarySources", "field": "reporterPostcodeNullFlavor", "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx", "evidence": "ReporterEditorPanel binds primarySources[index].reporterPostcodeNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.6."
+  },
+  {
+    "id": "C.2.r.local.reporterTelephoneNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterTelephoneNullFlavor",
+    "label": "Reporter Telephone NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {"status": "mapped", "model": "PrimarySource", "field": "telephone_null_flavor", "file": "crates/libs/lib-core/src/model/safety_report.rs", "evidence": "PrimarySource.telephone_null_flavor stores the C.2.r.2.7 nullFlavor."},
+    "frontend": {"status": "mapped", "section": "primarySources", "field": "reporterTelephoneNullFlavor", "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx", "evidence": "ReporterEditorPanel binds primarySources[index].reporterTelephoneNullFlavor."},
+    "action": "",
+    "notes": "Dedicated local persistence companion for official E2B element C.2.r.2.7."
   }
 ]

@@ -49,9 +49,15 @@ pub struct ReporterPresave {
             ROOT, extractor.REPORTER_BACKEND_MODELS
         )
 
-        self.assertIn("reporter.reporterNameNullFlavor", frontend)
+        self.assertIn("reporter.reporterTitleNullFlavor", frontend)
+        self.assertIn("reporter.reporterGivenNameNullFlavor", frontend)
+        self.assertIn("reporter.reporterOrganizationNullFlavor", frontend)
+        self.assertIn("reporter.reporterTelephoneNullFlavor", frontend)
         self.assertIn("reporter.reporterCountryNullFlavor", frontend)
-        self.assertIn("ReporterPresave.reporter_name_null_flavor", backend)
+        self.assertIn("ReporterPresave.reporter_title_null_flavor", backend)
+        self.assertIn("ReporterPresave.reporter_given_name_null_flavor", backend)
+        self.assertIn("ReporterPresave.organization_null_flavor", backend)
+        self.assertIn("ReporterPresave.telephone_null_flavor", backend)
         self.assertIn("ReporterPresave.country_code_null_flavor", backend)
         self.assertIn("ReporterPresave.qualification_null_flavor", backend)
 
@@ -83,6 +89,15 @@ return {
                 "PrimarySource.country_code_null_flavor",
             ),
             extractor.extract_reporter_transfers(ROOT),
+        )
+        transfers = extractor.extract_reporter_transfers(ROOT)
+        self.assertIn(
+            ("ReporterPresave.reporter_given_name_null_flavor", "PrimarySource.reporter_given_name_null_flavor"),
+            transfers,
+        )
+        self.assertIn(
+            ("ReporterPresave.city_null_flavor", "PrimarySource.city_null_flavor"),
+            transfers,
         )
 
 

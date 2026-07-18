@@ -468,13 +468,40 @@ async fn apply_direct_page_changes_patch(
 			changes,
 			&[
 				("reporterTitle", "reporterTitle"),
+				("reporterTitleNullFlavor", "reporterTitleNullFlavor"),
 				("reporterGivenName", "reporterGivenName"),
+				("reporterGivenNameNullFlavor", "reporterGivenNameNullFlavor"),
 				("reporterMiddleName", "reporterMiddleName"),
+				(
+					"reporterMiddleNameNullFlavor",
+					"reporterMiddleNameNullFlavor",
+				),
 				("reporterFamilyName", "reporterFamilyName"),
-				("reporterNameNullFlavor", "reporterNameNullFlavor"),
+				(
+					"reporterFamilyNameNullFlavor",
+					"reporterFamilyNameNullFlavor",
+				),
 				("reporterOrganization", "reporterOrganization"),
+				(
+					"reporterOrganizationNullFlavor",
+					"reporterOrganizationNullFlavor",
+				),
+				("reporterDepartment", "reporterDepartment"),
+				(
+					"reporterDepartmentNullFlavor",
+					"reporterDepartmentNullFlavor",
+				),
+				("reporterStreet", "reporterStreet"),
+				("reporterStreetNullFlavor", "reporterStreetNullFlavor"),
+				("reporterCity", "reporterCity"),
+				("reporterCityNullFlavor", "reporterCityNullFlavor"),
+				("reporterState", "reporterState"),
+				("reporterStateNullFlavor", "reporterStateNullFlavor"),
+				("reporterPostcode", "reporterPostcode"),
+				("reporterPostcodeNullFlavor", "reporterPostcodeNullFlavor"),
+				("reporterTelephone", "reporterTelephone"),
+				("reporterTelephoneNullFlavor", "reporterTelephoneNullFlavor"),
 				("reporterCountry", "reporterCountry"),
-				("reporterAddressNullFlavor", "reporterAddressNullFlavor"),
 				("qualification", "qualification"),
 				("qualificationNullFlavor", "qualificationNullFlavor"),
 				("qualificationKr1", "qualificationKr1"),
@@ -592,35 +619,80 @@ async fn apply_rp_page_rows_patch(
 			&["sourceReporterPresaveId", "source_reporter_presave_id"],
 		),
 		reporter_title: string_field(source, &["reporterTitle", "reporter_title"]),
+		reporter_title_null_flavor: string_field(
+			source,
+			&["reporterTitleNullFlavor", "reporter_title_null_flavor"],
+		),
 		reporter_given_name: string_field(
 			source,
 			&["reporterGivenName", "reporter_given_name"],
+		),
+		reporter_given_name_null_flavor: string_field(
+			source,
+			&[
+				"reporterGivenNameNullFlavor",
+				"reporter_given_name_null_flavor",
+			],
 		),
 		reporter_middle_name: string_field(
 			source,
 			&["reporterMiddleName", "reporter_middle_name"],
 		),
+		reporter_middle_name_null_flavor: string_field(
+			source,
+			&[
+				"reporterMiddleNameNullFlavor",
+				"reporter_middle_name_null_flavor",
+			],
+		),
 		reporter_family_name: string_field(
 			source,
 			&["reporterFamilyName", "reporter_family_name"],
 		),
-		reporter_name_null_flavor: string_field(
+		reporter_family_name_null_flavor: string_field(
 			source,
-			&["reporterNameNullFlavor", "reporter_name_null_flavor"],
+			&[
+				"reporterFamilyNameNullFlavor",
+				"reporter_family_name_null_flavor",
+			],
 		),
 		organization: string_field(
 			source,
 			&["reporterOrganization", "organization"],
 		),
-		department: string_field(source, &["reporterDepartment", "department"]),
-		street: string_field(source, &["reporterStreet", "street"]),
-		city: string_field(source, &["reporterCity", "city"]),
-		state: string_field(source, &["reporterState", "state"]),
-		postcode: string_field(source, &["reporterPostcode", "postcode"]),
-		telephone: string_field(source, &["reporterTelephone", "telephone"]),
-		reporter_address_null_flavor: string_field(
+		organization_null_flavor: string_field(
 			source,
-			&["reporterAddressNullFlavor", "reporter_address_null_flavor"],
+			&["reporterOrganizationNullFlavor", "organization_null_flavor"],
+		),
+		department: string_field(source, &["reporterDepartment", "department"]),
+		department_null_flavor: string_field(
+			source,
+			&["reporterDepartmentNullFlavor", "department_null_flavor"],
+		),
+		street: string_field(source, &["reporterStreet", "street"]),
+		street_null_flavor: string_field(
+			source,
+			&["reporterStreetNullFlavor", "street_null_flavor"],
+		),
+		city: string_field(source, &["reporterCity", "city"]),
+		city_null_flavor: string_field(
+			source,
+			&["reporterCityNullFlavor", "city_null_flavor"],
+		),
+		state: string_field(source, &["reporterState", "state"]),
+		state_null_flavor: string_field(
+			source,
+			&["reporterStateNullFlavor", "state_null_flavor"],
+		),
+		postcode: string_field(source, &["reporterPostcode", "postcode"]),
+		postcode_null_flavor: string_field(
+			source,
+			&["reporterPostcodeNullFlavor", "postcode_null_flavor"],
+		),
+		telephone: string_field(source, &["reporterTelephone", "telephone"]),
+		telephone_null_flavor: string_field(
+			source,
+			&["reporterTelephoneNullFlavor", "telephone_null_flavor"],
 		),
 		country_code: string_field(source, &["reporterCountry", "country_code"]),
 		country_code_null_flavor: string_field(
@@ -664,18 +736,30 @@ async fn apply_rp_page_rows_patch(
 				)
 				.unwrap_or(1),
 				reporter_title: update.reporter_title,
+				reporter_title_null_flavor: update.reporter_title_null_flavor,
 				reporter_given_name: update.reporter_given_name,
+				reporter_given_name_null_flavor: update
+					.reporter_given_name_null_flavor,
 				reporter_middle_name: update.reporter_middle_name,
+				reporter_middle_name_null_flavor: update
+					.reporter_middle_name_null_flavor,
 				reporter_family_name: update.reporter_family_name,
-				reporter_name_null_flavor: update.reporter_name_null_flavor,
+				reporter_family_name_null_flavor: update
+					.reporter_family_name_null_flavor,
 				organization: update.organization,
+				organization_null_flavor: update.organization_null_flavor,
 				department: update.department,
+				department_null_flavor: update.department_null_flavor,
 				street: update.street,
+				street_null_flavor: update.street_null_flavor,
 				city: update.city,
+				city_null_flavor: update.city_null_flavor,
 				state: update.state,
+				state_null_flavor: update.state_null_flavor,
 				postcode: update.postcode,
+				postcode_null_flavor: update.postcode_null_flavor,
 				telephone: update.telephone,
-				reporter_address_null_flavor: update.reporter_address_null_flavor,
+				telephone_null_flavor: update.telephone_null_flavor,
 				country_code: update.country_code,
 				country_code_null_flavor: update.country_code_null_flavor,
 				email: update.email,

@@ -30,16 +30,27 @@ pub(crate) struct SenderImport {
 
 pub(crate) struct PrimarySourceImport {
 	pub(crate) reporter_title: Option<String>,
+	pub(crate) reporter_title_null_flavor: Option<String>,
 	pub(crate) reporter_given_name: Option<String>,
+	pub(crate) reporter_given_name_null_flavor: Option<String>,
 	pub(crate) reporter_middle_name: Option<String>,
+	pub(crate) reporter_middle_name_null_flavor: Option<String>,
 	pub(crate) reporter_family_name: Option<String>,
+	pub(crate) reporter_family_name_null_flavor: Option<String>,
 	pub(crate) organization: Option<String>,
+	pub(crate) organization_null_flavor: Option<String>,
 	pub(crate) department: Option<String>,
+	pub(crate) department_null_flavor: Option<String>,
 	pub(crate) street: Option<String>,
+	pub(crate) street_null_flavor: Option<String>,
 	pub(crate) city: Option<String>,
+	pub(crate) city_null_flavor: Option<String>,
 	pub(crate) state: Option<String>,
+	pub(crate) state_null_flavor: Option<String>,
 	pub(crate) postcode: Option<String>,
+	pub(crate) postcode_null_flavor: Option<String>,
 	pub(crate) telephone: Option<String>,
+	pub(crate) telephone_null_flavor: Option<String>,
 	pub(crate) country_code: Option<String>,
 	pub(crate) email: Option<String>,
 	pub(crate) qualification: Option<String>,
@@ -393,53 +404,131 @@ pub(crate) fn parse_primary_sources(xml: &[u8]) -> Result<Vec<PrimarySourceImpor
 			&node,
 			".//hl7:assignedPerson/hl7:name/hl7:prefix",
 		);
+		let reporter_title_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:assignedPerson/hl7:name/hl7:prefix",
+			"nullFlavor",
+		);
 		let reporter_given_name = first_text(
 			&mut xpath,
 			&node,
 			".//hl7:assignedPerson/hl7:name/hl7:given",
+		);
+		let reporter_given_name_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:assignedPerson/hl7:name/hl7:given[1]",
+			"nullFlavor",
 		);
 		let reporter_middle_name = first_text(
 			&mut xpath,
 			&node,
 			".//hl7:assignedPerson/hl7:name/hl7:given[2]",
 		);
+		let reporter_middle_name_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:assignedPerson/hl7:name/hl7:given[2]",
+			"nullFlavor",
+		);
 		let reporter_family_name = first_text(
 			&mut xpath,
 			&node,
 			".//hl7:assignedPerson/hl7:name/hl7:family",
+		);
+		let reporter_family_name_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:assignedPerson/hl7:name/hl7:family",
+			"nullFlavor",
 		);
 		let nested_organization = first_text(
 			&mut xpath,
 			&node,
 			".//hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name",
 		);
+		let nested_organization_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:representedOrganization/hl7:assignedEntity/hl7:representedOrganization/hl7:name",
+			"nullFlavor",
+		);
 		let direct_organization =
 			first_text(&mut xpath, &node, ".//hl7:representedOrganization/hl7:name");
-		let organization =
-			nested_organization.clone().or(direct_organization.clone());
-		let department = if nested_organization.is_some() {
-			direct_organization
+		let direct_organization_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:representedOrganization/hl7:name",
+			"nullFlavor",
+		);
+		let has_nested_organization = nested_organization.is_some()
+			|| nested_organization_null_flavor.is_some();
+		let organization = nested_organization
+			.clone()
+			.or_else(|| direct_organization.clone());
+		let organization_null_flavor =
+			nested_organization_null_flavor.clone().or_else(|| {
+				(!has_nested_organization)
+					.then_some(direct_organization_null_flavor.clone())
+					.flatten()
+			});
+		let department = if has_nested_organization {
+			direct_organization.clone()
 		} else {
 			None
 		};
+		let department_null_flavor = has_nested_organization
+			.then_some(direct_organization_null_flavor)
+			.flatten();
 		let street = first_text(
 			&mut xpath,
 			&node,
 			".//hl7:assignedEntity/hl7:addr/hl7:streetAddressLine",
 		);
+		let street_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:assignedEntity/hl7:addr/hl7:streetAddressLine",
+			"nullFlavor",
+		);
 		let city =
 			first_text(&mut xpath, &node, ".//hl7:assignedEntity/hl7:addr/hl7:city");
+		let city_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:assignedEntity/hl7:addr/hl7:city",
+			"nullFlavor",
+		);
 		let state = first_text(
 			&mut xpath,
 			&node,
 			".//hl7:assignedEntity/hl7:addr/hl7:state",
+		);
+		let state_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:assignedEntity/hl7:addr/hl7:state",
+			"nullFlavor",
 		);
 		let postcode = first_text(
 			&mut xpath,
 			&node,
 			".//hl7:assignedEntity/hl7:addr/hl7:postalCode",
 		);
+		let postcode_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:assignedEntity/hl7:addr/hl7:postalCode",
+			"nullFlavor",
+		);
 		let telephone = telecom_first_in_node(&mut xpath, &node, "tel:");
+		let telephone_null_flavor = first_attr(
+			&mut xpath,
+			&node,
+			".//hl7:assignedEntity/hl7:telecom[not(starts-with(@value,'mailto:'))][1]",
+			"nullFlavor",
+		);
 		let email = telecom_first_in_node(&mut xpath, &node, "mailto:");
 		let country_code = normalize_iso2(
 			first_attr(
@@ -471,16 +560,27 @@ pub(crate) fn parse_primary_sources(xml: &[u8]) -> Result<Vec<PrimarySourceImpor
 
 		let has_importable_content = [
 			reporter_title.as_ref(),
+			reporter_title_null_flavor.as_ref(),
 			reporter_given_name.as_ref(),
+			reporter_given_name_null_flavor.as_ref(),
 			reporter_middle_name.as_ref(),
+			reporter_middle_name_null_flavor.as_ref(),
 			reporter_family_name.as_ref(),
+			reporter_family_name_null_flavor.as_ref(),
 			organization.as_ref(),
+			organization_null_flavor.as_ref(),
 			department.as_ref(),
+			department_null_flavor.as_ref(),
 			street.as_ref(),
+			street_null_flavor.as_ref(),
 			city.as_ref(),
+			city_null_flavor.as_ref(),
 			state.as_ref(),
+			state_null_flavor.as_ref(),
 			postcode.as_ref(),
+			postcode_null_flavor.as_ref(),
 			telephone.as_ref(),
+			telephone_null_flavor.as_ref(),
 			country_code.as_ref(),
 			email.as_ref(),
 			qualification_raw.as_ref(),
@@ -495,16 +595,27 @@ pub(crate) fn parse_primary_sources(xml: &[u8]) -> Result<Vec<PrimarySourceImpor
 
 		items.push(PrimarySourceImport {
 			reporter_title,
+			reporter_title_null_flavor,
 			reporter_given_name,
+			reporter_given_name_null_flavor,
 			reporter_middle_name,
+			reporter_middle_name_null_flavor,
 			reporter_family_name,
+			reporter_family_name_null_flavor,
 			organization,
+			organization_null_flavor,
 			department,
+			department_null_flavor,
 			street,
+			street_null_flavor,
 			city,
+			city_null_flavor,
 			state,
+			state_null_flavor,
 			postcode,
+			postcode_null_flavor,
 			telephone,
+			telephone_null_flavor,
 			country_code,
 			email,
 			qualification,
@@ -585,6 +696,31 @@ mod tests {
 			primary_sources[0].email.as_deref(),
 			Some("reporter@example.test")
 		);
+	}
+
+	#[test]
+	fn primary_source_import_isolates_element_null_flavors() {
+		let xml = primary_source_xml(
+			r#"<assignedPerson><name>
+  <prefix/>
+  <given nullFlavor="ASKU"/>
+  <family/>
+</name></assignedPerson>
+<addr><city nullFlavor="NASK"/><state/></addr>"#,
+		);
+
+		let primary_sources = parse_primary_sources(xml.as_bytes()).expect("parse");
+
+		assert_eq!(primary_sources.len(), 1);
+		assert_eq!(
+			primary_sources[0]
+				.reporter_given_name_null_flavor
+				.as_deref(),
+			Some("ASKU")
+		);
+		assert_eq!(primary_sources[0].city_null_flavor.as_deref(), Some("NASK"));
+		assert!(primary_sources[0].reporter_title_null_flavor.is_none());
+		assert!(primary_sources[0].state_null_flavor.is_none());
 	}
 }
 
