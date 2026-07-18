@@ -2293,7 +2293,7 @@
     "label": "Qualification NullFlavor",
     "section": "C",
     "authority": "ICH",
-    "status": "frontend_missing",
+    "status": "complete",
     "local_only": true,
     "backend": {
       "status": "mapped",
@@ -2303,13 +2303,13 @@
       "evidence": "PrimarySource.qualification_null_flavor stores the C.2.r.4 nullFlavor."
     },
     "frontend": {
-      "status": "missing",
+      "status": "mapped",
       "section": "primarySources",
       "field": "qualificationNullFlavor",
-      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP",
-      "evidence": "No current case-detail input binds primarySources[index].qualificationNullFlavor."
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx",
+      "evidence": "ReporterEditorPanel binds the C.2.r.4 UNK control to primarySources[index].qualificationNullFlavor."
     },
     "action": "",
-    "notes": "Dedicated local companion for the C.2.r.4 qualification nullFlavor."
+    "notes": "Dedicated persistence companion for the C.2.r.4 qualification nullFlavor; the UI exposes only UNK."
   }
 ]
