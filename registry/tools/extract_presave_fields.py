@@ -15,6 +15,15 @@ class PresaveSectionConfig:
     transfer_files: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class TransferSpec:
+    source_model: str
+    source_field: str
+    target_model: str
+    target_field: str
+    patterns: tuple[str, ...]
+
+
 PRESAVE_MODEL_FILE = "crates/libs/lib-core/src/model/presave.rs"
 PRESAVE_TYPE_FILE = "lib/types/presave.ts"
 PRESAVE_SECTIONS = {
@@ -68,6 +77,79 @@ PRESAVE_SECTIONS = {
         "components/presave/NarrativeForm.tsx",
         ("NarrativePresave",),
         ("app/(protected)/[authority]/case/[id]/detail/NR/NRPage.tsx",),
+    ),
+}
+
+def transfer_call(target: str, source: str) -> str:
+    return (
+        rf"\b(?:importValue|setValue)\(\s*[\"'`]"
+        rf"{re.escape(target)}[\"'`]\s*,\s*{re.escape(source)}"
+    )
+
+
+def value_assignment(target: str, source: str) -> str:
+    return rf"\b{re.escape(target)}\s*[:=]\s*{re.escape(source)}"
+
+
+TRANSFER_SPECS = {
+    "sender": (
+        TransferSpec("SenderPresave", "sender_type", "SenderInformation", "sender_type", (transfer_call("safetyReportIdentification.senderType", "d.senderType"),)),
+        TransferSpec("SenderPresave", "organization_name", "SenderInformation", "organization_name", (transfer_call("safetyReportIdentification.senderOrganization", "d.senderOrganization"),)),
+        TransferSpec("SenderPresave", "street_address", "SenderInformation", "street_address", (transfer_call("safetyReportIdentification.senderStreetAddress", "d.senderStreetAddress"),)),
+        TransferSpec("SenderPresave", "city", "SenderInformation", "city", (transfer_call("safetyReportIdentification.senderCity", "d.senderCity"),)),
+        TransferSpec("SenderPresave", "state", "SenderInformation", "state", (transfer_call("safetyReportIdentification.senderState", "d.senderState"),)),
+        TransferSpec("SenderPresave", "postcode", "SenderInformation", "postcode", (transfer_call("safetyReportIdentification.senderPostcode", "d.senderPostcode"),)),
+        TransferSpec("SenderPresave", "country_code", "SenderInformation", "country_code", (transfer_call("safetyReportIdentification.senderCountryCode", "d.senderCountryCode"),)),
+        TransferSpec("SenderPresave", "telephone", "SenderInformation", "telephone", (transfer_call("safetyReportIdentification.senderTelephone", "d.senderTelephone"),)),
+        TransferSpec("SenderPresave", "fax", "SenderInformation", "fax", (transfer_call("safetyReportIdentification.senderFax", "d.senderFax"),)),
+        TransferSpec("SenderPresave", "email", "SenderInformation", "email", (transfer_call("safetyReportIdentification.senderEmail", "d.senderEmail"),)),
+        TransferSpec("SenderPresaveResponsiblePerson", "department", "SenderInformation", "department", (transfer_call("safetyReportIdentification.senderDepartment", "defaultPerson.department"),)),
+        TransferSpec("SenderPresaveResponsiblePerson", "person_title", "SenderInformation", "person_title", (transfer_call("safetyReportIdentification.senderPersonTitle", "defaultPerson.title"),)),
+        TransferSpec("SenderPresaveResponsiblePerson", "person_given_name", "SenderInformation", "person_given_name", (transfer_call("safetyReportIdentification.senderPersonGivenName", "defaultPerson.givenName"),)),
+        TransferSpec("SenderPresaveResponsiblePerson", "person_middle_name", "SenderInformation", "person_middle_name", (transfer_call("safetyReportIdentification.senderPersonMiddleName", "defaultPerson.middleName"),)),
+        TransferSpec("SenderPresaveResponsiblePerson", "person_family_name", "SenderInformation", "person_family_name", (transfer_call("safetyReportIdentification.senderPersonFamilyName", "defaultPerson.familyName"),)),
+        TransferSpec("SenderPresaveGateway", "sender_identifier", "MessageHeader", "message_sender_identifier", (transfer_call("messageHeader.messageSenderIdentifier", "routingGateway.senderId"),)),
+    ),
+    "receiver": (
+        TransferSpec("ReceiverPresave", "organization_name", "ReceiverInformation", "organization_name", (transfer_call("safetyReportIdentification.receiverOrganization", "d.receiverOrganization"),)),
+        TransferSpec("ReceiverPresave", "receiver_type", "ReceiverInformation", "receiver_type", (value_assignment("receiverType", "receiverTypeCode(d.receiverType)"), transfer_call("safetyReportIdentification.receiverType", "receiverType"))),
+        TransferSpec("ReceiverPresaveRoute", "batch_receiver_identifier", "MessageHeader", "batch_receiver_identifier", (transfer_call("messageHeader.batchReceiverIdentifier", "route.batchReceiverIdentifier"),)),
+        TransferSpec("ReceiverPresaveRoute", "message_receiver_identifier", "MessageHeader", "message_receiver_identifier", (transfer_call("messageHeader.messageReceiverIdentifier", "route.messageReceiverIdentifier"),)),
+    ),
+    "product": (
+        TransferSpec("ProductPresave", "medicinal_product", "DrugInformation", "medicinal_product", (value_assignment("medicinalProduct", "d.medicinalProduct"),)),
+        TransferSpec("ProductPresave", "mpid_version", "DrugInformation", "mpid_version", (value_assignment("mpidVersion", "d.mpidVersionDateNumber"),)),
+        TransferSpec("ProductPresave", "mpid", "DrugInformation", "mpid", (value_assignment("mpid", "d.mpid"),)),
+        TransferSpec("ProductPresave", "mfds_mpid_version", "DrugInformation", "mfds_mpid_version", (value_assignment("mfdsMpidVersion", "d.mfdsMpidVersion"),)),
+        TransferSpec("ProductPresave", "mfds_mpid", "DrugInformation", "mfds_mpid", (value_assignment("mfdsMpid", "d.mfdsMpid"),)),
+        TransferSpec("ProductPresave", "phpid_version", "DrugInformation", "phpid_version", (value_assignment("phpidVersion", "d.phpidVersionDateNumber"),)),
+        TransferSpec("ProductPresave", "phpid", "DrugInformation", "phpid", (value_assignment("phpid", "d.phpid"),)),
+        TransferSpec("ProductPresave", "obtain_drug_country", "DrugInformation", "obtain_drug_country", (value_assignment("obtainDrugCountry", "d.obtainDrugCountry"),)),
+        TransferSpec("ProductPresave", "investigational_product_blinded", "DrugInformation", "investigational_product_blinded", (value_assignment("investigationalProductBlinded", "d.investigationalProductBlinded"),)),
+        TransferSpec("ProductPresave", "drug_authorization_number", "DrugInformation", "drug_authorization_number", (value_assignment("drugAuthorizationNumber", "d.drugAuthorizationNumber"),)),
+        TransferSpec("ProductPresave", "drug_authorization_country", "DrugInformation", "manufacturer_country", (value_assignment("drugAuthorizationCountry", "d.drugAuthorizationCountry"),)),
+        TransferSpec("ProductPresave", "drug_authorization_holder", "DrugInformation", "manufacturer_name", (value_assignment("drugAuthorizationHolder", "d.drugAuthorizationHolder"),)),
+        TransferSpec("ProductPresaveSubstance", "substance_name", "DrugActiveSubstance", "substance_name", (value_assignment("substanceName", "s.name"),)),
+        TransferSpec("ProductPresaveSubstance", "substance_termid_version", "DrugActiveSubstance", "substance_termid_version", (value_assignment("substanceTermIdVersion", "s.termIdVersion"),)),
+        TransferSpec("ProductPresaveSubstance", "substance_termid", "DrugActiveSubstance", "substance_termid", (value_assignment("substanceTermId", "s.termId"),)),
+        TransferSpec("ProductPresaveSubstance", "mfds_version", "DrugActiveSubstance", "mfds_version", (value_assignment("mfdsVersion", "s.mfdsVersion"),)),
+        TransferSpec("ProductPresaveSubstance", "mfds_id", "DrugActiveSubstance", "mfds_id", (value_assignment("mfdsId", "s.mfdsId"),)),
+        TransferSpec("ProductPresaveSubstance", "strength_value", "DrugActiveSubstance", "strength_value", (value_assignment("substanceStrengthValue", "s.strengthNumber"),)),
+        TransferSpec("ProductPresaveSubstance", "strength_unit", "DrugActiveSubstance", "strength_unit", (value_assignment("substanceStrengthUnit", "s.strengthUnit"),)),
+    ),
+    "study": (
+        TransferSpec("StudyPresave", "study_name", "StudyInformation", "study_name", (transfer_call("studyInformation.studyName", "d.studyName"),)),
+        TransferSpec("StudyPresave", "sponsor_study_number", "StudyInformation", "sponsor_study_number", (transfer_call("studyInformation.sponsorStudyNumber", "d.sponsorStudyNumber"),)),
+        TransferSpec("StudyPresave", "study_type_reaction", "StudyInformation", "study_type_reaction", (transfer_call("studyInformation.studyTypeReaction", "d.studyTypeReaction"),)),
+        TransferSpec("StudyPresave", "fda_ind_number_occurred", "StudyInformation", "fda_ind_number_occurred", (transfer_call("studyInformation.fdaIndNumberOccurred", "d.fdaIndNumberOccurred"),)),
+        TransferSpec("StudyPresave", "fda_pre_anda_number_occurred", "StudyInformation", "fda_pre_anda_number_occurred", (transfer_call("studyInformation.fdaPreAndaNumberOccurred", "d.fdaPreAndaNumberOccurred"),)),
+        TransferSpec("StudyPresaveRegistrationNumber", "registration_number", "StudyRegistrationNumber", "registration_number", (r"d\.studyRegistrations\.filter", value_assignment("registrationNumber", "registration.registrationNumber"), transfer_call("studyInformation.studyRegistrationNumbers.${index}.registrationNumber", "registration.registrationNumber"))),
+        TransferSpec("StudyPresaveRegistrationNumber", "country_code", "StudyRegistrationNumber", "country_code", (r"d\.studyRegistrations\.filter", value_assignment("countryCode", "registration.registrationCountry"), transfer_call("studyInformation.studyRegistrationNumbers.${index}.countryCode", "registration.countryCode"))),
+        TransferSpec("StudyPresaveFdaCrossReportedInd", "ind_number", "StudyFdaCrossReportedInd", "ind_number", (r"d\.fdaCrossReportedInds\.filter", value_assignment("indNumber", "item.indNumber"), transfer_call("studyInformation.fdaCrossReportedIndNumbers.${index}.indNumber", "item.indNumber"))),
+    ),
+    "narrative": (
+        TransferSpec("NarrativePresave", "case_narrative", "NarrativeInformation", "case_narrative", (transfer_call("narrative.caseNarrative", "d.caseNarrative"),)),
+        TransferSpec("NarrativePresave", "additional_information", "NarrativeInformation", "additional_information", (transfer_call("narrative.additionalInformation", "d.additionalInformation"),)),
     ),
 }
 
@@ -259,7 +341,25 @@ def extract_reporter_transfers(root: Path) -> set[tuple[str, str]]:
     return extract_reporter_transfer_source(path.read_text(encoding="utf-8"))
 
 
+def transfer_spec_matches(source: str, spec: TransferSpec) -> bool:
+    uncommented = re.sub(r"/\*.*?\*/|//[^\n]*", "", source, flags=re.DOTALL)
+    return all(re.search(pattern, uncommented, flags=re.DOTALL) for pattern in spec.patterns)
+
+
 def extract_presave_transfers(root: Path, section: str) -> set[tuple[str, str]]:
     if section == "reporter":
         return extract_reporter_transfers(root)
-    return set()
+    source = "\n".join(
+        path.read_text(encoding="utf-8")
+        for relative in PRESAVE_SECTIONS[section].transfer_files
+        for path in (resolve_frontend_path(root, relative),)
+        if path.is_file()
+    )
+    return {
+        (
+            f"{spec.source_model}.{spec.source_field}",
+            f"{spec.target_model}.{spec.target_field}",
+        )
+        for spec in TRANSFER_SPECS.get(section, ())
+        if transfer_spec_matches(source, spec)
+    }

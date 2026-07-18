@@ -1,0 +1,748 @@
+[
+  {
+    "id": "presave.study.C.5.2",
+    "e2br3_code": "C.5.2",
+    "label": "Study Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresave",
+      "field": "study_name",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresave.study_name persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "studyName",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.studyName exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.study.C.5.3",
+    "e2br3_code": "C.5.3",
+    "label": "Sponsor Study Number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresave",
+      "field": "sponsor_study_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresave.sponsor_study_number persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "sponsorStudyNumber",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.sponsorStudyNumber exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.study.C.5.4",
+    "e2br3_code": "C.5.4",
+    "label": "Study Type Where Reaction(s) or Event(s) Were Observed",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresave",
+      "field": "study_type_reaction",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresave.study_type_reaction persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "studyTypeReaction",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.studyTypeReaction exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.study.FDA.C.5.5a",
+    "e2br3_code": "FDA.C.5.5a",
+    "label": "IND Number Where AE Occurred",
+    "section": "C",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresave",
+      "field": "fda_ind_number_occurred",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresave.fda_ind_number_occurred persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "fdaIndNumberOccurred",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.fdaIndNumberOccurred exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.study.FDA.C.5.5b",
+    "e2br3_code": "FDA.C.5.5b",
+    "label": "Pre-ANDA Number Where AE Occurred",
+    "section": "C",
+    "authority": "FDA",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresave",
+      "field": "fda_pre_anda_number_occurred",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresave.fda_pre_anda_number_occurred persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "fdaPreAndaNumberOccurred",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.fdaPreAndaNumberOccurred exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.study.C.5.1.r.1",
+    "e2br3_code": "C.5.1.r.1",
+    "label": "Study Registration Number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveRegistrationNumber",
+      "field": "registration_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveRegistrationNumber.registration_number persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.study.C.5.1.r.2",
+    "e2br3_code": "C.5.1.r.2",
+    "label": "Study Registration Country",
+    "section": "C",
+    "authority": "ICH",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveRegistrationNumber",
+      "field": "country_code",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveRegistrationNumber.country_code persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.study.FDA.C.5.6.r",
+    "e2br3_code": "FDA.C.5.6.r",
+    "label": "IND Number of Cross Reported IND",
+    "section": "C",
+    "authority": "FDA",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveFdaCrossReportedInd",
+      "field": "ind_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveFdaCrossReportedInd.ind_number persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.study.local.presave.study.edcSync",
+    "e2br3_code": "local.presave.study.edcSync",
+    "label": "edcSync",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresave",
+      "field": "edc_sync",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresave.edc_sync persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "edcSync",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.edcSync exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.excludeCaseKeyFromSync",
+    "e2br3_code": "local.presave.study.excludeCaseKeyFromSync",
+    "label": "excludeCaseKeyFromSync",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresave",
+      "field": "exclude_case_key_from_sync",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresave.exclude_case_key_from_sync persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "excludeCaseKeyFromSync",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.excludeCaseKeyFromSync exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.productPresaveId",
+    "e2br3_code": "local.presave.study.productPresaveId",
+    "label": "productPresaveId",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresave",
+      "field": "product_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresave.product_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "productPresaveId",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.productPresaveId exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.sponsorStudyNumberKind",
+    "e2br3_code": "local.presave.study.sponsorStudyNumberKind",
+    "label": "sponsorStudyNumberKind",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresave",
+      "field": "sponsor_study_number_kind",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresave.sponsor_study_number_kind persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "sponsorStudyNumberKind",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.sponsorStudyNumberKind exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.studyNameNotation",
+    "e2br3_code": "local.presave.study.studyNameNotation",
+    "label": "studyNameNotation",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresave",
+      "field": "study_name_notation",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresave.study_name_notation persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "studyNameNotation",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.studyNameNotation exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.frontend.fdaCrossReportedInds",
+    "e2br3_code": "local.presave.study.frontend.fdaCrossReportedInds",
+    "label": "fdaCrossReportedInds",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "fdaCrossReportedInds",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.fdaCrossReportedInds exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.frontend.productId",
+    "e2br3_code": "local.presave.study.frontend.productId",
+    "label": "productId",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "productId",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.productId exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.frontend.productName",
+    "e2br3_code": "local.presave.study.frontend.productName",
+    "label": "productName",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "productName",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.productName exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.frontend.studyProductName",
+    "e2br3_code": "local.presave.study.frontend.studyProductName",
+    "label": "studyProductName",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "studyProductName",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.studyProductName exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.frontend.studyProducts",
+    "e2br3_code": "local.presave.study.frontend.studyProducts",
+    "label": "studyProducts",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "studyProducts",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.studyProducts exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.frontend.studyRegistrations",
+    "e2br3_code": "local.presave.study.frontend.studyRegistrations",
+    "label": "studyRegistrations",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "studyRegistrations",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.studyRegistrations exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.frontend.studyReporters",
+    "e2br3_code": "local.presave.study.frontend.studyReporters",
+    "label": "studyReporters",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "study",
+      "field": "studyReporters",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.studyReporters exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveFdaCrossReportedInd.sequence.number",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveFdaCrossReportedInd.sequence.number",
+    "label": "StudyPresaveFdaCrossReportedInd.sequence_number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveFdaCrossReportedInd",
+      "field": "sequence_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveFdaCrossReportedInd.sequence_number persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveFdaCrossReportedInd.study.presave.id",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveFdaCrossReportedInd.study.presave.id",
+    "label": "StudyPresaveFdaCrossReportedInd.study_presave_id",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveFdaCrossReportedInd",
+      "field": "study_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveFdaCrossReportedInd.study_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveProduct.product.name",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveProduct.product.name",
+    "label": "StudyPresaveProduct.product_name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveProduct",
+      "field": "product_name",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveProduct.product_name persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveProduct.product.presave.id",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveProduct.product.presave.id",
+    "label": "StudyPresaveProduct.product_presave_id",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveProduct",
+      "field": "product_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveProduct.product_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveProduct.sequence.number",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveProduct.sequence.number",
+    "label": "StudyPresaveProduct.sequence_number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveProduct",
+      "field": "sequence_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveProduct.sequence_number persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveProduct.study.presave.id",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveProduct.study.presave.id",
+    "label": "StudyPresaveProduct.study_presave_id",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveProduct",
+      "field": "study_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveProduct.study_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveRegistrationNumber.sequence.number",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveRegistrationNumber.sequence.number",
+    "label": "StudyPresaveRegistrationNumber.sequence_number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveRegistrationNumber",
+      "field": "sequence_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveRegistrationNumber.sequence_number persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveRegistrationNumber.study.presave.id",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveRegistrationNumber.study.presave.id",
+    "label": "StudyPresaveRegistrationNumber.study_presave_id",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveRegistrationNumber",
+      "field": "study_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveRegistrationNumber.study_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveReporter.reporter.given.name",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveReporter.reporter.given.name",
+    "label": "StudyPresaveReporter.reporter_given_name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveReporter",
+      "field": "reporter_given_name",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveReporter.reporter_given_name persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveReporter.reporter.organization",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveReporter.reporter.organization",
+    "label": "StudyPresaveReporter.reporter_organization",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveReporter",
+      "field": "reporter_organization",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveReporter.reporter_organization persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveReporter.reporter.presave.id",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveReporter.reporter.presave.id",
+    "label": "StudyPresaveReporter.reporter_presave_id",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveReporter",
+      "field": "reporter_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveReporter.reporter_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveReporter.reporter.qualification",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveReporter.reporter.qualification",
+    "label": "StudyPresaveReporter.reporter_qualification",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveReporter",
+      "field": "reporter_qualification",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveReporter.reporter_qualification persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveReporter.sequence.number",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveReporter.sequence.number",
+    "label": "StudyPresaveReporter.sequence_number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveReporter",
+      "field": "sequence_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveReporter.sequence_number persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.study.local.presave.study.backend.StudyPresaveReporter.study.presave.id",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveReporter.study.presave.id",
+    "label": "StudyPresaveReporter.study_presave_id",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "StudyPresaveReporter",
+      "field": "study_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "StudyPresaveReporter.study_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  }
+]

@@ -124,6 +124,26 @@ return {
             transfers,
         )
 
+    def test_transfer_pattern_rejects_cross_wired_receiver_assignments(self):
+        batch_spec = extractor.TRANSFER_SPECS["receiver"][2]
+        source = '''
+const batchReceiverIdentifier = route.batchReceiverIdentifier;
+const messageReceiverIdentifier = route.messageReceiverIdentifier;
+importValue("messageHeader.batchReceiverIdentifier", messageReceiverIdentifier);
+importValue("messageHeader.messageReceiverIdentifier", batchReceiverIdentifier);
+'''
+
+        self.assertFalse(extractor.transfer_spec_matches(source, batch_spec))
+
+    def test_transfer_pattern_ignores_commented_assignments(self):
+        narrative_spec = extractor.TRANSFER_SPECS["narrative"][0]
+        source = '''
+// setValue("narrative.caseNarrative", d.caseNarrative);
+/* setValue("narrative.caseNarrative", d.caseNarrative); */
+'''
+
+        self.assertFalse(extractor.transfer_spec_matches(source, narrative_spec))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1429,7 +1429,7 @@ class DictionaryValidatorTests(unittest.TestCase):
 
         self.assertEqual([], result.errors)
 
-    def test_repository_reporter_presave_inventory_is_complete(self):
+    def test_repository_all_presave_inventories_are_complete(self):
         result = validate.validate_registry(
             validate_backend_inventory=False,
             validate_presave_registry_rows=True,
@@ -1437,6 +1437,22 @@ class DictionaryValidatorTests(unittest.TestCase):
         )
 
         self.assertEqual([], result.errors)
+
+    def test_repository_presave_index_covers_every_supported_section(self):
+        index_path = validate.ROOT / "presaves/index.json"
+        index = json.loads(index_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(
+            [
+                "sections/c-sender.json",
+                "sections/c-receiver.json",
+                "sections/g-product.json",
+                "sections/c-reporter.json",
+                "sections/c-study.json",
+                "sections/h-narrative.json",
+            ],
+            index["sections"],
+        )
 
     def test_ci_runs_strict_presave_inventory(self):
         workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(

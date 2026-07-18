@@ -128,8 +128,10 @@ python3 registry/tools/validate.py --strict-presave-inventory
 
 Presave rows live under `registry/presaves/` and use the same row schema as the
 case registry. An `e2br3_code` may occur once in each namespace; that code joins
-the presave row to its case destination. The current strict scope is Reporter.
-Sender, Receiver, Product, Study, and Narrative remain follow-on work.
+the presave row to its case destination. Strict inventory validation covers all
+production presave sections: Sender, Receiver, Product, Reporter, Study, and
+Narrative. It verifies frontend fields, Rust storage fields, case joins, and
+implemented presave-to-case transfers independently for every section.
 
 Reporter nullFlavor fields with dedicated database columns use local companion
 rows, while nullFlavor carried inside another field remains represented by that

@@ -315,8 +315,10 @@ configuration.
 Presave forms are handled by the separate `registry/presaves/` namespace and
 presave inventory extractor. Presave rows retain this specification's row
 shape and join to case rows by `e2br3_code`; duplicates remain forbidden within
-either namespace. Reporter is currently the only strict presave scope. Sender,
-Receiver, Product, Study, and Narrative are not yet claimed as covered.
+either namespace. Strict presave coverage includes Sender, Receiver, Product,
+Reporter, Study, and Narrative. Each configured section must independently
+cover its frontend form fields, Rust model fields, case-registry destinations,
+and implemented presave-to-case transfer assignments.
 
 Dedicated presave and case nullFlavor columns receive local companion rows.
 NullFlavor encoded in-band in a field does not create a second mapping row.

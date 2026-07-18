@@ -1,0 +1,727 @@
+[
+  {
+    "id": "presave.sender.C.3.1",
+    "e2br3_code": "C.3.1",
+    "label": "Sender Type",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "sender_type",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.sender_type persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderType",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderType exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.2",
+    "e2br3_code": "C.3.2",
+    "label": "Sender's Organisation",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "organization_name",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.organization_name persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderOrganization",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderOrganization exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.3.1",
+    "e2br3_code": "C.3.3.1",
+    "label": "Sender's Department",
+    "section": "C",
+    "authority": "ICH",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveResponsiblePerson",
+      "field": "department",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveResponsiblePerson.department persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.3.2",
+    "e2br3_code": "C.3.3.2",
+    "label": "Sender's Title",
+    "section": "C",
+    "authority": "ICH",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveResponsiblePerson",
+      "field": "person_title",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveResponsiblePerson.person_title persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.3.3",
+    "e2br3_code": "C.3.3.3",
+    "label": "Sender's Given Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveResponsiblePerson",
+      "field": "person_given_name",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveResponsiblePerson.person_given_name persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.3.4",
+    "e2br3_code": "C.3.3.4",
+    "label": "Sender's Middle Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveResponsiblePerson",
+      "field": "person_middle_name",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveResponsiblePerson.person_middle_name persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.3.5",
+    "e2br3_code": "C.3.3.5",
+    "label": "Sender's Family Name",
+    "section": "C",
+    "authority": "ICH",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveResponsiblePerson",
+      "field": "person_family_name",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveResponsiblePerson.person_family_name persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.4.1",
+    "e2br3_code": "C.3.4.1",
+    "label": "Sender's Street Address",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "street_address",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.street_address persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderStreetAddress",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderStreetAddress exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.4.2",
+    "e2br3_code": "C.3.4.2",
+    "label": "Sender's City",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "city",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.city persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderCity",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderCity exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.4.3",
+    "e2br3_code": "C.3.4.3",
+    "label": "Sender's State or Province",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "state",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.state persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderState",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderState exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.4.4",
+    "e2br3_code": "C.3.4.4",
+    "label": "Sender's Postcode",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "postcode",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.postcode persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderPostcode",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderPostcode exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.4.5",
+    "e2br3_code": "C.3.4.5",
+    "label": "Sender's Country Code",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "country_code",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.country_code persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderCountryCode",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderCountryCode exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.4.6",
+    "e2br3_code": "C.3.4.6",
+    "label": "Sender's Telephone",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "telephone",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.telephone persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderTelephone",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderTelephone exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.4.7",
+    "e2br3_code": "C.3.4.7",
+    "label": "Sender's Fax",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "fax",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.fax persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderFax",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderFax exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.C.3.4.8",
+    "e2br3_code": "C.3.4.8",
+    "label": "Sender's E-mail Address",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "email",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.email persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderEmail",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderEmail exposes the presave value."
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.N.2.r.2",
+    "e2br3_code": "N.2.r.2",
+    "label": "Message Sender Identifier",
+    "section": "N",
+    "authority": "ICH",
+    "status": "intentionally_unmapped",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveGateway",
+      "field": "sender_identifier",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveGateway.sender_identifier persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": ""
+  },
+  {
+    "id": "presave.sender.local.presave.sender.senderDefault",
+    "e2br3_code": "local.presave.sender.senderDefault",
+    "label": "senderDefault",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "is_default",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.is_default persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderDefault",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderDefault exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.senderOrganizationNotation",
+    "e2br3_code": "local.presave.sender.senderOrganizationNotation",
+    "label": "senderOrganizationNotation",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresave",
+      "field": "organization_name_notation",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresave.organization_name_notation persists the presave value."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderOrganizationNotation",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderOrganizationNotation exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.frontend.defaultSender",
+    "e2br3_code": "local.presave.sender.frontend.defaultSender",
+    "label": "defaultSender",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "defaultSender",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.defaultSender exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.frontend.isDefaultSender",
+    "e2br3_code": "local.presave.sender.frontend.isDefaultSender",
+    "label": "isDefaultSender",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "isDefaultSender",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.isDefaultSender exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.frontend.regulatorGateways",
+    "e2br3_code": "local.presave.sender.frontend.regulatorGateways",
+    "label": "regulatorGateways",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "regulatorGateways",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.regulatorGateways exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.frontend.senderDeleted",
+    "e2br3_code": "local.presave.sender.frontend.senderDeleted",
+    "label": "senderDeleted",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderDeleted",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderDeleted exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.frontend.senderPersons",
+    "e2br3_code": "local.presave.sender.frontend.senderPersons",
+    "label": "senderPersons",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "not_applicable"
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "sender",
+      "field": "senderPersons",
+      "file": "components/presave/SenderForm.tsx",
+      "evidence": "SenderPresaveData.senderPersons exposes the presave value."
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.backend.SenderPresaveGateway.cde.sender.identifier",
+    "e2br3_code": "local.presave.sender.backend.SenderPresaveGateway.cde.sender.identifier",
+    "label": "SenderPresaveGateway.cde_sender_identifier",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveGateway",
+      "field": "cde_sender_identifier",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveGateway.cde_sender_identifier persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.backend.SenderPresaveGateway.cdr.sender.identifier",
+    "e2br3_code": "local.presave.sender.backend.SenderPresaveGateway.cdr.sender.identifier",
+    "label": "SenderPresaveGateway.cdr_sender_identifier",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveGateway",
+      "field": "cdr_sender_identifier",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveGateway.cdr_sender_identifier persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.backend.SenderPresaveGateway.gateway.authority",
+    "e2br3_code": "local.presave.sender.backend.SenderPresaveGateway.gateway.authority",
+    "label": "SenderPresaveGateway.gateway_authority",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveGateway",
+      "field": "gateway_authority",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveGateway.gateway_authority persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.backend.SenderPresaveGateway.is.default.for.authority",
+    "e2br3_code": "local.presave.sender.backend.SenderPresaveGateway.is.default.for.authority",
+    "label": "SenderPresaveGateway.is_default_for_authority",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveGateway",
+      "field": "is_default_for_authority",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveGateway.is_default_for_authority persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.backend.SenderPresaveGateway.routing.identifier",
+    "e2br3_code": "local.presave.sender.backend.SenderPresaveGateway.routing.identifier",
+    "label": "SenderPresaveGateway.routing_identifier",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveGateway",
+      "field": "routing_identifier",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveGateway.routing_identifier persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.backend.SenderPresaveGateway.sender.presave.id",
+    "e2br3_code": "local.presave.sender.backend.SenderPresaveGateway.sender.presave.id",
+    "label": "SenderPresaveGateway.sender_presave_id",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveGateway",
+      "field": "sender_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveGateway.sender_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.backend.SenderPresaveGateway.sequence.number",
+    "e2br3_code": "local.presave.sender.backend.SenderPresaveGateway.sequence.number",
+    "label": "SenderPresaveGateway.sequence_number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveGateway",
+      "field": "sequence_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveGateway.sequence_number persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.backend.SenderPresaveResponsiblePerson.is.default",
+    "e2br3_code": "local.presave.sender.backend.SenderPresaveResponsiblePerson.is.default",
+    "label": "SenderPresaveResponsiblePerson.is_default",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveResponsiblePerson",
+      "field": "is_default",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveResponsiblePerson.is_default persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.backend.SenderPresaveResponsiblePerson.sender.presave.id",
+    "e2br3_code": "local.presave.sender.backend.SenderPresaveResponsiblePerson.sender.presave.id",
+    "label": "SenderPresaveResponsiblePerson.sender_presave_id",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveResponsiblePerson",
+      "field": "sender_presave_id",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveResponsiblePerson.sender_presave_id persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  },
+  {
+    "id": "presave.sender.local.presave.sender.backend.SenderPresaveResponsiblePerson.sequence.number",
+    "e2br3_code": "local.presave.sender.backend.SenderPresaveResponsiblePerson.sequence.number",
+    "label": "SenderPresaveResponsiblePerson.sequence_number",
+    "section": "C",
+    "authority": "ICH",
+    "status": "not_applicable",
+    "backend": {
+      "status": "mapped",
+      "model": "SenderPresaveResponsiblePerson",
+      "field": "sequence_number",
+      "file": "crates/libs/lib-core/src/model/presave.rs",
+      "evidence": "SenderPresaveResponsiblePerson.sequence_number persists the presave value."
+    },
+    "frontend": {
+      "status": "not_applicable"
+    },
+    "action": "",
+    "notes": "",
+    "local_only": true
+  }
+]
