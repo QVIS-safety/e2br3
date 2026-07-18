@@ -74,11 +74,20 @@ the removed `frequency_value` field. Both frontend Zod validation and the Rust
 validator must report the missing G.k.4.r.3 unit when G.k.4.r.2 is populated.
 
 G.k.4.r.3 allowed-value validation is currently catalogued but gated from
-case validation. Activate an authoritative field-specific rule that accepts
-exactly the same nine values exposed by the autocomplete. Do not rely solely
-on the UI or on the presence of an imported general UCUM release: REST clients
-and imported XML can bypass the form and must receive the same rejection for
-any other value.
+case validation. Activate it through the existing shared rule-table pipeline:
+
+- Register `ICH.G.k.4.r.3.ALLOWED.VALUE` in a dosage
+  `NestedConstraintRule` table with `frequency_unit` as its value.
+- Execute that table with the shared `eval_nested_constraints()` evaluator.
+- Include the table in the executable rule-code registry and classify the
+  existing catalog rule for the `CaseValidate` phase.
+
+Do not add a field-specific validator function, a parallel backend code set,
+or a direct validation branch. The common allowed-value evaluator reads the
+existing dictionary constraint (`kind = vocabulary`,
+`vocabulary_scope = frequency`) and validates membership in the active
+`ICH-UCUM / frequency` terminology release. REST clients and imported XML can
+bypass the form, so the shared Rust validator remains authoritative.
 
 The validation contract is:
 
@@ -88,9 +97,11 @@ The validation contract is:
 - A populated G.k.4.r.3 must equal one of `a`, `mo`, `wk`, `d`, `h`, `min`,
   `{cyclical}`, `{asnecessary}`, or `{total}`.
 
-The frontend schema mirrors the required and allowed-value rules for immediate
-feedback. The Rust validator remains authoritative for case validation after
-form saves, direct REST writes, and XML imports.
+The frontend schema mirrors the required rule for immediate feedback, while
+the static autocomplete prevents ordinary form entry outside the approved
+list. Backend vocabulary membership is not duplicated in frontend validation.
+The Rust rule-table validator remains authoritative after form saves, direct
+REST writes, and XML imports.
 
 ## Registry
 
@@ -145,8 +156,9 @@ Implementation follows red-green TDD. Tests must prove:
 3. Rust validation requires G.k.4.r.3 when `number_of_units` is populated.
 4. Frontend Zod validation requires `frequencyUnit` when `numberOfUnits` is
    populated.
-5. Rust and frontend validation accept each of the nine approved G.k.4.r.3
-   values and reject an arbitrary value such as `fortnight`, including a value
+5. With an active `ICH-UCUM / frequency` terminology fixture containing the
+   nine approved values, the shared Rust rule-table validator accepts each one
+   and rejects an arbitrary value such as `fortnight`, including a value
    supplied outside the autocomplete path.
 6. The G.k.4.r.3 autocomplete exposes exactly the nine specified options,
    supports code/label search, and stores the canonical selected value.
@@ -167,7 +179,10 @@ normal test commands.
 Backend and sibling frontend changes are one coordinated contract change.
 Reinitialize the database after deployment so `dosage_information` is created
 without `frequency_value`. No compatibility alias, fallback read, fallback
-write, or migration remains.
+write, or migration remains. Load and activate the approved constrained-UCUM
+release for the `frequency` scope before relying on backend allowed-value
+validation; the existing validator intentionally fails closed without an
+active release.
 
 ## Out of Scope
 
