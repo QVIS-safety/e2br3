@@ -10,9 +10,8 @@ use lib_core::model::permission_profile::{
 	PermissionProfileUpdateData,
 };
 use lib_core::model::ModelManager;
-use lib_rest_core::{require_admin, Error, Result};
+use lib_rest_core::{require_role_admin, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
-use lib_web::middleware::mw_permission::RequireAdmin;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
 use std::collections::BTreeMap;
@@ -296,7 +295,7 @@ pub async fn list_permission_profiles(
 	ctx_w: CtxW,
 ) -> Result<(StatusCode, Json<Vec<PermissionProfileRow>>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_role_admin(&ctx)?;
 	let mut rows = visible_built_in_roles(&ctx, &mm).await?;
 	let custom_rows = PermissionProfileBmc::list(&ctx, &mm)
 		.await
@@ -312,7 +311,7 @@ pub async fn get_permission_profile(
 	Path(id): Path<String>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_role_admin(&ctx)?;
 	if let Some(row) = visible_built_in_roles(&ctx, &mm)
 		.await?
 		.into_iter()
@@ -331,13 +330,12 @@ pub async fn get_permission_profile(
 pub async fn create_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	_admin: RequireAdmin,
 	Json(params): Json<
 		lib_rest_core::rest_params::ParamsForCreate<PermissionProfileCreateBody>,
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_role_admin(&ctx)?;
 	let data = params.data;
 	let name = data
 		.name
@@ -398,13 +396,12 @@ pub async fn update_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<String>,
-	_admin: RequireAdmin,
 	Json(params): Json<
 		lib_rest_core::rest_params::ParamsForUpdate<PermissionProfileUpdateBody>,
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_role_admin(&ctx)?;
 	if is_built_in_role_id(&id) {
 		return Err(Error::AccessDenied {
 			required_role: "editable_custom_role".to_string(),
@@ -472,7 +469,7 @@ pub async fn delete_permission_profile(
 	Path(id): Path<String>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_role_admin(&ctx)?;
 	if is_built_in_role_id(&id) {
 		return Err(Error::BadRequest {
 			message: "built-in permission profiles cannot be deleted".to_string(),

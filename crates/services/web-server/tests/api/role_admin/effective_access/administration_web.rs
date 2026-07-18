@@ -2,8 +2,72 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permissions(
-) -> Result<()> {
+async fn test_users_edit_cannot_manage_roles_or_assign_roles() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm.clone());
+	let profile_id = create_empty_custom_role(
+		&app,
+		&admin_cookie,
+		&format!("qa_users_edit_{}", Uuid::new_v4().simple()),
+	)
+	.await?;
+	update_role_privileges(
+		&app,
+		&admin_cookie,
+		&profile_id,
+		json!([{
+			"menu_key": "users",
+			"can_read": true,
+			"can_edit": true,
+			"can_review": false,
+			"can_lock": false
+		}]),
+	)
+	.await?;
+	let (_custom_user_id, custom_cookie) =
+		custom_role_user(&mm, seed.org_id, &profile_id).await?;
+
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&custom_cookie,
+		format!("/api/users/{}", seed.viewer.id),
+		Some(json!({ "data": { "comments": "allowed user-field edit" } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": { "name": "Escalated Role", "privileges": [] }
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&custom_cookie,
+		format!("/api/users/{}", seed.viewer.id),
+		Some(json!({ "data": { "role": profile_id } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
+
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_users_matrix_privileges_grant_only_user_operations() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -67,7 +131,7 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 		&app,
 		&custom_cookie,
 		&[
-			("admin", "read", false),
+			("admin", "read", true),
 			("admin", "update", false),
 			("users", "read", true),
 			("users", "create", false),
@@ -80,8 +144,7 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 		],
 	)
 	.await?;
-	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
-		.await?;
+	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK).await?;
 	let (status, value) = request_json(
 		&app,
 		"PUT",
@@ -120,22 +183,22 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 		]),
 	)
 	.await?;
-	assert!(has_permission(&roles_profile_id, USER_CREATE));
-	assert!(has_permission(&roles_profile_id, USER_UPDATE));
-	assert!(has_permission(&roles_profile_id, USER_DELETE));
+	assert!(!has_permission(&roles_profile_id, USER_CREATE));
+	assert!(!has_permission(&roles_profile_id, USER_UPDATE));
+	assert!(!has_permission(&roles_profile_id, USER_DELETE));
 	assert_profile_access(
 		&app,
 		&roles_cookie,
 		&[
-			("admin", "read", true),
-			("admin", "update", true),
-			("users", "create", true),
-			("users", "update", true),
-			("users", "delete", true),
-			("roles", "read", true),
-			("roles", "create", true),
-			("roles", "update", true),
-			("roles", "delete", true),
+			("admin", "read", false),
+			("admin", "update", false),
+			("users", "create", false),
+			("users", "update", false),
+			("users", "delete", false),
+			("roles", "read", false),
+			("roles", "create", false),
+			("roles", "update", false),
+			("roles", "delete", false),
 		],
 	)
 	.await?;
@@ -154,8 +217,8 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 	.await?;
 	assert_eq!(
 		status,
-		StatusCode::CREATED,
-		"roles.can_edit should create permission profiles: {value:?}"
+		StatusCode::FORBIDDEN,
+		"roles alias must not create permission profiles: {value:?}"
 	);
 
 	update_role_privileges(
@@ -186,10 +249,10 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 			("users", "create", true),
 			("users", "update", true),
 			("users", "delete", true),
-			("roles", "read", true),
-			("roles", "create", true),
-			("roles", "update", true),
-			("roles", "delete", true),
+			("roles", "read", false),
+			("roles", "create", false),
+			("roles", "update", false),
+			("roles", "delete", false),
 		],
 	)
 	.await?;
@@ -208,7 +271,7 @@ async fn test_users_and_roles_matrix_privileges_grant_effective_admin_permission
 		})),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::CREATED, "{value:?}");
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 
 	Ok(())
 }
@@ -281,7 +344,7 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 		&app,
 		&custom_cookie,
 		&[
-			("admin", "read", false),
+			("admin", "read", true),
 			("admin", "update", false),
 			("users", "read", false),
 			("users", "create", false),
@@ -386,8 +449,8 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 		&app,
 		&custom_cookie,
 		&[
-			("admin", "read", false),
-			("admin", "update", false),
+			("admin", "read", true),
+			("admin", "update", true),
 			("users", "read", false),
 			("users", "create", false),
 			("users", "update", false),

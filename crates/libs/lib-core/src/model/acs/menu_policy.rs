@@ -144,14 +144,11 @@ static MENU_POLICIES: &[MenuPolicy] = &[
 		EDIT => fixed(&[TERMINOLOGY_IMPORT, TERMINOLOGY_APPROVE]),
 	),
 	policy!(&["admin"];
-		READ | EDIT => bundle(PermissionBundle::Admin),
+		EDIT => bundle(PermissionBundle::Admin),
 	),
 	policy!(&["settings"];
 		READ => fixed(&[SETTINGS_READ]),
 		EDIT => fixed(&[SETTINGS_READ, SETTINGS_UPDATE]),
-	),
-	policy!(&["roles"];
-		EDIT => bundle(PermissionBundle::Admin),
 	),
 ];
 
@@ -278,7 +275,7 @@ mod tests {
 			}
 		}
 
-		assert_eq!(hash, 9112830241756177989);
+		assert_eq!(hash, 12785691653349747734);
 	}
 
 	#[test]
@@ -375,6 +372,54 @@ mod tests {
 		assert!(permissions.contains(&USER_UPDATE));
 		assert!(permissions.contains(&XML_IMPORT_READ));
 		assert!(!permissions.contains(&XML_IMPORT));
+	}
+
+	#[test]
+	fn case_read_excludes_export_execution_and_user_discovery() {
+		let permissions = permissions_for_menu_privileges(&[AdminMenuPrivilege {
+			menu_key: "case".to_string(),
+			can_read: true,
+			can_edit: false,
+			can_review: false,
+			can_lock: false,
+		}]);
+
+		assert!(permissions.contains(&CASE_READ));
+		assert!(permissions.contains(&CASE_LIST));
+		assert!(!permissions.contains(&XML_EXPORT));
+		assert!(!permissions.contains(&USER_READ));
+		assert!(!permissions.contains(&USER_LIST));
+	}
+
+	#[test]
+	fn case_edit_does_not_implicitly_export_xml() {
+		let permissions = permissions_for_menu_privileges(&[AdminMenuPrivilege {
+			menu_key: "case".to_string(),
+			can_read: false,
+			can_edit: true,
+			can_review: false,
+			can_lock: false,
+		}]);
+
+		assert!(permissions.contains(&CASE_UPDATE));
+		assert!(!permissions.contains(&XML_EXPORT));
+	}
+
+	#[test]
+	fn display_only_admin_read_and_roles_alias_grant_nothing() {
+		for (menu_key, can_read, can_edit) in
+			[("admin", true, false), ("roles", false, true)]
+		{
+			let permissions =
+				permissions_for_menu_privileges(&[AdminMenuPrivilege {
+					menu_key: menu_key.to_string(),
+					can_read,
+					can_edit,
+					can_review: false,
+					can_lock: false,
+				}]);
+			assert!(permissions.is_empty(), "{menu_key}: {permissions:?}");
+		}
 	}
 
 	#[test]
@@ -518,13 +563,15 @@ mod tests {
 				&& edit.contains(&TERMINOLOGY_APPROVE)
 		);
 
-		// admin: any check grants the full admin permission set.
-		let admin = expand("admin", true, false, false, false);
+		// admin: the display-only Read flag grants nothing; Edit retains the
+		// legacy full-admin alias for built-in provisioning data.
+		assert!(expand("admin", true, false, false, false).is_empty());
+		let admin = expand("admin", false, true, false, false);
 		assert!(admin.contains(&SETTINGS_UPDATE) && admin.contains(&USER_CREATE));
 
-		// roles: only edit/review/lock grant admin; read alone grants nothing.
-		assert!(!expand("roles", true, false, false, false).contains(&USER_CREATE));
-		assert!(expand("roles", false, true, false, false).contains(&USER_CREATE));
+		// roles is not a PDF matrix privilege. Built-in administrators manage
+		// roles by identity, not through a self-assignable menu alias.
+		assert!(expand("roles", true, true, true, true).is_empty());
 
 		// Unknown menu keys expand to nothing.
 		assert!(expand("does_not_exist", true, true, true, true).is_empty());

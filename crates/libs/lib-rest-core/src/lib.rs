@@ -50,7 +50,7 @@ use lib_core::ctx::{
 	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
 	ROLE_USER,
 };
-use lib_core::model::acs::{has_permission, Permission, USER_CREATE};
+use lib_core::model::acs::{can_access_user_admin, has_permission, Permission};
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::case::{Case, CaseBmc};
 use lib_core::model::user::UserBmc;
@@ -81,21 +81,30 @@ pub async fn is_admin(ctx: &Ctx, mm: &ModelManager) -> Result<bool> {
 }
 
 pub fn can_access_admin(ctx: &Ctx) -> bool {
-	ctx.is_admin() || has_permission(ctx.permission_subject(), USER_CREATE)
+	can_access_user_admin(ctx)
 }
 
-pub async fn require_admin(ctx: &Ctx, mm: &ModelManager) -> Result<()> {
+pub async fn require_user_admin(ctx: &Ctx, mm: &ModelManager) -> Result<()> {
 	let _ = mm;
-	if !can_access_admin(ctx) {
+	if !can_access_user_admin(ctx) {
 		return Err(Error::AccessDenied {
-			required_role: "admin".to_string(),
+			required_role: "user administration".to_string(),
+		});
+	}
+	Ok(())
+}
+
+pub fn require_role_admin(ctx: &Ctx) -> Result<()> {
+	if !ctx.is_admin() {
+		return Err(Error::AccessDenied {
+			required_role: "role administration".to_string(),
 		});
 	}
 	Ok(())
 }
 
 pub async fn admin_db_ctx(ctx: &Ctx, mm: &ModelManager) -> Result<Ctx> {
-	require_admin(ctx, mm).await?;
+	require_user_admin(ctx, mm).await?;
 	if ctx.is_system_admin() || ctx.is_sponsor_admin() {
 		return Ok(ctx.clone());
 	}
