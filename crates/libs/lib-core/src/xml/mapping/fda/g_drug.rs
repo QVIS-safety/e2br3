@@ -33,7 +33,6 @@ impl GDrugPaths {
 		"hl7:inboundRelationship[@typeCode='CAUS']/hl7:act/hl7:code/@code";
 	pub const RECHALLENGE: &'static str =
 		"hl7:outboundRelationship2/hl7:observation[hl7:code[@code='31']]/hl7:value/@code";
-	pub const DOSAGE_TEXT: &'static str = "hl7:text";
 	pub const BATCH_LOT_NUMBER: &'static str =
 		"hl7:consumable/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText";
 	pub const CUMULATIVE_DOSE_VALUE: &'static str =

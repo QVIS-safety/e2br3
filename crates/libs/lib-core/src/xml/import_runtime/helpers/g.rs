@@ -88,7 +88,6 @@ pub(crate) struct DrugImport {
 	pub(crate) cumulative_dose_first_reaction_unit: Option<String>,
 	pub(crate) gestation_period_exposure_value: Option<Decimal>,
 	pub(crate) gestation_period_exposure_unit: Option<String>,
-	pub(crate) dosage_text: Option<String>,
 	pub(crate) action_taken: Option<String>,
 	pub(crate) fda_additional_info_coded: Option<String>,
 	pub(crate) fda_specialized_product_category: Option<String>,

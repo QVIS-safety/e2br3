@@ -1966,7 +1966,6 @@ mod golden_g_required_tests {
 			cumulative_dose_first_reaction_unit: None,
 			gestation_period_exposure_value: None,
 			gestation_period_exposure_unit: None,
-			dosage_text: None,
 			action_taken: None,
 			fda_additional_info_coded: None,
 			drug_additional_info_codes_json: None,

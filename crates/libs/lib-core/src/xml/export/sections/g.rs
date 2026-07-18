@@ -158,11 +158,6 @@ pub(crate) fn drug_fragment(
 	out.push_str("<id root=\"");
 	out.push_str(&xml_escape(&drug.id.to_string()));
 	out.push_str("\"/>");
-	if let Some(text) = drug.dosage_text.as_deref() {
-		out.push_str("<text>");
-		out.push_str(&xml_escape(text));
-		out.push_str("</text>");
-	}
 	out.push_str(
 		"<consumable typeCode=\"CSM\"><instanceOfKind classCode=\"INST\"><kindOfProduct classCode=\"MMAT\" determinerCode=\"KIND\">",
 	);
@@ -817,6 +812,8 @@ fn base_g_drug_skeleton() -> &'static str {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use rust_decimal::Decimal;
+	use sqlx::types::time::Date;
 	use sqlx::types::Uuid;
 	use time::OffsetDateTime;
 
@@ -845,7 +842,6 @@ mod tests {
 			cumulative_dose_first_reaction_unit: None,
 			gestation_period_exposure_value: None,
 			gestation_period_exposure_unit: None,
-			dosage_text: None,
 			action_taken: None,
 			fda_additional_info_coded: None,
 			drug_additional_info_codes_json: None,
@@ -878,6 +874,74 @@ mod tests {
 			created_by: Uuid::new_v4(),
 			updated_by: None,
 		}
+	}
+
+	fn test_dosage(drug_id: Uuid) -> DosageInformation {
+		DosageInformation {
+			id: Uuid::new_v4(),
+			drug_id,
+			sequence_number: 1,
+			dose_value: None,
+			dose_unit: None,
+			number_of_units: None,
+			frequency_value: None,
+			frequency_unit: None,
+			first_administration_date: None::<Date>,
+			last_administration_date: None::<Date>,
+			duration_value: None::<Decimal>,
+			duration_unit: None,
+			continuing: None,
+			batch_lot_number: None,
+			batch_lot_number_null_flavor: None,
+			dosage_text: Some("row dosage text".to_string()),
+			dose_form: None,
+			dose_form_termid: None,
+			dose_form_termid_version: None,
+			route_of_administration: None,
+			route_termid: None,
+			route_termid_version: None,
+			parent_route: None,
+			parent_route_termid: None,
+			parent_route_termid_version: None,
+			first_administration_date_null_flavor: None,
+			last_administration_date_null_flavor: None,
+			deleted: false,
+			created_at: OffsetDateTime::now_utc(),
+			updated_at: OffsetDateTime::now_utc(),
+			created_by: Uuid::new_v4(),
+			updated_by: None,
+		}
+	}
+
+	#[test]
+	fn export_g_emits_dosage_text_only_inside_repeated_dosage() {
+		let case_id = Uuid::new_v4();
+		let drug_id = Uuid::new_v4();
+		let drug = test_drug(drug_id, case_id);
+		let dosage = test_dosage(drug_id);
+
+		let xml = export_g_drugs_xml(&[drug], &[], &[dosage], &[], &[], &[], &[])
+			.expect("export xml");
+		let parser = libxml::parser::Parser::default();
+		let doc = parser.parse_string(&xml).expect("parse exported xml");
+		let mut xpath = libxml::xpath::Context::new(&doc).expect("xpath");
+		xpath.register_namespace("hl7", "urn:hl7-org:v3").unwrap();
+
+		let drug_text = xpath
+			.findvalue(
+				"//hl7:organizer/hl7:component/hl7:substanceAdministration/hl7:text",
+				None,
+			)
+			.unwrap();
+		let dosage_text = xpath
+			.findvalue(
+				"//hl7:outboundRelationship2/hl7:substanceAdministration/hl7:text",
+				None,
+			)
+			.unwrap();
+
+		assert_eq!(drug_text, "");
+		assert_eq!(dosage_text, "row dosage text");
 	}
 
 	#[test]

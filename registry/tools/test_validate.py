@@ -1429,6 +1429,7 @@ class RemovedOrphanLocalFieldsTests(unittest.TestCase):
             "D.local.patientFamilyName",
             "G.k.local.supplemental.brandName",
             "G.k.local.supplemental.genericName",
+            "G.k.local.supplemental.dosageText",
             "G.k.local.parentDosageText",
             "G.k.local.dosage.firstAdministrationTime",
             "G.k.local.dosage.lastAdministrationTime",
@@ -1469,6 +1470,12 @@ class RemovedOrphanLocalFieldsTests(unittest.TestCase):
         self.assertNotIn("pub brand_name: Option<String>", model_sources)
         self.assertNotIn("\n    brand_name VARCHAR", model_sources)
         self.assertFalse((repo / "crates/libs/lib-core/src/model/drug_recurrence.rs").exists())
+        drug_source = (repo / "crates/libs/lib-core/src/model/drug.rs").read_text()
+        drug_information_source = drug_source.split("// -- DosageInformation", 1)[0]
+        self.assertNotIn("pub dosage_text: Option<String>", drug_information_source)
+        bootstrap = (repo / "db/bootstrap/07-drug-information.sql").read_text()
+        drug_table = bootstrap.split("CREATE TABLE dosage_information", 1)[0]
+        self.assertNotIn("dosage_text", drug_table)
 
 
 if __name__ == "__main__":

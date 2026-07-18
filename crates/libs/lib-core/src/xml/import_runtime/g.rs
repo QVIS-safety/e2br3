@@ -62,7 +62,6 @@ async fn import_drugs(
 				.cumulative_dose_first_reaction_unit,
 			gestation_period_exposure_value: entry.gestation_period_exposure_value,
 			gestation_period_exposure_unit: entry.gestation_period_exposure_unit,
-			dosage_text: entry.dosage_text,
 			action_taken: entry.action_taken,
 			fda_additional_info_coded: entry.fda_additional_info_coded,
 			fda_specialized_product_category: entry.fda_specialized_product_category,
@@ -188,7 +187,6 @@ async fn import_drugs(
 				gestation_period_exposure_value: drug
 					.gestation_period_exposure_value,
 				gestation_period_exposure_unit: drug.gestation_period_exposure_unit,
-				dosage_text: drug.dosage_text,
 				action_taken: drug.action_taken,
 				investigational_product_blinded: drug
 					.investigational_product_blinded,

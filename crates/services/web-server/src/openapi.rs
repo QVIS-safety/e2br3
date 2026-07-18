@@ -1477,7 +1477,6 @@ struct DrugInformationDoc {
 	cumulative_dose_first_reaction_unit: Option<String>,
 	gestation_period_exposure_value: Option<String>,
 	gestation_period_exposure_unit: Option<String>,
-	dosage_text: Option<String>,
 	action_taken: Option<String>,
 	fda_additional_info_coded: Option<String>,
 	#[schema(value_type = Object)]
@@ -1517,7 +1516,6 @@ struct DrugInformationForUpdateDoc {
 	cumulative_dose_first_reaction_unit: Option<String>,
 	gestation_period_exposure_value: Option<String>,
 	gestation_period_exposure_unit: Option<String>,
-	dosage_text: Option<String>,
 	action_taken: Option<String>,
 	investigational_product_blinded: Option<bool>,
 	mpid: Option<String>,

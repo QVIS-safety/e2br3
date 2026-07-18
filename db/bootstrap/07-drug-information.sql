@@ -54,9 +54,6 @@ CREATE TABLE drug_information (
     gestation_period_exposure_value DECIMAL(10,2),
     gestation_period_exposure_unit VARCHAR(50),
 
-    -- Application-level legacy dosage text
-    dosage_text TEXT,
-
     -- G.k.7 - Action(s) Taken with Drug (E2B(R3) codes)
     action_taken VARCHAR(1) CHECK (action_taken IN ('1', '2', '3', '4', '5', '6')),
     -- 1=Withdrawn, 2=Dose reduced, 3=Dose increased, 4=Dose not changed,

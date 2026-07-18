@@ -1403,31 +1403,6 @@
     "notes": " Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
   },
   {
-    "id": "G.k.local.supplemental.dosageText",
-    "e2br3_code": "G.k.local.supplemental.dosageText",
-    "label": "Supplemental Drug Dosage Text",
-    "section": "G",
-    "authority": "ICH",
-    "status": "frontend_missing",
-    "local_only": true,
-    "backend": {
-      "status": "mapped",
-      "model": "DrugInformation",
-      "field": "dosage_text",
-      "file": "crates/libs/lib-core/src/model/drug.rs",
-      "evidence": "DrugInformation.dosage_text stores the local app-level dosage text helper."
-    },
-    "frontend": {
-      "status": "missing",
-      "section": "drugs",
-      "field": "drugDosageText",
-      "file": "../frontend/E2BR3-frontend/components/case-form/sections/SectionG.tsx",
-      "evidence": "Not present in the current case-form section source; no rendered Controller/register binding for this field."
-    },
-    "action": "",
-    "notes": "Structured dosage is captured under G.k.4.r DosageInformation rows. Supplemental local field; official dosage text is G.k.4.r.8. Demoted to frontend_missing 2026-07-08: backend remains implemented, but no matching form input is rendered in the current case-form source (field exists only in default-value state / TS types, not as a Controller or register binding)."
-  },
-  {
     "id": "G.k.11",
     "e2br3_code": "G.k.11",
     "label": "Additional Information on Drug",
