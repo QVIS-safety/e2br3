@@ -11,6 +11,7 @@ use serial_test::serial;
 use tower::ServiceExt;
 use uuid::Uuid;
 
+#[serial]
 #[tokio::test]
 async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 	let mm = init_test_mm().await?;
@@ -80,8 +81,7 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(value["notices"][0]["title"], "Updated maintenance");
-	assert_eq!(value["notices"][0]["writer"], seed.admin.email);
+	assert_eq!(value["notices"], json!([]));
 
 	let (status, value) = request_json(
 		&app,
@@ -148,11 +148,10 @@ async fn test_dashboard_notices_are_org_scoped_and_audited() -> Result<()> {
 	Ok(())
 }
 
-// Locks the read-permission contract: dashboard notices are shown on the home
-// dashboard to all authenticated users, so reading them via the runtime settings
-// endpoint must NOT be gated behind admin access or notice-edit permission.
+// PDF Role & Privilege: HOME Notice Read controls runtime notice visibility.
+#[serial]
 #[tokio::test]
-async fn test_dashboard_notices_readable_by_non_admin_viewer() -> Result<()> {
+async fn test_dashboard_notices_hidden_without_notice_read() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -183,7 +182,7 @@ async fn test_dashboard_notices_readable_by_non_admin_viewer() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 
-	// A non-admin viewer can read the notice from the runtime settings endpoint.
+	// A viewer without HOME Notice Read receives a redacted collection.
 	let (status, value) = request_json(
 		&app,
 		&viewer_cookie,
@@ -193,7 +192,7 @@ async fn test_dashboard_notices_readable_by_non_admin_viewer() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
-	assert_eq!(value["notices"][0]["title"], "Reboot window");
+	assert_eq!(value["notices"], json!([]));
 
 	Ok(())
 }

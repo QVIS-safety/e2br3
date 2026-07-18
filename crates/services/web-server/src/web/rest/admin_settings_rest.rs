@@ -6,7 +6,8 @@ use lib_core::ctx::{
 	ROLE_USER,
 };
 use lib_core::model::acs::{
-	DASHBOARD_NOTICE_UPDATE, SETTINGS_READ, SETTINGS_UPDATE,
+	has_permission, DASHBOARD_NOTICE_READ, DASHBOARD_NOTICE_UPDATE, SETTINGS_READ,
+	SETTINGS_UPDATE,
 };
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::ModelManager;
@@ -461,7 +462,10 @@ pub async fn get_runtime_settings(
 	ctx_w: CtxW,
 ) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
 	let ctx = ctx_w.0;
-	let payload = load_admin_settings_payload(&ctx, &mm).await?;
+	let mut payload = load_admin_settings_payload(&ctx, &mm).await?;
+	if !has_permission(ctx.permission_subject(), DASHBOARD_NOTICE_READ) {
+		payload.notices = Some(Vec::new());
+	}
 	Ok((StatusCode::OK, Json(payload)))
 }
 
@@ -472,7 +476,10 @@ pub async fn get_admin_settings(
 ) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SETTINGS_READ)?;
-	let payload = load_admin_settings_payload(&ctx, &mm).await?;
+	let mut payload = load_admin_settings_payload(&ctx, &mm).await?;
+	if !has_permission(ctx.permission_subject(), DASHBOARD_NOTICE_READ) {
+		payload.notices = Some(Vec::new());
+	}
 	Ok((StatusCode::OK, Json(payload)))
 }
 

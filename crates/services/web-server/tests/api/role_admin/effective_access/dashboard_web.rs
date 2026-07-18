@@ -14,6 +14,22 @@ async fn test_home_notice_matrix_privileges_surface_in_current_user_capabilities
 		create_empty_custom_role(&app, &admin_cookie, &profile_id).await?;
 	let (_custom_user_id, custom_cookie) =
 		custom_role_user(&mm, seed.org_id, &profile_id).await?;
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&admin_cookie,
+		"/api/admin/notices".to_string(),
+		Some(json!({
+			"data": {
+				"notices": [{
+					"id": "pdf-notice-read",
+					"title": "PDF permission notice"
+				}]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
 
 	assert_profile_access(
 		&app,
@@ -24,6 +40,14 @@ async fn test_home_notice_matrix_privileges_surface_in_current_user_capabilities
 		],
 	)
 	.await?;
+	let runtime = assert_get_status(
+		&app,
+		&custom_cookie,
+		"/api/settings/runtime",
+		StatusCode::OK,
+	)
+	.await?;
+	assert_eq!(runtime["notices"], json!([]), "{runtime:?}");
 
 	update_role_privileges(
 		&app,
@@ -54,6 +78,14 @@ async fn test_home_notice_matrix_privileges_surface_in_current_user_capabilities
 	assert!(has_permission(&profile_id, DASHBOARD_NOTICE_READ));
 	assert!(has_permission(&profile_id, DASHBOARD_NOTICE_UPDATE));
 	assert!(!has_permission(&profile_id, SETTINGS_UPDATE));
+	let runtime = assert_get_status(
+		&app,
+		&custom_cookie,
+		"/api/settings/runtime",
+		StatusCode::OK,
+	)
+	.await?;
+	assert_eq!(runtime["notices"][0]["title"], "PDF permission notice");
 
 	Ok(())
 }
