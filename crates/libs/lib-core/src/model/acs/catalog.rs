@@ -25,6 +25,7 @@ permission_group! {
 	CASE_DELETE => Delete,
 	CASE_LIST => List,
 	CASE_APPROVE => Approve,
+	CASE_LOCK => Lock,
 }
 
 permission_group! {

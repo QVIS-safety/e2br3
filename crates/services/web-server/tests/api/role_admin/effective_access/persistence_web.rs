@@ -146,8 +146,10 @@ async fn test_role_admin_api_persists_privilege_matrix_menu_keys() -> Result<()>
 	let privileges = persisted_role["privileges"]
 		.as_array()
 		.ok_or("persisted role privileges should be an array")?;
+	// Review/Lock are CASE-only rows in the reference model: the submitted
+	// home_workflow can_review=true must be normalized away on persist.
 	for (menu_key, can_read, can_edit, can_review, can_lock) in [
-		("home_workflow", true, false, true, false),
+		("home_workflow", true, false, false, false),
 		("home_notice", true, true, false, false),
 		("case", true, true, true, true),
 		("info", true, true, false, false),

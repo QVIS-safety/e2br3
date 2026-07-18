@@ -67,19 +67,31 @@ macro_rules! policy {
 	};
 }
 
+// Reference privilege model: privileges are Read/Edit only. Review and Lock
+// exist solely as the CASE menu's Review/Lock rows (the `case` key's REVIEW and
+// LOCK flags below) plus read-only E-mail subscription rows; no other policy
+// may consume the REVIEW/LOCK flags.
 static MENU_POLICIES: &[MenuPolicy] = &[
-	policy!(&["home_workflow"]; READ => fixed(&[CASE_READ, CASE_LIST])),
+	// HOME|Workflow|Read and CASE|Workflow|Read reference rows: both are
+	// read-only workflow visibility over cases.
+	policy!(&["home_workflow", "case_workflow"]; READ => fixed(&[CASE_READ, CASE_LIST])),
 	policy!(&["home_notice"];
 		READ => fixed(&[DASHBOARD_NOTICE_READ]),
-		EDIT | REVIEW | LOCK => fixed(&[DASHBOARD_NOTICE_READ, DASHBOARD_NOTICE_UPDATE]),
+		EDIT => fixed(&[DASHBOARD_NOTICE_READ, DASHBOARD_NOTICE_UPDATE]),
 	),
 	policy!(&["home_email"];
-		EDIT | REVIEW | LOCK => fixed(&[EMAIL_NOTIFICATION_SEND]),
+		EDIT => fixed(&[EMAIL_NOTIFICATION_SEND]),
 	),
+	// E-mail subscription rows (Report Due Mail / Review / Lock, Read privilege
+	// = receive that mail). Feature pending: the keys persist in the privilege
+	// matrix but grant no permissions yet, mirroring the org menu keys.
 	policy!(&["case"];
 		READ => bundle(PermissionBundle::Viewer),
 		EDIT => bundle(PermissionBundle::ProfileEdit),
-		REVIEW | LOCK => fixed(&[CASE_APPROVE, CASE_UPDATE]),
+		// CASE|Review|Edit and CASE|Lock|Edit reference rows: each grants
+		// exactly its dedicated workflow permission, never general edit.
+		REVIEW => fixed(&[CASE_APPROVE]),
+		LOCK => fixed(&[CASE_LOCK]),
 	),
 	policy!(&["info"];
 		READ => fixed(&[
@@ -122,24 +134,24 @@ static MENU_POLICIES: &[MenuPolicy] = &[
 	),
 	policy!(&["user", "users"];
 		READ => fixed(&[USER_READ, USER_LIST]),
-		EDIT | REVIEW | LOCK => fixed(&[USER_CREATE, USER_UPDATE, USER_DELETE]),
+		EDIT => fixed(&[USER_CREATE, USER_UPDATE, USER_DELETE]),
 	),
 	policy!(&["audit"];
-		READ | REVIEW => fixed(&[AUDIT_READ, AUDIT_LIST]),
+		READ => fixed(&[AUDIT_READ, AUDIT_LIST]),
 	),
 	policy!(&["data", "terminology"];
 		READ => fixed(&[TERMINOLOGY_READ]),
-		EDIT | REVIEW => fixed(&[TERMINOLOGY_IMPORT, TERMINOLOGY_APPROVE]),
+		EDIT => fixed(&[TERMINOLOGY_IMPORT, TERMINOLOGY_APPROVE]),
 	),
 	policy!(&["admin"];
-		READ | EDIT | REVIEW | LOCK => bundle(PermissionBundle::Admin),
+		READ | EDIT => bundle(PermissionBundle::Admin),
 	),
 	policy!(&["settings"];
 		READ => fixed(&[SETTINGS_READ]),
-		EDIT | REVIEW | LOCK => fixed(&[SETTINGS_READ, SETTINGS_UPDATE]),
+		EDIT => fixed(&[SETTINGS_READ, SETTINGS_UPDATE]),
 	),
 	policy!(&["roles"];
-		EDIT | REVIEW | LOCK => bundle(PermissionBundle::Admin),
+		EDIT => bundle(PermissionBundle::Admin),
 	),
 ];
 
@@ -217,8 +229,12 @@ mod tests {
 
 		for menu_key in [
 			"home_workflow",
+			"case_workflow",
 			"home_notice",
 			"home_email",
+			"email_report_due",
+			"email_review",
+			"email_lock",
 			"case",
 			"info",
 			"import",
@@ -262,7 +278,7 @@ mod tests {
 			}
 		}
 
-		assert_eq!(hash, 2630966853104627178);
+		assert_eq!(hash, 9112830241756177989);
 	}
 
 	#[test]
@@ -425,10 +441,16 @@ mod tests {
 			}])
 		}
 
-		// home_workflow: read grants case view only, never write.
-		let p = expand("home_workflow", true, false, false, false);
-		assert!(p.contains(&CASE_READ) && p.contains(&CASE_LIST));
-		assert!(!p.contains(&CASE_CREATE) && !p.contains(&CASE_UPDATE));
+		// home_workflow / case_workflow: read grants case view only, never write.
+		for key in ["home_workflow", "case_workflow"] {
+			let p = expand(key, true, false, false, false);
+			assert!(p.contains(&CASE_READ) && p.contains(&CASE_LIST), "{key}");
+			assert!(
+				!p.contains(&CASE_CREATE) && !p.contains(&CASE_UPDATE),
+				"{key}"
+			);
+			assert!(expand(key, false, true, true, true).is_empty(), "{key}");
+		}
 
 		// home_email: single "Send" checkbox bound to can_edit (feature pending).
 		assert!(expand("home_email", false, true, false, false)
@@ -436,13 +458,14 @@ mod tests {
 		assert!(!expand("home_email", true, false, false, false)
 			.contains(&EMAIL_NOTIFICATION_SEND));
 
-		// case: read = viewer, edit = write, review/lock = approve.
+		// case: read = viewer, edit = write, review = approve, lock = lock.
 		let read = expand("case", true, false, false, false);
 		assert!(read.contains(&CASE_READ));
 		assert!(!read.contains(&CASE_CREATE));
 		let edit = expand("case", true, true, false, false);
 		assert!(edit.contains(&CASE_CREATE) && edit.contains(&CASE_UPDATE));
 		assert!(expand("case", false, false, true, false).contains(&CASE_APPROVE));
+		assert!(expand("case", false, false, false, true).contains(&CASE_LOCK));
 
 		// info: read vs edit on presave/section templates.
 		let read = expand("info", true, false, false, false);
@@ -481,9 +504,8 @@ mod tests {
 		assert!(expand("organizations", true, true, true, true).is_empty());
 		assert!(expand("organization", true, true, true, true).is_empty());
 
-		// audit: granted on read OR review; edit-only grants nothing.
+		// audit: read only; edit-only grants nothing.
 		assert!(expand("audit", true, false, false, false).contains(&AUDIT_READ));
-		assert!(expand("audit", false, false, true, false).contains(&AUDIT_LIST));
 		assert!(!expand("audit", false, true, false, false).contains(&AUDIT_READ));
 
 		// data/terminology: read vs import/approve.
@@ -506,6 +528,78 @@ mod tests {
 
 		// Unknown menu keys expand to nothing.
 		assert!(expand("does_not_exist", true, true, true, true).is_empty());
+	}
+
+	// Reference model: Review/Lock exist only as CASE menu rows (CASE|Review|Edit,
+	// CASE|Lock|Edit). They grant exactly their dedicated permission — never the
+	// general case-edit permission.
+	#[test]
+	fn test_case_review_and_lock_grant_only_their_dedicated_permission() {
+		let review = permissions_for_menu_privileges(&[AdminMenuPrivilege {
+			menu_key: "case".to_string(),
+			can_read: false,
+			can_edit: false,
+			can_review: true,
+			can_lock: false,
+		}]);
+		assert_eq!(review, vec![CASE_APPROVE]);
+
+		let lock = permissions_for_menu_privileges(&[AdminMenuPrivilege {
+			menu_key: "case".to_string(),
+			can_read: false,
+			can_edit: false,
+			can_review: false,
+			can_lock: true,
+		}]);
+		assert_eq!(lock, vec![CASE_LOCK]);
+	}
+
+	// Review/Lock are not generic privilege columns; on every menu key other than
+	// "case" they must grant nothing (the reference UI has no such checkboxes).
+	#[test]
+	fn test_review_and_lock_flags_grant_nothing_outside_case() {
+		for menu_key in [
+			"home_workflow",
+			"case_workflow",
+			"home_notice",
+			"home_email",
+			"email_report_due",
+			"email_review",
+			"email_lock",
+			"info",
+			"import",
+			"export_submission",
+			"submission",
+			"export",
+			"user",
+			"users",
+			"audit",
+			"data",
+			"terminology",
+			"admin",
+			"settings",
+			"roles",
+		] {
+			let permissions =
+				permissions_for_menu_privileges(&[AdminMenuPrivilege {
+					menu_key: menu_key.to_string(),
+					can_read: false,
+					can_edit: false,
+					can_review: true,
+					can_lock: true,
+				}]);
+			assert!(
+				permissions.is_empty(),
+				"{menu_key} review/lock must grant nothing, got {permissions:?}"
+			);
+		}
+	}
+
+	#[test]
+	fn test_sponsor_admin_has_case_lock_permission() {
+		assert!(has_permission(ROLE_SPONSOR_ADMIN_CRO, CASE_LOCK));
+		assert!(has_permission(ROLE_SPONSOR_ADMIN_COMPANY, CASE_LOCK));
+		assert!(!has_permission(ROLE_USER, CASE_LOCK));
 	}
 
 	#[test]
