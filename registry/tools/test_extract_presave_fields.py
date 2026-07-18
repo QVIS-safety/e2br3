@@ -50,6 +50,7 @@ pub struct ReporterPresave {
         )
 
         self.assertIn("reporter.reporterNameNullFlavor", frontend)
+        self.assertIn("reporter.reporterCountryNullFlavor", frontend)
         self.assertIn("ReporterPresave.reporter_name_null_flavor", backend)
         self.assertIn("ReporterPresave.country_code_null_flavor", backend)
         self.assertIn("ReporterPresave.qualification_null_flavor", backend)
