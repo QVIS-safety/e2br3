@@ -160,7 +160,7 @@ jobs:
           SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
           SERVICE_TOKEN_DURATION_SEC: "1800"
           SERVICE_WEB_FOLDER: "web-folder/"
-        run: cargo test --workspace --exclude lib-core
+        run: cargo test --workspace --exclude lib-core -- --test-threads=1
 
       - name: Release Validation Gates
         env:
