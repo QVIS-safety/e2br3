@@ -102,6 +102,21 @@ pub(super) struct CiomsFormData {
 	pub(super) report_type: String,
 }
 
+fn dosage_texts_for_drug(data: &CiomsCaseData, drug_id: Uuid) -> String {
+	let mut rows: Vec<_> = data
+		.dosages
+		.iter()
+		.filter(|dosage| dosage.drug_id == drug_id)
+		.collect();
+	rows.sort_by_key(|dosage| dosage.sequence_number);
+	rows.into_iter()
+		.filter_map(|dosage| dosage.dosage_text.as_deref())
+		.map(str::trim)
+		.filter(|text| !text.is_empty())
+		.collect::<Vec<_>>()
+		.join("\n")
+}
+
 impl CiomsFormData {
 	pub(super) fn from_case_data(
 		data: &CiomsCaseData,
@@ -154,11 +169,8 @@ impl CiomsFormData {
 				" - ",
 			),
 			suspect_drug_name: drug_name(suspect_drug),
-			suspect_drug_dose: suspect_drug
-				.and_then(|drug| drug.dosage_text.clone())
-				.or_else(|| {
-					suspect_dosage.and_then(|dosage| dosage.dosage_text.clone())
-				})
+			suspect_drug_dose: suspect_drug_id
+				.map(|drug_id| dosage_texts_for_drug(data, drug_id))
 				.unwrap_or_default(),
 			suspect_drug_route: suspect_dosage
 				.and_then(|dosage| dosage.route_of_administration.clone())

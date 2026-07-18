@@ -37,7 +37,6 @@ fn export_g_drug_basic() {
 		cumulative_dose_first_reaction_unit: Some("mg".to_string()),
 		gestation_period_exposure_value: Some(10.into()),
 		gestation_period_exposure_unit: Some("wk".to_string()),
-		dosage_text: Some("Take once daily".to_string()),
 		action_taken: Some("5".to_string()),
 		fda_additional_info_coded: Some("1".to_string()),
 		drug_additional_info_codes_json: None,
@@ -155,13 +154,6 @@ fn export_g_drug_basic() {
 		)
 		.unwrap();
 	assert_eq!(mpid, "MPID123");
-	let drug_text = xpath
-		.findvalue(
-			"//hl7:organizer/hl7:component/hl7:substanceAdministration/hl7:text",
-			None,
-		)
-		.unwrap();
-	assert_eq!(drug_text, "Take once daily");
 	let drug_batch = xpath
 		.findvalue(
 			"//hl7:consumable/hl7:instanceOfKind/hl7:productInstanceInstance/hl7:lotNumberText",

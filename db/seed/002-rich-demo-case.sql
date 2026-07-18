@@ -359,7 +359,7 @@ BEGIN
         obtain_drug_country, drug_authorization_number,
         manufacturer_name, manufacturer_country, batch_lot_number,
         cumulative_dose_first_reaction_value, cumulative_dose_first_reaction_unit,
-        gestation_period_exposure_value, gestation_period_exposure_unit, dosage_text,
+        gestation_period_exposure_value, gestation_period_exposure_unit,
         action_taken, fda_additional_info_coded, drug_additional_info_codes_json,
         fda_specialized_product_category, fda_device_info_json, drug_additional_information,
         created_by, updated_by, created_at, updated_at
@@ -369,7 +369,7 @@ BEGIN
         'PHPID-DEMO-50', '2026.1', false,
         'KR', 'KR-DA-7781',
         'QVIS Biopharma', 'KR', 'LOT-2026-A1',
-        100.0, 'mg', 0, '804', '50 mg orally once daily for 2 days',
+        100.0, 'mg', 0, '804',
         '2',
         '1', '["3","7"]'::jsonb,
         'combination_product',

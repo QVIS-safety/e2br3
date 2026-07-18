@@ -30,7 +30,6 @@ pub struct GDrugImport {
 	pub cumulative_dose_first_reaction_unit: Option<String>,
 	pub gestation_period_exposure_value: Option<Decimal>,
 	pub gestation_period_exposure_unit: Option<String>,
-	pub dosage_text: Option<String>,
 	pub action_taken: Option<String>,
 	pub rechallenge: Option<String>,
 	pub fda_additional_info_coded: Option<String>,
@@ -182,7 +181,6 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			first_attr(&mut xpath, &node, GDrugPaths::RECHALLENGE),
 			&["1", "2", "3", "4"],
 		);
-		let dosage_text = first_text(&mut xpath, &node, GDrugPaths::DOSAGE_TEXT);
 		let batch_lot_number =
 			first_text(&mut xpath, &node, GDrugPaths::BATCH_LOT_NUMBER);
 		let cumulative_dose_first_reaction_value =
@@ -456,7 +454,6 @@ pub fn parse_g_drugs(xml: &[u8]) -> Result<Vec<GDrugImport>> {
 			cumulative_dose_first_reaction_unit,
 			gestation_period_exposure_value,
 			gestation_period_exposure_unit,
-			dosage_text,
 			action_taken,
 			rechallenge,
 			fda_additional_info_coded,

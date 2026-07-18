@@ -61,9 +61,6 @@ pub struct DrugInformation {
 	pub gestation_period_exposure_value: Option<Decimal>,
 	pub gestation_period_exposure_unit: Option<String>,
 
-	// G.k.4.r.8 / legacy app-level dosage text
-	pub dosage_text: Option<String>,
-
 	// G.k.7 - Action taken
 	pub action_taken: Option<String>,
 
@@ -101,7 +98,6 @@ pub struct DrugInformationForCreate {
 	pub cumulative_dose_first_reaction_unit: Option<String>,
 	pub gestation_period_exposure_value: Option<Decimal>,
 	pub gestation_period_exposure_unit: Option<String>,
-	pub dosage_text: Option<String>,
 	pub action_taken: Option<String>,
 	pub investigational_product_blinded: Option<bool>,
 	pub mpid: Option<String>,
@@ -132,7 +128,6 @@ pub struct DrugInformationForUpdate {
 	pub cumulative_dose_first_reaction_unit: Option<String>,
 	pub gestation_period_exposure_value: Option<Decimal>,
 	pub gestation_period_exposure_unit: Option<String>,
-	pub dosage_text: Option<String>,
 	pub action_taken: Option<String>,
 	pub investigational_product_blinded: Option<bool>,
 	pub mpid: Option<String>,
@@ -945,7 +940,7 @@ impl DrugInformationBmc {
 				     case_id, source_product_presave_id, sequence_number, drug_characterization, medicinal_product,
 				     drug_authorization_number, manufacturer_name, manufacturer_country,
 				     batch_lot_number, cumulative_dose_first_reaction_value, cumulative_dose_first_reaction_unit,
-				     gestation_period_exposure_value, gestation_period_exposure_unit, dosage_text,
+				     gestation_period_exposure_value, gestation_period_exposure_unit,
 			     action_taken, investigational_product_blinded, mpid, mpid_version,
 			     mfds_mpid_version, mfds_mpid, phpid, phpid_version, obtain_drug_country,
 			     fda_additional_info_coded,
@@ -957,8 +952,8 @@ impl DrugInformationBmc {
 				     $1, $2, $3, $4, $5,
 				     $7, $9, $10,
 				     $11, $12, $13,
-				     $14, $15, $16,
-				     $17, $19, $20, $21,
+				     $14, $15, $17,
+				     $19, $20, $21,
 				     $22, $23, $24, $25, $26,
 				     $28, $29,
 				     $30, $31, $32,
@@ -987,7 +982,7 @@ impl DrugInformationBmc {
 					.bind(drug_c.cumulative_dose_first_reaction_unit)
 					.bind(drug_c.gestation_period_exposure_value)
 					.bind(drug_c.gestation_period_exposure_unit)
-					.bind(drug_c.dosage_text)
+					.bind(Option::<String>::None)
 					.bind(drug_c.action_taken)
 					.bind(Option::<String>::None)
 					.bind(drug_c.investigational_product_blinded)
@@ -1080,7 +1075,6 @@ impl DrugInformationBmc {
 			     cumulative_dose_first_reaction_unit = COALESCE($11, cumulative_dose_first_reaction_unit),
 			     gestation_period_exposure_value = COALESCE($12, gestation_period_exposure_value),
 			     gestation_period_exposure_unit = COALESCE($13, gestation_period_exposure_unit),
-			     dosage_text = COALESCE($14, dosage_text),
 			     action_taken = COALESCE($15, action_taken),
 			     investigational_product_blinded = COALESCE($17, investigational_product_blinded),
 			     mpid = COALESCE($18, mpid),
@@ -1119,7 +1113,7 @@ impl DrugInformationBmc {
 					.bind(drug_u.cumulative_dose_first_reaction_unit)
 					.bind(drug_u.gestation_period_exposure_value)
 					.bind(drug_u.gestation_period_exposure_unit)
-					.bind(drug_u.dosage_text)
+					.bind(Option::<String>::None)
 					.bind(drug_u.action_taken)
 					.bind(Option::<String>::None)
 					.bind(drug_u.investigational_product_blinded)
@@ -1289,7 +1283,6 @@ impl DrugInformationBmc {
 			     cumulative_dose_first_reaction_unit = COALESCE($12, cumulative_dose_first_reaction_unit),
 			     gestation_period_exposure_value = COALESCE($13, gestation_period_exposure_value),
 			     gestation_period_exposure_unit = COALESCE($14, gestation_period_exposure_unit),
-			     dosage_text = COALESCE($15, dosage_text),
 			     action_taken = COALESCE($16, action_taken),
 			     investigational_product_blinded = COALESCE($18, investigational_product_blinded),
 			     mpid = COALESCE($19, mpid),
@@ -1328,7 +1321,7 @@ impl DrugInformationBmc {
 					.bind(drug_u.cumulative_dose_first_reaction_unit)
 					.bind(drug_u.gestation_period_exposure_value)
 					.bind(drug_u.gestation_period_exposure_unit)
-					.bind(drug_u.dosage_text)
+					.bind(Option::<String>::None)
 					.bind(drug_u.action_taken)
 					.bind(Option::<String>::None)
 					.bind(drug_u.investigational_product_blinded)

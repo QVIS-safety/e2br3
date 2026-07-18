@@ -398,7 +398,6 @@ async fn seed_cioms_case_data(
 			sequence_number: 1,
 			drug_characterization: "1".to_string(),
 			medicinal_product: "Amoxicillin capsule".to_string(),
-			dosage_text: Some("500 mg twice daily".to_string()),
 			action_taken: Some("1".to_string()),
 			manufacturer_name: Some("Acme Pharma".to_string()),
 			..Default::default()
