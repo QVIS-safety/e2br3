@@ -1218,15 +1218,16 @@ pub async fn toggle_case_review(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)> {
+) -> Result<(axum::http::StatusCode, Json<DataRestResult<PublicCaseView>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_APPROVE)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let entity = CaseBmc::toggle_review(&ctx, &mm, id).await?;
-	let entity = case_to_read_result(&ctx, &mm, entity).await?;
 	Ok((
 		axum::http::StatusCode::OK,
-		Json(DataRestResult { data: entity }),
+		Json(DataRestResult {
+			data: entity.into(),
+		}),
 	))
 }
 
@@ -1235,15 +1236,16 @@ pub async fn toggle_case_lock(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
-) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)> {
+) -> Result<(axum::http::StatusCode, Json<DataRestResult<PublicCaseView>>)> {
 	let ctx = ctx_w.0;
 	require_permission(&ctx, CASE_LOCK)?;
 	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
 	let entity = CaseBmc::toggle_lock(&ctx, &mm, id).await?;
-	let entity = case_to_read_result(&ctx, &mm, entity).await?;
 	Ok((
 		axum::http::StatusCode::OK,
-		Json(DataRestResult { data: entity }),
+		Json(DataRestResult {
+			data: entity.into(),
+		}),
 	))
 }
 
