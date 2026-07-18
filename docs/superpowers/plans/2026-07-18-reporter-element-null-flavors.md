@@ -12,7 +12,7 @@
 
 - Delete `reporterNameNullFlavor`, `reporterAddressNullFlavor`, `reporter_name_null_flavor`, and `reporter_address_null_flavor` without migration, alias, fallback, or dual write.
 - Add exactly eleven individual fields from the approved design.
-- Individual name/address/telephone nullFlavor values are limited to `MSK`, `ASKU`, and `NASK`.
+- C.2.r.1.1 Reporter Title accepts `MSK`, `UNK`, `ASKU`, and `NASK`; the other ten individual fields accept `MSK`, `ASKU`, and `NASK`.
 - Reuse the existing shared frontend nullFlavor control.
 - A nullFlavor clears and disables only its matching value field.
 - Keep country and qualification nullFlavor behavior unchanged.
@@ -32,6 +32,7 @@
 - Modify: `crates/services/web-server/src/web/rest/case_editor_rest/portable_save.rs`
 - Modify: `crates/services/web-server/src/openapi.rs`
 - Modify: `crates/libs/validator/src/portable_bindings/c.rs`
+- Modify: `crates/libs/validator/src/catalog.rs`
 - Modify: `crates/libs/validator/src/case/sections/c.rs`
 - Modify: `crates/libs/validator/src/c_reporter_policy.rs`
 - Test: `crates/services/web-server/tests/api/subresources_web.rs`
@@ -81,7 +82,7 @@ ALTER TABLE reporter_presaves
 For both tables add:
 
 ```sql
-reporter_title_null_flavor VARCHAR(4) CHECK (reporter_title_null_flavor IN ('MSK','ASKU','NASK')),
+reporter_title_null_flavor VARCHAR(4) CHECK (reporter_title_null_flavor IN ('MSK','UNK','ASKU','NASK')),
 reporter_given_name_null_flavor VARCHAR(4) CHECK (reporter_given_name_null_flavor IN ('MSK','ASKU','NASK')),
 reporter_middle_name_null_flavor VARCHAR(4) CHECK (reporter_middle_name_null_flavor IN ('MSK','ASKU','NASK')),
 reporter_family_name_null_flavor VARCHAR(4) CHECK (reporter_family_name_null_flavor IN ('MSK','ASKU','NASK')),
@@ -108,10 +109,15 @@ remove the two old fields.
 In `portable_bindings/c.rs`, replace the two group nullFlavor bindings with
 eleven bindings and point every reporter value binding at its matching
 nullFlavor path. Keep the existing `ICH.C.2.r.*.NULLFLAVOR.ALLOWED` codes.
-In `case/sections/c.rs`, feed the C.2.r.2.1 presence evaluator a present marker
-when either `organization` or `organization_null_flavor` has text. In
-`c_reporter_policy.rs`, count every new nullFlavor as reporter content. Do not
-modify `case/sections/rule_table.rs`.
+In `catalog.rs`, change the `ICH.C.2.r.2.1.REQUIRED` value policy from
+`NonEmpty` to `NonEmptyOrNullFlavor`. In `case/sections/c.rs`, feed the presence
+evaluator the actual `organization` and `organization_null_flavor` values; do
+not manufacture a `"present"` marker. In `c_reporter_policy.rs`, count every new
+nullFlavor as reporter content. Do not modify `case/sections/rule_table.rs`.
+
+Add validator regressions proving C.2.r.1.1 accepts `UNK`, the other ten fields
+reject `UNK`, every value binding points only to its own companion, and a study
+report with an organization nullFlavor satisfies C.2.r.2.1 REQUIRED.
 
 - [ ] **Step 6: Verify GREEN and commit**
 
@@ -202,7 +208,8 @@ git commit -m "fix: preserve reporter element null flavors in XML"
 
 - [ ] **Step 1: Write failing UI, schema, mapper, and transfer tests**
 
-Assert each field renders an existing nullFlavor select with
+Assert Reporter Title renders an existing nullFlavor select with
+`["", "MSK", "UNK", "ASKU", "NASK"]` and each of the other ten fields renders
 `["", "MSK", "ASKU", "NASK"]`. Select `reporterCityNullFlavor = NASK` and
 assert only `reporterCity` clears. Parse a presave with an empty given name plus
 `reporterGivenNameNullFlavor = ASKU`, and an empty organization plus
@@ -218,9 +225,10 @@ npx jest --runInBand __tests__/case-form/ReporterSection.reporter-null-flavors.t
 
 - [ ] **Step 3: Replace types, validation, mappers, and transfer**
 
-Define `ReporterElementNullFlavor = "MSK" | "ASKU" | "NASK"` and add the
-eleven optional camelCase fields to both case and presave types. Delete both
-group fields. Change required validation to:
+Define `ReporterElementNullFlavor = "MSK" | "ASKU" | "NASK"` and
+`ReporterTitleNullFlavor = ReporterElementNullFlavor | "UNK"`. Add the eleven
+optional camelCase fields to both case and presave types, using the title-specific
+type only for C.2.r.1.1. Delete both group fields. Change required validation to:
 
 ```ts
 if (!data.reporterGivenNameNullFlavor && !data.reporterGivenName?.trim()) {

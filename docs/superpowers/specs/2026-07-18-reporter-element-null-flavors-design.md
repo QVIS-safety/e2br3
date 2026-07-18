@@ -36,8 +36,9 @@ Existing values in the two database columns are intentionally discarded.
 | C.2.r.2.6 | `reporterPostcodeNullFlavor` | `postcode_null_flavor` |
 | C.2.r.2.7 | `reporterTelephoneNullFlavor` | `telephone_null_flavor` |
 
-All eleven fields accept only `MSK`, `ASKU`, or `NASK`. Each database column
-uses `VARCHAR(4)` with the equivalent check constraint.
+`reporterTitleNullFlavor` (C.2.r.1.1) accepts `MSK`, `UNK`, `ASKU`, or `NASK`.
+The other ten fields accept `MSK`, `ASKU`, or `NASK`. Each database column uses
+`VARCHAR(4)` with the equivalent element-specific check constraint.
 
 ## Database and API
 
@@ -102,6 +103,11 @@ Update the catalog source and run
 `scripts/validation/sync-catalog-constraints.mjs`; do not hand-maintain stale
 group paths in `lib/zod/generated/catalogBindings.ts`. The generated bindings
 must associate each value field only with its matching nullFlavor path.
+
+Keep the shared case rule engine unchanged. Change the
+`ICH.C.2.r.2.1.REQUIRED` value policy to `NonEmptyOrNullFlavor` and pass the
+actual `organization`/`organization_null_flavor` pair to the evaluator. Do not
+substitute a synthetic presence marker.
 
 ## Testing
 
