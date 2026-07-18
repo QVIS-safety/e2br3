@@ -233,6 +233,37 @@ fn dosage_with_route(drug_id: Uuid, route: &str) -> DosageInformation {
 	}
 }
 
+#[test]
+fn cioms_joins_all_suspect_dosage_texts_in_sequence_order() {
+	let drug_id = test_uuid();
+	let mut first = dosage_with_route(drug_id, "PO");
+	first.sequence_number = 1;
+	first.dosage_text = Some("  first regimen  ".to_string());
+	let mut blank = dosage_with_route(drug_id, "IV");
+	blank.sequence_number = 2;
+	blank.dosage_text = Some("   ".to_string());
+	let mut third = dosage_with_route(drug_id, "IM");
+	third.sequence_number = 3;
+	third.dosage_text = Some("third regimen".to_string());
+
+	let data = CiomsCaseData {
+		case_number: "SR-DOSAGE-TEXTS".to_string(),
+		report: None,
+		patient: None,
+		reactions: Vec::new(),
+		drugs: vec![suspect_drug(drug_id)],
+		dosages: vec![third, blank, first],
+		indications: Vec::new(),
+		primary_sources: Vec::new(),
+		senders: Vec::new(),
+		narrative: None,
+	};
+
+	let form = CiomsFormData::from_case_data(&data, &default_settings());
+
+	assert_eq!(form.suspect_drug_dose, "first regimen\nthird regimen");
+}
+
 fn reaction_with_country(country_code: &str) -> Reaction {
 	Reaction {
 		id: test_uuid(),
@@ -626,7 +657,7 @@ fn cioms_form_data_maps_suspect_drug_dosage_and_indication_fields() {
 }
 
 #[test]
-fn cioms_pdf_uses_latest_suspect_drug_child_records_when_latest_first() {
+fn cioms_pdf_uses_latest_route_and_indication_when_latest_first() {
 	let drug_id = test_uuid();
 	let data = CiomsCaseData {
 		case_number: "SR-LATEST-CHILD".to_string(),
@@ -778,10 +809,8 @@ fn cioms_pdf_uses_latest_suspect_drug_child_records_when_latest_first() {
 	let pdf = build_cioms_pdf(&data, &latest_first_settings());
 	let text = String::from_utf8_lossy(&pdf);
 
-	assert!(text.contains("Latest child dose"));
 	assert!(text.contains("NEW"));
 	assert!(text.contains("Latest child indication"));
-	assert!(!text.contains("Older child dose"));
 	assert!(!text.contains("Older child indication"));
 }
 
