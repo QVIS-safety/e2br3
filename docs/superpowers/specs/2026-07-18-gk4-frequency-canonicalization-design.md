@@ -73,8 +73,24 @@ The G.k.4.r.3 companion requirement is triggered by `number_of_units`, not by
 the removed `frequency_value` field. Both frontend Zod validation and the Rust
 validator must report the missing G.k.4.r.3 unit when G.k.4.r.2 is populated.
 
-Existing vocabulary validation remains authoritative. The UI list is an
-input constraint and must not weaken backend validation.
+G.k.4.r.3 allowed-value validation is currently catalogued but gated from
+case validation. Activate an authoritative field-specific rule that accepts
+exactly the same nine values exposed by the autocomplete. Do not rely solely
+on the UI or on the presence of an imported general UCUM release: REST clients
+and imported XML can bypass the form and must receive the same rejection for
+any other value.
+
+The validation contract is:
+
+- G.k.4.r.2 remains numeric and has a maximum representation length of four.
+- G.k.4.r.3 is required when G.k.4.r.2 is populated.
+- G.k.4.r.3 has a maximum length of 50 characters.
+- A populated G.k.4.r.3 must equal one of `a`, `mo`, `wk`, `d`, `h`, `min`,
+  `{cyclical}`, `{asnecessary}`, or `{total}`.
+
+The frontend schema mirrors the required and allowed-value rules for immediate
+feedback. The Rust validator remains authoritative for case validation after
+form saves, direct REST writes, and XML imports.
 
 ## Registry
 
@@ -129,13 +145,16 @@ Implementation follows red-green TDD. Tests must prove:
 3. Rust validation requires G.k.4.r.3 when `number_of_units` is populated.
 4. Frontend Zod validation requires `frequencyUnit` when `numberOfUnits` is
    populated.
-5. The G.k.4.r.3 autocomplete exposes exactly the nine specified options,
+5. Rust and frontend validation accept each of the nine approved G.k.4.r.3
+   values and reject an arbitrary value such as `fortnight`, including a value
+   supplied outside the autocomplete path.
+6. The G.k.4.r.3 autocomplete exposes exactly the nine specified options,
    supports code/label search, and stores the canonical selected value.
-6. The dosage save and detail adapters send and restore only
+7. The dosage save and detail adapters send and restore only
    `number_of_units` and `frequency_unit` for this pair.
-7. Registry validation passes after removal of
+8. Registry validation passes after removal of
    `G.k.local.dosage.frequencyValue`.
-8. Active source, schema, model, adapter, registry, and test-fixture paths no
+9. Active source, schema, model, adapter, registry, and test-fixture paths no
    longer contain the removed `frequency_value`, `frequencyValue`, or
    `doseFrequencyValue` fields.
 
