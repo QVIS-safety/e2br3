@@ -1420,6 +1420,25 @@ class DictionaryValidatorTests(unittest.TestCase):
 
         self.assertEqual([], result.errors)
 
+    def test_repository_reporter_presave_inventory_is_complete(self):
+        result = validate.validate_registry(
+            validate_backend_inventory=False,
+            validate_presave_registry_rows=True,
+            validate_presave_inventory=True,
+        )
+
+        self.assertEqual([], result.errors)
+
+    def test_ci_runs_strict_presave_inventory(self):
+        workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            "python3 registry/tools/validate.py --strict-presave-inventory",
+            workflow,
+        )
+
 
 class RemovedOrphanLocalFieldsTests(unittest.TestCase):
     def test_removed_orphan_rows_and_backend_storage_are_absent(self):

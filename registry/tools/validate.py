@@ -676,6 +676,8 @@ def validate_registry(
     validate_frontend_inventory: bool = False,
     validate_dictionary_membership: bool = False,
     frontend_source_globs: list[str] | None = None,
+    validate_presave_registry_rows: bool = False,
+    validate_presave_inventory: bool = False,
 ) -> ValidationResult:
     result = ValidationResult()
     if backend_models is None:
@@ -697,6 +699,7 @@ def validate_registry(
     seen_codes: dict[str, Path] = {}
     seen_backend: dict[str, str] = {}
     seen_frontend: dict[str, str] = {}
+    case_rows_by_code: dict[str, dict[str, Any]] = {}
     row_authorities: list[tuple[str, str, str, bool]] = []
     for section_file in sections:
         if not isinstance(section_file, str):
@@ -724,6 +727,7 @@ def validate_registry(
                 if code in seen_codes:
                     result.add(f"{row_id}: duplicate e2br3_code {code} in {source}; first seen in {seen_codes[code]}")
                 seen_codes[code] = source
+                case_rows_by_code.setdefault(code, row)
                 authority = row.get("authority")
                 if isinstance(row_id, str) and isinstance(authority, str):
                     row_authorities.append((row_id, code, authority, row.get("local_only") is True))
@@ -787,10 +791,13 @@ def validate_registry(
         try:
             source_frontend = {
                 field.key
-                for field in extract_frontend_fields.extract_frontend_fields(
-                    root=root,
-                    source_globs=frontend_source_globs
-                    or extract_frontend_fields.DEFAULT_SOURCE_GLOBS,
+                for field in (
+                    extract_frontend_fields.extract_frontend_fields(
+                        root=root,
+                        source_globs=frontend_source_globs,
+                    )
+                    if frontend_source_globs is not None
+                    else extract_frontend_fields.extract_frontend_fields_ast(root=root)
                 )
             }
         except extract_frontend_fields.FrontendInventoryError as exc:
@@ -806,6 +813,61 @@ def validate_registry(
         for key in sorted(registry_frontend - source_frontend):
             result.add(f"unknown frontend mapping: {key}")
 
+    if validate_presave_registry_rows or validate_presave_inventory:
+        import extract_presave_fields
+        import presave_registry
+
+        presaves = presave_registry.load_presave_registry(root, result)
+        expected_transfers: set[tuple[str, str]] = set()
+        for row in presaves.rows:
+            if row.get("status") == "not_applicable" and row.get("local_only") is True:
+                continue
+            code = row["e2br3_code"]
+            case_row = case_rows_by_code.get(code)
+            if case_row is None:
+                result.add(f"missing case registry join: {code}")
+                continue
+            backend = row.get("backend", {})
+            case_backend = case_row.get("backend", {})
+            if backend.get("status") == "mapped" and case_backend.get("status") == "mapped":
+                expected_transfers.add(
+                    (
+                        f"{backend['model']}.{backend['field']}",
+                        f"{case_backend['model']}.{case_backend['field']}",
+                    )
+                )
+
+        if validate_presave_inventory:
+            try:
+                source_frontend = extract_presave_fields.extract_reporter_frontend(root)
+                source_backend = extract_presave_fields.extract_presave_backend(
+                    root, extract_presave_fields.REPORTER_BACKEND_MODELS
+                )
+                source_transfers = extract_presave_fields.extract_reporter_transfers(root)
+            except (InventoryError, extract_frontend_fields.FrontendInventoryError) as exc:
+                result.add(str(exc))
+                return result
+
+            registry_frontend = set(presaves.frontend_keys.values())
+            registry_backend = set(presaves.backend_keys.values())
+            for key in sorted(source_frontend - registry_frontend):
+                result.add(f"missing presave frontend mapping: {key}")
+            for key in sorted(registry_frontend - source_frontend):
+                result.add(f"unknown presave frontend mapping: {key}")
+            for key in sorted(source_backend - registry_backend):
+                result.add(f"missing presave backend mapping: {key}")
+            for key in sorted(registry_backend - source_backend):
+                result.add(f"unknown presave backend mapping: {key}")
+            for pair in sorted(expected_transfers - source_transfers):
+                result.add(f"missing presave-to-case assignment: {pair[0]} -> {pair[1]}")
+            for source, actual in sorted(source_transfers):
+                expected = {target for candidate, target in expected_transfers if candidate == source}
+                if expected and actual not in expected:
+                    result.add(
+                        f"wrong presave-to-case target: {source} -> {actual}; "
+                        f"expected {sorted(expected)[0]}"
+                    )
+
     return result
 
 
@@ -813,10 +875,16 @@ def main() -> int:
     strict_backend_inventory = "--strict-backend-inventory" in sys.argv[1:]
     strict_frontend_inventory = "--strict-frontend-inventory" in sys.argv[1:]
     strict_dictionary = "--strict-dictionary" in sys.argv[1:]
+    strict_presave_registry = "--strict-presave-registry" in sys.argv[1:]
+    strict_presave_inventory = "--strict-presave-inventory" in sys.argv[1:]
     result = validate_registry(
         validate_backend_inventory=strict_backend_inventory,
         validate_frontend_inventory=strict_frontend_inventory,
         validate_dictionary_membership=strict_dictionary,
+        validate_presave_registry_rows=(
+            strict_presave_registry or strict_presave_inventory
+        ),
+        validate_presave_inventory=strict_presave_inventory,
     )
     if result.ok:
         print("registry validation passed")

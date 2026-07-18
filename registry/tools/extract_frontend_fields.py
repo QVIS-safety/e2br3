@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,7 +28,7 @@ class FrontendField:
 
 
 DEFAULT_SOURCE_GLOBS = [
-    "../frontend/E2BR3-frontend/app/(protected)/**/detail/*/*Page.tsx",
+    "../frontend/E2BR3-frontend/app/(protected)/*/case/*/detail/**/*.tsx",
 ]
 
 ALLOWED_FIELD_ROOTS = {
@@ -92,7 +93,6 @@ FIELD_PATTERNS = [
     re.compile(r"register\(\s*`([^`]+)`"),
 ]
 
-
 # Field names composed from an object-array `.map` callback, e.g. a
 # `SERIOUSNESS_CRITERIA = [{ name: "criteria..." }] as const` list rendered via
 # `name={`reactions.${i}.seriousness.${criterion.name}`}`. The concrete field
@@ -127,6 +127,31 @@ def extract_raw_field_paths_from_source(source: str) -> list[str]:
     fields.update(expand_name_placeholder_paths(source, fields))
     fields.update(expand_object_name_map_paths(source))
     return sorted(fields)
+
+
+def extract_frontend_fields_ast(root: Path = REPO_ROOT) -> list[FrontendField]:
+    repo_root = root if (root / "registry").exists() else root.parent
+    frontend_root = repo_root.parent / "frontend" / "E2BR3-frontend"
+    script = Path(__file__).with_suffix(".mjs")
+    completed = subprocess.run(
+        ["node", str(script), str(frontend_root)],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode:
+        raise FrontendInventoryError(completed.stderr.strip() or "AST frontend extraction failed")
+    payload = json.loads(completed.stdout)
+    return [
+        FrontendField(
+            key=item["key"],
+            section=split_key(item["key"])[0],
+            field=split_key(item["key"])[1],
+            file=item["file"],
+            raw=item["key"],
+        )
+        for item in payload
+    ]
 
 
 def expand_name_placeholder_paths(source: str, raw_fields: Iterable[str]) -> set[str]:

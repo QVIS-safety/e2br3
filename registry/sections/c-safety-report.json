@@ -2261,5 +2261,55 @@
     },
     "action": "",
     "notes": "App-local MFDS report-type classification stored on Case.mfds_report_type. Re-pointed from the wrong SafetyReportIdentification model. Not one of the 14 official MFDS KR extension elements; the .KR. token only satisfies the MFDS authority code rule."
+  },
+  {
+    "id": "C.2.r.local.reporterNameNullFlavor",
+    "e2br3_code": "C.2.r.local.reporterNameNullFlavor",
+    "label": "Reporter Name NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "frontend_missing",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "reporter_name_null_flavor",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.reporter_name_null_flavor stores the reporter name group nullFlavor."
+    },
+    "frontend": {
+      "status": "missing",
+      "section": "primarySources",
+      "field": "reporterNameNullFlavor",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP",
+      "evidence": "No current case-detail input binds primarySources[index].reporterNameNullFlavor."
+    },
+    "action": "",
+    "notes": "Dedicated local companion for the C.2.r.1 name-group nullFlavor."
+  },
+  {
+    "id": "C.2.r.local.qualificationNullFlavor",
+    "e2br3_code": "C.2.r.local.qualificationNullFlavor",
+    "label": "Qualification NullFlavor",
+    "section": "C",
+    "authority": "ICH",
+    "status": "complete",
+    "local_only": true,
+    "backend": {
+      "status": "mapped",
+      "model": "PrimarySource",
+      "field": "qualification_null_flavor",
+      "file": "crates/libs/lib-core/src/model/safety_report.rs",
+      "evidence": "PrimarySource.qualification_null_flavor stores the C.2.r.4 nullFlavor."
+    },
+    "frontend": {
+      "status": "mapped",
+      "section": "primarySources",
+      "field": "qualificationNullFlavor",
+      "file": "../frontend/E2BR3-frontend/app/(protected)/[authority]/case/[id]/detail/RP/components/ReporterEditorPanel.tsx",
+      "evidence": "ReporterEditorPanel binds the C.2.r.4 UNK control to primarySources[index].qualificationNullFlavor."
+    },
+    "action": "",
+    "notes": "Dedicated persistence companion for the C.2.r.4 qualification nullFlavor; the UI exposes only UNK."
   }
 ]
