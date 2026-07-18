@@ -209,6 +209,14 @@ pub fn routes_cases(mm: ModelManager) -> Router {
 		"/cases/{id}/validator/mark-validated",
 		axum::routing::post(case_rest::mark_case_validated_by_validator),
 	)
+	.route(
+		"/cases/{id}/review/toggle",
+		axum::routing::post(case_rest::toggle_case_review),
+	)
+	.route(
+		"/cases/{id}/lock/toggle",
+		axum::routing::post(case_rest::toggle_case_lock),
+	)
 	// Patient (singleton per case)
 	.route(
 		"/cases/{case_id}/patient",

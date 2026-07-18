@@ -530,6 +530,7 @@ CREATE TABLE if NOT EXISTS cases (
 
     dg_prd_key TEXT,
     status VARCHAR(50) NOT NULL DEFAULT 'draft',
+    status_before_lock VARCHAR(50),
     review_receivers_json TEXT,
     workflow_routes_json TEXT,
     workflow_status TEXT NOT NULL DEFAULT 'Saved',
@@ -563,7 +564,8 @@ CREATE TABLE if NOT EXISTS cases (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT case_status_valid CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'deleted', 'archived', 'nullified'))
+    CONSTRAINT case_status_valid CHECK (status IN ('draft', 'reviewed', 'validated', 'locked', 'submitted', 'deleted', 'archived', 'nullified')),
+    CONSTRAINT case_status_before_lock_valid CHECK (status_before_lock IS NULL OR status_before_lock IN ('draft', 'reviewed', 'validated'))
 );
 
 CREATE INDEX idx_cases_organization ON cases(organization_id);

@@ -21,9 +21,15 @@ pub const ENDPOINT_PERMISSION_CONTRACTS: &[EndpointPermissionContract] = &[
 	},
 	EndpointPermissionContract {
 		key: "case.approve",
-		method: "PUT",
-		path: "/api/cases/{id}/workflow",
+		method: "POST",
+		path: "/api/cases/{id}/review/toggle",
 		permissions: &["Case.Approve"],
+	},
+	EndpointPermissionContract {
+		key: "case.lock",
+		method: "POST",
+		path: "/api/cases/{id}/lock/toggle",
+		permissions: &["Case.Lock"],
 	},
 	EndpointPermissionContract {
 		key: "info.create",

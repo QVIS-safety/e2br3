@@ -5,15 +5,16 @@
 //! reviewed/validated/locked case-status transitions.
 
 use super::helpers::*;
-use crate::common::{
-	cookie_header, init_test_mm, seed_org_with_users, Result,
-};
+use crate::common::{cookie_header, init_test_mm, seed_org_with_users, Result};
 use axum::http::StatusCode;
 use lib_auth::token::generate_web_token;
+use lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO;
 use lib_core::model::acs::{
 	has_permission, CASE_APPROVE, CASE_LOCK, CASE_UPDATE, SETTINGS_UPDATE,
 	TERMINOLOGY_APPROVE, TERMINOLOGY_IMPORT, USER_CREATE, USER_DELETE, USER_UPDATE,
 };
+use lib_core::model::store::set_full_context_dbx;
+use lib_core::model::ModelManager;
 use serde_json::json;
 use serial_test::serial;
 use uuid::Uuid;
@@ -32,6 +33,68 @@ async fn update_case_status(
 		Some(json!({ "data": { "status": status } })),
 	)
 	.await
+}
+
+async fn toggle_case_action(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+	action: &str,
+) -> Result<(StatusCode, serde_json::Value)> {
+	request_json(
+		app,
+		"POST",
+		cookie,
+		format!("/api/cases/{case_id}/{action}/toggle"),
+		Some(json!({})),
+	)
+	.await
+}
+
+async fn create_case_with_status(
+	app: &axum::Router,
+	cookie: &str,
+	status: &str,
+) -> Result<Uuid> {
+	let safety_report_id = format!("QA-REVLOCK-{}", Uuid::new_v4().simple());
+	let (response_status, value) = request_json(
+		app,
+		"POST",
+		cookie,
+		"/api/cases".to_string(),
+		Some(json!({
+			"data": {
+				"safetyReportIdentification": {
+					"safetyReportId": safety_report_id
+				},
+				"status": status
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(response_status, StatusCode::CREATED, "{value:?}");
+	extract_id(&value)
+}
+
+async fn force_case_status_for_validator_fixture(
+	mm: &ModelManager,
+	user_id: Uuid,
+	organization_id: Uuid,
+	case_id: Uuid,
+	status: &str,
+) -> Result<()> {
+	let dbx = mm.dbx();
+	dbx.begin_txn().await?;
+	set_full_context_dbx(dbx, user_id, organization_id, ROLE_SPONSOR_ADMIN_CRO)
+		.await?;
+	dbx.execute(
+		sqlx::query("UPDATE cases SET status = $2 WHERE id = $1")
+			.bind(case_id)
+			.bind(status),
+	)
+	.await?;
+	dbx.commit_txn().await?;
+	Ok(())
 }
 
 #[serial]
@@ -195,8 +258,7 @@ async fn test_email_subscription_menu_keys_persist_and_grant_nothing() -> Result
 
 #[serial]
 #[tokio::test]
-async fn test_case_review_and_lock_profile_permissions_are_distinct() -> Result<()>
-{
+async fn test_case_review_and_lock_profile_permissions_are_distinct() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -354,37 +416,39 @@ async fn test_reviewed_and_locked_status_transitions_require_dedicated_privilege
 	)
 	.await?;
 
-	// Edit-only cannot enter reviewed; reviewer can.
+	// Generic case update cannot bypass the dedicated PDF actions.
 	let (status, value) =
 		update_case_status(&app, &editor_cookie, case_id, "reviewed").await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 	let (status, value) =
 		update_case_status(&app, &reviewer_cookie, case_id, "reviewed").await?;
-	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 
-	// Reviewer can also move to validated (review-grade QC step).
+	// Review is a same-button toggle and requires only Case.Approve.
 	let (status, value) =
-		update_case_status(&app, &reviewer_cookie, case_id, "validated").await?;
-	assert_eq!(status, StatusCode::OK, "{value:?}");
-
-	// Neither editor nor reviewer can lock; locker can.
-	let (status, value) =
-		update_case_status(&app, &editor_cookie, case_id, "locked").await?;
+		toggle_case_action(&app, &editor_cookie, case_id, "review").await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 	let (status, value) =
-		update_case_status(&app, &reviewer_cookie, case_id, "locked").await?;
-	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
-	let (status, value) =
-		update_case_status(&app, &locker_cookie, case_id, "locked").await?;
+		toggle_case_action(&app, &reviewer_cookie, case_id, "review").await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["status"], "reviewed");
+	let (status, value) =
+		toggle_case_action(&app, &reviewer_cookie, case_id, "review").await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["status"], "draft");
 
-	// Unlock (locked -> validated) is a lock-grade action too.
+	// Lock requires only Case.Lock and restores the exact pre-lock state.
 	let (status, value) =
-		update_case_status(&app, &reviewer_cookie, case_id, "validated").await?;
+		toggle_case_action(&app, &reviewer_cookie, case_id, "lock").await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 	let (status, value) =
-		update_case_status(&app, &locker_cookie, case_id, "validated").await?;
+		toggle_case_action(&app, &locker_cookie, case_id, "lock").await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["status"], "locked");
+	let (status, value) =
+		toggle_case_action(&app, &locker_cookie, case_id, "lock").await?;
+	assert_eq!(status, StatusCode::OK, "{value:?}");
+	assert_eq!(value["data"]["status"], "draft");
 
 	// Reviewer without edit cannot touch non-status fields.
 	let (status, value) = request_json(
@@ -397,13 +461,49 @@ async fn test_reviewed_and_locked_status_transitions_require_dedicated_privilege
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{value:?}");
 
-	// Sponsor admin keeps full review/lock control.
+	// All PDF lockable states round-trip without collapsing to a default.
+	for original in ["draft", "reviewed", "validated"] {
+		let create_status = if original == "validated" {
+			"draft"
+		} else {
+			original
+		};
+		let case_id =
+			create_case_with_status(&app, &admin_cookie, create_status).await?;
+		if original == "validated" {
+			force_case_status_for_validator_fixture(
+				&mm,
+				seed.admin.id,
+				seed.org_id,
+				case_id,
+				original,
+			)
+			.await?;
+		}
+		let (status, value) =
+			toggle_case_action(&app, &admin_cookie, case_id, "lock").await?;
+		assert_eq!(status, StatusCode::OK, "{value:?}");
+		assert_eq!(value["data"]["status"], "locked");
+		let (status, value) =
+			toggle_case_action(&app, &admin_cookie, case_id, "lock").await?;
+		assert_eq!(status, StatusCode::OK, "{value:?}");
+		assert_eq!(value["data"]["status"], original);
+	}
+
+	// A legacy locked row without a persisted prior state must not guess.
+	let legacy_case_id =
+		create_case_with_status(&app, &admin_cookie, "draft").await?;
+	force_case_status_for_validator_fixture(
+		&mm,
+		seed.admin.id,
+		seed.org_id,
+		legacy_case_id,
+		"locked",
+	)
+	.await?;
 	let (status, value) =
-		update_case_status(&app, &admin_cookie, case_id, "locked").await?;
-	assert_eq!(status, StatusCode::OK, "{value:?}");
-	let (status, value) =
-		update_case_status(&app, &admin_cookie, case_id, "validated").await?;
-	assert_eq!(status, StatusCode::OK, "{value:?}");
+		toggle_case_action(&app, &admin_cookie, legacy_case_id, "lock").await?;
+	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
 
 	Ok(())
 }
