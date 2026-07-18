@@ -370,7 +370,7 @@ async fn create_primary_source(
 				"case_id": case_id,
 				"sequence_number": 1,
 				"qualification": "1",
-				"country_code": "KR",
+				"country_code_null_flavor": "UNK",
 				"email": "reporter@example.com",
 				"primary_source_regulatory": "1"
 		}
@@ -400,7 +400,7 @@ async fn create_primary_source(
 		.header("content-type", "application/json")
 		.body(Body::from(
 			json!({"data": {
-				"country_code": "KR",
+				"country_code_null_flavor": "UNK",
 				"email": "reporter@example.com",
 				"primary_source_regulatory": "1"
 			}})
@@ -501,7 +501,7 @@ async fn create_reaction(
 					"reaction_meddra_version": "26.0",
 					"reaction_meddra_code": "10000001",
 				"outcome": "1",
-				"reaction_language": "en"
+				"reaction_language": "eng"
 			}})
 			.to_string(),
 		))?;

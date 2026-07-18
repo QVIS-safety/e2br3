@@ -120,7 +120,7 @@ pub fn parse_e_reactions(xml: &[u8]) -> Result<Vec<EReactionImport>> {
 		);
 		let reaction_meddra_code =
 			first_attr(&mut xpath, &node, EReactionPaths::MEDDRA_CODE);
-		let reaction_language = normalize_lang2(
+		let reaction_language = normalize_lang3(
 			first_attr(&mut xpath, &node, EReactionPaths::PRIMARY_LANG),
 			"reactions.reaction_language",
 		);
@@ -452,11 +452,11 @@ fn normalize_iso2(value: Option<String>, _field: &str) -> Option<String> {
 	}
 }
 
-fn normalize_lang2(value: Option<String>, _field: &str) -> Option<String> {
+fn normalize_lang3(value: Option<String>, _field: &str) -> Option<String> {
 	let v = value?.trim().to_string();
 	let len = v.len();
 	let lower = v.to_ascii_lowercase();
-	if len == 2 && lower.chars().all(|c| c.is_ascii_lowercase()) {
+	if len == 3 && lower.chars().all(|c| c.is_ascii_lowercase()) {
 		Some(lower)
 	} else {
 		None

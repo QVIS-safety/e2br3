@@ -163,7 +163,7 @@ async fn create_primary_source(
 			"case_id": case_id,
 				"sequence_number": 1,
 				"qualification": "1",
-				"country_code": "KR",
+				"country_code_null_flavor": "UNK",
 				"email": "reporter@example.com",
 				"primary_source_regulatory": "1"
 		}
@@ -194,7 +194,7 @@ async fn create_primary_source(
 	let update = json!({
 		"data": {
 				"qualification": "1",
-				"country_code": "KR",
+				"country_code_null_flavor": "UNK",
 				"email": "reporter@example.com",
 				"primary_source_regulatory": "1"
 		}
@@ -237,7 +237,7 @@ async fn force_all_primary_sources_non_primary(
 	mm.dbx()
 		.execute(
 			sqlx::query(
-				"UPDATE primary_sources SET primary_source_regulatory = '2' WHERE case_id = $1",
+				"UPDATE primary_sources SET primary_source_regulatory = NULL WHERE case_id = $1",
 			)
 			.bind(case_id),
 		)
@@ -338,7 +338,7 @@ async fn create_reaction(
 				"reaction_meddra_version": "26.0",
 				"reaction_meddra_code": "10000001",
 				"outcome": "1",
-				"reaction_language": "en"
+				"reaction_language": "eng"
 		}
 	});
 	let req = Request::builder()
@@ -2871,7 +2871,7 @@ async fn test_workflow_transition_rejects_user_outside_current_step_role(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{body:?}");
-	assert!(body.to_string().contains("Case.Update"), "{body:?}");
+	assert!(body.to_string().contains("PERMISSION_DENIED"), "{body:?}");
 	Ok(())
 }
 
@@ -2957,7 +2957,7 @@ async fn test_workflow_transition_rejects_user_outside_current_assignee(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{body:?}");
-	assert!(body.to_string().contains("Case.Update"), "{body:?}");
+	assert!(body.to_string().contains("PERMISSION_DENIED"), "{body:?}");
 
 	let (status, body) = transition_case_workflow(
 		&app,
@@ -2973,7 +2973,7 @@ async fn test_workflow_transition_rejects_user_outside_current_assignee(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::FORBIDDEN, "{body:?}");
-	assert!(body.to_string().contains("Case.Update"), "{body:?}");
+	assert!(body.to_string().contains("PERMISSION_DENIED"), "{body:?}");
 	Ok(())
 }
 

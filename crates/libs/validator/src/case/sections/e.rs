@@ -230,7 +230,7 @@ const E_REACTION_CONSTRAINT_RULES: &[IndexedConstraintRule<Reaction>] = &[
 		path: |idx| format!("reactions.{idx}.criteriaDeath"),
 		value: |reaction| {
 			true_marker_value(
-				Some(reaction.criteria_death),
+				reaction.criteria_death.then_some(true),
 				reaction.criteria_death_null_flavor.as_deref(),
 			)
 		},
@@ -240,7 +240,7 @@ const E_REACTION_CONSTRAINT_RULES: &[IndexedConstraintRule<Reaction>] = &[
 		path: |idx| format!("reactions.{idx}.criteriaLifeThreatening"),
 		value: |reaction| {
 			true_marker_value(
-				Some(reaction.criteria_life_threatening),
+				reaction.criteria_life_threatening.then_some(true),
 				reaction.criteria_life_threatening_null_flavor.as_deref(),
 			)
 		},
@@ -250,7 +250,7 @@ const E_REACTION_CONSTRAINT_RULES: &[IndexedConstraintRule<Reaction>] = &[
 		path: |idx| format!("reactions.{idx}.criteriaHospitalization"),
 		value: |reaction| {
 			true_marker_value(
-				Some(reaction.criteria_hospitalization),
+				reaction.criteria_hospitalization.then_some(true),
 				reaction.criteria_hospitalization_null_flavor.as_deref(),
 			)
 		},
@@ -260,7 +260,7 @@ const E_REACTION_CONSTRAINT_RULES: &[IndexedConstraintRule<Reaction>] = &[
 		path: |idx| format!("reactions.{idx}.criteriaDisabling"),
 		value: |reaction| {
 			true_marker_value(
-				Some(reaction.criteria_disabling),
+				reaction.criteria_disabling.then_some(true),
 				reaction.criteria_disabling_null_flavor.as_deref(),
 			)
 		},
@@ -270,7 +270,7 @@ const E_REACTION_CONSTRAINT_RULES: &[IndexedConstraintRule<Reaction>] = &[
 		path: |idx| format!("reactions.{idx}.criteriaCongenitalAnomaly"),
 		value: |reaction| {
 			true_marker_value(
-				Some(reaction.criteria_congenital_anomaly),
+				reaction.criteria_congenital_anomaly.then_some(true),
 				reaction.criteria_congenital_anomaly_null_flavor.as_deref(),
 			)
 		},
@@ -280,7 +280,7 @@ const E_REACTION_CONSTRAINT_RULES: &[IndexedConstraintRule<Reaction>] = &[
 		path: |idx| format!("reactions.{idx}.criteriaOtherMedicallyImportant"),
 		value: |reaction| {
 			true_marker_value(
-				Some(reaction.criteria_other_medically_important),
+				reaction.criteria_other_medically_important.then_some(true),
 				reaction
 					.criteria_other_medically_important_null_flavor
 					.as_deref(),
@@ -775,9 +775,10 @@ mod tests {
 	}
 
 	#[test]
-	fn true_marker_rules_emit_concrete_paths_and_honor_null_flavor() {
+	fn true_marker_rules_ignore_false_storage_defaults_and_honor_null_flavor() {
 		let mut reaction = reaction();
 		reaction.criteria_death_null_flavor = Some("NI".to_string());
+		reaction.criteria_other_medically_important = true;
 		let mut ctx = empty_ctx();
 		ctx.reactions = vec![reaction];
 		let mut issues = Vec::new();
@@ -788,14 +789,10 @@ mod tests {
 			.iter()
 			.filter(|issue| issue.code.starts_with("ICH.E.i.3.2"))
 			.collect::<Vec<_>>();
-		assert_eq!(marker_issues.len(), 5);
+		assert!(marker_issues.is_empty(), "{marker_issues:?}");
 		assert!(!marker_issues
 			.iter()
 			.any(|issue| issue.code == "ICH.E.i.3.2a.ALLOWED.VALUE"));
-		assert!(marker_issues.iter().any(|issue| {
-			issue.code == "ICH.E.i.3.2f.ALLOWED.VALUE"
-				&& issue.path == "reactions.0.criteriaOtherMedicallyImportant"
-		}));
 	}
 
 	#[test]

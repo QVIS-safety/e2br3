@@ -87,6 +87,20 @@ fn inactive_presave_reference_migration_covers_every_uuid_link() {
 	assert!(migration.contains("FOR KEY SHARE"));
 }
 
+#[test]
+fn schema_alignment_covers_auditor_access_and_reaction_language() {
+	let bootstrap = include_str!("../../../../db/bootstrap/01-safetydb-schema.sql");
+	let reactions = include_str!("../../../../db/bootstrap/05-reactions.sql");
+	let migration =
+		include_str!("../../../../db/migrations/20260719_schema_alignment.sql");
+	let grant = "GRANT USAGE ON SCHEMA public TO e2br3_auditor_role;";
+
+	assert!(bootstrap.contains(grant));
+	assert!(migration.contains(grant));
+	assert!(reactions.contains("reaction_language VARCHAR(3)"));
+	assert!(migration.contains("reaction_language TYPE VARCHAR(3)"));
+}
+
 #[serial]
 #[tokio::test]
 async fn inactive_presave_reference_returns_p2001_for_receiver_link() -> Result<()> {

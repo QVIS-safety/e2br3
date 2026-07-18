@@ -21,10 +21,10 @@ use lib_core::model::patient::{
 };
 use lib_core::model::reaction::Reaction;
 use lib_core::model::safety_report::{
-	DocumentsHeldBySender, LiteratureReference, PrimarySource, PrimarySourceBmc,
-	PrimarySourceFilter, SafetyReportIdentification, SafetyReportIdentificationBmc,
-	SenderInformation, SenderInformationBmc, SenderInformationFilter,
-	StudyInformation, StudyRegistrationNumber,
+	DocumentsHeldBySender, LiteratureReference, PrimarySource,
+	SafetyReportIdentification, SafetyReportIdentificationBmc, SenderInformation,
+	SenderInformationBmc, SenderInformationFilter, StudyInformation,
+	StudyRegistrationNumber,
 };
 use lib_core::model::store::set_full_context_from_ctx_dbx;
 use lib_core::model::terminology::{
@@ -242,22 +242,21 @@ pub async fn load_base_validation_context(
 		list_case_summaries(mm, narrative.as_ref()),
 	)?;
 
-	let (medical_history, past_drugs, death_info, parents) = tokio::try_join!(
+	let (medical_history, past_drugs, death_info) = tokio::try_join!(
 		list_medical_history(mm, patient.as_ref()),
 		list_past_drugs(mm, patient.as_ref()),
 		get_death_info_optional(mm, patient.as_ref()),
-		list_parents(mm, patient.as_ref()),
 	)?;
+	let parents = list_parents(ctx, mm, patient.as_ref()).await?;
 
 	let (reported_causes_of_death, autopsy_causes_of_death) = tokio::try_join!(
 		list_reported_causes_of_death(mm, death_info.as_ref()),
 		list_autopsy_causes_of_death(mm, death_info.as_ref()),
 	)?;
 
-	let (parent_medical_history, parent_past_drugs) = tokio::try_join!(
-		list_parent_medical_history(mm, &parents),
-		list_parent_past_drugs(mm, &parents),
-	)?;
+	let parent_medical_history =
+		list_parent_medical_history(ctx, mm, &parents).await?;
+	let parent_past_drugs = list_parent_past_drugs(ctx, mm, &parents).await?;
 
 	let (
 		primary_sources,
@@ -687,12 +686,18 @@ async fn list_primary_sources(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<Vec<PrimarySource>> {
-	let filter = PrimarySourceFilter {
-		case_id: Some(OpValsValue::from(vec![OpValValue::Eq(json!(case_id))])),
-		..Default::default()
-	};
-	let mut rows = PrimarySourceBmc::list(ctx, mm, Some(vec![filter]), None).await?;
-	rows.sort_by_key(|row| row.sequence_number);
+	mm.dbx().begin_txn().await?;
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+	let rows = mm
+		.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, PrimarySource>(
+				"SELECT * FROM primary_sources WHERE case_id = $1 AND deleted = false ORDER BY sequence_number",
+			)
+			.bind(case_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
 	Ok(rows)
 }
 
@@ -941,48 +946,74 @@ async fn list_autopsy_causes_of_death(
 }
 
 async fn list_parents(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	patient: Option<&PatientInformation>,
 ) -> Result<Vec<ParentInformation>> {
 	let Some(patient) = patient else {
 		return Ok(Vec::new());
 	};
-	let sql =
-		"SELECT * FROM parent_information WHERE patient_id = $1 ORDER BY created_at";
-	mm.dbx()
-		.fetch_all(sqlx::query_as::<_, ParentInformation>(sql).bind(patient.id))
-		.await
-		.map_err(Into::into)
+	mm.dbx().begin_txn().await?;
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+	let rows = mm
+		.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, ParentInformation>(
+				"SELECT * FROM parent_information WHERE patient_id = $1 AND deleted = false ORDER BY created_at",
+			)
+			.bind(patient.id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(rows)
 }
 
 async fn list_parent_medical_history(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	parents: &[ParentInformation],
 ) -> Result<Vec<ParentMedicalHistory>> {
 	if parents.is_empty() {
 		return Ok(Vec::new());
 	}
-	let parent_ids: Vec<Uuid> = parents.iter().map(|parent| parent.id).collect();
-	let sql = "SELECT * FROM parent_medical_history WHERE parent_id = ANY($1) ORDER BY parent_id, sequence_number";
-	mm.dbx()
-		.fetch_all(sqlx::query_as::<_, ParentMedicalHistory>(sql).bind(parent_ids))
-		.await
-		.map_err(Into::into)
+	let parent_ids = parents.iter().map(|parent| parent.id).collect::<Vec<_>>();
+	mm.dbx().begin_txn().await?;
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+	let rows = mm
+		.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, ParentMedicalHistory>(
+				"SELECT * FROM parent_medical_history WHERE parent_id = ANY($1) AND deleted = false ORDER BY parent_id, sequence_number",
+			)
+			.bind(parent_ids),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(rows)
 }
 
 async fn list_parent_past_drugs(
+	ctx: &Ctx,
 	mm: &ModelManager,
 	parents: &[ParentInformation],
 ) -> Result<Vec<ParentPastDrugHistory>> {
 	if parents.is_empty() {
 		return Ok(Vec::new());
 	}
-	let parent_ids: Vec<Uuid> = parents.iter().map(|parent| parent.id).collect();
-	let sql = "SELECT * FROM parent_past_drug_history WHERE parent_id = ANY($1) ORDER BY parent_id, sequence_number";
-	mm.dbx()
-		.fetch_all(sqlx::query_as::<_, ParentPastDrugHistory>(sql).bind(parent_ids))
-		.await
-		.map_err(Into::into)
+	let parent_ids = parents.iter().map(|parent| parent.id).collect::<Vec<_>>();
+	mm.dbx().begin_txn().await?;
+	set_full_context_from_ctx_dbx(mm.dbx(), ctx).await?;
+	let rows = mm
+		.dbx()
+		.fetch_all(
+			sqlx::query_as::<_, ParentPastDrugHistory>(
+				"SELECT * FROM parent_past_drug_history WHERE parent_id = ANY($1) AND deleted = false ORDER BY parent_id, sequence_number",
+			)
+			.bind(parent_ids),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(rows)
 }
 
 async fn list_studies(

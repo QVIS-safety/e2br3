@@ -23,7 +23,7 @@ fn import_e_section_all_fields_from_scenario6() {
 		first.primary_source_reaction_translation.as_deref(),
 		Some("Altered Consciousness")
 	);
-	assert_eq!(first.reaction_language, None);
+	assert_eq!(first.reaction_language.as_deref(), Some("por"));
 	assert_eq!(first.reaction_meddra_version.as_deref(), Some("12.0"));
 	assert_eq!(first.reaction_meddra_code.as_deref(), Some("10027940"));
 	assert_eq!(first.term_highlighted, Some(false));

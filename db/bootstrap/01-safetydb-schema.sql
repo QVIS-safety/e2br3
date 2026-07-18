@@ -1350,6 +1350,7 @@ CREATE POLICY audit_logs_read_for_admin_manager ON audit_logs
 
 -- Grant necessary permissions
 GRANT INSERT ON audit_logs TO e2br3_app_role;
+GRANT USAGE ON SCHEMA public TO e2br3_auditor_role;
 GRANT SELECT ON audit_logs TO e2br3_auditor_role;
 GRANT USAGE ON SEQUENCE audit_logs_id_seq TO e2br3_app_role;
 
