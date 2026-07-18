@@ -1,7 +1,7 @@
 use super::support::{install_profile, profile, RegistryGuard};
 use lib_core::model::acs::{
-	has_permission, CASE_APPROVE, CASE_CREATE, CASE_DELETE, CASE_READ, CASE_UPDATE,
-	DRUG_DEVICE_CHARACTERISTIC_LIST, DRUG_DEVICE_CHARACTERISTIC_READ,
+	has_permission, CASE_APPROVE, CASE_CREATE, CASE_DELETE, CASE_LOCK, CASE_READ,
+	CASE_UPDATE, DRUG_DEVICE_CHARACTERISTIC_LIST, DRUG_DEVICE_CHARACTERISTIC_READ,
 };
 use serial_test::serial;
 
@@ -40,18 +40,18 @@ fn case_review_profile_grants_review_permissions_only() {
 	install_profile("case_reviewer", profile("case", false, false, true, false));
 
 	assert!(has_permission("case_reviewer", CASE_APPROVE));
-	assert!(has_permission("case_reviewer", CASE_UPDATE));
+	assert!(!has_permission("case_reviewer", CASE_UPDATE));
 	assert!(!has_permission("case_reviewer", CASE_CREATE));
 	assert!(!has_permission("case_reviewer", CASE_DELETE));
 }
 
 #[test]
 #[serial]
-fn case_lock_profile_matches_review_permissions() {
+fn case_lock_profile_grants_lock_permission_only() {
 	let _registry = RegistryGuard::new();
-	let review = profile("case", false, false, true, false);
 	let lock = profile("case", false, false, false, true);
-	assert_eq!(lock, review);
 	install_profile("case_locker", lock);
-	assert!(has_permission("case_locker", CASE_APPROVE));
+	assert!(has_permission("case_locker", CASE_LOCK));
+	assert!(!has_permission("case_locker", CASE_APPROVE));
+	assert!(!has_permission("case_locker", CASE_UPDATE));
 }

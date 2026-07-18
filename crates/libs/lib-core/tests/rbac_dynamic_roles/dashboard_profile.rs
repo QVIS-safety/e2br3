@@ -38,19 +38,18 @@ fn notice_read_and_edit_profiles_are_separate() {
 
 #[test]
 #[serial]
-fn email_edit_review_and_lock_profiles_grant_send_but_read_does_not() {
+fn email_edit_grants_send_but_read_review_and_lock_do_not() {
 	let _registry = RegistryGuard::new();
 	assert!(profile("home_email", true, false, false, false).is_empty());
-	for (role, flags) in [
-		("email_editor", [false, true, false, false]),
-		("email_reviewer", [false, false, true, false]),
-		("email_locker", [false, false, false, true]),
-	] {
-		install_profile(
-			role,
-			profile("home_email", flags[0], flags[1], flags[2], flags[3]),
+	install_profile(
+		"email_editor",
+		profile("home_email", false, true, false, false),
+	);
+	assert!(has_permission("email_editor", EMAIL_NOTIFICATION_SEND));
+	for flags in [[false, false, true, false], [false, false, false, true]] {
+		assert!(
+			profile("home_email", flags[0], flags[1], flags[2], flags[3]).is_empty()
 		);
-		assert!(has_permission(role, EMAIL_NOTIFICATION_SEND));
 	}
 }
 

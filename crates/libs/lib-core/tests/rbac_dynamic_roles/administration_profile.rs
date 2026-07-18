@@ -26,12 +26,9 @@ fn user_read_and_write_profiles_are_separate_and_aliases_match() {
 
 #[test]
 #[serial]
-fn audit_read_and_review_profiles_grant_audit_views_only() {
+fn audit_read_grants_views_but_review_grants_nothing() {
 	let _registry = RegistryGuard::new();
-	assert_eq!(
-		profile("audit", true, false, false, false),
-		profile("audit", false, false, true, false)
-	);
+	assert!(profile("audit", false, false, true, false).is_empty());
 	install_profile("auditor", profile("audit", true, false, false, false));
 	assert!(has_permission("auditor", AUDIT_READ));
 	assert!(has_permission("auditor", AUDIT_LIST));
