@@ -15,7 +15,7 @@ use serial_test::serial;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-pub(super) async fn create_empty_permission_profile(
+pub(crate) async fn create_empty_permission_profile(
 	app: &axum::Router,
 	admin_cookie: &str,
 	name: String,

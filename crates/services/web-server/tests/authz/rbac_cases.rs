@@ -7,11 +7,12 @@ use serial_test::serial;
 use tower::ServiceExt;
 use uuid::Uuid;
 
-async fn create_case(cookie: &str, app: &axum::Router, org_id: Uuid) -> Result<()> {
+async fn create_case(cookie: &str, app: &axum::Router, _org_id: Uuid) -> Result<()> {
 	let body = json!({
 		"data": {
-			"organization_id": org_id,
-			"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+			"safetyReportIdentification": {
+				"safetyReportId": format!("SR-{}", Uuid::new_v4())
+			},
 			"status": "draft"
 		}
 	});
@@ -55,8 +56,9 @@ async fn test_viewer_cannot_create_case() -> Result<()> {
 	let app = web_server::app(mm);
 	let body = json!({
 		"data": {
-			"organization_id": seed.org_id,
-			"safety_report_id": format!("SR-{}", Uuid::new_v4()),
+			"safetyReportIdentification": {
+				"safetyReportId": format!("SR-{}", Uuid::new_v4())
+			},
 			"status": "draft"
 		}
 	});

@@ -419,7 +419,14 @@ impl UserBmc {
 		limit: i64,
 	) -> Result<Vec<WorkflowUserOption>> {
 		let limit = limit.clamp(1, 500);
-		mm.dbx()
+		let scoped_mm = mm.new_with_txn()?;
+		let dbx = scoped_mm.dbx();
+		dbx.begin_txn().await.map_err(Error::Dbx)?;
+		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
+			let _ = dbx.rollback_txn().await;
+			return Err(err);
+		}
+		let users = match dbx
 			.fetch_all(
 				sqlx::query_as::<_, WorkflowUserOption>(
 					"SELECT id, email, username
@@ -433,7 +440,15 @@ impl UserBmc {
 				.bind(limit),
 			)
 			.await
-			.map_err(Error::from)
+		{
+			Ok(users) => users,
+			Err(err) => {
+				let _ = dbx.rollback_txn().await;
+				return Err(err.into());
+			}
+		};
+		dbx.commit_txn().await.map_err(Error::Dbx)?;
+		Ok(users)
 	}
 
 	pub async fn update(
