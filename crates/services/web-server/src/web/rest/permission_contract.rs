@@ -20,7 +20,7 @@ pub const ENDPOINT_PERMISSION_CONTRACTS: &[EndpointPermissionContract] = &[
 		permissions: &["Case.Update", "SafetyReport.Update"],
 	},
 	EndpointPermissionContract {
-		key: "case.approve",
+		key: "case.review.toggle",
 		method: "POST",
 		path: "/api/cases/{id}/review/toggle",
 		permissions: &["Case.Approve"],
