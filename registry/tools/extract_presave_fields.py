@@ -87,6 +87,10 @@ def extract_reporter_frontend(root: Path) -> set[str]:
     for relative in REPORTER_FRONTEND_FILES:
         path = repo_root / relative
         if not path.is_file():
+            prefix = "../frontend/E2BR3-frontend/"
+            if relative.startswith(prefix):
+                path = repo_root / "frontend/E2BR3-frontend" / relative.removeprefix(prefix)
+        if not path.is_file():
             raise validate.InventoryError(f"presave frontend source not found: {path}")
         source = path.read_text(encoding="utf-8")
         if path.name == "presave.ts":
@@ -138,6 +142,9 @@ def extract_reporter_transfer_source(source: str) -> set[tuple[str, str]]:
 def extract_reporter_transfers(root: Path) -> set[tuple[str, str]]:
     repo_root = root if (root / "registry").exists() else root.parent
     path = repo_root / REPORTER_TRANSFER_FILE
+    if not path.is_file():
+        prefix = "../frontend/E2BR3-frontend/"
+        path = repo_root / "frontend/E2BR3-frontend" / REPORTER_TRANSFER_FILE.removeprefix(prefix)
     if not path.is_file():
         raise validate.InventoryError(f"reporter transfer source not found: {path}")
     return extract_reporter_transfer_source(path.read_text(encoding="utf-8"))

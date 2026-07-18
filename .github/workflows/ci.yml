@@ -19,12 +19,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout frontend registry source
+        uses: actions/checkout@v4
+        with:
+          repository: QVIS-safety/e2br3-frontend
+          path: frontend/E2BR3-frontend
+          token: ${{ secrets.FRONTEND_REPOSITORY_TOKEN || github.token }}
+
       - name: Validate registry
         run: |
           python3 -m unittest registry/tools/test_validate.py
           python3 -m unittest registry/tools/test_build_dictionary.py
           python3 registry/tools/validate.py
           python3 registry/tools/validate.py --strict-dictionary
+          python3 registry/tools/validate.py --strict-presave-inventory
 
   # ============================================
   # Job 1: Check code formatting

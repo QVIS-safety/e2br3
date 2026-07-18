@@ -1430,6 +1430,16 @@ class DictionaryValidatorTests(unittest.TestCase):
 
         self.assertEqual([], result.errors)
 
+    def test_ci_runs_strict_presave_inventory(self):
+        workflow = (validate.ROOT.parent / ".github/workflows/ci.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn(
+            "python3 registry/tools/validate.py --strict-presave-inventory",
+            workflow,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
