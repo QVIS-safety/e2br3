@@ -5,7 +5,8 @@ use axum::extract::{Path, State};
 use axum::Json;
 use lib_core::ctx::Ctx;
 use lib_core::model::acs::{
-	CASE_CREATE, CASE_DELETE, CASE_LIST, CASE_READ, CASE_UPDATE,
+	has_permission, CASE_APPROVE, CASE_CREATE, CASE_DELETE, CASE_LIST, CASE_LOCK,
+	CASE_READ, CASE_UPDATE,
 };
 use lib_core::model::case::{
 	is_allowed_case_status_transition, is_valid_case_status,
@@ -1085,7 +1086,16 @@ pub async fn update_case_guarded(
 	Json(params): Json<PublicCaseUpdateRequest>,
 ) -> Result<(axum::http::StatusCode, Json<DataRestResult<CaseReadResult>>)> {
 	let ctx = ctx_w.0;
-	require_permission(&ctx, CASE_UPDATE)?;
+	// Cheap gate before any DB access: the caller must hold at least one
+	// case-write-grade permission (edit, review, or lock).
+	if !has_permission(ctx.permission_subject(), CASE_UPDATE)
+		&& !has_permission(ctx.permission_subject(), CASE_APPROVE)
+		&& !has_permission(ctx.permission_subject(), CASE_LOCK)
+	{
+		return Err(Error::PermissionDenied {
+			required_permission: format!("{CASE_UPDATE}"),
+		});
+	}
 	let PublicCaseUpdateRequest {
 		data,
 		reason_for_change,
@@ -1093,10 +1103,14 @@ pub async fn update_case_guarded(
 	} = params;
 	let mut data = to_internal_case_for_update(data);
 	validate_case_update_payload(&data)?;
+	let touches_non_status = update_touches_non_status_fields(&data);
+	if touches_non_status {
+		require_permission(&ctx, CASE_UPDATE)?;
+	}
 	let current = CaseBmc::get(&ctx, &mm, id).await?;
 	normalize_review_receivers_for_update(&ctx, &mm, id, &mut data).await?;
 	let requested_status = data.status.clone();
-	if update_touches_non_status_fields(&data) {
+	if touches_non_status {
 		if let Some(reason) =
 			case_write_block_reason_for_case(&ctx, &mm, &current).await?
 		{
@@ -1117,6 +1131,25 @@ pub async fn update_case_guarded(
 				),
 			});
 		}
+		// Reference privilege rows CASE|Review|Edit and CASE|Lock|Edit:
+		// entering reviewed/validated is a review-grade action; entering or
+		// leaving locked is a lock-grade action. Everything else stays a
+		// regular case edit.
+		let prev = current.status.trim().to_ascii_lowercase();
+		let next = next_status.trim().to_ascii_lowercase();
+		if prev != next {
+			if prev == "locked" || next == "locked" {
+				require_permission(&ctx, CASE_LOCK)?;
+			} else if matches!(next.as_str(), "reviewed" | "validated") {
+				require_permission(&ctx, CASE_APPROVE)?;
+			} else {
+				require_permission(&ctx, CASE_UPDATE)?;
+			}
+		} else if !touches_non_status {
+			require_permission(&ctx, CASE_UPDATE)?;
+		}
+	} else if !touches_non_status {
+		require_permission(&ctx, CASE_UPDATE)?;
 	}
 
 	let requires_compliance = requested_status

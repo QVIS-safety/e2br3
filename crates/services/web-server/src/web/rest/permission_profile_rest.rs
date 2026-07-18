@@ -106,8 +106,6 @@ fn role_summary_booleans(
 			privilege.menu_key.as_str(),
 			"admin" | "roles" | "users" | "user"
 		) && (privilege.can_edit
-			|| privilege.can_review
-			|| privilege.can_lock
 			|| privilege.can_read && privilege.menu_key == "admin")
 	});
 	let can_view = can_admin
@@ -172,8 +170,12 @@ fn normalize_admin_privileges(
 		if !matches!(
 			menu_key.as_str(),
 			"home_workflow"
+				| "case_workflow"
 				| "home_notice"
 				| "home_email"
+				| "email_report_due"
+				| "email_review"
+				| "email_lock"
 				| "case" | "info"
 				| "import" | "export_submission"
 				| "submission"
@@ -187,6 +189,10 @@ fn normalize_admin_privileges(
 				message: format!("unknown role privilege menu '{menu_key}'"),
 			});
 		}
+		// Reference model: privileges are Read/Edit; Review/Lock exist only as
+		// the CASE menu's Review/Lock rows. Strip the flags everywhere else so
+		// they can never act as a hidden third/fourth privilege column.
+		let review_lock_allowed = menu_key == "case";
 		let entry = out.entry(menu_key.clone()).or_insert(AdminMenuPrivilege {
 			menu_key,
 			can_read: false,
@@ -196,8 +202,10 @@ fn normalize_admin_privileges(
 		});
 		entry.can_read = entry.can_read || privilege.can_read;
 		entry.can_edit = entry.can_edit || privilege.can_edit;
-		entry.can_review = entry.can_review || privilege.can_review;
-		entry.can_lock = entry.can_lock || privilege.can_lock;
+		entry.can_review =
+			entry.can_review || (privilege.can_review && review_lock_allowed);
+		entry.can_lock =
+			entry.can_lock || (privilege.can_lock && review_lock_allowed);
 	}
 	Ok(out.into_values().collect::<Vec<_>>())
 }

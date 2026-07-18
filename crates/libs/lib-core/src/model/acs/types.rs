@@ -57,6 +57,7 @@ pub enum Action {
 	Import,
 	Approve,
 	Send,
+	Lock,
 }
 
 /// A permission is a resource and action pair.
