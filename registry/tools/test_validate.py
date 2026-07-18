@@ -1421,6 +1421,15 @@ class DictionaryValidatorTests(unittest.TestCase):
 
         self.assertEqual([], result.errors)
 
+    def test_repository_reporter_presave_inventory_is_complete(self):
+        result = validate.validate_registry(
+            validate_backend_inventory=False,
+            validate_presave_registry_rows=True,
+            validate_presave_inventory=True,
+        )
+
+        self.assertEqual([], result.errors)
+
 
 if __name__ == "__main__":
     unittest.main()

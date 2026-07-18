@@ -81,22 +81,26 @@ def _reporter_type_source(source: str) -> str:
 
 
 def extract_reporter_frontend(root: Path) -> set[str]:
+    repo_root = root if (root / "registry").exists() else root.parent
     fields: set[str] = set()
+    reporter_type_fields: set[str] = set()
     for relative in REPORTER_FRONTEND_FILES:
-        path = root / relative
+        path = repo_root / relative
         if not path.is_file():
             raise validate.InventoryError(f"presave frontend source not found: {path}")
         source = path.read_text(encoding="utf-8")
         if path.name == "presave.ts":
             source = _reporter_type_source(source)
+            reporter_type_fields = extract_presave_frontend_source(source, "reporter")
         fields.update(extract_presave_frontend_source(source, "reporter"))
-    return fields
+    return {field for field in fields if field in reporter_type_fields}
 
 
 def extract_presave_backend(root: Path, models: dict[str, str]) -> set[str]:
+    repo_root = root if (root / "registry").exists() else root.parent
     fields: set[str] = set()
     for model, relative in models.items():
-        path = root / relative
+        path = repo_root / relative
         if not path.is_file():
             raise validate.InventoryError(f"presave backend source not found: {path}")
         fields.update(
@@ -121,11 +125,19 @@ def extract_reporter_transfer_source(source: str) -> set[tuple[str, str]]:
                     f"PrimarySource.{target_field}",
                 )
             )
+    if "normalizePrimarySourceValue" in source and "primarySourceForRegulatoryPurposes" in source:
+        pairs.add(
+            (
+                "ReporterPresave.primary_source_regulatory",
+                "PrimarySource.primary_source_regulatory",
+            )
+        )
     return pairs
 
 
 def extract_reporter_transfers(root: Path) -> set[tuple[str, str]]:
-    path = root / REPORTER_TRANSFER_FILE
+    repo_root = root if (root / "registry").exists() else root.parent
+    path = repo_root / REPORTER_TRANSFER_FILE
     if not path.is_file():
         raise validate.InventoryError(f"reporter transfer source not found: {path}")
     return extract_reporter_transfer_source(path.read_text(encoding="utf-8"))
