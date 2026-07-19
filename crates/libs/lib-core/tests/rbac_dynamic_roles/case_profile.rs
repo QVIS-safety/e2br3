@@ -43,6 +43,7 @@ fn case_review_profile_grants_review_permissions_only() {
 	assert!(!has_permission("case_reviewer", CASE_UPDATE));
 	assert!(!has_permission("case_reviewer", CASE_CREATE));
 	assert!(!has_permission("case_reviewer", CASE_DELETE));
+	assert!(!has_permission("case_reviewer", CASE_LOCK));
 }
 
 #[test]

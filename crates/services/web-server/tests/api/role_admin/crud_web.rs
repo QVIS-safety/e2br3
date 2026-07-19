@@ -175,3 +175,51 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	);
 	Ok(())
 }
+
+#[serial]
+#[tokio::test]
+async fn test_delete_permission_profile_soft_deletes_and_keeps_role_visible(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, created) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({ "data": { "name": "Restorable role", "privileges": [] } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{created}");
+	let profile_id = created["id"].as_str().ok_or("missing role id")?;
+
+	let (status, body) = request_json(
+		&app,
+		"DELETE",
+		&admin_cookie,
+		format!("/api/admin/permission-profiles/{profile_id}"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+
+	let (status, profiles) = request_json(
+		&app,
+		"GET",
+		&admin_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{profiles}");
+	let deleted = profiles
+		.as_array()
+		.and_then(|rows| rows.iter().find(|row| row["id"] == profile_id))
+		.ok_or("soft-deleted role missing from role list")?;
+	assert_eq!(deleted["active"], false);
+	Ok(())
+}

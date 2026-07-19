@@ -60,7 +60,45 @@ const PROFILE_SELECT: &str = r#"
 
 pub struct PermissionProfileBmc;
 
+const MAX_ACTIVE_CUSTOM_ROLES_PER_ORG: i64 = 20;
+
 impl PermissionProfileBmc {
+	async fn enforce_active_custom_role_limit(
+		dbx: &crate::model::store::dbx::Dbx,
+		organization_id: Uuid,
+		excluding_id: Option<Uuid>,
+	) -> Result<()> {
+		dbx.execute(
+			sqlx::query(
+				"SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))",
+			)
+			.bind(organization_id),
+		)
+		.await?;
+		let (count,) = dbx
+			.fetch_one(
+				sqlx::query_as::<_, (i64,)>(
+					r#"
+					SELECT COUNT(*)
+					FROM permission_profiles
+					WHERE organization_id = $1
+					  AND active = true
+					  AND built_in = false
+					  AND ($2::uuid IS NULL OR id <> $2)
+					"#,
+				)
+				.bind(organization_id)
+				.bind(excluding_id),
+			)
+			.await?;
+		if count >= MAX_ACTIVE_CUSTOM_ROLES_PER_ORG {
+			return Err(crate::model::Error::Conflict {
+				message: "active custom role limit is 20".to_string(),
+			});
+		}
+		Ok(())
+	}
+
 	pub async fn policy_version(mm: &ModelManager) -> Result<i64> {
 		let ctx = Ctx::root_ctx();
 		let dbx = mm.dbx();
@@ -262,6 +300,18 @@ impl PermissionProfileBmc {
 			dbx.rollback_txn().await?;
 			return Err(err);
 		}
+		if data.active {
+			if let Err(err) = Self::enforce_active_custom_role_limit(
+				dbx,
+				ctx.organization_id(),
+				None,
+			)
+			.await
+			{
+				dbx.rollback_txn().await?;
+				return Err(err);
+			}
+		}
 		match dbx
 			.fetch_one(
 				sqlx::query_as::<_, (Uuid,)>(
@@ -311,6 +361,18 @@ impl PermissionProfileBmc {
 		if let Err(err) = set_full_context_from_ctx_dbx(dbx, ctx).await {
 			dbx.rollback_txn().await?;
 			return Err(err);
+		}
+		if data.active {
+			if let Err(err) = Self::enforce_active_custom_role_limit(
+				dbx,
+				ctx.organization_id(),
+				Some(id),
+			)
+			.await
+			{
+				dbx.rollback_txn().await?;
+				return Err(err);
+			}
 		}
 		match dbx
 			.execute(

@@ -2,7 +2,8 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::ctx::{
-	Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
+	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
+	ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::AdminMenuPrivilege;
 use lib_core::model::permission_profile::{
@@ -10,9 +11,8 @@ use lib_core::model::permission_profile::{
 	PermissionProfileUpdateData,
 };
 use lib_core::model::ModelManager;
-use lib_rest_core::{require_admin, Error, Result};
+use lib_rest_core::{require_role_admin, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
-use lib_web::middleware::mw_permission::RequireAdmin;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
 use std::collections::BTreeMap;
@@ -20,7 +20,6 @@ use uuid::Uuid;
 
 const ROLE_NAME_MAX_LEN: usize = 128;
 const ROLE_DESCRIPTION_MAX_LEN: usize = 512;
-const MAX_CUSTOM_ROLES_PER_ORG: i64 = 20;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PermissionProfileRow {
@@ -235,8 +234,8 @@ fn full_menu_privileges() -> Vec<AdminMenuPrivilege> {
 		.collect()
 }
 
-fn built_in_roles() -> Vec<PermissionProfileRow> {
-	vec![build_role_row(
+fn system_admin_row() -> PermissionProfileRow {
+	build_role_row(
 		ROLE_SYSTEM_ADMIN.to_string(),
 		"System Administrator".to_string(),
 		Some(
@@ -248,14 +247,46 @@ fn built_in_roles() -> Vec<PermissionProfileRow> {
 		true,
 		false,
 		false,
-	)]
+	)
+}
+
+fn sponsor_admin_row(id: &str, name: &str) -> PermissionProfileRow {
+	build_role_row(
+		id.to_string(),
+		name.to_string(),
+		Some("Fixed account administrator role.".to_string()),
+		full_menu_privileges(),
+		true,
+		true,
+		false,
+		true,
+	)
 }
 
 async fn visible_built_in_roles(
-	_ctx: &Ctx,
+	ctx: &Ctx,
 	_mm: &ModelManager,
 ) -> Result<Vec<PermissionProfileRow>> {
-	Ok(built_in_roles())
+	let roles = match canonical_role(ctx.role()).as_str() {
+		ROLE_SYSTEM_ADMIN => vec![
+			system_admin_row(),
+			sponsor_admin_row(ROLE_SPONSOR_ADMIN_CRO, "CRO Sponsor Administrator"),
+			sponsor_admin_row(
+				ROLE_SPONSOR_ADMIN_COMPANY,
+				"Company Sponsor Administrator",
+			),
+		],
+		ROLE_SPONSOR_ADMIN_CRO => vec![sponsor_admin_row(
+			ROLE_SPONSOR_ADMIN_CRO,
+			"CRO Sponsor Administrator",
+		)],
+		ROLE_SPONSOR_ADMIN_COMPANY => vec![sponsor_admin_row(
+			ROLE_SPONSOR_ADMIN_COMPANY,
+			"Company Sponsor Administrator",
+		)],
+		_ => Vec::new(),
+	};
+	Ok(roles)
 }
 
 fn row_to_api(row: DbPermissionProfileRow) -> PermissionProfileRow {
@@ -296,7 +327,7 @@ pub async fn list_permission_profiles(
 	ctx_w: CtxW,
 ) -> Result<(StatusCode, Json<Vec<PermissionProfileRow>>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_role_admin(&ctx)?;
 	let mut rows = visible_built_in_roles(&ctx, &mm).await?;
 	let custom_rows = PermissionProfileBmc::list(&ctx, &mm)
 		.await
@@ -312,7 +343,7 @@ pub async fn get_permission_profile(
 	Path(id): Path<String>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_role_admin(&ctx)?;
 	if let Some(row) = visible_built_in_roles(&ctx, &mm)
 		.await?
 		.into_iter()
@@ -331,13 +362,12 @@ pub async fn get_permission_profile(
 pub async fn create_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	_admin: RequireAdmin,
 	Json(params): Json<
 		lib_rest_core::rest_params::ParamsForCreate<PermissionProfileCreateBody>,
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_role_admin(&ctx)?;
 	let data = params.data;
 	let name = data
 		.name
@@ -353,15 +383,6 @@ pub async fn create_permission_profile(
 	{
 		return Err(Error::BadRequest {
 			message: "role name already exists in this organization".to_string(),
-		});
-	}
-	let existing_custom_role_count =
-		PermissionProfileBmc::count_custom_in_org(&ctx, &mm)
-			.await
-			.map_err(Error::Model)?;
-	if existing_custom_role_count >= MAX_CUSTOM_ROLES_PER_ORG {
-		return Err(Error::BadRequest {
-			message: "organizations can create up to 20 custom roles".to_string(),
 		});
 	}
 	let description = normalize_role_description(data.description)?;
@@ -398,13 +419,12 @@ pub async fn update_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<String>,
-	_admin: RequireAdmin,
 	Json(params): Json<
 		lib_rest_core::rest_params::ParamsForUpdate<PermissionProfileUpdateBody>,
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_role_admin(&ctx)?;
 	if is_built_in_role_id(&id) {
 		return Err(Error::AccessDenied {
 			required_role: "editable_custom_role".to_string(),
@@ -472,17 +492,31 @@ pub async fn delete_permission_profile(
 	Path(id): Path<String>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_role_admin(&ctx)?;
 	if is_built_in_role_id(&id) {
 		return Err(Error::BadRequest {
 			message: "built-in permission profiles cannot be deleted".to_string(),
 		});
 	}
 	let id = parse_custom_role_id(&id)?;
-	PermissionProfileBmc::evict_dynamic_role(id);
-	PermissionProfileBmc::delete(&ctx, &mm, id)
+	let current = PermissionProfileBmc::get(&ctx, &mm, id)
 		.await
 		.map_err(Error::Model)?;
+	PermissionProfileBmc::update(
+		&ctx,
+		&mm,
+		id,
+		PermissionProfileUpdateData {
+			name: current.name,
+			description: current.description,
+			privileges: current.privileges_json,
+			active: false,
+			sponsor_admin_capable: current.sponsor_admin_capable,
+		},
+	)
+	.await
+	.map_err(Error::Model)?;
+	PermissionProfileBmc::evict_dynamic_role(id);
 	PermissionProfileBmc::refresh_dynamic_roles(&mm)
 		.await
 		.map_err(Error::Model)?;

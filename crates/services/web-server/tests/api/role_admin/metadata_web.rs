@@ -26,6 +26,7 @@ use serial_test::serial;
 use tower::ServiceExt;
 use uuid::Uuid;
 
+#[serial]
 #[tokio::test]
 async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 	let mm = init_test_mm().await?;
@@ -44,27 +45,84 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	let roles = value.as_array().ok_or("roles response should be array")?;
-	let system = roles
+	let sponsor_cro = roles
 		.iter()
-		.find(|role| role["id"] == ROLE_SYSTEM_ADMIN)
-		.ok_or("missing system permission profile")?;
-	assert_eq!(system["is_operational"].as_bool(), Some(false));
-	assert_eq!(system["is_editable"].as_bool(), Some(false));
+		.find(|role| role["id"] == ROLE_SPONSOR_ADMIN_CRO)
+		.ok_or("missing CRO sponsor permission profile")?;
+	assert_eq!(sponsor_cro["is_operational"].as_bool(), Some(true));
+	assert_eq!(sponsor_cro["is_editable"].as_bool(), Some(false));
 
-	assert!(!roles
-		.iter()
-		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_CRO));
+	assert!(!roles.iter().any(|role| role["id"] == ROLE_SYSTEM_ADMIN));
 	assert!(!roles
 		.iter()
 		.any(|role| role["id"] == ROLE_SPONSOR_ADMIN_COMPANY));
 
-	let system_privileges = system["privileges"]
+	let sponsor_privileges = sponsor_cro["privileges"]
 		.as_array()
-		.ok_or("system privileges should be an array")?;
+		.ok_or("sponsor privileges should be an array")?;
 	assert!(
-		system_privileges.is_empty(),
-		"system admin should not receive Safety DB working menu privileges"
+		!sponsor_privileges.is_empty(),
+		"CRO sponsor admin should expose its fixed Safety DB privileges"
 	);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn test_restoring_twenty_first_active_custom_role_returns_conflict(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	for index in 0..20 {
+		let (status, value) = request_json(
+			&app,
+			"POST",
+			&admin_cookie,
+			"/api/admin/permission-profiles".to_string(),
+			Some(json!({
+				"data": {
+					"name": format!("Active PDF role {index}"),
+					"active": true,
+					"privileges": []
+				}
+			})),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::CREATED, "index={index} {value:?}");
+	}
+
+	let (status, inactive) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"name": "Inactive PDF role",
+				"active": false,
+				"privileges": []
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CREATED, "{inactive:?}");
+	let inactive_id = inactive["id"].as_str().ok_or("missing inactive id")?;
+
+	let (status, value) = request_json(
+		&app,
+		"PUT",
+		&admin_cookie,
+		format!("/api/admin/permission-profiles/{inactive_id}"),
+		Some(json!({ "data": { "active": true } })),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::CONFLICT, "{value:?}");
+	assert!(value.to_string().contains("active custom role limit is 20"));
+
 	Ok(())
 }
 

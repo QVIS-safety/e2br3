@@ -25,6 +25,7 @@ pub struct Case {
 	// E2B fields
 	pub dg_prd_key: Option<String>,
 	pub status: String,
+	pub status_before_lock: Option<String>,
 	pub review_receivers_json: Option<String>,
 	pub workflow_routes_json: Option<String>,
 	pub workflow_status: String,
@@ -427,6 +428,7 @@ const CASE_SELECT: &str = r#"
 		c.organization_id,
 		c.dg_prd_key,
 		c.status,
+		c.status_before_lock,
 		c.review_receivers_json,
 		c.workflow_routes_json,
 		c.workflow_status,
@@ -692,6 +694,153 @@ impl CaseBmc {
 		}
 		dbx.commit_txn().await?;
 		Ok(())
+	}
+
+	pub async fn toggle_review(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<Case> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let current = dbx
+			.fetch_optional(
+				sqlx::query_as::<_, (String,)>(
+					"SELECT status FROM cases WHERE id = $1 FOR UPDATE",
+				)
+				.bind(id),
+			)
+			.await?;
+		let Some((status,)) = current else {
+			dbx.rollback_txn().await?;
+			return Err(crate::model::Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
+		};
+		let next = match status.trim().to_ascii_lowercase().as_str() {
+			"draft" => "reviewed",
+			"reviewed" | "validated" => "draft",
+			_ => {
+				dbx.rollback_txn().await?;
+				return Err(crate::model::Error::Conflict {
+					message: format!(
+						"case review cannot be toggled from status '{status}'"
+					),
+				});
+			}
+		};
+		let updated = dbx
+			.fetch_one(
+				sqlx::query_as::<_, Case>(
+					"UPDATE cases
+				 SET status = $2, updated_at = now(), updated_by = $3
+				 WHERE id = $1
+				 RETURNING *",
+				)
+				.bind(id)
+				.bind(next)
+				.bind(ctx.user_id()),
+			)
+			.await?;
+		for table in ["case_validation_summaries", "case_validation_reports"] {
+			dbx.execute(
+				sqlx::query(&format!(
+					"UPDATE {table} SET stale = true WHERE case_id = $1"
+				))
+				.bind(id),
+			)
+			.await?;
+		}
+		dbx.commit_txn().await?;
+		Ok(updated)
+	}
+
+	pub async fn toggle_lock(
+		ctx: &Ctx,
+		mm: &ModelManager,
+		id: Uuid,
+	) -> Result<Case> {
+		let dbx = mm.dbx();
+		dbx.begin_txn().await?;
+		if let Err(err) =
+			crate::model::store::set_full_context_from_ctx_dbx(dbx, ctx).await
+		{
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+		let current = dbx
+			.fetch_optional(
+				sqlx::query_as::<_, (String, Option<String>)>(
+					"SELECT status, status_before_lock
+					 FROM cases WHERE id = $1 FOR UPDATE",
+				)
+				.bind(id),
+			)
+			.await?;
+		let Some((status, status_before_lock)) = current else {
+			dbx.rollback_txn().await?;
+			return Err(crate::model::Error::EntityUuidNotFound {
+				entity: Self::TABLE,
+				id,
+			});
+		};
+		let normalized = status.trim().to_ascii_lowercase();
+		let (next, remembered): (String, Option<String>) = match normalized.as_str()
+		{
+			"draft" | "reviewed" | "validated" => {
+				("locked".to_string(), Some(normalized))
+			}
+			"locked" => {
+				let Some(previous) = status_before_lock else {
+					dbx.rollback_txn().await?;
+					return Err(crate::model::Error::Conflict {
+						message: "locked case has no recorded pre-lock status"
+							.to_string(),
+					});
+				};
+				if !matches!(previous.as_str(), "draft" | "reviewed" | "validated") {
+					dbx.rollback_txn().await?;
+					return Err(crate::model::Error::Conflict {
+						message: format!(
+							"locked case has invalid pre-lock status '{previous}'"
+						),
+					});
+				}
+				(previous, None)
+			}
+			_ => {
+				dbx.rollback_txn().await?;
+				return Err(crate::model::Error::Conflict {
+					message: format!(
+						"case lock cannot be toggled from status '{status}'"
+					),
+				});
+			}
+		};
+		let updated = dbx
+			.fetch_one(
+				sqlx::query_as::<_, Case>(
+					"UPDATE cases
+				 SET status = $2, status_before_lock = $3,
+				     updated_at = now(), updated_by = $4
+				 WHERE id = $1
+				 RETURNING *",
+				)
+				.bind(id)
+				.bind(next)
+				.bind(remembered)
+				.bind(ctx.user_id()),
+			)
+			.await?;
+		dbx.commit_txn().await?;
+		Ok(updated)
 	}
 
 	pub async fn delete(ctx: &Ctx, mm: &ModelManager, id: Uuid) -> Result<()> {

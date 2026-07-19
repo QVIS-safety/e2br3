@@ -80,9 +80,9 @@ pub fn validate_case_create_payload(data: &InternalCaseForCreate) -> Result<()> 
 				message: format!("invalid case status '{status}'"),
 			});
 		}
-		if status.eq_ignore_ascii_case("validated") {
+		if !status.trim().eq_ignore_ascii_case("draft") {
 			return Err(Error::BadRequest {
-				message: "cannot set case to validated manually: status is managed by validator".to_string(),
+				message: "case creation only accepts draft status; use the dedicated lifecycle action after creation".to_string(),
 			});
 		}
 	}
@@ -1138,13 +1138,16 @@ pub async fn update_case_guarded(
 		let prev = current.status.trim().to_ascii_lowercase();
 		let next = next_status.trim().to_ascii_lowercase();
 		if prev != next {
-			if prev == "locked" || next == "locked" {
-				require_permission(&ctx, CASE_LOCK)?;
-			} else if matches!(next.as_str(), "reviewed" | "validated") {
-				require_permission(&ctx, CASE_APPROVE)?;
-			} else {
-				require_permission(&ctx, CASE_UPDATE)?;
+			if prev == "locked"
+				|| matches!(next.as_str(), "reviewed" | "validated" | "locked")
+				|| (next == "draft"
+					&& matches!(prev.as_str(), "reviewed" | "validated"))
+			{
+				return Err(Error::BadRequest {
+					message: "use the dedicated case review/lock toggle endpoint for QC or lock state changes".to_string(),
+				});
 			}
+			require_permission(&ctx, CASE_UPDATE)?;
 		} else if !touches_non_status {
 			require_permission(&ctx, CASE_UPDATE)?;
 		}
@@ -1207,6 +1210,42 @@ pub async fn update_case_guarded(
 	Ok((
 		axum::http::StatusCode::OK,
 		Json(DataRestResult { data: entity }),
+	))
+}
+
+/// POST /api/cases/{id}/review/toggle
+pub async fn toggle_case_review(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(id): Path<Uuid>,
+) -> Result<(axum::http::StatusCode, Json<DataRestResult<PublicCaseView>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_APPROVE)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
+	let entity = CaseBmc::toggle_review(&ctx, &mm, id).await?;
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult {
+			data: entity.into(),
+		}),
+	))
+}
+
+/// POST /api/cases/{id}/lock/toggle
+pub async fn toggle_case_lock(
+	State(mm): State<ModelManager>,
+	ctx_w: CtxW,
+	Path(id): Path<Uuid>,
+) -> Result<(axum::http::StatusCode, Json<DataRestResult<PublicCaseView>>)> {
+	let ctx = ctx_w.0;
+	require_permission(&ctx, CASE_LOCK)?;
+	lib_rest_core::require_case_read_allowed(&ctx, &mm, id).await?;
+	let entity = CaseBmc::toggle_lock(&ctx, &mm, id).await?;
+	Ok((
+		axum::http::StatusCode::OK,
+		Json(DataRestResult {
+			data: entity.into(),
+		}),
 	))
 }
 

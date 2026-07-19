@@ -22,7 +22,7 @@ use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate, ParamsList};
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{
-	admin_db_ctx, require_admin, require_permission, routing_profile_for_user,
+	admin_db_ctx, require_permission, require_user_admin, routing_profile_for_user,
 	validate_active_sender_selection, Error, Result,
 };
 use lib_web::middleware::mw_auth::CtxW;

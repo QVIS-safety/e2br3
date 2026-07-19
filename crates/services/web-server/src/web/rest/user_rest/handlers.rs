@@ -11,8 +11,19 @@ pub async fn create_user(
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
 	let ParamsForCreate { data } = params;
-	require_admin(&ctx, &mm).await?;
+	require_user_admin(&ctx, &mm).await?;
 	require_permission(&ctx, USER_CREATE)?;
+	if !ctx.is_admin()
+		&& data
+			.role
+			.as_deref()
+			.is_some_and(|role| canonical_role(role) != ROLE_USER)
+	{
+		return Err(Error::PermissionDenied {
+			required_permission: "built-in administrator role assignment"
+				.to_string(),
+		});
+	}
 	validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
 	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
 	validate_uuid_scope("access_study_ids", &data.access_study_ids)?;
@@ -101,7 +112,7 @@ pub async fn get_user(
 	Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_user_admin(&ctx, &mm).await?;
 	require_permission(&ctx, USER_READ)?;
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
@@ -157,7 +168,7 @@ pub async fn list_users(
 	let ctx = ctx_w.0;
 	let params = ParamsList::<UserFilter>::from_raw_query(raw_query.as_deref())
 		.map_err(|message| Error::BadRequest { message })?;
-	require_admin(&ctx, &mm).await?;
+	require_user_admin(&ctx, &mm).await?;
 	require_permission(&ctx, USER_LIST)?;
 	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let entities =
@@ -206,8 +217,14 @@ pub async fn update_user(
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
 	let ParamsForUpdate { data } = params;
-	require_admin(&ctx, &mm).await?;
+	require_user_admin(&ctx, &mm).await?;
 	require_permission(&ctx, USER_UPDATE)?;
+	if !ctx.is_admin() && data.role.is_some() {
+		return Err(Error::PermissionDenied {
+			required_permission: "built-in administrator role assignment"
+				.to_string(),
+		});
+	}
 	validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
 	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
 	validate_uuid_scope("access_study_ids", &data.access_study_ids)?;
@@ -285,7 +302,7 @@ pub async fn delete_user(
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
-	require_admin(&ctx, &mm).await?;
+	require_user_admin(&ctx, &mm).await?;
 	require_permission(&ctx, USER_DELETE)?;
 	if id == ctx.user_id() {
 		return Err(Error::BadRequest {

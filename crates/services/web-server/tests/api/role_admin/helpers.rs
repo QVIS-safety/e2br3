@@ -208,7 +208,22 @@ pub(super) async fn assert_profile_access(
 			("settings", "update") => &["Settings.Update"],
 			("homeNotice", "read") => &["DashboardNotice.Read"],
 			("homeNotice", "update") => &["DashboardNotice.Update"],
-			("admin" | "roles", _) => &["User.Create"],
+			("admin", "read") => &[
+				"User.List",
+				"User.Read",
+				"User.Create",
+				"User.Update",
+				"User.Delete",
+				"Settings.Read",
+				"Settings.Update",
+			],
+			("admin", "update") => &[
+				"User.Create",
+				"User.Update",
+				"User.Delete",
+				"Settings.Update",
+			],
+			("roles", _) => &[],
 			_ => {
 				return Err(
 					format!("unknown access assertion {module}.{action}").into()

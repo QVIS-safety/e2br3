@@ -10,7 +10,7 @@ use crate::middleware::mw_auth::CtxW;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 use lib_core::ctx::Ctx;
-use lib_core::model::acs::{has_permission, Permission, USER_CREATE};
+use lib_core::model::acs::{can_access_user_admin, has_permission, Permission};
 use std::marker::PhantomData;
 
 // region:    --- RequirePermission Extractor
@@ -95,8 +95,7 @@ where
 			))?;
 
 		let ctx = ctx_result.as_ref().map_err(|e| Error::CtxExt(e.clone()))?;
-		let subject = ctx.0.permission_subject();
-		if !(ctx.0.is_admin() || has_permission(subject, USER_CREATE)) {
+		if !can_access_user_admin(&ctx.0) {
 			return Err(Error::AccessDenied {
 				required_role: "admin".to_string(),
 			});

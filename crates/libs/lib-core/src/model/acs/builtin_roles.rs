@@ -129,7 +129,6 @@ permission_set! {
 	USER_PERMISSIONS => [Read],
 	ORGANIZATION_PERMISSIONS => [Read],
 	TERMINOLOGY_PERMISSIONS => [Read],
-	XML_EXPORT_PERMISSIONS => [Export],
 }
 
 permission_set! {
@@ -168,9 +167,7 @@ permission_set! {
 	CASE_IDENTIFIER_PERMISSIONS => [Read, List],
 	RECEIVER_PERMISSIONS => [Read, List],
 	PRESAVE_TEMPLATE_PERMISSIONS => [Read, List],
-	USER_PERMISSIONS => [Read, List],
 	ORGANIZATION_PERMISSIONS => [Read],
-	XML_EXPORT_PERMISSIONS => [Export],
 }
 
 pub fn role_permissions(role: &str) -> &'static [Permission] {

@@ -246,6 +246,29 @@ async fn force_all_primary_sources_non_primary(
 	Ok(())
 }
 
+async fn force_validated_case_fixture(
+	mm: &lib_core::model::ModelManager,
+	user_id: Uuid,
+	org_id: Uuid,
+	case_id: Uuid,
+) -> Result<()> {
+	mm.dbx().begin_txn().await?;
+	if let Err(err) =
+		set_full_context_dbx(mm.dbx(), user_id, org_id, ROLE_SPONSOR_ADMIN_CRO).await
+	{
+		let _ = mm.dbx().rollback_txn().await;
+		return Err(err.into());
+	}
+	mm.dbx()
+		.execute(
+			sqlx::query("UPDATE cases SET status = 'validated' WHERE id = $1")
+				.bind(case_id),
+		)
+		.await?;
+	mm.dbx().commit_txn().await?;
+	Ok(())
+}
+
 async fn create_patient(
 	app: &axum::Router,
 	cookie: &str,
@@ -828,6 +851,25 @@ async fn update_case_status(
 	Ok((status, value))
 }
 
+async fn toggle_case_action(
+	app: &axum::Router,
+	cookie: &str,
+	case_id: Uuid,
+	action: &str,
+) -> Result<(StatusCode, Value)> {
+	let req = Request::builder()
+		.method("POST")
+		.uri(format!("/api/cases/{case_id}/{action}/toggle"))
+		.header("cookie", cookie)
+		.header("content-type", "application/json")
+		.body(Body::from("{}"))?;
+	let res = app.clone().oneshot(req).await?;
+	let status = res.status();
+	let body = to_bytes(res.into_body(), usize::MAX).await?;
+	let value = serde_json::from_slice::<Value>(&body)?;
+	Ok((status, value))
+}
+
 async fn update_safety_report(
 	app: &axum::Router,
 	cookie: &str,
@@ -1380,6 +1422,49 @@ async fn test_update_case_rejects_invalid_status() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_create_case_rejects_every_protected_lifecycle_status() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+
+	for protected_status in [
+		"reviewed",
+		"validated",
+		"locked",
+		"submitted",
+		"deleted",
+		"archived",
+		"nullified",
+	] {
+		let (status, body) = create_case_with_payload(
+			&app,
+			&cookie,
+			json!({
+				"data": {
+					"safetyReportIdentification": {
+						"safetyReportId": format!("PROTECTED-{protected_status}-{}", Uuid::new_v4())
+					},
+					"status": protected_status
+				}
+			}),
+		)
+		.await?;
+		assert_eq!(
+			status,
+			StatusCode::BAD_REQUEST,
+			"{protected_status}: {body}"
+		);
+		assert!(body
+			.to_string()
+			.contains("case creation only accepts draft"));
+	}
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_case_status_transition_prevents_regression_after_submitted(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
@@ -1690,23 +1775,18 @@ async fn test_validator_endpoint_marks_validated_when_clean() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_case_save_allows_validated_to_draft_transition() -> Result<()> {
-	std::env::set_var("E2BR3_VALIDATOR_TOKEN", "validator-secret");
+async fn test_review_toggle_allows_validated_to_draft_transition() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	seed_rule_clean_case(&app, &cookie, case_id).await?;
-	let (status, body) =
-		validator_mark_validated(&app, &cookie, case_id, Some("validator-secret"))
-			.await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
-	assert_eq!(body["data"]["status"].as_str(), Some("validated"));
+	force_validated_case_fixture(&mm, seed.admin.id, seed.org_id, case_id).await?;
 
-	let (status, body) = update_case_status(&app, &cookie, case_id, "draft").await?;
+	let (status, body) =
+		toggle_case_action(&app, &cookie, case_id, "review").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert!(body.get("data").is_some(), "{body:?}");
 
@@ -1723,8 +1803,7 @@ async fn test_case_can_be_marked_locked() -> Result<()> {
 	let app = web_server::app(mm);
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	let (status, body) =
-		update_case_status(&app, &cookie, case_id, "locked").await?;
+	let (status, body) = toggle_case_action(&app, &cookie, case_id, "lock").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["status"].as_str(), Some("locked"));
 
@@ -1741,8 +1820,7 @@ async fn test_locked_case_rejects_content_updates() -> Result<()> {
 	let app = web_server::app(mm);
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	let (status, body) =
-		update_case_status(&app, &cookie, case_id, "locked").await?;
+	let (status, body) = toggle_case_action(&app, &cookie, case_id, "lock").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 
 	let req = Request::builder()
@@ -2734,7 +2812,7 @@ async fn test_qced_case_blocks_content_updates_even_when_workflow_saved_is_edita
 	create_safety_report(&app, &cookie, case_id).await?;
 
 	let (status, body) =
-		update_case_status(&app, &cookie, case_id, "reviewed").await?;
+		toggle_case_action(&app, &cookie, case_id, "review").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 
 	let (status, body) = update_safety_report(
@@ -2765,7 +2843,7 @@ async fn test_validated_case_blocks_content_updates_even_when_workflow_saved_is_
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 
 	let (status, body) = update_admin_settings(
 		&app,
@@ -2791,10 +2869,7 @@ async fn test_validated_case_blocks_content_updates_even_when_workflow_saved_is_
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
 	create_safety_report(&app, &cookie, case_id).await?;
-
-	let (status, body) =
-		update_case_status(&app, &cookie, case_id, "validated").await?;
-	assert_eq!(status, StatusCode::OK, "{body:?}");
+	force_validated_case_fixture(&mm, seed.admin.id, seed.org_id, case_id).await?;
 
 	let (status, body) = update_safety_report(
 		&app,
@@ -3090,7 +3165,7 @@ async fn test_locked_case_blocks_workflow_transition_even_for_admin_override(
 
 	let case_id = create_case(&app, &admin_cookie, seed.org_id).await?;
 	let (status, body) =
-		update_case_status(&app, &admin_cookie, case_id, "locked").await?;
+		toggle_case_action(&app, &admin_cookie, case_id, "lock").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 
 	let (status, body) = transition_case_workflow(
@@ -3129,15 +3204,14 @@ async fn test_case_read_returns_separate_qc_and_lock_axes() -> Result<()> {
 	assert_eq!(body["data"]["is_locked"].as_bool(), Some(false));
 
 	let (status, body) =
-		update_case_status(&app, &cookie, case_id, "reviewed").await?;
+		toggle_case_action(&app, &cookie, case_id, "review").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	let (status, body) = get_case(&app, &cookie, case_id).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	assert_eq!(body["data"]["qc_state"].as_str(), Some("QCed"));
 	assert_eq!(body["data"]["is_locked"].as_bool(), Some(false));
 
-	let (status, body) =
-		update_case_status(&app, &cookie, case_id, "locked").await?;
+	let (status, body) = toggle_case_action(&app, &cookie, case_id, "lock").await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
 	let (status, body) = get_case(&app, &cookie, case_id).await?;
 	assert_eq!(status, StatusCode::OK, "{body:?}");
