@@ -2,7 +2,9 @@
 
 **Date:** 2026-07-19
 
-**Status:** Approved architecture
+**Last reviewed:** 2026-07-20
+
+**Status:** Revised after systematic review; pending final user approval
 **Supersedes:** The architectural portions of `2026-07-14-rbac-architecture-design.md` and `2026-07-15-unified-rbac-contract-design.md`. The implemented PDF behavior in `2026-07-18-pdf-rbac-compliance-design.md` remains the product contract until migrated to this model.
 
 ## Source of Truth and Decision Order
@@ -69,7 +71,7 @@ The internal kernel is preferred because:
 - the policy is currently bounded and closely tied to typed Rust domain state;
 - lifecycle, organization, sender, product, study, and blind-data constraints already live in the application;
 - an external engine would add deployment and policy-language complexity before the policy boundaries are clean;
-- the registry can later be exported to or replaced by an external engine without changing callers, because all callers depend on `authorize(ActionId, AuthorizationSnapshot, ResourceContext)`.
+- the registry can later be exported to or replaced by an external engine without changing callers, because all callers depend on `authorize(ActionId, RequestAuthorizationSnapshot, ResourceContext)`.
 
 ## Canonical Model
 
@@ -117,6 +119,27 @@ Rules:
 - an unknown grant is rejected;
 - aliases are accepted only by the one-time migration translator and are never accepted by the steady-state API;
 - no grant definition may reference an unregistered entitlement.
+
+The generated PDF projection explicitly preserves these reviewed rows and semantics:
+
+- HOME / Notice / Read and Edit;
+- HOME / Workflow / Read;
+- CASE / Case / Read and Edit;
+- CASE / Workflow / Read;
+- CASE / QC / Edit;
+- CASE / Lock / Edit;
+- INFO / Case Info / Read and Edit;
+- IMPORT / Import Files / Edit;
+- IMPORT / Import History / Read, including downloads and in-page history interactions;
+- EXPORT/SUBMISSION / Export/Submit / Edit;
+- EXPORT/SUBMISSION / Export/Submit History / Read, including downloads and in-page history interactions;
+- ADMIN / Admin / Read and Edit as retained by PDF page 8;
+- E-mail / Report Due Mail / Read;
+- E-mail / Report Due Mail / Send.
+
+The PDF retains both Report Due Mail rows but the scheduled-mail consuming feature is absent. Both rows therefore remain visible with `Reserved` availability, disabled controls, and no persisted assignment until real read/send actions exist. Settings / Read is not reintroduced. This representation is honest about implementation state without deleting a PDF-required row.
+
+ADMIN / Admin / Read expands only to registered administration list/read entitlements. ADMIN / Admin / Edit expands only to explicitly registered administration mutation entitlements and their required read prerequisites. Neither grant creates a platform/sponsor identity trait, bypasses organization scope, or implicitly permits role assignment. Role-profile and role-assignment actions remain separately declared policies.
 
 ### ActionPolicy
 
@@ -179,8 +202,13 @@ authorization_roles
 
 role_grants
     role_id UUID references authorization_roles
-    grant_id TEXT
+    grant_id TEXT references authorization_grant_catalog
     primary key (role_id, grant_id)
+
+authorization_grant_catalog
+    grant_id TEXT primary key
+    availability TEXT
+    catalog_hash TEXT
 
 user_role_assignments
     user_id UUID
@@ -195,13 +223,20 @@ organization_policy_state
     revision BIGINT
     updated_at TIMESTAMPTZ
 
+principal_authorization_state
+    user_id UUID
+    organization_id UUID
+    revision BIGINT
+    updated_at TIMESTAMPTZ
+    primary key (user_id, organization_id)
+
 authorization_catalog_state
     singleton BOOLEAN primary key
     catalog_hash TEXT
     applied_at TIMESTAMPTZ
 ```
 
-Built-in roles use stable UUIDs and are represented in the same role and grant tables as custom roles. Their definitions are seeded and reconciled by versioned database migrations generated from the reviewed Policy Registry. They are immutable through public role-administration APIs.
+Built-in roles use stable UUIDs and are represented in the same role and grant tables as custom roles. Their definitions and `authorization_grant_catalog` rows are seeded and reconciled by versioned database migrations generated from the reviewed Policy Registry. They are immutable through public role-administration APIs. `role_grants.grant_id` has a foreign key to the generated catalog projection. A database constraint trigger rejects a `role_grants` insert or update unless the referenced catalog row has `Implemented` availability.
 
 The database remains the assignment-state authority. The Rust registry remains the semantic authority for what each canonical grant and action means. Startup fails if stored non-reserved `grant_id` values are absent from the deployed registry or if the deployed catalog hash does not match the migration metadata.
 
@@ -217,7 +252,7 @@ Role metadata is produced by one role projection service from `authorization_rol
 
 ## Policy Revision and Multi-Instance Consistency
 
-Every transaction that changes a role, grant assignment, role activation/deletion state, or user-role assignment increments the affected organization’s policy revision in the same database transaction. Database triggers on the normalized authorization tables enforce the revision increment so a new mutation path cannot forget it.
+Every transaction that changes a role, grant assignment, or role activation/deletion state increments the affected organization’s policy revision in the same database transaction. Every transaction that changes a user’s active state, user-role assignment, organization membership, sender/product/study scope, blind-data access, active sender, access window, or other principal authorization fact increments that user and organization’s principal revision. Database triggers enforce both revision classes so a new mutation path cannot forget them.
 
 Built-in policy changes change the Policy Registry catalog hash and require a matching database migration. The effective snapshot version is:
 
@@ -226,6 +261,7 @@ PolicySnapshotVersion {
     catalog_hash,
     organization_id,
     organization_revision,
+    principal_revision,
 }
 ```
 
@@ -233,19 +269,21 @@ The global singleton `rbac_policy_state` and unversioned process-global dynamic-
 
 ### Request snapshot algorithm
 
-Authentication middleware performs one snapshot load before the handler:
+Authentication middleware creates one request-local snapshot before the handler. The snapshot is never stored as a process-global or cross-request user cache:
 
-1. resolve the principal, active organization, identity traits, and active role assignment;
+1. validate the authentication token and obtain only its stable principal identifier;
 2. start a repeatable-read transaction;
-3. read the organization policy revision and role grants in that transaction;
-4. compile or retrieve the immutable snapshot keyed by `(catalog_hash, organization_id, organization_revision, role_id)`;
-5. commit the read transaction;
-6. attach the complete `AuthorizationSnapshot` to the request;
-7. use that same object for route authorization, handler checks, profile serialization, response version headers, and authorization audit events.
+3. in that transaction, resolve the active organization, membership, identity traits, active role assignment, principal scope facts, organization revision, principal revision, and role grants;
+4. compile the role’s entitlements from those role grants and the deployed registry;
+5. create an immutable `RequestAuthorizationSnapshot` containing the principal facts, compiled entitlements, and exact snapshot version;
+6. commit the read transaction;
+7. attach that snapshot to the request;
+8. use that same object for route authorization, handler checks, profile serialization, response version headers, resource action projection, and authorization audit events;
+9. discard the snapshot when the request ends.
 
 If a concurrent policy mutation commits after step 3, the request consistently uses the earlier revision. The next request observes the new revision. A response must never pair permissions or allowed actions from one revision with a different version.
 
-Process caches may store immutable snapshots by the complete key. Cache invalidation notifications or Redis may improve hit rate, but correctness never depends on receiving a notification. A missing or mismatched cache entry is reloaded from the database. Load failure fails closed for protected actions.
+The initial implementation does not cache complete authorization snapshots. If profiling later demonstrates a need, a process cache may store only the role-level entitlement compilation keyed by `(catalog_hash, organization_id, organization_revision, role_id)`. Principal identity, assignment, scope, access windows, and final decisions are never shared across users or requests. Time-dependent conditions are evaluated against the current request time. Cache invalidation notifications or Redis may improve hit rate, but correctness never depends on receiving a notification. Load failure fails closed for protected actions.
 
 ## Backend Components
 
@@ -259,7 +297,7 @@ Loads user identity, organization membership, active role assignment, and typed 
 
 ### Snapshot Repository
 
-Reads normalized assignments and organization revision in one transaction. It owns the versioned immutable cache. It does not make authorization decisions.
+Reads every mutable principal fact, normalized assignment, role grant, and both revisions in one transaction. It creates a request-local immutable snapshot and does not make authorization decisions. The initial implementation has no cross-request snapshot cache.
 
 ### Policy Kernel
 
@@ -287,7 +325,9 @@ There is no independently maintained `permission_contract.rs` permission list af
 
 ### Role administration service
 
-Owns role create, update, soft-delete, restore, and grant replacement transactions. It validates canonical grants, rejects reserved grants, enforces immutable built-in roles and the 20-active-custom-role limit, and relies on database revision triggers. It does not update a process-global cache.
+Owns role create, update, soft-delete, restore, and grant replacement transactions. It validates canonical grants, rejects reserved grants, enforces immutable built-in roles and the 20-active-custom-role limit, and relies on database revision triggers. Soft-delete returns HTTP 409 while active user assignments reference the role; administrators must reassign those users first. It does not update a process-global cache.
+
+The role projection applies the PDF account-context visibility rule: a sponsor administrator sees only the sponsor administrator type assigned to that account plus its custom roles, while unrelated global built-in administrator roles are omitted.
 
 ## Frontend Contract
 
@@ -298,18 +338,20 @@ The backend generator produces:
 - endpoint-to-action metadata for API client diagnostics;
 - the Policy Registry catalog hash.
 
-The authenticated profile returns subject-level `allowedActions` and the exact `PolicySnapshotVersion`. It does not require the frontend to reconstruct action permission expressions.
+The authenticated profile returns subject-level `eligibleActions` and the exact `PolicySnapshotVersion`. An eligible action has passed principal entitlement and identity checks but is not a final authorization result when the action requires a target resource. The profile does not require the frontend to reconstruct action permission expressions.
 
 Frontend authorization has one public boundary:
 
 ```text
-canAction(actionId)
-<ActionGate action={actionId}>
+isEligibleForAction(actionId)
+canResourceAction(resource, actionId)
+<EligibleActionGate action={actionId}>
+<ResourceActionGate action={actionId} allowedActions={resource.allowedActions}>
 ```
 
-Routes, sidebar items, tabs, buttons, and mutations reference action IDs only. Direct permission strings, permission arrays, `roleMeta.canAdmin`, summary booleans, and role-name authorization checks are prohibited by a syntax-aware static rule.
+Routes and global navigation use `eligibleActions`. Resource screens and mutations use the target resource’s final `allowedActions`; they must not treat subject eligibility as final resource authorization. Direct permission strings, permission arrays, `roleMeta.canAdmin`, summary booleans, and role-name authorization checks are prohibited by a syntax-aware static rule.
 
-Resource responses expose `allowedActions` for state- or scope-sensitive operations when the decision depends on loaded resource data. CASE detail therefore returns allowed lifecycle actions calculated from the same snapshot and case state. The frontend does not duplicate the lifecycle authorization expression; it uses the returned action set while still rendering ordinary domain state.
+Resource responses expose final `allowedActions` for state- or scope-sensitive operations after loading the target. CASE detail therefore returns allowed lifecycle actions calculated from the same request snapshot, current request time, user scope, and case state. The frontend does not duplicate the lifecycle authorization expression; it uses the returned action set while still rendering ordinary domain state. Review and Lock never remove the independent Case Audit Trail read action, matching PDF page 41.
 
 When a response carries a newer snapshot version, the client performs one deduplicated profile refresh. New mutations are paused until the refresh completes. A 403 is handled as an authoritative denial, not automatically retried.
 
@@ -317,7 +359,7 @@ When a response carries a newer snapshot version, the client performs one dedupl
 
 PostgreSQL RLS continues to enforce organization and record ownership isolation. It does not inspect `privileges_json`, PDF menu keys, frontend concepts, or free-form role strings.
 
-Business action authorization is performed by the Policy Kernel before the operation. Where a database-level business permission check is legally or operationally required, the policy must query canonical normalized `role_grants` or a transaction-scoped decision token produced by the kernel. It may not implement a second mapping from roles or menu flags to permissions.
+Business action authorization is performed by the Policy Kernel before the operation. This migration does not add database-level business authorization. Any future requirement for a database business-permission check needs a separate reviewed design and may not introduce a second mapping from roles or menu flags to permissions.
 
 Database constraints provide defense in depth for:
 
@@ -327,7 +369,9 @@ Database constraints provide defense in depth for:
 - unique active assignment per user and organization;
 - soft-deleted/inactive role assignment rejection;
 - canonical grant validation through migration metadata;
-- monotonic organization revision changes.
+- implemented-grant enforcement through the generated grant catalog foreign key;
+- monotonic organization revision changes;
+- monotonic principal revision changes for assignment, membership, and scope mutations.
 
 ## Error and Audit Contract
 
@@ -340,7 +384,8 @@ Authorization denial returns HTTP 403 with:
     "actionId": "case.review.toggle",
     "policyVersion": {
       "catalogHash": "...",
-      "organizationRevision": 42
+      "organizationRevision": 42,
+      "principalRevision": 7
     },
     "requestId": "..."
   }
@@ -394,9 +439,9 @@ Cutover is blocked until route completeness is 100%, cross-process tests pass, a
 
 ### Phase 4: Frontend action cutover
 
-Generate Action IDs and PDF grant rows, migrate routes and controls to `canAction`, consume resource-level allowed actions, and remove handwritten permission and role-name authorization logic.
+Generate Action IDs and PDF grant rows, migrate routes and controls to `isEligibleForAction` or `canResourceAction` as appropriate, consume resource-level allowed actions, and remove handwritten permission and role-name authorization logic.
 
-The PDF matrix remains visually unchanged except where the current UI contradicts the approved PDF. Reserved E-mail Send remains visible and disabled until its real action exists.
+The PDF matrix remains visually unchanged except where the current UI contradicts the approved PDF. E-mail / Report Due Mail / Read and Send remain visible and disabled until their real actions exist; Settings / Read remains absent.
 
 ### Phase 5: Legacy removal
 
@@ -425,9 +470,13 @@ Remove legacy columns, JSON normalization, menu aliases, summary fields, duplica
 ### Snapshot consistency
 
 - launch two independent server processes against one test database;
-- warm both caches, mutate a role through process A, and authorize through process B;
+- establish authorization through both processes, mutate a role through process A, and authorize through process B; if the optional role-compilation cache is later enabled, exercise the same test with that cache warm;
 - process B may use the old revision only if it reports the old revision; once it reports the new revision it must use the new decision;
 - profile, route guard, handler, resource allowed actions, response header, and audit event must carry the same version;
+- two users with the same organization and role but different sender/product/study/blind scopes must never share principal facts or final decisions;
+- assignment or scope mutation between authentication and snapshot creation must produce either the complete earlier snapshot or the complete later snapshot, never a mixture;
+- user membership, role assignment, scope, blind access, active sender, and access-window mutations must advance principal revision;
+- crossing an access-window boundary must change the time-dependent decision without waiting for a policy mutation or cache invalidation;
 - restart, cache loss, missed notifications, and concurrent mutation tests must preserve the invariant;
 - snapshot-load failure must deny protected actions without falling back to built-in or stale permissions.
 
@@ -436,7 +485,9 @@ Remove legacy columns, JSON normalization, menu aliases, summary fields, duplica
 - user editing cannot grant role-management or role-assignment actions;
 - read grants cannot perform execute, update, review, lock, or export actions unless explicitly granted by the PDF;
 - role self-escalation, assignment to inactive/deleted roles, cross-organization assignment, and built-in role modification are rejected;
+- soft-delete of a role with active assignments returns HTTP 409 until those users are reassigned;
 - CASE Review, Lock, ordinary Edit, and raw status mutation remain independently enforced;
+- Case Audit Trail remains readable while the case is reviewed, validated, or locked when the user has the audit read action;
 - organization and sender/product/study/blind scopes are applied independently of RBAC grants;
 - RLS and application authorization cannot consult different policy representations.
 
@@ -464,9 +515,9 @@ Remove legacy columns, JSON normalization, menu aliases, summary fields, duplica
 | frontend/backend privilege-table mismatch | PDF matrix rows are generated from `GrantDefinition` |
 | `Ctx::can_modify` and old role API | Removed during legacy deletion |
 | partial endpoint contract | Route action binding is executable and mandatory |
-| process-local stale cache | Versioned immutable request snapshots replace global mutable state |
-| DB RLS reads `privileges_json` | RLS is reduced to scope isolation or canonical normalized grants |
-| reserved E-mail permission appears implemented | Reserved status is explicit, disabled, and unassignable |
+| process-local stale cache | Request-local snapshots replace global mutable state; only role compilation may be cached later |
+| DB RLS reads `privileges_json` | RLS is restricted to organization and record isolation |
+| incomplete E-mail representation | Both PDF Report Due Mail rows are explicit, reserved, disabled, and unassignable until implemented |
 
 ## Scope Boundaries
 
@@ -480,11 +531,13 @@ The architecture migration is complete only when:
 
 1. the approved PDF matrix is generated from canonical backend grant definitions;
 2. all protected backend routes are bound to registered Action IDs;
-3. handlers, profile responses, headers, resource allowed actions, and audit events use one request snapshot;
+3. handlers, profile responses, headers, resource allowed actions, and audit events use one request-local snapshot created from a single repeatable-read transaction;
 4. two independent backend processes cannot report the same snapshot version with different authorization decisions;
-5. frontend production code contains no authorization role-name checks or handwritten entitlement expressions;
-6. normalized roles, grants, and assignments replace legacy role strings and `privileges_json`;
-7. DB RLS no longer interprets legacy RBAC representations;
-8. all known duplicate gates, summary fields, aliases, manual endpoint contracts, dead RBAC code, and old role calls are removed;
-9. the full registry, migration, backend, frontend, cross-process, security, and PDF conformance suites pass from clean environments; and
-10. an unexplained legacy/new decision difference blocks deployment rather than being accepted as a compatibility exception.
+5. same-role users with different scopes cannot share principal facts, and all principal authorization mutations advance principal revision;
+6. frontend production code contains no authorization role-name checks or handwritten entitlement expressions and distinguishes subject eligibility from final resource authorization;
+7. normalized roles, grants, assignments, grant catalog, organization revision, and principal revision replace legacy role strings and `privileges_json`;
+8. DB RLS no longer interprets legacy RBAC representations;
+9. PDF Report Due Mail Read/Send rows, built-in role visibility, role soft-delete rules, Review/Lock, and Audit Trail behavior are explicitly preserved;
+10. all known duplicate gates, summary fields, aliases, manual endpoint contracts, dead RBAC code, and old role calls are removed;
+11. the full registry, migration, backend, frontend, cross-process, cross-principal, security, and PDF conformance suites pass from clean environments; and
+12. an unexplained legacy/new decision difference blocks deployment rather than being accepted as a compatibility exception.
