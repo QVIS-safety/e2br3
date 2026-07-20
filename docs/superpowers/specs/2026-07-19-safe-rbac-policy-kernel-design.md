@@ -4,7 +4,7 @@
 
 **Last reviewed:** 2026-07-20
 
-**Status:** Revised after systematic debugging and code review; pending final user approval
+**Status:** Approved for implementation on 2026-07-20 after systematic debugging and code review
 **Supersedes:** The architectural portions of `2026-07-14-rbac-architecture-design.md` and `2026-07-15-unified-rbac-contract-design.md`. The implemented PDF behavior in `2026-07-18-pdf-rbac-compliance-design.md` remains the product contract until migrated to this model.
 
 ## Source of Truth and Decision Order
