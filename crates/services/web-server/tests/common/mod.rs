@@ -99,6 +99,26 @@ pub async fn init_test_mm() -> Result<ModelManager> {
 	Ok(mm)
 }
 
+pub async fn seed_active_test_meddra_term(mm: &ModelManager) -> Result<()> {
+	let system_user_id = Uuid::parse_str(SYSTEM_USER_ID)?;
+	let system_org_id = Uuid::parse_str(SYSTEM_ORG_ID)?;
+	let mut tx = mm.dbx().db().begin().await?;
+	set_user_context(&mut tx, system_user_id).await?;
+	set_org_context(&mut tx, system_org_id, ROLE_SYSTEM_ADMIN).await?;
+
+	sqlx::query(
+		"INSERT INTO meddra_terms (code, term, level, version, language, active)
+		 VALUES ('10000001', 'Test reaction term', 'LLT', '26.0', 'en', true)
+		 ON CONFLICT (code, version, language)
+		 DO UPDATE SET term = EXCLUDED.term, level = EXCLUDED.level, active = true",
+	)
+	.execute(&mut *tx)
+	.await?;
+
+	tx.commit().await?;
+	Ok(())
+}
+
 fn reset_test_dynamic_roles() {
 	let mut roles = HashMap::new();
 	roles.insert(
