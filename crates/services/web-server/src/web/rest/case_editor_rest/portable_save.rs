@@ -1,4 +1,5 @@
 use super::common::*;
+use lib_rest_core::ConstraintViolation;
 use std::collections::BTreeSet;
 use validator::{
 	bindings_for_section, portable_constraints, validate_portable_value,
@@ -207,9 +208,11 @@ fn validate_binding_value(
 }
 
 fn violation(rule_code: &str, path: &str, message: &str) -> Error {
-	Error::BadRequest {
-		message: format!("{rule_code} at {path}: {message}"),
-	}
+	Error::ConstraintViolation(ConstraintViolation {
+		rule_code: rule_code.to_owned(),
+		path: path.to_owned(),
+		message: message.to_owned(),
+	})
 }
 
 pub(super) fn validate_direct_changes(
@@ -644,9 +647,27 @@ mod portable_save_tests {
 
 	fn error_message(error: Error) -> String {
 		match error {
-			Error::BadRequest { message } => message,
-			other => panic!("expected bad request, got {other:?}"),
+			Error::ConstraintViolation(detail) => format!(
+				"{} at {}: {}",
+				detail.rule_code, detail.path, detail.message
+			),
+			other => panic!("expected constraint violation, got {other:?}"),
 		}
+	}
+
+	fn constraint_violation(error: Error) -> ConstraintViolation {
+		match error {
+			Error::ConstraintViolation(detail) => detail,
+			other => panic!("expected constraint violation, got {other:?}"),
+		}
+	}
+
+	fn portable_constraint_message(code: &str) -> String {
+		portable_constraints()
+			.into_iter()
+			.find(|constraint| constraint.code == code)
+			.expect("portable Catalog constraint exists")
+			.message
 	}
 
 	#[test]
@@ -688,9 +709,13 @@ mod portable_save_tests {
 		)]);
 		let error =
 			validate_row_payload("AE", "reaction", &reaction, None).unwrap_err();
-		assert!(error_message(error).contains(
-			"ICH.E.i.1.1a.LENGTH.MAX at reactions.0.primarySourceReaction"
-		));
+		let detail = constraint_violation(error);
+		assert_eq!(detail.rule_code, "ICH.E.i.1.1a.LENGTH.MAX");
+		assert_eq!(detail.path, "reactions.0.primarySourceReaction");
+		assert_eq!(
+			detail.message,
+			portable_constraint_message("ICH.E.i.1.1a.LENGTH.MAX")
+		);
 
 		let test_result =
 			Map::from_iter([("resultValue".to_string(), json!("not-a-number"))]);

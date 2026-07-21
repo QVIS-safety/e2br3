@@ -22,6 +22,15 @@ use serde_json::{json, Value};
 use serial_test::serial;
 use tower::ServiceExt;
 use uuid::Uuid;
+use validator::portable_constraints;
+
+fn portable_constraint_message(code: &str) -> String {
+	portable_constraints()
+		.into_iter()
+		.find(|constraint| constraint.code == code)
+		.expect("portable Catalog constraint exists")
+		.message
+}
 
 async fn post_json(
 	app: &axum::Router,
@@ -118,6 +127,41 @@ async fn stale_validation_summary_count(
 		.0;
 	mm.dbx().commit_txn().await?;
 	Ok(count)
+}
+
+async fn validation_summary_row_versions(
+	mm: &ModelManager,
+	user_id: Uuid,
+	org_id: Uuid,
+	case_id: &str,
+) -> Result<Value> {
+	let case_uuid = Uuid::parse_str(case_id)?;
+	mm.dbx().begin_txn().await?;
+	set_full_context_dbx(mm.dbx(), user_id, org_id, ROLE_SPONSOR_ADMIN_CRO).await?;
+	let snapshot = mm
+		.dbx()
+		.fetch_one(
+			sqlx::query_as::<_, (Value,)>(
+				"SELECT COALESCE(
+				            jsonb_agg(
+				                jsonb_build_object(
+				                    'appendix', appendix,
+				                    'pageId', page_id,
+				                    'rowVersion', xmin::text
+				                )
+				                ORDER BY appendix, page_id
+				            ),
+				            '[]'::jsonb
+				        )
+				   FROM case_validation_summaries
+				  WHERE case_id = $1",
+			)
+			.bind(case_uuid),
+		)
+		.await?
+		.0;
+	mm.dbx().commit_txn().await?;
+	Ok(snapshot)
 }
 
 #[tokio::test]
@@ -764,7 +808,7 @@ async fn ci_patch_rejects_catalog_constraint_before_write() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 	let case_id =
 		create_case_for_editor(&app, &cookie, "EDITOR-CI-GATE", &["ich"]).await?;
 	create_safety_report(&app, &cookie, &case_id, "1", false).await?;
@@ -780,6 +824,20 @@ async fn ci_patch_rejects_catalog_constraint_before_write() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{body}");
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation?authority=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let stale_before =
+		stale_validation_summary_count(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await?;
+	assert_eq!(stale_before, 0);
+	let cache_versions_before =
+		validation_summary_row_versions(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await?;
 
 	let (status, body) = patch_json(
 		&app,
@@ -793,11 +851,29 @@ async fn ci_patch_rejects_catalog_constraint_before_write() -> Result<()> {
 	)
 	.await?;
 
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
-	assert!(
-		body.to_string().contains("ICH.C.1.9.1.ALLOWED.VALUE"),
-		"{body}"
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(body["error"]["message"], "CONSTRAINT_VIOLATION");
+	assert_eq!(
+		body["error"]["data"]["detail"]["ruleCode"],
+		"ICH.C.1.9.1.ALLOWED.VALUE"
 	);
+	assert_eq!(
+		body["error"]["data"]["detail"]["path"],
+		"safetyReportIdentification.otherCaseIdentifiersExist"
+	);
+	assert_eq!(
+		body["error"]["data"]["detail"]["message"],
+		portable_constraint_message("ICH.C.1.9.1.ALLOWED.VALUE")
+	);
+	assert!(body["error"]["data"]["req_uuid"].is_string());
+	let stale_after =
+		stale_validation_summary_count(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await?;
+	assert_eq!(stale_after, stale_before);
+	let cache_versions_after =
+		validation_summary_row_versions(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await?;
+	assert_eq!(cache_versions_after, cache_versions_before);
 
 	let (status, body) = get_json(
 		&app,
@@ -2200,9 +2276,23 @@ async fn portable_ae_patch_rejects_before_write() -> Result<()> {
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
-	let app = web_server::app(mm);
+	let app = web_server::app(mm.clone());
 	let case_id = create_case(&app, &cookie, "EDITOR-AE-PORTABLE-GATE").await?;
 	let reaction_id = create_reaction_fixture(&app, &cookie, &case_id).await?;
+	let (status, body) = get_json(
+		&app,
+		&cookie,
+		&format!("/api/cases/{case_id}/validation?authority=ich"),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{body}");
+	let stale_before =
+		stale_validation_summary_count(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await?;
+	assert_eq!(stale_before, 0);
+	let cache_versions_before =
+		validation_summary_row_versions(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await?;
 
 	let (status, body) = patch_json(
 		&app,
@@ -2216,11 +2306,29 @@ async fn portable_ae_patch_rejects_before_write() -> Result<()> {
 	)
 	.await?;
 
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
-	assert!(
-		body.to_string().contains("ICH.E.i.1.1a.LENGTH.MAX"),
-		"{body}"
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(body["error"]["message"], "CONSTRAINT_VIOLATION");
+	assert_eq!(
+		body["error"]["data"]["detail"]["ruleCode"],
+		"ICH.E.i.1.1a.LENGTH.MAX"
 	);
+	assert_eq!(
+		body["error"]["data"]["detail"]["path"],
+		"reactions.0.primarySourceReaction"
+	);
+	assert_eq!(
+		body["error"]["data"]["detail"]["message"],
+		portable_constraint_message("ICH.E.i.1.1a.LENGTH.MAX")
+	);
+	assert!(body["error"]["data"]["req_uuid"].is_string());
+	let stale_after =
+		stale_validation_summary_count(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await?;
+	assert_eq!(stale_after, stale_before);
+	let cache_versions_after =
+		validation_summary_row_versions(&mm, seed.admin.id, seed.org_id, &case_id)
+			.await?;
+	assert_eq!(cache_versions_after, cache_versions_before);
 
 	let (status, body) = get_json(
 		&app,
@@ -2273,8 +2381,20 @@ async fn portable_direct_rows_patch_rejects_before_write() -> Result<()> {
 		}),
 	)
 	.await?;
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
-	assert!(body.to_string().contains("ICH.H.1.LENGTH.MAX"), "{body}");
+	assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+	assert_eq!(body["error"]["message"], "CONSTRAINT_VIOLATION");
+	assert_eq!(
+		body["error"]["data"]["detail"]["ruleCode"],
+		"ICH.H.1.LENGTH.MAX"
+	);
+	assert_eq!(
+		body["error"]["data"]["detail"]["path"],
+		"narrative.caseNarrative"
+	);
+	assert_eq!(
+		body["error"]["data"]["detail"]["message"],
+		portable_constraint_message("ICH.H.1.LENGTH.MAX")
+	);
 
 	let (status, body) = get_json(
 		&app,

@@ -207,6 +207,15 @@ pub async fn mw_response_map(
 						},
 						None,
 					),
+					lib_rest_core::Error::ConstraintViolation(detail) => {
+						(
+							StatusCode::UNPROCESSABLE_ENTITY,
+							ClientError::CONSTRAINT_VIOLATION,
+							Some(to_value(detail).expect(
+								"constraint violation detail must serialize",
+							)),
+						)
+					}
 					lib_rest_core::Error::BadRequest { message } => (
 						StatusCode::BAD_REQUEST,
 						ClientError::SERVICE_ERROR,
@@ -269,6 +278,16 @@ pub async fn mw_response_map(
 			lib_rest_core::Error::BadRequest { message } => {
 				debug_detail = Some(serde_json::Value::String(message.clone()));
 				(StatusCode::BAD_REQUEST, ClientError::SERVICE_ERROR)
+			}
+			lib_rest_core::Error::ConstraintViolation(detail) => {
+				debug_detail = Some(
+					to_value(detail)
+						.expect("constraint violation detail must serialize"),
+				);
+				(
+					StatusCode::UNPROCESSABLE_ENTITY,
+					ClientError::CONSTRAINT_VIOLATION,
+				)
 			}
 			lib_rest_core::Error::Xml(err) => {
 				debug_detail = Some(serde_json::Value::String(format!("{err:?}")));

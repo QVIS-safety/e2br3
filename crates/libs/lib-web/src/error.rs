@@ -165,6 +165,7 @@ pub enum ClientError {
 	ORGANIZATION_ACCESS_DENIED,
 	ENTITY_NOT_FOUND { entity: &'static str, id: i64 },
 	ENTITY_UUID_NOT_FOUND { entity: &'static str, id: String },
+	CONSTRAINT_VIOLATION,
 	SERVICE_ERROR,
 }
 // endregion: --- Client Error

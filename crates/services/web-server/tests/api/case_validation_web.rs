@@ -1,6 +1,6 @@
 use crate::common::{
-	cookie_header, init_test_mm, insert_user, seed_org_with_all_roles,
-	seed_org_with_users, system_user_id, Result,
+	cookie_header, init_test_mm, insert_user, seed_active_test_meddra_term,
+	seed_org_with_all_roles, seed_org_with_users, system_user_id, Result,
 };
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
@@ -516,10 +516,12 @@ async fn create_narrative(
 }
 
 async fn seed_rule_clean_case(
+	mm: &lib_core::model::ModelManager,
 	app: &axum::Router,
 	cookie: &str,
 	case_id: Uuid,
 ) -> Result<()> {
+	seed_active_test_meddra_term(mm).await?;
 	create_safety_report(app, cookie, case_id).await?;
 	create_message_header(app, cookie, case_id).await?;
 	create_sender(app, cookie, case_id, "1").await?;
@@ -1134,7 +1136,7 @@ async fn test_primary_source_without_regulatory_primary_emits_warning() -> Resul
 	let app = web_server::app(mm.clone());
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	seed_rule_clean_case(&app, &cookie, case_id).await?;
+	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
 	force_all_primary_sources_non_primary(&mm, seed.admin.id, seed.org_id, case_id)
 		.await?;
 
@@ -1168,7 +1170,7 @@ async fn test_mfds_parent_past_drug_rules_emit_mfds_field_paths() -> Result<()> 
 	let app = web_server::app(mm.clone());
 
 	let missing_id_case_id = create_case(&app, &cookie, seed.org_id).await?;
-	seed_rule_clean_case(&app, &cookie, missing_id_case_id).await?;
+	seed_rule_clean_case(&mm, &app, &cookie, missing_id_case_id).await?;
 	update_message_header_message_receiver(&app, &cookie, missing_id_case_id, "FR")
 		.await?;
 	let parent_id =
@@ -1213,7 +1215,7 @@ async fn test_mfds_parent_past_drug_rules_emit_mfds_field_paths() -> Result<()> 
 	);
 
 	let missing_version_case_id = create_case(&app, &cookie, seed.org_id).await?;
-	seed_rule_clean_case(&app, &cookie, missing_version_case_id).await?;
+	seed_rule_clean_case(&mm, &app, &cookie, missing_version_case_id).await?;
 	update_message_header_message_receiver(
 		&app,
 		&cookie,
@@ -1731,7 +1733,7 @@ async fn test_validator_endpoint_marks_validated_when_clean() -> Result<()> {
 	let app = web_server::app(mm.clone());
 
 	let case_id = create_case(&app, &cookie, seed.org_id).await?;
-	seed_rule_clean_case(&app, &cookie, case_id).await?;
+	seed_rule_clean_case(&mm, &app, &cookie, case_id).await?;
 
 	let (status, body) =
 		validator_mark_validated(&app, &cookie, case_id, Some("validator-secret"))
