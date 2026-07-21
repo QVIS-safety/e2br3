@@ -191,7 +191,7 @@ async fn test_admin_can_see_role_create_update_delete_in_audit_logs() -> Result<
 				"data": {
 					"name": format!("Updated Audit Role {suffix}"),
 					"description": "Updated role description",
-					"active": false
+					"active": true
 				}
 			})
 			.to_string(),
@@ -234,8 +234,12 @@ async fn test_admin_can_see_role_create_update_delete_in_audit_logs() -> Result<
 		"role update audit log should be visible: {payload:?}"
 	);
 	assert!(
-		matching.iter().any(|log| log["action"] == "DELETE"),
-		"role delete audit log should be visible: {payload:?}"
+		matching.iter().any(|log| {
+			log["action"] == "UPDATE"
+				&& log["changed_fields"]["active"]["old"] == true
+				&& log["changed_fields"]["active"]["new"] == false
+		}),
+		"role soft-delete audit transition should be visible: {payload:?}"
 	);
 
 	Ok(())

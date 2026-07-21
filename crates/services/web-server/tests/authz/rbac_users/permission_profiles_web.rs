@@ -85,9 +85,17 @@ async fn test_permission_profiles_are_scoped_by_organization_for_sponsor_admins(
 	assert!(
 		profiles
 			.iter()
-			.all(|profile| profile["id"] != ROLE_SPONSOR_ADMIN_CRO
-				&& profile["id"] != ROLE_SPONSOR_ADMIN_COMPANY),
-		"Sponsor Administrator built-in roles should not be exposed: {rows:?}"
+			.any(|profile| profile["id"] == ROLE_SPONSOR_ADMIN_CRO
+				&& profile["built_in"] == true
+				&& profile["editable"] == false),
+		"CRO account should expose its assigned Sponsor Administrator as read-only: {rows:?}"
+	);
+	assert!(
+		profiles.iter().all(|profile| {
+			profile["id"] != ROLE_SPONSOR_ADMIN_COMPANY
+				&& profile["id"] != ROLE_SYSTEM_ADMIN
+		}),
+		"CRO account should not expose unrelated built-in administrator roles: {rows:?}"
 	);
 
 	Ok(())
@@ -142,7 +150,7 @@ async fn test_permission_profiles_reject_twenty_first_custom_role_per_org(
 	let body = to_bytes(res.into_body(), usize::MAX).await?;
 	let json: serde_json::Value = serde_json::from_slice(&body)?;
 
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	assert_eq!(status, StatusCode::CONFLICT, "{json:?}");
 	assert!(
 		json.to_string().contains("20"),
 		"limit error should mention the maximum role count: {json:?}"
