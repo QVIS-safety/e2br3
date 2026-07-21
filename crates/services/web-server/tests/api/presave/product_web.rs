@@ -88,7 +88,7 @@ async fn product_presave_details_expose_effective_mfds_dg_fields() -> Result<()>
 		format!("/api/presaves/products/{product_id}/details"),
 		json!({
 			"data": {
-				"substances": [
+				"active_substances": [
 					{
 						"sequence_number": 1,
 						"substance_name": "Acetaminophen",
@@ -116,9 +116,9 @@ async fn product_presave_details_expose_effective_mfds_dg_fields() -> Result<()>
 	assert!(saved["data"]["parent"]
 		.get("unknown_extra_product_code")
 		.is_none());
-	let substance = &saved["data"]["substances"]
+	let substance = &saved["data"]["active_substances"]
 		.as_array()
-		.ok_or("missing substances")?[0];
+		.ok_or("missing active_substances")?[0];
 	assert_eq!(substance["mfds_id"].as_str(), Some("KR-SUB"));
 	assert_eq!(substance["mfds_version"].as_str(), Some("KR-SUB-V1"));
 	assert_eq!(substance["substance_termid"].as_str(), Some("ICH-SUB"));
@@ -290,7 +290,7 @@ async fn test_product_presave_details_graph_load_and_save() -> Result<()> {
 	let app = web_server::app(mm);
 	let product_id =
 		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;
-	let substance_id = create_product_substance_via_api(
+	let substance_id = create_product_active_substance_via_api(
 		&app,
 		&admin_cookie,
 		product_id,
@@ -306,7 +306,7 @@ async fn test_product_presave_details_graph_load_and_save() -> Result<()> {
 	.await?;
 	assert_eq!(details["data"]["parent"]["id"], product_id.to_string());
 	assert_eq!(
-		details["data"]["substances"][0]["id"],
+		details["data"]["active_substances"][0]["id"],
 		substance_id.to_string()
 	);
 
@@ -317,7 +317,7 @@ async fn test_product_presave_details_graph_load_and_save() -> Result<()> {
 		json!({
 			"data": {
 				"parent": { "brand_name": "Graph Brand" },
-				"substances": [
+				"active_substances": [
 					{
 						"id": substance_id,
 						"sequence_number": 2,
@@ -335,7 +335,10 @@ async fn test_product_presave_details_graph_load_and_save() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(saved["data"]["parent"]["brand_name"], "Graph Brand");
-	assert_eq!(saved["data"]["substances"].as_array().unwrap().len(), 2);
+	assert_eq!(
+		saved["data"]["active_substances"].as_array().unwrap().len(),
+		2
+	);
 
 	Ok(())
 }
@@ -416,7 +419,7 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;
 	let product_b =
 		create_product_presave_via_api(&app, &admin_cookie, "fda").await?;
-	let substance_delete = create_product_substance_via_api(
+	let substance_delete = create_product_active_substance_via_api(
 		&app,
 		&admin_cookie,
 		product_a,
@@ -424,7 +427,7 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		"Delete Substance",
 	)
 	.await?;
-	let substance_keep = create_product_substance_via_api(
+	let substance_keep = create_product_active_substance_via_api(
 		&app,
 		&admin_cookie,
 		product_a,
@@ -432,7 +435,7 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		"Keep Substance",
 	)
 	.await?;
-	let wrong_parent_substance = create_product_substance_via_api(
+	let wrong_parent_substance = create_product_active_substance_via_api(
 		&app,
 		&admin_cookie,
 		product_b,
@@ -454,7 +457,10 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 	)
 	.await?;
 	assert_eq!(
-		after_omit["data"]["substances"].as_array().unwrap().len(),
+		after_omit["data"]["active_substances"]
+			.as_array()
+			.unwrap()
+			.len(),
 		2
 	);
 
@@ -464,7 +470,7 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		format!("/api/presaves/products/{product_a}/details"),
 		json!({
 			"data": {
-				"substances": []
+				"active_substances": []
 			}
 		}),
 	)
@@ -476,7 +482,10 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 	)
 	.await?;
 	assert_eq!(
-		after_empty["data"]["substances"].as_array().unwrap().len(),
+		after_empty["data"]["active_substances"]
+			.as_array()
+			.unwrap()
+			.len(),
 		2
 	);
 
@@ -486,7 +495,7 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		format!("/api/presaves/products/{product_a}/details"),
 		json!({
 			"data": {
-				"substances": [{ "id": substance_delete, "_delete": true }]
+				"active_substances": [{ "id": substance_delete, "_delete": true }]
 			}
 		}),
 	)
@@ -497,15 +506,17 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		format!("/api/presaves/products/{product_a}/details"),
 	)
 	.await?;
-	let substances = after_delete["data"]["substances"].as_array().unwrap();
+	let active_substances = after_delete["data"]["active_substances"]
+		.as_array()
+		.unwrap();
 	assert!(
-		!substances
+		!active_substances
 			.iter()
 			.any(|row| row["id"].as_str() == Some(&substance_delete.to_string())),
 		"{after_delete:?}"
 	);
 	assert!(
-		substances
+		active_substances
 			.iter()
 			.any(|row| row["id"].as_str() == Some(&substance_keep.to_string())),
 		"{after_delete:?}"
@@ -515,7 +526,7 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		&admin_cookie,
 		Method::PUT,
 		format!("/api/presaves/products/{product_a}/details"),
-		Some(json!({ "data": { "substances": [{ "_delete": true }] } })),
+		Some(json!({ "data": { "active_substances": [{ "_delete": true }] } })),
 	)
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
@@ -527,7 +538,7 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 		format!("/api/presaves/products/{product_a}/details"),
 		Some(json!({
 			"data": {
-				"substances": [{
+				"active_substances": [{
 					"id": wrong_parent_substance,
 					"sequence_number": 2,
 					"substance_name": "Wrong Parent"
@@ -537,6 +548,64 @@ async fn test_product_presave_details_noop_delete_and_invalid_child_operations(
 	)
 	.await?;
 	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+
+	let (status, value) = request_json(
+		&app,
+		&admin_cookie,
+		Method::PUT,
+		format!("/api/presaves/products/{product_a}/details"),
+		Some(json!({ "data": { "substances": [] } })),
+	)
+	.await?;
+	assert!(
+		status.is_client_error(),
+		"legacy Product key was accepted: {value:?}"
+	);
+
+	let details = get_json_ok(
+		&app,
+		&admin_cookie,
+		format!("/api/presaves/products/{product_a}/details"),
+	)
+	.await?;
+	let sender_id = details["data"]["parent"]["sender_presave_id"].clone();
+	for (method, uri, body) in [
+		(
+			Method::POST,
+			"/api/presaves/products".to_string(),
+			json!({
+				"data": {
+					"sender_presave_id": sender_id,
+					"product_id": format!("LEGACY-{}", Uuid::new_v4()),
+					"mpid_version_date_number": "legacy"
+				}
+			}),
+		),
+		(
+			Method::PATCH,
+			format!("/api/presaves/products/{product_a}"),
+			json!({ "data": { "phpid_version_date_number": "legacy" } }),
+		),
+		(
+			Method::POST,
+			format!("/api/presaves/products/{product_a}/active-substances"),
+			json!({ "data": { "sequence_number": 3, "name": "legacy" } }),
+		),
+		(
+			Method::PATCH,
+			format!(
+				"/api/presaves/products/{product_a}/active-substances/{substance_keep}"
+			),
+			json!({ "data": { "strength_number": "1" } }),
+		),
+	] {
+		let (status, value) =
+			request_json(&app, &admin_cookie, method, uri, Some(body)).await?;
+		assert!(
+			status.is_client_error(),
+			"legacy Product payload was accepted: {value:?}"
+		);
+	}
 
 	Ok(())
 }

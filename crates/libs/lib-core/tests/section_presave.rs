@@ -6,12 +6,13 @@ use crate::common::{
 use lib_core::_dev_utils;
 use lib_core::ctx::{Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO};
 use lib_core::model::presave::{
-	NarrativePresaveBmc, NarrativePresaveForCreate, ProductPresaveBmc,
-	ProductPresaveForCreate, ProductPresaveForUpdate, ProductPresaveSubstanceBmc,
-	ProductPresaveSubstanceForCreate, ProductPresaveSubstanceForUpdate,
-	ReceiverPresaveBmc, ReceiverPresaveConsigneeBmc,
-	ReceiverPresaveConsigneeForCreate, ReceiverPresaveConsigneeForUpdate,
-	ReceiverPresaveForCreate, ReceiverPresaveForUpdate, ReceiverPresaveRouteBmc,
+	NarrativePresaveBmc, NarrativePresaveForCreate,
+	ProductPresaveActiveSubstanceBmc, ProductPresaveActiveSubstanceForCreate,
+	ProductPresaveActiveSubstanceForUpdate, ProductPresaveBmc,
+	ProductPresaveForCreate, ProductPresaveForUpdate, ReceiverPresaveBmc,
+	ReceiverPresaveConsigneeBmc, ReceiverPresaveConsigneeForCreate,
+	ReceiverPresaveConsigneeForUpdate, ReceiverPresaveForCreate,
+	ReceiverPresaveForUpdate, ReceiverPresaveRouteBmc,
 	ReceiverPresaveRouteForCreate, ReceiverPresaveRouteForUpdate,
 	ReporterPresaveBmc, ReporterPresaveForCreate, ReporterPresaveForUpdate,
 	SenderPresaveBmc, SenderPresaveForCreate, SenderPresaveForUpdate,
@@ -19,8 +20,9 @@ use lib_core::model::presave::{
 	SenderPresaveGatewayForUpdate, SenderPresaveResponsiblePersonBmc,
 	SenderPresaveResponsiblePersonForCreate,
 	SenderPresaveResponsiblePersonForUpdate, StudyPresaveBmc,
-	StudyPresaveFdaCrossReportedIndBmc, StudyPresaveFdaCrossReportedIndForCreate,
-	StudyPresaveFdaCrossReportedIndForUpdate, StudyPresaveForCreate,
+	StudyPresaveFdaCrossReportedIndNumberBmc,
+	StudyPresaveFdaCrossReportedIndNumberForCreate,
+	StudyPresaveFdaCrossReportedIndNumberForUpdate, StudyPresaveForCreate,
 	StudyPresaveProductBmc, StudyPresaveProductForCreate,
 	StudyPresaveProductForUpdate, StudyPresaveRegistrationNumberBmc,
 	StudyPresaveRegistrationNumberForCreate,
@@ -47,11 +49,11 @@ const SECTION_PRESAVE_TABLES: &[&str] = &[
 	"receiver_presave_consignees",
 	"receiver_presave_routes",
 	"product_presaves",
-	"product_presave_substances",
+	"product_presave_active_substances",
 	"reporter_presaves",
 	"study_presaves",
 	"study_presave_registration_numbers",
-	"study_presave_fda_cross_reported_inds",
+	"study_presave_fda_cross_reported_ind_numbers",
 	"study_presave_products",
 	"study_presave_reporters",
 	"narrative_presaves",
@@ -1001,8 +1003,8 @@ async fn section_presave_tables_have_rls_and_relationship_guards() -> Result<()>
 		),
 		("product_presaves", "product_presaves_org_isolation"),
 		(
-			"product_presave_substances",
-			"product_presave_substances_via_parent",
+			"product_presave_active_substances",
+			"product_presave_active_substances_via_parent",
 		),
 		("reporter_presaves", "reporter_presaves_org_isolation"),
 		("study_presaves", "study_presaves_org_isolation"),
@@ -2797,10 +2799,10 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		consignee_id
 	);
 
-	let substance_id = ProductPresaveSubstanceBmc::create(
+	let substance_id = ProductPresaveActiveSubstanceBmc::create(
 		&ctx,
 		&mm,
-		ProductPresaveSubstanceForCreate {
+		ProductPresaveActiveSubstanceForCreate {
 			product_presave_id: product_id,
 			sequence_number: 1,
 			substance_name: Some("Substance Before".into()),
@@ -2813,22 +2815,23 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		},
 	)
 	.await?;
-	ProductPresaveSubstanceBmc::update(
+	ProductPresaveActiveSubstanceBmc::update(
 		&ctx,
 		&mm,
 		substance_id,
-		ProductPresaveSubstanceForUpdate {
+		ProductPresaveActiveSubstanceForUpdate {
 			substance_name: Some("Substance After".into()),
 			..Default::default()
 		},
 	)
 	.await?;
-	let substance = ProductPresaveSubstanceBmc::get(&ctx, &mm, substance_id).await?;
+	let substance =
+		ProductPresaveActiveSubstanceBmc::get(&ctx, &mm, substance_id).await?;
 	assert_eq!(substance.product_presave_id, product_id);
 	assert_eq!(substance.substance_name.as_deref(), Some("Substance After"));
 	assert_audit_changed_field(
 		&mm,
-		"product_presave_substances",
+		"product_presave_active_substances",
 		substance_id,
 		"substance_name",
 		json!("Substance Before"),
@@ -2836,7 +2839,8 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(
-		ProductPresaveSubstanceBmc::list_by_parent(&ctx, &mm, product_id).await?[0]
+		ProductPresaveActiveSubstanceBmc::list_by_parent(&ctx, &mm, product_id)
+			.await?[0]
 			.id,
 		substance_id
 	);
@@ -2888,10 +2892,10 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		registration_id
 	);
 
-	let cross_reported_ind_id = StudyPresaveFdaCrossReportedIndBmc::create(
+	let cross_reported_ind_id = StudyPresaveFdaCrossReportedIndNumberBmc::create(
 		&ctx,
 		&mm,
-		StudyPresaveFdaCrossReportedIndForCreate {
+		StudyPresaveFdaCrossReportedIndNumberForCreate {
 			study_presave_id: study_id,
 			sequence_number: 1,
 			ind_number: "IND-123".into(),
@@ -2899,25 +2903,30 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 		},
 	)
 	.await?;
-	StudyPresaveFdaCrossReportedIndBmc::update(
+	StudyPresaveFdaCrossReportedIndNumberBmc::update(
 		&ctx,
 		&mm,
 		cross_reported_ind_id,
-		StudyPresaveFdaCrossReportedIndForUpdate {
+		StudyPresaveFdaCrossReportedIndNumberForUpdate {
 			ind_number: Some("IND-456".into()),
 			deleted: Some(true),
 			..Default::default()
 		},
 	)
 	.await?;
-	let cross_reported_ind =
-		StudyPresaveFdaCrossReportedIndBmc::get(&ctx, &mm, cross_reported_ind_id)
-			.await?;
+	let cross_reported_ind = StudyPresaveFdaCrossReportedIndNumberBmc::get(
+		&ctx,
+		&mm,
+		cross_reported_ind_id,
+	)
+	.await?;
 	assert_eq!(cross_reported_ind.ind_number, "IND-456");
 	assert!(cross_reported_ind.deleted);
 	assert_eq!(
-		StudyPresaveFdaCrossReportedIndBmc::list_by_parent(&ctx, &mm, study_id)
-			.await?[0]
+		StudyPresaveFdaCrossReportedIndNumberBmc::list_by_parent(
+			&ctx, &mm, study_id
+		)
+		.await?[0]
 			.id,
 		cross_reported_ind_id
 	);
@@ -2968,10 +2977,14 @@ async fn section_presave_child_bmcs_crud_roundtrip() -> Result<()> {
 	);
 
 	StudyPresaveProductBmc::delete(&ctx, &mm, study_product_id).await?;
-	StudyPresaveFdaCrossReportedIndBmc::delete(&ctx, &mm, cross_reported_ind_id)
-		.await?;
+	StudyPresaveFdaCrossReportedIndNumberBmc::delete(
+		&ctx,
+		&mm,
+		cross_reported_ind_id,
+	)
+	.await?;
 	StudyPresaveRegistrationNumberBmc::delete(&ctx, &mm, registration_id).await?;
-	ProductPresaveSubstanceBmc::delete(&ctx, &mm, substance_id).await?;
+	ProductPresaveActiveSubstanceBmc::delete(&ctx, &mm, substance_id).await?;
 	ReceiverPresaveConsigneeBmc::delete(&ctx, &mm, consignee_id).await?;
 	SenderPresaveResponsiblePersonBmc::delete(&ctx, &mm, responsible_id).await?;
 	SenderPresaveGatewayBmc::delete(&ctx, &mm, gateway_first_id).await?;

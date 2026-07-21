@@ -16,6 +16,7 @@ async fn test_legacy_presave_templates_route_is_removed() -> Result<()> {
 		"/api/presave-templates".to_string(),
 		format!("/api/presave-templates/{}", Uuid::new_v4()),
 		format!("/api/presave-templates/{}/audit", Uuid::new_v4()),
+		format!("/api/presaves/products/{}/substances", Uuid::new_v4()),
 	] {
 		let (status, value) =
 			request_json(&app, &admin_cookie, Method::GET, uri, None).await?;

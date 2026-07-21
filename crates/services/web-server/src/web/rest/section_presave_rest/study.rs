@@ -144,20 +144,20 @@ pub async fn delete_study_presave(
 pub struct StudyPresaveDetails {
 	pub parent: StudyPresave,
 	pub products: Vec<StudyPresaveProduct>,
-	#[serde(rename = "registrations")]
-	pub registration_numbers: Vec<StudyPresaveRegistrationNumber>,
-	pub fda_cross_reported_inds: Vec<StudyPresaveFdaCrossReportedInd>,
+	pub study_registration_numbers: Vec<StudyPresaveRegistrationNumber>,
+	pub fda_cross_reported_ind_numbers: Vec<StudyPresaveFdaCrossReportedIndNumber>,
 	pub reporters: Vec<StudyPresaveReporter>,
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StudyPresaveDetailsForUpdate {
 	pub parent: Option<StudyPresaveForUpdate>,
 	pub products: Option<Vec<StudyProductDetailsForUpdate>>,
-	#[serde(rename = "registrations")]
-	pub registration_numbers: Option<Vec<StudyRegistrationNumberDetailsForUpdate>>,
-	pub fda_cross_reported_inds:
-		Option<Vec<StudyFdaCrossReportedIndDetailsForUpdate>>,
+	pub study_registration_numbers:
+		Option<Vec<StudyRegistrationNumberDetailsForUpdate>>,
+	pub fda_cross_reported_ind_numbers:
+		Option<Vec<StudyFdaCrossReportedIndNumberDetailsForUpdate>>,
 	pub reporters: Option<Vec<StudyReporterDetailsForUpdate>>,
 }
 
@@ -202,6 +202,7 @@ impl StudyProductDetailsForUpdate {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct StudyRegistrationNumberDetailsForUpdate {
 	pub id: Option<Uuid>,
 	#[serde(default, rename = "_delete")]
@@ -243,7 +244,8 @@ impl StudyRegistrationNumberDetailsForUpdate {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct StudyFdaCrossReportedIndDetailsForUpdate {
+#[serde(deny_unknown_fields)]
+pub struct StudyFdaCrossReportedIndNumberDetailsForUpdate {
 	pub id: Option<Uuid>,
 	#[serde(default, rename = "_delete")]
 	pub delete: bool,
@@ -252,9 +254,9 @@ pub struct StudyFdaCrossReportedIndDetailsForUpdate {
 	pub deleted: Option<bool>,
 }
 
-impl StudyFdaCrossReportedIndDetailsForUpdate {
-	fn into_update(self) -> StudyPresaveFdaCrossReportedIndForUpdate {
-		StudyPresaveFdaCrossReportedIndForUpdate {
+impl StudyFdaCrossReportedIndNumberDetailsForUpdate {
+	fn into_update(self) -> StudyPresaveFdaCrossReportedIndNumberForUpdate {
+		StudyPresaveFdaCrossReportedIndNumberForUpdate {
 			sequence_number: self.sequence_number,
 			ind_number: self.ind_number,
 			deleted: self.deleted,
@@ -264,8 +266,8 @@ impl StudyFdaCrossReportedIndDetailsForUpdate {
 	fn into_create(
 		self,
 		study_presave_id: Uuid,
-	) -> Result<StudyPresaveFdaCrossReportedIndForCreate> {
-		Ok(StudyPresaveFdaCrossReportedIndForCreate {
+	) -> Result<StudyPresaveFdaCrossReportedIndNumberForCreate> {
+		Ok(StudyPresaveFdaCrossReportedIndNumberForCreate {
 			study_presave_id,
 			sequence_number: self.sequence_number.ok_or_else(|| {
 				Error::BadRequest {
@@ -361,8 +363,8 @@ pub async fn update_study_presave_details(
 		.is_some_and(|parent| parent.deleted == Some(true))
 	{
 		if data.products.is_some()
-			|| data.registration_numbers.is_some()
-			|| data.fda_cross_reported_inds.is_some()
+			|| data.study_registration_numbers.is_some()
+			|| data.fda_cross_reported_ind_numbers.is_some()
 			|| data.reporters.is_some()
 		{
 			return Err(Error::BadRequest {
@@ -419,8 +421,8 @@ async fn apply_study_presave_details_inner(
 			upsert_study_product_detail(ctx, mm, id, product).await?;
 		}
 	}
-	if let Some(registration_numbers) = data.registration_numbers {
-		for registration_number in registration_numbers {
+	if let Some(study_registration_numbers) = data.study_registration_numbers {
+		for registration_number in study_registration_numbers {
 			upsert_study_registration_number_detail(
 				ctx,
 				mm,
@@ -430,9 +432,11 @@ async fn apply_study_presave_details_inner(
 			.await?;
 		}
 	}
-	if let Some(fda_cross_reported_inds) = data.fda_cross_reported_inds {
-		for item in fda_cross_reported_inds {
-			upsert_study_fda_cross_reported_ind_detail(ctx, mm, id, item).await?;
+	if let Some(fda_cross_reported_ind_numbers) = data.fda_cross_reported_ind_numbers
+	{
+		for item in fda_cross_reported_ind_numbers {
+			upsert_study_fda_cross_reported_ind_number_detail(ctx, mm, id, item)
+				.await?;
 		}
 	}
 	if let Some(reporters) = data.reporters {
@@ -450,16 +454,17 @@ async fn load_study_presave_details(
 ) -> Result<StudyPresaveDetails> {
 	let parent = StudyPresaveBmc::get(ctx, mm, id).await?;
 	let products = StudyPresaveProductBmc::list_by_parent(ctx, mm, id).await?;
-	let registration_numbers =
+	let study_registration_numbers =
 		StudyPresaveRegistrationNumberBmc::list_by_parent(ctx, mm, id).await?;
-	let fda_cross_reported_inds =
-		StudyPresaveFdaCrossReportedIndBmc::list_by_parent(ctx, mm, id).await?;
+	let fda_cross_reported_ind_numbers =
+		StudyPresaveFdaCrossReportedIndNumberBmc::list_by_parent(ctx, mm, id)
+			.await?;
 	let reporters = StudyPresaveReporterBmc::list_by_parent(ctx, mm, id).await?;
 	Ok(StudyPresaveDetails {
 		parent,
 		products,
-		registration_numbers,
-		fda_cross_reported_inds,
+		study_registration_numbers,
+		fda_cross_reported_ind_numbers,
 		reporters,
 	})
 }
@@ -475,13 +480,13 @@ fn require_study_detail_operation_permissions(
 		.iter()
 		.any(|item| item.id.is_none() && !item.delete)
 		|| data
-			.registration_numbers
+			.study_registration_numbers
 			.as_deref()
 			.unwrap_or_default()
 			.iter()
 			.any(|item| item.id.is_none() && !item.delete)
 		|| data
-			.fda_cross_reported_inds
+			.fda_cross_reported_ind_numbers
 			.as_deref()
 			.unwrap_or_default()
 			.iter()
@@ -499,13 +504,13 @@ fn require_study_detail_operation_permissions(
 		.iter()
 		.any(|item| item.delete || item.deleted == Some(true))
 		|| data
-			.registration_numbers
+			.study_registration_numbers
 			.as_deref()
 			.unwrap_or_default()
 			.iter()
 			.any(|item| item.delete || item.deleted == Some(true))
 		|| data
-			.fda_cross_reported_inds
+			.fda_cross_reported_ind_numbers
 			.as_deref()
 			.unwrap_or_default()
 			.iter()
@@ -541,8 +546,8 @@ async fn preflight_study_presave_details(
 			preflight_study_product_detail(ctx, mm, study_id, product).await?;
 		}
 	}
-	if let Some(registration_numbers) = &data.registration_numbers {
-		for registration_number in registration_numbers {
+	if let Some(study_registration_numbers) = &data.study_registration_numbers {
+		for registration_number in study_registration_numbers {
 			preflight_study_registration_number_detail(
 				ctx,
 				mm,
@@ -552,10 +557,12 @@ async fn preflight_study_presave_details(
 			.await?;
 		}
 	}
-	if let Some(items) = &data.fda_cross_reported_inds {
+	if let Some(items) = &data.fda_cross_reported_ind_numbers {
 		for item in items {
-			preflight_study_fda_cross_reported_ind_detail(ctx, mm, study_id, item)
-				.await?;
+			preflight_study_fda_cross_reported_ind_number_detail(
+				ctx, mm, study_id, item,
+			)
+			.await?;
 		}
 	}
 	if let Some(reporters) = &data.reporters {
@@ -643,11 +650,11 @@ fn validate_study_registration_number_detail_create(
 	Ok(())
 }
 
-async fn preflight_study_fda_cross_reported_ind_detail(
+async fn preflight_study_fda_cross_reported_ind_number_detail(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	study_id: Uuid,
-	item: &StudyFdaCrossReportedIndDetailsForUpdate,
+	item: &StudyFdaCrossReportedIndNumberDetailsForUpdate,
 ) -> Result<()> {
 	if item.delete && item.id.is_none() {
 		return Err(Error::BadRequest {
@@ -655,13 +662,14 @@ async fn preflight_study_fda_cross_reported_ind_detail(
 		});
 	}
 	if let Some(id) = item.id {
-		let entity = StudyPresaveFdaCrossReportedIndBmc::get(ctx, mm, id).await?;
+		let entity =
+			StudyPresaveFdaCrossReportedIndNumberBmc::get(ctx, mm, id).await?;
 		ensure_detail_parent_scope(
 			study_id,
 			entity.study_presave_id,
 			id,
 			"study",
-			"study_presave_fda_cross_reported_inds",
+			"study_presave_fda_cross_reported_ind_numbers",
 		)?;
 	} else if !item.delete
 		&& (item.sequence_number.is_none() || item.ind_number.is_none())
@@ -804,34 +812,35 @@ async fn upsert_study_registration_number_detail(
 	Ok(())
 }
 
-async fn upsert_study_fda_cross_reported_ind_detail(
+async fn upsert_study_fda_cross_reported_ind_number_detail(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &ModelManager,
 	study_id: Uuid,
-	item: StudyFdaCrossReportedIndDetailsForUpdate,
+	item: StudyFdaCrossReportedIndNumberDetailsForUpdate,
 ) -> Result<()> {
 	if let Some(id) = item.id {
-		let entity = StudyPresaveFdaCrossReportedIndBmc::get(ctx, mm, id).await?;
+		let entity =
+			StudyPresaveFdaCrossReportedIndNumberBmc::get(ctx, mm, id).await?;
 		ensure_detail_parent_scope(
 			study_id,
 			entity.study_presave_id,
 			id,
 			"study",
-			"study_presave_fda_cross_reported_inds",
+			"study_presave_fda_cross_reported_ind_numbers",
 		)?;
 		if item.delete {
-			StudyPresaveFdaCrossReportedIndBmc::update(
+			StudyPresaveFdaCrossReportedIndNumberBmc::update(
 				ctx,
 				mm,
 				id,
-				StudyPresaveFdaCrossReportedIndForUpdate {
+				StudyPresaveFdaCrossReportedIndNumberForUpdate {
 					deleted: Some(true),
 					..Default::default()
 				},
 			)
 			.await?;
 		} else {
-			StudyPresaveFdaCrossReportedIndBmc::update(
+			StudyPresaveFdaCrossReportedIndNumberBmc::update(
 				ctx,
 				mm,
 				id,
@@ -840,7 +849,7 @@ async fn upsert_study_fda_cross_reported_ind_detail(
 			.await?;
 		}
 	} else if !item.delete {
-		StudyPresaveFdaCrossReportedIndBmc::create(
+		StudyPresaveFdaCrossReportedIndNumberBmc::create(
 			ctx,
 			mm,
 			item.into_create(study_id)?,

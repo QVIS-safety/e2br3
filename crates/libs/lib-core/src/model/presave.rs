@@ -1169,6 +1169,7 @@ pub struct ProductPresave {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProductPresaveForCreate {
 	pub sender_presave_id: Option<Uuid>,
 	pub receiver_presave_id: Option<Uuid>,
@@ -1251,6 +1252,7 @@ impl IntoOrgScopedCreate for ProductPresaveForCreate {
 }
 
 #[derive(Default, Fields, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProductPresaveForUpdate {
 	pub deleted: Option<bool>,
 	pub sender_presave_id: Option<Uuid>,
@@ -1459,7 +1461,7 @@ impl ProductPresaveBmc {
 }
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
-pub struct ProductPresaveSubstance {
+pub struct ProductPresaveActiveSubstance {
 	pub id: Uuid,
 	pub product_presave_id: Uuid,
 	pub sequence_number: i32,
@@ -1477,7 +1479,8 @@ pub struct ProductPresaveSubstance {
 }
 
 #[derive(Fields, Deserialize)]
-pub struct ProductPresaveSubstanceForCreate {
+#[serde(deny_unknown_fields)]
+pub struct ProductPresaveActiveSubstanceForCreate {
 	pub product_presave_id: Uuid,
 	pub sequence_number: i32,
 	pub substance_name: Option<String>,
@@ -1490,7 +1493,8 @@ pub struct ProductPresaveSubstanceForCreate {
 }
 
 #[derive(Default, Fields, Deserialize)]
-pub struct ProductPresaveSubstanceForUpdate {
+#[serde(deny_unknown_fields)]
+pub struct ProductPresaveActiveSubstanceForUpdate {
 	pub sequence_number: Option<i32>,
 	pub substance_name: Option<String>,
 	pub substance_termid_version: Option<String>,
@@ -1502,11 +1506,11 @@ pub struct ProductPresaveSubstanceForUpdate {
 }
 
 impl_child_bmc!(
-	ProductPresaveSubstanceBmc,
-	ProductPresaveSubstance,
-	ProductPresaveSubstanceForCreate,
-	ProductPresaveSubstanceForUpdate,
-	"product_presave_substances",
+	ProductPresaveActiveSubstanceBmc,
+	ProductPresaveActiveSubstance,
+	ProductPresaveActiveSubstanceForCreate,
+	ProductPresaveActiveSubstanceForUpdate,
+	"product_presave_active_substances",
 	"product_presave_id"
 );
 
@@ -2358,7 +2362,7 @@ impl StudyPresaveRegistrationNumberBmc {
 }
 
 #[derive(Debug, Clone, Fields, FromRow, Serialize)]
-pub struct StudyPresaveFdaCrossReportedInd {
+pub struct StudyPresaveFdaCrossReportedIndNumber {
 	pub id: Uuid,
 	pub study_presave_id: Uuid,
 	pub sequence_number: i32,
@@ -2371,7 +2375,7 @@ pub struct StudyPresaveFdaCrossReportedInd {
 }
 
 #[derive(Fields, Deserialize)]
-pub struct StudyPresaveFdaCrossReportedIndForCreate {
+pub struct StudyPresaveFdaCrossReportedIndNumberForCreate {
 	pub study_presave_id: Uuid,
 	pub sequence_number: i32,
 	pub ind_number: String,
@@ -2379,18 +2383,18 @@ pub struct StudyPresaveFdaCrossReportedIndForCreate {
 }
 
 #[derive(Default, Fields, Deserialize)]
-pub struct StudyPresaveFdaCrossReportedIndForUpdate {
+pub struct StudyPresaveFdaCrossReportedIndNumberForUpdate {
 	pub sequence_number: Option<i32>,
 	pub ind_number: Option<String>,
 	pub deleted: Option<bool>,
 }
 
 impl_child_bmc!(
-	StudyPresaveFdaCrossReportedIndBmc,
-	StudyPresaveFdaCrossReportedInd,
-	StudyPresaveFdaCrossReportedIndForCreate,
-	StudyPresaveFdaCrossReportedIndForUpdate,
-	"study_presave_fda_cross_reported_inds",
+	StudyPresaveFdaCrossReportedIndNumberBmc,
+	StudyPresaveFdaCrossReportedIndNumber,
+	StudyPresaveFdaCrossReportedIndNumberForCreate,
+	StudyPresaveFdaCrossReportedIndNumberForUpdate,
+	"study_presave_fda_cross_reported_ind_numbers",
 	"study_presave_id"
 );
 

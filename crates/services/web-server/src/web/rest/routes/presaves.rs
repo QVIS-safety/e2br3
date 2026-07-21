@@ -89,15 +89,15 @@ pub fn routes_section_presaves(mm: ModelManager) -> Router {
 				.put(section_presave_rest::update_product_presave_details),
 		)
 		.route(
-			"/presaves/products/{product_id}/substances",
-			get(section_presave_rest::list_product_substances)
-				.post(section_presave_rest::create_product_substance),
+			"/presaves/products/{product_id}/active-substances",
+			get(section_presave_rest::list_product_active_substances)
+				.post(section_presave_rest::create_product_active_substance),
 		)
 		.route(
-			"/presaves/products/{product_id}/substances/{id}",
-			get(section_presave_rest::get_product_substance)
-				.patch(section_presave_rest::update_product_substance)
-				.delete(section_presave_rest::delete_product_substance),
+			"/presaves/products/{product_id}/active-substances/{id}",
+			get(section_presave_rest::get_product_active_substance)
+				.patch(section_presave_rest::update_product_active_substance)
+				.delete(section_presave_rest::delete_product_active_substance),
 		)
 		.route(
 			"/presaves/reporters",

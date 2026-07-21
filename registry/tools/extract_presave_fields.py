@@ -45,7 +45,7 @@ PRESAVE_SECTIONS = {
         "product",
         "ProductPresaveData",
         "components/presave/ProductForm.tsx",
-        ("ProductPresave", "ProductPresaveSubstance"),
+        ("ProductPresave", "ProductPresaveActiveSubstance"),
         (
             "app/(protected)/[authority]/case/[id]/detail/DG/components/SectionG.tsx",
             "app/(protected)/[authority]/case/[id]/detail/DG/hooks/useSectionGDrugs.ts",
@@ -65,7 +65,7 @@ PRESAVE_SECTIONS = {
         (
             "StudyPresave",
             "StudyPresaveRegistrationNumber",
-            "StudyPresaveFdaCrossReportedInd",
+            "StudyPresaveFdaCrossReportedIndNumber",
             "StudyPresaveProduct",
             "StudyPresaveReporter",
         ),
@@ -78,6 +78,24 @@ PRESAVE_SECTIONS = {
         ("NarrativePresave",),
         ("app/(protected)/[authority]/case/[id]/detail/NR/NRPage.tsx",),
     ),
+}
+
+NESTED_FRONTEND_FIELDS = {
+    "product": {
+        "activeSubstances": (
+            "substanceName",
+            "substanceTermIdVersion",
+            "substanceTermId",
+            "mfdsVersion",
+            "mfdsId",
+            "substanceStrengthValue",
+            "substanceStrengthUnit",
+        ),
+    },
+    "study": {
+        "studyRegistrationNumbers": ("registrationNumber", "countryCode"),
+        "fdaCrossReportedIndNumbers": ("indNumber",),
+    },
 }
 
 def transfer_call(target: str, source: str) -> str:
@@ -118,24 +136,24 @@ TRANSFER_SPECS = {
     ),
     "product": (
         TransferSpec("ProductPresave", "medicinal_product", "DrugInformation", "medicinal_product", (value_assignment("medicinalProduct", "d.medicinalProduct"),)),
-        TransferSpec("ProductPresave", "mpid_version", "DrugInformation", "mpid_version", (value_assignment("mpidVersion", "d.mpidVersionDateNumber"),)),
+        TransferSpec("ProductPresave", "mpid_version", "DrugInformation", "mpid_version", (value_assignment("mpidVersion", "d.mpidVersion"),)),
         TransferSpec("ProductPresave", "mpid", "DrugInformation", "mpid", (value_assignment("mpid", "d.mpid"),)),
         TransferSpec("ProductPresave", "mfds_mpid_version", "DrugInformation", "mfds_mpid_version", (value_assignment("mfdsMpidVersion", "d.mfdsMpidVersion"),)),
         TransferSpec("ProductPresave", "mfds_mpid", "DrugInformation", "mfds_mpid", (value_assignment("mfdsMpid", "d.mfdsMpid"),)),
-        TransferSpec("ProductPresave", "phpid_version", "DrugInformation", "phpid_version", (value_assignment("phpidVersion", "d.phpidVersionDateNumber"),)),
+        TransferSpec("ProductPresave", "phpid_version", "DrugInformation", "phpid_version", (value_assignment("phpidVersion", "d.phpidVersion"),)),
         TransferSpec("ProductPresave", "phpid", "DrugInformation", "phpid", (value_assignment("phpid", "d.phpid"),)),
         TransferSpec("ProductPresave", "obtain_drug_country", "DrugInformation", "obtain_drug_country", (value_assignment("obtainDrugCountry", "d.obtainDrugCountry"),)),
         TransferSpec("ProductPresave", "investigational_product_blinded", "DrugInformation", "investigational_product_blinded", (value_assignment("investigationalProductBlinded", "d.investigationalProductBlinded"),)),
         TransferSpec("ProductPresave", "drug_authorization_number", "DrugInformation", "drug_authorization_number", (value_assignment("drugAuthorizationNumber", "d.drugAuthorizationNumber"),)),
         TransferSpec("ProductPresave", "drug_authorization_country", "DrugInformation", "manufacturer_country", (value_assignment("drugAuthorizationCountry", "d.drugAuthorizationCountry"),)),
         TransferSpec("ProductPresave", "drug_authorization_holder", "DrugInformation", "manufacturer_name", (value_assignment("drugAuthorizationHolder", "d.drugAuthorizationHolder"),)),
-        TransferSpec("ProductPresaveSubstance", "substance_name", "DrugActiveSubstance", "substance_name", (value_assignment("substanceName", "s.name"),)),
-        TransferSpec("ProductPresaveSubstance", "substance_termid_version", "DrugActiveSubstance", "substance_termid_version", (value_assignment("substanceTermIdVersion", "s.termIdVersion"),)),
-        TransferSpec("ProductPresaveSubstance", "substance_termid", "DrugActiveSubstance", "substance_termid", (value_assignment("substanceTermId", "s.termId"),)),
-        TransferSpec("ProductPresaveSubstance", "mfds_version", "DrugActiveSubstance", "mfds_version", (value_assignment("mfdsVersion", "s.mfdsVersion"),)),
-        TransferSpec("ProductPresaveSubstance", "mfds_id", "DrugActiveSubstance", "mfds_id", (value_assignment("mfdsId", "s.mfdsId"),)),
-        TransferSpec("ProductPresaveSubstance", "strength_value", "DrugActiveSubstance", "strength_value", (value_assignment("substanceStrengthValue", "s.strengthNumber"),)),
-        TransferSpec("ProductPresaveSubstance", "strength_unit", "DrugActiveSubstance", "strength_unit", (value_assignment("substanceStrengthUnit", "s.strengthUnit"),)),
+        TransferSpec("ProductPresaveActiveSubstance", "substance_name", "DrugActiveSubstance", "substance_name", (value_assignment("substanceName", "s.substanceName"),)),
+        TransferSpec("ProductPresaveActiveSubstance", "substance_termid_version", "DrugActiveSubstance", "substance_termid_version", (value_assignment("substanceTermIdVersion", "s.substanceTermIdVersion"),)),
+        TransferSpec("ProductPresaveActiveSubstance", "substance_termid", "DrugActiveSubstance", "substance_termid", (value_assignment("substanceTermId", "s.substanceTermId"),)),
+        TransferSpec("ProductPresaveActiveSubstance", "mfds_version", "DrugActiveSubstance", "mfds_version", (value_assignment("mfdsVersion", "s.mfdsVersion"),)),
+        TransferSpec("ProductPresaveActiveSubstance", "mfds_id", "DrugActiveSubstance", "mfds_id", (value_assignment("mfdsId", "s.mfdsId"),)),
+        TransferSpec("ProductPresaveActiveSubstance", "strength_value", "DrugActiveSubstance", "strength_value", (value_assignment("substanceStrengthValue", "s.substanceStrengthValue"),)),
+        TransferSpec("ProductPresaveActiveSubstance", "strength_unit", "DrugActiveSubstance", "strength_unit", (value_assignment("substanceStrengthUnit", "s.substanceStrengthUnit"),)),
     ),
     "study": (
         TransferSpec("StudyPresave", "study_name", "StudyInformation", "study_name", (transfer_call("studyInformation.studyName", "d.studyName"),)),
@@ -143,9 +161,9 @@ TRANSFER_SPECS = {
         TransferSpec("StudyPresave", "study_type_reaction", "StudyInformation", "study_type_reaction", (transfer_call("studyInformation.studyTypeReaction", "d.studyTypeReaction"),)),
         TransferSpec("StudyPresave", "fda_ind_number_occurred", "StudyInformation", "fda_ind_number_occurred", (transfer_call("studyInformation.fdaIndNumberOccurred", "d.fdaIndNumberOccurred"),)),
         TransferSpec("StudyPresave", "fda_pre_anda_number_occurred", "StudyInformation", "fda_pre_anda_number_occurred", (transfer_call("studyInformation.fdaPreAndaNumberOccurred", "d.fdaPreAndaNumberOccurred"),)),
-        TransferSpec("StudyPresaveRegistrationNumber", "registration_number", "StudyRegistrationNumber", "registration_number", (r"d\.studyRegistrations\.filter", value_assignment("registrationNumber", "registration.registrationNumber"), transfer_call("studyInformation.studyRegistrationNumbers.${index}.registrationNumber", "registration.registrationNumber"))),
-        TransferSpec("StudyPresaveRegistrationNumber", "country_code", "StudyRegistrationNumber", "country_code", (r"d\.studyRegistrations\.filter", value_assignment("countryCode", "registration.registrationCountry"), transfer_call("studyInformation.studyRegistrationNumbers.${index}.countryCode", "registration.countryCode"))),
-        TransferSpec("StudyPresaveFdaCrossReportedInd", "ind_number", "StudyFdaCrossReportedInd", "ind_number", (r"d\.fdaCrossReportedInds\.filter", value_assignment("indNumber", "item.indNumber"), transfer_call("studyInformation.fdaCrossReportedIndNumbers.${index}.indNumber", "item.indNumber"))),
+        TransferSpec("StudyPresaveRegistrationNumber", "registration_number", "StudyRegistrationNumber", "registration_number", (r"d\.studyRegistrationNumbers\.filter", value_assignment("registrationNumber", "registration.registrationNumber"), transfer_call("studyInformation.studyRegistrationNumbers.${index}.registrationNumber", "registration.registrationNumber"))),
+        TransferSpec("StudyPresaveRegistrationNumber", "country_code", "StudyRegistrationNumber", "country_code", (r"d\.studyRegistrationNumbers\.filter", value_assignment("countryCode", "registration.countryCode"), transfer_call("studyInformation.studyRegistrationNumbers.${index}.countryCode", "registration.countryCode"))),
+        TransferSpec("StudyPresaveFdaCrossReportedIndNumber", "ind_number", "StudyFdaCrossReportedInd", "ind_number", (r"d\.fdaCrossReportedIndNumbers\.filter", value_assignment("indNumber", "item.indNumber"), transfer_call("studyInformation.fdaCrossReportedIndNumbers.${index}.indNumber", "item.indNumber"))),
     ),
     "narrative": (
         TransferSpec("NarrativePresave", "case_narrative", "NarrativeInformation", "case_narrative", (transfer_call("narrative.caseNarrative", "d.caseNarrative"),)),
@@ -276,10 +294,18 @@ def extract_presave_frontend(root: Path, section: str) -> set[str]:
         type_path.read_text(encoding="utf-8"), config.interface_name
     )
     type_fields = extract_presave_frontend_source(type_source, section)
-    form_fields = extract_presave_frontend_source(
-        form_path.read_text(encoding="utf-8"), section
-    )
-    return type_fields & (form_fields | type_fields)
+    form_source = form_path.read_text(encoding="utf-8")
+    form_fields = extract_presave_frontend_source(form_source, section)
+    fields = type_fields & (form_fields | type_fields)
+    for container, child_fields in NESTED_FRONTEND_FIELDS.get(section, {}).items():
+        for child_field in child_fields:
+            type_has_field = re.search(
+                rf"\b{re.escape(child_field)}\??:\s", type_source
+            )
+            form_path_fragment = f"{container}.${{index}}.{child_field}"
+            if type_has_field and form_path_fragment in form_source:
+                fields.add(f"{section}.{container}[].{child_field}")
+    return fields
 
 
 def extract_reporter_frontend(root: Path) -> set[str]:

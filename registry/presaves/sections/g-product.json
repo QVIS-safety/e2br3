@@ -40,9 +40,9 @@
     "frontend": {
       "status": "mapped",
       "section": "product",
-      "field": "mpidVersionDateNumber",
+      "field": "mpidVersion",
       "file": "components/presave/ProductForm.tsx",
-      "evidence": "ProductPresaveData.mpidVersionDateNumber exposes the presave value."
+      "evidence": "ProductPresaveData.mpidVersion exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -136,9 +136,9 @@
     "frontend": {
       "status": "mapped",
       "section": "product",
-      "field": "phpidVersionDateNumber",
+      "field": "phpidVersion",
       "file": "components/presave/ProductForm.tsx",
-      "evidence": "ProductPresaveData.phpidVersionDateNumber exposes the presave value."
+      "evidence": "ProductPresaveData.phpidVersion exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -293,16 +293,20 @@
     "label": "Substance Name",
     "section": "G",
     "authority": "ICH",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
       "status": "mapped",
-      "model": "ProductPresaveSubstance",
+      "model": "ProductPresaveActiveSubstance",
       "field": "substance_name",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ProductPresaveSubstance.substance_name persists the presave value."
+      "evidence": "ProductPresaveActiveSubstance.substance_name persists the presave value."
     },
     "frontend": {
-      "status": "not_applicable"
+      "status": "mapped",
+      "section": "product",
+      "field": "activeSubstances[].substanceName",
+      "file": "components/presave/ProductForm.tsx",
+      "evidence": "ProductPresaveData.activeSubstances[].substanceName exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -313,16 +317,20 @@
     "label": "Substance TermID Version",
     "section": "G",
     "authority": "ICH",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
       "status": "mapped",
-      "model": "ProductPresaveSubstance",
+      "model": "ProductPresaveActiveSubstance",
       "field": "substance_termid_version",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ProductPresaveSubstance.substance_termid_version persists the presave value."
+      "evidence": "ProductPresaveActiveSubstance.substance_termid_version persists the presave value."
     },
     "frontend": {
-      "status": "not_applicable"
+      "status": "mapped",
+      "section": "product",
+      "field": "activeSubstances[].substanceTermIdVersion",
+      "file": "components/presave/ProductForm.tsx",
+      "evidence": "ProductPresaveData.activeSubstances[].substanceTermIdVersion exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -333,16 +341,20 @@
     "label": "Substance TermID",
     "section": "G",
     "authority": "ICH",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
       "status": "mapped",
-      "model": "ProductPresaveSubstance",
+      "model": "ProductPresaveActiveSubstance",
       "field": "substance_termid",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ProductPresaveSubstance.substance_termid persists the presave value."
+      "evidence": "ProductPresaveActiveSubstance.substance_termid persists the presave value."
     },
     "frontend": {
-      "status": "not_applicable"
+      "status": "mapped",
+      "section": "product",
+      "field": "activeSubstances[].substanceTermId",
+      "file": "components/presave/ProductForm.tsx",
+      "evidence": "ProductPresaveData.activeSubstances[].substanceTermId exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -353,16 +365,20 @@
     "label": "Substance Version",
     "section": "G",
     "authority": "MFDS",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
       "status": "mapped",
-      "model": "ProductPresaveSubstance",
+      "model": "ProductPresaveActiveSubstance",
       "field": "mfds_version",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ProductPresaveSubstance.mfds_version persists the presave value."
+      "evidence": "ProductPresaveActiveSubstance.mfds_version persists the presave value."
     },
     "frontend": {
-      "status": "not_applicable"
+      "status": "mapped",
+      "section": "product",
+      "field": "activeSubstances[].mfdsVersion",
+      "file": "components/presave/ProductForm.tsx",
+      "evidence": "ProductPresaveData.activeSubstances[].mfdsVersion exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -373,16 +389,20 @@
     "label": "Substance ID",
     "section": "G",
     "authority": "MFDS",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
       "status": "mapped",
-      "model": "ProductPresaveSubstance",
+      "model": "ProductPresaveActiveSubstance",
       "field": "mfds_id",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ProductPresaveSubstance.mfds_id persists the presave value."
+      "evidence": "ProductPresaveActiveSubstance.mfds_id persists the presave value."
     },
     "frontend": {
-      "status": "not_applicable"
+      "status": "mapped",
+      "section": "product",
+      "field": "activeSubstances[].mfdsId",
+      "file": "components/presave/ProductForm.tsx",
+      "evidence": "ProductPresaveData.activeSubstances[].mfdsId exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -393,16 +413,20 @@
     "label": "Strength Value",
     "section": "G",
     "authority": "ICH",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
       "status": "mapped",
-      "model": "ProductPresaveSubstance",
+      "model": "ProductPresaveActiveSubstance",
       "field": "strength_value",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ProductPresaveSubstance.strength_value persists the presave value."
+      "evidence": "ProductPresaveActiveSubstance.strength_value persists the presave value."
     },
     "frontend": {
-      "status": "not_applicable"
+      "status": "mapped",
+      "section": "product",
+      "field": "activeSubstances[].substanceStrengthValue",
+      "file": "components/presave/ProductForm.tsx",
+      "evidence": "ProductPresaveData.activeSubstances[].substanceStrengthValue exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -413,16 +437,20 @@
     "label": "Strength Unit",
     "section": "G",
     "authority": "ICH",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
       "status": "mapped",
-      "model": "ProductPresaveSubstance",
+      "model": "ProductPresaveActiveSubstance",
       "field": "strength_unit",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ProductPresaveSubstance.strength_unit persists the presave value."
+      "evidence": "ProductPresaveActiveSubstance.strength_unit persists the presave value."
     },
     "frontend": {
-      "status": "not_applicable"
+      "status": "mapped",
+      "section": "product",
+      "field": "activeSubstances[].substanceStrengthUnit",
+      "file": "components/presave/ProductForm.tsx",
+      "evidence": "ProductPresaveData.activeSubstances[].substanceStrengthUnit exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -716,9 +744,9 @@
     "local_only": true
   },
   {
-    "id": "presave.product.local.presave.product.frontend.substances",
-    "e2br3_code": "local.presave.product.frontend.substances",
-    "label": "substances",
+    "id": "presave.product.local.presave.product.frontend.activeSubstances",
+    "e2br3_code": "local.presave.product.frontend.activeSubstances",
+    "label": "activeSubstances",
     "section": "G",
     "authority": "ICH",
     "status": "not_applicable",
@@ -728,27 +756,27 @@
     "frontend": {
       "status": "mapped",
       "section": "product",
-      "field": "substances",
+      "field": "activeSubstances",
       "file": "components/presave/ProductForm.tsx",
-      "evidence": "ProductPresaveData.substances exposes the presave value."
+      "evidence": "ProductPresaveData.activeSubstances exposes the presave value."
     },
     "action": "",
     "notes": "",
     "local_only": true
   },
   {
-    "id": "presave.product.local.presave.product.backend.ProductPresaveSubstance.product.presave.id",
-    "e2br3_code": "local.presave.product.backend.ProductPresaveSubstance.product.presave.id",
-    "label": "ProductPresaveSubstance.product_presave_id",
+    "id": "presave.product.local.presave.product.backend.ProductPresaveActiveSubstance.product.presave.id",
+    "e2br3_code": "local.presave.product.backend.ProductPresaveActiveSubstance.product.presave.id",
+    "label": "ProductPresaveActiveSubstance.product_presave_id",
     "section": "G",
     "authority": "ICH",
     "status": "not_applicable",
     "backend": {
       "status": "mapped",
-      "model": "ProductPresaveSubstance",
+      "model": "ProductPresaveActiveSubstance",
       "field": "product_presave_id",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ProductPresaveSubstance.product_presave_id persists the presave value."
+      "evidence": "ProductPresaveActiveSubstance.product_presave_id persists the presave value."
     },
     "frontend": {
       "status": "not_applicable"
@@ -758,18 +786,18 @@
     "local_only": true
   },
   {
-    "id": "presave.product.local.presave.product.backend.ProductPresaveSubstance.sequence.number",
-    "e2br3_code": "local.presave.product.backend.ProductPresaveSubstance.sequence.number",
-    "label": "ProductPresaveSubstance.sequence_number",
+    "id": "presave.product.local.presave.product.backend.ProductPresaveActiveSubstance.sequence.number",
+    "e2br3_code": "local.presave.product.backend.ProductPresaveActiveSubstance.sequence.number",
+    "label": "ProductPresaveActiveSubstance.sequence_number",
     "section": "G",
     "authority": "ICH",
     "status": "not_applicable",
     "backend": {
       "status": "mapped",
-      "model": "ProductPresaveSubstance",
+      "model": "ProductPresaveActiveSubstance",
       "field": "sequence_number",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "ProductPresaveSubstance.sequence_number persists the presave value."
+      "evidence": "ProductPresaveActiveSubstance.sequence_number persists the presave value."
     },
     "frontend": {
       "status": "not_applicable"

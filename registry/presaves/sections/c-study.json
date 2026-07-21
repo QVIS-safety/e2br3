@@ -125,7 +125,7 @@
     "label": "Study Registration Number",
     "section": "C",
     "authority": "ICH",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
       "status": "mapped",
       "model": "StudyPresaveRegistrationNumber",
@@ -134,7 +134,11 @@
       "evidence": "StudyPresaveRegistrationNumber.registration_number persists the presave value."
     },
     "frontend": {
-      "status": "not_applicable"
+      "status": "mapped",
+      "section": "study",
+      "field": "studyRegistrationNumbers[].registrationNumber",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.studyRegistrationNumbers[].registrationNumber exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -145,7 +149,7 @@
     "label": "Study Registration Country",
     "section": "C",
     "authority": "ICH",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
       "status": "mapped",
       "model": "StudyPresaveRegistrationNumber",
@@ -154,7 +158,11 @@
       "evidence": "StudyPresaveRegistrationNumber.country_code persists the presave value."
     },
     "frontend": {
-      "status": "not_applicable"
+      "status": "mapped",
+      "section": "study",
+      "field": "studyRegistrationNumbers[].countryCode",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.studyRegistrationNumbers[].countryCode exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -165,16 +173,20 @@
     "label": "IND Number of Cross Reported IND",
     "section": "C",
     "authority": "FDA",
-    "status": "intentionally_unmapped",
+    "status": "complete",
     "backend": {
       "status": "mapped",
-      "model": "StudyPresaveFdaCrossReportedInd",
+      "model": "StudyPresaveFdaCrossReportedIndNumber",
       "field": "ind_number",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "StudyPresaveFdaCrossReportedInd.ind_number persists the presave value."
+      "evidence": "StudyPresaveFdaCrossReportedIndNumber.ind_number persists the presave value."
     },
     "frontend": {
-      "status": "not_applicable"
+      "status": "mapped",
+      "section": "study",
+      "field": "fdaCrossReportedIndNumbers[].indNumber",
+      "file": "components/presave/StudyForm.tsx",
+      "evidence": "StudyPresaveData.fdaCrossReportedIndNumbers[].indNumber exposes the presave value."
     },
     "action": "",
     "notes": ""
@@ -305,9 +317,9 @@
     "local_only": true
   },
   {
-    "id": "presave.study.local.presave.study.frontend.fdaCrossReportedInds",
-    "e2br3_code": "local.presave.study.frontend.fdaCrossReportedInds",
-    "label": "fdaCrossReportedInds",
+    "id": "presave.study.local.presave.study.frontend.fdaCrossReportedIndNumbers",
+    "e2br3_code": "local.presave.study.frontend.fdaCrossReportedIndNumbers",
+    "label": "fdaCrossReportedIndNumbers",
     "section": "C",
     "authority": "ICH",
     "status": "not_applicable",
@@ -317,9 +329,9 @@
     "frontend": {
       "status": "mapped",
       "section": "study",
-      "field": "fdaCrossReportedInds",
+      "field": "fdaCrossReportedIndNumbers",
       "file": "components/presave/StudyForm.tsx",
-      "evidence": "StudyPresaveData.fdaCrossReportedInds exposes the presave value."
+      "evidence": "StudyPresaveData.fdaCrossReportedIndNumbers exposes the presave value."
     },
     "action": "",
     "notes": "",
@@ -410,9 +422,9 @@
     "local_only": true
   },
   {
-    "id": "presave.study.local.presave.study.frontend.studyRegistrations",
-    "e2br3_code": "local.presave.study.frontend.studyRegistrations",
-    "label": "studyRegistrations",
+    "id": "presave.study.local.presave.study.frontend.studyRegistrationNumbers",
+    "e2br3_code": "local.presave.study.frontend.studyRegistrationNumbers",
+    "label": "studyRegistrationNumbers",
     "section": "C",
     "authority": "ICH",
     "status": "not_applicable",
@@ -422,9 +434,9 @@
     "frontend": {
       "status": "mapped",
       "section": "study",
-      "field": "studyRegistrations",
+      "field": "studyRegistrationNumbers",
       "file": "components/presave/StudyForm.tsx",
-      "evidence": "StudyPresaveData.studyRegistrations exposes the presave value."
+      "evidence": "StudyPresaveData.studyRegistrationNumbers exposes the presave value."
     },
     "action": "",
     "notes": "",
@@ -452,18 +464,18 @@
     "local_only": true
   },
   {
-    "id": "presave.study.local.presave.study.backend.StudyPresaveFdaCrossReportedInd.sequence.number",
-    "e2br3_code": "local.presave.study.backend.StudyPresaveFdaCrossReportedInd.sequence.number",
-    "label": "StudyPresaveFdaCrossReportedInd.sequence_number",
+    "id": "presave.study.local.presave.study.backend.StudyPresaveFdaCrossReportedIndNumber.sequence.number",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveFdaCrossReportedIndNumber.sequence.number",
+    "label": "StudyPresaveFdaCrossReportedIndNumber.sequence_number",
     "section": "C",
     "authority": "ICH",
     "status": "not_applicable",
     "backend": {
       "status": "mapped",
-      "model": "StudyPresaveFdaCrossReportedInd",
+      "model": "StudyPresaveFdaCrossReportedIndNumber",
       "field": "sequence_number",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "StudyPresaveFdaCrossReportedInd.sequence_number persists the presave value."
+      "evidence": "StudyPresaveFdaCrossReportedIndNumber.sequence_number persists the presave value."
     },
     "frontend": {
       "status": "not_applicable"
@@ -473,18 +485,18 @@
     "local_only": true
   },
   {
-    "id": "presave.study.local.presave.study.backend.StudyPresaveFdaCrossReportedInd.study.presave.id",
-    "e2br3_code": "local.presave.study.backend.StudyPresaveFdaCrossReportedInd.study.presave.id",
-    "label": "StudyPresaveFdaCrossReportedInd.study_presave_id",
+    "id": "presave.study.local.presave.study.backend.StudyPresaveFdaCrossReportedIndNumber.study.presave.id",
+    "e2br3_code": "local.presave.study.backend.StudyPresaveFdaCrossReportedIndNumber.study.presave.id",
+    "label": "StudyPresaveFdaCrossReportedIndNumber.study_presave_id",
     "section": "C",
     "authority": "ICH",
     "status": "not_applicable",
     "backend": {
       "status": "mapped",
-      "model": "StudyPresaveFdaCrossReportedInd",
+      "model": "StudyPresaveFdaCrossReportedIndNumber",
       "field": "study_presave_id",
       "file": "crates/libs/lib-core/src/model/presave.rs",
-      "evidence": "StudyPresaveFdaCrossReportedInd.study_presave_id persists the presave value."
+      "evidence": "StudyPresaveFdaCrossReportedIndNumber.study_presave_id persists the presave value."
     },
     "frontend": {
       "status": "not_applicable"

@@ -317,7 +317,7 @@ BEGIN
         END IF;
     END IF;
 
-	IF p_table_name = 'product_presave_substances' THEN
+	IF p_table_name = 'product_presave_active_substances' THEN
         SELECT p.organization_id INTO v_org_id
         FROM product_presaves p
         WHERE p.id = NULLIF(v_values->>'product_presave_id', '')::UUID;
@@ -329,7 +329,7 @@ BEGIN
 
     IF p_table_name IN (
         'study_presave_registration_numbers',
-        'study_presave_fda_cross_reported_inds',
+        'study_presave_fda_cross_reported_ind_numbers',
         'study_presave_products',
         'study_presave_reporters'
     ) THEN
@@ -700,7 +700,7 @@ CREATE TRIGGER audit_receiver_presave_routes AFTER INSERT OR UPDATE OR DELETE ON
 CREATE TRIGGER audit_product_presaves AFTER INSERT OR UPDATE OR DELETE ON product_presaves
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
-CREATE TRIGGER audit_product_presave_substances AFTER INSERT OR UPDATE OR DELETE ON product_presave_substances
+CREATE TRIGGER audit_product_presave_active_substances AFTER INSERT OR UPDATE OR DELETE ON product_presave_active_substances
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_reporter_presaves AFTER INSERT OR UPDATE OR DELETE ON reporter_presaves
@@ -712,7 +712,7 @@ CREATE TRIGGER audit_study_presaves AFTER INSERT OR UPDATE OR DELETE ON study_pr
 CREATE TRIGGER audit_study_presave_registration_numbers AFTER INSERT OR UPDATE OR DELETE ON study_presave_registration_numbers
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
-CREATE TRIGGER audit_study_presave_fda_cross_reported_inds AFTER INSERT OR UPDATE OR DELETE ON study_presave_fda_cross_reported_inds
+CREATE TRIGGER audit_study_presave_fda_cross_reported_ind_numbers AFTER INSERT OR UPDATE OR DELETE ON study_presave_fda_cross_reported_ind_numbers
     FOR EACH ROW EXECUTE FUNCTION audit_trigger_function();
 
 CREATE TRIGGER audit_study_presave_products AFTER INSERT OR UPDATE OR DELETE ON study_presave_products
@@ -894,7 +894,7 @@ CREATE TRIGGER update_receiver_presave_routes_updated_at BEFORE UPDATE ON receiv
 CREATE TRIGGER update_product_presaves_updated_at BEFORE UPDATE ON product_presaves
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_product_presave_substances_updated_at BEFORE UPDATE ON product_presave_substances
+CREATE TRIGGER update_product_presave_active_substances_updated_at BEFORE UPDATE ON product_presave_active_substances
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reporter_presaves_updated_at BEFORE UPDATE ON reporter_presaves
@@ -906,7 +906,7 @@ CREATE TRIGGER update_study_presaves_updated_at BEFORE UPDATE ON study_presaves
 CREATE TRIGGER update_study_presave_registration_numbers_updated_at BEFORE UPDATE ON study_presave_registration_numbers
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_study_presave_fda_cross_reported_inds_updated_at BEFORE UPDATE ON study_presave_fda_cross_reported_inds
+CREATE TRIGGER update_study_presave_fda_cross_reported_ind_numbers_updated_at BEFORE UPDATE ON study_presave_fda_cross_reported_ind_numbers
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_study_presave_products_updated_at BEFORE UPDATE ON study_presave_products

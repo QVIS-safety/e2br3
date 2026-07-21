@@ -73,6 +73,26 @@ class PresaveRegistryTests(unittest.TestCase):
             "duplicate presave e2br3_code C.2.r.1.2", "\n".join(result.errors)
         )
 
+    def test_product_and_study_repeat_rows_use_canonical_frontend_paths(self):
+        registry_root = Path(__file__).resolve().parents[1]
+        result = validate.ValidationResult()
+
+        loaded = presave_registry.load_presave_registry(registry_root, result)
+
+        self.assertEqual(
+            "product.activeSubstances[].substanceName",
+            loaded.frontend_keys["G.k.2.3.r.1"],
+        )
+        self.assertEqual(
+            "study.studyRegistrationNumbers[].countryCode",
+            loaded.frontend_keys["C.5.1.r.2"],
+        )
+        self.assertEqual(
+            "study.fdaCrossReportedIndNumbers[].indNumber",
+            loaded.frontend_keys["FDA.C.5.6.r"],
+        )
+        self.assertEqual([], result.errors)
+
 
 if __name__ == "__main__":
     unittest.main()

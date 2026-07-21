@@ -416,7 +416,7 @@ pub(super) async fn create_product_presave_with_identity_for_sender_via_api(
 	data_id(&value)
 }
 
-pub(super) async fn create_product_substance_via_api(
+pub(super) async fn create_product_active_substance_via_api(
 	app: &Router,
 	cookie: &str,
 	product_id: Uuid,
@@ -426,7 +426,7 @@ pub(super) async fn create_product_substance_via_api(
 	let value = post_json_created(
 		app,
 		cookie,
-		format!("/api/presaves/products/{product_id}/substances"),
+		format!("/api/presaves/products/{product_id}/active-substances"),
 		json!({
 			"data": {
 				"sequence_number": sequence_number,

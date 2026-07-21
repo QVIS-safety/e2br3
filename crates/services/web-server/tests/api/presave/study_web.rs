@@ -65,7 +65,7 @@ async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 	.await?;
 	assert_eq!(details["data"]["parent"]["id"], study_id.to_string());
 	assert_eq!(
-		details["data"]["registrations"][0]["id"],
+		details["data"]["study_registration_numbers"][0]["id"],
 		registration_id.to_string()
 	);
 	assert_eq!(
@@ -84,7 +84,7 @@ async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 		json!({
 			"data": {
 				"parent": { "study_name": "Study Graph Updated" },
-				"registrations": [
+				"study_registration_numbers": [
 					{
 						"id": registration_id,
 						"sequence_number": 2,
@@ -110,7 +110,13 @@ async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 	)
 	.await?;
 	assert_eq!(saved["data"]["parent"]["study_name"], "Study Graph Updated");
-	assert_eq!(saved["data"]["registrations"].as_array().unwrap().len(), 2);
+	assert_eq!(
+		saved["data"]["study_registration_numbers"]
+			.as_array()
+			.unwrap()
+			.len(),
+		2
+	);
 	assert_eq!(saved["data"]["products"].as_array().unwrap().len(), 2);
 	assert_eq!(saved["data"]["reporters"].as_array().unwrap().len(), 2);
 
@@ -120,7 +126,7 @@ async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 		format!("/api/presaves/studies/{study_id}/details"),
 		json!({
 			"data": {
-				"registrations": [{ "id": registration_id, "_delete": true }]
+				"study_registration_numbers": [{ "id": registration_id, "_delete": true }]
 			}
 		}),
 	)
@@ -131,7 +137,7 @@ async fn test_study_presave_details_graph_load_save_and_delete() -> Result<()> {
 		format!("/api/presaves/studies/{study_id}/details"),
 	)
 	.await?;
-	let deleted_registration = after_delete["data"]["registrations"]
+	let deleted_registration = after_delete["data"]["study_registration_numbers"]
 		.as_array()
 		.unwrap()
 		.iter()
@@ -186,7 +192,7 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 	.await?;
 	assert_eq!(details["data"]["parent"]["id"], study_id.to_string());
 	assert_eq!(
-		details["data"]["registrations"][0]["id"],
+		details["data"]["study_registration_numbers"][0]["id"],
 		registration_id.to_string()
 	);
 	assert_eq!(
@@ -201,7 +207,7 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		json!({
 			"data": {
 				"parent": { "study_name": "updated by study graph" },
-				"registrations": [
+				"study_registration_numbers": [
 					{
 						"id": registration_id,
 						"sequence_number": 2,
@@ -240,7 +246,13 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		Some("updated by study graph"),
 		"{saved:?}"
 	);
-	assert_eq!(saved["data"]["registrations"].as_array().unwrap().len(), 2);
+	assert_eq!(
+		saved["data"]["study_registration_numbers"]
+			.as_array()
+			.unwrap()
+			.len(),
+		2
+	);
 	assert_eq!(saved["data"]["products"].as_array().unwrap().len(), 2);
 
 	let persisted = get_json_ok(
@@ -249,7 +261,9 @@ async fn test_study_presave_details_graph_load_and_save() -> Result<()> {
 		format!("/api/presaves/studies/{study_id}/details"),
 	)
 	.await?;
-	let registrations = persisted["data"]["registrations"].as_array().unwrap();
+	let registrations = persisted["data"]["study_registration_numbers"]
+		.as_array()
+		.unwrap();
 	let updated_registration = registrations
 		.iter()
 		.find(|row| row["id"].as_str() == Some(&registration_id.to_string()))
@@ -338,7 +352,7 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 	)
 	.await?;
 	assert_eq!(
-		after_omit["data"]["registrations"]
+		after_omit["data"]["study_registration_numbers"]
 			.as_array()
 			.unwrap()
 			.len(),
@@ -350,7 +364,7 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 		&app,
 		&admin_cookie,
 		format!("/api/presaves/studies/{study_id}/details"),
-		json!({ "data": { "registrations": [], "products": [] } }),
+		json!({ "data": { "study_registration_numbers": [], "products": [] } }),
 	)
 	.await?;
 	let after_empty = get_json_ok(
@@ -360,7 +374,7 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 	)
 	.await?;
 	assert_eq!(
-		after_empty["data"]["registrations"]
+		after_empty["data"]["study_registration_numbers"]
 			.as_array()
 			.unwrap()
 			.len(),
@@ -374,12 +388,14 @@ async fn test_study_presave_details_requires_explicit_child_delete() -> Result<(
 		format!("/api/presaves/studies/{study_id}/details"),
 		json!({
 			"data": {
-				"registrations": [{ "id": registration_delete_id, "_delete": true }]
+				"study_registration_numbers": [{ "id": registration_delete_id, "_delete": true }]
 			}
 		}),
 	)
 	.await?;
-	let registrations = after_delete["data"]["registrations"].as_array().unwrap();
+	let registrations = after_delete["data"]["study_registration_numbers"]
+		.as_array()
+		.unwrap();
 	let deleted_registration = registrations
 		.iter()
 		.find(|row| row["id"].as_str() == Some(&registration_delete_id.to_string()))
@@ -446,11 +462,11 @@ async fn test_study_presave_details_rejects_invalid_child_operations() -> Result
 	.await?;
 
 	for body in [
-		json!({ "data": { "registrations": [{ "_delete": true }] } }),
+		json!({ "data": { "study_registration_numbers": [{ "_delete": true }] } }),
 		json!({ "data": { "products": [{ "_delete": true }] } }),
-		json!({ "data": { "registrations": [{ "id": registration_b, "_delete": true }] } }),
+		json!({ "data": { "study_registration_numbers": [{ "id": registration_b, "_delete": true }] } }),
 		json!({ "data": { "products": [{ "id": product_b_child, "_delete": true }] } }),
-		json!({ "data": { "registrations": [{ "id": registration_b, "sequence_number": 2, "registration_number": "WRONG" }] } }),
+		json!({ "data": { "study_registration_numbers": [{ "id": registration_b, "sequence_number": 2, "registration_number": "WRONG" }] } }),
 		json!({ "data": { "products": [{ "id": product_b_child, "sequence_number": 2, "product_name": "WRONG" }] } }),
 	] {
 		let (status, value) = request_json(
@@ -462,6 +478,25 @@ async fn test_study_presave_details_rejects_invalid_child_operations() -> Result
 		)
 		.await?;
 		assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	}
+
+	for legacy_body in [
+		json!({ "data": { "registrations": [] } }),
+		json!({ "data": { "registration_numbers": [] } }),
+		json!({ "data": { "fda_cross_reported_inds": [] } }),
+	] {
+		let (status, value) = request_json(
+			&app,
+			&admin_cookie,
+			Method::PUT,
+			format!("/api/presaves/studies/{study_a}/details"),
+			Some(legacy_body),
+		)
+		.await?;
+		assert!(
+			status.is_client_error(),
+			"legacy Study key was accepted: {value:?}"
+		);
 	}
 
 	Ok(())

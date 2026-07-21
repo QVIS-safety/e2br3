@@ -126,7 +126,7 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 		&app,
 		&admin_cookie,
 		Method::POST,
-		format!("/api/presaves/products/{product_id}/substances"),
+		format!("/api/presaves/products/{product_id}/active-substances"),
 		Some(json!({
 			"data": {
 				"sequence_number": 1,
@@ -186,7 +186,9 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 			"/api/presaves/senders/{sender_id}/responsible-persons/{responsible_id}"
 		),
 		format!("/api/presaves/receivers/{receiver_id}/consignees/{consignee_id}"),
-		format!("/api/presaves/products/{product_id}/substances/{substance_id}"),
+		format!(
+			"/api/presaves/products/{product_id}/active-substances/{substance_id}"
+		),
 	] {
 		let (status, value) =
 			request_json(&app, &admin_cookie, Method::GET, uri, None).await?;
@@ -232,7 +234,9 @@ async fn test_section_presave_sender_receiver_product_reporter_rest_contract(
 			"/api/presaves/senders/{sender_id}/responsible-persons/{responsible_id}"
 		),
 		format!("/api/presaves/receivers/{receiver_id}/consignees/{consignee_id}"),
-		format!("/api/presaves/products/{product_id}/substances/{substance_id}"),
+		format!(
+			"/api/presaves/products/{product_id}/active-substances/{substance_id}"
+		),
 		format!("/api/presaves/reporters/{reporter_id}"),
 		format!("/api/presaves/products/{product_id}"),
 		format!("/api/presaves/receivers/{receiver_id}"),
