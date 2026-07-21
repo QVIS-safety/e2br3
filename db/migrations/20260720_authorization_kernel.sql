@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS authorization_roles (
     name text NOT NULL,
     built_in boolean NOT NULL,
     active boolean NOT NULL DEFAULT true,
+    deleted_at timestamptz,
+    row_version bigint NOT NULL DEFAULT 1 CHECK (row_version > 0),
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     CHECK (
@@ -49,6 +51,11 @@ CREATE TABLE IF NOT EXISTS authorization_roles (
         (NOT built_in AND organization_id IS NOT NULL AND stable_key IS NULL AND identity_kind IS NULL AND role_class = 'custom')
     )
 );
+
+ALTER TABLE authorization_roles
+    ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+    ADD COLUMN IF NOT EXISTS row_version bigint NOT NULL DEFAULT 1
+        CHECK (row_version > 0);
 
 CREATE UNIQUE INDEX IF NOT EXISTS authorization_roles_builtin_stable_key
     ON authorization_roles(stable_key) WHERE built_in;
@@ -145,6 +152,8 @@ CREATE TABLE IF NOT EXISTS user_role_assignments (
     user_id uuid NOT NULL,
     organization_id uuid NOT NULL,
     role_id uuid NOT NULL REFERENCES authorization_roles(id) ON DELETE RESTRICT,
+    active boolean NOT NULL DEFAULT true,
+    row_version bigint NOT NULL DEFAULT 1 CHECK (row_version > 0),
     assigned_at timestamptz NOT NULL DEFAULT now(),
     PRIMARY KEY (user_id, organization_id),
     FOREIGN KEY (user_id, organization_id)
@@ -152,35 +161,53 @@ CREATE TABLE IF NOT EXISTS user_role_assignments (
         ON DELETE CASCADE
 );
 
+ALTER TABLE user_role_assignments
+    ADD COLUMN IF NOT EXISTS active boolean NOT NULL DEFAULT true,
+    ADD COLUMN IF NOT EXISTS row_version bigint NOT NULL DEFAULT 1
+        CHECK (row_version > 0);
+
 CREATE OR REPLACE FUNCTION enforce_user_role_assignment_scope()
 RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE
+    target_organization_type text;
+    target_role_organization_id uuid;
+    target_role_identity_kind text;
+    target_role_built_in boolean;
+    target_role_active boolean;
+    target_role_deleted_at timestamptz;
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM authorization_roles r
-        WHERE r.id = NEW.role_id
-          AND r.active
-          AND (r.built_in OR r.organization_id = NEW.organization_id)
-          AND r.identity_kind IS DISTINCT FROM 'internal_service_principal'
-          AND (
-              r.identity_kind IS NULL
-              OR r.identity_kind IN ('platform_administrator', 'operational_user')
-              OR (
-                  r.identity_kind = 'sponsor_cro_administrator'
-                  AND EXISTS (
-                      SELECT 1 FROM organizations o
-                      WHERE o.id = NEW.organization_id AND lower(o.org_type) = 'cro'
-                  )
-              )
-              OR (
-                  r.identity_kind = 'sponsor_company_administrator'
-                  AND EXISTS (
-                      SELECT 1 FROM organizations o
-                      WHERE o.id = NEW.organization_id
-                        AND lower(o.org_type) = 'pharmaceutical_company'
-                  )
-              )
-          )
-    ) THEN
+    SELECT lower(org_type)
+    INTO target_organization_type
+    FROM organizations
+    WHERE id = NEW.organization_id
+    FOR SHARE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'organization % does not exist', NEW.organization_id
+            USING ERRCODE = '23503';
+    END IF;
+    SELECT organization_id, identity_kind, built_in, active, deleted_at
+    INTO target_role_organization_id, target_role_identity_kind,
+        target_role_built_in, target_role_active, target_role_deleted_at
+    FROM authorization_roles
+    WHERE id = NEW.role_id
+    FOR SHARE;
+    IF NOT FOUND
+       OR NOT target_role_active
+       OR target_role_deleted_at IS NOT NULL
+       OR NOT (target_role_built_in OR target_role_organization_id = NEW.organization_id)
+       OR target_role_identity_kind = 'internal_service_principal'
+       OR NOT (
+           target_role_identity_kind IS NULL
+           OR target_role_identity_kind IN ('platform_administrator', 'operational_user')
+           OR (
+               target_role_identity_kind = 'sponsor_cro_administrator'
+               AND target_organization_type = 'cro'
+           )
+           OR (
+               target_role_identity_kind = 'sponsor_company_administrator'
+               AND target_organization_type = 'pharmaceutical_company'
+           )
+       ) THEN
         RAISE EXCEPTION 'role % cannot be assigned in organization %', NEW.role_id, NEW.organization_id
             USING ERRCODE = '23514';
     END IF;

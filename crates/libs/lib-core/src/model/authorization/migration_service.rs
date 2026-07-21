@@ -112,19 +112,12 @@ impl AuthorizationMigrationService {
 				.bind(enum_name(&identity.role_class)?)
 				.execute(&mut **transaction)
 				.await?;
-			sqlx::query("DELETE FROM role_grants WHERE role_id = $1")
-				.bind(identity.id)
-				.execute(&mut **transaction)
-				.await?;
-			for grant in &identity.grants {
-				sqlx::query(
-					"INSERT INTO role_grants (role_id, grant_id) VALUES ($1, $2)",
-				)
-				.bind(identity.id)
-				.bind(grant.as_str())
-				.execute(&mut **transaction)
-				.await?;
-			}
+			Self::sync_role_grants(
+				transaction,
+				identity.id,
+				identity.grants.iter().map(|grant| grant.as_str()),
+			)
+			.await?;
 		}
 		Ok(())
 	}
@@ -171,20 +164,59 @@ impl AuthorizationMigrationService {
 			sqlx::query("INSERT INTO authorization_roles (id, organization_id, stable_key, identity_kind, role_class, name, built_in, active) VALUES ($1, $2, NULL, NULL, 'custom', $3, false, $4) ON CONFLICT (id) DO UPDATE SET organization_id = EXCLUDED.organization_id, name = EXCLUDED.name, active = EXCLUDED.active, updated_at = now()")
 				.bind(id).bind(organization_id).bind(name).bind(active)
 				.execute(&mut **transaction).await?;
-			sqlx::query("DELETE FROM role_grants WHERE role_id = $1")
-				.bind(id)
-				.execute(&mut **transaction)
-				.await?;
-			if active {
-				for grant in grants {
-					sqlx::query("INSERT INTO role_grants (role_id, grant_id) VALUES ($1, $2)").bind(id).bind(grant).execute(&mut **transaction).await?;
-				}
-			}
+			Self::sync_role_grants(
+				transaction,
+				id,
+				active.then_some(grants).into_iter().flatten(),
+			)
+			.await?;
 		}
 		if !rejections.is_empty() {
 			return Err(AuthorizationMigrationError::Rejected(rejections));
 		}
 		Ok(rows.len() as u64)
+	}
+
+	async fn sync_role_grants<T, S>(
+		transaction: &mut Transaction<'_, Postgres>,
+		role_id: Uuid,
+		desired: T,
+	) -> MigrationResult<()>
+	where
+		T: IntoIterator<Item = S>,
+		S: AsRef<str>,
+	{
+		let desired = desired
+			.into_iter()
+			.map(|grant_id| grant_id.as_ref().to_owned())
+			.collect::<BTreeSet<_>>();
+		let existing = sqlx::query_scalar::<_, String>(
+			"SELECT grant_id FROM role_grants WHERE role_id = $1",
+		)
+		.bind(role_id)
+		.fetch_all(&mut **transaction)
+		.await?
+		.into_iter()
+		.collect::<BTreeSet<_>>();
+		for grant_id in existing.difference(&desired) {
+			sqlx::query(
+				"DELETE FROM role_grants WHERE role_id = $1 AND grant_id = $2",
+			)
+			.bind(role_id)
+			.bind(grant_id)
+			.execute(&mut **transaction)
+			.await?;
+		}
+		for grant_id in desired.difference(&existing) {
+			sqlx::query(
+				"INSERT INTO role_grants (role_id, grant_id) VALUES ($1, $2)",
+			)
+			.bind(role_id)
+			.bind(grant_id)
+			.execute(&mut **transaction)
+			.await?;
+		}
+		Ok(())
 	}
 
 	async fn reconcile_assignments(
@@ -318,7 +350,7 @@ impl AuthorizationMigrationService {
 				&legacy_effective_access,
 				&normalized_effective_access,
 			)?;
-			sqlx::query("INSERT INTO user_role_assignments (user_id, organization_id, role_id, assigned_at) VALUES ($1, $2, $3, now()) ON CONFLICT (user_id, organization_id) DO UPDATE SET role_id = EXCLUDED.role_id, assigned_at = CASE WHEN user_role_assignments.role_id IS DISTINCT FROM EXCLUDED.role_id THEN now() ELSE user_role_assignments.assigned_at END")
+			sqlx::query("INSERT INTO user_role_assignments (user_id, organization_id, role_id, active, assigned_at) VALUES ($1, $2, $3, true, now()) ON CONFLICT (user_id, organization_id) DO UPDATE SET role_id = EXCLUDED.role_id, active = true, assigned_at = CASE WHEN user_role_assignments.role_id IS DISTINCT FROM EXCLUDED.role_id THEN now() ELSE user_role_assignments.assigned_at END")
 				.bind(user_id).bind(organization_id).bind(role_id).execute(&mut **transaction).await?;
 			sqlx::query(r#"
 				INSERT INTO authorization_migration_reconciliations AS current (

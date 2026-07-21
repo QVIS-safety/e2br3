@@ -1329,9 +1329,23 @@ fn canonical_facts() -> Vec<AuthorizationFactInput> {
 	use InvalidationDomain::{Organization, Principal};
 	vec![
 		fact(
+			"organization.definition",
+			"organizations",
+			&["active", "org_type"],
+			Organization,
+		),
+		fact(
 			"role.definition",
 			"authorization_roles",
-			&["active", "deleted_at", "role_class", "row_version"],
+			&[
+				"organization_id",
+				"identity_kind",
+				"active",
+				"built_in",
+				"deleted_at",
+				"role_class",
+				"row_version",
+			],
 			Organization,
 		),
 		fact(
@@ -1343,31 +1357,37 @@ fn canonical_facts() -> Vec<AuthorizationFactInput> {
 		fact(
 			"scope.sender_definition",
 			"sender_presaves",
-			&["active", "organization_id"],
+			&["deleted", "organization_id"],
 			Organization,
 		),
 		fact(
 			"scope.product_definition",
 			"product_presaves",
-			&["active", "organization_id"],
+			&["deleted", "organization_id"],
 			Organization,
 		),
 		fact(
 			"scope.study_definition",
 			"study_presaves",
-			&["active", "organization_id"],
+			&["deleted", "organization_id"],
 			Organization,
 		),
 		fact(
 			"principal.membership",
 			"user_organization_memberships",
-			&["active", "organization_id"],
+			&["user_id", "organization_id", "active"],
 			Principal,
 		),
 		fact(
 			"principal.role_assignment",
 			"user_role_assignments",
-			&["role_id", "active", "row_version"],
+			&[
+				"user_id",
+				"organization_id",
+				"role_id",
+				"active",
+				"row_version",
+			],
 			Principal,
 		),
 		fact("principal.active", "users", &["active"], Principal),

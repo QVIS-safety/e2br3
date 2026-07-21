@@ -340,7 +340,7 @@ git commit -m "feat: normalize authorization storage"
 - Consumes: `AuthorizationFactDefinition` and normalized state rows.
 - Produces: `RevisionRepository::load`, `RevisionRepository::lock`, trigger-verification query, and `PolicySnapshotVersion` internal revisions.
 
-- [ ] **Step 1: Write failing revision tests**
+- [x] **Step 1: Write failing revision tests**
 
 Cover role/grant changes, shared sender/product/study definition changes, user active/access-window/scope/blind/active-sender changes, assignment/membership changes, missing state rows, and unrelated non-authorization updates.
 
@@ -356,23 +356,23 @@ async fn principal_scope_change_advances_only_principal_revision() -> Result<()>
 }
 ```
 
-- [ ] **Step 2: Verify tests fail**
+- [x] **Step 2: Verify tests fail**
 
 Run: `cargo test -p web-server --test authz authorization_revisions -- --test-threads=1`
 
 Expected: FAIL because revision triggers and repository are absent.
 
-- [ ] **Step 3: Implement fact-domain triggers and repository**
+- [x] **Step 3: Implement fact-domain triggers and repository**
 
 Generate trigger verification from registered `FactId` values. Organization-shared facts increment `organization_policy_state`; principal-owned facts increment `principal_authorization_state`; state rows are inserted atomically with organizations and memberships. `RevisionRepository::load` returns an error on missing rows.
 
-- [ ] **Step 4: Verify revision tests pass**
+- [x] **Step 4: Verify revision tests pass**
 
 Run: `cargo test -p web-server --test authz authorization_revisions -- --test-threads=1`
 
 Expected: PASS with exactly one owning revision advanced for each fact mutation.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add db/migrations/20260720_authorization_revisions.sql db/bootstrap/01-safetydb-schema.sql crates/libs/lib-core/src/model/mod.rs crates/libs/lib-core/src/model/authorization crates/services/web-server/tests/authz.rs crates/services/web-server/tests/authz/authorization_revisions.rs
@@ -417,7 +417,7 @@ Expected: FAIL because the snapshot repository and middleware extension are abse
 
 - [ ] **Step 3: Implement the immutable snapshot and repeatable-read loader**
 
-Load membership, assignment, built-in UUID identity, role grants, principal scope facts, both revisions, and active organization in one repeatable-read transaction. Compute entitlements from the registry. Reject `now < access_start_at` and `now >= access_end_at`. Set `authorization_valid_until` to the earliest future access/token boundary.
+Load membership, assignment, built-in UUID identity, role grants, principal scope facts, both revisions, and the active organization's type in one repeatable-read transaction. Compute entitlements from the registry. Reject `now < access_start_at` and `now >= access_end_at`, and fail closed if a sponsor CRO/company built-in identity is incompatible with the current organization type. Set `authorization_valid_until` to the earliest future access/token boundary.
 
 - [ ] **Step 4: Attach the snapshot in middleware without changing decisions**
 

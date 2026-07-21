@@ -9,6 +9,7 @@ use axum::Router;
 use axum::{http::StatusCode, middleware, routing::get};
 use lib_core::model::authorization::{
 	AuthorizationMigrationError, AuthorizationMigrationService, MigrationReport,
+	RevisionRepository,
 };
 use lib_core::model::ModelManager;
 use lib_web::middleware::mw_auth::mw_ctx_resolver;
@@ -28,10 +29,14 @@ pub async fn reconcile_authorization_storage(
 		.max_connections(1)
 		.connect(&database_url)
 		.await?;
-	let result = AuthorizationMigrationService::reconcile_database(
-		&pool,
-		lib_core::authorization::policy_registry(),
-	)
+	let registry = lib_core::authorization::policy_registry();
+	let result = async {
+		RevisionRepository::verify_fact_triggers(&pool, registry).await?;
+		let report =
+			AuthorizationMigrationService::reconcile_database(&pool, registry)
+				.await?;
+		Ok(report)
+	}
 	.await;
 	pool.close().await;
 	result

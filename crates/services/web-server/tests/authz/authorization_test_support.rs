@@ -56,9 +56,22 @@ pub async fn init_authorization_test_db() -> Result<AuthorizationTestDb> {
 		CREATE TABLE organizations (
 			id uuid PRIMARY KEY,
 			name text NOT NULL,
-			org_type text
+			org_type text,
+			active boolean DEFAULT true
 		);
-		CREATE TABLE users (id uuid PRIMARY KEY, role text NOT NULL);
+		CREATE TABLE users (
+			id uuid PRIMARY KEY,
+			role text NOT NULL,
+			active boolean DEFAULT true,
+			access_start_at timestamptz,
+			access_end_at timestamptz,
+			access_sender_ids text,
+			access_product_ids text,
+			access_study_ids text,
+			access_blind_allowed boolean,
+			active_sender_identifier text,
+			comments text
+		);
 		CREATE TABLE user_organization_memberships (
 			user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -72,6 +85,21 @@ pub async fn init_authorization_test_db() -> Result<AuthorizationTestDb> {
 			built_in boolean NOT NULL DEFAULT false,
 			active boolean NOT NULL DEFAULT true,
 			privileges_json jsonb NOT NULL DEFAULT '[]'::jsonb
+		);
+		CREATE TABLE sender_presaves (
+			id uuid PRIMARY KEY,
+			organization_id uuid NOT NULL REFERENCES organizations(id),
+			deleted boolean NOT NULL DEFAULT false
+		);
+		CREATE TABLE product_presaves (
+			id uuid PRIMARY KEY,
+			organization_id uuid NOT NULL REFERENCES organizations(id),
+			deleted boolean NOT NULL DEFAULT false
+		);
+		CREATE TABLE study_presaves (
+			id uuid PRIMARY KEY,
+			organization_id uuid NOT NULL REFERENCES organizations(id),
+			deleted boolean NOT NULL DEFAULT false
 		);
 		INSERT INTO organizations (id, name, org_type)
 		VALUES (
@@ -122,7 +150,7 @@ async fn new_isolated_database() -> Result<AuthorizationTestDb> {
 
 	let connect_schema = schema.clone();
 	let pool = PgPoolOptions::new()
-		.max_connections(1)
+		.max_connections(5)
 		.after_connect(move |connection, _| {
 			let statement = format!("SET search_path TO \"{connect_schema}\"");
 			Box::pin(async move {
@@ -159,6 +187,17 @@ pub async fn apply_authorization_migrations(
 		database.pool(),
 		policy_registry(),
 	)
+	.await?;
+	Ok(())
+}
+
+pub async fn apply_authorization_revision_migration(
+	database: &AuthorizationTestDb,
+) -> Result<()> {
+	sqlx::raw_sql(include_str!(
+		"../../../../../db/migrations/20260720_authorization_revisions.sql"
+	))
+	.execute(database.pool())
 	.await?;
 	Ok(())
 }

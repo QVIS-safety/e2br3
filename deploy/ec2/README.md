@@ -106,8 +106,9 @@ RESET_DB=1 DATABASE_URL="$SERVICE_DB_URL" ./deploy/ec2/init-rds.sh
 When `ROOT_DATABASE_URL` is available, it derives an admin connection to the target app database
 and uses that for applying `db/bootstrap/*.sql` and `db/seed/*.sql`. This avoids role/GRANT failures
 when `SERVICE_DB_URL` points at the lower-privilege `app_user`.
-It currently applies `db/bootstrap/*.sql` and then `db/seed/*.sql` when `INCLUDE_SEED=1`.
-`db/migrations/` is reserved for future incremental changes.
+It applies `db/bootstrap/*.sql`, then `db/migrations/*.sql`, and finally `db/seed/*.sql`
+when `INCLUDE_SEED=1`. Both clean initialization and upgrades therefore use the same ordered
+authorization migrations.
 
 To skip dev seed data (`db/seed/*.sql`):
 
