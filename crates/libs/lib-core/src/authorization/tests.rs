@@ -185,12 +185,33 @@ fn registry_rejects_unknown_entitlements_and_implication_cycles() {
 		.unwrap_err();
 	assert!(matches!(unknown, RegistryError::UnknownEntitlement { .. }));
 
+	let mut cycle_tail = test_grant("b.read", &[], &["a.read"]);
+	cycle_tail.pdf_order = 2;
 	let cycle = PolicyRegistryBuilder::new()
 		.grant(test_grant("a.read", &[], &["b.read"]))
-		.grant(test_grant("b.read", &[], &["a.read"]))
+		.grant(cycle_tail)
 		.build()
 		.unwrap_err();
 	assert!(matches!(cycle, RegistryError::GrantImplicationCycle { .. }));
+}
+
+#[test]
+fn registry_rejects_missing_or_duplicate_pdf_order() {
+	let mut missing = test_grant("missing.read", &[], &[]);
+	missing.pdf_order = 0;
+	assert!(matches!(
+		PolicyRegistryBuilder::new().grant(missing).build(),
+		Err(RegistryError::InvalidPdfOrder { .. })
+	));
+
+	let duplicate = PolicyRegistryBuilder::new()
+		.grant(test_grant("first.read", &[], &[]))
+		.grant(test_grant("second.read", &[], &[]))
+		.build();
+	assert!(matches!(
+		duplicate,
+		Err(RegistryError::DuplicatePdfOrder { order: 1 })
+	));
 }
 
 fn test_grant(
@@ -200,6 +221,7 @@ fn test_grant(
 ) -> GrantDefinitionInput {
 	GrantDefinitionInput {
 		id: id.to_string(),
+		pdf_order: 1,
 		pdf_menu: "TEST".to_string(),
 		pdf_type: "Test".to_string(),
 		pdf_privilege: "Read".to_string(),

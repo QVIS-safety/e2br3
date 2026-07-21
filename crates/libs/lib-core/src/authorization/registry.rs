@@ -8,6 +8,8 @@ use uuid::Uuid;
 pub enum RegistryError {
 	InvalidIdentifier { kind: &'static str, value: String },
 	DuplicateIdentifier { kind: &'static str, value: String },
+	InvalidPdfOrder { grant: String, order: u16 },
+	DuplicatePdfOrder { order: u16 },
 	UnknownEntitlement { owner: String, entitlement: String },
 	UnknownGrant { owner: String, grant: String },
 	GrantImplicationCycle { grants: Vec<String> },
@@ -87,6 +89,12 @@ impl PolicyRegistry {
 
 	pub fn legacy_alias(&self, id: &str) -> Option<&LegacyGrantAlias> {
 		self.legacy_aliases.get(id)
+	}
+
+	pub fn legacy_aliases(
+		&self,
+	) -> impl ExactSizeIterator<Item = &LegacyGrantAlias> {
+		self.legacy_aliases.values()
 	}
 
 	pub fn validate_assignable_grants<'a>(
@@ -218,8 +226,20 @@ impl PolicyRegistryBuilder {
 		}
 
 		let mut grants = BTreeMap::new();
+		let mut pdf_orders = BTreeSet::new();
 		for input in self.grants {
 			let id = parse_id::<GrantId>("grant", input.id)?;
+			if input.pdf_order == 0 {
+				return Err(RegistryError::InvalidPdfOrder {
+					grant: id.to_string(),
+					order: input.pdf_order,
+				});
+			}
+			if !pdf_orders.insert(input.pdf_order) {
+				return Err(RegistryError::DuplicatePdfOrder {
+					order: input.pdf_order,
+				});
+			}
 			if input.assignable_role_classes.is_empty() {
 				return Err(RegistryError::EmptyRoleClasses {
 					grant: id.to_string(),
@@ -252,6 +272,7 @@ impl PolicyRegistryBuilder {
 				.collect::<Result<Vec<_>, _>>()?;
 			let definition = GrantDefinition {
 				id: id.clone(),
+				pdf_order: input.pdf_order,
 				pdf_menu: input.pdf_menu,
 				pdf_type: input.pdf_type,
 				pdf_privilege: input.pdf_privilege,
@@ -560,6 +581,7 @@ fn grant(
 ) -> GrantDefinitionInput {
 	GrantDefinitionInput {
 		id: id.to_string(),
+		pdf_order: 0,
 		pdf_menu: menu.to_string(),
 		pdf_type: type_name.to_string(),
 		pdf_privilege: privilege.to_string(),
@@ -760,7 +782,8 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			&[],
 		),
 	];
-	for grant in &mut grants {
+	for (index, grant) in grants.iter_mut().enumerate() {
+		grant.pdf_order = index as u16 + 1;
 		if matches!(grant.id.as_str(), "admin.read" | "admin.edit") {
 			grant
 				.assignable_role_classes

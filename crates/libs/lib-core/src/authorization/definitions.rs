@@ -101,7 +101,9 @@ pub enum EntitlementRule {
 	AnyOf,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum ScopeCondition {
 	ActiveMembership,
@@ -111,7 +113,9 @@ pub enum ScopeCondition {
 	BlindData,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(
+	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum ContextCondition {
 	SameOrganization,
@@ -140,6 +144,7 @@ pub enum InvalidationDomain {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct GrantDefinition {
 	pub id: GrantId,
+	pub pdf_order: u16,
 	pub pdf_menu: String,
 	pub pdf_type: String,
 	pub pdf_privilege: String,
@@ -152,6 +157,7 @@ pub struct GrantDefinition {
 #[derive(Debug, Clone)]
 pub struct GrantDefinitionInput {
 	pub id: String,
+	pub pdf_order: u16,
 	pub pdf_menu: String,
 	pub pdf_type: String,
 	pub pdf_privilege: String,
