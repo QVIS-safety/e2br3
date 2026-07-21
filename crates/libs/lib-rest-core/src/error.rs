@@ -10,6 +10,14 @@ use std::sync::Arc;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ConstraintViolation {
+	pub rule_code: String,
+	pub path: String,
+	pub message: String,
+}
+
 #[serde_as]
 #[derive(Debug, From, Serialize)]
 pub enum Error {
@@ -29,6 +37,7 @@ pub enum Error {
 	BadRequest {
 		message: String,
 	},
+	ConstraintViolation(ConstraintViolation),
 
 	// -- External Modules
 	#[from]
