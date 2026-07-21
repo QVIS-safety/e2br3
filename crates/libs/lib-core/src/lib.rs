@@ -1,3 +1,4 @@
+pub mod authorization;
 pub mod config;
 pub mod ctx;
 pub mod e2b;
