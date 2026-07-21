@@ -42,6 +42,31 @@ pub async fn reconcile_authorization_storage(
 	result
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AuthorizationStartupStatus {
+	Reconciled(MigrationReport),
+	LegacyRuntime { rejections: usize },
+}
+
+pub async fn initialize_authorization_storage(
+) -> Result<AuthorizationStartupStatus, AuthorizationMigrationError> {
+	classify_authorization_startup(reconcile_authorization_storage().await)
+}
+
+fn classify_authorization_startup(
+	result: Result<MigrationReport, AuthorizationMigrationError>,
+) -> Result<AuthorizationStartupStatus, AuthorizationMigrationError> {
+	match result {
+		Ok(report) => Ok(AuthorizationStartupStatus::Reconciled(report)),
+		Err(AuthorizationMigrationError::Rejected(rejections)) => {
+			Ok(AuthorizationStartupStatus::LegacyRuntime {
+				rejections: rejections.len(),
+			})
+		}
+		Err(error) => Err(error),
+	}
+}
+
 pub fn app(mm: ModelManager) -> Router {
 	let routes_rest = web::routes_rest::routes(mm.clone()).route_layer(
 		middleware::from_fn_with_state(mm.clone(), mw_ctx_require_and_set_dbx),
@@ -64,4 +89,40 @@ pub fn app(mm: ModelManager) -> Router {
 
 async fn health() -> StatusCode {
 	StatusCode::NO_CONTENT
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use lib_core::model::authorization::MigrationRejection;
+
+	#[test]
+	fn legacy_role_rejections_do_not_stop_the_legacy_runtime() {
+		let result = classify_authorization_startup(Err(
+			AuthorizationMigrationError::Rejected(vec![MigrationRejection {
+				user_id: None,
+				organization_id: None,
+				legacy_role: Some("legacy-role".to_string()),
+				reason: "not safely normalizable".to_string(),
+			}]),
+		));
+		assert!(matches!(
+			result,
+			Ok(AuthorizationStartupStatus::LegacyRuntime { rejections: 1 })
+		));
+	}
+
+	#[test]
+	fn catalog_mismatch_still_stops_startup() {
+		let result = classify_authorization_startup(Err(
+			AuthorizationMigrationError::CatalogHashMismatch {
+				stored: "old".to_string(),
+				deployed: "new".to_string(),
+			},
+		));
+		assert!(matches!(
+			result,
+			Err(AuthorizationMigrationError::CatalogHashMismatch { .. })
+		));
+	}
 }
