@@ -4,6 +4,10 @@ mod common;
 mod auth_mw_audit;
 #[path = "authz/platform_admin_policy.rs"]
 mod platform_admin_policy;
+#[path = "authz/policy_kernel_characterization.rs"]
+mod policy_kernel_characterization;
+#[path = "authz/protected_route_inventory.rs"]
+mod protected_route_inventory;
 #[path = "authz/rbac_audit.rs"]
 mod rbac_audit;
 #[path = "authz/rbac_cases.rs"]
