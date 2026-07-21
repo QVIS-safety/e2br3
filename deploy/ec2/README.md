@@ -33,6 +33,7 @@
    IMAGE_REF=ghcr.io/<owner>/e2br3-web-server:<sha>
    APP_PORT=3000
    SERVICE_DB_URL=postgres://<app-user>:<app-password>@<rds-endpoint>:5432/<app-db>?sslmode=require
+   SERVICE_MIGRATION_DB_URL=postgres://<migration-user>:<migration-password>@<rds-endpoint>:5432/<app-db>?sslmode=require
    SERVICE_DB_ROOT_URL=postgres://<admin-user>:<admin-password>@<rds-endpoint>:5432/postgres?sslmode=require
    SERVICE_PWD_KEY=<stable-password-hash-key>
    SERVICE_TOKEN_KEY=<stable-token-signing-key>
@@ -58,6 +59,9 @@
 8. Keep `SERVICE_PWD_KEY` stable across deployments and bootstrap runs.
    Seeded user password hashes are derived from `SERVICE_PWD_KEY`, so changing the key later will make
    existing passwords fail with `403 LOGIN_FAIL`.
+   Keep `SERVICE_MIGRATION_DB_URL` separate from `SERVICE_DB_URL`: the migration user owns the
+   versioned authorization migration objects, while request connections retain the lower-privilege
+   application role. Deployment preflight rejects URLs that resolve to the same database username.
 9. The app now re-syncs the initial platform admin (`hdh4063@gmail.com` / `welcome`)
    and demo tenant sponsor admins through application code on startup, instead of relying on
    hard-coded SQL password hashes.

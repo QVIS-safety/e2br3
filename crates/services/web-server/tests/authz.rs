@@ -2,6 +2,10 @@ mod common;
 
 #[path = "authz/auth_mw_audit.rs"]
 mod auth_mw_audit;
+#[path = "authz/authorization_storage.rs"]
+mod authorization_storage;
+#[path = "authz/authorization_test_support.rs"]
+mod authorization_test_support;
 #[path = "authz/platform_admin_policy.rs"]
 mod platform_admin_policy;
 #[path = "authz/policy_kernel_characterization.rs"]

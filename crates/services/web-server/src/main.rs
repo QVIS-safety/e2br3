@@ -34,6 +34,9 @@ async fn main() -> Result<()> {
 
 	let mm = ModelManager::new().await?;
 	bootstrap::bootstrap_admin_user(&mm).await?;
+	web_server::reconcile_authorization_storage()
+		.await
+		.map_err(|err| Error::Config(err.to_string()))?;
 	permission_profile_rest::refresh_dynamic_roles(&mm)
 		.await
 		.map_err(|err| Error::Config(err.to_string()))?;

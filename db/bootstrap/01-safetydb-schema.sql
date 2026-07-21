@@ -2103,3 +2103,8 @@ CREATE POLICY orgs_modify ON organizations
     TO e2br3_app_role
     USING (is_current_user_admin())
     WITH CHECK (is_current_user_admin());
+
+-- Authorization Policy Kernel storage is intentionally not duplicated here.
+-- Clean bootstrap and upgrades both apply the single authoritative versioned
+-- migration: db/migrations/20260720_authorization_kernel.sql. All supported
+-- database initializers run bootstrap files followed by every migration.

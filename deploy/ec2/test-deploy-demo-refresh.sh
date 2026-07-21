@@ -18,6 +18,7 @@ create_app() {
 
   cat > "${APP_DIR}/.env.prod" <<'ENV'
 SERVICE_DB_URL=postgres://app_user:pwd@example/app_db
+SERVICE_MIGRATION_DB_URL=postgres://migration_user:pwd@example/app_db
 SERVICE_DB_ROOT_URL=postgres://root:pwd@example/postgres
 SERVICE_PWD_KEY=test-pwd-key
 SERVICE_TOKEN_KEY=test-token-key
@@ -54,6 +55,19 @@ SH
   ISO_COUNTRIES_SCRIPT="${APP_DIR}/load-iso-countries.sh"
   export INIT_RDS_SCRIPT TERMINOLOGY_MANIFEST_SCRIPT ISO_COUNTRIES_SCRIPT
 }
+
+APP_DIR="${TMP_DIR}/app-shared-db-user"
+DEPLOY_LOG="${TMP_DIR}/deploy-shared-db-user.log"
+create_app "${APP_DIR}"
+sed -i.bak 's|SERVICE_MIGRATION_DB_URL=.*|SERVICE_MIGRATION_DB_URL=postgres://app_user:other@example/app_db|' "${APP_DIR}/.env.prod"
+if APP_DIR="${APP_DIR}" \
+  COMPOSE_FILE="${APP_DIR}/docker-compose.prod.yml" \
+  ENV_FILE="${APP_DIR}/.env.prod" \
+  IMAGE_REF=ghcr.io/example/e2br3-web-server:abc123 \
+  "${SCRIPT}"; then
+  echo "deploy unexpectedly accepted a shared runtime/migration database user" >&2
+  exit 1
+fi
 
 if command -v bash >/dev/null 2>&1; then
   APP_DIR="${TMP_DIR}/app-relative-env-file"

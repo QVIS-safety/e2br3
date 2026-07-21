@@ -1404,12 +1404,20 @@ fn canonical_facts() -> Vec<AuthorizationFactInput> {
 
 fn canonical_aliases() -> Vec<LegacyGrantAliasInput> {
 	[
+		("home_notice.read", "home.notice.read"),
+		("home_notice.edit", "home.notice.edit"),
+		("home_workflow.read", "home.workflow.read"),
+		("case_workflow.read", "case.workflow.read"),
 		("case.qc.edit", "case.review"),
 		("case.lock.edit", "case.lock"),
 		("import.edit", "import.execute"),
 		("import.read", "import.history.read"),
 		("export_submission.edit", "submission.execute"),
 		("export_submission.read", "submission.history.read"),
+		("export.edit", "submission.execute"),
+		("export.read", "submission.history.read"),
+		("submission.edit", "submission.execute"),
+		("submission.read", "submission.history.read"),
 	]
 	.into_iter()
 	.map(|(legacy_id, grant_id)| LegacyGrantAliasInput {

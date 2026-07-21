@@ -627,6 +627,7 @@ git commit -m "feat: expose authorization snapshot profile"
 
 **Interfaces:**
 - Produces: `public_route`, `subject_route(SubjectActionId, MethodRouter)`, `context_route(ContextActionId<C>, MethodRouter)`, generated `ENDPOINT_ACTIONS`/OpenAPI/audit-name inventory, and `ShadowDecisionRecord { action, legacy, kernel, reason }`.
+- Produces a canonical proof hash over the catalog hash plus the complete action-binding inventory. Re-evaluate every active migration reconciliation against observed legacy/kernel decisions, set it to `proven_equivalent` or `proven_different`, and invalidate prior proof whenever either its evidence hash or this proof hash changes.
 - Context classification examples: `/cases` GET Collection(Case), `/cases` POST Proposed(CaseCreate), `/cases/{id}` Existing(Case), nested case rows Parent(Case, child), `/cases/export/xml` ResourceSet(Case), `/import/xml` Proposed(XmlImportBatch), `/audit-logs` Collection(AuditLog).
 
 - [ ] **Step 1: Write failing completeness tests**
@@ -655,7 +656,11 @@ Run in frontend: `npm test -- --runInBand __tests__/auth/generated-endpoint-acti
 
 Expected: PASS with 100% explicit route classification and no duplicate binding.
 
-- [ ] **Step 5: Commit once in each repository**
+- [ ] **Step 5: Prove migration equivalence before cutover**
+
+Require every active assignment reconciliation to carry the current catalog/action-binding proof hash. Persist `proven_equivalent` only when all relevant legacy and kernel decisions agree; persist reviewed differences as `proven_different`. Any missing route binding, changed evidence, changed proof hash, or unreviewed mismatch remains `pending_action_binding` and blocks cutover.
+
+- [ ] **Step 6: Commit once in each repository**
 
 ```bash
 git add crates/services/web-server/src/web/mod.rs crates/services/web-server/src/web/authorization crates/services/web-server/src/web/rest/routes crates/services/web-server/tests/authz.rs crates/services/web-server/tests/authz/protected_route_inventory.rs crates/services/web-server/tests/authz/action_binding_completeness.rs crates/services/web-server/examples/export_authorization_contract.rs scripts/generate_frontend_authorization.sh
@@ -875,6 +880,8 @@ Expected: FAIL because role APIs still use `permission_profiles.privileges_json`
 - [ ] **Step 3: Implement normalized role repositories and service transactions**
 
 Lock `organization_policy_state` before active-role counting. Validate grants through generated catalog tables. Reject built-in identity/class fields from public payloads. Return 409 with assignment count for an in-use role and return the canonical server DTO after every successful write.
+
+Before disabling or deleting the legacy profile path, fail the cutover transaction unless every active assignment has a reconciliation row with `comparison_status = 'proven_equivalent'`, `equivalent = true`, and the current catalog/action-binding proof hash. Pending or different rows require an explicit reviewed disposition; startup reconciliation alone never treats them as equivalent.
 
 - [ ] **Step 4: Verify role suites pass**
 

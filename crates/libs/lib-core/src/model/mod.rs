@@ -21,6 +21,7 @@
 // region:    --- Modules
 
 pub mod acs;
+pub mod authorization;
 mod base;
 mod error;
 pub mod store;

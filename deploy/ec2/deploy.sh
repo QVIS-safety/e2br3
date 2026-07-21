@@ -71,6 +71,22 @@ RESET_PRESERVE_TERMINOLOGY="${RESET_PRESERVE_TERMINOLOGY:-1}"
 RELOAD_TERMINOLOGY="${RELOAD_TERMINOLOGY:-0}"
 LOAD_ISO_COUNTRIES="${LOAD_ISO_COUNTRIES:-1}"
 
+if [ -z "${SERVICE_MIGRATION_DB_URL:-}" ]; then
+  echo "SERVICE_MIGRATION_DB_URL is required and must use the authorization migration credential"
+  exit 1
+fi
+runtime_db_user=$(printf '%s\n' "${SERVICE_DB_URL:-}" | sed -n 's|^[A-Za-z][A-Za-z0-9+.-]*://\([^:@/]*\).*|\1|p')
+migration_db_user=$(printf '%s\n' "${SERVICE_MIGRATION_DB_URL}" | sed -n 's|^[A-Za-z][A-Za-z0-9+.-]*://\([^:@/]*\).*|\1|p')
+if [ -z "${runtime_db_user}" ] || [ -z "${migration_db_user}" ]; then
+  echo "SERVICE_DB_URL and SERVICE_MIGRATION_DB_URL must contain explicit database users"
+  exit 1
+fi
+if [ "${SERVICE_DB_URL}" = "${SERVICE_MIGRATION_DB_URL}" ] || \
+   [ "${runtime_db_user}" = "${migration_db_user}" ]; then
+  echo "SERVICE_MIGRATION_DB_URL must use a different database user from SERVICE_DB_URL"
+  exit 1
+fi
+
 SCHEMAS_DIR="${E2BR3_SCHEMAS_DIR:-${APP_DIR}/schemas}"
 if [ -d "${BUNDLED_SCHEMAS_DIR}" ]; then
   echo "Syncing bundled schemas from ${BUNDLED_SCHEMAS_DIR} to ${SCHEMAS_DIR}"

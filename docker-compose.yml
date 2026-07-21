@@ -43,6 +43,7 @@ services:
       SERVICE_BIND_ADDR: "0.0.0.0:8080"
       # Database connection (use 'postgres' as host - the service name)
       SERVICE_DB_URL: postgres://app_user:dev_only_pwd@postgres/app_db
+      SERVICE_MIGRATION_DB_URL: postgres://app_user:dev_only_pwd@postgres/app_db
       # Auth keys (dev only - use Secrets Manager in production)
       SERVICE_PWD_KEY: CKUGFOD9_2Qf6Pn3ZFRYgPYb8ht4vKqEG9PGMXTB7497bT0367DjoaD6ydFnEVaIRda0kKeBZVCT5Hb62m2sCA
       SERVICE_TOKEN_KEY: 9FoHBmkyxbgu_xFoQK7e0jz3RMNVJWgfvbVn712FBNH9LLaAWS3CS6Zpcg6RveiObvCUb6a2z-uAiLjhLh2igw
