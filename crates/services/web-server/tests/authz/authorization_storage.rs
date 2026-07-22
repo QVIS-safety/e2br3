@@ -501,6 +501,34 @@ async fn conflicting_catalog_hash_fails_closed() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn reviewed_catalog_predecessor_upgrades_explicitly() -> Result<()> {
+	let database = init_authorization_test_db().await?;
+	sqlx::query(
+		"UPDATE authorization_catalog_state SET catalog_hash = 'a8cbca03d528beb474ba7beb0658a5e22103df9b1a2693c9cce22708530a79e5' WHERE singleton",
+	)
+	.execute(database.pool())
+	.await?;
+	sqlx::raw_sql(include_str!(
+		"../../../../../db/migrations/20260722_authorization_ui_binding_catalog.sql"
+	))
+	.execute(database.pool())
+	.await?;
+	let stored: String = sqlx::query_scalar(
+		"SELECT catalog_hash FROM authorization_catalog_state WHERE singleton",
+	)
+	.fetch_one(database.pool())
+	.await?;
+	assert_eq!(
+		stored,
+		export_contract(policy_registry())?.catalog_hash,
+		"only the reviewed predecessor should advance to the deployed catalog"
+	);
+	database.close().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn runtime_role_is_read_only_over_normalized_storage() -> Result<()> {
 	let database = init_authorization_test_db().await?;
 	let runtime = database.runtime_pool().await?;
