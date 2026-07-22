@@ -52,6 +52,28 @@ pub struct MigrationReport {
 pub struct AuthorizationMigrationService;
 
 impl AuthorizationMigrationService {
+	/// Reconciles registry-owned catalog and built-in identities without
+	/// translating legacy user assignments. This is safe to run before a
+	/// separate legacy-backfill decision has been made.
+	pub async fn reconcile_registry_storage(
+		pool: &Pool<Postgres>,
+		registry: &PolicyRegistry,
+	) -> MigrationResult<()> {
+		let mut transaction = pool.begin().await?;
+		sqlx::query("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE")
+			.execute(&mut *transaction)
+			.await?;
+		sqlx::query("SELECT pg_advisory_xact_lock(20260720, 1)")
+			.execute(&mut *transaction)
+			.await?;
+		AuthorizationCatalogRepository::reconcile(&mut transaction, registry)
+			.await?;
+		Self::reconcile_builtin_roles(&mut transaction, registry).await?;
+		Self::reconcile_revision_rows(&mut transaction).await?;
+		transaction.commit().await?;
+		Ok(())
+	}
+
 	pub async fn reconcile_database(
 		pool: &Pool<Postgres>,
 		registry: &PolicyRegistry,

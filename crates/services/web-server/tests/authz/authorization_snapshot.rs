@@ -1,11 +1,16 @@
 use crate::authorization_test_support::{
-	apply_authorization_revision_migration, init_authorization_test_db,
+	apply_authorization_isolation_migration, apply_authorization_revision_migration,
+	init_authorization_test_db,
 };
 use crate::common::Result;
 use axum::extract::FromRequestParts;
 use axum::http::Request;
 use lib_core::authorization::{policy_registry, BuiltInIdentityKind};
+use lib_core::ctx::Ctx;
 use lib_core::model::authorization::{SnapshotLoadError, SnapshotRepository};
+use lib_core::model::store::{
+	dbx::Dbx, set_full_context_from_ctx_dbx, DatabaseIsolationContext,
+};
 use lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW;
 use serial_test::serial;
 use time::{Duration, OffsetDateTime};
@@ -20,6 +25,7 @@ async fn normalized_assignment_builds_one_versioned_platform_snapshot() -> Resul
 {
 	let database = init_authorization_test_db().await?;
 	apply_authorization_revision_migration(&database).await?;
+	apply_authorization_isolation_migration(&database).await?;
 	let evaluated_at = OffsetDateTime::now_utc();
 	let snapshot = SnapshotRepository::load_repeatable_read(
 		database.pool(),
@@ -41,6 +47,19 @@ async fn normalized_assignment_builds_one_versioned_platform_snapshot() -> Resul
 	assert!(snapshot.version().organization_revision() > 0);
 	assert!(snapshot.version().principal_revision() > 0);
 	assert_eq!(snapshot.evaluated_at(), evaluated_at);
+	let isolation = DatabaseIsolationContext::from_snapshot(&snapshot);
+	assert_eq!(isolation.principal_id(), USER_ID);
+	assert_eq!(isolation.organization_id(), ORGANIZATION_ID);
+	assert!(isolation.requests_platform_bypass());
+	let dbx = Dbx::new(database.pool().clone(), true)?;
+	dbx.begin_txn().await?;
+	let ctx = Ctx::from_authorization_snapshot(&snapshot)?;
+	set_full_context_from_ctx_dbx(&dbx, &ctx).await?;
+	let (has_platform_bypass,): (bool,) = dbx
+		.fetch_one(sqlx::query_as("SELECT is_current_user_admin()"))
+		.await?;
+	assert!(has_platform_bypass);
+	dbx.rollback_txn().await?;
 	let (mut parts, _) = Request::new(()).into_parts();
 	parts
 		.extensions

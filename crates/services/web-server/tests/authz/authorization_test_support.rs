@@ -62,6 +62,10 @@ pub async fn init_authorization_test_db() -> Result<AuthorizationTestDb> {
 			SELECT set_config('app.current_organization_id', target_organization_id::text, true);
 			SELECT set_config('app.current_user_role', target_role, true)
 		$$;
+		CREATE FUNCTION current_organization_id() RETURNS uuid
+		LANGUAGE sql STABLE AS $$
+			SELECT NULLIF(current_setting('app.current_organization_id', true), '')::uuid
+		$$;
 		CREATE TABLE organizations (
 			id uuid PRIMARY KEY,
 			name text NOT NULL,
@@ -110,6 +114,13 @@ pub async fn init_authorization_test_db() -> Result<AuthorizationTestDb> {
 			organization_id uuid NOT NULL REFERENCES organizations(id),
 			deleted boolean NOT NULL DEFAULT false
 		);
+		CREATE TABLE audit_logs (
+			id bigserial PRIMARY KEY,
+			organization_id uuid NOT NULL
+		);
+		ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+		CREATE POLICY audit_logs_read_for_admin_manager ON audit_logs
+			FOR SELECT TO e2br3_app_role USING (true);
 		INSERT INTO organizations (id, name, org_type)
 		VALUES (
 			'00000000-0000-0000-0000-000000000001',
@@ -205,6 +216,17 @@ pub async fn apply_authorization_revision_migration(
 ) -> Result<()> {
 	sqlx::raw_sql(include_str!(
 		"../../../../../db/migrations/20260720_authorization_revisions.sql"
+	))
+	.execute(database.pool())
+	.await?;
+	Ok(())
+}
+
+pub async fn apply_authorization_isolation_migration(
+	database: &AuthorizationTestDb,
+) -> Result<()> {
+	sqlx::raw_sql(include_str!(
+		"../../../../../db/migrations/20260722_authorization_isolation_audit.sql"
 	))
 	.execute(database.pool())
 	.await?;

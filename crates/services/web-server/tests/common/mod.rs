@@ -13,12 +13,15 @@ use lib_core::model::acs::{
 	normalize_menu_privileges, permissions_for_menu_privileges,
 	replace_dynamic_roles, upsert_dynamic_role_permissions, AdminMenuPrivilege,
 };
+use lib_core::model::authorization::AuthorizationMigrationService;
 use lib_core::model::store::{
 	set_full_context_dbx, set_org_context, set_user_context,
 };
 use lib_core::model::ModelManager;
+use sqlx::postgres::PgPoolOptions;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use tokio::sync::OnceCell;
 use uuid::Uuid;
 
 pub type Result<T> =
@@ -95,12 +98,51 @@ pub async fn init_test_env() {
 pub async fn init_test_mm() -> Result<ModelManager> {
 	init_test_env().await;
 	_dev_utils::init_dev().await;
+	apply_test_authorization_isolation_migration().await?;
 	reset_test_dynamic_roles();
 	let mm = ModelManager::new().await?;
 	mm.dbx()
 		.execute(sqlx::query("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
 		.await?;
 	Ok(mm)
+}
+
+async fn apply_test_authorization_isolation_migration() -> Result<()> {
+	static APPLIED: OnceCell<()> = OnceCell::const_new();
+	APPLIED
+		.get_or_try_init(|| async {
+			let database_url = std::env::var("SERVICE_DB_URL")
+				.map_err(|error| sqlx::Error::Configuration(Box::new(error)))?;
+			let pool = PgPoolOptions::new()
+				.max_connections(1)
+				.connect(&database_url)
+				.await?;
+			sqlx::raw_sql(include_str!(
+				"../../../../../db/migrations/20260720_authorization_kernel.sql"
+			))
+			.execute(&pool)
+			.await?;
+			sqlx::raw_sql(include_str!(
+				"../../../../../db/migrations/20260720_authorization_revisions.sql"
+			))
+			.execute(&pool)
+			.await?;
+			AuthorizationMigrationService::reconcile_registry_storage(
+				&pool,
+				policy_registry(),
+			)
+			.await
+			.map_err(|error| sqlx::Error::Protocol(error.to_string()))?;
+			sqlx::raw_sql(include_str!(
+				"../../../../../db/migrations/20260722_authorization_isolation_audit.sql"
+			))
+			.execute(&pool)
+			.await?;
+			pool.close().await;
+			Ok::<(), sqlx::Error>(())
+		})
+		.await?;
+	Ok(())
 }
 
 pub async fn seed_active_test_meddra_term(mm: &ModelManager) -> Result<()> {

@@ -2,6 +2,10 @@ mod common;
 
 #[path = "authz/auth_mw_audit.rs"]
 mod auth_mw_audit;
+#[path = "authz/authorization_audit.rs"]
+mod authorization_audit;
+#[path = "authz/authorization_isolation.rs"]
+mod authorization_isolation;
 #[path = "authz/authorization_revisions.rs"]
 mod authorization_revisions;
 #[path = "authz/authorization_snapshot.rs"]

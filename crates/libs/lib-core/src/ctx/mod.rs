@@ -6,6 +6,9 @@ mod error;
 
 pub use self::error::{Error, Result};
 
+use crate::authorization::RequestAuthorizationSnapshot;
+use crate::model::store::DatabaseIsolationContext;
+
 // endregion: --- Modules
 
 // region:    --- Role Constants
@@ -35,6 +38,7 @@ pub struct Ctx {
 	change_reason: Option<String>,
 	change_category: Option<String>,
 	e_signature_id: Option<uuid::Uuid>,
+	authorization_isolation: Option<DatabaseIsolationContext>,
 }
 
 // Constructors.
@@ -51,6 +55,7 @@ impl Ctx {
 			change_reason: None,
 			change_category: None,
 			e_signature_id: None,
+			authorization_isolation: None,
 		}
 	}
 
@@ -79,7 +84,24 @@ impl Ctx {
 			change_reason: None,
 			change_category: None,
 			e_signature_id: None,
+			authorization_isolation: None,
 		})
+	}
+
+	/// Builds a request context from the same validated snapshot used by the
+	/// policy kernel. This is the only request path that carries typed database
+	/// isolation instead of a caller-provided role label.
+	pub fn from_authorization_snapshot(
+		snapshot: &RequestAuthorizationSnapshot,
+	) -> Result<Self> {
+		let mut context = Self::new(
+			snapshot.principal_id(),
+			snapshot.organization_id(),
+			snapshot.legacy_permission_subject().to_string(),
+		)?;
+		context.authorization_isolation =
+			Some(DatabaseIsolationContext::from_snapshot(snapshot));
+		Ok(context)
 	}
 }
 
@@ -111,6 +133,12 @@ impl Ctx {
 
 	pub fn e_signature_id(&self) -> Option<uuid::Uuid> {
 		self.e_signature_id
+	}
+
+	pub(crate) fn authorization_isolation(
+		&self,
+	) -> Option<&DatabaseIsolationContext> {
+		self.authorization_isolation.as_ref()
 	}
 
 	pub fn with_compliance(

@@ -2,6 +2,7 @@
 
 pub mod dbx;
 
+use crate::authorization::RequestAuthorizationSnapshot;
 use crate::core_config;
 use crate::ctx::{canonical_role, Ctx};
 use crate::model::Error;
@@ -12,6 +13,42 @@ use uuid::Uuid;
 // endregion: --- Modules
 
 pub type Db = Pool<Postgres>;
+
+/// Database tenant-isolation context derived from a validated authorization
+/// snapshot. The platform bypass bit cannot be supplied by callers directly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DatabaseIsolationContext {
+	principal_id: Uuid,
+	organization_id: Uuid,
+	platform_bypass: PlatformIsolationBypass,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct PlatformIsolationBypass(bool);
+
+impl DatabaseIsolationContext {
+	pub fn from_snapshot(snapshot: &RequestAuthorizationSnapshot) -> Self {
+		Self {
+			principal_id: snapshot.principal_id(),
+			organization_id: snapshot.organization_id(),
+			platform_bypass: PlatformIsolationBypass(
+				snapshot.identity().is_platform_administrator(),
+			),
+		}
+	}
+
+	pub fn principal_id(&self) -> Uuid {
+		self.principal_id
+	}
+
+	pub fn organization_id(&self) -> Uuid {
+		self.organization_id
+	}
+
+	pub fn requests_platform_bypass(&self) -> bool {
+		self.platform_bypass.0
+	}
+}
 
 pub async fn new_db_pool() -> sqlx::Result<Db> {
 	// * See NOTE 1) below
@@ -107,6 +144,49 @@ pub async fn set_org_context_dbx(
 	Ok(())
 }
 
+/// Sets transaction-local database isolation from a validated authorization
+/// snapshot. Unlike the legacy helpers, this API accepts no role label.
+pub async fn set_authorization_isolation_context(
+	tx: &mut Transaction<'_, Postgres>,
+	context: &DatabaseIsolationContext,
+) -> Result<(), Error> {
+	set_user_context(tx, context.principal_id()).await?;
+	sqlx::query("SELECT set_authorization_isolation_context($1, $2)")
+		.bind(context.organization_id())
+		.bind(context.requests_platform_bypass())
+		.execute(&mut **tx)
+		.await
+		.map_err(|e| {
+			Error::Store(format!(
+				"Failed to set authorization isolation context: {e}"
+			))
+		})?;
+	Ok(())
+}
+
+/// Dbx variant of [`set_authorization_isolation_context`].
+pub async fn set_authorization_isolation_context_dbx(
+	dbx: &dbx::Dbx,
+	context: &DatabaseIsolationContext,
+) -> Result<(), Error> {
+	let query = sqlx::query(
+		"WITH user_context AS MATERIALIZED (
+			SELECT set_current_user_context($1)
+		)
+		SELECT set_authorization_isolation_context($2, $3)
+		FROM user_context",
+	)
+	.bind(context.principal_id())
+	.bind(context.organization_id())
+	.bind(context.requests_platform_bypass());
+	dbx.execute(query).await.map_err(|e| {
+		Error::Store(format!(
+			"Failed to set authorization isolation context: {e}"
+		))
+	})?;
+	Ok(())
+}
+
 fn canonical_db_role(role: &str) -> String {
 	canonical_role(role)
 }
@@ -145,10 +225,20 @@ pub async fn set_full_context_dbx(
 	organization_id: Uuid,
 	role: &str,
 ) -> Result<(), Error> {
-	// Set user context for audit trail
-	set_user_context_dbx(dbx, user_id).await?;
-	// Set organization context for RLS
-	set_org_context_dbx(dbx, organization_id, role).await?;
+	let db_role = canonical_db_role(role);
+	let query = sqlx::query(
+		"WITH user_context AS MATERIALIZED (
+			SELECT set_current_user_context($1)
+		)
+		SELECT set_org_context($2, $3)
+		FROM user_context",
+	)
+	.bind(user_id)
+	.bind(organization_id)
+	.bind(db_role);
+	dbx.execute(query).await.map_err(|e| {
+		Error::Store(format!("Failed to set full database context: {e}"))
+	})?;
 	Ok(())
 }
 
@@ -157,8 +247,12 @@ pub async fn set_full_context_from_ctx_dbx(
 	dbx: &dbx::Dbx,
 	ctx: &Ctx,
 ) -> Result<(), Error> {
-	set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
-		.await?;
+	if let Some(isolation) = ctx.authorization_isolation() {
+		set_authorization_isolation_context_dbx(dbx, isolation).await?;
+	} else {
+		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
+			.await?;
+	}
 	set_compliance_context_dbx(
 		dbx,
 		ctx.change_reason(),

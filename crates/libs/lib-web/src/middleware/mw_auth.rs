@@ -173,12 +173,8 @@ async fn ctx_resolve(
 	set_token_cookie(cookies, &user.email, user.token_salt)
 		.map_err(|_| CtxExtError::CannotSetTokenCookie)?;
 
-	let ctx = Ctx::new(
-		snapshot.principal_id(),
-		snapshot.organization_id(),
-		snapshot.legacy_permission_subject().to_string(),
-	)
-	.map_err(|ex| CtxExtError::CtxCreateFail(ex.to_string()))?;
+	let ctx = Ctx::from_authorization_snapshot(&snapshot)
+		.map_err(|ex| CtxExtError::CtxCreateFail(ex.to_string()))?;
 	Ok(ResolvedRequest {
 		ctx,
 		snapshot: AuthorizationSnapshotW::new(snapshot),
