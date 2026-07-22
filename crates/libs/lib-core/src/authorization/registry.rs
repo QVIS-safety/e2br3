@@ -207,6 +207,15 @@ impl PolicyRegistry {
 		(action.decision_stage == DecisionStage::SubjectOnly)
 			.then(|| SubjectActionId::new(action.id.clone()))
 	}
+
+	pub fn context_action<C: AuthorizationContext>(
+		&self,
+		id: &str,
+	) -> Option<ContextActionId<C>> {
+		let action = self.action(id)?;
+		(action.decision_stage == DecisionStage::ContextRequired(C::kind()))
+			.then(|| ContextActionId::new(action.id.clone()))
+	}
 }
 
 #[derive(Debug, Default)]

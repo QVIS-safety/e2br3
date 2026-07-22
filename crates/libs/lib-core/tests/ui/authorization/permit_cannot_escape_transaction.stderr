@@ -1,0 +1,12 @@
+error: lifetime may not live long enough
+ --> tests/ui/authorization/permit_cannot_escape_transaction.rs:6:2
+  |
+3 | fn escape<'tx>(
+  |           --- lifetime `'tx` defined here
+...
+6 |     permit
+  |     ^^^^^^ returning this value requires that `'tx` must outlive `'static`
+  |
+  = note: requirement occurs because of the type `AuthorizedMutation<'_, lib_core::authorization::Existing<CaseResource>>`, which makes the generic argument `'_` invariant
+  = note: the struct `AuthorizedMutation<'tx, C>` is invariant over the parameter `'tx`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance

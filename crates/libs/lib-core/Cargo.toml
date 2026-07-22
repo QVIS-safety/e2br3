@@ -39,3 +39,4 @@ zip = "2"
 
 [dev-dependencies]
 serial_test = "3"
+trybuild = "1"

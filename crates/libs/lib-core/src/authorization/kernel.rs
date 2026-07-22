@@ -1,0 +1,290 @@
+use super::{
+	policy_registry, ActionId, AuditClassification, AuthorizationContext,
+	AuthorizationDecision, AuthorizationDenial, AuthorizedMutation, AuthorizedRead,
+	ContextActionId, ContextCondition, ContextSnapshot, DecisionStage, DenialReason,
+	EligibilityDecision, EntitlementRule, EvaluatedContext, LockedMutationContext,
+	RequestAuthorizationSnapshot, SubjectActionId,
+};
+
+pub fn check_eligibility(
+	action_id: &ActionId,
+	snapshot: &RequestAuthorizationSnapshot,
+) -> EligibilityDecision {
+	let Some(policy) = policy_registry().action(action_id.as_str()) else {
+		return EligibilityDecision::Denied(AuthorizationDenial::new(
+			action_id.clone(),
+			DenialReason::UnknownAction,
+		));
+	};
+	if !policy.allowed_identities.is_empty()
+		&& !snapshot
+			.identity()
+			.built_in_kind()
+			.is_some_and(|identity| policy.allowed_identities.contains(&identity))
+	{
+		return EligibilityDecision::Denied(AuthorizationDenial::new(
+			action_id.clone(),
+			DenialReason::IncompatibleIdentity,
+		));
+	}
+	let entitlement_matches = match policy.entitlement_rule {
+		EntitlementRule::AllOf => policy
+			.entitlements
+			.iter()
+			.all(|entitlement| snapshot.entitlements().contains(entitlement)),
+		EntitlementRule::AnyOf => policy
+			.entitlements
+			.iter()
+			.any(|entitlement| snapshot.entitlements().contains(entitlement)),
+	};
+	if !entitlement_matches {
+		return EligibilityDecision::Denied(AuthorizationDenial::new(
+			action_id.clone(),
+			DenialReason::MissingEntitlement,
+		));
+	}
+	EligibilityDecision::Eligible
+}
+
+pub fn authorize_subject(
+	action: SubjectActionId,
+	snapshot: &RequestAuthorizationSnapshot,
+) -> AuthorizationDecision {
+	match check_eligibility(action.as_action_id(), snapshot) {
+		EligibilityDecision::Eligible => AuthorizationDecision::Allowed,
+		EligibilityDecision::Denied(denial) => AuthorizationDecision::Denied(denial),
+	}
+}
+
+pub fn authorize_contextual_read<'tx, C: AuthorizationContext>(
+	action: ContextActionId<C>,
+	snapshot: &RequestAuthorizationSnapshot,
+	context: ContextSnapshot<'tx, C>,
+) -> Result<AuthorizedRead<'tx, C>, AuthorizationDenial> {
+	let action_id = action.as_action_id().clone();
+	let policy = contextual_policy::<C>(&action_id)?;
+	if !matches!(
+		policy.audit_classification,
+		AuditClassification::Read | AuditClassification::PrivilegedRead
+	) {
+		return Err(AuthorizationDenial::new(
+			action_id,
+			DenialReason::WrongOperationClass,
+		));
+	}
+	check_context(&action_id, snapshot, &context.evaluated)?;
+	Ok(AuthorizedRead::new(
+		action_id,
+		snapshot.principal_id(),
+		snapshot.organization_id(),
+		context.evaluated.target_fingerprint,
+		snapshot.version().clone(),
+		snapshot.evaluated_at(),
+		context.evaluated.enforced_scope_filter,
+	))
+}
+
+pub fn authorize_contextual_mutation<'tx, C: AuthorizationContext>(
+	action: ContextActionId<C>,
+	snapshot: &RequestAuthorizationSnapshot,
+	context: LockedMutationContext<'tx, C>,
+) -> Result<AuthorizedMutation<'tx, C>, AuthorizationDenial> {
+	let action_id = action.as_action_id().clone();
+	let policy = contextual_policy::<C>(&action_id)?;
+	if !matches!(
+		policy.audit_classification,
+		AuditClassification::Mutation | AuditClassification::PrivilegedMutation
+	) {
+		return Err(AuthorizationDenial::new(
+			action_id,
+			DenialReason::WrongOperationClass,
+		));
+	}
+	check_context(&action_id, snapshot, &context.evaluated)?;
+	Ok(AuthorizedMutation::new(
+		action_id,
+		snapshot.principal_id(),
+		snapshot.organization_id(),
+		context.evaluated.target_fingerprint,
+		snapshot.version().clone(),
+		snapshot.evaluated_at(),
+	))
+}
+
+fn contextual_policy<C: AuthorizationContext>(
+	action_id: &ActionId,
+) -> Result<&'static super::ActionPolicy, AuthorizationDenial> {
+	let policy = policy_registry()
+		.action(action_id.as_str())
+		.ok_or_else(|| {
+			AuthorizationDenial::new(action_id.clone(), DenialReason::UnknownAction)
+		})?;
+	if policy.decision_stage != DecisionStage::ContextRequired(C::kind()) {
+		return Err(AuthorizationDenial::new(
+			action_id.clone(),
+			DenialReason::WrongDecisionStage,
+		));
+	}
+	Ok(policy)
+}
+
+fn check_context(
+	action_id: &ActionId,
+	snapshot: &RequestAuthorizationSnapshot,
+	context: &EvaluatedContext,
+) -> Result<(), AuthorizationDenial> {
+	if let EligibilityDecision::Denied(denial) =
+		check_eligibility(action_id, snapshot)
+	{
+		return Err(denial);
+	}
+	let policy = policy_registry()
+		.action(action_id.as_str())
+		.expect("context action was resolved before evaluation");
+	for condition in &policy.context_conditions {
+		let denied = match condition {
+			ContextCondition::SameOrganization
+				if context.organization_id != Some(snapshot.organization_id()) =>
+			{
+				Some(DenialReason::SameOrganizationRequired)
+			}
+			ContextCondition::WithinPrincipalScope
+				if !context.within_principal_scope =>
+			{
+				Some(DenialReason::OutsidePrincipalScope)
+			}
+			ContextCondition::CompatibleLifecycle
+				if !context.lifecycle_compatible =>
+			{
+				Some(DenialReason::IncompatibleLifecycle)
+			}
+			ContextCondition::ParentAuthorized if !context.parent_authorized => {
+				Some(DenialReason::ParentNotAuthorized)
+			}
+			ContextCondition::EveryTargetAuthorized
+				if !context.every_target_authorized =>
+			{
+				Some(DenialReason::TargetSetNotAuthorized)
+			}
+			_ => None,
+		};
+		if let Some(reason) = denied {
+			return Err(AuthorizationDenial::new(action_id.clone(), reason));
+		}
+	}
+	Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::authorization::{
+		BuiltInIdentityKind, CaseResource, EnforcedScopeFilter, EntitlementId,
+		IdentityTraits, PolicySnapshotVersion, PrincipalScope,
+	};
+	use std::collections::BTreeSet;
+	use time::OffsetDateTime;
+	use uuid::Uuid;
+
+	fn snapshot(
+		entitlements: &[&str],
+		identity: Option<BuiltInIdentityKind>,
+	) -> RequestAuthorizationSnapshot {
+		let organization_id = Uuid::new_v4();
+		RequestAuthorizationSnapshot::new(
+			Uuid::new_v4(),
+			organization_id,
+			Uuid::new_v4(),
+			IdentityTraits::new(identity),
+			entitlements
+				.iter()
+				.map(|value| EntitlementId::parse(*value).unwrap())
+				.collect::<BTreeSet<_>>(),
+			PrincipalScope::new(Vec::new(), Vec::new(), Vec::new(), false, None),
+			PolicySnapshotVersion::new("a".repeat(64), organization_id, 1, 1),
+			OffsetDateTime::now_utc(),
+			None,
+			"test".into(),
+		)
+	}
+
+	fn evaluated(
+		snapshot: &RequestAuthorizationSnapshot,
+		lifecycle_compatible: bool,
+	) -> EvaluatedContext {
+		EvaluatedContext {
+			organization_id: Some(snapshot.organization_id()),
+			target_fingerprint: "case:42:v7".into(),
+			within_principal_scope: true,
+			lifecycle_compatible,
+			parent_authorized: true,
+			every_target_authorized: true,
+			enforced_scope_filter: Some(EnforcedScopeFilter::new(
+				Vec::new(),
+				Vec::new(),
+				Vec::new(),
+				false,
+			)),
+		}
+	}
+
+	#[test]
+	fn case_review_requires_entitlement_and_compatible_lifecycle() {
+		type Case = crate::authorization::Existing<CaseResource>;
+		let action = policy_registry()
+			.context_action::<Case>("case.review.toggle")
+			.unwrap();
+		let missing = snapshot(&[], None);
+		let denial = authorize_contextual_mutation(
+			action.clone(),
+			&missing,
+			LockedMutationContext::new(evaluated(&missing, true)),
+		)
+		.unwrap_err();
+		assert_eq!(denial.reason(), DenialReason::MissingEntitlement);
+
+		let reviewer = snapshot(&["case.review"], None);
+		let denial = authorize_contextual_mutation(
+			action,
+			&reviewer,
+			LockedMutationContext::new(evaluated(&reviewer, false)),
+		)
+		.unwrap_err();
+		assert_eq!(denial.reason(), DenialReason::IncompatibleLifecycle);
+	}
+
+	#[test]
+	fn identity_restrictions_do_not_treat_custom_roles_as_administrators() {
+		type Users =
+			crate::authorization::Collection<crate::authorization::UserResource>;
+		let action = policy_registry()
+			.context_action::<Users>("user.list")
+			.unwrap();
+		let custom = snapshot(&["user.read"], None);
+		let denial = authorize_contextual_read(
+			action,
+			&custom,
+			ContextSnapshot::new(evaluated(&custom, true)),
+		)
+		.unwrap_err();
+		assert_eq!(denial.reason(), DenialReason::IncompatibleIdentity);
+	}
+
+	#[test]
+	fn read_permit_preserves_exact_context_evidence() {
+		type Cases = crate::authorization::Collection<CaseResource>;
+		let action = policy_registry()
+			.context_action::<Cases>("case.list")
+			.unwrap();
+		let reader = snapshot(&["case.read"], None);
+		let permit = authorize_contextual_read(
+			action,
+			&reader,
+			ContextSnapshot::new(evaluated(&reader, true)),
+		)
+		.unwrap();
+		assert_eq!(permit.target_fingerprint(), "case:42:v7");
+		assert!(permit.enforced_scope_filter().is_some());
+		assert_eq!(permit.snapshot_version(), reader.version());
+	}
+}

@@ -304,6 +304,13 @@ pub struct ContextActionId<C> {
 }
 
 impl<C> ContextActionId<C> {
+	pub(crate) fn new(id: ActionId) -> Self {
+		Self {
+			id,
+			marker: PhantomData,
+		}
+	}
+
 	pub fn as_action_id(&self) -> &ActionId {
 		&self.id
 	}
