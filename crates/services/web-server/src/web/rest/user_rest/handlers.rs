@@ -358,6 +358,7 @@ pub async fn get_current_user(
 pub async fn get_current_user_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 ) -> Result<(StatusCode, Json<DataRestResult<CurrentUserProfileView>>)> {
 	let ctx = ctx_w.0;
 	let entity: User = UserBmc::get(&ctx, &mm, ctx.user_id()).await?;
@@ -372,9 +373,7 @@ pub async fn get_current_user_profile(
 		.collect::<Vec<_>>();
 	permissions.sort_unstable();
 	permissions.dedup();
-	let policy_version = PermissionProfileBmc::policy_version(&mm)
-		.await
-		.map_err(Error::Model)?;
+	let policy_version = snapshot.version().organization_revision();
 	Ok((
 		StatusCode::OK,
 		Json(DataRestResult {

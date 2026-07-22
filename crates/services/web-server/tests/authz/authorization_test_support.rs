@@ -53,6 +53,15 @@ pub async fn init_authorization_test_db() -> Result<AuthorizationTestDb> {
 
 	sqlx::raw_sql(
 		r#"
+		CREATE FUNCTION set_current_user_context(target_user_id uuid)
+		RETURNS void LANGUAGE sql AS $$
+			SELECT set_config('app.current_user_id', target_user_id::text, true)
+		$$;
+		CREATE FUNCTION set_org_context(target_organization_id uuid, target_role text)
+		RETURNS void LANGUAGE sql AS $$
+			SELECT set_config('app.current_organization_id', target_organization_id::text, true);
+			SELECT set_config('app.current_user_role', target_role, true)
+		$$;
 		CREATE TABLE organizations (
 			id uuid PRIMARY KEY,
 			name text NOT NULL,

@@ -9,6 +9,7 @@ use crate::model::acs::{
 	permissions_for_menu_privileges, remove_dynamic_role, replace_dynamic_roles,
 	AdminMenuPrivilege,
 };
+use crate::model::authorization::NormalizedRoleRepository;
 use crate::model::store::set_full_context_from_ctx_dbx;
 use crate::model::ModelManager;
 use crate::model::Result;
@@ -333,6 +334,19 @@ impl PermissionProfileBmc {
 			.await
 		{
 			Ok((id,)) => {
+				if let Err(err) = NormalizedRoleRepository::upsert_custom_role(
+					dbx,
+					id,
+					ctx.organization_id(),
+					&data.name,
+					data.active,
+					&data.privileges.0,
+				)
+				.await
+				{
+					dbx.rollback_txn().await?;
+					return Err(err);
+				}
 				if let Err(err) = dbx.execute(sqlx::query(
 					"UPDATE rbac_policy_state SET version = version + 1, updated_at = now() WHERE singleton = true",
 				))
@@ -398,6 +412,19 @@ impl PermissionProfileBmc {
 			.await
 		{
 			Ok(_) => {
+				if let Err(err) = NormalizedRoleRepository::upsert_custom_role(
+					dbx,
+					id,
+					ctx.organization_id(),
+					&data.name,
+					data.active,
+					&data.privileges.0,
+				)
+				.await
+				{
+					dbx.rollback_txn().await?;
+					return Err(err);
+				}
 				if let Err(err) = dbx.execute(sqlx::query(
 					"UPDATE rbac_policy_state SET version = version + 1, updated_at = now() WHERE singleton = true",
 				))

@@ -4,6 +4,8 @@ mod common;
 mod auth_mw_audit;
 #[path = "authz/authorization_revisions.rs"]
 mod authorization_revisions;
+#[path = "authz/authorization_snapshot.rs"]
+mod authorization_snapshot;
 #[path = "authz/authorization_storage.rs"]
 mod authorization_storage;
 #[path = "authz/authorization_test_support.rs"]

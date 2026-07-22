@@ -89,11 +89,11 @@ impl AuthorizationMigrationService {
 		Self::reconcile_builtin_roles(transaction, registry).await?;
 		let custom_roles =
 			Self::reconcile_custom_roles(transaction, registry).await?;
+		Self::reconcile_revision_rows(transaction).await?;
 		let assignments =
 			Self::reconcile_assignments(transaction, registry, &catalog_hash)
 				.await?;
 		Self::remove_stale_custom_roles(transaction).await?;
-		Self::reconcile_revision_rows(transaction).await?;
 		Ok(MigrationReport {
 			assignments,
 			custom_roles,
@@ -397,7 +397,7 @@ impl AuthorizationMigrationService {
 	async fn reconcile_revision_rows(
 		transaction: &mut Transaction<'_, Postgres>,
 	) -> MigrationResult<()> {
-		sqlx::query("INSERT INTO organization_policy_state (organization_id) SELECT id FROM organizations ON CONFLICT (organization_id) DO NOTHING").execute(&mut **transaction).await?;
+		sqlx::query("INSERT INTO organization_policy_state (organization_id, organization_type) SELECT id, lower(org_type) FROM organizations ON CONFLICT (organization_id) DO UPDATE SET organization_type = EXCLUDED.organization_type").execute(&mut **transaction).await?;
 		sqlx::query("INSERT INTO principal_authorization_state (user_id, organization_id) SELECT user_id, organization_id FROM user_organization_memberships ON CONFLICT (user_id, organization_id) DO NOTHING").execute(&mut **transaction).await?;
 		Ok(())
 	}
@@ -444,7 +444,10 @@ fn grants_for_legacy_privileges(
 ) -> Result<BTreeSet<String>, String> {
 	let mut grants = BTreeSet::new();
 	for privilege in privileges {
-		let key = privilege.menu_key.trim();
+		let key = privilege.menu_key.trim().to_ascii_lowercase();
+		if is_reviewed_obsolete_legacy_menu_key(&key) {
+			continue;
+		}
 		let candidates = [
 			(privilege.can_read, format!("{key}.read")),
 			(privilege.can_edit, format!("{key}.edit")),
@@ -480,4 +483,21 @@ fn grants_for_legacy_privileges(
 		}
 	}
 	Ok(grants)
+}
+
+/// Rows explicitly removed or reserved by the reviewed PDF contract. These
+/// are accepted only by the one-way legacy translator and grant nothing.
+fn is_reviewed_obsolete_legacy_menu_key(menu_key: &str) -> bool {
+	matches!(
+		menu_key,
+		"user"
+			| "users" | "data"
+			| "audit" | "roles"
+			| "settings"
+			| "terminology"
+			| "home_email"
+			| "email_report_due"
+			| "email_review"
+			| "email_lock"
+	)
 }

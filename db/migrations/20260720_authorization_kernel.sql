@@ -167,7 +167,11 @@ ALTER TABLE user_role_assignments
         CHECK (row_version > 0);
 
 CREATE OR REPLACE FUNCTION enforce_user_role_assignment_scope()
-RETURNS trigger LANGUAGE plpgsql AS $$
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
 DECLARE
     target_organization_type text;
     target_role_organization_id uuid;
@@ -176,22 +180,21 @@ DECLARE
     target_role_active boolean;
     target_role_deleted_at timestamptz;
 BEGIN
-    SELECT lower(org_type)
-    INTO target_organization_type
-    FROM organizations
-    WHERE id = NEW.organization_id
-    FOR SHARE;
-    IF NOT FOUND THEN
+    EXECUTE format(
+        'SELECT organization_type FROM %I.organization_policy_state WHERE organization_id = $1 FOR SHARE',
+        TG_TABLE_SCHEMA
+    ) INTO target_organization_type USING NEW.organization_id;
+	IF target_organization_type IS NULL THEN
         RAISE EXCEPTION 'organization % does not exist', NEW.organization_id
             USING ERRCODE = '23503';
     END IF;
-    SELECT organization_id, identity_kind, built_in, active, deleted_at
-    INTO target_role_organization_id, target_role_identity_kind,
+    EXECUTE format(
+        'SELECT organization_id, identity_kind, built_in, active, deleted_at FROM %I.authorization_roles WHERE id = $1 FOR SHARE',
+        TG_TABLE_SCHEMA
+    ) INTO target_role_organization_id, target_role_identity_kind,
         target_role_built_in, target_role_active, target_role_deleted_at
-    FROM authorization_roles
-    WHERE id = NEW.role_id
-    FOR SHARE;
-    IF NOT FOUND
+      USING NEW.role_id;
+	IF target_role_active IS NULL
        OR NOT target_role_active
        OR target_role_deleted_at IS NOT NULL
        OR NOT (target_role_built_in OR target_role_organization_id = NEW.organization_id)
@@ -215,16 +218,214 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION enforce_user_role_assignment_scope() FROM PUBLIC;
+
 DROP TRIGGER IF EXISTS user_role_assignments_scope_guard ON user_role_assignments;
 CREATE TRIGGER user_role_assignments_scope_guard
 BEFORE INSERT OR UPDATE ON user_role_assignments
 FOR EACH ROW EXECUTE FUNCTION enforce_user_role_assignment_scope();
 
+CREATE OR REPLACE FUNCTION authz_assert_role_administrator(
+    target_organization_id uuid
+) RETURNS text
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path FROM CURRENT
+AS $$
+DECLARE
+    actor_user_id uuid;
+    actor_organization_id uuid;
+    actor_identity_kind text;
+BEGIN
+    actor_user_id := NULLIF(
+        current_setting('app.current_user_id', true), ''
+    )::uuid;
+    actor_organization_id := NULLIF(
+        current_setting('app.current_organization_id', true), ''
+    )::uuid;
+    IF actor_user_id IS NULL THEN
+        RAISE EXCEPTION 'authenticated role administrator is required'
+            USING ERRCODE = '42501';
+    END IF;
+
+    SELECT COALESCE(role.identity_kind, 'custom')
+    INTO actor_identity_kind
+    FROM user_role_assignments assignment
+    JOIN authorization_roles role ON role.id = assignment.role_id
+    WHERE assignment.user_id = actor_user_id
+      AND assignment.active
+      AND role.active
+      AND role.deleted_at IS NULL
+      AND (
+          role.identity_kind = 'platform_administrator'
+          OR assignment.organization_id = actor_organization_id
+      )
+    ORDER BY (role.identity_kind = 'platform_administrator') DESC
+    LIMIT 1;
+
+    IF actor_identity_kind = 'platform_administrator' THEN
+        RETURN actor_identity_kind;
+    END IF;
+    IF actor_identity_kind IS NULL
+       OR actor_organization_id IS DISTINCT FROM target_organization_id
+       OR actor_identity_kind NOT IN (
+           'sponsor_cro_administrator',
+           'sponsor_company_administrator'
+       ) THEN
+        RAISE EXCEPTION 'role administration is not allowed for organization %',
+            target_organization_id USING ERRCODE = '42501';
+    END IF;
+    RETURN actor_identity_kind;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION authz_assert_role_administrator(uuid) FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION authz_assign_user_role(
+    target_user_id uuid,
+    target_organization_id uuid,
+    target_role_id uuid
+) RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path FROM CURRENT
+AS $$
+DECLARE
+    actor_identity_kind text;
+    target_identity_kind text;
+    target_built_in boolean;
+BEGIN
+    actor_identity_kind := authz_assert_role_administrator(
+        target_organization_id
+    );
+    SELECT identity_kind, built_in
+    INTO target_identity_kind, target_built_in
+    FROM authorization_roles
+    WHERE id = target_role_id
+      AND active
+      AND deleted_at IS NULL;
+    IF actor_identity_kind <> 'platform_administrator'
+       AND target_built_in
+       AND target_identity_kind IS DISTINCT FROM 'operational_user' THEN
+        RAISE EXCEPTION 'sponsor administrators cannot assign privileged built-in roles'
+            USING ERRCODE = '42501';
+    END IF;
+
+    INSERT INTO user_role_assignments (
+        user_id, organization_id, role_id, active, assigned_at
+    )
+    SELECT target_user_id, target_organization_id, role.id, true, now()
+    FROM authorization_roles role
+    WHERE role.id = target_role_id
+      AND role.active
+      AND role.deleted_at IS NULL
+      AND (role.built_in OR role.organization_id = target_organization_id)
+    ON CONFLICT (user_id, organization_id) DO UPDATE SET
+        role_id = EXCLUDED.role_id,
+        active = true,
+        assigned_at = CASE
+            WHEN user_role_assignments.role_id IS DISTINCT FROM EXCLUDED.role_id
+                THEN now()
+            ELSE user_role_assignments.assigned_at
+        END;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'role % cannot be assigned in organization %',
+            target_role_id, target_organization_id USING ERRCODE = '23514';
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION authz_upsert_custom_role(
+    target_role_id uuid,
+    target_organization_id uuid,
+    target_name text,
+    target_active boolean,
+    target_grant_ids text[]
+) RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path FROM CURRENT
+AS $$
+DECLARE
+    existing_organization_id uuid;
+    existing_built_in boolean;
+BEGIN
+	PERFORM authz_assert_role_administrator(target_organization_id);
+    SELECT organization_id, built_in
+    INTO existing_organization_id, existing_built_in
+    FROM authorization_roles
+    WHERE id = target_role_id
+    FOR UPDATE;
+    IF FOUND AND (
+        existing_built_in
+        OR existing_organization_id IS DISTINCT FROM target_organization_id
+    ) THEN
+        RAISE EXCEPTION 'role % is not a custom role owned by organization %',
+            target_role_id, target_organization_id USING ERRCODE = '23514';
+    END IF;
+    IF btrim(target_name) = '' THEN
+        RAISE EXCEPTION 'custom role name is required' USING ERRCODE = '23514';
+    END IF;
+
+    INSERT INTO authorization_roles (
+        id, organization_id, stable_key, identity_kind, role_class,
+        name, built_in, active
+    ) VALUES (
+        target_role_id, target_organization_id, NULL, NULL, 'custom',
+        target_name, false, target_active
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        name = EXCLUDED.name,
+        active = EXCLUDED.active,
+        updated_at = now();
+
+    DELETE FROM role_grants WHERE role_id = target_role_id;
+    IF target_active THEN
+        INSERT INTO role_grants (role_id, grant_id)
+        SELECT target_role_id, grant_id
+        FROM unnest(target_grant_ids) AS grant_id;
+    END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION authz_assign_user_role(uuid, uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION authz_upsert_custom_role(uuid, uuid, text, boolean, text[])
+    FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION authz_assign_user_role(uuid, uuid, uuid)
+    TO e2br3_app_role;
+GRANT EXECUTE ON FUNCTION authz_upsert_custom_role(
+    uuid, uuid, text, boolean, text[]
+) TO e2br3_app_role;
+
 CREATE TABLE IF NOT EXISTS organization_policy_state (
     organization_id uuid PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+    organization_type text,
     revision bigint NOT NULL DEFAULT 1 CHECK (revision > 0),
     updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE organization_policy_state
+    ADD COLUMN IF NOT EXISTS organization_type text;
+
+CREATE OR REPLACE FUNCTION authz_initialize_organization_revision()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog
+AS $$
+BEGIN
+    EXECUTE format(
+        'INSERT INTO %I.organization_policy_state (organization_id, organization_type) VALUES ($1, lower($2)) ON CONFLICT (organization_id) DO UPDATE SET organization_type = EXCLUDED.organization_type',
+        TG_TABLE_SCHEMA
+    ) USING NEW.id, NEW.org_type;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS authz_initialize_organization_revision ON organizations;
+CREATE TRIGGER authz_initialize_organization_revision
+AFTER INSERT ON organizations
+FOR EACH ROW EXECUTE FUNCTION authz_initialize_organization_revision();
 
 CREATE TABLE IF NOT EXISTS principal_authorization_state (
     user_id uuid NOT NULL,

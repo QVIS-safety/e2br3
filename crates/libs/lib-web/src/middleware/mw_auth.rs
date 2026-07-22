@@ -1,4 +1,5 @@
 use crate::error::{Error, Result};
+use crate::middleware::mw_authorization_snapshot::AuthorizationSnapshotW;
 use crate::utils::token::{set_token_cookie, AUTH_TOKEN};
 use axum::body::Body;
 use axum::extract::{FromRequestParts, State};
@@ -7,8 +8,9 @@ use axum::http::Request;
 use axum::middleware::Next;
 use axum::response::Response;
 use lib_auth::token::{validate_web_token, Token};
+use lib_core::authorization::policy_registry;
 use lib_core::ctx::Ctx;
-use lib_core::model::permission_profile::PermissionProfileBmc;
+use lib_core::model::authorization::SnapshotRepository;
 use lib_core::model::user::{UserBmc, UserForAuth};
 use lib_core::model::ModelManager;
 use serde::Serialize;
@@ -53,8 +55,13 @@ pub async fn mw_ctx_resolver(
 		.and_then(decode_audit_reason_header)
 		.and_then(trim_non_empty);
 
-	let ctx_ext_result = match ctx_resolve(mm.clone(), &cookies).await {
-		Ok(CtxW(ctx)) => {
+	let resolved = ctx_resolve(mm.clone(), &cookies).await;
+	let snapshot = resolved
+		.as_ref()
+		.ok()
+		.map(|resolved| resolved.snapshot.clone());
+	let ctx_ext_result = match resolved {
+		Ok(ResolvedRequest { ctx, .. }) => {
 			let mut ctx = if let Some(reason) = audit_reason {
 				ctx.with_compliance(Some(reason), ctx.e_signature_id())
 			} else {
@@ -67,10 +74,11 @@ pub async fn mw_ctx_resolver(
 		}
 		Err(err) => Err(err),
 	};
-	if ctx_ext_result.is_ok() {
-		if let Ok(version) = PermissionProfileBmc::policy_version(&mm).await {
-			req.extensions_mut().insert(RbacPolicyVersion(version));
-		}
+	if let Some(snapshot) = snapshot {
+		req.extensions_mut().insert(RbacPolicyVersion(
+			snapshot.version().organization_revision(),
+		));
+		req.extensions_mut().insert(snapshot);
 	}
 
 	if ctx_ext_result.is_err()
@@ -122,7 +130,15 @@ fn hex_value(value: u8) -> Option<u8> {
 	}
 }
 
-async fn ctx_resolve(mm: ModelManager, cookies: &Cookies) -> CtxExtResult {
+struct ResolvedRequest {
+	ctx: Ctx,
+	snapshot: AuthorizationSnapshotW,
+}
+
+async fn ctx_resolve(
+	mm: ModelManager,
+	cookies: &Cookies,
+) -> core::result::Result<ResolvedRequest, CtxExtError> {
 	// -- Get Token String
 	let token = cookies
 		.get(AUTH_TOKEN)
@@ -140,15 +156,33 @@ async fn ctx_resolve(mm: ModelManager, cookies: &Cookies) -> CtxExtResult {
 	// -- Validate Token
 	validate_web_token(&token, user.token_salt)
 		.map_err(|_| CtxExtError::FailValidate)?;
+	let authentication_expires_at = lib_utils::time::parse_utc(&token.exp)
+		.map_err(|_| CtxExtError::TokenExpiryWrongFormat)?;
+	let snapshot = SnapshotRepository::load_repeatable_read(
+		mm.dbx().db(),
+		policy_registry(),
+		user.id,
+		user.organization_id,
+		time::OffsetDateTime::now_utc(),
+		Some(authentication_expires_at),
+	)
+	.await
+	.map_err(|error| CtxExtError::AuthorizationSnapshotLoad(error.to_string()))?;
 
 	// -- Update Token
 	set_token_cookie(cookies, &user.email, user.token_salt)
 		.map_err(|_| CtxExtError::CannotSetTokenCookie)?;
 
-	// -- Create CtxExtResult with user_id, organization_id, and role
-	Ctx::new(user.id, user.organization_id, user.role)
-		.map(CtxW)
-		.map_err(|ex| CtxExtError::CtxCreateFail(ex.to_string()))
+	let ctx = Ctx::new(
+		snapshot.principal_id(),
+		snapshot.organization_id(),
+		snapshot.legacy_permission_subject().to_string(),
+	)
+	.map_err(|ex| CtxExtError::CtxCreateFail(ex.to_string()))?;
+	Ok(ResolvedRequest {
+		ctx,
+		snapshot: AuthorizationSnapshotW::new(snapshot),
+	})
 }
 
 // region:    --- Ctx Extractor
@@ -181,13 +215,16 @@ type CtxExtResult = core::result::Result<CtxW, CtxExtError>;
 pub enum CtxExtError {
 	TokenNotInCookie,
 	TokenWrongFormat,
+	TokenExpiryWrongFormat,
 
 	UserNotFound,
 	ModelAccessError(String),
 	FailValidate,
 	CannotSetTokenCookie,
+	AuthorizationSnapshotLoad(String),
 
 	CtxNotInRequestExt,
+	AuthorizationSnapshotNotInRequestExt,
 	CtxCreateFail(String),
 }
 // endregion: --- Ctx Extractor Result/Error

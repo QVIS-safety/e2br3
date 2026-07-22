@@ -110,6 +110,44 @@ async fn test_admin_can_update_user() -> Result<()> {
 
 #[serial]
 #[tokio::test]
+async fn test_user_role_update_changes_the_normalized_assignment_atomically(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm.clone());
+	let role_id = create_empty_permission_profile(
+		&app,
+		&admin_cookie,
+		format!("Assignment update {}", Uuid::new_v4()),
+	)
+	.await?;
+
+	let req = Request::builder()
+		.method("PUT")
+		.uri(format!("/api/users/{}", seed.viewer.id))
+		.header("cookie", admin_cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(
+			json!({ "data": { "role": role_id } }).to_string(),
+		))?;
+	let res = app.oneshot(req).await?;
+	assert_eq!(res.status(), StatusCode::OK);
+
+	let assigned_role = sqlx::query_scalar::<_, Uuid>(
+		"SELECT role_id FROM user_role_assignments WHERE user_id = $1 AND organization_id = $2",
+	)
+	.bind(seed.viewer.id)
+	.bind(seed.org_id)
+	.fetch_one(mm.dbx().db())
+	.await?;
+	assert_eq!(assigned_role.to_string(), role_id);
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_sponsor_admin_cannot_assign_sponsor_admin_role() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;

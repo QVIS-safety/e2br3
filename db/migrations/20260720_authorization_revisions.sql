@@ -48,9 +48,9 @@ SET search_path = pg_catalog
 AS $$
 BEGIN
     EXECUTE format(
-        'INSERT INTO %I.organization_policy_state (organization_id) VALUES ($1) ON CONFLICT (organization_id) DO NOTHING',
+		'INSERT INTO %I.organization_policy_state (organization_id, organization_type) VALUES ($1, lower($2)) ON CONFLICT (organization_id) DO UPDATE SET organization_type = EXCLUDED.organization_type',
         TG_TABLE_SCHEMA
-    ) USING NEW.id;
+    ) USING NEW.id, NEW.org_type;
     RETURN NEW;
 END;
 $$;
@@ -64,6 +64,10 @@ CREATE OR REPLACE FUNCTION authz_revision_organization_organizations()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog AS $$
 BEGIN
     IF ROW(OLD.active, OLD.org_type) IS DISTINCT FROM ROW(NEW.active, NEW.org_type) THEN
+		EXECUTE format(
+			'UPDATE %I.organization_policy_state SET organization_type = lower($2), updated_at = now() WHERE organization_id = $1',
+			TG_TABLE_SCHEMA
+		) USING NEW.id, NEW.org_type;
         EXECUTE format('SELECT %I.authz_touch_organization_revision($1, $2)', TG_TABLE_SCHEMA)
             USING TG_TABLE_SCHEMA, NEW.id;
     END IF;
@@ -84,10 +88,19 @@ SET search_path = pg_catalog
 AS $$
 DECLARE
     incompatible_assignment_exists boolean;
+	locked_organization_id uuid;
 BEGIN
     IF OLD.org_type IS NOT DISTINCT FROM NEW.org_type THEN
         RETURN NEW;
     END IF;
+	EXECUTE format(
+		'SELECT organization_id FROM %I.organization_policy_state WHERE organization_id = $1 FOR UPDATE',
+		TG_TABLE_SCHEMA
+	) INTO locked_organization_id USING NEW.id;
+	IF locked_organization_id IS NULL THEN
+		RAISE EXCEPTION 'authorization state for organization % does not exist', NEW.id
+			USING ERRCODE = '23503';
+	END IF;
     EXECUTE format(
         'SELECT EXISTS (SELECT 1 FROM %I.user_role_assignments a JOIN %I.authorization_roles r ON r.id = a.role_id WHERE a.organization_id = $1 AND a.active AND ((r.identity_kind = ''sponsor_cro_administrator'' AND lower(coalesce($2, '''')) <> ''cro'') OR (r.identity_kind = ''sponsor_company_administrator'' AND lower(coalesce($2, '''')) <> ''pharmaceutical_company'')))',
         TG_TABLE_SCHEMA,

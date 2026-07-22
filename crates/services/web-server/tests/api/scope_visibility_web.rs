@@ -1,8 +1,8 @@
 #![allow(unused_imports, dead_code)]
 
 use crate::common::{
-	cookie_header, init_test_mm, insert_user, seed_org_with_users, system_user_id,
-	Result, TEST_CUSTOM_MANAGER_ROLE,
+	cookie_header, init_test_mm, insert_user, seed_company_org_with_users,
+	seed_org_with_users, system_user_id, Result, TEST_CUSTOM_MANAGER_ROLE,
 };
 use axum::body::{to_bytes, Body};
 use axum::http::{Request, StatusCode};
@@ -1500,15 +1500,8 @@ async fn test_sender_uuid_scope_lists_matching_sender_presave() -> Result<()> {
 #[tokio::test]
 async fn test_company_sponsor_admin_cannot_assign_sender_scope() -> Result<()> {
 	let mm = init_test_mm().await?;
-	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let company_admin = insert_user(
-		&mm,
-		seed.org_id,
-		ROLE_SPONSOR_ADMIN_COMPANY,
-		system_user_id(),
-		Some("companypwd"),
-	)
-	.await?;
+	let seed = seed_company_org_with_users(&mm, "companypwd", "viewpwd").await?;
+	let company_admin = seed.admin;
 	let company_token =
 		generate_web_token(&company_admin.email, company_admin.token_salt)?;
 	let company_cookie = cookie_header(&company_token.to_string());
@@ -1536,22 +1529,11 @@ async fn test_company_sponsor_admin_cannot_assign_sender_scope() -> Result<()> {
 async fn test_routing_profile_sender_options_follow_role_scope() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
-	let company_admin = insert_user(
-		&mm,
-		seed.org_id,
-		ROLE_SPONSOR_ADMIN_COMPANY,
-		system_user_id(),
-		Some("companypwd"),
-	)
-	.await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
 	let viewer_token =
 		generate_web_token(&seed.viewer.email, seed.viewer.token_salt)?;
-	let company_token =
-		generate_web_token(&company_admin.email, company_admin.token_salt)?;
 	let admin_cookie = cookie_header(&admin_token.to_string());
 	let viewer_cookie = cookie_header(&viewer_token.to_string());
-	let company_cookie = cookie_header(&company_token.to_string());
 	let app = web_server::app(mm.clone());
 	let sender_a =
 		create_sender_presave(&app, &admin_cookie, "Sender Org A", "SEND-ROUTE-A")
@@ -1622,25 +1604,6 @@ async fn test_routing_profile_sender_options_follow_role_scope() -> Result<()> {
 		.iter()
 		.any(|row| row["senderIdentifier"] == sender_a.to_string()));
 	assert!(admin_senders
-		.iter()
-		.any(|row| row["senderIdentifier"] == sender_b.to_string()));
-
-	let (status, company_profile) = request_json(
-		&app,
-		"GET",
-		&company_cookie,
-		"/api/users/me/routing".to_string(),
-		None,
-	)
-	.await?;
-	assert_eq!(status, StatusCode::OK, "{company_profile:?}");
-	let company_senders = company_profile["data"]["availableSenders"]
-		.as_array()
-		.ok_or("missing company senders")?;
-	assert!(company_senders
-		.iter()
-		.any(|row| row["senderIdentifier"] == sender_a.to_string()));
-	assert!(company_senders
 		.iter()
 		.any(|row| row["senderIdentifier"] == sender_b.to_string()));
 

@@ -26,6 +26,7 @@ use lib_rest_core::{
 	validate_active_sender_selection, Error, Result,
 };
 use lib_web::middleware::mw_auth::CtxW;
+use lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW;
 use lib_web::middleware::mw_permission::RequireAdmin;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use sqlx::types::time::OffsetDateTime;

@@ -100,6 +100,209 @@ async fn fixed_built_ins_and_enabled_memberships_are_normalized() -> Result<()> 
 
 #[serial]
 #[tokio::test]
+async fn runtime_custom_role_writer_cannot_mutate_a_built_in_role() -> Result<()> {
+	let database = init_authorization_test_db().await?;
+	let runtime = database.runtime_pool().await?;
+	let built_in_id = policy_registry()
+		.built_in_identities()
+		.first()
+		.ok_or("missing built-in identity")?
+		.id;
+	let mut transaction = runtime.begin().await?;
+	sqlx::query(
+		"SELECT set_current_user_context('00000000-0000-0000-0000-000000000011')",
+	)
+	.execute(&mut *transaction)
+	.await?;
+	sqlx::query(
+		"SELECT set_org_context('00000000-0000-0000-0000-000000000001', 'system_admin')",
+	)
+	.execute(&mut *transaction)
+	.await?;
+	let error = sqlx::query(
+		"SELECT authz_upsert_custom_role($1, $2, $3, true, ARRAY[]::text[])",
+	)
+	.bind(built_in_id)
+	.bind(uuid::Uuid::parse_str(
+		"00000000-0000-0000-0000-000000000001",
+	)?)
+	.bind("spoofed built-in")
+	.execute(&mut *transaction)
+	.await
+	.expect_err("runtime writer must not mutate a built-in role");
+	assert_eq!(
+		error.as_database_error().and_then(|error| error.code()),
+		Some("23514".into())
+	);
+	transaction.rollback().await?;
+	runtime.close().await;
+	database.close().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn runtime_custom_role_writer_cannot_reuse_a_role_id_across_organizations(
+) -> Result<()> {
+	let database = init_authorization_test_db().await?;
+	let runtime = database.runtime_pool().await?;
+	let first_org = uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000001")?;
+	let second_org = uuid::Uuid::new_v4();
+	let role_id = uuid::Uuid::new_v4();
+	sqlx::query(
+		"INSERT INTO organizations (id, name, org_type) VALUES ($1, 'Second organization', 'cro')",
+	)
+	.bind(second_org)
+	.execute(database.pool())
+	.await?;
+	let mut transaction = runtime.begin().await?;
+	sqlx::query(
+		"SELECT set_current_user_context('00000000-0000-0000-0000-000000000011')",
+	)
+	.execute(&mut *transaction)
+	.await?;
+	sqlx::query(
+		"SELECT set_org_context('00000000-0000-0000-0000-000000000001', 'system_admin')",
+	)
+	.execute(&mut *transaction)
+	.await?;
+	sqlx::query(
+		"SELECT authz_upsert_custom_role($1, $2, 'First role', true, ARRAY[]::text[])",
+	)
+	.bind(role_id)
+	.bind(first_org)
+	.execute(&mut *transaction)
+	.await?;
+	let error = sqlx::query(
+		"SELECT authz_upsert_custom_role($1, $2, 'Cross-org overwrite', true, ARRAY[]::text[])",
+	)
+	.bind(role_id)
+	.bind(second_org)
+	.execute(&mut *transaction)
+	.await
+	.expect_err("runtime writer must not reuse another organization's role id");
+	assert_eq!(
+		error.as_database_error().and_then(|error| error.code()),
+		Some("23514".into())
+	);
+	transaction.rollback().await?;
+	runtime.close().await;
+	database.close().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn runtime_role_writer_rejects_a_custom_role_as_assignment_authority(
+) -> Result<()> {
+	let database = init_authorization_test_db().await?;
+	let runtime = database.runtime_pool().await?;
+	let organization_id =
+		uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000001")?;
+	let actor_id = uuid::Uuid::new_v4();
+	let target_id = uuid::Uuid::new_v4();
+	let custom_role_id = uuid::Uuid::new_v4();
+	let operational_role_id = policy_registry()
+		.built_in_identities()
+		.iter()
+		.find(|identity| {
+			identity.kind
+				== lib_core::authorization::BuiltInIdentityKind::OperationalUser
+		})
+		.ok_or("missing operational identity")?
+		.id;
+	sqlx::query("INSERT INTO users (id, role) VALUES ($1, $2), ($3, 'user')")
+		.bind(actor_id)
+		.bind(custom_role_id.to_string())
+		.bind(target_id)
+		.execute(database.pool())
+		.await?;
+	sqlx::query(
+		"INSERT INTO user_organization_memberships (user_id, organization_id) VALUES ($1, $3), ($2, $3)",
+	)
+	.bind(actor_id)
+	.bind(target_id)
+	.bind(organization_id)
+	.execute(database.pool())
+	.await?;
+	sqlx::query(
+		"INSERT INTO authorization_roles (id, organization_id, role_class, name, built_in) VALUES ($1, $2, 'custom', 'Custom administrator', false)",
+	)
+	.bind(custom_role_id)
+	.bind(organization_id)
+	.execute(database.pool())
+	.await?;
+	sqlx::query(
+		"INSERT INTO user_role_assignments (user_id, organization_id, role_id) VALUES ($1, $2, $3)",
+	)
+	.bind(actor_id)
+	.bind(organization_id)
+	.bind(custom_role_id)
+	.execute(database.pool())
+	.await?;
+
+	let mut transaction = runtime.begin().await?;
+	sqlx::query("SELECT set_current_user_context($1)")
+		.bind(actor_id)
+		.execute(&mut *transaction)
+		.await?;
+	sqlx::query("SELECT set_org_context($1, 'custom-role')")
+		.bind(organization_id)
+		.execute(&mut *transaction)
+		.await?;
+	let error = sqlx::query("SELECT authz_assign_user_role($1, $2, $3)")
+		.bind(target_id)
+		.bind(organization_id)
+		.bind(operational_role_id)
+		.execute(&mut *transaction)
+		.await
+		.expect_err("a custom role must not become role-assignment authority");
+	assert_eq!(
+		error.as_database_error().and_then(|error| error.code()),
+		Some("42501".into())
+	);
+	transaction.rollback().await?;
+	runtime.close().await;
+	database.close().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn runtime_role_writer_rejects_an_actor_without_an_assignment() -> Result<()> {
+	let database = init_authorization_test_db().await?;
+	let runtime = database.runtime_pool().await?;
+	let organization_id =
+		uuid::Uuid::parse_str("00000000-0000-0000-0000-000000000001")?;
+	let mut transaction = runtime.begin().await?;
+	sqlx::query("SELECT set_current_user_context($1)")
+		.bind(uuid::Uuid::new_v4())
+		.execute(&mut *transaction)
+		.await?;
+	sqlx::query("SELECT set_org_context($1, 'system_admin')")
+		.bind(organization_id)
+		.execute(&mut *transaction)
+		.await?;
+	let error = sqlx::query(
+		"SELECT authz_upsert_custom_role($1, $2, 'Unowned role', true, ARRAY[]::text[])",
+	)
+	.bind(uuid::Uuid::new_v4())
+	.bind(organization_id)
+	.execute(&mut *transaction)
+	.await
+	.expect_err("an actor without a normalized assignment must fail closed");
+	assert_eq!(
+		error.as_database_error().and_then(|error| error.code()),
+		Some("42501".into())
+	);
+	transaction.rollback().await?;
+	runtime.close().await;
+	database.close().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn reconciliation_is_idempotent() -> Result<()> {
 	let database = init_authorization_test_db().await?;
 	let before = scalar_i64(&database, "SELECT count(*) FROM role_grants").await?;
@@ -451,6 +654,89 @@ async fn unknown_active_role_rolls_back_and_persists_rejection() -> Result<()> {
 		.await?,
 		1
 	);
+	database.close().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn reviewed_obsolete_menu_flags_are_dropped_during_one_way_backfill(
+) -> Result<()> {
+	let database = init_authorization_test_db().await?;
+	sqlx::raw_sql(
+		r#"
+		INSERT INTO permission_profiles (
+			id, organization_id, name, privileges_json
+		) VALUES (
+			'00000000-0000-0000-0000-000000000391',
+			'00000000-0000-0000-0000-000000000001',
+			'Legacy cleaned role',
+			'[
+			  {"menu_key":"case","can_read":true,"can_edit":false,"can_review":false,"can_lock":false},
+			  {"menu_key":"users","can_read":true,"can_edit":false,"can_review":false,"can_lock":false},
+			  {"menu_key":"data","can_read":true,"can_edit":false,"can_review":false,"can_lock":false},
+			  {"menu_key":"audit","can_read":true,"can_edit":false,"can_review":false,"can_lock":false},
+			  {"menu_key":"roles","can_read":true,"can_edit":false,"can_review":false,"can_lock":false},
+			  {"menu_key":"settings","can_read":true,"can_edit":false,"can_review":false,"can_lock":false},
+			  {"menu_key":"home_email","can_read":false,"can_edit":true,"can_review":false,"can_lock":false},
+			  {"menu_key":"email_lock","can_read":true,"can_edit":false,"can_review":false,"can_lock":false},
+			  {"menu_key":"email_report_due","can_read":false,"can_edit":true,"can_review":false,"can_lock":false}
+			]'
+		);
+		INSERT INTO users (id, role) VALUES (
+			'00000000-0000-0000-0000-000000000392',
+			'00000000-0000-0000-0000-000000000391'
+		);
+		INSERT INTO user_organization_memberships (user_id, organization_id)
+		VALUES (
+			'00000000-0000-0000-0000-000000000392',
+			'00000000-0000-0000-0000-000000000001'
+		);
+		"#,
+	)
+	.execute(database.pool())
+	.await?;
+	AuthorizationMigrationService::reconcile_database(
+		database.pool(),
+		policy_registry(),
+	)
+	.await?;
+	assert_eq!(
+		scalar_i64(
+			&database,
+			"SELECT count(*) FROM role_grants WHERE role_id = '00000000-0000-0000-0000-000000000391' AND grant_id = 'case.read'"
+		)
+		.await?,
+		1
+	);
+	assert_eq!(
+		scalar_i64(
+			&database,
+			"SELECT count(*) FROM role_grants WHERE role_id = '00000000-0000-0000-0000-000000000391'"
+		)
+		.await?,
+		1
+	);
+	database.close().await?;
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
+async fn genuinely_unknown_menu_flag_still_blocks_backfill() -> Result<()> {
+	let database = init_authorization_test_db().await?;
+	sqlx::query(
+		"INSERT INTO permission_profiles (id, organization_id, name, privileges_json) VALUES ('00000000-0000-0000-0000-000000000393', '00000000-0000-0000-0000-000000000001', 'Unknown role', '[{\"menu_key\":\"not_in_the_reviewed_contract\",\"can_read\":true,\"can_edit\":false,\"can_review\":false,\"can_lock\":false}]')",
+	)
+	.execute(database.pool())
+	.await?;
+	let error = AuthorizationMigrationService::reconcile_database(
+		database.pool(),
+		policy_registry(),
+	)
+	.await
+	.unwrap_err();
+	assert!(matches!(error, AuthorizationMigrationError::Rejected(_)));
 	database.close().await?;
 	Ok(())
 }

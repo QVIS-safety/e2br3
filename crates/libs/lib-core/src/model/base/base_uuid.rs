@@ -45,6 +45,32 @@ where
 		dbx.rollback_txn().await?;
 		return Err(err);
 	}
+	let id = match create_in_transaction::<MC, E>(ctx, mm, data).await {
+		Ok(id) => id,
+		Err(err) => {
+			dbx.rollback_txn().await?;
+			return Err(err);
+		}
+	};
+
+	// Commit transaction (triggers fire before commit)
+	dbx.commit_txn().await?;
+
+	Ok(id)
+}
+
+/// Creates one entity using the caller's open transaction. The caller owns
+/// transaction context, rollback, and commit.
+pub async fn create_in_transaction<MC, E>(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	data: E,
+) -> Result<Uuid>
+where
+	MC: DbBmc,
+	E: HasSeaFields,
+{
+	let dbx = mm.dbx();
 
 	let user_id = ctx.user_id();
 
@@ -68,15 +94,11 @@ where
 	let (id,) = match dbx.fetch_one(sqlx_query).await {
 		Ok(row) => row,
 		Err(err) => {
-			dbx.rollback_txn().await?;
 			return Err(
 				crate::model::Error::from(err).resolve_inactive_presave_reference()
 			);
 		}
 	};
-
-	// Commit transaction (triggers fire before commit)
-	dbx.commit_txn().await?;
 
 	Ok(id)
 }
@@ -159,6 +181,30 @@ where
 		dbx.rollback_txn().await?;
 		return Err(err);
 	}
+	if let Err(err) = update_in_transaction::<MC, E>(ctx, mm, id, data).await {
+		dbx.rollback_txn().await?;
+		return Err(err);
+	}
+
+	// Commit transaction (triggers fire before commit)
+	dbx.commit_txn().await?;
+
+	Ok(())
+}
+
+/// Updates one entity using the caller's open transaction. The caller owns
+/// transaction context, rollback, and commit.
+pub async fn update_in_transaction<MC, E>(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	id: Uuid,
+	data: E,
+) -> Result<()>
+where
+	MC: DbBmc,
+	E: HasSeaFields,
+{
+	let dbx = mm.dbx();
 
 	let user_id = ctx.user_id();
 
@@ -178,27 +224,17 @@ where
 	// -- Execute the query
 	let (sql, values) = query.build_sqlx(PostgresQueryBuilder);
 	let sqlx_query = sqlx::query_with(&sql, values);
-	let count = match dbx.execute(sqlx_query).await {
-		Ok(count) => count,
-		Err(err) => {
-			dbx.rollback_txn().await?;
-			return Err(
-				crate::model::Error::from(err).resolve_inactive_presave_reference()
-			);
-		}
-	};
+	let count = dbx.execute(sqlx_query).await.map_err(|err| {
+		crate::model::Error::from(err).resolve_inactive_presave_reference()
+	})?;
 
 	// -- Check result
 	if count == 0 {
-		dbx.rollback_txn().await?;
 		return Err(crate::model::Error::EntityUuidNotFound {
 			entity: MC::TABLE,
 			id,
 		});
 	}
-
-	// Commit transaction (triggers fire before commit)
-	dbx.commit_txn().await?;
 
 	Ok(())
 }

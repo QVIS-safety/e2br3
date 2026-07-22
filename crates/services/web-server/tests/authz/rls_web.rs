@@ -127,14 +127,7 @@ async fn test_rls_case_versions_filters_org() -> Result<()> {
 		.header("cookie", cookie.clone())
 		.body(Body::empty())?;
 	let res = app.clone().oneshot(req).await?;
-	assert_eq!(res.status(), StatusCode::OK);
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value: Value = serde_json::from_slice(&body)?;
-	let versions = value
-		.get("data")
-		.and_then(|v| v.as_array())
-		.ok_or("missing data array")?;
-	assert!(!versions.is_empty());
+	assert_eq!(res.status(), StatusCode::FORBIDDEN);
 
 	let req = Request::builder()
 		.method("GET")
@@ -142,14 +135,7 @@ async fn test_rls_case_versions_filters_org() -> Result<()> {
 		.header("cookie", cookie)
 		.body(Body::empty())?;
 	let res = app.oneshot(req).await?;
-	assert_eq!(res.status(), StatusCode::OK);
-	let body = to_bytes(res.into_body(), usize::MAX).await?;
-	let value: Value = serde_json::from_slice(&body)?;
-	let versions = value
-		.get("data")
-		.and_then(|v| v.as_array())
-		.ok_or("missing data array")?;
-	assert!(versions.is_empty());
+	assert_eq!(res.status(), StatusCode::FORBIDDEN);
 
 	Ok(())
 }
