@@ -15,6 +15,46 @@ pub enum Availability {
 #[derive(
 	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
+#[serde(rename_all = "camelCase")]
+pub enum GrantUiField {
+	CanRead,
+	CanEdit,
+	CanReview,
+	CanLock,
+}
+
+impl GrantUiField {
+	pub const fn as_str(self) -> &'static str {
+		match self {
+			Self::CanRead => "canRead",
+			Self::CanEdit => "canEdit",
+			Self::CanReview => "canReview",
+			Self::CanLock => "canLock",
+		}
+	}
+}
+
+#[derive(
+	Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
+#[serde(rename_all = "camelCase")]
+pub struct GrantUiBinding {
+	pub menu_key: String,
+	pub field: GrantUiField,
+}
+
+impl GrantUiBinding {
+	pub fn new(menu_key: impl Into<String>, field: GrantUiField) -> Self {
+		Self {
+			menu_key: menu_key.into(),
+			field,
+		}
+	}
+}
+
+#[derive(
+	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum RoleClass {
 	PlatformBuiltIn,
@@ -149,6 +189,7 @@ pub struct GrantDefinition {
 	pub pdf_type: String,
 	pub pdf_privilege: String,
 	pub availability: Availability,
+	pub ui_binding: GrantUiBinding,
 	pub implied_grants: Vec<GrantId>,
 	pub entitlements: Vec<EntitlementId>,
 	pub assignable_role_classes: Vec<RoleClass>,
@@ -162,6 +203,7 @@ pub struct GrantDefinitionInput {
 	pub pdf_type: String,
 	pub pdf_privilege: String,
 	pub availability: Availability,
+	pub ui_binding: GrantUiBinding,
 	pub implied_grants: Vec<String>,
 	pub entitlements: Vec<String>,
 	pub assignable_role_classes: Vec<RoleClass>,

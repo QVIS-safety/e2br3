@@ -6,21 +6,62 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RegistryError {
-	InvalidIdentifier { kind: &'static str, value: String },
-	DuplicateIdentifier { kind: &'static str, value: String },
-	InvalidPdfOrder { grant: String, order: u16 },
-	DuplicatePdfOrder { order: u16 },
-	UnknownEntitlement { owner: String, entitlement: String },
-	UnknownGrant { owner: String, grant: String },
-	GrantImplicationCycle { grants: Vec<String> },
-	ReservedGrantHasEntitlements { grant: String },
-	ReservedGrantNotAssignable { grant: String },
-	EmptyRoleClasses { grant: String },
-	InvalidBuiltInUuid { stable_key: String, value: String },
-	DuplicateBuiltInUuid { value: Uuid },
-	DuplicateBuiltInKind { kind: BuiltInIdentityKind },
-	UnknownAliasTarget { legacy_id: String, target: String },
-	DuplicateAlias { legacy_id: String },
+	InvalidIdentifier {
+		kind: &'static str,
+		value: String,
+	},
+	DuplicateIdentifier {
+		kind: &'static str,
+		value: String,
+	},
+	InvalidPdfOrder {
+		grant: String,
+		order: u16,
+	},
+	DuplicatePdfOrder {
+		order: u16,
+	},
+	DuplicateUiBinding {
+		menu_key: String,
+		field: GrantUiField,
+	},
+	UnknownEntitlement {
+		owner: String,
+		entitlement: String,
+	},
+	UnknownGrant {
+		owner: String,
+		grant: String,
+	},
+	GrantImplicationCycle {
+		grants: Vec<String>,
+	},
+	ReservedGrantHasEntitlements {
+		grant: String,
+	},
+	ReservedGrantNotAssignable {
+		grant: String,
+	},
+	EmptyRoleClasses {
+		grant: String,
+	},
+	InvalidBuiltInUuid {
+		stable_key: String,
+		value: String,
+	},
+	DuplicateBuiltInUuid {
+		value: Uuid,
+	},
+	DuplicateBuiltInKind {
+		kind: BuiltInIdentityKind,
+	},
+	UnknownAliasTarget {
+		legacy_id: String,
+		target: String,
+	},
+	DuplicateAlias {
+		legacy_id: String,
+	},
 }
 
 impl Display for RegistryError {
@@ -227,6 +268,7 @@ impl PolicyRegistryBuilder {
 
 		let mut grants = BTreeMap::new();
 		let mut pdf_orders = BTreeSet::new();
+		let mut ui_bindings = BTreeSet::new();
 		for input in self.grants {
 			let id = parse_id::<GrantId>("grant", input.id)?;
 			if input.pdf_order == 0 {
@@ -238,6 +280,12 @@ impl PolicyRegistryBuilder {
 			if !pdf_orders.insert(input.pdf_order) {
 				return Err(RegistryError::DuplicatePdfOrder {
 					order: input.pdf_order,
+				});
+			}
+			if !ui_bindings.insert(input.ui_binding.clone()) {
+				return Err(RegistryError::DuplicateUiBinding {
+					menu_key: input.ui_binding.menu_key,
+					field: input.ui_binding.field,
 				});
 			}
 			if input.assignable_role_classes.is_empty() {
@@ -277,6 +325,7 @@ impl PolicyRegistryBuilder {
 				pdf_type: input.pdf_type,
 				pdf_privilege: input.pdf_privilege,
 				availability: input.availability,
+				ui_binding: input.ui_binding,
 				implied_grants,
 				entitlements: grant_entitlements,
 				assignable_role_classes: input.assignable_role_classes,
@@ -586,6 +635,7 @@ fn grant(
 		pdf_type: type_name.to_string(),
 		pdf_privilege: privilege.to_string(),
 		availability,
+		ui_binding: canonical_ui_binding(id),
 		implied_grants: implied.iter().map(|value| (*value).to_string()).collect(),
 		entitlements: entitlements
 			.iter()
@@ -597,6 +647,32 @@ fn grant(
 			RoleClass::SponsorCompanyBuiltIn,
 		],
 	}
+}
+
+fn canonical_ui_binding(id: &str) -> GrantUiBinding {
+	use GrantUiField::{CanEdit, CanLock, CanRead, CanReview};
+	let (menu_key, field) = match id {
+		"home.notice.read" => ("home_notice", CanRead),
+		"home.notice.edit" => ("home_notice", CanEdit),
+		"home.workflow.read" => ("home_workflow", CanRead),
+		"case.read" => ("case", CanRead),
+		"case.edit" => ("case", CanEdit),
+		"case.workflow.read" => ("case_workflow", CanRead),
+		"case.review" => ("case", CanReview),
+		"case.lock" => ("case", CanLock),
+		"info.read" => ("info", CanRead),
+		"info.edit" => ("info", CanEdit),
+		"import.execute" => ("import", CanEdit),
+		"import.history.read" => ("import", CanRead),
+		"submission.execute" => ("export_submission", CanEdit),
+		"submission.history.read" => ("export_submission", CanRead),
+		"admin.read" => ("admin", CanRead),
+		"admin.edit" => ("admin", CanEdit),
+		"email.report_due.read" => ("email_report_due", CanRead),
+		"email.report_due.send" => ("email_report_due", CanEdit),
+		_ => unreachable!("canonical grant {id:?} requires a UI binding"),
+	};
+	GrantUiBinding::new(menu_key, field)
 }
 
 fn canonical_grants() -> Vec<GrantDefinitionInput> {

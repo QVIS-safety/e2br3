@@ -30,6 +30,45 @@ fn pdf_sensitive_grants_are_explicit() {
 }
 
 #[test]
+fn every_pdf_grant_has_one_unique_ui_binding() {
+	let registry = policy_registry();
+	let grants = registry.grants().collect::<Vec<_>>();
+	assert_eq!(grants.len(), 18);
+	let bindings = grants
+		.iter()
+		.map(|grant| grant.ui_binding.clone())
+		.collect::<BTreeSet<_>>();
+	assert_eq!(bindings.len(), grants.len());
+
+	let binding =
+		|grant_id: &str| registry.grant(grant_id).unwrap().ui_binding.clone();
+	assert_eq!(
+		binding("case.review"),
+		GrantUiBinding::new("case", GrantUiField::CanReview)
+	);
+	assert_eq!(
+		binding("case.lock"),
+		GrantUiBinding::new("case", GrantUiField::CanLock)
+	);
+	assert_eq!(
+		binding("admin.read"),
+		GrantUiBinding::new("admin", GrantUiField::CanRead)
+	);
+	assert_eq!(
+		binding("admin.edit"),
+		GrantUiBinding::new("admin", GrantUiField::CanEdit)
+	);
+	assert_eq!(
+		binding("email.report_due.read"),
+		GrantUiBinding::new("email_report_due", GrantUiField::CanRead)
+	);
+	assert_eq!(
+		binding("email.report_due.send"),
+		GrantUiBinding::new("email_report_due", GrantUiField::CanEdit)
+	);
+}
+
+#[test]
 fn case_review_and_lock_are_independent() {
 	let registry = policy_registry();
 	let review = registry.grant("case.review").unwrap();
@@ -214,6 +253,22 @@ fn registry_rejects_missing_or_duplicate_pdf_order() {
 	));
 }
 
+#[test]
+fn registry_rejects_duplicate_ui_bindings() {
+	let first = test_grant("first.read", &[], &[]);
+	let mut second = test_grant("second.read", &[], &[]);
+	second.pdf_order = 2;
+	second.ui_binding = first.ui_binding.clone();
+	let duplicate = PolicyRegistryBuilder::new()
+		.grant(first)
+		.grant(second)
+		.build();
+	assert!(matches!(
+		duplicate,
+		Err(RegistryError::DuplicateUiBinding { .. })
+	));
+}
+
 fn test_grant(
 	id: &str,
 	entitlements: &[&str],
@@ -226,6 +281,7 @@ fn test_grant(
 		pdf_type: "Test".to_string(),
 		pdf_privilege: "Read".to_string(),
 		availability: Availability::Implemented,
+		ui_binding: GrantUiBinding::new(id, GrantUiField::CanRead),
 		implied_grants: implied_grants
 			.iter()
 			.map(|value| value.to_string())

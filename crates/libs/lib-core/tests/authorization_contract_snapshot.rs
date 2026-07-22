@@ -41,6 +41,20 @@ fn generated_pdf_rows_preserve_reviewed_order_and_availability() {
 		.pdf_rows
 		.iter()
 		.all(|row| row.grant_id != "settings.read"));
+	let admin_read = contract
+		.pdf_rows
+		.iter()
+		.find(|row| row.grant_id == "admin.read")
+		.unwrap();
+	assert_eq!(admin_read.menu_key, "admin");
+	assert_eq!(admin_read.field, "canRead");
+	let email_send = contract
+		.pdf_rows
+		.iter()
+		.find(|row| row.grant_id == "email.report_due.send")
+		.unwrap();
+	assert_eq!(email_send.menu_key, "email_report_due");
+	assert_eq!(email_send.field, "canEdit");
 }
 
 #[test]
@@ -55,4 +69,6 @@ fn generated_typescript_contains_registry_owned_symbols() {
 	assert!(contract
 		.typescript
 		.contains(&format!("  \"{}\";", contract.catalog_hash)));
+	assert!(contract.typescript.contains("menuKey: \"admin\""));
+	assert!(contract.typescript.contains("field: \"canRead\""));
 }

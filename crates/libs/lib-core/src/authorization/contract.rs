@@ -53,6 +53,8 @@ pub struct PdfRolePrivilegeRow {
 	pub type_name: String,
 	pub privilege: String,
 	pub availability: Availability,
+	pub menu_key: String,
+	pub field: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -133,6 +135,8 @@ pub fn export_contract(
 			type_name: grant.pdf_type.clone(),
 			privilege: grant.pdf_privilege.clone(),
 			availability: grant.availability,
+			menu_key: grant.ui_binding.menu_key.clone(),
+			field: grant.ui_binding.field.as_str().to_string(),
 		})
 		.collect::<Vec<_>>();
 	pdf_rows.sort_unstable_by_key(|row| row.order);
@@ -172,7 +176,7 @@ fn render_typescript(
 		"} as const;\n\nexport type ActionId = (typeof Action)[keyof typeof Action];\n\n",
 	);
 	output.push_str(
-		"export type GrantAvailability = \"implemented\" | \"reserved\";\n\nexport interface PdfRolePrivilegeRow {\n  readonly grantId: string;\n  readonly order: number;\n  readonly menu: string;\n  readonly typeName: string;\n  readonly privilege: string;\n  readonly availability: GrantAvailability;\n}\n\n",
+		"export type GrantAvailability = \"implemented\" | \"reserved\";\nexport type RolePrivilegeField = \"canRead\" | \"canEdit\" | \"canReview\" | \"canLock\";\n\nexport interface PdfRolePrivilegeRow {\n  readonly grantId: string;\n  readonly order: number;\n  readonly menu: string;\n  readonly typeName: string;\n  readonly privilege: string;\n  readonly availability: GrantAvailability;\n  readonly menuKey: string;\n  readonly field: RolePrivilegeField;\n}\n\n",
 	);
 	output.push_str("export const PDF_ROLE_PRIVILEGE_ROWS = [\n");
 	for row in pdf_rows {
@@ -205,6 +209,14 @@ fn render_typescript(
 			serde_json::to_string(&row.availability)?
 		)
 		.expect("writing to a String cannot fail");
+		writeln!(
+			output,
+			"    menuKey: {},",
+			serde_json::to_string(&row.menu_key)?
+		)
+		.expect("writing to a String cannot fail");
+		writeln!(output, "    field: {},", serde_json::to_string(&row.field)?)
+			.expect("writing to a String cannot fail");
 		output.push_str("  },\n");
 	}
 	output.push_str("] as const satisfies readonly PdfRolePrivilegeRow[];\n\n");
@@ -322,6 +334,7 @@ mod tests {
 					pdf_type: "Sample".to_string(),
 					pdf_privilege: "Edit".to_string(),
 					availability: Availability::Implemented,
+					ui_binding: GrantUiBinding::new("sample", GrantUiField::CanEdit),
 					implied_grants: vec![],
 					entitlements: ordered("sample.read", "sample.update"),
 					assignable_role_classes: role_classes,
