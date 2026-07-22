@@ -17,7 +17,7 @@ fn acs_modules_separate_types_and_catalog() {
 		"types.rs",
 		"catalog.rs",
 		"builtin_roles.rs",
-		"menu_policy.rs",
+		"registry_adapter.rs",
 		"dynamic_roles.rs",
 		"check.rs",
 	] {
@@ -29,13 +29,17 @@ fn acs_modules_separate_types_and_catalog() {
 		!dir.join("permission.rs").exists(),
 		"legacy permission.rs should be removed"
 	);
+	assert!(
+		!dir.join("menu_policy.rs").exists(),
+		"handwritten menu policy should be removed"
+	);
 }
 
 #[test]
-fn menu_policy_is_declarative() {
-	let source = fs::read_to_string(acs_dir().join("menu_policy.rs")).unwrap();
-	assert!(source.contains("static MENU_POLICIES:"));
-	assert!(!source.contains("match menu_key"));
+fn role_privilege_policy_is_registry_owned() {
+	let source = fs::read_to_string(acs_dir().join("registry_adapter.rs")).unwrap();
+	assert!(source.contains("policy_registry()"));
+	assert!(!source.contains("MENU_POLICIES"));
 }
 
 #[test]
@@ -97,14 +101,94 @@ fn menu_aliases_expand_to_identical_permissions() {
 		}])
 	}
 
-	for aliases in [
-		["export_submission", "submission", "export"],
-		["user", "users", "users"],
-		["data", "terminology", "terminology"],
-	] {
+	for aliases in [["export_submission", "submission", "export"]] {
 		assert_eq!(expand(aliases[0]), expand(aliases[1]));
 		assert_eq!(expand(aliases[0]), expand(aliases[2]));
 	}
+	for removed in ["user", "users", "data", "terminology", "settings", "roles"] {
+		assert!(expand(removed).is_empty(), "{removed}");
+	}
+}
+
+#[test]
+fn pdf_admin_rows_compile_through_the_registry() {
+	let read = permissions_for_menu_privileges(&[AdminMenuPrivilege {
+		menu_key: "admin".to_string(),
+		can_read: true,
+		can_edit: false,
+		can_review: false,
+		can_lock: false,
+	}]);
+	assert!(read.contains(&USER_READ));
+	assert!(read.contains(&SETTINGS_READ));
+	assert!(!read.contains(&USER_CREATE));
+	assert!(!read.contains(&SETTINGS_UPDATE));
+
+	let edit = permissions_for_menu_privileges(&[AdminMenuPrivilege {
+		menu_key: "admin".to_string(),
+		can_read: false,
+		can_edit: true,
+		can_review: false,
+		can_lock: false,
+	}]);
+	assert!(edit.contains(&USER_CREATE));
+	assert!(edit.contains(&SETTINGS_UPDATE));
+	assert!(edit.contains(&USER_READ));
+}
+
+#[test]
+fn reserved_and_obsolete_email_rows_grant_nothing() {
+	for menu_key in [
+		"email_report_due",
+		"home_email",
+		"email_review",
+		"email_lock",
+	] {
+		let permissions = permissions_for_menu_privileges(&[AdminMenuPrivilege {
+			menu_key: menu_key.to_string(),
+			can_read: true,
+			can_edit: true,
+			can_review: false,
+			can_lock: false,
+		}]);
+		assert!(permissions.is_empty(), "{menu_key}: {permissions:?}");
+	}
+}
+
+#[test]
+fn registry_normalization_drops_reserved_rows_and_rejects_removed_rows() {
+	let reserved = normalize_menu_privileges(&[AdminMenuPrivilege {
+		menu_key: "email_report_due".to_string(),
+		can_read: true,
+		can_edit: true,
+		can_review: false,
+		can_lock: false,
+	}])
+	.unwrap();
+	assert!(reserved.is_empty());
+
+	let removed = normalize_menu_privileges(&[AdminMenuPrivilege {
+		menu_key: "users".to_string(),
+		can_read: true,
+		can_edit: false,
+		can_review: false,
+		can_lock: false,
+	}]);
+	assert!(matches!(
+		removed,
+		Err(PrivilegeAdapterError::UnknownMenu { .. })
+	));
+
+	let alias = normalize_menu_privileges(&[AdminMenuPrivilege {
+		menu_key: "export".to_string(),
+		can_read: true,
+		can_edit: false,
+		can_review: false,
+		can_lock: false,
+	}])
+	.unwrap();
+	assert_eq!(alias[0].menu_key, "export_submission");
+	assert!(alias[0].can_read);
 }
 
 #[test]

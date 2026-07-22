@@ -41,9 +41,7 @@ pub use catalog::*;
 
 mod builtin_roles;
 pub use builtin_roles::role_permissions;
-pub(crate) use builtin_roles::{
-	admin_permissions, profile_edit_permissions, viewer_permissions,
-};
+pub(crate) use builtin_roles::{profile_edit_permissions, viewer_permissions};
 
 mod dynamic_roles;
 pub(crate) use dynamic_roles::with_dynamic_role_permissions;
@@ -66,8 +64,11 @@ pub fn can_access_user_admin(ctx: &Ctx) -> bool {
 			.any(|permission| has_permission(ctx.permission_subject(), permission))
 }
 
-mod menu_policy;
-pub use menu_policy::{permissions_for_menu_privileges, AdminMenuPrivilege};
+mod registry_adapter;
+pub use registry_adapter::{
+	normalize_menu_privileges, permissions_for_menu_privileges, AdminMenuPrivilege,
+	PrivilegeAdapterError,
+};
 
 #[cfg(test)]
 mod tests;

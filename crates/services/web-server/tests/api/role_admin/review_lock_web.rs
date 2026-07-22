@@ -133,21 +133,21 @@ async fn test_review_lock_flags_are_normalized_to_case_menu_only() -> Result<()>
 				"can_lock": true
 			},
 			{
-				"menu_key": "users",
+				"menu_key": "home_notice",
 				"can_read": true,
 				"can_edit": false,
 				"can_review": true,
 				"can_lock": true
 			},
 			{
-				"menu_key": "settings",
+				"menu_key": "info",
 				"can_read": true,
 				"can_edit": false,
 				"can_review": true,
 				"can_lock": true
 			},
 			{
-				"menu_key": "data",
+				"menu_key": "import",
 				"can_read": true,
 				"can_edit": false,
 				"can_review": true,
@@ -191,8 +191,8 @@ async fn test_review_lock_flags_are_normalized_to_case_menu_only() -> Result<()>
 
 #[serial]
 #[tokio::test]
-async fn test_email_subscription_menu_keys_persist_and_grant_nothing() -> Result<()>
-{
+async fn test_reserved_email_subscription_rows_are_not_persisted_or_granted(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -214,21 +214,7 @@ async fn test_email_subscription_menu_keys_persist_and_grant_nothing() -> Result
 			{
 				"menu_key": "email_report_due",
 				"can_read": true,
-				"can_edit": false,
-				"can_review": false,
-				"can_lock": false
-			},
-			{
-				"menu_key": "email_review",
-				"can_read": true,
-				"can_edit": false,
-				"can_review": false,
-				"can_lock": false
-			},
-			{
-				"menu_key": "email_lock",
-				"can_read": true,
-				"can_edit": false,
+				"can_edit": true,
 				"can_review": false,
 				"can_lock": false
 			}
@@ -239,13 +225,7 @@ async fn test_email_subscription_menu_keys_persist_and_grant_nothing() -> Result
 	let privileges = value["privileges"]
 		.as_array()
 		.ok_or("privileges should be an array")?;
-	for menu_key in ["email_report_due", "email_review", "email_lock"] {
-		let row = privileges
-			.iter()
-			.find(|row| row["menu_key"] == menu_key)
-			.ok_or_else(|| format!("missing persisted e-mail row {menu_key}"))?;
-		assert_eq!(row["can_read"].as_bool(), Some(true), "{menu_key}");
-	}
+	assert!(privileges.is_empty(), "{privileges:?}");
 
 	// Subscription rows are reserved: they grant no operational permissions.
 	assert!(!has_permission(&profile_id, CASE_UPDATE));

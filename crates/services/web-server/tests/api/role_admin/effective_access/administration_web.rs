@@ -2,7 +2,7 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_users_edit_cannot_manage_roles_or_assign_roles() -> Result<()> {
+async fn test_admin_edit_cannot_manage_roles_or_assign_roles() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -19,7 +19,7 @@ async fn test_users_edit_cannot_manage_roles_or_assign_roles() -> Result<()> {
 		&admin_cookie,
 		&profile_id,
 		json!([{
-			"menu_key": "users",
+			"menu_key": "admin",
 			"can_read": true,
 			"can_edit": true,
 			"can_review": false,
@@ -67,7 +67,8 @@ async fn test_users_edit_cannot_manage_roles_or_assign_roles() -> Result<()> {
 
 #[serial]
 #[tokio::test]
-async fn test_users_matrix_privileges_grant_only_user_operations() -> Result<()> {
+async fn test_admin_matrix_privileges_grant_user_operations_but_not_role_identity(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -113,7 +114,7 @@ async fn test_users_matrix_privileges_grant_only_user_operations() -> Result<()>
 		&profile_id,
 		json!([
 			{
-				"menu_key": "users",
+				"menu_key": "admin",
 				"can_read": true,
 				"can_edit": false,
 				"can_review": false,
@@ -168,21 +169,21 @@ async fn test_users_matrix_privileges_grant_only_user_operations() -> Result<()>
 		create_empty_custom_role(&app, &admin_cookie, &roles_profile_id).await?;
 	let (_roles_user_id, roles_cookie) =
 		custom_role_user(&mm, seed.org_id, &roles_profile_id).await?;
-	update_role_privileges(
+	let (status, value) = request_json(
 		&app,
+		"PUT",
 		&admin_cookie,
-		&roles_profile_id,
-		json!([
-			{
+		format!("/api/admin/permission-profiles/{roles_profile_id}"),
+		Some(json!({ "data": { "privileges": [{
 				"menu_key": "roles",
 				"can_read": true,
 				"can_edit": true,
 				"can_review": false,
 				"can_lock": false
-			}
-		]),
+			}] } })),
 	)
 	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
 	assert!(!has_permission(&roles_profile_id, USER_CREATE));
 	assert!(!has_permission(&roles_profile_id, USER_UPDATE));
 	assert!(!has_permission(&roles_profile_id, USER_DELETE));
@@ -227,7 +228,7 @@ async fn test_users_matrix_privileges_grant_only_user_operations() -> Result<()>
 		&profile_id,
 		json!([
 			{
-				"menu_key": "users",
+				"menu_key": "admin",
 				"can_read": true,
 				"can_edit": true,
 				"can_review": false,
@@ -277,8 +278,8 @@ async fn test_users_matrix_privileges_grant_only_user_operations() -> Result<()>
 }
 #[serial]
 #[tokio::test]
-async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Result<()>
-{
+async fn test_pdf_admin_read_and_edit_grant_registered_admin_entitlements(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -326,7 +327,7 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 		&profile_id,
 		json!([
 			{
-				"menu_key": "settings",
+				"menu_key": "admin",
 				"can_read": true,
 				"can_edit": false,
 				"can_review": false,
@@ -337,8 +338,8 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 	.await?;
 	assert_eq!(
 		value["sponsor_admin_capable"].as_bool(),
-		Some(false),
-		"settings.can_read alone must not make the role Safety DB admin capable: {value:?}"
+		Some(true),
+		"admin.can_read must mark the role admin capable: {value:?}"
 	);
 	assert_profile_access(
 		&app,
@@ -346,7 +347,7 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 		&[
 			("admin", "read", true),
 			("admin", "update", false),
-			("users", "read", false),
+			("users", "read", true),
 			("users", "create", false),
 			("roles", "read", false),
 			("roles", "create", false),
@@ -383,8 +384,7 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 	);
 	assert!(has_permission(&profile_id, SETTINGS_READ));
 	assert!(!has_permission(&profile_id, SETTINGS_UPDATE));
-	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
-		.await?;
+	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK).await?;
 	let (status, value) = request_json(
 		&app,
 		"POST",
@@ -431,7 +431,7 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 		&profile_id,
 		json!([
 			{
-				"menu_key": "settings",
+				"menu_key": "admin",
 				"can_read": true,
 				"can_edit": true,
 				"can_review": false,
@@ -442,8 +442,8 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 	.await?;
 	assert_eq!(
 		value["sponsor_admin_capable"].as_bool(),
-		Some(false),
-		"settings.can_edit alone must not make the role broadly admin capable: {value:?}"
+		Some(true),
+		"admin.can_edit must mark the role admin capable: {value:?}"
 	);
 	assert_profile_access(
 		&app,
@@ -451,10 +451,10 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 		&[
 			("admin", "read", true),
 			("admin", "update", true),
-			("users", "read", false),
-			("users", "create", false),
-			("users", "update", false),
-			("users", "delete", false),
+			("users", "read", true),
+			("users", "create", true),
+			("users", "update", true),
+			("users", "delete", true),
 			("roles", "read", false),
 			("roles", "create", false),
 			("roles", "update", false),
@@ -466,11 +466,10 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 	.await?;
 	assert!(has_permission(&profile_id, SETTINGS_READ));
 	assert!(has_permission(&profile_id, SETTINGS_UPDATE));
-	assert!(!has_permission(&profile_id, USER_CREATE));
-	assert!(!has_permission(&profile_id, USER_UPDATE));
-	assert!(!has_permission(&profile_id, USER_DELETE));
-	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::FORBIDDEN)
-		.await?;
+	assert!(has_permission(&profile_id, USER_CREATE));
+	assert!(has_permission(&profile_id, USER_UPDATE));
+	assert!(has_permission(&profile_id, USER_DELETE));
+	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK).await?;
 	let (status, value) = request_json(
 		&app,
 		"PUT",
@@ -519,7 +518,7 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 	assert_eq!(
 		status,
 		StatusCode::FORBIDDEN,
-		"settings.can_edit must not create users through POST /api/users: {value:?}"
+		"admin.can_edit grants the entitlement but must not create a privileged administrator identity: {value:?}"
 	);
 
 	Ok(())
@@ -528,8 +527,7 @@ async fn test_settings_admin_matrix_grants_only_settings_route_access() -> Resul
 // Gap coverage: home_workflow read privilege must grant effective case-list
 #[serial]
 #[tokio::test]
-async fn test_audit_matrix_privileges_grant_effective_audit_log_access() -> Result<()>
-{
+async fn test_admin_read_grants_effective_audit_log_access() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -558,13 +556,13 @@ async fn test_audit_matrix_privileges_grant_effective_audit_log_access() -> Resu
 	assert_get_status(&app, &none_cookie, "/api/audit-logs", StatusCode::FORBIDDEN)
 		.await?;
 
-	// audit read grants AUDIT_READ + AUDIT_LIST.
+	// PDF ADMIN Read includes the registered audit-read entitlement.
 	update_role_privileges(
 		&app,
 		&admin_cookie,
 		&read_id,
 		json!([{
-			"menu_key": "audit",
+			"menu_key": "admin",
 			"can_read": true,
 			"can_edit": false,
 			"can_review": false,

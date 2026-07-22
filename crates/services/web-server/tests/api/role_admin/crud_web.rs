@@ -109,7 +109,7 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 		Some(json!({
 			"data": {
 				"name": "QA Role",
-				"description": "Can edit cases and read audit",
+				"description": "Can edit cases and read admin data",
 				"privileges": [
 					{
 						"menu_key": "case",
@@ -119,7 +119,7 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 						"can_lock": false
 					},
 					{
-						"menu_key": "audit",
+						"menu_key": "admin",
 						"can_read": true,
 						"can_edit": false,
 						"can_review": false,
@@ -132,15 +132,15 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	let profile_id = value["id"].as_str().ok_or("missing role id")?.to_string();
-	assert_eq!(value["description"], "Can edit cases and read audit");
+	assert_eq!(value["description"], "Can edit cases and read admin data");
 	assert_eq!(value["can_view"].as_bool(), Some(true));
-	assert_eq!(value["can_admin"].as_bool(), Some(false));
+	assert_eq!(value["can_admin"].as_bool(), Some(true));
 	assert_eq!(
 		value["privilege_map"]["case"]["can_edit"].as_bool(),
 		Some(true)
 	);
 	assert_eq!(
-		value["privilege_map"]["audit"]["can_read"].as_bool(),
+		value["privilege_map"]["admin"]["can_read"].as_bool(),
 		Some(true)
 	);
 

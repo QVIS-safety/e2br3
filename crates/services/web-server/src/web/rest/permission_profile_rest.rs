@@ -5,7 +5,9 @@ use lib_core::ctx::{
 	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
 	ROLE_SYSTEM_ADMIN,
 };
-use lib_core::model::acs::AdminMenuPrivilege;
+use lib_core::model::acs::{
+	normalize_menu_privileges, AdminMenuPrivilege, PrivilegeAdapterError,
+};
 use lib_core::model::permission_profile::{
 	DbPermissionProfileRow, PermissionProfileBmc, PermissionProfileCreateData,
 	PermissionProfileUpdateData,
@@ -101,11 +103,7 @@ fn role_summary_booleans(
 	privileges: &[AdminMenuPrivilege],
 ) -> (bool, bool, bool, bool) {
 	let can_admin = privileges.iter().any(|privilege| {
-		matches!(
-			privilege.menu_key.as_str(),
-			"admin" | "roles" | "users" | "user"
-		) && (privilege.can_edit
-			|| privilege.can_read && privilege.menu_key == "admin")
+		privilege.menu_key == "admin" && (privilege.can_read || privilege.can_edit)
 	});
 	let can_view = can_admin
 		|| privileges.iter().any(|privilege| {
@@ -159,54 +157,16 @@ fn build_role_row(
 fn normalize_admin_privileges(
 	privileges: Option<Vec<AdminMenuPrivilege>>,
 ) -> Result<Vec<AdminMenuPrivilege>> {
-	let raw = privileges.unwrap_or_default();
-	let mut out = BTreeMap::<String, AdminMenuPrivilege>::new();
-	for privilege in raw {
-		let menu_key = privilege.menu_key.trim().to_ascii_lowercase();
-		if menu_key.is_empty() {
-			continue;
-		}
-		if !matches!(
-			menu_key.as_str(),
-			"home_workflow"
-				| "case_workflow"
-				| "home_notice"
-				| "home_email"
-				| "email_report_due"
-				| "email_review"
-				| "email_lock"
-				| "case" | "info"
-				| "import" | "export_submission"
-				| "submission"
-				| "export" | "user"
-				| "users" | "audit"
-				| "data" | "terminology"
-				| "admin" | "settings"
-				| "roles"
-		) {
-			return Err(Error::BadRequest {
-				message: format!("unknown role privilege menu '{menu_key}'"),
-			});
-		}
-		// Reference model: privileges are Read/Edit; Review/Lock exist only as
-		// the CASE menu's Review/Lock rows. Strip the flags everywhere else so
-		// they can never act as a hidden third/fourth privilege column.
-		let review_lock_allowed = menu_key == "case";
-		let entry = out.entry(menu_key.clone()).or_insert(AdminMenuPrivilege {
-			menu_key,
-			can_read: false,
-			can_edit: false,
-			can_review: false,
-			can_lock: false,
-		});
-		entry.can_read = entry.can_read || privilege.can_read;
-		entry.can_edit = entry.can_edit || privilege.can_edit;
-		entry.can_review =
-			entry.can_review || (privilege.can_review && review_lock_allowed);
-		entry.can_lock =
-			entry.can_lock || (privilege.can_lock && review_lock_allowed);
-	}
-	Ok(out.into_values().collect::<Vec<_>>())
+	let raw = privileges
+		.unwrap_or_default()
+		.into_iter()
+		.filter(|privilege| !privilege.menu_key.trim().is_empty())
+		.collect::<Vec<_>>();
+	normalize_menu_privileges(&raw).map_err(|error| match error {
+		PrivilegeAdapterError::UnknownMenu { menu_key } => Error::BadRequest {
+			message: format!("unknown role privilege menu '{menu_key}'"),
+		},
+	})
 }
 
 const ADMIN_ROLE_MENU_KEYS: &[&str] = &[

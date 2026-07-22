@@ -91,7 +91,8 @@ async fn test_home_notice_matrix_privileges_surface_in_current_user_capabilities
 }
 #[serial]
 #[tokio::test]
-async fn test_home_email_matrix_privilege_persists_and_grants_send() -> Result<()> {
+async fn test_report_due_mail_rows_persist_but_grant_nothing_while_reserved(
+) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -106,14 +107,14 @@ async fn test_home_email_matrix_privilege_persists_and_grants_send() -> Result<(
 	.await?;
 	assert!(!has_permission(&profile_id, EMAIL_NOTIFICATION_SEND));
 
-	// home_email is accepted (200, not BAD_REQUEST) and its Send checkbox grants
-	// the reserved permission.
+	// The PDF row remains representable for migration, but reserved grants never
+	// compile to an operational permission.
 	update_role_privileges(
 		&app,
 		&admin_cookie,
 		&profile_id,
 		json!([{
-			"menu_key": "home_email",
+			"menu_key": "email_report_due",
 			"can_read": false,
 			"can_edit": true,
 			"can_review": false,
@@ -121,7 +122,7 @@ async fn test_home_email_matrix_privilege_persists_and_grants_send() -> Result<(
 		}]),
 	)
 	.await?;
-	assert!(has_permission(&profile_id, EMAIL_NOTIFICATION_SEND));
+	assert!(!has_permission(&profile_id, EMAIL_NOTIFICATION_SEND));
 
 	Ok(())
 }

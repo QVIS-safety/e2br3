@@ -2,7 +2,7 @@ use super::support::*;
 
 #[serial]
 #[tokio::test]
-async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
+async fn test_admin_matrix_privileges_grant_effective_terminology_permissions(
 ) -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
@@ -30,7 +30,7 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 		&profile_id,
 		json!([
 			{
-				"menu_key": "data",
+				"menu_key": "admin",
 				"can_read": true,
 				"can_edit": false,
 				"can_review": false,
@@ -98,7 +98,7 @@ async fn test_data_matrix_privileges_grant_effective_terminology_permissions(
 		&profile_id,
 		json!([
 			{
-				"menu_key": "data",
+				"menu_key": "admin",
 				"can_read": true,
 				"can_edit": true,
 				"can_review": false,
