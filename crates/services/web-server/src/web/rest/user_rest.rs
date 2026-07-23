@@ -8,8 +8,9 @@ use lib_core::ctx::{
 	ROLE_SYSTEM_ADMIN, ROLE_USER,
 };
 use lib_core::model::acs::{
-	all_permissions, has_permission, CASE_READ, USER_CREATE, USER_DELETE, USER_LIST,
-	USER_READ, USER_UPDATE,
+	all_permissions, built_in_menu_privileges, has_permission,
+	normalize_menu_privileges, AdminMenuPrivilege, CASE_READ, USER_CREATE,
+	USER_DELETE, USER_LIST, USER_READ, USER_UPDATE,
 };
 use lib_core::model::organization::{
 	Organization, OrganizationBmc, ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY,

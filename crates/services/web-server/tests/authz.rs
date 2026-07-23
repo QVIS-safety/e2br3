@@ -10,6 +10,8 @@ mod authorization_isolation;
 mod authorization_revisions;
 #[path = "authz/authorization_snapshot.rs"]
 mod authorization_snapshot;
+#[path = "authz/authorization_startup.rs"]
+mod authorization_startup;
 #[path = "authz/authorization_storage.rs"]
 mod authorization_storage;
 #[path = "authz/authorization_test_support.rs"]

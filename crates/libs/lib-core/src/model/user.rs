@@ -393,9 +393,6 @@ impl UserBmc {
 		user_id: Uuid,
 		organization_id: Uuid,
 	) -> Result<()> {
-		if organization_id.is_nil() {
-			return Ok(());
-		}
 		mm.dbx()
 			.execute(
 				sqlx::query(

@@ -84,6 +84,7 @@ pub struct CurrentUserProfileView {
 	pub active_organization: OrganizationOptionView,
 	pub available_organizations: Vec<OrganizationOptionView>,
 	pub routing: lib_rest_core::RoutingProfile,
+	pub privileges: Vec<AdminMenuPrivilege>,
 	pub permissions: Vec<String>,
 	pub policy_version: i64,
 }

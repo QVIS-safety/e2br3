@@ -365,6 +365,7 @@ pub async fn get_current_user_profile(
 	let organization_selection =
 		current_user_organization_selection_view(&ctx, &mm).await?;
 	let routing = routing_profile_for_user(&ctx, &mm).await?;
+	let privileges = current_user_menu_privileges(&ctx, &mm).await?;
 	let mut permissions = all_permissions()
 		.iter()
 		.copied()
@@ -383,11 +384,32 @@ pub async fn get_current_user_profile(
 				available_organizations: organization_selection
 					.available_organizations,
 				routing,
+				privileges,
 				permissions,
 				policy_version,
 			},
 		}),
 	))
+}
+
+async fn current_user_menu_privileges(
+	ctx: &Ctx,
+	mm: &ModelManager,
+) -> Result<Vec<AdminMenuPrivilege>> {
+	let built_in = built_in_menu_privileges(ctx.role());
+	if !built_in.is_empty() || ctx.is_admin() {
+		return Ok(built_in);
+	}
+	let Ok(profile_id) = Uuid::parse_str(ctx.role()) else {
+		return Ok(Vec::new());
+	};
+	let row = PermissionProfileBmc::get(ctx, mm, profile_id)
+		.await
+		.map_err(Error::Model)?;
+	if !row.active || row.organization_id != ctx.organization_id() {
+		return Ok(Vec::new());
+	}
+	Ok(normalize_menu_privileges(&row.privileges_json.0).unwrap_or_default())
 }
 
 pub async fn update_current_user_organization(

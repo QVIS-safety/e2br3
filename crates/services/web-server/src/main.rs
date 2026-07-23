@@ -33,7 +33,6 @@ async fn main() -> Result<()> {
 	config::validate_submission_runtime_config().map_err(Error::Config)?;
 
 	let mm = ModelManager::new().await?;
-	bootstrap::bootstrap_admin_user(&mm).await?;
 	let authorization_status = web_server::initialize_authorization_storage()
 		.await
 		.map_err(|err| Error::Config(err.to_string()))?;
@@ -50,6 +49,7 @@ async fn main() -> Result<()> {
 			);
 		}
 	}
+	bootstrap::bootstrap_admin_user(&mm).await?;
 	permission_profile_rest::refresh_dynamic_roles(&mm)
 		.await
 		.map_err(|err| Error::Config(err.to_string()))?;

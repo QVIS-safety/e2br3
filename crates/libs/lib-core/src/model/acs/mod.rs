@@ -66,8 +66,8 @@ pub fn can_access_user_admin(ctx: &Ctx) -> bool {
 
 mod registry_adapter;
 pub use registry_adapter::{
-	normalize_menu_privileges, permissions_for_menu_privileges, AdminMenuPrivilege,
-	PrivilegeAdapterError,
+	built_in_menu_privileges, normalize_menu_privileges,
+	permissions_for_menu_privileges, AdminMenuPrivilege, PrivilegeAdapterError,
 };
 
 #[cfg(test)]

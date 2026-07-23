@@ -71,6 +71,27 @@ async fn test_role_privilege_matrix_update_grants_effective_case_access(
 			.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 
+	let (status, profile) = request_json(
+		&app,
+		"GET",
+		&custom_cookie,
+		"/api/users/me/profile".to_string(),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK, "{profile:?}");
+	assert_eq!(
+		profile["data"]["privileges"],
+		json!([{
+			"menu_key": "case",
+			"can_read": true,
+			"can_edit": false,
+			"can_review": false,
+			"can_lock": false
+		}]),
+		"the authenticated profile must expose the stored menu intent without reverse-mapping permissions"
+	);
+
 	Ok(())
 }
 #[serial]

@@ -16,6 +16,77 @@ use serial_test::serial;
 use tower::ServiceExt;
 use uuid::Uuid;
 
+#[serial]
+#[tokio::test]
+async fn test_system_admin_permission_profiles_require_target_organization(
+) -> Result<()> {
+	let mm = init_test_mm().await?;
+	let source = seed_org_with_users(&mm, "sourcepwd", "sourceview").await?;
+	let target = seed_org_with_users(&mm, "targetpwd", "targetview").await?;
+	let system_admin = insert_user(
+		&mm,
+		source.org_id,
+		ROLE_SYSTEM_ADMIN,
+		system_user_id(),
+		Some("systempwd"),
+	)
+	.await?;
+	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
+	let cookie = cookie_header(&token.to_string());
+	let app = web_server::app(mm);
+	let role_name = format!("Target Role {}", Uuid::new_v4());
+	let body = json!({
+		"data": {
+			"name": role_name,
+			"privileges": [{
+				"menu_key": "case",
+				"can_read": true,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": false
+			}]
+		}
+	});
+
+	let missing_scope = Request::builder()
+		.method("POST")
+		.uri("/api/admin/permission-profiles")
+		.header("cookie", &cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let missing_scope = app.clone().oneshot(missing_scope).await?;
+	assert_eq!(missing_scope.status(), StatusCode::BAD_REQUEST);
+
+	let target_uri = format!(
+		"/api/admin/permission-profiles?organization_id={}",
+		target.org_id
+	);
+	let scoped = Request::builder()
+		.method("POST")
+		.uri(&target_uri)
+		.header("cookie", &cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(body.to_string()))?;
+	let scoped = app.clone().oneshot(scoped).await?;
+	assert_eq!(scoped.status(), StatusCode::CREATED);
+
+	let list = Request::builder()
+		.method("GET")
+		.uri(&target_uri)
+		.header("cookie", cookie)
+		.body(Body::empty())?;
+	let list = app.oneshot(list).await?;
+	assert_eq!(list.status(), StatusCode::OK);
+	let list_body = to_bytes(list.into_body(), usize::MAX).await?;
+	let rows: serde_json::Value = serde_json::from_slice(&list_body)?;
+	assert!(rows
+		.as_array()
+		.ok_or("expected profile list")?
+		.iter()
+		.any(|row| row["name"] == role_name));
+	Ok(())
+}
+
 #[tokio::test]
 async fn test_permission_profiles_are_scoped_by_organization_for_sponsor_admins(
 ) -> Result<()> {

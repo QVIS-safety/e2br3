@@ -1,4 +1,4 @@
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::ctx::{
@@ -6,11 +6,15 @@ use lib_core::ctx::{
 	ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::{
-	normalize_menu_privileges, AdminMenuPrivilege, PrivilegeAdapterError,
+	built_in_menu_privileges, normalize_menu_privileges, AdminMenuPrivilege,
+	PrivilegeAdapterError,
 };
 use lib_core::model::permission_profile::{
 	DbPermissionProfileRow, PermissionProfileBmc, PermissionProfileCreateData,
 	PermissionProfileUpdateData,
+};
+use lib_core::model::organization::{
+	OrganizationBmc, ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY,
 };
 use lib_core::model::ModelManager;
 use lib_rest_core::{require_role_admin, Error, Result};
@@ -22,6 +26,51 @@ use uuid::Uuid;
 
 const ROLE_NAME_MAX_LEN: usize = 128;
 const ROLE_DESCRIPTION_MAX_LEN: usize = 512;
+
+#[derive(Debug, Default, Deserialize)]
+pub struct PermissionProfileScope {
+	#[serde(default, alias = "organizationId")]
+	pub organization_id: Option<Uuid>,
+}
+
+async fn permission_profile_ctx(
+	ctx: &Ctx,
+	mm: &ModelManager,
+	scope: &PermissionProfileScope,
+) -> Result<Ctx> {
+	require_role_admin(ctx)?;
+	if !ctx.is_system_admin() {
+		return Ok(ctx.clone());
+	}
+	let organization_id = scope.organization_id.ok_or_else(|| Error::BadRequest {
+		message: "organization_id is required".to_string(),
+	})?;
+	if organization_id.is_nil() {
+		return Err(Error::BadRequest {
+			message: "system organization cannot own custom roles".to_string(),
+		});
+	}
+	let organization = OrganizationBmc::get(ctx, mm, organization_id)
+		.await
+		.map_err(Error::Model)?;
+	let valid_type = organization
+		.org_type
+		.as_deref()
+		.and_then(OrganizationBmc::normalize_org_type)
+		.is_some_and(|org_type| {
+			org_type == ORG_TYPE_CRO || org_type == ORG_TYPE_PHARMACEUTICAL_COMPANY
+		});
+	if !organization.active || !valid_type {
+		return Err(Error::BadRequest {
+			message: "target organization must be an active CRO or company"
+				.to_string(),
+		});
+	}
+	Ctx::new(ctx.user_id(), organization_id, ROLE_SYSTEM_ADMIN.to_string())
+		.map_err(|_| Error::BadRequest {
+			message: "invalid target organization context".to_string(),
+		})
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PermissionProfileRow {
@@ -169,31 +218,6 @@ fn normalize_admin_privileges(
 	})
 }
 
-const ADMIN_ROLE_MENU_KEYS: &[&str] = &[
-	"case",
-	"info",
-	"import",
-	"export_submission",
-	"users",
-	"roles",
-	"settings",
-	"audit",
-	"data",
-];
-
-fn full_menu_privileges() -> Vec<AdminMenuPrivilege> {
-	ADMIN_ROLE_MENU_KEYS
-		.iter()
-		.map(|menu_key| AdminMenuPrivilege {
-			menu_key: (*menu_key).to_string(),
-			can_read: true,
-			can_edit: true,
-			can_review: *menu_key == "case",
-			can_lock: *menu_key == "case",
-		})
-		.collect()
-}
-
 fn system_admin_row() -> PermissionProfileRow {
 	build_role_row(
 		ROLE_SYSTEM_ADMIN.to_string(),
@@ -202,7 +226,7 @@ fn system_admin_row() -> PermissionProfileRow {
 			"Platform-level role for provisioning and internal operations."
 				.to_string(),
 		),
-		Vec::new(),
+		built_in_menu_privileges(ROLE_SYSTEM_ADMIN),
 		true,
 		true,
 		false,
@@ -215,7 +239,7 @@ fn sponsor_admin_row(id: &str, name: &str) -> PermissionProfileRow {
 		id.to_string(),
 		name.to_string(),
 		Some("Fixed account administrator role.".to_string()),
-		full_menu_privileges(),
+		built_in_menu_privileges(id),
 		true,
 		true,
 		false,
@@ -285,9 +309,10 @@ pub async fn refresh_dynamic_roles(mm: &ModelManager) -> Result<()> {
 pub async fn list_permission_profiles(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	Query(scope): Query<PermissionProfileScope>,
 ) -> Result<(StatusCode, Json<Vec<PermissionProfileRow>>)> {
-	let ctx = ctx_w.0;
-	require_role_admin(&ctx)?;
+	let request_ctx = ctx_w.0;
+	let ctx = permission_profile_ctx(&request_ctx, &mm, &scope).await?;
 	let mut rows = visible_built_in_roles(&ctx, &mm).await?;
 	let custom_rows = PermissionProfileBmc::list(&ctx, &mm)
 		.await
@@ -301,9 +326,10 @@ pub async fn get_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<String>,
+	Query(scope): Query<PermissionProfileScope>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
-	let ctx = ctx_w.0;
-	require_role_admin(&ctx)?;
+	let request_ctx = ctx_w.0;
+	let ctx = permission_profile_ctx(&request_ctx, &mm, &scope).await?;
 	if let Some(row) = visible_built_in_roles(&ctx, &mm)
 		.await?
 		.into_iter()
@@ -322,12 +348,13 @@ pub async fn get_permission_profile(
 pub async fn create_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	Query(scope): Query<PermissionProfileScope>,
 	Json(params): Json<
 		lib_rest_core::rest_params::ParamsForCreate<PermissionProfileCreateBody>,
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
-	let ctx = ctx_w.0;
-	require_role_admin(&ctx)?;
+	let request_ctx = ctx_w.0;
+	let ctx = permission_profile_ctx(&request_ctx, &mm, &scope).await?;
 	let data = params.data;
 	let name = data
 		.name
@@ -379,12 +406,13 @@ pub async fn update_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<String>,
+	Query(scope): Query<PermissionProfileScope>,
 	Json(params): Json<
 		lib_rest_core::rest_params::ParamsForUpdate<PermissionProfileUpdateBody>,
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
-	let ctx = ctx_w.0;
-	require_role_admin(&ctx)?;
+	let request_ctx = ctx_w.0;
+	let ctx = permission_profile_ctx(&request_ctx, &mm, &scope).await?;
 	if is_built_in_role_id(&id) {
 		return Err(Error::AccessDenied {
 			required_role: "editable_custom_role".to_string(),
@@ -450,9 +478,10 @@ pub async fn delete_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<String>,
+	Query(scope): Query<PermissionProfileScope>,
 ) -> Result<StatusCode> {
-	let ctx = ctx_w.0;
-	require_role_admin(&ctx)?;
+	let request_ctx = ctx_w.0;
+	let ctx = permission_profile_ctx(&request_ctx, &mm, &scope).await?;
 	if is_built_in_role_id(&id) {
 		return Err(Error::BadRequest {
 			message: "built-in permission profiles cannot be deleted".to_string(),

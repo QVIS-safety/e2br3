@@ -190,6 +190,7 @@ async fn sync_user(
 
 	match existing_user_id {
 		Some(user_id) => {
+			sync_user_organization(ctx, mm, user_id, organization_id).await?;
 			let user_u = UserForUpdate {
 				organization_id: None,
 				email: Some(email.to_string()),
@@ -208,7 +209,6 @@ async fn sync_user(
 				last_login_at: None,
 			};
 			UserBmc::update(ctx, mm, user_id, user_u).await?;
-			sync_user_organization(ctx, mm, user_id, organization_id).await?;
 			UserBmc::update_pwd_and_clear_must_change(
 				ctx,
 				mm,
