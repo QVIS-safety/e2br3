@@ -56,9 +56,7 @@ pub fn built_in_menu_privileges(role: &str) -> Vec<AdminMenuPrivilege> {
 	}) {
 		let privilege = privileges
 			.entry(grant.ui_binding.menu_key.clone())
-			.or_insert_with(|| {
-				empty_privilege(grant.ui_binding.menu_key.clone())
-			});
+			.or_insert_with(|| empty_privilege(grant.ui_binding.menu_key.clone()));
 		set_enabled(privilege, grant.ui_binding.field);
 	}
 	privileges.into_values().collect()

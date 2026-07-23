@@ -1,5 +1,23 @@
 use super::*;
 
+fn system_admin_ctx_for_organization(
+	ctx: &Ctx,
+	organization_id: Uuid,
+) -> Result<Option<Ctx>> {
+	if !ctx.is_system_admin() {
+		return Ok(None);
+	}
+	let scoped = Ctx::new(ctx.user_id(), organization_id, ctx.role().to_string())
+		.map_err(|_| Error::BadRequest {
+			message: "valid organization context is required".to_string(),
+		})?
+		.with_compliance(
+			ctx.change_reason().map(ToString::to_string),
+			ctx.e_signature_id(),
+		);
+	Ok(Some(scoped))
+}
+
 /// POST /api/users
 /// Create a new user
 /// **Requires User.Create permission (admin only)**
@@ -38,7 +56,6 @@ pub async fn create_user(
 		) {
 		return Err(sender_scope_assignment_forbidden());
 	}
-	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let organization_id = if ctx.is_system_admin() {
 		data.organization_id.ok_or_else(|| Error::BadRequest {
 			message: "organization_id is required".to_string(),
@@ -51,6 +68,13 @@ pub async fn create_user(
 			message: "organization context is required".to_string(),
 		});
 	}
+	let db_ctx = if let Some(scoped) =
+		system_admin_ctx_for_organization(&ctx, organization_id)?
+	{
+		scoped
+	} else {
+		admin_db_ctx(&ctx, &mm).await?
+	};
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let role = normalize_user_role(data.role);
 	validate_create_role_selection(role.as_deref())?;
@@ -548,4 +572,27 @@ pub async fn update_current_user_routing(
 	.await?;
 	let routing = routing_profile_for_user(&ctx, &mm).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: routing })))
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn system_admin_user_creation_uses_the_selected_organization_context() {
+		let user_id = Uuid::new_v4();
+		let target_organization_id = Uuid::new_v4();
+		let request_ctx =
+			Ctx::new(user_id, Uuid::nil(), ROLE_SYSTEM_ADMIN.to_string())
+				.expect("system administrator context");
+
+		let scoped =
+			system_admin_ctx_for_organization(&request_ctx, target_organization_id)
+				.expect("scope selection should succeed")
+				.expect("system administrator should receive a scoped context");
+
+		assert_eq!(scoped.user_id(), user_id);
+		assert_eq!(scoped.organization_id(), target_organization_id);
+		assert_eq!(scoped.role(), ROLE_SYSTEM_ADMIN);
+	}
 }

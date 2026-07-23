@@ -9,12 +9,12 @@ use lib_core::model::acs::{
 	built_in_menu_privileges, normalize_menu_privileges, AdminMenuPrivilege,
 	PrivilegeAdapterError,
 };
+use lib_core::model::organization::{
+	OrganizationBmc, ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY,
+};
 use lib_core::model::permission_profile::{
 	DbPermissionProfileRow, PermissionProfileBmc, PermissionProfileCreateData,
 	PermissionProfileUpdateData,
-};
-use lib_core::model::organization::{
-	OrganizationBmc, ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY,
 };
 use lib_core::model::ModelManager;
 use lib_rest_core::{require_role_admin, Error, Result};
@@ -42,9 +42,10 @@ async fn permission_profile_ctx(
 	if !ctx.is_system_admin() {
 		return Ok(ctx.clone());
 	}
-	let organization_id = scope.organization_id.ok_or_else(|| Error::BadRequest {
-		message: "organization_id is required".to_string(),
-	})?;
+	let organization_id =
+		scope.organization_id.ok_or_else(|| Error::BadRequest {
+			message: "organization_id is required".to_string(),
+		})?;
 	if organization_id.is_nil() {
 		return Err(Error::BadRequest {
 			message: "system organization cannot own custom roles".to_string(),
@@ -66,10 +67,14 @@ async fn permission_profile_ctx(
 				.to_string(),
 		});
 	}
-	Ctx::new(ctx.user_id(), organization_id, ROLE_SYSTEM_ADMIN.to_string())
-		.map_err(|_| Error::BadRequest {
-			message: "invalid target organization context".to_string(),
-		})
+	Ctx::new(
+		ctx.user_id(),
+		organization_id,
+		ROLE_SYSTEM_ADMIN.to_string(),
+	)
+	.map_err(|_| Error::BadRequest {
+		message: "invalid target organization context".to_string(),
+	})
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
