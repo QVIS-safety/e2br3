@@ -52,18 +52,6 @@ pub use dynamic_roles::{
 mod check;
 pub use check::{has_all_permissions, has_any_permission, has_permission};
 
-use crate::ctx::Ctx;
-
-/// User administration is available to built-in administrators and to dynamic
-/// roles that hold at least one explicit User permission. Individual handlers
-/// must still check the exact action they perform.
-pub fn can_access_user_admin(ctx: &Ctx) -> bool {
-	ctx.is_admin()
-		|| [USER_LIST, USER_READ, USER_CREATE, USER_UPDATE, USER_DELETE]
-			.into_iter()
-			.any(|permission| has_permission(ctx.permission_subject(), permission))
-}
-
 mod registry_adapter;
 pub use registry_adapter::{
 	built_in_menu_privileges, normalize_menu_privileges,

@@ -187,11 +187,6 @@ impl Ctx {
 	pub fn is_user(&self) -> bool {
 		self.role == ROLE_USER
 	}
-
-	/// Returns true if the user can modify operational case data.
-	pub fn can_modify(&self) -> bool {
-		self.is_operational_admin() || self.is_user()
-	}
 }
 
 pub fn canonical_role(role: &str) -> String {

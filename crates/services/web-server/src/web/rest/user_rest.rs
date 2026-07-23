@@ -23,12 +23,11 @@ use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate, ParamsList};
 use lib_rest_core::rest_result::DataRestResult;
 use lib_rest_core::{
-	admin_db_ctx, require_permission, require_user_admin, routing_profile_for_user,
+	require_permission, routing_profile_for_user, user_admin_db_ctx,
 	validate_active_sender_selection, Error, Result,
 };
 use lib_web::middleware::mw_auth::CtxW;
 use lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW;
-use lib_web::middleware::mw_permission::RequireAdmin;
 use serde::{de, Deserialize, Deserializer, Serialize};
 use sqlx::types::time::OffsetDateTime;
 use time::{format_description, PrimitiveDateTime};

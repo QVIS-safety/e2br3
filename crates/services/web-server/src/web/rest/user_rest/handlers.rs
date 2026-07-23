@@ -24,13 +24,11 @@ fn system_admin_ctx_for_organization(
 pub async fn create_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
-	_admin: RequireAdmin,
 	Json(params): Json<ParamsForCreate<UserForCreateAdminPayload>>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
 	let ParamsForCreate { data } = params;
-	require_user_admin(&ctx, &mm).await?;
-	require_permission(&ctx, USER_CREATE)?;
+	let authorized_db_ctx = user_admin_db_ctx(&ctx, USER_CREATE)?;
 	if !ctx.is_admin()
 		&& data
 			.role
@@ -73,7 +71,7 @@ pub async fn create_user(
 	{
 		scoped
 	} else {
-		admin_db_ctx(&ctx, &mm).await?
+		authorized_db_ctx
 	};
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let role = normalize_user_role(data.role);
@@ -136,9 +134,7 @@ pub async fn get_user(
 	Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	require_user_admin(&ctx, &mm).await?;
-	require_permission(&ctx, USER_READ)?;
-	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
+	let db_ctx = user_admin_db_ctx(&ctx, USER_READ)?;
 	let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
 	Ok((
 		StatusCode::OK,
@@ -192,9 +188,7 @@ pub async fn list_users(
 	let ctx = ctx_w.0;
 	let params = ParamsList::<UserFilter>::from_raw_query(raw_query.as_deref())
 		.map_err(|message| Error::BadRequest { message })?;
-	require_user_admin(&ctx, &mm).await?;
-	require_permission(&ctx, USER_LIST)?;
-	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
+	let db_ctx = user_admin_db_ctx(&ctx, USER_LIST)?;
 	let entities =
 		UserBmc::list(&db_ctx, &mm, params.filters, params.list_options).await?;
 	let entities = entities.into_iter().map(user_view).collect::<Vec<_>>();
@@ -236,13 +230,11 @@ pub async fn update_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
 	Path(id): Path<Uuid>,
-	_admin: RequireAdmin,
 	Json(params): Json<ParamsForUpdate<UserForUpdateAdminPayload>>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
 	let ParamsForUpdate { data } = params;
-	require_user_admin(&ctx, &mm).await?;
-	require_permission(&ctx, USER_UPDATE)?;
+	let db_ctx = user_admin_db_ctx(&ctx, USER_UPDATE)?;
 	if !ctx.is_admin() && data.role.is_some() {
 		return Err(Error::PermissionDenied {
 			required_permission: "built-in administrator role assignment"
@@ -263,7 +255,6 @@ pub async fn update_user(
 		) {
 		return Err(sender_scope_assignment_forbidden());
 	}
-	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let existing: User = UserBmc::get(&db_ctx, &mm, id).await?;
 	validate_existing_sponsor_admin_mutation(&ctx, &existing)?;
 	let role = normalize_user_role(data.role);
@@ -326,14 +317,12 @@ pub async fn delete_user(
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
-	require_user_admin(&ctx, &mm).await?;
-	require_permission(&ctx, USER_DELETE)?;
+	let db_ctx = user_admin_db_ctx(&ctx, USER_DELETE)?;
 	if id == ctx.user_id() {
 		return Err(Error::BadRequest {
 			message: "cannot delete yourself".to_string(),
 		});
 	}
-	let db_ctx = admin_db_ctx(&ctx, &mm).await?;
 	let existing: User = UserBmc::get(&db_ctx, &mm, id).await?;
 	validate_existing_sponsor_admin_mutation(&ctx, &existing)?;
 	UserBmc::update(

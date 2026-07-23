@@ -50,7 +50,7 @@ use lib_core::ctx::{
 	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
 	ROLE_USER,
 };
-use lib_core::model::acs::{can_access_user_admin, has_permission, Permission};
+use lib_core::model::acs::{has_permission, Permission};
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::case::{Case, CaseBmc};
 use lib_core::model::user::UserBmc;
@@ -75,25 +75,6 @@ pub fn is_unique_violation(err: &lib_core::model::Error) -> bool {
 	}
 }
 
-pub async fn is_admin(ctx: &Ctx, mm: &ModelManager) -> Result<bool> {
-	let _ = mm;
-	Ok(ctx.is_admin())
-}
-
-pub fn can_access_admin(ctx: &Ctx) -> bool {
-	can_access_user_admin(ctx)
-}
-
-pub async fn require_user_admin(ctx: &Ctx, mm: &ModelManager) -> Result<()> {
-	let _ = mm;
-	if !can_access_user_admin(ctx) {
-		return Err(Error::AccessDenied {
-			required_role: "user administration".to_string(),
-		});
-	}
-	Ok(())
-}
-
 pub fn require_role_admin(ctx: &Ctx) -> Result<()> {
 	if !ctx.is_admin() {
 		return Err(Error::AccessDenied {
@@ -103,8 +84,10 @@ pub fn require_role_admin(ctx: &Ctx) -> Result<()> {
 	Ok(())
 }
 
-pub async fn admin_db_ctx(ctx: &Ctx, mm: &ModelManager) -> Result<Ctx> {
-	require_user_admin(ctx, mm).await?;
+/// Authorize one exact user-administration action and return the database
+/// context required by the legacy user repository RLS policy.
+pub fn user_admin_db_ctx(ctx: &Ctx, permission: Permission) -> Result<Ctx> {
+	require_permission(ctx, permission)?;
 	if ctx.is_system_admin() || ctx.is_sponsor_admin() {
 		return Ok(ctx.clone());
 	}
@@ -643,7 +626,7 @@ pub async fn case_matches_user_scope(
 	mm: &ModelManager,
 	case_id: Uuid,
 ) -> Result<bool> {
-	if is_admin(ctx, mm).await? {
+	if ctx.is_admin() {
 		return Ok(true);
 	}
 
@@ -841,5 +824,44 @@ pub async fn require_case_write_allowed(
 }
 
 pub mod prelude;
+
+#[cfg(test)]
+mod authorization_tests {
+	use super::*;
+	use lib_core::ctx::{ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN};
+	use lib_core::model::acs::{
+		remove_dynamic_role, upsert_dynamic_role_permissions, CASE_READ, USER_CREATE,
+	};
+
+	#[test]
+	fn user_admin_db_context_requires_the_exact_action() {
+		let user_id = Uuid::new_v4();
+		let organization_id = Uuid::new_v4();
+		let role = format!("user-admin-test-{}", Uuid::new_v4());
+		let ctx = Ctx::new(user_id, organization_id, role.clone()).unwrap();
+		upsert_dynamic_role_permissions(&role, vec![USER_CREATE]);
+
+		let scoped = user_admin_db_ctx(&ctx, USER_CREATE).unwrap();
+		assert_eq!(scoped.user_id(), user_id);
+		assert_eq!(scoped.organization_id(), organization_id);
+		assert_eq!(scoped.role(), ROLE_SPONSOR_ADMIN_CRO);
+		assert!(user_admin_db_ctx(&ctx, CASE_READ).is_err());
+
+		remove_dynamic_role(&role);
+	}
+
+	#[test]
+	fn built_in_admin_keeps_its_identity_after_exact_authorization() {
+		let ctx = Ctx::new(
+			Uuid::new_v4(),
+			Uuid::new_v4(),
+			ROLE_SYSTEM_ADMIN.to_string(),
+		)
+		.unwrap();
+
+		let scoped = user_admin_db_ctx(&ctx, USER_CREATE).unwrap();
+		assert_eq!(scoped.role(), ROLE_SYSTEM_ADMIN);
+	}
+}
 
 // endregion: --- Modules
