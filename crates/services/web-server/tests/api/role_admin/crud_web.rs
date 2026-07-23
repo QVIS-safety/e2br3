@@ -53,8 +53,10 @@ async fn test_role_admin_api_allows_new_role_without_privileges() -> Result<()> 
 	Uuid::parse_str(value["id"].as_str().ok_or("missing role id")?)?;
 	assert_eq!(value["name"], "QA empty privilege role");
 	assert_eq!(value["privileges"].as_array().map(Vec::len), Some(0));
-	assert_eq!(value["can_view"].as_bool(), Some(false));
-	assert_eq!(value["can_admin"].as_bool(), Some(false));
+	assert_eq!(value["built_in"].as_bool(), Some(false));
+	assert_eq!(value["editable"].as_bool(), Some(true));
+	assert!(value.get("can_view").is_none());
+	assert!(value.get("can_admin").is_none());
 
 	Ok(())
 }
@@ -133,16 +135,17 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	assert_eq!(status, StatusCode::CREATED, "{value:?}");
 	let profile_id = value["id"].as_str().ok_or("missing role id")?.to_string();
 	assert_eq!(value["description"], "Can edit cases and read admin data");
-	assert_eq!(value["can_view"].as_bool(), Some(true));
-	assert_eq!(value["can_admin"].as_bool(), Some(true));
-	assert_eq!(
-		value["privilege_map"]["case"]["can_edit"].as_bool(),
-		Some(true)
-	);
-	assert_eq!(
-		value["privilege_map"]["admin"]["can_read"].as_bool(),
-		Some(true)
-	);
+	let privileges = value["privileges"]
+		.as_array()
+		.ok_or("privileges should be an array")?;
+	assert!(privileges
+		.iter()
+		.any(|row| row["menu_key"] == "case" && row["can_edit"] == true));
+	assert!(privileges
+		.iter()
+		.any(|row| row["menu_key"] == "admin" && row["can_read"] == true));
+	assert!(value.get("privilege_map").is_none());
+	assert!(value.get("can_admin").is_none());
 
 	let (status, value) = request_json(
 		&app,
@@ -167,12 +170,16 @@ async fn test_role_admin_api_persists_menu_privileges() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK, "{value:?}");
 	assert_eq!(value["description"], "Can lock cases");
-	assert_eq!(value["can_review"].as_bool(), Some(true));
-	assert_eq!(value["can_lock"].as_bool(), Some(true));
-	assert_eq!(
-		value["privilege_map"]["case"]["can_lock"].as_bool(),
-		Some(true)
-	);
+	let privileges = value["privileges"]
+		.as_array()
+		.ok_or("privileges should be an array")?;
+	assert!(privileges.iter().any(|row| {
+		row["menu_key"] == "case"
+			&& row["can_review"] == true
+			&& row["can_lock"] == true
+	}));
+	assert!(value.get("can_review").is_none());
+	assert!(value.get("can_lock").is_none());
 	Ok(())
 }
 

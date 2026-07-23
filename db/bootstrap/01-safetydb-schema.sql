@@ -127,7 +127,6 @@ CREATE TABLE IF NOT EXISTS permission_profiles (
     privileges_json jsonb NOT NULL DEFAULT '[]'::jsonb,
     built_in boolean NOT NULL DEFAULT false,
     editable boolean NOT NULL DEFAULT true,
-    sponsor_admin_capable boolean NOT NULL DEFAULT false,
     active boolean NOT NULL DEFAULT true,
     updated_at timestamptz NOT NULL DEFAULT now()
 );

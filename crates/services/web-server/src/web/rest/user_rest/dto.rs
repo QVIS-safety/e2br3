@@ -19,7 +19,6 @@ pub struct UserRoleMetadata {
 	pub is_editable: bool,
 	pub is_sponsor_admin: bool,
 	pub is_operational: bool,
-	pub can_admin: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]

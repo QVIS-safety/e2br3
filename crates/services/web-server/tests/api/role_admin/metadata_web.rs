@@ -49,8 +49,11 @@ async fn test_role_admin_api_exposes_client_role_metadata() -> Result<()> {
 		.iter()
 		.find(|role| role["id"] == ROLE_SPONSOR_ADMIN_CRO)
 		.ok_or("missing CRO sponsor permission profile")?;
-	assert_eq!(sponsor_cro["is_operational"].as_bool(), Some(true));
-	assert_eq!(sponsor_cro["is_editable"].as_bool(), Some(false));
+	assert_eq!(sponsor_cro["built_in"].as_bool(), Some(true));
+	assert_eq!(sponsor_cro["editable"].as_bool(), Some(false));
+	assert!(sponsor_cro.get("is_builtin").is_none());
+	assert!(sponsor_cro.get("is_editable").is_none());
+	assert!(sponsor_cro.get("is_operational").is_none());
 
 	assert!(!roles.iter().any(|role| role["id"] == ROLE_SYSTEM_ADMIN));
 	assert!(!roles

@@ -30,7 +30,6 @@ pub struct DbPermissionProfileRow {
 	pub active: bool,
 	pub built_in: bool,
 	pub editable: bool,
-	pub sponsor_admin_capable: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,7 +38,6 @@ pub struct PermissionProfileCreateData {
 	pub description: Option<String>,
 	pub privileges: SqlxJson<Vec<AdminMenuPrivilege>>,
 	pub active: bool,
-	pub sponsor_admin_capable: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -48,12 +46,11 @@ pub struct PermissionProfileUpdateData {
 	pub description: Option<String>,
 	pub privileges: SqlxJson<Vec<AdminMenuPrivilege>>,
 	pub active: bool,
-	pub sponsor_admin_capable: bool,
 }
 
 const PROFILE_SELECT: &str = r#"
 	SELECT id, organization_id, name, description, privileges_json,
-	       active, built_in, editable, sponsor_admin_capable
+	       active, built_in, editable
 	FROM permission_profiles
 "#;
 
@@ -319,8 +316,8 @@ impl PermissionProfileBmc {
 					r#"
 					INSERT INTO permission_profiles
 						(organization_id, name, description, privileges_json, active,
-						 built_in, editable, sponsor_admin_capable)
-						VALUES ($1, $2, $3, $4, $5, false, true, $6)
+						 built_in, editable)
+						VALUES ($1, $2, $3, $4, $5, false, true)
 						RETURNING id
 					"#,
 				)
@@ -328,8 +325,7 @@ impl PermissionProfileBmc {
 				.bind(&data.name)
 				.bind(&data.description)
 				.bind(&data.privileges)
-				.bind(data.active)
-				.bind(data.sponsor_admin_capable),
+				.bind(data.active),
 			)
 			.await
 		{
@@ -395,10 +391,9 @@ impl PermissionProfileBmc {
 					UPDATE permission_profiles
 					SET name = $2,
 					    description = $3,
-						    privileges_json = $4,
-						    active = $5,
-						    sponsor_admin_capable = $6,
-						    updated_at = now()
+					    privileges_json = $4,
+					    active = $5,
+					    updated_at = now()
 					WHERE id = $1
 					"#,
 				)
@@ -406,8 +401,7 @@ impl PermissionProfileBmc {
 				.bind(&data.name)
 				.bind(&data.description)
 				.bind(&data.privileges)
-				.bind(data.active)
-				.bind(data.sponsor_admin_capable),
+				.bind(data.active),
 			)
 			.await
 		{

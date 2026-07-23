@@ -21,7 +21,6 @@ use lib_rest_core::{require_role_admin, Error, Result};
 use lib_web::middleware::mw_auth::CtxW;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
-use std::collections::BTreeMap;
 use uuid::Uuid;
 
 const ROLE_NAME_MAX_LEN: usize = 128;
@@ -83,19 +82,9 @@ pub struct PermissionProfileRow {
 	pub name: String,
 	pub description: Option<String>,
 	pub privileges: Vec<AdminMenuPrivilege>,
-	pub privilege_map: BTreeMap<String, AdminMenuPrivilege>,
-	pub can_view: bool,
-	pub can_review: bool,
-	pub can_lock: bool,
-	pub can_admin: bool,
 	pub active: bool,
 	pub built_in: bool,
 	pub editable: bool,
-	pub sponsor_admin_capable: bool,
-	pub is_builtin: bool,
-	pub is_editable: bool,
-	pub is_sponsor_admin: bool,
-	pub is_operational: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -143,36 +132,6 @@ fn normalize_role_description(value: Option<String>) -> Result<Option<String>> {
 	Ok(description)
 }
 
-fn privilege_map(
-	privileges: &[AdminMenuPrivilege],
-) -> BTreeMap<String, AdminMenuPrivilege> {
-	privileges
-		.iter()
-		.cloned()
-		.map(|privilege| (privilege.menu_key.clone(), privilege))
-		.collect()
-}
-
-fn role_summary_booleans(
-	privileges: &[AdminMenuPrivilege],
-) -> (bool, bool, bool, bool) {
-	let can_admin = privileges.iter().any(|privilege| {
-		privilege.menu_key == "admin" && (privilege.can_read || privilege.can_edit)
-	});
-	let can_view = can_admin
-		|| privileges.iter().any(|privilege| {
-			privilege.can_read
-				|| privilege.can_edit
-				|| privilege.can_review
-				|| privilege.can_lock
-		});
-	let can_review =
-		can_admin || privileges.iter().any(|privilege| privilege.can_review);
-	let can_lock =
-		can_admin || privileges.iter().any(|privilege| privilege.can_lock);
-	(can_view, can_review, can_lock, can_admin)
-}
-
 fn build_role_row(
 	id: String,
 	name: String,
@@ -181,30 +140,15 @@ fn build_role_row(
 	active: bool,
 	built_in: bool,
 	editable: bool,
-	sponsor_admin_capable: bool,
 ) -> PermissionProfileRow {
-	let is_system = id == ROLE_SYSTEM_ADMIN;
-	let (can_view, can_review, can_lock, can_admin) =
-		role_summary_booleans(&privileges);
-	let sponsor_admin_capable = sponsor_admin_capable || can_admin;
 	PermissionProfileRow {
 		id,
 		name,
 		description,
-		privilege_map: privilege_map(&privileges),
 		privileges,
-		can_view,
-		can_review,
-		can_lock,
-		can_admin,
 		active,
 		built_in,
 		editable,
-		sponsor_admin_capable,
-		is_builtin: built_in,
-		is_editable: editable,
-		is_sponsor_admin: sponsor_admin_capable,
-		is_operational: !is_system,
 	}
 }
 
@@ -235,7 +179,6 @@ fn system_admin_row() -> PermissionProfileRow {
 		true,
 		true,
 		false,
-		false,
 	)
 }
 
@@ -248,7 +191,6 @@ fn sponsor_admin_row(id: &str, name: &str) -> PermissionProfileRow {
 		true,
 		true,
 		false,
-		true,
 	)
 }
 
@@ -287,7 +229,6 @@ fn row_to_api(row: DbPermissionProfileRow) -> PermissionProfileRow {
 		row.active,
 		row.built_in,
 		row.editable,
-		row.sponsor_admin_capable,
 	)
 }
 
@@ -380,7 +321,6 @@ pub async fn create_permission_profile(
 	let description = normalize_role_description(data.description)?;
 	let active = data.active.unwrap_or(true);
 	let privileges = normalize_admin_privileges(data.privileges)?;
-	let (_, _, _, sponsor_admin_capable) = role_summary_booleans(&privileges);
 
 	let id = PermissionProfileBmc::create(
 		&ctx,
@@ -390,7 +330,6 @@ pub async fn create_permission_profile(
 			description,
 			privileges: SqlxJson(privileges),
 			active,
-			sponsor_admin_capable,
 		},
 	)
 	.await
@@ -451,7 +390,6 @@ pub async fn update_permission_profile(
 		row_to_api(current.clone()).privileges
 	};
 	let next_active = data.active.unwrap_or(current.active);
-	let (_, _, _, sponsor_admin_capable) = role_summary_booleans(&next_privileges);
 
 	PermissionProfileBmc::update(
 		&ctx,
@@ -462,7 +400,6 @@ pub async fn update_permission_profile(
 			description: next_description,
 			privileges: SqlxJson(next_privileges),
 			active: next_active,
-			sponsor_admin_capable,
 		},
 	)
 	.await
@@ -505,7 +442,6 @@ pub async fn delete_permission_profile(
 			description: current.description,
 			privileges: current.privileges_json,
 			active: false,
-			sponsor_admin_capable: current.sponsor_admin_capable,
 		},
 	)
 	.await

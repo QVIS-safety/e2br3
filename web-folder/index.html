@@ -327,7 +327,7 @@
           <p><code>${role.canonical_role_id || role.role_name}</code></p>
           <div class="chips">
             <span class="chip ${fixed ? "fixed" : ""}">${fixed ? "fixed" : "custom editable"}</span>
-            <span class="chip">${role.isSponsorAdmin || role.sponsor_admin_capable ? "sponsor admin" : "scoped role"}</span>
+            <span class="chip">${role.built_in ? "built-in role" : "custom role"}</span>
             <span class="chip">${role.isOperational === false ? "non-operational" : "operational"}</span>
           </div>`;
         $("roles-list").appendChild(item);

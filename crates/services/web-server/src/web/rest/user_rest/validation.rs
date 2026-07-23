@@ -116,7 +116,6 @@ pub(super) fn role_display_name(role: &str) -> String {
 
 pub(super) fn role_metadata(role: &str, _unused: Option<&str>) -> UserRoleMetadata {
 	let canonical_role_id = canonical_role(role);
-	let permission_subject = &canonical_role_id;
 	let is_builtin = matches!(
 		canonical_role_id.as_str(),
 		ROLE_SYSTEM_ADMIN | ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
@@ -132,7 +131,6 @@ pub(super) fn role_metadata(role: &str, _unused: Option<&str>) -> UserRoleMetada
 		is_editable: !is_builtin,
 		is_sponsor_admin,
 		is_operational: canonical_role_id != ROLE_SYSTEM_ADMIN,
-		can_admin: is_builtin || has_permission(permission_subject, USER_CREATE),
 	}
 }
 

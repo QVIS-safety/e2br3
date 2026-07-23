@@ -923,7 +923,6 @@ struct UserRoleMetadataDoc {
 	is_editable: bool,
 	is_sponsor_admin: bool,
 	is_operational: bool,
-	can_admin: bool,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, ToSchema)]

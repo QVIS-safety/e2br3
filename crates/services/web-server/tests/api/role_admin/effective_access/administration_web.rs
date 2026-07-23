@@ -336,10 +336,9 @@ async fn test_pdf_admin_read_and_edit_grant_registered_admin_entitlements(
 		]),
 	)
 	.await?;
-	assert_eq!(
-		value["sponsor_admin_capable"].as_bool(),
-		Some(true),
-		"admin.can_read must mark the role admin capable: {value:?}"
+	assert!(
+		value.get("sponsor_admin_capable").is_none(),
+		"derived admin summaries must not be exposed: {value:?}"
 	);
 	assert_profile_access(
 		&app,
@@ -440,10 +439,9 @@ async fn test_pdf_admin_read_and_edit_grant_registered_admin_entitlements(
 		]),
 	)
 	.await?;
-	assert_eq!(
-		value["sponsor_admin_capable"].as_bool(),
-		Some(true),
-		"admin.can_edit must mark the role admin capable: {value:?}"
+	assert!(
+		value.get("sponsor_admin_capable").is_none(),
+		"derived admin summaries must not be exposed: {value:?}"
 	);
 	assert_profile_access(
 		&app,
