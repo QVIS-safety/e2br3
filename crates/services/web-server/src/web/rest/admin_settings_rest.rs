@@ -1,13 +1,13 @@
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
+use lib_core::authorization::legacy_permission_allowed;
 use lib_core::ctx::{
 	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
 	ROLE_USER,
 };
 use lib_core::model::acs::{
-	has_permission, DASHBOARD_NOTICE_READ, DASHBOARD_NOTICE_UPDATE, SETTINGS_READ,
-	SETTINGS_UPDATE,
+	DASHBOARD_NOTICE_READ, DASHBOARD_NOTICE_UPDATE, SETTINGS_READ, SETTINGS_UPDATE,
 };
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::ModelManager;
@@ -463,7 +463,7 @@ pub async fn get_runtime_settings(
 ) -> Result<(StatusCode, Json<AdminSettingsPayload>)> {
 	let ctx = ctx_w.0;
 	let mut payload = load_admin_settings_payload(&ctx, &mm).await?;
-	if !has_permission(ctx.permission_subject(), DASHBOARD_NOTICE_READ) {
+	if !legacy_permission_allowed(ctx.permission_subject(), DASHBOARD_NOTICE_READ) {
 		payload.notices = Some(Vec::new());
 	}
 	Ok((StatusCode::OK, Json(payload)))
@@ -477,7 +477,7 @@ pub async fn get_admin_settings(
 	let ctx = ctx_w.0;
 	require_permission(&ctx, SETTINGS_READ)?;
 	let mut payload = load_admin_settings_payload(&ctx, &mm).await?;
-	if !has_permission(ctx.permission_subject(), DASHBOARD_NOTICE_READ) {
+	if !legacy_permission_allowed(ctx.permission_subject(), DASHBOARD_NOTICE_READ) {
 		payload.notices = Some(Vec::new());
 	}
 	Ok((StatusCode::OK, Json(payload)))

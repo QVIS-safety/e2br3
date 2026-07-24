@@ -3,10 +3,11 @@ use crate::web::rest::compliance::{
 };
 use axum::extract::{Path, State};
 use axum::Json;
+use lib_core::authorization::legacy_permission_allowed;
 use lib_core::ctx::Ctx;
 use lib_core::model::acs::{
-	has_permission, CASE_APPROVE, CASE_CREATE, CASE_DELETE, CASE_LIST, CASE_LOCK,
-	CASE_READ, CASE_UPDATE,
+	CASE_APPROVE, CASE_CREATE, CASE_DELETE, CASE_LIST, CASE_LOCK, CASE_READ,
+	CASE_UPDATE,
 };
 use lib_core::model::case::{
 	is_allowed_case_status_transition, is_valid_case_status,
@@ -1088,9 +1089,9 @@ pub async fn update_case_guarded(
 	let ctx = ctx_w.0;
 	// Cheap gate before any DB access: the caller must hold at least one
 	// case-write-grade permission (edit, review, or lock).
-	if !has_permission(ctx.permission_subject(), CASE_UPDATE)
-		&& !has_permission(ctx.permission_subject(), CASE_APPROVE)
-		&& !has_permission(ctx.permission_subject(), CASE_LOCK)
+	if !legacy_permission_allowed(ctx.permission_subject(), CASE_UPDATE)
+		&& !legacy_permission_allowed(ctx.permission_subject(), CASE_APPROVE)
+		&& !legacy_permission_allowed(ctx.permission_subject(), CASE_LOCK)
 	{
 		return Err(Error::PermissionDenied {
 			required_permission: format!("{CASE_UPDATE}"),

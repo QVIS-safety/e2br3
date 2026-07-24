@@ -63,7 +63,7 @@ async fn test_admin_can_create_user() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_admin_create_user_rejects_plain_user_role() -> Result<()> {
+async fn test_admin_create_user_allows_plain_user_role() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -89,13 +89,13 @@ async fn test_admin_create_user_rejects_plain_user_role() -> Result<()> {
 	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
 	let json: serde_json::Value = serde_json::from_slice(&body)?;
 
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	assert_eq!(status, StatusCode::CREATED, "{json:?}");
 	Ok(())
 }
 
 #[serial]
 #[tokio::test]
-async fn test_admin_update_user_rejects_plain_user_role() -> Result<()> {
+async fn test_admin_update_user_allows_plain_user_role() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -117,7 +117,7 @@ async fn test_admin_update_user_rejects_plain_user_role() -> Result<()> {
 	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
 	let json: serde_json::Value = serde_json::from_slice(&body)?;
 
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	assert_eq!(status, StatusCode::OK, "{json:?}");
 	Ok(())
 }
 
@@ -200,7 +200,7 @@ async fn test_system_admin_create_user_rejects_second_sponsor_admin_for_org(
 
 #[serial]
 #[tokio::test]
-async fn test_admin_create_user_rejects_missing_role() -> Result<()> {
+async fn test_admin_create_user_defaults_missing_role_to_plain_user() -> Result<()> {
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -225,7 +225,7 @@ async fn test_admin_create_user_rejects_missing_role() -> Result<()> {
 	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
 	let json: serde_json::Value = serde_json::from_slice(&body)?;
 
-	assert_eq!(status, StatusCode::BAD_REQUEST, "{json:?}");
+	assert_eq!(status, StatusCode::CREATED, "{json:?}");
 	Ok(())
 }
 

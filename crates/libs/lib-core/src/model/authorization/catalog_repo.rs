@@ -1,4 +1,6 @@
-use crate::authorization::{export_contract, PolicyRegistry};
+use crate::authorization::{
+	export_contract, PolicyRegistry, AUTHORIZATION_CONTRACT_SCHEMA_VERSION,
+};
 use sqlx::{Postgres, Transaction};
 
 use super::{AuthorizationMigrationError, MigrationResult};
@@ -67,7 +69,8 @@ impl AuthorizationCatalogRepository {
 			}
 		}
 
-		sqlx::query("INSERT INTO authorization_catalog_state (singleton, schema_version, catalog_hash, reconciled_at) VALUES (true, 1, $1, now()) ON CONFLICT (singleton) DO UPDATE SET schema_version = EXCLUDED.schema_version, catalog_hash = EXCLUDED.catalog_hash, reconciled_at = now()")
+		sqlx::query("INSERT INTO authorization_catalog_state (singleton, schema_version, catalog_hash, reconciled_at) VALUES (true, $1, $2, now()) ON CONFLICT (singleton) DO UPDATE SET schema_version = EXCLUDED.schema_version, catalog_hash = EXCLUDED.catalog_hash, reconciled_at = now()")
+			.bind(i32::try_from(AUTHORIZATION_CONTRACT_SCHEMA_VERSION).expect("authorization contract schema version fits i32"))
 			.bind(&contract.catalog_hash)
 			.execute(&mut **transaction)
 			.await?;

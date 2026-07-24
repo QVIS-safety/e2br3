@@ -351,14 +351,23 @@ impl UserBmc {
 				}
 				return Err(err);
 			}
-			if let Err(err) = RoleAssignmentRepository::assign_legacy_role(
-				mm.dbx(),
-				user_id,
-				organization_id,
-				&assignment_role,
-			)
-			.await
-			{
+			let assignment_result = if assignment_role == ROLE_USER {
+				RoleAssignmentRepository::assign_baseline_user_role(
+					mm.dbx(),
+					user_id,
+					organization_id,
+				)
+				.await
+			} else {
+				RoleAssignmentRepository::assign_legacy_role(
+					mm.dbx(),
+					user_id,
+					organization_id,
+					&assignment_role,
+				)
+				.await
+			};
+			if let Err(err) = assignment_result {
 				let _ = mm.dbx().rollback_txn().await;
 				if Self::is_retryable_write_error(&err)
 					&& attempt < USER_WRITE_MAX_ATTEMPTS

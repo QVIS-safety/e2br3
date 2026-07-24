@@ -5,6 +5,17 @@ use super::{
 	EligibilityDecision, EvaluatedContext, LockedMutationContext,
 	RequestAuthorizationSnapshot, SubjectActionId,
 };
+use crate::model::acs::{has_permission, Permission};
+
+/// Temporary compatibility entry point for routes that have not yet adopted a
+/// typed canonical action. Legacy permissions are generated one-way from the
+/// canonical grants; web code must not evaluate them independently.
+pub fn legacy_permission_allowed(
+	permission_subject: &str,
+	permission: Permission,
+) -> bool {
+	has_permission(permission_subject, permission)
+}
 
 pub fn check_eligibility(
 	action_id: &ActionId,
@@ -275,6 +286,32 @@ mod tests {
 		)
 		.unwrap_err();
 		assert_eq!(denial.reason(), DenialReason::IncompatibleIdentity);
+	}
+
+	#[test]
+	fn custom_pdf_grants_are_not_restricted_to_built_in_administrators() {
+		let custom = snapshot(
+			&[
+				"admin.read",
+				"admin.edit",
+				"home.notice.read",
+				"home.notice.edit",
+			],
+			None,
+		);
+		for action_id in [
+			"settings.read",
+			"settings.update",
+			"notice.update",
+			"audit_log.list",
+			"terminology.import",
+		] {
+			let action_id = ActionId::parse(action_id).unwrap();
+			assert!(
+				check_eligibility(&action_id, &custom).is_eligible(),
+				"{action_id} rejected a custom role that owns its PDF grant"
+			);
+		}
 	}
 
 	#[test]

@@ -1,5 +1,16 @@
 use super::*;
 
+fn user_target_organization(
+	ctx: &Ctx,
+	snapshot: &AuthorizationSnapshotW,
+) -> Option<Uuid> {
+	if snapshot.identity().is_platform_administrator() {
+		None
+	} else {
+		Some(ctx.organization_id())
+	}
+}
+
 /// POST /api/users
 /// Create a new user
 /// **Requires User.Create permission (admin only)**
@@ -18,9 +29,18 @@ pub async fn create_user(
 	} else {
 		ctx.organization_id()
 	};
+	let assigns_role = data
+		.role
+		.as_deref()
+		.is_some_and(|role| canonical_role(role) != ROLE_USER);
+	let action_id = if assigns_role {
+		"user.create.role_assignment"
+	} else {
+		"user.create"
+	};
 	let create_action = policy_registry()
-		.context_action::<Proposed<UserCreateProposal>>("user.create")
-		.expect("user.create policy");
+		.context_action::<Proposed<UserCreateProposal>>(action_id)
+		.expect("registered user create policy");
 	let permit = authorize_contextual_mutation(
 		create_action,
 		&snapshot,
@@ -28,23 +48,6 @@ pub async fn create_user(
 	)
 	.map_err(authorization_denied)?;
 	let db_ctx = rls_ctx_for_authorized_mutation(&ctx, &snapshot, &permit)?;
-	if data
-		.role
-		.as_deref()
-		.is_some_and(|role| canonical_role(role) != ROLE_USER)
-	{
-		let role_action = policy_registry()
-			.context_action::<Proposed<UserCreateProposal>>(
-				"user.create.role_assignment",
-			)
-			.expect("user.create.role_assignment policy");
-		authorize_contextual_mutation(
-			role_action,
-			&snapshot,
-			proposed_user_context(organization_id),
-		)
-		.map_err(authorization_denied)?;
-	}
 	validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
 	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
 	validate_uuid_scope("access_study_ids", &data.access_study_ids)?;
@@ -66,7 +69,6 @@ pub async fn create_user(
 	}
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let role = normalize_user_role(data.role);
-	validate_create_role_selection(role.as_deref())?;
 	let email = normalize_email_input(data.email)?;
 	let username = normalize_optional_username_input(data.username)?
 		.filter(|value| !value.is_empty())
@@ -126,13 +128,14 @@ pub async fn get_user(
 	Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
+	let target_organization_id = user_target_organization(&ctx, &snapshot);
 	let action = policy_registry()
 		.context_action::<Existing<UserResource>>("user.read")
 		.expect("user.read policy");
 	let permit = authorize_contextual_read(
 		action,
 		&snapshot,
-		existing_user_read_context(id, ctx.organization_id()),
+		existing_user_read_context(id, target_organization_id),
 	)
 	.map_err(authorization_denied)?;
 	let db_ctx = rls_ctx_for_authorized_read(&ctx, &snapshot, &permit)?;
@@ -188,6 +191,7 @@ pub async fn list_users(
 	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<UserView>>>)> {
 	let ctx = ctx_w.0;
+	let target_organization_id = user_target_organization(&ctx, &snapshot);
 	let params = ParamsList::<UserFilter>::from_raw_query(raw_query.as_deref())
 		.map_err(|message| Error::BadRequest { message })?;
 	let action = policy_registry()
@@ -196,7 +200,7 @@ pub async fn list_users(
 	let permit = authorize_contextual_read(
 		action,
 		&snapshot,
-		user_collection_context(ctx.organization_id()),
+		user_collection_context(target_organization_id),
 	)
 	.map_err(authorization_denied)?;
 	let db_ctx = rls_ctx_for_authorized_read(&ctx, &snapshot, &permit)?;
@@ -246,27 +250,22 @@ pub async fn update_user(
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
 	let ParamsForUpdate { data } = params;
+	let target_organization_id = user_target_organization(&ctx, &snapshot);
+	let action_id = if data.role.is_some() {
+		"user.update.role_assignment"
+	} else {
+		"user.update"
+	};
 	let action = policy_registry()
-		.context_action::<Existing<UserResource>>("user.update")
-		.expect("user.update policy");
+		.context_action::<Existing<UserResource>>(action_id)
+		.expect("registered user update policy");
 	let permit = authorize_contextual_mutation(
 		action,
 		&snapshot,
-		existing_user_mutation_context(id, ctx.organization_id()),
+		existing_user_mutation_context(id, target_organization_id),
 	)
 	.map_err(authorization_denied)?;
 	let db_ctx = rls_ctx_for_authorized_mutation(&ctx, &snapshot, &permit)?;
-	if data.role.is_some() {
-		let role_action = policy_registry()
-			.context_action::<Existing<UserResource>>("user.update.role_assignment")
-			.expect("user.update.role_assignment policy");
-		authorize_contextual_mutation(
-			role_action,
-			&snapshot,
-			existing_user_mutation_context(id, ctx.organization_id()),
-		)
-		.map_err(authorization_denied)?;
-	}
 	validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
 	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
 	validate_uuid_scope("access_study_ids", &data.access_study_ids)?;
@@ -285,7 +284,6 @@ pub async fn update_user(
 	validate_existing_sponsor_admin_mutation(&ctx, &existing)?;
 	let role = normalize_user_role(data.role);
 	if role.is_some() {
-		validate_update_role_selection(role.as_deref())?;
 		validate_permission_profile_role_for_org(&db_ctx, &mm, role.as_deref())
 			.await?;
 		validate_sponsor_admin_assignment_authority(&ctx, role.as_deref())?;
@@ -344,13 +342,14 @@ pub async fn delete_user(
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
+	let target_organization_id = user_target_organization(&ctx, &snapshot);
 	let action = policy_registry()
 		.context_action::<Existing<UserResource>>("user.delete")
 		.expect("user.delete policy");
 	let permit = authorize_contextual_mutation(
 		action,
 		&snapshot,
-		existing_user_mutation_context(id, ctx.organization_id()),
+		existing_user_mutation_context(id, target_organization_id),
 	)
 	.map_err(authorization_denied)?;
 	let db_ctx = rls_ctx_for_authorized_mutation(&ctx, &snapshot, &permit)?;
@@ -418,7 +417,9 @@ pub async fn get_current_user_profile(
 	let mut permissions = all_permissions()
 		.iter()
 		.copied()
-		.filter(|permission| has_permission(ctx.permission_subject(), *permission))
+		.filter(|permission| {
+			legacy_permission_allowed(ctx.permission_subject(), *permission)
+		})
 		.map(|permission| permission.to_string())
 		.collect::<Vec<_>>();
 	permissions.sort_unstable();

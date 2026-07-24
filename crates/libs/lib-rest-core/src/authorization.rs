@@ -1,7 +1,7 @@
 use crate::{Error, Result};
 use lib_core::authorization::{
 	AuthorizationContext, AuthorizationDenial, AuthorizedMutation, AuthorizedRead,
-	RequestAuthorizationSnapshot,
+	PolicySnapshotVersion, RequestAuthorizationSnapshot,
 };
 use lib_core::ctx::{Ctx, ROLE_SYSTEM_ADMIN};
 use uuid::Uuid;
@@ -20,6 +20,7 @@ trait PermitEvidence {
 	fn principal_id(&self) -> Uuid;
 	fn organization_id(&self) -> Uuid;
 	fn target_organization_id(&self) -> Option<Uuid>;
+	fn snapshot_version(&self) -> &PolicySnapshotVersion;
 }
 
 impl<C: AuthorizationContext> PermitEvidence for AuthorizedRead<'_, C> {
@@ -32,6 +33,9 @@ impl<C: AuthorizationContext> PermitEvidence for AuthorizedRead<'_, C> {
 	fn target_organization_id(&self) -> Option<Uuid> {
 		self.target_organization_id()
 	}
+	fn snapshot_version(&self) -> &PolicySnapshotVersion {
+		self.snapshot_version()
+	}
 }
 
 impl<C: AuthorizationContext> PermitEvidence for AuthorizedMutation<'_, C> {
@@ -43,6 +47,9 @@ impl<C: AuthorizationContext> PermitEvidence for AuthorizedMutation<'_, C> {
 	}
 	fn target_organization_id(&self) -> Option<Uuid> {
 		self.target_organization_id()
+	}
+	fn snapshot_version(&self) -> &PolicySnapshotVersion {
+		self.snapshot_version()
 	}
 }
 
@@ -70,18 +77,22 @@ fn rls_ctx_from_permit(
 	if permit.principal_id() != request_ctx.user_id()
 		|| permit.principal_id() != snapshot.principal_id()
 		|| permit.organization_id() != snapshot.organization_id()
+		|| request_ctx.organization_id() != snapshot.organization_id()
+		|| permit.snapshot_version() != snapshot.version()
 	{
 		return Err(Error::AccessDenied {
 			required_role: "authorization permit bound to this request".to_string(),
 		});
 	}
-	let target_organization_id =
-		permit
-			.target_organization_id()
-			.ok_or_else(|| Error::AccessDenied {
-				required_role: "authorization permit with target organization"
-					.to_string(),
-			})?;
+	let Some(target_organization_id) = permit.target_organization_id() else {
+		if snapshot.identity().is_platform_administrator() {
+			return Ok(request_ctx.clone());
+		}
+		return Err(Error::AccessDenied {
+			required_role: "authorization permit with target organization"
+				.to_string(),
+		});
+	};
 	if target_organization_id == request_ctx.organization_id() {
 		return Ok(request_ctx.clone());
 	}
@@ -101,6 +112,7 @@ fn rls_ctx_from_permit(
 			request_ctx.change_reason().map(ToString::to_string),
 			request_ctx.e_signature_id(),
 		)
+		.with_change_category(request_ctx.change_category().map(ToString::to_string))
 	})
 	.map_err(|_| Error::BadRequest {
 		message: "invalid authorized target organization context".to_string(),

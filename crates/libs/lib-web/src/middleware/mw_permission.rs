@@ -9,8 +9,9 @@ use crate::error::{Error, Result};
 use crate::middleware::mw_auth::CtxW;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
+use lib_core::authorization::legacy_permission_allowed;
 use lib_core::ctx::Ctx;
-use lib_core::model::acs::{has_permission, Permission};
+use lib_core::model::acs::Permission;
 use std::marker::PhantomData;
 
 // region:    --- RequirePermission Extractor
@@ -58,7 +59,7 @@ where
 
 		// Check permission
 		let permission = P::permission();
-		if !has_permission(ctx.0.permission_subject(), permission) {
+		if !legacy_permission_allowed(ctx.0.permission_subject(), permission) {
 			return Err(Error::PermissionDenied {
 				required_permission: P::permission_name().to_string(),
 			});
@@ -77,7 +78,7 @@ where
 /// Check if the context has a specific permission.
 /// Use this for inline permission checks in handlers.
 pub fn check_permission(ctx: &Ctx, permission: Permission) -> Result<()> {
-	if !has_permission(ctx.permission_subject(), permission) {
+	if !legacy_permission_allowed(ctx.permission_subject(), permission) {
 		return Err(Error::PermissionDenied {
 			required_permission: format!("{permission}"),
 		});
@@ -88,7 +89,7 @@ pub fn check_permission(ctx: &Ctx, permission: Permission) -> Result<()> {
 /// Check if the context has any of the given permissions.
 pub fn check_any_permission(ctx: &Ctx, permissions: &[Permission]) -> Result<()> {
 	for perm in permissions {
-		if has_permission(ctx.permission_subject(), *perm) {
+		if legacy_permission_allowed(ctx.permission_subject(), *perm) {
 			return Ok(());
 		}
 	}

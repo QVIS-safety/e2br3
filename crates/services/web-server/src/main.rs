@@ -36,19 +36,12 @@ async fn main() -> Result<()> {
 	let authorization_status = web_server::initialize_authorization_storage()
 		.await
 		.map_err(|err| Error::Config(err.to_string()))?;
-	match authorization_status {
-		web_server::AuthorizationStartupStatus::Reconciled(report) => {
-			info!(
-				"authorization storage reconciled: {} assignments, {} custom roles",
-				report.assignments, report.custom_roles
-			);
-		}
-		web_server::AuthorizationStartupStatus::LegacyRuntime { rejections } => {
-			warn!(
-				"authorization normalization rejected {rejections} legacy rows; continuing with the active legacy RBAC runtime"
-			);
-		}
-	}
+	let web_server::AuthorizationStartupStatus::Reconciled(report) =
+		authorization_status;
+	info!(
+		"authorization storage reconciled: {} assignments, {} custom roles",
+		report.assignments, report.custom_roles
+	);
 	bootstrap::bootstrap_admin_user(&mm).await?;
 	permission_profile_rest::refresh_dynamic_roles(&mm)
 		.await

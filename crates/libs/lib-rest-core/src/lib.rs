@@ -51,11 +51,12 @@ where
 	}
 }
 
+use lib_core::authorization::legacy_permission_allowed;
 use lib_core::ctx::{
 	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
 	ROLE_USER,
 };
-use lib_core::model::acs::{has_permission, Permission};
+use lib_core::model::acs::Permission;
 use lib_core::model::admin_settings::AdminSettingsBmc;
 use lib_core::model::case::{Case, CaseBmc};
 use lib_core::model::user::UserBmc;
@@ -81,7 +82,7 @@ pub fn is_unique_violation(err: &lib_core::model::Error) -> bool {
 }
 
 pub fn require_permission(ctx: &Ctx, permission: Permission) -> Result<()> {
-	if !has_permission(ctx.permission_subject(), permission) {
+	if !legacy_permission_allowed(ctx.permission_subject(), permission) {
 		return Err(Error::PermissionDenied {
 			required_permission: format!("{permission}"),
 		});

@@ -54,8 +54,9 @@ pub use check::{has_all_permissions, has_any_permission, has_permission};
 
 mod registry_adapter;
 pub use registry_adapter::{
-	built_in_menu_privileges, normalize_menu_privileges,
-	permissions_for_menu_privileges, AdminMenuPrivilege, PrivilegeAdapterError,
+	built_in_menu_privileges, normalize_current_menu_privileges,
+	normalize_menu_privileges, permissions_for_menu_privileges, AdminMenuPrivilege,
+	PrivilegeAdapterError,
 };
 
 #[cfg(test)]

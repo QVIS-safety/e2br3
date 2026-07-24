@@ -12,7 +12,7 @@ use lib_core::ctx::{
 	ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::{
-	built_in_menu_privileges, normalize_menu_privileges, AdminMenuPrivilege,
+	built_in_menu_privileges, normalize_current_menu_privileges, AdminMenuPrivilege,
 	PrivilegeAdapterError,
 };
 use lib_core::model::organization::{
@@ -163,7 +163,7 @@ fn normalize_admin_privileges(
 		.into_iter()
 		.filter(|privilege| !privilege.menu_key.trim().is_empty())
 		.collect::<Vec<_>>();
-	normalize_menu_privileges(&raw).map_err(|error| match error {
+	normalize_current_menu_privileges(&raw).map_err(|error| match error {
 		PrivilegeAdapterError::UnknownMenu { menu_key } => Error::BadRequest {
 			message: format!("unknown role privilege menu '{menu_key}'"),
 		},
@@ -383,9 +383,14 @@ pub async fn update_permission_profile(
 	let organization_id =
 		permission_profile_organization(&request_ctx, &snapshot, &mm, &scope)
 			.await?;
+	let action_id = if params.data.active == Some(true) {
+		"role.restore"
+	} else {
+		"role.update"
+	};
 	let action = policy_registry()
-		.context_action::<Existing<RoleResource>>("role.update")
-		.expect("role.update policy");
+		.context_action::<Existing<RoleResource>>(action_id)
+		.expect("registered role mutation policy");
 	let permit = authorize_contextual_mutation(
 		action,
 		&snapshot,

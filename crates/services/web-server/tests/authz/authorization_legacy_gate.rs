@@ -126,6 +126,20 @@ fn user_admin_rls_context_requires_authorization_permit_evidence() {
 		source.contains("target_organization_id"),
 		"permit-bound RLS context must verify the evaluated target organization"
 	);
+	assert!(
+		source.contains("permit.snapshot_version() != snapshot.version()"),
+		"RLS context construction must reject permits from a different policy snapshot"
+	);
+	assert!(
+		source.contains(
+			"request_ctx.organization_id() != snapshot.organization_id()"
+		),
+		"RLS context construction must bind the request organization to the snapshot"
+	);
+	assert!(
+		source.contains("with_change_category"),
+		"cross-organization RLS context must preserve the audit change category"
+	);
 }
 
 #[test]
@@ -233,4 +247,40 @@ fn legacy_console_does_not_call_removed_role_api() {
 	assert!(!console.contains("/api/admin/roles"));
 	assert!(!console.contains("function loadRoles"));
 	assert!(!console.contains("function createRole"));
+}
+
+#[test]
+fn production_routes_do_not_evaluate_legacy_permissions_directly() {
+	let root = workspace_root();
+	for path in [
+		"crates/libs/lib-rest-core/src/lib.rs",
+		"crates/libs/lib-web/src/middleware/mw_permission.rs",
+		"crates/services/web-server/src/web/rest/admin_settings_rest.rs",
+		"crates/services/web-server/src/web/rest/audit_rest.rs",
+		"crates/services/web-server/src/web/rest/case_rest.rs",
+		"crates/services/web-server/src/web/rest/user_rest.rs",
+		"crates/services/web-server/src/web/rest/user_rest/handlers.rs",
+	] {
+		let source = fs::read_to_string(root.join(path)).unwrap_or_else(|_| {
+			panic!("authorization source {path} must be readable")
+		});
+		assert!(
+			!source.contains("has_permission("),
+			"{path} bypasses the authorization kernel compatibility entry point"
+		);
+	}
+}
+
+#[test]
+fn role_reactivation_uses_the_restore_policy_action() {
+	let source =
+		fs::read_to_string(workspace_root().join(
+			"crates/services/web-server/src/web/rest/permission_profile_rest.rs",
+		))
+		.expect("permission profile source must be readable");
+	assert!(
+		source.contains("data.active == Some(true)")
+			&& source.contains("\"role.restore\""),
+		"an explicit role reactivation must be authorized and audited as role.restore"
+	);
 }

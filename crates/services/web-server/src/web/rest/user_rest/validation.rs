@@ -166,24 +166,6 @@ pub(super) fn validate_sponsor_admin_assignment_authority(
 	Ok(())
 }
 
-pub(super) fn validate_create_role_selection(role: Option<&str>) -> Result<()> {
-	match role {
-		Some(ROLE_USER) | None => Err(Error::BadRequest {
-			message: "permission profile selection is required".to_string(),
-		}),
-		_ => Ok(()),
-	}
-}
-
-pub(super) fn validate_update_role_selection(role: Option<&str>) -> Result<()> {
-	match role {
-		Some(ROLE_USER) => Err(Error::BadRequest {
-			message: "permission profile selection is required".to_string(),
-		}),
-		_ => Ok(()),
-	}
-}
-
 pub(super) async fn validate_permission_profile_role_for_org(
 	ctx: &Ctx,
 	mm: &ModelManager,
@@ -194,7 +176,10 @@ pub(super) async fn validate_permission_profile_role_for_org(
 	};
 	if matches!(
 		role,
-		ROLE_SYSTEM_ADMIN | ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
+		ROLE_SYSTEM_ADMIN
+			| ROLE_SPONSOR_ADMIN_CRO
+			| ROLE_SPONSOR_ADMIN_COMPANY
+			| ROLE_USER
 	) {
 		return Ok(());
 	}

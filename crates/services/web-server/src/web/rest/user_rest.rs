@@ -5,17 +5,17 @@ use axum::http::StatusCode;
 use axum::Json;
 use lib_core::authorization::{
 	authorize_contextual_mutation, authorize_contextual_read,
-	existing_user_mutation_context, existing_user_read_context, policy_registry,
-	proposed_user_context, user_collection_context, Existing, Proposed,
-	UserCreateProposal, UserResource,
+	existing_user_mutation_context, existing_user_read_context,
+	legacy_permission_allowed, policy_registry, proposed_user_context,
+	user_collection_context, Existing, Proposed, UserCreateProposal, UserResource,
 };
 use lib_core::ctx::{
 	built_in_role_metadata, canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY,
 	ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN, ROLE_USER,
 };
 use lib_core::model::acs::{
-	all_permissions, built_in_menu_privileges, has_permission,
-	normalize_menu_privileges, AdminMenuPrivilege, CASE_READ,
+	all_permissions, built_in_menu_privileges, normalize_menu_privileges,
+	AdminMenuPrivilege, CASE_READ,
 };
 use lib_core::model::organization::{
 	Organization, OrganizationBmc, ORG_TYPE_CRO, ORG_TYPE_PHARMACEUTICAL_COMPANY,

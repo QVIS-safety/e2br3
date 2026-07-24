@@ -74,6 +74,19 @@ fn legacy_flag_name(field: GrantUiField) -> &'static str {
 pub fn normalize_menu_privileges(
 	privileges: &[AdminMenuPrivilege],
 ) -> Result<Vec<AdminMenuPrivilege>, PrivilegeAdapterError> {
+	normalize_menu_privileges_with_aliases(privileges, true)
+}
+
+pub fn normalize_current_menu_privileges(
+	privileges: &[AdminMenuPrivilege],
+) -> Result<Vec<AdminMenuPrivilege>, PrivilegeAdapterError> {
+	normalize_menu_privileges_with_aliases(privileges, false)
+}
+
+fn normalize_menu_privileges_with_aliases(
+	privileges: &[AdminMenuPrivilege],
+	allow_legacy_aliases: bool,
+) -> Result<Vec<AdminMenuPrivilege>, PrivilegeAdapterError> {
 	let registry = policy_registry();
 	let mut normalized = BTreeMap::new();
 	for privilege in privileges {
@@ -86,7 +99,7 @@ pub fn normalize_menu_privileges(
 		let has_alias = registry
 			.legacy_aliases()
 			.any(|alias| alias.legacy_id.starts_with(&alias_prefix));
-		if direct.is_empty() && !has_alias {
+		if direct.is_empty() && (!allow_legacy_aliases || !has_alias) {
 			return Err(PrivilegeAdapterError::UnknownMenu { menu_key });
 		}
 
@@ -104,6 +117,9 @@ pub fn normalize_menu_privileges(
 				.copied()
 				.find(|grant| grant.ui_binding.field == field)
 				.or_else(|| {
+					if !allow_legacy_aliases {
+						return None;
+					}
 					let legacy_id =
 						format!("{menu_key}.{}", legacy_flag_name(field));
 					registry

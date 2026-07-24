@@ -45,7 +45,6 @@ pub async fn reconcile_authorization_storage(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuthorizationStartupStatus {
 	Reconciled(MigrationReport),
-	LegacyRuntime { rejections: usize },
 }
 
 pub async fn initialize_authorization_storage(
@@ -56,15 +55,7 @@ pub async fn initialize_authorization_storage(
 fn classify_authorization_startup(
 	result: Result<MigrationReport, AuthorizationMigrationError>,
 ) -> Result<AuthorizationStartupStatus, AuthorizationMigrationError> {
-	match result {
-		Ok(report) => Ok(AuthorizationStartupStatus::Reconciled(report)),
-		Err(AuthorizationMigrationError::Rejected(rejections)) => {
-			Ok(AuthorizationStartupStatus::LegacyRuntime {
-				rejections: rejections.len(),
-			})
-		}
-		Err(error) => Err(error),
-	}
+	result.map(AuthorizationStartupStatus::Reconciled)
 }
 
 pub fn app(mm: ModelManager) -> Router {
@@ -97,7 +88,7 @@ mod tests {
 	use lib_core::model::authorization::MigrationRejection;
 
 	#[test]
-	fn legacy_role_rejections_do_not_stop_the_legacy_runtime() {
+	fn legacy_role_rejections_stop_startup() {
 		let result = classify_authorization_startup(Err(
 			AuthorizationMigrationError::Rejected(vec![MigrationRejection {
 				user_id: None,
@@ -108,7 +99,8 @@ mod tests {
 		));
 		assert!(matches!(
 			result,
-			Ok(AuthorizationStartupStatus::LegacyRuntime { rejections: 1 })
+			Err(AuthorizationMigrationError::Rejected(rejections))
+				if rejections.len() == 1
 		));
 	}
 

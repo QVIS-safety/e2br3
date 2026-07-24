@@ -6,6 +6,8 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::fmt::{Display, Formatter, Write as _};
 
+pub const AUTHORIZATION_CONTRACT_SCHEMA_VERSION: u32 = 2;
+
 #[derive(Debug)]
 pub enum ContractExportError {
 	Serialize(serde_json::Error),
@@ -107,7 +109,7 @@ pub fn export_contract(
 	legacy_grant_aliases
 		.sort_unstable_by(|left, right| left.legacy_id.cmp(&right.legacy_id));
 	let canonical = CanonicalRegistryContract {
-		schema_version: 2,
+		schema_version: AUTHORIZATION_CONTRACT_SCHEMA_VERSION,
 		grants,
 		actions,
 		built_in_identities,

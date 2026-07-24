@@ -201,11 +201,12 @@ impl<'tx, C: AuthorizationContext> LockedMutationContext<'tx, C> {
 /// user policies. Callers cannot mark unrelated case lifecycle or scope
 /// conditions as satisfied.
 pub fn user_collection_context(
-	organization_id: Uuid,
+	organization_id: Option<Uuid>,
 ) -> ContextSnapshot<'static, Collection<UserResource>> {
 	ContextSnapshot::new(EvaluatedContext {
-		organization_id: Some(organization_id),
-		target_fingerprint: format!("users:{organization_id}"),
+		organization_id,
+		target_fingerprint: organization_id
+			.map_or_else(|| "users:all".to_string(), |id| format!("users:{id}")),
 		within_principal_scope: false,
 		lifecycle_compatible: false,
 		parent_authorized: false,
@@ -216,10 +217,10 @@ pub fn user_collection_context(
 
 pub fn existing_user_read_context(
 	user_id: Uuid,
-	organization_id: Uuid,
+	organization_id: Option<Uuid>,
 ) -> ContextSnapshot<'static, Existing<UserResource>> {
 	ContextSnapshot::new(EvaluatedContext {
-		organization_id: Some(organization_id),
+		organization_id,
 		target_fingerprint: format!("user:{user_id}"),
 		within_principal_scope: false,
 		lifecycle_compatible: false,
@@ -231,10 +232,10 @@ pub fn existing_user_read_context(
 
 pub fn existing_user_mutation_context(
 	user_id: Uuid,
-	organization_id: Uuid,
+	organization_id: Option<Uuid>,
 ) -> LockedMutationContext<'static, Existing<UserResource>> {
 	LockedMutationContext::new(EvaluatedContext {
-		organization_id: Some(organization_id),
+		organization_id,
 		target_fingerprint: format!("user:{user_id}"),
 		within_principal_scope: false,
 		lifecycle_compatible: false,

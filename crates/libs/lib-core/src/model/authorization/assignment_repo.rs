@@ -37,6 +37,20 @@ impl NormalizedRoleRepository {
 }
 
 impl RoleAssignmentRepository {
+	pub async fn assign_baseline_user_role(
+		dbx: &Dbx,
+		user_id: Uuid,
+		organization_id: Uuid,
+	) -> Result<()> {
+		dbx.execute(
+			sqlx::query("SELECT authz_assign_baseline_user_role($1, $2)")
+				.bind(user_id)
+				.bind(organization_id),
+		)
+		.await?;
+		Ok(())
+	}
+
 	pub async fn assign_legacy_role(
 		dbx: &Dbx,
 		user_id: Uuid,

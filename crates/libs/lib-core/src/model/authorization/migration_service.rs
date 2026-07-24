@@ -462,6 +462,18 @@ fn grants_for_legacy_privileges(
 		if is_reviewed_obsolete_legacy_menu_key(&key) {
 			continue;
 		}
+		let alias_prefix = format!("{key}.");
+		let is_known_menu = registry
+			.grants()
+			.any(|grant| grant.ui_binding.menu_key == key)
+			|| registry
+				.legacy_aliases()
+				.any(|alias| alias.legacy_id.starts_with(&alias_prefix));
+		if !is_known_menu {
+			return Err(format!(
+				"legacy menu {key:?} has no safe PDF grant mapping"
+			));
+		}
 		let candidates = [
 			(privilege.can_read, format!("{key}.read")),
 			(privilege.can_edit, format!("{key}.edit")),
@@ -554,5 +566,22 @@ mod tests {
 		)
 		.expect_err("active profiles must fail closed");
 		assert!(error.contains("invalid privileges_json"));
+	}
+
+	#[test]
+	fn active_legacy_profiles_reject_unknown_disabled_menu_rows() {
+		let error = grants_for_legacy_profile(
+			crate::authorization::policy_registry(),
+			true,
+			json!([{
+				"menu_key": "not_in_the_reviewed_contract",
+				"can_read": false,
+				"can_edit": false,
+				"can_review": false,
+				"can_lock": false
+			}]),
+		)
+		.expect_err("unknown menu rows must fail closed even when disabled");
+		assert!(error.contains("no safe PDF grant mapping"));
 	}
 }

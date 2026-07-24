@@ -28,6 +28,38 @@ use uuid::Uuid;
 
 #[serial]
 #[tokio::test]
+async fn test_role_admin_api_rejects_migration_only_menu_aliases() -> Result<()> {
+	let mm = init_test_mm().await?;
+	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
+	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
+	let admin_cookie = cookie_header(&admin_token.to_string());
+	let app = web_server::app(mm);
+
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&admin_cookie,
+		"/api/admin/permission-profiles".to_string(),
+		Some(json!({
+			"data": {
+				"name": "Reject Legacy Export Alias",
+				"privileges": [{
+					"menu_key": "export",
+					"can_read": true,
+					"can_edit": false,
+					"can_review": false,
+					"can_lock": false
+				}]
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(status, StatusCode::BAD_REQUEST, "{value:?}");
+	Ok(())
+}
+
+#[serial]
+#[tokio::test]
 async fn test_role_admin_api_rejects_duplicate_role_name_in_same_org() -> Result<()>
 {
 	let mm = init_test_mm().await?;

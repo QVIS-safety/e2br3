@@ -258,6 +258,24 @@ async fn test_admin_matrix_privileges_grant_user_operations_but_not_role_identit
 	)
 	.await?;
 	assert_get_status(&app, &custom_cookie, "/api/users", StatusCode::OK).await?;
+	let (status, value) = request_json(
+		&app,
+		"POST",
+		&custom_cookie,
+		"/api/users".to_string(),
+		Some(json!({
+			"data": {
+				"organization_id": seed.org_id,
+				"email": format!("admin-edit-baseline-{}@example.com", Uuid::new_v4())
+			}
+		})),
+	)
+	.await?;
+	assert_eq!(
+		status,
+		StatusCode::CREATED,
+		"admin.can_edit must create a baseline user without assigning a role: {value:?}"
+	);
 
 	let (status, value) = request_json(
 		&app,

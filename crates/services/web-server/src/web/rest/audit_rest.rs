@@ -3,7 +3,8 @@
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
-use lib_core::model::acs::{has_permission, AUDIT_LIST};
+use lib_core::authorization::legacy_permission_allowed;
+use lib_core::model::acs::AUDIT_LIST;
 use lib_core::model::audit::{
 	AuditChainVerificationReport, AuditLog, AuditLogBmc, AuditLogFilter,
 	CaseVersion, CaseVersionBmc,
@@ -19,7 +20,7 @@ use sqlx::types::time::OffsetDateTime;
 use uuid::Uuid;
 
 fn require_audit_permission(ctx: &lib_core::ctx::Ctx) -> Result<()> {
-	if !has_permission(ctx.permission_subject(), AUDIT_LIST) {
+	if !legacy_permission_allowed(ctx.permission_subject(), AUDIT_LIST) {
 		return Err(WebError::PermissionDenied {
 			required_permission: "AuditLog.List".to_string(),
 		});
