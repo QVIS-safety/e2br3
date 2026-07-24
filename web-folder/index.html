@@ -160,32 +160,6 @@
       </article>
 
       <article class="card">
-        <h2>Create Custom Role</h2>
-        <label for="role-name">Role ID</label>
-        <input id="role-name" placeholder="pvs_reviewer">
-        <label for="role-description">Description</label>
-        <input id="role-description" placeholder="PVS reviewer for case QC">
-        <label for="role-menu">Menu key</label>
-        <input id="role-menu" value="case">
-        <div class="split">
-          <label><input id="perm-read" type="checkbox" checked> Read</label>
-          <label><input id="perm-edit" type="checkbox"> Edit</label>
-          <label><input id="perm-review" type="checkbox"> QC</label>
-          <label><input id="perm-lock" type="checkbox"> Lock</label>
-        </div>
-        <div class="actions">
-          <button id="create-role">Create Role</button>
-          <button id="reload-roles" class="secondary">Reload Roles</button>
-        </div>
-        <div id="role-message" class="message"></div>
-      </article>
-
-      <article class="card">
-        <h2>Roles</h2>
-        <div id="roles-list" class="list"></div>
-      </article>
-
-      <article class="card">
         <h2>User Scope Assignment</h2>
         <label for="user-select">User</label>
         <select id="user-select"></select>
@@ -211,7 +185,7 @@
   <script>
     const DEFAULT_APP_NAME = "QVIS Safety";
     const $ = (id) => document.getElementById(id);
-    const state = { users: [], roles: [], profile: null };
+    const state = { users: [], profile: null };
 
     async function api(path, options = {}) {
       const response = await fetch(path, {
@@ -314,53 +288,6 @@
       setMessage("routing-message", "Routing selection saved.");
     }
 
-    async function loadRoles() {
-      const body = await api("/api/admin/roles");
-      state.roles = body;
-      $("roles-list").innerHTML = "";
-      body.forEach((role) => {
-        const item = document.createElement("div");
-        item.className = "item";
-        const fixed = role.isBuiltin || role.built_in;
-        item.innerHTML = `
-          <h3>${role.display_name}</h3>
-          <p><code>${role.canonical_role_id || role.role_name}</code></p>
-          <div class="chips">
-            <span class="chip ${fixed ? "fixed" : ""}">${fixed ? "fixed" : "custom editable"}</span>
-            <span class="chip">${role.built_in ? "built-in role" : "custom role"}</span>
-            <span class="chip">${role.isOperational === false ? "non-operational" : "operational"}</span>
-          </div>`;
-        $("roles-list").appendChild(item);
-      });
-    }
-
-    async function createRole() {
-      const roleName = $("role-name").value.trim();
-      const description = $("role-description").value.trim();
-      const menuKey = $("role-menu").value.trim();
-      if (!roleName || !menuKey) throw new Error("role id and menu key are required");
-      await api("/api/admin/roles", {
-        method: "POST",
-        body: JSON.stringify({
-          data: {
-            role_name: roleName,
-            display_name: roleName,
-            description: description || null,
-            privileges: [{
-              menu_key: menuKey,
-              can_read: $("perm-read").checked,
-              can_edit: $("perm-edit").checked,
-              can_review: $("perm-review").checked,
-              can_lock: $("perm-lock").checked
-            }],
-            active: true
-          }
-        })
-      });
-      setMessage("role-message", "Custom role created.");
-      await loadRoles();
-    }
-
     async function loadUsers() {
       const body = await api("/api/users");
       state.users = body.data;
@@ -414,7 +341,7 @@
       try {
         await loadBranding();
         await loadProfile();
-        await Promise.allSettled([loadRoles(), loadUsers()]);
+        await loadUsers();
       } catch (err) {
         setMessage("routing-message", err.message, false);
       }
@@ -423,8 +350,6 @@
     $("refresh-profile").addEventListener("click", () => loadProfile().catch((err) => setMessage("routing-message", err.message, false)));
     $("save-routing").addEventListener("click", () => saveRouting($("sender-select").value).catch((err) => setMessage("routing-message", err.message, false)));
     $("clear-routing").addEventListener("click", () => saveRouting(null).catch((err) => setMessage("routing-message", err.message, false)));
-    $("reload-roles").addEventListener("click", () => loadRoles().catch((err) => setMessage("role-message", err.message, false)));
-    $("create-role").addEventListener("click", () => createRole().catch((err) => setMessage("role-message", err.message, false)));
     $("reload-users").addEventListener("click", () => loadUsers().catch((err) => setMessage("user-message", err.message, false)));
     $("save-user-scope").addEventListener("click", () => saveUserScope().catch((err) => setMessage("user-message", err.message, false)));
     $("user-select").addEventListener("change", fillSelectedUser);

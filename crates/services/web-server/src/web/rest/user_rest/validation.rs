@@ -104,33 +104,22 @@ pub(super) fn validate_optional_uuid_identifier(
 }
 
 pub(super) fn role_display_name(role: &str) -> String {
-	match canonical_role(role).as_str() {
-		ROLE_SYSTEM_ADMIN => "System Administrator".to_string(),
-		ROLE_SPONSOR_ADMIN_CRO => "Sponsor Administrator (CRO)".to_string(),
-		ROLE_SPONSOR_ADMIN_COMPANY => {
-			"Sponsor Administrator (Pharmaceutical Company)".to_string()
-		}
-		other => other.replace('_', " "),
-	}
+	let canonical = canonical_role(role);
+	built_in_role_metadata(&canonical)
+		.map(|metadata| metadata.display_name.to_string())
+		.unwrap_or_else(|| canonical.replace('_', " "))
 }
 
 pub(super) fn role_metadata(role: &str, _unused: Option<&str>) -> UserRoleMetadata {
 	let canonical_role_id = canonical_role(role);
-	let is_builtin = matches!(
-		canonical_role_id.as_str(),
-		ROLE_SYSTEM_ADMIN | ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
-	);
-	let is_sponsor_admin = matches!(
-		canonical_role_id.as_str(),
-		ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
-	);
+	let built_in = built_in_role_metadata(&canonical_role_id);
 	UserRoleMetadata {
 		display_name: role_display_name(&canonical_role_id),
 		canonical_role_id: canonical_role_id.clone(),
-		is_builtin,
-		is_editable: !is_builtin,
-		is_sponsor_admin,
-		is_operational: canonical_role_id != ROLE_SYSTEM_ADMIN,
+		is_builtin: built_in.is_some(),
+		is_editable: built_in.is_none(),
+		is_sponsor_admin: built_in.is_some_and(|metadata| metadata.sponsor_admin),
+		is_operational: built_in.is_none_or(|metadata| metadata.operational),
 	}
 }
 

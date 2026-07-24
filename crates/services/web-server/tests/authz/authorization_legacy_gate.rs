@@ -135,3 +135,45 @@ fn user_role_metadata_does_not_turn_user_create_into_admin_identity() {
 	assert!(!validation.contains("has_permission(permission_subject, USER_CREATE)"));
 	assert!(!openapi.contains("\tcan_admin: bool,"));
 }
+
+#[test]
+fn built_in_role_metadata_has_one_backend_source() {
+	let root = workspace_root();
+	let permission_profiles =
+		fs::read_to_string(root.join(
+			"crates/services/web-server/src/web/rest/permission_profile_rest.rs",
+		))
+		.expect("permission profile source must be readable");
+	let user_validation = fs::read_to_string(
+		root.join("crates/services/web-server/src/web/rest/user_rest/validation.rs"),
+	)
+	.expect("user validation source must be readable");
+
+	for duplicate_label in [
+		"System Administrator",
+		"Sponsor Administrator (CRO)",
+		"Sponsor Administrator (Pharmaceutical Company)",
+		"CRO Sponsor Administrator",
+		"Company Sponsor Administrator",
+	] {
+		assert!(!permission_profiles.contains(duplicate_label));
+	}
+	for duplicate_display_expression in [
+		"\"System Administrator\".to_string()",
+		"\"Sponsor Administrator (CRO)\".to_string()",
+		"\"Sponsor Administrator (Pharmaceutical Company)\".to_string()",
+	] {
+		assert!(!user_validation.contains(duplicate_display_expression));
+	}
+	assert!(permission_profiles.contains("built_in_role_metadata("));
+	assert!(user_validation.contains("built_in_role_metadata("));
+}
+
+#[test]
+fn legacy_console_does_not_call_removed_role_api() {
+	let console = fs::read_to_string(workspace_root().join("web-folder/index.html"))
+		.expect("legacy console source must be readable");
+	assert!(!console.contains("/api/admin/roles"));
+	assert!(!console.contains("function loadRoles"));
+	assert!(!console.contains("function createRole"));
+}

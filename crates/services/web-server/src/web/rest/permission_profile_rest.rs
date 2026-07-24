@@ -2,8 +2,8 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
 use lib_core::ctx::{
-	canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
-	ROLE_SYSTEM_ADMIN,
+	built_in_role_metadata, canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY,
+	ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::{
 	built_in_menu_privileges, normalize_menu_privileges, AdminMenuPrivilege,
@@ -167,27 +167,14 @@ fn normalize_admin_privileges(
 	})
 }
 
-fn system_admin_row() -> PermissionProfileRow {
+fn built_in_role_row(role_id: &str) -> PermissionProfileRow {
+	let metadata = built_in_role_metadata(role_id)
+		.expect("built-in role row requires canonical metadata");
 	build_role_row(
-		ROLE_SYSTEM_ADMIN.to_string(),
-		"System Administrator".to_string(),
-		Some(
-			"Platform-level role for provisioning and internal operations."
-				.to_string(),
-		),
-		built_in_menu_privileges(ROLE_SYSTEM_ADMIN),
-		true,
-		true,
-		false,
-	)
-}
-
-fn sponsor_admin_row(id: &str, name: &str) -> PermissionProfileRow {
-	build_role_row(
-		id.to_string(),
-		name.to_string(),
-		Some("Fixed account administrator role.".to_string()),
-		built_in_menu_privileges(id),
+		metadata.role_id.to_string(),
+		metadata.display_name.to_string(),
+		Some(metadata.description.to_string()),
+		built_in_menu_privileges(metadata.role_id),
 		true,
 		true,
 		false,
@@ -200,21 +187,14 @@ async fn visible_built_in_roles(
 ) -> Result<Vec<PermissionProfileRow>> {
 	let roles = match canonical_role(ctx.role()).as_str() {
 		ROLE_SYSTEM_ADMIN => vec![
-			system_admin_row(),
-			sponsor_admin_row(ROLE_SPONSOR_ADMIN_CRO, "CRO Sponsor Administrator"),
-			sponsor_admin_row(
-				ROLE_SPONSOR_ADMIN_COMPANY,
-				"Company Sponsor Administrator",
-			),
+			built_in_role_row(ROLE_SYSTEM_ADMIN),
+			built_in_role_row(ROLE_SPONSOR_ADMIN_CRO),
+			built_in_role_row(ROLE_SPONSOR_ADMIN_COMPANY),
 		],
-		ROLE_SPONSOR_ADMIN_CRO => vec![sponsor_admin_row(
-			ROLE_SPONSOR_ADMIN_CRO,
-			"CRO Sponsor Administrator",
-		)],
-		ROLE_SPONSOR_ADMIN_COMPANY => vec![sponsor_admin_row(
-			ROLE_SPONSOR_ADMIN_COMPANY,
-			"Company Sponsor Administrator",
-		)],
+		ROLE_SPONSOR_ADMIN_CRO => vec![built_in_role_row(ROLE_SPONSOR_ADMIN_CRO)],
+		ROLE_SPONSOR_ADMIN_COMPANY => {
+			vec![built_in_role_row(ROLE_SPONSOR_ADMIN_COMPANY)]
+		}
 		_ => Vec::new(),
 	};
 	Ok(roles)
@@ -233,10 +213,7 @@ fn row_to_api(row: DbPermissionProfileRow) -> PermissionProfileRow {
 }
 
 fn is_built_in_role_id(id: &str) -> bool {
-	matches!(
-		id,
-		ROLE_SYSTEM_ADMIN | ROLE_SPONSOR_ADMIN_CRO | ROLE_SPONSOR_ADMIN_COMPANY
-	)
+	built_in_role_metadata(id).is_some()
 }
 
 fn parse_custom_role_id(id: &str) -> Result<Uuid> {
