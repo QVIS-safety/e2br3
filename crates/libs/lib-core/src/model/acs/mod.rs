@@ -41,7 +41,7 @@ pub use catalog::*;
 
 mod builtin_roles;
 pub use builtin_roles::role_permissions;
-pub(crate) use builtin_roles::{profile_edit_permissions, viewer_permissions};
+pub(crate) use builtin_roles::{case_view_permissions, profile_edit_permissions};
 
 mod dynamic_roles;
 pub(crate) use dynamic_roles::with_dynamic_role_permissions;

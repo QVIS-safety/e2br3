@@ -1,44 +1,49 @@
 use super::*;
 
-fn system_admin_ctx_for_organization(
-	ctx: &Ctx,
-	organization_id: Uuid,
-) -> Result<Option<Ctx>> {
-	if !ctx.is_system_admin() {
-		return Ok(None);
-	}
-	let scoped = Ctx::new(ctx.user_id(), organization_id, ctx.role().to_string())
-		.map_err(|_| Error::BadRequest {
-			message: "valid organization context is required".to_string(),
-		})?
-		.with_compliance(
-			ctx.change_reason().map(ToString::to_string),
-			ctx.e_signature_id(),
-		);
-	Ok(Some(scoped))
-}
-
 /// POST /api/users
 /// Create a new user
 /// **Requires User.Create permission (admin only)**
 pub async fn create_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 	Json(params): Json<ParamsForCreate<UserForCreateAdminPayload>>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
 	let ParamsForCreate { data } = params;
-	let authorized_db_ctx = user_admin_db_ctx(&ctx, USER_CREATE)?;
-	if !ctx.is_admin()
-		&& data
-			.role
-			.as_deref()
-			.is_some_and(|role| canonical_role(role) != ROLE_USER)
+	let organization_id = if snapshot.identity().is_platform_administrator() {
+		data.organization_id.ok_or_else(|| Error::BadRequest {
+			message: "organization_id is required".to_string(),
+		})?
+	} else {
+		ctx.organization_id()
+	};
+	let create_action = policy_registry()
+		.context_action::<Proposed<UserCreateProposal>>("user.create")
+		.expect("user.create policy");
+	let permit = authorize_contextual_mutation(
+		create_action,
+		&snapshot,
+		proposed_user_context(organization_id),
+	)
+	.map_err(authorization_denied)?;
+	let db_ctx = rls_ctx_for_authorized_mutation(&ctx, &snapshot, &permit)?;
+	if data
+		.role
+		.as_deref()
+		.is_some_and(|role| canonical_role(role) != ROLE_USER)
 	{
-		return Err(Error::PermissionDenied {
-			required_permission: "built-in administrator role assignment"
-				.to_string(),
-		});
+		let role_action = policy_registry()
+			.context_action::<Proposed<UserCreateProposal>>(
+				"user.create.role_assignment",
+			)
+			.expect("user.create.role_assignment policy");
+		authorize_contextual_mutation(
+			role_action,
+			&snapshot,
+			proposed_user_context(organization_id),
+		)
+		.map_err(authorization_denied)?;
 	}
 	validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
 	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
@@ -54,25 +59,11 @@ pub async fn create_user(
 		) {
 		return Err(sender_scope_assignment_forbidden());
 	}
-	let organization_id = if ctx.is_system_admin() {
-		data.organization_id.ok_or_else(|| Error::BadRequest {
-			message: "organization_id is required".to_string(),
-		})?
-	} else {
-		ctx.organization_id()
-	};
 	if organization_id.is_nil() {
 		return Err(Error::BadRequest {
 			message: "organization context is required".to_string(),
 		});
 	}
-	let db_ctx = if let Some(scoped) =
-		system_admin_ctx_for_organization(&ctx, organization_id)?
-	{
-		scoped
-	} else {
-		authorized_db_ctx
-	};
 	// New users are provisioned with a temporary password and must reset it on first login.
 	let role = normalize_user_role(data.role);
 	validate_create_role_selection(role.as_deref())?;
@@ -131,10 +122,20 @@ pub async fn create_user(
 pub async fn get_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 	Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
-	let db_ctx = user_admin_db_ctx(&ctx, USER_READ)?;
+	let action = policy_registry()
+		.context_action::<Existing<UserResource>>("user.read")
+		.expect("user.read policy");
+	let permit = authorize_contextual_read(
+		action,
+		&snapshot,
+		existing_user_read_context(id, ctx.organization_id()),
+	)
+	.map_err(authorization_denied)?;
+	let db_ctx = rls_ctx_for_authorized_read(&ctx, &snapshot, &permit)?;
 	let entity: User = UserBmc::get(&db_ctx, &mm, id).await?;
 	Ok((
 		StatusCode::OK,
@@ -183,12 +184,22 @@ pub async fn set_my_password(
 pub async fn list_users(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 	axum::extract::RawQuery(raw_query): axum::extract::RawQuery,
 ) -> Result<(StatusCode, Json<DataRestResult<Vec<UserView>>>)> {
 	let ctx = ctx_w.0;
 	let params = ParamsList::<UserFilter>::from_raw_query(raw_query.as_deref())
 		.map_err(|message| Error::BadRequest { message })?;
-	let db_ctx = user_admin_db_ctx(&ctx, USER_LIST)?;
+	let action = policy_registry()
+		.context_action("user.list")
+		.expect("user.list policy");
+	let permit = authorize_contextual_read(
+		action,
+		&snapshot,
+		user_collection_context(ctx.organization_id()),
+	)
+	.map_err(authorization_denied)?;
+	let db_ctx = rls_ctx_for_authorized_read(&ctx, &snapshot, &permit)?;
 	let entities =
 		UserBmc::list(&db_ctx, &mm, params.filters, params.list_options).await?;
 	let entities = entities.into_iter().map(user_view).collect::<Vec<_>>();
@@ -229,17 +240,32 @@ pub async fn list_workflow_user_options(
 pub async fn update_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 	Path(id): Path<Uuid>,
 	Json(params): Json<ParamsForUpdate<UserForUpdateAdminPayload>>,
 ) -> Result<(StatusCode, Json<DataRestResult<UserView>>)> {
 	let ctx = ctx_w.0;
 	let ParamsForUpdate { data } = params;
-	let db_ctx = user_admin_db_ctx(&ctx, USER_UPDATE)?;
-	if !ctx.is_admin() && data.role.is_some() {
-		return Err(Error::PermissionDenied {
-			required_permission: "built-in administrator role assignment"
-				.to_string(),
-		});
+	let action = policy_registry()
+		.context_action::<Existing<UserResource>>("user.update")
+		.expect("user.update policy");
+	let permit = authorize_contextual_mutation(
+		action,
+		&snapshot,
+		existing_user_mutation_context(id, ctx.organization_id()),
+	)
+	.map_err(authorization_denied)?;
+	let db_ctx = rls_ctx_for_authorized_mutation(&ctx, &snapshot, &permit)?;
+	if data.role.is_some() {
+		let role_action = policy_registry()
+			.context_action::<Existing<UserResource>>("user.update.role_assignment")
+			.expect("user.update.role_assignment policy");
+		authorize_contextual_mutation(
+			role_action,
+			&snapshot,
+			existing_user_mutation_context(id, ctx.organization_id()),
+		)
+		.map_err(authorization_denied)?;
 	}
 	validate_uuid_scope("access_sender_ids", &data.access_sender_ids)?;
 	validate_uuid_scope("access_product_ids", &data.access_product_ids)?;
@@ -314,10 +340,20 @@ pub async fn update_user(
 pub async fn delete_user(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 	Path(id): Path<Uuid>,
 ) -> Result<StatusCode> {
 	let ctx = ctx_w.0;
-	let db_ctx = user_admin_db_ctx(&ctx, USER_DELETE)?;
+	let action = policy_registry()
+		.context_action::<Existing<UserResource>>("user.delete")
+		.expect("user.delete policy");
+	let permit = authorize_contextual_mutation(
+		action,
+		&snapshot,
+		existing_user_mutation_context(id, ctx.organization_id()),
+	)
+	.map_err(authorization_denied)?;
+	let db_ctx = rls_ctx_for_authorized_mutation(&ctx, &snapshot, &permit)?;
 	if id == ctx.user_id() {
 		return Err(Error::BadRequest {
 			message: "cannot delete yourself".to_string(),
@@ -410,7 +446,7 @@ async fn current_user_menu_privileges(
 	mm: &ModelManager,
 ) -> Result<Vec<AdminMenuPrivilege>> {
 	let built_in = built_in_menu_privileges(ctx.role());
-	if !built_in.is_empty() || ctx.is_admin() {
+	if !built_in.is_empty() {
 		return Ok(built_in);
 	}
 	let Ok(profile_id) = Uuid::parse_str(ctx.role()) else {
@@ -561,27 +597,4 @@ pub async fn update_current_user_routing(
 	.await?;
 	let routing = routing_profile_for_user(&ctx, &mm).await?;
 	Ok((StatusCode::OK, Json(DataRestResult { data: routing })))
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	fn system_admin_user_creation_uses_the_selected_organization_context() {
-		let user_id = Uuid::new_v4();
-		let target_organization_id = Uuid::new_v4();
-		let request_ctx =
-			Ctx::new(user_id, Uuid::nil(), ROLE_SYSTEM_ADMIN.to_string())
-				.expect("system administrator context");
-
-		let scoped =
-			system_admin_ctx_for_organization(&request_ctx, target_organization_id)
-				.expect("scope selection should succeed")
-				.expect("system administrator should receive a scoped context");
-
-		assert_eq!(scoped.user_id(), user_id);
-		assert_eq!(scoped.organization_id(), target_organization_id);
-		assert_eq!(scoped.role(), ROLE_SYSTEM_ADMIN);
-	}
 }

@@ -2,7 +2,7 @@ use super::{
 	policy_registry, ActionId, AuditClassification, AuthorizationContext,
 	AuthorizationDecision, AuthorizationDenial, AuthorizedMutation, AuthorizedRead,
 	ContextActionId, ContextCondition, ContextSnapshot, DecisionStage, DenialReason,
-	EligibilityDecision, EntitlementRule, EvaluatedContext, LockedMutationContext,
+	EligibilityDecision, EvaluatedContext, LockedMutationContext,
 	RequestAuthorizationSnapshot, SubjectActionId,
 };
 
@@ -27,20 +27,14 @@ pub fn check_eligibility(
 			DenialReason::IncompatibleIdentity,
 		));
 	}
-	let entitlement_matches = match policy.entitlement_rule {
-		EntitlementRule::AllOf => policy
-			.entitlements
-			.iter()
-			.all(|entitlement| snapshot.entitlements().contains(entitlement)),
-		EntitlementRule::AnyOf => policy
-			.entitlements
-			.iter()
-			.any(|entitlement| snapshot.entitlements().contains(entitlement)),
-	};
-	if !entitlement_matches {
+	if !policy
+		.required_grants
+		.iter()
+		.all(|grant| snapshot.grants().contains(grant))
+	{
 		return EligibilityDecision::Denied(AuthorizationDenial::new(
 			action_id.clone(),
-			DenialReason::MissingEntitlement,
+			DenialReason::MissingGrant,
 		));
 	}
 	EligibilityDecision::Eligible
@@ -77,6 +71,7 @@ pub fn authorize_contextual_read<'tx, C: AuthorizationContext>(
 		action_id,
 		snapshot.principal_id(),
 		snapshot.organization_id(),
+		context.evaluated.organization_id,
 		context.evaluated.target_fingerprint,
 		snapshot.version().clone(),
 		snapshot.evaluated_at(),
@@ -105,6 +100,7 @@ pub fn authorize_contextual_mutation<'tx, C: AuthorizationContext>(
 		action_id,
 		snapshot.principal_id(),
 		snapshot.organization_id(),
+		context.evaluated.organization_id,
 		context.evaluated.target_fingerprint,
 		snapshot.version().clone(),
 		snapshot.evaluated_at(),
@@ -144,7 +140,8 @@ fn check_context(
 	for condition in &policy.context_conditions {
 		let denied = match condition {
 			ContextCondition::SameOrganization
-				if context.organization_id != Some(snapshot.organization_id()) =>
+				if context.organization_id != Some(snapshot.organization_id())
+					&& !snapshot.identity().is_platform_administrator() =>
 			{
 				Some(DenialReason::SameOrganizationRequired)
 			}
@@ -179,7 +176,7 @@ fn check_context(
 mod tests {
 	use super::*;
 	use crate::authorization::{
-		BuiltInIdentityKind, CaseResource, EnforcedScopeFilter, EntitlementId,
+		BuiltInIdentityKind, CaseResource, EnforcedScopeFilter, GrantId,
 		IdentityTraits, PolicySnapshotVersion, PrincipalScope,
 	};
 	use std::collections::BTreeSet;
@@ -187,7 +184,7 @@ mod tests {
 	use uuid::Uuid;
 
 	fn snapshot(
-		entitlements: &[&str],
+		grants: &[&str],
 		identity: Option<BuiltInIdentityKind>,
 	) -> RequestAuthorizationSnapshot {
 		let organization_id = Uuid::new_v4();
@@ -196,9 +193,9 @@ mod tests {
 			organization_id,
 			Uuid::new_v4(),
 			IdentityTraits::new(identity),
-			entitlements
+			grants
 				.iter()
-				.map(|value| EntitlementId::parse(*value).unwrap())
+				.map(|value| GrantId::parse(*value).unwrap())
 				.collect::<BTreeSet<_>>(),
 			PrincipalScope::new(Vec::new(), Vec::new(), Vec::new(), false, None),
 			PolicySnapshotVersion::new("a".repeat(64), organization_id, 1, 1),
@@ -229,7 +226,7 @@ mod tests {
 	}
 
 	#[test]
-	fn case_review_requires_entitlement_and_compatible_lifecycle() {
+	fn case_review_requires_grant_and_compatible_lifecycle() {
 		type Case = crate::authorization::Existing<CaseResource>;
 		let action = policy_registry()
 			.context_action::<Case>("case.review.toggle")
@@ -241,7 +238,7 @@ mod tests {
 			LockedMutationContext::new(evaluated(&missing, true)),
 		)
 		.unwrap_err();
-		assert_eq!(denial.reason(), DenialReason::MissingEntitlement);
+		assert_eq!(denial.reason(), DenialReason::MissingGrant);
 
 		let reviewer = snapshot(&["case.review"], None);
 		let denial = authorize_contextual_mutation(
@@ -254,20 +251,64 @@ mod tests {
 	}
 
 	#[test]
-	fn identity_restrictions_do_not_treat_custom_roles_as_administrators() {
+	fn custom_admin_edit_can_update_users_but_cannot_assign_roles() {
+		type User =
+			crate::authorization::Existing<crate::authorization::UserResource>;
+		let custom = snapshot(&["admin.edit"], None);
+		let action = policy_registry()
+			.context_action::<User>("user.update")
+			.unwrap();
+		assert!(authorize_contextual_mutation(
+			action,
+			&custom,
+			LockedMutationContext::new(evaluated(&custom, true)),
+		)
+		.is_ok());
+
+		let role_assignment = policy_registry()
+			.context_action::<User>("user.update.role_assignment")
+			.unwrap();
+		let denial = authorize_contextual_mutation(
+			role_assignment,
+			&custom,
+			LockedMutationContext::new(evaluated(&custom, true)),
+		)
+		.unwrap_err();
+		assert_eq!(denial.reason(), DenialReason::IncompatibleIdentity);
+	}
+
+	#[test]
+	fn only_platform_identity_can_cross_organization_boundaries() {
 		type Users =
 			crate::authorization::Collection<crate::authorization::UserResource>;
 		let action = policy_registry()
 			.context_action::<Users>("user.list")
 			.unwrap();
-		let custom = snapshot(&["user.read"], None);
+		let mut custom = snapshot(&["admin.read"], None);
+		let other_organization = Uuid::new_v4();
+		let mut cross_org = evaluated(&custom, true);
+		cross_org.organization_id = Some(other_organization);
 		let denial = authorize_contextual_read(
-			action,
+			action.clone(),
 			&custom,
-			ContextSnapshot::new(evaluated(&custom, true)),
+			ContextSnapshot::new(cross_org),
 		)
 		.unwrap_err();
-		assert_eq!(denial.reason(), DenialReason::IncompatibleIdentity);
+		assert_eq!(denial.reason(), DenialReason::SameOrganizationRequired);
+
+		custom = snapshot(
+			&["admin.read"],
+			Some(BuiltInIdentityKind::PlatformAdministrator),
+		);
+		let mut cross_org = evaluated(&custom, true);
+		cross_org.organization_id = Some(other_organization);
+		let permit = authorize_contextual_read(
+			action,
+			&custom,
+			ContextSnapshot::new(cross_org),
+		)
+		.unwrap();
+		assert_eq!(permit.target_organization_id(), Some(other_organization));
 	}
 
 	#[test]

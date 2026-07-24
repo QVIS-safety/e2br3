@@ -159,7 +159,7 @@ fn denial_reason(reason: DenialReason) -> &'static str {
 		DenialReason::UnknownAction => "unknown_action",
 		DenialReason::WrongDecisionStage => "wrong_decision_stage",
 		DenialReason::WrongOperationClass => "wrong_operation_class",
-		DenialReason::MissingEntitlement => "missing_entitlement",
+		DenialReason::MissingGrant => "missing_grant",
 		DenialReason::IncompatibleIdentity => "incompatible_identity",
 		DenialReason::SameOrganizationRequired => "same_organization_required",
 		DenialReason::OutsidePrincipalScope => "outside_principal_scope",

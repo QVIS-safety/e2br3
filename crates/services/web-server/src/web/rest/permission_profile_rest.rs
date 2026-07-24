@@ -1,9 +1,15 @@
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
+use lib_core::authorization::{
+	authorize_contextual_mutation, authorize_contextual_read,
+	existing_role_mutation_context, existing_role_read_context, policy_registry,
+	proposed_role_context, role_collection_context, BuiltInIdentityKind, Existing,
+	Proposed, RoleCreateProposal, RoleResource,
+};
 use lib_core::ctx::{
-	built_in_role_metadata, canonical_role, Ctx, ROLE_SPONSOR_ADMIN_COMPANY,
-	ROLE_SPONSOR_ADMIN_CRO, ROLE_SYSTEM_ADMIN,
+	built_in_role_metadata, Ctx, ROLE_SPONSOR_ADMIN_COMPANY, ROLE_SPONSOR_ADMIN_CRO,
+	ROLE_SYSTEM_ADMIN,
 };
 use lib_core::model::acs::{
 	built_in_menu_privileges, normalize_menu_privileges, AdminMenuPrivilege,
@@ -17,8 +23,12 @@ use lib_core::model::permission_profile::{
 	PermissionProfileUpdateData,
 };
 use lib_core::model::ModelManager;
-use lib_rest_core::{require_role_admin, Error, Result};
+use lib_rest_core::{
+	authorization_denied, rls_ctx_for_authorized_mutation,
+	rls_ctx_for_authorized_read, Error, Result,
+};
 use lib_web::middleware::mw_auth::CtxW;
+use lib_web::middleware::mw_authorization_snapshot::AuthorizationSnapshotW;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Json as SqlxJson;
 use uuid::Uuid;
@@ -32,14 +42,14 @@ pub struct PermissionProfileScope {
 	pub organization_id: Option<Uuid>,
 }
 
-async fn permission_profile_ctx(
+async fn permission_profile_organization(
 	ctx: &Ctx,
+	snapshot: &lib_core::authorization::RequestAuthorizationSnapshot,
 	mm: &ModelManager,
 	scope: &PermissionProfileScope,
-) -> Result<Ctx> {
-	require_role_admin(ctx)?;
-	if !ctx.is_system_admin() {
-		return Ok(ctx.clone());
+) -> Result<Uuid> {
+	if !snapshot.identity().is_platform_administrator() {
+		return Ok(ctx.organization_id());
 	}
 	let organization_id =
 		scope.organization_id.ok_or_else(|| Error::BadRequest {
@@ -66,14 +76,7 @@ async fn permission_profile_ctx(
 				.to_string(),
 		});
 	}
-	Ctx::new(
-		ctx.user_id(),
-		organization_id,
-		ROLE_SYSTEM_ADMIN.to_string(),
-	)
-	.map_err(|_| Error::BadRequest {
-		message: "invalid target organization context".to_string(),
-	})
+	Ok(organization_id)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -182,17 +185,19 @@ fn built_in_role_row(role_id: &str) -> PermissionProfileRow {
 }
 
 async fn visible_built_in_roles(
-	ctx: &Ctx,
+	identity: Option<BuiltInIdentityKind>,
 	_mm: &ModelManager,
 ) -> Result<Vec<PermissionProfileRow>> {
-	let roles = match canonical_role(ctx.role()).as_str() {
-		ROLE_SYSTEM_ADMIN => vec![
+	let roles = match identity {
+		Some(BuiltInIdentityKind::PlatformAdministrator) => vec![
 			built_in_role_row(ROLE_SYSTEM_ADMIN),
 			built_in_role_row(ROLE_SPONSOR_ADMIN_CRO),
 			built_in_role_row(ROLE_SPONSOR_ADMIN_COMPANY),
 		],
-		ROLE_SPONSOR_ADMIN_CRO => vec![built_in_role_row(ROLE_SPONSOR_ADMIN_CRO)],
-		ROLE_SPONSOR_ADMIN_COMPANY => {
+		Some(BuiltInIdentityKind::SponsorCroAdministrator) => {
+			vec![built_in_role_row(ROLE_SPONSOR_ADMIN_CRO)]
+		}
+		Some(BuiltInIdentityKind::SponsorCompanyAdministrator) => {
 			vec![built_in_role_row(ROLE_SPONSOR_ADMIN_COMPANY)]
 		}
 		_ => Vec::new(),
@@ -232,11 +237,25 @@ pub async fn refresh_dynamic_roles(mm: &ModelManager) -> Result<()> {
 pub async fn list_permission_profiles(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 	Query(scope): Query<PermissionProfileScope>,
 ) -> Result<(StatusCode, Json<Vec<PermissionProfileRow>>)> {
 	let request_ctx = ctx_w.0;
-	let ctx = permission_profile_ctx(&request_ctx, &mm, &scope).await?;
-	let mut rows = visible_built_in_roles(&ctx, &mm).await?;
+	let organization_id =
+		permission_profile_organization(&request_ctx, &snapshot, &mm, &scope)
+			.await?;
+	let action = policy_registry()
+		.context_action("role.list")
+		.expect("role.list policy");
+	let permit = authorize_contextual_read(
+		action,
+		&snapshot,
+		role_collection_context(organization_id),
+	)
+	.map_err(authorization_denied)?;
+	let ctx = rls_ctx_for_authorized_read(&request_ctx, &snapshot, &permit)?;
+	let mut rows =
+		visible_built_in_roles(snapshot.identity().built_in_kind(), &mm).await?;
 	let custom_rows = PermissionProfileBmc::list(&ctx, &mm)
 		.await
 		.map_err(Error::Model)?;
@@ -248,15 +267,29 @@ pub async fn list_permission_profiles(
 pub async fn get_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 	Path(id): Path<String>,
 	Query(scope): Query<PermissionProfileScope>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	let request_ctx = ctx_w.0;
-	let ctx = permission_profile_ctx(&request_ctx, &mm, &scope).await?;
-	if let Some(row) = visible_built_in_roles(&ctx, &mm)
-		.await?
-		.into_iter()
-		.find(|row| row.id == id)
+	let organization_id =
+		permission_profile_organization(&request_ctx, &snapshot, &mm, &scope)
+			.await?;
+	let action = policy_registry()
+		.context_action::<Existing<RoleResource>>("role.read")
+		.expect("role.read policy");
+	let permit = authorize_contextual_read(
+		action,
+		&snapshot,
+		existing_role_read_context(&id, organization_id),
+	)
+	.map_err(authorization_denied)?;
+	let ctx = rls_ctx_for_authorized_read(&request_ctx, &snapshot, &permit)?;
+	if let Some(row) =
+		visible_built_in_roles(snapshot.identity().built_in_kind(), &mm)
+			.await?
+			.into_iter()
+			.find(|row| row.id == id)
 	{
 		return Ok((StatusCode::OK, Json(row)));
 	}
@@ -271,13 +304,26 @@ pub async fn get_permission_profile(
 pub async fn create_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 	Query(scope): Query<PermissionProfileScope>,
 	Json(params): Json<
 		lib_rest_core::rest_params::ParamsForCreate<PermissionProfileCreateBody>,
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	let request_ctx = ctx_w.0;
-	let ctx = permission_profile_ctx(&request_ctx, &mm, &scope).await?;
+	let organization_id =
+		permission_profile_organization(&request_ctx, &snapshot, &mm, &scope)
+			.await?;
+	let action = policy_registry()
+		.context_action::<Proposed<RoleCreateProposal>>("role.create")
+		.expect("role.create policy");
+	let permit = authorize_contextual_mutation(
+		action,
+		&snapshot,
+		proposed_role_context(organization_id),
+	)
+	.map_err(authorization_denied)?;
+	let ctx = rls_ctx_for_authorized_mutation(&request_ctx, &snapshot, &permit)?;
 	let data = params.data;
 	let name = data
 		.name
@@ -326,6 +372,7 @@ pub async fn create_permission_profile(
 pub async fn update_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 	Path(id): Path<String>,
 	Query(scope): Query<PermissionProfileScope>,
 	Json(params): Json<
@@ -333,7 +380,19 @@ pub async fn update_permission_profile(
 	>,
 ) -> Result<(StatusCode, Json<PermissionProfileRow>)> {
 	let request_ctx = ctx_w.0;
-	let ctx = permission_profile_ctx(&request_ctx, &mm, &scope).await?;
+	let organization_id =
+		permission_profile_organization(&request_ctx, &snapshot, &mm, &scope)
+			.await?;
+	let action = policy_registry()
+		.context_action::<Existing<RoleResource>>("role.update")
+		.expect("role.update policy");
+	let permit = authorize_contextual_mutation(
+		action,
+		&snapshot,
+		existing_role_mutation_context(&id, organization_id),
+	)
+	.map_err(authorization_denied)?;
+	let ctx = rls_ctx_for_authorized_mutation(&request_ctx, &snapshot, &permit)?;
 	if is_built_in_role_id(&id) {
 		return Err(Error::AccessDenied {
 			required_role: "editable_custom_role".to_string(),
@@ -396,11 +455,24 @@ pub async fn update_permission_profile(
 pub async fn delete_permission_profile(
 	State(mm): State<ModelManager>,
 	ctx_w: CtxW,
+	snapshot: AuthorizationSnapshotW,
 	Path(id): Path<String>,
 	Query(scope): Query<PermissionProfileScope>,
 ) -> Result<StatusCode> {
 	let request_ctx = ctx_w.0;
-	let ctx = permission_profile_ctx(&request_ctx, &mm, &scope).await?;
+	let organization_id =
+		permission_profile_organization(&request_ctx, &snapshot, &mm, &scope)
+			.await?;
+	let action = policy_registry()
+		.context_action::<Existing<RoleResource>>("role.delete")
+		.expect("role.delete policy");
+	let permit = authorize_contextual_mutation(
+		action,
+		&snapshot,
+		existing_role_mutation_context(&id, organization_id),
+	)
+	.map_err(authorization_denied)?;
+	let ctx = rls_ctx_for_authorized_mutation(&request_ctx, &snapshot, &permit)?;
 	if is_built_in_role_id(&id) {
 		return Err(Error::BadRequest {
 			message: "built-in permission profiles cannot be deleted".to_string(),

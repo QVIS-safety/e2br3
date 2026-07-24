@@ -2,6 +2,7 @@ use super::support::{install_profile, profile, RegistryGuard};
 use lib_core::model::acs::{
 	has_permission, CASE_APPROVE, CASE_CREATE, CASE_DELETE, CASE_LOCK, CASE_READ,
 	CASE_UPDATE, DRUG_DEVICE_CHARACTERISTIC_LIST, DRUG_DEVICE_CHARACTERISTIC_READ,
+	USER_LIST, USER_READ, XML_EXPORT, XML_EXPORT_READ,
 };
 use serial_test::serial;
 
@@ -18,6 +19,9 @@ fn case_read_profile_grants_every_view_permission_only() {
 	assert!(!has_permission("case_reader", CASE_CREATE));
 	assert!(!has_permission("case_reader", CASE_UPDATE));
 	assert!(!has_permission("case_reader", CASE_APPROVE));
+	for unrelated in [USER_READ, USER_LIST, XML_EXPORT, XML_EXPORT_READ] {
+		assert!(!has_permission("case_reader", unrelated));
+	}
 }
 
 #[test]

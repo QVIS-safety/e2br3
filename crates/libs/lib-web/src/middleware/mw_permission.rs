@@ -111,8 +111,8 @@ pub fn check_organization_access(
 	ctx: &Ctx,
 	resource_org_id: uuid::Uuid,
 ) -> Result<()> {
-	// Admins can access any organization
-	if ctx.is_admin() {
+	// Only the platform identity may cross an organization boundary.
+	if ctx.is_system_admin() {
 		return Ok(());
 	}
 

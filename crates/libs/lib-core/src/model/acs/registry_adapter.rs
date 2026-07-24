@@ -1,5 +1,5 @@
 //! Compatibility adapter from the legacy menu-flag storage shape to the
-//! registry-owned grant and entitlement model.
+//! registry-owned grant model.
 
 use super::*;
 use crate::authorization::{policy_registry, Availability, GrantUiField};
@@ -142,63 +142,87 @@ fn push_unique(target: &mut Vec<Permission>, source: &[Permission]) {
 	}
 }
 
-fn permissions_for_entitlement(id: &str) -> &'static [Permission] {
+fn append_permissions_for_grant(target: &mut Vec<Permission>, id: &str) {
 	match id {
-		"notice.read" => &[DASHBOARD_NOTICE_READ],
-		"notice.update" => &[DASHBOARD_NOTICE_UPDATE],
-		"case.queue_read" | "case.workflow_read" => &[CASE_READ, CASE_LIST],
-		"case.read" => viewer_permissions(),
-		"case.create" => &[CASE_CREATE],
-		"case.update" => profile_edit_permissions(),
-		"case.review" => &[CASE_APPROVE],
-		"case.lock" => &[CASE_LOCK],
-		"case.audit_read" => &[],
-		"case.export" | "submission.execute" => &[XML_EXPORT],
-		"info.read" => &[
-			PRESAVE_TEMPLATE_READ,
-			PRESAVE_TEMPLATE_LIST,
-			SENDER_INFORMATION_READ,
-			SENDER_INFORMATION_LIST,
-			RECEIVER_READ,
-			RECEIVER_LIST,
-			STUDY_INFORMATION_READ,
-			STUDY_INFORMATION_LIST,
-			NARRATIVE_READ,
-			NARRATIVE_LIST,
-		],
-		"info.update" => &[
-			PRESAVE_TEMPLATE_CREATE,
-			PRESAVE_TEMPLATE_UPDATE,
-			PRESAVE_TEMPLATE_DELETE,
-			SENDER_INFORMATION_CREATE,
-			SENDER_INFORMATION_UPDATE,
-			SENDER_INFORMATION_DELETE,
-			RECEIVER_CREATE,
-			RECEIVER_UPDATE,
-			RECEIVER_DELETE,
-			STUDY_INFORMATION_CREATE,
-			STUDY_INFORMATION_UPDATE,
-			STUDY_INFORMATION_DELETE,
-			NARRATIVE_CREATE,
-			NARRATIVE_UPDATE,
-			NARRATIVE_DELETE,
-		],
-		"import.history_read" => &[XML_IMPORT_READ],
-		"import.execute" => &[XML_IMPORT],
-		"submission.history_read" => &[XML_EXPORT_READ],
-		"user.read" => &[USER_READ, USER_LIST],
-		"user.create" => &[USER_CREATE],
-		"user.update" => &[USER_UPDATE],
-		"user.delete" => &[USER_DELETE],
-		"user.role_assign" | "role.read" | "role.manage" | "role.assign" => &[],
-		"organization.read" => &[ORG_READ, ORG_LIST],
-		"organization.manage" => &[ORG_CREATE, ORG_UPDATE, ORG_DELETE],
-		"settings.read" => &[SETTINGS_READ],
-		"settings.update" => &[SETTINGS_UPDATE],
-		"audit.read" => &[AUDIT_READ, AUDIT_LIST],
-		"terminology.read" => &[TERMINOLOGY_READ],
-		"terminology.manage" => &[TERMINOLOGY_IMPORT, TERMINOLOGY_APPROVE],
-		_ => &[],
+		"home.notice.read" => push_unique(target, &[DASHBOARD_NOTICE_READ]),
+		"home.notice.edit" => push_unique(target, &[DASHBOARD_NOTICE_UPDATE]),
+		"home.workflow.read" | "case.workflow.read" => {
+			push_unique(target, &[CASE_READ, CASE_LIST]);
+		}
+		"case.read" => push_unique(target, case_view_permissions()),
+		"case.edit" => {
+			push_unique(target, &[CASE_CREATE]);
+			push_unique(target, profile_edit_permissions());
+		}
+		"case.review" => push_unique(target, &[CASE_APPROVE]),
+		"case.lock" => push_unique(target, &[CASE_LOCK]),
+		"info.read" => push_unique(
+			target,
+			&[
+				PRESAVE_TEMPLATE_READ,
+				PRESAVE_TEMPLATE_LIST,
+				SENDER_INFORMATION_READ,
+				SENDER_INFORMATION_LIST,
+				RECEIVER_READ,
+				RECEIVER_LIST,
+				STUDY_INFORMATION_READ,
+				STUDY_INFORMATION_LIST,
+				NARRATIVE_READ,
+				NARRATIVE_LIST,
+			],
+		),
+		"info.edit" => push_unique(
+			target,
+			&[
+				PRESAVE_TEMPLATE_CREATE,
+				PRESAVE_TEMPLATE_UPDATE,
+				PRESAVE_TEMPLATE_DELETE,
+				SENDER_INFORMATION_CREATE,
+				SENDER_INFORMATION_UPDATE,
+				SENDER_INFORMATION_DELETE,
+				RECEIVER_CREATE,
+				RECEIVER_UPDATE,
+				RECEIVER_DELETE,
+				STUDY_INFORMATION_CREATE,
+				STUDY_INFORMATION_UPDATE,
+				STUDY_INFORMATION_DELETE,
+				NARRATIVE_CREATE,
+				NARRATIVE_UPDATE,
+				NARRATIVE_DELETE,
+			],
+		),
+		"import.history.read" => push_unique(target, &[XML_IMPORT_READ]),
+		"import.execute" => push_unique(target, &[XML_IMPORT]),
+		"submission.history.read" => push_unique(target, &[XML_EXPORT_READ]),
+		"submission.execute" => push_unique(target, &[XML_EXPORT]),
+		"admin.read" => push_unique(
+			target,
+			&[
+				USER_READ,
+				USER_LIST,
+				ORG_READ,
+				ORG_LIST,
+				SETTINGS_READ,
+				AUDIT_READ,
+				AUDIT_LIST,
+				TERMINOLOGY_READ,
+			],
+		),
+		"admin.edit" => push_unique(
+			target,
+			&[
+				USER_CREATE,
+				USER_UPDATE,
+				USER_DELETE,
+				ORG_CREATE,
+				ORG_UPDATE,
+				ORG_DELETE,
+				SETTINGS_UPDATE,
+				TERMINOLOGY_IMPORT,
+				TERMINOLOGY_APPROVE,
+			],
+		),
+		_ => {}
 	}
 }
 
@@ -226,17 +250,14 @@ pub fn permissions_for_menu_privileges(
 		}
 	}
 
-	let Ok(entitlements) =
-		registry.effective_entitlements(grants.iter().map(|grant| grant.as_str()))
+	let Ok(grants) =
+		registry.effective_grants(grants.iter().map(|grant| grant.as_str()))
 	else {
 		return Vec::new();
 	};
 	let mut permissions = Vec::new();
-	for entitlement in entitlements {
-		push_unique(
-			&mut permissions,
-			permissions_for_entitlement(entitlement.as_str()),
-		);
+	for grant in grants {
+		append_permissions_for_grant(&mut permissions, grant.as_str());
 	}
 	permissions
 }

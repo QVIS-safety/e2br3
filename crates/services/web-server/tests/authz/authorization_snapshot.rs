@@ -43,7 +43,10 @@ async fn normalized_assignment_builds_one_versioned_platform_snapshot() -> Resul
 		snapshot.identity().built_in_kind(),
 		Some(BuiltInIdentityKind::PlatformAdministrator)
 	);
-	assert!(snapshot.entitlements().contains("role.manage"));
+	assert!(snapshot
+		.grants()
+		.iter()
+		.any(|grant| grant.as_str() == "admin.edit"));
 	assert!(snapshot.version().organization_revision() > 0);
 	assert!(snapshot.version().principal_revision() > 0);
 	assert_eq!(snapshot.evaluated_at(), evaluated_at);

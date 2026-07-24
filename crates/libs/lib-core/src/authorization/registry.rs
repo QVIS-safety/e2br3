@@ -25,19 +25,12 @@ pub enum RegistryError {
 		menu_key: String,
 		field: GrantUiField,
 	},
-	UnknownEntitlement {
-		owner: String,
-		entitlement: String,
-	},
 	UnknownGrant {
 		owner: String,
 		grant: String,
 	},
 	GrantImplicationCycle {
 		grants: Vec<String>,
-	},
-	ReservedGrantHasEntitlements {
-		grant: String,
 	},
 	ReservedGrantNotAssignable {
 		grant: String,
@@ -75,7 +68,6 @@ impl std::error::Error for RegistryError {}
 #[derive(Debug)]
 pub struct PolicyRegistry {
 	grants: BTreeMap<GrantId, GrantDefinition>,
-	entitlements: BTreeMap<EntitlementId, EntitlementDefinition>,
 	actions: BTreeMap<ActionId, ActionPolicy>,
 	built_in_identities: Vec<BuiltInIdentityDefinition>,
 	facts: BTreeMap<FactId, AuthorizationFactDefinition>,
@@ -89,16 +81,6 @@ impl PolicyRegistry {
 
 	pub fn grants(&self) -> impl ExactSizeIterator<Item = &GrantDefinition> {
 		self.grants.values()
-	}
-
-	pub fn entitlement(&self, id: &str) -> Option<&EntitlementDefinition> {
-		self.entitlements.get(id)
-	}
-
-	pub fn entitlements(
-		&self,
-	) -> impl ExactSizeIterator<Item = &EntitlementDefinition> {
-		self.entitlements.values()
 	}
 
 	pub fn action(&self, id: &str) -> Option<&ActionPolicy> {
@@ -169,37 +151,34 @@ impl PolicyRegistry {
 		Ok(grants)
 	}
 
-	pub fn effective_entitlements<'a>(
+	pub fn effective_grants<'a>(
 		&self,
 		grant_ids: impl IntoIterator<Item = &'a str>,
-	) -> Result<Vec<EntitlementId>, RegistryError> {
+	) -> Result<Vec<GrantId>, RegistryError> {
 		fn collect(
 			registry: &PolicyRegistry,
 			grant: &GrantDefinition,
 			visited: &mut BTreeSet<GrantId>,
-			entitlements: &mut BTreeSet<EntitlementId>,
 		) {
 			if !visited.insert(grant.id.clone()) {
 				return;
 			}
-			entitlements.extend(grant.entitlements.iter().cloned());
 			for implied in &grant.implied_grants {
-				collect(registry, &registry.grants[implied], visited, entitlements);
+				collect(registry, &registry.grants[implied], visited);
 			}
 		}
 
 		let mut visited = BTreeSet::new();
-		let mut entitlements = BTreeSet::new();
 		for grant_id in grant_ids {
 			let grant =
 				self.grant(grant_id)
 					.ok_or_else(|| RegistryError::UnknownGrant {
-						owner: "entitlement compilation".to_string(),
+						owner: "grant compilation".to_string(),
 						grant: grant_id.to_string(),
 					})?;
-			collect(self, grant, &mut visited, &mut entitlements);
+			collect(self, grant, &mut visited);
 		}
-		Ok(entitlements.into_iter().collect())
+		Ok(visited.into_iter().collect())
 	}
 
 	pub fn subject_action(&self, id: &str) -> Option<SubjectActionId> {
@@ -220,7 +199,6 @@ impl PolicyRegistry {
 
 #[derive(Debug, Default)]
 pub struct PolicyRegistryBuilder {
-	entitlements: Vec<String>,
 	grants: Vec<GrantDefinitionInput>,
 	actions: Vec<ActionPolicyInput>,
 	identities: Vec<BuiltInIdentityInput>,
@@ -231,11 +209,6 @@ pub struct PolicyRegistryBuilder {
 impl PolicyRegistryBuilder {
 	pub fn new() -> Self {
 		Self::default()
-	}
-
-	pub fn entitlement(mut self, id: impl Into<String>) -> Self {
-		self.entitlements.push(id.into());
-		self
 	}
 
 	pub fn grant(mut self, definition: GrantDefinitionInput) -> Self {
@@ -264,17 +237,6 @@ impl PolicyRegistryBuilder {
 	}
 
 	pub fn build(self) -> Result<PolicyRegistry, RegistryError> {
-		let mut entitlements = BTreeMap::new();
-		for raw_id in self.entitlements {
-			let id = parse_id::<EntitlementId>("entitlement", raw_id)?;
-			if entitlements
-				.insert(id.clone(), EntitlementDefinition { id: id.clone() })
-				.is_some()
-			{
-				return Err(duplicate("entitlement", id.as_str()));
-			}
-		}
-
 		let mut grants = BTreeMap::new();
 		let mut pdf_orders = BTreeSet::new();
 		let mut ui_bindings = BTreeSet::new();
@@ -302,26 +264,6 @@ impl PolicyRegistryBuilder {
 					grant: id.to_string(),
 				});
 			}
-			let grant_entitlements = input
-				.entitlements
-				.into_iter()
-				.map(|value| parse_id::<EntitlementId>("entitlement", value))
-				.collect::<Result<Vec<_>, _>>()?;
-			if input.availability == Availability::Reserved
-				&& !grant_entitlements.is_empty()
-			{
-				return Err(RegistryError::ReservedGrantHasEntitlements {
-					grant: id.to_string(),
-				});
-			}
-			for entitlement in &grant_entitlements {
-				if !entitlements.contains_key(entitlement) {
-					return Err(RegistryError::UnknownEntitlement {
-						owner: id.to_string(),
-						entitlement: entitlement.to_string(),
-					});
-				}
-			}
 			let implied_grants = input
 				.implied_grants
 				.into_iter()
@@ -336,7 +278,6 @@ impl PolicyRegistryBuilder {
 				availability: input.availability,
 				ui_binding: input.ui_binding,
 				implied_grants,
-				entitlements: grant_entitlements,
 				assignable_role_classes: input.assignable_role_classes,
 			};
 			if grants.insert(id.clone(), definition).is_some() {
@@ -359,24 +300,23 @@ impl PolicyRegistryBuilder {
 		let mut actions = BTreeMap::new();
 		for input in self.actions {
 			let id = parse_id::<ActionId>("action", input.id)?;
-			let action_entitlements = input
-				.entitlements
+			let required_grants = input
+				.required_grants
 				.into_iter()
-				.map(|value| parse_id::<EntitlementId>("entitlement", value))
+				.map(|value| parse_id::<GrantId>("grant", value))
 				.collect::<Result<Vec<_>, _>>()?;
-			for entitlement in &action_entitlements {
-				if !entitlements.contains_key(entitlement) {
-					return Err(RegistryError::UnknownEntitlement {
+			for grant in &required_grants {
+				if !grants.contains_key(grant) {
+					return Err(RegistryError::UnknownGrant {
 						owner: id.to_string(),
-						entitlement: entitlement.to_string(),
+						grant: grant.to_string(),
 					});
 				}
 			}
 			let action = ActionPolicy {
 				id: id.clone(),
 				decision_stage: input.decision_stage,
-				entitlement_rule: input.entitlement_rule,
-				entitlements: action_entitlements,
+				required_grants,
 				allowed_identities: input.allowed_identities,
 				scope_conditions: input.scope_conditions,
 				context_conditions: input.context_conditions,
@@ -478,7 +418,6 @@ impl PolicyRegistryBuilder {
 
 		Ok(PolicyRegistry {
 			grants,
-			entitlements,
 			actions,
 			built_in_identities: identities,
 			facts,
@@ -502,7 +441,6 @@ macro_rules! parsed_id {
 }
 
 parsed_id!(GrantId);
-parsed_id!(EntitlementId);
 parsed_id!(ActionId);
 parsed_id!(FactId);
 
@@ -572,9 +510,6 @@ pub fn policy_registry() -> &'static PolicyRegistry {
 
 fn canonical_registry_builder() -> PolicyRegistryBuilder {
 	let mut builder = PolicyRegistryBuilder::new();
-	for entitlement in CANONICAL_ENTITLEMENTS {
-		builder = builder.entitlement(*entitlement);
-	}
 	for grant in canonical_grants() {
 		builder = builder.grant(grant);
 	}
@@ -593,48 +528,12 @@ fn canonical_registry_builder() -> PolicyRegistryBuilder {
 	builder
 }
 
-const CANONICAL_ENTITLEMENTS: &[&str] = &[
-	"notice.read",
-	"notice.update",
-	"case.queue_read",
-	"case.read",
-	"case.create",
-	"case.update",
-	"case.review",
-	"case.lock",
-	"case.audit_read",
-	"case.export",
-	"case.workflow_read",
-	"info.read",
-	"info.update",
-	"import.history_read",
-	"import.execute",
-	"submission.history_read",
-	"submission.execute",
-	"user.read",
-	"user.create",
-	"user.update",
-	"user.delete",
-	"user.role_assign",
-	"role.read",
-	"role.manage",
-	"role.assign",
-	"organization.read",
-	"organization.manage",
-	"settings.read",
-	"settings.update",
-	"audit.read",
-	"terminology.read",
-	"terminology.manage",
-];
-
 fn grant(
 	id: &str,
 	menu: &str,
 	type_name: &str,
 	privilege: &str,
 	availability: Availability,
-	entitlements: &[&str],
 	implied: &[&str],
 ) -> GrantDefinitionInput {
 	GrantDefinitionInput {
@@ -646,10 +545,6 @@ fn grant(
 		availability,
 		ui_binding: canonical_ui_binding(id),
 		implied_grants: implied.iter().map(|value| (*value).to_string()).collect(),
-		entitlements: entitlements
-			.iter()
-			.map(|value| (*value).to_string())
-			.collect(),
 		assignable_role_classes: vec![
 			RoleClass::Custom,
 			RoleClass::SponsorCroBuiltIn,
@@ -693,7 +588,6 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			"Notice",
 			"Read",
 			Implemented,
-			&["notice.read"],
 			&[],
 		),
 		grant(
@@ -702,7 +596,6 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			"Notice",
 			"Edit",
 			Implemented,
-			&["notice.update"],
 			&["home.notice.read"],
 		),
 		grant(
@@ -711,25 +604,15 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			"Workflow",
 			"Read",
 			Implemented,
-			&["case.queue_read"],
 			&[],
 		),
-		grant(
-			"case.read",
-			"CASE",
-			"Case",
-			"Read",
-			Implemented,
-			&["case.read", "case.audit_read"],
-			&[],
-		),
+		grant("case.read", "CASE", "Case", "Read", Implemented, &[]),
 		grant(
 			"case.edit",
 			"CASE",
 			"Case",
 			"Edit",
 			Implemented,
-			&["case.create", "case.update"],
 			&["case.read"],
 		),
 		grant(
@@ -738,43 +621,17 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			"Workflow",
 			"Read",
 			Implemented,
-			&["case.workflow_read"],
 			&[],
 		),
-		grant(
-			"case.review",
-			"CASE",
-			"QC",
-			"Edit",
-			Implemented,
-			&["case.review"],
-			&[],
-		),
-		grant(
-			"case.lock",
-			"CASE",
-			"Lock",
-			"Edit",
-			Implemented,
-			&["case.lock"],
-			&[],
-		),
-		grant(
-			"info.read",
-			"INFO",
-			"Case Info",
-			"Read",
-			Implemented,
-			&["info.read"],
-			&[],
-		),
+		grant("case.review", "CASE", "QC", "Edit", Implemented, &[]),
+		grant("case.lock", "CASE", "Lock", "Edit", Implemented, &[]),
+		grant("info.read", "INFO", "Case Info", "Read", Implemented, &[]),
 		grant(
 			"info.edit",
 			"INFO",
 			"Case Info",
 			"Edit",
 			Implemented,
-			&["info.update"],
 			&["info.read"],
 		),
 		grant(
@@ -783,7 +640,6 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			"Import Files",
 			"Edit",
 			Implemented,
-			&["import.execute"],
 			&[],
 		),
 		grant(
@@ -792,7 +648,6 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			"Import History",
 			"Read",
 			Implemented,
-			&["import.history_read"],
 			&[],
 		),
 		grant(
@@ -801,7 +656,6 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			"Export/Submit",
 			"Edit",
 			Implemented,
-			&["submission.execute", "case.export"],
 			&[],
 		),
 		grant(
@@ -810,42 +664,15 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			"Export/Submit History",
 			"Read",
 			Implemented,
-			&["submission.history_read"],
 			&[],
 		),
-		grant(
-			"admin.read",
-			"ADMIN",
-			"Admin",
-			"Read",
-			Implemented,
-			&[
-				"user.read",
-				"role.read",
-				"organization.read",
-				"settings.read",
-				"audit.read",
-				"terminology.read",
-			],
-			&[],
-		),
+		grant("admin.read", "ADMIN", "Admin", "Read", Implemented, &[]),
 		grant(
 			"admin.edit",
 			"ADMIN",
 			"Admin",
 			"Edit",
 			Implemented,
-			&[
-				"user.create",
-				"user.update",
-				"user.delete",
-				"user.role_assign",
-				"role.manage",
-				"role.assign",
-				"organization.manage",
-				"settings.update",
-				"terminology.manage",
-			],
 			&["admin.read"],
 		),
 		grant(
@@ -855,7 +682,6 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			"Read",
 			Reserved,
 			&[],
-			&[],
 		),
 		grant(
 			"email.report_due.send",
@@ -863,7 +689,6 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 			"Report Due Mail",
 			"Send",
 			Reserved,
-			&[],
 			&[],
 		),
 	];
@@ -881,7 +706,7 @@ fn canonical_grants() -> Vec<GrantDefinitionInput> {
 fn action(
 	id: &str,
 	stage: DecisionStage,
-	entitlements: &[&str],
+	required_grants: &[&str],
 	identities: &[BuiltInIdentityKind],
 	context_conditions: &[ContextCondition],
 	audit: AuditClassification,
@@ -889,8 +714,7 @@ fn action(
 	ActionPolicyInput {
 		id: id.to_string(),
 		decision_stage: stage,
-		entitlement_rule: EntitlementRule::AllOf,
-		entitlements: entitlements
+		required_grants: required_grants
 			.iter()
 			.map(|value| (*value).to_string())
 			.collect(),
@@ -947,7 +771,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"case.create",
 			DecisionStage::ContextRequired(Proposed(ProposalKind::CaseCreate)),
-			&["case.create"],
+			&["case.edit"],
 			&[],
 			&[WithinPrincipalScope],
 			Mutation,
@@ -955,7 +779,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"case.update",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Case)),
-			&["case.update"],
+			&["case.edit"],
 			&[],
 			&[SameOrganization, WithinPrincipalScope, CompatibleLifecycle],
 			Mutation,
@@ -963,7 +787,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"case.delete",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Case)),
-			&["case.update"],
+			&["case.edit"],
 			&administrators,
 			&[SameOrganization, CompatibleLifecycle],
 			PrivilegedMutation,
@@ -998,7 +822,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 				parent: ResourceKind::Case,
 				child: ResourceKind::CaseAuditTrail,
 			}),
-			&["case.audit_read"],
+			&["case.read"],
 			&[],
 			&[ParentAuthorized],
 			Read,
@@ -1020,7 +844,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 				parent: ResourceKind::Case,
 				child: ResourceKind::CaseChild,
 			}),
-			&["case.update"],
+			&["case.edit"],
 			&[],
 			&[ParentAuthorized, CompatibleLifecycle],
 			Mutation,
@@ -1028,7 +852,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"case.workflow.read",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Case)),
-			&["case.workflow_read"],
+			&["case.workflow.read"],
 			&[],
 			&[SameOrganization],
 			Read,
@@ -1036,7 +860,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"case.workflow.transition",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Case)),
-			&["case.update"],
+			&["case.edit"],
 			&[],
 			&[SameOrganization, CompatibleLifecycle],
 			Mutation,
@@ -1044,7 +868,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"case.export.xml_set",
 			DecisionStage::ContextRequired(ResourceSet(ResourceKind::Case)),
-			&["case.export"],
+			&["submission.execute"],
 			&[],
 			&[EveryTargetAuthorized],
 			Read,
@@ -1068,7 +892,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"info.create",
 			DecisionStage::ContextRequired(Proposed(ProposalKind::PresaveCreate)),
-			&["info.update"],
+			&["info.edit"],
 			&[],
 			&[WithinPrincipalScope],
 			Mutation,
@@ -1076,7 +900,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"info.update",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Presave)),
-			&["info.update"],
+			&["info.edit"],
 			&[],
 			&[SameOrganization, WithinPrincipalScope],
 			Mutation,
@@ -1084,7 +908,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"import.history.list",
 			DecisionStage::ContextRequired(Collection(ResourceKind::ImportHistory)),
-			&["import.history_read"],
+			&["import.history.read"],
 			&[],
 			&[SameOrganization],
 			Read,
@@ -1092,7 +916,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"import.history.read",
 			DecisionStage::ContextRequired(Existing(ResourceKind::ImportHistory)),
-			&["import.history_read"],
+			&["import.history.read"],
 			&[],
 			&[SameOrganization],
 			Read,
@@ -1116,7 +940,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"submission.history.list",
 			DecisionStage::ContextRequired(Collection(ResourceKind::Submission)),
-			&["submission.history_read"],
+			&["submission.history.read"],
 			&[],
 			&[SameOrganization],
 			Read,
@@ -1124,7 +948,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"submission.read",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Submission)),
-			&["submission.history_read"],
+			&["submission.history.read"],
 			&[],
 			&[SameOrganization],
 			Read,
@@ -1148,23 +972,31 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"user.list",
 			DecisionStage::ContextRequired(Collection(ResourceKind::User)),
-			&["user.read"],
-			&administrators,
+			&["admin.read"],
+			&[],
 			&[SameOrganization],
 			PrivilegedRead,
 		),
 		action(
 			"user.read",
 			DecisionStage::ContextRequired(Existing(ResourceKind::User)),
-			&["user.read"],
-			&administrators,
+			&["admin.read"],
+			&[],
 			&[SameOrganization],
 			PrivilegedRead,
 		),
 		action(
 			"user.create",
 			DecisionStage::ContextRequired(Proposed(ProposalKind::UserCreate)),
-			&["user.create"],
+			&["admin.edit"],
+			&[],
+			&[SameOrganization],
+			PrivilegedMutation,
+		),
+		action(
+			"user.create.role_assignment",
+			DecisionStage::ContextRequired(Proposed(ProposalKind::UserCreate)),
+			&[],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedMutation,
@@ -1172,15 +1004,15 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"user.update",
 			DecisionStage::ContextRequired(Existing(ResourceKind::User)),
-			&["user.update"],
-			&administrators,
+			&["admin.edit"],
+			&[],
 			&[SameOrganization],
 			PrivilegedMutation,
 		),
 		action(
 			"user.update.role_assignment",
 			DecisionStage::ContextRequired(Existing(ResourceKind::User)),
-			&["user.role_assign"],
+			&[],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedMutation,
@@ -1188,15 +1020,15 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"user.delete",
 			DecisionStage::ContextRequired(Existing(ResourceKind::User)),
-			&["user.delete"],
-			&administrators,
+			&["admin.edit"],
+			&[],
 			&[SameOrganization],
 			PrivilegedMutation,
 		),
 		action(
 			"role.list",
 			DecisionStage::ContextRequired(Collection(ResourceKind::Role)),
-			&["role.read"],
+			&[],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedRead,
@@ -1204,7 +1036,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"role.read",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Role)),
-			&["role.read"],
+			&[],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedRead,
@@ -1212,7 +1044,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"role.create",
 			DecisionStage::ContextRequired(Proposed(ProposalKind::RoleCreate)),
-			&["role.manage"],
+			&[],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedMutation,
@@ -1220,7 +1052,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"role.update",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Role)),
-			&["role.manage"],
+			&[],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedMutation,
@@ -1228,7 +1060,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"role.delete",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Role)),
-			&["role.manage"],
+			&[],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedMutation,
@@ -1236,7 +1068,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"role.restore",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Role)),
-			&["role.manage"],
+			&[],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedMutation,
@@ -1244,7 +1076,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"organization.list",
 			DecisionStage::ContextRequired(Collection(ResourceKind::Organization)),
-			&["organization.read"],
+			&[],
 			&[PlatformAdministrator],
 			&[],
 			PrivilegedRead,
@@ -1252,7 +1084,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"organization.read",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Organization)),
-			&["organization.read"],
+			&[],
 			&[PlatformAdministrator],
 			&[],
 			PrivilegedRead,
@@ -1262,7 +1094,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 			DecisionStage::ContextRequired(Proposed(
 				ProposalKind::OrganizationCreate,
 			)),
-			&["organization.manage"],
+			&[],
 			&[PlatformAdministrator],
 			&[],
 			PrivilegedMutation,
@@ -1270,7 +1102,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"organization.update",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Organization)),
-			&["organization.manage"],
+			&[],
 			&[PlatformAdministrator],
 			&[],
 			PrivilegedMutation,
@@ -1278,7 +1110,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"organization.delete",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Organization)),
-			&["organization.manage"],
+			&[],
 			&[PlatformAdministrator],
 			&[],
 			PrivilegedMutation,
@@ -1286,7 +1118,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"settings.read",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Settings)),
-			&["settings.read"],
+			&["admin.read"],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedRead,
@@ -1294,7 +1126,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"settings.update",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Settings)),
-			&["settings.update"],
+			&["admin.edit"],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedMutation,
@@ -1302,7 +1134,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"notice.update",
 			DecisionStage::ContextRequired(Existing(ResourceKind::Notice)),
-			&["notice.update"],
+			&["home.notice.edit"],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedMutation,
@@ -1310,7 +1142,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"audit_log.list",
 			DecisionStage::ContextRequired(Collection(ResourceKind::AuditLog)),
-			&["audit.read"],
+			&["admin.read"],
 			&administrators,
 			&[SameOrganization],
 			PrivilegedRead,
@@ -1318,7 +1150,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 		action(
 			"terminology.list",
 			DecisionStage::ContextRequired(Collection(ResourceKind::Terminology)),
-			&["terminology.read"],
+			&["admin.read"],
 			&[],
 			&[],
 			Read,
@@ -1328,7 +1160,7 @@ fn canonical_actions() -> Vec<ActionPolicyInput> {
 			DecisionStage::ContextRequired(Proposed(
 				ProposalKind::TerminologyImport,
 			)),
-			&["terminology.manage"],
+			&["admin.edit"],
 			&administrators,
 			&[],
 			PrivilegedMutation,

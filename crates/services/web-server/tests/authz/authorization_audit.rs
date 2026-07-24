@@ -58,7 +58,7 @@ async fn allowed_event_rolls_back_with_mutation_but_denial_survives() -> Result<
 		action,
 		request_id,
 		Some("case:00000000-0000-0000-0000-000000000901".into()),
-		DenialReason::MissingEntitlement,
+		DenialReason::MissingGrant,
 	);
 	let mut wrong_transaction = database.pool().begin().await?;
 	assert!(AuthorizationAuditRepository::append_allowed(
@@ -78,7 +78,7 @@ async fn allowed_event_rolls_back_with_mutation_but_denial_survives() -> Result<
 	)
 	.fetch_one(database.pool())
 	.await?;
-	assert_eq!(row, ("denied".into(), Some("missing_entitlement".into())));
+	assert_eq!(row, ("denied".into(), Some("missing_grant".into())));
 	let update_error = sqlx::query(
 		"UPDATE authorization_audit_events SET action_id = 'case.delete'",
 	)

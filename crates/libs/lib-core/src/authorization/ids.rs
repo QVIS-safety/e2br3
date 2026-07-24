@@ -71,7 +71,6 @@ macro_rules! authorization_id {
 }
 
 authorization_id!(GrantId);
-authorization_id!(EntitlementId);
 authorization_id!(ActionId);
 authorization_id!(FactId);
 

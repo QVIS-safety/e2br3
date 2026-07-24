@@ -132,8 +132,8 @@ impl SnapshotRepository {
 			let grant_ids =
 				PrincipalRepository::grant_ids(&mut transaction, row.role_id)
 					.await?;
-			let entitlements = registry
-				.effective_entitlements(grant_ids.iter().map(String::as_str))
+			let grants = registry
+				.effective_grants(grant_ids.iter().map(String::as_str))
 				.map_err(|error| SnapshotLoadError::Registry(error.to_string()))?
 				.into_iter()
 				.collect::<BTreeSet<_>>();
@@ -170,7 +170,7 @@ impl SnapshotRepository {
 				organization_id,
 				row.role_id,
 				IdentityTraits::new(built_in_kind),
-				entitlements,
+				grants,
 				scope,
 				PolicySnapshotVersion::new(
 					deployed_hash,

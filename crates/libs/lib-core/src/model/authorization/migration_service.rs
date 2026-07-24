@@ -348,12 +348,12 @@ impl AuthorizationMigrationService {
 				.fetch_one(&mut **transaction)
 				.await?;
 			let normalized_effective_access = registry
-				.effective_entitlements(grant_ids.iter().map(String::as_str))
+				.effective_grants(grant_ids.iter().map(String::as_str))
 				.map_err(|error| {
 					AuthorizationMigrationError::Registry(error.to_string())
 				})?
 				.into_iter()
-				.map(|entitlement| entitlement.to_string())
+				.map(|grant| grant.to_string())
 				.collect::<Vec<_>>();
 			let evidence_hash = migration_evidence_hash(
 				catalog_hash,

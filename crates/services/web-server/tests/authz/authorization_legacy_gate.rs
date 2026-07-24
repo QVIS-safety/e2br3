@@ -35,10 +35,11 @@ fn user_administration_has_one_exact_permission_gate() {
 		!handlers.contains("require_user_admin"),
 		"user handlers must not layer a broad admin gate over exact permissions"
 	);
+	assert!(!handlers.contains("user_admin_db_ctx("));
 	assert_eq!(
-		handlers.matches("user_admin_db_ctx(").count(),
+		handlers.matches("rls_ctx_for_authorized_").count(),
 		5,
-		"each user administration handler must authorize and scope exactly once"
+		"each user administration handler must derive DB scope from one permit"
 	);
 }
 
@@ -69,6 +70,62 @@ fn legacy_admin_wrappers_and_dead_role_helpers_are_absent() {
 	);
 	assert!(!import.contains("lib_rest_core::is_admin"));
 	assert!(!presave.contains("lib_rest_core::is_admin"));
+}
+
+#[test]
+fn authorization_has_no_generic_admin_or_entitlement_middle_layer() {
+	let root = workspace_root();
+	let ctx = fs::read_to_string(root.join("crates/libs/lib-core/src/ctx/mod.rs"))
+		.expect("context source must be readable");
+	let rest_core =
+		fs::read_to_string(root.join("crates/libs/lib-rest-core/src/lib.rs"))
+			.expect("REST core source must be readable");
+	let authorization_files = [
+		"ids.rs",
+		"definitions.rs",
+		"registry.rs",
+		"snapshot.rs",
+		"kernel.rs",
+		"contract.rs",
+	];
+
+	assert!(
+		!ctx.contains("pub fn is_admin("),
+		"Ctx must not expose a generic administrator authorization shortcut"
+	);
+	assert!(!rest_core.contains("pub fn user_admin_db_ctx("));
+	assert!(!rest_core.contains("pub fn rls_ctx_for_user_admin("));
+
+	for file in authorization_files {
+		let source = fs::read_to_string(
+			root.join("crates/libs/lib-core/src/authorization")
+				.join(file),
+		)
+		.unwrap_or_else(|_| panic!("authorization source {file} must be readable"));
+		assert!(
+			!source.contains("EntitlementId")
+				&& !source.contains("EntitlementDefinition")
+				&& !source.contains("effective_entitlements("),
+			"authorization source {file} still contains the entitlement middle layer"
+		);
+	}
+}
+
+#[test]
+fn user_admin_rls_context_requires_authorization_permit_evidence() {
+	let root = workspace_root();
+	let rest_authorization =
+		root.join("crates/libs/lib-rest-core/src/authorization.rs");
+	let source = fs::read_to_string(&rest_authorization).unwrap_or_default();
+
+	assert!(
+		source.contains("AuthorizedRead") || source.contains("AuthorizedMutation"),
+		"RLS context construction must consume kernel permit evidence"
+	);
+	assert!(
+		source.contains("target_organization_id"),
+		"permit-bound RLS context must verify the evaluated target organization"
+	);
 }
 
 #[test]

@@ -194,3 +194,124 @@ impl<'tx, C: AuthorizationContext> LockedMutationContext<'tx, C> {
 		}
 	}
 }
+
+/// Context factories for user administration actions.
+///
+/// These factories deliberately expose only the facts used by the registered
+/// user policies. Callers cannot mark unrelated case lifecycle or scope
+/// conditions as satisfied.
+pub fn user_collection_context(
+	organization_id: Uuid,
+) -> ContextSnapshot<'static, Collection<UserResource>> {
+	ContextSnapshot::new(EvaluatedContext {
+		organization_id: Some(organization_id),
+		target_fingerprint: format!("users:{organization_id}"),
+		within_principal_scope: false,
+		lifecycle_compatible: false,
+		parent_authorized: false,
+		every_target_authorized: false,
+		enforced_scope_filter: None,
+	})
+}
+
+pub fn existing_user_read_context(
+	user_id: Uuid,
+	organization_id: Uuid,
+) -> ContextSnapshot<'static, Existing<UserResource>> {
+	ContextSnapshot::new(EvaluatedContext {
+		organization_id: Some(organization_id),
+		target_fingerprint: format!("user:{user_id}"),
+		within_principal_scope: false,
+		lifecycle_compatible: false,
+		parent_authorized: false,
+		every_target_authorized: false,
+		enforced_scope_filter: None,
+	})
+}
+
+pub fn existing_user_mutation_context(
+	user_id: Uuid,
+	organization_id: Uuid,
+) -> LockedMutationContext<'static, Existing<UserResource>> {
+	LockedMutationContext::new(EvaluatedContext {
+		organization_id: Some(organization_id),
+		target_fingerprint: format!("user:{user_id}"),
+		within_principal_scope: false,
+		lifecycle_compatible: false,
+		parent_authorized: false,
+		every_target_authorized: false,
+		enforced_scope_filter: None,
+	})
+}
+
+pub fn proposed_user_context(
+	organization_id: Uuid,
+) -> LockedMutationContext<'static, Proposed<UserCreateProposal>> {
+	LockedMutationContext::new(EvaluatedContext {
+		organization_id: Some(organization_id),
+		target_fingerprint: format!("user:new:{organization_id}"),
+		within_principal_scope: false,
+		lifecycle_compatible: false,
+		parent_authorized: false,
+		every_target_authorized: false,
+		enforced_scope_filter: None,
+	})
+}
+
+pub fn role_collection_context(
+	organization_id: Uuid,
+) -> ContextSnapshot<'static, Collection<RoleResource>> {
+	ContextSnapshot::new(EvaluatedContext {
+		organization_id: Some(organization_id),
+		target_fingerprint: format!("roles:{organization_id}"),
+		within_principal_scope: false,
+		lifecycle_compatible: false,
+		parent_authorized: false,
+		every_target_authorized: false,
+		enforced_scope_filter: None,
+	})
+}
+
+pub fn existing_role_read_context(
+	role_id: &str,
+	organization_id: Uuid,
+) -> ContextSnapshot<'static, Existing<RoleResource>> {
+	ContextSnapshot::new(EvaluatedContext {
+		organization_id: Some(organization_id),
+		target_fingerprint: format!("role:{role_id}"),
+		within_principal_scope: false,
+		lifecycle_compatible: false,
+		parent_authorized: false,
+		every_target_authorized: false,
+		enforced_scope_filter: None,
+	})
+}
+
+pub fn existing_role_mutation_context(
+	role_id: &str,
+	organization_id: Uuid,
+) -> LockedMutationContext<'static, Existing<RoleResource>> {
+	LockedMutationContext::new(EvaluatedContext {
+		organization_id: Some(organization_id),
+		target_fingerprint: format!("role:{role_id}"),
+		within_principal_scope: false,
+		lifecycle_compatible: false,
+		parent_authorized: false,
+		every_target_authorized: false,
+		enforced_scope_filter: None,
+	})
+}
+
+pub fn proposed_role_context(
+	organization_id: Uuid,
+) -> LockedMutationContext<'static, Proposed<RoleCreateProposal>> {
+	LockedMutationContext::new(EvaluatedContext {
+		organization_id: Some(organization_id),
+		target_fingerprint: format!("role:new:{organization_id}"),
+		within_principal_scope: false,
+		lifecycle_compatible: false,
+		parent_authorized: false,
+		every_target_authorized: false,
+		enforced_scope_filter: None,
+	})
+}

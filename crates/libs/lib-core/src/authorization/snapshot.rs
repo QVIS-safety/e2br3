@@ -1,4 +1,4 @@
-use super::{BuiltInIdentityKind, EntitlementId};
+use super::{BuiltInIdentityKind, GrantId};
 use std::collections::BTreeSet;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -115,7 +115,7 @@ pub struct RequestAuthorizationSnapshot {
 	organization_id: Uuid,
 	role_id: Uuid,
 	identity: IdentityTraits,
-	entitlements: BTreeSet<EntitlementId>,
+	grants: BTreeSet<GrantId>,
 	scope: PrincipalScope,
 	version: PolicySnapshotVersion,
 	evaluated_at: OffsetDateTime,
@@ -130,7 +130,7 @@ impl RequestAuthorizationSnapshot {
 		organization_id: Uuid,
 		role_id: Uuid,
 		identity: IdentityTraits,
-		entitlements: BTreeSet<EntitlementId>,
+		grants: BTreeSet<GrantId>,
 		scope: PrincipalScope,
 		version: PolicySnapshotVersion,
 		evaluated_at: OffsetDateTime,
@@ -142,7 +142,7 @@ impl RequestAuthorizationSnapshot {
 			organization_id,
 			role_id,
 			identity,
-			entitlements,
+			grants,
 			scope,
 			version,
 			evaluated_at,
@@ -167,8 +167,8 @@ impl RequestAuthorizationSnapshot {
 		&self.identity
 	}
 
-	pub fn entitlements(&self) -> &BTreeSet<EntitlementId> {
-		&self.entitlements
+	pub fn grants(&self) -> &BTreeSet<GrantId> {
+		&self.grants
 	}
 
 	pub fn scope(&self) -> &PrincipalScope {

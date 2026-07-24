@@ -68,11 +68,12 @@ authenticated request
   -> construct canonical action request
   -> authorization::kernel::authorize(ctx, action, scope)
        -> policy registry lookup
-       -> permission evaluation
+       -> canonical privilege evaluation
        -> built-in identity condition evaluation
        -> organization/resource scope evaluation
        -> allow or deny
-  -> construct database RLS context
+  -> authorized permit
+  -> construct database RLS context from that permit
   -> perform operation
 ```
 
@@ -96,13 +97,16 @@ sites incrementally.
 
 ### Components retained
 
-- `policy_registry`: the only policy data source for grants, entitlements,
-  canonical actions, identity conditions, and UI bindings.
+- `policy_registry`: the only policy data source for canonical PDF
+  privileges, actions, identity conditions, and UI bindings. A PDF privilege
+  is the stored grant; there is no separate entitlement layer.
 - `authorization::kernel`: the only allow/deny implementation.
-- `Ctx`: authenticated user ID, organization ID, built-in identity, and
-  compliance context. Identity helpers are facts, not authorization APIs.
-- RLS context builders: database isolation setup after authorization. They
-  contain no permission or administrator checks.
+- `Ctx`: authenticated user ID, organization ID, legacy permission subject,
+  and compliance context. It exposes no administrator predicate.
+- Permit-bound RLS context builders: database isolation setup after
+  authorization. They require an `AuthorizedRead` or `AuthorizedMutation`
+  carrying the evaluated target organization, so they cannot run before the
+  kernel decision.
 - Generated frontend authorization contract: produced from the backend
   registry and never maintained as a handwritten second matrix.
 
@@ -116,12 +120,10 @@ The following cannot remain as independent authorization implementations:
 - `USER_CREATE` or another permission interpreted as administrator identity
 - `can_admin` or equivalent derived response fields
 - endpoint middleware and handler checking the same operation independently
-- entitlements that appear in a grant but can never participate in a
-  canonical action decision
-
-`Ctx::is_admin()` may remain only as a built-in identity fact consumed by the
-kernel or by non-authorizing display metadata. It cannot directly allow a
-REST operation.
+- the `Grant -> Entitlement -> Action` middle layer
+- `Ctx::is_admin()` and any equivalent generic administrator predicate
+- freely callable `user_admin_db_ctx`/`rls_ctx_for_user_admin` helpers that
+  do not require a kernel permit
 
 ## Action and Scope Model
 

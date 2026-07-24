@@ -198,11 +198,6 @@ impl Ctx {
 		next
 	}
 
-	// Role check helpers
-	pub fn is_admin(&self) -> bool {
-		self.is_system_admin() || self.is_sponsor_admin()
-	}
-
 	pub fn is_system_admin(&self) -> bool {
 		self.role == ROLE_SYSTEM_ADMIN
 	}
@@ -341,9 +336,10 @@ mod tests {
 		)
 		.expect("user ctx");
 
-		assert!(system_admin.is_admin());
-		assert!(cro_admin.is_admin());
-		assert!(company_admin.is_admin());
-		assert!(!user.is_admin());
+		assert!(system_admin.is_system_admin());
+		assert!(cro_admin.is_sponsor_admin());
+		assert!(company_admin.is_sponsor_admin());
+		assert!(!user.is_system_admin());
+		assert!(!user.is_sponsor_admin());
 	}
 }

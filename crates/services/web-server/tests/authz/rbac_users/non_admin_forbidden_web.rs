@@ -43,9 +43,10 @@ async fn test_viewer_cannot_create_user() -> Result<()> {
 	assert_eq!(res.status(), StatusCode::FORBIDDEN);
 	let body = axum::body::to_bytes(res.into_body(), usize::MAX).await?;
 	let json: serde_json::Value = serde_json::from_slice(&body)?;
-	json["error"]["data"]["detail"]
-		.as_str()
-		.ok_or("expected string detail for PERMISSION_DENIED")?;
+	let detail = &json["error"]["data"]["detail"];
+	if detail.is_null() {
+		return Err("expected detail for PERMISSION_DENIED".into());
+	}
 	Ok(())
 }
 

@@ -1,7 +1,6 @@
 use super::{
 	ActionPolicy, AuthorizationFactDefinition, Availability,
-	BuiltInIdentityDefinition, EntitlementDefinition, GrantDefinition,
-	LegacyGrantAlias, PolicyRegistry,
+	BuiltInIdentityDefinition, GrantDefinition, LegacyGrantAlias, PolicyRegistry,
 };
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -70,7 +69,6 @@ pub struct AuthorizationContractExport {
 struct CanonicalRegistryContract {
 	schema_version: u32,
 	grants: Vec<GrantDefinition>,
-	entitlements: Vec<EntitlementDefinition>,
 	actions: Vec<ActionPolicy>,
 	built_in_identities: Vec<BuiltInIdentityDefinition>,
 	authorization_facts: Vec<AuthorizationFactDefinition>,
@@ -83,15 +81,12 @@ pub fn export_contract(
 	let mut grants = registry.grants().cloned().collect::<Vec<_>>();
 	for grant in &mut grants {
 		grant.implied_grants.sort_unstable();
-		grant.entitlements.sort_unstable();
 		grant.assignable_role_classes.sort_unstable();
 	}
 	grants.sort_unstable_by(|left, right| left.id.cmp(&right.id));
-	let mut entitlements = registry.entitlements().cloned().collect::<Vec<_>>();
-	entitlements.sort_unstable_by(|left, right| left.id.cmp(&right.id));
 	let mut actions = registry.actions().cloned().collect::<Vec<_>>();
 	for action in &mut actions {
-		action.entitlements.sort_unstable();
+		action.required_grants.sort_unstable();
 		action.allowed_identities.sort_unstable();
 		action.scope_conditions.sort_unstable();
 		action.context_conditions.sort_unstable();
@@ -112,9 +107,8 @@ pub fn export_contract(
 	legacy_grant_aliases
 		.sort_unstable_by(|left, right| left.legacy_id.cmp(&right.legacy_id));
 	let canonical = CanonicalRegistryContract {
-		schema_version: 1,
+		schema_version: 2,
 		grants,
-		entitlements,
 		actions,
 		built_in_identities,
 		authorization_facts,
@@ -257,8 +251,7 @@ mod tests {
 		let action = |id: &str| ActionPolicyInput {
 			id: id.to_string(),
 			decision_stage: DecisionStage::SubjectOnly,
-			entitlement_rule: EntitlementRule::AllOf,
-			entitlements: vec![],
+			required_grants: vec![],
 			allowed_identities: vec![],
 			scope_conditions: vec![],
 			context_conditions: vec![],
@@ -325,8 +318,6 @@ mod tests {
 			};
 
 			PolicyRegistryBuilder::new()
-				.entitlement("sample.read")
-				.entitlement("sample.update")
 				.grant(GrantDefinitionInput {
 					id: "sample.manage".to_string(),
 					pdf_order: 1,
@@ -336,7 +327,6 @@ mod tests {
 					availability: Availability::Implemented,
 					ui_binding: GrantUiBinding::new("sample", GrantUiField::CanEdit),
 					implied_grants: vec![],
-					entitlements: ordered("sample.read", "sample.update"),
 					assignable_role_classes: role_classes,
 				})
 				.action(ActionPolicyInput {
@@ -344,8 +334,7 @@ mod tests {
 					decision_stage: DecisionStage::ContextRequired(
 						ContextKind::Existing(ResourceKind::Application),
 					),
-					entitlement_rule: EntitlementRule::AllOf,
-					entitlements: ordered("sample.read", "sample.update"),
+					required_grants: vec!["sample.manage".to_string()],
 					allowed_identities,
 					scope_conditions,
 					context_conditions,

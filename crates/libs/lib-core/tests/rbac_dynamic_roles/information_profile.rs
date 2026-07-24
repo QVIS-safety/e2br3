@@ -27,7 +27,7 @@ fn information_read_profile_grants_all_information_views_only() {
 
 #[test]
 #[serial]
-fn information_edit_profile_grants_all_information_writes_only() {
+fn information_edit_profile_includes_read_and_write_permissions() {
 	let _registry = RegistryGuard::new();
 	install_profile("info_editor", profile("info", false, true, false, false));
 
@@ -40,5 +40,5 @@ fn information_edit_profile_grants_all_information_writes_only() {
 	] {
 		assert!(has_permission("info_editor", permission));
 	}
-	assert!(!has_permission("info_editor", NARRATIVE_READ));
+	assert!(has_permission("info_editor", NARRATIVE_READ));
 }

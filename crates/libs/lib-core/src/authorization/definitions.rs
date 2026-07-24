@@ -1,4 +1,4 @@
-use super::{ActionId, EntitlementId, FactId, GrantId};
+use super::{ActionId, FactId, GrantId};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 use uuid::Uuid;
@@ -134,13 +134,6 @@ pub enum DecisionStage {
 	ContextRequired(ContextKind),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum EntitlementRule {
-	AllOf,
-	AnyOf,
-}
-
 #[derive(
 	Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize,
 )]
@@ -191,7 +184,6 @@ pub struct GrantDefinition {
 	pub availability: Availability,
 	pub ui_binding: GrantUiBinding,
 	pub implied_grants: Vec<GrantId>,
-	pub entitlements: Vec<EntitlementId>,
 	pub assignable_role_classes: Vec<RoleClass>,
 }
 
@@ -205,7 +197,6 @@ pub struct GrantDefinitionInput {
 	pub availability: Availability,
 	pub ui_binding: GrantUiBinding,
 	pub implied_grants: Vec<String>,
-	pub entitlements: Vec<String>,
 	pub assignable_role_classes: Vec<RoleClass>,
 }
 
@@ -222,16 +213,10 @@ pub struct LegacyGrantAliasInput {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct EntitlementDefinition {
-	pub id: EntitlementId,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ActionPolicy {
 	pub id: ActionId,
 	pub decision_stage: DecisionStage,
-	pub entitlement_rule: EntitlementRule,
-	pub entitlements: Vec<EntitlementId>,
+	pub required_grants: Vec<GrantId>,
 	pub allowed_identities: Vec<BuiltInIdentityKind>,
 	pub scope_conditions: Vec<ScopeCondition>,
 	pub context_conditions: Vec<ContextCondition>,
@@ -242,8 +227,7 @@ pub struct ActionPolicy {
 pub struct ActionPolicyInput {
 	pub id: String,
 	pub decision_stage: DecisionStage,
-	pub entitlement_rule: EntitlementRule,
-	pub entitlements: Vec<String>,
+	pub required_grants: Vec<String>,
 	pub allowed_identities: Vec<BuiltInIdentityKind>,
 	pub scope_conditions: Vec<ScopeCondition>,
 	pub context_conditions: Vec<ContextCondition>,

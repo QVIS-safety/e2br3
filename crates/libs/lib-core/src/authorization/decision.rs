@@ -5,7 +5,7 @@ pub enum DenialReason {
 	UnknownAction,
 	WrongDecisionStage,
 	WrongOperationClass,
-	MissingEntitlement,
+	MissingGrant,
 	IncompatibleIdentity,
 	SameOrganizationRequired,
 	OutsidePrincipalScope,

@@ -10,6 +10,7 @@ struct PermitEvidence<C> {
 	action_id: ActionId,
 	principal_id: Uuid,
 	organization_id: Uuid,
+	target_organization_id: Option<Uuid>,
 	target_fingerprint: String,
 	snapshot_version: PolicySnapshotVersion,
 	decision_time: OffsetDateTime,
@@ -34,6 +35,7 @@ impl<C> PermitEvidence<C> {
 		action_id: ActionId,
 		principal_id: Uuid,
 		organization_id: Uuid,
+		target_organization_id: Option<Uuid>,
 		target_fingerprint: String,
 		snapshot_version: PolicySnapshotVersion,
 		decision_time: OffsetDateTime,
@@ -43,6 +45,7 @@ impl<C> PermitEvidence<C> {
 			action_id,
 			principal_id,
 			organization_id,
+			target_organization_id,
 			target_fingerprint,
 			snapshot_version,
 			decision_time,
@@ -63,6 +66,9 @@ macro_rules! permit_accessors {
 			}
 			pub fn organization_id(&self) -> Uuid {
 				self.evidence.organization_id
+			}
+			pub fn target_organization_id(&self) -> Option<Uuid> {
+				self.evidence.target_organization_id
 			}
 			pub fn target_fingerprint(&self) -> &str {
 				&self.evidence.target_fingerprint
@@ -88,6 +94,7 @@ impl<'tx, C: AuthorizationContext> AuthorizedRead<'tx, C> {
 		action_id: ActionId,
 		principal_id: Uuid,
 		organization_id: Uuid,
+		target_organization_id: Option<Uuid>,
 		target_fingerprint: String,
 		snapshot_version: PolicySnapshotVersion,
 		decision_time: OffsetDateTime,
@@ -98,6 +105,7 @@ impl<'tx, C: AuthorizationContext> AuthorizedRead<'tx, C> {
 				action_id,
 				principal_id,
 				organization_id,
+				target_organization_id,
 				target_fingerprint,
 				snapshot_version,
 				decision_time,
@@ -113,6 +121,7 @@ impl<'tx, C: AuthorizationContext> AuthorizedMutation<'tx, C> {
 		action_id: ActionId,
 		principal_id: Uuid,
 		organization_id: Uuid,
+		target_organization_id: Option<Uuid>,
 		target_fingerprint: String,
 		snapshot_version: PolicySnapshotVersion,
 		decision_time: OffsetDateTime,
@@ -122,6 +131,7 @@ impl<'tx, C: AuthorizationContext> AuthorizedMutation<'tx, C> {
 				action_id,
 				principal_id,
 				organization_id,
+				target_organization_id,
 				target_fingerprint,
 				snapshot_version,
 				decision_time,

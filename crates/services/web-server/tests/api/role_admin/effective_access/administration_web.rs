@@ -278,8 +278,8 @@ async fn test_admin_matrix_privileges_grant_user_operations_but_not_role_identit
 }
 #[serial]
 #[tokio::test]
-async fn test_pdf_admin_read_and_edit_grant_registered_admin_entitlements(
-) -> Result<()> {
+async fn test_pdf_admin_read_and_edit_grant_registered_admin_actions() -> Result<()>
+{
 	let mm = init_test_mm().await?;
 	let seed = seed_org_with_users(&mm, "adminpwd", "viewpwd").await?;
 	let admin_token = generate_web_token(&seed.admin.email, seed.admin.token_salt)?;
@@ -516,7 +516,7 @@ async fn test_pdf_admin_read_and_edit_grant_registered_admin_entitlements(
 	assert_eq!(
 		status,
 		StatusCode::FORBIDDEN,
-		"admin.can_edit grants the entitlement but must not create a privileged administrator identity: {value:?}"
+		"admin.can_edit grants user operations but must not create a privileged administrator identity: {value:?}"
 	);
 
 	Ok(())
@@ -554,7 +554,7 @@ async fn test_admin_read_grants_effective_audit_log_access() -> Result<()> {
 	assert_get_status(&app, &none_cookie, "/api/audit-logs", StatusCode::FORBIDDEN)
 		.await?;
 
-	// PDF ADMIN Read includes the registered audit-read entitlement.
+	// PDF ADMIN Read includes the registered audit-read action.
 	update_role_privileges(
 		&app,
 		&admin_cookie,

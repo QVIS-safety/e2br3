@@ -71,17 +71,17 @@ fn every_pdf_grant_has_one_unique_ui_binding() {
 #[test]
 fn case_review_and_lock_are_independent() {
 	let registry = policy_registry();
-	let review = registry.grant("case.review").unwrap();
-	let lock = registry.grant("case.lock").unwrap();
 	assert_eq!(
-		review.entitlements,
-		[EntitlementId::parse("case.review").unwrap()]
+		registry
+			.action("case.review.toggle")
+			.unwrap()
+			.required_grants,
+		[GrantId::parse("case.review").unwrap()]
 	);
 	assert_eq!(
-		lock.entitlements,
-		[EntitlementId::parse("case.lock").unwrap()]
+		registry.action("case.lock.toggle").unwrap().required_grants,
+		[GrantId::parse("case.lock").unwrap()]
 	);
-	assert_ne!(review.entitlements, lock.entitlements);
 }
 
 #[test]
@@ -173,31 +173,23 @@ fn authenticated_profile_action_is_subject_only_without_a_role_grant() {
 	let registry = policy_registry();
 	let action = registry.action("user.profile.read").unwrap();
 	assert_eq!(action.decision_stage, DecisionStage::SubjectOnly);
-	assert!(action.entitlements.is_empty());
+	assert!(action.required_grants.is_empty());
 	assert!(registry.subject_action("user.profile.read").is_some());
 }
 
 #[test]
-fn every_registered_entitlement_is_reachable_from_a_pdf_grant() {
+fn every_action_required_grant_is_a_pdf_grant() {
 	let registry = policy_registry();
-	let reachable = registry
-		.grants()
-		.flat_map(|grant| grant.entitlements.iter().cloned())
-		.collect::<BTreeSet<_>>();
-	let registered = registry
-		.entitlements()
-		.map(|definition| definition.id.clone())
-		.collect::<BTreeSet<_>>();
-	assert_eq!(reachable, registered);
+	assert!(registry.actions().all(|action| action
+		.required_grants
+		.iter()
+		.all(|grant| registry.grant(grant.as_str()).is_some())));
 }
 
 #[test]
 fn implied_grants_expand_in_the_registry_not_in_callers() {
-	let effective = policy_registry()
-		.effective_entitlements(["admin.edit"])
-		.unwrap();
-	assert!(effective.iter().any(|id| id.as_str() == "role.manage"));
-	assert!(effective.iter().any(|id| id.as_str() == "role.read"));
+	let effective = policy_registry().effective_grants(["admin.edit"]).unwrap();
+	assert!(effective.iter().any(|id| id.as_str() == "admin.read"));
 }
 
 #[test]
@@ -216,18 +208,17 @@ fn identifiers_reject_alias_like_or_noncanonical_values() {
 }
 
 #[test]
-fn registry_rejects_unknown_entitlements_and_implication_cycles() {
+fn registry_rejects_unknown_implied_grants_and_implication_cycles() {
 	let unknown = PolicyRegistryBuilder::new()
-		.entitlement("known.read")
-		.grant(test_grant("known.read", &["missing.read"], &[]))
+		.grant(test_grant("known.read", &["missing.read"]))
 		.build()
 		.unwrap_err();
-	assert!(matches!(unknown, RegistryError::UnknownEntitlement { .. }));
+	assert!(matches!(unknown, RegistryError::UnknownGrant { .. }));
 
-	let mut cycle_tail = test_grant("b.read", &[], &["a.read"]);
+	let mut cycle_tail = test_grant("b.read", &["a.read"]);
 	cycle_tail.pdf_order = 2;
 	let cycle = PolicyRegistryBuilder::new()
-		.grant(test_grant("a.read", &[], &["b.read"]))
+		.grant(test_grant("a.read", &["b.read"]))
 		.grant(cycle_tail)
 		.build()
 		.unwrap_err();
@@ -236,7 +227,7 @@ fn registry_rejects_unknown_entitlements_and_implication_cycles() {
 
 #[test]
 fn registry_rejects_missing_or_duplicate_pdf_order() {
-	let mut missing = test_grant("missing.read", &[], &[]);
+	let mut missing = test_grant("missing.read", &[]);
 	missing.pdf_order = 0;
 	assert!(matches!(
 		PolicyRegistryBuilder::new().grant(missing).build(),
@@ -244,8 +235,8 @@ fn registry_rejects_missing_or_duplicate_pdf_order() {
 	));
 
 	let duplicate = PolicyRegistryBuilder::new()
-		.grant(test_grant("first.read", &[], &[]))
-		.grant(test_grant("second.read", &[], &[]))
+		.grant(test_grant("first.read", &[]))
+		.grant(test_grant("second.read", &[]))
 		.build();
 	assert!(matches!(
 		duplicate,
@@ -255,8 +246,8 @@ fn registry_rejects_missing_or_duplicate_pdf_order() {
 
 #[test]
 fn registry_rejects_duplicate_ui_bindings() {
-	let first = test_grant("first.read", &[], &[]);
-	let mut second = test_grant("second.read", &[], &[]);
+	let first = test_grant("first.read", &[]);
+	let mut second = test_grant("second.read", &[]);
 	second.pdf_order = 2;
 	second.ui_binding = first.ui_binding.clone();
 	let duplicate = PolicyRegistryBuilder::new()
@@ -269,11 +260,7 @@ fn registry_rejects_duplicate_ui_bindings() {
 	));
 }
 
-fn test_grant(
-	id: &str,
-	entitlements: &[&str],
-	implied_grants: &[&str],
-) -> GrantDefinitionInput {
+fn test_grant(id: &str, implied_grants: &[&str]) -> GrantDefinitionInput {
 	GrantDefinitionInput {
 		id: id.to_string(),
 		pdf_order: 1,
@@ -286,7 +273,6 @@ fn test_grant(
 			.iter()
 			.map(|value| value.to_string())
 			.collect(),
-		entitlements: entitlements.iter().map(|value| value.to_string()).collect(),
 		assignable_role_classes: vec![RoleClass::Custom],
 	}
 }

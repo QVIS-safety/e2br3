@@ -132,8 +132,8 @@ permission_set! {
 }
 
 permission_set! {
-	VIEWER_PERMISSIONS,
-	viewer_permissions,
+	CASE_VIEW_PERMISSIONS,
+	case_view_permissions,
 	CASE_PERMISSIONS => [Read, List],
 	PATIENT_PERMISSIONS => [Read, List],
 	PATIENT_IDENTIFIER_PERMISSIONS => [Read, List],

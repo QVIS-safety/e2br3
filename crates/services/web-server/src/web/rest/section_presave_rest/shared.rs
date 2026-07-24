@@ -282,7 +282,7 @@ pub(super) async fn allowed_scope_for_section(
 	mm: &ModelManager,
 	section: PresaveScopeSection,
 ) -> Result<Option<HashSet<String>>> {
-	if ctx.is_admin() {
+	if ctx.is_system_admin() || ctx.is_sponsor_admin() {
 		return Ok(None);
 	}
 	let user: lib_core::model::user::User =
