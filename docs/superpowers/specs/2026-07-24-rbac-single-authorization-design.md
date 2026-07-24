@@ -85,6 +85,15 @@ Body-dependent operations authorize inside the handler after parsing the body.
 An endpoint must use either the static adapter or the body-dependent call, not
 both.
 
+Existing resource handlers that still accept a legacy `Permission` use one
+temporary compatibility entry point inside `authorization::kernel`. The
+REST `require_permission` function only translates the kernel result to the
+existing HTTP error. The kernel reads permissions compiled one-way from the
+canonical registry grants; no second permission-to-action table is added.
+Production web code cannot call `has_permission` directly. This keeps one
+decision implementation while canonical typed actions replace legacy call
+sites incrementally.
+
 ### Components retained
 
 - `policy_registry`: the only policy data source for grants, entitlements,
