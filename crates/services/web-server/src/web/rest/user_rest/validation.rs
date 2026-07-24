@@ -355,7 +355,12 @@ pub(super) fn has_sender_scope_assignment(
 	active_sender_identifier: &Option<String>,
 	access_sender_ids: &Option<ScopeListInput>,
 ) -> bool {
-	active_sender_identifier.is_some() || access_sender_ids.is_some()
+	active_sender_identifier
+		.as_deref()
+		.is_some_and(|value| !value.trim().is_empty())
+		|| parse_scope_input(access_sender_ids.clone()).is_some_and(|values| {
+			values.iter().any(|value| !value.trim().is_empty())
+		})
 }
 
 pub(super) fn sender_scope_assignment_forbidden_for_ctx(ctx: &Ctx) -> bool {
@@ -390,5 +395,29 @@ mod uuid_scope_tests {
 			Some("Sender Org A"),
 		)
 		.is_err());
+	}
+
+	#[test]
+	fn empty_sender_scope_is_not_an_assignment() {
+		assert!(!has_sender_scope_assignment(
+			&None,
+			&Some(ScopeListInput::List(Vec::new())),
+		));
+		assert!(!has_sender_scope_assignment(
+			&Some("  ".to_string()),
+			&Some(ScopeListInput::Encoded(String::new())),
+		));
+	}
+
+	#[test]
+	fn populated_sender_scope_is_an_assignment() {
+		assert!(has_sender_scope_assignment(
+			&Some(Uuid::new_v4().to_string()),
+			&None,
+		));
+		assert!(has_sender_scope_assignment(
+			&None,
+			&Some(ScopeListInput::List(vec![Uuid::new_v4().to_string()])),
+		));
 	}
 }

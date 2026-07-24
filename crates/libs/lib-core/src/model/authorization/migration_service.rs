@@ -116,6 +116,11 @@ impl AuthorizationMigrationService {
 			Self::reconcile_assignments(transaction, registry, &catalog_hash)
 				.await?;
 		Self::remove_stale_custom_roles(transaction).await?;
+		sqlx::query(
+			"UPDATE authorization_migration_rejections SET resolved = true WHERE NOT resolved",
+		)
+		.execute(&mut **transaction)
+		.await?;
 		Ok(MigrationReport {
 			assignments,
 			custom_roles,
@@ -158,20 +163,7 @@ impl AuthorizationMigrationService {
 			let name: String = row.try_get("name")?;
 			let active: bool = row.try_get("active")?;
 			let raw: Value = row.try_get("privileges_json")?;
-			let privileges: Vec<AdminMenuPrivilege> =
-				match serde_json::from_value(raw) {
-					Ok(privileges) => privileges,
-					Err(error) => {
-						rejections.push(MigrationRejection {
-							user_id: None,
-							organization_id: Some(organization_id),
-							legacy_role: Some(id.to_string()),
-							reason: format!("invalid privileges_json: {error}"),
-						});
-						continue;
-					}
-				};
-			let grants = match grants_for_legacy_privileges(registry, &privileges) {
+			let grants = match grants_for_legacy_profile(registry, active, raw) {
 				Ok(grants) => grants,
 				Err(reason) => {
 					rejections.push(MigrationRejection {
@@ -270,7 +262,7 @@ impl AuthorizationMigrationService {
 				})
 		})
 		.collect::<MigrationResult<BTreeMap<_, _>>>()?;
-		let rows = sqlx::query("SELECT m.user_id, m.organization_id, u.role FROM user_organization_memberships m JOIN users u ON u.id = m.user_id WHERE m.active")
+		let rows = sqlx::query("SELECT m.user_id, m.organization_id, u.role FROM user_organization_memberships m JOIN users u ON u.id = m.user_id WHERE m.active AND u.active")
 			.fetch_all(&mut **transaction).await?;
 		let mut assignments = Vec::new();
 		let mut rejections = Vec::new();
@@ -507,6 +499,19 @@ fn grants_for_legacy_privileges(
 	Ok(grants)
 }
 
+fn grants_for_legacy_profile(
+	registry: &PolicyRegistry,
+	active: bool,
+	raw: Value,
+) -> Result<BTreeSet<String>, String> {
+	if !active {
+		return Ok(BTreeSet::new());
+	}
+	let privileges = serde_json::from_value::<Vec<AdminMenuPrivilege>>(raw)
+		.map_err(|error| format!("invalid privileges_json: {error}"))?;
+	grants_for_legacy_privileges(registry, &privileges)
+}
+
 /// Rows explicitly removed or reserved by the reviewed PDF contract. These
 /// are accepted only by the one-way legacy translator and grant nothing.
 fn is_reviewed_obsolete_legacy_menu_key(menu_key: &str) -> bool {
@@ -522,4 +527,32 @@ fn is_reviewed_obsolete_legacy_menu_key(menu_key: &str) -> bool {
 			| "email_review"
 			| "email_lock"
 	)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use serde_json::json;
+
+	#[test]
+	fn inactive_legacy_profiles_do_not_block_reconciliation() {
+		let grants = grants_for_legacy_profile(
+			crate::authorization::policy_registry(),
+			false,
+			json!({"historical": "unsupported"}),
+		)
+		.expect("inactive profiles must not require privilege translation");
+		assert!(grants.is_empty());
+	}
+
+	#[test]
+	fn active_legacy_profiles_still_require_valid_privileges() {
+		let error = grants_for_legacy_profile(
+			crate::authorization::policy_registry(),
+			true,
+			json!({"historical": "unsupported"}),
+		)
+		.expect_err("active profiles must fail closed");
+		assert!(error.contains("invalid privileges_json"));
+	}
 }

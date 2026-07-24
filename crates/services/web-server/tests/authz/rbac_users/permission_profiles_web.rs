@@ -34,19 +34,23 @@ async fn test_system_admin_permission_profiles_require_target_organization(
 	let token = generate_web_token(&system_admin.email, system_admin.token_salt)?;
 	let cookie = cookie_header(&token.to_string());
 	let app = web_server::app(mm);
+	let source_role_name = format!("Source Role {}", Uuid::new_v4());
 	let role_name = format!("Target Role {}", Uuid::new_v4());
-	let body = json!({
-		"data": {
-			"name": role_name,
-			"privileges": [{
-				"menu_key": "case",
-				"can_read": true,
-				"can_edit": false,
-				"can_review": false,
-				"can_lock": false
-			}]
-		}
-	});
+	let role_body = |name: &str| {
+		json!({
+			"data": {
+				"name": name,
+				"privileges": [{
+					"menu_key": "case",
+					"can_read": true,
+					"can_edit": false,
+					"can_review": false,
+					"can_lock": false
+				}]
+			}
+		})
+	};
+	let body = role_body(&role_name);
 
 	let missing_scope = Request::builder()
 		.method("POST")
@@ -56,6 +60,19 @@ async fn test_system_admin_permission_profiles_require_target_organization(
 		.body(Body::from(body.to_string()))?;
 	let missing_scope = app.clone().oneshot(missing_scope).await?;
 	assert_eq!(missing_scope.status(), StatusCode::BAD_REQUEST);
+
+	let source_uri = format!(
+		"/api/admin/permission-profiles?organization_id={}",
+		source.org_id
+	);
+	let source_role = Request::builder()
+		.method("POST")
+		.uri(&source_uri)
+		.header("cookie", &cookie)
+		.header("content-type", "application/json")
+		.body(Body::from(role_body(&source_role_name).to_string()))?;
+	let source_role = app.clone().oneshot(source_role).await?;
+	assert_eq!(source_role.status(), StatusCode::CREATED);
 
 	let target_uri = format!(
 		"/api/admin/permission-profiles?organization_id={}",
@@ -84,6 +101,11 @@ async fn test_system_admin_permission_profiles_require_target_organization(
 		.ok_or("expected profile list")?
 		.iter()
 		.any(|row| row["name"] == role_name));
+	assert!(rows
+		.as_array()
+		.ok_or("expected profile list")?
+		.iter()
+		.all(|row| row["name"] != source_role_name));
 	Ok(())
 }
 
