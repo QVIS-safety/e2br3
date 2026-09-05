@@ -137,6 +137,7 @@ The remaining gaps are compile-time isolation of dev helpers, explicit staging s
 - The previous 5,000-row projection, separate scope query, and in-memory pagination are gone.
 - The dynamic case-query and list-view paths share the same SQL scope predicate.
 - The legacy `GET /api/cases` path now applies the same scope predicate before bounded SQL pagination. Its per-case scope query is gone, and workflow settings are loaded once per non-empty response instead of repeatedly per case.
+- The legacy list no longer loads `cases.raw_xml`, which was discarded before serialization; single-case and export reads retain the canonical XML payload.
 
 The dynamic case-query endpoint now applies sender/product/study scope inside the candidate SQL and supports bounded `limit`/`offset` pagination ([`case_query_catalog_rest.rs`](../crates/services/web-server/src/web/rest/case_query_catalog_rest.rs#L205)). Calls that omit pagination retain the existing 5,000-result compatibility ceiling.
 
