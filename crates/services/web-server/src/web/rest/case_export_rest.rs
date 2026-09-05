@@ -4,7 +4,6 @@ use axum::extract::{Path, Query, State};
 use axum::http::header;
 use axum::response::Response;
 use axum::Json;
-use lib_core::model::case::CaseBmc;
 use lib_core::model::message_header::MessageHeaderBmc;
 use lib_core::model::safety_report::SafetyReportIdentificationBmc;
 use lib_core::model::xml_export_history::{
@@ -164,25 +163,13 @@ fn export_file_name(
 	}
 }
 
-pub async fn generate_case_xml_for_authority(
+async fn generate_case_xml_for_authority(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
 	id: Uuid,
-	case: lib_core::model::case::Case,
-	authority: RegulatoryAuthority,
-) -> Result<(lib_core::model::case::Case, String)> {
-	generate_case_xml_for_authority_with_notation(ctx, mm, id, case, authority, None)
-		.await
-}
-
-async fn generate_case_xml_for_authority_with_notation(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &lib_core::model::ModelManager,
-	id: Uuid,
-	case: lib_core::model::case::Case,
 	authority: RegulatoryAuthority,
 	include_notation: Option<bool>,
-) -> Result<(lib_core::model::case::Case, String)> {
+) -> Result<String> {
 	let mut header = MessageHeaderBmc::get_by_case(ctx, mm, id)
 		.await
 		.map_err(Error::Model)?;
@@ -195,13 +182,11 @@ async fn generate_case_xml_for_authority_with_notation(
 		export_message_header(&header)?,
 	)
 	.await?;
-	let xml = export_case_xml_with_options(ctx, mm, id, options)
+	export_case_xml_with_options(ctx, mm, id, options)
 		.await
 		.map_err(|err| Error::BadRequest {
 			message: format!("export task failed: {err}"),
-		})?;
-
-	Ok((case, xml))
+		})
 }
 
 pub async fn record_xml_export(
@@ -280,15 +265,13 @@ async fn export_case_authorized(
 	id: Uuid,
 	query: ExportCaseQuery,
 ) -> Result<Response> {
-	let case = CaseBmc::get(ctx, mm, id).await?;
 	let safety_report_id = safety_report_id_for_case(ctx, mm, id).await?;
 	let authority = resolve_requested_export_authority(query.authority.as_deref())?;
 	let file_name = export_file_name(&safety_report_id, id, authority, true);
-	let (_case, xml) = match generate_case_xml_for_authority_with_notation(
+	let xml = match generate_case_xml_for_authority(
 		ctx,
 		mm,
 		id,
-		case.clone(),
 		authority,
 		query.include_notation,
 	)
@@ -403,18 +386,13 @@ async fn export_cases_zip_authorized(
 	{
 		let mut zip = ZipWriter::new(&mut cursor);
 		for case_id in unique_case_ids {
-			let case = CaseBmc::get(ctx, mm, case_id).await?;
 			let safety_report_id =
 				safety_report_id_for_case(ctx, mm, case_id).await?;
 			{
 				let file_name =
 					export_file_name(&safety_report_id, case_id, authority, true);
-				let (_case, xml) = match generate_case_xml_for_authority(
-					ctx,
-					mm,
-					case_id,
-					case.clone(),
-					authority,
+				let xml = match generate_case_xml_for_authority(
+					ctx, mm, case_id, authority, None,
 				)
 				.await
 				{
