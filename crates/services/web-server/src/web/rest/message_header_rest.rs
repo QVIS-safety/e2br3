@@ -7,11 +7,10 @@ use lib_core::model::message_header::{
 use lib_core::model::ModelManager;
 use lib_rest_core::rest_params::{ParamsForCreate, ParamsForUpdate};
 use lib_rest_core::rest_result::DataRestResult;
-use lib_rest_core::Result;
+use lib_rest_core::{is_unique_violation, Result};
 use lib_utils::time::format_e2b_timestamp;
 use lib_web::middleware::mw_auth::CtxW;
 use serde_json::{Map, Value};
-use std::borrow::Cow;
 use uuid::Uuid;
 
 use super::case_editor_rest::validate_row_payload;
@@ -86,17 +85,6 @@ fn update_constraint_fields(data: &MessageHeaderForUpdate) -> Map<String, Value>
 	);
 	insert_string!("messageDate", data.message_date);
 	fields
-}
-
-fn is_unique_violation(err: &lib_core::model::Error) -> bool {
-	matches!(err, lib_core::model::Error::UniqueViolation { .. })
-		|| matches!(
-			err.as_database_error().and_then(|db| db.code()),
-			Some(Cow::Borrowed("23505"))
-		) || {
-		let text = format!("{err:?}").to_ascii_lowercase();
-		text.contains("duplicate") || text.contains("unique")
-	}
 }
 
 pub async fn create_message_header(

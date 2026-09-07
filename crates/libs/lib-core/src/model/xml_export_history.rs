@@ -85,28 +85,6 @@ impl XmlExportHistoryBmc {
 		Ok(())
 	}
 
-	/// List all export history entries visible to the current user (newest first, limit 200).
-	/// Must be called from inside an RLS-scoped read context (e.g. `with_rls_read`).
-	pub async fn list_all(dbx: &Dbx) -> Result<Vec<XmlExportHistoryRecord>> {
-		dbx.fetch_all(sqlx::query_as::<_, XmlExportHistoryRecord>(
-			"SELECT h.id,
-			        h.case_id,
-			        h.case_number,
-			        h.file_name,
-			        h.status,
-			        h.error_message,
-			        h.exported_by,
-			        u.email AS exporter_email,
-			        h.exported_at
-			   FROM xml_export_history h
-			   LEFT JOIN users u ON u.id = h.exported_by
-			  ORDER BY h.exported_at DESC, h.created_at DESC
-			  LIMIT 200",
-		))
-		.await
-		.map_err(crate::model::Error::from)
-	}
-
 	pub async fn list_all_scoped(
 		dbx: &Dbx,
 		scope: &EnforcedScopeFilter,

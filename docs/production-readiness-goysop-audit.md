@@ -157,6 +157,16 @@ The dynamic case-query endpoint now applies sender/product/study scope inside th
 
 This is still a synchronous batch job hiding behind an HTTP request. A job queue, timeout, and streaming response are deferred until the capped path proves insufficient.
 
+### P2 — Unused handlers and duplicated leaf helpers (remediated)
+
+- Deleted the unused singleton REST-handler macro and its prelude re-export; active collection CRUD handlers remain unchanged.
+- Deleted the unused import/export history `list_all` methods. HTTP collection endpoints still use `list_all_scoped`; per-case/error reads and transaction boundaries are unchanged.
+- Removed five local XML-escape implementations in favor of `export_utils::xml_escape`, preserving replacement order.
+- Section C/D/F importers now reuse `import_sections::shared::parse_date`. Digit normalization, eight-digit minimum, calendar validation, and trailing timestamp handling are unchanged; the drug parser's partial-date contract is intentionally separate.
+- Message-header creation now uses `lib_rest_core::is_unique_violation`, including its existing SQLSTATE and text fallbacks.
+- No new abstraction, dependency, environment variable, deployment change, or input-policy change was introduced.
+- Regression verification: 160 XML library tests, 6 REST-core tests, singleton POST idempotency and scoped-history API tests, and the import → single/ZIP export smoke test passed. Database-backed checks used disposable isolated databases, not `app_db`.
+
 ### P2 — Root fallback mixes API routing and static-file routing (remediated)
 
 - [`lib.rs`](../crates/services/web-server/src/lib.rs#L79) sends every unmatched application route to the static file service.

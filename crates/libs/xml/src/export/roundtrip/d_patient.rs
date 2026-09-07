@@ -1,4 +1,5 @@
 use super::*;
+use crate::export_utils::xml_escape;
 
 pub fn patch_d_patient(raw_xml: &[u8], patch: &DPatientPatch) -> Result<String> {
 	let xml_str = std::str::from_utf8(raw_xml).map_err(|err| Error::InvalidXml {
@@ -279,15 +280,6 @@ fn write_d_9_3(
 	}
 	out.push_str("</observation></subjectOf2>");
 	out
-}
-
-fn xml_escape(value: &str) -> String {
-	value
-		.replace('&', "&amp;")
-		.replace('<', "&lt;")
-		.replace('>', "&gt;")
-		.replace('"', "&quot;")
-		.replace('\'', "&apos;")
 }
 
 #[cfg(test)]

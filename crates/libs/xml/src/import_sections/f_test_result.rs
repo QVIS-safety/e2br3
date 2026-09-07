@@ -2,6 +2,7 @@
 
 use crate::error::Error;
 use crate::import_constraint;
+use crate::import_sections::shared::parse_date;
 use crate::mapping::fda::f_test_result::FTestResultPaths;
 use crate::Result;
 use lib_core::ctx::Ctx;
@@ -12,7 +13,6 @@ use libxml::parser::Parser;
 use libxml::tree::Node;
 use libxml::xpath::Context;
 use sqlx::types::time::Date;
-use time::Month;
 
 #[derive(Debug)]
 pub struct FTestResultImport {
@@ -340,18 +340,6 @@ fn parse_bool_value(value: Option<String>) -> Option<bool> {
 		"false" | "0" => Some(false),
 		_ => None,
 	}
-}
-
-fn parse_date(value: String) -> Option<Date> {
-	let digits: String = value.chars().filter(|c| c.is_ascii_digit()).collect();
-	if digits.len() < 8 {
-		return None;
-	}
-	let y: i32 = digits[0..4].parse().ok()?;
-	let m: u8 = digits[4..6].parse().ok()?;
-	let d: u8 = digits[6..8].parse().ok()?;
-	let month = Month::try_from(m).ok()?;
-	Date::from_calendar_date(y, month, d).ok()
 }
 
 #[cfg(test)]

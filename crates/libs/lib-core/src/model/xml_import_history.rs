@@ -122,38 +122,6 @@ impl XmlImportHistoryBmc {
 		Ok(())
 	}
 
-	/// List all import history entries visible to the current user (newest first, limit 200).
-	/// Manages its own RLS-scoped read transaction.
-	pub async fn list_all(
-		mm: &ModelManager,
-		ctx: &Ctx,
-	) -> Result<Vec<XmlImportHistoryRow>> {
-		let dbx = mm.dbx();
-		dbx.begin_txn().await?;
-		set_full_context_dbx(dbx, ctx.user_id(), ctx.organization_id(), ctx.role())
-			.await?;
-		let rows = dbx
-			.fetch_all(sqlx::query_as::<_, XmlImportHistoryRow>(
-				"SELECT h.id,
-				        h.uploaded_file_name,
-				        h.source_file_name,
-				        h.case_id,
-				        h.case_number,
-				        h.status,
-				        h.error_message,
-				        h.uploaded_by,
-				        u.email AS uploader_email,
-				        h.uploaded_at
-				   FROM xml_import_history h
-				   LEFT JOIN users u ON u.id = h.uploaded_by
-				  ORDER BY h.uploaded_at DESC, h.created_at DESC
-				  LIMIT 200",
-			))
-			.await?;
-		dbx.commit_txn().await?;
-		Ok(rows)
-	}
-
 	pub async fn list_all_scoped(
 		mm: &ModelManager,
 		ctx: &Ctx,

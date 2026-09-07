@@ -1667,15 +1667,6 @@ fn fmt_ts(date: Date, time: Option<Time>) -> String {
 	out
 }
 
-fn xml_escape(value: &str) -> String {
-	value
-		.replace('&', "&amp;")
-		.replace('<', "&lt;")
-		.replace('>', "&gt;")
-		.replace('"', "&quot;")
-		.replace('\'', "&apos;")
-}
-
 fn export_characteristic_code(code: &str) -> &str {
 	match code {
 		"FDA.G.k.10.1" => "FDAGK101",
