@@ -1044,9 +1044,7 @@ async fn create_follow_up_case_in_txn(
 	validate_case_create_payload(&case_create)?;
 	let case_id = CaseBmc::create(ctx, mm, case_create).await?;
 	let transmission_date =
-		crate::web::rest::case_export_rest::format_message_timestamp_utc_pub(
-			OffsetDateTime::now_utc(),
-		);
+		lib_utils::time::format_e2b_timestamp(OffsetDateTime::now_utc());
 	SafetyReportIdentificationBmc::create(
 		ctx,
 		mm,
@@ -1139,9 +1137,7 @@ async fn create_case_authorized(
 
 	let id = CaseBmc::create(ctx, mm, data).await?;
 	let creation_timestamp =
-		crate::web::rest::case_export_rest::format_message_timestamp_utc_pub(
-			OffsetDateTime::now_utc(),
-		);
+		lib_utils::time::format_e2b_timestamp(OffsetDateTime::now_utc());
 	SafetyReportIdentificationBmc::create(
 		ctx,
 		mm,

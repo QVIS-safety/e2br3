@@ -648,29 +648,82 @@ async fn test_import_then_export_xml() -> Result<()> {
 	assert!(xml.contains("<MCCI_IN200100UV01"));
 	assert!(xml.contains(&unique_safety_report_id));
 
-	let (status, body) = request_json(
+	let second_import = import_xml_string(
 		&app,
 		&cookie,
-		"POST",
-		"/api/cases/export/xml".to_string(),
-		Some(
-			serde_json::json!({ "case_ids": [case_id, case_id], "authority": "fda" }),
-		),
+		"second.xml",
+		&fixture_xml("FAERS2022Scenario2.xml")?,
+		product_presave_id,
 	)
 	.await?;
-	assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
-	{
-		let mut zip = zip::ZipArchive::new(Cursor::new(body))?;
-		assert_eq!(zip.len(), 1, "duplicate case IDs must yield one XML entry");
-		let mut entry = zip.by_index(0)?;
+	let second_id = import_case_id(&second_import)?;
+	prepare_test_fda_export_case(
+		&mm,
+		seed.org_id,
+		seed.admin.id,
+		Uuid::parse_str(second_id)?,
+	)
+	.await?;
+	ensure_reaction_language(&app, &cookie, second_id).await?;
+	ensure_batch_transmission_date(&app, &cookie, second_id).await?;
+	ensure_fda_device_characteristics(&app, &cookie, second_id).await?;
+	mark_case_validated(&app, &cookie, second_id).await?;
+	for notation in [true, false] {
+		let (status, body) = request_json(
+			&app,
+			&cookie,
+			"PUT",
+			"/api/admin/settings".to_string(),
+			Some(serde_json::json!({"data": {"notation": notation}})),
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
 		assert_eq!(
-			entry.name(),
-			format!("{unique_safety_report_id}-{case_id}-fda.xml")
+			serde_json::from_slice::<Value>(&body)?["notation"],
+			notation
 		);
-		let mut zipped_xml = String::new();
-		entry.read_to_string(&mut zipped_xml)?;
-		assert!(zipped_xml.contains("<MCCI_IN200100UV01"));
-		assert!(zipped_xml.contains(&unique_safety_report_id));
+		let (status, body) = request_json(
+			&app,
+			&cookie,
+			"GET",
+			format!(
+				"/api/cases/{case_id}/export/xml?authority=fda&include_notation={}",
+				!notation
+			),
+			None,
+		)
+		.await?;
+		assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+		let single_xml = String::from_utf8(body)?;
+		assert!(single_xml.contains(&unique_safety_report_id));
+		if notation {
+			// Explicit override above disables comments.
+			assert!(!single_xml.contains("<!--"));
+		}
+		let (status, body) = request_json(
+			&app, &cookie, "POST", "/api/cases/export/xml".to_string(),
+			Some(serde_json::json!({ "case_ids": [case_id, second_id, case_id], "authority": "fda" })),
+		).await?;
+		assert_eq!(status, StatusCode::OK, "{}", String::from_utf8_lossy(&body));
+		let mut zip = zip::ZipArchive::new(Cursor::new(body))?;
+		assert_eq!(
+			zip.len(),
+			2,
+			"duplicate case IDs must yield one entry per case"
+		);
+		for (index, expected_id) in [case_id, second_id].into_iter().enumerate() {
+			let mut entry = zip.by_index(index)?;
+			assert!(entry.name().ends_with(&format!("-{expected_id}-fda.xml")));
+			let mut zipped_xml = String::new();
+			entry.read_to_string(&mut zipped_xml)?;
+			assert!(zipped_xml.contains("<MCCI_IN200100UV01"));
+			if !notation {
+				assert!(!zipped_xml.contains("<!--"));
+			}
+			if index == 0 {
+				assert!(zipped_xml.contains(&unique_safety_report_id));
+			}
+		}
 	}
 
 	let viewer_token =
@@ -700,6 +753,55 @@ async fn test_import_then_export_xml() -> Result<()> {
 			assert_eq!(status, expected, "{}", String::from_utf8_lossy(&body));
 		}
 	}
+
+	// A stored settings error must still fail inside the per-case history boundary,
+	// including when the single export supplies an explicit notation override.
+	let ctx = lib_core::ctx::Ctx::new(
+		seed.admin.id,
+		seed.org_id,
+		lib_core::ctx::ROLE_SPONSOR_ADMIN_CRO.to_string(),
+	)?;
+	let mut invalid_settings =
+		lib_core::model::admin_settings::AdminSettingsBmc::get(&ctx, &mm, "system")
+			.await?
+			.ok_or("missing test settings")?;
+	invalid_settings["timezone"] = Value::Null;
+	lib_core::model::admin_settings::AdminSettingsBmc::upsert(
+		&ctx,
+		&mm,
+		"system",
+		&invalid_settings,
+		Some(seed.admin.id),
+	)
+	.await?;
+	for (method, uri, input) in [
+		("GET", format!("/api/cases/{case_id}/export/xml?authority=fda&include_notation=false"), None),
+		("POST", "/api/cases/export/xml".to_string(), Some(serde_json::json!({ "case_ids": [case_id, second_id], "authority": "fda" }))),
+	] {
+		let (status, body) = request_json(&app, &cookie, method, uri, input).await?;
+		assert_eq!(status, StatusCode::BAD_REQUEST, "{}", String::from_utf8_lossy(&body));
+		assert!(String::from_utf8_lossy(&body).contains("admin settings field 'timezone' is required"));
+	}
+	let (status, body) = request_json(
+		&app,
+		&cookie,
+		"GET",
+		format!("/api/cases/{case_id}/exports/history"),
+		None,
+	)
+	.await?;
+	assert_eq!(status, StatusCode::OK);
+	let history: Value = serde_json::from_slice(&body)?;
+	let errors: Vec<_> = history["data"]["items"]
+		.as_array()
+		.ok_or("missing export history")?
+		.iter()
+		.filter(|item| item["status"] == "error")
+		.collect();
+	assert_eq!(errors.len(), 2);
+	assert!(errors.iter().all(|item| item["errorMessage"]
+		.as_str()
+		.is_some_and(|message| message.contains("timezone"))));
 
 	Ok(())
 }

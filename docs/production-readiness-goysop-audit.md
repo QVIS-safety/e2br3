@@ -149,6 +149,7 @@ The dynamic case-query endpoint now applies sender/product/study scope inside th
 ### P2 — Bulk XML export remains synchronous, but has request and byte caps
 
 - Single and bulk XML export now return only XML from one shared generation helper. The unused `Case` argument/return pair, full-payload clones, and redundant handler-level case reads are removed; authorization still checks each target before generation, and the XML serializer retains its own case read.
+- Bulk XML export loads runtime settings once, at the first case's generation step, and reuses that snapshot for the request. Settings failures still record the failing case's export history; subsequent requests reload settings. E2B timestamp formatting now lives in `lib-utils::time`, and export filenames no longer accept an unused suffix switch.
 - [`BulkXmlExportInput`](../crates/services/web-server/src/web/rest/case_export_rest.rs#L32) is capped at 100 unique cases and 100 MiB of uncompressed XML ([`case_export_rest.rs`](../crates/services/web-server/src/web/rest/case_export_rest.rs#L415)).
 - [`case_export_rest.rs`](../crates/services/web-server/src/web/rest/case_export_rest.rs#L458) processes each case serially and performs repeated case, identifier, export, and history work.
 - The entire ZIP is accumulated in a `Cursor<Vec<u8>>` before responding ([`case_export_rest.rs`](../crates/services/web-server/src/web/rest/case_export_rest.rs#L453)).

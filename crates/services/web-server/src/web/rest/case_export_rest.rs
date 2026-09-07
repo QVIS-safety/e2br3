@@ -19,7 +19,6 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::time::OffsetDateTime;
 use std::collections::HashSet;
 use std::io::{Cursor, Write};
-use time::Month;
 use uuid::Uuid;
 use xml::{export_case_xml_with_options, ExportXmlOptions};
 use zip::write::SimpleFileOptions;
@@ -49,32 +48,6 @@ pub struct XmlExportHistoryList {
 }
 
 // -- Helpers
-
-pub fn format_message_timestamp_utc_pub(now: OffsetDateTime) -> String {
-	let month = match now.month() {
-		Month::January => 1,
-		Month::February => 2,
-		Month::March => 3,
-		Month::April => 4,
-		Month::May => 5,
-		Month::June => 6,
-		Month::July => 7,
-		Month::August => 8,
-		Month::September => 9,
-		Month::October => 10,
-		Month::November => 11,
-		Month::December => 12,
-	};
-	format!(
-		"{:04}{:02}{:02}{:02}{:02}{:02}",
-		now.year(),
-		month,
-		now.day(),
-		now.hour(),
-		now.minute(),
-		now.second()
-	)
-}
 
 fn required_env_identifier(name: &str) -> Result<String> {
 	let value = std::env::var(name).map_err(|_| Error::BadRequest {
@@ -118,23 +91,6 @@ fn resolve_requested_export_authority(
 	})
 }
 
-async fn export_xml_options(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &lib_core::model::ModelManager,
-	include_notation: Option<bool>,
-	authority: RegulatoryAuthority,
-	outbound_message_header: xml::OutboundMessageHeader,
-) -> Result<ExportXmlOptions> {
-	let apply_comments = runtime_settings::load(ctx, mm)
-		.await?
-		.resolve_notation(include_notation);
-	Ok(ExportXmlOptions {
-		apply_comments,
-		authority,
-		outbound_message_header,
-	})
-}
-
 async fn safety_report_id_for_case(
 	ctx: &lib_core::ctx::Ctx,
 	mm: &lib_core::model::ModelManager,
@@ -154,13 +110,8 @@ fn export_file_name(
 	safety_report_id: &str,
 	case_id: Uuid,
 	authority: RegulatoryAuthority,
-	include_authority_suffix: bool,
 ) -> String {
-	if include_authority_suffix {
-		format!("{safety_report_id}-{case_id}-{}.xml", authority.as_str())
-	} else {
-		format!("{safety_report_id}-{case_id}.xml")
-	}
+	format!("{safety_report_id}-{case_id}-{}.xml", authority.as_str())
 }
 
 async fn generate_case_xml_for_authority(
@@ -169,19 +120,22 @@ async fn generate_case_xml_for_authority(
 	id: Uuid,
 	authority: RegulatoryAuthority,
 	include_notation: Option<bool>,
+	settings: &mut Option<runtime_settings::RuntimeSettings>,
 ) -> Result<String> {
 	let mut header = MessageHeaderBmc::get_by_case(ctx, mm, id)
 		.await
 		.map_err(Error::Model)?;
 	header.batch_transmission_date = Some(OffsetDateTime::now_utc());
-	let options = export_xml_options(
-		ctx,
-		mm,
-		include_notation,
+	let outbound_message_header = export_message_header(&header)?;
+	let settings = match settings {
+		Some(settings) => settings,
+		None => settings.insert(runtime_settings::load(ctx, mm).await?),
+	};
+	let options = ExportXmlOptions {
+		apply_comments: settings.resolve_notation(include_notation),
 		authority,
-		export_message_header(&header)?,
-	)
-	.await?;
+		outbound_message_header,
+	};
 	export_case_xml_with_options(ctx, mm, id, options)
 		.await
 		.map_err(|err| Error::BadRequest {
@@ -267,13 +221,14 @@ async fn export_case_authorized(
 ) -> Result<Response> {
 	let safety_report_id = safety_report_id_for_case(ctx, mm, id).await?;
 	let authority = resolve_requested_export_authority(query.authority.as_deref())?;
-	let file_name = export_file_name(&safety_report_id, id, authority, true);
+	let file_name = export_file_name(&safety_report_id, id, authority);
 	let xml = match generate_case_xml_for_authority(
 		ctx,
 		mm,
 		id,
 		authority,
 		query.include_notation,
+		&mut None,
 	)
 	.await
 	{
@@ -383,6 +338,7 @@ async fn export_cases_zip_authorized(
 	let options =
 		SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 	let mut xml_bytes = 0usize;
+	let mut settings = None;
 	{
 		let mut zip = ZipWriter::new(&mut cursor);
 		for case_id in unique_case_ids {
@@ -390,9 +346,14 @@ async fn export_cases_zip_authorized(
 				safety_report_id_for_case(ctx, mm, case_id).await?;
 			{
 				let file_name =
-					export_file_name(&safety_report_id, case_id, authority, true);
+					export_file_name(&safety_report_id, case_id, authority);
 				let xml = match generate_case_xml_for_authority(
-					ctx, mm, case_id, authority, None,
+					ctx,
+					mm,
+					case_id,
+					authority,
+					None,
+					&mut settings,
 				)
 				.await
 				{
