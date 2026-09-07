@@ -7,9 +7,8 @@
 use crate::authorization::EnforcedScopeFilter;
 use crate::ctx::Ctx;
 use crate::model::store::dbx::Dbx;
-use crate::model::store::set_full_context_dbx_or_rollback;
-use crate::model::ModelManager;
-use crate::model::Result;
+use crate::model::store::{set_org_context, set_user_context};
+use crate::model::{Error, ModelManager, Result};
 use serde::Serialize;
 use sqlx::types::time::OffsetDateTime;
 use uuid::Uuid;
@@ -43,7 +42,7 @@ pub struct XmlExportHistoryErrorRow {
 pub struct XmlExportHistoryBmc;
 
 impl XmlExportHistoryBmc {
-	/// Record a single XML export audit entry (begins and commits its own transaction).
+	/// Commit independently so export history survives a caller's rollback.
 	pub async fn record(
 		mm: &ModelManager,
 		ctx: &Ctx,
@@ -53,18 +52,16 @@ impl XmlExportHistoryBmc {
 		status: &str,
 		error_message: Option<&str>,
 	) -> Result<()> {
-		let dbx = mm.dbx();
-		dbx.begin_txn().await?;
-		set_full_context_dbx_or_rollback(
-			dbx,
-			ctx.user_id(),
-			ctx.organization_id(),
-			ctx.role(),
-		)
-		.await?;
-		dbx.execute(
-			sqlx::query(
-				"INSERT INTO xml_export_history (
+		let mut tx = mm
+			.dbx()
+			.db()
+			.begin()
+			.await
+			.map_err(|err| Error::Store(err.to_string()))?;
+		set_user_context(&mut tx, ctx.user_id()).await?;
+		set_org_context(&mut tx, ctx.organization_id(), ctx.role()).await?;
+		sqlx::query(
+			"INSERT INTO xml_export_history (
 					case_id,
 					case_number,
 					file_name,
@@ -72,16 +69,19 @@ impl XmlExportHistoryBmc {
 					error_message,
 					exported_by
 				) VALUES ($1, $2, $3, $4, $5, $6)",
-			)
-			.bind(case_id)
-			.bind(case_number)
-			.bind(file_name)
-			.bind(status)
-			.bind(error_message)
-			.bind(ctx.user_id()),
 		)
-		.await?;
-		dbx.commit_txn().await?;
+		.bind(case_id)
+		.bind(case_number)
+		.bind(file_name)
+		.bind(status)
+		.bind(error_message)
+		.bind(ctx.user_id())
+		.execute(&mut *tx)
+		.await
+		.map_err(|err| Error::Store(err.to_string()))?;
+		tx.commit()
+			.await
+			.map_err(|err| Error::Store(err.to_string()))?;
 		Ok(())
 	}
 

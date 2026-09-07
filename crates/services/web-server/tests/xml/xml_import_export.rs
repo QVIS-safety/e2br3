@@ -792,9 +792,20 @@ async fn test_import_then_export_xml() -> Result<()> {
 	.await?;
 	assert_eq!(status, StatusCode::OK);
 	let history: Value = serde_json::from_slice(&body)?;
-	let errors: Vec<_> = history["data"]["items"]
+	let items = history["data"]["items"]
 		.as_array()
-		.ok_or("missing export history")?
+		.ok_or("missing export history")?;
+	assert_eq!(
+		items
+			.iter()
+			.filter(|item| item["status"] == "success")
+			.count(),
+		5,
+		"single and ZIP successes must be recorded once per exported case"
+	);
+	assert!(items.iter().all(|item| item["caseId"] == case_id
+		&& item["exportedBy"] == seed.admin.id.to_string()));
+	let errors: Vec<_> = items
 		.iter()
 		.filter(|item| item["status"] == "error")
 		.collect();
@@ -1322,6 +1333,7 @@ async fn test_fda_export_always_validates_even_when_env_unset() -> Result<()> {
 		.ok_or("missing export history")?;
 	assert_eq!(items.len(), 2);
 	assert!(items.iter().all(|item| item["status"] == "error"));
+	assert!(items.iter().all(|item| item["caseId"] == case_id && item["exportedBy"] == seed.admin.id.to_string()), "history must survive the failed export's outer transaction with the original user and case");
 
 	match original {
 		Some(v) => std::env::set_var("E2BR3_EXPORT_VALIDATE", v),

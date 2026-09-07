@@ -143,53 +143,6 @@ async fn generate_case_xml_for_authority(
 		})
 }
 
-pub async fn record_xml_export(
-	ctx: &lib_core::ctx::Ctx,
-	mm: &lib_core::model::ModelManager,
-	case_id: Uuid,
-	case_number: Option<&str>,
-	file_name: &str,
-	status: &str,
-	error_message: Option<&str>,
-) -> Result<()> {
-	let mut tx = mm.dbx().db().begin().await.map_err(|err| {
-		Error::Model(lib_core::model::Error::Store(err.to_string()))
-	})?;
-	lib_core::model::store::set_user_context(&mut tx, ctx.user_id())
-		.await
-		.map_err(Error::Model)?;
-	lib_core::model::store::set_org_context(
-		&mut tx,
-		ctx.organization_id(),
-		ctx.role(),
-	)
-	.await
-	.map_err(Error::Model)?;
-	sqlx::query(
-		"INSERT INTO xml_export_history (
-			case_id,
-			case_number,
-			file_name,
-			status,
-			error_message,
-			exported_by
-		) VALUES ($1, $2, $3, $4, $5, $6)",
-	)
-	.bind(case_id)
-	.bind(case_number)
-	.bind(file_name)
-	.bind(status)
-	.bind(error_message)
-	.bind(ctx.user_id())
-	.execute(&mut *tx)
-	.await
-	.map_err(|err| Error::Model(lib_core::model::Error::Store(err.to_string())))?;
-	tx.commit().await.map_err(|err| {
-		Error::Model(lib_core::model::Error::Store(err.to_string()))
-	})?;
-	Ok(())
-}
-
 // -- Handlers
 
 /// GET /api/cases/{id}/export/xml
@@ -235,9 +188,9 @@ async fn export_case_authorized(
 		Ok(result) => result,
 		Err(err) => {
 			let error_message = err.to_string();
-			if let Err(record_err) = record_xml_export(
-				ctx,
+			if let Err(record_err) = XmlExportHistoryBmc::record(
 				mm,
+				ctx,
 				id,
 				Some(safety_report_id.as_str()),
 				&file_name,
@@ -253,9 +206,9 @@ async fn export_case_authorized(
 			return Err(err);
 		}
 	};
-	if let Err(err) = record_xml_export(
-		ctx,
+	if let Err(err) = XmlExportHistoryBmc::record(
 		mm,
+		ctx,
 		id,
 		Some(safety_report_id.as_str()),
 		&file_name,
@@ -360,9 +313,9 @@ async fn export_cases_zip_authorized(
 					Ok(result) => result,
 					Err(err) => {
 						let error_message = err.to_string();
-						if let Err(record_err) = record_xml_export(
-							ctx,
+						if let Err(record_err) = XmlExportHistoryBmc::record(
 							mm,
+							ctx,
 							case_id,
 							Some(safety_report_id.as_str()),
 							&file_name,
@@ -399,9 +352,9 @@ async fn export_cases_zip_authorized(
 					.map_err(|err| Error::BadRequest {
 						message: format!("failed to write zip entry: {err}"),
 					})?;
-				if let Err(err) = record_xml_export(
-					ctx,
+				if let Err(err) = XmlExportHistoryBmc::record(
 					mm,
+					ctx,
 					case_id,
 					Some(safety_report_id.as_str()),
 					&file_name,
